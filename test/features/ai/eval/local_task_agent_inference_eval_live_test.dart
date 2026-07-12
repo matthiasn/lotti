@@ -84,6 +84,11 @@ void main() {
           Platform.environment['LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE'] ??
               LocalTaskAgentEvalExecutionMode.singlePass.name,
         ),
+        reportEditorModelId:
+            Platform.environment['LOCAL_TASK_AGENT_EVAL_REPORT_EDITOR_MODEL'],
+        reportEditorMaxAttempts: parseLocalTaskAgentEvalReportEditorAttempts(
+          Platform.environment['LOCAL_TASK_AGENT_EVAL_REPORT_EDITOR_ATTEMPTS'],
+        ),
       );
 
       final report = await runner.run(

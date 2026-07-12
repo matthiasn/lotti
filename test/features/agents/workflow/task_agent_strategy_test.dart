@@ -301,6 +301,26 @@ void main() {
               response: 'Title updated',
             ),
           ).called(1);
+          final successfulMutations = strategy.extractSuccessfulMutations();
+          expect(successfulMutations, hasLength(1));
+          expect(
+            successfulMutations.single.toolName,
+            TaskAgentToolNames.setTaskTitle,
+          );
+          expect(successfulMutations.single.arguments, {
+            'title': 'New Title',
+          });
+          expect(
+            () => successfulMutations.add((
+              toolName: 'other',
+              arguments: const {},
+            )),
+            throwsUnsupportedError,
+          );
+          expect(
+            () => successfulMutations.single.arguments['title'] = 'Changed',
+            throwsUnsupportedError,
+          );
         },
       );
 
@@ -2481,6 +2501,14 @@ void main() {
         // Only the valid map item should be in the builder.
         expect(csBuilder.items, hasLength(1));
         expect(csBuilder.items.first.humanSummary, 'Add: "Valid item"');
+        final successfulMutations = deferredStrategy
+            .extractSuccessfulMutations();
+        expect(successfulMutations, hasLength(1));
+        expect(
+          successfulMutations.single.toolName,
+          TaskAgentToolNames.addChecklistItem,
+        );
+        expect(successfulMutations.single.arguments, {'title': 'Valid item'});
 
         // LLM should be warned about skipped items.
         final captured = verify(
@@ -2525,6 +2553,7 @@ void main() {
           );
 
           expect(builder.hasItems, isFalse);
+          expect(strategy.extractSuccessfulMutations(), isEmpty);
           verify(
             () => mockManager.addToolResponse(
               toolCallId: 'call-redundant',
@@ -2561,6 +2590,13 @@ void main() {
 
           expect(builder.hasItems, isTrue);
           expect(builder.items.first.toolName, 'update_task_priority');
+          final successfulMutations = strategy.extractSuccessfulMutations();
+          expect(successfulMutations, hasLength(1));
+          expect(
+            successfulMutations.single.toolName,
+            TaskAgentToolNames.updateTaskPriority,
+          );
+          expect(successfulMutations.single.arguments, {'priority': 'P0'});
           verify(
             () => mockManager.addToolResponse(
               toolCallId: 'call-actual',
@@ -2792,6 +2828,15 @@ void main() {
 
           expect(builder.hasItems, isTrue);
           expect(builder.items, hasLength(1));
+          final successfulMutations = strategy.extractSuccessfulMutations();
+          expect(successfulMutations, hasLength(1));
+          expect(
+            successfulMutations.single.toolName,
+            TaskAgentToolNames.setTaskTitle,
+          );
+          expect(successfulMutations.single.arguments, {
+            'title': 'PR Review for Ibad',
+          });
           expect(
             builder.items.single.toolName,
             TaskAgentToolNames.setTaskTitle,

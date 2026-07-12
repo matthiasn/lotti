@@ -6,6 +6,23 @@ import '../test_utils.dart';
 
 void main() {
   group('TaskAgentPromptBuilder.buildSystemPrompt', () {
+    test('identifies only empty and seeded report directives as built in', () {
+      for (final scenario in [
+        (directive: '', expected: true),
+        (directive: taskAgentReportDirective, expected: true),
+        (directive: '  $taskAgentReportDirective  ', expected: true),
+        (directive: 'Lead with a risk callout.', expected: false),
+      ]) {
+        expect(
+          TaskAgentPromptBuilder.usesBuiltInReportContract(
+            makeTestTemplateVersion(reportDirective: scenario.directive),
+          ),
+          scenario.expected,
+          reason: scenario.directive,
+        );
+      }
+    });
+
     test('legacy directives-only template uses the combined heading', () {
       final version = makeTestTemplateVersion(
         directives: 'You are precise and concise.',
@@ -149,8 +166,8 @@ void main() {
           evidenceSynthesis: true,
         );
 
-        expect(prompt, contains('compact current-state report'));
-        expect(prompt, contains('only sections that'));
+        expect(prompt, contains('Write free-form Markdown'));
+        expect(prompt, contains('headings are optional'));
         expect(prompt, isNot(contains('Include 1-2 relevant emojis')));
         expect(prompt, isNot(contains('### Required Sections')));
       },
@@ -164,7 +181,70 @@ void main() {
       );
 
       expect(prompt, contains('Legacy directive.'));
-      expect(prompt, endsWith('real-world outcome exists.\n'));
+      expect(
+        prompt,
+        endsWith('not Markdown structure or voice.\n'),
+      );
+    });
+
+    test('uses compact evidence scaffold for efficient model families', () {
+      final version = makeTestTemplateVersion(
+        reportDirective: taskAgentReportDirective,
+      );
+
+      final mistralPrompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: version,
+        soulVersion: null,
+        evidenceSynthesis: true,
+        evidenceSynthesisModelId: 'mistral-small-4-119b-instruct',
+      );
+      final qwenPrompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: version,
+        soulVersion: null,
+        evidenceSynthesis: true,
+        evidenceSynthesisModelId: 'qwen3.5-122b-a10b',
+      );
+
+      expect(
+        mistralPrompt,
+        contains(TaskAgentPromptBuilder.taskAgentCompactScaffold),
+      );
+      expect(
+        qwenPrompt,
+        contains(TaskAgentPromptBuilder.taskAgentCompactScaffold),
+      );
+      expect(mistralPrompt, isNot(contains('A wake ends in exactly')));
+      expect(mistralPrompt, contains('Examples of the boundary:'));
+      expect(mistralPrompt, contains('Include only sections that'));
+      expect(qwenPrompt, isNot(contains('Maybe revisit catering later')));
+      expect(qwenPrompt, contains('Write free-form Markdown'));
+      expect(qwenPrompt, contains('## Scope Erasure'));
+    });
+
+    test('compact scaffold preserves soul and custom directives', () {
+      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: makeTestTemplateVersion(
+          generalDirective: 'Escalate contractual blockers immediately.',
+          reportDirective: 'Use any Markdown structure that fits the task.',
+        ),
+        soulVersion: makeTestSoulDocumentVersion(
+          voiceDirective: 'Calm, direct, and specific.',
+          toneBounds: 'Never invent progress.',
+        ),
+        evidenceSynthesis: true,
+        evidenceSynthesisModelId: 'qwen3.5-122b-a10b',
+      );
+
+      expect(prompt, contains('## Your Personality'));
+      expect(prompt, contains('Calm, direct, and specific.'));
+      expect(prompt, contains('Never invent progress.'));
+      expect(prompt, contains('## Your Operational Directives'));
+      expect(prompt, contains('Escalate contractual blockers immediately.'));
+      expect(
+        prompt,
+        contains('Use any Markdown structure that fits the task.'),
+      );
+      expect(prompt, contains('## Evidence-First Synthesis Protocol'));
     });
   });
 }

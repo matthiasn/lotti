@@ -27,6 +27,7 @@ import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
@@ -43,6 +44,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -76,11 +78,13 @@ part 'task_agent_execute.dart';
 /// 7. Persist the user message as an [AgentMessageKind.user] entity for
 ///    inspectability (non-fatal if it fails).
 /// 8. Invoke the LLM and execute tool calls via [AgentToolExecutor].
-/// 9. Persist the final assistant response as a thought message.
-/// 10. Extract and persist the updated report (from `update_report` tool call).
-/// 11. Persist new observation notes (agentJournal entries).
-/// 12. Persist updated agent state (revision, wake counter, failure count).
-/// 13. Clean up the in-memory conversation in a `finally` block.
+/// 9. Optionally revise a new built-in Mistral report through the isolated,
+///    validated [TaskAgentReportEditor].
+/// 10. Persist per-model token usage and the final assistant response.
+/// 11. Extract and persist the accepted report (from `update_report`).
+/// 12. Persist new observation notes (agentJournal entries).
+/// 13. Persist updated agent state (revision, wake counter, failure count).
+/// 14. Clean up the in-memory conversation in a `finally` block.
 class TaskAgentWorkflow {
   TaskAgentWorkflow({
     required this.agentRepository,
@@ -124,8 +128,11 @@ class TaskAgentWorkflow {
   final AgentTemplateService templateService;
   final SoulDocumentService? soulDocumentService;
 
-  /// Whether to use the experimentally validated low-variance prompt and tool
-  /// contract intended for efficient task-agent models.
+  /// Whether to use the experimentally validated low-variance task-agent path.
+  ///
+  /// This enables the compact prompt/tool contract for efficient models and,
+  /// for the exact supported Melious Mistral plus built-in report contract,
+  /// the isolated validated Qwen report editor.
   final bool evidenceSynthesisEnabled;
 
   /// Optional domain logger for structured, PII-safe logging.
@@ -392,11 +399,12 @@ class TaskAgentWorkflow {
     task: task,
   );
 
-  String _buildSystemPrompt(_TemplateContext ctx) =>
+  String _buildSystemPrompt(_TemplateContext ctx, {required String modelId}) =>
       TaskAgentPromptBuilder.buildSystemPrompt(
         version: ctx.version,
         soulVersion: ctx.soulVersion,
         evidenceSynthesis: evidenceSynthesisEnabled,
+        evidenceSynthesisModelId: modelId,
       );
 
   Future<({String text, int? logStart, int? logEnd})> _buildUserMessage({

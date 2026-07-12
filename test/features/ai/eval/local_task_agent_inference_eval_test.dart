@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/eval/local_task_agent_inference_eval.dart';
@@ -40,6 +41,8 @@ void main() {
         equals(['qwen36-a35b-a3b-mlx4', 'gemma4-26b-a4b-qat-mlx4']),
       );
       expect(scenario.systemPrompt, contains('You are a Task Agent'));
+      expect(scenario.systemPrompt, contains('You are Laura.'));
+      expect(scenario.systemPrompt, contains('## Your Personality'));
       expect(scenario.userMessage, contains('## Current Task Context'));
       expect(scenario.userMessage, contains('## Parent Project Context'));
       expect(
@@ -66,6 +69,10 @@ void main() {
         LocalTaskAgentEvalExecutionMode.reportRevision,
       );
       expect(
+        parseLocalTaskAgentEvalExecutionMode('reportEditing'),
+        LocalTaskAgentEvalExecutionMode.reportEditing,
+      );
+      expect(
         () => parseLocalTaskAgentEvalExecutionMode('parallel'),
         throwsFormatException,
       );
@@ -81,6 +88,23 @@ void main() {
     );
     expect(
       () => parseLocalTaskAgentEvalReasoningEffort('maximum'),
+      throwsFormatException,
+    );
+  });
+
+  test('report editor attempt parser accepts positive bounded values', () {
+    expect(parseLocalTaskAgentEvalReportEditorAttempts(null), 1);
+    expect(parseLocalTaskAgentEvalReportEditorAttempts(' 2 '), 2);
+    expect(
+      () => parseLocalTaskAgentEvalReportEditorAttempts('0'),
+      throwsFormatException,
+    );
+    expect(
+      () => parseLocalTaskAgentEvalReportEditorAttempts('4'),
+      throwsFormatException,
+    );
+    expect(
+      () => parseLocalTaskAgentEvalReportEditorAttempts('many'),
       throwsFormatException,
     );
   });
@@ -112,14 +136,80 @@ void main() {
     final mutationTool = tools.singleWhere(
       (tool) => tool.function.name == TaskAgentToolNames.setTaskTitle,
     );
+    final reportProperties =
+        reportTool.function.parameters!['properties']! as Map<String, dynamic>;
 
-    expect(reportTool.function.description, contains('outside active scope'));
     expect(
       reportTool.function.description,
-      allOf(contains('actively block or'), contains('constrain current work')),
+      allOf(
+        contains('stale report claims'),
+        contains('out-of-scope concepts completely'),
+      ),
     );
-    expect(mutationTool.function.description, isNot(contains('active scope')));
+    expect(
+      mutationTool.function.description,
+      isNot(contains('out-of-scope concepts')),
+    );
+    expect(
+      (reportProperties['content']! as Map<String, dynamic>)['description'],
+      contains('free-form Markdown'),
+    );
   });
+
+  test(
+    'report editor material state keeps values and removes tool handles',
+    () {
+      final state = buildLocalTaskAgentEvalMaterialTaskState(const [
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.setTaskTitle,
+          argumentsJson: '{"title":"Launch beta"}',
+        ),
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.updateTaskPriority,
+          argumentsJson: '{"priority":"P1"}',
+        ),
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.updateTaskDueDate,
+          argumentsJson: '{"dueDate":"2026-09-30"}',
+        ),
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.updateTaskEstimate,
+          argumentsJson: '{"minutes":90}',
+        ),
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.addMultipleChecklistItems,
+          argumentsJson:
+              '{"items":[{"title":"Ask Ben"},{"title":"Review beta"}]}',
+        ),
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.addChecklistItem,
+          argumentsJson: '{"title":"Ship beta"}',
+        ),
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.updateChecklistItems,
+          argumentsJson: '{"items":[{"id":"private-id","isChecked":true}]}',
+        ),
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.updateReport,
+          argumentsJson: '{"oneLiner":"ignored"}',
+        ),
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.setTaskTitle,
+          argumentsJson: 'invalid',
+        ),
+      ]);
+
+      expect(state, {
+        'title': 'Launch beta',
+        'priority': 'P1',
+        'dueDate': '2026-09-30',
+        'estimateMinutes': 90,
+        'newChecklistItems': ['Ask Ben', 'Review beta', 'Ship beta'],
+      });
+      expect(jsonEncode(state), isNot(contains('private-id')));
+      expect(buildLocalTaskAgentEvalMaterialTaskState(const []), isEmpty);
+    },
+  );
 
   test('eval contracts serialize report and markdown details', () {
     final scenario = defaultLocalTaskAgentWakeScenario();
@@ -179,11 +269,13 @@ void main() {
     expect(invalidToolCall.toJson()['argumentsJsonValid'], isFalse);
 
     final json = report.toJson();
-    expect(json['schemaVersion'], 4);
+    expect(json['schemaVersion'], 6);
     expect(json['kind'], localTaskAgentEvalKind);
     expect(json['temperature'], 0.3);
     expect(json['executionMode'], 'singlePass');
     expect(json['reasoningEffort'], 'high');
+    expect(json['reportEditorModelId'], isNull);
+    expect(json['reportEditorMaxAttempts'], 1);
     expect(
       jsonDecode(report.toPrettyJson()),
       isA<Map<String, Object?>>().having(
@@ -212,6 +304,28 @@ void main() {
     expect(markdown, contains('reasoning effort `high`'));
     expect(markdown, contains('## Failures'));
     expect(markdown, contains('invalidToolArguments'));
+  });
+
+  test('scenarios expose the report language explicitly', () {
+    final scenarios = defaultMeliousTaskAgentEvalScenarios();
+
+    expect(
+      scenarios
+          .firstWhere(
+            (scenario) => scenario.id.startsWith('german_voice_plan'),
+          )
+          .languageCode,
+      'de',
+    );
+    expect(
+      scenarios
+          .firstWhere(
+            (scenario) => scenario.id.startsWith('spanish_mixed_context'),
+          )
+          .toJson()['languageCode'],
+      'es',
+    );
+    expect(defaultLocalTaskAgentWakeScenario().languageCode, 'en');
   });
 
   test('Melious matrix covers every configured prompt variant', () {
@@ -337,13 +451,19 @@ void main() {
         scenario.systemPrompt,
         contains('Evidence-First Synthesis Protocol'),
       );
-      expect(scenario.systemPrompt, contains('public fact set'));
-      expect(scenario.systemPrompt, contains('adopted commitments'));
+      expect(scenario.systemPrompt, contains('Mutation coverage:'));
+      expect(scenario.systemPrompt, contains('adopted commitment'));
       expect(scenario.systemPrompt, isNot(contains('- `## Decisions`:')));
       expect(scenario.systemPrompt, contains('material qualifiers'));
-      expect(scenario.systemPrompt, contains('private tool handle'));
-      expect(scenario.systemPrompt, contains('## Nächste Schritte'));
-      expect(scenario.systemPrompt, isNot(contains('Worked example')));
+      expect(scenario.systemPrompt, contains('internal JSON IDs'));
+      expect(
+        scenario.systemPrompt,
+        contains('idiomatically in `languageCode`'),
+      );
+      expect(
+        scenario.systemPrompt,
+        isNot(contains('## Mistral Evidence Examples')),
+      );
       expect(scenario.systemPrompt, contains('specific current-state tagline'));
       expect(scenario.systemPrompt, isNot(contains('1-2 relevant emojis')));
     },
@@ -415,6 +535,10 @@ void main() {
           'recurred',
         ]),
       ),
+    );
+    expect(
+      scenario.requiredReportTermGroups.last,
+      containsAll(['root cause', 'investigat']),
     );
   });
 
@@ -1187,6 +1311,285 @@ void main() {
     },
   );
 
+  test('report editing retries once with exact validation issues', () async {
+    final inferenceRepository = _QueuedInferenceRepository([
+      [
+        _toolCalls([
+          ..._expectedMetadataToolCalls(),
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: jsonEncode({
+              'oneLiner': 'Task configured for model validation',
+              'tldr': 'P1, due July 4, 2026, estimated 150 minutes.',
+              'content': '## Next actions\nRun eval and compare reference.',
+            }),
+          ),
+        ]),
+        _usage(inputTokens: 100, outputTokens: 20),
+      ],
+      [
+        _toolCalls([
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: jsonEncode({
+              'oneLiner': 'Run the evaluation',
+              'tldr': 'Two actions remain. No blockers.',
+              'content': 'Checklist created.',
+            }),
+          ),
+        ]),
+        _usage(inputTokens: 50, outputTokens: 10),
+      ],
+      [
+        _toolCalls([
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: jsonEncode({
+              'oneLiner': 'Run the P1 evaluation by July 4, 2026',
+              'tldr': 'The 150-minute evaluation has two remaining actions.',
+              'content':
+                  'Run the local app eval, then compare the candidate with '
+                  'the reference model.',
+            }),
+          ),
+        ]),
+        _usage(inputTokens: 40, outputTokens: 8),
+      ],
+    ]);
+    final runner = _createRunner(
+      provider: provider,
+      inferenceRepository: inferenceRepository,
+      executionMode: LocalTaskAgentEvalExecutionMode.reportEditing,
+      reportEditorModelId: 'qwen-report-editor',
+      reportEditorMaxAttempts: 2,
+      temperature: 0,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [defaultLocalTaskAgentWakeScenario()],
+    );
+
+    final result = report.results.single;
+    expect(result.failureCategory, LocalTaskAgentEvalFailureCategory.none);
+    expect(result.reportEditorAttempts, 2);
+    expect(result.reportEditorValidationIssues, isEmpty);
+    expect(result.inputTokens, 190);
+    expect(result.outputTokens, 38);
+    expect(inferenceRepository.requests, hasLength(3));
+    final repairMessages = jsonEncode(
+      inferenceRepository.requests.last.messages
+          .map((message) => message.toJson())
+          .toList(),
+    );
+    expect(repairMessages, contains('requiredCorrections'));
+    expect(repairMessages, contains('missingPriority'));
+    expect(repairMessages, contains('processNarration'));
+    expect(result.reportText, contains('150-minute'));
+  });
+
+  test(
+    'report editing uses an isolated model and compact committed evidence',
+    () async {
+      final inferenceRepository = _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            ..._expectedMetadataToolCalls(),
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Task configured for model validation',
+                'tldr': 'Metadata updated. Ready to begin.',
+                'content':
+                    '## Progress\nTask configured.\n\n## Blockers\nNone.',
+              }),
+            ),
+          ]),
+          _usage(inputTokens: 100, outputTokens: 20),
+        ],
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Run the local model evaluation by July 4, 2026',
+                'tldr':
+                    'This P1 task has a 150-minute budget to validate the '
+                    'candidate task-agent model.',
+                'content':
+                    'Run the local app eval, then compare the candidate with '
+                    'the reference model.',
+              }),
+            ),
+          ]),
+          _usage(inputTokens: 50, outputTokens: 10),
+        ],
+      ]);
+      final runner = _createRunner(
+        provider: provider,
+        inferenceRepository: inferenceRepository,
+        executionMode: LocalTaskAgentEvalExecutionMode.reportEditing,
+        reportEditorModelId: 'qwen-report-editor',
+        temperature: 0,
+      );
+
+      final report = await runner.run(
+        profiles: const [profile],
+        scenarios: [defaultLocalTaskAgentWakeScenario()],
+      );
+
+      final result = report.results.single;
+      expect(result.failureCategory, LocalTaskAgentEvalFailureCategory.none);
+      expect(result.inputTokens, 150);
+      expect(result.outputTokens, 30);
+      expect(result.usedForcedReportRetry, isTrue);
+      expect(result.reportEditorAttempts, 1);
+      expect(result.reportEditorValidationIssues, isEmpty);
+      expect(
+        result.reportToolCall?.phase,
+        LocalTaskAgentEvalToolCallPhase.reportPass,
+      );
+      expect(result.reportText, contains('Run the local app eval'));
+      expect(report.reportEditorModelId, 'qwen-report-editor');
+      expect(report.toJson()['reportEditorModelId'], 'qwen-report-editor');
+      expect(
+        report.toMarkdown(),
+        contains('report editor `qwen-report-editor`'),
+      );
+      expect(inferenceRepository.requests, hasLength(2));
+      expect(inferenceRepository.requests.first.model, profile.providerModelId);
+      expect(inferenceRepository.requests.last.model, 'qwen-report-editor');
+      expect(inferenceRepository.requests.last.toolNames, [
+        TaskAgentToolNames.updateReport,
+      ]);
+      final editorMessages = jsonEncode(
+        inferenceRepository.requests.last.messages
+            .map((message) => message.toJson())
+            .toList(),
+      );
+      expect(editorMessages, contains('draftReport'));
+      expect(editorMessages, contains('materialTaskState'));
+      expect(editorMessages, contains('estimateMinutes'));
+      expect(editorMessages, contains('P1'));
+      expect(editorMessages, isNot(contains('committedMutations')));
+      expect(
+        editorMessages,
+        isNot(contains(TaskAgentToolNames.updateTaskPriority)),
+      );
+      expect(editorMessages, isNot(contains('taskContext')));
+      expect(editorMessages, isNot(contains('## Current Task Context')));
+      expect(
+        editorMessages,
+        isNot(contains('You are a persistent Task Agent')),
+      );
+    },
+  );
+
+  test(
+    'report editing fails when the model does not return a revision',
+    () async {
+      final inferenceRepository = _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            ..._expectedMetadataToolCalls(),
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Task configured for model validation',
+                'tldr': 'Metadata updated. Ready to begin.',
+                'content': 'Task configured.',
+              }),
+            ),
+          ]),
+        ],
+        [_content('No revision needed.')],
+      ]);
+      final runner = _createRunner(
+        provider: provider,
+        inferenceRepository: inferenceRepository,
+        executionMode: LocalTaskAgentEvalExecutionMode.reportEditing,
+        temperature: 0,
+      );
+
+      final report = await runner.run(
+        profiles: const [profile],
+        scenarios: [defaultLocalTaskAgentWakeScenario()],
+      );
+
+      expect(
+        report.results.single.failureCategory,
+        LocalTaskAgentEvalFailureCategory.missingReportRevision,
+      );
+      expect(inferenceRepository.requests.last.model, profile.providerModelId);
+    },
+  );
+
+  test('report editing fails after the final invalid revision', () async {
+    final inferenceRepository = _QueuedInferenceRepository([
+      [
+        _toolCalls([
+          ..._expectedMetadataToolCalls(),
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: jsonEncode({
+              'oneLiner': 'Task configured for model validation',
+              'tldr': 'P1, due July 4, 2026, estimated 150 minutes.',
+              'content': 'Run eval and compare reference.',
+            }),
+          ),
+        ]),
+      ],
+      [
+        _toolCalls([
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: jsonEncode({
+              'oneLiner': 'Run the evaluation',
+              'tldr': 'No blockers.',
+              'content': 'Checklist created.',
+            }),
+          ),
+        ]),
+      ],
+      [
+        _toolCalls([
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: jsonEncode({
+              'oneLiner': 'Run the evaluation',
+              'tldr': 'Ready to begin.',
+              'content': 'The checklist contains two items.',
+            }),
+          ),
+        ]),
+      ],
+    ]);
+    final runner = _createRunner(
+      provider: provider,
+      inferenceRepository: inferenceRepository,
+      executionMode: LocalTaskAgentEvalExecutionMode.reportEditing,
+      reportEditorMaxAttempts: 2,
+      temperature: 0,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [defaultLocalTaskAgentWakeScenario()],
+    );
+
+    final result = report.results.single;
+    expect(
+      result.failureCategory,
+      LocalTaskAgentEvalFailureCategory.invalidReportRevision,
+    );
+    expect(result.reportEditorAttempts, 2);
+    expect(
+      result.reportEditorValidationIssues,
+      contains(TaskAgentReportRevisionIssue.processNarration),
+    );
+    expect(inferenceRepository.requests, hasLength(3));
+  });
+
   test('runner rejects speculative content in checklist arguments', () async {
     final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
       (scenario) => scenario.id.startsWith('messy_german_transcript'),
@@ -1262,6 +1665,8 @@ LocalTaskAgentInferenceEvalRunner _createRunner({
   ReasoningEffort? reasoningEffort,
   LocalTaskAgentEvalExecutionMode executionMode =
       LocalTaskAgentEvalExecutionMode.singlePass,
+  String? reportEditorModelId,
+  int reportEditorMaxAttempts = 1,
 }) {
   final container = ProviderContainer();
   addTearDown(container.dispose);
@@ -1275,6 +1680,8 @@ LocalTaskAgentInferenceEvalRunner _createRunner({
     reasoningEffort: reasoningEffort,
     forceReportRetry: forceReportRetry,
     executionMode: executionMode,
+    reportEditorModelId: reportEditorModelId,
+    reportEditorMaxAttempts: reportEditorMaxAttempts,
   );
 }
 

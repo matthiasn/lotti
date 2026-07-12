@@ -422,7 +422,11 @@ class TaskAgentContextBuilder {
                   def.description,
                 )
               : def.description,
-          parameters: def.parameters,
+          parameters: optimizeReport
+              ? TaskAgentEvidenceSynthesis.updateReportParameters(
+                  def.parameters,
+                )
+              : def.parameters,
         ),
       );
     }).toList();

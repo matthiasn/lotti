@@ -27,6 +27,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -497,6 +498,172 @@ void main() {
     });
 
     group('successful execute', () {
+      Future<({WakeResult result, List<dynamic> captured})>
+      runMistralReportEditorSafetyCase({
+        required List<String> editorArguments,
+        bool throwOnEditor = false,
+        bool throwOnEditorCreate = false,
+        String? reportDirective,
+        String? taskLanguageCode,
+      }) async {
+        final meliousProvider =
+            AiConfig.inferenceProvider(
+                  id: 'melious-provider-safety',
+                  baseUrl: 'https://api.melious.ai/v1',
+                  apiKey: 'test-key',
+                  name: 'Melious',
+                  createdAt: DateTime(2024),
+                  inferenceProviderType: InferenceProviderType.melious,
+                )
+                as AiConfigInferenceProvider;
+        final mistralModel =
+            AiConfig.model(
+                  id: 'mistral-model-safety',
+                  name: 'Mistral Small 4 119B',
+                  providerModelId: meliousMistralSmall4119BInstructModelId,
+                  inferenceProviderId: meliousProvider.id,
+                  createdAt: DateTime(2024),
+                  inputModalities: const [Modality.text],
+                  outputModalities: const [Modality.text],
+                  isReasoningModel: true,
+                  supportsFunctionCalling: true,
+                )
+                as AiConfigModel;
+        final mistralTemplate = makeTestTemplate(
+          modelId: meliousMistralSmall4119BInstructModelId,
+        );
+        when(
+          () => mockTemplateService.getTemplateForAgent(agentId),
+        ).thenAnswer((_) async => mistralTemplate);
+        when(
+          () => mockTemplateService.getActiveVersion(mistralTemplate.id),
+        ).thenAnswer(
+          (_) async => reportDirective == null
+              ? testTemplateVersion
+              : makeTestTemplateVersion(reportDirective: reportDirective),
+        );
+        when(
+          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [mistralModel]);
+        when(
+          () => mockAiConfigRepository.getConfigById(meliousProvider.id),
+        ).thenAnswer((_) async => meliousProvider);
+        if (taskLanguageCode != null) {
+          when(() => mockJournalDb.journalEntityById(taskId)).thenAnswer(
+            (_) async => _makeTask(
+              taskId,
+              languageCode: taskLanguageCode,
+            ),
+          );
+        }
+
+        var callIndex = 0;
+        var conversationCount = 0;
+        final safetyRepo =
+            MockConversationRepository(
+                mockConversationManager,
+                onSystemMessage: (_) {
+                  conversationCount++;
+                  if (throwOnEditorCreate && conversationCount == 2) {
+                    throw StateError('editor conversation unavailable');
+                  }
+                },
+              )
+              ..maxDelegateCalls = throwOnEditor
+                  ? 2
+                  : 1 + editorArguments.length
+              ..sendMessageDelegate =
+                  ({
+                    required conversationId,
+                    required message,
+                    required model,
+                    required provider,
+                    required inferenceRepo,
+                    tools,
+                    toolChoice,
+                    temperature = 0.7,
+                    strategy,
+                  }) async {
+                    callIndex++;
+                    if (callIndex == 1 && strategy is TaskAgentStrategy) {
+                      await strategy.processToolCalls(
+                        toolCalls: [
+                          const ChatCompletionMessageToolCall(
+                            id: 'priority-call',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: TaskAgentToolNames.updateTaskPriority,
+                              arguments: '{"priority":"P1"}',
+                            ),
+                          ),
+                          ChatCompletionMessageToolCall(
+                            id: 'draft-report-call',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: TaskAgentToolNames.updateReport,
+                              arguments: jsonEncode({
+                                'oneLiner': 'Task configured',
+                                'tldr': 'Priority updated. Ready to begin.',
+                                'content': '## Progress\nTask configured.',
+                              }),
+                            ),
+                          ),
+                        ],
+                        manager: mockConversationManager,
+                      );
+                      return const InferenceUsage(
+                        inputTokens: 100,
+                        outputTokens: 20,
+                      );
+                    }
+                    if (throwOnEditor) {
+                      throw StateError('editor unavailable');
+                    }
+                    await strategy!.processToolCalls(
+                      toolCalls: [
+                        ChatCompletionMessageToolCall(
+                          id: 'editor-call-$callIndex',
+                          type: ChatCompletionMessageToolCallType.function,
+                          function: ChatCompletionMessageFunctionCall(
+                            name: TaskAgentToolNames.updateReport,
+                            arguments: editorArguments[callIndex - 2],
+                          ),
+                        ),
+                      ],
+                      manager: mockConversationManager,
+                    );
+                    return const InferenceUsage(
+                      inputTokens: 5,
+                      outputTokens: 2,
+                    );
+                  };
+        final safetyWorkflow = createTestWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: safetyRepo,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          evidenceSynthesisEnabled: true,
+        );
+
+        final result = await safetyWorkflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        return (result: result, captured: captured);
+      }
+
       setUp(() {
         stubFullExecutePath(
           mockAgentRepository: mockAgentRepository,
@@ -1075,11 +1242,347 @@ void main() {
           );
           expect(
             reportTool.function.description,
-            contains('active execution constraints'),
+            contains('stale report claims'),
           );
           expect(
             (properties['tldr']! as Map)['description'],
-            contains('include 1-2 relevant emojis'),
+            contains('checked item means only user-marked complete'),
+          );
+          expect(
+            (properties['tldr']! as Map)['description'],
+            isNot(contains('include 1-2 relevant emojis')),
+          );
+        },
+      );
+
+      test(
+        'Mistral evidence mode accepts a grounded Qwen report revision and '
+        'attributes usage to both models',
+        () async {
+          final meliousProvider =
+              AiConfig.inferenceProvider(
+                    id: 'melious-provider-001',
+                    baseUrl: 'https://api.melious.ai/v1',
+                    apiKey: 'test-key',
+                    name: 'Melious',
+                    createdAt: DateTime(2024),
+                    inferenceProviderType: InferenceProviderType.melious,
+                  )
+                  as AiConfigInferenceProvider;
+          final mistralModel =
+              AiConfig.model(
+                    id: 'mistral-model-config',
+                    name: 'Mistral Small 4 119B',
+                    providerModelId: meliousMistralSmall4119BInstructModelId,
+                    inferenceProviderId: meliousProvider.id,
+                    createdAt: DateTime(2024),
+                    inputModalities: const [Modality.text],
+                    outputModalities: const [Modality.text],
+                    isReasoningModel: true,
+                    supportsFunctionCalling: true,
+                  )
+                  as AiConfigModel;
+          final mistralTemplate = makeTestTemplate(
+            modelId: meliousMistralSmall4119BInstructModelId,
+          );
+          when(
+            () => mockTemplateService.getTemplateForAgent(agentId),
+          ).thenAnswer((_) async => mistralTemplate);
+          when(
+            () => mockTemplateService.getActiveVersion(mistralTemplate.id),
+          ).thenAnswer((_) async => testTemplateVersion);
+          when(
+            () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [mistralModel]);
+          when(
+            () => mockAiConfigRepository.getConfigById(meliousProvider.id),
+          ).thenAnswer((_) async => meliousProvider);
+
+          final models = <String>[];
+          final messages = <String>[];
+          final toolNames = <List<String>>[];
+          final toolChoices = <ChatCompletionToolChoiceOption?>[];
+          final capturingRepo =
+              MockConversationRepository(
+                  mockConversationManager,
+                )
+                ..maxDelegateCalls = 2
+                ..sendMessageDelegate =
+                    ({
+                      required conversationId,
+                      required message,
+                      required model,
+                      required provider,
+                      required inferenceRepo,
+                      tools,
+                      toolChoice,
+                      temperature = 0.7,
+                      strategy,
+                    }) async {
+                      models.add(model);
+                      messages.add(message);
+                      toolNames.add(
+                        tools?.map((tool) => tool.function.name).toList() ?? [],
+                      );
+                      toolChoices.add(toolChoice);
+                      if (strategy is TaskAgentStrategy) {
+                        await strategy.processToolCalls(
+                          toolCalls: [
+                            const ChatCompletionMessageToolCall(
+                              id: 'priority-call',
+                              type: ChatCompletionMessageToolCallType.function,
+                              function: ChatCompletionMessageFunctionCall(
+                                name: TaskAgentToolNames.updateTaskPriority,
+                                arguments: '{"priority":"P1"}',
+                              ),
+                            ),
+                            ChatCompletionMessageToolCall(
+                              id: 'draft-report-call',
+                              type: ChatCompletionMessageToolCallType.function,
+                              function: ChatCompletionMessageFunctionCall(
+                                name: TaskAgentToolNames.updateReport,
+                                arguments: jsonEncode({
+                                  'oneLiner': 'Task configured',
+                                  'tldr': 'Priority updated. Ready to begin.',
+                                  'content': '## Progress\nTask configured.',
+                                }),
+                              ),
+                            ),
+                          ],
+                          manager: mockConversationManager,
+                        );
+                        return const InferenceUsage(
+                          inputTokens: 100,
+                          outputTokens: 20,
+                        );
+                      }
+                      await strategy!.processToolCalls(
+                        toolCalls: [
+                          ChatCompletionMessageToolCall(
+                            id: 'edited-report-call',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: TaskAgentToolNames.updateReport,
+                              arguments: jsonEncode({
+                                'oneLiner': 'Validate the P1 model candidate',
+                                'tldr':
+                                    'The P1 validation is ready for its two '
+                                    'remaining actions.',
+                                'content':
+                                    'Run the local evaluation, then compare the '
+                                    'candidate with the reference.',
+                              }),
+                            ),
+                          ),
+                        ],
+                        manager: mockConversationManager,
+                      );
+                      return const InferenceUsage(
+                        inputTokens: 50,
+                        outputTokens: 10,
+                      );
+                    };
+          final optimizedWorkflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            evidenceSynthesisEnabled: true,
+          );
+
+          final result = await optimizedWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(models, [
+            meliousMistralSmall4119BInstructModelId,
+            meliousQwen35122BA10BModelId,
+          ]);
+          expect(toolNames.first, contains(TaskAgentToolNames.updateReport));
+          expect(toolNames.last, [TaskAgentToolNames.updateReport]);
+          expect(toolChoices.first, isNull);
+          expect(toolChoices.last, isNotNull);
+          expect(messages.last, contains('materialTaskState'));
+          expect(messages.last, contains('"priority":"P1"'));
+          expect(messages.last, isNot(contains('## Current Task Context')));
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
+          expect(reports, hasLength(1));
+          expect(
+            reports.single.content,
+            contains('compare the candidate with the reference'),
+          );
+          final usage = capturedTokenUsageEntities(captured);
+          expect(usage, hasLength(2));
+          expect(
+            usage.map((entry) => entry.modelId),
+            containsAll([
+              meliousMistralSmall4119BInstructModelId,
+              meliousQwen35122BA10BModelId,
+            ]),
+          );
+          expect(
+            usage
+                .singleWhere(
+                  (entry) =>
+                      entry.modelId == meliousMistralSmall4119BInstructModelId,
+                )
+                .inputTokens,
+            100,
+          );
+          expect(
+            usage
+                .singleWhere(
+                  (entry) => entry.modelId == meliousQwen35122BA10BModelId,
+                )
+                .inputTokens,
+            50,
+          );
+        },
+      );
+
+      test(
+        'Mistral evidence mode preserves its draft after invalid editor '
+        'candidates',
+        () async {
+          final (:result, :captured) = await runMistralReportEditorSafetyCase(
+            editorArguments: [
+              jsonEncode({
+                'oneLiner': 'Run evaluation',
+                'tldr': 'No blockers.',
+                'content': 'Checklist created.',
+              }),
+              jsonEncode({
+                'oneLiner': 'Run evaluation',
+                'tldr': 'Ready to begin.',
+                'content': 'The checklist contains two items.',
+              }),
+              jsonEncode({
+                'oneLiner': 'Run evaluation',
+                'tldr': 'No recorded outcomes.',
+                'content': 'Checklist items added.',
+              }),
+            ],
+          );
+
+          expect(result.success, isTrue);
+          final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
+          expect(reports, hasLength(1));
+          expect(reports.single.content, '## Progress\nTask configured.');
+          final usage = capturedTokenUsageEntities(captured);
+          expect(usage, hasLength(2));
+          final editorUsage = usage.singleWhere(
+            (entry) => entry.modelId == meliousQwen35122BA10BModelId,
+          );
+          expect(editorUsage.inputTokens, 15);
+          expect(editorUsage.outputTokens, 6);
+        },
+      );
+
+      test(
+        'Mistral evidence mode preserves its draft when the editor fails',
+        () async {
+          final (:result, :captured) = await runMistralReportEditorSafetyCase(
+            editorArguments: const [],
+            throwOnEditor: true,
+          );
+
+          expect(result.success, isTrue);
+          final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
+          expect(reports, hasLength(1));
+          expect(reports.single.content, '## Progress\nTask configured.');
+          final usage = capturedTokenUsageEntities(captured);
+          expect(usage, hasLength(1));
+          expect(
+            usage.single.modelId,
+            meliousMistralSmall4119BInstructModelId,
+          );
+        },
+      );
+
+      test(
+        'Mistral evidence mode preserves its draft when editor conversation '
+        'creation fails',
+        () async {
+          final (:result, :captured) = await runMistralReportEditorSafetyCase(
+            editorArguments: const [],
+            throwOnEditorCreate: true,
+          );
+
+          expect(result.success, isTrue);
+          final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
+          expect(reports.single.content, '## Progress\nTask configured.');
+          expect(capturedTokenUsageEntities(captured), hasLength(1));
+        },
+      );
+
+      test(
+        'Mistral evidence mode validates the editor against the task language',
+        () async {
+          final (:result, :captured) = await runMistralReportEditorSafetyCase(
+            taskLanguageCode: 'de',
+            editorArguments: [
+              jsonEncode({
+                'oneLiner': 'P1-Aufgabe prüfen',
+                'tldr': 'Die P1-Prüfung bleibt offen.',
+                'content':
+                    '## Nächster Schritt\nPrüfen Sie den Modellkandidaten.',
+              }),
+            ],
+          );
+
+          expect(result.success, isTrue);
+          final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
+          expect(reports.single.content, '## Progress\nTask configured.');
+          final usage = capturedTokenUsageEntities(captured);
+          expect(
+            usage
+                .singleWhere(
+                  (entry) => entry.modelId == meliousQwen35122BA10BModelId,
+                )
+                .inputTokens,
+            5,
+          );
+        },
+      );
+
+      test(
+        'Mistral evidence mode leaves custom report directives unedited',
+        () async {
+          final (:result, :captured) = await runMistralReportEditorSafetyCase(
+            reportDirective: 'Use a custom release-note report structure.',
+            editorArguments: [
+              jsonEncode({
+                'oneLiner': 'Edited report',
+                'tldr': 'P1 edited summary.',
+                'content': 'This editor output must not be used.',
+              }),
+            ],
+          );
+
+          expect(result.success, isTrue);
+          final reports = capturedEntitiesOfType<AgentReportEntity>(captured);
+          expect(reports, hasLength(1));
+          expect(reports.single.content, '## Progress\nTask configured.');
+          final usage = capturedTokenUsageEntities(captured);
+          expect(usage, hasLength(1));
+          expect(
+            usage.single.modelId,
+            meliousMistralSmall4119BInstructModelId,
           );
         },
       );
@@ -7634,7 +8137,7 @@ int _countOccurrences(String haystack, String needle) {
   return count;
 }
 
-Task _makeTask(String id) {
+Task _makeTask(String id, {String? languageCode}) {
   return Task(
     meta: Metadata(
       id: id,
@@ -7653,6 +8156,7 @@ Task _makeTask(String id) {
       dateTo: DateTime(2024, 6),
       statusHistory: [],
       title: 'Linked task',
+      languageCode: languageCode,
     ),
   );
 }

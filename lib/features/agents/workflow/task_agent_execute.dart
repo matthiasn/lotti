@@ -205,7 +205,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     // compaction, which consumes its resolved entries as decision events).
     final pendingSets = ledger.pendingSets;
 
-    final systemPrompt = _buildSystemPrompt(templateCtx);
+    final systemPrompt = _buildSystemPrompt(templateCtx, modelId: modelId);
     final builtMessage = await _buildUserMessage(
       agentId: agentId,
       hasReport: lastReport != null,
@@ -499,6 +499,76 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         }
       }
 
+      var effectiveReport = TaskAgentReportDraft.fromJson({
+        'oneLiner': strategy.extractReportOneLiner(),
+        'tldr': strategy.extractReportTldr(),
+        'content': strategy.extractReportContent(),
+      });
+      InferenceUsage? reportEditorUsage;
+      if (effectiveReport != null &&
+          TaskAgentPromptBuilder.usesBuiltInReportContract(
+            templateCtx.version,
+          ) &&
+          TaskAgentReportEditor.supports(
+            enabled: evidenceSynthesisEnabled,
+            executorModelId: modelId,
+            providerType: provider.inferenceProviderType,
+          )) {
+        final materialTaskState = TaskAgentReportEditor.buildMaterialTaskState(
+          strategy.extractSuccessfulMutations(),
+        );
+        final languageCode =
+            materialTaskState['languageCode'] as String? ??
+            taskAttentionContext.task?.data.languageCode ??
+            'en';
+        try {
+          final editResult =
+              await TaskAgentReportEditor(
+                conversationRepository: conversationRepository,
+                inferenceRepository: inferenceRepo,
+                provider: provider,
+              ).edit(
+                draft: effectiveReport,
+                languageCode: languageCode,
+                materialTaskState: materialTaskState,
+                consumptionAgentId: recordConsumption ? agentId : null,
+                consumptionTaskId: recordConsumption ? taskId : null,
+                consumptionCategoryId: consumptionCategoryId,
+                consumptionWakeRunKey: recordConsumption ? runKey : null,
+                consumptionThreadId: recordConsumption ? threadId : null,
+              );
+          reportEditorUsage = editResult.usage;
+          final revision = editResult.revision;
+          if (editResult.error != null) {
+            _logError(
+              'report editor failed; preserving executor report',
+              error: editResult.error,
+              stackTrace: editResult.stackTrace,
+            );
+          } else if (revision != null) {
+            effectiveReport = revision;
+            _log(
+              'accepted report editor revision after '
+              '${editResult.attempts} attempt(s)',
+              subDomain: 'reportEditor',
+            );
+          } else {
+            _log(
+              'rejected report editor revision after '
+              '${editResult.attempts} attempt(s): '
+              '${editResult.validationIssues.map((issue) => issue.name).join(',')}',
+              subDomain: 'reportEditor',
+            );
+          }
+        } catch (e, s) {
+          _logError(
+            'report editor failed; preserving executor report',
+            error: e,
+            stackTrace: s,
+          );
+        }
+      }
+
       // Persist token usage as a synced entity (non-fatal on failure).
       await _persistTokenUsage(
         usage: usage,
@@ -506,6 +576,15 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         runKey: runKey,
         threadId: threadId,
         modelId: modelId,
+        templateCtx: templateCtx,
+        now: now,
+      );
+      await _persistTokenUsage(
+        usage: reportEditorUsage,
+        agentId: agentId,
+        runKey: runKey,
+        threadId: threadId,
+        modelId: meliousQwen35122BA10BModelId,
         templateCtx: templateCtx,
         now: now,
       );
@@ -518,9 +597,11 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // 7–11. Persist all wake outputs atomically. Wrapping in a transaction
       // ensures the state revision is only bumped if all outputs (thought,
       // report, observations) are successfully written.
-      final reportContent = strategy.extractReportContent();
-      final reportTldr = strategy.extractReportTldr();
-      final reportOneLiner = strategy.extractReportOneLiner();
+      final reportContent =
+          effectiveReport?.content ?? strategy.extractReportContent();
+      final reportTldr = effectiveReport?.tldr ?? strategy.extractReportTldr();
+      final reportOneLiner =
+          effectiveReport?.oneLiner ?? strategy.extractReportOneLiner();
       if (reportContent.isEmpty && lastReport == null) {
         // Only the FIRST report is mandatory; afterwards an empty report
         // means "nothing materially changed" and the prior one stands.

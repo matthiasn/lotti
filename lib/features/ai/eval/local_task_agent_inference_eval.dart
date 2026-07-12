@@ -6,14 +6,32 @@ import 'package:lotti/features/agents/model/seeded_directive_content.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 const localTaskAgentEvalKind = 'lotti.localTaskAgentInferenceEvalReport';
+
+final _defaultTaskAgentEvalSoul =
+    AgentDomainEntity.soulDocumentVersion(
+          id: 'eval-$lauraSoulId-v1',
+          agentId: lauraSoulId,
+          version: 1,
+          status: SoulDocumentVersionStatus.active,
+          authoredBy: 'system',
+          createdAt: DateTime.utc(2026, 7, 10),
+          vectorClock: null,
+          voiceDirective: lauraSoulVoiceDirective,
+          toneBounds: lauraSoulToneBounds,
+          coachingStyle: lauraSoulCoachingStyle,
+          antiSycophancyPolicy: lauraSoulAntiSycophancyPolicy,
+        )
+        as SoulDocumentVersionEntity;
 
 const defaultLocalTaskAgentEvalProfiles = [
   LocalTaskAgentEvalProfile(
@@ -59,7 +77,12 @@ enum LocalTaskAgentEvalPromptVariant {
   evidenceSynthesis,
 }
 
-enum LocalTaskAgentEvalExecutionMode { singlePass, twoPass, reportRevision }
+enum LocalTaskAgentEvalExecutionMode {
+  singlePass,
+  twoPass,
+  reportRevision,
+  reportEditing,
+}
 
 ReasoningEffort? parseLocalTaskAgentEvalReasoningEffort(String? value) {
   final normalized = value?.trim();
@@ -71,6 +94,19 @@ ReasoningEffort? parseLocalTaskAgentEvalReasoningEffort(String? value) {
       value,
     ),
   );
+}
+
+int parseLocalTaskAgentEvalReportEditorAttempts(String? value) {
+  final normalized = value?.trim();
+  if (normalized == null || normalized.isEmpty) return 1;
+  final attempts = int.tryParse(normalized);
+  if (attempts == null || attempts < 1 || attempts > 3) {
+    throw FormatException(
+      'Expected report editor attempts in [1, 3], got "$value".',
+      value,
+    );
+  }
+  return attempts;
 }
 
 LocalTaskAgentEvalExecutionMode parseLocalTaskAgentEvalExecutionMode(
@@ -149,6 +185,7 @@ class LocalTaskAgentEvalScenario {
     this.requiresReport = true,
     this.isFirstWake = true,
     this.maxTurns = 6,
+    this.languageCode = 'en',
     this.promptVariant = LocalTaskAgentEvalPromptVariant.production,
     this.requiredReportTermGroups = const [],
     this.forbiddenReportTerms = const [],
@@ -165,6 +202,7 @@ class LocalTaskAgentEvalScenario {
   final bool requiresReport;
   final bool isFirstWake;
   final int maxTurns;
+  final String languageCode;
   final LocalTaskAgentEvalPromptVariant promptVariant;
 
   /// Each group is satisfied when the report contains at least one term.
@@ -192,6 +230,7 @@ class LocalTaskAgentEvalScenario {
       'requiresReport': requiresReport,
       'isFirstWake': isFirstWake,
       'maxTurns': maxTurns,
+      'languageCode': languageCode,
       'promptVariant': promptVariant.name,
       'requiredReportTermGroups': requiredReportTermGroups,
       'forbiddenReportTerms': forbiddenReportTerms,
@@ -289,11 +328,31 @@ List<ChatCompletionTool> buildLocalTaskAgentEvalTools({
                     definition.description,
                   )
                 : definition.description,
-            parameters: definition.parameters,
+            parameters: useEvidenceContract
+                ? TaskAgentEvidenceSynthesis.updateReportParameters(
+                    definition.parameters,
+                  )
+                : definition.parameters,
           ),
         );
       })
       .toList(growable: false);
+}
+
+/// Reduces successful mutation calls to ID-free facts the editor must retain.
+Map<String, Object?> buildLocalTaskAgentEvalMaterialTaskState(
+  List<LocalTaskAgentEvalToolCall> toolCalls,
+) {
+  return TaskAgentReportEditor.buildMaterialTaskState(
+    toolCalls
+        .where((call) => call.phase == LocalTaskAgentEvalToolCallPhase.main)
+        .map((call) {
+          final arguments = call.jsonObjectArguments;
+          if (arguments == null) return null;
+          return (toolName: call.name, arguments: arguments);
+        })
+        .whereType<TaskAgentMutationRecord>(),
+  );
 }
 
 LocalTaskAgentEvalScenario defaultLocalTaskAgentWakeScenario() {
@@ -307,6 +366,8 @@ LocalTaskAgentEvalScenario defaultLocalTaskAgentWakeScenario() {
                 'Be precise, avoid redundant task updates, and publish a '
                 'short user-facing report only after required changes are '
                 'queued.',
+            generalDirective: taskAgentGeneralDirective,
+            reportDirective: taskAgentReportDirective,
             authoredBy: 'system',
             createdAt: DateTime.utc(2026, 6, 21),
             vectorClock: null,
@@ -317,7 +378,7 @@ LocalTaskAgentEvalScenario defaultLocalTaskAgentWakeScenario() {
     id: 'task_agent_first_wake_metadata_and_report',
     systemPrompt: TaskAgentPromptBuilder.buildSystemPrompt(
       version: version,
-      soulVersion: null,
+      soulVersion: _defaultTaskAgentEvalSoul,
     ),
     userMessage: _defaultProductionWakeUserMessage,
     expectedToolCalls: const [
@@ -376,6 +437,7 @@ LocalTaskAgentEvalScenario _germanPlanningScenario(
         name: TaskAgentToolNames.addMultipleChecklistItems,
       ),
     ],
+    languageCode: 'de',
     promptVariant: variant,
     requiredReportTermGroups: const [
       ['30. september', '30.09', '2026-09-30'],
@@ -514,6 +576,7 @@ LocalTaskAgentEvalScenario _messyGermanTranscriptScenario(
         name: TaskAgentToolNames.addMultipleChecklistItems,
       ),
     ],
+    languageCode: 'de',
     promptVariant: variant,
     requiredReportTermGroups: const [
       ['export'],
@@ -619,7 +682,7 @@ LocalTaskAgentEvalScenario _userCompletedItemScenario(
     requiredReportTermGroups: const [
       ['sync'],
       ['reappeared', 'resurfaced', 'again', 'recurrence', 'recurred'],
-      ['blocked', 'blocker', 'risk'],
+      ['blocked', 'blocker', 'risk', 'root cause', 'investigat'],
     ],
     forbiddenReportTerms: [
       'item-sync-fix',
@@ -647,6 +710,7 @@ LocalTaskAgentEvalScenario _spanishMixedContextScenario(
         name: TaskAgentToolNames.addMultipleChecklistItems,
       ),
     ],
+    languageCode: 'es',
     promptVariant: variant,
     requiredReportTermGroups: const [
       ['marta'],
@@ -712,7 +776,10 @@ LocalTaskAgentEvalScenario _latestDeadlineWinsScenario(
   );
 }
 
-String _buildEvalSystemPrompt(LocalTaskAgentEvalPromptVariant variant) {
+String _buildEvalSystemPrompt(
+  LocalTaskAgentEvalPromptVariant variant, {
+  String? evidenceSynthesisModelId,
+}) {
   final version =
       AgentDomainEntity.agentTemplateVersion(
             id: 'melious-task-agent-eval-${variant.name}',
@@ -733,9 +800,10 @@ String _buildEvalSystemPrompt(LocalTaskAgentEvalPromptVariant variant) {
           as AgentTemplateVersionEntity;
   return TaskAgentPromptBuilder.buildSystemPrompt(
     version: version,
-    soulVersion: null,
+    soulVersion: _defaultTaskAgentEvalSoul,
     evidenceSynthesis:
         variant == LocalTaskAgentEvalPromptVariant.evidenceSynthesis,
+    evidenceSynthesisModelId: evidenceSynthesisModelId,
   );
 }
 
@@ -1283,6 +1351,8 @@ enum LocalTaskAgentEvalFailureCategory {
   missingReport,
   missingRequiredContent,
   forbiddenReportContent,
+  missingReportRevision,
+  invalidReportRevision,
   inferenceFailed,
 }
 
@@ -1355,6 +1425,8 @@ class LocalTaskAgentEvalCaseResult {
     this.cachedInputTokens,
     this.finalContent,
     this.usedForcedReportRetry = false,
+    this.reportEditorAttempts = 0,
+    this.reportEditorValidationIssues = const [],
     this.errorMessage,
   });
 
@@ -1368,6 +1440,8 @@ class LocalTaskAgentEvalCaseResult {
   final int? cachedInputTokens;
   final String? finalContent;
   final bool usedForcedReportRetry;
+  final int reportEditorAttempts;
+  final List<TaskAgentReportRevisionIssue> reportEditorValidationIssues;
   final String? errorMessage;
   final List<LocalTaskAgentEvalToolCall> toolCalls;
   final LocalTaskAgentEvalFailureCategory failureCategory;
@@ -1463,6 +1537,10 @@ class LocalTaskAgentEvalCaseResult {
       'qualityScore': qualityScore,
       'finalContent': finalContent,
       'usedForcedReportRetry': usedForcedReportRetry,
+      'reportEditorAttempts': reportEditorAttempts,
+      'reportEditorValidationIssues': reportEditorValidationIssues
+          .map((issue) => issue.name)
+          .toList(),
       'errorMessage': errorMessage,
       'toolCalls': toolCalls.map((call) => call.toJson()).toList(),
     };
@@ -1478,6 +1556,8 @@ class LocalTaskAgentEvalReport {
     required this.temperature,
     required this.executionMode,
     this.reasoningEffort,
+    this.reportEditorModelId,
+    this.reportEditorMaxAttempts = 1,
   });
 
   final AiConfigInferenceProvider provider;
@@ -1487,16 +1567,20 @@ class LocalTaskAgentEvalReport {
   final double temperature;
   final LocalTaskAgentEvalExecutionMode executionMode;
   final ReasoningEffort? reasoningEffort;
+  final String? reportEditorModelId;
+  final int reportEditorMaxAttempts;
 
   String toPrettyJson() => const JsonEncoder.withIndent('  ').convert(toJson());
 
   Map<String, Object?> toJson() {
     return {
-      'schemaVersion': 4,
+      'schemaVersion': 6,
       'kind': localTaskAgentEvalKind,
       'temperature': temperature,
       'executionMode': executionMode.name,
       'reasoningEffort': reasoningEffort?.name,
+      'reportEditorModelId': reportEditorModelId,
+      'reportEditorMaxAttempts': reportEditorMaxAttempts,
       'provider': {
         'id': provider.id,
         'name': provider.name,
@@ -1519,7 +1603,9 @@ class LocalTaskAgentEvalReport {
       )
       ..writeln(
         'Execution: `${executionMode.name}` at temperature `$temperature`; '
-        'reasoning effort `${reasoningEffort?.name ?? 'modelDefault'}`',
+        'reasoning effort `${reasoningEffort?.name ?? 'modelDefault'}`; '
+        'report editor `${reportEditorModelId ?? 'profileModel'}` '
+        '(max attempts `$reportEditorMaxAttempts`)',
       )
       ..writeln()
       ..writeln(
@@ -1602,7 +1688,12 @@ class LocalTaskAgentInferenceEvalRunner {
     this.forceReportRetry = true,
     this.executionMode = LocalTaskAgentEvalExecutionMode.singlePass,
     this.reasoningEffort,
-  });
+    this.reportEditorModelId,
+    this.reportEditorMaxAttempts = 1,
+  }) : assert(
+         reportEditorMaxAttempts >= 1 && reportEditorMaxAttempts <= 3,
+         'reportEditorMaxAttempts must be between 1 and 3.',
+       );
 
   final AiConfigInferenceProvider provider;
   final ConversationRepository conversationRepository;
@@ -1611,6 +1702,8 @@ class LocalTaskAgentInferenceEvalRunner {
   final bool forceReportRetry;
   final LocalTaskAgentEvalExecutionMode executionMode;
   final ReasoningEffort? reasoningEffort;
+  final String? reportEditorModelId;
+  final int reportEditorMaxAttempts;
 
   Future<LocalTaskAgentEvalReport> run({
     required List<LocalTaskAgentEvalProfile> profiles,
@@ -1642,6 +1735,8 @@ class LocalTaskAgentInferenceEvalRunner {
       temperature: temperature,
       executionMode: executionMode,
       reasoningEffort: reasoningEffort,
+      reportEditorModelId: reportEditorModelId,
+      reportEditorMaxAttempts: reportEditorMaxAttempts,
     );
   }
 
@@ -1651,8 +1746,14 @@ class LocalTaskAgentInferenceEvalRunner {
   ) async {
     final stopwatch = Stopwatch()..start();
     final strategy = _LocalTaskAgentEvalStrategy(scenario: scenario);
+    final systemPrompt = _usesEvidenceSynthesis(scenario.promptVariant)
+        ? _buildEvalSystemPrompt(
+            scenario.promptVariant,
+            evidenceSynthesisModelId: profile.providerModelId,
+          )
+        : scenario.systemPrompt;
     final conversationId = conversationRepository.createConversation(
-      systemMessage: scenario.systemPrompt,
+      systemMessage: systemPrompt,
       maxTurns:
           scenario.maxTurns +
           (executionMode == LocalTaskAgentEvalExecutionMode.singlePass ? 0 : 1),
@@ -1684,6 +1785,10 @@ class LocalTaskAgentInferenceEvalRunner {
           strategy: strategy,
         );
         var usedForcedReportRetry = false;
+        var reportRevisionCompleted = true;
+        var reportRevisionValid = true;
+        var reportEditorAttempts = 0;
+        var reportEditorValidationIssues = <TaskAgentReportRevisionIssue>[];
         final plannedReportPass =
             executionMode == LocalTaskAgentEvalExecutionMode.twoPass &&
             scenario.requiresReport;
@@ -1691,12 +1796,33 @@ class LocalTaskAgentInferenceEvalRunner {
             executionMode == LocalTaskAgentEvalExecutionMode.reportRevision &&
             scenario.requiresReport &&
             strategy.hasReport;
+        final plannedReportEditing =
+            executionMode == LocalTaskAgentEvalExecutionMode.reportEditing &&
+            scenario.requiresReport &&
+            strategy.hasReport;
         final recoverMissingInitialReport =
             forceReportRetry &&
             scenario.isFirstWake &&
             scenario.requiresReport &&
             !strategy.hasReport;
-        if (plannedReportPass ||
+        if (plannedReportEditing) {
+          usedForcedReportRetry = true;
+          strategy.beginReportPass();
+          final editResult = await _editReport(
+            profile: profile,
+            scenario: scenario,
+            strategy: strategy,
+          );
+          reportRevisionCompleted = editResult.completed;
+          reportEditorValidationIssues = editResult.validationIssues;
+          reportRevisionValid = reportEditorValidationIssues.isEmpty;
+          reportEditorAttempts = editResult.attempts;
+          if (editResult.usage != null) {
+            usage = usage == null
+                ? editResult.usage
+                : usage.merge(editResult.usage!);
+          }
+        } else if (plannedReportPass ||
             plannedReportRevision ||
             recoverMissingInitialReport) {
           usedForcedReportRetry = true;
@@ -1756,12 +1882,16 @@ class LocalTaskAgentInferenceEvalRunner {
         stopwatch.stop();
 
         var finalContent = _extractFinalAssistantContent(manager);
-        final classifiedFailure = _classifyResult(
-          scenario: scenario,
-          toolCalls: strategy.toolCalls,
-          finalContent: finalContent,
-          hasReport: strategy.hasReport,
-        );
+        final classifiedFailure = !reportRevisionCompleted
+            ? LocalTaskAgentEvalFailureCategory.missingReportRevision
+            : !reportRevisionValid
+            ? LocalTaskAgentEvalFailureCategory.invalidReportRevision
+            : _classifyResult(
+                scenario: scenario,
+                toolCalls: strategy.toolCalls,
+                finalContent: finalContent,
+                hasReport: strategy.hasReport,
+              );
         final failureCategory =
             classifiedFailure ==
                     LocalTaskAgentEvalFailureCategory.emptyResponse &&
@@ -1788,6 +1918,8 @@ class LocalTaskAgentInferenceEvalRunner {
           cachedInputTokens: usage?.cachedInputTokens,
           finalContent: finalContent,
           usedForcedReportRetry: usedForcedReportRetry,
+          reportEditorAttempts: reportEditorAttempts,
+          reportEditorValidationIssues: reportEditorValidationIssues,
           errorMessage: manager?.lastError,
           toolCalls: strategy.toolCalls,
           failureCategory: failureCategory,
@@ -1805,6 +1937,42 @@ class LocalTaskAgentInferenceEvalRunner {
     } finally {
       conversationRepository.deleteConversation(conversationId);
     }
+  }
+
+  Future<_LocalTaskAgentReportEditingResult> _editReport({
+    required LocalTaskAgentEvalProfile profile,
+    required LocalTaskAgentEvalScenario scenario,
+    required _LocalTaskAgentEvalStrategy strategy,
+  }) async {
+    final materialTaskState = buildLocalTaskAgentEvalMaterialTaskState(
+      strategy.toolCalls,
+    );
+    final result =
+        await TaskAgentReportEditor(
+          conversationRepository: conversationRepository,
+          inferenceRepository: inferenceRepository,
+          provider: provider,
+          modelId: reportEditorModelId ?? profile.providerModelId,
+          maxAttempts: reportEditorMaxAttempts,
+          temperature: temperature,
+        ).edit(
+          draft: TaskAgentReportDraft.fromJson(
+            strategy.latestReportArguments!,
+          )!,
+          languageCode: scenario.languageCode,
+          materialTaskState: materialTaskState,
+        );
+    final revision = result.revision;
+    if (revision != null) {
+      strategy.recordEditedReport(revision);
+    }
+
+    return _LocalTaskAgentReportEditingResult(
+      completed: result.hadRevision,
+      attempts: result.attempts,
+      validationIssues: result.validationIssues,
+      usage: result.usage,
+    );
   }
 
   LocalTaskAgentEvalCaseResult _inferenceFailedResult({
@@ -1827,6 +1995,20 @@ class LocalTaskAgentInferenceEvalRunner {
   }
 }
 
+class _LocalTaskAgentReportEditingResult {
+  const _LocalTaskAgentReportEditingResult({
+    required this.completed,
+    required this.attempts,
+    required this.validationIssues,
+    required this.usage,
+  });
+
+  final bool completed;
+  final int attempts;
+  final List<TaskAgentReportRevisionIssue> validationIssues;
+  final InferenceUsage? usage;
+}
+
 class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
   _LocalTaskAgentEvalStrategy({required this.scenario});
 
@@ -1838,8 +2020,32 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
   List<LocalTaskAgentEvalToolCall> get toolCalls =>
       List.unmodifiable(_toolCalls);
 
+  int get reportCallCount => _toolCalls
+      .where((call) => call.name == TaskAgentToolNames.updateReport)
+      .length;
+
+  Map<String, dynamic>? get latestReportArguments {
+    for (final call in _toolCalls.reversed) {
+      if (call.name == TaskAgentToolNames.updateReport) {
+        return call.jsonObjectArguments;
+      }
+    }
+    return null;
+  }
+
   void beginReportPass() {
     _phase = LocalTaskAgentEvalToolCallPhase.reportPass;
+  }
+
+  void recordEditedReport(TaskAgentReportDraft report) {
+    _toolCalls.add(
+      LocalTaskAgentEvalToolCall(
+        name: TaskAgentToolNames.updateReport,
+        argumentsJson: jsonEncode(report.toJson()),
+        phase: LocalTaskAgentEvalToolCallPhase.reportPass,
+      ),
+    );
+    hasReport = true;
   }
 
   @override
@@ -1856,6 +2062,9 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
       _toolCalls.add(recorded);
 
       final args = recorded.jsonObjectArguments;
+      final response = args == null
+          ? 'Eval harness rejected invalid JSON arguments.'
+          : 'Eval harness accepted ${call.function.name}.';
       if (call.function.name == TaskAgentToolNames.updateReport &&
           args != null &&
           _hasNonEmptyString(args, 'oneLiner') &&
@@ -1866,9 +2075,7 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
 
       manager.addToolResponse(
         toolCallId: call.id,
-        response: args == null
-            ? 'Eval harness rejected invalid JSON arguments.'
-            : 'Eval harness accepted ${call.function.name}.',
+        response: response,
       );
     }
 

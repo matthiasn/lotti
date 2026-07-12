@@ -3044,7 +3044,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
-      'Verwendet experimentelle Prompts und geringe Varianz für effiziente Aufgabenagent-Modelle. Aufgabenänderungen können zuverlässiger werden, Berichte können aber weiterhin mechanisch oder ungenau wirken.';
+      'Verwendet den experimentellen Aufgabenagent-Pfad mit geringer Varianz. Mit Melious Mistral Small 4 verbessert ein zusätzlicher Qwen-Durchlauf die Berichte und erhöht Laufzeit und Verbrauch geringfügig.';
 
   @override
   String get configFlagEnableTooltip => 'Tooltips aktivieren';

@@ -1381,7 +1381,7 @@
   "configFlagEnableSyncedAlerts": "Alertes synchronisées",
   "configFlagEnableSyncedAlertsDescription": "Synchronise les alertes d'IA et de tâches entre tes appareils et autorise-les à programmer des notifications système locales.",
   "configFlagEnableTaskAgentEvidenceSynthesis": "Agent de tâches fondé sur les faits",
-  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Utilise des prompts expérimentaux et une faible variabilité pour les modèles d’agent de tâches efficaces. Les mises à jour peuvent être plus fiables, mais les rapports peuvent rester mécaniques ou imprécis.",
+  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Utilise le parcours expérimental à faible variabilité de l’agent de tâches. Avec Melious Mistral Small 4, un passage Qwen supplémentaire améliore les rapports et ajoute un peu de latence et d’utilisation.",
   "configFlagEnableTooltip": "Activer les info-bulles",
   "configFlagEnableTooltipDescription": "Afficher des info-bulles utiles dans toute l'application pour te guider à travers les fonctionnalités.",
   "configFlagEnableVectorSearch": "Recherche vectorielle",

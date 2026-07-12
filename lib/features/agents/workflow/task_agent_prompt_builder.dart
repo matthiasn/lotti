@@ -21,21 +21,35 @@ abstract final class TaskAgentPromptBuilder {
     required AgentTemplateVersionEntity version,
     required SoulDocumentVersionEntity? soulVersion,
     bool evidenceSynthesis = false,
+    String? evidenceSynthesisModelId,
   }) {
     final trimmedGeneralDirective = version.generalDirective.trim();
     final configuredReportDirective = version.reportDirective.trim();
-    final usesBuiltInReportDirective =
-        configuredReportDirective.isEmpty ||
-        configuredReportDirective == taskAgentReportDirective.trim();
+    final usesBuiltInReportDirective = usesBuiltInReportContract(version);
     final trimmedReportDirective =
         evidenceSynthesis && usesBuiltInReportDirective
-        ? TaskAgentEvidenceSynthesis.reportDirective.trim()
+        ? TaskAgentEvidenceSynthesis.reportDirectiveForModel(
+            evidenceSynthesisModelId,
+          ).trim()
         : configuredReportDirective;
     final trimmedLegacyDirective = version.directives.trim();
     final hasNewDirectives =
         evidenceSynthesis ||
         trimmedGeneralDirective.isNotEmpty ||
         trimmedReportDirective.isNotEmpty;
+
+    if (evidenceSynthesis &&
+        TaskAgentEvidenceSynthesis.usesCompactScaffold(
+          evidenceSynthesisModelId,
+        )) {
+      return _buildCompactEvidencePrompt(
+        generalDirective: trimmedGeneralDirective,
+        legacyDirective: trimmedLegacyDirective,
+        reportDirective: trimmedReportDirective,
+        soulVersion: soulVersion,
+        modelId: evidenceSynthesisModelId,
+      );
+    }
 
     if (hasNewDirectives) {
       final buf = StringBuffer()..write(taskAgentScaffoldCore);
@@ -84,6 +98,7 @@ abstract final class TaskAgentPromptBuilder {
       return _withEvidenceSynthesis(
         buf.toString(),
         enabled: evidenceSynthesis,
+        modelId: evidenceSynthesisModelId,
       );
     }
 
@@ -93,14 +108,76 @@ abstract final class TaskAgentPromptBuilder {
       '## Your Personality & Directives\n\n'
       '${version.directives}',
       enabled: evidenceSynthesis,
+      modelId: evidenceSynthesisModelId,
     );
+  }
+
+  /// Whether [version] uses Lotti's built-in task-report contract.
+  ///
+  /// Experimental report rewriting is safe only for this contract. A custom
+  /// report directive remains authoritative and must not be rewritten by a
+  /// generic post-pass.
+  static bool usesBuiltInReportContract(AgentTemplateVersionEntity version) {
+    final configuredReportDirective = version.reportDirective.trim();
+    return configuredReportDirective.isEmpty ||
+        configuredReportDirective == taskAgentReportDirective.trim();
   }
 
   static String _withEvidenceSynthesis(
     String prompt, {
     required bool enabled,
-  }) =>
-      enabled ? '$prompt${TaskAgentEvidenceSynthesis.systemDirective}' : prompt;
+    String? modelId,
+  }) => enabled
+      ? '$prompt${TaskAgentEvidenceSynthesis.systemDirectiveForModel(modelId)}'
+      : prompt;
+
+  static String _buildCompactEvidencePrompt({
+    required String generalDirective,
+    required String legacyDirective,
+    required String reportDirective,
+    required SoulDocumentVersionEntity? soulVersion,
+    required String? modelId,
+  }) {
+    final buf = StringBuffer()..write(taskAgentCompactScaffold);
+
+    if (soulVersion != null) {
+      _appendSoulPersonality(buf, soulVersion);
+      if (generalDirective.isNotEmpty &&
+          generalDirective != taskAgentGeneralDirective.trim()) {
+        buf
+          ..writeln()
+          ..writeln()
+          ..writeln('## Your Operational Directives')
+          ..writeln()
+          ..write(generalDirective);
+      }
+    } else {
+      final effectiveGeneralDirective = generalDirective.isNotEmpty
+          ? generalDirective
+          : legacyDirective;
+      if (effectiveGeneralDirective.isNotEmpty &&
+          effectiveGeneralDirective != taskAgentGeneralDirective.trim()) {
+        buf
+          ..writeln()
+          ..writeln()
+          ..writeln('## Your Personality & Directives')
+          ..writeln()
+          ..write(effectiveGeneralDirective);
+      }
+    }
+
+    if (reportDirective.isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln()
+        ..writeln('## Report Directive')
+        ..writeln()
+        ..write(reportDirective);
+    }
+
+    buf.write(TaskAgentEvidenceSynthesis.systemDirectiveForModel(modelId));
+    return buf.toString();
+  }
 
   /// Appends soul personality fields to the prompt buffer.
   static void _appendSoulPersonality(
@@ -133,6 +210,61 @@ abstract final class TaskAgentPromptBuilder {
         ..write(soul.antiSycophancyPolicy);
     }
   }
+
+  /// Reduced scaffold for the opt-in efficient-model profiles.
+  static const taskAgentCompactScaffold = '''
+You are a persistent Task Agent responsible for one task. Maintain task state,
+propose only justified changes, keep private memory in observations, and keep a
+user-facing report current.
+
+## Authority and Evidence
+
+- Current task fields and the newest explicit user evidence are authoritative.
+  A prior report or linked-task summary is context, never proof.
+- User actions are sovereign. Never undo a manual field change or reopen a
+  user-checked item unless the user explicitly asks or newer dated evidence
+  clearly requires it. Any such checklist override needs a reason.
+- A description of task state is not permission to mutate it. Change only what
+  explicit evidence authorizes; DONE and REJECTED remain user-only statuses.
+- Respect `languageCode` for every public report field. Detect and set language
+  only when it is currently absent.
+
+## Wake Protocol
+
+1. Read the current task, newest log evidence, proposal guard, attention
+   requests, parent context, and linked-task summaries.
+2. Call every tool required by explicit user intent. Check current values first
+   and skip no-ops, duplicates, speculative changes, and invented IDs.
+3. Record private reasoning or durable context with `record_observations`.
+   Frustration or correction is a critical `grievance`; explicit praise is
+   critical `excellence`; requested behavior change is critical
+   `template_improvement`; recurring patterns are `notable`; routine notes are
+   `operational`.
+4. On a first report or material change, call `update_report` once, separately
+   and last. Otherwise end with a brief plain-text note and do not republish.
+
+## Tool Discipline
+
+- Batch independent mutations in one assistant turn, but never batch
+  `update_report` with them. Most metadata and time tools are single-use per
+  wake; checklist and label batch tools may contain multiple items.
+- Keep owners, dates, quantities, dependencies, and scope in checklist titles.
+  Do not add existing work. Archive true duplicates instead of renaming them.
+- Treat tool failures and policy denials as private observations, not report
+  content. Stay within the task's allowed categories.
+- The Open Proposal Guard is authoritative: never duplicate an open or rejected
+  proposal. Retract only the same proposal when it became stale; never retract
+  unaffected siblings after a partial user decision.
+- Split work only when the user clearly asks for a distinct follow-up task:
+  create it, migrate only the identified checklist items, then record why.
+
+## Context Boundaries
+
+Parent and linked-task reports guide sequencing but cannot override newer direct
+task evidence. A missing linked report proves nothing. Use readable task titles
+for `/tasks/<taskId>` links; IDs belong only in tool arguments and link targets.
+Dedicated Links sections contain only real external URLs.
+''';
 
   /// The rigid scaffold of the Task Agent system prompt, combining all parts.
   ///

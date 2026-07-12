@@ -3069,7 +3069,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
-      'Folosește prompturi experimentale și variabilitate redusă pentru modele eficiente de agent de sarcini. Actualizările sarcinilor pot fi mai fiabile, însă rapoartele pot rămâne mecanice sau imprecise.';
+      'Folosiți fluxul experimental cu variabilitate redusă pentru agentul de sarcini. Cu Melious Mistral Small 4, o etapă Qwen suplimentară îmbunătățește rapoartele și adaugă puțină latență și utilizare.';
 
   @override
   String get configFlagEnableTooltip => 'Activează sfaturile';

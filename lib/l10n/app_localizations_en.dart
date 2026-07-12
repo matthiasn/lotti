@@ -3006,7 +3006,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
-      'Use the experimental low-variance prompt and temperature settings for efficient task-agent models. Task updates can be more reliable, but reports may still be mechanical or imprecise.';
+      'Use the experimental low-variance task-agent path. With Melious Mistral Small 4, an additional Qwen pass improves reports and adds a small amount of latency and usage.';
 
   @override
   String get configFlagEnableTooltip => 'Enable tooltips';

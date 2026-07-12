@@ -5206,7 +5206,7 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagEnableTaskAgentEvidenceSynthesisDescription.
   ///
   /// In en, this message translates to:
-  /// **'Use the experimental low-variance prompt and temperature settings for efficient task-agent models. Task updates can be more reliable, but reports may still be mechanical or imprecise.'**
+  /// **'Use the experimental low-variance task-agent path. With Melious Mistral Small 4, an additional Qwen pass improves reports and adds a small amount of latency and usage.'**
   String get configFlagEnableTaskAgentEvidenceSynthesisDescription;
 
   /// No description provided for @configFlagEnableTooltip.

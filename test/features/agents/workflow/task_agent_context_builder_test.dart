@@ -317,11 +317,36 @@ void main() {
 
       expect(
         optimizedReport.description,
-        contains('active execution constraints'),
+        contains('matching successful'),
       );
       expect(
-        optimizedReport.parameters,
-        equals(baselineByName['update_report']!.parameters),
+        optimizedReport.description,
+        contains('stale report claims'),
+      );
+      final baselineReport = baselineByName['update_report']!;
+      final optimizedParameters = optimizedReport.parameters!;
+      final baselineParameters = baselineReport.parameters!;
+      expect(
+        optimizedParameters['required'],
+        baselineParameters['required'],
+      );
+      expect(
+        optimizedParameters['additionalProperties'],
+        baselineParameters['additionalProperties'],
+      );
+      final optimizedProperties =
+          optimizedParameters['properties']! as Map<String, dynamic>;
+      final baselineProperties =
+          baselineParameters['properties']! as Map<String, dynamic>;
+      expect(optimizedProperties.keys, baselineProperties.keys);
+      expect(
+        (optimizedProperties['content']! as Map<String, dynamic>)['type'],
+        (baselineProperties['content']! as Map<String, dynamic>)['type'],
+      );
+      expect(
+        (optimizedProperties['content']!
+            as Map<String, dynamic>)['description'],
+        contains('free-form Markdown'),
       );
       expect(
         optimizedByName['set_task_title']!.description,

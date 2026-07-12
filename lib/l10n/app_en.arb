@@ -1666,7 +1666,7 @@
   "configFlagEnableSyncedAlerts": "Synced alerts",
   "configFlagEnableSyncedAlertsDescription": "Sync AI and task alerts across devices and allow them to schedule local OS notifications.",
   "configFlagEnableTaskAgentEvidenceSynthesis": "Evidence-first task agent",
-  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Use the experimental low-variance prompt and temperature settings for efficient task-agent models. Task updates can be more reliable, but reports may still be mechanical or imprecise.",
+  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Use the experimental low-variance task-agent path. With Melious Mistral Small 4, an additional Qwen pass improves reports and adds a small amount of latency and usage.",
   "configFlagEnableTooltip": "Enable tooltips",
   "configFlagEnableTooltipDescription": "Show helpful tooltips throughout the app to guide you through features.",
   "configFlagEnableVectorSearch": "Vector Search",

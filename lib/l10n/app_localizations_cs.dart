@@ -3050,7 +3050,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
-      'Použije experimentální prompty a nízkou variabilitu pro úsporné modely úkolového agenta. Aktualizace úkolů mohou být spolehlivější, ale reporty mohou stále působit mechanicky nebo nepřesně.';
+      'Použije experimentální režim úkolového agenta s nízkou variabilitou. S Melious Mistral Small 4 zlepší dodatečný průchod modelem Qwen reporty a přidá malé množství latence a spotřeby.';
 
   @override
   String get configFlagEnableTooltip => 'Povolit nápovědy';

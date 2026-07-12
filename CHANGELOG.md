@@ -8,9 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Try an evidence-first task-agent mode with efficient models.** Enable the
   experimental option in Settings → Advanced → Flags to use an evaluated
-  low-variance prompt and temperature-zero inference path. It is designed to
-  improve task and checklist update reliability while preserving custom report
-  instructions; report prose may still be mechanical or imprecise.
+  low-variance, temperature-zero inference path. On Melious, Mistral Small 4
+  119B now keeps responsibility for task and checklist changes while a compact
+  Qwen report-only pass improves the user-facing summary. Reports that fail
+  grounded quality checks are retried up to twice and otherwise leave the
+  original Mistral report untouched. Custom report instructions and other executor
+  models do not use the extra pass, and each model's token usage is tracked
+  separately.
 ### Fixed
 - **Melious task agents now continue reliably after calling tools.** Follow-up
   requests now preserve the OpenAI-compatible assistant message shape expected

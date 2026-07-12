@@ -827,10 +827,13 @@ the write."
 8. build the system prompt and user message
 9. create a conversation and persist the user message into the agent log
 10. run the conversation with `TaskAgentStrategy`
-11. persist combined wake token usage
-12. persist the final thought, report, observations, change set, and updated
+11. when the opt-in Mistral report editor applies, rewrite the new report from
+    compact successful-mutation facts and accept it only if deterministic
+    quality checks pass
+12. persist executor and editor token usage under their respective model IDs
+13. persist the final thought, report, observations, change set, and updated
     agent state
-13. optionally embed the persisted report when both embedding dependencies are
+14. optionally embed the persisted report when both embedding dependencies are
     available
 
 ### Evidence-First Inference
@@ -841,7 +844,7 @@ exposed under `Settings > Advanced > Flags`. `agentWorkflowProvider` watches the
 flag, so changing it rebuilds the workflow without changing any saved template
 or inference profile.
 
-When enabled, the task-agent path changes four inputs together:
+When enabled, the task-agent path changes four common inputs together:
 
 - `TaskAgentPromptBuilder` replaces only the seeded/default report directive
   with the evaluated compact directive and appends the evidence-synthesis
@@ -853,23 +856,53 @@ When enabled, the task-agent path changes four inputs together:
 - model reasoning remains profile/provider driven; the flag does not force a
   separate high-effort mode
 
-The mode does not add a report polisher or a second inference pass. Those
-variants increased cost and latency without a reliable report-quality gain in
-the retained evaluation. The flag is therefore a low-variance prompt and
-sampling opt-in, not a claim that efficient models match larger models on
-report prose.
+For the exact Melious `mistral-small-4-119b-instruct` executor and the built-in
+report contract, the same flag also enables the evaluated report-editor path:
+
+- Mistral remains the only model allowed to inspect task context and call task
+  mutation tools.
+- `TaskAgentStrategy` records only mutations that applied successfully or were
+  successfully queued. Failed, denied, duplicate, and redundant calls do not
+  become report facts.
+- a fresh, report-only Qwen 3.5 122B A10B conversation receives the Mistral
+  draft plus ID-free material mutation facts: title, language, priority, due
+  date, estimate, and newly added action titles
+- Qwen is forced to call only `update_report`; it never receives journal IDs,
+  the full task prompt, or mutation tools
+- deterministic validation checks required metadata, dates and estimates,
+  active risks, locale register, fake link sections, checklist/process
+  narration, unsupported priority claims, and causal claims inferred from a
+  user checkmark
+- up to two repair attempts receive the rejected candidate and exact failed
+  checks; after three invalid attempts, or any editor failure, the original
+  Mistral draft remains the report
+- executor and editor usage are persisted separately, so model-level cost and
+  token accounting stays accurate
+
+Custom report directives skip the editor entirely and remain authoritative.
+Other providers and executor models keep the common evidence-first prompt path
+without an extra inference pass. This routing is deliberately exact: the
+report editor is enabled only for the model/provider/contract combination that
+was exercised by the retained evaluation.
 
 ```mermaid
-flowchart LR
+flowchart TD
   Flag["Evidence-synthesis flag"] --> Provider["agentWorkflowProvider"]
   Provider --> Workflow["TaskAgentWorkflow"]
   Workflow --> Prompt["Default directive + evidence protocol"]
   Workflow --> Tools["Evidence-aware update_report description"]
   Workflow --> Sampling["Temperature 0.0"]
   Custom["Custom report directive"] -->|preserved| Prompt
-  Prompt --> Conversation["Single conversation loop"]
-  Tools --> Conversation
-  Sampling --> Conversation
+  Prompt --> Executor["Primary conversation"]
+  Tools --> Executor
+  Sampling --> Executor
+  Executor --> Gate{"Melious Mistral + built-in report + new draft?"}
+  Gate -->|no| Persist["Persist executor report"]
+  Gate -->|yes| Facts["ID-free successful mutation facts"]
+  Facts --> Editor["Forced Qwen update_report"]
+  Editor --> Validate{"Deterministic checks pass?"}
+  Validate -->|yes| PersistEdited["Persist edited report"]
+  Validate -->|no, max 2| Persist
 ```
 
 The task wake prompt is assembled from:
