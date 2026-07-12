@@ -205,7 +205,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Refresh'));
+      await tester.tap(find.byIcon(Icons.refresh_rounded));
       await tester.pump();
 
       verify(() => mockService.triggerReanalysis('agent-1')).called(1);

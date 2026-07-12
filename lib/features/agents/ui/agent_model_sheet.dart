@@ -80,10 +80,11 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
     setState(() => _busy = true);
     try {
       await action();
+      if (!mounted) return;
       ref
         ..invalidate(agentIdentityProvider(widget.agentId))
         ..invalidate(taskAgentResolvedSetupProvider(widget.agentId));
-      if (!mounted || modelName == null) return;
+      if (modelName == null) return;
       context.showToast(
         tone: DesignSystemToastTone.success,
         title: context.messages.taskAgentSetupChangedToast(modelName),
