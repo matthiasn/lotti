@@ -147,4 +147,39 @@ void main() {
     expect(broken.presentation, TaskAgentIdentityPresentation.broken);
     expect(broken.brokenSelectionId, 'missing-model');
   });
+
+  test('broken and disabled setups preserve report attribution state', () {
+    final provenance = ReportInferenceProvenance.executorOnly(
+      InferenceRunSnapshot(
+        runKey: 'run',
+        threadId: 'thread',
+        executor: route,
+      ),
+    );
+    final disabled = TaskAgentModelIdentityViewData.fromResolution(
+      setup: const ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.disabled,
+      ),
+      reportProvenance: provenance,
+      hasReport: true,
+    );
+    final broken = TaskAgentModelIdentityViewData.fromResolution(
+      setup: const ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.broken,
+      ),
+      reportProvenance: provenance,
+      hasReport: true,
+    );
+    final profileMissing = TaskAgentModelIdentityViewData.fromResolution(
+      setup: const ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.resolved,
+      ),
+      reportProvenance: provenance,
+      hasReport: true,
+    );
+
+    expect(disabled.reportRoute, route);
+    expect(broken.reportRoute, route);
+    expect(profileMissing.presentation, TaskAgentIdentityPresentation.broken);
+  });
 }
