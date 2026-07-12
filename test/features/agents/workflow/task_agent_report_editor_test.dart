@@ -215,6 +215,37 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(TaskAgentReportEditor.buildMaterialTaskState(const []), isEmpty);
   });
 
+  test(
+    'material state keeps current task anchors until mutations replace them',
+    () {
+      expect(
+        TaskAgentReportEditor.buildMaterialTaskState(
+          const [],
+          currentDueDate: '2026-09-30',
+          currentEstimateMinutes: 120,
+          currentPriority: 'P1',
+        ),
+        {
+          'priority': 'P1',
+          'dueDate': '2026-09-30',
+          'estimateMinutes': 120,
+        },
+      );
+      expect(
+        TaskAgentReportEditor.buildMaterialTaskState(
+          const [
+            (
+              toolName: TaskAgentToolNames.updateTaskDueDate,
+              arguments: {'dueDate': '2026-10-15'},
+            ),
+          ],
+          currentDueDate: '2026-09-30',
+        )['dueDate'],
+        '2026-10-15',
+      );
+    },
+  );
+
   test('validation catches grounded quality regressions', () {
     final issues = TaskAgentReportEditor.validateRevision(
       languageCode: 'de',
@@ -1089,6 +1120,59 @@ turn task metadata or a checklist edit into an accomplishment.
       expect(messages, contains('Pending work is never underway'));
       expect(messages, contains('investigation is needed'));
       expect(messages, contains('rejectedReport'));
+    },
+  );
+
+  test(
+    'editor sanitizes rejected draft scope for unrelated initial issues',
+    () async {
+      const deferredDraft = TaskAgentReportDraft(
+        oneLiner: 'Rotate the production certificate',
+        tldr: 'Three certificate actions remain.',
+        content:
+            'Request the certificate. An administrator analytics dashboard '
+            'is outside scope and must not be included.',
+      );
+      final inferenceRepository = _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Request the production certificate',
+                'tldr': 'Three certificate actions remain.',
+                'content':
+                    'Request the certificate, get staging access, then rotate '
+                    'it and verify webhooks.',
+              }),
+            ),
+          ]),
+        ],
+      ]);
+
+      final result =
+          await _createEditor(
+            provider: provider,
+            inferenceRepository: inferenceRepository,
+          ).edit(
+            draft: deferredDraft,
+            languageCode: 'en',
+            materialTaskState: const {},
+            reportDirective: evolvedReportDirective,
+            initialValidationIssues: const {
+              TaskAgentReportRevisionIssue.processNarration,
+            },
+          );
+
+      expect(result.revision, isNotNull);
+      final messages = jsonEncode(
+        inferenceRepository.requests.single.messages
+            .map((message) => message.toJson())
+            .toList(),
+      );
+      expect(messages, contains('rejectedReport'));
+      expect(messages, isNot(contains('dashboard')));
+      expect(messages, isNot(contains('analytics')));
     },
   );
 

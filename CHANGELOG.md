@@ -19,7 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   token usage is tracked separately. Concrete multi-step plans become
   checklist actions without requiring a separate explicit checklist request.
   Direct Qwen reports that fail local grounding checks receive a compact,
-  bounded Qwen repair; clean reports remain single-pass.
+  bounded Qwen repair; clean reports remain single-pass. The report pass keeps
+  existing deadlines, estimates, and urgent priorities visible, and deferred
+  ideas remain stripped from every repair attempt.
 ### Fixed
 - **Melious task agents now continue reliably after calling tools.** Follow-up
   requests now preserve the OpenAI-compatible assistant message shape expected

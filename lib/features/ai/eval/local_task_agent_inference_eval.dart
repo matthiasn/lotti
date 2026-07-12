@@ -197,6 +197,9 @@ class LocalTaskAgentEvalScenario {
     this.languageCode = 'en',
     this.promptVariant = LocalTaskAgentEvalPromptVariant.production,
     this.reportDirective,
+    this.currentDueDate,
+    this.currentEstimateMinutes,
+    this.currentPriority,
     this.requiredReportTermGroups = const [],
     this.forbiddenReportTerms = const [],
     this.requiredToolArgumentTermGroups = const {},
@@ -218,6 +221,11 @@ class LocalTaskAgentEvalScenario {
   /// Optional evolved report directive used instead of the prompt variant's
   /// configured contract.
   final String? reportDirective;
+
+  /// Existing material task anchors supplied to the production report route.
+  final String? currentDueDate;
+  final int? currentEstimateMinutes;
+  final String? currentPriority;
 
   /// Each group is satisfied when the report contains at least one term.
   final List<List<String>> requiredReportTermGroups;
@@ -247,6 +255,9 @@ class LocalTaskAgentEvalScenario {
       'languageCode': languageCode,
       'promptVariant': promptVariant.name,
       'reportDirective': reportDirective,
+      'currentDueDate': currentDueDate,
+      'currentEstimateMinutes': currentEstimateMinutes,
+      'currentPriority': currentPriority,
       'requiredReportTermGroups': requiredReportTermGroups,
       'forbiddenReportTerms': forbiddenReportTerms,
       'requiredToolArgumentTermGroups': requiredToolArgumentTermGroups,
@@ -311,7 +322,7 @@ LocalTaskAgentEvalScenario _implicitWorkflowPlanScenario(
     ],
     requiredToolArgumentTermGroups: const {
       TaskAgentToolNames.addMultipleChecklistItems: [
-        ['profile seeding'],
+        ['profile seeding', 'empty profile'],
         ['implement'],
         ['pull request', 'pr'],
         ['gemini'],
@@ -577,10 +588,13 @@ List<ChatCompletionTool> buildLocalTaskAgentEvalTools({
       .toList(growable: false);
 }
 
-/// Reduces successful mutation calls to ID-free facts the editor must retain.
+/// Reduces current scenario anchors and mutations to ID-free editor facts.
 Map<String, Object?> buildLocalTaskAgentEvalMaterialTaskState(
-  List<LocalTaskAgentEvalToolCall> toolCalls,
-) {
+  List<LocalTaskAgentEvalToolCall> toolCalls, {
+  String? currentDueDate,
+  int? currentEstimateMinutes,
+  String? currentPriority,
+}) {
   return TaskAgentReportEditor.buildMaterialTaskState(
     toolCalls
         .where((call) => call.phase == LocalTaskAgentEvalToolCallPhase.main)
@@ -590,6 +604,9 @@ Map<String, Object?> buildLocalTaskAgentEvalMaterialTaskState(
           return (toolName: call.name, arguments: arguments);
         })
         .whereType<TaskAgentMutationRecord>(),
+    currentDueDate: currentDueDate,
+    currentEstimateMinutes: currentEstimateMinutes,
+    currentPriority: currentPriority,
   );
 }
 
@@ -677,6 +694,8 @@ LocalTaskAgentEvalScenario _germanPlanningScenario(
     ],
     languageCode: 'de',
     promptVariant: variant,
+    currentDueDate: '2026-09-30',
+    currentPriority: 'P1',
     requiredReportTermGroups: const [
       ['30. september', '30.09', '2026-09-30'],
       ['ben'],
@@ -719,6 +738,8 @@ LocalTaskAgentEvalScenario _progressUpdateScenario(
       ),
     ],
     promptVariant: variant,
+    currentDueDate: '2026-09-30',
+    currentPriority: 'P1',
     requiredReportTermGroups: const [
       ['interviews'],
       ['dana'],
@@ -2170,6 +2191,9 @@ class LocalTaskAgentInferenceEvalRunner {
           if (scenario.requiresReport && strategy.hasReport) {
             final materialTaskState = buildLocalTaskAgentEvalMaterialTaskState(
               strategy.toolCalls,
+              currentDueDate: scenario.currentDueDate,
+              currentEstimateMinutes: scenario.currentEstimateMinutes,
+              currentPriority: scenario.currentPriority,
             );
             final initialValidationIssues =
                 route == _LocalTaskAgentProductionRoute.directQwen
@@ -2300,6 +2324,9 @@ class LocalTaskAgentInferenceEvalRunner {
   }) async {
     final materialTaskState = buildLocalTaskAgentEvalMaterialTaskState(
       strategy.toolCalls,
+      currentDueDate: scenario.currentDueDate,
+      currentEstimateMinutes: scenario.currentEstimateMinutes,
+      currentPriority: scenario.currentPriority,
     );
     final result =
         await TaskAgentReportEditor(

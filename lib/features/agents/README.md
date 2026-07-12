@@ -830,9 +830,9 @@ the write."
 8. build the system prompt and user message
 9. create a conversation and persist the user message into the agent log
 10. run the conversation with `TaskAgentStrategy`
-11. when the opt-in Mistral report editor applies, rewrite the new report from
-    compact successful-mutation facts and accept it only if deterministic
-    quality checks pass
+11. when an opt-in report route applies, validate or rewrite the new report
+    from compact current-task anchors plus successful-mutation facts, and
+    accept it only if deterministic quality checks pass
 12. persist executor and editor token usage under their respective model IDs
 13. persist the final thought, report, observations, change set, and updated
     agent state
@@ -883,8 +883,10 @@ also enables the report-editor path:
   successfully queued. Failed, denied, duplicate, and redundant calls do not
   become report facts.
 - a fresh, report-only Qwen 3.5 122B A10B conversation receives the active
-  report directive, the Mistral draft, and ID-free material mutation facts:
-  title, language, priority, due date, estimate, and newly added action titles
+  report directive, the Mistral draft, and ID-free material facts: the current
+  due date, estimate, and urgent/high priority plus successful title, language,
+  priority, due-date, estimate, and newly added-action mutations. Mutations
+  override current anchors because they describe the post-wake state
 - Qwen is forced to call only `update_report`; it never receives journal IDs,
   the full task prompt, or mutation tools
 - evolved and manually customized report directives remain authoritative for
@@ -897,9 +899,10 @@ also enables the report-editor path:
 - the same local validator checks direct Qwen reports. It does not ask Qwen to
   rate its own work: code identifies exact violations, and only invalid drafts
   receive an isolated Qwen rewrite with those correction codes
-- up to two repair attempts receive the rejected candidate and exact failed
-  checks; after three invalid attempts, or any editor failure, the original
-  Mistral draft remains the report
+- up to two repair attempts receive the sanitized rejected candidate and exact
+  failed checks; a candidate that leaks deferred scope is withheld entirely.
+  After three invalid attempts, or any editor failure, the original Mistral
+  draft remains the report
 - executor and editor usage are persisted separately, so model-level cost and
   token accounting stays accurate
 - agent internals persist the route outcome as direct Qwen, repaired direct
@@ -925,7 +928,7 @@ flowchart TD
   Sampling --> Executor
   Executor --> Route{"Executor route"}
   Route -->|other model| Persist["Persist executor report"]
-  Route -->|Mistral| Facts["ID-free successful mutation facts"]
+  Route -->|Mistral| Facts["ID-free current anchors + successful mutations"]
   Route -->|Qwen direct| DirectValidate{"Deterministic checks pass?"}
   DirectValidate -->|yes| Persist
   DirectValidate -->|no| Facts

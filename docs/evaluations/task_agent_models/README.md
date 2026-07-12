@@ -112,7 +112,8 @@ checks. Use `productionRouting` with the evidence-synthesis prompt to reproduce
 the shipped Melious routes: Mistral always uses the isolated Qwen editor, while
 direct Qwen receives a second Qwen call only when deterministic preflight
 rejects its draft. This mode resolves the production Qwen model and
-three-attempt bound automatically. `reportEditing` remains an always-edit
+three-attempt bound automatically and carries each scenario's current material
+task anchors into report validation. `reportEditing` remains an always-edit
 orchestration control for historical experiments.
 
 Run the two selectable efficient routes together with:

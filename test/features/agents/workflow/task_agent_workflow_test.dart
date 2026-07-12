@@ -552,6 +552,7 @@ void main() {
         bool throwOnEditorCreate = false,
         String? reportDirective,
         String? taskLanguageCode,
+        DateTime? taskDue,
       }) async {
         stubMeliousTaskAgentModel(
           providerId: 'melious-provider-safety',
@@ -562,11 +563,12 @@ void main() {
               ? null
               : makeTestTemplateVersion(reportDirective: reportDirective),
         );
-        if (taskLanguageCode != null) {
+        if (taskLanguageCode != null || taskDue != null) {
           when(() => mockJournalDb.journalEntityById(taskId)).thenAnswer(
             (_) async => _makeTask(
               taskId,
               languageCode: taskLanguageCode,
+              due: taskDue,
             ),
           );
         }
@@ -2054,6 +2056,42 @@ void main() {
                 .inputTokens,
             5,
           );
+        },
+      );
+
+      test(
+        'Mistral evidence mode restores an existing task deadline',
+        () async {
+          final (:result, :captured) = await runMistralReportEditorSafetyCase(
+            taskLanguageCode: 'de',
+            taskDue: DateTime(2026, 9, 30),
+            editorArguments: [
+              jsonEncode({
+                'oneLiner': 'P1-Beta vorbereiten',
+                'tldr': 'Die P1-Beta hat vier offene Aktionen.',
+                'content': '## Nächster Schritt\nAPI-Umfang mit Ben klären.',
+              }),
+              jsonEncode({
+                'oneLiner': 'P1-Beta bis 30. September 2026 vorbereiten',
+                'tldr':
+                    'Die P1-Beta ist bis zum 30. September 2026 '
+                    'vorzubereiten.',
+                'content':
+                    '## Nächster Schritt\nAPI-Umfang mit Ben bis zur Beta am '
+                    '30. September 2026 klären.',
+              }),
+            ],
+          );
+
+          expect(result.success, isTrue);
+          final report = capturedEntitiesOfType<AgentReportEntity>(
+            captured,
+          ).single;
+          expect(report.content, contains('30. September 2026'));
+          final editorUsage = capturedTokenUsageEntities(captured).singleWhere(
+            (entry) => entry.modelId == meliousQwen35122BA10BModelId,
+          );
+          expect(editorUsage.inputTokens, 10);
         },
       );
 
@@ -8815,7 +8853,7 @@ int _countOccurrences(String haystack, String needle) {
   return count;
 }
 
-Task _makeTask(String id, {String? languageCode}) {
+Task _makeTask(String id, {String? languageCode, DateTime? due}) {
   return Task(
     meta: Metadata(
       id: id,
@@ -8834,6 +8872,7 @@ Task _makeTask(String id, {String? languageCode}) {
       dateTo: DateTime(2024, 6),
       statusHistory: [],
       title: 'Linked task',
+      due: due,
       languageCode: languageCode,
     ),
   );

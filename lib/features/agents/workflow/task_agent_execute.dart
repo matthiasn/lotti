@@ -530,10 +530,23 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           isMistralEditorCandidate || isDirectQwenModel;
       final reportEditorRouteEligible =
           mistralReportEditorEligible || isDirectQwenExecutor;
+      final currentTaskData = taskAttentionContext.task?.data;
+      final currentTaskDue = currentTaskData?.due;
+      final currentTaskPriority = switch (currentTaskData?.priority) {
+        TaskPriority.p0Urgent => TaskPriority.p0Urgent.short,
+        TaskPriority.p1High => TaskPriority.p1High.short,
+        _ => null,
+      };
       final materialTaskState =
           reportEditorRouteEligible && effectiveReport != null
           ? TaskAgentReportEditor.buildMaterialTaskState(
               strategy.extractSuccessfulMutations(),
+              currentDueDate: currentTaskDue?.toIso8601String().substring(
+                0,
+                10,
+              ),
+              currentEstimateMinutes: currentTaskData?.estimate?.inMinutes,
+              currentPriority: currentTaskPriority,
             )
           : null;
       final languageCode = materialTaskState == null

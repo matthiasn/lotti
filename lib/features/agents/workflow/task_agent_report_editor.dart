@@ -212,16 +212,18 @@ class TaskAgentReportEditor {
         maxTurns: 2,
       );
       final strategy = _TaskAgentReportCaptureStrategy();
+      final rejectedReportJson = rejectedReport?.toJson();
       final message = <String, Object?>{
         'languageCode': languageCode,
         'materialTaskState': materialTaskState,
         'draftReport': editorDraft,
         'reportDirective': reportDirective.trim(),
         if (isRepair) ...{
-          if (!validationIssues.contains(
-            TaskAgentReportRevisionIssue.deferredScopeLeak,
-          ))
-            'rejectedReport': rejectedReport?.toJson(),
+          if (rejectedReportJson != null &&
+              !validationIssues.contains(
+                TaskAgentReportRevisionIssue.deferredScopeLeak,
+              ))
+            'rejectedReport': _withoutExcludedDraftScope(rejectedReportJson),
           'requiredCorrections': [
             for (final issue in validationIssues)
               {'code': issue.name, 'instruction': issue.correction},
@@ -375,11 +377,27 @@ class TaskAgentReportEditor {
     );
   }
 
-  /// Reduces successful mutation calls to ID-free facts the editor must keep.
+  /// Reduces current task anchors and successful mutations to ID-free facts.
+  ///
+  /// Successful mutations override the corresponding current value because
+  /// they describe the task state that will exist after this wake.
   static Map<String, Object?> buildMaterialTaskState(
-    Iterable<TaskAgentMutationRecord> mutations,
-  ) {
-    final state = <String, Object?>{};
+    Iterable<TaskAgentMutationRecord> mutations, {
+    String? currentDueDate,
+    int? currentEstimateMinutes,
+    String? currentPriority,
+  }) {
+    final normalizedDueDate = currentDueDate?.trim();
+    final normalizedPriority = currentPriority?.trim();
+    final state = <String, Object?>{
+      if (normalizedPriority != null && normalizedPriority.isNotEmpty)
+        'priority': normalizedPriority,
+      if (normalizedDueDate != null && normalizedDueDate.isNotEmpty)
+        'dueDate': normalizedDueDate,
+    };
+    if (currentEstimateMinutes case final estimateMinutes?) {
+      state['estimateMinutes'] = estimateMinutes;
+    }
     final checklistItems = <String>[];
 
     for (final mutation in mutations) {

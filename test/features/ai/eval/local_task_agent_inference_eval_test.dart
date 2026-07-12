@@ -674,6 +674,37 @@ void main() {
     expect(result.reportToolCall?.name, TaskAgentToolNames.updateReport);
   });
 
+  test('implicit plan scoring accepts outcome-equivalent checklist wording', () {
+    final scenario =
+        defaultMeliousTaskAgentEvalScenarios(
+          variants: const [LocalTaskAgentEvalPromptVariant.evidenceSynthesis],
+        ).firstWhere(
+          (scenario) => scenario.id.startsWith('implicit_workflow_plan'),
+        );
+    final result = LocalTaskAgentEvalCaseResult(
+      profile: profile,
+      scenario: scenario,
+      provider: provider,
+      latencyMs: 10,
+      toolCalls: const [
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.addMultipleChecklistItems,
+          argumentsJson:
+              '{"items":[{"title":"Fix the implementation to prevent empty profiles from being selectable"},{"title":"Create a pull request"},{"title":"Address the Gemini review comments"},{"title":"Address the code review comments"},{"title":"Merge the pull request"},{"title":"Create a release on all platforms"}]}',
+        ),
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.updateReport,
+          argumentsJson:
+              '{"oneLiner":"Fix inference profile seeding, then PR through release","tldr":"Prevent empty profiles from being selectable before review and release.","content":"Fix profile seeding, create the pull request, complete both reviews, merge, and release."}',
+        ),
+      ],
+      failureCategory: LocalTaskAgentEvalFailureCategory.none,
+    );
+
+    expect(result.passedQualityCheckCount, result.qualityCheckCount);
+    expect(result.qualityScore, 1);
+  });
+
   test(
     'parseLocalTaskAgentEvalProfile trims and validates name=model pairs',
     () {

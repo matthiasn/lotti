@@ -428,7 +428,9 @@ editor and remains a historical orchestration control. `productionRouting`
 mirrors the shipped Melious path: Mistral always uses the isolated Qwen editor,
 clean direct-Qwen reports remain single-pass, and deterministically invalid
 direct-Qwen reports receive a bounded Qwen repair. The production route
-resolves the Qwen editor and three-attempt bound automatically. The
+resolves the Qwen editor and three-attempt bound automatically. Scenario
+metadata supplies existing material due dates, estimates, and priorities to
+the editor just as the production workflow supplies current task anchors. The
 optional `LOCAL_TASK_AGENT_EVAL_REASONING_EFFORT` accepts the OpenAI-compatible
 `minimal`, `low`, `medium`, or `high` values. The generated JSON and Markdown
 record the selected effort; leaving it empty records and uses the model default.
