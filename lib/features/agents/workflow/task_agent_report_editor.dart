@@ -745,7 +745,8 @@ class TaskAgentReportEditor {
   );
   static final _excludedScopeMarker = RegExp(
     r'\b(?:deferred|rejected|omitted|out[- ]of[- ]scope|outside scope|'
-    'do not include|must not be included|leave (?:it|that|this) out|'
+    'scoped[- ]out|do not include|must not be included|'
+    'leave (?:it|that|this) out|'
     'zurückgestellt|nicht.{0,60}aufgenommen|nicht.{0,40}aufnehmen|'
     'ausgeschlossen|pospuest|aplazad|fuera de alcance|no incluir|'
     'différ|reporté|hors périmètre|ne pas inclure|amânat|'

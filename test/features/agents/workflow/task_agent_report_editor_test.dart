@@ -564,6 +564,24 @@ turn task metadata or a checklist edit into an accomplishment.
       validate('Repair the export, request test data, then run regression.'),
       isNot(contains(TaskAgentReportRevisionIssue.deferredScopeLeak)),
     );
+    expect(
+      TaskAgentReportEditor.validateRevision(
+        languageCode: 'en',
+        materialTaskState: const {},
+        draftReport: const {
+          'oneLiner': 'Rotate the production certificate',
+          'tldr': 'Three certificate actions remain.',
+          'content':
+              'Administrator analytics dashboard work is scoped out for now.',
+        },
+        candidateReport: const {
+          'oneLiner': 'Request the production certificate',
+          'tldr': 'Three certificate actions remain.',
+          'content': 'The analytics dashboard remains scoped out.',
+        },
+      ),
+      contains(TaskAgentReportRevisionIssue.deferredScopeLeak),
+    );
   });
 
   test('validation accepts localized equivalent anchors', () {
@@ -1131,7 +1149,7 @@ turn task metadata or a checklist edit into an accomplishment.
         tldr: 'Three certificate actions remain.',
         content:
             'Request the certificate. An administrator analytics dashboard '
-            'is outside scope and must not be included.',
+            'is scoped out for now.',
       );
       final inferenceRepository = _QueuedInferenceRepository([
         [
