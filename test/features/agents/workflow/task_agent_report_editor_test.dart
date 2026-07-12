@@ -711,6 +711,25 @@ turn task metadata or a checklist edit into an accomplishment.
     }
   });
 
+  test('checkmark-causality correction remains active during repair', () {
+    final issues = TaskAgentReportEditor.validateRevision(
+      languageCode: 'en',
+      materialTaskState: const {},
+      draftReport: const {
+        'oneLiner': 'Duplicate sync issue reappeared',
+        'tldr': 'The previous fix did not fully resolve the issue.',
+        'content': 'Investigate the root cause.',
+      },
+      candidateReport: const {
+        'oneLiner': 'Duplicate sync events reappeared',
+        'tldr': 'Root cause investigation is required.',
+        'content': 'Investigate before the fix can be validated.',
+      },
+    );
+
+    expect(issues, [TaskAgentReportRevisionIssue.checkmarkCausality]);
+  });
+
   test('validation preserves active risks in every supported language', () {
     const cases = [
       (
@@ -1654,6 +1673,65 @@ turn task metadata or a checklist edit into an accomplishment.
       expect(messages, isNot(contains('analytics')));
     },
   );
+
+  test('editor removes invented request state from its repair input', () async {
+    const draft = TaskAgentReportDraft(
+      oneLiner: 'Certificate rotation underway; awaiting Security',
+      tldr: 'Rotation is in progress while awaiting the certificate.',
+      content:
+          'Rotation is actively underway. Request replacement certificate '
+          'from Security. Analytics planning is out of scope.',
+    );
+    final inferenceRepository = _QueuedInferenceRepository([
+      [
+        _toolCalls([
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: jsonEncode({
+              'oneLiner': 'Request the replacement certificate',
+              'tldr': 'Request Security certificate, then obtain access.',
+              'content':
+                  'Request the replacement certificate from Security. Ask '
+                  'Priya for staging access, then rotate the certificate.',
+            }),
+          ),
+        ]),
+      ],
+    ]);
+
+    final result =
+        await _createEditor(
+          provider: provider,
+          inferenceRepository: inferenceRepository,
+        ).edit(
+          draft: draft,
+          languageCode: 'en',
+          materialTaskState: const {
+            'newChecklistItems': [
+              'Request replacement certificate from Security',
+              'Ask Priya for staging access',
+              'Rotate certificate and verify webhook deliveries',
+            ],
+          },
+          reportDirective: evolvedReportDirective,
+          initialValidationIssues: const {
+            TaskAgentReportRevisionIssue.processNarration,
+            TaskAgentReportRevisionIssue.deferredScopeLeak,
+          },
+        );
+
+    expect(result.revision, isNotNull);
+    final messages = jsonEncode(
+      inferenceRepository.requests.single.messages
+          .map((message) => message.toJson())
+          .toList(),
+    ).toLowerCase();
+    expect(messages, isNot(contains('awaiting security')));
+    expect(messages, isNot(contains('actively underway')));
+    expect(messages, isNot(contains('analytics planning')));
+    expect(messages, isNot(contains('rejectedreport')));
+    expect(messages, contains('request replacement certificate'));
+  });
 
   test('editor retries with exact issues and merges usage', () async {
     final inferenceRepository = _QueuedInferenceRepository([

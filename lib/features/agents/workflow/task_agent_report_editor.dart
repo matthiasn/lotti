@@ -191,9 +191,21 @@ class TaskAgentReportEditor {
   }) async {
     final draftJson = draft.toJson();
     final excludedDraftTerms = _extractExcludedDraftTerms(draftJson);
-    final editorDraft = excludedDraftTerms.isEmpty
+    var editorDraft = excludedDraftTerms.isEmpty
         ? draftJson
         : _withoutExcludedDraftScope(draftJson);
+    final hasUnperformedRequest = _hasUnperformedRequestItem(
+      materialTaskState,
+    );
+    if (hasUnperformedRequest &&
+        initialValidationIssues.contains(
+          TaskAgentReportRevisionIssue.processNarration,
+        )) {
+      editorDraft = _withoutUngroundedStateClauses(
+        editorDraft,
+        materialTaskState,
+      );
+    }
     var attempts = 0;
     var hadRevision = false;
     var validationIssues = initialValidationIssues.toList(growable: false);
@@ -223,7 +235,11 @@ class TaskAgentReportEditor {
           if (rejectedReportJson != null &&
               !validationIssues.contains(
                 TaskAgentReportRevisionIssue.deferredScopeLeak,
-              ))
+              ) &&
+              !(hasUnperformedRequest &&
+                  validationIssues.contains(
+                    TaskAgentReportRevisionIssue.processNarration,
+                  )))
             'rejectedReport': _withoutExcludedDraftScope(rejectedReportJson),
           'requiredCorrections': [
             for (final issue in validationIssues)
@@ -611,9 +627,14 @@ class TaskAgentReportEditor {
     }
 
     if (_hasCheckmarkCausality(
-      languageCode: languageCode,
-      normalizedCandidate: normalizedCandidate,
-    )) {
+          languageCode: languageCode,
+          normalizedCandidate: normalizedCandidate,
+        ) ||
+        (_hasCheckmarkCausality(
+              languageCode: languageCode,
+              normalizedCandidate: normalizedDraft,
+            ) &&
+            _unsupportedCheckmarkOutcome.hasMatch(normalizedCandidate))) {
       issues.add(TaskAgentReportRevisionIssue.checkmarkCausality);
     }
 
@@ -863,10 +884,7 @@ class TaskAgentReportEditor {
     ).hasMatch(normalizedCandidate);
     if (!candidateAddsWaitingState) return false;
 
-    final checklistItems = switch (materialTaskState['newChecklistItems']) {
-      final List<dynamic> items => items.whereType<String>(),
-      _ => const Iterable<String>.empty(),
-    };
+    final checklistItems = _newChecklistItems(materialTaskState);
     for (final item in checklistItems) {
       final normalizedItem = item.trim().toLowerCase();
       if (!_requestActionPrefix.hasMatch(normalizedItem)) continue;
@@ -877,6 +895,44 @@ class TaskAgentReportEditor {
       if (subjectTerms.any(normalizedCandidate.contains)) return true;
     }
     return false;
+  }
+
+  static bool _hasUnperformedRequestItem(
+    Map<String, Object?> materialTaskState,
+  ) => _newChecklistItems(
+    materialTaskState,
+  ).any((item) => _requestActionPrefix.hasMatch(item.trim().toLowerCase()));
+
+  static Iterable<String> _newChecklistItems(
+    Map<String, Object?> materialTaskState,
+  ) => switch (materialTaskState['newChecklistItems']) {
+    final List<dynamic> items => items.whereType<String>(),
+    _ => const Iterable<String>.empty(),
+  };
+
+  static Map<String, dynamic> _withoutUngroundedStateClauses(
+    Map<String, dynamic> report,
+    Map<String, Object?> materialTaskState,
+  ) {
+    return {
+      for (final field in const ['oneLiner', 'tldr', 'content'])
+        field: _scopeClause
+            .allMatches(report[field] as String? ?? '')
+            .map((match) => match.group(0)!)
+            .where((clause) {
+              final normalizedClause = clause.toLowerCase();
+              return !_hasKnownProcessNarration(
+                    normalizedCandidate: normalizedClause,
+                    hasNewChecklistItems: true,
+                  ) &&
+                  !_inventsWaitingFromUnperformedRequest(
+                    materialTaskState: materialTaskState,
+                    normalizedCandidate: normalizedClause,
+                  );
+            })
+            .join()
+            .trim(),
+    };
   }
 
   static bool _isSentenceInitial(String text, int wordStart) {
@@ -951,6 +1007,9 @@ class TaskAgentReportEditor {
     '^(?:request|ask|contact|anfordern|beantragen|solicitar|pedir|contactar|'
     r'demander|contacter|solicita|contactează|požádat|kontaktovat)\b',
     unicode: true,
+  );
+  static final _unsupportedCheckmarkOutcome = RegExp(
+    r'\b(?:deployed|verified|validated|implemented|applied)\b',
   );
   static const _requestActionStopWords = <String>{
     'request',
