@@ -25,8 +25,10 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
   ///    Audio/Qwen3 Omni Flash, Vision/Qwen3 VL Flash, Image/Wan 2.6)
   /// 2. A test category bound to the seeded Chinese AI Profile
   ///
-  /// The Chinese AI Profile (inference profile) is automatically created
-  /// by ProfileSeedingService on app startup and links to these models.
+  /// The Chinese AI Profile (inference profile) is created by
+  /// ProfileSeedingService once a usable Alibaba provider exists — the
+  /// provider save and `runFtueSetupForType` both trigger seeding — and
+  /// links to these models.
   Future<AlibabaFtueResult?> performAlibabaFtueSetup({
     required BuildContext context,
     required WidgetRef ref,

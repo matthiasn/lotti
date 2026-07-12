@@ -32,7 +32,18 @@ Future<void> aiConfigInitialization(Ref ref) async {
     );
   }
 
-  await profileService.seedDefaults();
+  // Seeding now reads provider rows for its usable-provider gate, so it gets
+  // its own guard: a failed read must not take down the rest of the app's
+  // startup sequence riding on this provider.
+  try {
+    await profileService.seedDefaults();
+  } catch (error, stackTrace) {
+    developer.log(
+      'Failed to seed inference profiles: $error',
+      name: 'aiConfigInitialization',
+      stackTrace: stackTrace,
+    );
+  }
 
   // Isolated from the backfill try/catch so a flaky backfill never skips
   // the profile upgrade pass.
@@ -41,6 +52,19 @@ Future<void> aiConfigInitialization(Ref ref) async {
   } catch (error, stackTrace) {
     developer.log(
       'Failed to upgrade inference profiles: $error',
+      name: 'aiConfigInitialization',
+      stackTrace: stackTrace,
+    );
+  }
+
+  // After upgrades, shed default seeds whose provider type has no usable
+  // provider — installs that seeded the full catalog before seeding was
+  // gated on provider setup, and providers deleted since the last launch.
+  try {
+    await profileService.removeOrphanedDefaultSeeds();
+  } catch (error, stackTrace) {
+    developer.log(
+      'Failed to remove orphaned default profiles: $error',
       name: 'aiConfigInitialization',
       stackTrace: stackTrace,
     );

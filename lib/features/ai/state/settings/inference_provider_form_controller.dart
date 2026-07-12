@@ -277,9 +277,10 @@ class InferenceProviderFormController
         );
       }
 
-      await ProfileSeedingService(
-        aiConfigRepository: repository,
-      ).upgradeExisting();
+      // Seed the profile(s) this provider unlocks before healing existing
+      // ones — profile seeding is gated on a usable provider of the matching
+      // type, so this save may be the moment the profile becomes eligible.
+      await _seedAndUpgradeProfiles(repository);
     }
   }
 
@@ -293,5 +294,33 @@ class InferenceProviderFormController
         updatedAt: DateTime.now(),
       ),
     );
+
+    // Editing a provider can flip it usable (e.g. adding the API key to a
+    // draft) — seed its gated default profile(s) now and heal existing ones
+    // so the profile appears immediately, not on the next app launch.
+    if (config is AiConfigInferenceProvider) {
+      await _seedAndUpgradeProfiles(repository);
+    }
+  }
+
+  /// Best-effort profile seeding + healing after a provider save.
+  ///
+  /// The provider row is already persisted when this runs, so a failure here
+  /// must not bubble into the page's save handler — that would turn a
+  /// successful save into an error toast and block navigation. The next
+  /// startup pass retries the same work anyway.
+  Future<void> _seedAndUpgradeProfiles(AiConfigRepository repository) async {
+    try {
+      final seedingService = ProfileSeedingService(
+        aiConfigRepository: repository,
+      );
+      await seedingService.seedDefaults();
+      await seedingService.upgradeExisting();
+    } catch (error) {
+      DevLogger.log(
+        name: 'InferenceProviderForm',
+        message: 'Profile seeding after provider save failed: $error',
+      );
+    }
   }
 }

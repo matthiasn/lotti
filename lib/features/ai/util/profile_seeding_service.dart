@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -51,6 +52,12 @@ const _mistralSkillAssignments = [
 /// when missing. Existing profiles are not overwritten during seeding; targeted
 /// upgrade migrations live in [upgradeExisting] and preserve user-authored
 /// model slots, flags, names, and skill assignments.
+///
+/// Seeding is gated per provider type: a default profile is only created once
+/// a *usable* provider of its type exists (see [providerTypeByProfileId] and
+/// [AiConfigInferenceProviderUsability.isUsable]). Fresh installs therefore
+/// start with zero profiles, and each provider setup surfaces exactly its own
+/// profile(s) instead of the full bundled catalog.
 class ProfileSeedingService {
   const ProfileSeedingService({
     required AiConfigRepository aiConfigRepository,
@@ -58,18 +65,51 @@ class ProfileSeedingService {
 
   final AiConfigRepository _repo;
 
-  /// Seeds all default profiles. Safe to call multiple times.
+  /// The provider type whose setup makes each default profile functional.
+  ///
+  /// [seedDefaults] only seeds a profile when a usable provider of its mapped
+  /// type exists, and [removeOrphanedDefaultSeeds] removes untouched seeds
+  /// whose mapped type has no usable provider left. Every entry in
+  /// [defaultProfiles] must have a mapping here (enforced by test).
+  static const providerTypeByProfileId = <String, InferenceProviderType>{
+    profileGeminiFlashId: InferenceProviderType.gemini,
+    profileGeminiProId: InferenceProviderType.gemini,
+    profileOpenAiId: InferenceProviderType.openAi,
+    profileMistralEuId: InferenceProviderType.mistral,
+    profileMeliousId: InferenceProviderType.melious,
+    profileAlibabaId: InferenceProviderType.alibaba,
+    profileAnthropicId: InferenceProviderType.anthropic,
+    profileLocalId: InferenceProviderType.ollama,
+    profileLocalPowerId: InferenceProviderType.omlx,
+    profileLocalGemmaOmlxId: InferenceProviderType.omlx,
+    profileLocalGemmaId: InferenceProviderType.ollama,
+    profileLocalGemmaPowerId: InferenceProviderType.ollama,
+  };
+
+  /// Seeds the default profiles whose provider type has a usable provider.
+  /// Safe to call multiple times.
   ///
   /// Only creates profiles that do not already exist by ID. Existing
   /// profiles — even if their model IDs or flags differ from the seed
   /// targets in code — are left untouched. This preserves user edits to
   /// the bundled defaults (e.g. swapping the Ollama profile's thinking
   /// model) across app restarts.
+  ///
+  /// Profiles whose provider type has no usable provider row (per
+  /// [AiConfigInferenceProviderUsability.isUsable]) are skipped entirely, so
+  /// the profile picker never fills up with entries that cannot serve a
+  /// single request. Runs at startup and again right after a provider is
+  /// created, updated, or finishes FTUE setup, so completing a provider
+  /// setup surfaces its profile immediately.
   Future<void> seedDefaults() async {
     var seededCount = 0;
     final models = await _fetchModelRows();
+    final usableTypes = await _fetchUsableProviderTypes();
 
     for (final template in defaultProfiles) {
+      if (!usableTypes.contains(providerTypeByProfileId[template.id])) {
+        continue;
+      }
       final existing = await _repo.getConfigById(template.id);
       if (existing != null) continue;
       final profile = _withResolvedModelConfigIds(template, models);
@@ -79,6 +119,75 @@ class ProfileSeedingService {
 
     if (seededCount > 0) {
       developer.log('Profiles: seeded $seededCount', name: _logTag);
+    }
+  }
+
+  /// Removes seeded default profiles that cannot serve any request because
+  /// no usable provider of their mapped type exists (anymore).
+  ///
+  /// This is the retroactive counterpart to the [seedDefaults] gate: installs
+  /// that seeded the full catalog before the gate existed — or that deleted a
+  /// provider after its profile was seeded — shed the dead entries here.
+  ///
+  /// Deliberately conservative: a profile is only removed when it is still
+  /// recognizable as an untouched seed (template name — or the known legacy
+  /// Local Power name — no description, no pinned host, template flags) AND
+  /// none of its model slots resolve to a model row owned by a usable
+  /// provider. Anything the user renamed, described, pinned, or rewired to a
+  /// working provider survives. Skill assignments are not inspected: they are
+  /// inert while no slot can resolve a provider, and re-seeding restores the
+  /// defaults if the provider returns.
+  ///
+  /// Runs at startup only (after [upgradeExisting]), so a mid-session
+  /// provider deletion with undo cannot race the cleanup.
+  Future<void> removeOrphanedDefaultSeeds() async {
+    final providers = await _fetchProviderRows();
+    final usableProviders = providers
+        .where((provider) => provider.isUsable)
+        .toList(growable: false);
+    final usableTypes = {
+      for (final provider in usableProviders) provider.inferenceProviderType,
+    };
+    final usableProviderIds = {
+      for (final provider in usableProviders) provider.id,
+    };
+    final models = await _fetchModelRows();
+    // Every value a profile slot could carry — row ID or legacy
+    // `providerModelId` — for models owned by a usable provider, so the
+    // per-slot check below is a set lookup instead of a scan over all rows.
+    final usableModelSlotValues = <String>{
+      for (final model in models)
+        if (usableProviderIds.contains(model.inferenceProviderId)) ...[
+          model.id,
+          model.providerModelId,
+        ],
+    };
+    final templatesById = {
+      for (final template in defaultProfiles) template.id: template,
+    };
+    final configs = await _repo.getConfigsByType(AiConfigType.inferenceProfile);
+
+    var removedCount = 0;
+    for (final config in configs.whereType<AiConfigInferenceProfile>()) {
+      final template = templatesById[config.id];
+      if (template == null) continue;
+      if (usableTypes.contains(providerTypeByProfileId[config.id])) continue;
+      if (!_isRemovableOrphanedSeed(
+        config,
+        template,
+        usableModelSlotValues: usableModelSlotValues,
+      )) {
+        continue;
+      }
+      await _repo.deleteConfig(config.id);
+      removedCount++;
+    }
+
+    if (removedCount > 0) {
+      developer.log(
+        'Profiles: removed $removedCount orphaned default seeds',
+        name: _logTag,
+      );
     }
   }
 
@@ -566,6 +675,59 @@ class ProfileSeedingService {
   Future<List<AiConfigModel>> _fetchModelRows() async {
     final configs = await _repo.getConfigsByType(AiConfigType.model);
     return configs.whereType<AiConfigModel>().toList(growable: false);
+  }
+
+  Future<List<AiConfigInferenceProvider>> _fetchProviderRows() async {
+    final configs = await _repo.getConfigsByType(
+      AiConfigType.inferenceProvider,
+    );
+    return configs.whereType<AiConfigInferenceProvider>().toList(
+      growable: false,
+    );
+  }
+
+  Future<Set<InferenceProviderType>> _fetchUsableProviderTypes() async {
+    final providers = await _fetchProviderRows();
+    return {
+      for (final provider in providers)
+        if (provider.isUsable) provider.inferenceProviderType,
+    };
+  }
+
+  /// Whether [profile] is still an untouched default seed that no usable
+  /// provider can serve — the only state [removeOrphanedDefaultSeeds] is
+  /// allowed to delete.
+  ///
+  /// A slot value found in [usableModelSlotValues] means the profile can
+  /// still serve requests (e.g. the user rewired it to another provider),
+  /// so the cleanup pass must keep it.
+  static bool _isRemovableOrphanedSeed(
+    AiConfigInferenceProfile profile,
+    AiConfigInferenceProfile template, {
+    required Set<String> usableModelSlotValues,
+  }) {
+    final nameUntouched =
+        profile.name == template.name ||
+        (profile.id == profileLocalPowerId &&
+            profile.name == _legacyLocalPowerName);
+    if (!nameUntouched ||
+        profile.description != null ||
+        profile.pinnedHostId != null ||
+        profile.isDefault != template.isDefault ||
+        profile.desktopOnly != template.desktopOnly) {
+      return false;
+    }
+
+    final slots = [
+      profile.thinkingModelId,
+      profile.thinkingHighEndModelId,
+      profile.imageRecognitionModelId,
+      profile.transcriptionModelId,
+      profile.imageGenerationModelId,
+    ];
+    return !slots.any(
+      (slot) => slot != null && usableModelSlotValues.contains(slot),
+    );
   }
 
   static AiConfigInferenceProfile _withResolvedModelConfigIds(

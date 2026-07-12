@@ -111,15 +111,19 @@ Future<AiFtueResult?> runFtueSetupForType({
   };
 
   if (result != null) {
-    // The FTUE just created or re-verified this provider's model rows. If a
-    // previous deletion of a same-type provider left seeded default profiles
-    // pointing at dead rows, heal them now — task structuring, transcription,
-    // and agent wakes resolve through the profile the moment onboarding hands
-    // the user their first capture, not on the next app launch.
+    // The FTUE just created or re-verified this provider's model rows. Seed
+    // the profile(s) gated on this provider type (onboarding binds its
+    // categories to the profile ID right after this), then heal profiles a
+    // previous same-type provider deletion left pointing at dead rows — task
+    // structuring, transcription, and agent wakes resolve through the profile
+    // the moment onboarding hands the user their first capture, not on the
+    // next app launch.
     try {
-      await ProfileSeedingService(
+      final seedingService = ProfileSeedingService(
         aiConfigRepository: aiConfigRepository,
-      ).upgradeExisting();
+      );
+      await seedingService.seedDefaults();
+      await seedingService.upgradeExisting();
     } catch (e, stackTrace) {
       developer.log(
         'Profile repair after FTUE setup failed: $e',

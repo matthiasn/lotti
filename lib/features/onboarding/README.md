@@ -198,8 +198,10 @@ stateDiagram-v2
 - **Native provider creation.** Unlike a settings deep-link, the flow creates the
   provider **in place**: `OnboardingApiKeyPanel` runs the existing per-provider
   FTUE setup (`runFtueSetupForType` → `performXxxFtueSetup`), which creates the
-  provider, ensures its known **models** exist, and reuses the startup-seeded
-  inference **profile**. Crucially it passes `createDefaultCategory: false` — the
+  provider, ensures its known **models** exist, and seeds the provider's
+  inference **profile** (profile seeding is gated on a usable provider of the
+  matching type, so this connect step is what makes the profile appear).
+  Crucially it passes `createDefaultCategory: false` — the
   onboarding category step owns category creation instead of auto-seeding a
   throwaway "Test Category".
 - **Connect does not celebrate.** A quiet `OnboardingSuccessView` beat (checkmark

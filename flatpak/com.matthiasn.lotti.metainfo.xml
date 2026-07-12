@@ -48,6 +48,7 @@
           <p>Habit and agent-heavy screens spend less time waiting on the database. Habit heatmaps now load only the latest completion per habit/day, and agent summary/feedback paths batch payload lookups instead of firing many individual reads.</p>
           <p>The debug-only Onboarding animation gallery (Settings → Advanced → Maintenance) no longer leaves the floating bottom navigation bar stacked on top of it on phones. It now escapes onto the root navigator the same way other pushed debug/editor surfaces already do.</p>
           <p>A new Settings → Recording Style page lets you choose the VU meter or energy-orb visualization for the mic — with the same live preview and "Try with your voice" toggle from onboarding — and the real recording screen now honors your choice instead of always showing the VU meter.</p>
+          <p>AI profile pickers only show profiles you can actually use. Default inference profiles are no longer seeded for providers you haven't set up: each bundled profile now appears only once a working provider of its type exists — connect Melious.ai and you get exactly the Melious profile, nothing more. Untouched leftover profiles for providers that were never set up (or have since been deleted) are cleaned up on the next launch; any profile you renamed, described, or rewired to another provider is kept.</p>
       </description>
     </release>
     <release version="0.9.1032" date="2026-07-06">
