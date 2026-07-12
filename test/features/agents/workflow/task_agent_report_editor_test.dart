@@ -285,6 +285,183 @@ void main() {
     }
   });
 
+  test('validation rejects localized resolution claims from checkmarks', () {
+    const cases = [
+      (
+        languageCode: 'en',
+        text:
+            'The prior fix was user-marked complete, so the issue is resolved.',
+      ),
+      (
+        languageCode: 'de',
+        text:
+            'Der Nutzer hat den Fix als erledigt markiert, daher ist das '
+            'Problem gelöst.',
+      ),
+      (
+        languageCode: 'es',
+        text:
+            'El usuario marcó el arreglo como completado, así que el problema '
+            'está resuelto.',
+      ),
+      (
+        languageCode: 'fr',
+        text:
+            'L’utilisateur a marqué le correctif comme terminé, donc le '
+            'problème est résolu.',
+      ),
+      (
+        languageCode: 'cs',
+        text:
+            'Uživatel označil opravu jako dokončenou, proto je problém vyřešen.',
+      ),
+      (
+        languageCode: 'ro',
+        text:
+            'Utilizatorul a marcat remedierea ca finalizată, deci problema '
+            'este rezolvată.',
+      ),
+    ];
+
+    for (final testCase in cases) {
+      final issues = TaskAgentReportEditor.validateRevision(
+        languageCode: testCase.languageCode,
+        materialTaskState: const {},
+        draftReport: const {
+          'oneLiner': 'Investigate the current issue',
+          'tldr': 'The prior fix was marked complete.',
+          'content': 'Continue the investigation.',
+        },
+        candidateReport: {
+          'oneLiner': 'Investigate the current issue',
+          'tldr': testCase.text,
+          'content': 'Continue the investigation.',
+        },
+      );
+
+      expect(
+        issues,
+        contains(TaskAgentReportRevisionIssue.checkmarkCausality),
+        reason: testCase.languageCode,
+      );
+    }
+  });
+
+  test('validation rejects localized checkmark evidence disclaimers', () {
+    const cases = [
+      (languageCode: 'en', text: 'The checkmark is not proof of resolution.'),
+      (
+        languageCode: 'de',
+        text: 'Die Markierung belegt nicht, dass der Fehler behoben ist.',
+      ),
+      (
+        languageCode: 'es',
+        text: 'La marca no confirma que el problema esté resuelto.',
+      ),
+      (
+        languageCode: 'fr',
+        text: 'La marque ne confirme pas que le problème est résolu.',
+      ),
+      (
+        languageCode: 'cs',
+        text: 'Označení nepotvrzuje, že je problém vyřešený.',
+      ),
+      (
+        languageCode: 'ro',
+        text: 'Marcajul nu confirmă că problema este rezolvată.',
+      ),
+    ];
+
+    for (final testCase in cases) {
+      final issues = TaskAgentReportEditor.validateRevision(
+        languageCode: testCase.languageCode,
+        materialTaskState: const {},
+        draftReport: const {
+          'oneLiner': 'Investigate the current issue',
+          'tldr': 'The prior fix was marked complete.',
+          'content': 'Continue the investigation.',
+        },
+        candidateReport: {
+          'oneLiner': 'Investigate the current issue',
+          'tldr': testCase.text,
+          'content': 'Continue the investigation.',
+        },
+      );
+
+      expect(
+        issues,
+        contains(TaskAgentReportRevisionIssue.checkmarkCausality),
+        reason: testCase.languageCode,
+      );
+    }
+  });
+
+  test('validation preserves active risks in every supported language', () {
+    const cases = [
+      (
+        languageCode: 'en',
+        draft: 'Root cause investigation remains active.',
+        preserved: 'Continue the root cause investigation.',
+      ),
+      (
+        languageCode: 'de',
+        draft: 'Die Ursache des wiederkehrenden Fehlers wird untersucht.',
+        preserved: 'Die Ursache weiter untersuchen.',
+      ),
+      (
+        languageCode: 'es',
+        draft: 'La causa raíz del error recurrente sigue bajo investigación.',
+        preserved: 'Investigar la causa raíz.',
+      ),
+      (
+        languageCode: 'fr',
+        draft: 'La cause racine du problème récurrent reste à examiner.',
+        preserved: 'Examiner la cause racine.',
+      ),
+      (
+        languageCode: 'cs',
+        draft: 'Vyšetřování hlavní příčiny opakující se chyby pokračuje.',
+        preserved: 'Prošetřit hlavní příčinu.',
+      ),
+      (
+        languageCode: 'ro',
+        draft:
+            'Investigația cauzei principale a erorii recurente rămâne activă.',
+        preserved: 'Investigați cauza principală.',
+      ),
+    ];
+
+    for (final testCase in cases) {
+      List<TaskAgentReportRevisionIssue> validate(String content) {
+        return TaskAgentReportEditor.validateRevision(
+          languageCode: testCase.languageCode,
+          materialTaskState: const {},
+          draftReport: {
+            'oneLiner': testCase.draft,
+            'tldr': testCase.draft,
+            'content': testCase.draft,
+          },
+          candidateReport: {
+            'oneLiner': 'Current action',
+            'tldr': 'Current action remains open.',
+            'content': content,
+          },
+        );
+      }
+
+      expect(
+        validate('Continue the current action.'),
+        contains(TaskAgentReportRevisionIssue.missingActiveRisk),
+        reason: '${testCase.languageCode} must reject an omitted risk',
+      );
+      expect(
+        validate(testCase.preserved),
+        isNot(contains(TaskAgentReportRevisionIssue.missingActiveRisk)),
+        reason: '${testCase.languageCode} must accept the preserved risk',
+      );
+    }
+  });
+
   test('validation accepts localized equivalent anchors', () {
     final issues = TaskAgentReportEditor.validateRevision(
       languageCode: 'de',
@@ -820,7 +997,7 @@ void main() {
     expect(repository.deleteCount, 2);
   });
 
-  test('editor attempt bound is asserted', () {
+  test('editor attempt bound is enforced at runtime', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
     final conversationRepository = container.read(
@@ -834,15 +1011,18 @@ void main() {
       ).maxAttempts,
       TaskAgentReportEditor.productionMaxAttempts,
     );
-    expect(
-      () => TaskAgentReportEditor(
-        conversationRepository: conversationRepository,
-        inferenceRepository: _QueuedInferenceRepository(const []),
-        provider: provider,
-        maxAttempts: 0,
-      ),
-      throwsAssertionError,
-    );
+    for (final maxAttempts in [0, 4]) {
+      expect(
+        () => TaskAgentReportEditor(
+          conversationRepository: conversationRepository,
+          inferenceRepository: _QueuedInferenceRepository(const []),
+          provider: provider,
+          maxAttempts: maxAttempts,
+        ),
+        throwsArgumentError,
+        reason: 'maxAttempts=$maxAttempts',
+      );
+    }
   });
 }
 

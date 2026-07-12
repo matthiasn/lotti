@@ -42,6 +42,8 @@ and latency but not Melious energy metadata.
 
 ## Scenarios
 
+The default suite contains 13 scenario IDs. The eleven core scenarios are:
+
 - `metadata_explicit`: four explicit task-field changes plus a first report.
 - `german_voice_plan`: German voice-note extraction into four distinct checklist
   actions while preserving owners, sequence, and deadline context.
@@ -62,6 +64,13 @@ and latency but not Melious energy metadata.
   item, and leave deployment pending.
 - `latest_deadline_wins`: resolve a long timeline using the newest explicit
   decision.
+
+The two additional held-out constraint scenarios are:
+
+- `deferred_scope_filter`: exclude a specifically deferred idea from both task
+  mutations and the public report.
+- `active_deployment_constraint`: keep deployment pending and its active
+  external constraint visible.
 
 The default run uses the `production` prompt only. `compactModel` adds an
 explicit extract, mutate, verify, and report sequence. `qualityFocused` adds a
@@ -90,6 +99,11 @@ Set `LOTTI_MELIOUS_ENV_FILE` or `MELIOUS_API_KEY` for another environment. Use
 Set `LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE=twoPass` to reproduce the rejected
 two-pass orchestration experiment described below. The default is
 `singlePass`.
+
+The judge accepts only HTTP(S) endpoints on `api.melious.ai` by default. When a
+deliberate proxy or alternate endpoint is configured with `MELIOUS_BASE_URL` or
+`UP_UPSTREAM_BASE_URL`, add its exact hostname to the comma-separated
+`TASK_AGENT_EVAL_ALLOWED_JUDGE_HOSTS` allowlist.
 
 Each invocation writes to a unique
 `build/task_agent_model_eval/<UTC timestamp>_<Lotti commit>/` directory by

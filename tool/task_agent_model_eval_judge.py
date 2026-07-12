@@ -11,11 +11,15 @@ import os
 import re
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from decimal import Decimal
 from pathlib import Path
 
 DEFAULT_JUDGE_MODEL = "qwen3.5-122b-a10b"
+DEFAULT_JUDGE_BASE_URL = "https://api.melious.ai/v1"
+DEFAULT_ALLOWED_JUDGE_HOSTS = frozenset({"api.melious.ai"})
+ALLOWED_JUDGE_HOSTS_ENV = "TASK_AGENT_EVAL_ALLOWED_JUDGE_HOSTS"
 JUDGE_PIPELINE_VERSION = 2
 JUDGE_RESPONSE_ATTEMPTS = 2
 REPAIR_PROMPT = """
@@ -49,10 +53,33 @@ report says the term was excluded, deferred, or not added.
 """.strip()
 
 
+def _allowed_judge_hosts() -> frozenset[str]:
+    configured = os.getenv(ALLOWED_JUDGE_HOSTS_ENV, "")
+    return DEFAULT_ALLOWED_JUDGE_HOSTS | frozenset(
+        host.strip().lower() for host in configured.split(",") if host.strip()
+    )
+
+
+def _validate_judge_url(url: str) -> str:
+    try:
+        parsed = urllib.parse.urlparse(url)
+        hostname = parsed.hostname
+    except (TypeError, ValueError) as error:
+        raise ValueError("Judge URL must be a valid HTTP(S) URL") from error
+    if parsed.scheme not in {"http", "https"} or not hostname:
+        raise ValueError("Judge URL must be a valid HTTP(S) URL")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("Judge URL must not contain credentials")
+    if hostname.lower() not in _allowed_judge_hosts():
+        raise ValueError(f"Judge URL host is not allowed: {hostname}")
+    return url
+
+
 def _post(url: str, key: str, body: dict) -> dict:
+    validated_url = _validate_judge_url(url)
     for attempt in range(3):
         request = urllib.request.Request(
-            url,
+            validated_url,
             data=json.dumps(body).encode(),
             headers={
                 "Authorization": f"Bearer {key}",
@@ -84,24 +111,27 @@ def _json_object(text: str) -> dict:
 
 
 def _valid_judgment(judgment: dict) -> bool:
-    score_keys = (
+    rubric_keys = (
         "factualGrounding",
         "requiredCoverage",
         "checklistQuality",
         "summaryQuality",
         "formatCompliance",
-        "overall",
     )
-    scores = [judgment.get(key) for key in score_keys]
+    rubric_scores = [judgment.get(key) for key in rubric_keys]
+    overall = judgment.get("overall")
     findings = judgment.get("findings")
     return (
         all(
-            isinstance(score, (int, float))
+            isinstance(score, int)
             and not isinstance(score, bool)
-            and math.isfinite(float(score))
             and 0 <= score <= 4
-            for score in scores
+            for score in rubric_scores
         )
+        and isinstance(overall, (int, float))
+        and not isinstance(overall, bool)
+        and math.isfinite(float(overall))
+        and 0 <= overall <= 4
         and judgment.get("verdict") in {"excellent", "good", "weak", "failed"}
         and isinstance(findings, list)
         and len(findings) <= 5
@@ -329,9 +359,13 @@ def main() -> None:
     key = os.getenv("MELIOUS_API_KEY") or os.getenv("UP_UPSTREAM_API_KEY")
     if not key:
         raise SystemExit("Missing MELIOUS_API_KEY or UP_UPSTREAM_API_KEY")
-    base_url = os.getenv("MELIOUS_BASE_URL") or os.getenv(
-        "UP_UPSTREAM_BASE_URL", "https://api.melious.ai/v1"
+    configured_base_url = os.getenv("MELIOUS_BASE_URL") or os.getenv(
+        "UP_UPSTREAM_BASE_URL", DEFAULT_JUDGE_BASE_URL
     )
+    try:
+        base_url = _validate_judge_url(configured_base_url)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     report = json.loads(args.input.read_text(encoding="utf-8"))
     scenarios = _scenario_by_id(report)
     previous_by_case = {}

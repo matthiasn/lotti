@@ -385,11 +385,12 @@ evaluator as a Melious model and prompt matrix. The built-in candidates are
 Mistral Small 4 119B Instruct, Qwen3.5 122B A10B, DeepSeek V4 Flash, and GLM
 5.2. The runner defaults to the dedicated Melious provider path so live evals
 exercise the same request and impact-accounting implementation as the app. The
-default production-prompt suite
-contains thirteen synthetic but app-shaped wakes covering explicit mutations,
-noisy multilingual transcripts, prior reports, no-op background refreshes,
-stale evidence, user overrides, checklist deduplication, external links, and
-long timelines, plus held-out deferred scope and active deployment constraints.
+default production-prompt suite contains thirteen synthetic but app-shaped
+wakes: eleven core scenarios cover explicit mutations, noisy multilingual
+transcripts, prior reports, no-op background refreshes, stale evidence, user
+overrides, checklist deduplication, external links, and long timelines; two
+additional held-out scenarios cover deferred scope and active deployment
+constraints.
 Deterministic checks validate required mutations and report
 facts as well as forbidden tools, speculative checklist content, report churn,
 and internal-ID leakage. Missing first reports go through the same report-only

@@ -1807,7 +1807,6 @@ class LocalTaskAgentInferenceEvalRunner {
             !strategy.hasReport;
         if (plannedReportEditing) {
           usedForcedReportRetry = true;
-          strategy.beginReportPass();
           final editResult = await _editReport(
             profile: profile,
             scenario: scenario,
@@ -2019,10 +2018,6 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
 
   List<LocalTaskAgentEvalToolCall> get toolCalls =>
       List.unmodifiable(_toolCalls);
-
-  int get reportCallCount => _toolCalls
-      .where((call) => call.name == TaskAgentToolNames.updateReport)
-      .length;
 
   Map<String, dynamic>? get latestReportArguments {
     for (final call in _toolCalls.reversed) {

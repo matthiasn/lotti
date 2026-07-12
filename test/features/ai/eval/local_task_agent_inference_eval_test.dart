@@ -1405,7 +1405,6 @@ void main() {
               }),
             ),
           ]),
-          _usage(inputTokens: 100, outputTokens: 20),
         ],
         [
           _toolCalls([
@@ -1440,8 +1439,8 @@ void main() {
 
       final result = report.results.single;
       expect(result.failureCategory, LocalTaskAgentEvalFailureCategory.none);
-      expect(result.inputTokens, 150);
-      expect(result.outputTokens, 30);
+      expect(result.inputTokens, 50);
+      expect(result.outputTokens, 10);
       expect(result.usedForcedReportRetry, isTrue);
       expect(result.reportEditorAttempts, 1);
       expect(result.reportEditorValidationIssues, isEmpty);

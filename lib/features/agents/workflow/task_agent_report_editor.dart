@@ -126,10 +126,15 @@ class TaskAgentReportEditor {
     this.modelId = meliousQwen35122BA10BModelId,
     this.maxAttempts = productionMaxAttempts,
     this.temperature = 0,
-  }) : assert(
-         maxAttempts >= 1 && maxAttempts <= 3,
-         'maxAttempts must be between 1 and 3.',
-       );
+  }) {
+    if (maxAttempts < 1 || maxAttempts > productionMaxAttempts) {
+      throw ArgumentError.value(
+        maxAttempts,
+        'maxAttempts',
+        'must be between 1 and $productionMaxAttempts',
+      );
+    }
+  }
 
   /// Production bound: one initial candidate and at most two repairs.
   static const productionMaxAttempts = 3;
@@ -499,31 +504,25 @@ class TaskAgentReportEditor {
       issues.add(TaskAgentReportRevisionIssue.processNarration);
     }
 
-    const causalFragments = [
-      'did not prevent',
-      'failed to prevent',
-      'fix failed',
-      'fix reverted',
-      'issue persists',
-      'problem persists',
-      'problem besteht fort',
-      'does not confirm',
-      "doesn't confirm",
-      'not proof',
-      'bestätigt nicht',
-      'belegt nicht',
-      'no confirma',
-      'ne confirme pas',
-    ];
+    final causalFragments = <String>{
+      ..._causalFragmentsByLanguage['en']!,
+      ...?_causalFragmentsByLanguage[languageCode],
+    };
     if (causalFragments.any(normalizedCandidate.contains)) {
       issues.add(TaskAgentReportRevisionIssue.checkmarkCausality);
     }
-    final claimsResolutionFromCheckmark = RegExp(
-      r'\b(resolved|fixed|implemented|applied|deployed|verified|validated)\b'
-      r'.{0,60}\b(user-marked|user marked|marked complete)\b|'
-      r'\b(user-marked|user marked|marked complete)\b.{0,60}'
-      r'\b(resolved|fixed|implemented|applied|deployed|verified|validated)\b',
-    ).hasMatch(normalizedCandidate);
+    final localizedCheckmarkPattern = _checkmarkCausalityPatterns[languageCode];
+    final checkmarkPatterns = <({String resolution, String checkmark})>{
+      _checkmarkCausalityPatterns['en']!,
+      ?localizedCheckmarkPattern,
+    };
+    final claimsResolutionFromCheckmark = checkmarkPatterns.any(
+      (patterns) => _containsNearbyPatterns(
+        normalizedCandidate,
+        patterns.resolution,
+        patterns.checkmark,
+      ),
+    );
     if (claimsResolutionFromCheckmark) {
       issues.add(TaskAgentReportRevisionIssue.checkmarkCausality);
     }
@@ -575,29 +574,14 @@ class TaskAgentReportEditor {
       issues.add(TaskAgentReportRevisionIssue.formalRegister);
     }
 
-    const activeRiskTerms = [
-      'root cause',
-      'reappear',
-      'resurfac',
-      'recurr',
-      'blocked until',
-      'pending until',
-      'active risk',
-      'risiko',
-      'bloquead',
-    ];
-    const reportedRiskTerms = [
-      'blocker',
-      'blocked',
-      'risk',
-      'root cause',
-      'investigat',
-      'risiko',
-      'ursache',
-      'bloquead',
-      'bloqueador',
-      'pendiente',
-    ];
+    final activeRiskTerms = <String>{
+      ..._activeRiskTermsByLanguage['en']!,
+      ...?_activeRiskTermsByLanguage[languageCode],
+    };
+    final reportedRiskTerms = <String>{
+      ..._reportedRiskTermsByLanguage['en']!,
+      ...?_reportedRiskTermsByLanguage[languageCode],
+    };
     if (activeRiskTerms.any(normalizedDraft.contains) &&
         !reportedRiskTerms.any(normalizedCandidate.contains)) {
       issues.add(TaskAgentReportRevisionIssue.missingActiveRisk);
@@ -605,6 +589,196 @@ class TaskAgentReportEditor {
 
     return issues.toList(growable: false);
   }
+
+  static bool _containsNearbyPatterns(
+    String text,
+    String firstPattern,
+    String secondPattern,
+  ) {
+    return RegExp(
+      '(?:$firstPattern).{0,100}(?:$secondPattern)|'
+      '(?:$secondPattern).{0,100}(?:$firstPattern)',
+    ).hasMatch(text);
+  }
+
+  static const _causalFragmentsByLanguage = <String, List<String>>{
+    'en': [
+      'did not prevent',
+      'failed to prevent',
+      'fix failed',
+      'fix reverted',
+      'issue persists',
+      'problem persists',
+      'does not confirm',
+      "doesn't confirm",
+      'not proof',
+    ],
+    'cs': ['nezabránilo', 'problém přetrvává', 'nepotvrzuje', 'není důkaz'],
+    'de': [
+      'hat nicht verhindert',
+      'verhinderte nicht',
+      'fehler besteht fort',
+      'problem besteht fort',
+      'bestätigt nicht',
+      'belegt nicht',
+    ],
+    'es': [
+      'no evitó',
+      'no ha evitado',
+      'el problema persiste',
+      'no confirma',
+      'no demuestra',
+    ],
+    'fr': [
+      "n'a pas empêché",
+      'n’a pas empêché',
+      'le problème persiste',
+      'ne confirme pas',
+      'ne prouve pas',
+    ],
+    'ro': [
+      'nu a prevenit',
+      'problema persistă',
+      'nu confirmă',
+      'nu dovedește',
+    ],
+  };
+
+  static const _checkmarkCausalityPatterns = <String, ({String resolution, String checkmark})>{
+    'en': (
+      resolution:
+          r'\b(?:resolved|fixed|implemented|applied|deployed|verified|validated)\b',
+      checkmark:
+          r'\b(?:user-marked|user marked|marked complete|marked as complete)\b',
+    ),
+    'cs': (
+      resolution: r'\b(?:vyřešen|opraven|implementov|nasazen|ověřen|validov)',
+      checkmark:
+          '(?:uživatel.{0,50}označ.{0,30}(?:dokončen|hotov)|označ.{0,30}(?:dokončen|hotov).{0,30}uživatel)',
+    ),
+    'de': (
+      resolution:
+          r'\b(?:gelöst|behoben|umgesetzt|implementier|angewend|bereitgestell|verifizier|validier)',
+      checkmark:
+          '(?:nutzer.{0,50}(?:(?:erledigt|abgeschlossen).{0,20}markiert|markiert.{0,30}(?:erledigt|abgeschlossen))|(?:erledigt|abgeschlossen).{0,20}markiert.{0,30}nutzer)',
+    ),
+    'es': (
+      resolution:
+          r'\b(?:resuelt|arreglad|corregid|implementad|aplicad|desplegad|verificad|validad)',
+      checkmark:
+          '(?:usuario.{0,50}marc.{0,30}(?:complet|terminad)|marc.{0,30}(?:complet|terminad).{0,30}usuario)',
+    ),
+    'fr': (
+      resolution: r'\b(?:résolu|corrig|implément|appliqu|déploy|vérifi|validé)',
+      checkmark:
+          '(?:utilisateur.{0,50}marqu.{0,30}(?:termin|achev|compl)|marqu.{0,30}(?:termin|achev|compl).{0,30}utilisateur)',
+    ),
+    'ro': (
+      resolution:
+          r'\b(?:rezolvat|remediat|implementat|aplicat|lansat|verificat|validat)',
+      checkmark:
+          '(?:utilizator.{0,50}marcat.{0,30}(?:finalizat|complet)|marcat.{0,30}(?:finalizat|complet).{0,30}utilizator)',
+    ),
+  };
+
+  static const _activeRiskTermsByLanguage = <String, List<String>>{
+    'en': [
+      'root cause',
+      'reappear',
+      'resurfac',
+      'recurr',
+      'blocked until',
+      'pending until',
+      'active risk',
+    ],
+    'cs': [
+      'hlavní příčin',
+      'kořenov',
+      'znovu obje',
+      'vrací se',
+      'opakuj',
+      'blokován',
+      'blokována',
+      'čeká na',
+      'aktivní riziko',
+      'riziko',
+    ],
+    'de': [
+      'wurzelursache',
+      'ursache',
+      'wiederkehr',
+      'wieder auf',
+      'erneut auf',
+      'blockiert bis',
+      'ausstehend bis',
+      'aktives risiko',
+      'risiko',
+    ],
+    'es': [
+      'causa raíz',
+      'reaparec',
+      'resurg',
+      'recurr',
+      'bloquead',
+      'pendiente hasta',
+      'riesgo activo',
+      'riesgo',
+    ],
+    'fr': [
+      'cause racine',
+      'réappar',
+      'ressurg',
+      'récurr',
+      'bloqué',
+      'bloquée',
+      'en attente jusqu',
+      'risque actif',
+      'risque',
+    ],
+    'ro': [
+      'cauza principală',
+      'cauza rădăcină',
+      'reapăr',
+      'recuren',
+      'blocat',
+      'blocată',
+      'în așteptare până',
+      'risc activ',
+      'risc',
+    ],
+  };
+
+  static const _reportedRiskTermsByLanguage = <String, List<String>>{
+    'en': ['blocker', 'blocked', 'risk', 'root cause', 'investigat'],
+    'cs': [
+      'blokace',
+      'blokován',
+      'blokována',
+      'riziko',
+      'příčin',
+      'prošetř',
+      'vyšetř',
+    ],
+    'de': ['blocker', 'blockiert', 'risiko', 'ursache', 'untersuch'],
+    'es': [
+      'bloqueador',
+      'bloquead',
+      'riesgo',
+      'causa raíz',
+      'investig',
+      'pendiente',
+    ],
+    'fr': [
+      'blocage',
+      'bloqué',
+      'bloquée',
+      'risque',
+      'cause racine',
+      'enquêt',
+      'examin',
+    ],
+    'ro': ['blocaj', 'blocat', 'blocată', 'risc', 'cauz', 'investig'],
+  };
 
   static const _languageInstructions = {
     'en': 'English',

@@ -92,6 +92,32 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
   }
 }
 
+class _FakeMistralInferenceRepository extends MistralInferenceRepository {
+  final textCalls =
+      <({String prompt, String model, ReasoningEffort? reasoningEffort})>[];
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateText({
+    required String prompt,
+    required String model,
+    required String baseUrl,
+    required String apiKey,
+    String? systemMessage,
+    double? temperature,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    ReasoningEffort? reasoningEffort,
+  }) {
+    textCalls.add((
+      prompt: prompt,
+      model: model,
+      reasoningEffort: reasoningEffort,
+    ));
+    return Stream.value(_FakeMeliousInferenceRepository._chunk('mistral text'));
+  }
+}
+
 class _FakeMistralOcrRepository extends MistralOcrRepository {
   final calls =
       <({String model, String baseUrl, String apiKey, List<String> images})>[];
@@ -326,6 +352,39 @@ void main() {
         () => client.createChatCompletionStream(
           request: any(named: 'request'),
         ),
+      );
+    });
+
+    test('routes reasoning effort to the Mistral repository', () async {
+      final fakeMistralRepo = _FakeMistralInferenceRepository();
+      addTearDown(fakeMistralRepo.close);
+      generate = CloudInferenceGenerate(
+        ollamaRepository: ollamaRepo,
+        geminiRepository: geminiRepo,
+        meliousRepository: meliousRepo,
+        mistralRepository: fakeMistralRepo,
+        mistralOcrRepository: mistralOcrRepo,
+        helpers: const CloudInferenceRequestHelpers(),
+      );
+
+      final chunks = await generate
+          .generate(
+            prompt,
+            model: 'mistral-small-latest',
+            temperature: 0.2,
+            baseUrl: 'https://api.mistral.ai/v1',
+            apiKey: 'sk-mistral-test',
+            provider: providerOfType(InferenceProviderType.mistral),
+            reasoningEffort: ReasoningEffort.high,
+          )
+          .toList();
+
+      expect(chunks.single.choices?.single.delta?.content, 'mistral text');
+      expect(fakeMistralRepo.textCalls, hasLength(1));
+      expect(fakeMistralRepo.textCalls.single.prompt, prompt);
+      expect(
+        fakeMistralRepo.textCalls.single.reasoningEffort,
+        ReasoningEffort.high,
       );
     });
   });

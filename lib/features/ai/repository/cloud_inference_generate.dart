@@ -108,6 +108,7 @@ class CloudInferenceGenerate {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         toolChoice: toolChoice,
+        reasoningEffort: reasoningEffort,
       );
     }
 

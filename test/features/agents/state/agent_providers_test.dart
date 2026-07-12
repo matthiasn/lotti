@@ -538,7 +538,9 @@ void main() {
       await getIt.reset();
     });
 
-    ProviderContainer createTaskWorkflowContainer() {
+    ProviderContainer createTaskWorkflowContainer({
+      bool evidenceSynthesisEnabled = false,
+    }) {
       final container = ProviderContainer(
         overrides: [
           agentRepositoryProvider.overrideWithValue(mockRepository),
@@ -567,7 +569,7 @@ void main() {
           ),
           configFlagProvider(
             enableTaskAgentEvidenceSynthesisFlag,
-          ).overrideWith((ref) => Stream.value(false)),
+          ).overrideWith((ref) => Stream.value(evidenceSynthesisEnabled)),
         ],
       );
       addTearDown(container.dispose);
@@ -582,6 +584,24 @@ void main() {
       expect(workflow.embeddingStore, isNull);
       expect(workflow.embeddingRepository, isNull);
       expect(workflow.evidenceSynthesisEnabled, isFalse);
+    });
+
+    test('wires enabled evidence synthesis from the config flag', () async {
+      final container = createTaskWorkflowContainer(
+        evidenceSynthesisEnabled: true,
+      );
+      final flagSubscription = container.listen(
+        configFlagProvider(enableTaskAgentEvidenceSynthesisFlag),
+        (_, _) {},
+      );
+      addTearDown(flagSubscription.close);
+      await container.read(
+        configFlagProvider(enableTaskAgentEvidenceSynthesisFlag).future,
+      );
+
+      final workflow = container.read(taskAgentWorkflowProvider);
+
+      expect(workflow.evidenceSynthesisEnabled, isTrue);
     });
 
     test('wires optional embedding dependencies from GetIt', () {

@@ -18,7 +18,7 @@ def _valid_judgment() -> dict:
     return {
         "factualGrounding": 4,
         "requiredCoverage": 3,
-        "checklistQuality": 3.5,
+        "checklistQuality": 3,
         "summaryQuality": 4,
         "formatCompliance": 4,
         "overall": 3.8,
@@ -62,9 +62,22 @@ class JudgmentValidationTest(unittest.TestCase):
         self.assertTrue(judge._valid_judgment(_valid_judgment()))
 
         invalid_cases = []
-        for value in (True, math.nan, math.inf, -0.1, 4.1, "4"):
+        rubric_keys = (
+            "factualGrounding",
+            "requiredCoverage",
+            "checklistQuality",
+            "summaryQuality",
+            "formatCompliance",
+        )
+        score_keys = (*rubric_keys, "overall")
+        for key in score_keys:
+            for value in (True, math.nan, math.inf, -0.1, 4.1, "4"):
+                invalid = _valid_judgment()
+                invalid[key] = value
+                invalid_cases.append(invalid)
+        for key in rubric_keys:
             invalid = _valid_judgment()
-            invalid["overall"] = value
+            invalid[key] = 2.5
             invalid_cases.append(invalid)
         invalid_cases.extend(
             [
@@ -216,7 +229,91 @@ class JudgmentValidationTest(unittest.TestCase):
         self.assertNotEqual(original, revised)
 
 
+class JudgeUrlValidationTest(unittest.TestCase):
+    def test_post_accepts_an_explicitly_allowed_https_host(self) -> None:
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = "{}"
+
+        with (
+            mock.patch.dict(
+                os.environ,
+                {judge.ALLOWED_JUDGE_HOSTS_ENV: "example.com"},
+                clear=True,
+            ),
+            mock.patch.object(
+                judge.urllib.request,
+                "urlopen",
+                return_value=response,
+            ) as urlopen,
+        ):
+            result = judge._post(
+                "https://example.com/v1/chat/completions",
+                "key",
+                {"model": "judge"},
+            )
+
+        self.assertEqual(result, {})
+        request = urlopen.call_args.args[0]
+        self.assertEqual(
+            request.full_url,
+            "https://example.com/v1/chat/completions",
+        )
+
+    def test_post_rejects_invalid_or_disallowed_urls_before_urlopen(self) -> None:
+        invalid_urls = (
+            "file:///etc/passwd",
+            "https:///missing-host",
+            "https://user:secret@example.com/v1",
+            "https://disallowed.example/v1",
+        )
+
+        with (
+            mock.patch.dict(
+                os.environ,
+                {judge.ALLOWED_JUDGE_HOSTS_ENV: "example.com"},
+                clear=True,
+            ),
+            mock.patch.object(judge.urllib.request, "urlopen") as urlopen,
+        ):
+            for url in invalid_urls:
+                with self.subTest(url=url), self.assertRaises(ValueError):
+                    judge._post(url, "key", {"model": "judge"})
+
+        urlopen.assert_not_called()
+
+
 class JudgeCliTest(unittest.TestCase):
+    def test_rejects_a_disallowed_configured_base_url(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            input_path = root / "input.json"
+            input_path.write_text(json.dumps(_report()), encoding="utf-8")
+            argv = [
+                "task_agent_model_eval_judge.py",
+                str(input_path),
+                "--json",
+                str(root / "judged.json"),
+                "--markdown",
+                str(root / "judged.md"),
+            ]
+
+            with (
+                mock.patch.object(sys, "argv", argv),
+                mock.patch.dict(
+                    os.environ,
+                    {
+                        "MELIOUS_API_KEY": "key",
+                        "MELIOUS_BASE_URL": "https://disallowed.example/v1",
+                    },
+                    clear=True,
+                ),
+                mock.patch.object(judge, "_judge_case") as judge_case,
+                self.assertRaisesRegex(SystemExit, "host is not allowed"),
+            ):
+                judge.main()
+
+            judge_case.assert_not_called()
+
     def test_writes_diagnostics_and_fails_unless_errors_are_allowed(self) -> None:
         for allow_errors in (False, True):
             with self.subTest(allow_errors=allow_errors), tempfile.TemporaryDirectory() as temp:
@@ -238,7 +335,11 @@ class JudgeCliTest(unittest.TestCase):
 
                 with (
                     mock.patch.object(sys, "argv", argv),
-                    mock.patch.dict(os.environ, {"MELIOUS_API_KEY": "key"}),
+                    mock.patch.dict(
+                        os.environ,
+                        {"MELIOUS_API_KEY": "key"},
+                        clear=True,
+                    ),
                     mock.patch.object(
                         judge,
                         "_judge_case",
