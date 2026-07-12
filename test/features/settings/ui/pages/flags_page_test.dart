@@ -790,9 +790,8 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('FlagsPage — previously uncovered flags (parameterized)', () {
-    // The setUp above already stubs watchConfigFlags() for 12 flags.
-    // We add the missing 11 flags here so the stream covers all 23 flags
-    // declared in FlagsBody.defaultDisplayedItems.
+    // This setup supplies the rows exercised below plus representative rows
+    // already covered above. Remaining defaults are covered by flagRowCases.
     setUp(() {
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
