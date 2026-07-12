@@ -74,7 +74,7 @@ enum TaskAgentReportRevisionIssue {
   ),
   formalRegister('Use the configured informal language register.'),
   missingActiveRisk(
-    'Restore the active risk, blocker, or root-cause investigation.',
+    'Restore the active constraint, risk, blocker, or root-cause investigation.',
   );
 
   const TaskAgentReportRevisionIssue(this.correction);
@@ -751,7 +751,20 @@ class TaskAgentReportEditor {
   };
 
   static const _reportedRiskTermsByLanguage = <String, List<String>>{
-    'en': ['blocker', 'blocked', 'risk', 'root cause', 'investigat'],
+    'en': [
+      'blocker',
+      'blocked',
+      'risk',
+      'root cause',
+      'investigat',
+      'pending',
+      'waiting until',
+      'awaiting approval',
+      'cannot proceed',
+      'on hold',
+      'constraint',
+      'maintenance window',
+    ],
     'cs': [
       'blokace',
       'blokován',
@@ -760,8 +773,19 @@ class TaskAgentReportEditor {
       'příčin',
       'prošetř',
       'vyšetř',
+      'pozastav',
+      'omezení',
     ],
-    'de': ['blocker', 'blockiert', 'risiko', 'ursache', 'untersuch'],
+    'de': [
+      'blocker',
+      'blockiert',
+      'risiko',
+      'ursache',
+      'untersuch',
+      'ausstehend',
+      'kann nicht',
+      'bedingung',
+    ],
     'es': [
       'bloqueador',
       'bloquead',
@@ -769,6 +793,8 @@ class TaskAgentReportEditor {
       'causa raíz',
       'investig',
       'pendiente',
+      'no puede',
+      'restricción',
     ],
     'fr': [
       'blocage',
@@ -778,8 +804,21 @@ class TaskAgentReportEditor {
       'cause racine',
       'enquêt',
       'examin',
+      'en attente',
+      'ne peut pas',
+      'contrainte',
     ],
-    'ro': ['blocaj', 'blocat', 'blocată', 'risc', 'cauz', 'investig'],
+    'ro': [
+      'blocaj',
+      'blocat',
+      'blocată',
+      'risc',
+      'cauz',
+      'investig',
+      'în așteptare',
+      'nu poate',
+      'constrângere',
+    ],
   };
 
   static const _languageInstructions = {

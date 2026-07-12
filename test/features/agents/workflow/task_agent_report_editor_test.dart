@@ -471,6 +471,38 @@ turn task metadata or a checklist edit into an accomplishment.
     }
   });
 
+  test('validation accepts a preserved scheduling constraint', () {
+    const draftReport = {
+      'oneLiner': 'Deployment pending until the maintenance window',
+      'tldr': 'The pull request is merged; deployment remains pending.',
+      'content': "Deploy during tomorrow's maintenance window.",
+    };
+
+    List<TaskAgentReportRevisionIssue> validate(String content) {
+      return TaskAgentReportEditor.validateRevision(
+        languageCode: 'en',
+        materialTaskState: const {},
+        draftReport: draftReport,
+        candidateReport: {
+          'oneLiner': 'Release status updated',
+          'tldr': content,
+          'content': content,
+        },
+      );
+    }
+
+    expect(
+      validate(
+        "Deployment remains pending for tomorrow's maintenance window.",
+      ),
+      isNot(contains(TaskAgentReportRevisionIssue.missingActiveRisk)),
+    );
+    expect(
+      validate('The pull request is merged.'),
+      contains(TaskAgentReportRevisionIssue.missingActiveRisk),
+    );
+  });
+
   test('validation accepts localized equivalent anchors', () {
     final issues = TaskAgentReportEditor.validateRevision(
       languageCode: 'de',
