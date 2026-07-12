@@ -856,6 +856,14 @@ When enabled, the task-agent path changes four common inputs together:
 - model reasoning remains profile/provider driven; the flag does not force a
   separate high-effort mode
 
+The resolved inference profile remains the executor selector. Melious
+backfills both evaluated efficient choices into the model picker:
+
+- choose `qwen3.5-122b-a10b` for a single-pass Qwen task agent using the tuned
+  Qwen prompt profile
+- choose `mistral-small-4-119b-instruct` for Mistral task mutations plus the
+  exact-match isolated Qwen report editor described below
+
 For the exact Melious `mistral-small-4-119b-instruct` executor and the built-in
 report contract, the same flag also enables the evaluated report-editor path:
 
@@ -889,6 +897,7 @@ was exercised by the retained evaluation.
 flowchart TD
   Flag["Evidence-synthesis flag"] --> Provider["agentWorkflowProvider"]
   Provider --> Workflow["TaskAgentWorkflow"]
+  Profile["Inference profile: Qwen or Mistral"] --> Workflow
   Workflow --> Prompt["Default directive + evidence protocol"]
   Workflow --> Tools["Evidence-aware update_report description"]
   Workflow --> Sampling["Temperature 0.0"]
@@ -897,7 +906,7 @@ flowchart TD
   Tools --> Executor
   Sampling --> Executor
   Executor --> Gate{"Melious Mistral + built-in report + new draft?"}
-  Gate -->|no| Persist["Persist executor report"]
+  Gate -->|no: Qwen direct or other route| Persist["Persist executor report"]
   Gate -->|yes| Facts["ID-free successful mutation facts"]
   Facts --> Editor["Forced Qwen update_report"]
   Editor --> Validate{"Deterministic checks pass?"}

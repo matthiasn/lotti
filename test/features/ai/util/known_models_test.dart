@@ -499,6 +499,7 @@ void main() {
             meliousGemma426bA4bModelId,
             meliousMinimaxM27ModelId,
             meliousMistralSmall4119BInstructModelId,
+            meliousQwen35122BA10BModelId,
             meliousDeepseekV4FlashModelId,
             meliousFlux2Klein9BModelId,
             meliousVoxtralSmall24B2507ModelId,
@@ -517,6 +518,17 @@ void main() {
         expect(glm.inputModalities, contains(Modality.text));
         expect(glm.outputModalities, contains(Modality.text));
         expect(glm.name, contains('GLM 5.2'));
+      });
+
+      test('Qwen 3.5 is a selectable tool-calling reasoning model', () {
+        final qwen = findMeliousKnownModel(meliousQwen35122BA10BModelId);
+
+        expect(qwen, isNotNull);
+        expect(qwen!.isReasoningModel, isTrue);
+        expect(qwen.supportsFunctionCalling, isTrue);
+        expect(qwen.inputModalities, contains(Modality.text));
+        expect(qwen.outputModalities, contains(Modality.text));
+        expect(qwen.name, contains('Qwen3.5 122B A10B'));
       });
 
       test('Flux default is a text-to-image model', () {

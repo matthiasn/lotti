@@ -792,7 +792,7 @@ void main() {
   group('FlagsPage — previously uncovered flags (parameterized)', () {
     // The setUp above already stubs watchConfigFlags() for 12 flags.
     // We add the missing 11 flags here so the stream covers all 23 flags
-    // declared in FlagsBody.displayedItems.
+    // declared in FlagsBody.defaultDisplayedItems.
     setUp(() {
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
@@ -1097,8 +1097,7 @@ void main() {
   });
 
   group('FlagsPage — default / unknown flag branch', () {
-    // Exercises the `default` arm in both _subtitleForFlag (line 227) and
-    // _titleForFlag (line 278) by feeding a flag whose name is not in any
+    // Exercises the fallback presentation for a flag whose name is not in any
     // named case.
     testWidgets(
       'renders an unknown flag using its raw name and description as '
@@ -1120,14 +1119,20 @@ void main() {
         );
 
         await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
+          makeTestableWidgetWithScaffold(
+            const FlagsBody(displayedItems: [unknownFlagName]),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        // The flag does not appear in FlagsBody.displayedItems, so
-        // `orderedFlags` will be empty → the widget returns SizedBox.shrink.
-        // The page should render without error and show zero list items.
-        expect(find.byType(DesignSystemListItem), findsNothing);
+        final row = find.byType(DesignSystemListItem);
+        expect(row, findsOneWidget);
+        expect(find.text(unknownFlagName), findsOneWidget);
+        expect(find.text(unknownFlagDesc), findsOneWidget);
+        expect(
+          find.descendant(of: row, matching: find.byIcon(Icons.settings)),
+          findsOneWidget,
+        );
       },
     );
 
@@ -1159,7 +1164,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 100));
 
-        // Only the private flag is in displayedItems → exactly one row.
+        // Only the private flag is in the default display order.
         expect(find.byType(DesignSystemListItem), findsOneWidget);
       },
     );

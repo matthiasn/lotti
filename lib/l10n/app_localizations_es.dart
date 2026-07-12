@@ -3060,7 +3060,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
-      'Usa la ruta experimental de baja variabilidad para el agente de tareas. Con Melious Mistral Small 4, una pasada adicional de Qwen mejora los informes y añade un poco de latencia y uso.';
+      'Optimiza los agentes de tareas para modelos eficientes de Melious. Qwen 3.5 puede ejecutar el agente directamente; con Mistral Small 4, una pasada aislada adicional de Qwen mejora los informes y añade un poco de latencia y uso.';
 
   @override
   String get configFlagEnableTooltip =>

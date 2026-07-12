@@ -1190,7 +1190,7 @@
   "configFlagEnableSyncedAlerts": "Synchronizovaná upozornění",
   "configFlagEnableSyncedAlertsDescription": "Synchronizuj upozornění od AI a úkolů mezi zařízeními a dovol jim plánovat místní systémová oznámení.",
   "configFlagEnableTaskAgentEvidenceSynthesis": "Úkolový agent založený na důkazech",
-  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Použije experimentální režim úkolového agenta s nízkou variabilitou. S Melious Mistral Small 4 zlepší dodatečný průchod modelem Qwen reporty a přidá malé množství latence a spotřeby.",
+  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Optimalizuje úkolové agenty pro úsporné modely Melious. Qwen 3.5 může agenta spouštět přímo; s Mistral Small 4 zlepší dodatečný izolovaný průchod modelem Qwen reporty a přidá malé množství latence a spotřeby.",
   "configFlagEnableTooltip": "Povolit nápovědy",
   "configFlagEnableTooltipDescription": "Zobrazit užitečné nápovědy v celé aplikaci, které vás provedou funkcemi.",
   "configFlagEnableVectorSearch": "Vektorové vyhledávání",

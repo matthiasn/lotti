@@ -243,7 +243,8 @@ flowchart TD
 Melious also has a small curated static catalog used for immediate provider
 setup before a user installs additional live-catalog rows: `deepseek-v4-pro`,
 `glm-5.2`, `gemma-4-26b-a4b`, `minimax-m2.7`,
-`mistral-small-4-119b-instruct`, `deepseek-v4-flash`, `flux-2-klein-9b`,
+`mistral-small-4-119b-instruct`, `qwen3.5-122b-a10b`,
+`deepseek-v4-flash`, `flux-2-klein-9b`,
 `voxtral-small-24b-2507`, `whisper-large-v3`, and `whisper-large-v3-turbo`.
 The default Melious profile uses `mistral-small-4-119b-instruct` for thinking
 and image recognition, `glm-5.2` for the high-end thinking slot,
@@ -454,6 +455,13 @@ mechanical phrasing, repeated content, and occasionally inflated status from
 weak evidence. A stricter six-scenario report-grounding screen passed only 3/6
 with model-default reasoning and 4/6 with requested high effort.
 
+That evidence supports Qwen as a direct executor behind the experimental flag.
+`qwen3.5-122b-a10b` is part of the curated Melious catalog, so it is backfilled
+for existing providers and can be selected in an inference profile without a
+separate live-catalog install. The resolved profile remains the model selector;
+the flag supplies the evaluated prompt, tool contract, and temperature rather
+than silently replacing the chosen model.
+
 Qwen exposes thinking as an on/off capability rather than distinct native
 effort tiers. In one matched state-classifier probe, requesting
 OpenAI-compatible `high` effort left the same three failures while adding 11%
@@ -466,12 +474,21 @@ only the `update_report` description, and selects temperature `0.0`; it does not
 enable a second pass. It replaces the report directive only when the template
 still uses the seeded default, so custom report structure remains flexible.
 
+The final Mistral configuration keeps Mistral as the mutation executor and uses
+an isolated Qwen report-only editor. In the retained 13-scenario run, all 13
+scenarios and all 94 deterministic checks passed; the two no-op cases made no
+editor call, and each of the eleven report cases accepted its first candidate.
+This exact route remains default-off and does not imply that Mistral alone
+matches a larger model.
+
 The older `conciseReport` variant remains available for reproduction. In the
 full Mistral matrix it improved automated judge scores and reduced tokens, but
 changing that directive also caused a missed checklist mutation. Focused
 Mistral and Qwen report-revision probes did not reliably remove
 process-narration or status-inflation defects. A report polisher is therefore
-not part of the production workflow.
+not used as a same-model generic stage. The only production post-pass is the
+validated, exact-match Mistral-to-Qwen report editor described above; Qwen used
+as the primary executor remains single-pass.
 
 ```mermaid
 flowchart LR

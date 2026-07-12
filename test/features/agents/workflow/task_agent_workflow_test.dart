@@ -498,6 +498,51 @@ void main() {
     });
 
     group('successful execute', () {
+      void stubMeliousTaskAgentModel({
+        required String providerId,
+        required String modelConfigId,
+        required String modelName,
+        required String providerModelId,
+        AgentTemplateVersionEntity? templateVersion,
+      }) {
+        final provider =
+            AiConfig.inferenceProvider(
+                  id: providerId,
+                  baseUrl: 'https://api.melious.ai/v1',
+                  apiKey: 'test-key',
+                  name: 'Melious',
+                  createdAt: DateTime(2024),
+                  inferenceProviderType: InferenceProviderType.melious,
+                )
+                as AiConfigInferenceProvider;
+        final model =
+            AiConfig.model(
+                  id: modelConfigId,
+                  name: modelName,
+                  providerModelId: providerModelId,
+                  inferenceProviderId: provider.id,
+                  createdAt: DateTime(2024),
+                  inputModalities: const [Modality.text],
+                  outputModalities: const [Modality.text],
+                  isReasoningModel: true,
+                  supportsFunctionCalling: true,
+                )
+                as AiConfigModel;
+        final template = makeTestTemplate(modelId: providerModelId);
+        when(
+          () => mockTemplateService.getTemplateForAgent(agentId),
+        ).thenAnswer((_) async => template);
+        when(
+          () => mockTemplateService.getActiveVersion(template.id),
+        ).thenAnswer((_) async => templateVersion ?? testTemplateVersion);
+        when(
+          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [model]);
+        when(
+          () => mockAiConfigRepository.getConfigById(provider.id),
+        ).thenAnswer((_) async => provider);
+      }
+
       Future<({WakeResult result, List<dynamic> captured})>
       runMistralReportEditorSafetyCase({
         required List<String> editorArguments,
@@ -506,48 +551,15 @@ void main() {
         String? reportDirective,
         String? taskLanguageCode,
       }) async {
-        final meliousProvider =
-            AiConfig.inferenceProvider(
-                  id: 'melious-provider-safety',
-                  baseUrl: 'https://api.melious.ai/v1',
-                  apiKey: 'test-key',
-                  name: 'Melious',
-                  createdAt: DateTime(2024),
-                  inferenceProviderType: InferenceProviderType.melious,
-                )
-                as AiConfigInferenceProvider;
-        final mistralModel =
-            AiConfig.model(
-                  id: 'mistral-model-safety',
-                  name: 'Mistral Small 4 119B',
-                  providerModelId: meliousMistralSmall4119BInstructModelId,
-                  inferenceProviderId: meliousProvider.id,
-                  createdAt: DateTime(2024),
-                  inputModalities: const [Modality.text],
-                  outputModalities: const [Modality.text],
-                  isReasoningModel: true,
-                  supportsFunctionCalling: true,
-                )
-                as AiConfigModel;
-        final mistralTemplate = makeTestTemplate(
-          modelId: meliousMistralSmall4119BInstructModelId,
-        );
-        when(
-          () => mockTemplateService.getTemplateForAgent(agentId),
-        ).thenAnswer((_) async => mistralTemplate);
-        when(
-          () => mockTemplateService.getActiveVersion(mistralTemplate.id),
-        ).thenAnswer(
-          (_) async => reportDirective == null
-              ? testTemplateVersion
+        stubMeliousTaskAgentModel(
+          providerId: 'melious-provider-safety',
+          modelConfigId: 'mistral-model-safety',
+          modelName: 'Mistral Small 4 119B',
+          providerModelId: meliousMistralSmall4119BInstructModelId,
+          templateVersion: reportDirective == null
+              ? null
               : makeTestTemplateVersion(reportDirective: reportDirective),
         );
-        when(
-          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [mistralModel]);
-        when(
-          () => mockAiConfigRepository.getConfigById(meliousProvider.id),
-        ).thenAnswer((_) async => meliousProvider);
         if (taskLanguageCode != null) {
           when(() => mockJournalDb.journalEntityById(taskId)).thenAnswer(
             (_) async => _makeTask(
@@ -1256,47 +1268,99 @@ void main() {
       );
 
       test(
+        'Qwen evidence mode uses its tuned direct-executor path without an '
+        'editor pass',
+        () async {
+          stubMeliousTaskAgentModel(
+            providerId: 'melious-provider-qwen',
+            modelConfigId: 'qwen-model-config',
+            modelName: 'Qwen3.5 122B A10B',
+            providerModelId: meliousQwen35122BA10BModelId,
+          );
+
+          String? systemMessage;
+          double? capturedTemperature;
+          final models = <String>[];
+          final capturingRepo =
+              MockConversationRepository(
+                  mockConversationManager,
+                  onSystemMessage: (message) => systemMessage = message,
+                )
+                ..maxDelegateCalls = 1
+                ..sendMessageDelegate =
+                    ({
+                      required conversationId,
+                      required message,
+                      required model,
+                      required provider,
+                      required inferenceRepo,
+                      tools,
+                      toolChoice,
+                      temperature = 0.7,
+                      strategy,
+                    }) async {
+                      models.add(model);
+                      capturedTemperature = temperature;
+                      await strategy!.processToolCalls(
+                        toolCalls: const [
+                          ChatCompletionMessageToolCall(
+                            id: 'qwen-report-call',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: TaskAgentToolNames.updateReport,
+                              arguments:
+                                  '{"oneLiner":"Review the active risk","tldr":"Approval remains pending.","content":"Marta must approve deployment."}',
+                            ),
+                          ),
+                        ],
+                        manager: mockConversationManager,
+                      );
+                      return const InferenceUsage(
+                        inputTokens: 90,
+                        outputTokens: 15,
+                      );
+                    };
+          final qwenWorkflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            evidenceSynthesisEnabled: true,
+          );
+
+          final result = await qwenWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(models, [meliousQwen35122BA10BModelId]);
+          expect(capturedTemperature, 0);
+          expect(systemMessage, contains('## Scope Erasure'));
+          expect(systemMessage, contains('Write free-form Markdown'));
+          expect(systemMessage, isNot(contains('Examples of the boundary:')));
+        },
+      );
+
+      test(
         'Mistral evidence mode accepts a grounded Qwen report revision and '
         'attributes usage to both models',
         () async {
-          final meliousProvider =
-              AiConfig.inferenceProvider(
-                    id: 'melious-provider-001',
-                    baseUrl: 'https://api.melious.ai/v1',
-                    apiKey: 'test-key',
-                    name: 'Melious',
-                    createdAt: DateTime(2024),
-                    inferenceProviderType: InferenceProviderType.melious,
-                  )
-                  as AiConfigInferenceProvider;
-          final mistralModel =
-              AiConfig.model(
-                    id: 'mistral-model-config',
-                    name: 'Mistral Small 4 119B',
-                    providerModelId: meliousMistralSmall4119BInstructModelId,
-                    inferenceProviderId: meliousProvider.id,
-                    createdAt: DateTime(2024),
-                    inputModalities: const [Modality.text],
-                    outputModalities: const [Modality.text],
-                    isReasoningModel: true,
-                    supportsFunctionCalling: true,
-                  )
-                  as AiConfigModel;
-          final mistralTemplate = makeTestTemplate(
-            modelId: meliousMistralSmall4119BInstructModelId,
+          stubMeliousTaskAgentModel(
+            providerId: 'melious-provider-001',
+            modelConfigId: 'mistral-model-config',
+            modelName: 'Mistral Small 4 119B',
+            providerModelId: meliousMistralSmall4119BInstructModelId,
           );
-          when(
-            () => mockTemplateService.getTemplateForAgent(agentId),
-          ).thenAnswer((_) async => mistralTemplate);
-          when(
-            () => mockTemplateService.getActiveVersion(mistralTemplate.id),
-          ).thenAnswer((_) async => testTemplateVersion);
-          when(
-            () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [mistralModel]);
-          when(
-            () => mockAiConfigRepository.getConfigById(meliousProvider.id),
-          ).thenAnswer((_) async => meliousProvider);
 
           final models = <String>[];
           final messages = <String>[];

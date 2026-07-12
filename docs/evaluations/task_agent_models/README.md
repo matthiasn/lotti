@@ -217,13 +217,63 @@ A draft-and-polish follow-up was prototyped after this result: an isolated
 report-only request received the draft and objective warning list without task
 or checklist mutation tools. Focused Mistral probes on the two German scenarios
 still returned reports with process narration, so both rewrites were rejected.
-That is not evidence of a quality improvement, and the extra inference pass is
-therefore not shipped. The production change from this work is limited to the
-OpenAI-compatible continuation fix; model and prompt experiments remain in the
-evaluation harness until a measured configuration beats the baseline on task
-completion, report quality, and token use together.
+That same-model rewrite was not evidence of a quality improvement and is not
+shipped as a generic polisher. Later experiments below use a different model in
+an isolated, deterministically validated report editor.
 
 These numbers are directional rather than release thresholds. They are based on
 one deterministic sample per case and synthetic replay data. Repeated runs and
 sanitized real task histories are still required before changing the default
 model.
+
+## Findings from 2026-07-12
+
+The production evidence-first contract was replicated with Qwen3.5 122B A10B
+as the direct executor three times across the expanded 13-scenario suite:
+
+| Measure | Result |
+| --- | ---: |
+| Scenario runs | 38 / 39 |
+| Deterministic checks | 257 / 258 |
+| Required mutations | 42 / 42 |
+| Unauthorized mutations | 0 |
+| Input tokens | 604,857 |
+| Output tokens | 29,699 |
+| Average latency | 5.792 s |
+
+The one failure omitted the deadline from a German report; the required task
+mutations still succeeded. Direct product, reliability, and editorial review
+found the mutation behavior suitable for a default-off experiment, while report
+prose remained more mechanical and occasionally less conservative than the
+larger-model baseline. Qwen therefore remains single-pass and uses its model or
+profile reasoning default.
+
+The final Mistral route kept Mistral as the only task-mutation executor and sent
+new built-in reports to an isolated Qwen editor with compact, ID-free successful
+mutation facts. The retained full run produced:
+
+| Measure | Result |
+| --- | ---: |
+| Scenarios | 13 / 13 |
+| Deterministic checks | 94 / 94 |
+| Report cases | 11 |
+| No-op cases | 2 |
+| Editor calls on no-op cases | 0 |
+| Input tokens | 168,653 |
+| Output tokens | 10,341 |
+| Total latency | 89.618 s |
+
+This establishes two explicit experimental selections rather than a silent
+model substitution:
+
+- Qwen3.5 122B A10B directly executes task mutations and writes its report.
+- Mistral Small 4 119B executes task mutations; an isolated Qwen pass may
+  replace its draft only after deterministic validation.
+
+Both models are present in the curated Melious catalog and are selected through
+the normal inference profile. The config flag supplies the evaluated prompt,
+tool contract, and temperature-zero path. It remains off by default, preserves
+custom report directives, and does not claim parity on unsanitized real user
+histories. Full artifacts and the GPT-5.6 Sol simulated expert review are kept
+in the private evaluation archive under `2026-07-12_qwen35` and
+`2026-07-12_qwen-gated-editor-v31`.

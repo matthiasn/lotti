@@ -1381,7 +1381,7 @@
   "configFlagEnableSyncedAlerts": "Alerte sincronizate",
   "configFlagEnableSyncedAlertsDescription": "Sincronizați alertele AI și de sarcini între dispozitivele dvs. și permiteți programarea notificărilor locale de sistem.",
   "configFlagEnableTaskAgentEvidenceSynthesis": "Agent de sarcini bazat pe dovezi",
-  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Activează fluxul experimental cu variabilitate redusă pentru agentul de sarcini. Cu Melious Mistral Small 4, o etapă Qwen suplimentară îmbunătățește rapoartele și adaugă puțină latență și utilizare.",
+  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Optimizează agenții de sarcini pentru modelele Melious eficiente. Qwen 3.5 poate rula agentul direct; cu Mistral Small 4, o etapă Qwen suplimentară și izolată îmbunătățește rapoartele și adaugă puțină latență și utilizare.",
   "configFlagEnableTooltip": "Activează sfaturile",
   "configFlagEnableTooltipDescription": "Afișează sfaturi utile în întreaga aplicație pentru a vă ghida prin funcții.",
   "configFlagEnableVectorSearch": "Căutare vectorială",

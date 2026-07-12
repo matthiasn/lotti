@@ -84,12 +84,15 @@ bool _flagMatchesQuery(
 /// without the surrounding `SliverBoxAdapterPage` chrome. Hosts the
 /// keyword search bar plus the filtered flag list.
 class FlagsBody extends ConsumerStatefulWidget {
-  const FlagsBody({super.key});
+  const FlagsBody({
+    super.key,
+    this.displayedItems = defaultDisplayedItems,
+  });
 
   /// Canonical render order for the flag list. Adding a flag here
   /// also requires icon + title + subtitle wiring below; the
   /// modular flag tests assert each end of that chain.
-  static const List<String> displayedItems = [
+  static const List<String> defaultDisplayedItems = [
     privateFlag,
     enableNotificationsFlag,
     recordLocationFlag,
@@ -116,6 +119,9 @@ class FlagsBody extends ConsumerStatefulWidget {
     showSidebarWakeQueueFlag,
     enableForkHealingFlag,
   ];
+
+  /// Flag names to render, in display order.
+  final List<String> displayedItems;
 
   @override
   ConsumerState<FlagsBody> createState() => _FlagsBodyState();
@@ -337,7 +343,7 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
                 for (final flag in snapshot.data ?? <ConfigFlag>{})
                   flag.name: flag,
               };
-              final orderedFlags = FlagsBody.displayedItems
+              final orderedFlags = widget.displayedItems
                   .map((name) => flagLookup[name])
                   .nonNulls
                   .toList();
