@@ -180,7 +180,11 @@ class TaskAgentReportEditor {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
   }) async {
-    final excludedDraftTerms = _extractExcludedDraftTerms(draft.toJson());
+    final draftJson = draft.toJson();
+    final excludedDraftTerms = _extractExcludedDraftTerms(draftJson);
+    final editorDraft = excludedDraftTerms.isEmpty
+        ? draftJson
+        : _withoutExcludedDraftScope(draftJson);
     var attempts = 0;
     var hadRevision = false;
     var validationIssues = <TaskAgentReportRevisionIssue>[];
@@ -193,7 +197,7 @@ class TaskAgentReportEditor {
         systemMessage: isRepair
             ? '$_systemPrompt\n\n'
                   'The previous candidate failed deterministic quality checks. '
-                  'Rewrite it again from the original draft, material task '
+                  'Rewrite it again from the sanitized draft, material task '
                   'state, and report directive. Fix every listed violation. '
                   'Do not defend the candidate or mention the corrections.'
             : _systemPrompt,
@@ -203,12 +207,13 @@ class TaskAgentReportEditor {
       final message = <String, Object?>{
         'languageCode': languageCode,
         'materialTaskState': materialTaskState,
-        'draftReport': draft.toJson(),
+        'draftReport': editorDraft,
         'reportDirective': reportDirective.trim(),
-        if (excludedDraftTerms.isNotEmpty)
-          'excludedDraftTerms': excludedDraftTerms,
         if (isRepair) ...{
-          'rejectedReport': rejectedReport?.toJson(),
+          if (!validationIssues.contains(
+            TaskAgentReportRevisionIssue.deferredScopeLeak,
+          ))
+            'rejectedReport': rejectedReport?.toJson(),
           'requiredCorrections': [
             for (final issue in validationIssues)
               {'code': issue.name, 'instruction': issue.correction},
@@ -609,16 +614,39 @@ class TaskAgentReportEditor {
   ) {
     final draftText = _reportFieldText(draftReport);
     final terms = <String>{};
-    for (final segment in draftText.split(_sentenceBoundary)) {
+    for (final match in _scopeClause.allMatches(draftText)) {
+      final segment = match.group(0)!;
       if (!_excludedScopeMarker.hasMatch(segment)) continue;
-      for (final match in _distinctiveWord.allMatches(segment.toLowerCase())) {
-        final term = match.group(0)!;
+      for (final wordMatch in _distinctiveWord.allMatches(
+        segment.toLowerCase(),
+      )) {
+        final term = wordMatch.group(0)!;
         if (!_excludedScopeStopWords.contains(term)) {
           terms.add(term);
         }
       }
     }
     return terms.toList(growable: false)..sort();
+  }
+
+  static Map<String, dynamic> _withoutExcludedDraftScope(
+    Map<String, dynamic> draftReport,
+  ) {
+    return {
+      for (final field in const ['oneLiner', 'tldr', 'content'])
+        field: _withoutExcludedClauses(draftReport[field] as String? ?? ''),
+    };
+  }
+
+  static String _withoutExcludedClauses(String text) {
+    final buffer = StringBuffer();
+    for (final match in _scopeClause.allMatches(text)) {
+      final clause = match.group(0)!;
+      if (!_excludedScopeMarker.hasMatch(clause)) {
+        buffer.write(clause);
+      }
+    }
+    return buffer.toString().trim();
   }
 
   static bool _containsNearbyPatterns(
@@ -632,7 +660,10 @@ class TaskAgentReportEditor {
     ).hasMatch(text);
   }
 
-  static final _sentenceBoundary = RegExp(r'[.!?;\n]+', unicode: true);
+  static final _scopeClause = RegExp(
+    r'[^.!?;,\n]+(?:[.!?;,\n]+|$)',
+    unicode: true,
+  );
   static final _distinctiveWord = RegExp(
     r'[\p{L}\p{N}]{7,}',
     unicode: true,
@@ -919,8 +950,8 @@ analysis, transcription, readiness, waiting filler, internal IDs, rejected or
 deferred scope, empty sections, and claims that no blocker, link, or outcome
 exists. Never restate the task status as real-world progress or label a user
 checkmark as applied, implemented, fixed, or achieved.
-If `excludedDraftTerms` is present, none of those terms may appear anywhere in
-the revision, even to explain that a concept was deferred or excluded.
+Explicitly deferred, rejected, omitted, and out-of-scope draft clauses have
+already been removed. Never reconstruct, infer, or explain those omissions.
 Do not mention the checklist itself; present its real actions directly.
 Links and reference sections require a real HTTP or HTTPS URL; a date, title,
 or internal label is not a link.

@@ -869,9 +869,67 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(serializedMessages, contains('pragmatic project partner'));
     expect(serializedMessages, contains('## Next moves'));
     expect(serializedMessages, contains('## Decisions needed'));
-    expect(serializedMessages, contains('excludedDraftTerms'));
-    expect(serializedMessages, contains('newsletter'));
+    expect(serializedMessages, contains('Run eval and compare the reference'));
+    expect(serializedMessages, isNot(contains('newsletter')));
     expect(serializedMessages, isNot(contains('private-id')));
+  });
+
+  test('editor repairs deferred scope without re-exposing the term', () async {
+    const deferredDraft = TaskAgentReportDraft(
+      oneLiner: 'Repair the CSV export',
+      tldr: 'Three committed actions remain.',
+      content:
+          'Repair the export. The newsletter idea is explicitly deferred and '
+          'must not be included.',
+    );
+    final inferenceRepository = _QueuedInferenceRepository([
+      [
+        _toolCalls([
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: jsonEncode({
+              'oneLiner': 'Repair the CSV export',
+              'tldr': 'The newsletter remains outside scope.',
+              'content': 'Repair the export; omit the newsletter.',
+            }),
+          ),
+        ]),
+      ],
+      [
+        _toolCalls([
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: jsonEncode({
+              'oneLiner': 'Repair the CSV export',
+              'tldr': 'Three committed actions remain.',
+              'content':
+                  'Repair the export, request test data, then run regression.',
+            }),
+          ),
+        ]),
+      ],
+    ]);
+
+    final result =
+        await _createEditor(
+          provider: provider,
+          inferenceRepository: inferenceRepository,
+        ).edit(
+          draft: deferredDraft,
+          languageCode: 'en',
+          materialTaskState: const {},
+          reportDirective: evolvedReportDirective,
+        );
+
+    expect(result.revision?.content, contains('run regression'));
+    expect(result.attempts, 2);
+    final repairMessages = jsonEncode(
+      inferenceRepository.requests.last.messages
+          .map((message) => message.toJson())
+          .toList(),
+    );
+    expect(repairMessages, contains('deferredScopeLeak'));
+    expect(repairMessages, isNot(contains('newsletter')));
   });
 
   test('editor retries with exact issues and merges usage', () async {
