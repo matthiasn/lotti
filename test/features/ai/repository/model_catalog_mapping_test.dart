@@ -65,6 +65,10 @@ void main() {
         ModelCatalogMapping.humanizeModelId('gpt-6', acronyms: {'GPT'}),
         'GPT 6',
       );
+      expect(
+        ModelCatalogMapping.humanizeModelId('glm-5.2', acronyms: {'GLM'}),
+        'GLM 5.2',
+      );
     });
 
     test('falls back to the raw id when the humanized form is empty', () {
