@@ -8775,7 +8775,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskAgentAutomaticUpdatesOnDescription =>
-      'When this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.';
+      'When anything related to this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.';
 
   @override
   String get taskAgentCancelTimerTooltip => 'Cancel pending automatic update';

@@ -8984,7 +8984,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get taskAgentAutomaticUpdatesOnDescription =>
-      'Cuando cambia esta tarea, empieza una cuenta atrás de dos minutos. Los cambios durante la cuenta atrás se agrupan en una sola actualización.';
+      'Cuando cambia algo relacionado con esta tarea, empieza una cuenta atrás de dos minutos. Los cambios durante la cuenta atrás se agrupan en una sola actualización.';
 
   @override
   String get taskAgentCancelTimerTooltip =>

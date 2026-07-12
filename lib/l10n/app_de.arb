@@ -3626,7 +3626,7 @@
   "taskAgentAutomaticUpdatesNeedsSetup": "Wähle ein KI-Setup, bevor du automatische Updates einschaltest.",
   "taskAgentAutomaticUpdatesOffBadge": "Automatische Updates aus · Mit „Jetzt ausführen“ aktualisieren",
   "taskAgentAutomaticUpdatesOffDescription": "Automatische Updates sind aus. Verwende „Jetzt ausführen“, um diesen Bericht zu aktualisieren.",
-  "taskAgentAutomaticUpdatesOnDescription": "Wenn sich diese Aufgabe ändert, startet ein zweiminütiger Countdown. Änderungen währenddessen werden in einem Update gebündelt.",
+  "taskAgentAutomaticUpdatesOnDescription": "Wenn sich etwas an oder im Zusammenhang mit dieser Aufgabe ändert, startet ein zweiminütiger Countdown. Änderungen währenddessen werden in einem Update gebündelt.",
   "taskAgentCancelTimerTooltip": "Ausstehendes automatisches Update abbrechen",
   "taskAgentChooseModel": "Denkmodell wählen",
   "taskAgentChooseProfile": "Gespeicherte Einrichtung wählen",

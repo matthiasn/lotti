@@ -8937,7 +8937,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskAgentAutomaticUpdatesOnDescription =>
-      'Když se úkol změní, spustí se dvouminutový odpočet. Změny během odpočtu se sloučí do jedné aktualizace.';
+      'Když se změní něco souvisejícího s tímto úkolem, spustí se dvouminutový odpočet. Změny během odpočtu se sloučí do jedné aktualizace.';
 
   @override
   String get taskAgentCancelTimerTooltip =>

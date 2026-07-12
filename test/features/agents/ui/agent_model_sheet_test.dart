@@ -170,7 +170,7 @@ void main() {
       expect(find.text('Automatic updates'), findsOneWidget);
       expect(
         find.text(
-          'When this task changes, a two-minute countdown starts. Changes '
+          'When anything related to this task changes, a two-minute countdown starts. Changes '
           'during the countdown are bundled into one update.',
         ),
         findsOneWidget,

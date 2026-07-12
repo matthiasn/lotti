@@ -9007,7 +9007,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get taskAgentAutomaticUpdatesOnDescription =>
-      'Quand cette tâche change, un compte à rebours de deux minutes démarre. Les changements effectués pendant ce délai sont regroupés dans une seule mise à jour.';
+      'Quand quelque chose lié à cette tâche change, un compte à rebours de deux minutes démarre. Les changements effectués pendant ce délai sont regroupés dans une seule mise à jour.';
 
   @override
   String get taskAgentCancelTimerTooltip =>

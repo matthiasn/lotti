@@ -129,7 +129,7 @@ flowchart TD
 ```mermaid
 stateDiagram-v2
   [*] --> AutomaticOn
-  AutomaticOn --> Countdown: task change
+  AutomaticOn --> Countdown: related task change
   Countdown --> Running: deadline or Run now
   AutomaticOn --> AutomaticOff: checkbox off
   Countdown --> AutomaticOff: checkbox off / cancel automation job

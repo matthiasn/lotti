@@ -3626,7 +3626,7 @@
   "taskAgentAutomaticUpdatesNeedsSetup": "Alegeți o configurare AI înainte de a activa actualizările automate.",
   "taskAgentAutomaticUpdatesOffBadge": "Actualizări automate dezactivate · Folosiți „Rulează acum”",
   "taskAgentAutomaticUpdatesOffDescription": "Actualizările automate sunt dezactivate. Folosiți „Rulează acum” pentru a actualiza acest raport.",
-  "taskAgentAutomaticUpdatesOnDescription": "Când această sarcină se modifică, începe o numărătoare inversă de două minute. Modificările din acest interval sunt grupate într-o singură actualizare.",
+  "taskAgentAutomaticUpdatesOnDescription": "Când se modifică ceva legat de această sarcină, începe o numărătoare inversă de două minute. Modificările din acest interval sunt grupate într-o singură actualizare.",
   "taskAgentCancelTimerTooltip": "Anulați actualizarea automată în așteptare",
   "taskAgentChooseModel": "Alegeți un model de raționament",
   "taskAgentChooseProfile": "Alegeți o configurare salvată",

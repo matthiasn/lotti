@@ -3626,7 +3626,7 @@
   "taskAgentAutomaticUpdatesNeedsSetup": "Elige una configuración de IA antes de activar las actualizaciones automáticas.",
   "taskAgentAutomaticUpdatesOffBadge": "Actualizaciones automáticas desactivadas · Usa «Ejecutar ahora»",
   "taskAgentAutomaticUpdatesOffDescription": "Las actualizaciones automáticas están desactivadas. Usa «Ejecutar ahora» para actualizar este informe.",
-  "taskAgentAutomaticUpdatesOnDescription": "Cuando cambia esta tarea, empieza una cuenta atrás de dos minutos. Los cambios durante la cuenta atrás se agrupan en una sola actualización.",
+  "taskAgentAutomaticUpdatesOnDescription": "Cuando cambia algo relacionado con esta tarea, empieza una cuenta atrás de dos minutos. Los cambios durante la cuenta atrás se agrupan en una sola actualización.",
   "taskAgentCancelTimerTooltip": "Cancelar la actualización automática pendiente",
   "taskAgentChooseModel": "Elegir un modelo de razonamiento",
   "taskAgentChooseProfile": "Elegir una configuración guardada",

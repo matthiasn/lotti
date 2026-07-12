@@ -15196,7 +15196,7 @@ abstract class AppLocalizations {
   /// No description provided for @taskAgentAutomaticUpdatesOnDescription.
   ///
   /// In en, this message translates to:
-  /// **'When this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.'**
+  /// **'When anything related to this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.'**
   String get taskAgentAutomaticUpdatesOnDescription;
 
   /// No description provided for @taskAgentCancelTimerTooltip.

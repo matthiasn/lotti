@@ -3410,7 +3410,7 @@
   "taskAgentAutomaticUpdatesNeedsSetup": "Než zapneš automatické aktualizace, vyber nastavení AI.",
   "taskAgentAutomaticUpdatesOffBadge": "Automatické aktualizace vypnuté · Aktualizuj přes „Spustit nyní“",
   "taskAgentAutomaticUpdatesOffDescription": "Automatické aktualizace jsou vypnuté. Tuto zprávu aktualizuješ přes „Spustit nyní“.",
-  "taskAgentAutomaticUpdatesOnDescription": "Když se úkol změní, spustí se dvouminutový odpočet. Změny během odpočtu se sloučí do jedné aktualizace.",
+  "taskAgentAutomaticUpdatesOnDescription": "Když se změní něco souvisejícího s tímto úkolem, spustí se dvouminutový odpočet. Změny během odpočtu se sloučí do jedné aktualizace.",
   "taskAgentCancelTimerTooltip": "Zrušit čekající automatickou aktualizaci",
   "taskAgentChooseModel": "Vybrat model pro uvažování",
   "taskAgentChooseProfile": "Vybrat uložené nastavení",

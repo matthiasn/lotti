@@ -4283,7 +4283,7 @@
   "taskAgentAutomaticUpdatesNeedsSetup": "Choose an AI setup before turning on automatic updates.",
   "taskAgentAutomaticUpdatesOffBadge": "Automatic updates off · Use Run now to update",
   "taskAgentAutomaticUpdatesOffDescription": "Automatic updates are off. Use Run now to update this report.",
-  "taskAgentAutomaticUpdatesOnDescription": "When this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.",
+  "taskAgentAutomaticUpdatesOnDescription": "When anything related to this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.",
   "taskAgentCancelTimerTooltip": "Cancel pending automatic update",
   "taskAgentChooseModel": "Choose a thinking model",
   "taskAgentChooseProfile": "Choose a saved setup",

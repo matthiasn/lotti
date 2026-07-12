@@ -146,8 +146,9 @@ The toast may offer **Run now** while no wake is running. Do not automatically t
 The setup sheet also contains an independent persistent **Automatic updates**
 checkbox:
 
-- checked: task changes may start the existing two-minute coalescing countdown;
-- unchecked: no task-change countdown or automation-origin wake is allowed, but
+- checked: changes related to the task may start the existing two-minute
+  coalescing countdown;
+- unchecked: no task-related countdown or automation-origin wake is allowed, but
   the header keeps the manual **Run now** refresh action;
 - switching off clears the current countdown and removes only queued
   automation-origin jobs; a queued user Run now job is preserved;

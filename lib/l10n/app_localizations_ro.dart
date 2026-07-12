@@ -9000,7 +9000,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskAgentAutomaticUpdatesOnDescription =>
-      'Când această sarcină se modifică, începe o numărătoare inversă de două minute. Modificările din acest interval sunt grupate într-o singură actualizare.';
+      'Când se modifică ceva legat de această sarcină, începe o numărătoare inversă de două minute. Modificările din acest interval sunt grupate într-o singură actualizare.';
 
   @override
   String get taskAgentCancelTimerTooltip =>
