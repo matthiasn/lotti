@@ -71,6 +71,7 @@ AiConfigModel _$AiConfigModelFromJson(Map<String, dynamic> json) =>
           .map((e) => $enumDecode(_$ModalityEnumMap, e))
           .toList(),
       isReasoningModel: json['isReasoningModel'] as bool,
+      publisher: json['publisher'] as String?,
       supportsFunctionCalling:
           json['supportsFunctionCalling'] as bool? ?? false,
       geminiThinkingMode:
@@ -101,6 +102,7 @@ Map<String, dynamic> _$AiConfigModelToJson(AiConfigModel instance) =>
           .map((e) => _$ModalityEnumMap[e]!)
           .toList(),
       'isReasoningModel': instance.isReasoningModel,
+      'publisher': instance.publisher,
       'supportsFunctionCalling': instance.supportsFunctionCalling,
       'geminiThinkingMode':
           _$GeminiThinkingModeEnumMap[instance.geminiThinkingMode]!,

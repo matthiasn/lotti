@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -298,6 +299,8 @@ void main() {
             taskId: any(named: 'taskId'),
             templateId: any(named: 'templateId'),
             profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             awaitContent: any(named: 'awaitContent'),
           ),
@@ -312,6 +315,8 @@ void main() {
             taskId: task.meta.id,
             templateId: templateId,
             profileId: profileId,
+            setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+            setupOriginEntityId: categoryId,
             allowedCategoryIds: {categoryId},
             awaitContent: true,
           ),
@@ -401,6 +406,8 @@ void main() {
             taskId: any(named: 'taskId'),
             templateId: any(named: 'templateId'),
             profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             awaitContent: any(named: 'awaitContent'),
           ),
@@ -440,6 +447,8 @@ void main() {
             taskId: any(named: 'taskId'),
             templateId: any(named: 'templateId'),
             profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             awaitContent: any(named: 'awaitContent'),
           ),
@@ -453,6 +462,8 @@ void main() {
           () => mockService.createTaskAgent(
             taskId: task.meta.id,
             templateId: templateId,
+            setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+            setupOriginEntityId: categoryId,
             allowedCategoryIds: {categoryId},
             awaitContent: true,
           ),

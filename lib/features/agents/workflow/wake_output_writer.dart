@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
@@ -75,6 +76,7 @@ class WakeOutputWriter {
     required String threadId,
     required String runKey,
     required DateTime now,
+    ReportInferenceProvenance? reportProvenance,
   }) async {
     // Collects report details inside the transaction for post-commit
     // embedding. Declared outside so it survives the transaction scope.
@@ -134,6 +136,7 @@ class WakeOutputWriter {
             content: sanitizedContent,
             tldr: sanitizedTldr,
             oneLiner: sanitizedOneLiner,
+            provenance: reportProvenance?.toReportMap() ?? const {},
             threadId: threadId,
           ),
         );

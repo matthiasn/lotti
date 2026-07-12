@@ -183,6 +183,11 @@ extension _AgentHandlers on SyncEventProcessor {
           incoming: entityToApply,
           prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
         );
+      } else if (entityToApply is AgentIdentityEntity) {
+        entityToApply = await _preserveLocalTaskAgentConfigFields(
+          incoming: entityToApply,
+          prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+        );
       }
       await agentRepository!.upsertEntity(entityToApply);
       if (prefetchedAgentEntitiesById?.containsKey(entityToApply.id) ?? false) {
@@ -191,27 +196,41 @@ extension _AgentHandlers on SyncEventProcessor {
       // Remove wake subscriptions when an agent is paused or destroyed
       // remotely — mirrors what AgentService.pauseAgent/destroyAgent do
       // locally.
+      final appliedIdentity = entityToApply is AgentIdentityEntity
+          ? entityToApply
+          : null;
       if (wakeOrchestrator != null &&
-          resolvedEntity is AgentIdentityEntity &&
-          resolvedEntity.lifecycle != AgentLifecycle.active) {
-        wakeOrchestrator!.removeSubscriptions(resolvedEntity.agentId);
+          appliedIdentity != null &&
+          (appliedIdentity.lifecycle != AgentLifecycle.active ||
+              !appliedIdentity.config.automaticUpdatesEnabledEffective ||
+              appliedIdentity.config.inferenceSetup?.mode ==
+                  AgentInferenceSetupMode.disabled)) {
+        wakeOrchestrator!.disableAutomaticUpdatesRuntime(
+          appliedIdentity.agentId,
+        );
       }
       // Restore wake subscriptions when an agent is resumed remotely —
       // mirrors what TaskAgentService.restoreSubscriptionsForAgent does
       // locally after AgentService.resumeAgent.
       if (wakeOrchestrator != null &&
-          resolvedEntity is AgentIdentityEntity &&
-          resolvedEntity.lifecycle == AgentLifecycle.active &&
-          resolvedEntity.kind == 'task_agent') {
+          appliedIdentity != null &&
+          appliedIdentity.lifecycle == AgentLifecycle.active &&
+          appliedIdentity.kind == 'task_agent' &&
+          appliedIdentity.config.automaticUpdatesEnabledEffective &&
+          appliedIdentity.config.inferenceSetup?.mode !=
+              AgentInferenceSetupMode.disabled) {
+        wakeOrchestrator!.enableAutomaticUpdatesRuntime(
+          appliedIdentity.agentId,
+        );
         final links = await agentRepository!.getLinksFrom(
-          resolvedEntity.agentId,
+          appliedIdentity.agentId,
           type: 'agent_task',
         );
         for (final link in links) {
           wakeOrchestrator!.addSubscription(
             AgentSubscription(
-              id: '${resolvedEntity.agentId}_task_${link.toId}',
-              agentId: resolvedEntity.agentId,
+              id: '${appliedIdentity.agentId}_task_${link.toId}',
+              agentId: appliedIdentity.agentId,
               matchEntityIds: {link.toId},
               deferPropagatedMatches: false,
             ),
@@ -242,6 +261,45 @@ extension _AgentHandlers on SyncEventProcessor {
         subDomain: 'processor.apply',
       );
     }
+  }
+
+  /// Keeps explicit task-agent fields when an older client sends a rewrite
+  /// that omitted keys it could not deserialize.
+  ///
+  /// Explicit incoming true/false and configured/disabled values always win;
+  /// only null (field absent in old JSON) is overlaid from the local row.
+  Future<AgentIdentityEntity> _preserveLocalTaskAgentConfigFields({
+    required AgentIdentityEntity incoming,
+    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
+  }) async {
+    if (incoming.kind != 'task_agent' ||
+        (incoming.config.automaticUpdatesEnabled != null &&
+            incoming.config.inferenceSetup != null)) {
+      return incoming;
+    }
+    final prefetched = prefetchedAgentEntitiesById?[incoming.id];
+    final localEntity =
+        prefetched ??
+        (prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false
+            ? null
+            : await agentRepository!.getEntity(incoming.id));
+    if (localEntity is! AgentIdentityEntity) return incoming;
+
+    final automaticUpdatesEnabled =
+        incoming.config.automaticUpdatesEnabled ??
+        localEntity.config.automaticUpdatesEnabled;
+    final inferenceSetup =
+        incoming.config.inferenceSetup ?? localEntity.config.inferenceSetup;
+    if (automaticUpdatesEnabled == incoming.config.automaticUpdatesEnabled &&
+        inferenceSetup == incoming.config.inferenceSetup) {
+      return incoming;
+    }
+    return incoming.copyWith(
+      config: incoming.config.copyWith(
+        automaticUpdatesEnabled: automaticUpdatesEnabled,
+        inferenceSetup: inferenceSetup,
+      ),
+    );
   }
 
   Future<void> _applyAgentLinkMessage({
@@ -278,6 +336,9 @@ extension _AgentHandlers on SyncEventProcessor {
           final agent = await agentRepository!.getEntity(resolvedLink.fromId);
           if (agent is AgentIdentityEntity &&
               agent.lifecycle == AgentLifecycle.active &&
+              agent.config.automaticUpdatesEnabledEffective &&
+              agent.config.inferenceSetup?.mode !=
+                  AgentInferenceSetupMode.disabled &&
               agent.kind == 'task_agent') {
             wakeOrchestrator!.addSubscription(
               AgentSubscription(

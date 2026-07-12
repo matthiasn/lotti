@@ -1,22 +1,20 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/agents/ui/agent_controls.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
+import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_token_usage_section.dart';
-import 'package:lotti/features/agents/ui/profile_selector.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/inference_profile_controller.dart';
-import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
-import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
@@ -300,69 +298,52 @@ class _ProfileSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final identityAsync = ref.watch(agentIdentityProvider(agentId));
-    final identity = identityAsync.value?.mapOrNull(agent: (e) => e);
-    final profileId = identity?.config.profileId;
-
-    // Resolve profile name.
-    final profilesAsync = ref.watch(inferenceProfileControllerProvider);
-    final profileName = profilesAsync.value
-        ?.whereType<AiConfigInferenceProfile>()
-        .where((p) => p.id == profileId)
-        .firstOrNull
-        ?.name;
+    final tokens = context.designTokens;
+    final state = ref
+        .watch(agentStateProvider(agentId))
+        .value
+        ?.mapOrNull(agentState: (value) => value);
+    final setup = ref.watch(taskAgentResolvedSetupProvider(agentId)).value;
+    final route = setup?.profile == null
+        ? null
+        : formatInferenceRouteIdentity(
+            InferenceRouteSnapshot.fromResolvedProfile(setup!.profile!),
+          );
+    final taskId = state?.slots.activeTaskId;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.cardPadding,
-        vertical: AppTheme.spacingSmall,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.cardPadding,
+        vertical: tokens.spacing.step3,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.messages.inferenceProfilesTitle,
-            style: context.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            context.messages.taskAgentSetupTitle,
+            style: tokens.typography.styles.subtitle.subtitle2,
           ),
-          const SizedBox(height: AppTheme.spacingSmall),
-          ProfileSelector(
-            selectedProfileId: profileId,
-            onProfileSelected: (newProfileId) async {
-              if (identity == null) return;
-              final service = ref.read(taskAgentServiceProvider);
-              try {
-                await service.updateAgentProfile(
-                  agentId: agentId,
-                  profileId: newProfileId,
-                );
-                if (!context.mounted) return;
-                ref.invalidate(agentIdentityProvider(agentId));
-              } catch (e, stackTrace) {
-                developer.log(
-                  'updateAgentProfile failed',
-                  name: 'AgentInternalsBody',
-                  error: e.runtimeType,
-                  stackTrace: stackTrace,
-                );
-                if (!context.mounted) return;
-                context.showToast(
-                  tone: DesignSystemToastTone.error,
-                  title: context.messages.commonError,
-                );
-              }
-            },
-          ),
-          if (profileName != null) ...[
-            const SizedBox(height: AppTheme.spacingXSmall),
-            Text(
-              profileName,
-              style: context.textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
+          SizedBox(height: tokens.spacing.step3),
+          DesignSystemListItem(
+            title: route ?? context.messages.taskAgentNoProfileSelected,
+            subtitle: route == null
+                ? context.messages.taskAgentNoProfileSelectedDescription
+                : context.messages.taskAgentCurrentSetupLabel,
+            subtitleMaxLines: null,
+            leading: Icon(
+              route == null
+                  ? Icons.error_outline_rounded
+                  : Icons.psychology_outlined,
             ),
-          ],
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: taskId == null
+                ? null
+                : () => AgentModelSheet.show(
+                    context: context,
+                    taskId: taskId,
+                    agentId: agentId,
+                  ),
+          ),
         ],
       ),
     );

@@ -117,6 +117,34 @@ void main() {
       expect(semantics.properties.enabled, isTrue);
     });
 
+    testWidgets('allows an opt-in label to wrap without ellipsis', (
+      tester,
+    ) async {
+      const label = 'Automatic updates for every future task change';
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: 140,
+            child: DesignSystemCheckbox(
+              value: true,
+              label: label,
+              labelMaxLines: null,
+              onChanged: _noop,
+            ),
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.text(label));
+      expect(text.maxLines, isNull);
+      expect(text.overflow, TextOverflow.visible);
+      expect(
+        tester.getSize(find.text(label)).height,
+        greaterThan(dsTokensLight.typography.lineHeight.bodySmall),
+      );
+    });
+
     testWidgets('renders the indeterminate state with mixed semantics', (
       tester,
     ) async {

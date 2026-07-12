@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:meta/meta.dart';
@@ -94,6 +95,31 @@ class ResolvedProfile {
   AiConfigModel? get effectiveHighEndModel =>
       thinkingHighEndModel ?? thinkingModel;
 
+  /// Returns this profile with only its thinking route replaced.
+  ResolvedProfile withThinkingRoute({
+    required AiConfigModel model,
+    required AiConfigInferenceProvider provider,
+  }) {
+    return ResolvedProfile(
+      thinkingModelId: model.providerModelId,
+      thinkingProvider: provider,
+      thinkingModel: model,
+      thinkingHighEndModelId: thinkingHighEndModelId,
+      thinkingHighEndProvider: thinkingHighEndProvider,
+      thinkingHighEndModel: thinkingHighEndModel,
+      imageRecognitionModelId: imageRecognitionModelId,
+      imageRecognitionProvider: imageRecognitionProvider,
+      imageRecognitionModel: imageRecognitionModel,
+      transcriptionModelId: transcriptionModelId,
+      transcriptionProvider: transcriptionProvider,
+      transcriptionModel: transcriptionModel,
+      imageGenerationModelId: imageGenerationModelId,
+      imageGenerationProvider: imageGenerationProvider,
+      imageGenerationModel: imageGenerationModel,
+      skillAssignments: skillAssignments,
+    );
+  }
+
   static const _listEquals = ListEquality<SkillAssignment>();
 
   @override
@@ -137,4 +163,92 @@ class ResolvedProfile {
     imageGenerationModel,
     _listEquals.hash(skillAssignments),
   );
+}
+
+/// Outcome of resolving a task-agent inference setup.
+enum AgentSetupResolutionStatus { resolved, disabled, broken, legacyUnknown }
+
+/// The configuration tier that supplied the effective thinking route.
+enum AgentSetupResolutionSource {
+  directModel,
+  baseProfile,
+  legacyAgentProfile,
+  legacyVersionProfile,
+  legacyTemplateProfile,
+  legacyModel,
+}
+
+/// Stable identity used to compare live routing with immutable report history.
+@immutable
+class InferenceRouteFingerprint {
+  const InferenceRouteFingerprint({
+    required this.providerModelId,
+    required this.providerType,
+    required this.runtimeSettings,
+    this.modelConfigId,
+    this.providerConfigId,
+  });
+
+  factory InferenceRouteFingerprint.fromProfile(ResolvedProfile profile) {
+    return InferenceRouteFingerprint(
+      modelConfigId: profile.thinkingModel?.id,
+      providerModelId: profile.thinkingModelId,
+      providerConfigId: profile.thinkingProvider.id,
+      providerType: profile.thinkingProvider.inferenceProviderType,
+      runtimeSettings: <String, Object?>{
+        if (profile.thinkingModel != null)
+          'geminiThinkingMode': profile.thinkingModel!.geminiThinkingMode.name,
+      },
+    );
+  }
+
+  final String? modelConfigId;
+  final String providerModelId;
+  final String? providerConfigId;
+  final InferenceProviderType providerType;
+  final Map<String, Object?> runtimeSettings;
+
+  static const _mapEquals = MapEquality<String, Object?>();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is InferenceRouteFingerprint &&
+          modelConfigId == other.modelConfigId &&
+          providerModelId == other.providerModelId &&
+          providerConfigId == other.providerConfigId &&
+          providerType == other.providerType &&
+          _mapEquals.equals(runtimeSettings, other.runtimeSettings);
+
+  @override
+  int get hashCode => Object.hash(
+    modelConfigId,
+    providerModelId,
+    providerConfigId,
+    providerType,
+    _mapEquals.hash(runtimeSettings),
+  );
+}
+
+/// Detailed, shared resolution result consumed by runtime and UI.
+@immutable
+class ResolvedAgentSetup {
+  const ResolvedAgentSetup({
+    required this.status,
+    this.profile,
+    this.source,
+    this.setupOrigin,
+    this.brokenSelectionId,
+    this.routeFingerprint,
+  });
+
+  final AgentSetupResolutionStatus status;
+  final ResolvedProfile? profile;
+  final AgentSetupResolutionSource? source;
+  final AgentInferenceSetupOrigin? setupOrigin;
+  final String? brokenSelectionId;
+  final InferenceRouteFingerprint? routeFingerprint;
+
+  bool get canRun => status == AgentSetupResolutionStatus.resolved;
+  bool get hasBrokenSelection => brokenSelectionId != null;
 }

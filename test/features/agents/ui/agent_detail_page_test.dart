@@ -4,15 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/inference_profile_controller.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -681,42 +680,29 @@ void main() {
     });
   });
 
-  group('AgentDetailPage - Profile section', () {
-    testWidgets('shows resolved profile name when profileId is set', (
+  group('AgentDetailPage - Agent setup section', () {
+    testWidgets('shows the resolved model and serving provider', (
       tester,
     ) async {
-      final profile = testInferenceProfile(
-        id: 'prof-1',
-        name: 'Fast Flash',
-      );
-
-      await tester.pumpWidget(
-        buildSubject(
-          identityOverride: (ref, agentId) async => makeTestIdentity(
-            config: const AgentConfig(profileId: 'prof-1'),
-          ),
-          extraOverrides: [
-            inferenceProfileControllerProvider.overrideWith(
-              () => _FakeProfileController([profile]),
-            ),
-          ],
+      final model = testAiModel();
+      final provider = testInferenceProvider();
+      final resolved = ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.resolved,
+        profile: ResolvedProfile(
+          thinkingModelId: model.providerModelId,
+          thinkingProvider: provider,
+          thinkingModel: model,
         ),
+        source: AgentSetupResolutionSource.baseProfile,
+        setupOrigin: AgentInferenceSetupOrigin.user,
       );
-      await tester.pump();
-      await tester.pump();
 
-      // Profile name appears twice: in the ProfileSelector input and as
-      // a subtitle label below it.
-      expect(find.text('Fast Flash'), findsAtLeastNWidgets(1));
-    });
-
-    testWidgets('shows profile section heading', (tester) async {
       await tester.pumpWidget(
         buildSubject(
           identityOverride: (ref, agentId) async => makeTestIdentity(),
           extraOverrides: [
-            inferenceProfileControllerProvider.overrideWith(
-              () => _FakeProfileController([]),
+            taskAgentResolvedSetupProvider.overrideWith(
+              (ref, agentId) async => resolved,
             ),
           ],
         ),
@@ -724,43 +710,32 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // "Inference Profiles" appears as section heading and in ProfileSelector.
+      expect(find.text('Test Model · via Gemini'), findsOneWidget);
+    });
+
+    testWidgets('shows a visible error when no setup resolves', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          identityOverride: (ref, agentId) async => makeTestIdentity(),
+          extraOverrides: [
+            taskAgentResolvedSetupProvider.overrideWith(
+              (ref, agentId) async => null,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
       final context = tester.element(find.byType(AgentDetailPage));
       expect(
-        find.text(context.messages.inferenceProfilesTitle),
-        findsAtLeastNWidgets(1),
+        find.text(context.messages.taskAgentSetupTitle),
+        findsOneWidget,
       );
-    });
-
-    testWidgets('does not show profile name when profileId is null', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildSubject(
-          identityOverride: (ref, agentId) async => makeTestIdentity(),
-          extraOverrides: [
-            inferenceProfileControllerProvider.overrideWith(
-              () => _FakeProfileController([
-                testInferenceProfile(id: 'prof-1', name: 'Some Profile'),
-              ]),
-            ),
-          ],
-        ),
+      expect(
+        find.text(context.messages.taskAgentNoProfileSelected),
+        findsOneWidget,
       );
-      await tester.pump();
-      await tester.pump();
-
-      // No profile name should be shown since identity has no profileId.
-      expect(find.text('Some Profile'), findsNothing);
     });
   });
-}
-
-class _FakeProfileController extends InferenceProfileController {
-  _FakeProfileController(this._profiles);
-
-  final List<AiConfig> _profiles;
-
-  @override
-  Stream<List<AiConfig>> build() => Stream.value(_profiles);
 }

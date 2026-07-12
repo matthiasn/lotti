@@ -18,6 +18,7 @@ import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';

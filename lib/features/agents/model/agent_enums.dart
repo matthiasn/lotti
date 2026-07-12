@@ -16,6 +16,30 @@ enum AgentLifecycle {
   destroyed,
 }
 
+/// Persistence mode for a task agent's inference setup.
+enum AgentInferenceSetupMode {
+  /// Use the configured profile and/or direct thinking-model selection.
+  configured,
+
+  /// Do not run inference for this agent until a setup is selected.
+  disabled,
+}
+
+/// Explains why a persisted task-agent inference setup exists.
+enum AgentInferenceSetupOrigin {
+  /// The user selected the setup directly for this agent.
+  user,
+
+  /// The category default was copied when creating or resetting the agent.
+  categorySnapshot,
+
+  /// A template or template-version default was copied into the agent.
+  templateSnapshot,
+
+  /// A newer client wrote an origin this build does not recognize.
+  unknown,
+}
+
 /// How the agent interacts with the user.
 enum AgentInteractionMode {
   /// Agent operates without user prompts during execution.
@@ -130,6 +154,9 @@ enum WakeReason {
   /// does not wait through a 2-minute countdown after speaking.
   transcriptionComplete,
 }
+
+/// Whether a queued wake was explicitly requested by the user or automation.
+enum WakeInitiator { user, automation }
 
 /// Where a durable planner-knowledge entry came from (ADR 0022 Decision 10).
 enum KnowledgeSource {

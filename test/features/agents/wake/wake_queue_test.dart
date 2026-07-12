@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'wake_queue_test_helpers.dart';
 
@@ -16,6 +17,7 @@ void main() {
     String? reasonId,
     String? workspaceKey,
     DateTime? createdAt,
+    WakeInitiator? initiator,
   }) {
     return WakeJob(
       runKey: runKey,
@@ -25,6 +27,7 @@ void main() {
       reasonId: reasonId,
       workspaceKey: workspaceKey,
       createdAt: createdAt ?? testDate,
+      initiator: initiator,
     );
   }
 
@@ -50,12 +53,25 @@ void main() {
       expect(job.triggerTokens, tokens);
       expect(job.reasonId, 'timer-1');
       expect(job.createdAt, testDate);
+      expect(job.initiator, WakeInitiator.automation);
     });
 
     test('reasonId is optional and defaults to null', () {
       final job = makeJob();
 
       expect(job.reasonId, isNull);
+    });
+
+    test('reanalysis defaults to user and explicit initiator wins', () {
+      final userJob = makeJob(reason: WakeReason.reanalysis.name);
+      final forcedAutomation = makeJob(
+        runKey: 'forced',
+        reason: WakeReason.reanalysis.name,
+        initiator: WakeInitiator.automation,
+      );
+
+      expect(userJob.initiator, WakeInitiator.user);
+      expect(forcedAutomation.initiator, WakeInitiator.automation);
     });
   });
 
@@ -249,6 +265,40 @@ void main() {
         final result = queue.dequeue()!;
         expect(result.runKey, 'rk-1');
         expect(result.agentId, 'agent-42');
+      });
+    });
+
+    group('removeByAgentWhere', () {
+      test('removes automation while preserving user and other-agent jobs', () {
+        queue
+          ..enqueue(
+            makeJob(
+              runKey: 'automatic',
+              initiator: WakeInitiator.automation,
+            ),
+          )
+          ..enqueue(
+            makeJob(
+              runKey: 'user',
+              initiator: WakeInitiator.user,
+            ),
+          )
+          ..enqueue(
+            makeJob(
+              runKey: 'other-agent',
+              agentId: 'agent-2',
+              initiator: WakeInitiator.automation,
+            ),
+          );
+
+        final removed = queue.removeByAgentWhere(
+          'agent-1',
+          (job) => job.initiator == WakeInitiator.automation,
+        );
+
+        expect(removed.map((job) => job.runKey), ['automatic']);
+        expect(queue.dequeue()?.runKey, 'user');
+        expect(queue.dequeue()?.runKey, 'other-agent');
       });
     });
 

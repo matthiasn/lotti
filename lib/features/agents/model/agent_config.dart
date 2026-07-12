@@ -18,6 +18,20 @@ abstract class AgentConfig with _$AgentConfig {
     /// Inference profile ID — takes precedence over [modelId] when set.
     String? profileId,
 
+    /// Typed persistent inference setup for task agents.
+    ///
+    /// Null preserves the legacy profile/template/model resolution chain.
+    /// Once present, this setup is authoritative: configured setups resolve
+    /// only their direct model override or base profile, while disabled setups
+    /// prohibit inference instead of falling through to legacy defaults.
+    AgentInferenceSetup? inferenceSetup,
+
+    /// Whether task changes may schedule coalesced automatic wakes.
+    ///
+    /// Null means legacy/on. New task agents and the first switch edit persist
+    /// an explicit value independently from profile/model selection.
+    bool? automaticUpdatesEnabled,
+
     /// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
     /// it is configuration set once at creation, not mutable derived state.
     /// Null falls back to the default window. Reads accept the legacy
@@ -32,6 +46,36 @@ abstract class AgentConfig with _$AgentConfig {
 
   factory AgentConfig.fromJson(Map<String, dynamic> json) =>
       _$AgentConfigFromJson(json);
+}
+
+extension AgentConfigAutomation on AgentConfig {
+  /// Legacy configs omitted the field and retain the historical enabled state.
+  bool get automaticUpdatesEnabledEffective => automaticUpdatesEnabled ?? true;
+}
+
+/// Persistent inference routing owned by one task-agent instance.
+@freezed
+abstract class AgentInferenceSetup with _$AgentInferenceSetup {
+  const factory AgentInferenceSetup({
+    @JsonKey(unknownEnumValue: AgentInferenceSetupMode.disabled)
+    required AgentInferenceSetupMode mode,
+    @JsonKey(unknownEnumValue: AgentInferenceSetupOrigin.unknown)
+    required AgentInferenceSetupOrigin origin,
+
+    /// Base inference profile. Its non-thinking slots remain available when a
+    /// direct thinking-model override is selected.
+    String? baseProfileId,
+
+    /// Config-row ID (`AiConfigModel.id`) for the task agent's thinking model.
+    /// This is deliberately not a provider-native `providerModelId`.
+    String? thinkingModelOverrideId,
+
+    /// Category/template ID whose default was copied, when applicable.
+    String? originEntityId,
+  }) = _AgentInferenceSetup;
+
+  factory AgentInferenceSetup.fromJson(Map<String, dynamic> json) =>
+      _$AgentInferenceSetupFromJson(json);
 }
 
 /// Named slots that an agent uses to track its active work items.

@@ -4278,7 +4278,15 @@
   "taskActionBarOpenRunningTimer": "Open running timer",
   "taskActionBarStopTracking": "Stop time tracking",
   "taskActionBarTrackTime": "Track time",
-  "taskAgentCancelTimerTooltip": "Cancel",
+  "taskAgentAttributionUnavailable": "Attribution unavailable",
+  "taskAgentAutomaticUpdatesLabel": "Automatic updates",
+  "taskAgentAutomaticUpdatesNeedsSetup": "Choose an AI setup before turning on automatic updates.",
+  "taskAgentAutomaticUpdatesOffBadge": "Automatic updates off · Use Run now to update",
+  "taskAgentAutomaticUpdatesOffDescription": "Automatic updates are off. Use Run now to update this report.",
+  "taskAgentAutomaticUpdatesOnDescription": "When this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.",
+  "taskAgentCancelTimerTooltip": "Cancel pending automatic update",
+  "taskAgentChooseModel": "Choose a thinking model",
+  "taskAgentChooseProfile": "Choose a saved setup",
   "taskAgentCountdownTooltip": "Next auto-run in {countdown}",
   "@taskAgentCountdownTooltip": {
     "placeholders": {
@@ -4296,7 +4304,57 @@
       }
     }
   },
-  "taskAgentRunNowTooltip": "Refresh",
+  "taskAgentCurrentSetupHeader": "Current setup",
+  "taskAgentCurrentSetupLabel": "Current setup",
+  "taskAgentDirectModelOverride": "Direct model override",
+  "taskAgentDisableConfirmAction": "Turn off",
+  "taskAgentDisableConfirmBody": "The current report stays visible, but this agent cannot run until you choose a setup.",
+  "taskAgentDisableConfirmTitle": "Turn off AI setup?",
+  "taskAgentModelPickerTitle": "Choose thinking model",
+  "taskAgentNoAiSetup": "No AI setup",
+  "taskAgentNoAiSetupDescription": "Pauses agent inference until you choose a profile or model.",
+  "taskAgentNoModelsAvailable": "No compatible thinking models available",
+  "taskAgentNoProfilesAvailable": "No profiles available on this device",
+  "taskAgentNoProfileSelected": "No AI setup",
+  "taskAgentNoProfileSelectedDescription": "Choose a saved setup or thinking model before this agent can run.",
+  "taskAgentProfileDefaultBadge": "Profile default",
+  "taskAgentRunNowTooltip": "Run now",
+  "taskAgentSetupAndReportSemantics": "This report and current setup use {identity}. Activate to change setup.",
+  "@taskAgentSetupAndReportSemantics": {
+    "placeholders": {
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "taskAgentSetupBroken": "Selected AI setup is unavailable",
+  "taskAgentSetupChangedToast": "Using {model} for every future agent update until you change it.",
+  "@taskAgentSetupChangedToast": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "taskAgentSetupOriginCategory": "Copied from the category default when this agent was created",
+  "taskAgentSetupOriginDisabled": "Disabled",
+  "taskAgentSetupOriginLegacy": "Legacy setup",
+  "taskAgentSetupOriginTemplate": "Copied from the template",
+  "taskAgentSetupOriginUser": "You chose this for this agent",
+  "taskAgentSetupPersistenceDescription": "Changes apply to every future update until you change them.",
+  "taskAgentSetupSemantics": "Current setup: {identity}. Activate to change setup.",
+  "@taskAgentSetupSemantics": {
+    "placeholders": {
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "taskAgentSetupTitle": "Agent setup",
+  "taskAgentThisReportHeader": "This report",
+  "taskAgentUseCategoryDefault": "Copy category default",
+  "taskAgentUseCategoryDefaultDescription": "Copies the category’s current setup. Later category changes won’t affect this agent.",
+  "taskAgentUseProfileDefault": "Use profile default",
   "taskCategoryAllLabel": "all",
   "taskCategoryLabel": "Category:",
   "taskCategoryUnassignedLabel": "unassigned",

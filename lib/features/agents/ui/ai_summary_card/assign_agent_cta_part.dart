@@ -96,6 +96,7 @@ Future<void> _createTaskAgent(
       taskId: taskId,
       templateId: result.templateId,
       profileId: result.profileId,
+      setupOrigin: AgentInferenceSetupOrigin.user,
       allowedCategoryIds: allowedCategoryIds,
     );
     if (context.mounted) {

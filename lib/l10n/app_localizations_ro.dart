@@ -8980,7 +8980,37 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskActionBarTrackTime => 'Înregistrează timpul';
 
   @override
-  String get taskAgentCancelTimerTooltip => 'Anulează';
+  String get taskAgentAttributionUnavailable =>
+      'Atribuirea nu este disponibilă';
+
+  @override
+  String get taskAgentAutomaticUpdatesLabel => 'Actualizări automate';
+
+  @override
+  String get taskAgentAutomaticUpdatesNeedsSetup =>
+      'Alegeți o configurare AI înainte de a activa actualizările automate.';
+
+  @override
+  String get taskAgentAutomaticUpdatesOffBadge =>
+      'Actualizări automate dezactivate · Folosiți „Rulează acum”';
+
+  @override
+  String get taskAgentAutomaticUpdatesOffDescription =>
+      'Actualizările automate sunt dezactivate. Folosiți „Rulează acum” pentru a actualiza acest raport.';
+
+  @override
+  String get taskAgentAutomaticUpdatesOnDescription =>
+      'Când această sarcină se modifică, începe o numărătoare inversă de două minute. Modificările din acest interval sunt grupate într-o singură actualizare.';
+
+  @override
+  String get taskAgentCancelTimerTooltip =>
+      'Anulați actualizarea automată în așteptare';
+
+  @override
+  String get taskAgentChooseModel => 'Alegeți un model de raționament';
+
+  @override
+  String get taskAgentChooseProfile => 'Alegeți o configurare salvată';
 
   @override
   String taskAgentCountdownTooltip(String countdown) {
@@ -8996,7 +9026,112 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get taskAgentRunNowTooltip => 'Reîmprospătează';
+  String get taskAgentCurrentSetupHeader => 'Configurarea curentă';
+
+  @override
+  String get taskAgentCurrentSetupLabel => 'Configurarea curentă';
+
+  @override
+  String get taskAgentDirectModelOverride => 'Înlocuire directă a modelului';
+
+  @override
+  String get taskAgentDisableConfirmAction => 'Dezactivează';
+
+  @override
+  String get taskAgentDisableConfirmBody =>
+      'Raportul curent rămâne vizibil, dar agentul nu poate rula până când alegeți o configurare.';
+
+  @override
+  String get taskAgentDisableConfirmTitle => 'Dezactivați configurarea AI?';
+
+  @override
+  String get taskAgentModelPickerTitle => 'Alegeți modelul de raționament';
+
+  @override
+  String get taskAgentNoAiSetup => 'Fără configurare AI';
+
+  @override
+  String get taskAgentNoAiSetupDescription =>
+      'Oprește inferența până când alegeți un profil sau un model.';
+
+  @override
+  String get taskAgentNoModelsAvailable =>
+      'Nu există modele de raționament compatibile';
+
+  @override
+  String get taskAgentNoProfilesAvailable =>
+      'Nu există profiluri disponibile pe acest dispozitiv';
+
+  @override
+  String get taskAgentNoProfileSelected => 'Nicio configurare AI';
+
+  @override
+  String get taskAgentNoProfileSelectedDescription =>
+      'Alegeți o configurare salvată sau un model înainte ca agentul să poată rula.';
+
+  @override
+  String get taskAgentProfileDefaultBadge => 'Modelul implicit al profilului';
+
+  @override
+  String get taskAgentRunNowTooltip => 'Rulează acum';
+
+  @override
+  String taskAgentSetupAndReportSemantics(String identity) {
+    return 'Acest raport și configurarea curentă folosesc $identity. Activați pentru a modifica configurarea.';
+  }
+
+  @override
+  String get taskAgentSetupBroken =>
+      'Configurarea AI selectată nu este disponibilă';
+
+  @override
+  String taskAgentSetupChangedToast(String model) {
+    return '$model va fi folosit pentru toate actualizările viitoare până când îl schimbați.';
+  }
+
+  @override
+  String get taskAgentSetupOriginCategory =>
+      'Copiată din configurarea implicită a categoriei la crearea agentului';
+
+  @override
+  String get taskAgentSetupOriginDisabled => 'Dezactivată';
+
+  @override
+  String get taskAgentSetupOriginLegacy => 'Configurare veche';
+
+  @override
+  String get taskAgentSetupOriginTemplate => 'Copiată din șablon';
+
+  @override
+  String get taskAgentSetupOriginUser =>
+      'Ați ales această configurare pentru acest agent';
+
+  @override
+  String get taskAgentSetupPersistenceDescription =>
+      'Modificările se aplică tuturor actualizărilor viitoare până când le schimbați din nou.';
+
+  @override
+  String taskAgentSetupSemantics(String identity) {
+    return 'Configurarea curentă: $identity. Activați pentru a o modifica.';
+  }
+
+  @override
+  String get taskAgentSetupTitle => 'Configurarea agentului';
+
+  @override
+  String get taskAgentThisReportHeader => 'Acest raport';
+
+  @override
+  String get taskAgentUseCategoryDefault =>
+      'Copiați configurarea implicită a categoriei';
+
+  @override
+  String get taskAgentUseCategoryDefaultDescription =>
+      'Copiază configurarea curentă a categoriei. Modificările ulterioare ale categoriei nu vor afecta acest agent.';
+
+  @override
+  String get taskAgentUseProfileDefault =>
+      'Folosiți modelul implicit al profilului';
 
   @override
   String get taskCategoryAllLabel => 'toate';

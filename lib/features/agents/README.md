@@ -63,6 +63,29 @@ Startup does this:
   Gemini-Flash-specific override or hard-coded budget in this feature. The
   `GeminiThinkingMode` → numeric/`thinkingLevel` mapping lives in
   `GeminiThinkingConfig` in the `ai` feature.
+- A task agent owns a nullable typed `AgentInferenceSetup`. `null` means a
+  legacy instance and preserves the historic agent-profile → template-version
+  profile → template profile → legacy model chain. Once a setup is written it
+  is authoritative: `disabled` never falls through, while `configured` resolves
+  a direct thinking-model override first and its base profile second. The direct
+  override stores an `AiConfigModel.id`, not a provider-native model id. The
+  same `ProfileResolver.resolveDetailed` result drives both wake execution and
+  the AI-summary identity header.
+- New agents snapshot where their setup came from (`user`, category, or
+  template). Category assignment with no default profile creates an explicit
+  disabled setup even if the selected template has a profile; the header then
+  shows `No profile selected` and Run now stays disabled until a profile or
+  direct thinking model is chosen.
+- `automaticUpdatesEnabled` is an independent persistent task-agent setting.
+  Turning it off removes subscriptions, clears countdown state, and selectively
+  drops queued automation wakes while preserving user-origin Run now jobs. It
+  does not change the selected profile/model or hide the current report.
+- Every task-agent report written by `WakeOutputWriter` receives a versioned
+  inference provenance stamp captured once at wake start. It denormalizes model
+  name, publisher, serving-provider name/type, route identifiers and relevant
+  runtime settings without storing credentials or endpoint URLs. Historical
+  reports without the stamp show attribution unavailable instead of borrowing
+  the current setup.
 - Linked task context for agents is built directly in
   `TaskAgentContextBuilder.buildLinkedTasksContextJson` (the wake's prompt/context
   collaborator, which `TaskAgentWorkflow` holds and delegates to; forked from
@@ -87,6 +110,40 @@ flowchart LR
   Wake -.->|disabled today| Drill["get_related_task_details<br/>(enabled: false)"]
   Drill -.-> FullSibling["Full sibling task JSON + latest task-agent report"]
 ```
+
+```mermaid
+flowchart TD
+  Config["AgentConfig.inferenceSetup"] --> Legacy{"null?"}
+  Legacy -->|yes| LegacyChain["agent profile → version profile → template profile → legacy model"]
+  Legacy -->|no| Mode{"mode"}
+  Mode -->|disabled| Stop["No inference / visible no-profile state"]
+  Mode -->|configured| Override{"direct thinking override resolves?"}
+  Override -->|yes| Direct["AiConfigModel.id route"]
+  Override -->|no| Base["base profile thinking route"]
+  Direct --> Snapshot["Immutable InferenceRunSnapshot"]
+  Base --> Snapshot
+  Snapshot --> Wake["TaskAgentWorkflow"]
+  Snapshot --> Provenance["ReportInferenceProvenance v1"]
+```
+
+```mermaid
+stateDiagram-v2
+  [*] --> AutomaticOn
+  AutomaticOn --> Countdown: task change
+  Countdown --> Running: deadline or Run now
+  AutomaticOn --> AutomaticOff: checkbox off
+  Countdown --> AutomaticOff: checkbox off / cancel automation job
+  AutomaticOff --> Running: Run now (user initiator)
+  AutomaticOff --> AutomaticOn: checkbox on / restore subscriptions only
+  Running --> AutomaticOff: wake finishes while preference is off
+  Running --> AutomaticOn: wake finishes while preference is on
+```
+
+The AI-summary header compares the live route fingerprint with the immutable
+final-author route on the visible report. Equal routes collapse to one editable
+identity line. Different routes render separate `Current setup` and `This
+report` lines. Agent Internals opens the same `AgentModelSheet`; it does not own
+a second profile mutation path.
 
 ```mermaid
 flowchart TD

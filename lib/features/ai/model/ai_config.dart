@@ -80,6 +80,11 @@ sealed class AiConfig with _$AiConfig {
     required List<Modality> inputModalities,
     required List<Modality> outputModalities,
     required bool isReasoningModel,
+
+    /// Structured model publisher/developer identity (for example Google,
+    /// Meta, Alibaba, Zhipu, or Mistral). Null when the catalog cannot provide
+    /// this authoritatively; UI must not infer it from an arbitrary name.
+    String? publisher,
     @Default(false) bool supportsFunctionCalling,
     @Default(GeminiThinkingMode.low) GeminiThinkingMode geminiThinkingMode,
     DateTime? updatedAt,

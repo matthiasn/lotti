@@ -8988,7 +8988,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskActionBarTrackTime => 'Suivre le temps';
 
   @override
-  String get taskAgentCancelTimerTooltip => 'Annuler';
+  String get taskAgentAttributionUnavailable => 'Attribution indisponible';
+
+  @override
+  String get taskAgentAutomaticUpdatesLabel => 'Mises à jour automatiques';
+
+  @override
+  String get taskAgentAutomaticUpdatesNeedsSetup =>
+      'Choisis une configuration IA avant d’activer les mises à jour automatiques.';
+
+  @override
+  String get taskAgentAutomaticUpdatesOffBadge =>
+      'Mises à jour automatiques désactivées · Utilise « Exécuter maintenant »';
+
+  @override
+  String get taskAgentAutomaticUpdatesOffDescription =>
+      'Les mises à jour automatiques sont désactivées. Utilise « Exécuter maintenant » pour actualiser ce rapport.';
+
+  @override
+  String get taskAgentAutomaticUpdatesOnDescription =>
+      'Quand cette tâche change, un compte à rebours de deux minutes démarre. Les changements effectués pendant ce délai sont regroupés dans une seule mise à jour.';
+
+  @override
+  String get taskAgentCancelTimerTooltip =>
+      'Annuler la mise à jour automatique en attente';
+
+  @override
+  String get taskAgentChooseModel => 'Choisir un modèle de réflexion';
+
+  @override
+  String get taskAgentChooseProfile => 'Choisir une configuration enregistrée';
 
   @override
   String taskAgentCountdownTooltip(String countdown) {
@@ -9004,7 +9033,110 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get taskAgentRunNowTooltip => 'Actualiser';
+  String get taskAgentCurrentSetupHeader => 'Configuration actuelle';
+
+  @override
+  String get taskAgentCurrentSetupLabel => 'Configuration actuelle';
+
+  @override
+  String get taskAgentDirectModelOverride => 'Remplacement direct du modèle';
+
+  @override
+  String get taskAgentDisableConfirmAction => 'Désactiver';
+
+  @override
+  String get taskAgentDisableConfirmBody =>
+      'Le rapport actuel reste visible, mais l’agent ne peut plus s’exécuter tant que tu n’as pas choisi de configuration.';
+
+  @override
+  String get taskAgentDisableConfirmTitle => 'Désactiver la configuration IA ?';
+
+  @override
+  String get taskAgentModelPickerTitle => 'Choisir un modèle de réflexion';
+
+  @override
+  String get taskAgentNoAiSetup => 'Aucune configuration IA';
+
+  @override
+  String get taskAgentNoAiSetupDescription =>
+      'Met l’inférence en pause jusqu’à ce que tu choisisses un profil ou un modèle.';
+
+  @override
+  String get taskAgentNoModelsAvailable =>
+      'Aucun modèle de réflexion compatible disponible';
+
+  @override
+  String get taskAgentNoProfilesAvailable =>
+      'Aucun profil disponible sur cet appareil';
+
+  @override
+  String get taskAgentNoProfileSelected => 'Aucune configuration IA';
+
+  @override
+  String get taskAgentNoProfileSelectedDescription =>
+      'Choisis une configuration enregistrée ou un modèle avant de lancer l’agent.';
+
+  @override
+  String get taskAgentProfileDefaultBadge => 'Réglage du profil';
+
+  @override
+  String get taskAgentRunNowTooltip => 'Exécuter maintenant';
+
+  @override
+  String taskAgentSetupAndReportSemantics(String identity) {
+    return 'Ce rapport et la configuration actuelle utilisent $identity. Active pour la modifier.';
+  }
+
+  @override
+  String get taskAgentSetupBroken =>
+      'La configuration IA sélectionnée est indisponible';
+
+  @override
+  String taskAgentSetupChangedToast(String model) {
+    return '$model sera utilisé pour chaque future mise à jour jusqu’à ce que tu le changes.';
+  }
+
+  @override
+  String get taskAgentSetupOriginCategory =>
+      'Copiée depuis le réglage de la catégorie à la création de cet agent';
+
+  @override
+  String get taskAgentSetupOriginDisabled => 'Désactivée';
+
+  @override
+  String get taskAgentSetupOriginLegacy => 'Ancienne configuration';
+
+  @override
+  String get taskAgentSetupOriginTemplate => 'Copiée depuis le modèle';
+
+  @override
+  String get taskAgentSetupOriginUser =>
+      'Tu as choisi cette configuration pour cet agent';
+
+  @override
+  String get taskAgentSetupPersistenceDescription =>
+      'Les changements s’appliquent à toutes les futures mises à jour jusqu’à ce que tu les modifies.';
+
+  @override
+  String taskAgentSetupSemantics(String identity) {
+    return 'Configuration actuelle : $identity. Active pour la modifier.';
+  }
+
+  @override
+  String get taskAgentSetupTitle => 'Configuration de l’agent';
+
+  @override
+  String get taskAgentThisReportHeader => 'Ce rapport';
+
+  @override
+  String get taskAgentUseCategoryDefault => 'Copier le réglage de la catégorie';
+
+  @override
+  String get taskAgentUseCategoryDefaultDescription =>
+      'Copie la configuration actuelle de la catégorie. Ses changements ultérieurs n’affecteront pas cet agent.';
+
+  @override
+  String get taskAgentUseProfileDefault => 'Utiliser le réglage du profil';
 
   @override
   String get taskCategoryAllLabel => 'tout';

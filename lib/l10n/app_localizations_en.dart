@@ -8756,7 +8756,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskActionBarTrackTime => 'Track time';
 
   @override
-  String get taskAgentCancelTimerTooltip => 'Cancel';
+  String get taskAgentAttributionUnavailable => 'Attribution unavailable';
+
+  @override
+  String get taskAgentAutomaticUpdatesLabel => 'Automatic updates';
+
+  @override
+  String get taskAgentAutomaticUpdatesNeedsSetup =>
+      'Choose an AI setup before turning on automatic updates.';
+
+  @override
+  String get taskAgentAutomaticUpdatesOffBadge =>
+      'Automatic updates off · Use Run now to update';
+
+  @override
+  String get taskAgentAutomaticUpdatesOffDescription =>
+      'Automatic updates are off. Use Run now to update this report.';
+
+  @override
+  String get taskAgentAutomaticUpdatesOnDescription =>
+      'When this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.';
+
+  @override
+  String get taskAgentCancelTimerTooltip => 'Cancel pending automatic update';
+
+  @override
+  String get taskAgentChooseModel => 'Choose a thinking model';
+
+  @override
+  String get taskAgentChooseProfile => 'Choose a saved setup';
 
   @override
   String taskAgentCountdownTooltip(String countdown) {
@@ -8772,7 +8800,108 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get taskAgentRunNowTooltip => 'Refresh';
+  String get taskAgentCurrentSetupHeader => 'Current setup';
+
+  @override
+  String get taskAgentCurrentSetupLabel => 'Current setup';
+
+  @override
+  String get taskAgentDirectModelOverride => 'Direct model override';
+
+  @override
+  String get taskAgentDisableConfirmAction => 'Turn off';
+
+  @override
+  String get taskAgentDisableConfirmBody =>
+      'The current report stays visible, but this agent cannot run until you choose a setup.';
+
+  @override
+  String get taskAgentDisableConfirmTitle => 'Turn off AI setup?';
+
+  @override
+  String get taskAgentModelPickerTitle => 'Choose thinking model';
+
+  @override
+  String get taskAgentNoAiSetup => 'No AI setup';
+
+  @override
+  String get taskAgentNoAiSetupDescription =>
+      'Pauses agent inference until you choose a profile or model.';
+
+  @override
+  String get taskAgentNoModelsAvailable =>
+      'No compatible thinking models available';
+
+  @override
+  String get taskAgentNoProfilesAvailable =>
+      'No profiles available on this device';
+
+  @override
+  String get taskAgentNoProfileSelected => 'No AI setup';
+
+  @override
+  String get taskAgentNoProfileSelectedDescription =>
+      'Choose a saved setup or thinking model before this agent can run.';
+
+  @override
+  String get taskAgentProfileDefaultBadge => 'Profile default';
+
+  @override
+  String get taskAgentRunNowTooltip => 'Run now';
+
+  @override
+  String taskAgentSetupAndReportSemantics(String identity) {
+    return 'This report and current setup use $identity. Activate to change setup.';
+  }
+
+  @override
+  String get taskAgentSetupBroken => 'Selected AI setup is unavailable';
+
+  @override
+  String taskAgentSetupChangedToast(String model) {
+    return 'Using $model for every future agent update until you change it.';
+  }
+
+  @override
+  String get taskAgentSetupOriginCategory =>
+      'Copied from the category default when this agent was created';
+
+  @override
+  String get taskAgentSetupOriginDisabled => 'Disabled';
+
+  @override
+  String get taskAgentSetupOriginLegacy => 'Legacy setup';
+
+  @override
+  String get taskAgentSetupOriginTemplate => 'Copied from the template';
+
+  @override
+  String get taskAgentSetupOriginUser => 'You chose this for this agent';
+
+  @override
+  String get taskAgentSetupPersistenceDescription =>
+      'Changes apply to every future update until you change them.';
+
+  @override
+  String taskAgentSetupSemantics(String identity) {
+    return 'Current setup: $identity. Activate to change setup.';
+  }
+
+  @override
+  String get taskAgentSetupTitle => 'Agent setup';
+
+  @override
+  String get taskAgentThisReportHeader => 'This report';
+
+  @override
+  String get taskAgentUseCategoryDefault => 'Copy category default';
+
+  @override
+  String get taskAgentUseCategoryDefaultDescription =>
+      'Copies the category’s current setup. Later category changes won’t affect this agent.';
+
+  @override
+  String get taskAgentUseProfileDefault => 'Use profile default';
 
   @override
   String get taskCategoryAllLabel => 'all';

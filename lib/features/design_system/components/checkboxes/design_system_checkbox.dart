@@ -21,6 +21,7 @@ class DesignSystemCheckbox extends StatefulWidget {
     required this.value,
     required this.onChanged,
     this.label,
+    this.labelMaxLines = 1,
     this.semanticsLabel,
     this.forcedState,
     super.key,
@@ -32,6 +33,7 @@ class DesignSystemCheckbox extends StatefulWidget {
   final bool? value;
   final ValueChanged<bool?>? onChanged;
   final String? label;
+  final int? labelMaxLines;
   final String? semanticsLabel;
   final DesignSystemCheckboxVisualState? forcedState;
 
@@ -115,6 +117,7 @@ class _DesignSystemCheckboxState extends State<DesignSystemCheckbox> {
                 ),
                 child: _CheckboxContent(
                   label: widget.label,
+                  labelMaxLines: widget.labelMaxLines,
                   gap: sizeSpec.itemGap,
                   boxSize: sizeSpec.checkboxSize,
                   borderRadius: sizeSpec.cornerRadius,
@@ -174,9 +177,11 @@ class _CheckboxContent extends StatelessWidget {
     required this.showGlyph,
     required this.value,
     this.label,
+    this.labelMaxLines,
   });
 
   final String? label;
+  final int? labelMaxLines;
   final double gap;
   final double boxSize;
   final double borderRadius;
@@ -228,8 +233,10 @@ class _CheckboxContent extends StatelessWidget {
           Flexible(
             child: Text(
               label!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              maxLines: labelMaxLines,
+              overflow: labelMaxLines == null
+                  ? TextOverflow.visible
+                  : TextOverflow.ellipsis,
             ),
           ),
         );

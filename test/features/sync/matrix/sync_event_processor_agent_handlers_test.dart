@@ -87,6 +87,116 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'older-client rewrite preserves explicit task-agent setup fields',
+      () async {
+        final local =
+            AgentDomainEntity.agent(
+                  id: 'agent-legacy-rewrite',
+                  agentId: 'agent-legacy-rewrite',
+                  kind: 'task_agent',
+                  displayName: 'Task Agent',
+                  lifecycle: AgentLifecycle.active,
+                  mode: AgentInteractionMode.autonomous,
+                  allowedCategoryIds: const {},
+                  currentStateId: 'state-1',
+                  config: const AgentConfig(
+                    profileId: 'profile-1',
+                    automaticUpdatesEnabled: false,
+                    inferenceSetup: AgentInferenceSetup(
+                      mode: AgentInferenceSetupMode.configured,
+                      origin: AgentInferenceSetupOrigin.categorySnapshot,
+                      baseProfileId: 'profile-1',
+                      originEntityId: 'category-1',
+                    ),
+                  ),
+                  createdAt: DateTime(2024, 3, 15),
+                  updatedAt: DateTime(2024, 3, 15),
+                  vectorClock: null,
+                )
+                as AgentIdentityEntity;
+        final incoming = local.copyWith(
+          displayName: 'Renamed by older client',
+          config: const AgentConfig(profileId: 'profile-1'),
+          updatedAt: DateTime(2024, 3, 16),
+        );
+        when(
+          () => mockAgentRepo.getEntity(incoming.id),
+        ).thenAnswer((_) async => local);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        final applied =
+            verify(
+                  () => mockAgentRepo.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(applied.displayName, 'Renamed by older client');
+        expect(applied.config.automaticUpdatesEnabled, isFalse);
+        expect(applied.config.inferenceSetup, local.config.inferenceSetup);
+      },
+    );
+
+    test('explicit incoming setup fields win over local values', () async {
+      final local =
+          AgentDomainEntity.agent(
+                id: 'agent-explicit-rewrite',
+                agentId: 'agent-explicit-rewrite',
+                kind: 'task_agent',
+                displayName: 'Task Agent',
+                lifecycle: AgentLifecycle.active,
+                mode: AgentInteractionMode.autonomous,
+                allowedCategoryIds: const {},
+                currentStateId: 'state-1',
+                config: const AgentConfig(
+                  automaticUpdatesEnabled: false,
+                  inferenceSetup: AgentInferenceSetup(
+                    mode: AgentInferenceSetupMode.disabled,
+                    origin: AgentInferenceSetupOrigin.user,
+                  ),
+                ),
+                createdAt: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+                vectorClock: null,
+              )
+              as AgentIdentityEntity;
+      final incoming = local.copyWith(
+        config: const AgentConfig(
+          profileId: 'profile-2',
+          automaticUpdatesEnabled: true,
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.user,
+            baseProfileId: 'profile-2',
+          ),
+        ),
+        updatedAt: DateTime(2024, 3, 16),
+      );
+      when(
+        () => mockAgentRepo.getEntity(incoming.id),
+      ).thenAnswer((_) async => local);
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.agentEntity(
+            agentEntity: incoming,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertEntity(incoming)).called(1);
+    });
+
     test('processes agent state entity', () async {
       final entity = AgentDomainEntity.agentState(
         id: 'state-1',
@@ -1980,6 +2090,12 @@ void main() {
         when(
           () => mockOrchestrator.removeSubscriptions(any()),
         ).thenReturn(null);
+        when(
+          () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
+        ).thenReturn(null);
+        when(
+          () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+        ).thenReturn(null);
       });
 
       test('removes subscriptions when agent is dormant', () async {
@@ -2008,7 +2124,9 @@ void main() {
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
         verify(
-          () => mockOrchestrator.removeSubscriptions('agent-dormant'),
+          () => mockOrchestrator.disableAutomaticUpdatesRuntime(
+            'agent-dormant',
+          ),
         ).called(1);
       });
 
@@ -2038,7 +2156,9 @@ void main() {
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
         verify(
-          () => mockOrchestrator.removeSubscriptions('agent-destroyed'),
+          () => mockOrchestrator.disableAutomaticUpdatesRuntime(
+            'agent-destroyed',
+          ),
         ).called(1);
       });
 
@@ -2083,7 +2203,12 @@ void main() {
         await processor.process(event: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
-        verifyNever(() => mockOrchestrator.removeSubscriptions(any()));
+        verify(
+          () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-active'),
+        ).called(1);
+        verifyNever(
+          () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
+        );
         verify(
           () => mockOrchestrator.addSubscription(
             any(
@@ -2116,7 +2241,9 @@ void main() {
         await processor.process(event: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
-        verifyNever(() => mockOrchestrator.removeSubscriptions(any()));
+        verifyNever(
+          () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
+        );
       });
 
       test('safe when wakeOrchestrator is null', () async {
@@ -2147,7 +2274,9 @@ void main() {
         await processor.process(event: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
-        verifyNever(() => mockOrchestrator.removeSubscriptions(any()));
+        verifyNever(
+          () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
+        );
       });
     });
 

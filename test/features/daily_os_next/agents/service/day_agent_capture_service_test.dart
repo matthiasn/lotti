@@ -2010,6 +2010,8 @@ void main() {
             taskId: any(named: 'taskId'),
             templateId: any(named: 'templateId'),
             profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         ).thenAnswer(
@@ -2038,6 +2040,8 @@ void main() {
             taskId: 'created-task-1',
             templateId: 'template-work',
             profileId: 'profile-work',
+            setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+            setupOriginEntityId: 'work',
             allowedCategoryIds: {'work'},
           ),
         ).called(1);
@@ -2067,6 +2071,8 @@ void main() {
             taskId: any(named: 'taskId'),
             templateId: any(named: 'templateId'),
             profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         ).thenThrow(StateError('duplicate agent'));

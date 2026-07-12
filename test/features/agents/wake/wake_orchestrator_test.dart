@@ -1077,6 +1077,46 @@ void main() {
         });
       });
 
+      test(
+        'disableAutomaticUpdatesRuntime drops automation but preserves user job',
+        () {
+          queue
+            ..enqueue(
+              WakeJob(
+                runKey: 'automatic',
+                agentId: 'agent-1',
+                reason: WakeReason.subscription.name,
+                initiator: WakeInitiator.automation,
+                triggerTokens: const {'task-1'},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            )
+            ..enqueue(
+              WakeJob(
+                runKey: 'user',
+                agentId: 'agent-1',
+                reason: WakeReason.reanalysis.name,
+                initiator: WakeInitiator.user,
+                triggerTokens: const {},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            );
+
+          orchestrator.disableAutomaticUpdatesRuntime('agent-1');
+
+          expect(queue.length, 1);
+          expect(queue.dequeue()?.runKey, 'user');
+
+          orchestrator
+            ..addSubscription(makeSub())
+            ..enableAutomaticUpdatesRuntime('agent-1')
+            ..addSubscription(makeSub());
+          // The first add is ignored while disabled; enabling makes the same
+          // subscription eligible again without enqueueing any wake.
+          expect(queue.isEmpty, isTrue);
+        },
+      );
+
       test('removeSubscription removes only the named subscription', () {
         fakeAsync((async) {
           orchestrator
@@ -1511,6 +1551,109 @@ void main() {
     });
 
     group('processNext', () {
+      test(
+        'automatic task-agent wake is dropped when updates are off',
+        () async {
+          when(() => mockRepository.getEntity('agent-1')).thenAnswer(
+            (_) async => makeTestIdentity(
+              id: 'agent-1',
+              agentId: 'agent-1',
+              config: const AgentConfig(automaticUpdatesEnabled: false),
+            ),
+          );
+          var executions = 0;
+          orchestrator.wakeExecutor = (_, _, _, _) async {
+            executions++;
+            return null;
+          };
+          queue.enqueue(
+            WakeJob(
+              runKey: 'automatic-off',
+              agentId: 'agent-1',
+              reason: WakeReason.subscription.name,
+              initiator: WakeInitiator.automation,
+              triggerTokens: const {'task-1'},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+
+          await orchestrator.processNext();
+
+          expect(executions, 0);
+          verifyNever(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          );
+        },
+      );
+
+      test(
+        'user task-agent wake remains allowed when updates are off',
+        () async {
+          when(() => mockRepository.getEntity('agent-1')).thenAnswer(
+            (_) async => makeTestIdentity(
+              id: 'agent-1',
+              agentId: 'agent-1',
+              config: const AgentConfig(automaticUpdatesEnabled: false),
+            ),
+          );
+          var executions = 0;
+          orchestrator.wakeExecutor = (_, _, _, _) async {
+            executions++;
+            return null;
+          };
+          queue.enqueue(
+            WakeJob(
+              runKey: 'manual-off',
+              agentId: 'agent-1',
+              reason: WakeReason.reanalysis.name,
+              initiator: WakeInitiator.user,
+              triggerTokens: const {},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+
+          await orchestrator.processNext();
+
+          expect(executions, 1);
+          verify(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).called(1);
+        },
+      );
+
+      test('disabled setup drops user task-agent wake too', () async {
+        when(() => mockRepository.getEntity('agent-1')).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: 'agent-1',
+            agentId: 'agent-1',
+            lifecycle: AgentLifecycle.dormant,
+            config: const AgentConfig(
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.disabled,
+                origin: AgentInferenceSetupOrigin.user,
+              ),
+            ),
+          ),
+        );
+        orchestrator.wakeExecutor = noOpExecutor;
+        queue.enqueue(
+          WakeJob(
+            runKey: 'manual-disabled',
+            agentId: 'agent-1',
+            reason: WakeReason.reanalysis.name,
+            initiator: WakeInitiator.user,
+            triggerTokens: const {},
+            createdAt: DateTime(2024, 3, 15),
+          ),
+        );
+
+        await orchestrator.processNext();
+
+        verifyNever(
+          () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+        );
+      });
+
       glados.Glados(
         glados.any.wakeDrainScenario,
         glados.ExploreConfig(numRuns: 180),
@@ -1557,6 +1700,9 @@ void main() {
               final agentId = invocation.positionalArguments.single as String;
               return stateByAgent[agentId];
             });
+            when(
+              () => generatedRepository.getEntity(any()),
+            ).thenAnswer((_) async => null);
             when(
               () => generatedRepository.upsertEntity(any()),
             ).thenAnswer((invocation) async {
@@ -4570,6 +4716,7 @@ void main() {
             when(
               () => repo.getAgentState(any()),
             ).thenAnswer((_) async => null);
+            when(() => repo.getEntity(any())).thenAnswer((_) async => null);
             when(() => repo.upsertEntity(any())).thenAnswer((_) async {});
             when(
               () => repo.updateWakeRunStatus(
@@ -4708,6 +4855,9 @@ void main() {
         ).thenAnswer((_) async {});
         when(
           () => loggedRepo.getAgentState(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => loggedRepo.getEntity(any()),
         ).thenAnswer((_) async => null);
 
         final loggedOrchestrator = WakeOrchestrator(

@@ -36,6 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1037]
 ### Added
+- **Task agents now show and own their AI setup directly in the summary.** The
+  header names the thinking model, its publisher, and the serving provider;
+  tapping it opens one persistent setup surface for choosing a profile or
+  model, returning to the profile default, copying the category default, or
+  pausing AI entirely. Reports keep immutable model/provider attribution after
+  later setup changes. Automatic task-change updates can also be switched off
+  without removing the manual Run now action or the existing report.
 - **Daily OS gives better feedback while turning a spoken check-in into a
   plan.** Drafting now shows a staged progress trail, failures offer Retry and
   Back to decisions, the Day footer explains why blocks made it in, each block

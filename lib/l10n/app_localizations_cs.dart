@@ -8918,7 +8918,36 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskActionBarTrackTime => 'Sledovat čas';
 
   @override
-  String get taskAgentCancelTimerTooltip => 'Cancel';
+  String get taskAgentAttributionUnavailable => 'Autorství není dostupné';
+
+  @override
+  String get taskAgentAutomaticUpdatesLabel => 'Automatické aktualizace';
+
+  @override
+  String get taskAgentAutomaticUpdatesNeedsSetup =>
+      'Než zapneš automatické aktualizace, vyber nastavení AI.';
+
+  @override
+  String get taskAgentAutomaticUpdatesOffBadge =>
+      'Automatické aktualizace vypnuté · Aktualizuj přes „Spustit nyní“';
+
+  @override
+  String get taskAgentAutomaticUpdatesOffDescription =>
+      'Automatické aktualizace jsou vypnuté. Tuto zprávu aktualizuješ přes „Spustit nyní“.';
+
+  @override
+  String get taskAgentAutomaticUpdatesOnDescription =>
+      'Když se úkol změní, spustí se dvouminutový odpočet. Změny během odpočtu se sloučí do jedné aktualizace.';
+
+  @override
+  String get taskAgentCancelTimerTooltip =>
+      'Zrušit čekající automatickou aktualizaci';
+
+  @override
+  String get taskAgentChooseModel => 'Vybrat model pro uvažování';
+
+  @override
+  String get taskAgentChooseProfile => 'Vybrat uložené nastavení';
 
   @override
   String taskAgentCountdownTooltip(String countdown) {
@@ -8934,7 +8963,110 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get taskAgentCurrentSetupHeader => 'Aktuální nastavení';
+
+  @override
+  String get taskAgentCurrentSetupLabel => 'Aktuální nastavení';
+
+  @override
+  String get taskAgentDirectModelOverride => 'Přímé přepsání modelu';
+
+  @override
+  String get taskAgentDisableConfirmAction => 'Vypnout';
+
+  @override
+  String get taskAgentDisableConfirmBody =>
+      'Aktuální zpráva zůstane viditelná, ale agent se nespustí, dokud nevybereš nastavení.';
+
+  @override
+  String get taskAgentDisableConfirmTitle => 'Vypnout nastavení AI?';
+
+  @override
+  String get taskAgentModelPickerTitle => 'Vybrat model pro uvažování';
+
+  @override
+  String get taskAgentNoAiSetup => 'Bez nastavení AI';
+
+  @override
+  String get taskAgentNoAiSetupDescription =>
+      'Pozastaví inferenci, dokud nevybereš profil nebo model.';
+
+  @override
+  String get taskAgentNoModelsAvailable =>
+      'Nejsou dostupné žádné kompatibilní modely';
+
+  @override
+  String get taskAgentNoProfilesAvailable =>
+      'Na tomto zařízení nejsou dostupné žádné profily';
+
+  @override
+  String get taskAgentNoProfileSelected => 'Žádné nastavení AI';
+
+  @override
+  String get taskAgentNoProfileSelectedDescription =>
+      'Než agenta spustíš, vyber uložené nastavení nebo model.';
+
+  @override
+  String get taskAgentProfileDefaultBadge => 'Výchozí model profilu';
+
+  @override
   String get taskAgentRunNowTooltip => 'Spustit nyní';
+
+  @override
+  String taskAgentSetupAndReportSemantics(String identity) {
+    return 'Tato zpráva i aktuální nastavení používají $identity. Aktivuj pro změnu nastavení.';
+  }
+
+  @override
+  String get taskAgentSetupBroken => 'Vybrané nastavení AI není dostupné';
+
+  @override
+  String taskAgentSetupChangedToast(String model) {
+    return 'Pro všechny budoucí aktualizace se bude používat $model, dokud ho nezměníš.';
+  }
+
+  @override
+  String get taskAgentSetupOriginCategory =>
+      'Zkopírováno z výchozího nastavení kategorie při vytvoření agenta';
+
+  @override
+  String get taskAgentSetupOriginDisabled => 'Vypnuto';
+
+  @override
+  String get taskAgentSetupOriginLegacy => 'Starší nastavení';
+
+  @override
+  String get taskAgentSetupOriginTemplate => 'Zkopírováno ze šablony';
+
+  @override
+  String get taskAgentSetupOriginUser =>
+      'Toto nastavení jsi vybral pro tohoto agenta';
+
+  @override
+  String get taskAgentSetupPersistenceDescription =>
+      'Změny platí pro každou budoucí aktualizaci, dokud je znovu nezměníš.';
+
+  @override
+  String taskAgentSetupSemantics(String identity) {
+    return 'Aktuální nastavení: $identity. Aktivuj pro změnu nastavení.';
+  }
+
+  @override
+  String get taskAgentSetupTitle => 'Nastavení agenta';
+
+  @override
+  String get taskAgentThisReportHeader => 'Tato zpráva';
+
+  @override
+  String get taskAgentUseCategoryDefault =>
+      'Zkopírovat výchozí nastavení kategorie';
+
+  @override
+  String get taskAgentUseCategoryDefaultDescription =>
+      'Zkopíruje aktuální nastavení kategorie. Pozdější změny kategorie tohoto agenta neovlivní.';
+
+  @override
+  String get taskAgentUseProfileDefault => 'Použít výchozí model profilu';
 
   @override
   String get taskCategoryAllLabel => 'vše';

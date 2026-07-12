@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -175,6 +176,7 @@ class WakeOrchestrator {
   /// a "wake in 2:00" timer when the content gate is going to skip the run
   /// anyway.
   final _agentsAwaitingContent = <String>{};
+  final _automaticUpdatesDisabledAgents = <String>{};
 
   // ── Throttle state ──────────────────────────────────────────────────────
 
@@ -282,6 +284,7 @@ class WakeOrchestrator {
   /// is replaced, preventing duplicate wake jobs when `restoreSubscriptions`
   /// runs more than once (e.g. on hot restart).
   void addSubscription(AgentSubscription sub) {
+    if (_automaticUpdatesDisabledAgents.contains(sub.agentId)) return;
     final idx = _subscriptions.indexWhere((s) => s.id == sub.id);
     if (idx >= 0) {
       _subscriptions[idx] = sub;
@@ -297,6 +300,22 @@ class WakeOrchestrator {
     _wakeCounters.remove(agentId);
     _agentsAwaitingContent.remove(agentId);
     clearThrottle(agentId);
+  }
+
+  /// Disable the task-change automation runtime without touching manual jobs.
+  void disableAutomaticUpdatesRuntime(String agentId) {
+    _automaticUpdatesDisabledAgents.add(agentId);
+    removeSubscriptions(agentId);
+    queue.removeByAgentWhere(
+      agentId,
+      (job) => job.initiator == WakeInitiator.automation,
+    );
+  }
+
+  /// Allow future subscription registration after the preference is enabled.
+  /// This does not enqueue work or restore an old countdown.
+  void enableAutomaticUpdatesRuntime(String agentId) {
+    _automaticUpdatesDisabledAgents.remove(agentId);
   }
 
   /// Remove a single subscription by id. Used when a remote `AgentTaskLink`
@@ -494,6 +513,7 @@ class WakeOrchestrator {
     Set<String> triggerTokens = const {},
     String? workspaceKey,
     bool supersede = true,
+    WakeInitiator? initiator,
   }) {
     // Manual wakes bypass and clear the throttle gate so the user's action
     // takes effect immediately.
@@ -527,6 +547,7 @@ class WakeOrchestrator {
       triggerTokens: triggerTokens,
       workspaceKey: workspaceKey,
       createdAt: now,
+      initiator: initiator,
     );
 
     queue.enqueue(job);

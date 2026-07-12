@@ -1372,5 +1372,49 @@ void main() {
         expect(ftueOllamaCategoryColor, '#0F172A');
       });
     });
+
+    group('publisher metadata', () {
+      test('curated model ids map to their model publisher', () {
+        expect(publisherForCuratedModel('gemini-3-pro'), 'Google');
+        expect(publisherForCuratedModel('qwen3.5-plus'), 'Alibaba');
+        expect(publisherForCuratedModel('meta-llama/Llama-3.3'), 'Meta');
+        expect(publisherForCuratedModel('mistral-small-4'), 'Mistral AI');
+        expect(publisherForCuratedModel('glm-5.2'), 'Zhipu AI');
+        expect(publisherForCuratedModel('custom-model'), isNull);
+      });
+
+      test('explicit publisher wins and unknown custom models stay null', () {
+        const explicit = KnownModel(
+          providerModelId: 'custom-model',
+          name: 'Custom',
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: true,
+          description: 'Custom model',
+          publisher: 'Acme AI',
+        );
+        const unknown = KnownModel(
+          providerModelId: 'custom-model',
+          name: 'Custom',
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: true,
+          description: 'Custom model',
+        );
+
+        expect(
+          explicit
+              .toAiConfigModel(id: 'explicit', inferenceProviderId: 'provider')
+              .publisher,
+          'Acme AI',
+        );
+        expect(
+          unknown
+              .toAiConfigModel(id: 'unknown', inferenceProviderId: 'provider')
+              .publisher,
+          isNull,
+        );
+      });
+    });
   });
 }

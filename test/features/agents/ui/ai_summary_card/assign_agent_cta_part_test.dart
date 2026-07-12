@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
@@ -288,6 +289,7 @@ void main() {
             allowedCategoryIds: captureAny(named: 'allowedCategoryIds'),
             templateId: captureAny(named: 'templateId'),
             profileId: captureAny(named: 'profileId'),
+            setupOrigin: AgentInferenceSetupOrigin.user,
           ),
         ).captured;
         expect(captured, [
@@ -343,6 +345,7 @@ class _SuccessPathHarness {
         taskId: any(named: 'taskId'),
         templateId: any(named: 'templateId'),
         profileId: any(named: 'profileId'),
+        setupOrigin: any(named: 'setupOrigin'),
         allowedCategoryIds: any(named: 'allowedCategoryIds'),
       ),
     ).thenAnswer((_) async => makeTestIdentity());

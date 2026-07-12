@@ -206,6 +206,7 @@ void main() {
     String kind = 'task_agent',
     String displayName = 'Task Agent',
     AgentLifecycle lifecycle = AgentLifecycle.active,
+    AgentConfig config = const AgentConfig(),
   }) {
     return makeTestIdentity(
       id: agentId,
@@ -214,6 +215,7 @@ void main() {
       displayName: displayName,
       lifecycle: lifecycle,
       currentStateId: 'state-$agentId',
+      config: config,
     );
   }
 
@@ -239,6 +241,12 @@ void main() {
     // Stub syncService write methods
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
+    when(
+      () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
+    ).thenReturn(null);
+    when(
+      () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+    ).thenReturn(null);
 
     // Stub template existence for all tests that provide kTestTemplateId.
     when(
@@ -377,7 +385,11 @@ void main() {
             config: any(named: 'config'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
-        ).thenAnswer((_) async => identity);
+        ).thenAnswer((invocation) async {
+          return identity.copyWith(
+            config: invocation.namedArguments[#config]! as AgentConfig,
+          );
+        });
         when(
           () => generatedRepository.getAgentState(agentId),
         ).thenAnswer(
@@ -421,7 +433,21 @@ void main() {
               ),
             );
           }
-          verifyNever(() => generatedSyncService.upsertEntity(any()));
+          if (scenario.shouldCreateAgent &&
+              !scenario.stateExists &&
+              scenario.profileId == null) {
+            final writes = verify(
+              () => generatedSyncService.upsertEntity(captureAny()),
+            ).captured;
+            expect(writes, hasLength(1), reason: '$scenario');
+            expect(
+              (writes.single as AgentIdentityEntity).lifecycle,
+              AgentLifecycle.dormant,
+              reason: '$scenario',
+            );
+          } else {
+            verifyNever(() => generatedSyncService.upsertEntity(any()));
+          }
           verifyNever(() => generatedSyncService.upsertLink(any()));
           verifyNever(() => generatedOrchestrator.addSubscription(any()));
           verifyNever(
@@ -442,7 +468,13 @@ void main() {
 
         final result = await create();
 
-        expect(result, same(identity), reason: '$scenario');
+        expect(
+          result.lifecycle,
+          scenario.profileId == null
+              ? AgentLifecycle.dormant
+              : AgentLifecycle.active,
+          reason: '$scenario',
+        );
         final createCall = verify(
           () => generatedAgentService.createAgent(
             kind: captureAny(named: 'kind'),
@@ -459,6 +491,19 @@ void main() {
         );
         final config = createCall[2] as AgentConfig;
         expect(config.profileId, scenario.profileId, reason: '$scenario');
+        expect(config.automaticUpdatesEnabled, isTrue, reason: '$scenario');
+        expect(
+          config.inferenceSetup?.mode,
+          scenario.profileId == null
+              ? AgentInferenceSetupMode.disabled
+              : AgentInferenceSetupMode.configured,
+          reason: '$scenario',
+        );
+        expect(
+          config.inferenceSetup?.baseProfileId,
+          scenario.profileId,
+          reason: '$scenario',
+        );
         expect(
           config.modelId,
           switch (scenario.resolvedTemplateId) {
@@ -478,8 +523,20 @@ void main() {
         final entityWrites = verify(
           () => generatedSyncService.upsertEntity(captureAny()),
         ).captured;
-        expect(entityWrites, hasLength(1), reason: '$scenario');
-        final updatedState = entityWrites.single as AgentStateEntity;
+        expect(
+          entityWrites,
+          hasLength(scenario.profileId == null ? 2 : 1),
+          reason: '$scenario',
+        );
+        if (scenario.profileId == null) {
+          final persistedIdentity = entityWrites.first as AgentIdentityEntity;
+          expect(persistedIdentity.lifecycle, AgentLifecycle.dormant);
+          expect(
+            persistedIdentity.config.inferenceSetup?.mode,
+            AgentInferenceSetupMode.disabled,
+          );
+        }
+        final updatedState = entityWrites.whereType<AgentStateEntity>().single;
         expect(updatedState.agentId, agentId, reason: '$scenario');
         expect(updatedState.slots.activeTaskId, taskId, reason: '$scenario');
         expect(
@@ -505,30 +562,47 @@ void main() {
         );
         expect(templateLink.toId, agentId, reason: '$scenario');
 
-        final subscriptions = verify(
-          () => generatedOrchestrator.addSubscription(captureAny()),
-        ).captured.cast<AgentSubscription>();
-        expect(subscriptions, hasLength(1), reason: '$scenario');
-        expect(subscriptions.single.agentId, agentId, reason: '$scenario');
-        expect(subscriptions.single.matchEntityIds, {taskId});
-        expect(
-          subscriptions.single.deferPropagatedMatches,
-          isFalse,
-          reason: '$scenario',
-        );
-        verify(
-          () => generatedOrchestrator.setAwaitingContent(
-            agentId,
-            awaiting: scenario.awaitContent,
-          ),
-        ).called(1);
-        verify(
-          () => generatedOrchestrator.enqueueManualWake(
-            agentId: agentId,
-            reason: WakeReason.creation.name,
-            triggerTokens: {taskId},
-          ),
-        ).called(1);
+        if (scenario.profileId == null) {
+          verifyNever(() => generatedOrchestrator.addSubscription(any()));
+          verifyNever(
+            () => generatedOrchestrator.setAwaitingContent(
+              any(),
+              awaiting: any(named: 'awaiting'),
+            ),
+          );
+          verifyNever(
+            () => generatedOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          );
+        } else {
+          final subscriptions = verify(
+            () => generatedOrchestrator.addSubscription(captureAny()),
+          ).captured.cast<AgentSubscription>();
+          expect(subscriptions, hasLength(1), reason: '$scenario');
+          expect(subscriptions.single.agentId, agentId, reason: '$scenario');
+          expect(subscriptions.single.matchEntityIds, {taskId});
+          expect(
+            subscriptions.single.deferPropagatedMatches,
+            isFalse,
+            reason: '$scenario',
+          );
+          verify(
+            () => generatedOrchestrator.setAwaitingContent(
+              agentId,
+              awaiting: scenario.awaitContent,
+            ),
+          ).called(1);
+          verify(
+            () => generatedOrchestrator.enqueueManualWake(
+              agentId: agentId,
+              reason: WakeReason.creation.name,
+              triggerTokens: {taskId},
+            ),
+          ).called(1);
+        }
       }, tags: 'glados');
 
       test('creates agent via service, updates state, creates link, '
@@ -545,10 +619,14 @@ void main() {
           () => mockAgentService.createAgent(
             kind: 'task_agent',
             displayName: 'My Task Agent',
-            config: const AgentConfig(),
+            config: any(named: 'config'),
             allowedCategoryIds: {'cat-1'},
           ),
-        ).thenAnswer((_) async => identity);
+        ).thenAnswer((invocation) async {
+          return identity.copyWith(
+            config: invocation.namedArguments[#config]! as AgentConfig,
+          );
+        });
 
         // State fetch
         final state = makeState();
@@ -571,6 +649,7 @@ void main() {
           templateId: kTestTemplateId,
           allowedCategoryIds: {'cat-1'},
           displayName: 'My Task Agent',
+          profileId: 'profile-1',
         );
 
         expect(result, isA<AgentIdentityEntity>());
@@ -659,6 +738,67 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'missing category default is disabled even when template has a profile',
+        () async {
+          final template = makeTestTemplate().copyWith(
+            profileId: 'template-profile',
+          );
+          final identity = makeIdentity();
+          when(
+            () => mockRepository.getEntity(kTestTemplateId),
+          ).thenAnswer((_) async => template);
+          when(
+            () => mockRepository.getLinksTo(
+              'task-no-default',
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((invocation) async {
+            return identity.copyWith(
+              config: invocation.namedArguments[#config]! as AgentConfig,
+            );
+          });
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => makeState());
+
+          final result = await service.createTaskAgent(
+            taskId: 'task-no-default',
+            templateId: kTestTemplateId,
+            allowedCategoryIds: {'category-1'},
+            setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+            setupOriginEntityId: 'category-1',
+          );
+
+          expect(result.lifecycle, AgentLifecycle.dormant);
+          expect(
+            result.config.inferenceSetup,
+            const AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.disabled,
+              origin: AgentInferenceSetupOrigin.categorySnapshot,
+              originEntityId: 'category-1',
+            ),
+          );
+          expect(result.config.profileId, isNull);
+          verifyNever(() => mockOrchestrator.addSubscription(any()));
+          verifyNever(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          );
+        },
+      );
 
       test('throws StateError if agent already exists for task', () async {
         final existingLink = AgentLink.agentTask(
@@ -930,6 +1070,7 @@ void main() {
           () => mockOrchestrator.enqueueManualWake(
             agentId: 'agent-1',
             reason: 'reanalysis',
+            initiator: WakeInitiator.user,
           ),
         ).called(1);
       });
@@ -1285,6 +1426,7 @@ void main() {
         await service.createTaskAgent(
           taskId: 'task-sync',
           templateId: kTestTemplateId,
+          profileId: 'profile-1',
           allowedCategoryIds: {'cat-1'},
         );
 
@@ -1508,6 +1650,14 @@ void main() {
         ).captured;
         final updated = captured.first as AgentIdentityEntity;
         expect(updated.config.profileId, 'new-profile-id');
+        expect(
+          updated.config.inferenceSetup,
+          const AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.user,
+            baseProfileId: 'new-profile-id',
+          ),
+        );
       });
 
       test('clears profileId when null is provided', () async {
@@ -1528,6 +1678,14 @@ void main() {
         ).captured;
         final updated = captured.first as AgentIdentityEntity;
         expect(updated.config.profileId, isNull);
+        expect(updated.lifecycle, AgentLifecycle.dormant);
+        expect(
+          updated.config.inferenceSetup?.mode,
+          AgentInferenceSetupMode.disabled,
+        );
+        verify(
+          () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+        ).called(1);
       });
 
       test('throws StateError when agent not found', () async {
@@ -1547,6 +1705,305 @@ void main() {
               contains('ghost'),
             ),
           ),
+        );
+      });
+    });
+
+    group('persistent inference setup', () {
+      test('rejects configured setup without a profile or model', () async {
+        await expectLater(
+          () => service.updateAgentInferenceSetup(
+            agentId: 'agent-1',
+            setup: const AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.configured,
+              origin: AgentInferenceSetupOrigin.user,
+            ),
+          ),
+          throwsArgumentError,
+        );
+        verifyNever(() => mockAgentService.getAgent(any()));
+      });
+
+      test('reconfiguring a setup-disabled agent reactivates it', () async {
+        final identity = makeIdentity(
+          lifecycle: AgentLifecycle.dormant,
+          config: const AgentConfig(
+            automaticUpdatesEnabled: true,
+            inferenceSetup: AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.disabled,
+              origin: AgentInferenceSetupOrigin.user,
+            ),
+          ),
+        );
+        when(
+          () => mockAgentService.getAgent('agent-1'),
+        ).thenAnswer((_) async => identity);
+        when(
+          () => mockRepository.getLinksFrom(
+            'agent-1',
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => []);
+
+        await service.updateAgentInferenceSetup(
+          agentId: 'agent-1',
+          setup: const AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.categorySnapshot,
+            baseProfileId: 'profile-1',
+            originEntityId: 'category-1',
+          ),
+        );
+
+        final updated =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(updated.lifecycle, AgentLifecycle.active);
+        expect(updated.config.profileId, 'profile-1');
+        expect(updated.config.automaticUpdatesEnabled, isTrue);
+        verifyNever(
+          () => mockOrchestrator.restorePendingWake(
+            agentId: any(named: 'agentId'),
+            dueAt: any(named: 'dueAt'),
+          ),
+        );
+      });
+
+      test('direct model override preserves the base profile origin', () async {
+        final identity = makeIdentity(
+          config: const AgentConfig(
+            profileId: 'profile-1',
+            automaticUpdatesEnabled: false,
+            inferenceSetup: AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.configured,
+              origin: AgentInferenceSetupOrigin.categorySnapshot,
+              baseProfileId: 'profile-1',
+              originEntityId: 'category-1',
+            ),
+          ),
+        );
+        when(
+          () => mockAgentService.getAgent('agent-1'),
+        ).thenAnswer((_) async => identity);
+
+        await service.updateAgentThinkingModelOverride(
+          agentId: 'agent-1',
+          modelConfigId: 'model-config-1',
+        );
+
+        final updated =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(
+          updated.config.inferenceSetup,
+          const AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.categorySnapshot,
+            baseProfileId: 'profile-1',
+            thinkingModelOverrideId: 'model-config-1',
+            originEntityId: 'category-1',
+          ),
+        );
+        expect(updated.config.automaticUpdatesEnabled, isFalse);
+      });
+
+      test('direct model override migrates a legacy profile setup', () async {
+        final identity = makeIdentity(
+          config: const AgentConfig(profileId: 'legacy-profile'),
+        );
+        when(
+          () => mockAgentService.getAgent('agent-1'),
+        ).thenAnswer((_) async => identity);
+
+        await service.updateAgentThinkingModelOverride(
+          agentId: 'agent-1',
+          modelConfigId: 'model-config-1',
+        );
+
+        final updated =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(
+          updated.config.inferenceSetup,
+          const AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.user,
+            baseProfileId: 'legacy-profile',
+            thinkingModelOverrideId: 'model-config-1',
+          ),
+        );
+      });
+
+      test(
+        'clearing the only direct model produces explicit no setup',
+        () async {
+          final identity = makeIdentity(
+            config: const AgentConfig(
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                thinkingModelOverrideId: 'model-config-1',
+              ),
+            ),
+          );
+          when(
+            () => mockAgentService.getAgent('agent-1'),
+          ).thenAnswer((_) async => identity);
+
+          await service.updateAgentThinkingModelOverride(
+            agentId: 'agent-1',
+            modelConfigId: null,
+          );
+
+          final updated =
+              verify(
+                    () => mockSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentIdentityEntity;
+          expect(updated.lifecycle, AgentLifecycle.dormant);
+          expect(
+            updated.config.inferenceSetup?.mode,
+            AgentInferenceSetupMode.disabled,
+          );
+        },
+      );
+
+      test('model override throws when the agent is missing', () async {
+        when(
+          () => mockAgentService.getAgent('missing'),
+        ).thenAnswer((_) async => null);
+
+        await expectLater(
+          () => service.updateAgentThinkingModelOverride(
+            agentId: 'missing',
+            modelConfigId: 'model-1',
+          ),
+          throwsStateError,
+        );
+      });
+    });
+
+    group('automatic updates', () {
+      test(
+        'turning off persists the preference and clears automation',
+        () async {
+          final identity = makeIdentity(
+            config: const AgentConfig(
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          when(
+            () => mockAgentService.getAgent('agent-1'),
+          ).thenAnswer((_) async => identity);
+
+          await service.updateAutomaticUpdates(
+            agentId: 'agent-1',
+            enabled: false,
+          );
+
+          final updated =
+              verify(
+                    () => mockSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentIdentityEntity;
+          expect(updated.config.automaticUpdatesEnabled, isFalse);
+          expect(updated.config.inferenceSetup, identity.config.inferenceSetup);
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+        },
+      );
+
+      test(
+        'turning on restores subscriptions without an old countdown',
+        () async {
+          final identity = makeIdentity(
+            config: const AgentConfig(
+              automaticUpdatesEnabled: false,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          when(
+            () => mockAgentService.getAgent('agent-1'),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer((_) async => []);
+
+          await service.updateAutomaticUpdates(
+            agentId: 'agent-1',
+            enabled: true,
+          );
+
+          final updated =
+              verify(
+                    () => mockSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentIdentityEntity;
+          expect(updated.config.automaticUpdatesEnabled, isTrue);
+          verify(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.restorePendingWake(
+              agentId: any(named: 'agentId'),
+              dueAt: any(named: 'dueAt'),
+            ),
+          );
+        },
+      );
+
+      test('cannot turn automation on without an inference setup', () async {
+        final identity = makeIdentity(
+          config: const AgentConfig(
+            inferenceSetup: AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.disabled,
+              origin: AgentInferenceSetupOrigin.user,
+            ),
+          ),
+        );
+        when(
+          () => mockAgentService.getAgent('agent-1'),
+        ).thenAnswer((_) async => identity);
+
+        await expectLater(
+          () => service.updateAutomaticUpdates(
+            agentId: 'agent-1',
+            enabled: true,
+          ),
+          throwsStateError,
+        );
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      });
+
+      test('throws when the agent is missing', () async {
+        when(
+          () => mockAgentService.getAgent('missing'),
+        ).thenAnswer((_) async => null);
+
+        await expectLater(
+          () => service.updateAutomaticUpdates(
+            agentId: 'missing',
+            enabled: false,
+          ),
+          throwsStateError,
         );
       });
     });
