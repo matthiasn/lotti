@@ -206,6 +206,14 @@ class TaskAgentReportEditor {
         materialTaskState,
       );
     }
+    if (initialValidationIssues.contains(
+      TaskAgentReportRevisionIssue.checkmarkCausality,
+    )) {
+      editorDraft = _withoutCheckmarkCausalityClauses(
+        editorDraft,
+        languageCode,
+      );
+    }
     var attempts = 0;
     var hadRevision = false;
     var validationIssues = initialValidationIssues.toList(growable: false);
@@ -239,7 +247,10 @@ class TaskAgentReportEditor {
               !(hasUnperformedRequest &&
                   validationIssues.contains(
                     TaskAgentReportRevisionIssue.processNarration,
-                  )))
+                  )) &&
+              !validationIssues.contains(
+                TaskAgentReportRevisionIssue.checkmarkCausality,
+              ))
             'rejectedReport': _withoutExcludedDraftScope(rejectedReportJson),
           'requiredCorrections': [
             for (final issue in validationIssues)
@@ -929,6 +940,29 @@ class TaskAgentReportEditor {
                     materialTaskState: materialTaskState,
                     normalizedCandidate: normalizedClause,
                   );
+            })
+            .join()
+            .trim(),
+    };
+  }
+
+  static Map<String, dynamic> _withoutCheckmarkCausalityClauses(
+    Map<String, dynamic> report,
+    String languageCode,
+  ) {
+    return {
+      for (final field in const ['oneLiner', 'tldr', 'content'])
+        field: _scopeClause
+            .allMatches(report[field] as String? ?? '')
+            .map((match) => match.group(0)!)
+            .where((clause) {
+              final normalizedClause = clause.toLowerCase();
+              return !_hasCheckmarkCausality(
+                    languageCode: languageCode,
+                    normalizedCandidate: normalizedClause,
+                  ) &&
+                  !_unsupportedCheckmarkOutcome.hasMatch(normalizedClause) &&
+                  !RegExp(r'\b(?:fix|patch)\b').hasMatch(normalizedClause);
             })
             .join()
             .trim(),

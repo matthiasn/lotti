@@ -1733,6 +1733,57 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(messages, contains('request replacement certificate'));
   });
 
+  test('editor removes checkmark causality from its repair input', () async {
+    const draft = TaskAgentReportDraft(
+      oneLiner: 'Duplicate sync issue reappeared; investigation required',
+      tldr: 'The previous fix did not fully resolve the issue.',
+      content:
+          'Duplicate events reappeared after reconnecting two devices. The '
+          'earlier fix has not stabilized sync.',
+    );
+    final inferenceRepository = _QueuedInferenceRepository([
+      [
+        _toolCalls([
+          (
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: jsonEncode({
+              'oneLiner': 'Duplicate sync events reappeared',
+              'tldr': 'Root cause investigation is required.',
+              'content':
+                  'Duplicate events reappeared after reconnecting two '
+                  'devices. Investigate the root cause.',
+            }),
+          ),
+        ]),
+      ],
+    ]);
+
+    final result =
+        await _createEditor(
+          provider: provider,
+          inferenceRepository: inferenceRepository,
+        ).edit(
+          draft: draft,
+          languageCode: 'en',
+          materialTaskState: const {},
+          reportDirective: evolvedReportDirective,
+          initialValidationIssues: const {
+            TaskAgentReportRevisionIssue.checkmarkCausality,
+          },
+        );
+
+    expect(result.revision, isNotNull);
+    final messages = jsonEncode(
+      inferenceRepository.requests.single.messages
+          .map((message) => message.toJson())
+          .toList(),
+    ).toLowerCase();
+    expect(messages, isNot(contains('did not fully resolve')));
+    expect(messages, isNot(contains('has not stabilized')));
+    expect(messages, isNot(contains('rejectedreport')));
+    expect(messages, contains('duplicate sync issue reappeared'));
+  });
+
   test('editor retries with exact issues and merges usage', () async {
     final inferenceRepository = _QueuedInferenceRepository([
       [
