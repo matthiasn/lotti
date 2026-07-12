@@ -58,8 +58,8 @@ void main() {
 
       test('has correct name', () {
         expect(tool.name, equals('update_task_due_date'));
-        expect(tool.description, contains('explicitly asks'));
-        expect(tool.description, contains('checklist item'));
+        expect(tool.description, contains('CHANGE the due date'));
+        expect(tool.description, contains('current dueDate'));
       });
 
       test('requires a string dueDate parameter with YYYY-MM-DD format', () {
@@ -171,8 +171,8 @@ void main() {
         expect(tool.description, contains('status'));
         expect(tool.description, contains('DONE'));
         expect(tool.description, contains('user-only'));
-        expect(tool.description, contains('explicitly asks'));
-        expect(tool.description, contains('blocker or gate'));
+        expect(tool.description, contains('clear evidence'));
+        expect(tool.description, contains('BLOCKED and ON HOLD require'));
       });
 
       test('requires status parameter with enum of allowed values', () {
