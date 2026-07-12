@@ -80,7 +80,7 @@ class AgentTestBench {
     this._taskAgentService,
     this._ttsEngine,
     this._mediaQueryData = desktopMediaQueryData,
-    this._provideAgentIdentity = false,
+    this.provideAgentIdentity = false,
     this._isRunningOverride,
     this.suggestionListOverride,
     this._extraOverrides = const [],
@@ -117,7 +117,7 @@ class AgentTestBench {
   /// internals panel) so navigation into the panel resolves without
   /// hitting real infrastructure. The shell otherwise only needs
   /// [taskAgentProvider]; navigation tests opt into this.
-  final bool _provideAgentIdentity;
+  final bool provideAgentIdentity;
 
   /// Replaces the default static `agentIsRunningProvider` override.
   /// Used by lifecycle tests that drive the running flag from a
@@ -151,6 +151,13 @@ class AgentTestBench {
         taskAgentResolvedSetupProvider.overrideWith(
           (ref, id) async => _resolvedSetup ?? defaultResolvedSetup,
         ),
+        taskAgentSetupOptionsProvider.overrideWith(
+          (ref) async => const TaskAgentSetupOptions(
+            profiles: [],
+            models: [],
+            providers: [],
+          ),
+        ),
         agentReportProvider.overrideWith((ref, agentId) async => _report),
         templateForAgentProvider.overrideWith(
           (ref, agentId) async => _template,
@@ -164,7 +171,7 @@ class AgentTestBench {
         unifiedSuggestionListProvider.overrideWith(
           suggestionListOverride ?? (ref, taskId) async => _suggestions,
         ),
-        if (_provideAgentIdentity)
+        if (provideAgentIdentity)
           agentIdentityProvider.overrideWith((ref, id) async => identity),
         if (_confirmationService != null)
           changeSetConfirmationServiceProvider.overrideWith(

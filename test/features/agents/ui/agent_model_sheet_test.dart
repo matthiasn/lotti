@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -96,22 +97,33 @@ void main() {
     ).thenAnswer((_) async {});
   });
 
-  List<Override> overrides({bool automaticUpdates = true}) {
+  List<Override> overrides({
+    bool automaticUpdates = true,
+    AgentConfig? config,
+    ResolvedAgentSetup? resolvedSetup,
+    TaskAgentSetupOptions? setupOptions,
+  }) {
     final identity = makeTestIdentity().copyWith(
-      config: AgentConfig(
-        automaticUpdatesEnabled: automaticUpdates,
-        profileId: profile.id,
-        inferenceSetup: AgentInferenceSetup(
-          mode: AgentInferenceSetupMode.configured,
-          origin: AgentInferenceSetupOrigin.user,
-          baseProfileId: profile.id,
-        ),
-      ),
+      config:
+          config ??
+          AgentConfig(
+            automaticUpdatesEnabled: automaticUpdates,
+            profileId: profile.id,
+            inferenceSetup: AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.configured,
+              origin: AgentInferenceSetupOrigin.user,
+              baseProfileId: profile.id,
+            ),
+          ),
     );
     return [
       agentIdentityProvider.overrideWith((ref, id) async => identity),
-      taskAgentResolvedSetupProvider.overrideWith((ref, id) async => resolved),
-      taskAgentSetupOptionsProvider.overrideWith((ref) async => options),
+      taskAgentResolvedSetupProvider.overrideWith(
+        (ref, id) async => resolvedSetup ?? resolved,
+      ),
+      taskAgentSetupOptionsProvider.overrideWith(
+        (ref) async => setupOptions ?? options,
+      ),
       taskAgentServiceProvider.overrideWithValue(service),
       journalDbProvider.overrideWithValue(journalDb),
     ];
@@ -120,6 +132,9 @@ void main() {
   Future<void> openSheet(
     WidgetTester tester, {
     bool automaticUpdates = true,
+    AgentConfig? config,
+    ResolvedAgentSetup? resolvedSetup,
+    TaskAgentSetupOptions? setupOptions,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -135,7 +150,12 @@ void main() {
             ),
           ),
         ),
-        overrides: overrides(automaticUpdates: automaticUpdates),
+        overrides: overrides(
+          automaticUpdates: automaticUpdates,
+          config: config,
+          resolvedSetup: resolvedSetup,
+          setupOptions: setupOptions,
+        ),
       ),
     );
     await tester.tap(find.text('Open'));
@@ -288,5 +308,204 @@ void main() {
     expect(setup.mode, AgentInferenceSetupMode.disabled);
     expect(setup.origin, AgentInferenceSetupOrigin.categorySnapshot);
     expect(setup.originEntityId, 'category-1');
+  });
+
+  testWidgets('category default copies its profile and model snapshot', (
+    tester,
+  ) async {
+    final task = makeTestTask(id: 'task-1').copyWith(
+      meta: makeTestTask(id: 'task-1').meta.copyWith(categoryId: 'category-1'),
+    );
+    when(
+      () => journalDb.journalEntityById('task-1'),
+    ).thenAnswer((_) async => task);
+    when(() => journalDb.getCategoryById('category-1')).thenAnswer(
+      (_) async => CategoryTestUtils.createTestCategory(
+        id: 'category-1',
+        defaultProfileId: profile.id,
+      ),
+    );
+    await openSheet(tester);
+
+    await tester.tap(find.text('Copy category default'));
+    await tester.pump();
+
+    final setup =
+        verify(
+              () => service.updateAgentInferenceSetup(
+                agentId: 'agent-1',
+                setup: captureAny(named: 'setup'),
+              ),
+            ).captured.single
+            as AgentInferenceSetup;
+    expect(setup.mode, AgentInferenceSetupMode.configured);
+    expect(setup.baseProfileId, profile.id);
+    expect(find.textContaining('Using Qwen 3.5 Plus'), findsWidgets);
+  });
+
+  testWidgets('origin labels cover disabled, category, template, and legacy', (
+    tester,
+  ) async {
+    final cases = <(ResolvedAgentSetup, String)>[
+      (
+        const ResolvedAgentSetup(status: AgentSetupResolutionStatus.disabled),
+        'Disabled',
+      ),
+      (
+        ResolvedAgentSetup(
+          status: AgentSetupResolutionStatus.resolved,
+          profile: resolved.profile,
+          setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+        ),
+        'Copied from the category default when this agent was created',
+      ),
+      (
+        ResolvedAgentSetup(
+          status: AgentSetupResolutionStatus.resolved,
+          profile: resolved.profile,
+          setupOrigin: AgentInferenceSetupOrigin.templateSnapshot,
+        ),
+        'Copied from the template',
+      ),
+      (
+        ResolvedAgentSetup(
+          status: AgentSetupResolutionStatus.resolved,
+          profile: resolved.profile,
+          setupOrigin: AgentInferenceSetupOrigin.unknown,
+        ),
+        'Legacy setup',
+      ),
+    ];
+
+    for (final (setup, expected) in cases) {
+      await openSheet(tester, resolvedSetup: setup);
+      expect(find.text(expected), findsOneWidget);
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('broken profile routes and empty model state remain explicit', (
+    tester,
+  ) async {
+    await openSheet(
+      tester,
+      setupOptions: TaskAgentSetupOptions(
+        profiles: [profile],
+        models: const [],
+        providers: [provider],
+      ),
+    );
+    expect(find.text('Selected AI setup is unavailable'), findsOneWidget);
+    expect(
+      find.text('No compatible thinking models available'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+
+    await openSheet(
+      tester,
+      setupOptions: TaskAgentSetupOptions(
+        profiles: [profile],
+        models: [model],
+        providers: const [],
+      ),
+    );
+    expect(find.text('Selected AI setup is unavailable'), findsOneWidget);
+  });
+
+  testWidgets('failed save shows an error and restores interaction', (
+    tester,
+  ) async {
+    when(
+      () => service.updateAgentProfile(
+        agentId: any(named: 'agentId'),
+        profileId: any(named: 'profileId'),
+      ),
+    ).thenThrow(StateError('save failed'));
+    await openSheet(tester);
+
+    await tester.tap(find.text('Saved profile'));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Error'), findsWidgets);
+    expect(
+      tester
+          .widgetList<AbsorbPointer>(find.byType(AbsorbPointer))
+          .any((widget) => !widget.absorbing),
+      isTrue,
+    );
+  });
+
+  testWidgets('cancel keeps AI setup and direct override can be cleared', (
+    tester,
+  ) async {
+    await openSheet(
+      tester,
+      config: AgentConfig(
+        automaticUpdatesEnabled: true,
+        inferenceSetup: AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.configured,
+          origin: AgentInferenceSetupOrigin.user,
+          baseProfileId: profile.id,
+          thinkingModelOverrideId: model.id,
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Use profile default'));
+    await tester.pump();
+    verify(
+      () => service.updateAgentThinkingModelOverride(
+        agentId: 'agent-1',
+        modelConfigId: null,
+      ),
+    ).called(1);
+
+    await tester.tap(find.text('No AI setup'));
+    await tester.pump();
+    await tester.tap(find.text('Cancel'));
+    await tester.pump();
+    verifyNever(
+      () => service.updateAgentInferenceSetup(
+        agentId: any(named: 'agentId'),
+        setup: any(named: 'setup'),
+      ),
+    );
+  });
+
+  testWidgets('disabled setup blocks automation and explains remediation', (
+    tester,
+  ) async {
+    await openSheet(
+      tester,
+      config: const AgentConfig(
+        automaticUpdatesEnabled: false,
+        inferenceSetup: AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.disabled,
+          origin: AgentInferenceSetupOrigin.user,
+        ),
+      ),
+      resolvedSetup: const ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.disabled,
+      ),
+      setupOptions: const TaskAgentSetupOptions(
+        profiles: [],
+        models: [],
+        providers: [],
+      ),
+    );
+
+    expect(find.text('No AI setup'), findsWidgets);
+    expect(find.text('No profiles available on this device'), findsOneWidget);
+    expect(
+      find.text('Choose an AI setup before turning on automatic updates.'),
+      findsOneWidget,
+    );
+    final checkbox = tester.widget<DesignSystemCheckbox>(
+      find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
+    );
+    expect(checkbox.onChanged, isNull);
   });
 }

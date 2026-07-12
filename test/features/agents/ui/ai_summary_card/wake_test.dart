@@ -27,6 +27,23 @@ void main() {
       expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
     });
 
+    testWidgets('setup identity opens the persistent agent setup sheet', (
+      tester,
+    ) async {
+      final bench = AgentTestBench(
+        provideAgentIdentity: true,
+        report: makeTestReport(tldr: 'Tldr line.'),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('test-model · via Test Provider'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Agent setup'), findsOneWidget);
+    });
+
     testWidgets(
       'tapping refresh triggers a re-analysis on the task agent service',
       (tester) async {
