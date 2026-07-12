@@ -28,6 +28,7 @@ class KnownModel {
     required this.outputModalities,
     required this.isReasoningModel,
     required this.description,
+    this.publisher,
     this.supportsFunctionCalling = false,
     this.maxCompletionTokens,
   });
@@ -38,6 +39,7 @@ class KnownModel {
   final List<Modality> outputModalities;
   final bool isReasoningModel;
   final String description;
+  final String? publisher;
   final bool supportsFunctionCalling;
   final int? maxCompletionTokens;
 
@@ -55,11 +57,41 @@ class KnownModel {
       inputModalities: inputModalities,
       outputModalities: outputModalities,
       isReasoningModel: isReasoningModel,
+      publisher: publisher ?? publisherForCuratedModel(providerModelId),
       supportsFunctionCalling: supportsFunctionCalling,
       description: description,
       maxCompletionTokens: maxCompletionTokens,
     );
   }
+}
+
+/// Publisher metadata for curated model IDs, applied when the model row is
+/// created. This is deliberately seed/import-time metadata; UI never guesses
+/// a publisher from a mutable display name.
+String? publisherForCuratedModel(String providerModelId) {
+  final id = providerModelId.toLowerCase();
+  final modelId = id.split('/').last;
+  if (id.contains('gemini') || id.contains('gemma')) return 'Google';
+  if (id.contains('qwen') || id.contains('wan')) return 'Alibaba';
+  if (id.contains('llama')) return 'Meta';
+  if (id.contains('mistral') ||
+      id.contains('ministral') ||
+      id.contains('voxtral')) {
+    return 'Mistral AI';
+  }
+  if (id.contains('glm')) return 'Zhipu AI';
+  if (id.contains('deepseek')) return 'DeepSeek';
+  if (id.contains('claude')) return 'Anthropic';
+  if (id.contains('minimax')) return 'MiniMax';
+  if (id.contains('flux')) return 'Black Forest Labs';
+  if (id.contains('whisper') ||
+      modelId.startsWith('gpt-') ||
+      modelId.startsWith('o1') ||
+      modelId.startsWith('o3') ||
+      modelId.startsWith('o4')) {
+    return 'OpenAI';
+  }
+  return null;
 }
 
 /// Known models for each inference provider type

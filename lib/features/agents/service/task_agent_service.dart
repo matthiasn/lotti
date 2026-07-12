@@ -6,7 +6,12 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart'
-    show AgentLifecycle, WakeReason;
+    show
+        AgentInferenceSetupMode,
+        AgentInferenceSetupOrigin,
+        AgentLifecycle,
+        WakeInitiator,
+        WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -64,6 +69,8 @@ class TaskAgentService {
     required Set<String> allowedCategoryIds,
     String? templateId,
     String? profileId,
+    AgentInferenceSetupOrigin? setupOrigin,
+    String? setupOriginEntityId,
     String? displayName,
     bool awaitContent = false,
     Set<String> additionalWakeTokens = const {},
@@ -103,15 +110,50 @@ class TaskAgentService {
         );
       }
 
-      final identity = await agentService.createAgent(
+      final templateProfileId = templateEntity.profileId;
+      final categoryHasNoDefault =
+          setupOrigin == AgentInferenceSetupOrigin.categorySnapshot &&
+          profileId == null;
+      final baseProfileId = categoryHasNoDefault
+          ? null
+          : profileId ?? templateProfileId;
+      final effectiveOrigin = profileId != null
+          ? (setupOrigin ?? AgentInferenceSetupOrigin.user)
+          : !categoryHasNoDefault && templateProfileId != null
+          ? AgentInferenceSetupOrigin.templateSnapshot
+          : (setupOrigin ?? AgentInferenceSetupOrigin.user);
+      final inferenceSetup = AgentInferenceSetup(
+        mode: baseProfileId == null
+            ? AgentInferenceSetupMode.disabled
+            : AgentInferenceSetupMode.configured,
+        origin: effectiveOrigin,
+        baseProfileId: baseProfileId,
+        originEntityId: profileId != null
+            ? setupOriginEntityId
+            : !categoryHasNoDefault && templateProfileId != null
+            ? resolvedTemplateId
+            : setupOriginEntityId,
+      );
+      final createdIdentity = await agentService.createAgent(
         kind: _agentKind,
         displayName: displayName ?? 'Task Agent',
         config: AgentConfig(
           modelId: templateEntity.modelId,
-          profileId: profileId,
+          profileId: baseProfileId,
+          inferenceSetup: inferenceSetup,
+          automaticUpdatesEnabled: true,
         ),
         allowedCategoryIds: allowedCategoryIds,
       );
+      final identity = inferenceSetup.mode == AgentInferenceSetupMode.disabled
+          ? createdIdentity.copyWith(
+              lifecycle: AgentLifecycle.dormant,
+              updatedAt: clock.now(),
+            )
+          : createdIdentity;
+      if (!identical(identity, createdIdentity)) {
+        await syncService.upsertEntity(identity);
+      }
 
       // Update state with activeTaskId.
       final state = await repository.getAgentState(identity.agentId);
@@ -158,8 +200,12 @@ class TaskAgentService {
       return identity;
     });
 
-    // Register subscription for changes to this task.
-    _registerTaskSubscription(identity.agentId, taskId);
+    final inferenceEnabled =
+        identity.config.inferenceSetup?.mode !=
+        AgentInferenceSetupMode.disabled;
+    if (inferenceEnabled) {
+      _registerTaskSubscription(identity.agentId, taskId);
+    }
 
     // Mirror the persisted awaitingContent flag in the orchestrator so that
     // subscription notifications for a brand-new blank task do not surface a
@@ -169,13 +215,15 @@ class TaskAgentService {
     // WakeOrchestrator._shouldSkipForAwaitingContent() will defer execution
     // for blank tasks and immediately activate agents whose task already has
     // meaningful content.
-    orchestrator
-      ..setAwaitingContent(identity.agentId, awaiting: awaitContent)
-      ..enqueueManualWake(
-        agentId: identity.agentId,
-        reason: WakeReason.creation.name,
-        triggerTokens: {taskId, ...additionalWakeTokens},
-      );
+    if (inferenceEnabled) {
+      orchestrator
+        ..setAwaitingContent(identity.agentId, awaiting: awaitContent)
+        ..enqueueManualWake(
+          agentId: identity.agentId,
+          reason: WakeReason.creation.name,
+          triggerTokens: {taskId, ...additionalWakeTokens},
+        );
+    }
 
     domainLogger?.log(
       LogDomain.agentRuntime,
@@ -203,31 +251,161 @@ class TaskAgentService {
     return agentService.getAgent(agentId);
   }
 
-  /// Update the inference profile for an existing agent.
+  /// Persist the complete inference setup for an existing task agent.
   ///
-  /// Sets `config.profileId` on the agent identity entity. The actual model
-  /// resolution happens at inference time via the profile's slots.
+  /// Disabled setup is mirrored to the legacy-aware dormant lifecycle and
+  /// cancels pending automatic work. Re-enabling a setup only reactivates an
+  /// agent that was dormant because its previous typed setup was disabled;
+  /// an independently paused legacy/configured agent stays paused.
+  Future<void> updateAgentInferenceSetup({
+    required String agentId,
+    required AgentInferenceSetup setup,
+  }) async {
+    if (setup.mode == AgentInferenceSetupMode.configured &&
+        setup.baseProfileId == null &&
+        setup.thinkingModelOverrideId == null) {
+      throw ArgumentError.value(
+        setup,
+        'setup',
+        'Configured setup requires a profile or thinking model',
+      );
+    }
+
+    late AgentIdentityEntity previous;
+    late AgentIdentityEntity updated;
+    await syncService.runInTransaction(() async {
+      final identity = await agentService.getAgent(agentId);
+      if (identity == null) {
+        throw StateError('Agent $agentId not found');
+      }
+      previous = identity;
+      final wasInferenceDisabled =
+          identity.config.inferenceSetup?.mode ==
+          AgentInferenceSetupMode.disabled;
+      final lifecycle = setup.mode == AgentInferenceSetupMode.disabled
+          ? AgentLifecycle.dormant
+          : wasInferenceDisabled && identity.lifecycle == AgentLifecycle.dormant
+          ? AgentLifecycle.active
+          : identity.lifecycle;
+      updated = identity.copyWith(
+        lifecycle: lifecycle,
+        config: identity.config.copyWith(
+          profileId: setup.mode == AgentInferenceSetupMode.configured
+              ? setup.baseProfileId
+              : null,
+          inferenceSetup: setup,
+        ),
+        updatedAt: clock.now(),
+      );
+      await syncService.upsertEntity(updated);
+    });
+
+    if (setup.mode == AgentInferenceSetupMode.disabled) {
+      orchestrator.disableAutomaticUpdatesRuntime(agentId);
+    } else if (previous.config.inferenceSetup?.mode ==
+            AgentInferenceSetupMode.disabled &&
+        updated.lifecycle == AgentLifecycle.active &&
+        updated.config.automaticUpdatesEnabledEffective) {
+      await restoreSubscriptionsForAgent(agentId, restoreCountdown: false);
+    }
+
+    domainLogger?.log(
+      LogDomain.agentRuntime,
+      'updated inference setup for ${DomainLogger.sanitizeId(agentId)} '
+      'to ${setup.mode.name}',
+      subDomain: 'lifecycle',
+    );
+  }
+
+  /// Enable or disable subscription-triggered automatic task updates.
+  ///
+  /// Turning this on restores subscriptions but never enqueues a wake or
+  /// replays changes received while it was off. Turning it off clears the
+  /// countdown and queued subscription jobs while preserving manual wakes.
+  Future<void> updateAutomaticUpdates({
+    required String agentId,
+    required bool enabled,
+  }) async {
+    late AgentIdentityEntity identity;
+    await syncService.runInTransaction(() async {
+      final current = await agentService.getAgent(agentId);
+      if (current == null) {
+        throw StateError('Agent $agentId not found');
+      }
+      identity = current;
+      if (enabled &&
+          identity.config.inferenceSetup?.mode ==
+              AgentInferenceSetupMode.disabled) {
+        throw StateError(
+          'Choose an inference setup before enabling automation',
+        );
+      }
+
+      final updated = identity.copyWith(
+        config: identity.config.copyWith(automaticUpdatesEnabled: enabled),
+        updatedAt: clock.now(),
+      );
+      await syncService.upsertEntity(updated);
+    });
+
+    if (enabled && identity.lifecycle == AgentLifecycle.active) {
+      orchestrator.enableAutomaticUpdatesRuntime(agentId);
+      await restoreSubscriptionsForAgent(agentId, restoreCountdown: false);
+    } else {
+      orchestrator.disableAutomaticUpdatesRuntime(agentId);
+    }
+
+    domainLogger?.log(
+      LogDomain.agentRuntime,
+      'automatic updates ${enabled ? 'enabled' : 'disabled'} for '
+      '${DomainLogger.sanitizeId(agentId)}',
+      subDomain: 'lifecycle',
+    );
+  }
+
+  /// Update the base inference profile and clear any direct model override.
   Future<void> updateAgentProfile({
     required String agentId,
     required String? profileId,
   }) async {
-    final now = clock.now();
+    await updateAgentInferenceSetup(
+      agentId: agentId,
+      setup: AgentInferenceSetup(
+        mode: profileId == null
+            ? AgentInferenceSetupMode.disabled
+            : AgentInferenceSetupMode.configured,
+        origin: AgentInferenceSetupOrigin.user,
+        baseProfileId: profileId,
+      ),
+    );
+  }
+
+  /// Set or clear the persistent direct thinking-model override.
+  Future<void> updateAgentThinkingModelOverride({
+    required String agentId,
+    required String? modelConfigId,
+  }) async {
     final identity = await agentService.getAgent(agentId);
     if (identity == null) {
       throw StateError('Agent $agentId not found');
     }
-    final updatedIdentity = identity.copyWith(
-      config: identity.config.copyWith(profileId: profileId),
-      updatedAt: now,
-    );
-    await syncService.upsertEntity(updatedIdentity);
-
-    domainLogger?.log(
-      LogDomain.agentRuntime,
-      'updated profile for ${DomainLogger.sanitizeId(agentId)} '
-      'to ${profileId != null ? DomainLogger.sanitizeId(profileId) : 'none'}',
-      subDomain: 'lifecycle',
-    );
+    final current = identity.config.inferenceSetup;
+    final baseProfileId = current?.mode == AgentInferenceSetupMode.configured
+        ? current?.baseProfileId
+        : identity.config.profileId;
+    final next = modelConfigId == null && baseProfileId == null
+        ? const AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.disabled,
+            origin: AgentInferenceSetupOrigin.user,
+          )
+        : AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: current?.origin ?? AgentInferenceSetupOrigin.user,
+            baseProfileId: baseProfileId,
+            thinkingModelOverrideId: modelConfigId,
+            originEntityId: current?.originEntityId,
+          );
+    await updateAgentInferenceSetup(agentId: agentId, setup: next);
   }
 
   /// Trigger a manual re-analysis wake for [agentId].
@@ -243,6 +421,7 @@ class TaskAgentService {
     orchestrator.enqueueManualWake(
       agentId: agentId,
       reason: WakeReason.reanalysis.name,
+      initiator: WakeInitiator.user,
     );
   }
 
@@ -278,7 +457,10 @@ class TaskAgentService {
   ///
   /// Call this after resuming a paused agent so that automatic
   /// wake-on-task-change is restored for the current session.
-  Future<void> restoreSubscriptionsForAgent(String agentId) async {
+  Future<void> restoreSubscriptionsForAgent(
+    String agentId, {
+    bool restoreCountdown = true,
+  }) async {
     final links = await repository.getLinksFrom(
       agentId,
       type: AgentLinkTypes.agentTask,
@@ -286,7 +468,9 @@ class TaskAgentService {
     for (final link in links) {
       _registerTaskSubscription(agentId, link.toId);
     }
-    await _hydrateThrottleDeadline(agentId);
+    if (restoreCountdown) {
+      await _hydrateThrottleDeadline(agentId);
+    }
     domainLogger?.log(
       LogDomain.agentRuntime,
       'restored ${links.length} subscriptions '
@@ -370,7 +554,13 @@ class TaskAgentService {
       lifecycle: AgentLifecycle.active,
     );
     final taskAgents = activeAgents
-        .where((agent) => agent.kind == _agentKind)
+        .where(
+          (agent) =>
+              agent.kind == _agentKind &&
+              agent.config.automaticUpdatesEnabledEffective &&
+              agent.config.inferenceSetup?.mode !=
+                  AgentInferenceSetupMode.disabled,
+        )
         .toList(growable: false);
     final statesByAgentId = await _loadStatesForRestore(taskAgents);
 

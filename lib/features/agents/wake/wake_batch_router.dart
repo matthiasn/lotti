@@ -12,6 +12,7 @@ extension WakeBatchRouter on WakeOrchestrator {
       return;
     }
     for (final sub in _subscriptions) {
+      if (_automaticUpdatesDisabledAgents.contains(sub.agentId)) continue;
       // 1. Check whether any token matches the subscription's entity IDs.
       //    A "direct" match means the agent's own entity was edited
       //    (token in tokens AND propagated::token NOT in tokens). A

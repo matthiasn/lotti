@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
@@ -38,6 +39,9 @@ Widget _buildShell({
         ),
       ),
       taskAgentProvider.overrideWith((ref, id) => identity(ref)),
+      taskAgentResolvedSetupProvider.overrideWith(
+        (ref, id) async => defaultResolvedSetup,
+      ),
       agentReportProvider.overrideWith(
         (ref, agentId) async => makeTestReport(tldr: 'Tldr line.'),
       ),

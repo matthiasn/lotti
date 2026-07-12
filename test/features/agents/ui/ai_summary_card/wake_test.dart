@@ -1,6 +1,8 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -71,6 +73,62 @@ void main() {
         });
       },
     );
+
+    testWidgets(
+      'automatic updates off hides countdown but keeps manual refresh',
+      (tester) async {
+        final taskAgentService = MockTaskAgentService();
+        when(
+          () => taskAgentService.triggerReanalysis(any()),
+        ).thenAnswer((_) {});
+        final identity = makeTestIdentity().copyWith(
+          config: const AgentConfig(automaticUpdatesEnabled: false),
+        );
+        final bench = AgentTestBench(
+          identity: identity,
+          taskAgentService: taskAgentService,
+          state: makeTestState(nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30)),
+          report: makeTestReport(tldr: 'Tldr line.'),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Automatic updates off · Use Run now to update'),
+          findsOneWidget,
+        );
+        expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+        expect(find.byTooltip('Run now'), findsOneWidget);
+        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        expect(find.text('0:30'), findsNothing);
+        await tester.tap(find.byIcon(Icons.refresh_rounded));
+        verify(() => taskAgentService.triggerReanalysis(any())).called(1);
+      },
+    );
+
+    testWidgets('no setup disables Run now and shows a visible error', (
+      tester,
+    ) async {
+      final taskAgentService = MockTaskAgentService();
+      final bench = AgentTestBench(
+        taskAgentService: taskAgentService,
+        resolvedSetup: const ResolvedAgentSetup(
+          status: AgentSetupResolutionStatus.disabled,
+        ),
+        report: makeTestReport(tldr: 'Existing report.'),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+
+      expect(find.text('No AI setup'), findsOneWidget);
+      final refresh = tester.widget<IconButton>(
+        find.widgetWithIcon(IconButton, Icons.refresh_rounded),
+      );
+      expect(refresh.onPressed, isNull);
+      verifyNever(() => taskAgentService.triggerReanalysis(any()));
+    });
 
     testWidgets('long scheduled wake countdown uses h:mm:ss format', (
       tester,

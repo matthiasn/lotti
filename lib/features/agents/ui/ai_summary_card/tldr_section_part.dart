@@ -22,6 +22,7 @@ class TldrHeader extends StatelessWidget {
     required this.onCancelTimer,
     required this.onCountdownExpired,
     this.playbackControl,
+    this.identityRegion,
     super.key,
   });
 
@@ -35,10 +36,11 @@ class TldrHeader extends StatelessWidget {
   /// TtsPlayButton here so the header stays framework-free). `null` when the
   /// feature flag is off, there's no TL;DR, or the engine is unsupported.
   final Widget? playbackControl;
+  final Widget? identityRegion;
   final bool isRunning;
   final bool showCountdown;
   final DateTime? nextWakeAt;
-  final VoidCallback onRunNow;
+  final VoidCallback? onRunNow;
   final VoidCallback onCancelTimer;
   final VoidCallback onCountdownExpired;
 
@@ -189,23 +191,29 @@ class TldrHeader extends StatelessWidget {
           // via a SizedBox makes the single-run case spread across
           // the card — leading block at the left edge, control
           // cluster at the right edge.
-          return SizedBox(
-            width: constraints.maxWidth,
-            child: Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              runSpacing: 8,
-              children: [
-                buildLeadingBlock(maxColumnWidth: maxColumnWidth),
-                SizedBox(
-                  height: _controlsRowHeight,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: buildControls(compactCountdown: compact),
-                  ),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: constraints.maxWidth,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  runSpacing: 8,
+                  children: [
+                    buildLeadingBlock(maxColumnWidth: maxColumnWidth),
+                    SizedBox(
+                      height: _controlsRowHeight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: buildControls(compactCountdown: compact),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              ?identityRegion,
+            ],
           );
         },
       ),
@@ -303,7 +311,7 @@ class _ReadMorePill extends StatelessWidget {
   const _ReadMorePill({required this.expanded, required this.onPressed});
 
   final bool expanded;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -362,14 +370,18 @@ class _IconAffordance extends StatelessWidget {
 
   final IconData icon;
   final String tooltip;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final ai = context.designTokens.colors.aiCard;
     return IconButton(
-      icon: Icon(icon, size: compact ? 16 : 18, color: ai.metaText),
+      icon: Icon(
+        icon,
+        size: compact ? 16 : 18,
+        color: onPressed == null ? ai.faintMeta : ai.metaText,
+      ),
       tooltip: tooltip,
       padding: EdgeInsets.zero,
       // >=44pt tap target for every control (low-vision / magnifier /

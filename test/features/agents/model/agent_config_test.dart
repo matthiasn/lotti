@@ -11,6 +11,70 @@ import 'package:lotti/features/sync/g_counter.dart';
 /// set field lands on without ever using `DateTime.now()`.
 final _slotsBase = DateTime(2026);
 
+class _GeneratedInferenceSetupScenario {
+  const _GeneratedInferenceSetupScenario({
+    required this.mode,
+    required this.origin,
+    required this.baseProfileId,
+    required this.thinkingModelOverrideId,
+    required this.originEntityId,
+  });
+
+  final AgentInferenceSetupMode mode;
+  final AgentInferenceSetupOrigin origin;
+  final String? baseProfileId;
+  final String? thinkingModelOverrideId;
+  final String? originEntityId;
+
+  AgentInferenceSetup get setup => AgentInferenceSetup(
+    mode: mode,
+    origin: origin,
+    baseProfileId: baseProfileId,
+    thinkingModelOverrideId: thinkingModelOverrideId,
+    originEntityId: originEntityId,
+  );
+
+  @override
+  String toString() =>
+      '_GeneratedInferenceSetupScenario('
+      'mode: $mode, origin: $origin, baseProfileId: $baseProfileId, '
+      'thinkingModelOverrideId: $thinkingModelOverrideId, '
+      'originEntityId: $originEntityId)';
+}
+
+extension _AnyInferenceSetup on glados.Any {
+  glados.Generator<AgentInferenceSetupMode> get inferenceSetupMode =>
+      glados.AnyUtils(this).choose(AgentInferenceSetupMode.values);
+
+  glados.Generator<AgentInferenceSetupOrigin> get inferenceSetupOrigin =>
+      glados.AnyUtils(this).choose(AgentInferenceSetupOrigin.values);
+
+  glados.Generator<String?> get optionalSetupId =>
+      glados.AnyUtils(this).choose(const <String?>[null, 'id-a', 'id-b']);
+
+  glados.Generator<_GeneratedInferenceSetupScenario>
+  get inferenceSetupScenario => glados.CombinableAny(this).combine5(
+    inferenceSetupMode,
+    inferenceSetupOrigin,
+    optionalSetupId,
+    optionalSetupId,
+    optionalSetupId,
+    (
+      AgentInferenceSetupMode mode,
+      AgentInferenceSetupOrigin origin,
+      String? baseProfileId,
+      String? thinkingModelOverrideId,
+      String? originEntityId,
+    ) => _GeneratedInferenceSetupScenario(
+      mode: mode,
+      origin: origin,
+      baseProfileId: baseProfileId,
+      thinkingModelOverrideId: thinkingModelOverrideId,
+      originEntityId: originEntityId,
+    ),
+  );
+}
+
 /// One generated [AgentSlots] shape exercising the freezed `toJson`/`fromJson`
 /// codec (including the `@JsonKey`-renamed counter keys and ISO-8601 `DateTime`
 /// encoding). Each nullable field uses a negative day-offset / count sentinel
@@ -114,6 +178,56 @@ extension _AnyGeneratedSlots on glados.Any {
 }
 
 void main() {
+  group('AgentInferenceSetup', () {
+    glados.Glados(
+      glados.any.inferenceSetupScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'JSON round-trip preserves every setup field',
+      (scenario) {
+        final setup = scenario.setup;
+        final json = jsonDecode(jsonEncode(setup.toJson()));
+        expect(
+          AgentInferenceSetup.fromJson(json as Map<String, dynamic>),
+          setup,
+          reason: '$scenario',
+        );
+      },
+      tags: 'glados',
+    );
+
+    test('legacy AgentConfig JSON leaves inferenceSetup unset', () {
+      final config = AgentConfig.fromJson(const <String, dynamic>{});
+
+      expect(config.inferenceSetup, isNull);
+      expect(config.profileId, isNull);
+    });
+
+    test('unknown setup enums fail safe to disabled and unknown origin', () {
+      final setup = AgentInferenceSetup.fromJson(const <String, dynamic>{
+        'mode': 'futureMode',
+        'origin': 'futureOrigin',
+      });
+
+      expect(setup.mode, AgentInferenceSetupMode.disabled);
+      expect(setup.origin, AgentInferenceSetupOrigin.unknown);
+    });
+
+    for (final preference in <bool?>[null, true, false]) {
+      test('automatic update preference $preference round-trips', () {
+        final config = AgentConfig(automaticUpdatesEnabled: preference);
+        final json = jsonDecode(jsonEncode(config.toJson()));
+        final restored = AgentConfig.fromJson(json as Map<String, dynamic>);
+
+        expect(restored.automaticUpdatesEnabled, preference);
+        expect(
+          restored.automaticUpdatesEnabledEffective,
+          preference ?? true,
+        );
+      });
+    }
+  });
+
   group('AgentMessageMetadata.milestone', () {
     // The JSON value for each milestone is the cross-device sync wire format
     // and the key the State-as-Projection fold matches on (PR 4). Renaming an

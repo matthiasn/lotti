@@ -754,7 +754,7 @@ void main() {
           apiKey: apiKey,
         );
 
-        expect(models.single.name, 'GPT 4 1 Mini');
+        expect(models.single.name, 'GPT 4.1 Mini');
         expect(models.single.description, contains('embeddings model'));
         expect(models.single.description, contains('Context: 2048 tokens'));
         expect(models.single.isReasoningModel, isFalse);

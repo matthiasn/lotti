@@ -18,7 +18,17 @@ mixin _$AgentConfig {
 /// Maximum number of tool-call turns per wake.
  int get maxTurnsPerWake;/// Model identifier to use for inference.
  String get modelId;/// Inference profile ID — takes precedence over [modelId] when set.
- String? get profileId;/// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
+ String? get profileId;/// Typed persistent inference setup for task agents.
+///
+/// Null preserves the legacy profile/template/model resolution chain.
+/// Once present, this setup is authoritative: configured setups resolve
+/// only their direct model override or base profile, while disabled setups
+/// prohibit inference instead of falling through to legacy defaults.
+ AgentInferenceSetup? get inferenceSetup;/// Whether task changes may schedule coalesced automatic wakes.
+///
+/// Null means legacy/on. New task agents and the first switch edit persist
+/// an explicit value independently from profile/model selection.
+ bool? get automaticUpdatesEnabled;/// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
 /// it is configuration set once at creation, not mutable derived state.
 /// Null falls back to the default window. Reads accept the legacy
 /// `AgentSlots.feedbackWindowDays` for agents created before the re-home.
@@ -38,16 +48,16 @@ $AgentConfigCopyWith<AgentConfig> get copyWith => _$AgentConfigCopyWithImpl<Agen
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentConfig&&(identical(other.maxTurnsPerWake, maxTurnsPerWake) || other.maxTurnsPerWake == maxTurnsPerWake)&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.feedbackWindowDays, feedbackWindowDays) || other.feedbackWindowDays == feedbackWindowDays)&&(identical(other.recursionDepth, recursionDepth) || other.recursionDepth == recursionDepth));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentConfig&&(identical(other.maxTurnsPerWake, maxTurnsPerWake) || other.maxTurnsPerWake == maxTurnsPerWake)&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.inferenceSetup, inferenceSetup) || other.inferenceSetup == inferenceSetup)&&(identical(other.automaticUpdatesEnabled, automaticUpdatesEnabled) || other.automaticUpdatesEnabled == automaticUpdatesEnabled)&&(identical(other.feedbackWindowDays, feedbackWindowDays) || other.feedbackWindowDays == feedbackWindowDays)&&(identical(other.recursionDepth, recursionDepth) || other.recursionDepth == recursionDepth));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,maxTurnsPerWake,modelId,profileId,feedbackWindowDays,recursionDepth);
+int get hashCode => Object.hash(runtimeType,maxTurnsPerWake,modelId,profileId,inferenceSetup,automaticUpdatesEnabled,feedbackWindowDays,recursionDepth);
 
 @override
 String toString() {
-  return 'AgentConfig(maxTurnsPerWake: $maxTurnsPerWake, modelId: $modelId, profileId: $profileId, feedbackWindowDays: $feedbackWindowDays, recursionDepth: $recursionDepth)';
+  return 'AgentConfig(maxTurnsPerWake: $maxTurnsPerWake, modelId: $modelId, profileId: $profileId, inferenceSetup: $inferenceSetup, automaticUpdatesEnabled: $automaticUpdatesEnabled, feedbackWindowDays: $feedbackWindowDays, recursionDepth: $recursionDepth)';
 }
 
 
@@ -58,11 +68,11 @@ abstract mixin class $AgentConfigCopyWith<$Res>  {
   factory $AgentConfigCopyWith(AgentConfig value, $Res Function(AgentConfig) _then) = _$AgentConfigCopyWithImpl;
 @useResult
 $Res call({
- int maxTurnsPerWake, String modelId, String? profileId, int? feedbackWindowDays, int? recursionDepth
+ int maxTurnsPerWake, String modelId, String? profileId, AgentInferenceSetup? inferenceSetup, bool? automaticUpdatesEnabled, int? feedbackWindowDays, int? recursionDepth
 });
 
 
-
+$AgentInferenceSetupCopyWith<$Res>? get inferenceSetup;
 
 }
 /// @nodoc
@@ -75,17 +85,31 @@ class _$AgentConfigCopyWithImpl<$Res>
 
 /// Create a copy of AgentConfig
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? maxTurnsPerWake = null,Object? modelId = null,Object? profileId = freezed,Object? feedbackWindowDays = freezed,Object? recursionDepth = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? maxTurnsPerWake = null,Object? modelId = null,Object? profileId = freezed,Object? inferenceSetup = freezed,Object? automaticUpdatesEnabled = freezed,Object? feedbackWindowDays = freezed,Object? recursionDepth = freezed,}) {
   return _then(_self.copyWith(
 maxTurnsPerWake: null == maxTurnsPerWake ? _self.maxTurnsPerWake : maxTurnsPerWake // ignore: cast_nullable_to_non_nullable
 as int,modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
 as String,profileId: freezed == profileId ? _self.profileId : profileId // ignore: cast_nullable_to_non_nullable
-as String?,feedbackWindowDays: freezed == feedbackWindowDays ? _self.feedbackWindowDays : feedbackWindowDays // ignore: cast_nullable_to_non_nullable
+as String?,inferenceSetup: freezed == inferenceSetup ? _self.inferenceSetup : inferenceSetup // ignore: cast_nullable_to_non_nullable
+as AgentInferenceSetup?,automaticUpdatesEnabled: freezed == automaticUpdatesEnabled ? _self.automaticUpdatesEnabled : automaticUpdatesEnabled // ignore: cast_nullable_to_non_nullable
+as bool?,feedbackWindowDays: freezed == feedbackWindowDays ? _self.feedbackWindowDays : feedbackWindowDays // ignore: cast_nullable_to_non_nullable
 as int?,recursionDepth: freezed == recursionDepth ? _self.recursionDepth : recursionDepth // ignore: cast_nullable_to_non_nullable
 as int?,
   ));
 }
+/// Create a copy of AgentConfig
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentInferenceSetupCopyWith<$Res>? get inferenceSetup {
+    if (_self.inferenceSetup == null) {
+    return null;
+  }
 
+  return $AgentInferenceSetupCopyWith<$Res>(_self.inferenceSetup!, (value) {
+    return _then(_self.copyWith(inferenceSetup: value));
+  });
+}
 }
 
 
@@ -167,10 +191,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int maxTurnsPerWake,  String modelId,  String? profileId,  int? feedbackWindowDays,  int? recursionDepth)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int maxTurnsPerWake,  String modelId,  String? profileId,  AgentInferenceSetup? inferenceSetup,  bool? automaticUpdatesEnabled,  int? feedbackWindowDays,  int? recursionDepth)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AgentConfig() when $default != null:
-return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.feedbackWindowDays,_that.recursionDepth);case _:
+return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.inferenceSetup,_that.automaticUpdatesEnabled,_that.feedbackWindowDays,_that.recursionDepth);case _:
   return orElse();
 
 }
@@ -188,10 +212,10 @@ return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.feedba
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int maxTurnsPerWake,  String modelId,  String? profileId,  int? feedbackWindowDays,  int? recursionDepth)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int maxTurnsPerWake,  String modelId,  String? profileId,  AgentInferenceSetup? inferenceSetup,  bool? automaticUpdatesEnabled,  int? feedbackWindowDays,  int? recursionDepth)  $default,) {final _that = this;
 switch (_that) {
 case _AgentConfig():
-return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.feedbackWindowDays,_that.recursionDepth);case _:
+return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.inferenceSetup,_that.automaticUpdatesEnabled,_that.feedbackWindowDays,_that.recursionDepth);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -208,10 +232,10 @@ return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.feedba
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int maxTurnsPerWake,  String modelId,  String? profileId,  int? feedbackWindowDays,  int? recursionDepth)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int maxTurnsPerWake,  String modelId,  String? profileId,  AgentInferenceSetup? inferenceSetup,  bool? automaticUpdatesEnabled,  int? feedbackWindowDays,  int? recursionDepth)?  $default,) {final _that = this;
 switch (_that) {
 case _AgentConfig() when $default != null:
-return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.feedbackWindowDays,_that.recursionDepth);case _:
+return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.inferenceSetup,_that.automaticUpdatesEnabled,_that.feedbackWindowDays,_that.recursionDepth);case _:
   return null;
 
 }
@@ -223,7 +247,7 @@ return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.feedba
 @JsonSerializable()
 
 class _AgentConfig implements AgentConfig {
-  const _AgentConfig({this.maxTurnsPerWake = 10, this.modelId = 'models/gemini-3-flash-preview', this.profileId, this.feedbackWindowDays, this.recursionDepth});
+  const _AgentConfig({this.maxTurnsPerWake = 10, this.modelId = 'models/gemini-3-flash-preview', this.profileId, this.inferenceSetup, this.automaticUpdatesEnabled, this.feedbackWindowDays, this.recursionDepth});
   factory _AgentConfig.fromJson(Map<String, dynamic> json) => _$AgentConfigFromJson(json);
 
 /// Maximum number of tool-call turns per wake.
@@ -232,6 +256,18 @@ class _AgentConfig implements AgentConfig {
 @override@JsonKey() final  String modelId;
 /// Inference profile ID — takes precedence over [modelId] when set.
 @override final  String? profileId;
+/// Typed persistent inference setup for task agents.
+///
+/// Null preserves the legacy profile/template/model resolution chain.
+/// Once present, this setup is authoritative: configured setups resolve
+/// only their direct model override or base profile, while disabled setups
+/// prohibit inference instead of falling through to legacy defaults.
+@override final  AgentInferenceSetup? inferenceSetup;
+/// Whether task changes may schedule coalesced automatic wakes.
+///
+/// Null means legacy/on. New task agents and the first switch edit persist
+/// an explicit value independently from profile/model selection.
+@override final  bool? automaticUpdatesEnabled;
 /// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
 /// it is configuration set once at creation, not mutable derived state.
 /// Null falls back to the default window. Reads accept the legacy
@@ -255,16 +291,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentConfig&&(identical(other.maxTurnsPerWake, maxTurnsPerWake) || other.maxTurnsPerWake == maxTurnsPerWake)&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.feedbackWindowDays, feedbackWindowDays) || other.feedbackWindowDays == feedbackWindowDays)&&(identical(other.recursionDepth, recursionDepth) || other.recursionDepth == recursionDepth));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentConfig&&(identical(other.maxTurnsPerWake, maxTurnsPerWake) || other.maxTurnsPerWake == maxTurnsPerWake)&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.inferenceSetup, inferenceSetup) || other.inferenceSetup == inferenceSetup)&&(identical(other.automaticUpdatesEnabled, automaticUpdatesEnabled) || other.automaticUpdatesEnabled == automaticUpdatesEnabled)&&(identical(other.feedbackWindowDays, feedbackWindowDays) || other.feedbackWindowDays == feedbackWindowDays)&&(identical(other.recursionDepth, recursionDepth) || other.recursionDepth == recursionDepth));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,maxTurnsPerWake,modelId,profileId,feedbackWindowDays,recursionDepth);
+int get hashCode => Object.hash(runtimeType,maxTurnsPerWake,modelId,profileId,inferenceSetup,automaticUpdatesEnabled,feedbackWindowDays,recursionDepth);
 
 @override
 String toString() {
-  return 'AgentConfig(maxTurnsPerWake: $maxTurnsPerWake, modelId: $modelId, profileId: $profileId, feedbackWindowDays: $feedbackWindowDays, recursionDepth: $recursionDepth)';
+  return 'AgentConfig(maxTurnsPerWake: $maxTurnsPerWake, modelId: $modelId, profileId: $profileId, inferenceSetup: $inferenceSetup, automaticUpdatesEnabled: $automaticUpdatesEnabled, feedbackWindowDays: $feedbackWindowDays, recursionDepth: $recursionDepth)';
 }
 
 
@@ -275,11 +311,11 @@ abstract mixin class _$AgentConfigCopyWith<$Res> implements $AgentConfigCopyWith
   factory _$AgentConfigCopyWith(_AgentConfig value, $Res Function(_AgentConfig) _then) = __$AgentConfigCopyWithImpl;
 @override @useResult
 $Res call({
- int maxTurnsPerWake, String modelId, String? profileId, int? feedbackWindowDays, int? recursionDepth
+ int maxTurnsPerWake, String modelId, String? profileId, AgentInferenceSetup? inferenceSetup, bool? automaticUpdatesEnabled, int? feedbackWindowDays, int? recursionDepth
 });
 
 
-
+@override $AgentInferenceSetupCopyWith<$Res>? get inferenceSetup;
 
 }
 /// @nodoc
@@ -292,14 +328,313 @@ class __$AgentConfigCopyWithImpl<$Res>
 
 /// Create a copy of AgentConfig
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? maxTurnsPerWake = null,Object? modelId = null,Object? profileId = freezed,Object? feedbackWindowDays = freezed,Object? recursionDepth = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? maxTurnsPerWake = null,Object? modelId = null,Object? profileId = freezed,Object? inferenceSetup = freezed,Object? automaticUpdatesEnabled = freezed,Object? feedbackWindowDays = freezed,Object? recursionDepth = freezed,}) {
   return _then(_AgentConfig(
 maxTurnsPerWake: null == maxTurnsPerWake ? _self.maxTurnsPerWake : maxTurnsPerWake // ignore: cast_nullable_to_non_nullable
 as int,modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
 as String,profileId: freezed == profileId ? _self.profileId : profileId // ignore: cast_nullable_to_non_nullable
-as String?,feedbackWindowDays: freezed == feedbackWindowDays ? _self.feedbackWindowDays : feedbackWindowDays // ignore: cast_nullable_to_non_nullable
+as String?,inferenceSetup: freezed == inferenceSetup ? _self.inferenceSetup : inferenceSetup // ignore: cast_nullable_to_non_nullable
+as AgentInferenceSetup?,automaticUpdatesEnabled: freezed == automaticUpdatesEnabled ? _self.automaticUpdatesEnabled : automaticUpdatesEnabled // ignore: cast_nullable_to_non_nullable
+as bool?,feedbackWindowDays: freezed == feedbackWindowDays ? _self.feedbackWindowDays : feedbackWindowDays // ignore: cast_nullable_to_non_nullable
 as int?,recursionDepth: freezed == recursionDepth ? _self.recursionDepth : recursionDepth // ignore: cast_nullable_to_non_nullable
 as int?,
+  ));
+}
+
+/// Create a copy of AgentConfig
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentInferenceSetupCopyWith<$Res>? get inferenceSetup {
+    if (_self.inferenceSetup == null) {
+    return null;
+  }
+
+  return $AgentInferenceSetupCopyWith<$Res>(_self.inferenceSetup!, (value) {
+    return _then(_self.copyWith(inferenceSetup: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$AgentInferenceSetup {
+
+@JsonKey(unknownEnumValue: AgentInferenceSetupMode.disabled) AgentInferenceSetupMode get mode;@JsonKey(unknownEnumValue: AgentInferenceSetupOrigin.unknown) AgentInferenceSetupOrigin get origin;/// Base inference profile. Its non-thinking slots remain available when a
+/// direct thinking-model override is selected.
+ String? get baseProfileId;/// Config-row ID (`AiConfigModel.id`) for the task agent's thinking model.
+/// This is deliberately not a provider-native `providerModelId`.
+ String? get thinkingModelOverrideId;/// Category/template ID whose default was copied, when applicable.
+ String? get originEntityId;
+/// Create a copy of AgentInferenceSetup
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentInferenceSetupCopyWith<AgentInferenceSetup> get copyWith => _$AgentInferenceSetupCopyWithImpl<AgentInferenceSetup>(this as AgentInferenceSetup, _$identity);
+
+  /// Serializes this AgentInferenceSetup to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentInferenceSetup&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.baseProfileId, baseProfileId) || other.baseProfileId == baseProfileId)&&(identical(other.thinkingModelOverrideId, thinkingModelOverrideId) || other.thinkingModelOverrideId == thinkingModelOverrideId)&&(identical(other.originEntityId, originEntityId) || other.originEntityId == originEntityId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,mode,origin,baseProfileId,thinkingModelOverrideId,originEntityId);
+
+@override
+String toString() {
+  return 'AgentInferenceSetup(mode: $mode, origin: $origin, baseProfileId: $baseProfileId, thinkingModelOverrideId: $thinkingModelOverrideId, originEntityId: $originEntityId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentInferenceSetupCopyWith<$Res>  {
+  factory $AgentInferenceSetupCopyWith(AgentInferenceSetup value, $Res Function(AgentInferenceSetup) _then) = _$AgentInferenceSetupCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(unknownEnumValue: AgentInferenceSetupMode.disabled) AgentInferenceSetupMode mode,@JsonKey(unknownEnumValue: AgentInferenceSetupOrigin.unknown) AgentInferenceSetupOrigin origin, String? baseProfileId, String? thinkingModelOverrideId, String? originEntityId
+});
+
+
+
+
+}
+/// @nodoc
+class _$AgentInferenceSetupCopyWithImpl<$Res>
+    implements $AgentInferenceSetupCopyWith<$Res> {
+  _$AgentInferenceSetupCopyWithImpl(this._self, this._then);
+
+  final AgentInferenceSetup _self;
+  final $Res Function(AgentInferenceSetup) _then;
+
+/// Create a copy of AgentInferenceSetup
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? mode = null,Object? origin = null,Object? baseProfileId = freezed,Object? thinkingModelOverrideId = freezed,Object? originEntityId = freezed,}) {
+  return _then(_self.copyWith(
+mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
+as AgentInferenceSetupMode,origin: null == origin ? _self.origin : origin // ignore: cast_nullable_to_non_nullable
+as AgentInferenceSetupOrigin,baseProfileId: freezed == baseProfileId ? _self.baseProfileId : baseProfileId // ignore: cast_nullable_to_non_nullable
+as String?,thinkingModelOverrideId: freezed == thinkingModelOverrideId ? _self.thinkingModelOverrideId : thinkingModelOverrideId // ignore: cast_nullable_to_non_nullable
+as String?,originEntityId: freezed == originEntityId ? _self.originEntityId : originEntityId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AgentInferenceSetup].
+extension AgentInferenceSetupPatterns on AgentInferenceSetup {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AgentInferenceSetup value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AgentInferenceSetup() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AgentInferenceSetup value)  $default,){
+final _that = this;
+switch (_that) {
+case _AgentInferenceSetup():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AgentInferenceSetup value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AgentInferenceSetup() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(unknownEnumValue: AgentInferenceSetupMode.disabled)  AgentInferenceSetupMode mode, @JsonKey(unknownEnumValue: AgentInferenceSetupOrigin.unknown)  AgentInferenceSetupOrigin origin,  String? baseProfileId,  String? thinkingModelOverrideId,  String? originEntityId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AgentInferenceSetup() when $default != null:
+return $default(_that.mode,_that.origin,_that.baseProfileId,_that.thinkingModelOverrideId,_that.originEntityId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(unknownEnumValue: AgentInferenceSetupMode.disabled)  AgentInferenceSetupMode mode, @JsonKey(unknownEnumValue: AgentInferenceSetupOrigin.unknown)  AgentInferenceSetupOrigin origin,  String? baseProfileId,  String? thinkingModelOverrideId,  String? originEntityId)  $default,) {final _that = this;
+switch (_that) {
+case _AgentInferenceSetup():
+return $default(_that.mode,_that.origin,_that.baseProfileId,_that.thinkingModelOverrideId,_that.originEntityId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(unknownEnumValue: AgentInferenceSetupMode.disabled)  AgentInferenceSetupMode mode, @JsonKey(unknownEnumValue: AgentInferenceSetupOrigin.unknown)  AgentInferenceSetupOrigin origin,  String? baseProfileId,  String? thinkingModelOverrideId,  String? originEntityId)?  $default,) {final _that = this;
+switch (_that) {
+case _AgentInferenceSetup() when $default != null:
+return $default(_that.mode,_that.origin,_that.baseProfileId,_that.thinkingModelOverrideId,_that.originEntityId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AgentInferenceSetup implements AgentInferenceSetup {
+  const _AgentInferenceSetup({@JsonKey(unknownEnumValue: AgentInferenceSetupMode.disabled) required this.mode, @JsonKey(unknownEnumValue: AgentInferenceSetupOrigin.unknown) required this.origin, this.baseProfileId, this.thinkingModelOverrideId, this.originEntityId});
+  factory _AgentInferenceSetup.fromJson(Map<String, dynamic> json) => _$AgentInferenceSetupFromJson(json);
+
+@override@JsonKey(unknownEnumValue: AgentInferenceSetupMode.disabled) final  AgentInferenceSetupMode mode;
+@override@JsonKey(unknownEnumValue: AgentInferenceSetupOrigin.unknown) final  AgentInferenceSetupOrigin origin;
+/// Base inference profile. Its non-thinking slots remain available when a
+/// direct thinking-model override is selected.
+@override final  String? baseProfileId;
+/// Config-row ID (`AiConfigModel.id`) for the task agent's thinking model.
+/// This is deliberately not a provider-native `providerModelId`.
+@override final  String? thinkingModelOverrideId;
+/// Category/template ID whose default was copied, when applicable.
+@override final  String? originEntityId;
+
+/// Create a copy of AgentInferenceSetup
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AgentInferenceSetupCopyWith<_AgentInferenceSetup> get copyWith => __$AgentInferenceSetupCopyWithImpl<_AgentInferenceSetup>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentInferenceSetupToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentInferenceSetup&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.baseProfileId, baseProfileId) || other.baseProfileId == baseProfileId)&&(identical(other.thinkingModelOverrideId, thinkingModelOverrideId) || other.thinkingModelOverrideId == thinkingModelOverrideId)&&(identical(other.originEntityId, originEntityId) || other.originEntityId == originEntityId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,mode,origin,baseProfileId,thinkingModelOverrideId,originEntityId);
+
+@override
+String toString() {
+  return 'AgentInferenceSetup(mode: $mode, origin: $origin, baseProfileId: $baseProfileId, thinkingModelOverrideId: $thinkingModelOverrideId, originEntityId: $originEntityId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AgentInferenceSetupCopyWith<$Res> implements $AgentInferenceSetupCopyWith<$Res> {
+  factory _$AgentInferenceSetupCopyWith(_AgentInferenceSetup value, $Res Function(_AgentInferenceSetup) _then) = __$AgentInferenceSetupCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(unknownEnumValue: AgentInferenceSetupMode.disabled) AgentInferenceSetupMode mode,@JsonKey(unknownEnumValue: AgentInferenceSetupOrigin.unknown) AgentInferenceSetupOrigin origin, String? baseProfileId, String? thinkingModelOverrideId, String? originEntityId
+});
+
+
+
+
+}
+/// @nodoc
+class __$AgentInferenceSetupCopyWithImpl<$Res>
+    implements _$AgentInferenceSetupCopyWith<$Res> {
+  __$AgentInferenceSetupCopyWithImpl(this._self, this._then);
+
+  final _AgentInferenceSetup _self;
+  final $Res Function(_AgentInferenceSetup) _then;
+
+/// Create a copy of AgentInferenceSetup
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? mode = null,Object? origin = null,Object? baseProfileId = freezed,Object? thinkingModelOverrideId = freezed,Object? originEntityId = freezed,}) {
+  return _then(_AgentInferenceSetup(
+mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
+as AgentInferenceSetupMode,origin: null == origin ? _self.origin : origin // ignore: cast_nullable_to_non_nullable
+as AgentInferenceSetupOrigin,baseProfileId: freezed == baseProfileId ? _self.baseProfileId : baseProfileId // ignore: cast_nullable_to_non_nullable
+as String?,thinkingModelOverrideId: freezed == thinkingModelOverrideId ? _self.thinkingModelOverrideId : thinkingModelOverrideId // ignore: cast_nullable_to_non_nullable
+as String?,originEntityId: freezed == originEntityId ? _self.originEntityId : originEntityId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

@@ -3,10 +3,12 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/workflow/wake_output_writer.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
@@ -133,6 +135,7 @@ void main() {
     ProposalLedger? ledger,
     AgentStateEntity? state,
     Uuid? uuid,
+    ReportInferenceProvenance? reportProvenance,
   }) => writer(uuid: uuid).persist(
     strategy: strategy,
     reportContent: reportContent,
@@ -149,6 +152,7 @@ void main() {
     threadId: _threadId,
     runKey: _runKey,
     now: _now,
+    reportProvenance: reportProvenance,
   );
 
   // Drains every captured `upsertEntity` argument, in call order. `verify`
@@ -207,6 +211,37 @@ void main() {
   });
 
   group('report', () {
+    test('stamps immutable inference provenance on a written report', () async {
+      const provenance = ReportInferenceProvenance(
+        runKey: _runKey,
+        threadId: _threadId,
+        executor: InferenceRouteSnapshot(
+          providerModelId: 'qwen3.5-plus',
+          modelName: 'Qwen 3.5 Plus',
+          publisherName: 'Alibaba',
+          servingProviderType: InferenceProviderType.alibaba,
+          servingProviderName: 'Alibaba Cloud',
+          runtimeSettings: <String, Object?>{},
+        ),
+        finalContentAuthor: ReportContentAuthor.executor,
+      );
+      when(
+        () => repo.getReportHead(_agentId, AgentReportScopes.current),
+      ).thenAnswer((_) async => null);
+
+      await run(
+        reportContent: 'Attributed report',
+        reportProvenance: provenance,
+      );
+
+      final report = capturedUpserts().whereType<AgentReportEntity>().single;
+      final decoded = ReportInferenceProvenance.tryRead(report.provenance);
+      expect(decoded, isNotNull);
+      expect(decoded!.finalAuthorRoute.modelName, 'Qwen 3.5 Plus');
+      expect(decoded.finalAuthorRoute.publisherName, 'Alibaba');
+      expect(decoded.finalAuthorRoute.servingProviderName, 'Alibaba Cloud');
+    });
+
     test('non-empty content writes report + head, reuses existing head id, '
         'and returns the report to embed', () async {
       when(

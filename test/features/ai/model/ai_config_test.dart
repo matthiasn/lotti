@@ -188,6 +188,7 @@ void main() {
                 inputModalities: [Modality.text, Modality.image],
                 outputModalities: [Modality.text],
                 isReasoningModel: false,
+                publisher: 'OpenAI',
                 supportsFunctionCalling: true,
                 maxCompletionTokens: 4096,
               )
@@ -205,6 +206,7 @@ void main() {
       expect(decoded.inputModalities, config.inputModalities);
       expect(decoded.outputModalities, config.outputModalities);
       expect(decoded.isReasoningModel, config.isReasoningModel);
+      expect(decoded.publisher, 'OpenAI');
       expect(decoded.supportsFunctionCalling, config.supportsFunctionCalling);
       expect(decoded.maxCompletionTokens, config.maxCompletionTokens);
     });
@@ -230,6 +232,7 @@ void main() {
               as AiConfigModel;
 
       expect(decoded.maxCompletionTokens, isNull);
+      expect(decoded.publisher, isNull);
     });
 
     test('all Modality values survive round-trip', () {

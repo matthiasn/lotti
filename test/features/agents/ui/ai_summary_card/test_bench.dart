@@ -10,9 +10,12 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
@@ -31,6 +34,22 @@ import '../../test_data/entity_factories.dart';
 /// into the compact layout by passing a narrower `MediaQueryData`.
 const MediaQueryData desktopMediaQueryData = MediaQueryData(
   size: Size(900, 800),
+);
+
+final defaultResolvedSetup = ResolvedAgentSetup(
+  status: AgentSetupResolutionStatus.resolved,
+  profile: ResolvedProfile(
+    thinkingModelId: 'test-model',
+    thinkingProvider: AiConfigInferenceProvider(
+      id: 'test-provider',
+      baseUrl: 'https://example.invalid',
+      apiKey: 'test-key',
+      name: 'Test Provider',
+      createdAt: DateTime(2024),
+      inferenceProviderType: InferenceProviderType.genericOpenAi,
+    ),
+  ),
+  source: AgentSetupResolutionSource.legacyModel,
 );
 
 /// Shared overrides for the "no agent attached" path.
@@ -54,6 +73,8 @@ class AgentTestBench {
     this._enableAgents = true,
     this._enableSummaryTts = false,
     this._template,
+    this._identity,
+    this._resolvedSetup,
     this._confirmationService,
     this._updateNotifications,
     this._taskAgentService,
@@ -80,6 +101,8 @@ class AgentTestBench {
   final bool _enableAgents;
   final bool _enableSummaryTts;
   final AgentTemplateEntity? _template;
+  final AgentIdentityEntity? _identity;
+  final ResolvedAgentSetup? _resolvedSetup;
   final MockChangeSetConfirmationService? _confirmationService;
   final MockUpdateNotifications? _updateNotifications;
   final MockTaskAgentService? _taskAgentService;
@@ -113,7 +136,7 @@ class AgentTestBench {
   final List<Override> _extraOverrides;
 
   Widget build() {
-    final identity = makeTestIdentity();
+    final identity = _identity ?? makeTestIdentity();
     return RiverpodWidgetTestBench(
       mediaQueryData: _mediaQueryData,
       overrides: [
@@ -125,6 +148,9 @@ class AgentTestBench {
           ),
         ),
         taskAgentProvider.overrideWith((ref, id) async => identity),
+        taskAgentResolvedSetupProvider.overrideWith(
+          (ref, id) async => _resolvedSetup ?? defaultResolvedSetup,
+        ),
         agentReportProvider.overrideWith((ref, agentId) async => _report),
         templateForAgentProvider.overrideWith(
           (ref, agentId) async => _template,

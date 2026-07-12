@@ -51,7 +51,7 @@ abstract final class ModelCatalogMapping {
   }) {
     final leaf = modelId.split('/').last;
     final words = leaf
-        .replaceAll(RegExp(r'[_\-.]+'), ' ')
+        .replaceAll(RegExp('[_-]+'), ' ')
         .split(RegExp(r'\s+'))
         .where((part) => part.isNotEmpty)
         .map((word) => _titleCaseWord(word, acronyms));

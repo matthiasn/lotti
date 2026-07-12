@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:mocktail/mocktail.dart';
@@ -50,6 +52,203 @@ void main() {
   }
 
   group('ProfileResolver', () {
+    test('typed disabled setup blocks every legacy fallback', () async {
+      final result = await resolver.resolveDetailed(
+        agentConfig: const AgentConfig(
+          profileId: 'legacy-agent-profile',
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.disabled,
+            origin: AgentInferenceSetupOrigin.user,
+          ),
+        ),
+        template: makeTestTemplate(profileId: 'legacy-template-profile'),
+        version: makeTestTemplateVersion(profileId: 'legacy-version-profile'),
+      );
+
+      expect(result.status, AgentSetupResolutionStatus.disabled);
+      expect(result.setupOrigin, AgentInferenceSetupOrigin.user);
+      expect(result.profile, isNull);
+      expect(result.canRun, isFalse);
+      verifyNever(() => mockAiConfig.getConfigById(any()));
+    });
+
+    test(
+      'typed direct model resolves by config id without a profile',
+      () async {
+        final model = testAiModel(
+          id: 'model-config-id',
+          providerModelId: 'provider-model-id',
+        );
+        when(
+          () => mockAiConfig.getConfigById('model-config-id'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfig.getConfigById('provider-1'),
+        ).thenAnswer((_) async => testInferenceProvider());
+
+        final result = await resolver.resolveDetailed(
+          agentConfig: const AgentConfig(
+            inferenceSetup: AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.configured,
+              origin: AgentInferenceSetupOrigin.user,
+              thinkingModelOverrideId: 'model-config-id',
+            ),
+          ),
+          template: makeTestTemplate(),
+          version: makeTestTemplateVersion(),
+        );
+
+        expect(result.status, AgentSetupResolutionStatus.resolved);
+        expect(result.source, AgentSetupResolutionSource.directModel);
+        expect(result.profile?.thinkingModelId, 'provider-model-id');
+        expect(result.routeFingerprint?.modelConfigId, 'model-config-id');
+        expect(result.canRun, isTrue);
+      },
+    );
+
+    test('direct model reports a missing selected base profile', () async {
+      final model = testAiModel(
+        id: 'model-config-id',
+        providerModelId: 'provider-model-id',
+      );
+      when(
+        () => mockAiConfig.getConfigById('missing-profile'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockAiConfig.getConfigById('model-config-id'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfig.getConfigById('provider-1'),
+      ).thenAnswer((_) async => testInferenceProvider());
+
+      final result = await resolver.resolveDetailed(
+        agentConfig: const AgentConfig(
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.user,
+            baseProfileId: 'missing-profile',
+            thinkingModelOverrideId: 'model-config-id',
+          ),
+        ),
+        template: makeTestTemplate(),
+        version: makeTestTemplateVersion(),
+      );
+
+      expect(result.status, AgentSetupResolutionStatus.resolved);
+      expect(result.source, AgentSetupResolutionSource.directModel);
+      expect(result.profile?.thinkingModelId, 'provider-model-id');
+      expect(result.brokenSelectionId, 'missing-profile');
+      expect(result.hasBrokenSelection, isTrue);
+    });
+
+    test('typed direct model replaces only the base thinking slot', () async {
+      final profile = testInferenceProfile(
+        id: 'base-profile',
+        thinkingModelId: 'missing-base-thinking',
+        transcriptionModelId: 'transcription',
+      );
+      stubProfile(profile);
+      when(() => mockAiConfig.getConfigsByType(AiConfigType.model)).thenAnswer(
+        (_) async => [
+          testAiModel(
+            id: 'transcription-model',
+            providerModelId: 'transcription',
+            inferenceProviderId: 'transcription-provider',
+          ),
+        ],
+      );
+      when(
+        () => mockAiConfig.getConfigById('base-provider'),
+      ).thenAnswer((_) async => testInferenceProvider(id: 'base-provider'));
+      when(
+        () => mockAiConfig.getConfigById('transcription-provider'),
+      ).thenAnswer(
+        (_) async => testInferenceProvider(id: 'transcription-provider'),
+      );
+      final overrideModel = testAiModel(
+        id: 'override-model',
+        providerModelId: 'override-thinking',
+        inferenceProviderId: 'override-provider',
+      );
+      when(
+        () => mockAiConfig.getConfigById('override-model'),
+      ).thenAnswer((_) async => overrideModel);
+      when(
+        () => mockAiConfig.getConfigById('override-provider'),
+      ).thenAnswer((_) async => testInferenceProvider(id: 'override-provider'));
+
+      final result = await resolver.resolveDetailed(
+        agentConfig: const AgentConfig(
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.categorySnapshot,
+            baseProfileId: 'base-profile',
+            thinkingModelOverrideId: 'override-model',
+          ),
+        ),
+        template: makeTestTemplate(),
+        version: makeTestTemplateVersion(),
+      );
+
+      expect(result.profile?.thinkingModelId, 'override-thinking');
+      expect(result.profile?.transcriptionModelId, 'transcription');
+      expect(result.setupOrigin, AgentInferenceSetupOrigin.categorySnapshot);
+      expect(result.hasBrokenSelection, isFalse);
+    });
+
+    test('broken direct model visibly falls back to configured base', () async {
+      final profile = testInferenceProfile(id: 'base-profile');
+      stubProfile(profile);
+      stubModelResolution();
+      when(
+        () => mockAiConfig.getConfigById('missing-override'),
+      ).thenAnswer((_) async => null);
+
+      final result = await resolver.resolveDetailed(
+        agentConfig: const AgentConfig(
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.user,
+            baseProfileId: 'base-profile',
+            thinkingModelOverrideId: 'missing-override',
+          ),
+        ),
+        template: makeTestTemplate(),
+        version: makeTestTemplateVersion(),
+      );
+
+      expect(result.status, AgentSetupResolutionStatus.resolved);
+      expect(result.source, AgentSetupResolutionSource.baseProfile);
+      expect(result.brokenSelectionId, 'missing-override');
+      expect(result.hasBrokenSelection, isTrue);
+    });
+
+    test(
+      'typed setup with no usable route is broken without legacy fallback',
+      () async {
+        when(
+          () => mockAiConfig.getConfigById('missing-profile'),
+        ).thenAnswer((_) async => null);
+
+        final result = await resolver.resolveDetailed(
+          agentConfig: const AgentConfig(
+            inferenceSetup: AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.configured,
+              origin: AgentInferenceSetupOrigin.templateSnapshot,
+              baseProfileId: 'missing-profile',
+            ),
+          ),
+          template: makeTestTemplate(),
+          version: makeTestTemplateVersion(),
+        );
+
+        expect(result.status, AgentSetupResolutionStatus.broken);
+        expect(result.profile, isNull);
+        expect(result.brokenSelectionId, 'missing-profile');
+        verifyNever(() => mockAiConfig.getConfigsByType(AiConfigType.model));
+      },
+    );
+
     test('resolves profile from agent config profileId', () async {
       final profile = testInferenceProfile(id: 'profile-agent');
       stubProfile(profile);

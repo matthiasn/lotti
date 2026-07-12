@@ -317,7 +317,7 @@ class MistralInferenceRepository {
   static String _displayNameForModel(String modelId) {
     final leaf = modelId.split('/').last;
     final words = leaf
-        .replaceAll(RegExp(r'[_\-.]+'), ' ')
+        .replaceAll(RegExp('[_-]+'), ' ')
         .split(RegExp(r'\s+'))
         .where((part) => part.isNotEmpty)
         .map(_titleCaseModelWord);

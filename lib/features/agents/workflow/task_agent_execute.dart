@@ -97,12 +97,23 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     final profileResolver = ProfileResolver(
       aiConfigRepository: this.aiConfigRepository,
     );
-    final resolvedProfile = await profileResolver.resolve(
+    final resolvedSetup = await profileResolver.resolveDetailed(
       agentConfig: agentIdentity.config,
       template: templateCtx.template,
       version: templateCtx.version,
     );
+    final resolvedProfile = resolvedSetup.profile;
     if (resolvedProfile == null) {
+      if (agentIdentity.config.inferenceSetup != null) {
+        _log(
+          'typed inference setup is ${resolvedSetup.status.name} — aborting wake',
+          subDomain: 'execute',
+        );
+        return WakeResult(
+          success: false,
+          error: 'Inference setup is ${resolvedSetup.status.name}',
+        );
+      }
       final modelId =
           templateCtx.version.modelId ?? templateCtx.template.modelId;
       _log(
@@ -116,6 +127,16 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     }
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
+    final runSnapshot = InferenceRunSnapshot(
+      runKey: runKey,
+      threadId: threadId,
+      setupSource: resolvedSetup.source,
+      setupOrigin: resolvedSetup.setupOrigin,
+      profileId:
+          agentIdentity.config.inferenceSetup?.baseProfileId ??
+          agentIdentity.config.profileId,
+      executor: InferenceRouteSnapshot.fromResolvedProfile(resolvedProfile),
+    );
 
     // One ledger fetch feeds the compactor's decision events (below), the
     // LLM prompt (open proposals + legacy resolved view) and the
@@ -739,6 +760,9 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             threadId: threadId,
             runKey: runKey,
             now: now,
+            reportProvenance: ReportInferenceProvenance.executorOnly(
+              runSnapshot,
+            ),
           );
 
       // 9b. Embed the report for vector search (fire-and-forget).

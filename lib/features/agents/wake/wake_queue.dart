@@ -1,3 +1,5 @@
+import 'package:lotti/features/agents/model/agent_enums.dart';
+
 /// A single pending wake request for an agent.
 class WakeJob {
   WakeJob({
@@ -9,7 +11,13 @@ class WakeJob {
     this.reasonId,
     this.workspaceKey,
     this.hasDirectMatch = true,
-  }) : triggerTokens = Set<String>.of(triggerTokens);
+    WakeInitiator? initiator,
+  }) : initiator =
+           initiator ??
+           (reason == WakeReason.reanalysis.name
+               ? WakeInitiator.user
+               : WakeInitiator.automation),
+       triggerTokens = Set<String>.of(triggerTokens);
 
   /// Deterministic key derived by `RunKeyFactory`; used for deduplication.
   final String runKey;
@@ -29,6 +37,9 @@ class WakeJob {
   /// Wake trigger category: currently `'subscription'`, `'creation'`,
   /// or `'reanalysis'`.
   final String reason;
+
+  /// User-requested wakes remain allowed while automatic updates are off.
+  final WakeInitiator initiator;
 
   /// The DB-notification tokens that triggered this wake.
   ///
@@ -156,6 +167,23 @@ class WakeQueue {
     _queue.removeWhere((job) {
       if (job.agentId != agentId) return false;
       if (!allWorkspaces && job.workspaceKey != workspaceKey) return false;
+      removed.add(job);
+      return true;
+    });
+    return removed;
+  }
+
+  /// Remove and return jobs for [agentId] that satisfy [predicate].
+  ///
+  /// Used when automatic updates are disabled: subscription jobs are dropped
+  /// while explicit manual wakes remain queued.
+  List<WakeJob> removeByAgentWhere(
+    String agentId,
+    bool Function(WakeJob job) predicate,
+  ) {
+    final removed = <WakeJob>[];
+    _queue.removeWhere((job) {
+      if (job.agentId != agentId || !predicate(job)) return false;
       removed.add(job);
       return true;
     });

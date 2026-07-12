@@ -7,6 +7,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -396,6 +397,8 @@ void main() {
             taskId: any(named: 'taskId'),
             templateId: any(named: 'templateId'),
             profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             awaitContent: any(named: 'awaitContent'),
           ),
@@ -428,6 +431,8 @@ void main() {
             taskId: 'new-task',
             templateId: 'tmpl-1',
             profileId: 'prof-1',
+            setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+            setupOriginEntityId: 'cat-1',
             allowedCategoryIds: {'cat-1'},
             awaitContent: true,
           ),
@@ -469,6 +474,8 @@ void main() {
             taskId: any(named: 'taskId'),
             templateId: any(named: 'templateId'),
             profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             awaitContent: any(named: 'awaitContent'),
           ),

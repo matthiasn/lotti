@@ -10,6 +10,12 @@ _AgentConfig _$AgentConfigFromJson(Map<String, dynamic> json) => _AgentConfig(
   maxTurnsPerWake: (json['maxTurnsPerWake'] as num?)?.toInt() ?? 10,
   modelId: json['modelId'] as String? ?? 'models/gemini-3-flash-preview',
   profileId: json['profileId'] as String?,
+  inferenceSetup: json['inferenceSetup'] == null
+      ? null
+      : AgentInferenceSetup.fromJson(
+          json['inferenceSetup'] as Map<String, dynamic>,
+        ),
+  automaticUpdatesEnabled: json['automaticUpdatesEnabled'] as bool?,
   feedbackWindowDays: (json['feedbackWindowDays'] as num?)?.toInt(),
   recursionDepth: (json['recursionDepth'] as num?)?.toInt(),
 );
@@ -19,9 +25,50 @@ Map<String, dynamic> _$AgentConfigToJson(_AgentConfig instance) =>
       'maxTurnsPerWake': instance.maxTurnsPerWake,
       'modelId': instance.modelId,
       'profileId': instance.profileId,
+      'inferenceSetup': instance.inferenceSetup,
+      'automaticUpdatesEnabled': instance.automaticUpdatesEnabled,
       'feedbackWindowDays': instance.feedbackWindowDays,
       'recursionDepth': instance.recursionDepth,
     };
+
+_AgentInferenceSetup _$AgentInferenceSetupFromJson(Map<String, dynamic> json) =>
+    _AgentInferenceSetup(
+      mode: $enumDecode(
+        _$AgentInferenceSetupModeEnumMap,
+        json['mode'],
+        unknownValue: AgentInferenceSetupMode.disabled,
+      ),
+      origin: $enumDecode(
+        _$AgentInferenceSetupOriginEnumMap,
+        json['origin'],
+        unknownValue: AgentInferenceSetupOrigin.unknown,
+      ),
+      baseProfileId: json['baseProfileId'] as String?,
+      thinkingModelOverrideId: json['thinkingModelOverrideId'] as String?,
+      originEntityId: json['originEntityId'] as String?,
+    );
+
+Map<String, dynamic> _$AgentInferenceSetupToJson(
+  _AgentInferenceSetup instance,
+) => <String, dynamic>{
+  'mode': _$AgentInferenceSetupModeEnumMap[instance.mode]!,
+  'origin': _$AgentInferenceSetupOriginEnumMap[instance.origin]!,
+  'baseProfileId': instance.baseProfileId,
+  'thinkingModelOverrideId': instance.thinkingModelOverrideId,
+  'originEntityId': instance.originEntityId,
+};
+
+const _$AgentInferenceSetupModeEnumMap = {
+  AgentInferenceSetupMode.configured: 'configured',
+  AgentInferenceSetupMode.disabled: 'disabled',
+};
+
+const _$AgentInferenceSetupOriginEnumMap = {
+  AgentInferenceSetupOrigin.user: 'user',
+  AgentInferenceSetupOrigin.categorySnapshot: 'categorySnapshot',
+  AgentInferenceSetupOrigin.templateSnapshot: 'templateSnapshot',
+  AgentInferenceSetupOrigin.unknown: 'unknown',
+};
 
 _AgentSlots _$AgentSlotsFromJson(Map<String, dynamic> json) => _AgentSlots(
   activeTaskId: json['activeTaskId'] as String?,

@@ -66,6 +66,7 @@ WakeExecutor get noOpExecutor =>
 /// This avoids repeating the same `when(...)` boilerplate in tests that
 /// call `clearInteractions(mockRepository)` to isolate assertion windows.
 void restubWakeRunMethods(MockAgentRepository repo) {
+  when(() => repo.getEntity(any())).thenAnswer((_) async => null);
   when(
     () => repo.insertWakeRun(entry: any(named: 'entry')),
   ).thenAnswer((_) async {});
@@ -88,6 +89,7 @@ void restubWakeRunMethods(MockAgentRepository repo) {
 /// stubs are not overwritten.
 void stubWakeRepositoryDefaults(MockAgentRepository repo) {
   restubWakeRunMethods(repo);
+  when(() => repo.getEntity(any())).thenAnswer((_) async => null);
   when(() => repo.getAgentState(any())).thenAnswer((_) async => null);
   when(() => repo.upsertEntity(any())).thenAnswer((_) async {});
 }

@@ -7,15 +7,21 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
+import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -382,6 +388,27 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
 
     final reportAsync = ref.watch(agentReportProvider(agentId));
     final report = reportAsync.value?.mapOrNull(agentReport: (r) => r);
+    final liveIdentity = ref
+        .watch(agentIdentityProvider(agentId))
+        .value
+        ?.mapOrNull(agent: (value) => value);
+    final effectiveIdentity = liveIdentity ?? widget.identity;
+    final resolvedSetup = ref
+        .watch(taskAgentResolvedSetupProvider(agentId))
+        .value;
+    final reportProvenance = report == null
+        ? null
+        : ReportInferenceProvenance.tryRead(report.provenance);
+    final identityData = TaskAgentModelIdentityViewData.fromResolution(
+      setup: resolvedSetup,
+      reportProvenance: reportProvenance,
+      hasReport: report != null,
+    );
+    final inferenceAvailable =
+        identityData.presentation != TaskAgentIdentityPresentation.disabled &&
+        identityData.presentation != TaskAgentIdentityPresentation.broken;
+    final automaticUpdatesEnabled =
+        effectiveIdentity.config.automaticUpdatesEnabledEffective;
 
     final tldr = _resolveTldr(report);
     final additionalReport = _resolveAdditionalReport(report);
@@ -454,7 +481,11 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     });
 
     final showCountdown =
-        !isRunning && remainingSeconds > 0 && !_cancelledManually;
+        inferenceAvailable &&
+        automaticUpdatesEnabled &&
+        !isRunning &&
+        remainingSeconds > 0 &&
+        !_cancelledManually;
 
     final cardRadius = BorderRadius.circular(tokens.radii.l);
     return DecoratedBox(
@@ -499,12 +530,24 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
               expanded: _expanded,
               onToggle: () => setState(() => _expanded = !_expanded),
               onAgentTap: () => _openInternals(agentName: subtitle),
+              identityRegion: TaskAgentIdentityRegion(
+                data: identityData,
+                automaticUpdatesEnabled: automaticUpdatesEnabled,
+                onSetupTap: () => AgentModelSheet.show(
+                  context: context,
+                  taskId: widget.taskId,
+                  agentId: agentId,
+                ),
+              ),
               playbackControl: playbackControl,
               isRunning: isRunning,
               showCountdown: showCountdown,
               nextWakeAt: nextWakeAt,
-              onRunNow: () =>
-                  ref.read(taskAgentServiceProvider).triggerReanalysis(agentId),
+              onRunNow: inferenceAvailable
+                  ? () => ref
+                        .read(taskAgentServiceProvider)
+                        .triggerReanalysis(agentId)
+                  : null,
               onCancelTimer: () {
                 ref.read(taskAgentServiceProvider).cancelScheduledWake(agentId);
                 setState(() => _cancelledManually = true);

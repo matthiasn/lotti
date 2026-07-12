@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 
@@ -192,6 +195,171 @@ void main() {
 
       // ignore: unrelated_type_equality_checks
       expect(profile == 'not a profile', isFalse);
+    });
+
+    test('withThinkingRoute preserves every non-thinking slot', () {
+      final originalModel = AiTestDataFactory.createTestModel(id: 'original');
+      final replacementModel = AiTestDataFactory.createTestModel(
+        id: 'replacement',
+        providerModelId: 'replacement-wire-id',
+      );
+      final original = ResolvedProfile(
+        thinkingModelId: 'original-wire-id',
+        thinkingProvider: provider1,
+        thinkingModel: originalModel,
+        thinkingHighEndModelId: 'high-end',
+        thinkingHighEndProvider: provider1,
+        thinkingHighEndModel: originalModel,
+        imageRecognitionModelId: 'vision',
+        imageRecognitionProvider: provider1,
+        imageRecognitionModel: originalModel,
+        transcriptionModelId: 'audio',
+        transcriptionProvider: provider1,
+        transcriptionModel: originalModel,
+        imageGenerationModelId: 'image',
+        imageGenerationProvider: provider1,
+        imageGenerationModel: originalModel,
+        skillAssignments: const [
+          SkillAssignment(skillId: 'skill', automate: true),
+        ],
+      );
+
+      final replaced = original.withThinkingRoute(
+        model: replacementModel,
+        provider: provider2,
+      );
+
+      expect(replaced.thinkingModelId, 'replacement-wire-id');
+      expect(replaced.thinkingProvider, provider2);
+      expect(replaced.thinkingModel, replacementModel);
+      expect(replaced.thinkingHighEndModelId, original.thinkingHighEndModelId);
+      expect(
+        replaced.imageRecognitionModelId,
+        original.imageRecognitionModelId,
+      );
+      expect(replaced.transcriptionModelId, original.transcriptionModelId);
+      expect(replaced.imageGenerationModelId, original.imageGenerationModelId);
+      expect(replaced.skillAssignments, original.skillAssignments);
+    });
+  });
+
+  group('InferenceRouteFingerprint', () {
+    glados.Glados(
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'value equality and hashCode are stable for generated runtime settings',
+      (value) {
+        final normalized = value.isEmpty ? 'default' : value;
+        final first = InferenceRouteFingerprint(
+          modelConfigId: 'model-$normalized',
+          providerModelId: 'wire-$normalized',
+          providerConfigId: 'provider-$normalized',
+          providerType: InferenceProviderType.openRouter,
+          runtimeSettings: {'setting': normalized},
+        );
+        final second = InferenceRouteFingerprint(
+          modelConfigId: 'model-$normalized',
+          providerModelId: 'wire-$normalized',
+          providerConfigId: 'provider-$normalized',
+          providerType: InferenceProviderType.openRouter,
+          runtimeSettings: {'setting': normalized},
+        );
+
+        expect(first, second, reason: 'value=$normalized');
+        expect(first.hashCode, second.hashCode, reason: 'value=$normalized');
+      },
+      tags: 'glados',
+    );
+
+    test('fromProfile captures ids, provider type, and runtime settings', () {
+      final model = AiTestDataFactory.createTestModel(
+        id: 'model-config',
+        providerModelId: 'wire-id',
+      );
+      final provider = testInferenceProvider(id: 'provider-config');
+      final fingerprint = InferenceRouteFingerprint.fromProfile(
+        ResolvedProfile(
+          thinkingModelId: 'wire-id',
+          thinkingProvider: provider,
+          thinkingModel: model,
+        ),
+      );
+
+      expect(fingerprint.modelConfigId, 'model-config');
+      expect(fingerprint.providerModelId, 'wire-id');
+      expect(fingerprint.providerConfigId, 'provider-config');
+      expect(fingerprint.providerType, InferenceProviderType.gemini);
+      expect(fingerprint.runtimeSettings, {
+        'geminiThinkingMode': model.geminiThinkingMode.name,
+      });
+    });
+
+    test('different route fields and runtime settings break equality', () {
+      const base = InferenceRouteFingerprint(
+        modelConfigId: 'model',
+        providerModelId: 'wire',
+        providerConfigId: 'provider',
+        providerType: InferenceProviderType.gemini,
+        runtimeSettings: {'setting': 'a'},
+      );
+      final variants = [
+        const InferenceRouteFingerprint(
+          modelConfigId: 'other',
+          providerModelId: 'wire',
+          providerConfigId: 'provider',
+          providerType: InferenceProviderType.gemini,
+          runtimeSettings: {'setting': 'a'},
+        ),
+        const InferenceRouteFingerprint(
+          modelConfigId: 'model',
+          providerModelId: 'other',
+          providerConfigId: 'provider',
+          providerType: InferenceProviderType.gemini,
+          runtimeSettings: {'setting': 'a'},
+        ),
+        const InferenceRouteFingerprint(
+          modelConfigId: 'model',
+          providerModelId: 'wire',
+          providerConfigId: 'other',
+          providerType: InferenceProviderType.gemini,
+          runtimeSettings: {'setting': 'a'},
+        ),
+        const InferenceRouteFingerprint(
+          modelConfigId: 'model',
+          providerModelId: 'wire',
+          providerConfigId: 'provider',
+          providerType: InferenceProviderType.openRouter,
+          runtimeSettings: {'setting': 'a'},
+        ),
+        const InferenceRouteFingerprint(
+          modelConfigId: 'model',
+          providerModelId: 'wire',
+          providerConfigId: 'provider',
+          providerType: InferenceProviderType.gemini,
+          runtimeSettings: {'setting': 'b'},
+        ),
+      ];
+
+      for (final variant in variants) {
+        expect(base, isNot(variant));
+      }
+      // ignore: unrelated_type_equality_checks
+      expect(base == 'not a fingerprint', isFalse);
+    });
+  });
+
+  group('ResolvedAgentSetup', () {
+    test('derived state distinguishes runnable and broken selections', () {
+      const resolved = ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.resolved,
+        brokenSelectionId: 'missing-override',
+        setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+      );
+
+      expect(resolved.canRun, isTrue);
+      expect(resolved.hasBrokenSelection, isTrue);
+      expect(resolved.setupOrigin, AgentInferenceSetupOrigin.categorySnapshot);
     });
   });
 }

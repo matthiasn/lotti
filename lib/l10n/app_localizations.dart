@@ -15163,11 +15163,59 @@ abstract class AppLocalizations {
   /// **'Track time'**
   String get taskActionBarTrackTime;
 
+  /// No description provided for @taskAgentAttributionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Attribution unavailable'**
+  String get taskAgentAttributionUnavailable;
+
+  /// No description provided for @taskAgentAutomaticUpdatesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic updates'**
+  String get taskAgentAutomaticUpdatesLabel;
+
+  /// No description provided for @taskAgentAutomaticUpdatesNeedsSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an AI setup before turning on automatic updates.'**
+  String get taskAgentAutomaticUpdatesNeedsSetup;
+
+  /// No description provided for @taskAgentAutomaticUpdatesOffBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic updates off · Use Run now to update'**
+  String get taskAgentAutomaticUpdatesOffBadge;
+
+  /// No description provided for @taskAgentAutomaticUpdatesOffDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic updates are off. Use Run now to update this report.'**
+  String get taskAgentAutomaticUpdatesOffDescription;
+
+  /// No description provided for @taskAgentAutomaticUpdatesOnDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When anything related to this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.'**
+  String get taskAgentAutomaticUpdatesOnDescription;
+
   /// No description provided for @taskAgentCancelTimerTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Cancel'**
+  /// **'Cancel pending automatic update'**
   String get taskAgentCancelTimerTooltip;
+
+  /// No description provided for @taskAgentChooseModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a thinking model'**
+  String get taskAgentChooseModel;
+
+  /// No description provided for @taskAgentChooseProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a saved setup'**
+  String get taskAgentChooseProfile;
 
   /// No description provided for @taskAgentCountdownTooltip.
   ///
@@ -15187,11 +15235,191 @@ abstract class AppLocalizations {
   /// **'Failed to create agent: {error}'**
   String taskAgentCreateError(String error);
 
+  /// No description provided for @taskAgentCurrentSetupHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Current setup'**
+  String get taskAgentCurrentSetupHeader;
+
+  /// No description provided for @taskAgentCurrentSetupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current setup'**
+  String get taskAgentCurrentSetupLabel;
+
+  /// No description provided for @taskAgentDirectModelOverride.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct model override'**
+  String get taskAgentDirectModelOverride;
+
+  /// No description provided for @taskAgentDisableConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off'**
+  String get taskAgentDisableConfirmAction;
+
+  /// No description provided for @taskAgentDisableConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The current report stays visible, but this agent cannot run until you choose a setup.'**
+  String get taskAgentDisableConfirmBody;
+
+  /// No description provided for @taskAgentDisableConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off AI setup?'**
+  String get taskAgentDisableConfirmTitle;
+
+  /// No description provided for @taskAgentModelPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose thinking model'**
+  String get taskAgentModelPickerTitle;
+
+  /// No description provided for @taskAgentNoAiSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI setup'**
+  String get taskAgentNoAiSetup;
+
+  /// No description provided for @taskAgentNoAiSetupDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Pauses agent inference until you choose a profile or model.'**
+  String get taskAgentNoAiSetupDescription;
+
+  /// No description provided for @taskAgentNoModelsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No compatible thinking models available'**
+  String get taskAgentNoModelsAvailable;
+
+  /// No description provided for @taskAgentNoProfilesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No profiles available on this device'**
+  String get taskAgentNoProfilesAvailable;
+
+  /// No description provided for @taskAgentNoProfileSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI setup'**
+  String get taskAgentNoProfileSelected;
+
+  /// No description provided for @taskAgentNoProfileSelectedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a saved setup or thinking model before this agent can run.'**
+  String get taskAgentNoProfileSelectedDescription;
+
+  /// No description provided for @taskAgentProfileDefaultBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile default'**
+  String get taskAgentProfileDefaultBadge;
+
   /// No description provided for @taskAgentRunNowTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Refresh'**
+  /// **'Run now'**
   String get taskAgentRunNowTooltip;
+
+  /// No description provided for @taskAgentRouteVia.
+  ///
+  /// In en, this message translates to:
+  /// **'via'**
+  String get taskAgentRouteVia;
+
+  /// No description provided for @taskAgentSetupAndReportSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'This report and current setup use {identity}. Activate to change setup.'**
+  String taskAgentSetupAndReportSemantics(String identity);
+
+  /// No description provided for @taskAgentSetupBroken.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected AI setup is unavailable'**
+  String get taskAgentSetupBroken;
+
+  /// No description provided for @taskAgentSetupChangedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Using {model} for every future agent update until you change it.'**
+  String taskAgentSetupChangedToast(String model);
+
+  /// No description provided for @taskAgentSetupOriginCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied from the category default when this agent was created'**
+  String get taskAgentSetupOriginCategory;
+
+  /// No description provided for @taskAgentSetupOriginDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get taskAgentSetupOriginDisabled;
+
+  /// No description provided for @taskAgentSetupOriginLegacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Legacy setup'**
+  String get taskAgentSetupOriginLegacy;
+
+  /// No description provided for @taskAgentSetupOriginTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied from the template'**
+  String get taskAgentSetupOriginTemplate;
+
+  /// No description provided for @taskAgentSetupOriginUser.
+  ///
+  /// In en, this message translates to:
+  /// **'You chose this for this agent'**
+  String get taskAgentSetupOriginUser;
+
+  /// No description provided for @taskAgentSetupPersistenceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes apply to every future update until you change them.'**
+  String get taskAgentSetupPersistenceDescription;
+
+  /// No description provided for @taskAgentSetupSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Current setup: {identity}. Activate to change setup.'**
+  String taskAgentSetupSemantics(String identity);
+
+  /// No description provided for @taskAgentSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent setup'**
+  String get taskAgentSetupTitle;
+
+  /// No description provided for @taskAgentThisReportHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'This report'**
+  String get taskAgentThisReportHeader;
+
+  /// No description provided for @taskAgentUseCategoryDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy category default'**
+  String get taskAgentUseCategoryDefault;
+
+  /// No description provided for @taskAgentUseCategoryDefaultDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Copies the category’s current setup. Later category changes won’t affect this agent.'**
+  String get taskAgentUseCategoryDefaultDescription;
+
+  /// No description provided for @taskAgentUseProfileDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Use profile default'**
+  String get taskAgentUseProfileDefault;
 
   /// No description provided for @taskCategoryAllLabel.
   ///

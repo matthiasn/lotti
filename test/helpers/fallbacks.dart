@@ -254,6 +254,12 @@ void registerAllFallbackValues() {
 
   // Agent config fallback
   registerFallbackValue(const AgentConfig());
+  registerFallbackValue(
+    const AgentInferenceSetup(
+      mode: AgentInferenceSetupMode.disabled,
+      origin: AgentInferenceSetupOrigin.user,
+    ),
+  );
 
   // Agent subscription fallback
   registerFallbackValue(

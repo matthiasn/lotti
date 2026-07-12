@@ -8872,7 +8872,36 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskActionBarTrackTime => 'Zeit erfassen';
 
   @override
-  String get taskAgentCancelTimerTooltip => 'Abbrechen';
+  String get taskAgentAttributionUnavailable => 'Zuordnung nicht verfügbar';
+
+  @override
+  String get taskAgentAutomaticUpdatesLabel => 'Automatische Updates';
+
+  @override
+  String get taskAgentAutomaticUpdatesNeedsSetup =>
+      'Wähle ein KI-Setup, bevor du automatische Updates einschaltest.';
+
+  @override
+  String get taskAgentAutomaticUpdatesOffBadge =>
+      'Automatische Updates aus · Mit „Jetzt ausführen“ aktualisieren';
+
+  @override
+  String get taskAgentAutomaticUpdatesOffDescription =>
+      'Automatische Updates sind aus. Verwende „Jetzt ausführen“, um diesen Bericht zu aktualisieren.';
+
+  @override
+  String get taskAgentAutomaticUpdatesOnDescription =>
+      'Wenn sich etwas an oder im Zusammenhang mit dieser Aufgabe ändert, startet ein zweiminütiger Countdown. Änderungen währenddessen werden in einem Update gebündelt.';
+
+  @override
+  String get taskAgentCancelTimerTooltip =>
+      'Ausstehendes automatisches Update abbrechen';
+
+  @override
+  String get taskAgentChooseModel => 'Denkmodell wählen';
+
+  @override
+  String get taskAgentChooseProfile => 'Gespeicherte Einrichtung wählen';
 
   @override
   String taskAgentCountdownTooltip(String countdown) {
@@ -8888,7 +8917,113 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get taskAgentRunNowTooltip => 'Aktualisieren';
+  String get taskAgentCurrentSetupHeader => 'Aktuelle Einrichtung';
+
+  @override
+  String get taskAgentCurrentSetupLabel => 'Aktuelle Einrichtung';
+
+  @override
+  String get taskAgentDirectModelOverride => 'Direkte Modellüberschreibung';
+
+  @override
+  String get taskAgentDisableConfirmAction => 'Ausschalten';
+
+  @override
+  String get taskAgentDisableConfirmBody =>
+      'Der aktuelle Bericht bleibt sichtbar, aber der Agent kann erst wieder laufen, wenn du eine Einrichtung auswählst.';
+
+  @override
+  String get taskAgentDisableConfirmTitle => 'KI-Einrichtung ausschalten?';
+
+  @override
+  String get taskAgentModelPickerTitle => 'Denkmodell wählen';
+
+  @override
+  String get taskAgentNoAiSetup => 'Keine KI-Einrichtung';
+
+  @override
+  String get taskAgentNoAiSetupDescription =>
+      'Pausiert die Inferenz, bis du ein Profil oder Modell auswählst.';
+
+  @override
+  String get taskAgentNoModelsAvailable =>
+      'Keine kompatiblen Denkmodelle verfügbar';
+
+  @override
+  String get taskAgentNoProfilesAvailable =>
+      'Auf diesem Gerät sind keine Profile verfügbar';
+
+  @override
+  String get taskAgentNoProfileSelected => 'Kein KI-Setup';
+
+  @override
+  String get taskAgentNoProfileSelectedDescription =>
+      'Wähle eine gespeicherte Einrichtung oder ein Denkmodell, bevor der Agent laufen kann.';
+
+  @override
+  String get taskAgentProfileDefaultBadge => 'Profilstandard';
+
+  @override
+  String get taskAgentRunNowTooltip => 'Jetzt ausführen';
+
+  @override
+  String get taskAgentRouteVia => 'über';
+
+  @override
+  String taskAgentSetupAndReportSemantics(String identity) {
+    return 'Dieser Bericht und die aktuelle Einrichtung verwenden $identity. Aktivieren, um die Einrichtung zu ändern.';
+  }
+
+  @override
+  String get taskAgentSetupBroken =>
+      'Die ausgewählte KI-Einrichtung ist nicht verfügbar';
+
+  @override
+  String taskAgentSetupChangedToast(String model) {
+    return '$model wird für jedes zukünftige Agent-Update verwendet, bis du es änderst.';
+  }
+
+  @override
+  String get taskAgentSetupOriginCategory =>
+      'Beim Erstellen dieses Agenten aus dem Kategorie-Standard kopiert';
+
+  @override
+  String get taskAgentSetupOriginDisabled => 'Deaktiviert';
+
+  @override
+  String get taskAgentSetupOriginLegacy => 'Alte Einrichtung';
+
+  @override
+  String get taskAgentSetupOriginTemplate => 'Aus der Vorlage kopiert';
+
+  @override
+  String get taskAgentSetupOriginUser =>
+      'Du hast dies für diesen Agenten ausgewählt';
+
+  @override
+  String get taskAgentSetupPersistenceDescription =>
+      'Änderungen gelten für alle zukünftigen Updates, bis du sie wieder änderst.';
+
+  @override
+  String taskAgentSetupSemantics(String identity) {
+    return 'Aktuelle Einrichtung: $identity. Aktivieren, um die Einrichtung zu ändern.';
+  }
+
+  @override
+  String get taskAgentSetupTitle => 'Agent-Einrichtung';
+
+  @override
+  String get taskAgentThisReportHeader => 'Dieser Bericht';
+
+  @override
+  String get taskAgentUseCategoryDefault => 'Kategorie-Standard kopieren';
+
+  @override
+  String get taskAgentUseCategoryDefaultDescription =>
+      'Kopiert das aktuelle Setup der Kategorie. Spätere Kategorieänderungen wirken sich nicht auf diesen Agenten aus.';
+
+  @override
+  String get taskAgentUseProfileDefault => 'Profilstandard verwenden';
 
   @override
   String get taskCategoryAllLabel => 'Alle';

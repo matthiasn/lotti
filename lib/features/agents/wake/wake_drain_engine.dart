@@ -86,6 +86,15 @@ extension WakeDrainEngine on WakeOrchestrator {
         final job = queue.dequeue();
         if (job == null) break;
 
+        if (!await _wakeAllowedByCurrentPolicy(job)) {
+          _log(
+            'drain policy dropped automatic/disabled wake for '
+            '${DomainLogger.sanitizeId(job.agentId)}',
+            subDomain: 'drain',
+          );
+          continue;
+        }
+
         final acquired = await runner.tryAcquire(job.agentId);
         if (!acquired) {
           // Agent is already running; defer for re-enqueue after loop.
@@ -149,6 +158,28 @@ extension WakeDrainEngine on WakeOrchestrator {
         queue.clearHistory();
       }
     }
+  }
+
+  Future<bool> _wakeAllowedByCurrentPolicy(WakeJob job) async {
+    late final AgentDomainEntity? entity;
+    try {
+      entity = await repository.getEntity(job.agentId);
+    } catch (error, stackTrace) {
+      _logError(
+        'failed to load agent policy; allowing wake to proceed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return true;
+    }
+    if (entity is! AgentIdentityEntity || entity.kind != AgentKinds.taskAgent) {
+      return true;
+    }
+    return taskAgentWakeAllowed(
+      config: entity.config,
+      lifecycle: entity.lifecycle,
+      initiator: job.initiator,
+    );
   }
 
   /// Execute a single wake job: persist → run executor → update status.

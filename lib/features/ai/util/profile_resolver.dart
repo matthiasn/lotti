@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -35,15 +36,33 @@ class ProfileResolver {
     required AgentTemplateEntity template,
     required AgentTemplateVersionEntity version,
   }) async {
-    final profileId =
-        agentConfig.profileId ?? version.profileId ?? template.profileId;
+    final details = await resolveDetailed(
+      agentConfig: agentConfig,
+      template: template,
+      version: version,
+    );
+    return details.profile;
+  }
 
-    if (profileId != null) {
-      return _resolveFromProfile(profileId, template, version);
+  /// Resolves both the effective profile and the configuration tier that won.
+  ///
+  /// Typed setups are authoritative and never fall through to unrelated
+  /// template/legacy defaults. Null [AgentConfig.inferenceSetup] preserves the
+  /// historic chain for synced agents created by older clients.
+  Future<ResolvedAgentSetup> resolveDetailed({
+    required AgentConfig agentConfig,
+    required AgentTemplateEntity template,
+    required AgentTemplateVersionEntity version,
+  }) async {
+    final setup = agentConfig.inferenceSetup;
+    if (setup != null) {
+      return _resolveTypedSetup(setup);
     }
-
-    // Legacy fallback: use modelId directly for thinking slot only.
-    return _resolveFromModelId(version.modelId ?? template.modelId);
+    return _resolveLegacySetup(
+      agentConfig: agentConfig,
+      template: template,
+      version: version,
+    );
   }
 
   /// Resolves a [ResolvedProfile] directly from a [profileId].
@@ -58,16 +77,137 @@ class ProfileResolver {
   }
 
   Future<ResolvedProfile?> _resolveFromProfile(
-    String profileId,
-    AgentTemplateEntity template,
-    AgentTemplateVersionEntity version,
-  ) async {
+    String profileId, {
+    ResolvedInferenceProvider? thinkingOverride,
+  }) async {
     final config = await _fetchProfile(profileId);
-    if (config == null) {
-      // Fallback to legacy path when profile not found (e.g., sync race).
-      return _resolveFromModelId(version.modelId ?? template.modelId);
+    if (config == null) return null;
+    return _buildResolvedProfile(config, thinkingOverride: thinkingOverride);
+  }
+
+  Future<ResolvedAgentSetup> _resolveTypedSetup(
+    AgentInferenceSetup setup,
+  ) async {
+    if (setup.mode == AgentInferenceSetupMode.disabled) {
+      return ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.disabled,
+        setupOrigin: setup.origin,
+      );
     }
-    return _buildResolvedProfile(config);
+
+    final overrideId = setup.thinkingModelOverrideId;
+    final override = overrideId == null
+        ? null
+        : await resolveInferenceProviderForModelConfigId(
+            modelConfigId: overrideId,
+            aiConfigRepository: _aiConfigRepository,
+            logTag: _logTag,
+          );
+    final baseProfile = setup.baseProfileId == null
+        ? null
+        : await _resolveFromProfile(
+            setup.baseProfileId!,
+            thinkingOverride: override,
+          );
+
+    if (override != null) {
+      final profile =
+          baseProfile?.withThinkingRoute(
+            model: override.model,
+            provider: override.provider,
+          ) ??
+          ResolvedProfile(
+            thinkingModelId: override.model.providerModelId,
+            thinkingProvider: override.provider,
+            thinkingModel: override.model,
+          );
+      return _resolvedDetails(
+        profile: profile,
+        source: AgentSetupResolutionSource.directModel,
+        setupOrigin: setup.origin,
+        brokenSelectionId: setup.baseProfileId != null && baseProfile == null
+            ? setup.baseProfileId
+            : null,
+      );
+    }
+
+    if (baseProfile != null) {
+      return _resolvedDetails(
+        profile: baseProfile,
+        source: AgentSetupResolutionSource.baseProfile,
+        setupOrigin: setup.origin,
+        brokenSelectionId: overrideId,
+      );
+    }
+
+    return ResolvedAgentSetup(
+      status: AgentSetupResolutionStatus.broken,
+      setupOrigin: setup.origin,
+      brokenSelectionId: overrideId ?? setup.baseProfileId,
+    );
+  }
+
+  Future<ResolvedAgentSetup> _resolveLegacySetup({
+    required AgentConfig agentConfig,
+    required AgentTemplateEntity template,
+    required AgentTemplateVersionEntity version,
+  }) async {
+    final (profileId, source) = agentConfig.profileId != null
+        ? (
+            agentConfig.profileId!,
+            AgentSetupResolutionSource.legacyAgentProfile,
+          )
+        : version.profileId != null
+        ? (
+            version.profileId!,
+            AgentSetupResolutionSource.legacyVersionProfile,
+          )
+        : template.profileId != null
+        ? (
+            template.profileId!,
+            AgentSetupResolutionSource.legacyTemplateProfile,
+          )
+        : (null, null);
+
+    if (profileId != null && source != null) {
+      final profile = await _resolveFromProfile(profileId);
+      if (profile != null) {
+        return _resolvedDetails(profile: profile, source: source);
+      }
+    }
+
+    final legacy = await _resolveFromModelId(
+      version.modelId ?? template.modelId,
+    );
+    if (legacy != null) {
+      return _resolvedDetails(
+        profile: legacy,
+        source: AgentSetupResolutionSource.legacyModel,
+        brokenSelectionId: profileId,
+      );
+    }
+
+    return ResolvedAgentSetup(
+      status: AgentSetupResolutionStatus.legacyUnknown,
+      source: AgentSetupResolutionSource.legacyModel,
+      brokenSelectionId: profileId ?? version.modelId ?? template.modelId,
+    );
+  }
+
+  ResolvedAgentSetup _resolvedDetails({
+    required ResolvedProfile profile,
+    required AgentSetupResolutionSource source,
+    AgentInferenceSetupOrigin? setupOrigin,
+    String? brokenSelectionId,
+  }) {
+    return ResolvedAgentSetup(
+      status: AgentSetupResolutionStatus.resolved,
+      profile: profile,
+      source: source,
+      setupOrigin: setupOrigin,
+      brokenSelectionId: brokenSelectionId,
+      routeFingerprint: InferenceRouteFingerprint.fromProfile(profile),
+    );
   }
 
   /// Fetches and type-checks a profile config by [profileId].
@@ -86,14 +226,17 @@ class ProfileResolver {
   }
 
   Future<ResolvedProfile?> _buildResolvedProfile(
-    AiConfigInferenceProfile config,
-  ) async {
+    AiConfigInferenceProfile config, {
+    ResolvedInferenceProvider? thinkingOverride,
+  }) async {
     // Resolve thinking slot (fatal if missing).
-    final thinkingSlot = await resolveInferenceProviderForProfileSlot(
-      modelId: config.thinkingModelId,
-      aiConfigRepository: _aiConfigRepository,
-      logTag: _logTag,
-    );
+    final thinkingSlot =
+        thinkingOverride ??
+        await resolveInferenceProviderForProfileSlot(
+          modelId: config.thinkingModelId,
+          aiConfigRepository: _aiConfigRepository,
+          logTag: _logTag,
+        );
     if (thinkingSlot == null) {
       developer.log(
         'Cannot resolve thinking model ${config.thinkingModelId} '
