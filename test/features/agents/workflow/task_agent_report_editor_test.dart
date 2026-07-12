@@ -416,6 +416,29 @@ turn task metadata or a checklist edit into an accomplishment.
         },
       ),
       (
+        name: 'German captured checklist and scope variants',
+        languageCode: 'de',
+        materialTaskState: <String, Object?>{
+          'newChecklistItems': [
+            'Kaputten CSV-Export reparieren',
+            'Sam nach anonymisierten Testdaten fragen',
+            'Regressionstest laufen lassen',
+          ],
+        },
+        report: <String, dynamic>{
+          'oneLiner': 'CSV-Export wird aktuell repariert',
+          'tldr': 'Die Reparatur ist im Gange.',
+          'content':
+              'Drei konkrete Schritte wurden identifiziert und als '
+              'Checkliste erfasst. Ein Newsletter soll erst später '
+              'aufgenommen werden.',
+        },
+        expected: <TaskAgentReportRevisionIssue>{
+          TaskAgentReportRevisionIssue.processNarration,
+          TaskAgentReportRevisionIssue.deferredScopeLeak,
+        },
+      ),
+      (
         name: 'certificate deferred-scope leak',
         languageCode: 'en',
         materialTaskState: <String, Object?>{

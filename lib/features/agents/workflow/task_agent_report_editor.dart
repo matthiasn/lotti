@@ -754,7 +754,8 @@ class TaskAgentReportEditor {
           r'auftrag\w*|vorbereit\w*|activaci(?:ó|o)n\w*|tarea|travail|tâche|'
           r'muncă|sarcin)\b.{0,50}\b(underway|in progress|'
           'currently active|wurde aufgenommen|l(?:ä|ae)uft(?: aktuell)?|'
-          'in bearbeitung|en curso|en progreso|'
+          'in bearbeitung|im gange|wird(?: aktuell)? repariert|en curso|'
+          'en progreso|'
           r'en progrès|în curs|probíhá)\b',
         ).hasMatch(normalizedCandidate);
     final describesPendingInvestigationAsProgress =
@@ -772,9 +773,10 @@ class TaskAgentReportEditor {
     final narratesNewActionsAsQueued =
         hasNewChecklistItems &&
         RegExp(
-          r'\b(workflow\s+items?|actions?|tasks?|steps?|items?)\b.{0,30}'
+          r'\b(workflow\s+items?|actions?|tasks?|steps?|schritte|items?)\b.{0,30}'
           r'\b(queued|queue|listed|captured|prepared|identified|extracted|'
-          r'defined|recorded|created|added|assembled|tracked)\b',
+          'defined|recorded|created|added|assembled|tracked|identifiziert|'
+          r'erfasst)\b',
         ).hasMatch(normalizedCandidate);
     final narratesNewActionsAsReady =
         hasNewChecklistItems &&
@@ -1030,7 +1032,7 @@ class TaskAgentReportEditor {
     'leave (?:it|that|this) out|'
     'zurückgestellt|nicht.{0,60}aufgenommen|nicht.{0,40}aufnehmen|'
     r'nicht.{0,40}bearbeit\w*|'
-    r'(?:erst\s+)?später.{0,40}(?:betrachtet|berücksichtigt|bearbeitet|angegangen)|'
+    r'(?:erst\s+)?später.{0,40}(?:aufgenommen|betrachtet|berücksichtigt|bearbeitet|angegangen)|'
     'ausgeschlossen|fuera de alcance|no incluir|'
     'hors périmètre|ne pas inclure|'
     r'în afara domeniului|nu include|odložen|mimo rozsah|nezahrnovat)\b',
