@@ -5023,6 +5023,18 @@ abstract class AppLocalizations {
   /// **'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.'**
   String get configFlagAttemptEmbeddingDescription;
 
+  /// No description provided for @configFlagDailyOsOnboardingEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS walkthrough'**
+  String get configFlagDailyOsOnboardingEnabled;
+
+  /// No description provided for @configFlagDailyOsOnboardingEnabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan. Requires the DailyOS page.'**
+  String get configFlagDailyOsOnboardingEnabledDescription;
+
   /// No description provided for @configFlagEnableAiStreaming.
   ///
   /// In en, this message translates to:
@@ -5172,18 +5184,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use the new onboarding flow for first-run AI setup instead of the provider picker.'**
   String get configFlagEnableOnboardingFtueDescription;
-
-  /// No description provided for @configFlagDailyOsOnboardingEnabled.
-  ///
-  /// In en, this message translates to:
-  /// **'Daily OS walkthrough'**
-  String get configFlagDailyOsOnboardingEnabled;
-
-  /// No description provided for @configFlagDailyOsOnboardingEnabledDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan. Requires the next-gen agentic DailyOS.'**
-  String get configFlagDailyOsOnboardingEnabledDescription;
 
   /// No description provided for @configFlagEnableProjects.
   ///

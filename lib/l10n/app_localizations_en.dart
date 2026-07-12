@@ -2898,6 +2898,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.';
 
   @override
+  String get configFlagDailyOsOnboardingEnabled => 'Daily OS walkthrough';
+
+  @override
+  String get configFlagDailyOsOnboardingEnabledDescription =>
+      'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan. Requires the DailyOS page.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Enable AI streaming for task actions';
 
@@ -2984,13 +2991,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get configFlagEnableOnboardingFtueDescription =>
       'Use the new onboarding flow for first-run AI setup instead of the provider picker.';
-
-  @override
-  String get configFlagDailyOsOnboardingEnabled => 'Daily OS walkthrough';
-
-  @override
-  String get configFlagDailyOsOnboardingEnabledDescription =>
-      'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan. Requires the next-gen agentic DailyOS.';
 
   @override
   String get configFlagEnableProjects => 'Enable Projects';

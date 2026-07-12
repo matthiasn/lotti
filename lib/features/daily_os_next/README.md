@@ -731,21 +731,23 @@ month's deterministic `day_agent_plan:<dayId>` ids), and tapping a day selects
 it via `dailyOsNextSelectedDateProvider`, which the already visible Daily OS
 surface reacts to directly.
 
-## Onboarding walkthrough — Phase 0 substrate
+## Onboarding walkthrough — substrate & contracts
 
 A first-time Daily OS user lands on a real but unexplained empty `DayPage`
 (`hasPlan: false`, one "Speak a check-in" CTA). The onboarding walkthrough
 teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 [`docs/implementation_plans/2026-07-09_daily_os_onboarding.md`](../../../docs/implementation_plans/2026-07-09_daily_os_onboarding.md).
 
-> **Status.** Only the **Phase 0 substrate** below is implemented — the
-> eligibility gate, cadence bookkeeping, plan-existence query, and metrics
-> vocabulary. There is **no walkthrough UI yet**, and the whole thing is inert:
-> it is gated behind the off-by-default `dailyOsOnboardingEnabledFlag`, and
-> `dailyOsOnboardingProviderReadyProvider` (the seam for the real planning-flow
-> readiness signal) defaults to `false` until a later phase wires it, so
-> `shouldAutoShowDailyOsOnboardingProvider` never resolves `true` in a shipped
-> build. This section documents what exists in code today.
+> **Status.** The **Phase 0 substrate** (eligibility gate, cadence bookkeeping,
+> plan-existence query, metrics vocabulary) and the **Phase 1 contracts** (typed
+> modal result + onboarding session) below are implemented. There is still **no
+> walkthrough UI** (spotlight / coach strips / auto-show wiring — Phase 2+), and
+> the auto-show path is inert: it is gated behind the off-by-default
+> `dailyOsOnboardingEnabledFlag`, and `dailyOsOnboardingProviderReadyProvider`
+> (the seam for the real planning-flow readiness signal) defaults to `false`
+> until a later phase wires it, so `shouldAutoShowDailyOsOnboardingProvider`
+> never resolves `true` in a shipped build. This section documents what exists
+> in code today.
 
 | Piece | File | Role |
 |---|---|---|
@@ -754,6 +756,8 @@ teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 | `DailyOsOnboardingCadence` | same | Mutation side: `recordShown()` / `markCompleted()`, persisted under a private `daily_os_onboarding_` `SettingsDb` key prefix (four shows within fourteen days), mirroring the general FTUE cadence. |
 | `AgentRepository.countEntitiesByAgentAndType` | `features/agents/database/agent_repo_evolution.dart` | The "has a plan ever existed for `daily_os_planner`" query. Deliberately **includes soft-deleted tombstones** (unlike `getEntitiesByIds`), so a returning user who deleted their only plan is not mistaken for a new user. |
 | Daily OS event vocabulary + `DailyOsOnboardingFunnelState` | `features/onboarding/model/onboarding_event.dart` | Six `dailyOs*` events reuse the shared `OnboardingMetricsDb`, but the two funnel derivations are **partitioned by vocabulary** so Daily OS events never shift the general FTUE active-day or activation metrics. |
+| `DayPlanningResult` + `attributeCreatedTaskIds` | `ui/pages/day_planning_result.dart` | `showDayPlanningModal` now resolves to a typed result instead of `Future<void>`: `DayPlanningCreated` (drafted plan + task ids newly materialized from approved capture items), `DayPlanningAdapted` (Refine result), or `null` on dismissal. Attribution reconstructs the created task ids from `ParsedItem.matchedTaskId` transitions on the approved capture items — best-effort, empty when it can't be established. |
+| `DailyOsOnboardingSession` | `state/daily_os_onboarding_session.dart` | Walkthrough session contract: stable id, `auto`/`replay` origin, tips-visible state, and exactly-once guards for the stage and skip events (emission injected via a callback so it is testable in isolation). Consumed by Phase 2's coach strips; the modal does not thread it yet. |
 
 Eligibility (all must hold): both `dailyOsOnboardingEnabledFlag` and
 `enableDailyOsPageFlag` on; the selected date is local today; today has no
