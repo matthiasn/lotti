@@ -152,6 +152,16 @@ class ProfileSeedingService {
       for (final provider in usableProviders) provider.id,
     };
     final models = await _fetchModelRows();
+    // Every value a profile slot could carry — row ID or legacy
+    // `providerModelId` — for models owned by a usable provider, so the
+    // per-slot check below is a set lookup instead of a scan over all rows.
+    final usableModelSlotValues = <String>{
+      for (final model in models)
+        if (usableProviderIds.contains(model.inferenceProviderId)) ...[
+          model.id,
+          model.providerModelId,
+        ],
+    };
     final templatesById = {
       for (final template in defaultProfiles) template.id: template,
     };
@@ -165,8 +175,7 @@ class ProfileSeedingService {
       if (!_isRemovableOrphanedSeed(
         config,
         template,
-        models: models,
-        usableProviderIds: usableProviderIds,
+        usableModelSlotValues: usableModelSlotValues,
       )) {
         continue;
       }
@@ -688,11 +697,14 @@ class ProfileSeedingService {
   /// Whether [profile] is still an untouched default seed that no usable
   /// provider can serve — the only state [removeOrphanedDefaultSeeds] is
   /// allowed to delete.
+  ///
+  /// A slot value found in [usableModelSlotValues] means the profile can
+  /// still serve requests (e.g. the user rewired it to another provider),
+  /// so the cleanup pass must keep it.
   static bool _isRemovableOrphanedSeed(
     AiConfigInferenceProfile profile,
     AiConfigInferenceProfile template, {
-    required List<AiConfigModel> models,
-    required Set<String> usableProviderIds,
+    required Set<String> usableModelSlotValues,
   }) {
     final nameUntouched =
         profile.name == template.name ||
@@ -714,25 +726,7 @@ class ProfileSeedingService {
       profile.imageGenerationModelId,
     ];
     return !slots.any(
-      (slot) =>
-          _slotResolvesToUsableProviderModel(slot, models, usableProviderIds),
-    );
-  }
-
-  /// True when [slotValue] resolves — by row ID or legacy `providerModelId` —
-  /// to a model row owned by a usable provider. Such a slot means the profile
-  /// can still serve requests (e.g. the user rewired it to another provider),
-  /// so the cleanup pass must keep it.
-  static bool _slotResolvesToUsableProviderModel(
-    String? slotValue,
-    List<AiConfigModel> models,
-    Set<String> usableProviderIds,
-  ) {
-    if (slotValue == null) return false;
-    return models.any(
-      (model) =>
-          (model.id == slotValue || model.providerModelId == slotValue) &&
-          usableProviderIds.contains(model.inferenceProviderId),
+      (slot) => slot != null && usableModelSlotValues.contains(slot),
     );
   }
 

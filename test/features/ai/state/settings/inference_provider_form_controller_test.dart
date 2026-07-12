@@ -1300,6 +1300,66 @@ void main() {
       ).captured.whereType<AiConfigInferenceProfile>().map((p) => p.id);
       expect(savedProfileIds, [profileMeliousId]);
     });
+
+    test('a profile seeding failure does not fail the provider save', () async {
+      // Arrange — the gate is open (usable Gemini provider), but the seed
+      // lookup blows up. The provider row is already saved at that point, so
+      // addConfig must swallow the failure instead of surfacing an error
+      // toast for a save that succeeded.
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(
+        () => mockRepository.getConfigsByType(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getConfigById(any()),
+      ).thenThrow(Exception('db unavailable'));
+
+      final geminiConfig = AiConfig.inferenceProvider(
+        id: 'gemini-provider-id',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: 'test-gemini-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024, 3, 15),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [geminiConfig]);
+
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+
+      // Act + Assert — completes despite the seeding failure.
+      await expectLater(controller.addConfig(geminiConfig), completes);
+      verify(() => mockRepository.saveConfig(geminiConfig)).called(1);
+    });
+
+    test(
+      'a profile seeding failure does not fail the provider update',
+      () async {
+        // Arrange — every config-type read throws, so the seeding pass fails
+        // at its first fetch. The update itself must still complete.
+        when(() => mockRepository.getConfigById('test-id')).thenAnswer(
+          (_) async => testConfig,
+        );
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+        when(
+          () => mockRepository.getConfigsByType(any()),
+        ).thenThrow(Exception('db unavailable'));
+
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: 'test-id').notifier,
+        );
+        await container.read(
+          inferenceProviderFormControllerProvider(configId: 'test-id').future,
+        );
+
+        // Act + Assert — completes despite the seeding failure.
+        await expectLater(controller.updateConfig(testConfig), completes);
+        verify(() => mockRepository.saveConfig(any())).called(1);
+      },
+    );
   });
 
   group('Edge Cases', () {
