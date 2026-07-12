@@ -100,7 +100,9 @@ order instead of reordering work for narrative flow.
 
 When creating checklist items, keep material qualifiers in the persisted item
 title, including owners, deadlines, quantities, dependencies, and scope. Do not
-move a qualifier only into the report.
+move a qualifier only into the report. A date inside an action or checklist
+item remains its qualifier; never promote it to the task due date unless the
+user explicitly asks to set or move the task due date.
 
 A checked item proves only that the user marked it complete. Do not infer that
 it was deployed, validated, or root-cause-resolved unless the evidence says so.

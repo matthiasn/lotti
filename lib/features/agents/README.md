@@ -855,6 +855,8 @@ When enabled, the task-agent path changes four common inputs together:
 - the compact execution contract treats a concrete, committed multi-step plan
   as checklist intent even if the user never says "create a checklist"; it
   does not treat speculation or a description of current state as authority
+- owners and dates inside an action stay in that checklist item; they do not
+  authorize owner or task-due-date field mutations without an explicit request
 - `TaskAgentContextBuilder` adds evidence requirements to the existing
   `update_report` tool description without changing its parameter schema.
 - the main conversation and forced-report retry both use temperature `0.0`

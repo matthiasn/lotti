@@ -245,6 +245,7 @@ Use the task language and omit empty sections.
       expect(mistralPrompt, isNot(contains('A wake ends in exactly')));
       expect(mistralPrompt, contains('Examples of the boundary:'));
       expect(mistralPrompt, contains('date appears only in prose'));
+      expect(mistralPrompt, contains('promote it to the task due date'));
       expect(
         mistralPrompt,
         contains('A committed multi-step plan is mutation intent'),
@@ -262,6 +263,7 @@ Use the task language and omit empty sections.
       expect(qwenPrompt, contains('"underway"'));
       expect(qwenPrompt, contains('investigation is needed'));
       expect(qwenPrompt, contains('generic downstream fixes'));
+      expect(qwenPrompt, contains('promote it to the task due date'));
       expect(qwenPrompt, contains('Omit absent'));
     });
 

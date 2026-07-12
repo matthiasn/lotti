@@ -49,7 +49,10 @@ const taskFieldTools = <AgentToolDefinition>[
     name: TaskAgentToolNames.updateTaskDueDate,
     description:
         'Update the due date for the task. '
-        'Only call when you want to CHANGE the due date to a different value. '
+        'Only call when the user explicitly asks to set, move, or CHANGE the '
+        'task due date to a different value. A date or deadline inside an '
+        'action or checklist item remains an item qualifier and does not '
+        'authorize changing the task due date. '
         'Do NOT call if the task already has the correct due date — check the '
         'current dueDate in the task context first.',
     parameters: {

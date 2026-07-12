@@ -58,6 +58,8 @@ void main() {
 
       test('has correct name', () {
         expect(tool.name, equals('update_task_due_date'));
+        expect(tool.description, contains('explicitly asks'));
+        expect(tool.description, contains('checklist item'));
       });
 
       test('requires a string dueDate parameter with YYYY-MM-DD format', () {

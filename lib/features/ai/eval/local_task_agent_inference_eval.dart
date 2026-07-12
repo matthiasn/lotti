@@ -780,11 +780,6 @@ LocalTaskAgentEvalScenario _duplicateChecklistScenario(
     expectedToolCalls: const [
       LocalTaskAgentExpectedToolCall(
         name: TaskAgentToolNames.addMultipleChecklistItems,
-        expectedArgumentsSubset: {
-          'items': [
-            {'title': 'Submit the expense report by Friday'},
-          ],
-        },
       ),
     ],
     promptVariant: variant,
@@ -795,6 +790,13 @@ LocalTaskAgentEvalScenario _duplicateChecklistScenario(
       ['reconcile'],
     ],
     forbiddenReportTerms: const ['item-receipts', 'item-reconcile'],
+    requiredToolArgumentTermGroups: const {
+      TaskAgentToolNames.addMultipleChecklistItems: [
+        ['submit'],
+        ['expense report'],
+        ['friday'],
+      ],
+    },
     forbiddenToolArgumentTerms: const {
       TaskAgentToolNames.addMultipleChecklistItems: [
         'email the q2 receipts',

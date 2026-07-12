@@ -705,6 +705,51 @@ void main() {
     expect(result.qualityScore, 1);
   });
 
+  test('duplicate reconciliation accepts a more specific missing item', () {
+    final scenario =
+        defaultMeliousTaskAgentEvalScenarios(
+          variants: const [LocalTaskAgentEvalPromptVariant.evidenceSynthesis],
+        ).firstWhere(
+          (scenario) =>
+              scenario.id.startsWith('duplicate_checklist_reconciliation'),
+        );
+    expect(
+      scenario.expectedToolCalls.single.expectedArgumentsSubset,
+      isEmpty,
+    );
+    expect(
+      scenario.requiredToolArgumentTermGroups[TaskAgentToolNames
+          .addMultipleChecklistItems],
+      containsAll([
+        ['submit'],
+        ['expense report'],
+        ['friday'],
+      ]),
+    );
+    final result = LocalTaskAgentEvalCaseResult(
+      profile: profile,
+      scenario: scenario,
+      provider: provider,
+      latencyMs: 10,
+      toolCalls: const [
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.addMultipleChecklistItems,
+          argumentsJson:
+              '{"items":[{"title":"Submit the Q2 expense report by Friday"}]}',
+        ),
+        LocalTaskAgentEvalToolCall(
+          name: TaskAgentToolNames.updateReport,
+          argumentsJson:
+              '{"oneLiner":"Submit Q2 expense report by Friday","tldr":"Email receipts and reconcile card transactions before submission.","content":"Submit the expense report by Friday after emailing receipts and reconciling transactions."}',
+        ),
+      ],
+      failureCategory: LocalTaskAgentEvalFailureCategory.none,
+    );
+
+    expect(result.passedQualityCheckCount, result.qualityCheckCount);
+    expect(result.qualityScore, 1);
+  });
+
   test(
     'parseLocalTaskAgentEvalProfile trims and validates name=model pairs',
     () {

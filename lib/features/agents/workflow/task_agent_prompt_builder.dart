@@ -272,6 +272,9 @@ user-facing report current.
   `update_report` with them. Most metadata and time tools are single-use per
   wake; checklist and label batch tools may contain multiple items.
 - Keep owners, dates, quantities, dependencies, and scope in checklist titles.
+  A date inside an action or checklist item remains its qualifier; never
+  promote it to the task due date unless the user explicitly asks to set or
+  move the task due date.
   Do not add existing work. Archive true duplicates instead of renaming them.
 - Treat tool failures and policy denials as private observations, not report
   content. Stay within the task's allowed categories.
