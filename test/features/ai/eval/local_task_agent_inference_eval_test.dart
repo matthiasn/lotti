@@ -376,6 +376,12 @@ void main() {
       contains('ordinary Markdown bullets'),
     );
 
+    final decisionMemo = scenarios.first;
+    expect(
+      decisionMemo.forbiddenReportTerms,
+      contains('## decision needed'),
+    );
+
     final localized = scenarios.firstWhere(
       (scenario) => scenario.id.contains('localized_partner'),
     );

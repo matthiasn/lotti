@@ -297,6 +297,7 @@ evolvedReportDirectiveTaskAgentEvalScenarios() {
       forbiddenDirectiveTerms: const [
         '## achieved',
         'what is left to do',
+        '## decision needed',
       ],
     ),
     _withEvolvedReportDirective(

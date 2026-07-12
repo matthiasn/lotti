@@ -682,6 +682,23 @@ turn task metadata or a checklist edit into an accomplishment.
     );
     expect(
       TaskAgentReportEditor.validateRevision(
+        languageCode: 'en',
+        materialTaskState: const {},
+        draftReport: const {
+          'oneLiner': 'Run the evaluation',
+          'tldr': 'Compare the candidate with the reference.',
+          'content': 'Run the evaluation and compare the models.',
+        },
+        candidateReport: const {
+          'oneLiner': 'Run the evaluation',
+          'tldr': 'Compare the candidate with the reference.',
+          'content': '## Decision needed\nNone at this time.',
+        },
+      ),
+      [TaskAgentReportRevisionIssue.processNarration],
+    );
+    expect(
+      TaskAgentReportEditor.validateRevision(
         languageCode: 'de',
         materialTaskState: const {
           'newChecklistItems': [
