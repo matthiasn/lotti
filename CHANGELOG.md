@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1038]
+## [0.9.1039]
 ### Added
 - **Try an evidence-first task-agent mode with efficient models.** Enable the
   experimental option in Settings → Advanced → Flags to use an evaluated

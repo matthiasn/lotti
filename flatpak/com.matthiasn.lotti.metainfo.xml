@@ -32,7 +32,7 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.1038" date="2026-07-12">
+    <release version="0.9.1039" date="2026-07-12">
       <description>
           <p>An experimental evidence-first task-agent mode is now available in Settings → Advanced → Flags. It uses an evaluated low-variance, temperature-zero inference path. On Melious, Mistral Small 4 119B keeps responsibility for task and checklist changes while a compact Qwen report-only pass improves the user-facing summary. Reports that fail grounded quality checks are retried up to twice and otherwise leave the original Mistral report untouched. Qwen 3.5 122B A10B is also included in the Melious model picker as an experimental direct task-agent option. Evolved and manually customized report instructions stay authoritative through the report-only pass; other executor models do not use that pass. Each model's token usage is tracked separately. Concrete multi-step plans become checklist actions without requiring a separate explicit checklist request. Direct Qwen reports that fail local grounding checks receive a compact, bounded Qwen repair; clean reports remain single-pass. The report pass keeps existing deadlines, estimates, and urgent priorities visible, and deferred ideas remain stripped from every repair attempt.</p>
           <p>Melious task agents now continue reliably after calling tools. Follow-up requests preserve the OpenAI-compatible assistant message shape expected by strict providers, so checklist updates and the final report are no longer interrupted after an otherwise successful tool call.</p>
