@@ -2859,6 +2859,8 @@
   "imageViewerDownloadTooltip": "Download image",
   "inactiveLabel": "Inactive",
   "inactiveSwitchDescription": "Can be chosen for new entries when on",
+  "inferenceProfileChooseModelTitle": "Choose a model",
+  "inferenceProfileChooseTitle": "Choose an inference profile",
   "inferenceProfileCreateTitle": "Create Profile",
   "inferenceProfileDescriptionLabel": "Description",
   "inferenceProfileDesktopOnly": "Desktop Only",
@@ -2885,8 +2887,8 @@
   "inferenceProfilePinnedHostNoneLabel": "Not pinned (no auto-trigger)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (this device)",
   "inferenceProfileSaveButton": "Save",
-  "inferenceProfileSelectModel": "Select a model…",
-  "inferenceProfileSelectProfile": "Select a profile…",
+  "inferenceProfileSelectModel": "Choose a model…",
+  "inferenceProfileSelectProfile": "Choose a profile…",
   "inferenceProfilesEmpty": "No inference profiles yet",
   "inferenceProfileSkillModelRequired": "Requires {slotName} model to be set",
   "@inferenceProfileSkillModelRequired": {
@@ -2910,6 +2912,7 @@
   "inferenceProfileThinkingHighEnd": "Thinking (High-End)",
   "inferenceProfileThinkingRequired": "A thinking model is required",
   "inferenceProfileTranscription": "Transcription",
+  "inferenceProfileUnavailable": "Inference profile unavailable",
   "inputDataTypeAudioFilesDescription": "Use audio files as input",
   "inputDataTypeAudioFilesName": "Audio Files",
   "inputDataTypeImagesDescription": "Use images as input",
@@ -4286,7 +4289,7 @@
   "taskAgentAutomaticUpdatesOnDescription": "When anything related to this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.",
   "taskAgentCancelTimerTooltip": "Cancel pending automatic update",
   "taskAgentChooseModel": "Choose a thinking model",
-  "taskAgentChooseProfile": "Choose a saved setup",
+  "taskAgentChooseProfile": "Choose an inference profile",
   "taskAgentCountdownTooltip": "Next auto-run in {countdown}",
   "@taskAgentCountdownTooltip": {
     "placeholders": {
@@ -4317,9 +4320,17 @@
   "taskAgentNoProfilesAvailable": "No profiles available on this device",
   "taskAgentNoProfileSelected": "No AI setup",
   "taskAgentNoProfileSelectedDescription": "Choose a saved setup or thinking model before this agent can run.",
+  "taskAgentProfileChangedToast": "Using {profile} for every future agent update until you change it.",
+  "@taskAgentProfileChangedToast": {
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
   "taskAgentProfileDefaultBadge": "Profile default",
-  "taskAgentRunNowTooltip": "Run now",
   "taskAgentRouteVia": "via",
+  "taskAgentRunNowTooltip": "Run now",
   "taskAgentSetupAndReportSemantics": "This report and current setup use {identity}. Activate to change setup.",
   "@taskAgentSetupAndReportSemantics": {
     "placeholders": {

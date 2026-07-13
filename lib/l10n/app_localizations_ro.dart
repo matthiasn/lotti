@@ -5542,6 +5542,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Poate fi ales pentru intrări noi când este activ';
 
   @override
+  String get inferenceProfileChooseModelTitle => 'Alegeți un model';
+
+  @override
+  String get inferenceProfileChooseTitle => 'Alegeți un profil de inferență';
+
+  @override
   String get inferenceProfileCreateTitle => 'Creați un profil';
 
   @override
@@ -5644,6 +5650,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get inferenceProfileTranscription => 'Transcriere';
+
+  @override
+  String get inferenceProfileUnavailable => 'Profil de inferență indisponibil';
 
   @override
   String get inputDataTypeAudioFilesDescription =>
@@ -9010,7 +9019,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentChooseModel => 'Alegeți un model de raționament';
 
   @override
-  String get taskAgentChooseProfile => 'Alegeți o configurare salvată';
+  String get taskAgentChooseProfile => 'Alegeți un profil de inferență';
 
   @override
   String taskAgentCountdownTooltip(String countdown) {
@@ -9070,13 +9079,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alegeți o configurare salvată sau un model înainte ca agentul să poată rula.';
 
   @override
+  String taskAgentProfileChangedToast(String profile) {
+    return '$profile va fi utilizat pentru toate actualizările viitoare ale agentului până când îl schimbați.';
+  }
+
+  @override
   String get taskAgentProfileDefaultBadge => 'Modelul implicit al profilului';
 
   @override
-  String get taskAgentRunNowTooltip => 'Rulează acum';
+  String get taskAgentRouteVia => 'prin';
 
   @override
-  String get taskAgentRouteVia => 'prin';
+  String get taskAgentRunNowTooltip => 'Rulează acum';
 
   @override
   String taskAgentSetupAndReportSemantics(String identity) {

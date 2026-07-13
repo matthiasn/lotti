@@ -5527,6 +5527,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'Se puede elegir para nuevas entradas cuando está activo';
 
   @override
+  String get inferenceProfileChooseModelTitle => 'Elige un modelo';
+
+  @override
+  String get inferenceProfileChooseTitle => 'Elige un perfil de inferencia';
+
+  @override
   String get inferenceProfileCreateTitle => 'Crear perfil';
 
   @override
@@ -5593,10 +5599,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inferenceProfileSaveButton => 'Guardar';
 
   @override
-  String get inferenceProfileSelectModel => 'Seleccionar un modelo…';
+  String get inferenceProfileSelectModel => 'Elige un modelo…';
 
   @override
-  String get inferenceProfileSelectProfile => 'Seleccionar un perfil…';
+  String get inferenceProfileSelectProfile => 'Elige un perfil…';
 
   @override
   String get inferenceProfilesEmpty => 'Aún no hay perfiles de inferencia';
@@ -5629,6 +5635,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get inferenceProfileTranscription => 'Transcripción';
+
+  @override
+  String get inferenceProfileUnavailable =>
+      'Perfil de inferencia no disponible';
 
   @override
   String get inputDataTypeAudioFilesDescription =>
@@ -8994,7 +9004,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskAgentChooseModel => 'Elegir un modelo de razonamiento';
 
   @override
-  String get taskAgentChooseProfile => 'Elegir una configuración guardada';
+  String get taskAgentChooseProfile => 'Elige un perfil de inferencia';
 
   @override
   String taskAgentCountdownTooltip(String countdown) {
@@ -9055,13 +9065,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'Elige una configuración guardada o un modelo antes de ejecutar el agente.';
 
   @override
+  String taskAgentProfileChangedToast(String profile) {
+    return 'Se usará $profile para todas las futuras actualizaciones del agente hasta que lo cambies.';
+  }
+
+  @override
   String get taskAgentProfileDefaultBadge => 'Predeterminado del perfil';
 
   @override
-  String get taskAgentRunNowTooltip => 'Ejecutar ahora';
+  String get taskAgentRouteVia => 'vía';
 
   @override
-  String get taskAgentRouteVia => 'vía';
+  String get taskAgentRunNowTooltip => 'Ejecutar ahora';
 
   @override
   String taskAgentSetupAndReportSemantics(String identity) {

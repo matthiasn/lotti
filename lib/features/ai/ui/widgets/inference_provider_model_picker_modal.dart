@@ -26,13 +26,12 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 ///   one-tap "Current default" shortcut at the top), page 2 lists the chosen
 ///   provider's models with a back button.
 ///
-/// The profile default is rendered as a **model row** (a single-accent
-/// `interactive` selection dot + name + wire id + a `Default ✓` marker + a
-/// stronger activated tint) identically wherever it appears — pinned on page 1
-/// and first in its provider's list on page 2 — so it reads as one model with a
-/// shortcut rather than a duplicate provider entry. Non-default model rows lead
-/// with their provider's brand-accent dot instead. The body is full-bleed,
-/// aligned with the modal's top bar, on every layout.
+/// The profile default is rendered as the same model row wherever it appears
+/// and carries a `Default` marker. The currently selected override is rendered
+/// with the activated tint and check mark, so a task override remains distinct
+/// from the profile default. Non-selected model rows lead with their provider's
+/// brand-accent dot. The body is full-bleed, aligned with the modal's top bar,
+/// on every layout.
 class InferenceProviderModelPickerModal {
   /// Opens the picker and resolves with the chosen model's id, or `null` when
   /// the user dismisses it (or there was nothing to pick). See the class doc
@@ -44,6 +43,7 @@ class InferenceProviderModelPickerModal {
     required List<AiConfigInferenceProvider> providers,
     required String title,
     required String defaultBadgeLabel,
+    String? selectedModelId,
   }) async {
     final providersById = <String, AiConfigInferenceProvider>{
       for (final provider in providers) provider.id: provider,
@@ -61,6 +61,7 @@ class InferenceProviderModelPickerModal {
     final validModels = withProvider.isEmpty ? models : withProvider;
     if (validModels.isEmpty) return null;
     if (validModels.length == 1) return validModels.first.id;
+    final effectiveSelectedModelId = selectedModelId ?? defaultModelId;
 
     // Group models under their provider, preserving first-seen order so the
     // provider list is stable and matches the order the caller supplied.
@@ -90,6 +91,7 @@ class InferenceProviderModelPickerModal {
           models: orderModelsDefaultFirst(validModels, defaultModelId),
           providerType: onlyProvider?.inferenceProviderType,
           defaultModelId: defaultModelId,
+          selectedModelId: effectiveSelectedModelId,
           defaultBadgeLabel: defaultBadgeLabel,
           onSelected: (id) => Navigator.of(modalContext).pop(id),
         ),
@@ -105,68 +107,69 @@ class InferenceProviderModelPickerModal {
         ? null
         : validModels.firstWhereOrNull((model) => model.id == defaultModelId);
 
-    try {
-      return await ModalUtils.showMultiPageModal<String>(
-        context: context,
-        pageIndexNotifier: pageIndexNotifier,
-        pageListBuilder: (modalContext) => [
-          ModalUtils.modalSheetPage(
-            context: modalContext,
-            title: title,
-            showCloseButton: true,
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: _ProviderPage(
-              providerOrder: providerOrder,
-              modelsByProvider: modelsByProvider,
-              providersById: providersById,
-              defaultModel: defaultModel,
-              defaultProvider: defaultModel == null
-                  ? null
-                  : providersById[defaultModel.inferenceProviderId],
-              defaultBadgeLabel: defaultBadgeLabel,
-              onDefaultSelected: () =>
-                  Navigator.of(modalContext).pop(defaultModel!.id),
-              onProviderSelected: (provider) {
-                selectedProvider.value = provider;
-                pageIndexNotifier.value = 1;
-              },
-            ),
+    // Wolt completes its route future before every reverse-transition widget
+    // has been unmounted. These notifiers therefore must remain usable through
+    // the route's teardown; once the modal releases them they are garbage
+    // collected with the page closures.
+    return ModalUtils.showMultiPageModal<String>(
+      context: context,
+      pageIndexNotifier: pageIndexNotifier,
+      pageListBuilder: (modalContext) => [
+        ModalUtils.modalSheetPage(
+          context: modalContext,
+          title: title,
+          showCloseButton: true,
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: _ProviderPage(
+            providerOrder: providerOrder,
+            modelsByProvider: modelsByProvider,
+            providersById: providersById,
+            defaultModel: defaultModel,
+            defaultProvider: defaultModel == null
+                ? null
+                : providersById[defaultModel.inferenceProviderId],
+            selectedModelId: effectiveSelectedModelId,
+            defaultBadgeLabel: defaultBadgeLabel,
+            onDefaultSelected: () =>
+                Navigator.of(modalContext).pop(defaultModel!.id),
+            onProviderSelected: (provider) {
+              selectedProvider.value = provider;
+              pageIndexNotifier.value = 1;
+            },
           ),
-          ModalUtils.modalSheetPage(
-            context: modalContext,
-            // Same dismiss affordance as page 1 so the two pages read as one
-            // picker (back arrow + branded title + close).
-            showCloseButton: true,
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            onTapBack: () => pageIndexNotifier.value = 0,
-            titleWidget: ValueListenableBuilder<AiConfigInferenceProvider?>(
-              valueListenable: selectedProvider,
-              builder: (context, provider, _) =>
-                  _ProviderPageTitle(provider: provider),
-            ),
-            child: ValueListenableBuilder<AiConfigInferenceProvider?>(
-              valueListenable: selectedProvider,
-              builder: (context, provider, _) {
-                if (provider == null) return const SizedBox.shrink();
-                return _ModelList(
-                  models: orderModelsDefaultFirst(
-                    modelsByProvider[provider.id] ?? const [],
-                    defaultModelId,
-                  ),
-                  providerType: provider.inferenceProviderType,
-                  defaultModelId: defaultModelId,
-                  defaultBadgeLabel: defaultBadgeLabel,
-                  onSelected: (id) => Navigator.of(modalContext).pop(id),
-                );
-              },
-            ),
+        ),
+        ModalUtils.modalSheetPage(
+          context: modalContext,
+          // Same dismiss affordance as page 1 so the two pages read as one
+          // picker (back arrow + branded title + close).
+          showCloseButton: true,
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          onTapBack: () => pageIndexNotifier.value = 0,
+          titleWidget: ValueListenableBuilder<AiConfigInferenceProvider?>(
+            valueListenable: selectedProvider,
+            builder: (context, provider, _) =>
+                _ProviderPageTitle(provider: provider),
           ),
-        ],
-      );
-    } finally {
-      selectedProvider.dispose();
-      pageIndexNotifier.dispose();
-    }
+          child: ValueListenableBuilder<AiConfigInferenceProvider?>(
+            valueListenable: selectedProvider,
+            builder: (context, provider, _) {
+              if (provider == null) return const SizedBox.shrink();
+              return _ModelList(
+                models: orderModelsDefaultFirst(
+                  modelsByProvider[provider.id] ?? const [],
+                  defaultModelId,
+                ),
+                providerType: provider.inferenceProviderType,
+                defaultModelId: defaultModelId,
+                selectedModelId: effectiveSelectedModelId,
+                defaultBadgeLabel: defaultBadgeLabel,
+                onSelected: (id) => Navigator.of(modalContext).pop(id),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   /// Returns [models] with the default (if present) moved to the front, the
@@ -212,6 +215,7 @@ class _ProviderPage extends StatelessWidget {
     required this.providersById,
     required this.defaultModel,
     required this.defaultProvider,
+    required this.selectedModelId,
     required this.defaultBadgeLabel,
     required this.onDefaultSelected,
     required this.onProviderSelected,
@@ -222,6 +226,7 @@ class _ProviderPage extends StatelessWidget {
   final Map<String, AiConfigInferenceProvider> providersById;
   final AiConfigModel? defaultModel;
   final AiConfigInferenceProvider? defaultProvider;
+  final String? selectedModelId;
   final String defaultBadgeLabel;
   final VoidCallback onDefaultSelected;
   final ValueChanged<AiConfigInferenceProvider> onProviderSelected;
@@ -247,6 +252,7 @@ class _ProviderPage extends StatelessWidget {
               model: defaultModel,
               providerType: defaultProvider?.inferenceProviderType,
               isDefault: true,
+              isSelected: defaultModel.id == selectedModelId,
               defaultBadgeLabel: defaultBadgeLabel,
               onTap: onDefaultSelected,
             ),
@@ -323,6 +329,7 @@ class _ModelList extends StatelessWidget {
     required this.models,
     required this.providerType,
     required this.defaultModelId,
+    required this.selectedModelId,
     required this.defaultBadgeLabel,
     required this.onSelected,
   });
@@ -330,6 +337,7 @@ class _ModelList extends StatelessWidget {
   final List<AiConfigModel> models;
   final InferenceProviderType? providerType;
   final String? defaultModelId;
+  final String? selectedModelId;
   final String defaultBadgeLabel;
   final ValueChanged<String> onSelected;
 
@@ -348,6 +356,7 @@ class _ModelList extends StatelessWidget {
               model: model,
               providerType: providerType,
               isDefault: model.id == defaultModelId,
+              isSelected: model.id == selectedModelId,
               defaultBadgeLabel: defaultBadgeLabel,
               onTap: () => onSelected(model.id),
             ),
@@ -367,6 +376,7 @@ class _ModelRow extends StatelessWidget {
     required this.model,
     required this.providerType,
     required this.isDefault,
+    required this.isSelected,
     required this.defaultBadgeLabel,
     required this.onTap,
   });
@@ -374,6 +384,7 @@ class _ModelRow extends StatelessWidget {
   final AiConfigModel model;
   final InferenceProviderType? providerType;
   final bool isDefault;
+  final bool isSelected;
   final String defaultBadgeLabel;
   final VoidCallback onTap;
 
@@ -389,14 +400,21 @@ class _ModelRow extends StatelessWidget {
       // + marker) so the strongest scan position reinforces "selected"; other
       // rows lead with their provider's brand accent for grouping.
       leading: _LeadingDot(
-        color: isDefault
+        color: isSelected
             ? tokens.colors.interactive.enabled
             : aiProviderAccent(type: providerType, tokens: tokens),
       ),
-      trailing: isDefault ? _DefaultMarker(label: defaultBadgeLabel) : null,
-      activated: isDefault,
-      selected: isDefault,
-      activatedBackgroundColor: isDefault
+      trailing: isSelected || isDefault
+          ? _ModelStatusMarker(
+              label: isDefault
+                  ? defaultBadgeLabel
+                  : context.messages.designSystemSelectedLabel,
+              showCheck: isSelected,
+            )
+          : null,
+      activated: isSelected,
+      selected: isSelected,
+      activatedBackgroundColor: isSelected
           ? DesignSystemListPalette.activatedFillStrong(tokens)
           : null,
       onTap: onTap,
@@ -494,10 +512,11 @@ class _ProviderPageTitle extends StatelessWidget {
 
 /// Single-accent default marker: the badge label + a check, both in the
 /// interactive accent. Deliberately not a filled pill (no second hue).
-class _DefaultMarker extends StatelessWidget {
-  const _DefaultMarker({required this.label});
+class _ModelStatusMarker extends StatelessWidget {
+  const _ModelStatusMarker({required this.label, required this.showCheck});
 
   final String label;
+  final bool showCheck;
 
   @override
   Widget build(BuildContext context) {
@@ -513,8 +532,10 @@ class _DefaultMarker extends StatelessWidget {
             fontWeight: tokens.typography.weight.semiBold,
           ),
         ),
-        SizedBox(width: tokens.spacing.step2),
-        Icon(Icons.check_rounded, color: accent, size: tokens.spacing.step6),
+        if (showCheck) ...[
+          SizedBox(width: tokens.spacing.step2),
+          Icon(Icons.check_rounded, color: accent, size: tokens.spacing.step6),
+        ],
       ],
     );
   }

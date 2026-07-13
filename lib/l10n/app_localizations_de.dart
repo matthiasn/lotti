@@ -5485,6 +5485,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Kann für neue Einträge gewählt werden, wenn aktiv';
 
   @override
+  String get inferenceProfileChooseModelTitle => 'Modell auswählen';
+
+  @override
+  String get inferenceProfileChooseTitle => 'Inferenzprofil auswählen';
+
+  @override
   String get inferenceProfileCreateTitle => 'Profil erstellen';
 
   @override
@@ -5586,6 +5592,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get inferenceProfileTranscription => 'Transkription';
+
+  @override
+  String get inferenceProfileUnavailable => 'Inferenzprofil nicht verfügbar';
 
   @override
   String get inputDataTypeAudioFilesDescription =>
@@ -8901,7 +8910,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskAgentChooseModel => 'Denkmodell wählen';
 
   @override
-  String get taskAgentChooseProfile => 'Gespeicherte Einrichtung wählen';
+  String get taskAgentChooseProfile => 'Inferenzprofil auswählen';
 
   @override
   String taskAgentCountdownTooltip(String countdown) {
@@ -8961,13 +8970,18 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wähle eine gespeicherte Einrichtung oder ein Denkmodell, bevor der Agent laufen kann.';
 
   @override
+  String taskAgentProfileChangedToast(String profile) {
+    return '$profile wird für jedes zukünftige Agent-Update verwendet, bis du es änderst.';
+  }
+
+  @override
   String get taskAgentProfileDefaultBadge => 'Profilstandard';
 
   @override
-  String get taskAgentRunNowTooltip => 'Jetzt ausführen';
+  String get taskAgentRouteVia => 'über';
 
   @override
-  String get taskAgentRouteVia => 'über';
+  String get taskAgentRunNowTooltip => 'Jetzt ausführen';
 
   @override
   String taskAgentSetupAndReportSemantics(String identity) {

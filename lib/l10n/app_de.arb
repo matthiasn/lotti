@@ -2355,6 +2355,8 @@
   "imageViewerDownloadTooltip": "Bild herunterladen",
   "inactiveLabel": "Inaktiv",
   "inactiveSwitchDescription": "Kann für neue Einträge gewählt werden, wenn aktiv",
+  "inferenceProfileChooseModelTitle": "Modell auswählen",
+  "inferenceProfileChooseTitle": "Inferenzprofil auswählen",
   "inferenceProfileCreateTitle": "Profil erstellen",
   "inferenceProfileDescriptionLabel": "Beschreibung",
   "inferenceProfileDesktopOnly": "Nur Desktop",
@@ -2406,6 +2408,7 @@
   "inferenceProfileThinkingHighEnd": "Denken (High-End)",
   "inferenceProfileThinkingRequired": "Ein Denk-Modell ist erforderlich",
   "inferenceProfileTranscription": "Transkription",
+  "inferenceProfileUnavailable": "Inferenzprofil nicht verfügbar",
   "inputDataTypeAudioFilesDescription": "Audiodateien als Eingabe verwenden",
   "inputDataTypeAudioFilesName": "Audiodateien",
   "inputDataTypeImagesDescription": "Bilder als Eingabe verwenden",
@@ -3629,7 +3632,7 @@
   "taskAgentAutomaticUpdatesOnDescription": "Wenn sich etwas an oder im Zusammenhang mit dieser Aufgabe ändert, startet ein zweiminütiger Countdown. Änderungen währenddessen werden in einem Update gebündelt.",
   "taskAgentCancelTimerTooltip": "Ausstehendes automatisches Update abbrechen",
   "taskAgentChooseModel": "Denkmodell wählen",
-  "taskAgentChooseProfile": "Gespeicherte Einrichtung wählen",
+  "taskAgentChooseProfile": "Inferenzprofil auswählen",
   "taskAgentCountdownTooltip": "Nächster automatischer Lauf in {countdown}",
   "@taskAgentCountdownTooltip": {
     "placeholders": {
@@ -3660,9 +3663,17 @@
   "taskAgentNoProfilesAvailable": "Auf diesem Gerät sind keine Profile verfügbar",
   "taskAgentNoProfileSelected": "Kein KI-Setup",
   "taskAgentNoProfileSelectedDescription": "Wähle eine gespeicherte Einrichtung oder ein Denkmodell, bevor der Agent laufen kann.",
+  "taskAgentProfileChangedToast": "{profile} wird für jedes zukünftige Agent-Update verwendet, bis du es änderst.",
+  "@taskAgentProfileChangedToast": {
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
   "taskAgentProfileDefaultBadge": "Profilstandard",
-  "taskAgentRunNowTooltip": "Jetzt ausführen",
   "taskAgentRouteVia": "über",
+  "taskAgentRunNowTooltip": "Jetzt ausführen",
   "taskAgentSetupAndReportSemantics": "Dieser Bericht und die aktuelle Einrichtung verwenden {identity}. Aktivieren, um die Einrichtung zu ändern.",
   "taskAgentSetupBroken": "Die ausgewählte KI-Einrichtung ist nicht verfügbar",
   "taskAgentSetupChangedToast": "{model} wird für jedes zukünftige Agent-Update verwendet, bis du es änderst.",

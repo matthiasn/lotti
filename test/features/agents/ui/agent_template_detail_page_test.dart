@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/state/wake_run_chart_providers.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
+import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/agents/ui/soul_selector.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
@@ -236,8 +237,7 @@ void main() {
       await tester.pump();
 
       // Select a profile via the profile picker
-      final profileDropdown = find.byIcon(Icons.arrow_drop_down);
-      await tester.tap(profileDropdown.first);
+      await tester.tap(find.byType(SettingsProfilePickerField));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
       await tester.tap(find.text('Test Profile'));
@@ -2148,8 +2148,7 @@ void main() {
         await tester.pump();
 
         // Select a profile via the profile picker
-        final profileDropdown = find.byIcon(Icons.arrow_drop_down);
-        await tester.tap(profileDropdown.first);
+        await tester.tap(find.byType(SettingsProfilePickerField));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
         await tester.tap(find.text('Test Profile'));

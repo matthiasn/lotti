@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_provider_model_picker_modal.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -33,20 +34,30 @@ class AgentModelSheet {
     required String taskId,
     required String agentId,
   }) {
+    final taskMessenger = ScaffoldMessenger.of(context);
     return ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.taskAgentSetupTitle,
       padding: EdgeInsets.zero,
-      builder: (_) => _AgentModelSheetBody(taskId: taskId, agentId: agentId),
+      builder: (_) => _AgentModelSheetBody(
+        taskId: taskId,
+        agentId: agentId,
+        taskMessenger: taskMessenger,
+      ),
     );
   }
 }
 
 class _AgentModelSheetBody extends ConsumerStatefulWidget {
-  const _AgentModelSheetBody({required this.taskId, required this.agentId});
+  const _AgentModelSheetBody({
+    required this.taskId,
+    required this.agentId,
+    required this.taskMessenger,
+  });
 
   final String taskId;
   final String agentId;
+  final ScaffoldMessengerState taskMessenger;
 
   @override
   ConsumerState<_AgentModelSheetBody> createState() =>
@@ -72,23 +83,16 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
     };
   }
 
-  Future<void> _persist(
-    Future<void> Function() action, {
-    String? modelName,
-  }) async {
-    if (_busy) return;
+  Future<bool> _persist(Future<void> Function() action) async {
+    if (_busy) return false;
     setState(() => _busy = true);
     try {
       await action();
-      if (!mounted) return;
+      if (!mounted) return false;
       ref
         ..invalidate(agentIdentityProvider(widget.agentId))
         ..invalidate(taskAgentResolvedSetupProvider(widget.agentId));
-      if (modelName == null) return;
-      context.showToast(
-        tone: DesignSystemToastTone.success,
-        title: context.messages.taskAgentSetupChangedToast(modelName),
-      );
+      return true;
     } catch (error, stackTrace) {
       developer.log(
         'Task-agent setup update failed',
@@ -96,17 +100,34 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
         error: error,
         stackTrace: stackTrace,
       );
-      if (!mounted) return;
+      if (!mounted) return false;
       context.showToast(
         tone: DesignSystemToastTone.error,
         title: context.messages.commonError,
       );
+      return false;
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
+  Future<void> _persistTerminalChoice(
+    Future<void> Function() action, {
+    required String successTitle,
+  }) async {
+    final persisted = await _persist(action);
+    if (!persisted || !mounted) return;
+    Navigator.of(context).pop();
+    if (widget.taskMessenger.mounted) {
+      widget.taskMessenger.showDesignSystemToast(
+        tone: DesignSystemToastTone.success,
+        title: successTitle,
+      );
+    }
+  }
+
   Future<void> _useCategoryDefault(TaskAgentSetupOptions options) async {
+    final messages = context.messages;
     final journalDb = ref.read(journalDbProvider);
     final entity = await journalDb.journalEntityById(widget.taskId);
     final categoryId = entity is Task ? entity.categoryId : null;
@@ -122,36 +143,43 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
         : options.models
               .where((value) => value.id == profile.thinkingModelId)
               .firstOrNull;
-    await _persist(
-      () => ref
-          .read(taskAgentServiceProvider)
-          .updateAgentInferenceSetup(
-            agentId: widget.agentId,
-            setup: AgentInferenceSetup(
-              mode: profileId == null
-                  ? AgentInferenceSetupMode.disabled
-                  : AgentInferenceSetupMode.configured,
-              origin: AgentInferenceSetupOrigin.categorySnapshot,
-              baseProfileId: profileId,
-              originEntityId: categoryId,
-            ),
+    Future<void> action() => ref
+        .read(taskAgentServiceProvider)
+        .updateAgentInferenceSetup(
+          agentId: widget.agentId,
+          setup: AgentInferenceSetup(
+            mode: profileId == null
+                ? AgentInferenceSetupMode.disabled
+                : AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.categorySnapshot,
+            baseProfileId: profileId,
+            originEntityId: categoryId,
           ),
-      modelName: model?.name,
+        );
+    if (profile == null || model == null) {
+      final persisted = await _persist(action);
+      if (persisted && mounted) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+    final successTitle = messages.taskAgentProfileChangedToast(
+      profile.name,
+    );
+    await _persistTerminalChoice(
+      action,
+      successTitle: successTitle,
     );
   }
 
   Future<void> _chooseProfile(
     AiConfigInferenceProfile profile,
-    TaskAgentSetupOptions options,
   ) async {
-    final model = options.models
-        .where((value) => value.id == profile.thinkingModelId)
-        .firstOrNull;
-    await _persist(
+    await _persistTerminalChoice(
       () => ref
           .read(taskAgentServiceProvider)
           .updateAgentProfile(agentId: widget.agentId, profileId: profile.id),
-      modelName: model?.name ?? profile.thinkingModelId,
+      successTitle: context.messages.taskAgentProfileChangedToast(profile.name),
     );
   }
 
@@ -194,6 +222,9 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
     final selectedId = await InferenceProviderModelPickerModal.show(
       context: context,
       defaultModelId: profile?.thinkingModelId,
+      selectedModelId:
+          config.inferenceSetup?.thinkingModelOverrideId ??
+          profile?.thinkingModelId,
       models: options.models,
       providers: options.providers,
       title: context.messages.taskAgentModelPickerTitle,
@@ -203,14 +234,16 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
     final model = options.models
         .where((value) => value.id == selectedId)
         .firstOrNull;
-    await _persist(
+    await _persistTerminalChoice(
       () => ref
           .read(taskAgentServiceProvider)
           .updateAgentThinkingModelOverride(
             agentId: widget.agentId,
             modelConfigId: selectedId,
           ),
-      modelName: model?.name ?? selectedId,
+      successTitle: context.messages.taskAgentSetupChangedToast(
+        model?.name ?? selectedId,
+      ),
     );
   }
 
@@ -365,7 +398,14 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
                   trailing: config?.inferenceSetup?.baseProfileId == profile.id
                       ? const Icon(Icons.check_rounded)
                       : null,
-                  onTap: () => _chooseProfile(profile, options),
+                  activated:
+                      config?.inferenceSetup?.baseProfileId == profile.id,
+                  selected: config?.inferenceSetup?.baseProfileId == profile.id,
+                  activatedBackgroundColor:
+                      config?.inferenceSetup?.baseProfileId == profile.id
+                      ? DesignSystemListPalette.activatedFillStrong(tokens)
+                      : null,
+                  onTap: () => _chooseProfile(profile),
                   showDivider: true,
                 ),
             ],

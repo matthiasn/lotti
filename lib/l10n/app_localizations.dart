@@ -9396,6 +9396,18 @@ abstract class AppLocalizations {
   /// **'Can be chosen for new entries when on'**
   String get inactiveSwitchDescription;
 
+  /// No description provided for @inferenceProfileChooseModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a model'**
+  String get inferenceProfileChooseModelTitle;
+
+  /// No description provided for @inferenceProfileChooseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an inference profile'**
+  String get inferenceProfileChooseTitle;
+
   /// No description provided for @inferenceProfileCreateTitle.
   ///
   /// In en, this message translates to:
@@ -9513,13 +9525,13 @@ abstract class AppLocalizations {
   /// No description provided for @inferenceProfileSelectModel.
   ///
   /// In en, this message translates to:
-  /// **'Select a model…'**
+  /// **'Choose a model…'**
   String get inferenceProfileSelectModel;
 
   /// No description provided for @inferenceProfileSelectProfile.
   ///
   /// In en, this message translates to:
-  /// **'Select a profile…'**
+  /// **'Choose a profile…'**
   String get inferenceProfileSelectProfile;
 
   /// No description provided for @inferenceProfilesEmpty.
@@ -9575,6 +9587,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transcription'**
   String get inferenceProfileTranscription;
+
+  /// No description provided for @inferenceProfileUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Inference profile unavailable'**
+  String get inferenceProfileUnavailable;
 
   /// No description provided for @inputDataTypeAudioFilesDescription.
   ///
@@ -15214,7 +15232,7 @@ abstract class AppLocalizations {
   /// No description provided for @taskAgentChooseProfile.
   ///
   /// In en, this message translates to:
-  /// **'Choose a saved setup'**
+  /// **'Choose an inference profile'**
   String get taskAgentChooseProfile;
 
   /// No description provided for @taskAgentCountdownTooltip.
@@ -15313,23 +15331,29 @@ abstract class AppLocalizations {
   /// **'Choose a saved setup or thinking model before this agent can run.'**
   String get taskAgentNoProfileSelectedDescription;
 
+  /// No description provided for @taskAgentProfileChangedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Using {profile} for every future agent update until you change it.'**
+  String taskAgentProfileChangedToast(String profile);
+
   /// No description provided for @taskAgentProfileDefaultBadge.
   ///
   /// In en, this message translates to:
   /// **'Profile default'**
   String get taskAgentProfileDefaultBadge;
 
-  /// No description provided for @taskAgentRunNowTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Run now'**
-  String get taskAgentRunNowTooltip;
-
   /// No description provided for @taskAgentRouteVia.
   ///
   /// In en, this message translates to:
   /// **'via'**
   String get taskAgentRouteVia;
+
+  /// No description provided for @taskAgentRunNowTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Run now'**
+  String get taskAgentRunNowTooltip;
 
   /// No description provided for @taskAgentSetupAndReportSemantics.
   ///

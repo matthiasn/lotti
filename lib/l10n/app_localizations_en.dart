@@ -5420,6 +5420,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Can be chosen for new entries when on';
 
   @override
+  String get inferenceProfileChooseModelTitle => 'Choose a model';
+
+  @override
+  String get inferenceProfileChooseTitle => 'Choose an inference profile';
+
+  @override
   String get inferenceProfileCreateTitle => 'Create Profile';
 
   @override
@@ -5485,10 +5491,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inferenceProfileSaveButton => 'Save';
 
   @override
-  String get inferenceProfileSelectModel => 'Select a model…';
+  String get inferenceProfileSelectModel => 'Choose a model…';
 
   @override
-  String get inferenceProfileSelectProfile => 'Select a profile…';
+  String get inferenceProfileSelectProfile => 'Choose a profile…';
 
   @override
   String get inferenceProfilesEmpty => 'No inference profiles yet';
@@ -5520,6 +5526,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inferenceProfileTranscription => 'Transcription';
+
+  @override
+  String get inferenceProfileUnavailable => 'Inference profile unavailable';
 
   @override
   String get inputDataTypeAudioFilesDescription => 'Use audio files as input';
@@ -8784,7 +8793,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskAgentChooseModel => 'Choose a thinking model';
 
   @override
-  String get taskAgentChooseProfile => 'Choose a saved setup';
+  String get taskAgentChooseProfile => 'Choose an inference profile';
 
   @override
   String taskAgentCountdownTooltip(String countdown) {
@@ -8844,13 +8853,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose a saved setup or thinking model before this agent can run.';
 
   @override
+  String taskAgentProfileChangedToast(String profile) {
+    return 'Using $profile for every future agent update until you change it.';
+  }
+
+  @override
   String get taskAgentProfileDefaultBadge => 'Profile default';
 
   @override
-  String get taskAgentRunNowTooltip => 'Run now';
+  String get taskAgentRouteVia => 'via';
 
   @override
-  String get taskAgentRouteVia => 'via';
+  String get taskAgentRunNowTooltip => 'Run now';
 
   @override
   String taskAgentSetupAndReportSemantics(String identity) {

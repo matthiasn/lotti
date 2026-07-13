@@ -2355,6 +2355,8 @@
   "imageViewerDownloadTooltip": "Télécharger l'image",
   "inactiveLabel": "Inactif",
   "inactiveSwitchDescription": "Peut être choisi pour de nouvelles entrées si actif",
+  "inferenceProfileChooseModelTitle": "Choisis un modèle",
+  "inferenceProfileChooseTitle": "Choisis un profil d’inférence",
   "inferenceProfileCreateTitle": "Créer un profil",
   "inferenceProfileDescriptionLabel": "Description",
   "inferenceProfileDesktopOnly": "Bureau uniquement",
@@ -2381,8 +2383,8 @@
   "inferenceProfilePinnedHostNoneLabel": "Non épinglé (pas de déclenchement auto)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (cet appareil)",
   "inferenceProfileSaveButton": "Enregistrer",
-  "inferenceProfileSelectModel": "Sélectionner un modèle…",
-  "inferenceProfileSelectProfile": "Sélectionner un profil…",
+  "inferenceProfileSelectModel": "Choisis un modèle…",
+  "inferenceProfileSelectProfile": "Choisis un profil…",
   "inferenceProfilesEmpty": "Aucun profil d'inférence",
   "inferenceProfileSkillModelRequired": "Nécessite le modèle {slotName}",
   "@inferenceProfileSkillModelRequired": {
@@ -2406,6 +2408,7 @@
   "inferenceProfileThinkingHighEnd": "Réflexion (haut de gamme)",
   "inferenceProfileThinkingRequired": "Un modèle de réflexion est requis",
   "inferenceProfileTranscription": "Transcription",
+  "inferenceProfileUnavailable": "Profil d’inférence indisponible",
   "inputDataTypeAudioFilesDescription": "Utiliser des fichiers audio comme entrée",
   "inputDataTypeAudioFilesName": "Fichiers audio",
   "inputDataTypeImagesDescription": "Utiliser des images comme entrée",
@@ -3629,7 +3632,7 @@
   "taskAgentAutomaticUpdatesOnDescription": "Quand quelque chose lié à cette tâche change, un compte à rebours de deux minutes démarre. Les changements effectués pendant ce délai sont regroupés dans une seule mise à jour.",
   "taskAgentCancelTimerTooltip": "Annuler la mise à jour automatique en attente",
   "taskAgentChooseModel": "Choisir un modèle de réflexion",
-  "taskAgentChooseProfile": "Choisir une configuration enregistrée",
+  "taskAgentChooseProfile": "Choisis un profil d’inférence",
   "taskAgentCountdownTooltip": "Prochaine exécution auto dans {countdown}",
   "@taskAgentCountdownTooltip": {
     "placeholders": {
@@ -3660,9 +3663,17 @@
   "taskAgentNoProfilesAvailable": "Aucun profil disponible sur cet appareil",
   "taskAgentNoProfileSelected": "Aucune configuration IA",
   "taskAgentNoProfileSelectedDescription": "Choisis une configuration enregistrée ou un modèle avant de lancer l’agent.",
+  "taskAgentProfileChangedToast": "{profile} sera utilisé pour toutes les futures mises à jour de l’agent jusqu’à ce que tu le changes.",
+  "@taskAgentProfileChangedToast": {
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
   "taskAgentProfileDefaultBadge": "Réglage du profil",
-  "taskAgentRunNowTooltip": "Exécuter maintenant",
   "taskAgentRouteVia": "via",
+  "taskAgentRunNowTooltip": "Exécuter maintenant",
   "taskAgentSetupAndReportSemantics": "Ce rapport et la configuration actuelle utilisent {identity}. Active pour la modifier.",
   "taskAgentSetupBroken": "La configuration IA sélectionnée est indisponible",
   "taskAgentSetupChangedToast": "{model} sera utilisé pour chaque future mise à jour jusqu’à ce que tu le changes.",

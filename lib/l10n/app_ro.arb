@@ -2355,6 +2355,8 @@
   "imageViewerDownloadTooltip": "Descărcați imaginea",
   "inactiveLabel": "Inactiv",
   "inactiveSwitchDescription": "Poate fi ales pentru intrări noi când este activ",
+  "inferenceProfileChooseModelTitle": "Alegeți un model",
+  "inferenceProfileChooseTitle": "Alegeți un profil de inferență",
   "inferenceProfileCreateTitle": "Creați un profil",
   "inferenceProfileDescriptionLabel": "Descriere",
   "inferenceProfileDesktopOnly": "Doar desktop",
@@ -2406,6 +2408,7 @@
   "inferenceProfileThinkingHighEnd": "Gândire (nivel înalt)",
   "inferenceProfileThinkingRequired": "Este necesar un model de gândire",
   "inferenceProfileTranscription": "Transcriere",
+  "inferenceProfileUnavailable": "Profil de inferență indisponibil",
   "inputDataTypeAudioFilesDescription": "Folosește fișiere audio ca intrare",
   "inputDataTypeAudioFilesName": "Fișiere audio",
   "inputDataTypeImagesDescription": "Folosește imagini ca intrare",
@@ -3629,7 +3632,7 @@
   "taskAgentAutomaticUpdatesOnDescription": "Când se modifică ceva legat de această sarcină, începe o numărătoare inversă de două minute. Modificările din acest interval sunt grupate într-o singură actualizare.",
   "taskAgentCancelTimerTooltip": "Anulați actualizarea automată în așteptare",
   "taskAgentChooseModel": "Alegeți un model de raționament",
-  "taskAgentChooseProfile": "Alegeți o configurare salvată",
+  "taskAgentChooseProfile": "Alegeți un profil de inferență",
   "taskAgentCountdownTooltip": "Următoarea rulare automată în {countdown}",
   "@taskAgentCountdownTooltip": {
     "placeholders": {
@@ -3660,9 +3663,17 @@
   "taskAgentNoProfilesAvailable": "Nu există profiluri disponibile pe acest dispozitiv",
   "taskAgentNoProfileSelected": "Nicio configurare AI",
   "taskAgentNoProfileSelectedDescription": "Alegeți o configurare salvată sau un model înainte ca agentul să poată rula.",
+  "taskAgentProfileChangedToast": "{profile} va fi utilizat pentru toate actualizările viitoare ale agentului până când îl schimbați.",
+  "@taskAgentProfileChangedToast": {
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
   "taskAgentProfileDefaultBadge": "Modelul implicit al profilului",
-  "taskAgentRunNowTooltip": "Rulează acum",
   "taskAgentRouteVia": "prin",
+  "taskAgentRunNowTooltip": "Rulează acum",
   "taskAgentSetupAndReportSemantics": "Acest raport și configurarea curentă folosesc {identity}. Activați pentru a modifica configurarea.",
   "taskAgentSetupBroken": "Configurarea AI selectată nu este disponibilă",
   "taskAgentSetupChangedToast": "{model} va fi folosit pentru toate actualizările viitoare până când îl schimbați.",
