@@ -705,6 +705,14 @@ the decoder-bars thinking shader in the task action bar while inference is
 running, and Daily OS Next uses the voice tension-loop shader around the record
 button while capture or refine listening is active.
 
+Both widget families ship a CPU-painted fallback painter that renders whenever
+the fragment program is unavailable. `AiStateShaderProgramCache.shadersEnabled`
+gates program loading per platform: on Linux the loaders fail fast and the
+widgets always use the CPU fallbacks, because para-virtualized GPUs (virtio in
+VMs) have hung on these shaders' fragment loops — stalling the compositor's
+atomic commit on a DMA fence and freezing the entire desktop for minutes
+(kernel hung-task in `drm_atomic_helper_wait_for_fences`).
+
 Two Flutter runtime-effect shaders are registered in `pubspec.yaml`:
 
 - `shaders/ai_voice_input.frag` renders five transparent elastic-circle voice

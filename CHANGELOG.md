@@ -21,6 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   save an audio entry before the encoder had finished writing the file. Live
   input-level metering in the recording modal and indicator works on Linux,
   including the level-reactive recording orb.
+- **Opening the recorder no longer freezes Linux VMs.** The energy-orb
+  visualizer's GPU shader could hang para-virtualized GPUs (virtio), stalling
+  the whole desktop for minutes. On Linux the orb and the AI thinking
+  animations now always use their CPU-painted fallbacks.
+- **Closing the app on Linux no longer crashes at shutdown.** The AI
+  configuration, AI usage, and notification databases were not closed on the
+  window-close path, so their background isolates were torn down mid-shutdown
+  and aborted the process (SIGABRT). All databases now close cleanly before
+  the window is destroyed, and the media player and log buffers are flushed
+  on the way out.
 
 ## [0.9.1039]
 ### Added

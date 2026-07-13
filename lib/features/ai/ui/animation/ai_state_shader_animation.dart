@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -69,21 +70,46 @@ abstract final class AiStateShaderProgramCache {
   static Future<ui.FragmentProgram>? _voiceInputProgram;
   static Future<ui.FragmentProgram>? _thinkingLineProgram;
 
+  /// Whether the GPU fragment shaders are used on this platform.
+  ///
+  /// Disabled on Linux: para-virtualized GPUs (e.g. virtio-gpu in VMs) have
+  /// been observed to hang on these shaders' fragment loops, stalling the
+  /// compositor's atomic commit on a DMA fence for minutes and freezing the
+  /// entire desktop (kernel hung-task in `drm_atomic_helper_wait_for_fences`).
+  /// When disabled, the loaders fail fast and the shader widgets render their
+  /// CPU fallback painters (`AiVoiceInputFallbackPainter`,
+  /// `AiThinkingLineFallbackPainter`) instead.
+  static bool get shadersEnabled =>
+      debugShadersEnabledOverride ?? !Platform.isLinux;
+
+  /// Test-only override for [shadersEnabled]. Cleared by [reset].
+  @visibleForTesting
+  static bool? debugShadersEnabledOverride;
+
   static Future<ui.FragmentProgram> loadVoiceInput() {
-    return _voiceInputProgram ??= ui.FragmentProgram.fromAsset(
-      AiStateShaderAssets.voiceInput,
-    );
+    return _voiceInputProgram ??= _load(AiStateShaderAssets.voiceInput);
   }
 
   static Future<ui.FragmentProgram> loadThinkingLine() {
-    return _thinkingLineProgram ??= ui.FragmentProgram.fromAsset(
-      AiStateShaderAssets.thinkingLine,
-    );
+    return _thinkingLineProgram ??= _load(AiStateShaderAssets.thinkingLine);
+  }
+
+  static Future<ui.FragmentProgram> _load(String asset) {
+    if (!shadersEnabled) {
+      // ignore() marks the failure as handled so the memoised future never
+      // surfaces as an unhandled async error; FutureBuilder listeners still
+      // receive the error and switch to the CPU fallback painter.
+      return Future<ui.FragmentProgram>.error(
+        UnsupportedError('GPU fragment shaders are disabled on this platform'),
+      )..ignore();
+    }
+    return ui.FragmentProgram.fromAsset(asset);
   }
 
   @visibleForTesting
   static void reset() {
     _voiceInputProgram = null;
     _thinkingLineProgram = null;
+    debugShadersEnabledOverride = null;
   }
 }

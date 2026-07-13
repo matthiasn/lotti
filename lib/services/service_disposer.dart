@@ -4,11 +4,15 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
+import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -38,7 +42,7 @@ class ServiceDisposer {
   /// Disposes all services and databases. Used on non-macOS platforms.
   Future<void> disposeAll() async {
     await _disposeServices();
-    await _disposeDatabases();
+    await disposeDatabases();
   }
 
   /// Disposes only non-database services. Used on macOS where calling
@@ -81,17 +85,49 @@ class ServiceDisposer {
     );
   }
 
-  Future<void> _disposeDatabases() async {
+  /// Closes every Drift database while the Dart VM is still healthy.
+  ///
+  /// This is the single source of truth for the database shutdown list — it is
+  /// used by both exit paths (window close via `WindowService`, and OS exit
+  /// requests via `AppLifecycleListener.onExitRequested` in `main.dart`).
+  /// **When adding a new Drift database, add its close here.** A database
+  /// missing from this list is closed by a Dart `Finalizer` during VM
+  /// teardown instead; SQLite's `sqlite3_close_v2` then invokes `xDestroy`
+  /// FFI callbacks after `DLRT_GetFfiCallbackMetadata` is gone and the
+  /// process aborts with SIGABRT (seen on Linux with ai_config.sqlite's
+  /// background isolate).
+  ///
+  /// Databases are independent of each other, so they close in parallel —
+  /// each still guarded by the per-operation timeout, bounding the worst case
+  /// to one timeout instead of one per database.
+  Future<void> disposeDatabases() async {
     // 5. Close Drift databases so no WAL/lock files are left dangling.
-    await _disposeAsyncSafely<JournalDb>((db) => db.close(), 'JournalDb');
-    await _disposeAsyncSafely<SyncDatabase>((db) => db.close(), 'SyncDatabase');
-    await _disposeAsyncSafely<AgentDatabase>(
-      (db) => db.close(),
-      'AgentDatabase',
-    );
-    await _disposeAsyncSafely<EditorDb>((db) => db.close(), 'EditorDb');
-    await _disposeAsyncSafely<Fts5Db>((db) => db.close(), 'Fts5Db');
-    await _disposeAsyncSafely<SettingsDb>((db) => db.close(), 'SettingsDb');
+    await Future.wait<void>([
+      _disposeAsyncSafely<JournalDb>((db) => db.close(), 'JournalDb'),
+      _disposeAsyncSafely<SyncDatabase>((db) => db.close(), 'SyncDatabase'),
+      _disposeAsyncSafely<AgentDatabase>((db) => db.close(), 'AgentDatabase'),
+      _disposeAsyncSafely<EditorDb>((db) => db.close(), 'EditorDb'),
+      _disposeAsyncSafely<Fts5Db>((db) => db.close(), 'Fts5Db'),
+      _disposeAsyncSafely<SettingsDb>((db) => db.close(), 'SettingsDb'),
+      _disposeAsyncSafely<OnboardingMetricsDb>(
+        (db) => db.close(),
+        'OnboardingMetricsDb',
+      ),
+      _disposeAsyncSafely<ConsumptionDatabase>(
+        (db) => db.close(),
+        'ConsumptionDatabase',
+      ),
+      _disposeAsyncSafely<NotificationsDb>(
+        (db) => db.close(),
+        'NotificationsDb',
+      ),
+      // The repository close also cancels its watch subscription and stream
+      // controller before closing AiConfigDb's background isolate.
+      _disposeAsyncSafely<AiConfigRepository>(
+        (repo) => repo.close(),
+        'AiConfigRepository',
+      ),
+    ]);
   }
 
   void _disposeSyncSafely<T extends Object>(

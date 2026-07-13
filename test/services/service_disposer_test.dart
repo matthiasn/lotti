@@ -6,11 +6,15 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
+import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -91,6 +95,22 @@ void main() {
       when(settingsDb.close).thenAnswer((_) async {
         order.add('SettingsDb');
       });
+      final onboardingMetricsDb = MockOnboardingMetricsDb();
+      when(onboardingMetricsDb.close).thenAnswer((_) async {
+        order.add('OnboardingMetricsDb');
+      });
+      final consumptionDb = MockConsumptionDatabase();
+      when(consumptionDb.close).thenAnswer((_) async {
+        order.add('ConsumptionDatabase');
+      });
+      final notificationsDb = MockNotificationsDb();
+      when(notificationsDb.close).thenAnswer((_) async {
+        order.add('NotificationsDb');
+      });
+      final aiConfigRepository = MockAiConfigRepository();
+      when(aiConfigRepository.close).thenAnswer((_) async {
+        order.add('AiConfigRepository');
+      });
 
       testGetIt
         ..registerSingleton<BackfillRequestService>(backfill)
@@ -103,10 +123,16 @@ void main() {
         ..registerSingleton<AgentDatabase>(agentDb)
         ..registerSingleton<EditorDb>(editorDb)
         ..registerSingleton<Fts5Db>(fts5Db)
-        ..registerSingleton<SettingsDb>(settingsDb);
+        ..registerSingleton<SettingsDb>(settingsDb)
+        ..registerSingleton<OnboardingMetricsDb>(onboardingMetricsDb)
+        ..registerSingleton<ConsumptionDatabase>(consumptionDb)
+        ..registerSingleton<NotificationsDb>(notificationsDb)
+        ..registerSingleton<AiConfigRepository>(aiConfigRepository);
 
       await disposer.disposeAll();
 
+      // Services dispose sequentially; database closes start in declaration
+      // order (they then complete in parallel).
       expect(order, [
         'BackfillRequestService',
         'EmbeddingService',
@@ -119,6 +145,10 @@ void main() {
         'EditorDb',
         'Fts5Db',
         'SettingsDb',
+        'OnboardingMetricsDb',
+        'ConsumptionDatabase',
+        'NotificationsDb',
+        'AiConfigRepository',
       ]);
       expect(loggedErrors, isEmpty);
     });
@@ -247,6 +277,63 @@ void main() {
         expect(loggedErrors.single.error, isA<TimeoutException>());
       });
     });
+
+    test(
+      'disposeDatabases closes the ai_config repository (Linux shutdown '
+      'SIGABRT regression: ai_config.sqlite background isolate must not '
+      'outlive the VM)',
+      () async {
+        final aiConfigRepository = MockAiConfigRepository();
+        when(aiConfigRepository.close).thenAnswer((_) async {});
+
+        testGetIt.registerSingleton<AiConfigRepository>(aiConfigRepository);
+
+        await disposer.disposeDatabases();
+
+        verify(aiConfigRepository.close).called(1);
+        expect(loggedErrors, isEmpty);
+      },
+    );
+
+    test(
+      'a hung database close does not block the others (parallel close)',
+      () {
+        fakeAsync((async) {
+          final closed = <String>[];
+
+          final journalDb = MockJournalDb();
+          // JournalDb.close() will never complete.
+          when(journalDb.close).thenAnswer((_) => Completer<void>().future);
+
+          final aiConfigRepository = MockAiConfigRepository();
+          when(aiConfigRepository.close).thenAnswer((_) async {
+            closed.add('AiConfigRepository');
+          });
+
+          testGetIt
+            ..registerSingleton<JournalDb>(journalDb)
+            ..registerSingleton<AiConfigRepository>(aiConfigRepository);
+
+          var done = false;
+          unawaited(disposer.disposeDatabases().then((_) => done = true));
+
+          // The fast close completes without waiting for the hung one.
+          async.flushMicrotasks();
+          expect(closed, ['AiConfigRepository']);
+          expect(done, isFalse);
+
+          // One per-operation timeout later, the hung close is abandoned and
+          // the whole database pass completes.
+          async
+            ..elapse(const Duration(seconds: 3, milliseconds: 1))
+            ..flushMicrotasks();
+
+          expect(done, isTrue);
+          expect(loggedErrors.single.service, 'JournalDb');
+          expect(loggedErrors.single.error, isA<TimeoutException>());
+        });
+      },
+    );
 
     test(
       'disposeAll on partial registrations only runs registered services',

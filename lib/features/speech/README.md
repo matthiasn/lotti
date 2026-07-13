@@ -83,7 +83,10 @@ Standard recording goes through `AudioRecorderRepository`, which wraps the
   pill (the desktop sidebar row no longer visualizes dBFS — see below). The
   modal itself renders the skeuomorphic VU meter or the energy orb depending
   on `recordingStyleProvider` (`lib/features/onboarding/state/recording_style.dart`,
-  settable in Settings › Recording Style) — same dBFS feed either way.
+  settable in Settings › Recording Style) — same dBFS feed either way. On
+  Linux the energy orb always renders its CPU fallback painter instead of the
+  GPU fragment shader (`AiStateShaderProgramCache.shadersEnabled`): virtio
+  GPUs in VMs have hung on the shader and frozen the whole desktop.
 - linked-entry and category context
 - coordination with app-wide playback
 - persistence through `SpeechRepository`

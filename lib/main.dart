@@ -8,14 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/editor_db.dart';
-import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/maintenance.dart';
-import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     hide aiConfigRepositoryProvider;
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -25,6 +20,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/service_disposer.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/fd_limits.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -45,12 +41,6 @@ class AppConstants {
 // ignore: unused_element
 late final AppLifecycleListener _appLifecycleListener;
 
-/// Per-resource close budget. macOS hard-kills the process roughly 10 s after
-/// `applicationShouldTerminate`, so each close must yield well before that —
-/// 5 s gives us a clear log of which resource was the culprit and still leaves
-/// headroom for the rest of the shutdown sequence to run.
-const _closeTimeout = Duration(seconds: 5);
-
 /// Closes every Drift database before the engine tears down isolates.
 ///
 /// Without this, Drift databases are closed via Dart `Finalizer` during VM
@@ -59,42 +49,12 @@ const _closeTimeout = Duration(seconds: 5);
 /// the VM is already in cleanup, so `DLRT_GetFfiCallbackMetadata` asserts and
 /// the process aborts with SIGABRT. Closing here drains writer + read-pool
 /// isolates while the VM is still healthy.
+///
+/// The close list itself lives in [ServiceDisposer.disposeDatabases] — the
+/// single source of truth shared with the window-close path in
+/// `WindowService` — so a database added there is covered on every exit path.
 Future<AppExitResponse> _handleAppExitRequested() async {
-  Future<void> closeIfRegistered<T extends Object>(
-    Future<void> Function(T) close,
-  ) async {
-    if (!getIt.isRegistered<T>()) return;
-    try {
-      await close(getIt<T>()).timeout(_closeTimeout);
-    } on TimeoutException {
-      // Don't rethrow: a stuck close on one resource shouldn't block the
-      // others from getting a chance to close cleanly before exit.
-      getIt<DomainLogger>().log(
-        LogDomain.general,
-        'close timed out after ${_closeTimeout.inSeconds}s',
-        subDomain: 'onExitRequested:$T',
-        level: InsightLevel.error,
-      );
-    } catch (e, stackTrace) {
-      getIt<DomainLogger>().error(
-        LogDomain.general,
-        e,
-        stackTrace: stackTrace,
-        subDomain: 'onExitRequested:$T',
-      );
-    }
-  }
-
-  await Future.wait<void>([
-    closeIfRegistered<JournalDb>((db) => db.close()),
-    closeIfRegistered<Fts5Db>((db) => db.close()),
-    closeIfRegistered<EditorDb>((db) => db.close()),
-    closeIfRegistered<OnboardingMetricsDb>((db) => db.close()),
-    closeIfRegistered<SyncDatabase>((db) => db.close()),
-    closeIfRegistered<AgentDatabase>((db) => db.close()),
-    closeIfRegistered<SettingsDb>((db) => db.close()),
-    closeIfRegistered<AiConfigRepository>((repo) => repo.close()),
-  ]);
+  await ServiceDisposer(getIt, _logExitDisposalError).disposeDatabases();
 
   // Flush logs last so any close-time entries (errors caught above, drift
   // teardown messages) make it to disk before the engine tears down.
@@ -107,6 +67,23 @@ Future<AppExitResponse> _handleAppExitRequested() async {
   }
 
   return AppExitResponse.exit;
+}
+
+void _logExitDisposalError(
+  dynamic error,
+  StackTrace stackTrace,
+  String service,
+) {
+  try {
+    getIt<DomainLogger>().error(
+      LogDomain.general,
+      error as Object,
+      stackTrace: stackTrace,
+      subDomain: 'onExitRequested:$service',
+    );
+  } catch (_) {
+    // Logging may already be torn down while the app is exiting.
+  }
 }
 
 Future<void> main() async {

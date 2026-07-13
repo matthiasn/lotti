@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +21,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/debug_overlays.dart';
+import 'package:lotti/utils/immediate_exit.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
 
@@ -149,7 +149,10 @@ class MaintenanceBody extends ConsumerWidget {
               );
               if (confirmed && context.mounted) {
                 await maintenance.deleteAgentDb();
-                exit(0);
+                // POSIX _exit: Dart's exit() would run VM teardown finalizers
+                // against the still-open databases and abort with SIGABRT
+                // (sqlite3_close_v2 → xDestroy FFI callback after shutdown).
+                immediateExit(0);
               }
             },
           ),

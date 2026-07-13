@@ -36,6 +36,7 @@
       <description>
           <p>Task agents now show their thinking model, model publisher, and serving provider directly in the AI summary. The identity opens a persistent setup sheet for choosing a profile or model, returning to the profile default, copying the category default, or pausing AI. Reports retain immutable attribution after setup changes, and automatic task-related updates can be disabled while Run now remains available.</p>
           <p>Audio recording on Linux works reliably again. Stopping a recording no longer fails internally, which had left the recorder stuck and could save an audio entry before the encoder finished writing the file. Live input-level metering in the recording modal and indicator works on Linux, including the level-reactive recording orb.</p>
+          <p>Opening the recorder no longer freezes Linux VMs: the energy-orb visualizer's GPU shader could hang para-virtualized GPUs, so on Linux the orb and AI thinking animations now always use their CPU-painted fallbacks. Closing the app on Linux no longer crashes at shutdown: all databases now close cleanly before the window is destroyed.</p>
       </description>
     </release>
     <release version="0.9.1039" date="2026-07-12">

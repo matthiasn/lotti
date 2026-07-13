@@ -185,11 +185,37 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
 
       _exitFn(0);
     } else {
+      // Linux/Windows shutdown: dispose everything while the VM is healthy,
+      // then destroy the window (which tears down the engine and VM). Any
+      // FFI-backed resource still open here — a Drift background isolate, the
+      // media_kit/mpv player — is finalized *during* VM teardown instead,
+      // where its native callbacks hit DLRT_GetFfiCallbackMetadata after
+      // shutdown and abort the process with SIGABRT.
       try {
         await _disposer.disposeAll();
       } catch (e, s) {
         _logDisposalError(e, s, 'disposeAll');
       }
+
+      try {
+        await _playerDisposer();
+      } catch (e, s) {
+        _logDisposalError(e, s, 'audioPlayer');
+      }
+
+      // Flush buffered log lines (LoggingService batches writes ~500 ms) so
+      // disposal errors reach disk before the engine tears down. Bounded so a
+      // hung flush cannot indefinitely delay shutdown.
+      try {
+        if (getIt.isRegistered<LoggingService>()) {
+          await getIt<LoggingService>().flush().timeout(
+            const Duration(seconds: 1),
+          );
+        }
+      } catch (_) {
+        // Logging is best-effort during shutdown; do not block destroy on it.
+      }
+
       try {
         await windowManager.destroy();
       } catch (e, s) {

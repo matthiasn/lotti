@@ -37,6 +37,8 @@ void main() {
       // the very same memoised object, not merely an equal one.
       for (var n = 2; n <= 9; n++) {
         AiStateShaderProgramCache.reset();
+        // Tests run on Linux CI, where shaders are disabled by default.
+        AiStateShaderProgramCache.debugShadersEnabledOverride = true;
         final voice = [
           for (var i = 0; i < n; i++)
             await AiStateShaderProgramCache.loadVoiceInput(),
@@ -54,6 +56,53 @@ void main() {
         }
       }
     });
+
+    test('shaders are disabled on Linux and enabled elsewhere by default', () {
+      // Para-virtualized GPUs (virtio in VMs) hang on these shaders' fragment
+      // loops, freezing the whole desktop — see AiStateShaderProgramCache.
+      expect(AiStateShaderProgramCache.shadersEnabled, !Platform.isLinux);
+    });
+
+    test('loaders fail fast when shaders are disabled', () async {
+      AiStateShaderProgramCache.debugShadersEnabledOverride = false;
+
+      await expectLater(
+        AiStateShaderProgramCache.loadVoiceInput(),
+        throwsUnsupportedError,
+      );
+      await expectLater(
+        AiStateShaderProgramCache.loadThinkingLine(),
+        throwsUnsupportedError,
+      );
+    });
+
+    testWidgets(
+      'voice input widget renders the CPU fallback painter when shaders '
+      'are disabled (no GPU shader work is ever submitted)',
+      (tester) async {
+        AiStateShaderProgramCache.debugShadersEnabledOverride = false;
+
+        await tester.pumpWidget(
+          const TestSurface(
+            child: AiVoiceInputShader(
+              dbfs: -24,
+              size: 160,
+              primaryColor: Color(0xFF63D7C7),
+              secondaryColor: Color(0xFFE9EEF2),
+              backgroundColor: Color(0x00000000),
+              timeOverride: 1,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          hCustomPaintUnder<AiVoiceInputShader>(tester).painter,
+          isA<AiVoiceInputFallbackPainter>(),
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('AiVoiceInputShader', () {

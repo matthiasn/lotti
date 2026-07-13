@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -195,5 +196,43 @@ void main() {
       verify(() => getIt<OutboxService>().dispose()).called(1);
       verify(() => getIt<MatrixService>().dispose()).called(1);
     });
+
+    test(
+      'non-macOS shutdown disposes the player and flushes logs after '
+      'disposeAll',
+      () async {
+        final mockLogging = MockLoggingService();
+        final flushed = Completer<void>();
+        when(mockLogging.flush).thenAnswer((_) async {
+          if (!flushed.isCompleted) flushed.complete();
+        });
+        getIt.registerSingleton<LoggingService>(mockLogging);
+
+        final callOrder = <String>[];
+        final matrixDisposed = Completer<void>();
+        when(
+          () => (getIt<MatrixService>() as MockMatrixService).dispose(),
+        ).thenAnswer((_) async {
+          callOrder.add('disposeServices');
+          matrixDisposed.complete();
+        });
+
+        WindowService(
+          skipWindowManagerSetup: true,
+          isMacOSOverride: () => false,
+          playerDisposerOverride: () async {
+            callOrder.add('playerDispose');
+          },
+        ).onWindowClose();
+
+        await matrixDisposed.future;
+        // The log flush runs after the player disposal and before the window
+        // is destroyed; awaiting it pins the whole ordering deterministically.
+        await flushed.future;
+
+        expect(callOrder, ['disposeServices', 'playerDispose']);
+        verify(mockLogging.flush).called(1);
+      },
+    );
   });
 }
