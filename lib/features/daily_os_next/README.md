@@ -738,19 +738,20 @@ A first-time Daily OS user lands on a real but unexplained empty `DayPage`
 teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 [`docs/implementation_plans/2026-07-09_daily_os_onboarding.md`](../../../docs/implementation_plans/2026-07-09_daily_os_onboarding.md).
 
-> **Status.** Phases **0–2c** below are implemented end-to-end: a session
-> coordinates the walkthrough, `AppScreen` auto-arms it (sequenced behind
-> What's New and the FTUE welcome) by starting a session + switching to the
-> Daily OS tab, the spotlight mounts over the empty-Day CTA, the coach strips
-> render inside the create modal (recording stage events), and the modal's
-> typed result drives completion (retiring the cadence) or a skip. The path is
-> still **inert in a shipped build**: it is gated behind the off-by-default
-> `dailyOsOnboardingEnabledFlag`, and `dailyOsOnboardingProviderReadyProvider`
-> (the real planning-flow readiness signal) defaults to `false`, so
-> `shouldAutoShowDailyOsOnboardingProvider` never resolves `true`. Still
-> **deferred**: wiring the real `providerReady` seam, the completion
-> **celebration** beat, and the Settings **replay** entry (Phase 3). This
-> section documents what exists in code today.
+> **Status.** Phases **0–2c** are implemented end-to-end and the flow is now
+> **functional behind its flag**: a session coordinates the walkthrough,
+> `AppScreen` auto-arms it (sequenced behind What's New and the FTUE welcome) by
+> starting a session + switching to the Daily OS tab, the spotlight mounts over
+> the empty-Day CTA, the coach strips render inside the create modal (recording
+> stage events), and the modal's typed result drives completion (retiring the
+> cadence) or a skip. `dailyOsOnboardingProviderReadyProvider` now reflects the
+> **real** readiness the drafting flow needs — at least one *usable* configured
+> inference provider — so with a provider connected and the off-by-default
+> `dailyOsOnboardingEnabledFlag` turned on, the walkthrough auto-shows to a
+> genuinely new Daily OS user on today's unplanned surface. It stays **inert by
+> default** (flag off). Still **deferred**: the completion **celebration** beat
+> and the Settings **replay** entry (Phase 3). This section documents what
+> exists in code today.
 
 | Piece | File | Role |
 |---|---|---|

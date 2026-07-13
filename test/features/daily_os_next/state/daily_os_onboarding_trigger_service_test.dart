@@ -1,8 +1,12 @@
+import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart'
+    show AiConfigRepository;
 import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
@@ -20,6 +24,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../agents/test_data/ai_config_factories.dart';
 
 /// Fake [WhatsNewController] reporting no unseen release — the "clear to show
 /// the next auto-shown overlay" state.
@@ -157,18 +162,54 @@ void main() {
   });
 
   group('dailyOsOnboardingProviderReadyProvider', () {
-    test(
-      'defaults to false until a later phase wires real readiness',
-      () async {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
+    late MockAiConfigRepository repo;
 
-        expect(
-          await container.read(dailyOsOnboardingProviderReadyProvider.future),
-          isFalse,
-        );
-      },
-    );
+    setUp(() {
+      repo = MockAiConfigRepository();
+      if (getIt.isRegistered<AiConfigRepository>()) {
+        getIt.unregister<AiConfigRepository>();
+      }
+      getIt.registerSingleton<AiConfigRepository>(repo);
+    });
+
+    tearDown(() {
+      if (getIt.isRegistered<AiConfigRepository>()) {
+        getIt.unregister<AiConfigRepository>();
+      }
+    });
+
+    Future<bool> readReady(List<AiConfig> providers) {
+      // Single-subscription stream buffers its value for the notifier that
+      // subscribes after this returns (a broadcast stream would drop it).
+      when(
+        () => repo.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) => Stream.value(providers));
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      // Keep the async chain alive while its future resolves.
+      container.listen(
+        dailyOsOnboardingProviderReadyProvider,
+        (_, _) {},
+      );
+      return container.read(dailyOsOnboardingProviderReadyProvider.future);
+    }
+
+    test('false when no inference provider is configured', () async {
+      expect(await readReady(const []), isFalse);
+    });
+
+    test('false when the only provider is not usable (no API key)', () async {
+      // A cloud provider with a blank API key cannot connect.
+      expect(await readReady([testInferenceProvider(apiKey: '')]), isFalse);
+    });
+
+    test('true when a usable cloud provider is configured', () async {
+      expect(await readReady([testInferenceProvider()]), isTrue);
+    });
+
+    test('true for a keyless local provider with a base URL', () async {
+      expect(await readReady([testLocalInferenceProvider()]), isTrue);
+    });
   });
 
   group('shouldAutoShowDailyOsOnboarding', () {
