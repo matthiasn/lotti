@@ -8,8 +8,6 @@
   "colorLabel": "Colour",
   "configFlagEnableAiStreaming": "Enable AI streaming for task actions",
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
-  "configFlagEnableDailyOs": "Enable DailyOS",
-  "configFlagEnableDailyOsDescription": "Show the DailyOS page in the main navigation.",
   "configFlagEnableDashboardsPage": "Enable Dashboards page",
   "configFlagEnableDashboardsPageDescription": "Show the Dashboards page in the main navigation. View your data and insights in customisable dashboards.",
   "configFlagEnableHabitsPage": "Enable Habits page",

@@ -2936,6 +2936,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wenn aktiviert, versucht die App, Einbettungen für deine Einträge zu generieren, um die Suche und Vorschläge für verwandte Inhalte zu verbessern.';
 
   @override
+  String get configFlagDailyOsOnboardingEnabled => 'Daily-OS-Einführung';
+
+  @override
+  String get configFlagDailyOsOnboardingEnabledDescription =>
+      'Führe neue Daily-OS-Nutzer durch ein echtes Check-in, das Sprache in eine Aufgabe und einen Tagesplan verwandelt.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'AI-Streaming für Aufgabenaktionen aktivieren';
 
@@ -2949,13 +2956,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get configFlagEnableAiSummaryTtsDescription =>
       'Zeigt die lokale Text-to-Speech-Schaltfläche in AI-Zusammenfassungen von Aufgaben. Erfordert ein installiertes MLX-Audio-TTS-Modell.';
-
-  @override
-  String get configFlagEnableDailyOs => 'DailyOS aktivieren';
-
-  @override
-  String get configFlagEnableDailyOsDescription =>
-      'DailyOS in der Hauptnavigation anzeigen.';
 
   @override
   String get configFlagEnableDashboardsPage => 'Seite Dashboards aktivieren';
@@ -4247,6 +4247,30 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextTriageToday => 'Heute';
+
+  @override
+  String get dailyOsOnboardingCoachCapture => 'Sag, was dir im Kopf herumgeht.';
+
+  @override
+  String get dailyOsOnboardingCoachDrafting =>
+      'Der Planer erstellt neue Aufgaben und fügt die Arbeit in deinen Tag ein.';
+
+  @override
+  String get dailyOsOnboardingCoachReconcile =>
+      'Wähle, was in den heutigen Tag gehört. Neue Einträge werden zu Aufgaben, wenn du den Tag aufbaust.';
+
+  @override
+  String get dailyOsOnboardingSpotlightAction => 'Ausprobieren';
+
+  @override
+  String get dailyOsOnboardingSpotlightDismiss => 'Nicht jetzt';
+
+  @override
+  String get dailyOsOnboardingSpotlightMessage =>
+      'Tippe hier und sag, was dir im Kopf herumgeht – ich mache eine Aufgabe daraus und baue deinen Tag darum herum.';
+
+  @override
+  String get dailyOsOnboardingSpotlightTitle => 'Mach aus Worten einen Plan';
 
   @override
   String get dailyOsTodayButton => 'Heute';

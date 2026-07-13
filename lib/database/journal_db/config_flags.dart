@@ -100,14 +100,6 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: enableDailyOsPageFlag,
-      description: 'Enable DailyOS Page?',
-      status: false,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: enableSessionRatingsFlag,
       description: 'Enable session ratings?',
       status: false,
@@ -199,6 +191,17 @@ Future<void> initConfigFlags(
       // until it's enabled, first-run AI setup falls back to the provider
       // selection modal. Flip on to make the FTUE the new-user front door.
       description: 'Enable the new onboarding (FTUE) flow?',
+      status: false,
+    ),
+  );
+
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: dailyOsOnboardingEnabledFlag,
+      // Off by default: the Daily OS onboarding walkthrough is still being
+      // built. The Daily OS surface itself is always available now, so this
+      // flag only controls whether new users get the coaching walkthrough.
+      description: 'Enable the Daily OS onboarding walkthrough?',
       status: false,
     ),
   );

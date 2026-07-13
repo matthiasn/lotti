@@ -2942,6 +2942,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Pokud je povoleno, aplikace se pokusí generovat vektory pro vaše položky, aby zlepšila vyhledávání a návrhy souvisejícího obsahu.';
 
   @override
+  String get configFlagDailyOsOnboardingEnabled => 'Průvodce Daily OS';
+
+  @override
+  String get configFlagDailyOsOnboardingEnabledDescription =>
+      'Proveď nové uživatele Daily OS skutečným check-inem, který promění řeč v úkol a plán dne.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Povolit AI streamování pro akce úkolů';
 
@@ -2955,13 +2962,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagEnableAiSummaryTtsDescription =>
       'Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model MLX Audio TTS.';
-
-  @override
-  String get configFlagEnableDailyOs => 'Povolit DailyOS';
-
-  @override
-  String get configFlagEnableDailyOsDescription =>
-      'Zobrazit DailyOS v hlavní navigaci.';
 
   @override
   String get configFlagEnableDashboardsPage => 'Povolit stránku Dashboardů';
@@ -4258,6 +4258,30 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextTriageToday => 'Dnes';
+
+  @override
+  String get dailyOsOnboardingCoachCapture => 'Řekni, co ti leží v hlavě.';
+
+  @override
+  String get dailyOsOnboardingCoachDrafting =>
+      'Plánovač vytváří nové úkoly a zasazuje práci do tvého dne.';
+
+  @override
+  String get dailyOsOnboardingCoachReconcile =>
+      'Vyber, co patří do dneška. Nové položky se stanou úkoly, až sestavíš den.';
+
+  @override
+  String get dailyOsOnboardingSpotlightAction => 'Vyzkoušet';
+
+  @override
+  String get dailyOsOnboardingSpotlightDismiss => 'Teď ne';
+
+  @override
+  String get dailyOsOnboardingSpotlightMessage =>
+      'Klepni sem a řekni, co ti leží v hlavě – proměním to v úkol a poskládám kolem toho tvůj den.';
+
+  @override
+  String get dailyOsOnboardingSpotlightTitle => 'Proměň řeč v plán';
 
   @override
   String get dailyOsTodayButton => 'Dnes';

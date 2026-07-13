@@ -32,6 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1043" date="2026-07-14">
+      <description>
+          <p>Daily OS is now available to everyone. The Daily OS day-planning surface no longer sits behind a feature flag and appears in the main navigation for all users.</p>
+      </description>
+    </release>
     <release version="0.9.1042" date="2026-07-13">
       <description>
           <p>Audio recordings can now be paused and resumed mid-capture from the recording sheet, next to stop and cancel, so you can pause a brain dump and pick it back up without splitting it into separate entries. While paused the elapsed timer and level meter freeze. Available for standard recordings; live-transcription recordings are unaffected.</p>

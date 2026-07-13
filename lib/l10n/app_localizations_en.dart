@@ -2898,6 +2898,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.';
 
   @override
+  String get configFlagDailyOsOnboardingEnabled => 'Daily OS walkthrough';
+
+  @override
+  String get configFlagDailyOsOnboardingEnabledDescription =>
+      'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Enable AI streaming for task actions';
 
@@ -2911,13 +2918,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get configFlagEnableAiSummaryTtsDescription =>
       'Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.';
-
-  @override
-  String get configFlagEnableDailyOs => 'Enable DailyOS';
-
-  @override
-  String get configFlagEnableDailyOsDescription =>
-      'Show the DailyOS page in the main navigation.';
 
   @override
   String get configFlagEnableDashboardsPage => 'Enable Dashboards page';
@@ -4195,6 +4195,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextTriageToday => 'Today';
+
+  @override
+  String get dailyOsOnboardingCoachCapture =>
+      'Say what\'s pulling at your attention.';
+
+  @override
+  String get dailyOsOnboardingCoachDrafting =>
+      'The planner is creating any new tasks and fitting the work into your day.';
+
+  @override
+  String get dailyOsOnboardingCoachReconcile =>
+      'Choose what belongs in today. New items become tasks when you build the day.';
+
+  @override
+  String get dailyOsOnboardingSpotlightAction => 'Try it';
+
+  @override
+  String get dailyOsOnboardingSpotlightDismiss => 'Not now';
+
+  @override
+  String get dailyOsOnboardingSpotlightMessage =>
+      'Tap here and say what\'s on your mind — I\'ll turn it into a task and build your day around it.';
+
+  @override
+  String get dailyOsOnboardingSpotlightTitle => 'Turn talk into a plan';
 
   @override
   String get dailyOsTodayButton => 'Today';
@@ -9575,13 +9600,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get configFlagEnableAiStreamingDescription =>
       'Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.';
-
-  @override
-  String get configFlagEnableDailyOs => 'Enable DailyOS';
-
-  @override
-  String get configFlagEnableDailyOsDescription =>
-      'Show the DailyOS page in the main navigation.';
 
   @override
   String get configFlagEnableDashboardsPage => 'Enable Dashboards page';

@@ -5023,6 +5023,18 @@ abstract class AppLocalizations {
   /// **'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.'**
   String get configFlagAttemptEmbeddingDescription;
 
+  /// No description provided for @configFlagDailyOsOnboardingEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS walkthrough'**
+  String get configFlagDailyOsOnboardingEnabled;
+
+  /// No description provided for @configFlagDailyOsOnboardingEnabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan.'**
+  String get configFlagDailyOsOnboardingEnabledDescription;
+
   /// No description provided for @configFlagEnableAiStreaming.
   ///
   /// In en, this message translates to:
@@ -5046,18 +5058,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.'**
   String get configFlagEnableAiSummaryTtsDescription;
-
-  /// No description provided for @configFlagEnableDailyOs.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable DailyOS'**
-  String get configFlagEnableDailyOs;
-
-  /// No description provided for @configFlagEnableDailyOsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Show the DailyOS page in the main navigation.'**
-  String get configFlagEnableDailyOsDescription;
 
   /// No description provided for @configFlagEnableDashboardsPage.
   ///
@@ -7175,6 +7175,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Today'**
   String get dailyOsNextTriageToday;
+
+  /// No description provided for @dailyOsOnboardingCoachCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Say what\'s pulling at your attention.'**
+  String get dailyOsOnboardingCoachCapture;
+
+  /// No description provided for @dailyOsOnboardingCoachDrafting.
+  ///
+  /// In en, this message translates to:
+  /// **'The planner is creating any new tasks and fitting the work into your day.'**
+  String get dailyOsOnboardingCoachDrafting;
+
+  /// No description provided for @dailyOsOnboardingCoachReconcile.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what belongs in today. New items become tasks when you build the day.'**
+  String get dailyOsOnboardingCoachReconcile;
+
+  /// No description provided for @dailyOsOnboardingSpotlightAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Try it'**
+  String get dailyOsOnboardingSpotlightAction;
+
+  /// No description provided for @dailyOsOnboardingSpotlightDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get dailyOsOnboardingSpotlightDismiss;
+
+  /// No description provided for @dailyOsOnboardingSpotlightMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap here and say what\'s on your mind — I\'ll turn it into a task and build your day around it.'**
+  String get dailyOsOnboardingSpotlightMessage;
+
+  /// No description provided for @dailyOsOnboardingSpotlightTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn talk into a plan'**
+  String get dailyOsOnboardingSpotlightTitle;
 
   /// No description provided for @dailyOsTodayButton.
   ///

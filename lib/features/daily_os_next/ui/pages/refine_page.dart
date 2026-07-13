@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/day_planning_result.dart';
 import 'package:lotti/features/daily_os_next/ui/refine_voice_sync.dart';
 import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
@@ -85,7 +86,9 @@ class _RefineModalContentState extends ConsumerState<RefineModalContent> {
       (previous, next) {
         if (previous?.phase != RefinePhase.accepted &&
             next.phase == RefinePhase.accepted) {
-          Navigator.of(context).pop(next.currentPlan);
+          Navigator.of(
+            context,
+          ).pop(DayPlanningAdapted(draft: next.currentPlan));
         }
       },
     );
@@ -394,7 +397,7 @@ class RefinePage extends ConsumerWidget {
     ref.listen<RefineState>(refineControllerProvider(draft), (previous, next) {
       if (previous?.phase != RefinePhase.accepted &&
           next.phase == RefinePhase.accepted) {
-        Navigator.of(context).pop(next.currentPlan);
+        Navigator.of(context).pop(DayPlanningAdapted(draft: next.currentPlan));
       }
     });
 

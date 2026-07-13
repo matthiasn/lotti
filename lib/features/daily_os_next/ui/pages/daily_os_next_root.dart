@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/day_planning_result.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/device_region.dart';
@@ -36,6 +38,30 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
 
   void _shiftDay(int days) {
     ref.read(dailyOsNextSelectedDateProvider.notifier).shiftDays(days);
+  }
+
+  /// Opens the create ritual and routes its typed outcome through the Daily OS
+  /// onboarding session controller.
+  ///
+  /// For an ordinary user (no active walkthrough session) both branches are
+  /// no-ops — `complete`/`dismiss` return immediately — so this behaves exactly
+  /// like the previous fire-and-forget open. During a walkthrough it records
+  /// completion (retiring the auto-show cadence) or a dismissal skip.
+  Future<void> _runCheckIn(DateTime date) async {
+    final result = await showDayPlanningModal(
+      context: context,
+      dayDate: date,
+      intent: const DayPlanningCreate(),
+    );
+    if (!mounted) return;
+    final controller = ref.read(
+      dailyOsOnboardingSessionControllerProvider.notifier,
+    );
+    if (result is DayPlanningCreated) {
+      await controller.complete(createdTaskIds: result.createdTaskIds);
+    } else {
+      controller.dismiss();
+    }
   }
 
   Future<void> _pickDate() async {
@@ -109,13 +135,7 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
       key: ValueKey('empty-${selectedDate.toIso8601String()}'),
       draft: DraftPlan.emptyForDay(selectedDate),
       hasPlan: false,
-      onCheckIn: () => unawaited(
-        showDayPlanningModal(
-          context: context,
-          dayDate: selectedDate,
-          intent: const DayPlanningCreate(),
-        ),
-      ),
+      onCheckIn: () => unawaited(_runCheckIn(selectedDate)),
       dateStrip: strip,
     );
   }

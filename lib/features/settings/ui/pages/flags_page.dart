@@ -105,7 +105,6 @@ class FlagsBody extends ConsumerStatefulWidget {
     resendAttachments,
     enableHabitsPageFlag,
     enableDashboardsPageFlag,
-    enableDailyOsPageFlag,
     enableEventsFlag,
     enableSessionRatingsFlag,
     enableProjectsFlag,
@@ -115,6 +114,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableSyncedAlertsFlag,
     enableWhatsNewFlag,
     enableOnboardingFtueFlag,
+    dailyOsOnboardingEnabledFlag,
     showSyncActivityIndicatorFlag,
     showSidebarWakeQueueFlag,
     enableForkHealingFlag,
@@ -163,8 +163,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.repeat_rounded;
       case enableDashboardsPageFlag:
         return Icons.dashboard_rounded;
-      case enableDailyOsPageFlag:
-        return Icons.calendar_today_rounded;
       case enableEventsFlag:
         return Icons.event_rounded;
       case enableSessionRatingsFlag:
@@ -183,6 +181,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.new_releases_outlined;
       case enableOnboardingFtueFlag:
         return Icons.auto_awesome_motion_rounded;
+      case dailyOsOnboardingEnabledFlag:
+        return Icons.tips_and_updates_outlined;
       case showSyncActivityIndicatorFlag:
         return Icons.network_check_rounded;
       case showSidebarWakeQueueFlag:
@@ -222,8 +222,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableHabitsPageDescription;
       case enableDashboardsPageFlag:
         return context.messages.configFlagEnableDashboardsPageDescription;
-      case enableDailyOsPageFlag:
-        return context.messages.configFlagEnableDailyOsDescription;
       case enableEventsFlag:
         return context.messages.configFlagEnableEventsDescription;
       case enableSessionRatingsFlag:
@@ -242,6 +240,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableWhatsNewDescription;
       case enableOnboardingFtueFlag:
         return context.messages.configFlagEnableOnboardingFtueDescription;
+      case dailyOsOnboardingEnabledFlag:
+        return context.messages.configFlagDailyOsOnboardingEnabledDescription;
       case showSyncActivityIndicatorFlag:
         return context.messages.configFlagShowSyncActivityIndicatorDescription;
       case showSidebarWakeQueueFlag:
@@ -279,8 +279,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableHabitsPage;
       case enableDashboardsPageFlag:
         return context.messages.configFlagEnableDashboardsPage;
-      case enableDailyOsPageFlag:
-        return context.messages.configFlagEnableDailyOs;
       case enableEventsFlag:
         return context.messages.configFlagEnableEvents;
       case enableSessionRatingsFlag:
@@ -299,6 +297,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableWhatsNew;
       case enableOnboardingFtueFlag:
         return context.messages.configFlagEnableOnboardingFtue;
+      case dailyOsOnboardingEnabledFlag:
+        return context.messages.configFlagDailyOsOnboardingEnabled;
       case showSyncActivityIndicatorFlag:
         return context.messages.configFlagShowSyncActivityIndicator;
       case showSidebarWakeQueueFlag:

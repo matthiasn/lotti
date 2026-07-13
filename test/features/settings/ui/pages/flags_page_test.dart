@@ -61,11 +61,6 @@ void main() {
             status: false,
           ),
           const ConfigFlag(
-            name: enableDailyOsPageFlag,
-            description: 'Enable DailyOS Page?',
-            status: true,
-          ),
-          const ConfigFlag(
             name: enableAiStreamingFlag,
             description: 'Enable AI streaming responses?',
             status: false,
@@ -98,6 +93,11 @@ void main() {
           const ConfigFlag(
             name: enableOnboardingFtueFlag,
             description: 'Enable the new onboarding (FTUE) flow?',
+            status: false,
+          ),
+          const ConfigFlag(
+            name: dailyOsOnboardingEnabledFlag,
+            description: 'Enable the Daily OS onboarding walkthrough?',
             status: false,
           ),
           const ConfigFlag(
@@ -152,7 +152,6 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 14 flags in the mock data.
       expect(
         find.byType(DesignSystemListItem),
         findsNWidgets(_displayedFlagCount),
@@ -286,7 +285,7 @@ void main() {
       expect(find.byIcon(Icons.bolt_rounded), findsAtLeastNWidgets(1));
       expect(find.byIcon(Icons.volume_up_rounded), findsAtLeastNWidgets(1));
       expect(
-        find.byIcon(Icons.calendar_today_rounded),
+        find.byIcon(Icons.tips_and_updates_outlined),
         findsAtLeastNWidgets(1),
       );
     });
@@ -399,6 +398,17 @@ void main() {
             expectedToggle: const ConfigFlag(
               name: enableOnboardingFtueFlag,
               description: 'Enable the new onboarding (FTUE) flow?',
+              status: true,
+            ),
+          ),
+          (
+            name: 'daily-os-onboarding',
+            title: (m) => m.configFlagDailyOsOnboardingEnabled,
+            description: (m) => m.configFlagDailyOsOnboardingEnabledDescription,
+            icon: Icons.tips_and_updates_outlined,
+            expectedToggle: const ConfigFlag(
+              name: dailyOsOnboardingEnabledFlag,
+              description: 'Enable the Daily OS onboarding walkthrough?',
               status: true,
             ),
           ),
@@ -811,11 +821,6 @@ void main() {
               name: enableEventsFlag,
               description: 'Enable Events?',
               status: false,
-            ),
-            const ConfigFlag(
-              name: enableDailyOsPageFlag,
-              description: 'Enable DailyOS Page?',
-              status: true,
             ),
             const ConfigFlag(
               name: enableAiStreamingFlag,

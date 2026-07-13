@@ -22,6 +22,9 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
@@ -232,6 +235,10 @@ Future<void> _stubNavService(
     () => navService.isEventsPageEnabled,
   ).thenAnswer((_) => isEventsEnabled());
   when(() => navService.tapIndex(any())).thenReturn(null);
+  // Daily OS lives at the calendar index; the onboarding arm reads both to
+  // decide whether to switch tabs. Same value → already on the tab, no tap.
+  when(() => navService.calendarIndex).thenReturn(1);
+  when(() => navService.index).thenReturn(1);
   when(() => navService.isDesktopMode).thenReturn(false);
   // The desktop tasks pane (`tasks_tab_page.dart`) reads
   // `desktopSelectedTaskId` for its detail selection; stub it with an
@@ -318,6 +325,11 @@ Future<void> _pumpAppScreen(
         // FTUE welcome gate is off (matches the flag stub above), but pin it
         // explicitly rather than relying on the flag short-circuit alone.
         shouldAutoShowOnboardingProvider.overrideWith((ref) async => false),
+        // Daily OS onboarding gate off too, pinned so its real provider (which
+        // reads unstubbed config flags) never fires in the default harness.
+        shouldAutoShowDailyOsOnboardingProvider.overrideWith(
+          (ref) async => false,
+        ),
         // The Tasks destination's expanded subtree (TasksSavedFiltersTree)
         // watches saved-filter providers. Override them with safe defaults so
         // this test doesn't transitively trigger the real JournalPageController
@@ -354,7 +366,9 @@ Future<void> _pumpAppScreenCustomProviders(
   Size viewportSize = _phoneViewportSize,
   Future<bool> Function(Ref)? shouldAutoShowWhatsNew,
   Future<bool> Function(Ref)? shouldAutoShowOnboarding,
+  Future<bool> Function(Ref)? shouldAutoShowDailyOsOnboarding,
   OnboardingWelcomeCadence Function()? onboardingWelcomeCadenceOverride,
+  DailyOsOnboardingCadence Function()? dailyOsOnboardingCadenceOverride,
   AiSetupPromptService Function()? aiSetupPromptOverride,
   WhatsNewController Function()? whatsNewOverride,
   List<Override> extraOverrides = const [],
@@ -421,9 +435,16 @@ Future<void> _pumpAppScreenCustomProviders(
         shouldAutoShowOnboardingProvider.overrideWith(
           shouldAutoShowOnboarding ?? (ref) async => false,
         ),
+        shouldAutoShowDailyOsOnboardingProvider.overrideWith(
+          shouldAutoShowDailyOsOnboarding ?? (ref) async => false,
+        ),
         if (onboardingWelcomeCadenceOverride != null)
           onboardingWelcomeCadenceProvider.overrideWith(
             onboardingWelcomeCadenceOverride,
+          ),
+        if (dailyOsOnboardingCadenceOverride != null)
+          dailyOsOnboardingCadenceProvider.overrideWith(
+            dailyOsOnboardingCadenceOverride,
           ),
         if (whatsNewOverride != null)
           whatsNewControllerProvider.overrideWith(whatsNewOverride),
@@ -2664,6 +2685,59 @@ void main() {
     );
 
     testWidgets(
+      'shouldAutoShowDailyOsOnboarding data(true) arms the walkthrough and '
+      'defers the show count until the spotlight is visible',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          // The selected destination is already the Daily OS tab, so this
+          // isolates session arming from navigation behavior.
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        var recordShownCount = 0;
+        final sessionController = _CountingDailyOsOnboardingSessionController();
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          whatsNewOverride: _StableUnseenWhatsNewController.new,
+          shouldAutoShowDailyOsOnboarding: (ref) async => true,
+          dailyOsOnboardingCadenceOverride: () =>
+              _CountingDailyOsOnboardingCadence(
+                onRecordShown: () => recordShownCount++,
+              ),
+          extraOverrides: [
+            dailyOsOnboardingSessionControllerProvider.overrideWith(
+              () => sessionController,
+            ),
+          ],
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 800));
+
+        expect(sessionController.startCount, 1);
+        expect(
+          recordShownCount,
+          0,
+          reason:
+              'arming alone must not count a walkthrough the user never saw',
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
       'FTUE welcome skip closes the welcome without marking it completed '
       '(so the shown-count/window grace period is preserved)',
       (tester) async {
@@ -3357,6 +3431,36 @@ class _CountingOnboardingWelcomeCadence extends OnboardingWelcomeCadence {
 
   @override
   Future<void> markCompleted() async => onMarkCompleted?.call();
+}
+
+/// Counts `recordShown` without touching SettingsDb — proves the Daily OS
+/// onboarding auto-show arm ran.
+class _CountingDailyOsOnboardingCadence extends DailyOsOnboardingCadence {
+  _CountingDailyOsOnboardingCadence({this.onRecordShown});
+
+  final void Function()? onRecordShown;
+
+  @override
+  Future<void> recordShown() async => onRecordShown?.call();
+}
+
+class _CountingDailyOsOnboardingSessionController
+    extends DailyOsOnboardingSessionController {
+  int startCount = 0;
+
+  @override
+  DailyOsOnboardingSession start({
+    required DailyOsOnboardingOrigin origin,
+    required DateTime targetDate,
+    String? sessionId,
+  }) {
+    startCount++;
+    return super.start(
+      origin: origin,
+      targetDate: targetDate,
+      sessionId: sessionId,
+    );
+  }
 }
 
 /// A [WhatsNewController] with no unseen releases, used so the What's New modal

@@ -2950,6 +2950,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cuando está habilitado, la aplicación intentará generar incrustaciones para tus entradas para mejorar la búsqueda y las sugerencias de contenido relacionado.';
 
   @override
+  String get configFlagDailyOsOnboardingEnabled => 'Guía de Daily OS';
+
+  @override
+  String get configFlagDailyOsOnboardingEnabledDescription =>
+      'Guía a los nuevos usuarios de Daily OS por un check-in real que convierte tu voz en una tarea y un plan del día.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Habilitar streaming de IA para acciones de tareas';
 
@@ -2963,13 +2970,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get configFlagEnableAiSummaryTtsDescription =>
       'Muestra el botón local de texto a voz en los resúmenes de IA de tareas. Requiere un modelo TTS de MLX Audio instalado.';
-
-  @override
-  String get configFlagEnableDailyOs => 'Habilitar DailyOS';
-
-  @override
-  String get configFlagEnableDailyOsDescription =>
-      'Mostrar DailyOS en la navegación principal.';
 
   @override
   String get configFlagEnableDashboardsPage => 'Habilitar página Paneles';
@@ -4271,6 +4271,31 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextTriageToday => 'Hoy';
+
+  @override
+  String get dailyOsOnboardingCoachCapture => 'Di lo que te ronda la cabeza.';
+
+  @override
+  String get dailyOsOnboardingCoachDrafting =>
+      'El planificador está creando tareas nuevas y encajando el trabajo en tu día.';
+
+  @override
+  String get dailyOsOnboardingCoachReconcile =>
+      'Elige qué entra en el día de hoy. Los elementos nuevos se convierten en tareas cuando construyes el día.';
+
+  @override
+  String get dailyOsOnboardingSpotlightAction => 'Probar';
+
+  @override
+  String get dailyOsOnboardingSpotlightDismiss => 'Ahora no';
+
+  @override
+  String get dailyOsOnboardingSpotlightMessage =>
+      'Toca aquí y di lo que te ronda la cabeza: lo convierto en una tarea y organizo tu día en torno a ella.';
+
+  @override
+  String get dailyOsOnboardingSpotlightTitle =>
+      'Convierte lo que dices en un plan';
 
   @override
   String get dailyOsTodayButton => 'Hoy';

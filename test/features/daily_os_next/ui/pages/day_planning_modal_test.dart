@@ -10,6 +10,7 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/day_planning_result.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
@@ -188,6 +189,60 @@ Future<void> _openCreate(
   await tester.tap(find.text('open'));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 400));
+}
+
+/// Mutable holder for the [showDayPlanningModal] future's eventual result, so
+/// tests can drive the flow to completion and then assert the returned value.
+class _ResultHolder {
+  DayPlanningResult? value;
+  bool settled = false;
+}
+
+/// Like [_openCreate], but captures the modal's returned [DayPlanningResult].
+Future<_ResultHolder> _openCreateCapturingResult(
+  WidgetTester tester, {
+  CaptureState capture = const CaptureState.idle(),
+  MockDayAgent? agent,
+  Size size = const Size(420, 900),
+}) async {
+  final holder = _ResultHolder();
+  await tester.pumpWidget(
+    makeTestableWidget(
+      Builder(
+        builder: (context) => Center(
+          child: ElevatedButton(
+            onPressed: () async {
+              holder
+                ..value = await showDayPlanningModal(
+                  context: context,
+                  dayDate: DateTime(2024, 3, 15),
+                  intent: const DayPlanningCreate(),
+                )
+                ..settled = true;
+            },
+            child: const Text('open'),
+          ),
+        ),
+      ),
+      mediaQueryData: MediaQueryData(size: size),
+      overrides: [
+        captureControllerProvider.overrideWith(
+          () => _FakeCaptureController(capture),
+        ),
+        dailyOsActualTimeBlocksProvider.overrideWith(
+          (ref, date) async => const <TimeBlock>[],
+        ),
+        agentIsRunningProvider.overrideWith(
+          (ref, agentId) => Stream.value(false),
+        ),
+        if (agent != null) dayAgentProvider.overrideWithValue(agent),
+      ],
+    ),
+  );
+  await tester.tap(find.text('open'));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+  return holder;
 }
 
 AppLocalizations _l10n(WidgetTester tester) => AppLocalizations.of(
@@ -409,6 +464,44 @@ void main() {
       expect(find.byType(DayPlanningGlassActionBar), findsNothing);
       expect(find.byType(DraftingModalContent), findsNothing);
       expect(find.byType(ReconcileModalContent), findsNothing);
+    });
+
+    testWidgets('drafting ready resolves the modal with DayPlanningCreated', (
+      tester,
+    ) async {
+      final result = await _openCreateCapturingResult(
+        tester,
+        capture: _captured,
+        agent: _fastAgent(),
+      );
+      final messages = _l10n(tester);
+      await _tapPill(tester, messages.dailyOsNextCaptureReconcileCta);
+      await _tapPill(tester, messages.dailyOsNextReconcileBuildDayCta);
+      await _settle(tester);
+
+      expect(result.value, isA<DayPlanningCreated>());
+      // The MockDayAgent create flow matches/creates no new tasks, so
+      // attribution is legitimately empty rather than fabricated.
+      expect(
+        (result.value! as DayPlanningCreated).createdTaskIds,
+        isEmpty,
+      );
+    });
+
+    testWidgets('barrier dismissal resolves the modal with null', (
+      tester,
+    ) async {
+      final result = await _openCreateCapturingResult(
+        tester,
+        capture: _captured,
+        agent: _fastAgent(),
+      );
+      // Tap the dim barrier (top-left, outside the sheet) to dismiss.
+      await tester.tapAt(const Offset(5, 5));
+      await _settle(tester);
+
+      expect(result.settled, isTrue);
+      expect(result.value, isNull);
     });
 
     testWidgets('reconcile re-record steps back to capture', (tester) async {

@@ -241,4 +241,88 @@ void main() {
     expect(after.usedStructuringFloor, isTrue);
     expect(after.connectedProvider, isTrue);
   });
+
+  group('Daily OS onboarding funnel partition', () {
+    test('dailyOsOnboardingFunnelState is empty before any events', () async {
+      final state = await makeRepo().dailyOsOnboardingFunnelState();
+      expect(state.activeDaysCount, 0);
+      expect(state.shownCount, 0);
+      expect(state.completed, isFalse);
+    });
+
+    test('derives Daily OS stage counts and active days', () async {
+      final day0 = DateTime.utc(2026, 7, 1, 9);
+      final day1 = DateTime.utc(2026, 7, 2, 9);
+      final r0 = makeRepo(clock: () => day0);
+      await r0.recordEvent(
+        OnboardingEventName.dailyOsWalkthroughShown,
+        reason: 'auto',
+      );
+      await r0.recordEvent(OnboardingEventName.dailyOsReconcileReached);
+      await r0.recordEvent(OnboardingEventName.dailyOsDraftingStarted);
+      await r0.recordEvent(
+        OnboardingEventName.dailyOsTaskMaterialized,
+        valueBucket: 2,
+      );
+      await makeRepo(
+        clock: () => day1,
+      ).recordEvent(OnboardingEventName.dailyOsWalkthroughCompleted);
+
+      final state = await makeRepo().dailyOsOnboardingFunnelState();
+      expect(state.activeDaysCount, 2);
+      expect(state.shownCount, 1);
+      expect(state.reconcileReachedCount, 1);
+      expect(state.draftingStartedCount, 1);
+      expect(state.taskMaterializedCount, 1);
+      expect(state.completedCount, 1);
+      expect(state.completed, isTrue);
+    });
+
+    test(
+      'Daily OS events do not change the general FTUE funnel metrics',
+      () async {
+        final day0 = DateTime.utc(2026, 7, 1, 9);
+        final repo = makeRepo(clock: () => day0);
+        await repo.recordAppFirstSeenIfAbsent();
+        await repo.recordEvent(OnboardingEventName.realAha);
+
+        final baseline = await makeRepo().funnelState();
+
+        // Record a burst of Daily OS onboarding events, including on a
+        // brand-new day bucket that must NOT inflate the FTUE active-day count.
+        final laterDay = DateTime.utc(2026, 7, 20, 9);
+        final laterRepo = makeRepo(clock: () => laterDay);
+        await laterRepo.recordEvent(
+          OnboardingEventName.dailyOsWalkthroughShown,
+          reason: 'auto',
+        );
+        await laterRepo.recordEvent(
+          OnboardingEventName.dailyOsWalkthroughCompleted,
+        );
+
+        final after = await makeRepo().funnelState();
+        expect(after.activeDaysCount, baseline.activeDaysCount);
+        expect(after.activeDaysInFirst7, baseline.activeDaysInFirst7);
+        expect(after.reachedRealAha, isTrue);
+        // The Daily OS events are absent from the general count map entirely.
+        expect(
+          after.countOf(OnboardingEventName.dailyOsWalkthroughShown),
+          0,
+        );
+      },
+    );
+
+    test(
+      'general FTUE events do not contribute to the Daily OS funnel',
+      () async {
+        final repo = makeRepo();
+        await repo.recordEvent(OnboardingEventName.realAha);
+        await repo.recordEvent(OnboardingEventName.providerConnected);
+
+        final state = await makeRepo().dailyOsOnboardingFunnelState();
+        expect(state.activeDaysCount, 0);
+        expect(state.shownCount, 0);
+      },
+    );
+  });
 }

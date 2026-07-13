@@ -77,7 +77,6 @@ void main() {
         enableHabitsPageFlag: false,
         enableDashboardsPageFlag: false,
         enableEventsFlag: false,
-        enableDailyOsPageFlag: false,
         enableSessionRatingsFlag: false,
         enableSyncActorFlag: false,
         enableProjectsFlag: false,
@@ -87,6 +86,7 @@ void main() {
         enableVectorSearchFlag: false,
         enableWhatsNewFlag: false,
         enableOnboardingFtueFlag: false,
+        dailyOsOnboardingEnabledFlag: false,
         showSyncActivityIndicatorFlag: false,
         showSidebarWakeQueueFlag: false,
       };

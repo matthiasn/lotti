@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1043]
+### Changed
+- **Daily OS is now available to everyone.** The Daily OS day-planning surface
+  no longer sits behind a Settings → Advanced → Flags toggle — its calendar tab
+  appears in the main navigation for all users.
+
 ## [0.9.1042]
 ### Added
 - **Pause and resume audio recordings mid-capture.** The recording sheet now

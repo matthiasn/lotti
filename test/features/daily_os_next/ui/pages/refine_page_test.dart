@@ -11,6 +11,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/day_planning_result.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/diff_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
@@ -502,15 +503,15 @@ void main() {
         acceptedPlan: acceptedPlan,
       );
 
-      DraftPlan? popped;
+      DayPlanningResult? popped;
       await tester.pumpWidget(
         _wrap(
           Builder(
             builder: (context) => Scaffold(
               body: ElevatedButton(
                 onPressed: () async {
-                  popped = await Navigator.of(context).push<DraftPlan>(
-                    MaterialPageRoute<DraftPlan>(
+                  popped = await Navigator.of(context).push<DayPlanningResult>(
+                    MaterialPageRoute<DayPlanningResult>(
                       builder: (_) => RefinePage(draft: draft),
                     ),
                   );
@@ -540,8 +541,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pump(const Duration(milliseconds: 350));
 
-      expect(popped, isNotNull);
-      expect(popped?.scheduledMinutes, 99);
+      expect(popped, isA<DayPlanningAdapted>());
+      expect((popped! as DayPlanningAdapted).draft.scheduledMinutes, 99);
       expect(find.byType(RefinePage), findsNothing);
     });
 
@@ -727,7 +728,7 @@ void main() {
         updatedPlan: acceptedPlan,
       );
       final agent = RecordingDayAgent(diff: diff, acceptedPlan: acceptedPlan);
-      DraftPlan? result;
+      DayPlanningResult? result;
 
       await tester.pumpWidget(
         _wrap(
@@ -738,13 +739,14 @@ void main() {
                   onPressed: () async {
                     // Host the modal content the way the day-planning sheet
                     // does: inside a bounded route body.
-                    result = await Navigator.of(context).push<DraftPlan>(
-                      MaterialPageRoute<DraftPlan>(
-                        builder: (_) => Scaffold(
-                          body: RefineModalContent(draft: draft),
-                        ),
-                      ),
-                    );
+                    result = await Navigator.of(context)
+                        .push<DayPlanningResult>(
+                          MaterialPageRoute<DayPlanningResult>(
+                            builder: (_) => Scaffold(
+                              body: RefineModalContent(draft: draft),
+                            ),
+                          ),
+                        );
                   },
                   child: const Text('Open refine'),
                 );
@@ -772,7 +774,8 @@ void main() {
       await _tap(tester, find.text(messages.dailyOsNextRefineAccept));
       await tester.pump(const Duration(milliseconds: 600));
 
-      expect(result?.scheduledMinutes, 42);
+      expect(result, isA<DayPlanningAdapted>());
+      expect((result! as DayPlanningAdapted).draft.scheduledMinutes, 42);
       expect(find.byType(RefineModalContent), findsNothing);
     });
   });

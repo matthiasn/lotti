@@ -12,7 +12,6 @@ const enableLoggingFlag = 'enable_logging';
 
 const enableHabitsPageFlag = 'enable_habits_page';
 const enableDashboardsPageFlag = 'enable_dashboards_page';
-const enableDailyOsPageFlag = 'enable_daily_os_page';
 const enableEventsFlag = 'enable_events';
 const enableSessionRatingsFlag = 'enable_session_ratings';
 const enableSyncActorFlag = 'enable_sync_actor';
@@ -24,6 +23,7 @@ const enableSyncedAlertsFlag = 'enable_synced_alerts';
 
 const enableWhatsNewFlag = 'enable_whats_new';
 const enableOnboardingFtueFlag = 'enable_onboarding_ftue';
+const dailyOsOnboardingEnabledFlag = 'daily_os_onboarding_enabled';
 const showSyncActivityIndicatorFlag = 'show_sync_activity_indicator';
 const showSidebarWakeQueueFlag = 'show_sidebar_wake_queue';
 const enableForkHealingFlag = 'enable_fork_healing';

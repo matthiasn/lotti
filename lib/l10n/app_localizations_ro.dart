@@ -2958,6 +2958,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Când este activată, aplicația va încerca să genereze încorporări pentru intrările dvs. pentru a îmbunătăți căutarea și sugestiile de conținut corelat.';
 
   @override
+  String get configFlagDailyOsOnboardingEnabled => 'Ghid Daily OS';
+
+  @override
+  String get configFlagDailyOsOnboardingEnabledDescription =>
+      'Ghidați utilizatorii noi Daily OS printr-un check-in real care transformă vocea într-o sarcină și un plan de zi.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Activează streamingul AI pentru acțiunile legate de sarcini';
 
@@ -2971,13 +2978,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get configFlagEnableAiSummaryTtsDescription =>
       'Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS MLX Audio instalat.';
-
-  @override
-  String get configFlagEnableDailyOs => 'Activează DailyOS';
-
-  @override
-  String get configFlagEnableDailyOsDescription =>
-      'Afișează DailyOS în navigarea principală.';
 
   @override
   String get configFlagEnableDashboardsPage =>
@@ -4286,6 +4286,30 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextTriageToday => 'Astăzi';
+
+  @override
+  String get dailyOsOnboardingCoachCapture => 'Spuneți ce vă preocupă.';
+
+  @override
+  String get dailyOsOnboardingCoachDrafting =>
+      'Planificatorul creează sarcinile noi și așază munca în ziua dvs.';
+
+  @override
+  String get dailyOsOnboardingCoachReconcile =>
+      'Alegeți ce se potrivește pentru azi. Elementele noi devin sarcini când construiți ziua.';
+
+  @override
+  String get dailyOsOnboardingSpotlightAction => 'Încercați';
+
+  @override
+  String get dailyOsOnboardingSpotlightDismiss => 'Nu acum';
+
+  @override
+  String get dailyOsOnboardingSpotlightMessage =>
+      'Atingeți aici și spuneți ce vă preocupă – transform totul într-o sarcină și vă construiesc ziua în jurul ei.';
+
+  @override
+  String get dailyOsOnboardingSpotlightTitle => 'Transformați vorbele în plan';
 
   @override
   String get dailyOsTodayButton => 'Astăzi';

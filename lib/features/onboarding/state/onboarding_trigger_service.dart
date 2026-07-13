@@ -219,7 +219,19 @@ class OnboardingWelcomeCadence extends AsyncNotifier<void> {
   /// [onboardingWelcomeCompletedKey]). Called from the welcome modal's
   /// completion callback, not from its skip/dismiss path -- a plain skip
   /// leaves the shown-count/window grace period intact.
-  Future<void> markCompleted() => markOnboardingWelcomeCompleted();
+  ///
+  /// Refreshes the read-side provider after persistence so gates sequenced
+  /// behind the welcome (including Daily OS onboarding) can proceed in the
+  /// same app session instead of observing the cached pre-completion value.
+  Future<void> markCompleted() async {
+    final keepAlive = ref.keepAlive();
+    try {
+      await markOnboardingWelcomeCompleted();
+      ref.invalidate(shouldAutoShowOnboardingProvider);
+    } finally {
+      keepAlive.close();
+    }
+  }
 }
 
 /// Persists the onboarding welcome's "completed" flag, permanently retiring

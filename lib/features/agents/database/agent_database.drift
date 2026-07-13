@@ -266,6 +266,12 @@ getAgentEntitiesInInterval: SELECT * FROM agent_entities WHERE updated_at >= :st
 
 countAgentEntitiesInInterval: SELECT COUNT(*) AS cnt FROM agent_entities WHERE updated_at >= :start AND updated_at < :end;
 
+-- Deliberately omits `deleted_at IS NULL`: callers that need to know whether
+-- an agent has EVER produced an entity of a given type (e.g. the Daily OS
+-- onboarding eligibility gate, which must not re-offer the walkthrough to a
+-- user whose only plan was later deleted) need tombstones counted too.
+countAgentEntitiesByAgentAndType: SELECT COUNT(*) AS cnt FROM agent_entities WHERE agent_id = :agentId AND type = :type;
+
 getAllAgentLinks: SELECT * FROM agent_links WHERE deleted_at IS NULL ORDER BY created_at ASC;
 
 getAgentLinksInInterval: SELECT * FROM agent_links WHERE updated_at >= :start AND updated_at < :end ORDER BY updated_at ASC, id ASC LIMIT :limit OFFSET :offset;

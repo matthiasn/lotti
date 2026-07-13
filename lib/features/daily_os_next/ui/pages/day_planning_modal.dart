@@ -12,14 +12,17 @@ import 'package:lotti/features/daily_os_next/state/drafting_controller.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/day_planning_result.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_coach_slot.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_glass_action_bar.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_shader.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -63,7 +66,13 @@ class DayPlanningAdapt extends DayPlanningIntent {
 /// On create, the Drafting step closes the whole modal once the plan is
 /// ready and invalidates [currentDraftPlanProvider] so the day surface
 /// shows the new plan.
-Future<void> showDayPlanningModal({
+///
+/// Resolves to a [DayPlanningResult]: a [DayPlanningCreated] (with the drafted
+/// plan and any newly-created task ids) when the create flow lands a plan, a
+/// [DayPlanningAdapted] when the Refine flow accepts one, or `null` when the
+/// user dismisses the modal (barrier tap, close button, or "looks good" with
+/// nothing to adapt). Existing callers that ignore the value are unaffected.
+Future<DayPlanningResult?> showDayPlanningModal({
   required BuildContext context,
   required DateTime dayDate,
   required DayPlanningIntent intent,
@@ -71,7 +80,7 @@ Future<void> showDayPlanningModal({
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final day = DateTime(dayDate.year, dayDate.month, dayDate.day);
 
-  return WoltModalSheet.show<void>(
+  return WoltModalSheet.show<DayPlanningResult>(
     context: context,
     useRootNavigator: true,
     modalTypeBuilder: (modalContext) =>
@@ -241,7 +250,16 @@ class _CaptureStepBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final actualBlocks =
         ref.watch(dailyOsActualTimeBlocksProvider(day)).value ?? const [];
-    return CaptureModalContent(forDate: day, actualBlocks: actualBlocks);
+    return Column(
+      children: [
+        DailyOsOnboardingCoachSlot(
+          message: context.messages.dailyOsOnboardingCoachCapture,
+        ),
+        Expanded(
+          child: CaptureModalContent(forDate: day, actualBlocks: actualBlocks),
+        ),
+      ],
+    );
   }
 }
 
@@ -400,9 +418,15 @@ class _ReconcileStepContent extends ConsumerWidget {
     final tokens = context.designTokens;
     final state = ref.watch(reconcileControllerProvider(params));
     return switch (state) {
-      _ when state.hasValue => ReconcileModalContent(
-        params: params,
-        data: state.requireValue,
+      _ when state.hasValue => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DailyOsOnboardingCoachSlot(
+            message: context.messages.dailyOsOnboardingCoachReconcile,
+            recordStage: OnboardingEventName.dailyOsReconcileReached,
+          ),
+          ReconcileModalContent(params: params, data: state.requireValue),
+        ],
       ),
       _ when state.hasError => Padding(
         padding: EdgeInsets.all(tokens.spacing.step8),
@@ -545,6 +569,42 @@ class _DraftingStepContent extends ConsumerStatefulWidget {
 class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
   bool _advanced = false;
 
+  /// Invalidates the day plan and closes the modal with a [DayPlanningCreated]
+  /// result once Drafting is ready. Attribution of the newly-created task ids
+  /// is best-effort: a reparse failure ships an empty list rather than
+  /// blocking the close.
+  Future<void> _closeWithCreatedResult(DraftPlan draft) async {
+    if (!mounted) return;
+    ref.invalidate(currentDraftPlanProvider(widget.day));
+    final createdTaskIds = await _attributeCreatedTaskIds();
+    if (!mounted) return;
+    // Only auto-close if the modal is still the current route — a competing
+    // dismissal (close button / barrier tap) within the same frame can already
+    // be popping it, and a second pop would target the surface beneath.
+    final route = ModalRoute.of(context);
+    if (route?.isCurrent ?? false) {
+      Navigator.of(context).pop(
+        DayPlanningCreated(draft: draft, createdTaskIds: createdTaskIds),
+      );
+    }
+  }
+
+  Future<List<String>> _attributeCreatedTaskIds() async {
+    final decidedCaptureItemIds = widget.params.decidedCaptureItemIds;
+    if (decidedCaptureItemIds.isEmpty) return const [];
+    try {
+      final reparsed = await ref
+          .read(dayAgentProvider)
+          .parseCaptureToItems(widget.params.captureId);
+      return attributeCreatedTaskIds(
+        decidedCaptureItemIds: decidedCaptureItemIds,
+        reparsedItems: reparsed,
+      );
+    } catch (_) {
+      return const [];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -554,19 +614,11 @@ class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
       (previous, next) {
         final value = next.value;
         if (value == null || _advanced) return;
-        if (value.phase == DraftingPhase.ready && value.draft != null) {
+        final draft = value.draft;
+        if (value.phase == DraftingPhase.ready && draft != null) {
           _advanced = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            ref.invalidate(currentDraftPlanProvider(widget.day));
-            // Only auto-close if the modal is still the current route — a
-            // competing dismissal (close button / barrier tap) within the
-            // same frame can already be popping it, and a second pop would
-            // target the surface beneath.
-            final route = ModalRoute.of(context);
-            if (route?.isCurrent ?? false) {
-              Navigator.of(context).pop();
-            }
+            unawaited(_closeWithCreatedResult(draft));
           });
         }
       },
@@ -574,8 +626,16 @@ class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
 
     final asyncState = ref.watch(draftingControllerProvider(widget.params));
     return switch (asyncState) {
-      _ when asyncState.hasValue => DraftingModalContent(
-        state: asyncState.requireValue,
+      _ when asyncState.hasValue => Column(
+        children: [
+          DailyOsOnboardingCoachSlot(
+            message: context.messages.dailyOsOnboardingCoachDrafting,
+            recordStage: OnboardingEventName.dailyOsDraftingStarted,
+          ),
+          Expanded(
+            child: DraftingModalContent(state: asyncState.requireValue),
+          ),
+        ],
       ),
       _ when asyncState.hasError => Center(
         child: Padding(
