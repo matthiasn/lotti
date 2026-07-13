@@ -2,8 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart'
-    show PaintingContext, RenderProxyBox, ScrollCacheExtent;
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 // animation library is not required for these assertions
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -164,40 +163,6 @@ final _testLinkedAiResponse = AiResponseEntry(
 /// Finds private widget types (e.g. `_PulsingBorder`) by runtime type name.
 Finder _byPrivateType(String typeName) =>
     find.byWidgetPredicate((w) => w.runtimeType.toString() == typeName);
-
-class _PaintPositionRecorder extends SingleChildRenderObjectWidget {
-  const _PaintPositionRecorder({
-    required this.onPaint,
-    required super.child,
-  });
-
-  final ValueChanged<double> onPaint;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) {
-    return _RenderPaintPositionRecorder(onPaint);
-  }
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    _RenderPaintPositionRecorder renderObject,
-  ) {
-    renderObject.onPaint = onPaint;
-  }
-}
-
-class _RenderPaintPositionRecorder extends RenderProxyBox {
-  _RenderPaintPositionRecorder(this.onPaint);
-
-  ValueChanged<double> onPaint;
-
-  @override
-  void paint(PaintingContext context, Offset offset) {
-    onPaint(localToGlobal(Offset.zero).dy);
-    super.paint(context, offset);
-  }
-}
 
 /// Mocks returned by [_registerEntryDetailsMocks] for per-group re-stubbing.
 typedef _EntryDetailsMocks = ({
@@ -1350,7 +1315,7 @@ void main() {
                               showAiEntry: false,
                             ),
                             const SizedBox(height: 500),
-                            _PaintPositionRecorder(
+                            PaintPositionRecorder(
                               onPaint: paintedMarkerTops.add,
                               child: const SizedBox(
                                 key: markerKey,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 
@@ -373,7 +372,7 @@ class _StableSizeHarnessState extends State<_StableSizeHarness> {
                   ),
                 ),
                 SizedBox(height: widget.markerSpacer),
-                _PaintPositionRecorder(
+                PaintPositionRecorder(
                   onPaint: widget.onMarkerPaint,
                   child: const SizedBox(key: _markerKey, height: 40),
                 ),
@@ -387,39 +386,5 @@ class _StableSizeHarnessState extends State<_StableSizeHarness> {
         ),
       ),
     );
-  }
-}
-
-class _PaintPositionRecorder extends SingleChildRenderObjectWidget {
-  const _PaintPositionRecorder({
-    required this.onPaint,
-    required super.child,
-  });
-
-  final ValueChanged<double>? onPaint;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) {
-    return _RenderPaintPositionRecorder(onPaint);
-  }
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    _RenderPaintPositionRecorder renderObject,
-  ) {
-    renderObject.onPaint = onPaint;
-  }
-}
-
-class _RenderPaintPositionRecorder extends RenderProxyBox {
-  _RenderPaintPositionRecorder(this.onPaint);
-
-  ValueChanged<double>? onPaint;
-
-  @override
-  void paint(PaintingContext context, Offset offset) {
-    onPaint?.call(localToGlobal(Offset.zero).dy);
-    super.paint(context, offset);
   }
 }

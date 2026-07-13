@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -17,6 +18,45 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'mocks/mocks.dart';
+
+/// Records the child's global top whenever it paints.
+///
+/// Scroll-stability widget tests use this to catch one-frame displacement that
+/// a final-geometry assertion would miss.
+class PaintPositionRecorder extends SingleChildRenderObjectWidget {
+  const PaintPositionRecorder({
+    required this.onPaint,
+    required super.child,
+    super.key,
+  });
+
+  final ValueChanged<double>? onPaint;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return PaintPositionRecorderRenderObject(onPaint);
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    PaintPositionRecorderRenderObject renderObject,
+  ) {
+    renderObject.onPaint = onPaint;
+  }
+}
+
+class PaintPositionRecorderRenderObject extends RenderProxyBox {
+  PaintPositionRecorderRenderObject(this.onPaint);
+
+  ValueChanged<double>? onPaint;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    onPaint?.call(localToGlobal(Offset.zero).dy);
+    super.paint(context, offset);
+  }
+}
 
 /// Holds the mocks registered during [setUpTestGetIt] so tests can access
 /// them for stubbing without re-creating or looking them up.
