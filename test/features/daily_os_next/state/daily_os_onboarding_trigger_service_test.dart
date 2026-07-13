@@ -7,6 +7,11 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
+import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
+import 'package:lotti/features/whats_new/model/whats_new_content.dart';
+import 'package:lotti/features/whats_new/model/whats_new_release.dart';
+import 'package:lotti/features/whats_new/model/whats_new_state.dart';
+import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -16,6 +21,33 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
+/// Fake [WhatsNewController] reporting no unseen release — the "clear to show
+/// the next auto-shown overlay" state.
+class _NoUnseenWhatsNewController extends WhatsNewController {
+  @override
+  Future<WhatsNewState> build() async => const WhatsNewState();
+}
+
+/// Fake [WhatsNewController] reporting an unseen release — blocks any
+/// auto-show sequenced behind What's New.
+class _UnseenWhatsNewController extends WhatsNewController {
+  @override
+  Future<WhatsNewState> build() async => WhatsNewState(
+    unseenContent: [
+      WhatsNewContent(
+        release: WhatsNewRelease(
+          version: '1.0.0',
+          date: DateTime(2024),
+          title: 'Test Release',
+          folder: 'v1.0.0',
+        ),
+        headerMarkdown: '# Test',
+        sections: const ['Feature 1'],
+      ),
+    ],
+  );
+}
+
 void main() {
   group('isDailyOsOnboardingEligible', () {
     // Baseline args: a genuinely new Daily OS user on today's empty surface
@@ -24,6 +56,8 @@ void main() {
     bool eligible({
       bool dailyOsOnboardingFlagEnabled = true,
       bool dailyOsPageEnabled = true,
+      bool hasUnseenWhatsNew = false,
+      bool welcomeStillOwed = false,
       bool selectedDateIsToday = true,
       bool todayHasActivePlan = false,
       bool hasEverHadPlan = false,
@@ -35,6 +69,8 @@ void main() {
     }) => isDailyOsOnboardingEligible(
       dailyOsOnboardingFlagEnabled: dailyOsOnboardingFlagEnabled,
       dailyOsPageEnabled: dailyOsPageEnabled,
+      hasUnseenWhatsNew: hasUnseenWhatsNew,
+      welcomeStillOwed: welcomeStillOwed,
       selectedDateIsToday: selectedDateIsToday,
       todayHasActivePlan: todayHasActivePlan,
       hasEverHadPlan: hasEverHadPlan,
@@ -47,6 +83,14 @@ void main() {
 
     test('is true for a fresh, ready, today-scoped candidate', () {
       expect(eligible(), isTrue);
+    });
+
+    test("false while What's New still has unseen content", () {
+      expect(eligible(hasUnseenWhatsNew: true), isFalse);
+    });
+
+    test('false while the general FTUE welcome is still owed', () {
+      expect(eligible(welcomeStillOwed: true), isFalse);
     });
 
     test('false when the Daily OS onboarding flag is off', () {
@@ -152,6 +196,8 @@ void main() {
       bool onboardingEnabled = true,
       bool pageEnabled = true,
       bool providerReady = true,
+      bool welcomeStillOwed = false,
+      bool whatsNewUnseen = false,
       int everPlanCount = 0,
       DraftPlan? todayPlan,
     }) {
@@ -162,6 +208,11 @@ void main() {
       when(
         () => mockJournalDb.getConfigFlag(enableDailyOsPageFlag),
       ).thenAnswer((_) async => pageEnabled);
+      // What's New only blocks when its feature is on AND it has unseen
+      // content (mirrors the general FTUE welcome's own guard).
+      when(
+        () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
+      ).thenAnswer((_) async => whatsNewUnseen);
 
       final mockAgentRepo = MockAgentRepository();
       when(
@@ -178,6 +229,16 @@ void main() {
           currentDraftPlanProvider.overrideWith((ref, date) async => todayPlan),
           dailyOsOnboardingProviderReadyProvider.overrideWith(
             (ref) async => providerReady,
+          ),
+          whatsNewControllerProvider.overrideWith(
+            whatsNewUnseen
+                ? _UnseenWhatsNewController.new
+                : _NoUnseenWhatsNewController.new,
+          ),
+          // The general FTUE welcome's own gate, resolved directly so this
+          // test does not re-plumb the welcome's dependencies.
+          shouldAutoShowOnboardingProvider.overrideWith(
+            (ref) async => welcomeStillOwed,
           ),
         ],
       );
@@ -202,6 +263,16 @@ void main() {
 
     test('false when the Daily OS page flag is off', () async {
       final container = createContainer(pageEnabled: false);
+      expect(await read(container), isFalse);
+    });
+
+    test('false while the general FTUE welcome is still owed', () async {
+      final container = createContainer(welcomeStillOwed: true);
+      expect(await read(container), isFalse);
+    });
+
+    test("false while What's New has unseen content", () async {
+      final container = createContainer(whatsNewUnseen: true);
       expect(await read(container), isFalse);
     });
 
