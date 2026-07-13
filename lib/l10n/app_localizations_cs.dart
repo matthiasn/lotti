@@ -5574,7 +5574,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileSaveButton => 'Save';
 
   @override
-  String get inferenceProfileSelectModel => 'Choose a model…';
+  String get inferenceProfileSelectModel => 'Vyber model…';
 
   @override
   String get inferenceProfileSelectProfile => 'Vyber profil…';

@@ -945,7 +945,15 @@ void main() {
             _pickerField('Thinking *'),
           );
           expect(thinkingField.valueText, 'Claude Sonnet');
-          expect(find.text('Choose a model').hitTestable(), findsNothing);
+          expect(
+            find
+                .descendant(
+                  of: _pickerField('Thinking *'),
+                  matching: find.text('Choose a model…'),
+                )
+                .hitTestable(),
+            findsNothing,
+          );
         },
       );
 

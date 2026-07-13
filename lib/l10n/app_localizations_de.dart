@@ -8971,7 +8971,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String taskAgentProfileChangedToast(String profile) {
-    return 'Für alle zukünftigen Agenten-Aktualisierungen wird $profile verwendet, bis du es änderst.';
+    return '$profile wird für jedes zukünftige Agent-Update verwendet, bis du es änderst.';
   }
 
   @override

@@ -3663,7 +3663,7 @@
   "taskAgentNoProfilesAvailable": "Auf diesem Gerät sind keine Profile verfügbar",
   "taskAgentNoProfileSelected": "Kein KI-Setup",
   "taskAgentNoProfileSelectedDescription": "Wähle eine gespeicherte Einrichtung oder ein Denkmodell, bevor der Agent laufen kann.",
-  "taskAgentProfileChangedToast": "Für alle zukünftigen Agenten-Aktualisierungen wird {profile} verwendet, bis du es änderst.",
+  "taskAgentProfileChangedToast": "{profile} wird für jedes zukünftige Agent-Update verwendet, bis du es änderst.",
   "@taskAgentProfileChangedToast": {
     "placeholders": {
       "profile": {
