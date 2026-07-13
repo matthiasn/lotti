@@ -52,15 +52,15 @@ class AudioConverterChannel {
 
   /// Converts an M4A file at [inputPath] to PCM WAV at [outputPath].
   ///
-  /// Uses the platform's native decoder and throws [AudioConversionException]
-  /// if conversion fails. The caller owns both paths and their cleanup.
+  /// Uses the platform's native decoder and rethrows conversion or platform
+  /// failures after logging them. The caller owns both paths and their cleanup.
   static Future<void> convertM4aToWav({
     required String inputPath,
     required String outputPath,
   }) async {
     try {
       await AudioDecoder.convertToWav(inputPath, outputPath);
-    } on AudioConversionException catch (error) {
+    } catch (error) {
       getIt<DomainLogger>().log(
         LogDomain.speech,
         'Native M4A-to-WAV conversion failed: $error',
@@ -99,9 +99,9 @@ Future<Uint8List> convertM4aBytesToTemporaryWav(
       inputPath: inputFile.path,
       outputPath: outputFile.path,
     );
-    if (!outputFile.existsSync()) {
+    if (!outputFile.existsSync() || outputFile.lengthSync() == 0) {
       throw FileSystemException(
-        'Native M4A-to-WAV conversion completed without an output file',
+        'Native M4A-to-WAV conversion completed without a valid output file',
         outputFile.path,
       );
     }

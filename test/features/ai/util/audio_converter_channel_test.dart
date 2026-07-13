@@ -121,6 +121,17 @@ void main() {
       expect(fakeLogging.lastEvent, contains('AAC decoder unavailable'));
     });
 
+    test('logs and rethrows unexpected platform failures', () async {
+      await expectLater(
+        AudioConverterChannel.convertM4aToWav(
+          inputPath: '/tmp/input.m4a',
+          outputPath: '/tmp/output.wav',
+        ),
+        throwsA(isA<MissingPluginException>()),
+      );
+      expect(fakeLogging.lastEvent, contains('MissingPluginException'));
+    });
+
     test('temporary conversion uses native defaults and cleans up', () async {
       late String inputPath;
       late String outputPath;
@@ -224,29 +235,35 @@ void main() {
       expect(outputFile.existsSync(), isFalse);
     });
 
-    test('temporary M4A conversion rejects a missing output file', () async {
+    test('temporary M4A conversion rejects missing or empty output', () async {
       final directory = await Directory.systemTemp.createTemp(
         'lotti_audio_converter_missing_output_test_',
       );
       addTearDown(() => directory.delete(recursive: true));
 
-      await expectLater(
-        convertM4aBytesToTemporaryWav(
-          Uint8List.fromList([1, 2, 3]),
-          temporaryDirectory: directory,
-          fileStem: 'missing',
-          converter: ({required inputPath, required outputPath}) async {},
-        ),
-        throwsA(
-          isA<FileSystemException>().having(
-            (error) => error.message,
-            'message',
-            contains('without an output file'),
+      for (final createEmptyOutput in [false, true]) {
+        final stem = createEmptyOutput ? 'empty' : 'missing';
+        await expectLater(
+          convertM4aBytesToTemporaryWav(
+            Uint8List.fromList([1, 2, 3]),
+            temporaryDirectory: directory,
+            fileStem: stem,
+            converter: ({required inputPath, required outputPath}) async {
+              if (createEmptyOutput) await File(outputPath).create();
+            },
           ),
-        ),
-      );
+          throwsA(
+            isA<FileSystemException>().having(
+              (error) => error.message,
+              'message',
+              contains('without a valid output file'),
+            ),
+          ),
+        );
 
-      expect(File('${directory.path}/missing.m4a').existsSync(), isFalse);
+        expect(File('${directory.path}/$stem.m4a').existsSync(), isFalse);
+        expect(File('${directory.path}/$stem.wav').existsSync(), isFalse);
+      }
     });
 
     test('returns false on PlatformException and logs error', () async {
