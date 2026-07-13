@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:audio_decoder/audio_decoder.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -7,18 +8,17 @@ import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 typedef AudioPathConverter =
-    Future<bool> Function({
+    Future<void> Function({
       required String inputPath,
       required String outputPath,
     });
 typedef AudioScratchFileDeleter = void Function(File file);
 
-/// Dart-side wrapper for native WAV/M4A audio conversion via a platform
-/// channel.
+/// Dart-side wrapper for native WAV/M4A audio conversion.
 ///
-/// On iOS and macOS, the native side uses `AVAudioFile` for AAC encoding and
-/// PCM decoding. Platforms without a native implementation return `false` so
-/// callers can preserve their source file or select a provider fallback.
+/// WAV-to-M4A remains on Lotti's Apple platform channel. M4A-to-WAV delegates
+/// to `audio_decoder`, which uses AVFoundation, Android MediaCodec, Windows
+/// Media Foundation, and Linux GStreamer without bundling FFmpeg.
 class AudioConverterChannel {
   static const _channel = MethodChannel('com.matthiasn.lotti/audio_converter');
 
@@ -52,28 +52,21 @@ class AudioConverterChannel {
 
   /// Converts an M4A file at [inputPath] to PCM WAV at [outputPath].
   ///
-  /// Apple platforms use AVFoundation. Platforms without a registered native
-  /// implementation return `false`, allowing provider code to use its
-  /// non-converting compatibility path.
-  static Future<bool> convertM4aToWav({
+  /// Uses the platform's native decoder and throws [AudioConversionException]
+  /// if conversion fails. The caller owns both paths and their cleanup.
+  static Future<void> convertM4aToWav({
     required String inputPath,
     required String outputPath,
   }) async {
     try {
-      final result = await _channel.invokeMethod<bool>('convertM4aToWav', {
-        'inputPath': inputPath,
-        'outputPath': outputPath,
-      });
-      return result ?? false;
-    } on MissingPluginException {
-      return false;
-    } on PlatformException catch (e) {
+      await AudioDecoder.convertToWav(inputPath, outputPath);
+    } on AudioConversionException catch (error) {
       getIt<DomainLogger>().log(
         LogDomain.speech,
-        'Native M4A-to-WAV conversion failed: $e',
+        'Native M4A-to-WAV conversion failed: $error',
         subDomain: 'convertM4aToWav',
       );
-      return false;
+      rethrow;
     }
   }
 }
@@ -81,11 +74,11 @@ class AudioConverterChannel {
 /// Converts in-memory M4A bytes through temporary files, reads the result, then
 /// removes each scratch file independently before returning.
 ///
-/// The archived M4A is never changed. A `null` result means native conversion
-/// was unavailable or failed, so callers can choose a provider-specific
-/// fallback. Cleanup is best-effort so one filesystem deletion failure does
-/// not leave the other scratch file behind.
-Future<Uint8List?> convertM4aBytesToTemporaryWav(
+/// The archived M4A is never changed. Conversion failures propagate after
+/// cleanup so callers can surface the decoder detail instead of silently
+/// changing request semantics. Cleanup is best-effort so one filesystem
+/// deletion failure does not leave the other scratch file behind.
+Future<Uint8List> convertM4aBytesToTemporaryWav(
   Uint8List m4aBytes, {
   AudioPathConverter? converter,
   AudioScratchFileDeleter? scratchFileDeleter,
@@ -102,11 +95,16 @@ Future<Uint8List?> convertM4aBytesToTemporaryWav(
   try {
     await directory.create(recursive: true);
     await inputFile.writeAsBytes(m4aBytes, flush: true);
-    final converted = await convert(
+    await convert(
       inputPath: inputFile.path,
       outputPath: outputFile.path,
     );
-    if (!converted || !outputFile.existsSync()) return null;
+    if (!outputFile.existsSync()) {
+      throw FileSystemException(
+        'Native M4A-to-WAV conversion completed without an output file',
+        outputFile.path,
+      );
+    }
     return await outputFile.readAsBytes();
   } finally {
     for (final file in [inputFile, outputFile]) {

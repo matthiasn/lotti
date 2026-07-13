@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:audio_decoder/audio_decoder.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/logging_types.dart';
@@ -38,6 +39,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const channel = MethodChannel('com.matthiasn.lotti/audio_converter');
+  const decoderChannel = MethodChannel('audio_decoder');
   late _FakeDomainLogger fakeLogging;
 
   group('AudioConverterChannel', () {
@@ -55,6 +57,8 @@ void main() {
     tearDown(() async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, null);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(decoderChannel, null);
       await tearDownTestGetIt();
     });
 
@@ -75,72 +79,53 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('converts M4A to WAV through the native channel', () async {
+    test('converts M4A to WAV through the cross-platform decoder', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (call) async {
-            expect(call.method, 'convertM4aToWav');
+          .setMockMethodCallHandler(decoderChannel, (call) async {
+            expect(call.method, 'convertToWav');
             final args = call.arguments as Map<dynamic, dynamic>;
             expect(args['inputPath'], '/tmp/input.m4a');
             expect(args['outputPath'], '/tmp/output.wav');
-            return true;
+            return '/tmp/output.wav';
           });
 
-      final result = await AudioConverterChannel.convertM4aToWav(
+      await AudioConverterChannel.convertM4aToWav(
         inputPath: '/tmp/input.m4a',
         outputPath: '/tmp/output.wav',
       );
-      expect(result, isTrue);
     });
 
-    final m4aFailureCases =
-        <
-          ({
-            String description,
-            Future<Object?> Function(MethodCall call) handler,
-            bool expectsLog,
-          })
-        >[
-          (
-            description: 'returns false and logs M4A platform failures',
-            handler: (_) async => throw PlatformException(
+    test('logs and rethrows cross-platform decoder failures', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            decoderChannel,
+            (_) async => throw PlatformException(
               code: 'CONVERSION_ERROR',
-              message: 'Failed',
+              message: 'AAC decoder unavailable',
             ),
-            expectsLog: true,
-          ),
-          (
-            description: 'returns false when the M4A plugin is unavailable',
-            handler: (_) async => throw MissingPluginException(),
-            expectsLog: false,
-          ),
-          (
-            description: 'returns false when M4A conversion returns null',
-            handler: (_) async => null,
-            expectsLog: false,
-          ),
-        ];
-    for (final testCase in m4aFailureCases) {
-      test(testCase.description, () async {
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(channel, testCase.handler);
+          );
 
-        final result = await AudioConverterChannel.convertM4aToWav(
+      await expectLater(
+        AudioConverterChannel.convertM4aToWav(
           inputPath: '/tmp/input.m4a',
           outputPath: '/tmp/output.wav',
-        );
-
-        expect(result, isFalse);
-        if (testCase.expectsLog) {
-          expect(fakeLogging.lastEvent, contains('M4A-to-WAV'));
-        }
-      });
-    }
+        ),
+        throwsA(
+          isA<AudioConversionException>().having(
+            (error) => error.message,
+            'message',
+            'AAC decoder unavailable',
+          ),
+        ),
+      );
+      expect(fakeLogging.lastEvent, contains('AAC decoder unavailable'));
+    });
 
     test('temporary conversion uses native defaults and cleans up', () async {
       late String inputPath;
       late String outputPath;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (call) async {
+          .setMockMethodCallHandler(decoderChannel, (call) async {
             inputPath =
                 (call.arguments as Map<dynamic, dynamic>)['inputPath']
                     as String;
@@ -148,7 +133,7 @@ void main() {
                 (call.arguments as Map<dynamic, dynamic>)['outputPath']
                     as String;
             await File(outputPath).writeAsBytes([82, 73, 70, 70]);
-            return true;
+            return outputPath;
           });
 
       final wavBytes = await convertM4aBytesToTemporaryWav(
@@ -175,7 +160,6 @@ void main() {
         converter: ({required inputPath, required outputPath}) async {
           expect(File(inputPath).readAsBytesSync(), [1, 2, 3]);
           await File(outputPath).writeAsBytes([82, 73, 70, 70]);
-          return true;
         },
       );
 
@@ -192,17 +176,19 @@ void main() {
       final inputFile = File('${directory.path}/failed.m4a');
       final outputFile = File('${directory.path}/failed.wav');
 
-      final wavBytes = await convertM4aBytesToTemporaryWav(
-        Uint8List.fromList([1, 2, 3]),
-        temporaryDirectory: directory,
-        fileStem: 'failed',
-        converter: ({required inputPath, required outputPath}) async {
-          await File(outputPath).writeAsBytes([82, 73, 70, 70]);
-          return false;
-        },
+      await expectLater(
+        convertM4aBytesToTemporaryWav(
+          Uint8List.fromList([1, 2, 3]),
+          temporaryDirectory: directory,
+          fileStem: 'failed',
+          converter: ({required inputPath, required outputPath}) async {
+            await File(outputPath).writeAsBytes([82, 73, 70, 70]);
+            throw AudioConversionException('decode failed');
+          },
+        ),
+        throwsA(isA<AudioConversionException>()),
       );
 
-      expect(wavBytes, isNull);
       expect(inputFile.existsSync(), isFalse);
       expect(outputFile.existsSync(), isFalse);
     });
@@ -222,7 +208,6 @@ void main() {
         fileStem: 'cleanup',
         converter: ({required inputPath, required outputPath}) async {
           await File(outputPath).writeAsBytes([82, 73, 70, 70]);
-          return true;
         },
         scratchFileDeleter: (file) {
           attemptedPaths.add(file.path);
@@ -245,14 +230,22 @@ void main() {
       );
       addTearDown(() => directory.delete(recursive: true));
 
-      final wavBytes = await convertM4aBytesToTemporaryWav(
-        Uint8List.fromList([1, 2, 3]),
-        temporaryDirectory: directory,
-        fileStem: 'missing',
-        converter: ({required inputPath, required outputPath}) async => true,
+      await expectLater(
+        convertM4aBytesToTemporaryWav(
+          Uint8List.fromList([1, 2, 3]),
+          temporaryDirectory: directory,
+          fileStem: 'missing',
+          converter: ({required inputPath, required outputPath}) async {},
+        ),
+        throwsA(
+          isA<FileSystemException>().having(
+            (error) => error.message,
+            'message',
+            contains('without an output file'),
+          ),
+        ),
       );
 
-      expect(wavBytes, isNull);
       expect(File('${directory.path}/missing.m4a').existsSync(), isFalse);
     });
 

@@ -287,10 +287,28 @@ by Lotti, so the provider route converts a temporary copy to PCM WAV and sends
 that through buffered `/chat/completions`; the original M4A is never modified,
 and both scratch files are deleted in `finally`. The audio block precedes the
 text block so the task prompt and category speech dictionary guide recognition.
-If native conversion is unavailable or fails, `/audio/transcriptions` produces
-a draft and a text-only Voxtral pass applies the same context without
-paraphrasing. Requests reject empty responses, time out after 60 seconds, and
-surface structured provider detail with a correlation id.
+Conversion is implemented by `audio_decoder`: AVFoundation on iOS and macOS,
+MediaCodec on Android, Media Foundation on Windows, and GStreamer on Linux.
+No FFmpeg binary is bundled. Conversion failure aborts the request and surfaces
+the native decoder detail because a transcription-endpoint fallback cannot
+apply task context during recognition. Requests reject empty responses, time
+out after 60 seconds, and surface structured provider detail with a correlation
+id.
+
+```mermaid
+sequenceDiagram
+  participant Archive as M4A master
+  participant Scratch as Temporary files
+  participant Decoder as Native decoder
+  participant Melious as Voxtral chat
+  Archive->>Scratch: copy bytes to unique .m4a
+  Scratch->>Decoder: decode .m4a to PCM .wav
+  Decoder-->>Scratch: write RIFF/WAVE output
+  Scratch->>Melious: WAV audio block + task/dictionary context
+  Melious-->>Scratch: contextual transcript or provider error
+  Scratch->>Scratch: delete .m4a and .wav in finally
+```
+
 Whisper and explicit transcription model IDs still use the transcription
 endpoint. FTUE setup also creates both
 Whisper rows so users can switch between the regular and Turbo variants.

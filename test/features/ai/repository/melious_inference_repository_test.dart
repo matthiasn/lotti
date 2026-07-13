@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -979,7 +980,7 @@ void main() {
         httpClient: MockClient((_) async => _voxtralChatResponse()),
         m4aToWavConverter: (_) async {
           conversionCalled = true;
-          return null;
+          throw StateError('WAV input must bypass conversion');
         },
       );
       addTearDown(repository.close);
@@ -998,26 +999,20 @@ void main() {
       expect(conversionCalled, isFalse);
     });
 
-    test(
-      'transcribeChatAudio context-corrects when WAV conversion is unavailable',
-      () async {
-        final captured = <http.Request>[];
-        final repository = MeliousInferenceRepository(
-          httpClient: MockClient((request) async {
-            captured.add(request);
-            if (request.url.path.endsWith('/audio/transcriptions')) {
-              return http.Response(
-                jsonEncode({'text': 'Lottie uses Melius.'}),
-                200,
-              );
-            }
-            return _voxtralChatResponse();
-          }),
-          m4aToWavConverter: (_) async => null,
-        );
-        addTearDown(repository.close);
+    test('transcribeChatAudio surfaces native conversion failures', () async {
+      var requestSent = false;
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async {
+          requestSent = true;
+          return _voxtralChatResponse();
+        }),
+        m4aToWavConverter: (_) async =>
+            throw Exception('GStreamer AAC decoder unavailable'),
+      );
+      addTearDown(repository.close);
 
-        final chunks = await repository
+      await expectLater(
+        repository
             .transcribeChatAudio(
               model: 'voxtral-small-24b-2507',
               audioBase64: base64Encode([1, 2, 3]),
@@ -1025,44 +1020,20 @@ void main() {
               apiKey: apiKey,
               prompt: 'Transcribe exactly. Required spelling: Lotti.',
             )
-            .toList();
-
-        expect(chunks.single.id, 'chatcmpl-voxtral');
-        expect(
-          chunks.single.choices?.single.delta?.content,
-          'Lotti uses Voxtral.',
-        );
-        expect(chunks.single.usage?.totalTokens, 15);
-        expect(captured, hasLength(2));
-        expect(
-          captured.first.url.toString(),
-          '$baseUrl/audio/transcriptions',
-        );
-        expect(captured.first.headers['Authorization'], 'Bearer $apiKey');
-        final multipartBody = latin1.decode(captured.first.bodyBytes);
-        expect(multipartBody, contains('voxtral-small-24b-2507'));
-
-        expect(captured.last.url.toString(), '$baseUrl/chat/completions');
-        expect(captured.last.headers['Authorization'], 'Bearer $apiKey');
-        final body = jsonDecode(captured.last.body) as Map<String, dynamic>;
-        expect(body['model'], 'voxtral-small-24b-2507');
-        expect(body['stream'], isFalse);
-        expect(
-          body['request_id'],
-          isA<String>().having(
-            (value) => value,
-            'request id',
-            startsWith('melious-audio-'),
+            .toList(),
+        throwsA(
+          isA<TranscriptionException>().having(
+            (error) => error.message,
+            'message',
+            allOf(
+              contains('GStreamer AAC decoder unavailable'),
+              contains('request melious-audio-'),
+            ),
           ),
-        );
-        final messages = body['messages']! as List<dynamic>;
-        final content =
-            (messages.single as Map<String, dynamic>)['content']! as String;
-        expect(content, contains('Required spelling: Lotti.'));
-        expect(content, contains('Lottie uses Melius.'));
-        expect(content, contains('only the final transcript'));
-      },
-    );
+        ),
+      );
+      expect(requestSent, isFalse);
+    });
 
     test(
       'transcribeChatAudio preserves structured provider error detail',
@@ -1141,12 +1112,40 @@ void main() {
       );
     });
 
-    test('transcribeChatAudio rejects an empty first-pass transcript', () {
+    test('transcribeChatAudio bounds native conversion time', () async {
       final repository = MeliousInferenceRepository(
-        httpClient: MockClient(
-          (_) async => http.Response(jsonEncode({'text': ''}), 200),
+        m4aToWavConverter: (_) => Completer<Uint8List>().future,
+      );
+      addTearDown(repository.close);
+
+      await expectLater(
+        repository
+            .transcribeChatAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              prompt: 'Transcribe.',
+              timeout: Duration.zero,
+            )
+            .toList(),
+        throwsA(
+          isA<TranscriptionException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('timed out'), contains('request melious-audio-')),
+          ),
         ),
-        m4aToWavConverter: (_) async => null,
+      );
+    });
+
+    test('transcribeChatAudio prefixes conversion status detail', () {
+      final repository = MeliousInferenceRepository(
+        m4aToWavConverter: (_) async => throw TranscriptionException(
+          'Native audio decoder rejected the recording',
+          provider: 'audio_decoder',
+          statusCode: 422,
+        ),
       );
       addTearDown(repository.close);
 
@@ -1164,7 +1163,10 @@ void main() {
           isA<TranscriptionException>().having(
             (error) => error.message,
             'message',
-            contains('no first-pass transcript'),
+            allOf(
+              startsWith('HTTP 422: Native audio decoder'),
+              contains('request melious-audio-'),
+            ),
           ),
         ),
       );

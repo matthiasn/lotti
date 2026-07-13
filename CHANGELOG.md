@@ -17,11 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   disappearing.** Chat, saved audio entries, linked tasks, and agent-evolution
   input show provider diagnostics, including empty-response failures. Melious
   Voxtral now converts a temporary copy of the compact M4A master to WAV for a
-  buffered contextual chat request, then deletes its scratch files. Conversion
-  failures use an M4A transcription plus context-correction fallback. Requests
-  fail with provider detail and a request ID after 60 seconds instead of
-  waiting indefinitely. Voxtral is preferred over Whisper when both Melious
-  models are configured.
+  buffered contextual chat request on every supported platform, then deletes
+  its scratch files. Conversion uses native system media APIs without bundling
+  FFmpeg, and failures surface their decoder detail instead of dropping to a
+  less contextual request. Requests fail with provider detail and a request ID
+  after 60 seconds instead of waiting indefinitely. Voxtral is preferred over
+  Whisper when both Melious models are configured.
 
 ## [0.9.1040]
 ### Added
