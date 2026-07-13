@@ -738,18 +738,19 @@ A first-time Daily OS user lands on a real but unexplained empty `DayPage`
 teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 [`docs/implementation_plans/2026-07-09_daily_os_onboarding.md`](../../../docs/implementation_plans/2026-07-09_daily_os_onboarding.md).
 
-> **Status.** The **Phase 0 substrate**, the **Phase 1 contracts**, the **Phase
-> 2a widgets**, and the **Phase 2b wiring** below are implemented: a session
-> coordinates the walkthrough, the spotlight mounts over the empty-Day CTA, the
-> coach strips render inside the create modal (recording stage events), and the
-> modal's typed result drives completion (retiring the cadence) or a skip. What
-> is still missing is the **auto-show / replay arming** (Phase 2c): nothing
-> calls `sessionController.start()` yet, so no session is ever active in a
-> shipped build. The path is inert regardless — gated behind the off-by-default
-> `dailyOsOnboardingEnabledFlag`, with `dailyOsOnboardingProviderReadyProvider`
-> defaulting to `false` — so `shouldAutoShowDailyOsOnboardingProvider` never
-> resolves `true`. The completion **celebration** beat is also deferred to a
-> later pass. This section documents what exists in code today.
+> **Status.** Phases **0–2c** below are implemented end-to-end: a session
+> coordinates the walkthrough, `AppScreen` auto-arms it (sequenced behind
+> What's New and the FTUE welcome) by starting a session + switching to the
+> Daily OS tab, the spotlight mounts over the empty-Day CTA, the coach strips
+> render inside the create modal (recording stage events), and the modal's
+> typed result drives completion (retiring the cadence) or a skip. The path is
+> still **inert in a shipped build**: it is gated behind the off-by-default
+> `dailyOsOnboardingEnabledFlag`, and `dailyOsOnboardingProviderReadyProvider`
+> (the real planning-flow readiness signal) defaults to `false`, so
+> `shouldAutoShowDailyOsOnboardingProvider` never resolves `true`. Still
+> **deferred**: wiring the real `providerReady` seam, the completion
+> **celebration** beat, and the Settings **replay** entry (Phase 3). This
+> section documents what exists in code today.
 
 | Piece | File | Role |
 |---|---|---|

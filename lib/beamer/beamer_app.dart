@@ -19,6 +19,9 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dar
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
@@ -267,6 +270,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   /// stack a second modal and double-count the show.
   bool _onboardingWelcomeShown = false;
 
+  /// Guards against the Daily OS onboarding walkthrough being armed more than
+  /// once per [AppScreen] lifetime, mirroring [_onboardingWelcomeShown].
+  bool _dailyOsOnboardingShown = false;
+
   void _showNotLoggedInToast(BuildContext context) {
     if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -353,9 +360,32 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         onCompleted: () => unawaited(
           ref.read(onboardingWelcomeCadenceProvider.notifier).markCompleted(),
         ),
-        onDismiss: () {},
+        // The welcome no longer owns the slot on close — let the Daily OS
+        // onboarding gate re-evaluate. (Provider-connect completion re-checks
+        // too once the readiness seam is wired in a later phase; until then
+        // Daily OS stays gated on `providerReady`.)
+        onDismiss: () =>
+            ref.invalidate(shouldAutoShowDailyOsOnboardingProvider),
       ),
     );
+  }
+
+  /// Arms the Daily OS onboarding walkthrough once it wins the auto-show slot
+  /// (after What's New and the general FTUE welcome). Switches to the Daily OS
+  /// tab so the spotlight has its surface, starts the session (which `DayPage`
+  /// observes to mount the spotlight over the empty-Day CTA), and records the
+  /// show only then. `recordShown` log-and-swallows its own `SettingsDb`
+  /// failures, so a bookkeeping hiccup never surfaces here.
+  Future<void> _showDailyOsOnboarding() async {
+    if (!mounted) return;
+    if (navService.isDailyOsPageEnabled &&
+        navService.index != navService.calendarIndex) {
+      navService.tapIndex(navService.calendarIndex);
+    }
+    ref
+        .read(dailyOsOnboardingSessionControllerProvider.notifier)
+        .start(origin: DailyOsOnboardingOrigin.auto);
+    await ref.read(dailyOsOnboardingCadenceProvider.notifier).recordShown();
   }
 
   @override
@@ -421,7 +451,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         if (prevHasUnseen && !nextHasUnseen) {
           ref
             ..invalidate(aiSetupPromptServiceProvider)
-            ..invalidate(shouldAutoShowOnboardingProvider);
+            ..invalidate(shouldAutoShowOnboardingProvider)
+            ..invalidate(shouldAutoShowDailyOsOnboardingProvider);
         }
       })
       // Auto-show AI setup prompt for new users without AI providers
@@ -471,6 +502,32 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               error,
               stackTrace: stack,
               subDomain: 'shouldAutoShowOnboarding',
+            );
+          },
+        );
+      })
+      // Auto-show the Daily OS onboarding walkthrough once it wins the slot.
+      // Its own eligibility gate keeps it sequenced behind What's New and the
+      // FTUE welcome, so being last in this chain does not race them.
+      ..listen(shouldAutoShowDailyOsOnboardingProvider, (prev, next) {
+        next.when(
+          data: (shouldShow) {
+            if (shouldShow && mounted && !_dailyOsOnboardingShown) {
+              _dailyOsOnboardingShown = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  unawaited(_showDailyOsOnboarding());
+                }
+              });
+            }
+          },
+          loading: () {},
+          error: (error, stack) {
+            getIt<DomainLogger>().error(
+              LogDomain.onboarding,
+              error,
+              stackTrace: stack,
+              subDomain: 'shouldAutoShowDailyOsOnboarding',
             );
           },
         );
