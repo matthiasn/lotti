@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
@@ -110,19 +113,30 @@ bool _isSameLocalDay(DateTime a, DateTime b) {
       localA.day == localB.day;
 }
 
-/// Seam for the real planning-flow provider/profile readiness signal.
+/// Whether the day-planning flow has a usable AI provider to run against.
 ///
-/// Phase 0 defaults this to `false` so the walkthrough never auto-shows before
-/// a later phase wires it to the same readiness truth the real
-/// `DayPlanningCreate` flow relies on. Combined with the off-by-default
-/// [dailyOsOnboardingEnabledFlag], this keeps the substrate inert until the
-/// walkthrough UI and its readiness check ship. Tests and the wiring phase
-/// override this provider.
+/// This is the same truth the real `DayPlanningCreate` drafting wake gates on:
+/// `DayAgentWorkflow` fails with `'No inference provider configured'` unless the
+/// planner's profile resolves a thinking slot, which ultimately requires **at
+/// least one configured inference provider that is usable** (API key set, or a
+/// keyless local provider with a base URL). Gating the walkthrough on this
+/// keeps us from inviting a user into a capture-and-draft flow that is
+/// guaranteed to fail — and, reading the reactive config controller, it flips
+/// to `true` the moment the user connects a provider.
+///
+/// Transcription/image slots are non-fatal (resolved best-effort), so the
+/// gate is the drafting thinking slot, mirrored here as "a usable provider
+/// exists" — which is upstream of profile/template seeding and needs no
+/// planner agent to exist yet.
 final FutureProvider<bool> dailyOsOnboardingProviderReadyProvider =
-    FutureProvider<bool>(
-      (ref) async => false,
-      name: 'dailyOsOnboardingProviderReadyProvider',
-    );
+    FutureProvider<bool>((ref) async {
+      final providers = await ref.watch(
+        aiConfigByTypeControllerProvider(AiConfigType.inferenceProvider).future,
+      );
+      return providers.whereType<AiConfigInferenceProvider>().any(
+        (provider) => provider.isUsable,
+      );
+    }, name: 'dailyOsOnboardingProviderReadyProvider');
 
 /// Candidate-eligibility check for the Daily OS onboarding walkthrough.
 ///
