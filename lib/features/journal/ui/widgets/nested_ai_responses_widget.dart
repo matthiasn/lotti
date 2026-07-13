@@ -50,8 +50,12 @@ class _NestedAiResponsesWidgetState
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
   late Animation<double> _rotationAnimation;
+  ProviderSubscription<AsyncValue<List<AiResponseEntry>>>?
+  _responsesSubscription;
   final Set<String> _seenResponseIds = {};
+  Set<String> _newlyArrivedResponseIds = const {};
   bool _receivedInitialResponses = false;
+  bool _animateSection = false;
 
   /// Whether the section is expanded - derived from animation controller.
   bool get _isExpanded =>
@@ -84,12 +88,52 @@ class _NestedAiResponsesWidgetState
 
     // Start expanded
     _animationController.value = 1.0;
+    _listenToResponses();
+  }
+
+  @override
+  void didUpdateWidget(covariant NestedAiResponsesWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.parentEntryId == widget.parentEntryId) return;
+
+    _responsesSubscription?.close();
+    _seenResponseIds.clear();
+    _newlyArrivedResponseIds = const {};
+    _receivedInitialResponses = false;
+    _animateSection = false;
+    _listenToResponses();
   }
 
   @override
   void dispose() {
+    _responsesSubscription?.close();
     _animationController.dispose();
     super.dispose();
+  }
+
+  void _listenToResponses() {
+    _responsesSubscription = ref.listenManual(
+      linkedAiResponsesControllerProvider(widget.parentEntryId),
+      (_, next) => _trackResponses(next.value),
+      fireImmediately: true,
+    );
+  }
+
+  void _trackResponses(List<AiResponseEntry>? responses) {
+    if (responses == null) return;
+
+    final currentIds = responses.map((response) => response.meta.id).toSet();
+    final isInitialResult = !_receivedInitialResponses;
+    final animateSection =
+        !isInitialResult && _seenResponseIds.isEmpty && currentIds.isNotEmpty;
+    _newlyArrivedResponseIds = isInitialResult || animateSection
+        ? const {}
+        : currentIds.difference(_seenResponseIds);
+    _animateSection = animateSection;
+    _receivedInitialResponses = true;
+    _seenResponseIds
+      ..clear()
+      ..addAll(currentIds);
   }
 
   void _toggleExpanded() {
@@ -109,24 +153,14 @@ class _NestedAiResponsesWidgetState
     final aiResponses = asyncAiResponses.value;
     if (aiResponses == null) return const SizedBox.shrink();
 
-    final isInitialResult = !_receivedInitialResponses;
-    final currentIds = aiResponses.map((response) => response.meta.id).toSet();
-    final wasEmpty = _seenResponseIds.isEmpty;
-    final newlyArrived = currentIds.difference(_seenResponseIds);
-    _receivedInitialResponses = true;
-    _seenResponseIds
-      ..clear()
-      ..addAll(currentIds);
-
     if (aiResponses.isEmpty) return const SizedBox.shrink();
 
-    final animateSection = !isInitialResult && wasEmpty;
     final section = _buildNestedSection(
       context,
       aiResponses,
-      newlyArrived: isInitialResult || animateSection ? const {} : newlyArrived,
+      newlyArrived: _newlyArrivedResponseIds,
     );
-    if (!animateSection) return section;
+    if (!_animateSection) return section;
     return SizeFadeEntrance(
       key: ValueKey('nested-ai-section-${widget.parentEntryId}'),
       child: section,

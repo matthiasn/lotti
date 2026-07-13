@@ -1,19 +1,39 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+
+class _ControllableLinkedAiResponsesController
+    extends LinkedAiResponsesController {
+  _ControllableLinkedAiResponsesController({
+    required String entryId,
+    required this.initialResponses,
+  }) : super(entryId);
+
+  final List<AiResponseEntry> initialResponses;
+
+  @override
+  Future<List<AiResponseEntry>> build() async => initialResponses;
+
+  void emit(List<AiResponseEntry> responses) {
+    state = AsyncData(responses);
+  }
+}
 
 // Test data
 final testAudioEntry = JournalAudio(
@@ -150,6 +170,53 @@ void main() {
   }
 
   group('NestedAiResponsesWidget Rendering', () {
+    testWidgets(
+      'tracks response entrances outside build across provider updates',
+      (tester) async {
+        final controller = _ControllableLinkedAiResponsesController(
+          entryId: testAudioEntry.meta.id,
+          initialResponses: const [],
+        );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            NestedAiResponsesWidget(
+              parentEntryId: testAudioEntry.meta.id,
+              linkedFromEntity: testAudioEntry,
+            ),
+            overrides: [
+              linkedAiResponsesControllerProvider(
+                testAudioEntry.meta.id,
+              ).overrideWith(() => controller),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(SizeFadeEntrance), findsNothing);
+
+        controller.emit([testAiResponseEntry1]);
+        await tester.pump();
+
+        final sectionEntrance = tester.widget<SizeFadeEntrance>(
+          find.byKey(
+            ValueKey('nested-ai-section-${testAudioEntry.meta.id}'),
+          ),
+        );
+        expect(sectionEntrance.animate, isTrue);
+
+        await tester.pump(const Duration(milliseconds: 300));
+        controller.emit([testAiResponseEntry2, testAiResponseEntry1]);
+        await tester.pump();
+
+        final responseEntrance = tester.widget<SizeFadeEntrance>(
+          find.byKey(
+            ValueKey('nested-ai-response-${testAiResponseEntry2.meta.id}'),
+          ),
+        );
+        expect(responseEntrance.animate, isTrue);
+      },
+    );
+
     testWidgets('shows nothing while loading', (tester) async {
       // Arrange - use a completer to keep the provider in loading state
       final completer = Completer<List<EntryLink>>();

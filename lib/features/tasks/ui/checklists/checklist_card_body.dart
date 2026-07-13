@@ -126,19 +126,33 @@ class _AnimatedChecklistItems extends StatefulWidget {
 
 class _AnimatedChecklistItemsState extends State<_AnimatedChecklistItems> {
   final Set<String> _knownItemIds = {};
-  bool _seeded = false;
+  final Set<String> _newlyInsertedItemIds = {};
 
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    super.initState();
+    _knownItemIds.addAll(widget.itemIds);
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedChecklistItems oldWidget) {
+    super.didUpdateWidget(oldWidget);
     final currentIds = widget.itemIds.toSet();
-    final newlyInserted = _seeded
-        ? currentIds.difference(_knownItemIds)
-        : const <String>{};
-    _seeded = true;
+    if (oldWidget.checklistId != widget.checklistId ||
+        oldWidget.taskId != widget.taskId) {
+      _newlyInsertedItemIds.clear();
+    } else {
+      _newlyInsertedItemIds
+        ..clear()
+        ..addAll(currentIds.difference(_knownItemIds));
+    }
     _knownItemIds
       ..clear()
       ..addAll(currentIds);
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return ListView(
       // EdgeInsets.zero — without this BoxScrollView absorbs the ambient
       // MediaQuery.padding (e.g. iPhone notch) as its top padding.
@@ -149,7 +163,7 @@ class _AnimatedChecklistItemsState extends State<_AnimatedChecklistItems> {
         final itemId = widget.itemIds[index];
         return SizeFadeEntrance(
           key: ValueKey('row-${widget.checklistId}-$itemId'),
-          animate: newlyInserted.contains(itemId),
+          animate: _newlyInsertedItemIds.contains(itemId),
           child: ChecklistItemRow(
             itemId: itemId,
             checklistId: widget.checklistId,

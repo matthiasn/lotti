@@ -36,7 +36,38 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
   /// Track expansion states for each checklist (used for sorting mode).
   final Map<String, bool> _expansionStates = {};
   final Set<String> _knownChecklistIds = {};
-  bool _seededChecklistIds = false;
+  final Set<String> _newlyInsertedChecklistIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _knownChecklistIds.addAll(widget.task.data.checklistIds ?? const []);
+  }
+
+  @override
+  void didUpdateWidget(covariant ChecklistsWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final taskChanged =
+        oldWidget.entryId != widget.entryId ||
+        oldWidget.task.id != widget.task.id;
+    if (taskChanged) {
+      _checklistIds = null;
+    }
+
+    final currentIds =
+        (_checklistIds ?? widget.task.data.checklistIds ?? const <String>[])
+            .toSet();
+    if (taskChanged) {
+      _newlyInsertedChecklistIds.clear();
+    } else {
+      _newlyInsertedChecklistIds
+        ..clear()
+        ..addAll(currentIds.difference(_knownChecklistIds));
+    }
+    _knownChecklistIds
+      ..clear()
+      ..addAll(currentIds);
+  }
 
   void _onExpansionChanged(String checklistId, bool isExpanded) {
     _expansionStates[checklistId] = isExpanded;
@@ -71,14 +102,6 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
     }
 
     final checklistIds = _checklistIds ?? item.data.checklistIds ?? [];
-    final currentChecklistIds = checklistIds.toSet();
-    final newlyInsertedChecklistIds = _seededChecklistIds
-        ? currentChecklistIds.difference(_knownChecklistIds)
-        : const <String>{};
-    _seededChecklistIds = true;
-    _knownChecklistIds
-      ..clear()
-      ..addAll(currentChecklistIds);
     // Empty state — when the task has no checklists yet, the section is
     // hidden entirely. Adding the first checklist now lives exclusively on
     // the FAB's create-entry menu (see `create_entry_items.dart`), which
@@ -117,6 +140,7 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                 : newIndex;
             itemIds.insert(insertionIndex, movedItem);
             setState(() {
+              _newlyInsertedChecklistIds.clear();
               _checklistIds = itemIds;
             });
 
@@ -134,7 +158,7 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
               // (which flashed the cards). checklistId is unique per task.
               return SizeFadeEntrance(
                 key: Key('checklist-$checklistId-${widget.entryId}'),
-                animate: newlyInsertedChecklistIds.contains(checklistId),
+                animate: _newlyInsertedChecklistIds.contains(checklistId),
                 child: Consumer(
                   builder: (context, ref, _) {
                     final checklist = ref
