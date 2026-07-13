@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
@@ -34,6 +35,39 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
 
   /// Track expansion states for each checklist (used for sorting mode).
   final Map<String, bool> _expansionStates = {};
+  final Set<String> _knownChecklistIds = {};
+  final Set<String> _newlyInsertedChecklistIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _knownChecklistIds.addAll(widget.task.data.checklistIds ?? const []);
+  }
+
+  @override
+  void didUpdateWidget(covariant ChecklistsWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final taskChanged =
+        oldWidget.entryId != widget.entryId ||
+        oldWidget.task.id != widget.task.id;
+    if (taskChanged) {
+      _checklistIds = null;
+    }
+
+    final currentIds =
+        (_checklistIds ?? widget.task.data.checklistIds ?? const <String>[])
+            .toSet();
+    if (taskChanged) {
+      _newlyInsertedChecklistIds.clear();
+    } else {
+      _newlyInsertedChecklistIds.addAll(
+        currentIds.difference(_knownChecklistIds),
+      );
+    }
+    _knownChecklistIds
+      ..clear()
+      ..addAll(currentIds);
+  }
 
   void _onExpansionChanged(String checklistId, bool isExpanded) {
     _expansionStates[checklistId] = isExpanded;
@@ -106,6 +140,7 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                 : newIndex;
             itemIds.insert(insertionIndex, movedItem);
             setState(() {
+              _newlyInsertedChecklistIds.clear();
               _checklistIds = itemIds;
             });
 
@@ -132,7 +167,10 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                         )),
                       )
                       .value;
-                  // Don't render card for deleted or stale checklists
+                  // Don't render card for deleted or stale checklists. The
+                  // entrance stays unmounted while a newly inserted checklist
+                  // is loading, so its one-shot animation cannot finish on a
+                  // zero-height placeholder.
                   if (checklist == null) {
                     return const SizedBox.shrink();
                   }
@@ -143,15 +181,21 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                       : sortingState.preExpansionStates[checklistId];
 
                   // ModernBaseCard is now inside ChecklistWrapper to ensure
-                  // DropRegion covers the entire visual card area
-                  return ChecklistCardWrapper(
-                    entryId: checklistId,
-                    categoryId: item.categoryId,
-                    taskId: widget.task.id,
-                    isSortingMode: isSorting,
-                    initiallyExpanded: initiallyExpanded,
-                    onExpansionChanged: _onExpansionChanged,
-                    reorderIndex: index,
+                  // DropRegion covers the entire visual card area.
+                  return SizeFadeEntrance(
+                    key: ValueKey(
+                      'checklist-entrance-$checklistId-${widget.entryId}',
+                    ),
+                    animate: _newlyInsertedChecklistIds.contains(checklistId),
+                    child: ChecklistCardWrapper(
+                      entryId: checklistId,
+                      categoryId: item.categoryId,
+                      taskId: widget.task.id,
+                      isSortingMode: isSorting,
+                      initiallyExpanded: initiallyExpanded,
+                      onExpansionChanged: _onExpansionChanged,
+                      reorderIndex: index,
+                    ),
                   );
                 },
               );

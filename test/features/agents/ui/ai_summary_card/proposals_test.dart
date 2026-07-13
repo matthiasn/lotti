@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/theme/motion_tokens.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -72,16 +73,16 @@ void main() {
           ),
           // Reduced motion keeps the entrance instant (and suppresses the row's
           // one-shot swipe-nudge timer); we assert the wiring, not the tween —
-          // EnterTransition's own tests cover the reveal.
+          // SizeFadeEntrance's own tests cover the reveal.
           mediaQueryData: const MediaQueryData(disableAnimations: true),
         ),
       );
       await tester.pump();
 
-      final enterP1 = tester.widget<EnterTransition>(
+      final enterP1 = tester.widget<SizeFadeEntrance>(
         find.byKey(const ValueKey('enter-p1-0')),
       );
-      final enterP2 = tester.widget<EnterTransition>(
+      final enterP2 = tester.widget<SizeFadeEntrance>(
         find.byKey(const ValueKey('enter-p2-0')),
       );
       // The initial batch (p1) is shown instantly; only the freshly arrived p2
@@ -161,11 +162,13 @@ void main() {
       );
 
       final service = MockChangeSetConfirmationService();
-      when(() => service.confirmAll(any())).thenAnswer(
-        (_) async => const [
+      var stabilizationStarted = false;
+      when(() => service.confirmAll(any())).thenAnswer((_) async {
+        expect(stabilizationStarted, isTrue);
+        return const [
           ToolExecutionResult(success: true, output: 'ok'),
-        ],
-      );
+        ];
+      });
       final notifier = MockUpdateNotifications();
 
       final bench = AgentTestBench(
@@ -188,6 +191,7 @@ void main() {
           ],
           activity: const [],
         ),
+        onSuggestionResolveStart: () => stabilizationStarted = true,
       );
 
       await tester.pumpWidget(bench.build());
@@ -214,15 +218,18 @@ void main() {
       );
 
       final service = MockChangeSetConfirmationService();
-      when(() => service.confirmItem(any(), any())).thenAnswer(
-        (_) async => const ToolExecutionResult(success: true, output: 'ok'),
-      );
+      var stabilizationStarted = false;
+      when(() => service.confirmItem(any(), any())).thenAnswer((_) async {
+        expect(stabilizationStarted, isTrue);
+        return const ToolExecutionResult(success: true, output: 'ok');
+      });
       final notifier = MockUpdateNotifications();
 
       final bench = AgentTestBench(
         confirmationService: service,
         updateNotifications: notifier,
         suggestions: UnifiedSuggestionList(open: [pending], activity: const []),
+        onSuggestionResolveStart: () => stabilizationStarted = true,
       );
 
       await tester.pumpWidget(bench.build());
@@ -1338,9 +1345,9 @@ void main() {
   });
 
   // The card wraps each section that lands while the agent runs in an
-  // [EnterTransition] so it reveals open from zero instead of snapping the
+  // [SizeFadeEntrance] so it reveals open from zero instead of snapping the
   // page below it (see `ai_summary_card.dart`).
-  group('EnterTransition', () {
+  group('SizeFadeEntrance', () {
     Future<void> pumpEnter(
       WidgetTester tester, {
       required bool animate,
@@ -1350,7 +1357,7 @@ void main() {
         makeTestableWidget(
           Align(
             alignment: Alignment.topLeft,
-            child: EnterTransition(
+            child: SizeFadeEntrance(
               animate: animate,
               child: const SizedBox(height: 100, width: 100),
             ),
@@ -1365,7 +1372,7 @@ void main() {
     double revealHeight(WidgetTester tester) => tester
         .getSize(
           find.descendant(
-            of: find.byType(EnterTransition),
+            of: find.byType(SizeFadeEntrance),
             matching: find.byType(SizeTransition),
           ),
         )

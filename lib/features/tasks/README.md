@@ -194,12 +194,28 @@ Checklist content is modeled separately through checklist entities and linked ch
   the checklist height above it and shove the proposals the user just tapped —
   either *up* (a checked-off item's row collapses) or *down* (a new to-do is
   added). `TaskDetailsPage` guards against both with a `ScrollAnchor`
-  (`util/scroll_anchor.dart`): it listens to `unifiedSuggestionListProvider`
-  and, when the open-proposal count drops (a confirm/dismiss), pins the
-  proposals' on-screen viewport position for a `holdDuration` so the page stays
-  put across the relayout instead of jumping. The window is sized to span the
-  checked item's *delayed* row collapse (`checklistCompletionAnimationDuration`
-  + `checklistCompletionFadeDuration` + buffer), which lands ~a second after the
+  (`util/scroll_anchor.dart`). `AiSummaryCard` signals the page synchronously
+  when a resolve gesture starts, before checklist persistence can relayout the
+  page; the `unifiedSuggestionListProvider` count listener remains a fallback
+  for externally resolved proposals. The anchor pins the proposals' on-screen
+  viewport position for a `holdDuration` so the page stays put across the
+  relayout instead of jumping. Source-entry transcripts and image analysis use
+  a separate pre-paint path: `ViewportStableAnimatedSize` arms the page's
+  `ViewportStableScrollController` when an off-screen animated region is about
+  to relayout. Its custom scroll position consumes the resulting content-extent
+  delta in `correctForNewDimensions`, causing Flutter to repeat viewport layout
+  with the corrected offset before anything paints. The scroll position
+  consumes the animated region's measured height delta—not the whole page's
+  extent delta—so the inference indicator collapsing below the viewport in the
+  same frame cannot leave a fixed residual nudge. A render-level layout
+  invalidation hook also covers analysis consumers that rebuild below the
+  wrapper without invoking its `didUpdateWidget`. Newly
+  created checklist rows and checklist cards reveal through `SizeFadeEntrance`,
+  so the compensated layout change is a progressive expansion rather than a
+  one-frame insertion. The window spans
+  the checked item's *delayed* row collapse
+  (`checklistCompletionAnimationDuration` +
+  `checklistCompletionFadeDuration` + buffer), which lands ~a second after the
   tap — long after a short frame burst would have ended. Because the window is
   long, the hold releases the moment the user scrolls (an offset change the
   anchor did not itself make) so it never fights a deliberate scroll; the
@@ -405,7 +421,9 @@ value still surfaces an `ErrorWidget`. Relatedly, the checklist cards in
 `ChecklistsWidget` are keyed by checklist **identity** (`Key('checklist-$id-…')`,
 not the list index), so inserting or reordering a checklist keeps every other
 card's element + state instead of shifting indices and re-fetching (which
-flashed them).
+flashed them). Both checklist IDs and linked-item IDs seed their existing set on
+first render; only IDs arriving later play the one-shot size/fade entrance, so
+background refreshes do not replay initial-load motion.
 
 ### Checklist runtime model
 
@@ -692,6 +710,19 @@ Examples:
 - agent reports and pending change sets are displayed on task pages, but generated elsewhere
 
 That separation is deliberate. The task feature owns the task experience; it should not become a secret duplicate of the AI feature.
+
+`TaskDetailsPage` wraps its scroll view in `TaskScrollStabilityScope`. Both
+nested AI response cards and the source-entry editors that receive audio
+transcripts or image-analysis markdown opt into `ViewportStableAnimatedSize`
+only inside that scope. If the changing region is visible, its top and the page
+scroll offset stay fixed while it unfolds downward. If the region is fully
+above the viewport, `ViewportStableScrollController` compensates each measured
+region-height delta from the viewport's own layout cycle—even when only the
+editor consumer rebuilt and unrelated content elsewhere changes in the same
+frame—so the content currently being read never paints at an intermediate
+displaced position. User scrolling cancels the hold
+immediately, and the standalone journal-entry detail page remains outside the
+scope.
 
 ## Current Constraints
 

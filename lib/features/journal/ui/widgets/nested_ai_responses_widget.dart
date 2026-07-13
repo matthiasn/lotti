@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
+import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -48,6 +50,12 @@ class _NestedAiResponsesWidgetState
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
   late Animation<double> _rotationAnimation;
+  ProviderSubscription<AsyncValue<List<AiResponseEntry>>>?
+  _responsesSubscription;
+  final Set<String> _seenResponseIds = {};
+  Set<String> _newlyArrivedResponseIds = const {};
+  bool _receivedInitialResponses = false;
+  bool _animateSection = false;
 
   /// Whether the section is expanded - derived from animation controller.
   bool get _isExpanded =>
@@ -80,12 +88,52 @@ class _NestedAiResponsesWidgetState
 
     // Start expanded
     _animationController.value = 1.0;
+    _listenToResponses();
+  }
+
+  @override
+  void didUpdateWidget(covariant NestedAiResponsesWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.parentEntryId == widget.parentEntryId) return;
+
+    _responsesSubscription?.close();
+    _seenResponseIds.clear();
+    _newlyArrivedResponseIds = const {};
+    _receivedInitialResponses = false;
+    _animateSection = false;
+    _listenToResponses();
   }
 
   @override
   void dispose() {
+    _responsesSubscription?.close();
     _animationController.dispose();
     super.dispose();
+  }
+
+  void _listenToResponses() {
+    _responsesSubscription = ref.listenManual(
+      linkedAiResponsesControllerProvider(widget.parentEntryId),
+      (_, next) => _trackResponses(next.value),
+      fireImmediately: true,
+    );
+  }
+
+  void _trackResponses(List<AiResponseEntry>? responses) {
+    if (responses == null) return;
+
+    final currentIds = responses.map((response) => response.meta.id).toSet();
+    final isInitialResult = !_receivedInitialResponses;
+    final animateSection =
+        !isInitialResult && _seenResponseIds.isEmpty && currentIds.isNotEmpty;
+    _newlyArrivedResponseIds = isInitialResult || animateSection
+        ? const {}
+        : currentIds.difference(_seenResponseIds);
+    _animateSection = animateSection;
+    _receivedInitialResponses = true;
+    _seenResponseIds
+      ..clear()
+      ..addAll(currentIds);
   }
 
   void _toggleExpanded() {
@@ -102,24 +150,28 @@ class _NestedAiResponsesWidgetState
       linkedAiResponsesControllerProvider(widget.parentEntryId),
     );
 
-    return asyncAiResponses.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
-      data: (aiResponses) {
-        // Don't render anything if no AI responses exist
-        if (aiResponses.isEmpty) {
-          return const SizedBox.shrink();
-        }
+    final aiResponses = asyncAiResponses.value;
+    if (aiResponses == null) return const SizedBox.shrink();
 
-        return _buildNestedSection(context, aiResponses);
-      },
+    if (aiResponses.isEmpty) return const SizedBox.shrink();
+
+    final section = _buildNestedSection(
+      context,
+      aiResponses,
+      newlyArrived: _newlyArrivedResponseIds,
+    );
+    if (!_animateSection) return section;
+    return SizeFadeEntrance(
+      key: ValueKey('nested-ai-section-${widget.parentEntryId}'),
+      child: section,
     );
   }
 
   Widget _buildNestedSection(
     BuildContext context,
-    List<AiResponseEntry> aiResponses,
-  ) {
+    List<AiResponseEntry> aiResponses, {
+    required Set<String> newlyArrived,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(
         left: AppTheme.spacingSmall,
@@ -150,14 +202,23 @@ class _NestedAiResponsesWidgetState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: AppTheme.spacingXSmall),
-                          ...aiResponses.map(
-                            (response) => Padding(
+                          ...aiResponses.map((response) {
+                            final card = Padding(
                               padding: const EdgeInsets.only(
                                 bottom: AppTheme.spacingSmall,
                               ),
                               child: _buildAiResponseCard(context, response),
-                            ),
-                          ),
+                            );
+                            if (!newlyArrived.contains(response.meta.id)) {
+                              return card;
+                            }
+                            return SizeFadeEntrance(
+                              key: ValueKey(
+                                'nested-ai-response-${response.meta.id}',
+                              ),
+                              child: card,
+                            );
+                          }),
                         ],
                       ),
                     ),
@@ -274,10 +335,13 @@ class _NestedAiResponsesWidgetState
           ),
         ),
       ),
-      child: AiResponseSummary(
-        response,
-        linkedFromId: widget.linkedFromEntity.meta.id,
-        fadeOut: false,
+      child: ViewportStableAnimatedSize(
+        key: ValueKey('nested-ai-response-size-${response.meta.id}'),
+        child: AiResponseSummary(
+          response,
+          linkedFromId: widget.linkedFromEntity.meta.id,
+          fadeOut: false,
+        ),
       ),
     );
   }

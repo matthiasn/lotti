@@ -83,6 +83,7 @@ class AgentTestBench {
     this.provideAgentIdentity = false,
     this._isRunningOverride,
     this.suggestionListOverride,
+    this.onSuggestionResolveStart,
     this._extraOverrides = const [],
     this.width,
   });
@@ -91,6 +92,7 @@ class AgentTestBench {
   /// [_mediaQueryData] — used to render the card as it appears inside a narrow
   /// resizable task pane on a wide desktop.
   final double? width;
+  final VoidCallback? onSuggestionResolveStart;
 
   static const String taskId = 'task-001';
 
@@ -191,15 +193,21 @@ class AgentTestBench {
         ..._extraOverrides,
       ],
       child: width == null
-          ? const SingleChildScrollView(
-              child: AiSummaryCard(taskId: taskId),
+          ? SingleChildScrollView(
+              child: AiSummaryCard(
+                taskId: taskId,
+                onSuggestionResolveStart: onSuggestionResolveStart,
+              ),
             )
           : Align(
               alignment: Alignment.topCenter,
               child: SizedBox(
                 width: width,
-                child: const SingleChildScrollView(
-                  child: AiSummaryCard(taskId: taskId),
+                child: SingleChildScrollView(
+                  child: AiSummaryCard(
+                    taskId: taskId,
+                    onSuggestionResolveStart: onSuggestionResolveStart,
+                  ),
                 ),
               ),
             ),

@@ -12,7 +12,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
@@ -31,6 +30,7 @@ import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
+import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -400,18 +400,6 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
     // a gap before an empty (collapsed) labels row.
     final hasLabels = showLabels && (item.meta.labelIds?.isNotEmpty ?? false);
 
-    // Only mount the nested AI responses section when there are responses to
-    // show. The widget hides itself when empty, but it is still a body section,
-    // so the rhythm step in front of it left a wasted gap above the footer
-    // (most visible as the dead band over the Save button on audio entries).
-    final hasNestedAiResponses =
-        item is JournalAudio &&
-        (ref
-                .watch(linkedAiResponsesControllerProvider(itemId))
-                .value
-                ?.isNotEmpty ??
-            false);
-
     final footer = EntryDetailFooter(
       entryId: itemId,
       linkedFrom: linkedFrom,
@@ -428,11 +416,11 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
         // defining value before any prose. For audio this also puts the player
         // above its transcript, matching the collapsible layout.
         ?detailSection,
-        if (!shouldHideEditor) _bodyEditor(itemId),
-        if (hasNestedAiResponses)
-          NestedAiResponsesWidget(
-            parentEntryId: itemId,
-            linkedFromEntity: item,
+        if (!shouldHideEditor)
+          _bodyEditor(
+            itemId,
+            stabilizeGeneratedText:
+                item is JournalImage || item is JournalAudio,
           ),
       ];
       return Column(
@@ -441,6 +429,11 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
         children: [
           header,
           ..._withRhythm(context, body),
+          if (item is JournalAudio)
+            NestedAiResponsesWidget(
+              parentEntryId: itemId,
+              linkedFromEntity: item,
+            ),
           // Footer self-collapses to zero when there is nothing to show, so it
           // carries its own (small) leading gap rather than a rhythm step.
           footer,
@@ -454,14 +447,24 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       if (item is JournalImage) EntryImageWidget(item),
       if (item is JournalAudio && detailSection != null) detailSection,
       if (hasLabels) EntryLabelsDisplay(entryId: itemId),
-      if (!shouldHideEditor) _bodyEditor(itemId),
-      if (hasNestedAiResponses)
-        NestedAiResponsesWidget(parentEntryId: itemId, linkedFromEntity: item),
+      if (!shouldHideEditor)
+        _bodyEditor(
+          itemId,
+          stabilizeGeneratedText: item is JournalImage || item is JournalAudio,
+        ),
     ];
     final expandedContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: [..._withRhythm(context, collapsibleBody), footer],
+      children: [
+        ..._withRhythm(context, collapsibleBody),
+        if (item is JournalAudio)
+          NestedAiResponsesWidget(
+            parentEntryId: itemId,
+            linkedFromEntity: item,
+          ),
+        footer,
+      ],
     );
 
     return Column(
@@ -487,8 +490,22 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
   // shifted the body off the shared content gutter. With no margin the read-only
   // text and the (now outlined) editing panel both sit flush on the gutter,
   // aligned with the timestamp/labels and symmetric within the card.
-  Widget _bodyEditor(String itemId) =>
-      EditorWidget(entryId: itemId, margin: EdgeInsets.zero);
+  Widget _bodyEditor(
+    String itemId, {
+    required bool stabilizeGeneratedText,
+  }) {
+    final editor = EditorWidget(entryId: itemId, margin: EdgeInsets.zero);
+    if (!stabilizeGeneratedText) return editor;
+
+    // Transcription and image analysis update the source entry's `entryText`
+    // directly rather than creating a nested AI response. Keep this editor in
+    // the same viewport-stable size path as nested responses so a result above
+    // the task viewport cannot displace the passage currently being read.
+    return ViewportStableAnimatedSize(
+      key: ValueKey('ai-generated-entry-text-size-$itemId'),
+      child: editor,
+    );
+  }
 
   /// Interleaves ONE shared vertical-rhythm step (`cardItemSpacing`) *between*
   /// stacked body sections — but not before the first one. The header row is

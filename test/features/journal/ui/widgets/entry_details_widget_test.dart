@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 // animation library is not required for these assertions
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -23,6 +25,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
@@ -32,6 +35,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
+import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -52,6 +56,7 @@ import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../design_system/test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Fake entry controllers used by the coverage tests below.
@@ -75,6 +80,44 @@ class _FakeEntryController extends EntryController {
     );
     state = AsyncData(value);
     return SynchronousFuture(value);
+  }
+}
+
+/// Replays the database-notification path used when image analysis appends
+/// entry text: publish the new entity state, then replace the Quill controller.
+class _ControllableEntryController extends EntryController {
+  _ControllableEntryController(this._entry);
+
+  JournalEntity _entry;
+
+  @override
+  Future<EntryState?> build() {
+    _replaceEditorController();
+    final value = EntryState.saved(
+      entryId: id,
+      entry: _entry,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+      formKey: GlobalKey<FormBuilderState>(),
+    );
+    state = AsyncData(value);
+    return SynchronousFuture(value);
+  }
+
+  void emit(JournalEntity entry) {
+    _entry = entry;
+    state = AsyncData(state.requireValue?.copyWith(entry: entry));
+    _replaceEditorController();
+  }
+
+  void _replaceEditorController() {
+    final previous = controller;
+    final next = QuillController.basic();
+    final text = _entry.entryText?.plainText ?? '';
+    if (text.isNotEmpty) next.document.insert(0, text);
+    controller = next;
+    previous.dispose();
   }
 }
 
@@ -1161,12 +1204,197 @@ void main() {
       },
     );
 
-    // Audio entries only mount NestedAiResponsesWidget when there are linked AI
-    // responses — otherwise the empty section's rhythm gap left a dead band
-    // above the footer (the Save-button void).
     testWidgets(
-      'EntryDetailsContent omits NestedAiResponsesWidget for JournalAudio with '
-      'no linked AI responses',
+      'JournalImage analysis text opts into task viewport stabilization',
+      (tester) async {
+        final scrollController = ViewportStableScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  testImageEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testImageEntry)),
+              ],
+              child: SizedBox(
+                height: 400,
+                child: TaskScrollStabilityScope(
+                  controller: scrollController,
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    child: EntryDetailsContent(
+                      testImageEntry.meta.id,
+                      linkedFrom: testTask,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final stabilizedText = find.byKey(
+          ValueKey('ai-generated-entry-text-size-${testImageEntry.meta.id}'),
+        );
+        expect(stabilizedText, findsOneWidget);
+        expect(
+          find.descendant(
+            of: stabilizedText,
+            matching: find.byType(AnimatedSize),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: stabilizedText,
+            matching: find.byType(EditorWidget),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'JournalImage analysis refresh keeps later task content painted in place',
+      (tester) async {
+        const markerKey = Key('content-after-image-analysis');
+        const imageFile = 'entry_details_analysis_test.png';
+        final docsDir = _cachedDocsDir!..createSync(recursive: true);
+        File(
+          '${docsDir.path}/$imageFile',
+        ).writeAsBytesSync(dsPlaceholderPngBytes);
+        final initialImage = testImageEntry.copyWith(
+          entryText: null,
+          data: testImageEntry.data.copyWith(
+            imageDirectory: '/',
+            imageFile: imageFile,
+          ),
+        );
+        final analyzedImage = initialImage.copyWith(
+          entryText: EntryText(
+            plainText: List.generate(
+              30,
+              (index) => 'Analysis detail line $index',
+            ).join('\n'),
+          ),
+        );
+        final scrollController = ViewportStableScrollController();
+        addTearDown(scrollController.dispose);
+        final trailingExtent = ValueNotifier<double>(1200);
+        addTearDown(trailingExtent.dispose);
+        final paintedMarkerTops = <double>[];
+        late _ControllableEntryController entryController;
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(initialImage.id).overrideWith(
+                  () => entryController = _ControllableEntryController(
+                    initialImage,
+                  ),
+                ),
+              ],
+              child: SizedBox(
+                height: 600,
+                child: TaskScrollStabilityScope(
+                  controller: scrollController,
+                  child: CustomScrollView(
+                    controller: scrollController,
+                    slivers: [
+                      const SliverToBoxAdapter(child: SizedBox(height: 300)),
+                      SliverToBoxAdapter(
+                        child: Column(
+                          children: [
+                            EntryDetailsWidget(
+                              itemId: initialImage.id,
+                              linkedFrom: testTask,
+                              showAiEntry: false,
+                            ),
+                            const SizedBox(height: 500),
+                            PaintPositionRecorder(
+                              onPaint: paintedMarkerTops.add,
+                              child: const SizedBox(
+                                key: markerKey,
+                                height: 40,
+                              ),
+                            ),
+                            ValueListenableBuilder<double>(
+                              valueListenable: trailingExtent,
+                              builder: (context, value, child) =>
+                                  SizedBox(height: value),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final markerBeforeScroll = tester.getTopLeft(find.byKey(markerKey)).dy;
+        scrollController.jumpTo(
+          scrollController.offset + markerBeforeScroll - 200,
+        );
+        await tester.pump();
+        final markerTop = tester.getTopLeft(find.byKey(markerKey)).dy;
+        final generatedText = find.byKey(
+          ValueKey('ai-generated-entry-text-size-${initialImage.id}'),
+        );
+        expect(tester.getBottomLeft(generatedText).dy, lessThanOrEqualTo(0));
+        final offsetBeforeAnalysis = scrollController.offset;
+        final generatedTextHeightBefore = tester.getSize(generatedText).height;
+        paintedMarkerTops.clear();
+
+        entryController.emit(analyzedImage);
+        // In the real task page the inference indicator can collapse at the
+        // same time. That unrelated change below the marker must not be
+        // subtracted from the editor's anchoring correction.
+        trailingExtent.value = 1180;
+        await tester.pump();
+        for (var frame = 0; frame < 8; frame++) {
+          await tester.pump(const Duration(milliseconds: 20));
+          expect(
+            tester.getTopLeft(find.byKey(markerKey)).dy,
+            closeTo(markerTop, 1),
+            reason: 'painted content moved during animation frame $frame',
+          );
+        }
+
+        expect(
+          tester.getTopLeft(find.byKey(markerKey)).dy,
+          closeTo(markerTop, 1),
+        );
+        expect(scrollController.offset, greaterThan(offsetBeforeAnalysis));
+        expect(
+          tester.getSize(generatedText).height,
+          greaterThan(generatedTextHeightBefore),
+        );
+        expect(
+          paintedMarkerTops,
+          isNotEmpty,
+        );
+        expect(
+          paintedMarkerTops.every((top) => (top - markerTop).abs() <= 1),
+          isTrue,
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+      },
+    );
+
+    // Audio entries keep a stable zero-height response host so a later result
+    // can animate in without reserving an empty rhythm gap beforehand.
+    testWidgets(
+      'EntryDetailsContent keeps a zero-height AI response host for '
+      'JournalAudio with no linked AI responses',
       (tester) async {
         final mockJournalRepository = MockJournalRepository();
         when(
@@ -1202,8 +1430,15 @@ void main() {
 
         await tester.pump();
 
-        // No responses → the nested section is not mounted (no wasted gap).
-        expect(find.byType(NestedAiResponsesWidget), findsNothing);
+        expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
+        expect(
+          tester.getSize(find.byType(NestedAiResponsesWidget)).height,
+          0,
+        );
+        expect(
+          find.byKey(NestedAiResponsesWidget.headerKey),
+          findsNothing,
+        );
         // AudioPlayerWidget is still the detail section for audio entries.
         expect(find.byType(AudioPlayerWidget), findsOneWidget);
       },

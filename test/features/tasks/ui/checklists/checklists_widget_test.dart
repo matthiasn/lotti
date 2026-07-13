@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -61,6 +64,28 @@ class MockEntryController extends EntryController {
   }
 }
 
+class _MutableEntryController extends EntryController {
+  _MutableEntryController(this._task);
+
+  Task _task;
+
+  @override
+  Future<EntryState?> build() async => _entryState(_task);
+
+  void emit(Task task) {
+    _task = task;
+    state = AsyncData(_entryState(task));
+  }
+
+  EntryState _entryState(Task task) => EntryState.saved(
+    entryId: task.id,
+    entry: task,
+    showMap: false,
+    isFocused: false,
+    shouldShowEditorToolBar: false,
+  );
+}
+
 /// Returns a fixed `Checklist?` for a given checklist id, letting tests drive
 /// the per-card `checklist == null` branch in [ChecklistsWidget] (a deleted /
 /// stale checklist still listed in `checklistIds` collapses to
@@ -73,6 +98,16 @@ class _StubChecklistController extends ChecklistController {
 
   @override
   Future<Checklist?> build() async => _checklist;
+}
+
+class _DelayedChecklistController extends ChecklistController {
+  _DelayedChecklistController(this._result, ChecklistParams params)
+    : super(params);
+
+  final Future<Checklist?> _result;
+
+  @override
+  Future<Checklist?> build() => _result;
 }
 
 void main() {
@@ -284,6 +319,198 @@ void main() {
       expect(find.byIcon(Icons.add_rounded), findsNothing);
       // Checklists-level sort menu is shown when there are multiple checklists
       expect(find.byKey(const Key('checklists-menu')), findsOneWidget);
+      final entrances = tester
+          .widgetList<SizeFadeEntrance>(find.byType(SizeFadeEntrance))
+          .toList();
+      expect(entrances, hasLength(2));
+      expect(
+        entrances.every((entrance) => !entrance.animate),
+        isTrue,
+      );
+    });
+
+    testWidgets('animates a checklist added after the initial task build', (
+      tester,
+    ) async {
+      final initialTask = mockTask.copyWith(
+        data: mockTask.data.copyWith(checklistIds: const []),
+      );
+      final controller = _MutableEntryController(initialTask);
+      final checklistCompleter = Completer<Checklist?>();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entryControllerProvider(mockTask.id).overrideWith(
+              () => controller,
+            ),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+            checklistControllerProvider(const (
+              id: 'checklist1',
+              taskId: 'task1',
+            )).overrideWith(
+              () => _DelayedChecklistController(
+                checklistCompleter.future,
+                const (id: 'checklist1', taskId: 'task1'),
+              ),
+            ),
+          ],
+          child: WidgetTestBench(
+            child: Consumer(
+              builder: (context, ref, _) {
+                final currentTask = ref
+                    .watch(entryControllerProvider(mockTask.id))
+                    .value
+                    ?.entry;
+                if (currentTask is! Task) return const SizedBox.shrink();
+                return ChecklistsWidget(
+                  entryId: currentTask.id,
+                  task: currentTask,
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(find.byType(SizeFadeEntrance), findsNothing);
+
+      final taskWithChecklist = initialTask.copyWith(
+        data: initialTask.data.copyWith(checklistIds: const ['checklist1']),
+      );
+      controller.emit(taskWithChecklist);
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.byType(SizeFadeEntrance, skipOffstage: false),
+        findsNothing,
+      );
+
+      // An unrelated task rebuild can arrive before the checklist provider
+      // resolves. The inserted id must remain pending through that rebuild.
+      controller.emit(
+        taskWithChecklist.copyWith(
+          entryText: const EntryText(plainText: 'Updated task note'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final checklist = await getIt<JournalDb>().journalEntityById(
+        'checklist1',
+      );
+      checklistCompleter.complete(checklist! as Checklist);
+      await tester.pump();
+      await tester.pump();
+
+      final entrance = tester.widget<SizeFadeEntrance>(
+        find.byKey(
+          const ValueKey('checklist-entrance-checklist1-task1'),
+          skipOffstage: false,
+        ),
+      );
+      expect(entrance.animate, isTrue);
+    });
+
+    testWidgets('switching tasks seeds the next task without an entrance', (
+      tester,
+    ) async {
+      final firstTask = mockTask.copyWith(
+        data: mockTask.data.copyWith(checklistIds: const ['checklist1']),
+      );
+      final secondTask = mockTask.copyWith(
+        meta: mockTask.meta.copyWith(id: 'task2'),
+        data: mockTask.data.copyWith(
+          title: 'Second task',
+          checklistIds: const ['checklist2'],
+        ),
+      );
+      final firstChecklist =
+          (await getIt<JournalDb>().journalEntityById('checklist1'))!
+              as Checklist;
+      final secondChecklist =
+          (await getIt<JournalDb>().journalEntityById('checklist2'))!
+              as Checklist;
+      var currentTask = firstTask;
+      late StateSetter setCurrentTask;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entryControllerProvider(firstTask.id).overrideWith(
+              () => MockEntryController(mockEntry: firstTask),
+            ),
+            entryControllerProvider(secondTask.id).overrideWith(
+              () => MockEntryController(mockEntry: secondTask),
+            ),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+            checklistControllerProvider(const (
+              id: 'checklist1',
+              taskId: 'task1',
+            )).overrideWith(
+              () => _StubChecklistController(firstChecklist, const (
+                id: 'checklist1',
+                taskId: 'task1',
+              )),
+            ),
+            checklistControllerProvider(const (
+              id: 'checklist2',
+              taskId: 'task2',
+            )).overrideWith(
+              () => _StubChecklistController(secondChecklist, const (
+                id: 'checklist2',
+                taskId: 'task2',
+              )),
+            ),
+          ],
+          child: WidgetTestBench(
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                setCurrentTask = setState;
+                return ChecklistsWidget(
+                  entryId: currentTask.id,
+                  task: currentTask,
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final firstEntrance = tester.widget<SizeFadeEntrance>(
+        find.byKey(
+          const ValueKey('checklist-entrance-checklist1-task1'),
+          skipOffstage: false,
+        ),
+      );
+      expect(firstEntrance.animate, isFalse);
+
+      setCurrentTask(() => currentTask = secondTask);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+
+      expect(
+        find.byKey(
+          const ValueKey('checklist-entrance-checklist1-task1'),
+          skipOffstage: false,
+        ),
+        findsNothing,
+      );
+      final secondEntrance = tester.widget<SizeFadeEntrance>(
+        find.byKey(
+          const ValueKey('checklist-entrance-checklist2-task2'),
+          skipOffstage: false,
+        ),
+      );
+      expect(secondEntrance.animate, isFalse);
     });
 
     testWidgets('hides menu button when only one checklist', (tester) async {

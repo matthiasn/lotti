@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
@@ -77,35 +78,12 @@ class Body extends StatelessWidget {
           // to _reorderItem (same list) or moveToChecklist (cross list).
           // ReorderableListView would re-animate the list on every data
           // mutation, fighting the OS-native drag image and feeling wobbly.
-          ListView.builder(
-            // EdgeInsets.zero — without this BoxScrollView absorbs the
-            // ambient MediaQuery.padding (e.g. iPhone notch) as its top
-            // padding, pushing the first item far below the filter strip
-            // on mobile.
-            padding: EdgeInsets.zero,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: itemIds.length,
-            itemBuilder: (context, index) {
-              final itemId = itemIds[index];
-              return ChecklistItemRow(
-                key: ValueKey('row-$checklistId-$itemId'),
-                itemId: itemId,
-                checklistId: checklistId,
-                taskId: taskId,
-                index: index,
-                hideIfChecked: hideChecked,
-                hideIfUnchecked: hideUnchecked,
-                // Leading divider (every row except the first) rather than a
-                // trailing one: the separator above a row is part of that
-                // row's own widget, so an appended item and the line above it
-                // mount on the same frame. A trailing divider would belong to
-                // the *previous* row, whose repaint isn't synchronized with the
-                // new (async-loading) row — producing a "row appears, divider
-                // lands a frame later" flicker.
-                showDivider: index > 0,
-              );
-            },
+          _AnimatedChecklistItems(
+            itemIds: itemIds,
+            checklistId: checklistId,
+            taskId: taskId,
+            hideChecked: hideChecked,
+            hideUnchecked: hideUnchecked,
           ),
 
         Divider(
@@ -122,6 +100,83 @@ class Body extends StatelessWidget {
           onSubmitted: onCreateItem,
         ),
       ],
+    );
+  }
+}
+
+class _AnimatedChecklistItems extends StatefulWidget {
+  const _AnimatedChecklistItems({
+    required this.itemIds,
+    required this.checklistId,
+    required this.taskId,
+    required this.hideChecked,
+    required this.hideUnchecked,
+  });
+
+  final List<String> itemIds;
+  final String checklistId;
+  final String taskId;
+  final bool hideChecked;
+  final bool hideUnchecked;
+
+  @override
+  State<_AnimatedChecklistItems> createState() =>
+      _AnimatedChecklistItemsState();
+}
+
+class _AnimatedChecklistItemsState extends State<_AnimatedChecklistItems> {
+  final Set<String> _knownItemIds = {};
+  final Set<String> _newlyInsertedItemIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _knownItemIds.addAll(widget.itemIds);
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedChecklistItems oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final currentIds = widget.itemIds.toSet();
+    if (oldWidget.checklistId != widget.checklistId ||
+        oldWidget.taskId != widget.taskId) {
+      _newlyInsertedItemIds.clear();
+    } else {
+      _newlyInsertedItemIds
+        ..clear()
+        ..addAll(currentIds.difference(_knownItemIds));
+    }
+    _knownItemIds
+      ..clear()
+      ..addAll(currentIds);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      // EdgeInsets.zero — without this BoxScrollView absorbs the ambient
+      // MediaQuery.padding (e.g. iPhone notch) as its top padding.
+      padding: EdgeInsets.zero,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: List.generate(widget.itemIds.length, (index) {
+        final itemId = widget.itemIds[index];
+        return SizeFadeEntrance(
+          key: ValueKey('row-${widget.checklistId}-$itemId'),
+          animate: _newlyInsertedItemIds.contains(itemId),
+          child: ChecklistItemRow(
+            itemId: itemId,
+            checklistId: widget.checklistId,
+            taskId: widget.taskId,
+            index: index,
+            hideIfChecked: widget.hideChecked,
+            hideIfUnchecked: widget.hideUnchecked,
+            // The leading divider belongs to the entering row, so the line and
+            // content reveal on the same animation frame.
+            showDivider: index > 0,
+          ),
+        );
+      }),
     );
   }
 }

@@ -1,8 +1,20 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
+
+/// Returns the global top edge of the viewport containing [renderObject].
+///
+/// Returns `null` when either object is detached or the viewport is not a
+/// [RenderBox].
+double? viewportTopGlobal(RenderObject? renderObject) {
+  if (renderObject == null || !renderObject.attached) return null;
+  final RenderObject? viewport = RenderAbstractViewport.maybeOf(renderObject);
+  if (viewport is! RenderBox || !viewport.attached) return null;
+  return viewport.localToGlobal(Offset.zero).dy;
+}
 
 /// Pure helper: the scroll offset needed to hold an anchored widget visually
 /// fixed in the viewport after content *above* it changed height.
@@ -129,23 +141,29 @@ class ScrollAnchor {
     });
   }
 
-  void _correctOnce() {
+  ScrollPosition? _positionForCorrection() {
     final anchorTop = _anchorTop;
     // `positions.length != 1` guards both the no-client case and the
     // multi-client case: `controller.position` / `.offset` assert when the
     // controller drives more than one scroll view (possible during route
     // transitions or page-state reuse), which `hasClients` would not catch.
-    if (anchorTop == null || controller.positions.length != 1) return;
+    if (anchorTop == null || controller.positions.length != 1) return null;
     // The offset moved away from what we set → the user is scrolling. Release
     // rather than yank them back; the long hold window must never fight input.
     final expected = _expectedOffset;
     if (expected != null && (controller.offset - expected).abs() > tolerance) {
       _endHold();
-      return;
+      return null;
     }
+    return controller.position;
+  }
+
+  void _correctOnce() {
+    final anchorTop = _anchorTop;
+    final position = _positionForCorrection();
+    if (anchorTop == null || position == null) return;
     final currentTop = locate();
     if (currentTop == null) return;
-    final position = controller.position;
     final target = anchorCorrectionOffset(
       anchorTop: anchorTop,
       currentTop: currentTop,

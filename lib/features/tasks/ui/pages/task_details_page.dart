@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
+import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/features/tasks/util/scroll_anchor.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -52,7 +52,7 @@ class TaskDetailsPage extends ConsumerStatefulWidget {
 
 class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     with HighlightScrollMixin {
-  final _scrollController = ScrollController();
+  final _scrollController = ViewportStableScrollController();
   final void Function() _listener = getIt<UserActivityService>().updateActivity;
   late final void Function() _updateOffsetListener;
   final Map<String, GlobalKey> _entryKeys = {};
@@ -185,15 +185,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// Global-Y of the top of the scroll viewport (where the slivers begin to be
   /// painted), or null when it isn't available.
   double? _viewportTopGlobal() {
-    final renderObject = _belowCardKey.currentContext?.findRenderObject();
-    if (renderObject is! RenderBox || !renderObject.attached) return null;
-    // Typed as the RenderObject supertype (not RenderAbstractViewport) so the
-    // `is RenderBox` check below promotes — RenderBox is a subtype of
-    // RenderObject, so no cast/`!` is needed. The concrete viewport behind a
-    // CustomScrollView (RenderViewport) is a RenderBox.
-    final RenderObject? viewport = RenderAbstractViewport.maybeOf(renderObject);
-    if (viewport is! RenderBox || !viewport.attached) return null;
-    return viewport.localToGlobal(Offset.zero).dy;
+    return viewportTopGlobal(
+      _belowCardKey.currentContext?.findRenderObject(),
+    );
   }
 
   /// Pin the content below the AI card *only* when the card (and the seam just
@@ -310,70 +304,74 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       // trailing SliverPadding consumes that inset so the last entry
       // can scroll fully above the bar instead of being hidden behind.
       body: Builder(
-        builder: (context) => CustomScrollView(
+        builder: (context) => TaskScrollStabilityScope(
           controller: _scrollController,
-          slivers: [
-            TaskSliverAppBar(taskId: widget.taskId),
-            SliverToBoxAdapter(
-              child: Center(
-                child: ConstrainedBox(
-                  // Cap the content measure on wide windows so the task reads
-                  // as a centered column rather than full-bleed text; this is
-                  // non-binding at phone / narrow-pane widths.
-                  constraints: const BoxConstraints(maxWidth: 760),
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      left: 15,
-                      right: 15,
-                      top: 10,
-                    ),
-                    child: TaskForm(
-                      taskId: widget.taskId,
-                      suggestionsFocusKey: _suggestionsKey,
+          child: CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              TaskSliverAppBar(taskId: widget.taskId),
+              SliverToBoxAdapter(
+                child: Center(
+                  child: ConstrainedBox(
+                    // Cap the content measure on wide windows so the task reads
+                    // as a centered column rather than full-bleed text; this is
+                    // non-binding at phone / narrow-pane widths.
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 15,
+                        right: 15,
+                        top: 10,
+                      ),
+                      child: TaskForm(
+                        taskId: widget.taskId,
+                        suggestionsFocusKey: _suggestionsKey,
+                        onSuggestionResolveStart: _suggestionsAnchor.hold,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            SliverToBoxAdapter(
-              child: Center(
-                key: _belowCardKey,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 760),
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: 8,
-                      left: 10,
-                      right: 10,
+              SliverToBoxAdapter(
+                child: Center(
+                  key: _belowCardKey,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        top: 8,
+                        left: 10,
+                        right: 10,
+                      ),
+                      child:
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: <Widget>[
+                              LinkedEntriesWithTimer(
+                                item: task,
+                                entryKeyBuilder: _getEntryKey,
+                                highlightedEntryId: highlightedEntryId,
+                                hideTaskEntries: true,
+                              ),
+                              LinkedFromEntriesWidget(
+                                task,
+                                hideTaskEntries: true,
+                              ),
+                            ],
+                          ).animate().fadeIn(
+                            duration: const Duration(milliseconds: 100),
+                          ),
                     ),
-                    child:
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: <Widget>[
-                            LinkedEntriesWithTimer(
-                              item: task,
-                              entryKeyBuilder: _getEntryKey,
-                              highlightedEntryId: highlightedEntryId,
-                              hideTaskEntries: true,
-                            ),
-                            LinkedFromEntriesWidget(
-                              task,
-                              hideTaskEntries: true,
-                            ),
-                          ],
-                        ).animate().fadeIn(
-                          duration: const Duration(milliseconds: 100),
-                        ),
                   ),
                 ),
               ),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.paddingOf(context).bottom,
+              SliverPadding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.paddingOf(context).bottom,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
