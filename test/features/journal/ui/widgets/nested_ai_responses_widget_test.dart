@@ -217,6 +217,62 @@ void main() {
       },
     );
 
+    testWidgets(
+      'switching parents treats the next parent responses as initial data',
+      (tester) async {
+        final otherParent = testAudioEntry.copyWith(
+          meta: testAudioEntry.meta.copyWith(id: 'audio-entry-456'),
+        );
+        final firstController = _ControllableLinkedAiResponsesController(
+          entryId: testAudioEntry.meta.id,
+          initialResponses: [testAiResponseEntry1],
+        );
+        final secondController = _ControllableLinkedAiResponsesController(
+          entryId: otherParent.meta.id,
+          initialResponses: [testAiResponseEntry2],
+        );
+        var parent = testAudioEntry;
+        late StateSetter setParent;
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                linkedAiResponsesControllerProvider(
+                  testAudioEntry.meta.id,
+                ).overrideWith(() => firstController),
+                linkedAiResponsesControllerProvider(
+                  otherParent.meta.id,
+                ).overrideWith(() => secondController),
+              ],
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  setParent = setState;
+                  return NestedAiResponsesWidget(
+                    parentEntryId: parent.meta.id,
+                    linkedFromEntity: parent,
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byKey(Key(testAiResponseEntry1.meta.id)), findsOneWidget);
+        expect(find.byType(SizeFadeEntrance), findsNothing);
+
+        setParent(() => parent = otherParent);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byKey(Key(testAiResponseEntry1.meta.id)), findsNothing);
+        expect(find.byKey(Key(testAiResponseEntry2.meta.id)), findsOneWidget);
+        expect(find.byType(SizeFadeEntrance), findsNothing);
+      },
+    );
+
     testWidgets('shows nothing while loading', (tester) async {
       // Arrange - use a completer to keep the provider in loading state
       final completer = Completer<List<EntryLink>>();

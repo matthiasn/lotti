@@ -60,9 +60,9 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
     if (taskChanged) {
       _newlyInsertedChecklistIds.clear();
     } else {
-      _newlyInsertedChecklistIds
-        ..clear()
-        ..addAll(currentIds.difference(_knownChecklistIds));
+      _newlyInsertedChecklistIds.addAll(
+        currentIds.difference(_knownChecklistIds),
+      );
     }
     _knownChecklistIds
       ..clear()

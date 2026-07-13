@@ -56,4 +56,54 @@ void main() {
     // provider-heavy row down before unrelated async dependencies resolve.
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('switching checklists resets tracking for later insertions', (
+    tester,
+  ) async {
+    var checklistId = 'cl-1';
+    var itemIds = <String>[];
+    late StateSetter outerSetState;
+    final focusNode = FocusNode();
+    addTearDown(focusNode.dispose);
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        StatefulBuilder(
+          builder: (context, setState) {
+            outerSetState = setState;
+            return Body(
+              itemIds: itemIds,
+              checklistId: checklistId,
+              taskId: 'task-1',
+              filter: ChecklistFilter.all,
+              completionRate: 0,
+              activeTotalCount: itemIds.length,
+              focusNode: focusNode,
+              onCreateItem: (_) async {},
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(SizeFadeEntrance), findsNothing);
+
+    outerSetState(() {
+      checklistId = 'cl-2';
+    });
+    await tester.pump();
+    expect(find.byType(SizeFadeEntrance), findsNothing);
+
+    outerSetState(() => itemIds = ['item-2']);
+    await tester.pump();
+    await tester.pump();
+
+    final replacementEntrance = tester.widget<SizeFadeEntrance>(
+      find.byKey(const ValueKey('row-cl-2-item-2'), skipOffstage: false),
+    );
+    expect(replacementEntrance.animate, isTrue);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

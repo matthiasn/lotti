@@ -389,6 +389,16 @@ void main() {
         findsNothing,
       );
 
+      // An unrelated task rebuild can arrive before the checklist provider
+      // resolves. The inserted id must remain pending through that rebuild.
+      controller.emit(
+        taskWithChecklist.copyWith(
+          entryText: const EntryText(plainText: 'Updated task note'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
       final checklist = await getIt<JournalDb>().journalEntityById(
         'checklist1',
       );
@@ -403,6 +413,104 @@ void main() {
         ),
       );
       expect(entrance.animate, isTrue);
+    });
+
+    testWidgets('switching tasks seeds the next task without an entrance', (
+      tester,
+    ) async {
+      final firstTask = mockTask.copyWith(
+        data: mockTask.data.copyWith(checklistIds: const ['checklist1']),
+      );
+      final secondTask = mockTask.copyWith(
+        meta: mockTask.meta.copyWith(id: 'task2'),
+        data: mockTask.data.copyWith(
+          title: 'Second task',
+          checklistIds: const ['checklist2'],
+        ),
+      );
+      final firstChecklist =
+          (await getIt<JournalDb>().journalEntityById('checklist1'))!
+              as Checklist;
+      final secondChecklist =
+          (await getIt<JournalDb>().journalEntityById('checklist2'))!
+              as Checklist;
+      var currentTask = firstTask;
+      late StateSetter setCurrentTask;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entryControllerProvider(firstTask.id).overrideWith(
+              () => MockEntryController(mockEntry: firstTask),
+            ),
+            entryControllerProvider(secondTask.id).overrideWith(
+              () => MockEntryController(mockEntry: secondTask),
+            ),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+            checklistControllerProvider(const (
+              id: 'checklist1',
+              taskId: 'task1',
+            )).overrideWith(
+              () => _StubChecklistController(firstChecklist, const (
+                id: 'checklist1',
+                taskId: 'task1',
+              )),
+            ),
+            checklistControllerProvider(const (
+              id: 'checklist2',
+              taskId: 'task2',
+            )).overrideWith(
+              () => _StubChecklistController(secondChecklist, const (
+                id: 'checklist2',
+                taskId: 'task2',
+              )),
+            ),
+          ],
+          child: WidgetTestBench(
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                setCurrentTask = setState;
+                return ChecklistsWidget(
+                  entryId: currentTask.id,
+                  task: currentTask,
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final firstEntrance = tester.widget<SizeFadeEntrance>(
+        find.byKey(
+          const ValueKey('checklist-entrance-checklist1-task1'),
+          skipOffstage: false,
+        ),
+      );
+      expect(firstEntrance.animate, isFalse);
+
+      setCurrentTask(() => currentTask = secondTask);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+
+      expect(
+        find.byKey(
+          const ValueKey('checklist-entrance-checklist1-task1'),
+          skipOffstage: false,
+        ),
+        findsNothing,
+      );
+      final secondEntrance = tester.widget<SizeFadeEntrance>(
+        find.byKey(
+          const ValueKey('checklist-entrance-checklist2-task2'),
+          skipOffstage: false,
+        ),
+      );
+      expect(secondEntrance.animate, isFalse);
     });
 
     testWidgets('hides menu button when only one checklist', (tester) async {
