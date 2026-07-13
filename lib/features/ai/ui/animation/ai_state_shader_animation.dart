@@ -19,26 +19,6 @@ void aiSetShaderColor(ui.FragmentShader shader, int index, Color color) {
     ..setFloat(index + 3, color.a);
 }
 
-enum AiVoiceShaderRoute {
-  elasticMembrane,
-  impactRipples,
-  tensionLoop,
-  liquidPulse,
-  resonanceBraid,
-}
-
-extension AiVoiceShaderRouteLabel on AiVoiceShaderRoute {
-  String get label {
-    return switch (this) {
-      AiVoiceShaderRoute.elasticMembrane => 'Elastic membrane',
-      AiVoiceShaderRoute.impactRipples => 'Impact ripples',
-      AiVoiceShaderRoute.tensionLoop => 'Tension loop',
-      AiVoiceShaderRoute.liquidPulse => 'Liquid pulse',
-      AiVoiceShaderRoute.resonanceBraid => 'Resonance braid',
-    };
-  }
-}
-
 enum AiThinkingShaderRoute {
   quietThread,
   packetScan,

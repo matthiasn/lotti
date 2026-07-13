@@ -38,12 +38,6 @@ WidgetbookComponent buildAiShaderAnimationsWidgetbookComponent() {
         ),
       ),
       WidgetbookUseCase(
-        name: 'Voice route matrix',
-        builder: (context) => _VoiceRouteMatrixUseCase(
-          config: _voiceConfigFromKnobs(context),
-        ),
-      ),
-      WidgetbookUseCase(
         name: 'Thinking playground',
         builder: (context) => _ThinkingLineUseCase(
           config: _thinkingConfigFromKnobs(context),

@@ -23,7 +23,6 @@ class AiVoiceInputShader extends StatefulWidget {
     this.intensity = 0.78,
     this.lineDensity = 19,
     this.orbitalMix = 0.55,
-    this.route = AiVoiceShaderRoute.tensionLoop,
     this.timeOverride,
     this.programLoader,
     this.semanticsLabel,
@@ -38,7 +37,6 @@ class AiVoiceInputShader extends StatefulWidget {
   final double intensity;
   final double lineDensity;
   final double orbitalMix;
-  final AiVoiceShaderRoute route;
   final Color primaryColor;
   final Color secondaryColor;
   final Color backgroundColor;
@@ -56,6 +54,8 @@ class _AiVoiceInputShaderState extends State<AiVoiceInputShader>
 
   late final AnimationController _controller;
   late Future<ui.FragmentProgram> _programFuture;
+  ui.FragmentProgram? _shaderProgram;
+  ui.FragmentShader? _fragmentShader;
 
   /// Whether the OS "reduce motion" accessibility setting is on. When true the
   /// continuous time ticker is held still and the shader renders one calm
@@ -85,12 +85,14 @@ class _AiVoiceInputShaderState extends State<AiVoiceInputShader>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.programLoader != widget.programLoader) {
       _programFuture = _loadProgram();
+      _disposeFragmentShader();
     }
     _syncController();
   }
 
   @override
   void dispose() {
+    _disposeFragmentShader();
     _controller.dispose();
     super.dispose();
   }
@@ -99,6 +101,21 @@ class _AiVoiceInputShaderState extends State<AiVoiceInputShader>
     final loader =
         widget.programLoader ?? AiStateShaderProgramCache.loadVoiceInput;
     return loader();
+  }
+
+  ui.FragmentShader _shaderFor(ui.FragmentProgram program) {
+    if (!identical(_shaderProgram, program)) {
+      _disposeFragmentShader();
+      _shaderProgram = program;
+      _fragmentShader = program.fragmentShader();
+    }
+    return _fragmentShader!;
+  }
+
+  void _disposeFragmentShader() {
+    _fragmentShader?.dispose();
+    _fragmentShader = null;
+    _shaderProgram = null;
   }
 
   void _syncController() {
@@ -146,20 +163,18 @@ class _AiVoiceInputShaderState extends State<AiVoiceInputShader>
                               intensity: widget.intensity,
                               lineDensity: widget.lineDensity,
                               orbitalMix: widget.orbitalMix,
-                              route: widget.route,
                               primaryColor: widget.primaryColor,
                               secondaryColor: widget.secondaryColor,
                               backgroundColor: widget.backgroundColor,
                             )
                           : AiVoiceInputShaderPainter(
-                              program: program,
+                              shader: _shaderFor(program),
                               dbfs: widget.dbfs,
                               dbfsFloor: widget.dbfsFloor,
                               time: time,
                               intensity: widget.intensity,
                               lineDensity: widget.lineDensity,
                               orbitalMix: widget.orbitalMix,
-                              route: widget.route,
                               primaryColor: widget.primaryColor,
                               secondaryColor: widget.secondaryColor,
                               backgroundColor: widget.backgroundColor,
@@ -176,31 +191,29 @@ class _AiVoiceInputShaderState extends State<AiVoiceInputShader>
   }
 }
 
-/// Drives the loaded fragment [program] for [AiVoiceInputShader] — maps the
-/// voice level and animation params to shader uniforms and paints them.
+/// Drives the loaded fragment shader for [AiVoiceInputShader], mapping the
+/// voice level and animation parameters to uniforms before painting it.
 class AiVoiceInputShaderPainter extends CustomPainter {
   AiVoiceInputShaderPainter({
-    required this.program,
+    required this.shader,
     required this.dbfs,
     required this.dbfsFloor,
     required this.time,
     required this.intensity,
     required this.lineDensity,
     required this.orbitalMix,
-    required this.route,
     required this.primaryColor,
     required this.secondaryColor,
     required this.backgroundColor,
   });
 
-  final ui.FragmentProgram program;
+  final ui.FragmentShader shader;
   final double dbfs;
   final double dbfsFloor;
   final double time;
   final double intensity;
   final double lineDensity;
   final double orbitalMix;
-  final AiVoiceShaderRoute route;
   final Color primaryColor;
   final Color secondaryColor;
   final Color backgroundColor;
@@ -209,7 +222,7 @@ class AiVoiceInputShaderPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
 
-    final shader = program.fragmentShader()
+    shader
       ..setFloat(0, size.width)
       ..setFloat(1, size.height)
       ..setFloat(2, time)
@@ -217,11 +230,10 @@ class AiVoiceInputShaderPainter extends CustomPainter {
       ..setFloat(4, dbfsFloor)
       ..setFloat(5, intensity)
       ..setFloat(6, lineDensity)
-      ..setFloat(7, orbitalMix)
-      ..setFloat(8, route.index.toDouble());
-    aiSetShaderColor(shader, 9, primaryColor);
-    aiSetShaderColor(shader, 13, secondaryColor);
-    aiSetShaderColor(shader, 17, backgroundColor);
+      ..setFloat(7, orbitalMix);
+    aiSetShaderColor(shader, 8, primaryColor);
+    aiSetShaderColor(shader, 12, secondaryColor);
+    aiSetShaderColor(shader, 16, backgroundColor);
 
     canvas.drawRect(
       Offset.zero & size,
@@ -231,14 +243,13 @@ class AiVoiceInputShaderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(AiVoiceInputShaderPainter oldDelegate) {
-    return oldDelegate.program != program ||
+    return oldDelegate.shader != shader ||
         oldDelegate.dbfs != dbfs ||
         oldDelegate.dbfsFloor != dbfsFloor ||
         oldDelegate.time != time ||
         oldDelegate.intensity != intensity ||
         oldDelegate.lineDensity != lineDensity ||
         oldDelegate.orbitalMix != orbitalMix ||
-        oldDelegate.route != route ||
         oldDelegate.primaryColor != primaryColor ||
         oldDelegate.secondaryColor != secondaryColor ||
         oldDelegate.backgroundColor != backgroundColor;
@@ -256,7 +267,6 @@ class AiVoiceInputFallbackPainter extends CustomPainter {
     required this.intensity,
     required this.lineDensity,
     required this.orbitalMix,
-    required this.route,
     required this.primaryColor,
     required this.secondaryColor,
     required this.backgroundColor,
@@ -268,7 +278,6 @@ class AiVoiceInputFallbackPainter extends CustomPainter {
   final double intensity;
   final double lineDensity;
   final double orbitalMix;
-  final AiVoiceShaderRoute route;
   final Color primaryColor;
   final Color secondaryColor;
   final Color backgroundColor;
@@ -347,7 +356,6 @@ class AiVoiceInputFallbackPainter extends CustomPainter {
         oldDelegate.intensity != intensity ||
         oldDelegate.lineDensity != lineDensity ||
         oldDelegate.orbitalMix != orbitalMix ||
-        oldDelegate.route != route ||
         oldDelegate.primaryColor != primaryColor ||
         oldDelegate.secondaryColor != secondaryColor ||
         oldDelegate.backgroundColor != backgroundColor;

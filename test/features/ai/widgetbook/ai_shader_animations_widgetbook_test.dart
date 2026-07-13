@@ -18,7 +18,6 @@ void main() {
       expect(component.name, 'State shader animations');
       expect(component.useCases.map((useCase) => useCase.name), [
         'Voice playground',
-        'Voice route matrix',
         'Thinking playground',
         'Thinking route matrix',
         'Action bar study',

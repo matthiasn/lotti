@@ -43,46 +43,6 @@ class _ThinkingLineUseCase extends StatelessWidget {
   }
 }
 
-class _VoiceRouteMatrixUseCase extends StatelessWidget {
-  const _VoiceRouteMatrixUseCase({required this.config});
-
-  final _VoiceShaderConfig config;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final spacing = tokens.spacing;
-
-    return _WidgetbookCanvas(
-      child: Wrap(
-        spacing: spacing.step8,
-        runSpacing: spacing.step7,
-        children: [
-          for (final route in AiVoiceShaderRoute.values)
-            _RoutePreview(
-              label: route.label,
-              width: 180,
-              child: AiVoiceInputShader(
-                dbfs: config.manualDbfs,
-                dbfsFloor: config.dbfsFloor,
-                size: 180,
-                speed: config.speed,
-                intensity: config.intensity,
-                lineDensity: config.lineDensity,
-                orbitalMix: config.orbitalMix,
-                route: route,
-                primaryColor: config.primaryColor,
-                secondaryColor: config.secondaryColor,
-                backgroundColor: config.backgroundColor,
-                semanticsLabel: '${route.label} voice shader preview',
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ThinkingRouteMatrixUseCase extends StatelessWidget {
   const _ThinkingRouteMatrixUseCase({required this.config});
 
@@ -164,7 +124,6 @@ class _ActionBarStudyUseCase extends StatelessWidget {
                     intensity: voiceConfig.intensity,
                     lineDensity: voiceConfig.lineDensity,
                     orbitalMix: voiceConfig.orbitalMix,
-                    route: voiceConfig.route,
                     primaryColor: voiceConfig.primaryColor,
                     secondaryColor: voiceConfig.secondaryColor,
                     backgroundColor: voiceConfig.backgroundColor,

@@ -17,6 +17,8 @@ import 'package:lotti/features/ai_chat/services/realtime_transcription_service.d
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
@@ -41,6 +43,7 @@ import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 import 'package:uuid/uuid.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
@@ -356,6 +359,7 @@ void main() {
           }
 
           return MaterialApp(
+            theme: DesignSystemTheme.light(),
             home: Scaffold(
               body: AudioRecordingModalContent(
                 categoryId: provideCategory ? 'test-category' : null,
@@ -506,6 +510,7 @@ void main() {
       String categoryId = 'test-category',
       String? linkedId,
       List<Override> extraOverrides = const [],
+      ThemeData? theme,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -514,7 +519,7 @@ void main() {
             ...extraOverrides,
           ],
           child: MaterialApp(
-            theme: resolveTestTheme(),
+            theme: theme ?? resolveTestTheme(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
@@ -571,6 +576,92 @@ void main() {
     }
 
     group('AudioRecordingModal.show() - Static Method Coverage', () {
+      testWidgets(
+        'default root modal finishes cleanly above a nested task navigator',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(1000, 800)
+            ..devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+
+          final rootObserver = _TestNavigatorObserver();
+          final nestedObserver = _TestNavigatorObserver();
+          final navigatedPaths = <String>[];
+          var modalHadPoppedWhenNavigating = false;
+          beamToNamedOverride = (path) {
+            navigatedPaths.add(path);
+            modalHadPoppedWhenNavigating = rootObserver.poppedRoutes
+                .whereType<WoltModalSheetRoute<String>>()
+                .isNotEmpty;
+          };
+          addTearDown(() => beamToNamedOverride = null);
+          final recordingState = AudioRecorderState(
+            status: AudioRecorderStatus.recording,
+            progress: const Duration(seconds: 8),
+            vu: 1,
+            dBFS: -24,
+            showIndicator: false,
+            modalVisible: true,
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                ...baseOverrides(),
+                realtimeAvailableProvider.overrideWith((_) async => false),
+                audioRecorderControllerProvider.overrideWith(
+                  () => _CallbackTrackingController(
+                    fixedState: recordingState,
+                    createdId: 'audio-entry-1',
+                  ),
+                ),
+              ],
+              child: MaterialApp(
+                theme: resolveTestTheme(),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                navigatorObservers: [rootObserver],
+                home: Navigator(
+                  observers: [nestedObserver],
+                  onGenerateRoute: (_) => MaterialPageRoute<void>(
+                    builder: (context) => Scaffold(
+                      body: ElevatedButton(
+                        onPressed: () => AudioRecordingModal.show(context),
+                        child: const Text('Show Modal'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Show Modal'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(
+            rootObserver.pushedRoutes.whereType<WoltModalSheetRoute<String>>(),
+            hasLength(1),
+          );
+          expect(
+            nestedObserver.pushedRoutes
+                .whereType<WoltModalSheetRoute<String>>(),
+            isEmpty,
+          );
+
+          await tester.tap(find.text('STOP'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(find.byType(AudioRecordingModalContent), findsNothing);
+          expect(navigatedPaths, ['/journal/audio-entry-1']);
+          expect(modalHadPoppedWhenNavigating, isTrue);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
       testWidgets(
         'should set modal visible and category when show() is called',
         (tester) async {
@@ -1389,8 +1480,56 @@ void main() {
         final shader = tester.widget<AiVoiceInputShader>(
           find.byType(AiVoiceInputShader),
         );
+        final shaderContext = tester.element(find.byType(AiVoiceInputShader));
+        final theme = Theme.of(shaderContext);
+        final tokens =
+            theme.extension<DsTokens>() ??
+            (theme.brightness == Brightness.dark
+                ? dsTokensDark
+                : dsTokensLight);
         expect(shader.dbfs, -7);
+        expect(shader.intensity, 1);
+        expect(shader.primaryColor, tokens.colors.interactive.enabled);
+        expect(shader.secondaryColor, tokens.colors.text.highEmphasis);
       });
+
+      testWidgets(
+        'light and dark design-system themes provide the orb colors',
+        (tester) async {
+          stubCategory();
+          for (final scenario in <(ThemeData, DsTokens)>[
+            (DesignSystemTheme.light(), dsTokensLight),
+            (DesignSystemTheme.dark(), dsTokensDark),
+          ]) {
+            await pumpModalContent(
+              tester,
+              theme: scenario.$1,
+              extraOverrides: [
+                realtimeAvailableProvider.overrideWith((_) async => false),
+                audioRecorderControllerProvider.overrideWith(
+                  () => TestAudioRecorderController(restingState),
+                ),
+                recordingStyleAppPrefsProvider.overrideWithValue(
+                  _fakeRecordingStylePrefs('modern'),
+                ),
+              ],
+            );
+            await tester.pump();
+            await tester.pump();
+
+            final shader = tester.widget<AiVoiceInputShader>(
+              find.byType(AiVoiceInputShader),
+            );
+            expect(shader.primaryColor, scenario.$2.colors.interactive.enabled);
+            expect(
+              shader.secondaryColor,
+              scenario.$2.colors.text.highEmphasis,
+            );
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pump();
+          }
+        },
+      );
     });
   });
 
@@ -1450,6 +1589,7 @@ void main() {
             });
 
             return MaterialApp(
+              theme: DesignSystemTheme.light(),
               home: Scaffold(
                 body: AudioRecordingModalContent(
                   categoryId: 'test-category',
@@ -1560,8 +1700,9 @@ void main() {
                 });
               }
 
-              return const MaterialApp(
-                home: Scaffold(
+              return MaterialApp(
+                theme: DesignSystemTheme.light(),
+                home: const Scaffold(
                   body: AudioRecordingModalContent(
                     categoryId: 'test-category',
                     linkedId: 'event-123',
@@ -1639,8 +1780,9 @@ void main() {
                 });
               }
 
-              return const MaterialApp(
-                home: Scaffold(
+              return MaterialApp(
+                theme: DesignSystemTheme.light(),
+                home: const Scaffold(
                   body: AudioRecordingModalContent(
                     categoryId: 'test-category',
                     linkedId: 'journal-123',
@@ -1713,8 +1855,9 @@ void main() {
                 });
               }
 
-              return const MaterialApp(
-                home: Scaffold(
+              return MaterialApp(
+                theme: DesignSystemTheme.light(),
+                home: const Scaffold(
                   body: AudioRecordingModalContent(
                     categoryId: 'test-category',
                     linkedId: 'nonexistent-123',
@@ -1789,8 +1932,9 @@ void main() {
                   });
                 }
 
-                return const MaterialApp(
-                  home: Scaffold(
+                return MaterialApp(
+                  theme: DesignSystemTheme.light(),
+                  home: const Scaffold(
                     body: AudioRecordingModalContent(
                       categoryId: 'test-category',
                       linkedId: 'null-value-123',
@@ -1866,8 +2010,9 @@ void main() {
                 });
               }
 
-              return const MaterialApp(
-                home: Scaffold(
+              return MaterialApp(
+                theme: DesignSystemTheme.light(),
+                home: const Scaffold(
                   body: AudioRecordingModalContent(
                     categoryId: 'test-category',
                     linkedId: 'loading-123',
@@ -1941,8 +2086,9 @@ void main() {
                 });
               }
 
-              return const MaterialApp(
-                home: Scaffold(
+              return MaterialApp(
+                theme: DesignSystemTheme.light(),
+                home: const Scaffold(
                   body: AudioRecordingModalContent(
                     categoryId: 'test-category',
                     linkedId: 'error-123',
@@ -2038,8 +2184,9 @@ void main() {
                   });
                 }
 
-                return const MaterialApp(
-                  home: Scaffold(
+                return MaterialApp(
+                  theme: DesignSystemTheme.light(),
+                  home: const Scaffold(
                     body: AudioRecordingModalContent(
                       categoryId: 'test-category',
                       linkedId: 'task-123',
@@ -2074,6 +2221,7 @@ class _CallbackTrackingController extends AudioRecorderController {
     this.onStopRealtimeCalled,
     this.onCancelRealtimeCalled,
     this.onRecordRealtimeCalled,
+    this.createdId,
   });
 
   final AudioRecorderState fixedState;
@@ -2082,6 +2230,7 @@ class _CallbackTrackingController extends AudioRecorderController {
   final VoidCallback? onStopRealtimeCalled;
   final VoidCallback? onCancelRealtimeCalled;
   final VoidCallback? onRecordRealtimeCalled;
+  final String? createdId;
 
   @override
   AudioRecorderState build() => fixedState;
@@ -2093,7 +2242,7 @@ class _CallbackTrackingController extends AudioRecorderController {
       status: AudioRecorderStatus.stopped,
       modalVisible: false,
     );
-    return null;
+    return createdId;
   }
 
   @override
@@ -2116,7 +2265,7 @@ class _CallbackTrackingController extends AudioRecorderController {
   @override
   Future<String?> stop() async {
     onStopCalled?.call();
-    return null;
+    return createdId;
   }
 
   @override
@@ -2126,5 +2275,22 @@ class _CallbackTrackingController extends AudioRecorderController {
       status: AudioRecorderStatus.stopped,
       modalVisible: false,
     );
+  }
+}
+
+class _TestNavigatorObserver extends NavigatorObserver {
+  final List<Route<dynamic>> pushedRoutes = <Route<dynamic>>[];
+  final List<Route<dynamic>> poppedRoutes = <Route<dynamic>>[];
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    pushedRoutes.add(route);
+    super.didPush(route, previousRoute);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    poppedRoutes.add(route);
+    super.didPop(route, previousRoute);
   }
 }

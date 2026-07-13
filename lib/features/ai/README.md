@@ -694,11 +694,11 @@ Implementation details that matter:
 ## AI Activity Visualization
 
 `ui/animation/ai_state_shader_animation.dart` is the barrel for the
-shader-based AI activity visualizations. It holds the shader routes, assets,
+shader-based AI activity visualizations. It holds the shader assets,
 the program cache, and the shared `aiSetShaderColor` uniform helper, and it
 re-exports the voice and thinking widget/painter families from the standalone
 `ai_voice_input_shader.dart` and `ai_thinking_line_shader.dart` libraries
-(each imports the barrel back for the shared routes/cache/helper).
+(each imports the barrel back for the shared cache/helper and thinking routes).
 Widgetbook remains the tuning surface via
 `widgetbook/ai_shader_animations_widgetbook.dart`; production task details use
 the decoder-bars thinking shader in the task action bar while inference is
@@ -707,15 +707,23 @@ button while capture or refine listening is active.
 
 Two Flutter runtime-effect shaders are registered in `pubspec.yaml`:
 
-- `shaders/ai_voice_input.frag` renders five transparent elastic-circle voice
-  routes: elastic membrane, impact ripples, tension loop, liquid pulse, and
-  resonance braid. The public widget accepts a dBFS value (`-80..0` by default),
-  matching `record.Amplitude.current` and `computeDbfsFromPcm16`. The routes use
-  localized pressure fields, delayed contour layers, edge traces, and traveling
-  highlights instead of radial zig-zag spokes, pinwheel-like symmetry, globe
-  grids, or filled shader backgrounds. The tension-loop route derives its hot
-  bands from the primary teal toward translucent white rather than using an
-  alert/red accent.
+- `shaders/ai_voice_input.frag` renders the transparent tension-loop voice orb.
+  It contains only that production program: unused experimental variants are
+  not compiled into the runtime effect. `AiVoiceInputShader` creates one
+  `FragmentShader` for the loaded program and reuses it while animation time and
+  live dBFS uniforms change, rather than allocating a native shader every frame.
+  The public widget accepts a dBFS value (`-80..0` by default), matching
+  `record.Amplitude.current` and `computeDbfsFromPcm16`. Five shared quadrature
+  harmonic pairs and four bounded pressure lobes drive every contour; each
+  ribbon gets a different phase by mixing those bases rather than evaluating a
+  new trigonometric pressure field. The render path contains no `exp` or `pow`.
+  It composites two hero ribbons, secondary contours, hairlines, and reusable
+  halos into a transparent premultiplied result. The production recording modal
+  supplies the design-system interactive teal as the body color and the
+  high-emphasis text color to two broader pressure-lit ribbons, resolving those
+  tokens through the ambient design-system theme. The accent therefore blooms
+  white in dark mode and dark in light mode while the fine structure remains
+  teal.
 - `shaders/ai_thinking_line.frag` renders five horizontal thinking routes:
   quiet thread, packet scan, circuit trace, probability band, and decoder bars,
   sized for action-bar use. `AiRunningDecoderBars` selects the decoder-bars
@@ -724,15 +732,14 @@ Two Flutter runtime-effect shaders are registered in `pubspec.yaml`:
   shader amplitude and opacity when activity starts or stops, then removes the
   shader subtree once the exit animation is fully collapsed.
 
-The Widgetbook use cases expose route pickers plus knobs for speed, intensity,
-geometry, colors, randomness, and dBFS. Matrix use cases render every route at
-once for side-by-side comparison; the voice playground opens on the tension loop
-route because that is the current lead candidate. The voice playground also has a
+The Widgetbook use cases expose knobs for speed, intensity,
+geometry, colors, randomness, and dBFS. The thinking matrix renders every
+thinking route at once for side-by-side comparison. The voice playground has a
 Widgetbook-only recorder control that starts a `record.AudioRecorder` metered
 mic session and polls `AudioRecorder.getAmplitude()` every 20ms for
 package-reported dBFS. The shader input runs through a dBFS envelope with
 instant attack and slower release so voice onsets stay responsive while short
-  dips do not make the rings collapse abruptly.
+dips do not make the rings collapse abruptly.
 The default metered path writes only to a temporary file and deletes it when
 recording stops. A PCM stream mode remains available as a diagnostic and
 fallback dBFS source, with input-device selection and raw peak/RMS diagnostics
@@ -749,7 +756,8 @@ flowchart LR
   VoiceWidget --> ProgramCache["AiStateShaderProgramCache"]
   ThinkWidget --> ProgramCache
   ProgramCache --> FragmentProgram["FragmentProgram.fromAsset"]
-  FragmentProgram --> Painter["CustomPainter uniforms"]
+  FragmentProgram --> FragmentShader["One cached FragmentShader per widget"]
+  FragmentShader --> Painter["CustomPainter updates uniforms"]
   Painter --> Canvas["Widgetbook canvas"]
 ```
 
