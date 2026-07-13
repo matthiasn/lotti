@@ -156,15 +156,15 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
             originEntityId: categoryId,
           ),
         );
-    if (model == null) {
+    if (profile == null || model == null) {
       final persisted = await _persist(action);
       if (persisted && mounted) {
         Navigator.of(context).pop();
       }
       return;
     }
-    final successTitle = messages.taskAgentSetupChangedToast(
-      model.name,
+    final successTitle = messages.taskAgentProfileChangedToast(
+      profile.name,
     );
     await _persistTerminalChoice(
       action,

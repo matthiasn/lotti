@@ -410,7 +410,7 @@ void main() {
             as AgentInferenceSetup;
     expect(setup.mode, AgentInferenceSetupMode.configured);
     expect(setup.baseProfileId, profile.id);
-    expect(find.textContaining('Using Qwen 3.5 Plus'), findsWidgets);
+    expect(find.textContaining('Using Saved profile'), findsWidgets);
   });
 
   testWidgets('origin labels cover disabled, category, template, and legacy', (
