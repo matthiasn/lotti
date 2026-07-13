@@ -936,6 +936,7 @@ void main() {
               baseUrl: baseUrl,
               apiKey: apiKey,
               prompt: 'Transcribe exactly. Required spelling: Lotti.',
+              maxCompletionTokens: 321,
             )
             .toList();
 
@@ -957,6 +958,7 @@ void main() {
           'type': 'text',
           'text': 'Transcribe exactly. Required spelling: Lotti.',
         });
+        expect(body['max_tokens'], 321);
       },
     );
 
@@ -1052,58 +1054,63 @@ void main() {
       },
     );
 
-    test('transcribeChatAudio preserves structured provider error detail', () {
-      final repository = MeliousInferenceRepository(
-        httpClient: MockClient(
-          (_) async => http.Response(
-            jsonEncode({
-              'error': {
-                'code': 'INFERENCE_3103',
-                'message': 'All Voxtral providers failed',
-              },
-            }),
-            503,
+    test(
+      'transcribeChatAudio preserves structured provider error detail',
+      () async {
+        final wavBytes = base64Decode('UklGRgAAAABXQVZF');
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient(
+            (_) async => http.Response(
+              jsonEncode({
+                'error': {
+                  'code': 'INFERENCE_3103',
+                  'message': 'All Voxtral providers failed',
+                },
+              }),
+              503,
+            ),
           ),
-        ),
-        m4aToWavConverter: (_) async => null,
-      );
-      addTearDown(repository.close);
+          m4aToWavConverter: (_) async => wavBytes,
+        );
+        addTearDown(repository.close);
 
-      expect(
-        repository
-            .transcribeChatAudio(
-              model: 'voxtral-small-24b-2507',
-              audioBase64: base64Encode([1, 2, 3]),
-              baseUrl: baseUrl,
-              apiKey: apiKey,
-              prompt: 'Transcribe.',
-            )
-            .toList(),
-        throwsA(
-          isA<TranscriptionException>()
-              .having((error) => error.statusCode, 'statusCode', 503)
-              .having(
-                (error) => error.message,
-                'message',
-                contains('All Voxtral providers failed'),
+        await expectLater(
+          repository
+              .transcribeChatAudio(
+                model: 'voxtral-small-24b-2507',
+                audioBase64: base64Encode([1, 2, 3]),
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                prompt: 'Transcribe.',
               )
-              .having(
-                (error) => error.message,
-                'HTTP detail',
-                contains('HTTP 503'),
-              ),
-        ),
-      );
-    });
+              .toList(),
+          throwsA(
+            isA<TranscriptionException>()
+                .having((error) => error.statusCode, 'statusCode', 503)
+                .having(
+                  (error) => error.message,
+                  'message',
+                  contains('All Voxtral providers failed'),
+                )
+                .having(
+                  (error) => error.message,
+                  'HTTP detail',
+                  contains('HTTP 503'),
+                ),
+          ),
+        );
+      },
+    );
 
-    test('transcribeChatAudio times out with a request id', () {
+    test('transcribeChatAudio times out with a request id', () async {
+      final wavBytes = base64Decode('UklGRgAAAABXQVZF');
       final repository = MeliousInferenceRepository(
         httpClient: MockClient((_) => Completer<http.Response>().future),
-        m4aToWavConverter: (_) async => null,
+        m4aToWavConverter: (_) async => wavBytes,
       );
       addTearDown(repository.close);
 
-      expect(
+      await expectLater(
         repository
             .transcribeChatAudio(
               model: 'voxtral-small-24b-2507',
