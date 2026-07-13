@@ -43,7 +43,11 @@ void _listenForInferenceErrors({
         duration: const Duration(seconds: 12),
         replaceCurrent: true,
       );
-      ref.read(provider.notifier).setError(null);
+      Future.microtask(() {
+        if (context.mounted) {
+          ref.read(provider.notifier).setError(null);
+        }
+      });
     });
   }
 }

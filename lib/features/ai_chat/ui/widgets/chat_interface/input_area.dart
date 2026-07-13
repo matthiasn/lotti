@@ -70,7 +70,11 @@ class InputAreaState extends ConsumerState<InputArea> {
             duration: const Duration(seconds: 8),
             replaceCurrent: true,
           );
-          ref.read(chatRecorderControllerProvider.notifier).clearResult();
+          Future.microtask(() {
+            if (mounted) {
+              ref.read(chatRecorderControllerProvider.notifier).clearResult();
+            }
+          });
           return;
         }
         if (next.transcript != null &&

@@ -207,6 +207,38 @@ void main() {
       expect(outputFile.existsSync(), isFalse);
     });
 
+    test('scratch cleanup continues when one deletion fails', () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'lotti_audio_converter_cleanup_test_',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final attemptedPaths = <String>[];
+      final inputFile = File('${directory.path}/cleanup.m4a');
+      final outputFile = File('${directory.path}/cleanup.wav');
+
+      final wavBytes = await convertM4aBytesToTemporaryWav(
+        Uint8List.fromList([1, 2, 3]),
+        temporaryDirectory: directory,
+        fileStem: 'cleanup',
+        converter: ({required inputPath, required outputPath}) async {
+          await File(outputPath).writeAsBytes([82, 73, 70, 70]);
+          return true;
+        },
+        scratchFileDeleter: (file) {
+          attemptedPaths.add(file.path);
+          if (file.path.endsWith('.m4a')) {
+            throw FileSystemException('simulated cleanup failure', file.path);
+          }
+          file.deleteSync();
+        },
+      );
+
+      expect(wavBytes, [82, 73, 70, 70]);
+      expect(attemptedPaths, [inputFile.path, outputFile.path]);
+      expect(inputFile.existsSync(), isTrue);
+      expect(outputFile.existsSync(), isFalse);
+    });
+
     test('temporary M4A conversion rejects a missing output file', () async {
       final directory = await Directory.systemTemp.createTemp(
         'lotti_audio_converter_missing_output_test_',

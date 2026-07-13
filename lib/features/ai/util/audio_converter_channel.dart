@@ -11,6 +11,7 @@ typedef AudioPathConverter =
       required String inputPath,
       required String outputPath,
     });
+typedef AudioScratchFileDeleter = void Function(File file);
 
 /// Dart-side wrapper for native WAV/M4A audio conversion via a platform
 /// channel.
@@ -77,15 +78,17 @@ class AudioConverterChannel {
   }
 }
 
-/// Converts in-memory M4A bytes through temporary files and always removes the
-/// scratch input and output before returning.
+/// Converts in-memory M4A bytes through temporary files, reads the result, then
+/// removes each scratch file independently before returning.
 ///
 /// The archived M4A is never changed. A `null` result means native conversion
 /// was unavailable or failed, so callers can choose a provider-specific
-/// fallback.
+/// fallback. Cleanup is best-effort so one filesystem deletion failure does
+/// not leave the other scratch file behind.
 Future<Uint8List?> convertM4aBytesToTemporaryWav(
   Uint8List m4aBytes, {
   AudioPathConverter? converter,
+  AudioScratchFileDeleter? scratchFileDeleter,
   Directory? temporaryDirectory,
   String? fileStem,
 }) async {
@@ -94,6 +97,7 @@ Future<Uint8List?> convertM4aBytesToTemporaryWav(
   final inputFile = File(p.join(directory.path, '$stem.m4a'));
   final outputFile = File(p.join(directory.path, '$stem.wav'));
   final convert = converter ?? AudioConverterChannel.convertM4aToWav;
+  final deleteScratchFile = scratchFileDeleter ?? (file) => file.deleteSync();
 
   try {
     await directory.create(recursive: true);
@@ -103,9 +107,15 @@ Future<Uint8List?> convertM4aBytesToTemporaryWav(
       outputPath: outputFile.path,
     );
     if (!converted || !outputFile.existsSync()) return null;
-    return outputFile.readAsBytes();
+    return await outputFile.readAsBytes();
   } finally {
-    if (inputFile.existsSync()) inputFile.deleteSync();
-    if (outputFile.existsSync()) outputFile.deleteSync();
+    for (final file in [inputFile, outputFile]) {
+      try {
+        if (file.existsSync()) deleteScratchFile(file);
+      } on FileSystemException {
+        // Scratch cleanup is best-effort, and one failure must not prevent the
+        // other file from being removed.
+      }
+    }
   }
 }

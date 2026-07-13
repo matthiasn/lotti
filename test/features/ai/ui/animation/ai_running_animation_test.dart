@@ -671,6 +671,15 @@ void main() {
           ),
           findsOneWidget,
         );
+        expect(
+          container.read(
+            inferenceErrorControllerProvider((
+              id: testId,
+              aiResponseType: testType,
+            )),
+          ),
+          isNull,
+        );
         await tester.pumpWidget(const SizedBox.shrink());
       } finally {
         container.dispose();

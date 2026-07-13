@@ -163,8 +163,8 @@ class AudioConverter {
                 let outputFile = try AVAudioFile(
                     forWriting: outputUrl,
                     settings: outputSettings,
-                    commonFormat: .pcmFormatFloat32,
-                    interleaved: false
+                    commonFormat: inputFormat.commonFormat,
+                    interleaved: inputFormat.isInterleaved
                 )
                 guard let buffer = AVAudioPCMBuffer(
                     pcmFormat: inputFormat,
@@ -178,6 +178,7 @@ class AudioConverter {
                 }
 
                 while true {
+                    buffer.frameLength = buffer.frameCapacity
                     try inputFile.read(into: buffer)
                     if buffer.frameLength == 0 { break }
                     try outputFile.write(from: buffer)

@@ -806,7 +806,7 @@ $draft
         ],
         object: 'chat.completion.chunk',
         created: decoded['created'] as int? ?? 0,
-        model: decoded['model'] as String?,
+        model: decoded['model'] as String? ?? normalizedModel,
         usage: parseCompletionUsage(decoded['usage']),
       );
     } on TranscriptionException catch (error) {
