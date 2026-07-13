@@ -1367,6 +1367,159 @@ void main() {
       });
     });
 
+    group('Pause / Resume Controls', () {
+      AudioRecorderState standardRecording() => AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        progress: const Duration(seconds: 8),
+        vu: 40,
+        dBFS: -25,
+        showIndicator: false,
+        modalVisible: true,
+      );
+
+      testWidgets('shows pause button while recording in standard mode', (
+        tester,
+      ) async {
+        stubCategory();
+
+        await pumpModalContent(
+          tester,
+          extraOverrides: [
+            realtimeAvailableProvider.overrideWith((_) async => false),
+            audioRecorderControllerProvider.overrideWith(
+              () => TestAudioRecorderController(standardRecording()),
+            ),
+          ],
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(
+          find.byKey(const ValueKey('pause_resume_button')),
+          findsOneWidget,
+        );
+        // Recording → shows the pause glyph.
+        expect(find.byIcon(Icons.pause), findsOneWidget);
+        // Cancel and stop stay alongside it.
+        expect(find.byKey(const ValueKey('cancel_recording')), findsOneWidget);
+        expect(find.text('STOP'), findsOneWidget);
+      });
+
+      testWidgets('omits pause button in realtime recording mode', (
+        tester,
+      ) async {
+        stubCategory();
+
+        final realtime = standardRecording().copyWith(isRealtimeMode: true);
+
+        await pumpModalContent(
+          tester,
+          extraOverrides: [
+            realtimeAvailableProvider.overrideWith((_) async => true),
+            audioRecorderControllerProvider.overrideWith(
+              () => TestAudioRecorderController(realtime),
+            ),
+          ],
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(
+          find.byKey(const ValueKey('pause_resume_button')),
+          findsNothing,
+        );
+        // Cancel and stop remain available in realtime mode.
+        expect(find.byKey(const ValueKey('cancel_recording')), findsOneWidget);
+        expect(find.text('STOP'), findsOneWidget);
+      });
+
+      testWidgets(
+        'tapping pause calls pause() and swaps to a resume (play) button',
+        (tester) async {
+          stubCategory();
+
+          var pauseCalled = false;
+
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              realtimeAvailableProvider.overrideWith((_) async => false),
+              audioRecorderControllerProvider.overrideWith(
+                () => _CallbackTrackingController(
+                  fixedState: standardRecording(),
+                  onPauseCalled: () => pauseCalled = true,
+                ),
+              ),
+            ],
+          );
+
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 250));
+
+          await tester.tap(find.byKey(const ValueKey('pause_resume_button')));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 250));
+
+          expect(pauseCalled, isTrue);
+          // The single button persists (static key); its glyph swaps to play.
+          expect(
+            find.byKey(const ValueKey('pause_resume_button')),
+            findsOneWidget,
+          );
+          expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+          expect(find.byIcon(Icons.pause), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'paused state shows a resume button; tapping it calls resume()',
+        (tester) async {
+          stubCategory();
+
+          var resumeCalled = false;
+          final paused = standardRecording().copyWith(
+            status: AudioRecorderStatus.paused,
+          );
+
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              realtimeAvailableProvider.overrideWith((_) async => false),
+              audioRecorderControllerProvider.overrideWith(
+                () => _CallbackTrackingController(
+                  fixedState: paused,
+                  onResumeCalled: () => resumeCalled = true,
+                ),
+              ),
+            ],
+          );
+
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 250));
+
+          expect(
+            find.byKey(const ValueKey('pause_resume_button')),
+            findsOneWidget,
+          );
+          // Paused → shows the play (resume) glyph.
+          expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+          // Stop controls remain visible while paused.
+          expect(find.text('STOP'), findsOneWidget);
+
+          await tester.tap(find.byKey(const ValueKey('pause_resume_button')));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 250));
+
+          expect(resumeCalled, isTrue);
+          // Same button; glyph swaps back to pause.
+          expect(find.byIcon(Icons.pause), findsOneWidget);
+          expect(find.byIcon(Icons.play_arrow), findsNothing);
+        },
+      );
+    });
+
     group('AudioRecordingModal - Recording Style Visualizer', () {
       final restingState = AudioRecorderState(
         status: AudioRecorderStatus.initializing,
@@ -2222,6 +2375,8 @@ class _CallbackTrackingController extends AudioRecorderController {
     this.onCancelRealtimeCalled,
     this.onRecordRealtimeCalled,
     this.createdId,
+    this.onPauseCalled,
+    this.onResumeCalled,
   });
 
   final AudioRecorderState fixedState;
@@ -2231,9 +2386,23 @@ class _CallbackTrackingController extends AudioRecorderController {
   final VoidCallback? onCancelRealtimeCalled;
   final VoidCallback? onRecordRealtimeCalled;
   final String? createdId;
+  final VoidCallback? onPauseCalled;
+  final VoidCallback? onResumeCalled;
 
   @override
   AudioRecorderState build() => fixedState;
+
+  @override
+  Future<void> pause() async {
+    onPauseCalled?.call();
+    state = state.copyWith(status: AudioRecorderStatus.paused);
+  }
+
+  @override
+  Future<void> resume() async {
+    onResumeCalled?.call();
+    state = state.copyWith(status: AudioRecorderStatus.recording);
+  }
 
   @override
   Future<String?> stopRealtime() async {

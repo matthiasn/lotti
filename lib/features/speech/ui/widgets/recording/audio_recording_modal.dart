@@ -164,7 +164,7 @@ class _AudioRecordingModalContentState
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   child: _isRecording(state)
-                      ? _buildStopButton(context, theme)
+                      ? _buildStopButton(context, theme, state, controller)
                       : _buildRecordButton(context, controller, theme),
                 ),
               ],
@@ -379,6 +379,7 @@ class _AudioRecordingModalContentState
   /// left of the stop button while recording, in both standard and realtime
   /// modes. Uses the localized cancel label for accessibility/tooltip.
   Widget _buildCancelButton(BuildContext context, ThemeData theme) {
+    final tokens = context.designTokens;
     return Tooltip(
       message: context.messages.audioRecordingCancel,
       child: Semantics(
@@ -392,8 +393,8 @@ class _AudioRecordingModalContentState
           behavior: HitTestBehavior.opaque,
           onTap: _terminalActionInProgress ? null : _cancel,
           child: Container(
-            width: 48,
-            height: 48,
+            width: tokens.spacing.step9,
+            height: tokens.spacing.step9,
             decoration: BoxDecoration(
               color: Colors.transparent,
               shape: BoxShape.circle,
@@ -412,10 +413,94 @@ class _AudioRecordingModalContentState
     );
   }
 
+  /// Circular pause / resume control shown between the cancel and stop buttons
+  /// while a standard (non-realtime) recording is in progress.
+  ///
+  /// Tapping toggles [AudioRecorderController.pause] and
+  /// [AudioRecorderController.resume]; the glyph swaps pause ↔ play and the
+  /// accessibility/tooltip label follows. Tinted with the primary accent so it
+  /// reads as a distinct, benign transport control next to the grey destructive
+  /// cancel — a fumbled pause can't be mistaken for discard. Mirrors
+  /// [_buildCancelButton]'s 48×48 ring so the whole control is tappable.
+  /// Disabled while a terminal stop/cancel is already underway.
+  Widget _buildPauseResumeButton(
+    BuildContext context,
+    AudioRecorderController controller,
+    AudioRecorderState state,
+    ThemeData theme,
+  ) {
+    final tokens = context.designTokens;
+    final isPaused = state.status == AudioRecorderStatus.paused;
+    final label = isPaused
+        ? context.messages.audioRecordingResume
+        : context.messages.audioRecordingPause;
+
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        label: label,
+        child: GestureDetector(
+          // Static key: a key that changed with [isPaused] would tear down and
+          // rebuild this subtree on every toggle, so the AnimatedSwitcher below
+          // could never run its cross-fade. The icon swap is animated by the
+          // switcher's own child key instead.
+          key: const ValueKey('pause_resume_button'),
+          behavior: HitTestBehavior.opaque,
+          onTap: _terminalActionInProgress
+              ? null
+              : () {
+                  if (isPaused) {
+                    controller.resume();
+                  } else {
+                    controller.pause();
+                  }
+                },
+          child: Container(
+            width: tokens.spacing.step9,
+            height: tokens.spacing.step9,
+            decoration: BoxDecoration(
+              // A touch more fill + a stronger ring than a bare outline so the
+              // circle body stays visible on the near-black surface and the
+              // purple identity doesn't rely on the glyph alone.
+              color: theme.colorScheme.primary.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.85),
+              ),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Padding(
+                key: ValueKey(isPaused),
+                // The play triangle's ink sits left of the glyph's geometric
+                // center, so nudge it right to optically center it in the ring;
+                // the symmetric pause bars need no offset.
+                padding: EdgeInsets.only(
+                  left: isPaused ? tokens.spacing.step1 : 0,
+                ),
+                child: Icon(
+                  isPaused ? Icons.play_arrow : Icons.pause,
+                  // Matches the sibling cancel (X) glyph size so the two
+                  // circular controls read as one family.
+                  size: 22,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildStopButton(
     BuildContext context,
     ThemeData theme,
+    AudioRecorderState state,
+    AudioRecorderController controller,
   ) {
+    final tokens = context.designTokens;
     return Row(
       key: const ValueKey('stop_controls'),
       mainAxisSize: MainAxisSize.min,
@@ -423,16 +508,22 @@ class _AudioRecordingModalContentState
         // Cancel (X) button — discards the whole recording without creating an
         // entry. Available in both standard and realtime modes.
         _buildCancelButton(context, theme),
-        const SizedBox(width: 12),
+        SizedBox(width: tokens.spacing.step4),
+        // Pause / resume — standard mode only. The realtime flow streams PCM to
+        // a WebSocket and has no pause path, so the control is omitted there.
+        if (!state.isRealtimeMode) ...[
+          _buildPauseResumeButton(context, controller, state, theme),
+          SizedBox(width: tokens.spacing.step4),
+        ],
         // Stop button
         GestureDetector(
           onTap: _terminalActionInProgress ? null : _stop,
           child: Container(
             width: 120,
-            height: 48,
+            height: tokens.spacing.step9,
             decoration: BoxDecoration(
               color: Colors.transparent,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(tokens.radii.xl),
               border: Border.all(
                 color: theme.colorScheme.error,
                 width: 2,
@@ -443,8 +534,8 @@ class _AudioRecordingModalContentState
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 8,
-                    height: 8,
+                    width: tokens.spacing.step3,
+                    height: tokens.spacing.step3,
                     decoration: BoxDecoration(
                       color: Colors.red,
                       shape: BoxShape.circle,

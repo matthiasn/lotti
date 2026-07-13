@@ -40,6 +40,7 @@
     </release>
     <release version="0.9.1040" date="2026-07-13">
       <description>
+          <p>Audio recordings can now be paused and resumed mid-capture from the recording sheet, next to stop and cancel, so you can pause a brain dump and pick it back up without splitting it into separate entries. While paused the elapsed timer and level meter freeze. Available for standard recordings; live-transcription recordings are unaffected.</p>
           <p>Task agents now show their thinking model, model publisher, and serving provider directly in the AI summary. The identity opens a persistent setup sheet for choosing a profile or model, returning to the profile default, copying the category default, or pausing AI. Reports retain immutable attribution after setup changes, and automatic task-related updates can be disabled while Run now remains available.</p>
           <p>AI profile and model choices now use one consistent design-system picker flow. Task-agent choices finish saving before the setup sheet closes, and their confirmation stays inside the task column instead of spanning the application.</p>
           <p>Backfill Sync now updates both Missing counters as sequence-log rows resolve, keeping them in step with the inbound queue countdown during large backfills instead of waiting for the slower diagnostics refresh.</p>

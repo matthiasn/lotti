@@ -39,6 +39,10 @@ The main recording interface presented as a modal bottom sheet.
 - Standard/Realtime transcription mode toggle (shown when realtime transcription
   is available and recording has not started)
 - Record/Stop button with recording status indicator
+- Pause/Resume control (standard mode only) that suspends capture mid-recording;
+  the glyph swaps pause ↔ play and, while paused, the elapsed timer and VU meter
+  freeze. Realtime mode streams PCM to a WebSocket and has no pause path, so the
+  control is omitted there.
 - Integrates with Riverpod state management via `AudioRecorderController`
 - Automatically pauses any playing audio when recording starts
 - Uses the root navigator by default so the sheet remains stable above nested
@@ -72,6 +76,30 @@ sequenceDiagram
   opt unlinked recording produced an entry
     Caller->>AppNav: open journal entry
   end
+```
+
+**Recording lifecycle (`AudioRecorderStatus`):**
+
+The modal drives `AudioRecorderController` through the states below. `pause` and
+`resume` only apply to standard file recording; the realtime PCM/WebSocket flow
+goes straight from `recording` to `stopped`. While `paused`, the amplitude
+listener drops incoming samples so `progress`, `vu`, and `dBFS` hold their
+pre-pause values (the elapsed timer and VU meter freeze).
+
+```mermaid
+stateDiagram-v2
+    [*] --> stopped
+    stopped --> recording: record() / recordRealtime()
+    recording --> paused: pause() (standard only)
+    paused --> recording: resume()
+    recording --> stopped: stop() / stopRealtime() / cancel()
+    paused --> stopped: stop() / cancel()
+    stopped --> [*]
+
+    note right of paused
+        amplitude samples dropped;
+        progress / vu / dBFS frozen
+    end note
 ```
 
 ### 3. AudioRecordingOrb

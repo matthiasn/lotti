@@ -78,6 +78,12 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     // We'll get it lazily when needed
 
     _amplitudeSub = _recorderRepository.amplitudeStream.listen((Amplitude amp) {
+      // While paused the recorder keeps polling amplitude, but the elapsed
+      // timer and level meter must freeze so the displayed duration matches the
+      // audio actually captured. Dropping these samples holds progress/vu/dBFS
+      // at their pre-pause values until the recording resumes.
+      if (state.status == AudioRecorderStatus.paused) return;
+
       final dBFS = amp.current;
       final vu = _vuMeter.addSample(dBFS);
 
@@ -337,10 +343,20 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   }
 
   /// Pauses the current recording.
-  /// Updates the state to reflect paused status.
+  ///
+  /// Updates the state to paused and drops the level meter to its resting
+  /// (silent) values so the VU meter / orb visualizer reads as quiet rather
+  /// than frozen mid-level — a frozen loud needle would look like the app
+  /// hung. The elapsed [AudioRecorderState.progress] is intentionally left
+  /// untouched so the timer holds; the amplitude listener in [build] then drops
+  /// incoming samples until [resume] restarts metering.
   Future<void> pause() async {
     await _recorderRepository.pauseRecording();
-    state = state.copyWith(status: AudioRecorderStatus.paused);
+    state = state.copyWith(
+      status: AudioRecorderStatus.paused,
+      vu: -20,
+      dBFS: -160,
+    );
   }
 
   /// Resumes a paused recording.

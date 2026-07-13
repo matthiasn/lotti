@@ -1228,6 +1228,83 @@ void main() {
         });
       });
 
+      test('freezes progress and levels while paused, resumes afterwards', () {
+        fakeAsync((async) {
+          // Arrange — a controllable amplitude stream feeding a fresh container.
+          final amplitudeController = StreamController<Amplitude>.broadcast();
+          final mockAmplitude = MockAmplitude();
+          when(() => mockAmplitude.current).thenReturn(-50);
+          when(
+            () => mockAudioRecorderRepository.amplitudeStream,
+          ).thenAnswer((_) => amplitudeController.stream);
+
+          final testContainer = ProviderContainer(
+            overrides: [
+              audioRecorderRepositoryProvider.overrideWithValue(
+                mockAudioRecorderRepository,
+              ),
+            ],
+          );
+          final controller = testContainer.read(
+            audioRecorderControllerProvider.notifier,
+          );
+
+          async
+            ..elapse(const Duration(milliseconds: 100))
+            ..flushMicrotasks();
+
+          // Live samples advance the elapsed timer (false branch of the guard).
+          fillVuBuffer(amplitudeController, mockAmplitude, async, count: 5);
+          final beforePause = testContainer.read(
+            audioRecorderControllerProvider,
+          );
+          expect(beforePause.progress.inMilliseconds, greaterThan(0));
+
+          // Act — pause. Status flips to paused.
+          controller.pause();
+          async.flushMicrotasks();
+          final paused = testContainer.read(audioRecorderControllerProvider);
+          expect(paused.status, AudioRecorderStatus.paused);
+
+          // Samples arriving while paused are dropped (true branch of guard):
+          // progress, dBFS and vu all hold their pre-pause values.
+          fillVuBuffer(amplitudeController, mockAmplitude, async, count: 10);
+          final duringPause = testContainer.read(
+            audioRecorderControllerProvider,
+          );
+          expect(duringPause.progress, paused.progress);
+          expect(duringPause.dBFS, paused.dBFS);
+          expect(duringPause.vu, paused.vu);
+
+          // Act — resume. The timer AND level metering advance again on the
+          // next samples (not just progress — a regression that left vu/dBFS
+          // frozen must fail here too).
+          controller.resume();
+          async.flushMicrotasks();
+          expect(
+            testContainer.read(audioRecorderControllerProvider).status,
+            AudioRecorderStatus.recording,
+          );
+
+          // Feed a new, louder level and fill the sliding VU window (15 samples)
+          // so the meter reflects the post-resume input.
+          when(() => mockAmplitude.current).thenReturn(-10);
+          fillVuBuffer(amplitudeController, mockAmplitude, async, count: 15);
+          final afterResume = testContainer.read(
+            audioRecorderControllerProvider,
+          );
+          expect(afterResume.dBFS, -10);
+          expect(afterResume.vu, greaterThan(duringPause.vu));
+          expect(
+            afterResume.progress.inMilliseconds,
+            greaterThan(duringPause.progress.inMilliseconds),
+          );
+
+          amplitudeController.close();
+          testContainer.dispose();
+        });
+      });
+
       test('should cancel amplitude subscription on dispose', () async {
         // Arrange
         final amplitudeController = StreamController<Amplitude>();
