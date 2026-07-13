@@ -21,13 +21,12 @@ class ViewportStableScrollController extends ScrollController {
   });
 
   bool _isHolding = false;
-  int _holdRevision = 0;
+  double _pendingExtentDelta = 0;
   Timer? _releaseTimer;
 
   /// Preserves the current viewport content until [duration] elapses.
   void hold(Duration duration) {
     if (duration <= Duration.zero) return;
-    if (!_isHolding) _holdRevision++;
     _isHolding = true;
     _releaseTimer?.cancel();
     _releaseTimer = Timer(duration, _releaseAnchor);
@@ -37,10 +36,30 @@ class ViewportStableScrollController extends ScrollController {
     _releaseTimer?.cancel();
     _releaseTimer = null;
     _isHolding = false;
+    _pendingExtentDelta = 0;
   }
 
   void _releaseAfterFrame() {
     WidgetsBinding.instance.addPostFrameCallback((_) => _releaseAnchor());
+  }
+
+  void _reportExtentDelta(double delta) {
+    if (!_isHolding ||
+        delta.abs() <= _ViewportStableScrollPosition._tolerance) {
+      return;
+    }
+    _pendingExtentDelta += delta;
+    // The total scroll extent can remain unchanged when unrelated content
+    // below shrinks in the same frame. Flag the position so
+    // applyContentDimensions still invokes correctForNewDimensions, where the
+    // region-specific delta is applied at the viewport boundary.
+    if (positions.length == 1) position.correctBy(0);
+  }
+
+  double _takePendingExtentDelta() {
+    final delta = _pendingExtentDelta;
+    _pendingExtentDelta = 0;
+    return delta;
   }
 
   @override
@@ -80,8 +99,6 @@ class _ViewportStableScrollPosition extends ScrollPositionWithSingleContext {
 
   final ViewportStableScrollController controller;
   static const _tolerance = 0.5;
-  int _holdRevision = -1;
-  double? _correctedMaxScrollExtent;
 
   @override
   bool correctForNewDimensions(
@@ -95,15 +112,8 @@ class _ViewportStableScrollPosition extends ScrollPositionWithSingleContext {
     }
 
     if (!controller._isHolding) return true;
-    if (_holdRevision != controller._holdRevision) {
-      _holdRevision = controller._holdRevision;
-      _correctedMaxScrollExtent = null;
-    }
-    final previousMaxScrollExtent =
-        _correctedMaxScrollExtent ?? oldPosition.maxScrollExtent;
-    final delta = newPosition.maxScrollExtent - previousMaxScrollExtent;
+    final delta = controller._takePendingExtentDelta();
     if (delta.abs() <= _tolerance) return true;
-    _correctedMaxScrollExtent = newPosition.maxScrollExtent;
     final target = (pixels + delta).clamp(
       newPosition.minScrollExtent,
       newPosition.maxScrollExtent,
@@ -162,6 +172,7 @@ class ViewportStableAnimatedSize extends StatefulWidget {
 class _ViewportStableAnimatedSizeState
     extends State<ViewportStableAnimatedSize> {
   ScrollController? _controller;
+  bool _shouldReportHeightDelta = false;
 
   @override
   void didChangeDependencies() {
@@ -196,11 +207,13 @@ class _ViewportStableAnimatedSizeState
   }
 
   void _holdIfFullyAboveViewport() {
+    _shouldReportHeightDelta = false;
     final bottom = _bottomGlobal();
     final viewportTop = _viewportTopGlobal();
     if (bottom == null || viewportTop == null) return;
     final controller = _controller;
     if (bottom <= viewportTop && controller is ViewportStableScrollController) {
+      _shouldReportHeightDelta = true;
       controller.hold(widget.duration + MotionDurations.short2);
     }
   }
@@ -211,6 +224,13 @@ class _ViewportStableAnimatedSizeState
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return _LayoutInvalidationReporter(
       onWillLayout: _holdIfFullyAboveViewport,
+      onHeightDelta: (delta) {
+        final controller = _controller;
+        if (_shouldReportHeightDelta &&
+            controller is ViewportStableScrollController) {
+          controller._reportExtentDelta(delta);
+        }
+      },
       child: AnimatedSize(
         alignment: Alignment.topCenter,
         duration: reduceMotion ? Duration.zero : widget.duration,
@@ -230,14 +250,19 @@ class _ViewportStableAnimatedSizeState
 class _LayoutInvalidationReporter extends SingleChildRenderObjectWidget {
   const _LayoutInvalidationReporter({
     required this.onWillLayout,
+    required this.onHeightDelta,
     required super.child,
   });
 
   final VoidCallback onWillLayout;
+  final ValueChanged<double> onHeightDelta;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
-    return _RenderLayoutInvalidationReporter(onWillLayout: onWillLayout);
+    return _RenderLayoutInvalidationReporter(
+      onWillLayout: onWillLayout,
+      onHeightDelta: onHeightDelta,
+    );
   }
 
   @override
@@ -245,15 +270,22 @@ class _LayoutInvalidationReporter extends SingleChildRenderObjectWidget {
     BuildContext context,
     _RenderLayoutInvalidationReporter renderObject,
   ) {
-    renderObject.onWillLayout = onWillLayout;
+    renderObject
+      ..onWillLayout = onWillLayout
+      ..onHeightDelta = onHeightDelta;
   }
 }
 
 class _RenderLayoutInvalidationReporter extends RenderProxyBox {
-  _RenderLayoutInvalidationReporter({required this.onWillLayout});
+  _RenderLayoutInvalidationReporter({
+    required this.onWillLayout,
+    required this.onHeightDelta,
+  });
 
   VoidCallback onWillLayout;
+  ValueChanged<double> onHeightDelta;
   bool _hasLaidOut = false;
+  double? _previousHeight;
 
   @override
   void markNeedsLayout() {
@@ -263,7 +295,11 @@ class _RenderLayoutInvalidationReporter extends RenderProxyBox {
 
   @override
   void performLayout() {
+    final previousHeight = _previousHeight;
     super.performLayout();
+    final currentHeight = size.height;
+    _previousHeight = currentHeight;
     _hasLaidOut = true;
+    if (previousHeight != null) onHeightDelta(currentHeight - previousHeight);
   }
 }

@@ -158,6 +158,51 @@ void main() {
     expect(tester.getTopLeft(find.byKey(_markerKey)).dy, closeTo(markerTop, 1));
   });
 
+  testWidgets(
+    'ignores an unrelated extent shrink below the anchored content',
+    (tester) async {
+      final paintedMarkerTops = <double>[];
+      final key = GlobalKey<_StableSizeHarnessState>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          _StableSizeHarness(key: key, onMarkerPaint: paintedMarkerTops.add),
+        ),
+      );
+      await tester.pump();
+
+      final state = key.currentState!..controller.jumpTo(500);
+      await tester.pump();
+      final markerTop = tester.getTopLeft(find.byKey(_markerKey)).dy;
+      final maxExtentBefore = state.controller.position.maxScrollExtent;
+      paintedMarkerTops.clear();
+
+      state.resizeDescendantAndTail(
+        descendantHeight: 250,
+        tailHeight: 1580,
+      );
+      await tester.pump();
+      for (var frame = 0; frame < 3; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(
+          tester.getTopLeft(find.byKey(_markerKey)).dy,
+          closeTo(markerTop, 1),
+          reason: 'visible content moved during animation frame $frame',
+        );
+      }
+
+      expect(paintedMarkerTops, isNotEmpty);
+      expect(
+        paintedMarkerTops.every((top) => (top - markerTop).abs() <= 1),
+        isTrue,
+      );
+      expect(state.controller.offset, closeTo(700, 1));
+      expect(
+        state.controller.position.maxScrollExtent - maxExtentBefore,
+        closeTo(180, 1),
+      );
+    },
+  );
+
   testWidgets('keeps scroll offset fixed when the growing region is visible', (
     tester,
   ) async {
@@ -185,6 +230,31 @@ void main() {
       tester.getSize(find.byKey(_animatedSizeKey)).height,
       inExclusiveRange(50, 250),
     );
+  });
+
+  testWidgets('does not fight an active user scroll', (tester) async {
+    final key = GlobalKey<_StableSizeHarnessState>();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(_StableSizeHarness(key: key)),
+    );
+    await tester.pump();
+
+    final state = key.currentState!..controller.jumpTo(500);
+    await tester.pump();
+    state.controller.position.isScrollingNotifier.value = true;
+    final offsetDuringDrag = state.controller.offset;
+    final markerTopBeforeResize = tester.getTopLeft(find.byKey(_markerKey)).dy;
+
+    state.resizeDescendant(250);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+
+    expect(state.controller.offset, offsetDuringDrag);
+    expect(
+      tester.getTopLeft(find.byKey(_markerKey)).dy,
+      greaterThan(markerTopBeforeResize),
+    );
+    state.controller.position.isScrollingNotifier.value = false;
   });
 
   testWidgets('holds visible content while growing at the bottom extent', (
@@ -248,15 +318,25 @@ class _StableSizeHarnessState extends State<_StableSizeHarness> {
   final ViewportStableScrollController controller =
       ViewportStableScrollController();
   late final ValueNotifier<double> height;
+  late final ValueNotifier<double> tailHeight;
 
   @override
   void initState() {
     super.initState();
     height = ValueNotifier(widget.initialHeight);
+    tailHeight = ValueNotifier(1600 - widget.markerSpacer);
   }
 
   // ignore: use_setters_to_change_properties
   void resizeDescendant(double value) => height.value = value;
+
+  void resizeDescendantAndTail({
+    required double descendantHeight,
+    required double tailHeight,
+  }) {
+    height.value = descendantHeight;
+    this.tailHeight.value = tailHeight;
+  }
 
   void rebuildWithHeight(double value) {
     height.value = value;
@@ -266,6 +346,7 @@ class _StableSizeHarnessState extends State<_StableSizeHarness> {
   @override
   void dispose() {
     height.dispose();
+    tailHeight.dispose();
     controller.dispose();
     super.dispose();
   }
@@ -296,7 +377,10 @@ class _StableSizeHarnessState extends State<_StableSizeHarness> {
                   onPaint: widget.onMarkerPaint,
                   child: const SizedBox(key: _markerKey, height: 40),
                 ),
-                SizedBox(height: 1600 - widget.markerSpacer),
+                ValueListenableBuilder<double>(
+                  valueListenable: tailHeight,
+                  builder: (context, value, child) => SizedBox(height: value),
+                ),
               ],
             ),
           ),

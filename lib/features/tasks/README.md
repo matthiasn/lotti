@@ -204,7 +204,10 @@ Checklist content is modeled separately through checklist entities and linked ch
   `ViewportStableScrollController` when an off-screen animated region is about
   to relayout. Its custom scroll position consumes the resulting content-extent
   delta in `correctForNewDimensions`, causing Flutter to repeat viewport layout
-  with the corrected offset before anything paints. A render-level layout
+  with the corrected offset before anything paints. The scroll position
+  consumes the animated region's measured height delta—not the whole page's
+  extent delta—so the inference indicator collapsing below the viewport in the
+  same frame cannot leave a fixed residual nudge. A render-level layout
   invalidation hook also covers analysis consumers that rebuild below the
   wrapper without invoking its `didUpdateWidget`. Newly
   created checklist rows and checklist cards reveal through `SizeFadeEntrance`,
@@ -713,10 +716,11 @@ nested AI response cards and the source-entry editors that receive audio
 transcripts or image-analysis markdown opt into `ViewportStableAnimatedSize`
 only inside that scope. If the changing region is visible, its top and the page
 scroll offset stay fixed while it unfolds downward. If the region is fully
-above the viewport, `ViewportStableScrollController` compensates each animated
-content-extent delta from the viewport's own layout cycle—even when only the
-editor consumer rebuilt—so the content currently being read never paints at an
-intermediate displaced position. User scrolling cancels the hold
+above the viewport, `ViewportStableScrollController` compensates each measured
+region-height delta from the viewport's own layout cycle—even when only the
+editor consumer rebuilt and unrelated content elsewhere changes in the same
+frame—so the content currently being read never paints at an intermediate
+displaced position. User scrolling cancels the hold
 immediately, and the standalone journal-entry detail page remains outside the
 scope.
 

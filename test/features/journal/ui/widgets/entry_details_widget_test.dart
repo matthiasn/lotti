@@ -1318,6 +1318,8 @@ void main() {
         );
         final scrollController = ViewportStableScrollController();
         addTearDown(scrollController.dispose);
+        final trailingExtent = ValueNotifier<double>(1200);
+        addTearDown(trailingExtent.dispose);
         final paintedMarkerTops = <double>[];
         late _ControllableEntryController entryController;
 
@@ -1355,7 +1357,11 @@ void main() {
                                 height: 40,
                               ),
                             ),
-                            const SizedBox(height: 1200),
+                            ValueListenableBuilder<double>(
+                              valueListenable: trailingExtent,
+                              builder: (context, value, child) =>
+                                  SizedBox(height: value),
+                            ),
                           ],
                         ),
                       ),
@@ -1384,6 +1390,10 @@ void main() {
         paintedMarkerTops.clear();
 
         entryController.emit(analyzedImage);
+        // In the real task page the inference indicator can collapse at the
+        // same time. That unrelated change below the marker must not be
+        // subtracted from the editor's anchoring correction.
+        trailingExtent.value = 1180;
         await tester.pump();
         for (var frame = 0; frame < 8; frame++) {
           await tester.pump(const Duration(milliseconds: 20));
