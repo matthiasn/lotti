@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -120,9 +121,9 @@ class ProposalsSection extends StatelessWidget {
             for (var i = 0; i < open.length; i++)
               // A newly arrived proposal eases its own height open; the initial
               // batch (and a row re-appearing mid-collapse) appears instantly.
-              // EnterTransition is a SizeTransition, so it composes with the
+              // SizeFadeEntrance is a SizeTransition, so it composes with the
               // row's own collapse on exit without fighting it.
-              EnterTransition(
+              SizeFadeEntrance(
                 key: ValueKey(
                   'enter-${open[i].changeSet.id}-${open[i].itemIndex}',
                 ),
@@ -171,83 +172,6 @@ class ProposalsSection extends StatelessWidget {
           ],
         ],
       ),
-    );
-  }
-}
-
-/// One-shot entrance reveal for a card section that lands *after* the card is
-/// already on screen (an async report or the proposals section appearing).
-///
-/// Eases the child's height open from zero — vertical only, full width
-/// throughout — with a fade, so the content below it is pushed down smoothly
-/// instead of in one jerking frame. Built on [SizeTransition] rather than
-/// [AnimatedSize] on purpose: it animates exactly once, then sits at full size
-/// as an inert pass-through, so a proposal row collapsing *inside* it later is
-/// left entirely to that row's own choreography (an enclosing `AnimatedSize`
-/// would instead try to re-drive — and crash on — that inner size change).
-///
-/// Plays only when [animate] is true and reduced motion is off; otherwise it
-/// snaps to full size on its first layout (used for content already present on
-/// the card's first frame, which the card's `StaggeredEntrance` covers).
-class EnterTransition extends StatefulWidget {
-  const EnterTransition({
-    required this.child,
-    this.animate = true,
-    super.key,
-  });
-
-  final Widget child;
-
-  /// Whether to play the reveal. False snaps straight to full size — the
-  /// caller has decided this content should appear without its own motion.
-  final bool animate;
-
-  @override
-  State<EnterTransition> createState() => _EnterTransitionState();
-}
-
-class _EnterTransitionState extends State<EnterTransition>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: MotionDurations.medium2,
-  );
-  late final Animation<double> _size = CurvedAnimation(
-    parent: _controller,
-    curve: MotionCurves.emphasizedDecelerate,
-  );
-  late final Animation<double> _fade = CurvedAnimation(
-    parent: _controller,
-    curve: MotionCurves.standard,
-  );
-  bool _started = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Decide once, on first layout, so a later rebuild (e.g. [_ready] flipping
-    // on the parent) can never restart a reveal that already played.
-    if (_started) return;
-    _started = true;
-    if (widget.animate && !MediaQuery.disableAnimationsOf(context)) {
-      _controller.forward();
-    } else {
-      _controller.value = 1;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizeTransition(
-      alignment: Alignment.topCenter,
-      sizeFactor: _size,
-      child: FadeTransition(opacity: _fade, child: widget.child),
     );
   }
 }

@@ -22,11 +22,13 @@ class TaskForm extends ConsumerWidget {
   const TaskForm({
     required this.taskId,
     this.suggestionsFocusKey,
+    this.onSuggestionResolveStart,
     super.key,
   });
 
   final String taskId;
   final GlobalKey? suggestionsFocusKey;
+  final VoidCallback? onSuggestionResolveStart;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -88,6 +90,7 @@ class TaskForm extends ConsumerWidget {
           child: AiSummaryCard(
             taskId: taskId,
             proposalsFocusKey: suggestionsFocusKey,
+            onSuggestionResolveStart: onSuggestionResolveStart,
           ),
         ),
       ],

@@ -1,9 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/tasks/util/scroll_anchor.dart';
 
 void main() {
   group('anchorCorrectionOffset', () {
+    glados.Glados3(
+      glados.any.intInRange(-1000, 1001),
+      glados.any.intInRange(0, 1001),
+      glados.any.intInRange(0, 1001),
+      glados.ExploreConfig(numRuns: 180),
+    ).test(
+      'compensates generated drift exactly within scroll extents',
+      (drift, offsetSeed, maxExtent) {
+        final currentOffset = offsetSeed % (maxExtent + 1);
+        final unclamped = currentOffset + drift;
+        final expected = unclamped.clamp(0, maxExtent).toDouble();
+        final result = anchorCorrectionOffset(
+          anchorTop: 1000,
+          currentTop: 1000 + drift.toDouble(),
+          currentOffset: currentOffset.toDouble(),
+          minScrollExtent: 0,
+          maxScrollExtent: maxExtent.toDouble(),
+        );
+
+        if (drift == 0 || expected == currentOffset) {
+          expect(
+            result,
+            isNull,
+            reason: 'd=$drift o=$currentOffset m=$maxExtent',
+          );
+        } else {
+          expect(
+            result,
+            expected,
+            reason: 'd=$drift o=$currentOffset m=$maxExtent',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
     test('null when drift is within tolerance', () {
       expect(
         anchorCorrectionOffset(

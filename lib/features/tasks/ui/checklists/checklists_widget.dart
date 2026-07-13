@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
@@ -34,6 +35,8 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
 
   /// Track expansion states for each checklist (used for sorting mode).
   final Map<String, bool> _expansionStates = {};
+  final Set<String> _knownChecklistIds = {};
+  bool _seededChecklistIds = false;
 
   void _onExpansionChanged(String checklistId, bool isExpanded) {
     _expansionStates[checklistId] = isExpanded;
@@ -68,6 +71,14 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
     }
 
     final checklistIds = _checklistIds ?? item.data.checklistIds ?? [];
+    final currentChecklistIds = checklistIds.toSet();
+    final newlyInsertedChecklistIds = _seededChecklistIds
+        ? currentChecklistIds.difference(_knownChecklistIds)
+        : const <String>{};
+    _seededChecklistIds = true;
+    _knownChecklistIds
+      ..clear()
+      ..addAll(currentChecklistIds);
     // Empty state — when the task has no checklists yet, the section is
     // hidden entirely. Adding the first checklist now lives exclusively on
     // the FAB's create-entry menu (see `create_entry_items.dart`), which
@@ -121,39 +132,42 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
               // suggestion adds one) keeps every other card's element + state,
               // instead of shifting indices, dropping state, and re-fetching
               // (which flashed the cards). checklistId is unique per task.
-              return Consumer(
+              return SizeFadeEntrance(
                 key: Key('checklist-$checklistId-${widget.entryId}'),
-                builder: (context, ref, _) {
-                  final checklist = ref
-                      .watch(
-                        checklistControllerProvider((
-                          id: checklistId,
-                          taskId: widget.task.id,
-                        )),
-                      )
-                      .value;
-                  // Don't render card for deleted or stale checklists
-                  if (checklist == null) {
-                    return const SizedBox.shrink();
-                  }
+                animate: newlyInsertedChecklistIds.contains(checklistId),
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final checklist = ref
+                        .watch(
+                          checklistControllerProvider((
+                            id: checklistId,
+                            taskId: widget.task.id,
+                          )),
+                        )
+                        .value;
+                    // Don't render card for deleted or stale checklists
+                    if (checklist == null) {
+                      return const SizedBox.shrink();
+                    }
 
-                  // Determine initial expansion state for restoration
-                  final initiallyExpanded = isSorting
-                      ? false // Force collapsed during sorting
-                      : sortingState.preExpansionStates[checklistId];
+                    // Determine initial expansion state for restoration
+                    final initiallyExpanded = isSorting
+                        ? false // Force collapsed during sorting
+                        : sortingState.preExpansionStates[checklistId];
 
-                  // ModernBaseCard is now inside ChecklistWrapper to ensure
-                  // DropRegion covers the entire visual card area
-                  return ChecklistCardWrapper(
-                    entryId: checklistId,
-                    categoryId: item.categoryId,
-                    taskId: widget.task.id,
-                    isSortingMode: isSorting,
-                    initiallyExpanded: initiallyExpanded,
-                    onExpansionChanged: _onExpansionChanged,
-                    reorderIndex: index,
-                  );
-                },
+                    // ModernBaseCard is now inside ChecklistWrapper to ensure
+                    // DropRegion covers the entire visual card area
+                    return ChecklistCardWrapper(
+                      entryId: checklistId,
+                      categoryId: item.categoryId,
+                      taskId: widget.task.id,
+                      isSortingMode: isSorting,
+                      initiallyExpanded: initiallyExpanded,
+                      onExpansionChanged: _onExpansionChanged,
+                      reorderIndex: index,
+                    );
+                  },
+                ),
               );
             },
           ),

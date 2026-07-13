@@ -1161,12 +1161,11 @@ void main() {
       },
     );
 
-    // Audio entries only mount NestedAiResponsesWidget when there are linked AI
-    // responses — otherwise the empty section's rhythm gap left a dead band
-    // above the footer (the Save-button void).
+    // Audio entries keep a stable zero-height response host so a later result
+    // can animate in without reserving an empty rhythm gap beforehand.
     testWidgets(
-      'EntryDetailsContent omits NestedAiResponsesWidget for JournalAudio with '
-      'no linked AI responses',
+      'EntryDetailsContent keeps a zero-height AI response host for '
+      'JournalAudio with no linked AI responses',
       (tester) async {
         final mockJournalRepository = MockJournalRepository();
         when(
@@ -1202,8 +1201,15 @@ void main() {
 
         await tester.pump();
 
-        // No responses → the nested section is not mounted (no wasted gap).
-        expect(find.byType(NestedAiResponsesWidget), findsNothing);
+        expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
+        expect(
+          tester.getSize(find.byType(NestedAiResponsesWidget)).height,
+          0,
+        );
+        expect(
+          find.byKey(NestedAiResponsesWidget.headerKey),
+          findsNothing,
+        );
         // AudioPlayerWidget is still the detail section for audio entries.
         expect(find.byType(AudioPlayerWidget), findsOneWidget);
       },

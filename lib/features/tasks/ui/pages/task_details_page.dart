@@ -20,6 +20,7 @@ import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
+import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/features/tasks/util/scroll_anchor.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -310,70 +311,74 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       // trailing SliverPadding consumes that inset so the last entry
       // can scroll fully above the bar instead of being hidden behind.
       body: Builder(
-        builder: (context) => CustomScrollView(
+        builder: (context) => TaskScrollStabilityScope(
           controller: _scrollController,
-          slivers: [
-            TaskSliverAppBar(taskId: widget.taskId),
-            SliverToBoxAdapter(
-              child: Center(
-                child: ConstrainedBox(
-                  // Cap the content measure on wide windows so the task reads
-                  // as a centered column rather than full-bleed text; this is
-                  // non-binding at phone / narrow-pane widths.
-                  constraints: const BoxConstraints(maxWidth: 760),
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      left: 15,
-                      right: 15,
-                      top: 10,
-                    ),
-                    child: TaskForm(
-                      taskId: widget.taskId,
-                      suggestionsFocusKey: _suggestionsKey,
+          child: CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              TaskSliverAppBar(taskId: widget.taskId),
+              SliverToBoxAdapter(
+                child: Center(
+                  child: ConstrainedBox(
+                    // Cap the content measure on wide windows so the task reads
+                    // as a centered column rather than full-bleed text; this is
+                    // non-binding at phone / narrow-pane widths.
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 15,
+                        right: 15,
+                        top: 10,
+                      ),
+                      child: TaskForm(
+                        taskId: widget.taskId,
+                        suggestionsFocusKey: _suggestionsKey,
+                        onSuggestionResolveStart: _suggestionsAnchor.hold,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            SliverToBoxAdapter(
-              child: Center(
-                key: _belowCardKey,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 760),
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: 8,
-                      left: 10,
-                      right: 10,
+              SliverToBoxAdapter(
+                child: Center(
+                  key: _belowCardKey,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        top: 8,
+                        left: 10,
+                        right: 10,
+                      ),
+                      child:
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: <Widget>[
+                              LinkedEntriesWithTimer(
+                                item: task,
+                                entryKeyBuilder: _getEntryKey,
+                                highlightedEntryId: highlightedEntryId,
+                                hideTaskEntries: true,
+                              ),
+                              LinkedFromEntriesWidget(
+                                task,
+                                hideTaskEntries: true,
+                              ),
+                            ],
+                          ).animate().fadeIn(
+                            duration: const Duration(milliseconds: 100),
+                          ),
                     ),
-                    child:
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: <Widget>[
-                            LinkedEntriesWithTimer(
-                              item: task,
-                              entryKeyBuilder: _getEntryKey,
-                              highlightedEntryId: highlightedEntryId,
-                              hideTaskEntries: true,
-                            ),
-                            LinkedFromEntriesWidget(
-                              task,
-                              hideTaskEntries: true,
-                            ),
-                          ],
-                        ).animate().fadeIn(
-                          duration: const Duration(milliseconds: 100),
-                        ),
                   ),
                 ),
               ),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.paddingOf(context).bottom,
+              SliverPadding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.paddingOf(context).bottom,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

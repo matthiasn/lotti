@@ -58,11 +58,16 @@ class AiSummaryCard extends ConsumerWidget {
   const AiSummaryCard({
     required this.taskId,
     this.proposalsFocusKey,
+    this.onSuggestionResolveStart,
     super.key,
   });
 
   final String taskId;
   final GlobalKey? proposalsFocusKey;
+
+  /// Called synchronously when the user commits to resolving a suggestion,
+  /// before the underlying task mutation can change surrounding layout.
+  final VoidCallback? onSuggestionResolveStart;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -80,6 +85,7 @@ class AiSummaryCard extends ConsumerWidget {
           taskId: taskId,
           identity: identity,
           proposalsFocusKey: proposalsFocusKey,
+          onSuggestionResolveStart: onSuggestionResolveStart,
         );
       },
     );
@@ -91,11 +97,13 @@ class _AiSummaryShell extends ConsumerStatefulWidget {
     required this.taskId,
     required this.identity,
     required this.proposalsFocusKey,
+    required this.onSuggestionResolveStart,
   });
 
   final String taskId;
   final AgentIdentityEntity identity;
   final GlobalKey? proposalsFocusKey;
+  final VoidCallback? onSuggestionResolveStart;
 
   @override
   ConsumerState<_AiSummaryShell> createState() => _AiSummaryShellState();
@@ -191,6 +199,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   /// the count the instant it is committed).
   void _onRowResolveStart(PendingSuggestion suggestion) {
     if (!_exitingFingerprints.add(suggestion.fingerprint)) return;
+    widget.onSuggestionResolveStart?.call();
     if (mounted) setState(() {});
   }
 
@@ -283,6 +292,9 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
 
   Future<void> _confirmAll(List<PendingSuggestion> pending) async {
     if (_confirmAllBusy || pending.isEmpty) return;
+    // Start viewport stabilization before the first persistence call can grow
+    // or shrink checklist content above this card.
+    widget.onSuggestionResolveStart?.call();
     // One light haptic for the whole gesture (the rows no longer tick
     // individually — that machine-gunned on a big batch). Bump the pulse so
     // the rows run their resolve → collapse exit as one staggered downward

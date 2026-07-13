@@ -12,7 +12,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
@@ -400,18 +399,6 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
     // a gap before an empty (collapsed) labels row.
     final hasLabels = showLabels && (item.meta.labelIds?.isNotEmpty ?? false);
 
-    // Only mount the nested AI responses section when there are responses to
-    // show. The widget hides itself when empty, but it is still a body section,
-    // so the rhythm step in front of it left a wasted gap above the footer
-    // (most visible as the dead band over the Save button on audio entries).
-    final hasNestedAiResponses =
-        item is JournalAudio &&
-        (ref
-                .watch(linkedAiResponsesControllerProvider(itemId))
-                .value
-                ?.isNotEmpty ??
-            false);
-
     final footer = EntryDetailFooter(
       entryId: itemId,
       linkedFrom: linkedFrom,
@@ -429,11 +416,6 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
         // above its transcript, matching the collapsible layout.
         ?detailSection,
         if (!shouldHideEditor) _bodyEditor(itemId),
-        if (hasNestedAiResponses)
-          NestedAiResponsesWidget(
-            parentEntryId: itemId,
-            linkedFromEntity: item,
-          ),
       ];
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,6 +423,11 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
         children: [
           header,
           ..._withRhythm(context, body),
+          if (item is JournalAudio)
+            NestedAiResponsesWidget(
+              parentEntryId: itemId,
+              linkedFromEntity: item,
+            ),
           // Footer self-collapses to zero when there is nothing to show, so it
           // carries its own (small) leading gap rather than a rhythm step.
           footer,
@@ -455,13 +442,19 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       if (item is JournalAudio && detailSection != null) detailSection,
       if (hasLabels) EntryLabelsDisplay(entryId: itemId),
       if (!shouldHideEditor) _bodyEditor(itemId),
-      if (hasNestedAiResponses)
-        NestedAiResponsesWidget(parentEntryId: itemId, linkedFromEntity: item),
     ];
     final expandedContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: [..._withRhythm(context, collapsibleBody), footer],
+      children: [
+        ..._withRhythm(context, collapsibleBody),
+        if (item is JournalAudio)
+          NestedAiResponsesWidget(
+            parentEntryId: itemId,
+            linkedFromEntity: item,
+          ),
+        footer,
+      ],
     );
 
     return Column(

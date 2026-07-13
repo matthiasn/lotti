@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
+import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -265,6 +266,41 @@ void main() {
 
       // Should have Dismissible widgets for each AI response
       expect(find.byType(Dismissible), findsNWidgets(2));
+    });
+
+    testWidgets('enables animated response sizing in the task scroll scope', (
+      tester,
+    ) async {
+      setupSingleAiResponse();
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          TaskScrollStabilityScope(
+            controller: controller,
+            child: NestedAiResponsesWidget(
+              parentEntryId: testAudioEntry.meta.id,
+              linkedFromEntity: testAudioEntry,
+            ),
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(ViewportStableAnimatedSize), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(ViewportStableAnimatedSize),
+          matching: find.byType(AnimatedSize),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(AiResponseSummary), findsOneWidget);
     });
   });
 
