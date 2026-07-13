@@ -4283,6 +4283,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextTriageToday => 'Aujourd\'hui';
 
   @override
+  String get dailyOsOnboardingCoachCapture => 'Dis ce qui te préoccupe.';
+
+  @override
+  String get dailyOsOnboardingCoachDrafting =>
+      'Le planificateur crée les nouvelles tâches et place le travail dans ta journée.';
+
+  @override
+  String get dailyOsOnboardingCoachReconcile =>
+      'Choisis ce qui a sa place aujourd\'hui. Les nouveaux éléments deviennent des tâches quand tu construis la journée.';
+
+  @override
+  String get dailyOsOnboardingSpotlightAction => 'Essayer';
+
+  @override
+  String get dailyOsOnboardingSpotlightDismiss => 'Pas maintenant';
+
+  @override
+  String get dailyOsOnboardingSpotlightMessage =>
+      'Touche ici et dis ce qui te préoccupe – j\'en fais une tâche et j\'organise ta journée autour.';
+
+  @override
+  String get dailyOsOnboardingSpotlightTitle => 'Transforme tes mots en plan';
+
+  @override
   String get dailyOsTodayButton => 'Aujourd\'hui';
 
   @override
@@ -9087,10 +9111,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Réglage du profil';
 
   @override
-  String get taskAgentRunNowTooltip => 'Exécuter maintenant';
+  String get taskAgentRouteVia => 'via';
 
   @override
-  String get taskAgentRouteVia => 'via';
+  String get taskAgentRunNowTooltip => 'Exécuter maintenant';
 
   @override
   String taskAgentSetupAndReportSemantics(String identity) {

@@ -2310,6 +2310,13 @@
   "dailyOsNextTriageDoNow": "Do now",
   "dailyOsNextTriageDrop": "Drop",
   "dailyOsNextTriageToday": "Today",
+  "dailyOsOnboardingCoachCapture": "Say what's pulling at your attention.",
+  "dailyOsOnboardingCoachDrafting": "The planner is creating any new tasks and fitting the work into your day.",
+  "dailyOsOnboardingCoachReconcile": "Choose what belongs in today. New items become tasks when you build the day.",
+  "dailyOsOnboardingSpotlightAction": "Try it",
+  "dailyOsOnboardingSpotlightDismiss": "Not now",
+  "dailyOsOnboardingSpotlightMessage": "Tap here and say what's on your mind — I'll turn it into a task and build your day around it.",
+  "dailyOsOnboardingSpotlightTitle": "Turn talk into a plan",
   "dailyOsTodayButton": "Today",
   "dashboardActiveLabel": "Active",
   "dashboardActiveSwitchDescription": "Shown in the dashboards list",
@@ -4320,8 +4327,8 @@
   "taskAgentNoProfileSelected": "No AI setup",
   "taskAgentNoProfileSelectedDescription": "Choose a saved setup or thinking model before this agent can run.",
   "taskAgentProfileDefaultBadge": "Profile default",
-  "taskAgentRunNowTooltip": "Run now",
   "taskAgentRouteVia": "via",
+  "taskAgentRunNowTooltip": "Run now",
   "taskAgentSetupAndReportSemantics": "This report and current setup use {identity}. Activate to change setup.",
   "@taskAgentSetupAndReportSemantics": {
     "placeholders": {

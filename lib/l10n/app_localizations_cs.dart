@@ -4261,6 +4261,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextTriageToday => 'Dnes';
 
   @override
+  String get dailyOsOnboardingCoachCapture => 'Řekni, co ti leží v hlavě.';
+
+  @override
+  String get dailyOsOnboardingCoachDrafting =>
+      'Plánovač vytváří nové úkoly a zasazuje práci do tvého dne.';
+
+  @override
+  String get dailyOsOnboardingCoachReconcile =>
+      'Vyber, co patří do dneška. Nové položky se stanou úkoly, až sestavíš den.';
+
+  @override
+  String get dailyOsOnboardingSpotlightAction => 'Vyzkoušet';
+
+  @override
+  String get dailyOsOnboardingSpotlightDismiss => 'Teď ne';
+
+  @override
+  String get dailyOsOnboardingSpotlightMessage =>
+      'Klepni sem a řekni, co ti leží v hlavě – proměním to v úkol a poskládám kolem toho tvůj den.';
+
+  @override
+  String get dailyOsOnboardingSpotlightTitle => 'Proměň řeč v plán';
+
+  @override
   String get dailyOsTodayButton => 'Dnes';
 
   @override
@@ -9017,10 +9041,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Výchozí model profilu';
 
   @override
-  String get taskAgentRunNowTooltip => 'Spustit nyní';
+  String get taskAgentRouteVia => 'přes';
 
   @override
-  String get taskAgentRouteVia => 'přes';
+  String get taskAgentRunNowTooltip => 'Spustit nyní';
 
   @override
   String taskAgentSetupAndReportSemantics(String identity) {

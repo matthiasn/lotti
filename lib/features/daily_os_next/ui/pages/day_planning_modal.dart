@@ -17,10 +17,12 @@ import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_coach_slot.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_glass_action_bar.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_shader.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -248,7 +250,16 @@ class _CaptureStepBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final actualBlocks =
         ref.watch(dailyOsActualTimeBlocksProvider(day)).value ?? const [];
-    return CaptureModalContent(forDate: day, actualBlocks: actualBlocks);
+    return Column(
+      children: [
+        DailyOsOnboardingCoachSlot(
+          message: context.messages.dailyOsOnboardingCoachCapture,
+        ),
+        Expanded(
+          child: CaptureModalContent(forDate: day, actualBlocks: actualBlocks),
+        ),
+      ],
+    );
   }
 }
 
@@ -407,9 +418,15 @@ class _ReconcileStepContent extends ConsumerWidget {
     final tokens = context.designTokens;
     final state = ref.watch(reconcileControllerProvider(params));
     return switch (state) {
-      _ when state.hasValue => ReconcileModalContent(
-        params: params,
-        data: state.requireValue,
+      _ when state.hasValue => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DailyOsOnboardingCoachSlot(
+            message: context.messages.dailyOsOnboardingCoachReconcile,
+            recordStage: OnboardingEventName.dailyOsReconcileReached,
+          ),
+          ReconcileModalContent(params: params, data: state.requireValue),
+        ],
       ),
       _ when state.hasError => Padding(
         padding: EdgeInsets.all(tokens.spacing.step8),
@@ -609,8 +626,16 @@ class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
 
     final asyncState = ref.watch(draftingControllerProvider(widget.params));
     return switch (asyncState) {
-      _ when asyncState.hasValue => DraftingModalContent(
-        state: asyncState.requireValue,
+      _ when asyncState.hasValue => Column(
+        children: [
+          DailyOsOnboardingCoachSlot(
+            message: context.messages.dailyOsOnboardingCoachDrafting,
+            recordStage: OnboardingEventName.dailyOsDraftingStarted,
+          ),
+          Expanded(
+            child: DraftingModalContent(state: asyncState.requireValue),
+          ),
+        ],
       ),
       _ when asyncState.hasError => Center(
         child: Padding(
