@@ -31,8 +31,7 @@ enum DailyOsOnboardingOrigin {
 /// Wolt modal recreates its page widgets across page swaps, so per-widget
 /// booleans cannot enforce "record this stage once." This session owns that
 /// bookkeeping for the whole walkthrough instead: a stable [sessionId], its
-/// [origin], whether coaching tips are still visible, and exactly-once guards
-/// for the stage and skip events.
+/// [origin], and exactly-once guards for the stage and skip events.
 ///
 /// Emission is injected via an `onEvent` callback rather than reaching for the
 /// metrics repository directly, so the contract is testable in isolation. A
@@ -45,13 +44,10 @@ class DailyOsOnboardingSession {
     required this.sessionId,
     required this.origin,
     DailyOsOnboardingEventSink? onEvent,
-    bool tipsVisible = true,
   }) : // Private field, public param: an initializing formal would force a
        // private named parameter, which Dart forbids.
        // ignore: prefer_initializing_formals
-       _onEvent = onEvent,
-       // ignore: prefer_initializing_formals
-       _tipsVisible = tipsVisible;
+       _onEvent = onEvent;
 
   /// Stable id for this walkthrough run, used to tie its events together.
   final String sessionId;
@@ -61,23 +57,10 @@ class DailyOsOnboardingSession {
 
   final DailyOsOnboardingEventSink? _onEvent;
   final Set<OnboardingEventName> _recordedStages = {};
-  bool _tipsVisible;
   bool _skipRecorded = false;
-
-  /// Whether coaching tips should still render. Flips to false once the user
-  /// hides tips; it never flips back within a session.
-  bool get tipsVisible => _tipsVisible;
 
   /// Whether the session-level skip has been recorded.
   bool get skipRecorded => _skipRecorded;
-
-  /// Hides coaching for the remainder of this session without interrupting the
-  /// real modal. Also records the session skip (hiding tips is a rejection of
-  /// guidance, distinct from completing the plan).
-  void hideTips() {
-    _tipsVisible = false;
-    recordSkippedOnce();
-  }
 
   /// Records a stage event at most once per session. Repeat calls for an event
   /// already recorded are no-ops, so a rebuilt page cannot double-count.

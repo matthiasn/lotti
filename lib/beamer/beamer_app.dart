@@ -378,8 +378,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   /// failures, so a bookkeeping hiccup never surfaces here.
   Future<void> _showDailyOsOnboarding() async {
     if (!mounted) return;
-    if (navService.isDailyOsPageEnabled &&
-        navService.index != navService.calendarIndex) {
+    // Daily OS is always available (no config flag), so only the current tab
+    // gates the switch.
+    if (navService.index != navService.calendarIndex) {
       navService.tapIndex(navService.calendarIndex);
     }
     ref

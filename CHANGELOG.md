@@ -59,6 +59,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Finishing a recording also dismisses its sheet exactly once before opening
   the saved entry, avoiding a nested-navigator teardown failure.
 
+### Changed
+- **Daily OS is now available to everyone.** The Daily OS day-planning surface
+  no longer sits behind a Settings → Advanced → Flags toggle — its calendar tab
+  appears in the main navigation for all users.
+
 ## [0.9.1039]
 ### Added
 - **Task agents now use evidence-first inference by default with efficient

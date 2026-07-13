@@ -55,8 +55,8 @@ const dailyOsOnboardingWindow = Duration(days: 14);
 /// auto-show slot (so it never races What's New or the general FTUE).
 ///
 /// Eligible while:
-/// - both the Daily OS onboarding flag and the Daily OS page flag are on
-///   (no point coaching a surface the user cannot reach),
+/// - the Daily OS onboarding flag is on (the Daily OS surface itself is always
+///   available, so only the walkthrough is gated),
 /// - What's New has nothing unseen and the general FTUE welcome is not still
 ///   owed — the walkthrough is sequenced *behind* both so the three
 ///   auto-shown surfaces never race for the screen,
@@ -73,7 +73,6 @@ const dailyOsOnboardingWindow = Duration(days: 14);
 ///   of the first auto-show.
 bool isDailyOsOnboardingEligible({
   required bool dailyOsOnboardingFlagEnabled,
-  required bool dailyOsPageEnabled,
   required bool hasUnseenWhatsNew,
   required bool welcomeStillOwed,
   required bool selectedDateIsToday,
@@ -86,7 +85,6 @@ bool isDailyOsOnboardingEligible({
   required DateTime now,
 }) {
   if (!dailyOsOnboardingFlagEnabled) return false;
-  if (!dailyOsPageEnabled) return false;
   if (hasUnseenWhatsNew) return false;
   if (welcomeStillOwed) return false;
   if (!selectedDateIsToday) return false;
@@ -172,8 +170,6 @@ Future<bool> shouldAutoShowDailyOsOnboarding(Ref ref) async {
     dailyOsOnboardingEnabledFlag,
   );
   if (!onboardingEnabled) return false;
-  final pageEnabled = await db.getConfigFlag(enableDailyOsPageFlag);
-  if (!pageEnabled) return false;
 
   // What's New still owns the first overlay slot while it has unseen content
   // *and* its own feature is enabled (a disabled What's New reports unseen
@@ -209,7 +205,6 @@ Future<bool> shouldAutoShowDailyOsOnboarding(Ref ref) async {
 
   return isDailyOsOnboardingEligible(
     dailyOsOnboardingFlagEnabled: onboardingEnabled,
-    dailyOsPageEnabled: pageEnabled,
     hasUnseenWhatsNew: hasUnseenWhatsNew,
     welcomeStillOwed: welcomeStillOwed,
     selectedDateIsToday: selectedDateIsToday,

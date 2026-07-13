@@ -2959,7 +2959,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
-      'Accompagne les nouveaux utilisateurs de Daily OS dans un vrai check-in qui transforme ta voix en tâche et en plan de journée. Nécessite la page DailyOS.';
+      'Accompagne les nouveaux utilisateurs de Daily OS dans un vrai check-in qui transforme ta voix en tâche et en plan de journée.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -2975,13 +2975,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get configFlagEnableAiSummaryTtsDescription =>
       'Affiche le bouton local de synthèse vocale dans les résumés IA des tâches. Nécessite un modèle TTS MLX Audio installé.';
-
-  @override
-  String get configFlagEnableDailyOs => 'Activer DailyOS';
-
-  @override
-  String get configFlagEnableDailyOsDescription =>
-      'Afficher DailyOS dans la navigation principale.';
 
   @override
   String get configFlagEnableDashboardsPage =>

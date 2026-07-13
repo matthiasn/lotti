@@ -27,9 +27,10 @@ class NavService {
     _journalDb = journalDb ?? getIt<JournalDb>();
     _settingsDb = settingsDb ?? getIt<SettingsDb>();
 
+    // Daily OS is always available -- it has no config flag. Only the pages
+    // that remain gated (habits / dashboards / projects / events) are watched.
     _navigationFlagsSub =
-        Rx.combineLatest5<
-              bool,
+        Rx.combineLatest4<
               bool,
               bool,
               bool,
@@ -37,20 +38,17 @@ class NavService {
               ({
                 bool habits,
                 bool dashboards,
-                bool dailyOs,
                 bool projects,
                 bool events,
               })
             >(
               _journalDb.watchConfigFlag(enableHabitsPageFlag),
               _journalDb.watchConfigFlag(enableDashboardsPageFlag),
-              _journalDb.watchConfigFlag(enableDailyOsPageFlag),
               _journalDb.watchConfigFlag(enableProjectsFlag),
               _journalDb.watchConfigFlag(enableEventsFlag),
-              (habits, dashboards, dailyOs, projects, events) => (
+              (habits, dashboards, projects, events) => (
                 habits: habits,
                 dashboards: dashboards,
-                dailyOs: dailyOs,
                 projects: projects,
                 events: events,
               ),
@@ -64,7 +62,6 @@ class NavService {
     ({
       bool habits,
       bool dashboards,
-      bool dailyOs,
       bool projects,
       bool events,
     })
@@ -118,7 +115,6 @@ class NavService {
 
   bool _isHabitsPageEnabled = false;
   bool _isDashboardsPageEnabled = false;
-  bool _isDailyOsPageEnabled = false;
   bool _isProjectsPageEnabled = false;
   bool _isEventsPageEnabled = false;
 
@@ -140,7 +136,9 @@ class NavService {
 
   bool get isHabitsPageEnabled => _isHabitsPageEnabled;
   bool get isDashboardsPageEnabled => _isDashboardsPageEnabled;
-  bool get isDailyOsPageEnabled => _isDailyOsPageEnabled;
+
+  /// Daily OS is always available -- it no longer sits behind a config flag.
+  bool get isDailyOsPageEnabled => true;
   bool get isProjectsPageEnabled => _isProjectsPageEnabled;
   bool get isEventsPageEnabled => _isEventsPageEnabled;
 
@@ -153,11 +151,7 @@ class NavService {
     // Daily OS lead as the most important pages, then Projects, then the
     // rest, with Settings last.
     yield (enabled: true, rootPath: '/tasks', delegate: tasksDelegate);
-    yield (
-      enabled: _isDailyOsPageEnabled,
-      rootPath: '/calendar',
-      delegate: calendarDelegate,
-    );
+    yield (enabled: true, rootPath: '/calendar', delegate: calendarDelegate);
     yield (
       enabled: _isProjectsPageEnabled,
       rootPath: '/projects',
@@ -216,7 +210,6 @@ class NavService {
     ({
       bool habits,
       bool dashboards,
-      bool dailyOs,
       bool projects,
       bool events,
     })
@@ -224,7 +217,6 @@ class NavService {
   ) {
     _isHabitsPageEnabled = flags.habits;
     _isDashboardsPageEnabled = flags.dashboards;
-    _isDailyOsPageEnabled = flags.dailyOs;
     _isProjectsPageEnabled = flags.projects;
     _isEventsPageEnabled = flags.events;
     _cachedBeamerDelegates = null;

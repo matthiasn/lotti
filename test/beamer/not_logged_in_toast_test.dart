@@ -271,7 +271,6 @@ void main() {
       when(() => db.watchConfigFlag(any())).thenAnswer((invocation) {
         final flagName = invocation.positionalArguments.first as String;
         const enabledFlags = {
-          enableDailyOsPageFlag,
           enableDashboardsPageFlag,
           enableHabitsPageFlag,
           enableMatrixFlag,

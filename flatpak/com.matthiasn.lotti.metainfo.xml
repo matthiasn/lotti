@@ -49,6 +49,7 @@
           <p>AI profile and model choices now use one consistent design-system picker flow. Task-agent choices finish saving before the setup sheet closes, and their confirmation stays inside the task column instead of spanning the application.</p>
           <p>Backfill Sync now updates both Missing counters as sequence-log rows resolve, keeping them in step with the inbound queue countdown during large backfills instead of waiting for the slower diagnostics refresh.</p>
           <p>The energy-orb recording visualization now compiles only its production shader and reuses the loaded fragment shader as live audio levels change, avoiding prolonged stalls and recording crashes on affected Linux graphics stacks. Finishing a recording also dismisses its sheet exactly once before opening the saved entry, avoiding a nested-navigator teardown failure.</p>
+          <p>Daily OS is now available to everyone. The Daily OS day-planning surface no longer sits behind a feature flag and appears in the main navigation for all users.</p>
       </description>
     </release>
     <release version="0.9.1039" date="2026-07-12">
