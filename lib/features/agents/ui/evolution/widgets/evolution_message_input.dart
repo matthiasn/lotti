@@ -6,6 +6,8 @@ import 'package:lotti/features/agents/ui/evolution/widgets/evolution_transcripti
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_voice_controls.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -13,7 +15,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 ///
 /// Features a rounded text field with an animated send button that pulses
 /// while the assistant is processing a response. Supports voice transcription
-/// via the shared [chatRecorderControllerProvider].
+/// via the shared [chatRecorderControllerProvider], including a detailed error
+/// toast when transcription fails.
 class EvolutionMessageInput extends ConsumerStatefulWidget {
   const EvolutionMessageInput({
     required this.onSend,
@@ -65,6 +68,25 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
     _transcriptSubscription = ref.listenManual<ChatRecorderState>(
       chatRecorderControllerProvider,
       (previous, next) {
+        final error = next.error?.trim();
+        if (error != null &&
+            error.isNotEmpty &&
+            error != previous?.error &&
+            mounted) {
+          context.showToast(
+            tone: DesignSystemToastTone.error,
+            title: context.messages.commonError,
+            description: error,
+            duration: const Duration(seconds: 8),
+            replaceCurrent: true,
+          );
+          Future.microtask(() {
+            if (mounted) {
+              ref.read(chatRecorderControllerProvider.notifier).clearResult();
+            }
+          });
+          return;
+        }
         if (next.transcript != null &&
             next.transcript != previous?.transcript) {
           if (!mounted) return;

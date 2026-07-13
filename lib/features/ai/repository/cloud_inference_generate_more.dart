@@ -192,6 +192,25 @@ class CloudInferenceGenerateMore {
       );
     }
 
+    if (provider.inferenceProviderType == InferenceProviderType.melious &&
+        MeliousInferenceRepository.isMeliousChatAudioModel(model)) {
+      developer.log(
+        'Using Melious chat-audio endpoint for model: $model',
+        name: 'CloudInferenceRepository',
+      );
+      return _meliousRepository.transcribeChatAudio(
+        model: model,
+        audioBase64: audioBase64,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        prompt: _promptWithSpeechDictionary(
+          prompt,
+          speechDictionaryTerms,
+        ),
+        maxCompletionTokens: maxCompletionTokens,
+      );
+    }
+
     if (provider.inferenceProviderType == InferenceProviderType.omlx &&
         OmlxTranscriptionRepository.isOmlxTranscriptionModel(model)) {
       developer.log(

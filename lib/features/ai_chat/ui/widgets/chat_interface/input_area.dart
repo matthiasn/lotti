@@ -5,6 +5,8 @@ import 'package:lotti/features/ai_chat/services/realtime_transcription_service.d
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/assistant_settings_sheet.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/chat_voice_controls.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 export 'package:lotti/features/ai_chat/ui/widgets/chat_interface/chat_voice_controls.dart';
@@ -16,9 +18,10 @@ export 'package:lotti/features/ai_chat/ui/widgets/chat_interface/chat_voice_cont
 /// mode, and a progress view during batch transcription. Listens to the
 /// recorder via `listenManual`: a finished transcript is auto-sent when the
 /// session can send, otherwise dropped into the text field for editing, then
-/// cleared so it is not re-consumed. The trailing button cycles through
-/// send / settings / mic (with a batch-vs-realtime toggle when realtime is
-/// available).
+/// cleared so it is not re-consumed. Recorder errors are shown with their
+/// diagnostic detail in an error toast and consumed through the same clear
+/// path. The trailing button cycles through send / settings / mic (with a
+/// batch-vs-realtime toggle when realtime is available).
 class InputArea extends ConsumerStatefulWidget {
   const InputArea({
     required this.controller,
@@ -55,6 +58,25 @@ class InputAreaState extends ConsumerState<InputArea> {
     _transcriptSubscription = ref.listenManual<ChatRecorderState>(
       chatRecorderControllerProvider,
       (previous, next) {
+        final error = next.error?.trim();
+        if (error != null &&
+            error.isNotEmpty &&
+            error != previous?.error &&
+            mounted) {
+          context.showToast(
+            tone: DesignSystemToastTone.error,
+            title: context.messages.commonError,
+            description: error,
+            duration: const Duration(seconds: 8),
+            replaceCurrent: true,
+          );
+          Future.microtask(() {
+            if (mounted) {
+              ref.read(chatRecorderControllerProvider.notifier).clearResult();
+            }
+          });
+          return;
+        }
         if (next.transcript != null &&
             next.transcript != previous?.transcript) {
           if (!mounted) return;

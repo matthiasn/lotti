@@ -1,7 +1,7 @@
 import AVFoundation
 import FlutterMacOS
 
-/// Native WAV-to-M4A audio converter using Apple's AVFoundation framework.
+/// Native WAV/M4A audio converter using Apple's AVFoundation framework.
 ///
 /// Registered as a Flutter platform channel handler for
 /// `com.matthiasn.lotti/audio_converter`.
@@ -30,6 +30,19 @@ class AudioConverter {
                     return
                 }
                 convertWavToM4a(inputPath: inputPath, outputPath: outputPath, result: result)
+            case "convertM4aToWav":
+                guard let args = call.arguments as? [String: String],
+                      let inputPath = args["inputPath"],
+                      let outputPath = args["outputPath"]
+                else {
+                    result(FlutterError(
+                        code: "INVALID_ARGUMENTS",
+                        message: "Missing inputPath or outputPath",
+                        details: nil
+                    ))
+                    return
+                }
+                convertM4aToWav(inputPath: inputPath, outputPath: outputPath, result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -111,6 +124,73 @@ class AudioConverter {
                     result(FlutterError(
                         code: "CONVERSION_ERROR",
                         message: "Failed to convert WAV to M4A: \(error.localizedDescription)",
+                        details: "\(error)"
+                    ))
+                }
+            }
+        }
+    }
+
+    private static func convertM4aToWav(
+        inputPath: String,
+        outputPath: String,
+        result: @escaping FlutterResult
+    ) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let outputUrl = URL(fileURLWithPath: outputPath)
+            do {
+                let inputFile = try AVAudioFile(
+                    forReading: URL(fileURLWithPath: inputPath)
+                )
+                let inputFormat = inputFile.processingFormat
+                guard inputFile.length > 0 else {
+                    throw NSError(
+                        domain: "AudioConverter",
+                        code: 1,
+                        userInfo: [NSLocalizedDescriptionKey: "Input M4A file is empty"]
+                    )
+                }
+
+                let outputSettings: [String: Any] = [
+                    AVFormatIDKey: kAudioFormatLinearPCM,
+                    AVSampleRateKey: inputFormat.sampleRate,
+                    AVNumberOfChannelsKey: inputFormat.channelCount,
+                    AVLinearPCMBitDepthKey: 16,
+                    AVLinearPCMIsFloatKey: false,
+                    AVLinearPCMIsBigEndianKey: false,
+                    AVLinearPCMIsNonInterleaved: false
+                ]
+                let outputFile = try AVAudioFile(
+                    forWriting: outputUrl,
+                    settings: outputSettings,
+                    commonFormat: inputFormat.commonFormat,
+                    interleaved: inputFormat.isInterleaved
+                )
+                guard let buffer = AVAudioPCMBuffer(
+                    pcmFormat: inputFormat,
+                    frameCapacity: 4096
+                ) else {
+                    throw NSError(
+                        domain: "AudioConverter",
+                        code: 2,
+                        userInfo: [NSLocalizedDescriptionKey: "Could not create audio buffer"]
+                    )
+                }
+
+                while true {
+                    buffer.frameLength = buffer.frameCapacity
+                    try inputFile.read(into: buffer)
+                    if buffer.frameLength == 0 { break }
+                    try outputFile.write(from: buffer)
+                }
+
+                DispatchQueue.main.async { result(true) }
+            } catch {
+                try? FileManager.default.removeItem(at: outputUrl)
+                DispatchQueue.main.async {
+                    result(FlutterError(
+                        code: "CONVERSION_ERROR",
+                        message: "Failed to convert M4A to WAV: \(error.localizedDescription)",
                         details: "\(error)"
                     ))
                 }

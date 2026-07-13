@@ -2,8 +2,10 @@
 
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_amplitude_history.dart';
@@ -310,13 +312,23 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
           transcript: transcript,
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'stopAndTranscribe.transcription',
+        message: 'Voice transcription failed',
+      );
       // Only update state if this operation is still current and ref is valid
       if (currentOpId == _operationId && ref.mounted) {
         // partialTranscript cleared automatically (defaults to null)
         state = state.copyWith(
           status: ChatRecorderStatus.idle,
-          error: 'Transcription failed: $e',
+          error: switch (e) {
+            TranscriptionException(:final message) => message,
+            _ => e.toString(),
+          },
           errorType: ChatRecorderErrorType.transcriptionFailed,
         );
       }

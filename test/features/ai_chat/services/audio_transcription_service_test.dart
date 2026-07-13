@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
@@ -97,6 +98,9 @@ enum _ModelKind {
   /// Melious provider + a Whisper-class model → Melious transcription.
   meliousWhisper,
 
+  /// Melious provider + a Voxtral model → contextual chat audio.
+  meliousVoxtral,
+
   /// MLX Audio provider + a Qwen3-ASR model id.
   mlxQwen,
 
@@ -110,7 +114,8 @@ enum _ModelKind {
 InferenceProviderType _providerTypeFor(_ModelKind kind) => switch (kind) {
   _ModelKind.mistralVoxtral ||
   _ModelKind.mistralOther => InferenceProviderType.mistral,
-  _ModelKind.meliousWhisper => InferenceProviderType.melious,
+  _ModelKind.meliousWhisper ||
+  _ModelKind.meliousVoxtral => InferenceProviderType.melious,
   _ModelKind.mlxQwen => InferenceProviderType.mlxAudio,
   _ModelKind.geminiFlash ||
   _ModelKind.geminiOther => InferenceProviderType.gemini,
@@ -120,6 +125,7 @@ String _providerModelIdFor(_ModelKind kind, int index) => switch (kind) {
   _ModelKind.mistralVoxtral => 'voxtral-mini-latest-$index',
   _ModelKind.mistralOther => 'mistral-large-audio-$index',
   _ModelKind.meliousWhisper => 'openai/whisper-large-v3',
+  _ModelKind.meliousVoxtral => 'voxtral-small-24b-2507',
   _ModelKind.mlxQwen => mlxAudioQwenAsrModelId,
   _ModelKind.geminiFlash => 'gemini-2.5-flash',
   _ModelKind.geminiOther => 'gemini-pro-audio-$index',
@@ -401,6 +407,34 @@ void main() {
 
     expect(await svc.transcribe(file.path), 'ok');
   });
+
+  test(
+    'throws a detailed error when the provider returns no transcript',
+    () async {
+      final file = await audioFile();
+      final mockCloud = MockCloudInferenceRepository();
+      _stubGenerateWithAudio(mockCloud, ['', '   ']);
+
+      final svc = buildService(repo: sharedRepo, cloud: mockCloud);
+
+      await expectLater(
+        svc.transcribe(file.path),
+        throwsA(
+          isA<TranscriptionException>()
+              .having(
+                (error) => error.message,
+                'message',
+                contains('gemini-2.5-flash'),
+              )
+              .having(
+                (error) => error.message,
+                'message',
+                contains('Gemini'),
+              ),
+        ),
+      );
+    },
+  );
 
   test('transcribeStream yields chunks progressively', () async {
     final file = await audioFile();
@@ -827,6 +861,20 @@ void main() {
     expect(selected.providerModelId, 'openai/whisper-large-v3');
   });
 
+  test('batch selector prefers contextual Melious Voxtral over Whisper', () {
+    final inputs = _buildSelectionInputs([
+      _ModelKind.meliousWhisper,
+      _ModelKind.meliousVoxtral,
+    ]);
+
+    final selected = debugSelectBatchAudioModel(
+      inputs.models,
+      inputs.providers,
+    );
+
+    expect(selected.providerModelId, 'voxtral-small-24b-2507');
+  });
+
   group('batch model-selection priority (property)', () {
     glados.Glados<List<_ModelKind>>(
       glados.any.nonEmptyList(glados.any.choose(_ModelKind.values)),
@@ -847,7 +895,11 @@ void main() {
         bool isMistral(AiConfigModel m) =>
             providerType[m.inferenceProviderId] ==
             InferenceProviderType.mistral;
-        bool isVoxtral(AiConfigModel m) =>
+        bool isMistralVoxtral(AiConfigModel m) =>
+            isMistral(m) && m.providerModelId.startsWith('voxtral-');
+        bool isMeliousVoxtral(AiConfigModel m) =>
+            providerType[m.inferenceProviderId] ==
+                InferenceProviderType.melious &&
             m.providerModelId.startsWith('voxtral-');
         bool isMlxQwen(AiConfigModel m) =>
             providerType[m.inferenceProviderId] ==
@@ -864,9 +916,9 @@ void main() {
         expect(inputs.models, contains(selected), reason: 'kinds=$kinds');
 
         // Priority: each higher tier, when present, forces the pick into it.
-        if (inputs.models.any(isVoxtral)) {
+        if (inputs.models.any(isMistralVoxtral)) {
           expect(
-            isVoxtral(selected),
+            isMistralVoxtral(selected),
             isTrue,
             reason: 'voxtral wins; kinds=$kinds',
           );
@@ -875,6 +927,12 @@ void main() {
             isMistral(selected),
             isTrue,
             reason: 'mistral batch wins; kinds=$kinds',
+          );
+        } else if (inputs.models.any(isMeliousVoxtral)) {
+          expect(
+            isMeliousVoxtral(selected),
+            isTrue,
+            reason: 'melious contextual voxtral wins; kinds=$kinds',
           );
         } else if (inputs.models.any(isMeliousWhisper)) {
           expect(

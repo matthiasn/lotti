@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   longer yanks the passage you are reading. Checklist items created from an
   accepted AI suggestion also reveal progressively while the suggestion card
   remains anchored under your pointer.
+### Fixed
+- **Voice input now reports transcription failures instead of silently
+  disappearing.** Chat, saved audio entries, linked tasks, and agent-evolution
+  input show provider diagnostics, including empty-response failures. Melious
+  Voxtral now converts a temporary copy of the compact M4A master to WAV for a
+  buffered contextual chat request, then deletes its scratch files. Conversion
+  failures use an M4A transcription plus context-correction fallback. Requests
+  fail with provider detail and a request ID after 60 seconds instead of
+  waiting indefinitely. Voxtral is preferred over Whisper when both Melious
+  models are configured.
 
 ## [0.9.1040]
 ### Added

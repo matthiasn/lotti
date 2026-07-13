@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
+import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:meta/meta.dart';
@@ -132,19 +133,31 @@ class AudioTranscriptionService {
           : null,
     );
 
+    var receivedTranscript = false;
     await for (final chunk in stream) {
       final content = chunk.choices?.firstOrNull?.delta?.content ?? '';
       if (content.isNotEmpty) {
+        if (content.trim().isNotEmpty) {
+          receivedTranscript = true;
+        }
         yield content;
       }
+    }
+
+    if (!receivedTranscript) {
+      throw TranscriptionException(
+        '${provider.name} returned no transcript for '
+        '${model.providerModelId}. The request completed without any text.',
+        provider: provider.name,
+      );
     }
   }
 }
 
 /// Test-only access to the batch audio-model selection priority, so its
-/// ordering algebra (Mistral-offline > Mistral-batch > Melious-STT >
-/// MLX-Qwen > flash-preferred > first) can be property-tested without driving
-/// the streaming pipeline.
+/// ordering algebra (Mistral-offline > Mistral-batch > Melious-chat-audio >
+/// Melious-STT > MLX-Qwen > flash-preferred > first) can be property-tested
+/// without driving the streaming pipeline.
 @visibleForTesting
 AiConfigModel debugSelectBatchAudioModel(
   List<AiConfigModel> audioModels,
@@ -180,6 +193,17 @@ AiConfigModel _selectBatchAudioModel(
   );
   if (mistralBatch != null) {
     return mistralBatch;
+  }
+
+  final meliousChatAudio = audioModels.firstWhereOrNull(
+    (model) =>
+        hasProviderType(model, InferenceProviderType.melious) &&
+        MeliousInferenceRepository.isMeliousChatAudioModel(
+          model.providerModelId,
+        ),
+  );
+  if (meliousChatAudio != null) {
+    return meliousChatAudio;
   }
 
   final meliousTranscription = audioModels.firstWhereOrNull(

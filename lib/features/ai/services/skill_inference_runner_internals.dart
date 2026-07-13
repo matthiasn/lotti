@@ -36,6 +36,31 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
     }
   }
 
+  /// Stores or clears the diagnostic failure for an entity and its linked
+  /// task, matching the ids updated by [_setStatus].
+  void _setInferenceError(
+    String? error, {
+    required String entityId,
+    required AiResponseType responseType,
+    String? linkedTaskId,
+  }) {
+    void setFor(String id) {
+      _ref
+          .read(
+            inferenceErrorControllerProvider((
+              id: id,
+              aiResponseType: responseType,
+            )).notifier,
+          )
+          .setError(error);
+    }
+
+    setFor(entityId);
+    if (linkedTaskId != null) {
+      setFor(linkedTaskId);
+    }
+  }
+
   /// Sets the [ImageGenerationErrorController] for an entity (and optionally
   /// its linked task) so the cover-art UI can show the provider's verbatim
   /// failure reason. Passing `null` clears any stale error from a previous
@@ -71,6 +96,12 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
     String? linkedTaskId,
     void Function(Object error)? onError,
   }) async {
+    _setInferenceError(
+      null,
+      entityId: entityId,
+      responseType: responseType,
+      linkedTaskId: linkedTaskId,
+    );
     _setStatus(
       InferenceStatus.running,
       entityId: entityId,
@@ -86,6 +117,26 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
         linkedTaskId: linkedTaskId,
       );
     } catch (e, stack) {
+      final errorDetail = switch (e) {
+        TranscriptionException(
+          :final message,
+          :final provider,
+          :final statusCode,
+        ) =>
+          [
+            if (statusCode != null && !message.contains('HTTP $statusCode'))
+              'HTTP $statusCode',
+            if (provider != null && provider.isNotEmpty) provider,
+            message,
+          ].join(' · '),
+        _ => e.toString(),
+      };
+      _setInferenceError(
+        errorDetail,
+        entityId: entityId,
+        responseType: responseType,
+        linkedTaskId: linkedTaskId,
+      );
       _setStatus(
         InferenceStatus.error,
         entityId: entityId,

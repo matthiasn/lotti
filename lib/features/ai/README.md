@@ -250,8 +250,9 @@ entry into a `KnownModel` row at runtime. The mapping preserves chat, vision,
 reasoning, function-calling, audio-input, image-generation, embedding, and
 rerank models in the installable catalog instead of relying on a static list.
 The request path stays OpenAI-compatible for chat and vision chat; Whisper-class
-IDs (`whisper`, `transcribe`, `voxtral`, `asr`, or `stt`) route to
-`POST /audio/transcriptions`; image-output models route to
+IDs (`whisper`, `transcribe`, `asr`, or `stt`) route to
+`POST /audio/transcriptions`, while Voxtral audio-input IDs route to
+`POST /chat/completions`; image-output models route to
 `POST /images/generations` and decode the returned `b64_json` image bytes.
 Chat callers may opt into an OpenAI-compatible `reasoning_effort`; leaving it
 unset preserves the provider's model default. The dedicated Melious path
@@ -267,7 +268,8 @@ flowchart TD
   Map --> Install["Save AiConfig.model rows"]
   Install --> Route{"Runtime request"}
   Route -->|chat / vision| Chat["OpenAI-compatible /chat/completions"]
-  Route -->|speech-to-text ID| Audio["/audio/transcriptions"]
+  Route -->|Whisper / STT ID| Audio["/audio/transcriptions"]
+  Route -->|Voxtral audio input| ChatAudio["buffered /chat/completions"]
   Route -->|image output| Image["/images/generations"]
 ```
 
@@ -280,12 +282,17 @@ setup before a user installs additional live-catalog rows: `deepseek-v4-pro`,
 The default Melious profile uses `mistral-small-4-119b-instruct` for thinking
 and image recognition, `glm-5.2` for the high-end thinking slot,
 `flux-2-klein-9b` for image generation, and `voxtral-small-24b-2507` for
-transcription — Voxtral runs through Melious' chat-completions audio path so
-the final response includes token usage, billing, and environmental impact
-metadata. The shared chat-audio fallback appends the category speech dictionary
-to the prompt for Voxtral, OpenAI chat-audio models, Gemini, and other providers
-that accept audio through chat completions; Whisper and explicit transcription
-model IDs still use the transcription endpoint. FTUE setup also creates both
+transcription. Melious' chat adapter stalls on the archived M4A bytes produced
+by Lotti, so the provider route converts a temporary copy to PCM WAV and sends
+that through buffered `/chat/completions`; the original M4A is never modified,
+and both scratch files are deleted in `finally`. The audio block precedes the
+text block so the task prompt and category speech dictionary guide recognition.
+If native conversion is unavailable or fails, `/audio/transcriptions` produces
+a draft and a text-only Voxtral pass applies the same context without
+paraphrasing. Requests reject empty responses, time out after 60 seconds, and
+surface structured provider detail with a correlation id.
+Whisper and explicit transcription model IDs still use the transcription
+endpoint. FTUE setup also creates both
 Whisper rows so users can switch between the regular and Turbo variants.
 Existing untouched default
 Melious profiles chain through the upgrade migrations during
@@ -735,6 +742,13 @@ Widgetbook remains the tuning surface via
 the decoder-bars thinking shader in the task action bar while inference is
 running, and Daily OS Next uses the voice tension-loop shader around the record
 button while capture or refine listening is active.
+
+Skill inference failures are retained separately from the coarse
+`InferenceStatus` lifecycle by `inferenceErrorControllerProvider`. The task and
+entry activity widgets listen for that detail: when the running animation ends
+in an error, they show a design-system error toast containing the provider HTTP
+message, timeout, and request id, then consume it so rebuilds do not replay the
+same failure.
 
 Two Flutter runtime-effect shaders are registered in `pubspec.yaml`:
 

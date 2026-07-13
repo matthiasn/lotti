@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show AiConfigRepository;
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
@@ -626,6 +627,60 @@ void main() {
         expect(shader.randomness, AiRunningDecoderBars.defaultRandomness);
         expect(shader.pulse, AiRunningDecoderBars.defaultPulse);
         expect(shader.opacity, 1);
+      } finally {
+        container.dispose();
+      }
+    });
+
+    testWidgets('surfaces a detailed inference error after bars stop', (
+      tester,
+    ) async {
+      final container = makeContainer();
+      try {
+        setInferenceStatus(container, InferenceStatus.running);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: WidgetTestBench(
+              child: AiRunningDecoderBars(
+                entryId: testId,
+                responseTypes: testSet,
+              ),
+            ),
+          ),
+        );
+        await tester.pump(AiRunningDecoderBars.transitionDuration);
+
+        container
+            .read(
+              inferenceErrorControllerProvider((
+                id: testId,
+                aiResponseType: testType,
+              )).notifier,
+            )
+            .setError(
+              'HTTP 503 · Melious · request melious-audio-123 failed',
+            );
+        setInferenceStatus(container, InferenceStatus.error);
+        await tester.pump();
+
+        expect(
+          find.text(
+            'HTTP 503 · Melious · request melious-audio-123 failed',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          container.read(
+            inferenceErrorControllerProvider((
+              id: testId,
+              aiResponseType: testType,
+            )),
+          ),
+          isNull,
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
       } finally {
         container.dispose();
       }

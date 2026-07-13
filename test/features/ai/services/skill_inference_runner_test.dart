@@ -18,10 +18,12 @@ import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
+import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
+import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
@@ -1098,6 +1100,15 @@ void main() {
 
         // Should not save — empty response.
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        expect(
+          container.read(
+            inferenceErrorControllerProvider((
+              id: 'audio-1',
+              aiResponseType: AiResponseType.audioTranscription,
+            )),
+          ),
+          contains('Empty transcription response'),
+        );
       });
 
       test('builds task context when linkedTaskId is provided', () async {
@@ -1409,6 +1420,75 @@ void main() {
             subDomain: 'runTranscription',
           ),
         ).called(1);
+        expect(
+          container.read(
+            inferenceErrorControllerProvider((
+              id: 'entry-1',
+              aiResponseType: AiResponseType.audioTranscription,
+            )),
+          ),
+          contains('DB error'),
+        );
+      });
+
+      test('surfaces structured transcription failure detail', () async {
+        final audioEntity = makeAudioEntity();
+        await createStubAudioFile();
+
+        when(
+          () => mockAiInputRepo.getEntity('audio-1'),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockPromptBuilderHelper.getSpeechDictionaryTerms(audioEntity),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockCloudRepo.generateWithAudio(
+            any(),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.error(
+            TranscriptionException(
+              'All Voxtral providers failed',
+              provider: 'Melious',
+              statusCode: 503,
+            ),
+          ),
+        );
+        stubLoggingException();
+
+        await runner.runTranscription(
+          audioEntryId: 'audio-1',
+          automationResult: makeTranscriptionResult(),
+        );
+
+        expect(
+          container.read(
+            inferenceErrorControllerProvider((
+              id: 'audio-1',
+              aiResponseType: AiResponseType.audioTranscription,
+            )),
+          ),
+          'HTTP 503 · Melious · All Voxtral providers failed',
+        );
+        expect(
+          container.read(
+            inferenceStatusControllerProvider((
+              id: 'audio-1',
+              aiResponseType: AiResponseType.audioTranscription,
+            )),
+          ),
+          InferenceStatus.error,
+        );
       });
     });
 
