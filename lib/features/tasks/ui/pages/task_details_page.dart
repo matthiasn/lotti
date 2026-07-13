@@ -52,7 +52,7 @@ class TaskDetailsPage extends ConsumerStatefulWidget {
 
 class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     with HighlightScrollMixin {
-  final _scrollController = ScrollController();
+  final _scrollController = ViewportStableScrollController();
   final void Function() _listener = getIt<UserActivityService>().updateActivity;
   late final void Function() _updateOffsetListener;
   final Map<String, GlobalKey> _entryKeys = {};

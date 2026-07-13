@@ -2,15 +2,18 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show ScrollCacheExtent;
+import 'package:flutter/rendering.dart'
+    show PaintingContext, RenderProxyBox, ScrollCacheExtent;
 // animation library is not required for these assertions
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -54,6 +57,7 @@ import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../design_system/test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Fake entry controllers used by the coverage tests below.
@@ -77,6 +81,44 @@ class _FakeEntryController extends EntryController {
     );
     state = AsyncData(value);
     return SynchronousFuture(value);
+  }
+}
+
+/// Replays the database-notification path used when image analysis appends
+/// entry text: publish the new entity state, then replace the Quill controller.
+class _ControllableEntryController extends EntryController {
+  _ControllableEntryController(this._entry);
+
+  JournalEntity _entry;
+
+  @override
+  Future<EntryState?> build() {
+    _replaceEditorController();
+    final value = EntryState.saved(
+      entryId: id,
+      entry: _entry,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+      formKey: GlobalKey<FormBuilderState>(),
+    );
+    state = AsyncData(value);
+    return SynchronousFuture(value);
+  }
+
+  void emit(JournalEntity entry) {
+    _entry = entry;
+    state = AsyncData(state.requireValue?.copyWith(entry: entry));
+    _replaceEditorController();
+  }
+
+  void _replaceEditorController() {
+    final previous = controller;
+    final next = QuillController.basic();
+    final text = _entry.entryText?.plainText ?? '';
+    if (text.isNotEmpty) next.document.insert(0, text);
+    controller = next;
+    previous.dispose();
   }
 }
 
@@ -122,6 +164,40 @@ final _testLinkedAiResponse = AiResponseEntry(
 /// Finds private widget types (e.g. `_PulsingBorder`) by runtime type name.
 Finder _byPrivateType(String typeName) =>
     find.byWidgetPredicate((w) => w.runtimeType.toString() == typeName);
+
+class _PaintPositionRecorder extends SingleChildRenderObjectWidget {
+  const _PaintPositionRecorder({
+    required this.onPaint,
+    required super.child,
+  });
+
+  final ValueChanged<double> onPaint;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _RenderPaintPositionRecorder(onPaint);
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderPaintPositionRecorder renderObject,
+  ) {
+    renderObject.onPaint = onPaint;
+  }
+}
+
+class _RenderPaintPositionRecorder extends RenderProxyBox {
+  _RenderPaintPositionRecorder(this.onPaint);
+
+  ValueChanged<double> onPaint;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    onPaint(localToGlobal(Offset.zero).dy);
+    super.paint(context, offset);
+  }
+}
 
 /// Mocks returned by [_registerEntryDetailsMocks] for per-group re-stubbing.
 typedef _EntryDetailsMocks = ({
@@ -1166,7 +1242,7 @@ void main() {
     testWidgets(
       'JournalImage analysis text opts into task viewport stabilization',
       (tester) async {
-        final scrollController = ScrollController();
+        final scrollController = ViewportStableScrollController();
         addTearDown(scrollController.dispose);
 
         await tester.pumpWidget(
@@ -1213,6 +1289,129 @@ void main() {
           ),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'JournalImage analysis refresh keeps later task content painted in place',
+      (tester) async {
+        const markerKey = Key('content-after-image-analysis');
+        const imageFile = 'entry_details_analysis_test.png';
+        final docsDir = _cachedDocsDir!..createSync(recursive: true);
+        File(
+          '${docsDir.path}/$imageFile',
+        ).writeAsBytesSync(dsPlaceholderPngBytes);
+        final initialImage = testImageEntry.copyWith(
+          entryText: null,
+          data: testImageEntry.data.copyWith(
+            imageDirectory: '/',
+            imageFile: imageFile,
+          ),
+        );
+        final analyzedImage = initialImage.copyWith(
+          entryText: EntryText(
+            plainText: List.generate(
+              30,
+              (index) => 'Analysis detail line $index',
+            ).join('\n'),
+          ),
+        );
+        final scrollController = ViewportStableScrollController();
+        addTearDown(scrollController.dispose);
+        final paintedMarkerTops = <double>[];
+        late _ControllableEntryController entryController;
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(initialImage.id).overrideWith(
+                  () => entryController = _ControllableEntryController(
+                    initialImage,
+                  ),
+                ),
+              ],
+              child: SizedBox(
+                height: 600,
+                child: TaskScrollStabilityScope(
+                  controller: scrollController,
+                  child: CustomScrollView(
+                    controller: scrollController,
+                    slivers: [
+                      const SliverToBoxAdapter(child: SizedBox(height: 300)),
+                      SliverToBoxAdapter(
+                        child: Column(
+                          children: [
+                            EntryDetailsWidget(
+                              itemId: initialImage.id,
+                              linkedFrom: testTask,
+                              showAiEntry: false,
+                            ),
+                            const SizedBox(height: 500),
+                            _PaintPositionRecorder(
+                              onPaint: paintedMarkerTops.add,
+                              child: const SizedBox(
+                                key: markerKey,
+                                height: 40,
+                              ),
+                            ),
+                            const SizedBox(height: 1200),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final markerBeforeScroll = tester.getTopLeft(find.byKey(markerKey)).dy;
+        scrollController.jumpTo(
+          scrollController.offset + markerBeforeScroll - 200,
+        );
+        await tester.pump();
+        final markerTop = tester.getTopLeft(find.byKey(markerKey)).dy;
+        final generatedText = find.byKey(
+          ValueKey('ai-generated-entry-text-size-${initialImage.id}'),
+        );
+        expect(tester.getBottomLeft(generatedText).dy, lessThanOrEqualTo(0));
+        final offsetBeforeAnalysis = scrollController.offset;
+        final generatedTextHeightBefore = tester.getSize(generatedText).height;
+        paintedMarkerTops.clear();
+
+        entryController.emit(analyzedImage);
+        await tester.pump();
+        for (var frame = 0; frame < 8; frame++) {
+          await tester.pump(const Duration(milliseconds: 20));
+          expect(
+            tester.getTopLeft(find.byKey(markerKey)).dy,
+            closeTo(markerTop, 1),
+            reason: 'painted content moved during animation frame $frame',
+          );
+        }
+
+        expect(
+          tester.getTopLeft(find.byKey(markerKey)).dy,
+          closeTo(markerTop, 1),
+        );
+        expect(scrollController.offset, greaterThan(offsetBeforeAnalysis));
+        expect(
+          tester.getSize(generatedText).height,
+          greaterThan(generatedTextHeightBefore),
+        );
+        expect(
+          paintedMarkerTops,
+          isNotEmpty,
+        );
+        expect(
+          paintedMarkerTops.every((top) => (top - markerTop).abs() <= 1),
+          isTrue,
+        );
+        await tester.pump(const Duration(milliseconds: 200));
       },
     );
 

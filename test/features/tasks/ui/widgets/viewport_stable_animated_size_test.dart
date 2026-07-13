@@ -245,7 +245,8 @@ class _StableSizeHarness extends StatefulWidget {
 }
 
 class _StableSizeHarnessState extends State<_StableSizeHarness> {
-  final ScrollController controller = ScrollController();
+  final ViewportStableScrollController controller =
+      ViewportStableScrollController();
   late final ValueNotifier<double> height;
 
   @override

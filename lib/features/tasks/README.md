@@ -199,12 +199,14 @@ Checklist content is modeled separately through checklist entities and linked ch
   page; the `unifiedSuggestionListProvider` count listener remains a fallback
   for externally resolved proposals. The anchor pins the proposals' on-screen
   viewport position for a `holdDuration` so the page stays put across the
-  relayout instead of jumping. `ViewportStableAnimatedSize` records whether its
-  previous painted bounds were above the viewport, then reports each animated
-  height delta during layout and applies the matching scroll correction before
-  the next paint. This also covers analysis consumers that rebuild below the
-  wrapper without invoking its `didUpdateWidget`; the anchor's post-frame
-  correction remains the fallback for delayed or external relayouts. Newly
+  relayout instead of jumping. Source-entry transcripts and image analysis use
+  a separate pre-paint path: `ViewportStableAnimatedSize` arms the page's
+  `ViewportStableScrollController` when an off-screen animated region is about
+  to relayout. Its custom scroll position consumes the resulting content-extent
+  delta in `correctForNewDimensions`, causing Flutter to repeat viewport layout
+  with the corrected offset before anything paints. A render-level layout
+  invalidation hook also covers analysis consumers that rebuild below the
+  wrapper without invoking its `didUpdateWidget`. Newly
   created checklist rows and checklist cards reveal through `SizeFadeEntrance`,
   so the compensated layout change is a progressive expansion rather than a
   one-frame insertion. The window spans
@@ -711,9 +713,10 @@ nested AI response cards and the source-entry editors that receive audio
 transcripts or image-analysis markdown opt into `ViewportStableAnimatedSize`
 only inside that scope. If the changing region is visible, its top and the page
 scroll offset stay fixed while it unfolds downward. If the region is fully
-above the viewport, the widget compensates each animated height delta during
-layout—even when only the editor consumer rebuilt—so the content currently
-being read does not move. User scrolling cancels the hold
+above the viewport, `ViewportStableScrollController` compensates each animated
+content-extent delta from the viewport's own layout cycle—even when only the
+editor consumer rebuilt—so the content currently being read never paints at an
+intermediate displaced position. User scrolling cancels the hold
 immediately, and the standalone journal-entry detail page remains outside the
 scope.
 

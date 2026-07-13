@@ -141,53 +141,6 @@ class ScrollAnchor {
     });
   }
 
-  /// Compensates a known height [delta] during layout, before the frame paints.
-  ///
-  /// This is used when the changing region is wholly above the viewport, so
-  /// its height delta is also the exact visual drift of all later content.
-  /// [ScrollPosition.correctBy] is the layout-safe counterpart to
-  /// [ScrollController.jumpTo]. The estimated extent includes the same delta
-  /// because the viewport publishes its new dimensions after descendants lay
-  /// out. Set [requireHold] to false when the changing render object measured
-  /// the delta itself; this covers descendant-only rebuilds that cannot call
-  /// [hold] before layout.
-  void correctByLayoutDelta(
-    double delta, {
-    bool requireHold = true,
-  }) {
-    if (_disposed || delta.abs() <= tolerance) return;
-    final position = _positionForLayoutCorrection(requireHold: requireHold);
-    if (position == null) return;
-    final estimatedMaxScrollExtent = math.max(
-      position.minScrollExtent,
-      position.maxScrollExtent + delta,
-    );
-    final target = anchorCorrectionOffset(
-      anchorTop: 0,
-      currentTop: delta,
-      currentOffset: controller.offset,
-      minScrollExtent: position.minScrollExtent,
-      maxScrollExtent: estimatedMaxScrollExtent,
-      tolerance: tolerance,
-    );
-    if (target != null) {
-      position.correctBy(target - position.pixels);
-      if (_anchorTop != null) _expectedOffset = target;
-    } else if (_anchorTop != null) {
-      _expectedOffset = controller.offset;
-    }
-  }
-
-  ScrollPosition? _positionForLayoutCorrection({required bool requireHold}) {
-    if (_anchorTop != null) return _positionForCorrection();
-    if (requireHold || controller.positions.length != 1) return null;
-    final position = controller.position;
-    // An unannounced descendant size change can be corrected safely while the
-    // viewport is idle. Never override a drag, ballistic scroll, or animateTo.
-    if (position.isScrollingNotifier.value) return null;
-    return position;
-  }
-
   ScrollPosition? _positionForCorrection() {
     final anchorTop = _anchorTop;
     // `positions.length != 1` guards both the no-client case and the
