@@ -36,6 +36,7 @@
       <description>
           <p>Task agents now show their thinking model, model publisher, and serving provider directly in the AI summary. The identity opens a persistent setup sheet for choosing a profile or model, returning to the profile default, copying the category default, or pausing AI. Reports retain immutable attribution after setup changes, and automatic task-related updates can be disabled while Run now remains available.</p>
           <p>AI profile and model choices now use one consistent design-system picker flow. Task-agent choices finish saving before the setup sheet closes, and their confirmation stays inside the task column instead of spanning the application.</p>
+          <p>Backfill Sync now updates both Missing counters as sequence-log rows resolve, keeping them in step with the inbound queue countdown during large backfills instead of waiting for the slower diagnostics refresh.</p>
           <p>The energy-orb recording visualization now compiles only its production shader and reuses the loaded fragment shader as live audio levels change, avoiding prolonged stalls and recording crashes on affected Linux graphics stacks. Finishing a recording also dismisses its sheet exactly once before opening the saved entry, avoiding a nested-navigator teardown failure.</p>
       </description>
     </release>

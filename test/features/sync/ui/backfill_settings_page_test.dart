@@ -64,6 +64,9 @@ void main() {
       () => mockSequenceService.getBackfillStats(),
     ).thenAnswer((_) async => populatedStats);
     when(
+      () => mockSequenceService.watchBackfillMissingCount(),
+    ).thenAnswer((_) => Stream<int>.value(5));
+    when(
       () => mockBackfillService.processFullBackfill(),
     ).thenAnswer((_) async => 5);
     when(
@@ -124,6 +127,9 @@ void main() {
       when(
         () => mockSequenceService.getBackfillStats(),
       ).thenAnswer((_) async => emptyStats);
+      when(
+        () => mockSequenceService.watchBackfillMissingCount(),
+      ).thenAnswer((_) => Stream<int>.value(0));
       await pumpBody(tester);
 
       // missing = 0 → check icon (not bolt)
@@ -138,6 +144,23 @@ void main() {
       // up now / Manual backfill) are NOT in the tree. The only bolt
       // is in the status row.
       expect(find.byIcon(Icons.bolt_outlined), findsOneWidget);
+    });
+
+    testWidgets('live missing count updates the status row and ledger', (
+      tester,
+    ) async {
+      final missingCounts = StreamController<int>();
+      addTearDown(missingCounts.close);
+      when(
+        () => mockSequenceService.watchBackfillMissingCount(),
+      ).thenAnswer((_) => missingCounts.stream);
+
+      await pumpBody(tester);
+      missingCounts.add(4);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('4'), findsNWidgets(2));
     });
   });
 

@@ -63,6 +63,8 @@ class BackfillSettingsBody extends ConsumerWidget {
     final tokens = context.designTokens;
     final config = ref.watch(backfillConfigControllerProvider);
     final stats = ref.watch(backfillStatsControllerProvider);
+    final liveMissing = ref.watch(backfillMissingCountProvider).value;
+    final missing = liveMissing ?? stats.stats?.totalMissing ?? 0;
     final matrixService = getIt.isRegistered<MatrixService>()
         ? getIt<MatrixService>()
         : null;
@@ -80,12 +82,13 @@ class BackfillSettingsBody extends ConsumerWidget {
             children: [
               StatusRow(
                 inbound: depth?.total ?? 0,
-                missing: stats.stats?.totalMissing ?? 0,
+                missing: missing,
                 skipped: depth?.abandoned ?? 0,
               ),
               SizedBox(height: tokens.spacing.step4),
               SyncStatsCard(
                 stats: stats.stats,
+                missingCount: missing,
                 isLoading: stats.isLoading,
                 onRefresh: () => ref
                     .read(backfillStatsControllerProvider.notifier)

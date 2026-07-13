@@ -289,6 +289,10 @@ class SyncSequenceLogService {
   Future<BackfillStats> getBackfillStats() =>
       _backfillQueries.getBackfillStats();
 
+  /// Watch the current number of sequence-log rows in `missing` state.
+  Stream<int> watchBackfillMissingCount() =>
+      _backfillQueries.watchBackfillMissingCount();
+
   /// Get missing entries with age and per-host limits for automatic backfill.
   Future<List<SyncSequenceLogItem>> getMissingEntriesWithLimits({
     int limit = 50,

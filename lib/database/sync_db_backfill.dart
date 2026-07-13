@@ -5,6 +5,30 @@ part of 'sync_db.dart';
 /// limits), request-count bookkeeping, the actionable-row probe, and
 /// per-host status aggregation.
 mixin _SyncDbBackfill on _$SyncDatabase {
+  /// Watch the number of sequence-log rows that are still genuinely missing.
+  ///
+  /// This is intentionally narrower than [getBackfillStats]: the Backfill
+  /// Settings status row needs to move at the same cadence as the inbound
+  /// queue while it drains, but recomputing every per-host status bucket for
+  /// each commit would be unnecessary work. Drift invalidates this count when
+  /// `sync_sequence_log` changes, and SQLite can satisfy the status predicate
+  /// from the actionable status indexes.
+  Stream<int> watchBackfillMissingCount() {
+    return customSelect(
+      '''
+      SELECT COUNT(*) AS cnt
+      FROM sync_sequence_log
+        INDEXED BY idx_sync_sequence_log_actionable_status_created_at
+      WHERE status IN (
+        ${SyncSequenceStatus.missing.index},
+        ${SyncSequenceStatus.requested.index}
+      )
+        AND status = ${SyncSequenceStatus.missing.index}
+      ''',
+      readsFrom: {syncSequenceLog},
+    ).watchSingle().map((row) => row.read<int>('cnt'));
+  }
+
   /// Get entries with status 'missing' or 'requested' that haven't
   /// exceeded maxRequestCount, ordered by creation time (oldest first).
   /// Return rows in `missing` / `requested` state that are still eligible
