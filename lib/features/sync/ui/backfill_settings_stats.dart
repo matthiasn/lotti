@@ -146,12 +146,14 @@ class _StatusCell extends StatelessWidget {
 class SyncStatsCard extends StatelessWidget {
   const SyncStatsCard({
     required this.stats,
+    required this.missingCount,
     required this.isLoading,
     required this.onRefresh,
     super.key,
   });
 
   final BackfillStats? stats;
+  final int missingCount;
   final bool isLoading;
   final VoidCallback onRefresh;
 
@@ -214,7 +216,7 @@ class SyncStatsCard extends StatelessWidget {
               ),
             )
           else
-            _Ledger(stats: stats!),
+            _Ledger(stats: stats!, missingCount: missingCount),
         ],
       ),
     );
@@ -222,9 +224,10 @@ class SyncStatsCard extends StatelessWidget {
 }
 
 class _Ledger extends StatelessWidget {
-  const _Ledger({required this.stats});
+  const _Ledger({required this.stats, required this.missingCount});
 
   final BackfillStats stats;
+  final int missingCount;
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +240,7 @@ class _Ledger extends StatelessWidget {
     final interactive = tokens.colors.interactive.enabled;
     final error = tokens.colors.alert.error.defaultColor;
 
-    final missingTone = stats.totalMissing > 0 ? warning : lowEmphasis;
+    final missingTone = missingCount > 0 ? warning : lowEmphasis;
     final requestedTone = stats.totalRequested > 0 ? interactive : lowEmphasis;
     final unresolvableTone = stats.totalUnresolvable > 0 ? error : lowEmphasis;
 
@@ -260,7 +263,7 @@ class _Ledger extends StatelessWidget {
         ),
         _LedgerRow(
           label: messages.backfillStatsMissing,
-          value: stats.totalMissing,
+          value: missingCount,
           color: missingTone,
         ),
         _LedgerRow(

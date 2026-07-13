@@ -1,6 +1,8 @@
 // Tests for the backfill sweep queries and statistics
 // (`lib/database/sync_db_backfill.dart`).
 // ignore_for_file: avoid_redundant_argument_values
+import 'dart:async';
+
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:glados/glados.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -377,6 +379,68 @@ void main() {
       expect(stats.totalUnresolvable, 1);
       expect(stats.totalBurned, 3);
       expect(stats.totalEntries, 4);
+    });
+  });
+
+  group('watchBackfillMissingCount', () {
+    setUpAll(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
+      await db?.close();
+    });
+
+    test('emits as missing rows are added and resolved', () async {
+      final database = db!;
+      final counts = StreamIterator(database.watchBackfillMissingCount());
+      addTearDown(counts.cancel);
+
+      expect(await counts.moveNext(), isTrue);
+      expect(counts.current, 0);
+
+      await _insertSequenceRow(
+        database,
+        hostId: 'host-live-count',
+        counter: 1,
+        status: SyncSequenceStatus.missing,
+        createdAt: DateTime(2024, 3, 15),
+      );
+      expect(await counts.moveNext(), isTrue);
+      expect(counts.current, 1);
+
+      await database.updateSequenceStatus(
+        'host-live-count',
+        1,
+        SyncSequenceStatus.received,
+      );
+      expect(await counts.moveNext(), isTrue);
+      expect(counts.current, 0);
+    });
+
+    test('uses the actionable status index for the live count', () async {
+      final plan = await db!.customSelect(
+        '''
+            EXPLAIN QUERY PLAN
+            SELECT COUNT(*) AS cnt
+            FROM sync_sequence_log
+              INDEXED BY idx_sync_sequence_log_actionable_status_created_at
+            WHERE status IN (
+              ${SyncSequenceStatus.missing.index},
+              ${SyncSequenceStatus.requested.index}
+            )
+              AND status = ${SyncSequenceStatus.missing.index}
+            ''',
+      ).get();
+
+      expect(
+        plan.map((row) => row.data['detail'] as String),
+        anyElement(
+          contains('idx_sync_sequence_log_actionable_status_created_at'),
+        ),
+      );
     });
   });
 

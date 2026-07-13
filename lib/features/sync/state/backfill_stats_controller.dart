@@ -106,6 +106,18 @@ class BackfillStatsState {
 /// the timer on `onHide` and re-arms it on `onShow`.
 const Duration _autoRefreshInterval = Duration(seconds: 30);
 
+/// Live missing-row count for the Backfill Settings page.
+///
+/// The full per-host stats aggregate remains throttled because it is intended
+/// for diagnostics. This focused reactive query is cheap enough to follow
+/// committed sequence-log changes, keeping the prominent missing counters in
+/// step with the inbound queue while a large backfill drains.
+final StreamProvider<int> backfillMissingCountProvider =
+    StreamProvider.autoDispose<int>(
+      (ref) => getIt<SyncSequenceLogService>().watchBackfillMissingCount(),
+      name: 'backfillMissingCountProvider',
+    );
+
 /// Backs the Backfill Settings page: loads and auto-refreshes [BackfillStats]
 /// (throttled, foreground-only — see [_autoRefreshInterval]) and exposes the
 /// manual operations (full backfill, re-request, reset/retire of stuck and

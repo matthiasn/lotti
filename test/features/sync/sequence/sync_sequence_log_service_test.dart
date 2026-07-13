@@ -3538,6 +3538,19 @@ void main() {
     });
   });
 
+  group('watchBackfillMissingCount', () {
+    test('delegates to database', () async {
+      final counts = Stream<int>.fromIterable(const [12, 6, 0]);
+      when(mockDb.watchBackfillMissingCount).thenAnswer((_) => counts);
+
+      expect(
+        await service.watchBackfillMissingCount().toList(),
+        const [12, 6, 0],
+      );
+      verify(mockDb.watchBackfillMissingCount).called(1);
+    });
+  });
+
   group('getRequestedEntries', () {
     test('delegates to database with default limit', () async {
       when(

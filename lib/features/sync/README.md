@@ -1074,6 +1074,24 @@ Important implementation details:
 counters, supports manual full historical backfill, and can re-request entries
 that were previously requested but never resolved.
 
+The Backfill Settings page deliberately uses two statistics paths. The full
+per-host `getBackfillStats()` aggregate refreshes at a throttled 30-second
+cadence for diagnostics. The two visible Missing values instead watch the
+focused `watchBackfillMissingCount()` query while the page is mounted. Drift
+re-runs that indexed count after committed `sync_sequence_log` changes, so it
+tracks the inbound queue during a large drain without repeatedly rebuilding
+every host/status bucket. Closing the page auto-disposes the provider and its
+database subscription.
+
+```mermaid
+flowchart LR
+  Commit["Sequence-log write commits"] --> Drift["Drift invalidates missing-count query"]
+  Drift --> Provider["backfillMissingCountProvider"]
+  Provider --> Status["Status row: Missing"]
+  Provider --> Ledger["Sync statistics: Missing"]
+  Timer["30-second foreground timer"] --> Aggregate["Full per-host diagnostics aggregate"]
+```
+
 Own-host reservation lifecycle:
 
 ```mermaid

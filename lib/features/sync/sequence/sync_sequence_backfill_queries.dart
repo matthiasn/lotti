@@ -109,6 +109,11 @@ class SyncSequenceBackfillQueries {
     return _syncDatabase.getBackfillStats();
   }
 
+  /// Watch the lightweight aggregate used by the live Backfill status row.
+  Stream<int> watchBackfillMissingCount() {
+    return _syncDatabase.watchBackfillMissingCount();
+  }
+
   /// Get missing entries with age and per-host limits for automatic backfill.
   /// This is used for bounded automatic backfill that only looks at recent gaps.
   ///

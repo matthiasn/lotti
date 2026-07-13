@@ -141,6 +141,17 @@ void main() {
       expect(await queries.getBackfillStats(), same(stats));
     });
 
+    test('watchBackfillMissingCount returns the database stream', () async {
+      final counts = Stream<int>.fromIterable(const [8, 3, 0]);
+      when(db.watchBackfillMissingCount).thenAnswer((_) => counts);
+
+      expect(
+        await queries.watchBackfillMissingCount().toList(),
+        const [8, 3, 0],
+      );
+      verify(db.watchBackfillMissingCount).called(1);
+    });
+
     test('getNearestCoveringEntry forwards hostId and counter', () async {
       when(
         () => db.getNearestCoveringEntry(alice, 7),

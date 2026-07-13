@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   their confirmation stays inside the task column instead of spanning the app.
   Category defaults, agent creation, agent templates, inference-profile slots,
   and task-agent setup now share the same design-system selection language.
+- **Backfill Sync now shows its progress as it happens.** The Missing counters
+  in the status row and statistics ledger update as sequence-log rows resolve,
+  keeping pace with the inbound queue countdown during large backfills instead
+  of waiting for the slower diagnostics refresh.
 - **The energy-orb recording visualization no longer overwhelms Linux
   rendering.** The orb now compiles only its production shader and reuses the
   loaded fragment shader as live audio levels change, avoiding the prolonged
