@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:lotti/features/design_system/theme/motion_tokens.dart';
 import 'package:lotti/features/tasks/util/scroll_anchor.dart';
 
@@ -109,11 +110,54 @@ class _ViewportStableAnimatedSizeState
   Widget build(BuildContext context) {
     if (_controller == null) return widget.child;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    return AnimatedSize(
-      alignment: Alignment.topCenter,
-      duration: reduceMotion ? Duration.zero : widget.duration,
-      curve: widget.curve,
-      child: widget.child,
+    return _HeightDeltaReporter(
+      onHeightDelta: (delta) => _anchor?.correctByLayoutDelta(delta),
+      child: AnimatedSize(
+        alignment: Alignment.topCenter,
+        duration: reduceMotion ? Duration.zero : widget.duration,
+        curve: widget.curve,
+        child: widget.child,
+      ),
     );
+  }
+}
+
+class _HeightDeltaReporter extends SingleChildRenderObjectWidget {
+  const _HeightDeltaReporter({
+    required this.onHeightDelta,
+    required super.child,
+  });
+
+  final ValueChanged<double> onHeightDelta;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _RenderHeightDeltaReporter(onHeightDelta);
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderHeightDeltaReporter renderObject,
+  ) {
+    renderObject.onHeightDelta = onHeightDelta;
+  }
+}
+
+class _RenderHeightDeltaReporter extends RenderProxyBox {
+  _RenderHeightDeltaReporter(this.onHeightDelta);
+
+  ValueChanged<double> onHeightDelta;
+  double? _previousHeight;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final previousHeight = _previousHeight;
+    final currentHeight = size.height;
+    _previousHeight = currentHeight;
+    if (previousHeight != null) {
+      onHeightDelta(currentHeight - previousHeight);
+    }
   }
 }

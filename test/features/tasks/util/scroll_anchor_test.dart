@@ -233,6 +233,21 @@ void main() {
       expect(state.controller.offset, 260);
     });
 
+    testWidgets('keeps holding when a layout delta is clamped at the extent', (
+      tester,
+    ) async {
+      final harnessKey = GlobalKey<_AnchorHarnessState>();
+      await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+      await tester.pump();
+
+      final state = harnessKey.currentState!;
+      state.anchor.hold();
+      state.anchor.correctByLayoutDelta(-100);
+
+      expect(state.controller.offset, 0);
+      expect(state.anchor.isHolding, isTrue);
+    });
+
     testWidgets('does nothing when locate returns null (anchor absent)', (
       tester,
     ) async {

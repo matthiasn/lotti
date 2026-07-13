@@ -199,11 +199,15 @@ Checklist content is modeled separately through checklist entities and linked ch
   page; the `unifiedSuggestionListProvider` count listener remains a fallback
   for externally resolved proposals. The anchor pins the proposals' on-screen
   viewport position for a `holdDuration` so the page stays put across the
-  relayout instead of jumping. Newly created checklist rows and checklist cards
-  reveal through `SizeFadeEntrance`, so the compensated layout change is a
-  progressive expansion rather than a one-frame insertion. The window spans the
-  checked item's *delayed* row collapse (`checklistCompletionAnimationDuration`
-  + `checklistCompletionFadeDuration` + buffer), which lands ~a second after the
+  relayout instead of jumping. `ViewportStableAnimatedSize` reports each
+  animated height delta during layout and applies the matching scroll correction
+  before paint; the anchor's post-frame correction remains the fallback for
+  delayed or external relayouts. Newly created checklist rows and checklist
+  cards reveal through `SizeFadeEntrance`, so the compensated layout change is
+  a progressive expansion rather than a one-frame insertion. The window spans
+  the checked item's *delayed* row collapse
+  (`checklistCompletionAnimationDuration` +
+  `checklistCompletionFadeDuration` + buffer), which lands ~a second after the
   tap — long after a short frame burst would have ended. Because the window is
   long, the hold releases the moment the user scrolls (an offset change the
   anchor did not itself make) so it never fights a deliberate scroll; the
