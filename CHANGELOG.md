@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   later setup changes. Automatic task-related updates can also be switched off
   without removing the manual Run now action or the existing report.
 
+### Fixed
+- **Audio recording on Linux works reliably again.** Stopping a recording no
+  longer fails internally, which had left the recorder stuck (the next record
+  tap silently stopped nothing instead of starting a new recording) and could
+  save an audio entry before the encoder had finished writing the file. Live
+  input-level metering in the recording modal and indicator works on Linux,
+  including the level-reactive recording orb.
+
 ## [0.9.1039]
 ### Added
 - **Task agents now use evidence-first inference by default with efficient
