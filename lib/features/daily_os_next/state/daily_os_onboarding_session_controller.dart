@@ -1,0 +1,91 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
+import 'package:lotti/features/onboarding/model/onboarding_event.dart';
+import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/file_utils.dart';
+
+/// Holds the single active Daily OS onboarding walkthrough session, or `null`
+/// when no walkthrough is running.
+///
+/// This is the coordination point the walkthrough UI reads: the empty-Day
+/// spotlight and the modal coach strips both watch this provider to decide
+/// whether to render and which session to record against. The session is armed
+/// by the auto-show gate or the Settings replay entry (a later phase) and ends
+/// on completion or dismissal.
+///
+/// Session events (stage transitions, skip) are emitted to
+/// `OnboardingMetricsRepository` via the session's injected `onEvent`, so the
+/// exactly-once bookkeeping lives in [DailyOsOnboardingSession] and the
+/// controller only owns the lifecycle and the metrics hop.
+class DailyOsOnboardingSessionController
+    extends Notifier<DailyOsOnboardingSession?> {
+  @override
+  DailyOsOnboardingSession? build() => null;
+
+  /// Starts a walkthrough session with metrics-wired event emission and makes
+  /// it the active session. Returns the started session.
+  ///
+  /// [sessionId] defaults to a fresh id; pass one only to correlate with an
+  /// externally-generated id. Recording the `Shown` event is the caller's
+  /// responsibility (it must happen only once the overlay is actually
+  /// on-screen), not part of starting the session.
+  DailyOsOnboardingSession start({
+    required DailyOsOnboardingOrigin origin,
+    String? sessionId,
+  }) {
+    final session = DailyOsOnboardingSession(
+      sessionId: sessionId ?? uuid.v1(),
+      origin: origin,
+      onEvent: (event, {reason, valueBucket}) => _record(
+        event,
+        origin: origin,
+        reason: reason,
+        valueBucket: valueBucket,
+      ),
+    );
+    state = session;
+    return session;
+  }
+
+  /// Ends the active walkthrough session (completed or dismissed). Idempotent.
+  void end() {
+    if (state == null) return;
+    state = null;
+  }
+
+  /// Records a session event to the onboarding metrics store. Best-effort:
+  /// swallowed when the repository is not registered (most tests) so a metrics
+  /// hiccup never disrupts the walkthrough.
+  ///
+  /// The event's own [reason] wins when present; otherwise the session
+  /// [origin] (`auto` / `replay`) is recorded so the funnel can segment
+  /// auto-shown runs from replays. [valueBucket] (e.g. the materialized-task
+  /// count) is forwarded unchanged.
+  void _record(
+    OnboardingEventName event, {
+    required DailyOsOnboardingOrigin origin,
+    String? reason,
+    int? valueBucket,
+  }) {
+    if (!getIt.isRegistered<OnboardingMetricsRepository>()) return;
+    unawaited(
+      getIt<OnboardingMetricsRepository>().recordEvent(
+        event,
+        reason: reason ?? origin.name,
+        valueBucket: valueBucket,
+      ),
+    );
+  }
+}
+
+final dailyOsOnboardingSessionControllerProvider =
+    NotifierProvider<
+      DailyOsOnboardingSessionController,
+      DailyOsOnboardingSession?
+    >(
+      DailyOsOnboardingSessionController.new,
+      name: 'dailyOsOnboardingSessionControllerProvider',
+    );
