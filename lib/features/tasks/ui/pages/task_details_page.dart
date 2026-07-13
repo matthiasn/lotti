@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -186,15 +185,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// Global-Y of the top of the scroll viewport (where the slivers begin to be
   /// painted), or null when it isn't available.
   double? _viewportTopGlobal() {
-    final renderObject = _belowCardKey.currentContext?.findRenderObject();
-    if (renderObject is! RenderBox || !renderObject.attached) return null;
-    // Typed as the RenderObject supertype (not RenderAbstractViewport) so the
-    // `is RenderBox` check below promotes — RenderBox is a subtype of
-    // RenderObject, so no cast/`!` is needed. The concrete viewport behind a
-    // CustomScrollView (RenderViewport) is a RenderBox.
-    final RenderObject? viewport = RenderAbstractViewport.maybeOf(renderObject);
-    if (viewport is! RenderBox || !viewport.attached) return null;
-    return viewport.localToGlobal(Offset.zero).dy;
+    return viewportTopGlobal(
+      _belowCardKey.currentContext?.findRenderObject(),
+    );
   }
 
   /// Pin the content below the AI card *only* when the card (and the seam just

@@ -5,6 +5,32 @@ import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.da
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  testWidgets('is a direct pass-through outside the task scroll scope', (
+    tester,
+  ) async {
+    const childKey = Key('pass-through-child');
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const Align(
+          alignment: Alignment.topLeft,
+          child: ViewportStableAnimatedSize(
+            key: _animatedSizeKey,
+            child: SizedBox(key: childKey, width: 120, height: 80),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.descendant(
+        of: find.byKey(_animatedSizeKey),
+        matching: find.byType(AnimatedSize),
+      ),
+      findsNothing,
+    );
+    expect(tester.getSize(find.byKey(childKey)), const Size(120, 80));
+  });
+
   testWidgets('pins later content while an off-screen region grows', (
     tester,
   ) async {

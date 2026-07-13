@@ -156,32 +156,38 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
               // suggestion adds one) keeps every other card's element + state,
               // instead of shifting indices, dropping state, and re-fetching
               // (which flashed the cards). checklistId is unique per task.
-              return SizeFadeEntrance(
+              return Consumer(
                 key: Key('checklist-$checklistId-${widget.entryId}'),
-                animate: _newlyInsertedChecklistIds.contains(checklistId),
-                child: Consumer(
-                  builder: (context, ref, _) {
-                    final checklist = ref
-                        .watch(
-                          checklistControllerProvider((
-                            id: checklistId,
-                            taskId: widget.task.id,
-                          )),
-                        )
-                        .value;
-                    // Don't render card for deleted or stale checklists
-                    if (checklist == null) {
-                      return const SizedBox.shrink();
-                    }
+                builder: (context, ref, _) {
+                  final checklist = ref
+                      .watch(
+                        checklistControllerProvider((
+                          id: checklistId,
+                          taskId: widget.task.id,
+                        )),
+                      )
+                      .value;
+                  // Don't render card for deleted or stale checklists. The
+                  // entrance stays unmounted while a newly inserted checklist
+                  // is loading, so its one-shot animation cannot finish on a
+                  // zero-height placeholder.
+                  if (checklist == null) {
+                    return const SizedBox.shrink();
+                  }
 
-                    // Determine initial expansion state for restoration
-                    final initiallyExpanded = isSorting
-                        ? false // Force collapsed during sorting
-                        : sortingState.preExpansionStates[checklistId];
+                  // Determine initial expansion state for restoration
+                  final initiallyExpanded = isSorting
+                      ? false // Force collapsed during sorting
+                      : sortingState.preExpansionStates[checklistId];
 
-                    // ModernBaseCard is now inside ChecklistWrapper to ensure
-                    // DropRegion covers the entire visual card area
-                    return ChecklistCardWrapper(
+                  // ModernBaseCard is now inside ChecklistWrapper to ensure
+                  // DropRegion covers the entire visual card area.
+                  return SizeFadeEntrance(
+                    key: ValueKey(
+                      'checklist-entrance-$checklistId-${widget.entryId}',
+                    ),
+                    animate: _newlyInsertedChecklistIds.contains(checklistId),
+                    child: ChecklistCardWrapper(
                       entryId: checklistId,
                       categoryId: item.categoryId,
                       taskId: widget.task.id,
@@ -189,9 +195,9 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                       initiallyExpanded: initiallyExpanded,
                       onExpansionChanged: _onExpansionChanged,
                       reorderIndex: index,
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               );
             },
           ),

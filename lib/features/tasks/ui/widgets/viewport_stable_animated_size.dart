@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:lotti/features/design_system/theme/motion_tokens.dart';
 import 'package:lotti/features/tasks/util/scroll_anchor.dart';
 
@@ -90,11 +89,7 @@ class _ViewportStableAnimatedSizeState
   }
 
   double? _viewportTopGlobal() {
-    final renderObject = context.findRenderObject();
-    if (renderObject == null || !renderObject.attached) return null;
-    final RenderObject? viewport = RenderAbstractViewport.maybeOf(renderObject);
-    if (viewport is! RenderBox || !viewport.attached) return null;
-    return viewport.localToGlobal(Offset.zero).dy;
+    return viewportTopGlobal(context.findRenderObject());
   }
 
   void _holdIfFullyAboveViewport() {

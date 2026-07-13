@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -96,6 +98,16 @@ class _StubChecklistController extends ChecklistController {
 
   @override
   Future<Checklist?> build() async => _checklist;
+}
+
+class _DelayedChecklistController extends ChecklistController {
+  _DelayedChecklistController(this._result, ChecklistParams params)
+    : super(params);
+
+  final Future<Checklist?> _result;
+
+  @override
+  Future<Checklist?> build() => _result;
 }
 
 void main() {
@@ -324,6 +336,7 @@ void main() {
         data: mockTask.data.copyWith(checklistIds: const []),
       );
       final controller = _MutableEntryController(initialTask);
+      final checklistCompleter = Completer<Checklist?>();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -333,6 +346,15 @@ void main() {
             ),
             checklistRepositoryProvider.overrideWithValue(
               mockChecklistRepository,
+            ),
+            checklistControllerProvider(const (
+              id: 'checklist1',
+              taskId: 'task1',
+            )).overrideWith(
+              () => _DelayedChecklistController(
+                checklistCompleter.future,
+                const (id: 'checklist1', taskId: 'task1'),
+              ),
             ),
           ],
           child: WidgetTestBench(
@@ -362,10 +384,21 @@ void main() {
       controller.emit(taskWithChecklist);
       await tester.pump();
       await tester.pump();
+      expect(
+        find.byType(SizeFadeEntrance, skipOffstage: false),
+        findsNothing,
+      );
+
+      final checklist = await getIt<JournalDb>().journalEntityById(
+        'checklist1',
+      );
+      checklistCompleter.complete(checklist! as Checklist);
+      await tester.pump();
+      await tester.pump();
 
       final entrance = tester.widget<SizeFadeEntrance>(
         find.byKey(
-          const Key('checklist-checklist1-task1'),
+          const ValueKey('checklist-entrance-checklist1-task1'),
           skipOffstage: false,
         ),
       );

@@ -162,11 +162,13 @@ void main() {
       );
 
       final service = MockChangeSetConfirmationService();
-      when(() => service.confirmAll(any())).thenAnswer(
-        (_) async => const [
+      var stabilizationStarted = false;
+      when(() => service.confirmAll(any())).thenAnswer((_) async {
+        expect(stabilizationStarted, isTrue);
+        return const [
           ToolExecutionResult(success: true, output: 'ok'),
-        ],
-      );
+        ];
+      });
       final notifier = MockUpdateNotifications();
 
       final bench = AgentTestBench(
@@ -189,6 +191,7 @@ void main() {
           ],
           activity: const [],
         ),
+        onSuggestionResolveStart: () => stabilizationStarted = true,
       );
 
       await tester.pumpWidget(bench.build());

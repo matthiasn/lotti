@@ -1,8 +1,20 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
+
+/// Returns the global top edge of the viewport containing [renderObject].
+///
+/// Returns `null` when either object is detached or the viewport is not a
+/// [RenderBox].
+double? viewportTopGlobal(RenderObject? renderObject) {
+  if (renderObject == null || !renderObject.attached) return null;
+  final RenderObject? viewport = RenderAbstractViewport.maybeOf(renderObject);
+  if (viewport is! RenderBox || !viewport.attached) return null;
+  return viewport.localToGlobal(Offset.zero).dy;
+}
 
 /// Pure helper: the scroll offset needed to hold an anchored widget visually
 /// fixed in the viewport after content *above* it changed height.
