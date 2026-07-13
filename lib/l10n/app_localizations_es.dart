@@ -4280,6 +4280,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextTriageToday => 'Hoy';
 
   @override
+  String get dailyOsOnboardingCoachCapture => 'Di lo que te ronda la cabeza.';
+
+  @override
+  String get dailyOsOnboardingCoachDrafting =>
+      'El planificador está creando tareas nuevas y encajando el trabajo en tu día.';
+
+  @override
+  String get dailyOsOnboardingCoachReconcile =>
+      'Elige qué entra en el día de hoy. Los elementos nuevos se convierten en tareas cuando construyes el día.';
+
+  @override
+  String get dailyOsOnboardingSpotlightAction => 'Probar';
+
+  @override
+  String get dailyOsOnboardingSpotlightDismiss => 'Ahora no';
+
+  @override
+  String get dailyOsOnboardingSpotlightMessage =>
+      'Toca aquí y di lo que te ronda la cabeza: lo convierto en una tarea y organizo tu día en torno a ella.';
+
+  @override
+  String get dailyOsOnboardingSpotlightTitle =>
+      'Convierte lo que dices en un plan';
+
+  @override
   String get dailyOsTodayButton => 'Hoy';
 
   @override

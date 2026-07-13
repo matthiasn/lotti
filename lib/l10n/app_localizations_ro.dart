@@ -4295,6 +4295,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextTriageToday => 'Astăzi';
 
   @override
+  String get dailyOsOnboardingCoachCapture => 'Spuneți ce vă preocupă.';
+
+  @override
+  String get dailyOsOnboardingCoachDrafting =>
+      'Planificatorul creează sarcinile noi și așază munca în ziua dvs.';
+
+  @override
+  String get dailyOsOnboardingCoachReconcile =>
+      'Alegeți ce se potrivește pentru azi. Elementele noi devin sarcini când construiți ziua.';
+
+  @override
+  String get dailyOsOnboardingSpotlightAction => 'Încercați';
+
+  @override
+  String get dailyOsOnboardingSpotlightDismiss => 'Nu acum';
+
+  @override
+  String get dailyOsOnboardingSpotlightMessage =>
+      'Atingeți aici și spuneți ce vă preocupă – transform totul într-o sarcină și vă construiesc ziua în jurul ei.';
+
+  @override
+  String get dailyOsOnboardingSpotlightTitle => 'Transformați vorbele în plan';
+
+  @override
   String get dailyOsTodayButton => 'Astăzi';
 
   @override

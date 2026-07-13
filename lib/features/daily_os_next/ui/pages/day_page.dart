@@ -15,6 +15,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/captures_panel.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_spotlight_host.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
@@ -73,6 +74,9 @@ class DayPage extends ConsumerStatefulWidget {
 
 class _DayPageState extends ConsumerState<DayPage> {
   late PlanView _view = widget.hasPlan ? PlanView.agenda : PlanView.day;
+
+  /// Measurement anchor for the onboarding spotlight over the empty-Day CTA.
+  final GlobalKey _checkInCtaKey = GlobalKey();
 
   Future<void> _openRefine({String? initialTranscript}) async {
     await showDayPlanningModal(
@@ -226,78 +230,96 @@ class _DayPageState extends ConsumerState<DayPage> {
         ? (TimeBlock block, String title) =>
               unawaited(_renameBlock(block, title))
         : null;
+    final body = SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomNavHeight),
+        child: Column(
+          children: [
+            DayHeader(
+              dateStrip: widget.dateStrip,
+              date: widget.draft.dayDate,
+              selectedView: _view,
+              hasPlan: widget.hasPlan,
+              onViewChanged: (next) => setState(() => _view = next),
+              onBack: () => Navigator.of(context).maybePop(),
+              onInspectAgent: () => unawaited(_openAgentInternals()),
+              onDeletePlan: () => unawaited(_confirmDeletePlan()),
+            ),
+            CapturesPanel(date: widget.draft.dayDate),
+            // Proposed learnings surface here on both views and both
+            // form factors; renders nothing when there is nothing to
+            // confirm.
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step5,
+              ),
+              child: const Align(
+                alignment: Alignment.centerLeft,
+                child: KnowledgeNudge(),
+              ),
+            ),
+            Expanded(
+              // Rows meeting the fold dissolve instead of resting
+              // razor-cut against the footer's glass edge.
+              child: EdgeFade(
+                rampExtent: 36,
+                fadeTop: false,
+                minFraction: 0.04,
+                child: _view == PlanView.agenda
+                    ? AgendaView(
+                        draft: widget.draft,
+                        actualBlocks: actualBlocks ?? const [],
+                        hasPlan: widget.hasPlan,
+                        onRenameItem: onRenameItem,
+                      )
+                    : DayTimeline(
+                        draft: widget.draft,
+                        actualBlocks: actualBlocks,
+                        onRenameBlock: onRenameBlock,
+                        showGestureHint: !prefs.timelineGesturesLearned,
+                        onGesturesLearned: ref
+                            .read(
+                              dailyOsPreferencesControllerProvider.notifier,
+                            )
+                            .markTimelineGesturesLearned,
+                      ),
+              ),
+            ),
+            if (widget.hasPlan)
+              _DayFooter(
+                draft: widget.draft,
+                showCoachHint: !prefs.dayFooterHintRetired,
+                onRefine: () => unawaited(_openRefine()),
+                onQuickRefinement: _openQuickRefinement,
+                onCommit: _openCommit,
+                onShutdown: _openShutdown,
+              )
+            else
+              _NoPlanFooter(
+                onCheckIn: widget.onCheckIn,
+                ctaKey: _checkInCtaKey,
+              ),
+          ],
+        ),
+      ),
+    );
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
-      body: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: EdgeInsets.only(bottom: bottomNavHeight),
-          child: Column(
-            children: [
-              DayHeader(
-                dateStrip: widget.dateStrip,
-                date: widget.draft.dayDate,
-                selectedView: _view,
-                hasPlan: widget.hasPlan,
-                onViewChanged: (next) => setState(() => _view = next),
-                onBack: () => Navigator.of(context).maybePop(),
-                onInspectAgent: () => unawaited(_openAgentInternals()),
-                onDeletePlan: () => unawaited(_confirmDeletePlan()),
-              ),
-              CapturesPanel(date: widget.draft.dayDate),
-              // Proposed learnings surface here on both views and both
-              // form factors; renders nothing when there is nothing to
-              // confirm.
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step5,
-                ),
-                child: const Align(
-                  alignment: Alignment.centerLeft,
-                  child: KnowledgeNudge(),
-                ),
-              ),
-              Expanded(
-                // Rows meeting the fold dissolve instead of resting
-                // razor-cut against the footer's glass edge.
-                child: EdgeFade(
-                  rampExtent: 36,
-                  fadeTop: false,
-                  minFraction: 0.04,
-                  child: _view == PlanView.agenda
-                      ? AgendaView(
-                          draft: widget.draft,
-                          actualBlocks: actualBlocks ?? const [],
-                          hasPlan: widget.hasPlan,
-                          onRenameItem: onRenameItem,
-                        )
-                      : DayTimeline(
-                          draft: widget.draft,
-                          actualBlocks: actualBlocks,
-                          onRenameBlock: onRenameBlock,
-                          showGestureHint: !prefs.timelineGesturesLearned,
-                          onGesturesLearned: ref
-                              .read(
-                                dailyOsPreferencesControllerProvider.notifier,
-                              )
-                              .markTimelineGesturesLearned,
-                        ),
-                ),
-              ),
-              if (widget.hasPlan)
-                _DayFooter(
-                  draft: widget.draft,
-                  showCoachHint: !prefs.dayFooterHintRetired,
-                  onRefine: () => unawaited(_openRefine()),
-                  onQuickRefinement: _openQuickRefinement,
-                  onCommit: _openCommit,
-                  onShutdown: _openShutdown,
-                )
-              else
-                _NoPlanFooter(onCheckIn: widget.onCheckIn),
-            ],
+      body: Stack(
+        children: [
+          body,
+          // Onboarding spotlight over the empty-Day CTA. Renders nothing for
+          // normal users (no active walkthrough session) or once the day has a
+          // plan, so it never affects the ordinary Day surface.
+          Positioned.fill(
+            child: DayCheckInSpotlightHost(
+              ctaKey: _checkInCtaKey,
+              enabled: !widget.hasPlan,
+              onCheckIn: widget.onCheckIn,
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -726,13 +748,38 @@ class _DayFooterActions extends StatelessWidget {
 /// routes to Capture so the assistant can draft a day around the
 /// already-tracked time (handoff v2 item 2).
 class _NoPlanFooter extends StatelessWidget {
-  const _NoPlanFooter({required this.onCheckIn});
+  const _NoPlanFooter({required this.onCheckIn, this.ctaKey});
 
   final VoidCallback? onCheckIn;
+
+  /// Measurement key for the onboarding spotlight to anchor to. The stable
+  /// [Key] used as a test finder stays on the button regardless.
+  final GlobalKey? ctaKey;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final button = FilledButton.icon(
+      key: const Key('daily_os_day_check_in_cta'),
+      onPressed: onCheckIn,
+      icon: const Icon(Icons.mic_rounded, size: 14),
+      label: Text(
+        context.messages.dailyOsNextDayCheckInCta,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      style: FilledButton.styleFrom(
+        backgroundColor: tokens.colors.interactive.enabled,
+        foregroundColor: tokens.colors.text.onInteractiveAlert,
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step5,
+          vertical: tokens.spacing.step2,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+        ),
+      ),
+    );
     return DesignSystemGlassStrip(
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -742,29 +789,12 @@ class _NoPlanFooter extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            FilledButton.icon(
-              key: const Key('daily_os_day_check_in_cta'),
-              onPressed: onCheckIn,
-              icon: const Icon(Icons.mic_rounded, size: 14),
-              label: Text(
-                context.messages.dailyOsNextDayCheckInCta,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: tokens.colors.interactive.enabled,
-                foregroundColor: tokens.colors.text.onInteractiveAlert,
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step5,
-                  vertical: tokens.spacing.step2,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    tokens.radii.badgesPills,
-                  ),
-                ),
-              ),
-            ),
+            // The onboarding spotlight measures the CTA through this wrapper
+            // key; the stable Key on the button stays put for test finders.
+            if (ctaKey != null)
+              KeyedSubtree(key: ctaKey, child: button)
+            else
+              button,
           ],
         ),
       ),

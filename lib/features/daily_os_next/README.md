@@ -738,18 +738,18 @@ A first-time Daily OS user lands on a real but unexplained empty `DayPage`
 teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 [`docs/implementation_plans/2026-07-09_daily_os_onboarding.md`](../../../docs/implementation_plans/2026-07-09_daily_os_onboarding.md).
 
-> **Status.** The **Phase 0 substrate** (eligibility gate, cadence bookkeeping,
-> plan-existence query, metrics vocabulary), the **Phase 1 contracts** (typed
-> modal result + onboarding session), and the **Phase 2a presentational
-> widgets** (spotlight + coach strip) below are implemented. What is still
-> missing is the **wiring** (Phase 2b/2c): the widgets are not yet mounted on
-> the Day surface or the modal pages, and no auto-show listener exists. The
-> auto-show path stays inert regardless: it is gated behind the off-by-default
-> `dailyOsOnboardingEnabledFlag`, and `dailyOsOnboardingProviderReadyProvider`
-> (the seam for the real planning-flow readiness signal) defaults to `false`
-> until a later phase wires it, so `shouldAutoShowDailyOsOnboardingProvider`
-> never resolves `true` in a shipped build. This section documents what exists
-> in code today.
+> **Status.** The **Phase 0 substrate**, the **Phase 1 contracts**, the **Phase
+> 2a widgets**, and the **Phase 2b wiring** below are implemented: a session
+> coordinates the walkthrough, the spotlight mounts over the empty-Day CTA, the
+> coach strips render inside the create modal (recording stage events), and the
+> modal's typed result drives completion (retiring the cadence) or a skip. What
+> is still missing is the **auto-show / replay arming** (Phase 2c): nothing
+> calls `sessionController.start()` yet, so no session is ever active in a
+> shipped build. The path is inert regardless — gated behind the off-by-default
+> `dailyOsOnboardingEnabledFlag`, with `dailyOsOnboardingProviderReadyProvider`
+> defaulting to `false` — so `shouldAutoShowDailyOsOnboardingProvider` never
+> resolves `true`. The completion **celebration** beat is also deferred to a
+> later pass. This section documents what exists in code today.
 
 | Piece | File | Role |
 |---|---|---|
@@ -762,6 +762,9 @@ teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 | `DailyOsOnboardingSession` | `state/daily_os_onboarding_session.dart` | Walkthrough session contract: stable id, `auto`/`replay` origin, tips-visible state, and exactly-once guards for the stage and skip events (emission injected via a callback so it is testable in isolation). Consumed by the coach strips; the modal does not thread it yet (Phase 2b). |
 | `DailyOsOnboardingSpotlight` | `ui/widgets/daily_os_onboarding_spotlight.dart` | Presentational full-screen coaching overlay: dims the surface, cuts a highlight hole around a measured target rect (the check-in CTA), and floats a glass card with one primary action. Tap-inside-target and the card's action both proceed; scrim taps dismiss. Attention ring pulses under normal motion, static under `MediaQuery.disableAnimationsOf`. Copy/callbacks/rect all injected — the wiring layer (Phase 2b) measures the CTA and inserts it into an `Overlay`. |
 | `DailyOsOnboardingCoachStrip` | `ui/widgets/daily_os_onboarding_coach_strip.dart` | Presentational static glass banner narrating one modal beat, with an optional injected "hide tips" affordance. No motion, no session/metrics logic of its own. |
+| `DailyOsOnboardingSessionController` | `state/daily_os_onboarding_session_controller.dart` | Holds the single active session (or null). `start`/`end` own the lifecycle; `complete` records the materialized-task bucket + completion and retires the cadence; `dismiss` records the skip. Wires the session's events to `OnboardingMetricsRepository` (best-effort, tagged by origin). |
+| `DailyOsOnboardingCoachSlot` | `ui/widgets/daily_os_onboarding_coach_slot.dart` | Session-aware slot inserted at each modal beat: renders the coach strip only while a session is active, and records its stage event once on mount. Collapses to nothing for normal users. |
+| `DayCheckInSpotlightHost` | `ui/widgets/day_check_in_spotlight_host.dart` | Mounts the spotlight over the measured empty-Day CTA while a session is active; "Try it" opens the real modal (session persists for the coach strips), a scrim/"Not now" dismissal records the skip and ends the session. Inert for normal users. |
 
 Eligibility (all must hold): both `dailyOsOnboardingEnabledFlag` and
 `enableDailyOsPageFlag` on; the selected date is local today; today has no

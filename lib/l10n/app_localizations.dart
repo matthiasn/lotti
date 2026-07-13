@@ -7188,6 +7188,48 @@ abstract class AppLocalizations {
   /// **'Today'**
   String get dailyOsNextTriageToday;
 
+  /// No description provided for @dailyOsOnboardingCoachCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Say what\'s pulling at your attention.'**
+  String get dailyOsOnboardingCoachCapture;
+
+  /// No description provided for @dailyOsOnboardingCoachDrafting.
+  ///
+  /// In en, this message translates to:
+  /// **'The planner is creating any new tasks and fitting the work into your day.'**
+  String get dailyOsOnboardingCoachDrafting;
+
+  /// No description provided for @dailyOsOnboardingCoachReconcile.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what belongs in today. New items become tasks when you build the day.'**
+  String get dailyOsOnboardingCoachReconcile;
+
+  /// No description provided for @dailyOsOnboardingSpotlightAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Try it'**
+  String get dailyOsOnboardingSpotlightAction;
+
+  /// No description provided for @dailyOsOnboardingSpotlightDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get dailyOsOnboardingSpotlightDismiss;
+
+  /// No description provided for @dailyOsOnboardingSpotlightMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap here and say what\'s on your mind — I\'ll turn it into a task and build your day around it.'**
+  String get dailyOsOnboardingSpotlightMessage;
+
+  /// No description provided for @dailyOsOnboardingSpotlightTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn talk into a plan'**
+  String get dailyOsOnboardingSpotlightTitle;
+
   /// No description provided for @dailyOsTodayButton.
   ///
   /// In en, this message translates to:

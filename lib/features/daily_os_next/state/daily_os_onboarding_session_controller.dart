@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -54,6 +55,38 @@ class DailyOsOnboardingSessionController
   void end() {
     if (state == null) return;
     state = null;
+  }
+
+  /// Records a successful walkthrough completion for the active session: the
+  /// materialized-task count (when any tasks were created), the completion
+  /// event, and the permanent cadence retirement, then ends the session.
+  ///
+  /// No-op when no session is active — the ordinary (un-onboarded) create flow
+  /// calls this too, and simply does nothing. [createdTaskIds] is the set
+  /// attributed by the modal; its size feeds the 1–5 `dailyOsTaskMaterialized`
+  /// bucket.
+  Future<void> complete({List<String> createdTaskIds = const []}) async {
+    final session = state;
+    if (session == null) return;
+    if (createdTaskIds.isNotEmpty) {
+      session.recordStageOnce(
+        OnboardingEventName.dailyOsTaskMaterialized,
+        valueBucket: createdTaskIds.length.clamp(1, 5),
+      );
+    }
+    session.recordStageOnce(OnboardingEventName.dailyOsWalkthroughCompleted);
+    await ref.read(dailyOsOnboardingCadenceProvider.notifier).markCompleted();
+    end();
+  }
+
+  /// Records a dismissal (the coached modal closed without a plan) for the
+  /// active session: the session skip, then ends it. No-op when no session is
+  /// active.
+  void dismiss() {
+    final session = state;
+    if (session == null) return;
+    session.recordSkippedOnce();
+    end();
   }
 
   /// Records a session event to the onboarding metrics store. Best-effort:

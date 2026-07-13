@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -9,13 +13,24 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
+/// Counts `markCompleted` without touching SettingsDb.
+class _CountingCadence extends DailyOsOnboardingCadence {
+  int markCompletedCount = 0;
+
+  @override
+  FutureOr<void> build() {}
+
+  @override
+  Future<void> markCompleted() async => markCompletedCount++;
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(OnboardingEventName.dailyOsWalkthroughShown);
   });
 
-  ProviderContainer makeContainer() {
-    final container = ProviderContainer();
+  ProviderContainer makeContainer({List<Override> overrides = const []}) {
+    final container = ProviderContainer(overrides: overrides);
     addTearDown(container.dispose);
     return container;
   }
@@ -196,6 +211,153 @@ void main() {
           valueBucket: any(named: 'valueBucket'),
         ),
       ).called(1);
+    });
+  });
+
+  group('complete', () {
+    late MockOnboardingMetricsRepository repo;
+    late _CountingCadence cadence;
+
+    setUp(() {
+      repo = MockOnboardingMetricsRepository();
+      when(
+        () => repo.recordEvent(
+          any(),
+          provider: any(named: 'provider'),
+          reason: any(named: 'reason'),
+          valueBucket: any(named: 'valueBucket'),
+        ),
+      ).thenAnswer((_) async {});
+      if (getIt.isRegistered<OnboardingMetricsRepository>()) {
+        getIt.unregister<OnboardingMetricsRepository>();
+      }
+      getIt.registerSingleton<OnboardingMetricsRepository>(repo);
+      cadence = _CountingCadence();
+    });
+
+    tearDown(() {
+      if (getIt.isRegistered<OnboardingMetricsRepository>()) {
+        getIt.unregister<OnboardingMetricsRepository>();
+      }
+    });
+
+    ProviderContainer completingContainer() => makeContainer(
+      overrides: [
+        dailyOsOnboardingCadenceProvider.overrideWith(() => cadence),
+      ],
+    );
+
+    test(
+      'records materialized tasks + completion, retires cadence, ends session',
+      () async {
+        final container = completingContainer();
+        final controller = controllerOf(container)
+          ..start(origin: DailyOsOnboardingOrigin.auto);
+
+        await controller.complete(createdTaskIds: const ['t1', 't2']);
+
+        verify(
+          () => repo.recordEvent(
+            OnboardingEventName.dailyOsTaskMaterialized,
+            reason: 'auto',
+            valueBucket: 2,
+          ),
+        ).called(1);
+        verify(
+          () => repo.recordEvent(
+            OnboardingEventName.dailyOsWalkthroughCompleted,
+            reason: 'auto',
+            valueBucket: any(named: 'valueBucket'),
+          ),
+        ).called(1);
+        expect(cadence.markCompletedCount, 1);
+        expect(
+          container.read(dailyOsOnboardingSessionControllerProvider),
+          isNull,
+        );
+      },
+    );
+
+    test('clamps the materialized-task bucket to 5', () async {
+      final container = completingContainer();
+      await (controllerOf(container)
+            ..start(origin: DailyOsOnboardingOrigin.auto))
+          .complete(createdTaskIds: List.generate(9, (i) => 't$i'));
+
+      verify(
+        () => repo.recordEvent(
+          OnboardingEventName.dailyOsTaskMaterialized,
+          reason: 'auto',
+          valueBucket: 5,
+        ),
+      ).called(1);
+    });
+
+    test('records no materialized event when no tasks were created', () async {
+      final container = completingContainer();
+      await (controllerOf(
+        container,
+      )..start(origin: DailyOsOnboardingOrigin.auto)).complete();
+
+      verifyNever(
+        () => repo.recordEvent(
+          OnboardingEventName.dailyOsTaskMaterialized,
+          reason: any(named: 'reason'),
+          valueBucket: any(named: 'valueBucket'),
+        ),
+      );
+      verify(
+        () => repo.recordEvent(
+          OnboardingEventName.dailyOsWalkthroughCompleted,
+          reason: 'auto',
+          valueBucket: any(named: 'valueBucket'),
+        ),
+      ).called(1);
+    });
+
+    test('is a no-op when no session is active (ordinary create)', () async {
+      final container = completingContainer();
+      await controllerOf(container).complete(createdTaskIds: const ['t1']);
+
+      expect(cadence.markCompletedCount, 0);
+      verifyNever(
+        () => repo.recordEvent(
+          any(),
+          reason: any(named: 'reason'),
+          valueBucket: any(named: 'valueBucket'),
+        ),
+      );
+    });
+
+    test('dismiss records the skip and ends the session', () async {
+      final container = completingContainer();
+      controllerOf(container)
+        ..start(origin: DailyOsOnboardingOrigin.auto)
+        ..dismiss();
+
+      verify(
+        () => repo.recordEvent(
+          OnboardingEventName.dailyOsWalkthroughSkipped,
+          reason: 'auto',
+          valueBucket: any(named: 'valueBucket'),
+        ),
+      ).called(1);
+      expect(
+        container.read(dailyOsOnboardingSessionControllerProvider),
+        isNull,
+      );
+    });
+
+    test('dismiss is a no-op when no session is active', () {
+      final container = completingContainer();
+      controllerOf(container).dismiss();
+      verifyNever(
+        () => repo.recordEvent(
+          any(),
+          reason: any(named: 'reason'),
+          valueBucket: any(named: 'valueBucket'),
+        ),
+      );
     });
   });
 
