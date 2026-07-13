@@ -1193,6 +1193,57 @@ void main() {
       });
     });
 
+    test(
+      'transcribeChatAudio skips HTTP after conversion exhausts timeout',
+      () {
+        fakeAsync((async) {
+          final startedAt = DateTime(2024, 3, 15, 12);
+          var currentTime = startedAt;
+          var requestSent = false;
+          final repository = MeliousInferenceRepository(
+            clockSource: Clock(() => currentTime),
+            httpClient: MockClient((_) async {
+              requestSent = true;
+              return _voxtralChatResponse();
+            }),
+            m4aToWavConverter: (_) async {
+              currentTime = startedAt.add(const Duration(seconds: 60));
+              return base64Decode('UklGRgAAAABXQVZF');
+            },
+          );
+          Object? failure;
+
+          repository
+              .transcribeChatAudio(
+                model: 'voxtral-small-24b-2507',
+                audioBase64: base64Encode([1, 2, 3]),
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                prompt: 'Transcribe.',
+              )
+              .toList()
+              .then<void>(
+                (_) {},
+                onError: (Object error, StackTrace _) {
+                  failure = error;
+                },
+              );
+          async.flushMicrotasks();
+
+          expect(requestSent, isFalse);
+          expect(
+            failure,
+            isA<TranscriptionException>().having(
+              (error) => error.message,
+              'message',
+              allOf(contains('timed out'), contains('request melious-audio-')),
+            ),
+          );
+          repository.close();
+        });
+      },
+    );
+
     test('transcribeChatAudio prefixes conversion status detail', () {
       final repository = MeliousInferenceRepository(
         m4aToWavConverter: (_) async => throw TranscriptionException(

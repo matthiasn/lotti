@@ -682,17 +682,24 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
     try {
       final deadline = _clock.now().add(timeout);
-      Duration remainingTimeout() {
+      Duration remainingTimeoutOrThrow() {
         final remaining = deadline.difference(_clock.now());
-        return remaining.isNegative ? Duration.zero : remaining;
+        if (remaining <= Duration.zero) {
+          throw TimeoutException('Melious chat-audio deadline exhausted');
+        }
+        return remaining;
       }
 
       final sourceBytes = base64Decode(audioBase64);
-      final wavBytes = _isWavAudio(sourceBytes)
-          ? sourceBytes
-          : await _m4aToWavConverter(
-              sourceBytes,
-            ).timeout(remainingTimeout());
+      late final Uint8List wavBytes;
+      if (_isWavAudio(sourceBytes)) {
+        wavBytes = sourceBytes;
+      } else {
+        final conversionTimeout = remainingTimeoutOrThrow();
+        wavBytes = await _m4aToWavConverter(
+          sourceBytes,
+        ).timeout(conversionTimeout);
+      }
       final messageContent = [
         {
           'type': 'input_audio',
@@ -718,6 +725,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         'temperature': 0.0,
         'max_tokens': ?maxCompletionTokens,
       };
+      final requestTimeout = remainingTimeoutOrThrow();
       final response = await httpClient
           .post(
             uri,
@@ -728,7 +736,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
             },
             body: jsonEncode(body),
           )
-          .timeout(remainingTimeout());
+          .timeout(requestTimeout);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw TranscriptionException(
