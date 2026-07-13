@@ -1576,6 +1576,11 @@ The one-on-one UI is split into two surfaces:
   card, compact ritual summary metrics, and persisted session history
 - `EvolutionChatPage`: the active negotiation loop for the current ritual
 
+`EvolutionMessageInput` reuses the chat recorder controller for batch voice
+input. Successful transcripts populate the evolution composer; failures render
+the provider's diagnostic detail in an error toast and clear the consumed
+recorder result so the same failure is not replayed on rebuild.
+
 The compact summary surface is backed by `ritualSummaryMetricsProvider` and
 only exposes the retained signals:
 

@@ -188,6 +188,31 @@ void main() {
       expect(textField.controller!.text, 'Transcribed text');
     });
 
+    testWidgets('surfaces recorder errors with their diagnostic detail', (
+      tester,
+    ) async {
+      late TranscriptEmittingController controller;
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => controller = TranscriptEmittingController(),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      controller.emitError('HTTP 503: all transcription providers failed');
+      await tester.pump();
+
+      expect(
+        find.text('HTTP 503: all transcription providers failed'),
+        findsOneWidget,
+      );
+      expect(controller.clearResultCalls, 1);
+    });
+
     testWidgets('shows voice controls when recording', (tester) async {
       await tester.pumpWidget(
         buildSubject(

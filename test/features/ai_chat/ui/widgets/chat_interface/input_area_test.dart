@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -13,26 +11,16 @@ import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
 import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/assistant_settings_sheet.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/input_area.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
-/// Wraps [child] in [ProviderScope] + [MaterialApp] with localization.
+/// Wraps [child] in the centralized no-scroll widget-test harness.
 Widget _wrap(Widget child, {List<Override> overrides = const []}) =>
-    ProviderScope(
+    makeTestableWidgetNoScroll(
+      Scaffold(body: child),
       overrides: overrides,
-      child: MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: child),
-      ),
     );
 
 /// Creates an [InputArea] with sensible defaults.  Only the varying parts
@@ -177,6 +165,28 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     },
   );
+
+  testWidgets('surfaces recorder errors with their diagnostic detail', (
+    tester,
+  ) async {
+    late _TranscriptEmittingController recorder;
+    await tester.pumpWidget(
+      _wrap(
+        _inputArea(),
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => recorder = _TranscriptEmittingController(),
+          ),
+        ],
+      ),
+    );
+
+    recorder.emitError('HTTP 422: unsupported audio payload');
+    await tester.pump();
+
+    expect(find.text('HTTP 422: unsupported audio payload'), findsOneWidget);
+    expect(recorder.clearResultCalls, 1);
+  });
 
   testWidgets('shows Listening indicator during realtimeRecording', (
     tester,
@@ -1111,6 +1121,8 @@ class _StaticChatController extends ChatSessionController {
 
 /// Test controller that can emit a transcript to trigger the subscription
 class _TranscriptEmittingController extends ChatRecorderController {
+  int clearResultCalls = 0;
+
   @override
   ChatRecorderState build() {
     return const ChatRecorderState(
@@ -1126,8 +1138,17 @@ class _TranscriptEmittingController extends ChatRecorderController {
     );
   }
 
+  void emitError(String error) {
+    state = state.copyWith(
+      status: ChatRecorderStatus.idle,
+      error: error,
+      errorType: ChatRecorderErrorType.transcriptionFailed,
+    );
+  }
+
   @override
   void clearResult() {
+    clearResultCalls++;
     state = ChatRecorderState(
       status: state.status,
       amplitudeHistory: state.amplitudeHistory,

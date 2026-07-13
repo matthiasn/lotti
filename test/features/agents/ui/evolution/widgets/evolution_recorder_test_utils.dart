@@ -143,6 +143,8 @@ class ProcessingTestController extends ChatRecorderController {
 
 /// Idle controller that can emit a transcript.
 class TranscriptEmittingController extends ChatRecorderController {
+  int clearResultCalls = 0;
+
   @override
   ChatRecorderState build() {
     return const ChatRecorderState(
@@ -158,8 +160,17 @@ class TranscriptEmittingController extends ChatRecorderController {
     );
   }
 
+  void emitError(String error) {
+    state = state.copyWith(
+      status: ChatRecorderStatus.idle,
+      error: error,
+      errorType: ChatRecorderErrorType.transcriptionFailed,
+    );
+  }
+
   @override
   void clearResult() {
+    clearResultCalls++;
     state = ChatRecorderState(
       status: state.status,
       amplitudeHistory: state.amplitudeHistory,

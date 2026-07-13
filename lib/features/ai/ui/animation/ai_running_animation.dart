@@ -4,15 +4,49 @@ import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:siri_wave/siri_wave.dart';
+
+void _listenForInferenceErrors({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String entryId,
+  required Set<AiResponseType> responseTypes,
+}) {
+  for (final responseType in responseTypes) {
+    final provider = inferenceErrorControllerProvider((
+      id: entryId,
+      aiResponseType: responseType,
+    ));
+    ref.listen<String?>(provider, (previous, next) {
+      final detail = next?.trim();
+      if (detail == null ||
+          detail.isEmpty ||
+          detail == previous ||
+          !context.mounted) {
+        return;
+      }
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.commonError,
+        description: detail,
+        duration: const Duration(seconds: 12),
+        replaceCurrent: true,
+      );
+      ref.read(provider.notifier).setError(null);
+    });
+  }
+}
 
 /// Bare iOS-9-style Siri waveform sized to [height].
 ///
@@ -142,6 +176,12 @@ class AiRunningDecoderBars extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    _listenForInferenceErrors(
+      context: context,
+      ref: ref,
+      entryId: entryId,
+      responseTypes: responseTypes,
+    );
     // The presence envelope (fade/scale in & out, collapse to zero) lives in
     // [AiThinkingShaderPresence]; here we only feed it the entry's
     // inference-running signal and, when interactive, the tap-to-progress
@@ -420,6 +460,12 @@ class AiRunningAnimationWrapperCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    _listenForInferenceErrors(
+      context: context,
+      ref: ref,
+      entryId: entryId,
+      responseTypes: responseTypes,
+    );
     final provider = inferenceRunningControllerProvider((
       id: entryId,
       responseTypes: responseTypes,

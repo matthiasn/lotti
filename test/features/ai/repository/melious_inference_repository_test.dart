@@ -44,6 +44,30 @@ class _ChatStreamProbe {
   }
 }
 
+http.Response _voxtralChatResponse() => http.Response(
+  jsonEncode({
+    'id': 'chatcmpl-voxtral',
+    'model': 'voxtral-small-24b-2507',
+    'created': 123,
+    'choices': [
+      {
+        'index': 0,
+        'message': {
+          'role': 'assistant',
+          'content': 'Lotti uses Voxtral.',
+        },
+        'finish_reason': 'stop',
+      },
+    ],
+    'usage': {
+      'prompt_tokens': 11,
+      'completion_tokens': 4,
+      'total_tokens': 15,
+    },
+  }),
+  200,
+);
+
 void main() {
   group('MeliousInferenceRepository', () {
     const baseUrl = 'https://api.melious.ai/v1';
@@ -892,6 +916,345 @@ void main() {
     );
 
     test(
+      'transcribeChatAudio sends temporary WAV directly with context',
+      () async {
+        http.Request? captured;
+        final wavBytes = base64Decode('UklGRgAAAABXQVZF');
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient((request) async {
+            captured = request;
+            return _voxtralChatResponse();
+          }),
+          m4aToWavConverter: (_) async => wavBytes,
+        );
+        addTearDown(repository.close);
+
+        final chunks = await repository
+            .transcribeChatAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              prompt: 'Transcribe exactly. Required spelling: Lotti.',
+            )
+            .toList();
+
+        expect(chunks.single.id, 'chatcmpl-voxtral');
+        expect(captured?.url.toString(), '$baseUrl/chat/completions');
+        final body = jsonDecode(captured!.body) as Map<String, dynamic>;
+        final messages = body['messages']! as List<dynamic>;
+        final content =
+            (messages.single as Map<String, dynamic>)['content']!
+                as List<dynamic>;
+        expect(content.first, {
+          'type': 'input_audio',
+          'input_audio': {
+            'data': base64Encode(wavBytes),
+            'format': 'wav',
+          },
+        });
+        expect(content.last, {
+          'type': 'text',
+          'text': 'Transcribe exactly. Required spelling: Lotti.',
+        });
+      },
+    );
+
+    test('transcribeChatAudio reuses WAV input without conversion', () async {
+      final wavBytes = base64Decode('UklGRgAAAABXQVZF');
+      var conversionCalled = false;
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async => _voxtralChatResponse()),
+        m4aToWavConverter: (_) async {
+          conversionCalled = true;
+          return null;
+        },
+      );
+      addTearDown(repository.close);
+
+      final chunks = await repository
+          .transcribeChatAudio(
+            model: 'voxtral-small-24b-2507',
+            audioBase64: base64Encode(wavBytes),
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            prompt: 'Transcribe.',
+          )
+          .toList();
+
+      expect(chunks.single.id, 'chatcmpl-voxtral');
+      expect(conversionCalled, isFalse);
+    });
+
+    test(
+      'transcribeChatAudio context-corrects when WAV conversion is unavailable',
+      () async {
+        final captured = <http.Request>[];
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient((request) async {
+            captured.add(request);
+            if (request.url.path.endsWith('/audio/transcriptions')) {
+              return http.Response(
+                jsonEncode({'text': 'Lottie uses Melius.'}),
+                200,
+              );
+            }
+            return _voxtralChatResponse();
+          }),
+          m4aToWavConverter: (_) async => null,
+        );
+        addTearDown(repository.close);
+
+        final chunks = await repository
+            .transcribeChatAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              prompt: 'Transcribe exactly. Required spelling: Lotti.',
+            )
+            .toList();
+
+        expect(chunks.single.id, 'chatcmpl-voxtral');
+        expect(
+          chunks.single.choices?.single.delta?.content,
+          'Lotti uses Voxtral.',
+        );
+        expect(chunks.single.usage?.totalTokens, 15);
+        expect(captured, hasLength(2));
+        expect(
+          captured.first.url.toString(),
+          '$baseUrl/audio/transcriptions',
+        );
+        expect(captured.first.headers['Authorization'], 'Bearer $apiKey');
+        final multipartBody = latin1.decode(captured.first.bodyBytes);
+        expect(multipartBody, contains('voxtral-small-24b-2507'));
+
+        expect(captured.last.url.toString(), '$baseUrl/chat/completions');
+        expect(captured.last.headers['Authorization'], 'Bearer $apiKey');
+        final body = jsonDecode(captured.last.body) as Map<String, dynamic>;
+        expect(body['model'], 'voxtral-small-24b-2507');
+        expect(body['stream'], isFalse);
+        expect(
+          body['request_id'],
+          isA<String>().having(
+            (value) => value,
+            'request id',
+            startsWith('melious-audio-'),
+          ),
+        );
+        final messages = body['messages']! as List<dynamic>;
+        final content =
+            (messages.single as Map<String, dynamic>)['content']! as String;
+        expect(content, contains('Required spelling: Lotti.'));
+        expect(content, contains('Lottie uses Melius.'));
+        expect(content, contains('only the final transcript'));
+      },
+    );
+
+    test('transcribeChatAudio preserves structured provider error detail', () {
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'error': {
+                'code': 'INFERENCE_3103',
+                'message': 'All Voxtral providers failed',
+              },
+            }),
+            503,
+          ),
+        ),
+        m4aToWavConverter: (_) async => null,
+      );
+      addTearDown(repository.close);
+
+      expect(
+        repository
+            .transcribeChatAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              prompt: 'Transcribe.',
+            )
+            .toList(),
+        throwsA(
+          isA<TranscriptionException>()
+              .having((error) => error.statusCode, 'statusCode', 503)
+              .having(
+                (error) => error.message,
+                'message',
+                contains('All Voxtral providers failed'),
+              )
+              .having(
+                (error) => error.message,
+                'HTTP detail',
+                contains('HTTP 503'),
+              ),
+        ),
+      );
+    });
+
+    test('transcribeChatAudio times out with a request id', () {
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((_) => Completer<http.Response>().future),
+        m4aToWavConverter: (_) async => null,
+      );
+      addTearDown(repository.close);
+
+      expect(
+        repository
+            .transcribeChatAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              prompt: 'Transcribe.',
+              timeout: Duration.zero,
+            )
+            .toList(),
+        throwsA(
+          isA<TranscriptionException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('timed out'), contains('request melious-audio-')),
+          ),
+        ),
+      );
+    });
+
+    test('transcribeChatAudio rejects an empty first-pass transcript', () {
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient(
+          (_) async => http.Response(jsonEncode({'text': ''}), 200),
+        ),
+        m4aToWavConverter: (_) async => null,
+      );
+      addTearDown(repository.close);
+
+      expect(
+        repository
+            .transcribeChatAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              prompt: 'Transcribe.',
+            )
+            .toList(),
+        throwsA(
+          isA<TranscriptionException>().having(
+            (error) => error.message,
+            'message',
+            contains('no first-pass transcript'),
+          ),
+        ),
+      );
+    });
+
+    final malformedChatCases =
+        <({String description, http.Response response, String message})>[
+          (
+            description: 'rejects non-JSON chat responses',
+            response: http.Response('not-json', 200),
+            message: 'not valid JSON',
+          ),
+          (
+            description: 'rejects non-object chat responses',
+            response: http.Response('[]', 200),
+            message: 'invalid chat-audio response',
+          ),
+          (
+            description: 'rejects chat responses without transcript text',
+            response: http.Response(jsonEncode({'choices': <Object>[]}), 200),
+            message: 'returned no transcript',
+          ),
+        ];
+    for (final testCase in malformedChatCases) {
+      test('transcribeChatAudio ${testCase.description}', () {
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient((_) async => testCase.response),
+          m4aToWavConverter: (_) async => base64Decode('UklGRgAAAABXQVZF'),
+        );
+        addTearDown(repository.close);
+
+        expect(
+          repository
+              .transcribeChatAudio(
+                model: 'voxtral-small-24b-2507',
+                audioBase64: base64Encode([1, 2, 3]),
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                prompt: 'Transcribe.',
+              )
+              .toList(),
+          throwsA(
+            isA<TranscriptionException>().having(
+              (error) => error.message,
+              'message',
+              contains(testCase.message),
+            ),
+          ),
+        );
+      });
+    }
+
+    test('transcribeChatAudio wraps transport failures', () {
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async => throw Exception('network down')),
+        m4aToWavConverter: (_) async => base64Decode('UklGRgAAAABXQVZF'),
+      );
+      addTearDown(repository.close);
+
+      expect(
+        repository
+            .transcribeChatAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              prompt: 'Transcribe.',
+            )
+            .toList(),
+        throwsA(
+          isA<TranscriptionException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('request failed'), contains('network down')),
+          ),
+        ),
+      );
+    });
+
+    final invalidChatArguments =
+        <({String model, String audio, String baseUrl, String apiKey})>[
+          (model: ' ', audio: 'audio', baseUrl: baseUrl, apiKey: apiKey),
+          (model: 'voxtral', audio: '', baseUrl: baseUrl, apiKey: apiKey),
+          (model: 'voxtral', audio: 'audio', baseUrl: ' ', apiKey: apiKey),
+          (model: 'voxtral', audio: 'audio', baseUrl: baseUrl, apiKey: ' '),
+        ];
+    for (final arguments in invalidChatArguments) {
+      test('transcribeChatAudio validates required arguments $arguments', () {
+        final repository = MeliousInferenceRepository();
+        addTearDown(repository.close);
+
+        expect(
+          repository
+              .transcribeChatAudio(
+                model: arguments.model,
+                audioBase64: arguments.audio,
+                baseUrl: arguments.baseUrl,
+                apiKey: arguments.apiKey,
+                prompt: 'Transcribe.',
+              )
+              .toList(),
+          throwsArgumentError,
+        );
+      });
+    }
+
+    test(
       'transcribeAudio forwards speech-dictionary terms as the OpenAI '
       'prompt field, trimmed, de-blanked, and capped at 100 terms',
       () async {
@@ -1403,6 +1766,33 @@ void main() {
       expect(
         MeliousInferenceRepository.isMeliousTranscriptionModel(
           'qwen/qwen3-vl-plus',
+        ),
+        isFalse,
+      );
+    });
+
+    test('isMeliousChatAudioModel matches Voxtral model IDs', () {
+      expect(
+        MeliousInferenceRepository.isMeliousChatAudioModel(
+          'voxtral-small-24b-2507',
+        ),
+        isTrue,
+      );
+      expect(
+        MeliousInferenceRepository.isMeliousChatAudioModel(
+          'MISTRAL/VOXTRAL-SMALL-LATEST',
+        ),
+        isTrue,
+      );
+      expect(
+        MeliousInferenceRepository.isMeliousChatAudioModel(
+          'openai/whisper-large-v3',
+        ),
+        isFalse,
+      );
+      expect(
+        MeliousInferenceRepository.isMeliousChatAudioModel(
+          'mistral/voxtral-mini-transcribe',
         ),
         isFalse,
       );

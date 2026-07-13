@@ -385,6 +385,9 @@ What it actually does today:
 - asks `profileAutomationServiceProvider` whether that task has an automated
   transcription skill
 - optionally forwards the saved audio entry to `SkillInferenceRunner`
+- leaves the failed inference status and detailed provider error attached to
+  both the audio entry and linked task; their AI activity surfaces replace the
+  disappearing animation with an error toast containing the diagnostic detail
 
 What it does not do:
 

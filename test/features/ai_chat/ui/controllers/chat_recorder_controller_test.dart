@@ -395,6 +395,10 @@ void main() {
         tools: any(named: 'tools'),
       ),
     ).thenAnswer((_) => Stream.error(Exception('network down')));
+    final mockTranscriptionService = MockAudioTranscriptionService();
+    when(
+      () => mockTranscriptionService.transcribeStream(any()),
+    ).thenAnswer((_) => Stream.error(Exception('network down')));
 
     final container = ProviderContainer(
       overrides: [
@@ -405,6 +409,7 @@ void main() {
             recorderFactory: () => mockRecorder,
             tempDirectoryProvider: () async => Directory.systemTemp,
             config: const ChatRecorderConfig(maxSeconds: 2),
+            transcriptionService: mockTranscriptionService,
           ),
         ),
       ],
@@ -418,7 +423,7 @@ void main() {
     await controller.stopAndTranscribe();
     final state = container.read(chatRecorderControllerProvider);
     expect(state.errorType, ChatRecorderErrorType.transcriptionFailed);
-    expect(state.error, contains('Transcription failed'));
+    expect(state.error, contains('network down'));
     sub.close();
     container.dispose();
   });

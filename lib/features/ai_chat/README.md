@@ -267,7 +267,14 @@ The controller also tracks:
 - `partialTranscript` for live mode
 - final `transcript`
 - structured error type
+- provider diagnostic detail for failed batch transcription
 - whether realtime mode is selected
+
+Batch errors are logged by `ChatRecorderController` and rendered by both chat
+input and evolution input as an error toast. The UI clears the consumed result
+after showing it, which prevents a provider error from being replayed on later
+widget rebuilds. A provider stream that closes without any non-blank transcript
+is treated as a failure rather than a successful empty dictation.
 
 ## Voice Input Paths
 
@@ -280,6 +287,10 @@ The controller also tracks:
 - prefers Mistral offline transcription models first, so their `context_bias`
   parameter can receive the category speech dictionary terms
 - then any configured Mistral audio model
+- then Melious Voxtral models: a temporary WAV copy goes to contextual
+  `/chat/completions` while the M4A master remains untouched; conversion
+  failures use M4A transcription followed by a text-only context pass
+- then Melious Whisper/STT models through `/audio/transcriptions`
 - then local MLX Qwen3-ASR models, which receive the same speech dictionary as
   prompt context
 - otherwise uses a `gemini-2.5-flash` model, or the first audio-capable model
@@ -304,9 +315,14 @@ sequenceDiagram
     MLX-->>Batch: final transcript
   else HTTP provider
     Batch->>Cloud: generateWithAudio(...)
-    Cloud-->>Batch: text chunks
+    Cloud-->>Batch: text chunks or detailed provider error
   end
-  Batch-->>UI: text chunks
+  alt transcript received
+    Batch-->>UI: text chunks
+  else error or empty provider response
+    Batch-->>UI: TranscriptionException
+    UI->>UI: log failure and show diagnostic toast
+  end
   UI->>UI: accumulate transcript
 ```
 
