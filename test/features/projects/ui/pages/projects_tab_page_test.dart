@@ -215,7 +215,9 @@ void main() {
     );
     expect(find.text('Device Sync'), findsOneWidget);
     expect(find.text('API Migration'), findsOneWidget);
-    expect(find.text('Active'), findsOneWidget);
+    // "Active" is the implicit default and no longer renders a status pill;
+    // only the non-default "Completed" pill remains.
+    expect(find.text('Active'), findsNothing);
     expect(find.text('Completed'), findsOneWidget);
     expect(findRichTextContaining('5 tasks'), findsOneWidget);
     expect(findRichTextContaining('Due Mar 27'), findsOneWidget);
@@ -376,13 +378,10 @@ void main() {
     );
     expect(find.text('Device Sync'), findsOneWidget);
     expect(find.text('React Course'), findsOneWidget);
-    expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
-    expect(
-      find.byWidgetPredicate(
-        (widget) => widget is SizedBox && widget.width == 540,
-      ),
-      findsOneWidget,
-    );
+    // With no project selected, the desktop overview owns the full width:
+    // no empty detail pane and no resizable split.
+    expect(find.byType(DesktopDetailEmptyState), findsNothing);
+    expect(find.byType(ResizableDivider), findsNothing);
   });
 
   testWidgets(
@@ -599,19 +598,28 @@ void main() {
 
   group('desktop split layout', () {
     testWidgets(
-      'renders a ResizableDivider between list and detail panes so the '
-      'user can adjust the list-pane width',
+      'renders a ResizableDivider between list and detail panes when a '
+      'project is selected so the user can adjust the list-pane width',
       (tester) async {
+        final nav = getIt<NavService>() as MockNavService;
+        when(
+          () => nav.desktopSelectedProjectId,
+        ).thenReturn(ValueNotifier<String?>('p1'));
+        final originalOnError = FlutterError.onError;
+        FlutterError.onError = (_) {};
+        addTearDown(() => FlutterError.onError = originalOnError);
+
         await pumpPage(
           tester,
           groups: [buildWorkGroup()],
           mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
         );
 
+        // A selection opens the master+detail split: list pane, drag divider,
+        // and the detail page — no empty-state placeholder.
         expect(find.byType(ResizableDivider), findsOneWidget);
-        // And the detail pane is present (empty-state placeholder when no
-        // project is selected).
-        expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
+        expect(find.byType(ProjectDetailsPage), findsOneWidget);
+        expect(find.byType(DesktopDetailEmptyState), findsNothing);
       },
     );
 
@@ -619,6 +627,14 @@ void main() {
       'dragging the ResizableDivider grows the list pane via '
       'updateListPaneWidth',
       (tester) async {
+        final nav = getIt<NavService>() as MockNavService;
+        when(
+          () => nav.desktopSelectedProjectId,
+        ).thenReturn(ValueNotifier<String?>('p1'));
+        final originalOnError = FlutterError.onError;
+        FlutterError.onError = (_) {};
+        addTearDown(() => FlutterError.onError = originalOnError);
+
         await pumpPage(
           tester,
           groups: [buildWorkGroup()],
@@ -845,24 +861,31 @@ void main() {
 
   group('desktop split-view layout', () {
     testWidgets(
-      'wide viewport renders list pane + divider + empty detail state',
+      'wide viewport with no selection renders the full-width overview '
+      '(no split, no empty pane)',
       (tester) async {
+        tester.view
+          ..physicalSize = const Size(1400, 900)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
         await pumpPage(
           tester,
           groups: [buildWorkGroup()],
           mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
         );
 
-        // Split view: the list scaffold sits beside a drag divider, and
-        // with no selection the detail pane shows the empty state.
-        expect(find.byType(ResizableDivider), findsOneWidget);
-        expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
+        // No project selected → the overview spans the full width; the
+        // resizable split and the empty detail pane are gone.
+        expect(find.byType(ResizableDivider), findsNothing);
+        expect(find.byType(DesktopDetailEmptyState), findsNothing);
         expect(find.text('Device Sync'), findsOneWidget);
       },
     );
 
     testWidgets(
-      'selecting a project id swaps the empty state for ProjectDetailsPage',
+      'selecting a project swaps the full-width overview for the detail split',
       (tester) async {
         final nav = getIt<NavService>() as MockNavService;
         final selected = ValueNotifier<String?>(null);
@@ -883,14 +906,17 @@ void main() {
             ),
           ],
         );
-        expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
+        // No selection → the overview is shown; no detail page, no empty pane.
+        expect(find.byType(ProjectDetailsPage), findsNothing);
+        expect(find.byType(DesktopDetailEmptyState), findsNothing);
 
         selected.value = 'p1';
         await tester.pump();
         await tester.pump();
 
-        expect(find.byType(DesktopDetailEmptyState), findsNothing);
+        // Selecting a project opens the split with the detail page.
         expect(find.byType(ProjectDetailsPage), findsOneWidget);
+        expect(find.byType(ResizableDivider), findsOneWidget);
       },
     );
   });

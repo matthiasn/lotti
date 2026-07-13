@@ -2747,6 +2747,10 @@
       }
     }
   },
+  "projectShowcaseTaskGroupDone": "Hotovo",
+  "projectShowcaseTaskGroupInProgress": "Probíhá",
+  "projectShowcaseTaskGroupNeedsAttention": "Vyžaduje pozornost",
+  "projectShowcaseTaskGroupToDo": "K vyřízení",
   "projectShowcaseTasksCompleted": "{completed} z {total} úkolů dokončeno",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {

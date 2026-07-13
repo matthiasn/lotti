@@ -79,7 +79,13 @@ class _ProjectDetailPaneState extends State<ProjectDetailPane> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    HealthPanel(record: widget.record),
+                    HealthPanel(
+                      record: widget.record,
+                      categoryColor: colorFromCssHex(
+                        widget.record.category?.color ??
+                            defaultCategoryColorHex,
+                      ),
+                    ),
                     SizedBox(height: tokens.spacing.step5),
                     TextSection(
                       title: context.messages.projectShowcaseDescriptionTitle,

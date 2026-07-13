@@ -62,6 +62,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   be installed directly from the provider edit page.
 
 ### Changed
+- **Redesigned the Projects overview.** The projects tab is no longer a flat
+  grey list. Each category is now its own colour-coded zone — a tinted card with
+  a coloured spine rail and a bold heading in the category's colour — and every
+  project leads with a progress-gauge ring showing its completion percent inside
+  it: the number turns red when the project is overdue or has blocked tasks, the
+  ring shows a green check when it's done, and a not-yet-started project shows a
+  calm "ready" dot instead of a bare "0". Within each category the rows are
+  ordered by what needs you — overdue or blocked projects float to the top,
+  finished ones sink to the bottom and dim — so the page reads top-down as "act
+  on this first". Due dates and blocked work surface as colour- and icon-coded
+  chips (a red warning for overdue, an amber clock for due-soon, a red "N
+  Blocked"), while a quiet category-tinted task count and a normal due date stay
+  recessive. On a wide window the overview now fills the screen as a balanced
+  two-column layout instead of squeezing the list beside a large empty "select a
+  project" pane; the detail pane appears only once you open a project.
 - **Choosing a model for a one-off AI run is calmer.** When you run an AI
   action from the sparkle menu (transcribe a voice note, analyze a photo,
   generate a prompt or cover art) and you have more than one capable model, the

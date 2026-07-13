@@ -7067,6 +7067,18 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get projectShowcaseTaskGroupDone => 'Finalizat';
+
+  @override
+  String get projectShowcaseTaskGroupInProgress => 'În desfășurare';
+
+  @override
+  String get projectShowcaseTaskGroupNeedsAttention => 'Necesită atenție';
+
+  @override
+  String get projectShowcaseTaskGroupToDo => 'De făcut';
+
+  @override
   String projectShowcaseTasksCompleted(int completed, int total) {
     return '$completed/$total sarcini finalizate';
   }

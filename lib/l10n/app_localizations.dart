@@ -11962,6 +11962,30 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{{count} session} other{{count} sessions}}'**
   String projectShowcaseSessionsCount(int count);
 
+  /// No description provided for @projectShowcaseTaskGroupDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get projectShowcaseTaskGroupDone;
+
+  /// No description provided for @projectShowcaseTaskGroupInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get projectShowcaseTaskGroupInProgress;
+
+  /// No description provided for @projectShowcaseTaskGroupNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get projectShowcaseTaskGroupNeedsAttention;
+
+  /// No description provided for @projectShowcaseTaskGroupToDo.
+  ///
+  /// In en, this message translates to:
+  /// **'To do'**
+  String get projectShowcaseTaskGroupToDo;
+
   /// No description provided for @projectShowcaseTasksCompleted.
   ///
   /// In en, this message translates to:

@@ -2955,6 +2955,10 @@
       }
     }
   },
+  "projectShowcaseTaskGroupDone": "Terminé",
+  "projectShowcaseTaskGroupInProgress": "En cours",
+  "projectShowcaseTaskGroupNeedsAttention": "À traiter",
+  "projectShowcaseTaskGroupToDo": "À faire",
   "projectShowcaseTasksCompleted": "{total, plural, one{{completed}/{total} tâche terminée} other{{completed}/{total} tâches terminées}}",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {

@@ -306,36 +306,6 @@ class OutlinedMetaTag extends StatelessWidget {
   }
 }
 
-/// A compact status icon + label used in the project list row.
-class ProjectStatusLabel extends StatelessWidget {
-  const ProjectStatusLabel({required this.status, super.key});
-
-  final ProjectStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _ProjectStatusIcon(
-          status: status,
-          size: tokens.typography.lineHeight.caption,
-          color: showcaseProjectStatusColor(context, status),
-        ),
-        SizedBox(width: tokens.spacing.step1),
-        Text(
-          showcaseProjectStatusLabel(context, status),
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: ShowcasePalette.highText(context),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _ProjectStatusIcon extends StatelessWidget {
   const _ProjectStatusIcon({
     required this.status,

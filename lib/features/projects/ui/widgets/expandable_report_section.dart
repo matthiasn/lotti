@@ -23,6 +23,7 @@ class ExpandableReportSection extends StatefulWidget {
     required this.title,
     required this.body,
     required this.fullContent,
+    this.leadingIcon,
     this.trailingLabel,
     this.initiallyExpanded = false,
     this.nextWakeAt,
@@ -33,6 +34,10 @@ class ExpandableReportSection extends StatefulWidget {
   });
 
   final String title;
+
+  /// Optional leading glyph before the title (e.g. a sparkle marking the block
+  /// as AGENT-authored, to distinguish it from the user's own content).
+  final IconData? leadingIcon;
   final String body;
   final String fullContent;
   final String? trailingLabel;
@@ -148,13 +153,28 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    widget.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                      color: ShowcasePalette.highText(context),
-                    ),
+                  child: Row(
+                    children: [
+                      if (widget.leadingIcon case final leadingIcon?) ...[
+                        Icon(
+                          leadingIcon,
+                          size: tokens.typography.lineHeight.subtitle2,
+                          color: ShowcasePalette.teal(context),
+                        ),
+                        SizedBox(width: tokens.spacing.step2),
+                      ],
+                      Flexible(
+                        child: Text(
+                          widget.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.subtitle.subtitle2
+                              .copyWith(
+                                color: ShowcasePalette.highText(context),
+                              ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Row(

@@ -2955,6 +2955,10 @@
       }
     }
   },
+  "projectShowcaseTaskGroupDone": "Finalizat",
+  "projectShowcaseTaskGroupInProgress": "În desfășurare",
+  "projectShowcaseTaskGroupNeedsAttention": "Necesită atenție",
+  "projectShowcaseTaskGroupToDo": "De făcut",
   "projectShowcaseTasksCompleted": "{completed}/{total} sarcini finalizate",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {

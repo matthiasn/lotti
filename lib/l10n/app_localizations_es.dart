@@ -7068,6 +7068,18 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get projectShowcaseTaskGroupDone => 'Hecho';
+
+  @override
+  String get projectShowcaseTaskGroupInProgress => 'En curso';
+
+  @override
+  String get projectShowcaseTaskGroupNeedsAttention => 'Requiere atención';
+
+  @override
+  String get projectShowcaseTaskGroupToDo => 'Por hacer';
+
+  @override
   String projectShowcaseTasksCompleted(int completed, int total) {
     return '$completed/$total tareas completadas';
   }

@@ -10,9 +10,12 @@ void main() {
   const hoverColor = Color(0xFF112233);
   const selectedColor = Color(0xFF445566);
 
+  const restingColor = Color(0xFF778899);
+
   Future<void> pumpSurface(
     WidgetTester tester, {
     bool selected = false,
+    Color? rowRestingColor,
     VoidCallback? onTap,
     ValueChanged<bool>? onHoverChanged,
     double topOverlap = 0,
@@ -28,6 +31,7 @@ void main() {
                 selected: selected,
                 hoverColor: hoverColor,
                 selectedColor: selectedColor,
+                restingColor: rowRestingColor,
                 padding: const EdgeInsets.all(8),
                 onTap: onTap ?? () {},
                 onHoverChanged: onHoverChanged,
@@ -59,6 +63,24 @@ void main() {
 
     testWidgets('selected row paints the selected color', (tester) async {
       await pumpSurface(tester, selected: true);
+
+      expect(backgroundColor(tester), selectedColor);
+    });
+
+    testWidgets('idle row paints restingColor when one is provided', (
+      tester,
+    ) async {
+      await pumpSurface(tester, rowRestingColor: restingColor);
+
+      expect(backgroundColor(tester), restingColor);
+    });
+
+    testWidgets('selection overrides restingColor', (tester) async {
+      await pumpSurface(
+        tester,
+        selected: true,
+        rowRestingColor: restingColor,
+      );
 
       expect(backgroundColor(tester), selectedColor);
     });

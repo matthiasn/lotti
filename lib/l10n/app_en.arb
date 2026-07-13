@@ -3452,6 +3452,10 @@
       }
     }
   },
+  "projectShowcaseTaskGroupDone": "Done",
+  "projectShowcaseTaskGroupInProgress": "In progress",
+  "projectShowcaseTaskGroupNeedsAttention": "Needs attention",
+  "projectShowcaseTaskGroupToDo": "To do",
   "projectShowcaseTasksCompleted": "{total, plural, one{{completed}/{total} task completed} other{{completed}/{total} tasks completed}}",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {

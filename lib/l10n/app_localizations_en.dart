@@ -6895,6 +6895,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get projectShowcaseTaskGroupDone => 'Done';
+
+  @override
+  String get projectShowcaseTaskGroupInProgress => 'In progress';
+
+  @override
+  String get projectShowcaseTaskGroupNeedsAttention => 'Needs attention';
+
+  @override
+  String get projectShowcaseTaskGroupToDo => 'To do';
+
+  @override
   String projectShowcaseTasksCompleted(int completed, int total) {
     String _temp0 = intl.Intl.pluralLogic(
       total,

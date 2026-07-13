@@ -7021,6 +7021,18 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get projectShowcaseTaskGroupDone => 'Hotovo';
+
+  @override
+  String get projectShowcaseTaskGroupInProgress => 'Probíhá';
+
+  @override
+  String get projectShowcaseTaskGroupNeedsAttention => 'Vyžaduje pozornost';
+
+  @override
+  String get projectShowcaseTaskGroupToDo => 'K vyřízení';
+
+  @override
   String projectShowcaseTasksCompleted(int completed, int total) {
     return '$completed z $total úkolů dokončeno';
   }

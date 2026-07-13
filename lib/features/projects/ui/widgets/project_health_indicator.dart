@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/cards/modern_status_chip.dart';
 
 /// Renders a project's health band as a colored [ModernStatusChip], optionally
@@ -59,33 +59,36 @@ class ProjectHealthIndicator extends StatelessWidget {
   ProjectHealthBand band,
 ) {
   final messages = context.messages;
-  final brightness = Theme.of(context).brightness;
-  final isLight = brightness == Brightness.light;
+  // One traffic-light source: the health band draws from the SAME design-system
+  // alert tokens as the task status dots/pills, so "good green" / "at-risk red"
+  // mean the same hue everywhere on the page. Calm status glyphs (not sentiment
+  // smileys) keep the verdict reading as a status, not an emoji.
+  final alert = context.designTokens.colors.alert;
   return switch (band) {
     ProjectHealthBand.surviving => (
       messages.projectHealthBandSurviving,
-      isLight ? projectStatusDarkBlue : projectStatusBlue,
-      Icons.sentiment_neutral_rounded,
+      alert.info.defaultColor,
+      Icons.trending_flat_rounded,
     ),
     ProjectHealthBand.onTrack => (
       messages.projectHealthBandOnTrack,
-      isLight ? projectStatusDarkGreen : projectStatusGreen,
-      Icons.sentiment_satisfied_alt_rounded,
+      alert.success.defaultColor,
+      Icons.check_circle_outline_rounded,
     ),
     ProjectHealthBand.watch => (
       messages.projectHealthBandWatch,
-      Theme.of(context).colorScheme.tertiary,
+      alert.info.defaultColor,
       Icons.visibility_outlined,
     ),
     ProjectHealthBand.atRisk => (
       messages.projectHealthBandAtRisk,
-      isLight ? projectStatusDarkOrange : projectStatusOrange,
+      alert.warning.defaultColor,
       Icons.warning_amber_rounded,
     ),
     ProjectHealthBand.blocked => (
       messages.projectHealthBandBlocked,
-      isLight ? taskStatusDarkRed : taskStatusRed,
-      Icons.block_outlined,
+      alert.error.defaultColor,
+      Icons.block_rounded,
     ),
   };
 }

@@ -341,7 +341,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        wrapSliver(ProjectTasksSliverPanel(record: record)),
+        wrapSliver(ProjectTasksSliverPanel(record: record, categoryColor: const Color(0xFF4AB6E8))),
       );
       await tester.pump();
 
@@ -365,6 +365,7 @@ void main() {
         wrapSliver(
           ProjectTasksSliverPanel(
             record: record,
+            categoryColor: const Color(0xFF4AB6E8),
             onTaskTap: (s) => tapped = s,
           ),
         ),

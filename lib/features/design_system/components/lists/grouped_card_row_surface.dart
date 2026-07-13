@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 /// The tappable, hover-aware background surface for one row in a grouped card
 /// stack.
 ///
-/// Paints a [selectedColor]/[hoverColor] fill behind [child], reports taps via
-/// [onTap] and hover via [onHoverChanged], and exposes the row as `selected` to
-/// semantics. The background can bleed past the content using [topOverlap]/
+/// Paints a [selectedColor]/[hoverColor] fill behind [child] (falling back to
+/// [restingColor] when neither selected nor hovered, for a persistent
+/// emphasis wash), reports taps via [onTap] and hover via [onHoverChanged], and
+/// exposes the row as `selected` to semantics. The background can bleed past
+/// the content using [topOverlap]/
 /// [bottomOverlap] (to hide seams between connected cards) and be inset/rounded
 /// via [backgroundTopInset]/[backgroundBottomInset]/[backgroundBorderRadius];
 /// [rowKey]/[backgroundKey] expose the row and its background for testing.
@@ -25,6 +27,7 @@ class GroupedCardRowSurface extends StatefulWidget {
     this.backgroundTopInset = 0,
     this.backgroundBottomInset = 0,
     this.backgroundBorderRadius,
+    this.restingColor,
     super.key,
   });
 
@@ -33,6 +36,11 @@ class GroupedCardRowSurface extends StatefulWidget {
   final bool selected;
   final Color hoverColor;
   final Color selectedColor;
+
+  /// Persistent background painted when the row is neither selected nor
+  /// hovered (e.g. a faint attention wash). `null` keeps the row transparent
+  /// at rest, matching the default grouped-card behaviour.
+  final Color? restingColor;
   final EdgeInsetsGeometry padding;
   final VoidCallback onTap;
   final Widget child;
@@ -54,7 +62,7 @@ class _GroupedCardRowSurfaceState extends State<GroupedCardRowSurface> {
   Widget build(BuildContext context) {
     final backgroundColor = widget.selected
         ? widget.selectedColor
-        : (_hovered ? widget.hoverColor : null);
+        : (_hovered ? widget.hoverColor : widget.restingColor);
 
     return Semantics(
       selected: widget.selected,

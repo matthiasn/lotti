@@ -287,24 +287,84 @@ shows no health state instead of falling back to invented local heuristics.
 
 ### Top-Level Projects Tab
 
-The tab renders grouped project rows using the shared overview content and list
-widgets.
+`ProjectsTabPage` owns the search field, the filter modal, navigation into
+project details, and the floating create action that opens the responsive create
+overlay (`showProjectCreateModal`) in place so creation stays inside the tab (an
+optional `categoryId` prefills the category). The grouped project list itself is
+rendered by the shared overview widgets, which carry the redesign described
+below.
 
-Each category group is rendered as one rounded grouped-card surface with:
+**Responsive frame (`projects_tab_page.dart`).** On a desktop-width window
+(`isDesktopLayout`, `MediaQuery.width >= kDesktopBreakpoint`) the layout is
+selection-aware, keyed on `NavService.desktopSelectedProjectId`:
 
-- a shared grouped-card background color
-- a 1 px border using `ShowcasePalette.border(context)`
-- internal row dividers that disappear under the selected or hovered row fill
+- **No selection** → the overview owns the full width (no split, no empty
+  detail pane).
+- **A project is open** → a resizable master/detail split: a fixed-width list
+  pane (`paneWidthControllerProvider`) + `ResizableDivider` + `ProjectDetailsPage`.
 
-It is responsible for:
+On phone widths it is always the single list scaffold; tapping a project beams to
+`/projects/<id>`.
 
-- grouped category sections
-- search
-- filter modal
-- navigation into project details
-- floating create action that opens the responsive create overlay
-  (`showProjectCreateModal`) in place, so creation stays inside the Projects
-  tab; an optional `categoryId` argument prefills the category
+**Overview list (`projects_overview_list.dart`).** `ProjectsOverviewSliverList`
+branches on the sliver's `crossAxisExtent` (so the narrow master pane in the
+split correctly stays single-column):
+
+- below `kWideProjectsOverviewBreakpoint` (1100) the category sections stack in a
+  single column, each width-capped by `ProjectsOverviewContentWidth`;
+- at or above it they flow into **two columns** split by `balanceProjectColumns`,
+  which keeps each category whole and picks the partition that minimises the
+  height difference between the columns (brute-force for a realistic category
+  count, greedy fallback beyond `_maxBruteForceColumns`). The header/search share
+  the same `_wideContentMaxWidth` (1120) frame and left edge as the two-column
+  body, and the inter-column gutter is one spacing step wider than the inter-card
+  vertical gap.
+
+**Category section (`project_list_shared.dart`).** Each
+`ProjectGroupSection` is one rounded grouped card carrying the category's
+identity:
+
+- the card **surface is tinted** with the category hue at low alpha
+  (`ShowcasePalette.categoryCardSurface`) and a thin category-coloured **spine
+  rail** runs down its left edge (a `PositionedDirectional` `ColoredBox` in the
+  card's `Stack`);
+- a 1 px border (`ShowcasePalette.border`) and internal row dividers that
+  disappear under the selected/hovered row fill;
+- a `ProjectGroupHeader` **masthead** — the category name in its own colour at
+  `heading3` (20 px), so the section label out-ranks the 16 px row titles, with a
+  matching coloured icon and the project count clustered beside the name;
+- rows ordered by `_triageSorted` (see below) rather than raw input order.
+
+**Project row (`project_list_row.dart`).** `ProjectRow` leads with a 32 px
+**progress-gauge ring** over a neutral grey track, then a content column (title
+in `subtitle1`; an optional `ProjectStatusPill` shown only for non-default
+states; a `bodySmall` one-liner; a meta-chip row). The ring centre and the row's
+emphasis are driven by the project's health, resolved once per build:
+
+```mermaid
+flowchart TD
+    A[ProjectRow] --> B{status is completed?}
+    B -- yes --> C[green check ring · whole text column dimmed to 0.55]
+    B -- no --> D{projectNeedsAttention?<br/>blocked tasks OR overdue}
+    D -- yes --> E[red arc · red numeral · red attention row wash]
+    D -- no --> F{percent == 0?}
+    F -- yes --> G[category arc · grey 'ready' dot]
+    F -- no --> H[category arc · white numeral]
+```
+
+`projectNeedsAttention` and `projectTriageRank` are the shared source of truth:
+`_triageSorted` orders each section needs-attention → in-progress → not-started →
+completed-last, and the row reuses `projectNeedsAttention` for the red ring/numeral
+and the `restingColor` attention wash, so the order and the per-row accents always
+agree.
+
+The meta-chip row uses two weight tiers (`_ChipTier`): quiet `identity` (the
+category-tinted task count) and `neutral` (a normal/`Ongoing` due date) chips
+keep faint fills and `mediumText` labels, while loud `semantic` chips — overdue
+(warning icon, error), due-soon (clock icon, warning) and blocked (error) — are
+full-tinted. Urgency therefore reads by chip **weight and icon shape**, not hue
+alone, so a warm category colour can't be mistaken for an amber/red health
+signal.
 
 ### Project Detail Pages
 

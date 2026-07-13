@@ -25,7 +25,7 @@ void main() {
       final record = makeTestProjectRecord(healthScore: 85);
 
       await tester.pumpWidget(
-        wrap(HealthPanel(record: record)),
+        wrap(HealthPanel(record: record, categoryColor: const Color(0xFF4AB6E8))),
       );
       await tester.pump();
 
@@ -37,7 +37,7 @@ void main() {
       final record = makeTestProjectRecord(blockedTaskCount: 3);
 
       await tester.pumpWidget(
-        wrap(HealthPanel(record: record)),
+        wrap(HealthPanel(record: record, categoryColor: const Color(0xFF4AB6E8))),
       );
       await tester.pump();
 
@@ -55,7 +55,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        wrap(HealthPanel(record: record)),
+        wrap(HealthPanel(record: record, categoryColor: const Color(0xFF4AB6E8))),
       );
       await tester.pump();
 
@@ -70,7 +70,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        wrap(HealthPanel(record: record)),
+        wrap(HealthPanel(record: record, categoryColor: const Color(0xFF4AB6E8))),
       );
       await tester.pump();
 
@@ -82,7 +82,7 @@ void main() {
       final record = makeTestProjectRecord();
 
       await tester.pumpWidget(
-        wrap(HealthPanel(record: record)),
+        wrap(HealthPanel(record: record, categoryColor: const Color(0xFF4AB6E8))),
       );
       await tester.pump();
 

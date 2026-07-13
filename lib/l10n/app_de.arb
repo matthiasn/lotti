@@ -2955,6 +2955,10 @@
       }
     }
   },
+  "projectShowcaseTaskGroupDone": "Erledigt",
+  "projectShowcaseTaskGroupInProgress": "In Arbeit",
+  "projectShowcaseTaskGroupNeedsAttention": "Braucht Aufmerksamkeit",
+  "projectShowcaseTaskGroupToDo": "Zu erledigen",
   "projectShowcaseTasksCompleted": "{completed}/{total} Aufgaben abgeschlossen",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {

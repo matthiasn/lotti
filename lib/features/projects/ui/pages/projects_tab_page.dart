@@ -4,7 +4,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
-import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -74,36 +73,41 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
         decoration: BoxDecoration(
           color: ShowcasePalette.page(context),
         ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: paneWidths.listPaneWidth,
-              child: _ProjectsListScaffold(
+        child: ValueListenableBuilder<String?>(
+          valueListenable: getIt<NavService>().desktopSelectedProjectId,
+          builder: (context, selectedProjectId, _) {
+            // With nothing selected the overview owns the full width and
+            // renders as a centered reading column (capped by
+            // `ProjectsOverviewContentWidth`), rather than squeezing the list
+            // into a narrow pane beside an empty "select a project" void.
+            if (selectedProjectId == null) {
+              return _ProjectsListScaffold(
                 scrollController: _scrollController,
-              ),
-            ),
-            ResizableDivider(
-              onDrag: (delta) => ref
-                  .read(paneWidthControllerProvider.notifier)
-                  .updateListPaneWidth(delta),
-            ),
-            Expanded(
-              child: ValueListenableBuilder<String?>(
-                valueListenable: getIt<NavService>().desktopSelectedProjectId,
-                builder: (context, selectedProjectId, _) {
-                  if (selectedProjectId != null) {
-                    return ProjectDetailsPage(
-                      key: ValueKey(selectedProjectId),
-                      projectId: selectedProjectId,
-                    );
-                  }
-                  return DesktopDetailEmptyState(
-                    message: context.messages.desktopEmptyStateSelectProject,
-                  );
-                },
-              ),
-            ),
-          ],
+              );
+            }
+            // A project is open: resizable master list + detail split.
+            return Row(
+              children: [
+                SizedBox(
+                  width: paneWidths.listPaneWidth,
+                  child: _ProjectsListScaffold(
+                    scrollController: _scrollController,
+                  ),
+                ),
+                ResizableDivider(
+                  onDrag: (delta) => ref
+                      .read(paneWidthControllerProvider.notifier)
+                      .updateListPaneWidth(delta),
+                ),
+                Expanded(
+                  child: ProjectDetailsPage(
+                    key: ValueKey(selectedProjectId),
+                    projectId: selectedProjectId,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       );
     }

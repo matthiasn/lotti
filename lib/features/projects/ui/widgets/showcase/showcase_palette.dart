@@ -20,6 +20,41 @@ class ShowcasePalette {
   static Color groupedCardSurface(BuildContext context) =>
       context.designTokens.colors.background.level02;
 
+  /// The grouped-card surface tinted with a category's [color] at a very low
+  /// alpha, so each category section reads as its own coloured zone (not an
+  /// identical grey slab) while staying calm on the dark theme.
+  static Color categoryCardSurface(BuildContext context, Color color) =>
+      Color.alphaBlend(
+        color.withValues(alpha: 0.08),
+        groupedCardSurface(context),
+      );
+
+  /// A much fainter category tint for surfaces where a whole page shares ONE
+  /// category (the project detail pane). A 0.08 wash on every card there reads
+  /// as a flat colour fill; this barely-there warmth keeps the project's
+  /// identity without colouring the page.
+  static Color categoryCardSurfaceFaint(BuildContext context, Color color) =>
+      Color.alphaBlend(
+        color.withValues(alpha: 0.03),
+        groupedCardSurface(context),
+      );
+
+  /// A faint teal wash marking an AGENT-authored surface (the AI report card),
+  /// so AI-generated content reads as visually distinct from the user's own
+  /// project/task content (which carries the category tint).
+  static Color agentCardSurface(BuildContext context) => Color.alphaBlend(
+    teal(context).withValues(alpha: 0.06),
+    groupedCardSurface(context),
+  );
+
+  /// A faint attention wash (alert error at low alpha) used as the resting
+  /// background of rows that need attention, so the hotspot reads before any
+  /// text does.
+  static Color attentionRowWash(BuildContext context) =>
+      context.designTokens.colors.alert.error.defaultColor.withValues(
+        alpha: 0.1,
+      );
+
   static Color healthSurface(BuildContext context) =>
       context.designTokens.colors.background.alternative01;
 

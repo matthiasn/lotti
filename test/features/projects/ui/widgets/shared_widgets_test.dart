@@ -306,53 +306,6 @@ void main() {
     });
   });
 
-  group('ProjectStatusLabel', () {
-    testWidgets('renders icon and text for each status', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          ProjectStatusLabel(
-            status: ProjectStatus.onHold(
-              id: 'h',
-              createdAt: DateTime(2026),
-              utcOffset: 0,
-              reason: 'waiting',
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('On Hold'), findsOneWidget);
-      expect(
-        find.byIcon(Icons.pause_circle_outline_rounded),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('uses the Figma body-small status typography', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        wrap(
-          ProjectStatusLabel(
-            status: ProjectStatus.active(
-              id: 'a',
-              createdAt: DateTime(2026),
-              utcOffset: 0,
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      final label = tester.widget<Text>(find.text('Active'));
-
-      expect(label.style?.fontSize, 14);
-      expect(label.style?.fontWeight, FontWeight.w400);
-      expect(label.style?.height, closeTo(1.4286, 0.0001));
-    });
-  });
-
   group('TaskStatePill', () {
     testWidgets('renders localised label for open task', (tester) async {
       await tester.pumpWidget(
@@ -1261,10 +1214,10 @@ Longer report content.
     });
   });
 
-  group('_ProjectStatusIcon via ProjectStatusLabel', () {
+  group('_ProjectStatusIcon via ProjectStatusPill', () {
     testWidgets('renders SVG icon for active status', (tester) async {
       await tester.pumpWidget(
-        wrap(ProjectStatusLabel(status: _activeStatus())),
+        wrap(ProjectStatusPill(status: _activeStatus())),
       );
       await tester.pump();
 
@@ -1274,7 +1227,7 @@ Longer report content.
 
     testWidgets('renders SVG icon for completed status', (tester) async {
       await tester.pumpWidget(
-        wrap(ProjectStatusLabel(status: _completedStatus())),
+        wrap(ProjectStatusPill(status: _completedStatus())),
       );
       await tester.pump();
 
@@ -1284,7 +1237,7 @@ Longer report content.
 
     testWidgets('renders SVG icon for archived status', (tester) async {
       await tester.pumpWidget(
-        wrap(ProjectStatusLabel(status: _archivedStatus())),
+        wrap(ProjectStatusPill(status: _archivedStatus())),
       );
       await tester.pump();
 
@@ -1294,7 +1247,7 @@ Longer report content.
 
     testWidgets('renders Icon fallback for onHold status', (tester) async {
       await tester.pumpWidget(
-        wrap(ProjectStatusLabel(status: _onHoldStatus())),
+        wrap(ProjectStatusPill(status: _onHoldStatus())),
       );
       await tester.pump();
 
@@ -1308,7 +1261,7 @@ Longer report content.
 
     testWidgets('renders Icon fallback for open status', (tester) async {
       await tester.pumpWidget(
-        wrap(ProjectStatusLabel(status: _openStatus())),
+        wrap(ProjectStatusPill(status: _openStatus())),
       );
       await tester.pump();
 

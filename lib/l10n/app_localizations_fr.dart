@@ -7077,6 +7077,18 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get projectShowcaseTaskGroupDone => 'Terminé';
+
+  @override
+  String get projectShowcaseTaskGroupInProgress => 'En cours';
+
+  @override
+  String get projectShowcaseTaskGroupNeedsAttention => 'À traiter';
+
+  @override
+  String get projectShowcaseTaskGroupToDo => 'À faire';
+
+  @override
   String projectShowcaseTasksCompleted(int completed, int total) {
     String _temp0 = intl.Intl.pluralLogic(
       total,
