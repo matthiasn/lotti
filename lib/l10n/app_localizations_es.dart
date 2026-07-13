@@ -2416,7 +2416,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get audioRecordingListening => 'Escuchando...';
 
   @override
+  String get audioRecordingPause => 'PAUSAR';
+
+  @override
   String get audioRecordingRealtime => 'Transcripción en vivo';
+
+  @override
+  String get audioRecordingResume => 'REANUDAR';
 
   @override
   String get audioRecordings => 'Grabaciones de audio';

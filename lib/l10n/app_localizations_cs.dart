@@ -2416,7 +2416,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordingListening => 'Naslouchám...';
 
   @override
+  String get audioRecordingPause => 'POZASTAVIT';
+
+  @override
   String get audioRecordingRealtime => 'Živý přepis';
+
+  @override
+  String get audioRecordingResume => 'POKRAČOVAT';
 
   @override
   String get audioRecordings => 'Audiozáznamy';

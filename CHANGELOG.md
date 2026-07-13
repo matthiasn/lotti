@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1042]
+### Added
+- **Pause and resume audio recordings mid-capture.** The recording sheet now
+  has a pause control next to stop and cancel, so you can stop talking to
+  gather your thoughts and pick the recording back up without splitting it into
+  separate entries. While paused, the elapsed timer and level meter freeze;
+  resuming continues the same recording. (Available for standard recordings;
+  live-transcription recordings are unaffected.)
+
 ## [0.9.1041]
 ### Changed
 - **Task details stay steady while AI results and accepted suggestions land.**

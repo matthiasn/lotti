@@ -2384,7 +2384,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get audioRecordingListening => 'Listening...';
 
   @override
+  String get audioRecordingPause => 'PAUSE';
+
+  @override
   String get audioRecordingRealtime => 'Live Transcription';
+
+  @override
+  String get audioRecordingResume => 'RESUME';
 
   @override
   String get audioRecordings => 'Audio Recordings';

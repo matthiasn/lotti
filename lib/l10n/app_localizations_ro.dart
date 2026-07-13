@@ -2427,7 +2427,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordingListening => 'Se ascultă...';
 
   @override
+  String get audioRecordingPause => 'PAUZĂ';
+
+  @override
   String get audioRecordingRealtime => 'Transcriere în direct';
+
+  @override
+  String get audioRecordingResume => 'RELUARE';
 
   @override
   String get audioRecordings => 'Înregistrări audio';

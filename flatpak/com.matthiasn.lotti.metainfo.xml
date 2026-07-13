@@ -32,6 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1042" date="2026-07-13">
+      <description>
+          <p>Audio recordings can now be paused and resumed mid-capture from the recording sheet, next to stop and cancel, so you can pause a brain dump and pick it back up without splitting it into separate entries. While paused the elapsed timer and level meter freeze. Available for standard recordings; live-transcription recordings are unaffected.</p>
+      </description>
+    </release>
     <release version="0.9.1041" date="2026-07-13">
       <description>
           <p>Task details now stay steady while AI results and accepted suggestions land. Completed audio transcripts and image analyses expand smoothly instead of snapping linked entries taller, content above the viewport no longer yanks the passage being read, and checklist items created from accepted AI suggestions reveal progressively while the suggestion card remains anchored.</p>

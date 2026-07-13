@@ -2415,7 +2415,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get audioRecordingListening => 'Hört zu...';
 
   @override
+  String get audioRecordingPause => 'PAUSE';
+
+  @override
   String get audioRecordingRealtime => 'Live-Transkription';
+
+  @override
+  String get audioRecordingResume => 'FORTSETZEN';
 
   @override
   String get audioRecordings => 'Audioaufnahmen';

@@ -2429,7 +2429,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get audioRecordingListening => 'Écoute en cours...';
 
   @override
+  String get audioRecordingPause => 'PAUSE';
+
+  @override
   String get audioRecordingRealtime => 'Transcription en direct';
+
+  @override
+  String get audioRecordingResume => 'REPRENDRE';
 
   @override
   String get audioRecordings => 'Enregistrements audio';

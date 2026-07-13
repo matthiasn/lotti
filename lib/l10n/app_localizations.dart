@@ -4165,11 +4165,23 @@ abstract class AppLocalizations {
   /// **'Listening...'**
   String get audioRecordingListening;
 
+  /// No description provided for @audioRecordingPause.
+  ///
+  /// In en, this message translates to:
+  /// **'PAUSE'**
+  String get audioRecordingPause;
+
   /// No description provided for @audioRecordingRealtime.
   ///
   /// In en, this message translates to:
   /// **'Live Transcription'**
   String get audioRecordingRealtime;
+
+  /// No description provided for @audioRecordingResume.
+  ///
+  /// In en, this message translates to:
+  /// **'RESUME'**
+  String get audioRecordingResume;
 
   /// No description provided for @audioRecordings.
   ///
