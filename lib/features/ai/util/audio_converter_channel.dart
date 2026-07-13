@@ -60,11 +60,13 @@ class AudioConverterChannel {
   }) async {
     try {
       await AudioDecoder.convertToWav(inputPath, outputPath);
-    } catch (error) {
-      getIt<DomainLogger>().log(
+    } catch (error, stackTrace) {
+      getIt<DomainLogger>().error(
         LogDomain.speech,
-        'Native M4A-to-WAV conversion failed: $error',
+        error,
+        stackTrace: stackTrace,
         subDomain: 'convertM4aToWav',
+        message: 'Native M4A-to-WAV conversion failed',
       );
       rethrow;
     }

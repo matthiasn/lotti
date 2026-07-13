@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -1137,6 +1139,58 @@ void main() {
           ),
         ),
       );
+    });
+
+    test('transcribeChatAudio shares its timeout across both stages', () {
+      fakeAsync((async) {
+        final startedAt = DateTime(2024, 3, 15, 12);
+        var currentTime = startedAt;
+        final repository = MeliousInferenceRepository(
+          clockSource: Clock(() => currentTime),
+          httpClient: MockClient((_) => Completer<http.Response>().future),
+          m4aToWavConverter: (_) async {
+            currentTime = startedAt.add(const Duration(seconds: 40));
+            return base64Decode('UklGRgAAAABXQVZF');
+          },
+        );
+        Object? failure;
+        var completed = false;
+
+        repository
+            .transcribeChatAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              prompt: 'Transcribe.',
+            )
+            .toList()
+            .then<void>(
+              (_) {
+                completed = true;
+              },
+              onError: (Object error, StackTrace _) {
+                failure = error;
+                completed = true;
+              },
+            );
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 19));
+        expect(completed, isFalse);
+
+        async.elapse(const Duration(seconds: 1));
+        expect(completed, isTrue);
+        expect(
+          failure,
+          isA<TranscriptionException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('timed out'), contains('request melious-audio-')),
+          ),
+        );
+        repository.close();
+      });
     });
 
     test('transcribeChatAudio prefixes conversion status detail', () {

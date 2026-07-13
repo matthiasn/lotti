@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -39,10 +40,12 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     CloudInferenceRequestHelpers? helpers,
     MeliousChatCompletionStreamFactory? chatCompletionStreamFactory,
     MeliousM4aToWavConverter? m4aToWavConverter,
+    Clock? clockSource,
   }) : _helpers = helpers ?? const CloudInferenceRequestHelpers(),
        _chatCompletionStreamFactory =
            chatCompletionStreamFactory ?? _createChatCompletionStream,
-       _m4aToWavConverter = m4aToWavConverter ?? convertM4aBytesToTemporaryWav;
+       _m4aToWavConverter = m4aToWavConverter ?? convertM4aBytesToTemporaryWav,
+       _clock = clockSource ?? clock;
 
   static const _providerName = 'MeliousInferenceRepository';
   static const _modelListTimeout = Duration(seconds: 15);
@@ -63,6 +66,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   final CloudInferenceRequestHelpers _helpers;
   final MeliousChatCompletionStreamFactory _chatCompletionStreamFactory;
   final MeliousM4aToWavConverter _m4aToWavConverter;
+  final Clock _clock;
 
   /// Fetches the live Melious model catalog and maps `_meta` capability data
   /// into the app's [KnownModel] shape.
@@ -677,10 +681,18 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     final requestId = 'melious-audio-${const Uuid().v4()}';
 
     try {
+      final deadline = _clock.now().add(timeout);
+      Duration remainingTimeout() {
+        final remaining = deadline.difference(_clock.now());
+        return remaining.isNegative ? Duration.zero : remaining;
+      }
+
       final sourceBytes = base64Decode(audioBase64);
       final wavBytes = _isWavAudio(sourceBytes)
           ? sourceBytes
-          : await _m4aToWavConverter(sourceBytes).timeout(timeout);
+          : await _m4aToWavConverter(
+              sourceBytes,
+            ).timeout(remainingTimeout());
       final messageContent = [
         {
           'type': 'input_audio',
@@ -716,7 +728,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
             },
             body: jsonEncode(body),
           )
-          .timeout(timeout);
+          .timeout(remainingTimeout());
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw TranscriptionException(
