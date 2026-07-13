@@ -45,12 +45,14 @@ class _ChatStreamProbe {
 }
 
 http.Response _voxtralChatResponse({
-  String? model = 'voxtral-small-24b-2507',
+  Object? id = 'chatcmpl-voxtral',
+  Object? model = 'voxtral-small-24b-2507',
+  Object? created = 123,
 }) => http.Response(
   jsonEncode({
-    'id': 'chatcmpl-voxtral',
+    'id': ?id,
     'model': ?model,
-    'created': 123,
+    'created': ?created,
     'choices': [
       {
         'index': 0,
@@ -925,7 +927,11 @@ void main() {
         final repository = MeliousInferenceRepository(
           httpClient: MockClient((request) async {
             captured = request;
-            return _voxtralChatResponse(model: null);
+            return _voxtralChatResponse(
+              id: 42,
+              model: 42,
+              created: 'not-an-integer',
+            );
           }),
           m4aToWavConverter: (_) async => wavBytes,
         );
@@ -942,7 +948,8 @@ void main() {
             )
             .toList();
 
-        expect(chunks.single.id, 'chatcmpl-voxtral');
+        expect(chunks.single.id, startsWith('melious-audio-'));
+        expect(chunks.single.created, 0);
         expect(chunks.single.model, 'voxtral-small-24b-2507');
         expect(captured?.url.toString(), '$baseUrl/chat/completions');
         final body = jsonDecode(captured!.body) as Map<String, dynamic>;

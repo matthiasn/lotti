@@ -794,9 +794,12 @@ $draft
           provider: _providerName,
         );
       }
+      final responseId = decoded['id'];
+      final responseCreated = decoded['created'];
+      final responseModel = decoded['model'];
 
       yield CreateChatCompletionStreamResponse(
-        id: decoded['id'] as String? ?? requestId,
+        id: responseId is String ? responseId : requestId,
         choices: [
           ChatCompletionStreamResponseChoice(
             delta: ChatCompletionStreamResponseDelta(content: content),
@@ -805,8 +808,8 @@ $draft
           ),
         ],
         object: 'chat.completion.chunk',
-        created: decoded['created'] as int? ?? 0,
-        model: decoded['model'] as String? ?? normalizedModel,
+        created: responseCreated is int ? responseCreated : 0,
+        model: responseModel is String ? responseModel : normalizedModel,
         usage: parseCompletionUsage(decoded['usage']),
       );
     } on TranscriptionException catch (error) {
