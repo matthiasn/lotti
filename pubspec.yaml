@@ -20,6 +20,7 @@ environment:
 
 dependencies:
   async: ^2.13.0
+  audio_decoder: ^0.8.1
   beamer: ^1.5.2
   cached_network_image: ^3.2.0
   calendar_view: ^2.0.0

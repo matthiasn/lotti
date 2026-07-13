@@ -6,6 +6,7 @@
 
 #include "generated_plugin_registrant.h"
 
+#include <audio_decoder/audio_decoder_plugin_c_api.h>
 #include <audioplayers_windows/audioplayers_windows_plugin.h>
 #include <connectivity_plus/connectivity_plus_windows_plugin.h>
 #include <file_selector_windows/file_selector_windows.h>
@@ -27,6 +28,8 @@
 #include <window_manager/window_manager_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
+  AudioDecoderPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("AudioDecoderPluginCApi"));
   AudioplayersWindowsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("AudioplayersWindowsPlugin"));
   ConnectivityPlusWindowsPluginRegisterWithRegistrar(

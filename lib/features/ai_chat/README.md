@@ -288,8 +288,10 @@ is treated as a failure rather than a successful empty dictation.
   parameter can receive the category speech dictionary terms
 - then any configured Mistral audio model
 - then Melious Voxtral models: a temporary WAV copy goes to contextual
-  `/chat/completions` while the M4A master remains untouched; conversion
-  failures use M4A transcription followed by a text-only context pass
+  `/chat/completions` while the M4A master remains untouched; native conversion
+  covers Android, iOS, Linux, macOS, and Windows without bundled FFmpeg, and a
+  decoder failure is surfaced because fallback transcription would lose task
+  context during recognition
 - then Melious Whisper/STT models through `/audio/transcriptions`
 - then local MLX Qwen3-ASR models, which receive the same speech dictionary as
   prompt context
