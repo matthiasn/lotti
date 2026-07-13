@@ -30,6 +30,7 @@ import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
+import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -415,7 +416,12 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
         // defining value before any prose. For audio this also puts the player
         // above its transcript, matching the collapsible layout.
         ?detailSection,
-        if (!shouldHideEditor) _bodyEditor(itemId),
+        if (!shouldHideEditor)
+          _bodyEditor(
+            itemId,
+            stabilizeGeneratedText:
+                item is JournalImage || item is JournalAudio,
+          ),
       ];
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,7 +447,11 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       if (item is JournalImage) EntryImageWidget(item),
       if (item is JournalAudio && detailSection != null) detailSection,
       if (hasLabels) EntryLabelsDisplay(entryId: itemId),
-      if (!shouldHideEditor) _bodyEditor(itemId),
+      if (!shouldHideEditor)
+        _bodyEditor(
+          itemId,
+          stabilizeGeneratedText: item is JournalImage || item is JournalAudio,
+        ),
     ];
     final expandedContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,8 +490,22 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
   // shifted the body off the shared content gutter. With no margin the read-only
   // text and the (now outlined) editing panel both sit flush on the gutter,
   // aligned with the timestamp/labels and symmetric within the card.
-  Widget _bodyEditor(String itemId) =>
-      EditorWidget(entryId: itemId, margin: EdgeInsets.zero);
+  Widget _bodyEditor(
+    String itemId, {
+    required bool stabilizeGeneratedText,
+  }) {
+    final editor = EditorWidget(entryId: itemId, margin: EdgeInsets.zero);
+    if (!stabilizeGeneratedText) return editor;
+
+    // Transcription and image analysis update the source entry's `entryText`
+    // directly rather than creating a nested AI response. Keep this editor in
+    // the same viewport-stable size path as nested responses so a result above
+    // the task viewport cannot displace the passage currently being read.
+    return ViewportStableAnimatedSize(
+      key: ValueKey('ai-generated-entry-text-size-$itemId'),
+      child: editor,
+    );
+  }
 
   /// Interleaves ONE shared vertical-rhythm step (`cardItemSpacing`) *between*
   /// stacked body sections — but not before the first one. The header row is

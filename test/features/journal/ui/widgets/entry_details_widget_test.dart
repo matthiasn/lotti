@@ -23,6 +23,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
@@ -32,6 +33,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
+import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -1158,6 +1160,59 @@ void main() {
         await tester.pump();
 
         expect(find.byType(EntryDetailsContent), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'JournalImage analysis text opts into task viewport stabilization',
+      (tester) async {
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  testImageEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testImageEntry)),
+              ],
+              child: SizedBox(
+                height: 400,
+                child: TaskScrollStabilityScope(
+                  controller: scrollController,
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    child: EntryDetailsContent(
+                      testImageEntry.meta.id,
+                      linkedFrom: testTask,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final stabilizedText = find.byKey(
+          ValueKey('ai-generated-entry-text-size-${testImageEntry.meta.id}'),
+        );
+        expect(stabilizedText, findsOneWidget);
+        expect(
+          find.descendant(
+            of: stabilizedText,
+            matching: find.byType(AnimatedSize),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: stabilizedText,
+            matching: find.byType(EditorWidget),
+          ),
+          findsOneWidget,
+        );
       },
     );
 

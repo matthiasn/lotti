@@ -699,14 +699,15 @@ Examples:
 
 That separation is deliberate. The task feature owns the task experience; it should not become a secret duplicate of the AI feature.
 
-`TaskDetailsPage` wraps its scroll view in `TaskScrollStabilityScope`. Nested AI
-response cards opt into `ViewportStableAnimatedSize` only inside that scope:
-completed transcripts and image analyses interpolate to their new height. If
-the changing response is visible, its top and the page scroll offset stay fixed
-while it unfolds downward. If the response is fully above the viewport, a
-frame-synchronous `ScrollAnchor` holds its bottom edge so the content currently
-being read does not move. User scrolling cancels the hold immediately, and the
-standalone journal-entry detail page remains outside the scope.
+`TaskDetailsPage` wraps its scroll view in `TaskScrollStabilityScope`. Both
+nested AI response cards and the source-entry editors that receive audio
+transcripts or image-analysis markdown opt into `ViewportStableAnimatedSize`
+only inside that scope. If the changing region is visible, its top and the page
+scroll offset stay fixed while it unfolds downward. If the region is fully
+above the viewport, a frame-synchronous `ScrollAnchor` holds its bottom edge so
+the content currently being read does not move. User scrolling cancels the hold
+immediately, and the standalone journal-entry detail page remains outside the
+scope.
 
 ## Current Constraints
 
