@@ -5611,6 +5611,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileTranscription => 'Transcription';
 
   @override
+  String get inferenceProfileUnavailable =>
+      'Inferenční profil není k dispozici';
+
+  @override
   String get inputDataTypeAudioFilesDescription =>
       'Použijte audio soubory jako vstup';
 

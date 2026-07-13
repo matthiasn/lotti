@@ -101,10 +101,14 @@ class SettingsProfilePickerField extends ConsumerWidget {
 
     return SettingsPickerField(
       label: context.messages.agentDefaultProfileLabel,
-      valueText: selected?.name,
+      valueText:
+          selected?.name ??
+          (selectedProfileId != null
+              ? context.messages.inferenceProfileUnavailable
+              : null),
       hintText: hintText ?? context.messages.inferenceProfileSelectProfile,
-      enabled: filtered.isNotEmpty,
-      onClear: selected != null ? () => onProfileSelected(null) : null,
+      enabled: filtered.isNotEmpty || selectedProfileId != null,
+      onClear: selectedProfileId != null ? () => onProfileSelected(null) : null,
       onTap: () {
         unawaited(
           _showProfilePicker(

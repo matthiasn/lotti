@@ -337,6 +337,13 @@ void main() {
   testWidgets('category without a default persists visible no-setup state', (
     tester,
   ) async {
+    final saveCompleter = Completer<void>();
+    when(
+      () => service.updateAgentInferenceSetup(
+        agentId: any(named: 'agentId'),
+        setup: any(named: 'setup'),
+      ),
+    ).thenAnswer((_) => saveCompleter.future);
     final task = makeTestTask(id: 'task-1').copyWith(
       meta: makeTestTask(id: 'task-1').meta.copyWith(categoryId: 'category-1'),
     );
@@ -353,6 +360,12 @@ void main() {
     await tester.tap(find.text('Copy category default'));
     await tester.pump();
 
+    expect(find.text('Agent setup'), findsOneWidget);
+
+    saveCompleter.complete();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
     final setup =
         verify(
               () => service.updateAgentInferenceSetup(
@@ -364,6 +377,7 @@ void main() {
     expect(setup.mode, AgentInferenceSetupMode.disabled);
     expect(setup.origin, AgentInferenceSetupOrigin.categorySnapshot);
     expect(setup.originEntityId, 'category-1');
+    expect(find.text('Agent setup'), findsNothing);
   });
 
   testWidgets('category default copies its profile and model snapshot', (

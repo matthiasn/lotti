@@ -5652,6 +5652,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inferenceProfileTranscription => 'Transcriere';
 
   @override
+  String get inferenceProfileUnavailable => 'Profil de inferență indisponibil';
+
+  @override
   String get inputDataTypeAudioFilesDescription =>
       'Folosește fișiere audio ca intrare';
 

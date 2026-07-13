@@ -9588,6 +9588,12 @@ abstract class AppLocalizations {
   /// **'Transcription'**
   String get inferenceProfileTranscription;
 
+  /// No description provided for @inferenceProfileUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Inference profile unavailable'**
+  String get inferenceProfileUnavailable;
+
   /// No description provided for @inputDataTypeAudioFilesDescription.
   ///
   /// In en, this message translates to:

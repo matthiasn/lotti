@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/settings/settings_picker_field.dart';
 
 import '../../../test_helper.dart';
 import '../test_utils.dart';
@@ -334,6 +335,39 @@ void main() {
       // The kit field renders the clear affordance as a close icon.
       await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pumpAndSettle();
+
+      expect(clearedTo, isNull);
+    });
+
+    testWidgets('dangling selection stays enabled and can be cleared', (
+      tester,
+    ) async {
+      String? clearedTo = 'not-cleared';
+
+      await tester.pumpWidget(
+        _buildSettingsField(
+          selectedProfileId: 'missing-profile',
+          onProfileSelected: (id) => clearedTo = id,
+          profiles: [],
+        ),
+      );
+      await tester.pump();
+
+      final context = tester.element(
+        find.byType(SettingsProfilePickerField),
+      );
+      final field = tester.widget<SettingsPickerField>(
+        find.byType(SettingsPickerField),
+      );
+      expect(field.enabled, isTrue);
+      expect(
+        find.text(context.messages.inferenceProfileUnavailable),
+        findsOneWidget,
+      );
+      expect(find.text('missing-profile'), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pump();
 
       expect(clearedTo, isNull);
     });

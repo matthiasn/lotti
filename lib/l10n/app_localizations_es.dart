@@ -5637,6 +5637,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inferenceProfileTranscription => 'Transcripción';
 
   @override
+  String get inferenceProfileUnavailable =>
+      'Perfil de inferencia no disponible';
+
+  @override
   String get inputDataTypeAudioFilesDescription =>
       'Usar archivos de audio como entrada';
 

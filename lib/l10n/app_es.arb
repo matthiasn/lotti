@@ -2408,6 +2408,7 @@
   "inferenceProfileThinkingHighEnd": "Pensamiento (alta gama)",
   "inferenceProfileThinkingRequired": "Se requiere un modelo de pensamiento",
   "inferenceProfileTranscription": "Transcripción",
+  "inferenceProfileUnavailable": "Perfil de inferencia no disponible",
   "inputDataTypeAudioFilesDescription": "Usar archivos de audio como entrada",
   "inputDataTypeAudioFilesName": "Archivos de audio",
   "inputDataTypeImagesDescription": "Usar imágenes como entrada",

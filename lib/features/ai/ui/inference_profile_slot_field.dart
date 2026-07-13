@@ -60,7 +60,7 @@ class ModelSlotField extends ConsumerWidget {
               ? context.messages.inferenceProfileModelUnavailable
               : null),
       hintText: context.messages.inferenceProfileSelectModel,
-      enabled: filteredModels.isNotEmpty,
+      enabled: filteredModels.isNotEmpty || modelId != null,
       onClear: modelId != null ? () => onModelSelected(null) : null,
       onTap: () => unawaited(
         _showModelPicker(

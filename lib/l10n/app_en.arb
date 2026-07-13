@@ -2912,6 +2912,7 @@
   "inferenceProfileThinkingHighEnd": "Thinking (High-End)",
   "inferenceProfileThinkingRequired": "A thinking model is required",
   "inferenceProfileTranscription": "Transcription",
+  "inferenceProfileUnavailable": "Inference profile unavailable",
   "inputDataTypeAudioFilesDescription": "Use audio files as input",
   "inputDataTypeAudioFilesName": "Audio Files",
   "inputDataTypeImagesDescription": "Use images as input",

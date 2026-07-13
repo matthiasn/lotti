@@ -10,9 +10,7 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 ///
 /// The modal returns the selected profile id. Callers decide whether that
 /// selection updates a draft, advances a wizard, or persists immediately.
-class InferenceProfilePickerModal {
-  const InferenceProfilePickerModal._();
-
+abstract final class InferenceProfilePickerModal {
   static Future<String?> show({
     required BuildContext context,
     required List<AiConfigInferenceProfile> profiles,

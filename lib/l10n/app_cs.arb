@@ -2200,6 +2200,7 @@
       }
     }
   },
+  "inferenceProfileUnavailable": "Inferenční profil není k dispozici",
   "inputDataTypeAudioFilesDescription": "Použijte audio soubory jako vstup",
   "inputDataTypeAudioFilesName": "Audio soubory",
   "inputDataTypeImagesDescription": "Použijte obrázky jako vstup",

@@ -2408,6 +2408,7 @@
   "inferenceProfileThinkingHighEnd": "Gândire (nivel înalt)",
   "inferenceProfileThinkingRequired": "Este necesar un model de gândire",
   "inferenceProfileTranscription": "Transcriere",
+  "inferenceProfileUnavailable": "Profil de inferență indisponibil",
   "inputDataTypeAudioFilesDescription": "Folosește fișiere audio ca intrare",
   "inputDataTypeAudioFilesName": "Fișiere audio",
   "inputDataTypeImagesDescription": "Folosește imagini ca intrare",

@@ -503,6 +503,10 @@ void main() {
           find.text('Model unavailable — its provider may have been removed'),
           findsOneWidget,
         );
+        final field = tester.widget<SettingsPickerField>(
+          _pickerField('Thinking *'),
+        );
+        expect(field.enabled, isTrue);
 
         // Clearing the slot drops the dangling id and reveals the
         // placeholder again.

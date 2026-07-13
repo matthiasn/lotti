@@ -157,7 +157,10 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
           ),
         );
     if (model == null) {
-      await _persist(action);
+      final persisted = await _persist(action);
+      if (persisted && mounted) {
+        Navigator.of(context).pop();
+      }
       return;
     }
     final successTitle = messages.taskAgentSetupChangedToast(
