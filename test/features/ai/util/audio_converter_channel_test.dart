@@ -12,6 +12,8 @@ import '../../../widget_test_utils.dart';
 
 class _FakeDomainLogger extends Fake implements DomainLogger {
   String? lastEvent;
+  Object? lastError;
+  StackTrace? lastStackTrace;
 
   @override
   void log(
@@ -31,6 +33,8 @@ class _FakeDomainLogger extends Fake implements DomainLogger {
     String? subDomain,
     String? message,
   }) {
+    lastError = error;
+    lastStackTrace = stackTrace;
     lastEvent = message ?? '$error';
   }
 }
@@ -118,7 +122,16 @@ void main() {
           ),
         ),
       );
-      expect(fakeLogging.lastEvent, contains('AAC decoder unavailable'));
+      expect(fakeLogging.lastEvent, 'Native M4A-to-WAV conversion failed');
+      expect(
+        fakeLogging.lastError,
+        isA<AudioConversionException>().having(
+          (error) => error.message,
+          'message',
+          'AAC decoder unavailable',
+        ),
+      );
+      expect(fakeLogging.lastStackTrace, isNotNull);
     });
 
     test('logs and rethrows unexpected platform failures', () async {
@@ -129,7 +142,9 @@ void main() {
         ),
         throwsA(isA<MissingPluginException>()),
       );
-      expect(fakeLogging.lastEvent, contains('MissingPluginException'));
+      expect(fakeLogging.lastEvent, 'Native M4A-to-WAV conversion failed');
+      expect(fakeLogging.lastError, isA<MissingPluginException>());
+      expect(fakeLogging.lastStackTrace, isNotNull);
     });
 
     test('temporary conversion uses native defaults and cleans up', () async {
