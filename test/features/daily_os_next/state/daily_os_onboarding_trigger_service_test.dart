@@ -60,7 +60,6 @@ void main() {
     // the input(s) relevant to the branch under test.
     bool eligible({
       bool dailyOsOnboardingFlagEnabled = true,
-      bool dailyOsPageEnabled = true,
       bool hasUnseenWhatsNew = false,
       bool welcomeStillOwed = false,
       bool selectedDateIsToday = true,
@@ -73,7 +72,6 @@ void main() {
       DateTime? now,
     }) => isDailyOsOnboardingEligible(
       dailyOsOnboardingFlagEnabled: dailyOsOnboardingFlagEnabled,
-      dailyOsPageEnabled: dailyOsPageEnabled,
       hasUnseenWhatsNew: hasUnseenWhatsNew,
       welcomeStillOwed: welcomeStillOwed,
       selectedDateIsToday: selectedDateIsToday,
@@ -100,10 +98,6 @@ void main() {
 
     test('false when the Daily OS onboarding flag is off', () {
       expect(eligible(dailyOsOnboardingFlagEnabled: false), isFalse);
-    });
-
-    test('false when the Daily OS page flag is off', () {
-      expect(eligible(dailyOsPageEnabled: false), isFalse);
     });
 
     test('false when the selected date is not today', () {
@@ -235,7 +229,6 @@ void main() {
 
     ProviderContainer createContainer({
       bool onboardingEnabled = true,
-      bool pageEnabled = true,
       bool providerReady = true,
       bool welcomeStillOwed = false,
       bool whatsNewUnseen = false,
@@ -246,9 +239,6 @@ void main() {
       when(
         () => mockJournalDb.getConfigFlag(dailyOsOnboardingEnabledFlag),
       ).thenAnswer((_) async => onboardingEnabled);
-      when(
-        () => mockJournalDb.getConfigFlag(enableDailyOsPageFlag),
-      ).thenAnswer((_) async => pageEnabled);
       // What's New only blocks when its feature is on AND it has unseen
       // content (mirrors the general FTUE welcome's own guard).
       when(
@@ -299,11 +289,6 @@ void main() {
 
     test('false when the Daily OS onboarding flag is off', () async {
       final container = createContainer(onboardingEnabled: false);
-      expect(await read(container), isFalse);
-    });
-
-    test('false when the Daily OS page flag is off', () async {
-      final container = createContainer(pageEnabled: false);
       expect(await read(container), isFalse);
     });
 

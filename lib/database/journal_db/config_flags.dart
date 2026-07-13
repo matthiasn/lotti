@@ -100,14 +100,6 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: enableDailyOsPageFlag,
-      description: 'Enable DailyOS Page?',
-      status: false,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: enableSessionRatingsFlag,
       description: 'Enable session ratings?',
       status: false,
@@ -207,8 +199,8 @@ Future<void> initConfigFlags(
     const ConfigFlag(
       name: dailyOsOnboardingEnabledFlag,
       // Off by default: the Daily OS onboarding walkthrough is still being
-      // built. It also requires `enableDailyOsPageFlag` at runtime -- there
-      // is no point coaching a surface the user can't reach.
+      // built. The Daily OS surface itself is always available now, so this
+      // flag only controls whether new users get the coaching walkthrough.
       description: 'Enable the Daily OS onboarding walkthrough?',
       status: false,
     ),

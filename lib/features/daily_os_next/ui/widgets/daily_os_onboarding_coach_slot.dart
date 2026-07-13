@@ -12,7 +12,8 @@ import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 /// per session the first time the beat mounts (the once-guard lives in the
 /// session, so a rebuild or a Wolt page recreation cannot double-count). The
 /// Capture beat passes no stage — reaching Capture is the walkthrough opening,
-/// already recorded as `Shown` by the arming layer.
+/// already recorded as `Shown` by `DayCheckInSpotlightHost` when the spotlight
+/// surfaced.
 class DailyOsOnboardingCoachSlot extends ConsumerStatefulWidget {
   const DailyOsOnboardingCoachSlot({
     required this.message,

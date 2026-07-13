@@ -2956,7 +2956,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
-      'Ghidați utilizatorii noi Daily OS printr-un check-in real care transformă vocea într-o sarcină și un plan de zi. Necesită pagina DailyOS.';
+      'Ghidați utilizatorii noi Daily OS printr-un check-in real care transformă vocea într-o sarcină și un plan de zi.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -2972,13 +2972,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get configFlagEnableAiSummaryTtsDescription =>
       'Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS MLX Audio instalat.';
-
-  @override
-  String get configFlagEnableDailyOs => 'Activează DailyOS';
-
-  @override
-  String get configFlagEnableDailyOsDescription =>
-      'Afișează DailyOS în navigarea principală.';
 
   @override
   String get configFlagEnableDashboardsPage =>

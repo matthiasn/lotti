@@ -233,6 +233,10 @@ Future<void> _stubNavService(
     () => navService.isEventsPageEnabled,
   ).thenAnswer((_) => isEventsEnabled());
   when(() => navService.tapIndex(any())).thenReturn(null);
+  // Daily OS lives at the calendar index; the onboarding arm reads both to
+  // decide whether to switch tabs. Same value → already on the tab, no tap.
+  when(() => navService.calendarIndex).thenReturn(1);
+  when(() => navService.index).thenReturn(1);
   when(() => navService.isDesktopMode).thenReturn(false);
   // The desktop tasks pane (`tasks_tab_page.dart`) reads
   // `desktopSelectedTaskId` for its detail selection; stub it with an

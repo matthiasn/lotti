@@ -21,42 +21,17 @@ void main() {
       );
     });
 
-    testWidgets('shows no hide affordance when onHide is null', (tester) async {
+    testWidgets('renders as a static strip with no interactive affordance', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const DailyOsOnboardingCoachStrip(message: 'Coaching line'),
         ),
       );
 
+      expect(find.text('Coaching line'), findsOneWidget);
       expect(find.byType(TextButton), findsNothing);
-    });
-
-    testWidgets('renders the hide affordance and invokes onHide on tap', (
-      tester,
-    ) async {
-      var hidden = 0;
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DailyOsOnboardingCoachStrip(
-            message: 'Coaching line',
-            hideLabel: 'Hide tips',
-            onHide: () => hidden++,
-          ),
-        ),
-      );
-
-      expect(find.widgetWithText(TextButton, 'Hide tips'), findsOneWidget);
-      await tester.tap(find.text('Hide tips'));
-      await tester.pump();
-
-      expect(hidden, 1);
-    });
-
-    test('asserts hideLabel is provided when onHide is set', () {
-      expect(
-        () => DailyOsOnboardingCoachStrip(message: 'x', onHide: () {}),
-        throwsAssertionError,
-      );
     });
   });
 }

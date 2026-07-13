@@ -69,23 +69,21 @@ class _GeneratedNavPath {
 class _GeneratedNavScenario {
   const _GeneratedNavScenario({
     required this.projects,
-    required this.dailyOs,
     required this.habits,
     required this.dashboards,
     required this.paths,
   });
 
   final bool projects;
-  final bool dailyOs;
   final bool habits;
   final bool dashboards;
   final List<_GeneratedNavPath> paths;
 
-  // Mirrors `NavService._tabSpecs`: Daily OS right after Tasks, then
-  // Projects and the remaining flag-gated tabs.
+  // Mirrors `NavService._tabSpecs`: Daily OS is unconditional and sits right
+  // after Tasks, then Projects and the remaining flag-gated tabs.
   List<String> get enabledRoots => [
     '/tasks',
-    if (dailyOs) '/calendar',
+    '/calendar',
     if (projects) '/projects',
     if (habits) '/habits',
     if (dashboards) '/dashboards',
@@ -114,7 +112,7 @@ class _GeneratedNavScenario {
 
   @override
   String toString() {
-    return '_GeneratedNavScenario(projects: $projects, dailyOs: $dailyOs, '
+    return '_GeneratedNavScenario(projects: $projects, '
         'habits: $habits, dashboards: $dashboards, paths: $paths)';
   }
 }
@@ -134,21 +132,18 @@ extension _AnyGeneratedNavScenario on glados.Any {
       );
 
   glados.Generator<_GeneratedNavScenario> get navScenario =>
-      glados.CombinableAny(this).combine5(
-        glados.AnyUtils(this).choose([false, true]),
+      glados.CombinableAny(this).combine4(
         glados.AnyUtils(this).choose([false, true]),
         glados.AnyUtils(this).choose([false, true]),
         glados.AnyUtils(this).choose([false, true]),
         glados.ListAnys(this).listWithLengthInRange(0, 35, navPath),
         (
           bool projects,
-          bool dailyOs,
           bool habits,
           bool dashboards,
           List<_GeneratedNavPath> paths,
         ) => _GeneratedNavScenario(
           projects: projects,
-          dailyOs: dailyOs,
           habits: habits,
           dashboards: dashboards,
           paths: paths,
@@ -167,7 +162,6 @@ class _NavFlagBench {
       final flagName = invocation.positionalArguments.first as String;
       return switch (flagName) {
         enableProjectsFlag => projects.stream,
-        enableDailyOsPageFlag => dailyOs.stream,
         enableHabitsPageFlag => habits.stream,
         enableDashboardsPageFlag => dashboards.stream,
         enableEventsFlag => events.stream,
@@ -182,7 +176,6 @@ class _NavFlagBench {
   }
 
   final projects = StreamController<bool>.broadcast(sync: true);
-  final dailyOs = StreamController<bool>.broadcast(sync: true);
   final habits = StreamController<bool>.broadcast(sync: true);
   final dashboards = StreamController<bool>.broadcast(sync: true);
   final events = StreamController<bool>.broadcast(sync: true);
@@ -193,7 +186,6 @@ class _NavFlagBench {
   /// exercise the Events destination).
   void emitAll({required bool enabled}) {
     projects.add(enabled);
-    dailyOs.add(enabled);
     habits.add(enabled);
     dashboards.add(enabled);
     events.add(false);
@@ -203,7 +195,6 @@ class _NavFlagBench {
     await navService.dispose();
     await Future.wait([
       projects.close(),
-      dailyOs.close(),
       habits.close(),
       dashboards.close(),
       events.close(),
@@ -236,7 +227,6 @@ void main() {
         final flagName = invocation.positionalArguments.first as String;
         final enabledFlags = {
           enableProjectsFlag,
-          enableDailyOsPageFlag,
           enableHabitsPageFlag,
           enableDashboardsPageFlag,
         };
@@ -339,7 +329,7 @@ void main() {
       expect(navService.currentPath, '/habits');
     });
 
-    test('orders Daily OS directly after Tasks when enabled', () {
+    test('orders Daily OS directly after Tasks', () {
       final navService = getIt<NavService>();
 
       expect(
@@ -372,7 +362,6 @@ void main() {
 
       try {
         bench.projects.add(scenario.projects);
-        bench.dailyOs.add(scenario.dailyOs);
         bench.habits.add(scenario.habits);
         bench.dashboards.add(scenario.dashboards);
         bench.events.add(false);
@@ -380,7 +369,7 @@ void main() {
 
         final expectedDelegates = [
           navService.tasksDelegate,
-          if (scenario.dailyOs) navService.calendarDelegate,
+          navService.calendarDelegate,
           if (scenario.projects) navService.projectsDelegate,
           if (scenario.habits) navService.habitsDelegate,
           if (scenario.dashboards) navService.dashboardsDelegate,
@@ -421,7 +410,6 @@ void main() {
       ).thenAnswer((invocation) {
         final flagName = invocation.positionalArguments.first as String;
         final enabledFlags = {
-          enableDailyOsPageFlag,
           enableHabitsPageFlag,
           enableDashboardsPageFlag,
         };
@@ -445,10 +433,13 @@ void main() {
       final bench = _NavFlagBench();
       final navService = bench.navService;
 
+      // Daily OS is unconditional, so its /calendar tab is present even before
+      // the flag-gated tabs emit.
       expect(
         navService.beamerDelegates,
         [
           navService.tasksDelegate,
+          navService.calendarDelegate,
           navService.journalDelegate,
           navService.settingsDelegate,
         ],
@@ -639,7 +630,9 @@ void main() {
 
           expect(navService.isHabitsPageEnabled, isFalse);
           expect(navService.isDashboardsPageEnabled, isFalse);
-          expect(navService.isDailyOsPageEnabled, isFalse);
+          // Daily OS has no flag: it is always enabled, even with every
+          // optional flag off.
+          expect(navService.isDailyOsPageEnabled, isTrue);
           expect(navService.isProjectsPageEnabled, isFalse);
           expect(navService.isEventsPageEnabled, isFalse);
         },
@@ -656,7 +649,6 @@ void main() {
           final flagName = invocation.positionalArguments.first as String;
           final enabledFlags = {
             enableProjectsFlag,
-            enableDailyOsPageFlag,
             enableHabitsPageFlag,
             enableDashboardsPageFlag,
           };
@@ -763,9 +755,6 @@ void main() {
           final projectsController = StreamController<bool>.broadcast(
             sync: true,
           );
-          final dailyOsController = StreamController<bool>.broadcast(
-            sync: true,
-          );
           final habitsController = StreamController<bool>.broadcast(sync: true);
           final dashboardsController = StreamController<bool>.broadcast(
             sync: true,
@@ -778,7 +767,6 @@ void main() {
             final flagName = invocation.positionalArguments.first as String;
             return switch (flagName) {
               enableProjectsFlag => projectsController.stream,
-              enableDailyOsPageFlag => dailyOsController.stream,
               enableHabitsPageFlag => habitsController.stream,
               enableDashboardsPageFlag => dashboardsController.stream,
               enableEventsFlag => eventsController.stream,
@@ -794,7 +782,6 @@ void main() {
             await navService.dispose();
             await Future.wait([
               projectsController.close(),
-              dailyOsController.close(),
               habitsController.close(),
               dashboardsController.close(),
               eventsController.close(),
@@ -803,7 +790,6 @@ void main() {
 
           // Enable all optional tabs and navigate to habits.
           projectsController.add(true);
-          dailyOsController.add(true);
           habitsController.add(true);
           dashboardsController.add(true);
           eventsController.add(false);

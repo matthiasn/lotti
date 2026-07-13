@@ -2896,7 +2896,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
-      'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan. Requires the DailyOS page.';
+      'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -2912,13 +2912,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get configFlagEnableAiSummaryTtsDescription =>
       'Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.';
-
-  @override
-  String get configFlagEnableDailyOs => 'Enable DailyOS';
-
-  @override
-  String get configFlagEnableDailyOsDescription =>
-      'Show the DailyOS page in the main navigation.';
 
   @override
   String get configFlagEnableDashboardsPage => 'Enable Dashboards page';
@@ -9587,13 +9580,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get configFlagEnableAiStreamingDescription =>
       'Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.';
-
-  @override
-  String get configFlagEnableDailyOs => 'Enable DailyOS';
-
-  @override
-  String get configFlagEnableDailyOsDescription =>
-      'Show the DailyOS page in the main navigation.';
 
   @override
   String get configFlagEnableDashboardsPage => 'Enable Dashboards page';

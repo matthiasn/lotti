@@ -20,7 +20,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-const _displayedFlagCount = 16;
+const _displayedFlagCount = 15;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -59,11 +59,6 @@ void main() {
             name: enableEventsFlag,
             description: 'Enable Events?',
             status: false,
-          ),
-          const ConfigFlag(
-            name: enableDailyOsPageFlag,
-            description: 'Enable DailyOS Page?',
-            status: true,
           ),
           const ConfigFlag(
             name: enableAiStreamingFlag,
@@ -157,7 +152,6 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 14 flags in the mock data.
       expect(
         find.byType(DesignSystemListItem),
         findsNWidgets(_displayedFlagCount),
@@ -291,7 +285,7 @@ void main() {
       expect(find.byIcon(Icons.bolt_rounded), findsAtLeastNWidgets(1));
       expect(find.byIcon(Icons.volume_up_rounded), findsAtLeastNWidgets(1));
       expect(
-        find.byIcon(Icons.calendar_today_rounded),
+        find.byIcon(Icons.tips_and_updates_outlined),
         findsAtLeastNWidgets(1),
       );
     });
@@ -827,11 +821,6 @@ void main() {
               name: enableEventsFlag,
               description: 'Enable Events?',
               status: false,
-            ),
-            const ConfigFlag(
-              name: enableDailyOsPageFlag,
-              description: 'Enable DailyOS Page?',
-              status: true,
             ),
             const ConfigFlag(
               name: enableAiStreamingFlag,

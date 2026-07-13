@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   later setup changes. Automatic task-related updates can also be switched off
   without removing the manual Run now action or the existing report.
 
+### Changed
+- **Daily OS is now available to everyone.** The Daily OS day-planning surface
+  no longer sits behind a Settings → Advanced → Flags toggle — its calendar tab
+  appears in the main navigation for all users.
+
 ## [0.9.1039]
 ### Added
 - **Task agents now use evidence-first inference by default with efficient

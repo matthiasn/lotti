@@ -63,6 +63,34 @@ void main() {
       expect(find.widgetWithText(TextButton, 'Not now'), findsOneWidget);
     });
 
+    testWidgets('both action labels render at the same font size', (
+      tester,
+    ) async {
+      await pumpSpotlight(tester, onAction: () {}, onDismiss: () {});
+
+      double? renderedFontSize(String label) {
+        final richText = tester.widget<RichText>(
+          find.descendant(
+            of: find.text(label),
+            matching: find.byType(RichText),
+          ),
+        );
+        return richText.text.style?.fontSize;
+      }
+
+      // Regression guard: "Not now" (a TextButton) used to inherit the app-wide
+      // TextButton override (a larger 20px label) while "Try it" (a
+      // FilledButton) fell back to the Material default, so the dismiss action
+      // read visibly bigger than the primary one. Both now pin the same design
+      // system label style.
+      final tryItSize = renderedFontSize('Try it');
+      final notNowSize = renderedFontSize('Not now');
+
+      expect(tryItSize, isNotNull);
+      expect(notNowSize, isNotNull);
+      expect(notNowSize, tryItSize);
+    });
+
     testWidgets('the primary action button fires onAction', (tester) async {
       var actions = 0;
       var dismisses = 0;

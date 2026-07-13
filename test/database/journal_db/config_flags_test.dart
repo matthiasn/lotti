@@ -77,7 +77,6 @@ void main() {
         enableHabitsPageFlag: false,
         enableDashboardsPageFlag: false,
         enableEventsFlag: false,
-        enableDailyOsPageFlag: false,
         enableSessionRatingsFlag: false,
         enableSyncActorFlag: false,
         enableProjectsFlag: false,

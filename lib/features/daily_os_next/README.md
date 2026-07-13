@@ -768,8 +768,9 @@ teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 | `DailyOsOnboardingCoachSlot` | `ui/widgets/daily_os_onboarding_coach_slot.dart` | Session-aware slot inserted at each modal beat: renders the coach strip only while a session is active, and records its stage event once on mount. Collapses to nothing for normal users. |
 | `DayCheckInSpotlightHost` | `ui/widgets/day_check_in_spotlight_host.dart` | Mounts the spotlight over the measured empty-Day CTA while a session is active; "Try it" opens the real modal (session persists for the coach strips), a scrim/"Not now" dismissal records the skip and ends the session. Inert for normal users. |
 
-Eligibility (all must hold): both `dailyOsOnboardingEnabledFlag` and
-`enableDailyOsPageFlag` on; the selected date is local today; today has no
+Eligibility (all must hold): `dailyOsOnboardingEnabledFlag` on (the Daily OS
+surface itself is always available — it has no config flag); the selected date
+is local today; today has no
 active plan (so the real CTA exists); no plan has ever existed for the planner
 (soft-deleted included); the planning flow reports a usable provider/profile;
 the walkthrough is not completed; it has shown fewer than four times; and it is

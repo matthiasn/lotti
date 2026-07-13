@@ -30,9 +30,10 @@ class DailyOsOnboardingSessionController
   /// it the active session. Returns the started session.
   ///
   /// [sessionId] defaults to a fresh id; pass one only to correlate with an
-  /// externally-generated id. Recording the `Shown` event is the caller's
-  /// responsibility (it must happen only once the overlay is actually
-  /// on-screen), not part of starting the session.
+  /// externally-generated id. Recording the `Shown` event is not part of
+  /// starting the session — `DayCheckInSpotlightHost` records it once the
+  /// spotlight is actually on-screen, so the metric reflects a walkthrough the
+  /// user genuinely saw.
   DailyOsOnboardingSession start({
     required DailyOsOnboardingOrigin origin,
     String? sessionId,

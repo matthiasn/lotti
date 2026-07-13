@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_spotlight.dart';
+import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Mounts the [DailyOsOnboardingSpotlight] over the empty-Day check-in CTA
@@ -12,6 +13,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// over it. For every normal user — no active session, or [enabled] false
 /// because the day already has a plan — it collapses to nothing and the Day
 /// surface behaves exactly as before.
+///
+/// When the spotlight first surfaces it records the walkthrough's top-of-funnel
+/// `dailyOsWalkthroughShown` event (once per session), so the funnel's shown
+/// count reflects a spotlight the user actually saw rather than a merely-armed
+/// session.
 ///
 /// - "Try it" (or a tap on the highlighted CTA) calls [onCheckIn] to open the
 ///   real create modal and hides the spotlight for the rest of this mount; the
@@ -45,13 +51,25 @@ class _DayCheckInSpotlightHostState
   Rect? _targetRect;
   bool _proceeded = false;
 
-  /// Measures the CTA's rect in global coordinates. This host fills the Day
-  /// surface from its top-left, so global coordinates match the spotlight's
-  /// own local space.
+  /// The session id whose `Shown` funnel event has already been scheduled from
+  /// this mount. Tracked by id (not a plain bool) so a replay that starts a new
+  /// session while this host stays mounted still records its own `Shown` event.
+  /// The session's own once-guard keeps it exactly-once per session; this only
+  /// avoids re-scheduling a post-frame callback on every rebuild.
+  String? _recordedSessionId;
+
+  /// Measures the CTA's rect in this host's local coordinate space — the same
+  /// space the spotlight lays out in. The host is a full-bleed layer over the
+  /// Day surface, but it is not guaranteed to start at the global origin
+  /// (desktop split-pane, embedded layouts), so the CTA's global position is
+  /// converted back into the host's local space rather than assumed equal.
   void _measure() {
     final box = widget.ctaKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
-    final rect = box.localToGlobal(Offset.zero) & box.size;
+    final hostBox = context.findRenderObject() as RenderBox?;
+    if (hostBox == null || !hostBox.hasSize) return;
+    final localTopLeft = hostBox.globalToLocal(box.localToGlobal(Offset.zero));
+    final rect = localTopLeft & box.size;
     if (rect != _targetRect) setState(() => _targetRect = rect);
   }
 
@@ -70,6 +88,22 @@ class _DayCheckInSpotlightHostState
 
     final rect = _targetRect;
     if (rect == null) return const SizedBox.shrink();
+
+    // The walkthrough is now actually on-screen (session active, empty-Day CTA
+    // measured), so this is the moment to record the funnel's top-of-funnel
+    // `Shown` event — recorded here, not by the arming layer, so it reflects a
+    // spotlight the user genuinely saw. `recordStageOnce` is idempotent per
+    // session; tracking the session id keeps a replay's new session from being
+    // suppressed while this host stays mounted.
+    if (_recordedSessionId != session.sessionId) {
+      _recordedSessionId = session.sessionId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref
+            .read(dailyOsOnboardingSessionControllerProvider)
+            ?.recordStageOnce(OnboardingEventName.dailyOsWalkthroughShown);
+      });
+    }
 
     return DailyOsOnboardingSpotlight(
       targetRect: rect,

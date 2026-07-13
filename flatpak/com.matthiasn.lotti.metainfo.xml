@@ -35,6 +35,7 @@
     <release version="0.9.1040" date="2026-07-13">
       <description>
           <p>Task agents now show their thinking model, model publisher, and serving provider directly in the AI summary. The identity opens a persistent setup sheet for choosing a profile or model, returning to the profile default, copying the category default, or pausing AI. Reports retain immutable attribution after setup changes, and automatic task-related updates can be disabled while Run now remains available.</p>
+          <p>Daily OS is now available to everyone. The Daily OS day-planning surface no longer sits behind a feature flag and appears in the main navigation for all users.</p>
       </description>
     </release>
     <release version="0.9.1039" date="2026-07-12">

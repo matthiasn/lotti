@@ -37,13 +37,12 @@ void main() {
       expect(session.origin, DailyOsOnboardingOrigin.replay);
     });
 
-    test('defaults to visible tips and no recorded skip', () {
+    test('defaults to no recorded skip', () {
       final session = DailyOsOnboardingSession(
         sessionId: 's-1',
         origin: DailyOsOnboardingOrigin.auto,
       );
 
-      expect(session.tipsVisible, isTrue);
       expect(session.skipRecorded, isFalse);
     });
 
@@ -125,22 +124,6 @@ void main() {
       expect(session.skipRecorded, isTrue);
     });
 
-    test('hideTips hides tips and records the skip once', () {
-      final sink = _EventSink();
-      final session = DailyOsOnboardingSession(
-        sessionId: 's-1',
-        origin: DailyOsOnboardingOrigin.auto,
-        onEvent: sink.add,
-      )..hideTips();
-
-      expect(session.tipsVisible, isFalse);
-      expect(sink.events, [OnboardingEventName.dailyOsWalkthroughSkipped]);
-
-      // A subsequent explicit skip does not double-count.
-      session.recordSkippedOnce();
-      expect(sink.events, [OnboardingEventName.dailyOsWalkthroughSkipped]);
-    });
-
     test('skip and stage events are independent once-flags', () {
       final sink = _EventSink();
       DailyOsOnboardingSession(
@@ -167,16 +150,6 @@ void main() {
             ..recordSkippedOnce();
 
       expect(session.skipRecorded, isTrue);
-    });
-
-    test('honours an initial tipsVisible of false', () {
-      final session = DailyOsOnboardingSession(
-        sessionId: 's-1',
-        origin: DailyOsOnboardingOrigin.auto,
-        tipsVisible: false,
-      );
-
-      expect(session.tipsVisible, isFalse);
     });
   });
 }

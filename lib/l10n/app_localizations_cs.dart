@@ -2940,7 +2940,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
-      'Proveď nové uživatele Daily OS skutečným check-inem, který promění řeč v úkol a plán dne. Vyžaduje stránku DailyOS.';
+      'Proveď nové uživatele Daily OS skutečným check-inem, který promění řeč v úkol a plán dne.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -2956,13 +2956,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagEnableAiSummaryTtsDescription =>
       'Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model MLX Audio TTS.';
-
-  @override
-  String get configFlagEnableDailyOs => 'Povolit DailyOS';
-
-  @override
-  String get configFlagEnableDailyOsDescription =>
-      'Zobrazit DailyOS v hlavní navigaci.';
 
   @override
   String get configFlagEnableDashboardsPage => 'Povolit stránku Dashboardů';

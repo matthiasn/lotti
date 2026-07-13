@@ -5020,7 +5020,7 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagDailyOsOnboardingEnabledDescription.
   ///
   /// In en, this message translates to:
-  /// **'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan. Requires the DailyOS page.'**
+  /// **'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan.'**
   String get configFlagDailyOsOnboardingEnabledDescription;
 
   /// No description provided for @configFlagEnableAiStreaming.
@@ -5046,18 +5046,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.'**
   String get configFlagEnableAiSummaryTtsDescription;
-
-  /// No description provided for @configFlagEnableDailyOs.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable DailyOS'**
-  String get configFlagEnableDailyOs;
-
-  /// No description provided for @configFlagEnableDailyOsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Show the DailyOS page in the main navigation.'**
-  String get configFlagEnableDailyOsDescription;
 
   /// No description provided for @configFlagEnableDashboardsPage.
   ///

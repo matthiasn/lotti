@@ -191,6 +191,14 @@ class _DailyOsOnboardingSpotlightState extends State<DailyOsOnboardingSpotlight>
                     children: [
                       TextButton(
                         onPressed: widget.onDismiss,
+                        // Pin the label style to the design system so the
+                        // dismiss button does not inherit the app-wide
+                        // TextButton override (a larger 20px label), which
+                        // would make "Not now" read bigger than "Try it".
+                        style: TextButton.styleFrom(
+                          foregroundColor: tokens.colors.text.mediumEmphasis,
+                          textStyle: tokens.typography.styles.body.bodyMedium,
+                        ),
                         child: Text(widget.dismissLabel),
                       ),
                       SizedBox(width: tokens.spacing.step2),
@@ -200,6 +208,9 @@ class _DailyOsOnboardingSpotlightState extends State<DailyOsOnboardingSpotlight>
                           backgroundColor: tokens.colors.interactive.enabled,
                           foregroundColor:
                               tokens.colors.text.onInteractiveAlert,
+                          // Same DS token as the dismiss button so both
+                          // actions render at an identical label size.
+                          textStyle: tokens.typography.styles.body.bodyMedium,
                         ),
                         child: Text(widget.actionLabel),
                       ),
