@@ -26,21 +26,26 @@ class _EventSink {
 }
 
 void main() {
+  final targetDate = DateTime(2026, 7, 10);
+
   group('DailyOsOnboardingSession', () {
-    test('exposes its id and origin', () {
+    test('exposes its id, origin, and target date', () {
       final session = DailyOsOnboardingSession(
         sessionId: 's-1',
         origin: DailyOsOnboardingOrigin.replay,
+        targetDate: targetDate,
       );
 
       expect(session.sessionId, 's-1');
       expect(session.origin, DailyOsOnboardingOrigin.replay);
+      expect(session.targetDate, targetDate);
     });
 
     test('defaults to no recorded skip', () {
       final session = DailyOsOnboardingSession(
         sessionId: 's-1',
         origin: DailyOsOnboardingOrigin.auto,
+        targetDate: targetDate,
       );
 
       expect(session.skipRecorded, isFalse);
@@ -51,6 +56,7 @@ void main() {
       DailyOsOnboardingSession(
           sessionId: 's-1',
           origin: DailyOsOnboardingOrigin.auto,
+          targetDate: targetDate,
           onEvent: sink.add,
         )
         ..recordStageOnce(OnboardingEventName.dailyOsReconcileReached)
@@ -68,6 +74,7 @@ void main() {
       DailyOsOnboardingSession(
         sessionId: 's-1',
         origin: DailyOsOnboardingOrigin.auto,
+        targetDate: targetDate,
         onEvent: sink.add,
       ).recordStageOnce(
         OnboardingEventName.dailyOsTaskMaterialized,
@@ -89,6 +96,7 @@ void main() {
       DailyOsOnboardingSession(
           sessionId: 's-1',
           origin: DailyOsOnboardingOrigin.auto,
+          targetDate: targetDate,
           onEvent: sink.add,
         )
         ..recordStageOnce(
@@ -115,6 +123,7 @@ void main() {
           DailyOsOnboardingSession(
               sessionId: 's-1',
               origin: DailyOsOnboardingOrigin.auto,
+              targetDate: targetDate,
               onEvent: sink.add,
             )
             ..recordSkippedOnce()
@@ -129,6 +138,7 @@ void main() {
       DailyOsOnboardingSession(
           sessionId: 's-1',
           origin: DailyOsOnboardingOrigin.auto,
+          targetDate: targetDate,
           onEvent: sink.add,
         )
         ..recordSkippedOnce()
@@ -145,6 +155,7 @@ void main() {
           DailyOsOnboardingSession(
               sessionId: 's-1',
               origin: DailyOsOnboardingOrigin.auto,
+              targetDate: targetDate,
             )
             ..recordStageOnce(OnboardingEventName.dailyOsReconcileReached)
             ..recordSkippedOnce();

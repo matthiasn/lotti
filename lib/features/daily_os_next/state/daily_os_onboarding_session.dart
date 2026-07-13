@@ -43,6 +43,7 @@ class DailyOsOnboardingSession {
   DailyOsOnboardingSession({
     required this.sessionId,
     required this.origin,
+    required this.targetDate,
     DailyOsOnboardingEventSink? onEvent,
   }) : // Private field, public param: an initializing formal would force a
        // private named parameter, which Dart forbids.
@@ -54,6 +55,13 @@ class DailyOsOnboardingSession {
 
   /// Whether this run was auto-shown or replayed.
   final DailyOsOnboardingOrigin origin;
+
+  /// Local calendar day whose empty check-in surface won the onboarding gate.
+  ///
+  /// Keeping the target on the session prevents an async auto-show decision
+  /// from following the user onto another date while navigation or sync state
+  /// changes between eligibility and presentation.
+  final DateTime targetDate;
 
   final DailyOsOnboardingEventSink? _onEvent;
   final Set<OnboardingEventName> _recordedStages = {};

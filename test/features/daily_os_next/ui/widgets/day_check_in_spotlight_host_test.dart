@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_spotlight.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_spotlight_host.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
@@ -13,17 +14,27 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
+class _CountingCadence extends DailyOsOnboardingCadence {
+  int recordShownCount = 0;
+
+  @override
+  Future<void> recordShown() async => recordShownCount++;
+}
+
 void main() {
   final ctaKey = GlobalKey();
+  final targetDate = DateTime(2026, 7, 10);
 
   setUpAll(() {
     registerFallbackValue(OnboardingEventName.dailyOsWalkthroughShown);
   });
 
   late MockOnboardingMetricsRepository repo;
+  late _CountingCadence cadence;
 
-  setUp(() {
+  setUp(() async {
     repo = MockOnboardingMetricsRepository();
+    cadence = _CountingCadence();
     when(
       () => repo.recordEvent(
         any(),
@@ -32,31 +43,36 @@ void main() {
         valueBucket: any(named: 'valueBucket'),
       ),
     ).thenAnswer((_) async {});
-    if (getIt.isRegistered<OnboardingMetricsRepository>()) {
-      getIt.unregister<OnboardingMetricsRepository>();
-    }
-    getIt.registerSingleton<OnboardingMetricsRepository>(repo);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<OnboardingMetricsRepository>(repo);
+      },
+    );
   });
 
-  tearDown(() {
-    if (getIt.isRegistered<OnboardingMetricsRepository>()) {
-      getIt.unregister<OnboardingMetricsRepository>();
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
   Future<DailyOsOnboardingSessionController> pumpHost(
     WidgetTester tester, {
     required bool withSession,
     bool enabled = true,
+    DateTime? hostDate,
     VoidCallback? onCheckIn,
   }) async {
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [
+        dailyOsOnboardingCadenceProvider.overrideWith(() => cadence),
+      ],
+    );
     addTearDown(container.dispose);
     final controller = container.read(
       dailyOsOnboardingSessionControllerProvider.notifier,
     );
     if (withSession) {
-      controller.start(origin: DailyOsOnboardingOrigin.auto);
+      controller.start(
+        origin: DailyOsOnboardingOrigin.auto,
+        targetDate: targetDate,
+      );
     }
 
     await tester.pumpWidget(
@@ -74,6 +90,7 @@ void main() {
               Positioned.fill(
                 child: DayCheckInSpotlightHost(
                   ctaKey: ctaKey,
+                  date: hostDate ?? targetDate,
                   enabled: enabled,
                   onCheckIn: onCheckIn,
                 ),
@@ -99,8 +116,24 @@ void main() {
     testWidgets('shows nothing when disabled (day already has a plan)', (
       tester,
     ) async {
-      await pumpHost(tester, withSession: true, enabled: false);
+      final controller = await pumpHost(
+        tester,
+        withSession: true,
+        enabled: false,
+      );
       expect(find.byType(DailyOsOnboardingSpotlight), findsNothing);
+      expect(controller.state, isNull);
+    });
+
+    testWidgets('ends a session that belongs to another date', (tester) async {
+      final controller = await pumpHost(
+        tester,
+        withSession: true,
+        hostDate: targetDate.add(const Duration(days: 1)),
+      );
+
+      expect(find.byType(DailyOsOnboardingSpotlight), findsNothing);
+      expect(controller.state, isNull);
     });
 
     testWidgets('measures the CTA and shows the spotlight during a session', (
@@ -125,6 +158,7 @@ void main() {
           valueBucket: any(named: 'valueBucket'),
         ),
       ).called(1);
+      expect(cadence.recordShownCount, 1);
     });
 
     testWidgets('records no Shown event when there is no active session', (
@@ -152,7 +186,10 @@ void main() {
         expect(controller.state, isNull);
 
         // A replay starts a fresh session on the still-mounted host.
-        controller.start(origin: DailyOsOnboardingOrigin.replay);
+        controller.start(
+          origin: DailyOsOnboardingOrigin.replay,
+          targetDate: targetDate,
+        );
         await tester.pump();
         await tester.pump();
 
@@ -165,6 +202,11 @@ void main() {
             valueBucket: any(named: 'valueBucket'),
           ),
         ).called(2);
+        expect(
+          cadence.recordShownCount,
+          1,
+          reason: 'manual replay must not consume the auto-show budget',
+        );
       },
     );
 
@@ -172,11 +214,18 @@ void main() {
       'measures the CTA in host-local space when the host is offset from the '
       'global origin',
       (tester) async {
-        final container = ProviderContainer();
+        final container = ProviderContainer(
+          overrides: [
+            dailyOsOnboardingCadenceProvider.overrideWith(() => cadence),
+          ],
+        );
         addTearDown(container.dispose);
         container
             .read(dailyOsOnboardingSessionControllerProvider.notifier)
-            .start(origin: DailyOsOnboardingOrigin.auto);
+            .start(
+              origin: DailyOsOnboardingOrigin.auto,
+              targetDate: targetDate,
+            );
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -196,6 +245,7 @@ void main() {
                     Positioned.fill(
                       child: DayCheckInSpotlightHost(
                         ctaKey: ctaKey,
+                        date: targetDate,
                         enabled: true,
                         onCheckIn: null,
                       ),

@@ -315,6 +315,7 @@ class _DayPageState extends ConsumerState<DayPage> {
           Positioned.fill(
             child: DayCheckInSpotlightHost(
               ctaKey: _checkInCtaKey,
+              date: widget.draft.dayDate,
               enabled: !widget.hasPlan,
               onCheckIn: widget.onCheckIn,
             ),

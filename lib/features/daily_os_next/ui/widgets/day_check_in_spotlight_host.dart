@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_spotlight.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -27,6 +31,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 class DayCheckInSpotlightHost extends ConsumerStatefulWidget {
   const DayCheckInSpotlightHost({
     required this.ctaKey,
+    required this.date,
     required this.enabled,
     required this.onCheckIn,
     super.key,
@@ -34,6 +39,9 @@ class DayCheckInSpotlightHost extends ConsumerStatefulWidget {
 
   /// Key on the real check-in CTA button, used to measure its rect.
   final GlobalKey ctaKey;
+
+  /// Local calendar day rendered by the host surface.
+  final DateTime date;
 
   /// Whether the empty-Day CTA exists (false once the day has a plan).
   final bool enabled;
@@ -49,7 +57,8 @@ class DayCheckInSpotlightHost extends ConsumerStatefulWidget {
 class _DayCheckInSpotlightHostState
     extends ConsumerState<DayCheckInSpotlightHost> {
   Rect? _targetRect;
-  bool _proceeded = false;
+  String? _proceededSessionId;
+  String? _sessionEndScheduledFor;
 
   /// The session id whose `Shown` funnel event has already been scheduled from
   /// this mount. Tracked by id (not a plain bool) so a replay that starts a new
@@ -76,7 +85,16 @@ class _DayCheckInSpotlightHostState
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(dailyOsOnboardingSessionControllerProvider);
-    if (session == null || !widget.enabled || _proceeded) {
+    if (session == null) {
+      return const SizedBox.shrink();
+    }
+
+    final matchesTargetDate = _isSameLocalDay(session.targetDate, widget.date);
+    if (!widget.enabled || !matchesTargetDate) {
+      _scheduleSessionEnd(session.sessionId);
+      return const SizedBox.shrink();
+    }
+    if (_proceededSessionId == session.sessionId) {
       return const SizedBox.shrink();
     }
 
@@ -99,9 +117,18 @@ class _DayCheckInSpotlightHostState
       _recordedSessionId = session.sessionId;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        ref
-            .read(dailyOsOnboardingSessionControllerProvider)
-            ?.recordStageOnce(OnboardingEventName.dailyOsWalkthroughShown);
+        final activeSession = ref.read(
+          dailyOsOnboardingSessionControllerProvider,
+        );
+        if (activeSession?.sessionId != session.sessionId) return;
+        activeSession?.recordStageOnce(
+          OnboardingEventName.dailyOsWalkthroughShown,
+        );
+        if (activeSession?.origin == DailyOsOnboardingOrigin.auto) {
+          unawaited(
+            ref.read(dailyOsOnboardingCadenceProvider.notifier).recordShown(),
+          );
+        }
       });
     }
 
@@ -114,7 +141,7 @@ class _DayCheckInSpotlightHostState
       onAction: () {
         // Opening the modal is progress, not a skip: hide the spotlight but
         // leave the session running for the modal's coach strips.
-        setState(() => _proceeded = true);
+        setState(() => _proceededSessionId = session.sessionId);
         widget.onCheckIn?.call();
       },
       onDismiss: () {
@@ -123,4 +150,27 @@ class _DayCheckInSpotlightHostState
       },
     );
   }
+
+  void _scheduleSessionEnd(String sessionId) {
+    if (_sessionEndScheduledFor == sessionId) return;
+    _sessionEndScheduledFor = sessionId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _sessionEndScheduledFor = null;
+      final activeSession = ref.read(
+        dailyOsOnboardingSessionControllerProvider,
+      );
+      if (activeSession?.sessionId == sessionId) {
+        ref.read(dailyOsOnboardingSessionControllerProvider.notifier).end();
+      }
+    });
+  }
+}
+
+bool _isSameLocalDay(DateTime a, DateTime b) {
+  final localA = a.toLocal();
+  final localB = b.toLocal();
+  return localA.year == localB.year &&
+      localA.month == localB.month &&
+      localA.day == localB.day;
 }

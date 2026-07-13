@@ -36,11 +36,18 @@ class DailyOsOnboardingSessionController
   /// user genuinely saw.
   DailyOsOnboardingSession start({
     required DailyOsOnboardingOrigin origin,
+    required DateTime targetDate,
     String? sessionId,
   }) {
+    final localTargetDate = targetDate.toLocal();
     final session = DailyOsOnboardingSession(
       sessionId: sessionId ?? uuid.v1(),
       origin: origin,
+      targetDate: DateTime(
+        localTargetDate.year,
+        localTargetDate.month,
+        localTargetDate.day,
+      ),
       onEvent: (event, {reason, valueBucket}) => _record(
         event,
         origin: origin,

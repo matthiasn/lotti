@@ -22,6 +22,7 @@ import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.da
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
+import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
@@ -373,11 +374,18 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   /// Arms the Daily OS onboarding walkthrough once it wins the auto-show slot
   /// (after What's New and the general FTUE welcome). Switches to the Daily OS
   /// tab so the spotlight has its surface, starts the session (which `DayPage`
-  /// observes to mount the spotlight over the empty-Day CTA), and records the
-  /// show only then. `recordShown` log-and-swallows its own `SettingsDb`
-  /// failures, so a bookkeeping hiccup never surfaces here.
-  Future<void> _showDailyOsOnboarding() async {
-    if (!mounted) return;
+  /// observes to mount the spotlight over the empty-Day CTA). The host records
+  /// the show only once the spotlight is actually visible.
+  Future<bool> _showDailyOsOnboarding() async {
+    if (!mounted) return false;
+    // Eligibility is asynchronous. Re-read it in the presentation callback so
+    // a plan sync or date change between the original emission and this frame
+    // cannot arm a stale walkthrough session.
+    if (!await ref.read(shouldAutoShowDailyOsOnboardingProvider.future)) {
+      return false;
+    }
+    if (!mounted) return false;
+    final targetDate = ref.read(dailyOsNextSelectedDateProvider);
     // Daily OS is always available (no config flag), so only the current tab
     // gates the switch.
     if (navService.index != navService.calendarIndex) {
@@ -385,8 +393,26 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     }
     ref
         .read(dailyOsOnboardingSessionControllerProvider.notifier)
-        .start(origin: DailyOsOnboardingOrigin.auto);
-    await ref.read(dailyOsOnboardingCadenceProvider.notifier).recordShown();
+        .start(
+          origin: DailyOsOnboardingOrigin.auto,
+          targetDate: targetDate,
+        );
+    return true;
+  }
+
+  Future<void> _tryShowDailyOsOnboarding() async {
+    try {
+      final armed = await _showDailyOsOnboarding();
+      if (!armed) _dailyOsOnboardingShown = false;
+    } catch (error, stack) {
+      _dailyOsOnboardingShown = false;
+      getIt<DomainLogger>().error(
+        LogDomain.onboarding,
+        error,
+        stackTrace: stack,
+        subDomain: 'showDailyOsOnboarding',
+      );
+    }
   }
 
   @override
@@ -517,7 +543,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               _dailyOsOnboardingShown = true;
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
-                  unawaited(_showDailyOsOnboarding());
+                  unawaited(_tryShowDailyOsOnboarding());
                 }
               });
             }

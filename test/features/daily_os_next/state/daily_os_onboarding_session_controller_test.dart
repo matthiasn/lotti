@@ -12,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 /// Counts `markCompleted` without touching SettingsDb.
 class _CountingCadence extends DailyOsOnboardingCadence {
@@ -25,6 +26,11 @@ class _CountingCadence extends DailyOsOnboardingCadence {
 }
 
 void main() {
+  final targetDate = DateTime(2026, 7, 10);
+
+  setUp(setUpTestGetIt);
+  tearDown(tearDownTestGetIt);
+
   setUpAll(() {
     registerFallbackValue(OnboardingEventName.dailyOsWalkthroughShown);
   });
@@ -49,11 +55,16 @@ void main() {
 
     test('start makes a session with the given origin the active session', () {
       final container = makeContainer();
-      final session = controllerOf(
-        container,
-      ).start(origin: DailyOsOnboardingOrigin.replay);
+      final session =
+          controllerOf(
+            container,
+          ).start(
+            origin: DailyOsOnboardingOrigin.replay,
+            targetDate: targetDate,
+          );
 
       expect(session.origin, DailyOsOnboardingOrigin.replay);
+      expect(session.targetDate, targetDate);
       expect(
         container.read(dailyOsOnboardingSessionControllerProvider),
         same(session),
@@ -64,6 +75,7 @@ void main() {
       final container = makeContainer();
       final session = controllerOf(container).start(
         origin: DailyOsOnboardingOrigin.auto,
+        targetDate: targetDate,
         sessionId: 'fixed-id',
       );
 
@@ -72,9 +84,13 @@ void main() {
 
     test('start generates a non-empty id when none is given', () {
       final container = makeContainer();
-      final session = controllerOf(
-        container,
-      ).start(origin: DailyOsOnboardingOrigin.auto);
+      final session =
+          controllerOf(
+            container,
+          ).start(
+            origin: DailyOsOnboardingOrigin.auto,
+            targetDate: targetDate,
+          );
 
       expect(session.sessionId, isNotEmpty);
     });
@@ -82,7 +98,10 @@ void main() {
     test('end clears the active session and is idempotent', () {
       final container = makeContainer();
       final controller = controllerOf(container)
-        ..start(origin: DailyOsOnboardingOrigin.auto)
+        ..start(
+          origin: DailyOsOnboardingOrigin.auto,
+          targetDate: targetDate,
+        )
         ..end();
 
       expect(
@@ -112,22 +131,16 @@ void main() {
           valueBucket: any(named: 'valueBucket'),
         ),
       ).thenAnswer((_) async {});
-      if (getIt.isRegistered<OnboardingMetricsRepository>()) {
-        getIt.unregister<OnboardingMetricsRepository>();
-      }
       getIt.registerSingleton<OnboardingMetricsRepository>(repo);
-    });
-
-    tearDown(() {
-      if (getIt.isRegistered<OnboardingMetricsRepository>()) {
-        getIt.unregister<OnboardingMetricsRepository>();
-      }
     });
 
     test('records a stage event tagged with the session origin', () {
       final container = makeContainer();
       controllerOf(container)
-          .start(origin: DailyOsOnboardingOrigin.auto)
+          .start(
+            origin: DailyOsOnboardingOrigin.auto,
+            targetDate: targetDate,
+          )
           .recordStageOnce(OnboardingEventName.dailyOsReconcileReached);
 
       verify(
@@ -143,8 +156,13 @@ void main() {
     test('uses the replay origin as the reason for a replay session', () {
       final container = makeContainer();
       controllerOf(
-        container,
-      ).start(origin: DailyOsOnboardingOrigin.replay).recordSkippedOnce();
+            container,
+          )
+          .start(
+            origin: DailyOsOnboardingOrigin.replay,
+            targetDate: targetDate,
+          )
+          .recordSkippedOnce();
 
       verify(
         () => repo.recordEvent(
@@ -159,7 +177,10 @@ void main() {
     test('a per-event reason overrides the origin', () {
       final container = makeContainer();
       controllerOf(container)
-          .start(origin: DailyOsOnboardingOrigin.auto)
+          .start(
+            origin: DailyOsOnboardingOrigin.auto,
+            targetDate: targetDate,
+          )
           .recordStageOnce(
             OnboardingEventName.dailyOsDraftingStarted,
             reason: 'custom',
@@ -178,7 +199,10 @@ void main() {
     test('forwards the value bucket (materialized-task count)', () {
       final container = makeContainer();
       controllerOf(container)
-          .start(origin: DailyOsOnboardingOrigin.auto)
+          .start(
+            origin: DailyOsOnboardingOrigin.auto,
+            targetDate: targetDate,
+          )
           .recordStageOnce(
             OnboardingEventName.dailyOsTaskMaterialized,
             valueBucket: 3,
@@ -198,7 +222,10 @@ void main() {
       final session =
           controllerOf(
               container,
-            ).start(origin: DailyOsOnboardingOrigin.auto)
+            ).start(
+              origin: DailyOsOnboardingOrigin.auto,
+              targetDate: targetDate,
+            )
             ..recordStageOnce(OnboardingEventName.dailyOsReconcileReached)
             ..recordStageOnce(OnboardingEventName.dailyOsReconcileReached);
 
@@ -230,7 +257,10 @@ void main() {
         () async {
           final container = makeContainer();
           controllerOf(container)
-              .start(origin: DailyOsOnboardingOrigin.auto)
+              .start(
+                origin: DailyOsOnboardingOrigin.auto,
+                targetDate: targetDate,
+              )
               .recordStageOnce(OnboardingEventName.dailyOsReconcileReached);
           await Future<void>.value();
           await Future<void>.value();
@@ -256,17 +286,8 @@ void main() {
           valueBucket: any(named: 'valueBucket'),
         ),
       ).thenAnswer((_) async {});
-      if (getIt.isRegistered<OnboardingMetricsRepository>()) {
-        getIt.unregister<OnboardingMetricsRepository>();
-      }
       getIt.registerSingleton<OnboardingMetricsRepository>(repo);
       cadence = _CountingCadence();
-    });
-
-    tearDown(() {
-      if (getIt.isRegistered<OnboardingMetricsRepository>()) {
-        getIt.unregister<OnboardingMetricsRepository>();
-      }
     });
 
     ProviderContainer completingContainer() => makeContainer(
@@ -280,7 +301,10 @@ void main() {
       () async {
         final container = completingContainer();
         final controller = controllerOf(container)
-          ..start(origin: DailyOsOnboardingOrigin.auto);
+          ..start(
+            origin: DailyOsOnboardingOrigin.auto,
+            targetDate: targetDate,
+          );
 
         await controller.complete(createdTaskIds: const ['t1', 't2']);
 
@@ -308,8 +332,10 @@ void main() {
 
     test('clamps the materialized-task bucket to 5', () async {
       final container = completingContainer();
-      await (controllerOf(container)
-            ..start(origin: DailyOsOnboardingOrigin.auto))
+      await (controllerOf(container)..start(
+            origin: DailyOsOnboardingOrigin.auto,
+            targetDate: targetDate,
+          ))
           .complete(createdTaskIds: List.generate(9, (i) => 't$i'));
 
       verify(
@@ -324,8 +350,12 @@ void main() {
     test('records no materialized event when no tasks were created', () async {
       final container = completingContainer();
       await (controllerOf(
-        container,
-      )..start(origin: DailyOsOnboardingOrigin.auto)).complete();
+            container,
+          )..start(
+            origin: DailyOsOnboardingOrigin.auto,
+            targetDate: targetDate,
+          ))
+          .complete();
 
       verifyNever(
         () => repo.recordEvent(
@@ -360,7 +390,10 @@ void main() {
     test('dismiss records the skip and ends the session', () async {
       final container = completingContainer();
       controllerOf(container)
-        ..start(origin: DailyOsOnboardingOrigin.auto)
+        ..start(
+          origin: DailyOsOnboardingOrigin.auto,
+          targetDate: targetDate,
+        )
         ..dismiss();
 
       verify(
@@ -390,15 +423,15 @@ void main() {
   });
 
   test('recording is swallowed when no metrics repo is registered', () {
-    if (getIt.isRegistered<OnboardingMetricsRepository>()) {
-      getIt.unregister<OnboardingMetricsRepository>();
-    }
     final container = makeContainer();
 
     // Must not throw despite the repository being absent.
     expect(
       () => controllerOf(container)
-          .start(origin: DailyOsOnboardingOrigin.auto)
+          .start(
+            origin: DailyOsOnboardingOrigin.auto,
+            targetDate: targetDate,
+          )
           .recordStageOnce(OnboardingEventName.dailyOsReconcileReached),
       returnsNormally,
     );

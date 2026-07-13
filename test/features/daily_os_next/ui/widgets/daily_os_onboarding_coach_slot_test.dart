@@ -13,13 +13,15 @@ import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  final targetDate = DateTime(2026, 7, 10);
+
   setUpAll(() {
     registerFallbackValue(OnboardingEventName.dailyOsWalkthroughShown);
   });
 
   late MockOnboardingMetricsRepository repo;
 
-  setUp(() {
+  setUp(() async {
     repo = MockOnboardingMetricsRepository();
     when(
       () => repo.recordEvent(
@@ -29,17 +31,14 @@ void main() {
         valueBucket: any(named: 'valueBucket'),
       ),
     ).thenAnswer((_) async {});
-    if (getIt.isRegistered<OnboardingMetricsRepository>()) {
-      getIt.unregister<OnboardingMetricsRepository>();
-    }
-    getIt.registerSingleton<OnboardingMetricsRepository>(repo);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<OnboardingMetricsRepository>(repo);
+      },
+    );
   });
 
-  tearDown(() {
-    if (getIt.isRegistered<OnboardingMetricsRepository>()) {
-      getIt.unregister<OnboardingMetricsRepository>();
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
   Future<void> pumpSlot(
     WidgetTester tester, {
@@ -51,7 +50,10 @@ void main() {
     if (withSession) {
       container
           .read(dailyOsOnboardingSessionControllerProvider.notifier)
-          .start(origin: DailyOsOnboardingOrigin.auto);
+          .start(
+            origin: DailyOsOnboardingOrigin.auto,
+            targetDate: targetDate,
+          );
     }
 
     await tester.pumpWidget(

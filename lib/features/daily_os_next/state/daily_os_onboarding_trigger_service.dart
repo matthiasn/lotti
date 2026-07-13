@@ -3,11 +3,16 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
@@ -111,40 +116,72 @@ bool _isSameLocalDay(DateTime a, DateTime b) {
       localA.day == localB.day;
 }
 
-/// Whether the day-planning flow has a usable AI provider to run against.
+/// Whether the day-planning flow has a resolvable thinking route.
 ///
-/// This is the same truth the real `DayPlanningCreate` drafting wake gates on:
-/// `DayAgentWorkflow` fails with `'No inference provider configured'` unless the
-/// planner's profile resolves a thinking slot, which ultimately requires **at
-/// least one configured text-inference provider that is usable** (API key set,
-/// or a keyless local provider with a base URL). Audio-only providers are not
-/// sufficient because they can only serve the optional transcription slot.
-/// Gating the walkthrough on this keeps us from inviting a user into a
-/// capture-and-draft flow that is guaranteed to fail — and, reading the
-/// reactive config controller, it flips to `true` the moment the user connects
-/// a suitable provider.
-///
-/// Transcription/image slots are non-fatal (resolved best-effort), so the
-/// gate is the drafting thinking slot, mirrored here as "a usable, non-audio
-/// provider exists" — which is upstream of profile/template seeding and needs
-/// no planner agent to exist yet.
-const Set<InferenceProviderType> _audioOnlyProviderTypes = {
-  InferenceProviderType.mlxAudio,
-  InferenceProviderType.voxtral,
-  InferenceProviderType.whisper,
-};
-
+/// Uses the same [ProfileResolver] chain as `DayAgentWorkflow`: an existing
+/// planner resolves through its assigned template and config; before the first
+/// capture, the seeded Shepherd template is resolved with the config that
+/// planner creation will copy. Watching provider, model, and profile config
+/// streams keeps the gate reactive as setup changes.
 final FutureProvider<bool> dailyOsOnboardingProviderReadyProvider =
     FutureProvider<bool>((ref) async {
-      final providers = await ref.watch(
-        aiConfigByTypeControllerProvider(AiConfigType.inferenceProvider).future,
-      );
-      return providers.whereType<AiConfigInferenceProvider>().any(
-        (provider) =>
-            provider.isUsable &&
-            !_audioOnlyProviderTypes.contains(provider.inferenceProviderType),
+      final configFutures = [
+        ref.watch(
+          aiConfigByTypeControllerProvider(
+            AiConfigType.inferenceProvider,
+          ).future,
+        ),
+        ref.watch(
+          aiConfigByTypeControllerProvider(AiConfigType.model).future,
+        ),
+        ref.watch(
+          aiConfigByTypeControllerProvider(
+            AiConfigType.inferenceProfile,
+          ).future,
+        ),
+      ];
+      final agentRepository = ref.watch(agentRepositoryProvider);
+      final templateService = ref.watch(agentTemplateServiceProvider);
+      final profileResolver = ref.watch(profileResolverProvider);
+
+      await Future.wait(configFutures);
+      return hasResolvableDailyOsPlannerThinkingRoute(
+        agentRepository: agentRepository,
+        templateService: templateService,
+        profileResolver: profileResolver,
       );
     }, name: 'dailyOsOnboardingProviderReadyProvider');
+
+/// Resolves the exact thinking route a Daily OS drafting wake would use.
+///
+/// Read-only: it never creates the planner. When no planner exists yet it
+/// mirrors [DayAgentService.getOrCreatePlannerAgent] by applying the seeded
+/// template's model/profile config to a transient [AgentConfig].
+Future<bool> hasResolvableDailyOsPlannerThinkingRoute({
+  required AgentRepository agentRepository,
+  required AgentTemplateService templateService,
+  required ProfileResolver profileResolver,
+}) async {
+  final plannerEntity = await agentRepository.getEntity(dailyOsPlannerAgentId);
+  final planner = plannerEntity is AgentIdentityEntity ? plannerEntity : null;
+  final template = planner == null
+      ? await templateService.getTemplate(dayAgentTemplateId)
+      : await templateService.getTemplateForAgent(planner.agentId);
+  if (template == null) return false;
+
+  final version = await templateService.getActiveVersion(template.id);
+  if (version == null) return false;
+
+  final config =
+      planner?.config ??
+      AgentConfig(modelId: template.modelId, profileId: template.profileId);
+  final resolved = await profileResolver.resolve(
+    agentConfig: config,
+    template: template,
+    version: version,
+  );
+  return resolved != null;
+}
 
 /// Candidate-eligibility check for the Daily OS onboarding walkthrough.
 ///

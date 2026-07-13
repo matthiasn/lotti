@@ -3,10 +3,17 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show AiConfigRepository;
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
@@ -22,9 +29,12 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/ai_config_factories.dart';
+import '../../agents/test_data/entity_factories.dart';
+import '../../agents/test_data/template_factories.dart';
 
 /// Fake [WhatsNewController] reporting no unseen release — the "clear to show
 /// the next auto-shown overlay" state.
@@ -54,6 +64,8 @@ class _UnseenWhatsNewController extends WhatsNewController {
 }
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   group('isDailyOsOnboardingEligible', () {
     // Baseline args: a genuinely new Daily OS user on today's empty surface
     // with a ready provider and nothing persisted. Each test overrides only
@@ -156,31 +168,74 @@ void main() {
   });
 
   group('dailyOsOnboardingProviderReadyProvider', () {
-    late MockAiConfigRepository repo;
+    late MockAiConfigRepository aiConfigRepository;
+    late MockAgentRepository agentRepository;
+    late MockAgentTemplateService templateService;
+    late MockProfileResolver profileResolver;
+    late AgentTemplateEntity template;
+    late AgentTemplateVersionEntity version;
 
-    setUp(() {
-      repo = MockAiConfigRepository();
-      if (getIt.isRegistered<AiConfigRepository>()) {
-        getIt.unregister<AiConfigRepository>();
-      }
-      getIt.registerSingleton<AiConfigRepository>(repo);
-    });
+    setUp(() async {
+      aiConfigRepository = MockAiConfigRepository();
+      agentRepository = MockAgentRepository();
+      templateService = MockAgentTemplateService();
+      profileResolver = MockProfileResolver();
+      template = makeTestTemplate(
+        id: dayAgentTemplateId,
+        agentId: dayAgentTemplateId,
+        kind: AgentTemplateKind.dayAgent,
+      );
+      version = makeTestTemplateVersion(agentId: dayAgentTemplateId);
 
-    tearDown(() {
-      if (getIt.isRegistered<AiConfigRepository>()) {
-        getIt.unregister<AiConfigRepository>();
-      }
-    });
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<AiConfigRepository>(aiConfigRepository);
+        },
+      );
 
-    Future<bool> readReady(List<AiConfig> providers) {
-      // Single-subscription stream buffers its value for the notifier that
-      // subscribes after this returns (a broadcast stream would drop it).
       when(
-        () => repo.watchConfigsByType(AiConfigType.inferenceProvider),
-      ).thenAnswer((_) => Stream.value(providers));
-      final container = ProviderContainer();
+        () => agentRepository.getEntity(dailyOsPlannerAgentId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => templateService.getTemplate(dayAgentTemplateId),
+      ).thenAnswer((_) async => template);
+      when(
+        () => templateService.getActiveVersion(dayAgentTemplateId),
+      ).thenAnswer((_) async => version);
+    });
+
+    tearDown(tearDownTestGetIt);
+
+    Future<bool> readReady({required ResolvedProfile? resolvedProfile}) {
+      when(
+        () => aiConfigRepository.watchConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      ).thenAnswer((_) => Stream.value([testLocalInferenceProvider()]));
+      when(
+        () => aiConfigRepository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => Stream.value(const []));
+      when(
+        () => aiConfigRepository.watchConfigsByType(
+          AiConfigType.inferenceProfile,
+        ),
+      ).thenAnswer((_) => Stream.value(const []));
+      when(
+        () => profileResolver.resolve(
+          agentConfig: any(named: 'agentConfig'),
+          template: template,
+          version: version,
+        ),
+      ).thenAnswer((_) async => resolvedProfile);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(agentRepository),
+          agentTemplateServiceProvider.overrideWithValue(templateService),
+          profileResolverProvider.overrideWithValue(profileResolver),
+        ],
+      );
       addTearDown(container.dispose);
-      // Keep the async chain alive while its future resolves.
       container.listen(
         dailyOsOnboardingProviderReadyProvider,
         (_, _) {},
@@ -188,37 +243,106 @@ void main() {
       return container.read(dailyOsOnboardingProviderReadyProvider.future);
     }
 
-    test('false when no inference provider is configured', () async {
-      expect(await readReady(const []), isFalse);
+    test('true when the exact planner thinking route resolves', () async {
+      final resolvedProfile = ResolvedProfile(
+        thinkingModelId: 'models/gemini-3-flash-preview',
+        thinkingProvider: testInferenceProvider(),
+      );
+
+      expect(
+        await readReady(resolvedProfile: resolvedProfile),
+        isTrue,
+      );
+      verify(
+        () => profileResolver.resolve(
+          agentConfig: AgentConfig(modelId: template.modelId),
+          template: template,
+          version: version,
+        ),
+      ).called(1);
     });
 
-    test('false when the only provider is not usable (no API key)', () async {
-      // A cloud provider with a blank API key cannot connect.
-      expect(await readReady([testInferenceProvider(apiKey: '')]), isFalse);
+    test('false when a configured provider cannot serve the planner', () async {
+      expect(await readReady(resolvedProfile: null), isFalse);
     });
 
-    test('true when a usable cloud provider is configured', () async {
-      expect(await readReady([testInferenceProvider()]), isTrue);
-    });
-
-    test('true for a keyless local provider with a base URL', () async {
-      expect(await readReady([testLocalInferenceProvider()]), isTrue);
-    });
-
-    test('false when every usable provider is audio-only', () async {
-      for (final providerType in const {
-        InferenceProviderType.mlxAudio,
-        InferenceProviderType.voxtral,
-        InferenceProviderType.whisper,
-      }) {
-        expect(
-          await readReady([
-            testInferenceProvider(inferenceProviderType: providerType),
-          ]),
-          isFalse,
-          reason: '${providerType.name} cannot serve the thinking slot',
+    test(
+      'existing planner resolves its assigned template and config',
+      () async {
+        const plannerConfig = AgentConfig(profileId: 'planner-profile');
+        final planner = makeTestIdentity(
+          id: dailyOsPlannerAgentId,
+          agentId: dailyOsPlannerAgentId,
+          kind: 'day_agent',
+          config: plannerConfig,
         );
-      }
+        final assignedTemplate = makeTestTemplate(
+          id: 'assigned-day-template',
+          agentId: 'assigned-day-template',
+          kind: AgentTemplateKind.dayAgent,
+        );
+        final assignedVersion = makeTestTemplateVersion(
+          agentId: assignedTemplate.id,
+        );
+        final resolvedProfile = ResolvedProfile(
+          thinkingModelId: 'models/gemini-3-flash-preview',
+          thinkingProvider: testInferenceProvider(),
+        );
+        when(
+          () => agentRepository.getEntity(dailyOsPlannerAgentId),
+        ).thenAnswer((_) async => planner);
+        when(
+          () => templateService.getTemplateForAgent(dailyOsPlannerAgentId),
+        ).thenAnswer((_) async => assignedTemplate);
+        when(
+          () => templateService.getActiveVersion(assignedTemplate.id),
+        ).thenAnswer((_) async => assignedVersion);
+        when(
+          () => profileResolver.resolve(
+            agentConfig: plannerConfig,
+            template: assignedTemplate,
+            version: assignedVersion,
+          ),
+        ).thenAnswer((_) async => resolvedProfile);
+
+        expect(
+          await hasResolvableDailyOsPlannerThinkingRoute(
+            agentRepository: agentRepository,
+            templateService: templateService,
+            profileResolver: profileResolver,
+          ),
+          isTrue,
+        );
+        verify(
+          () => profileResolver.resolve(
+            agentConfig: plannerConfig,
+            template: assignedTemplate,
+            version: assignedVersion,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('false when the seeded day-agent template is unavailable', () async {
+      when(
+        () => templateService.getTemplate(dayAgentTemplateId),
+      ).thenAnswer((_) async => null);
+
+      expect(
+        await hasResolvableDailyOsPlannerThinkingRoute(
+          agentRepository: agentRepository,
+          templateService: templateService,
+          profileResolver: profileResolver,
+        ),
+        isFalse,
+      );
+      verifyNever(
+        () => profileResolver.resolve(
+          agentConfig: any(named: 'agentConfig'),
+          template: any(named: 'template'),
+          version: any(named: 'version'),
+        ),
+      );
     });
   });
 

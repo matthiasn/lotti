@@ -22,6 +22,8 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
@@ -2684,15 +2686,15 @@ void main() {
 
     testWidgets(
       'shouldAutoShowDailyOsOnboarding data(true) arms the walkthrough and '
-      'records the show',
+      'defers the show count until the spotlight is visible',
       (tester) async {
         final mockNavService = MockNavService();
         await _stubNavService(
           mockNavService,
           indexStream: Stream.value(0),
           isProjectsEnabled: () => false,
-          // Daily OS tab disabled here so `_showDailyOsOnboarding` skips the
-          // tab switch and we isolate the arm + recordShown effect.
+          // The selected destination is already the Daily OS tab, so this
+          // isolates session arming from navigation behavior.
           isDailyOsEnabled: () => false,
           isHabitsEnabled: () => false,
           isDashboardsEnabled: () => false,
@@ -2701,6 +2703,7 @@ void main() {
         addTearDown(tearDownTestGetIt);
 
         var recordShownCount = 0;
+        final sessionController = _CountingDailyOsOnboardingSessionController();
         await _pumpAppScreenCustomProviders(
           tester,
           navService: mockNavService,
@@ -2710,18 +2713,23 @@ void main() {
               _CountingDailyOsOnboardingCadence(
                 onRecordShown: () => recordShownCount++,
               ),
+          extraOverrides: [
+            dailyOsOnboardingSessionControllerProvider.overrideWith(
+              () => sessionController,
+            ),
+          ],
         );
 
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 800));
 
+        expect(sessionController.startCount, 1);
         expect(
           recordShownCount,
-          1,
+          0,
           reason:
-              '_showDailyOsOnboarding must arm the session and record the '
-              'show once it wins the slot',
+              'arming alone must not count a walkthrough the user never saw',
         );
 
         await tester.pumpWidget(const SizedBox.shrink());
@@ -3434,6 +3442,25 @@ class _CountingDailyOsOnboardingCadence extends DailyOsOnboardingCadence {
 
   @override
   Future<void> recordShown() async => onRecordShown?.call();
+}
+
+class _CountingDailyOsOnboardingSessionController
+    extends DailyOsOnboardingSessionController {
+  int startCount = 0;
+
+  @override
+  DailyOsOnboardingSession start({
+    required DailyOsOnboardingOrigin origin,
+    required DateTime targetDate,
+    String? sessionId,
+  }) {
+    startCount++;
+    return super.start(
+      origin: origin,
+      targetDate: targetDate,
+      sessionId: sessionId,
+    );
+  }
 }
 
 /// A [WhatsNewController] with no unseen releases, used so the What's New modal

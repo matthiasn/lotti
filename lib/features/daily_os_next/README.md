@@ -741,12 +741,12 @@ teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 > **Status.** Phases **0–2c** are implemented end-to-end and the flow is now
 > **functional behind its flag**: a session coordinates the walkthrough,
 > `AppScreen` auto-arms it (sequenced behind What's New and the FTUE welcome) by
-> starting a session + switching to the Daily OS tab, the spotlight mounts over
-> the empty-Day CTA, the coach strips render inside the create modal (recording
+> starting a date-bound session + switching to the Daily OS tab, the spotlight
+> mounts over the empty-Day CTA, the coach strips render inside the create modal (recording
 > stage events), and the modal's typed result drives completion (retiring the
 > cadence) or a skip. `dailyOsOnboardingProviderReadyProvider` now reflects the
-> **real** readiness the drafting flow needs — at least one *usable* configured
-> text-inference provider (audio-only providers do not qualify) — so with a
+> **real** readiness the drafting flow needs — the exact planner template,
+> model/profile, and provider chain must resolve a thinking route — so with a
 > suitable provider connected and the off-by-default
 > `dailyOsOnboardingEnabledFlag` turned on, the walkthrough auto-shows to a
 > genuinely new Daily OS user on today's unplanned surface. It stays **inert by
@@ -762,7 +762,7 @@ teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 | `AgentRepository.countEntitiesByAgentAndType` | `features/agents/database/agent_repo_evolution.dart` | The "has a plan ever existed for `daily_os_planner`" query. Deliberately **includes soft-deleted tombstones** (unlike `getEntitiesByIds`), so a returning user who deleted their only plan is not mistaken for a new user. |
 | Daily OS event vocabulary + `DailyOsOnboardingFunnelState` | `features/onboarding/model/onboarding_event.dart` | Six `dailyOs*` events reuse the shared `OnboardingMetricsDb`, but the two funnel derivations are **partitioned by vocabulary** so Daily OS events never shift the general FTUE active-day or activation metrics. |
 | `DayPlanningResult` + `attributeCreatedTaskIds` | `ui/pages/day_planning_result.dart` | `showDayPlanningModal` now resolves to a typed result instead of `Future<void>`: `DayPlanningCreated` (drafted plan + task ids newly materialized from approved capture items), `DayPlanningAdapted` (Refine result), or `null` on dismissal. Attribution reconstructs the created task ids from `ParsedItem.matchedTaskId` transitions on the approved capture items — best-effort, empty when it can't be established. |
-| `DailyOsOnboardingSession` | `state/daily_os_onboarding_session.dart` | Walkthrough session contract: stable id, `auto`/`replay` origin, tips-visible state, and exactly-once guards for the stage and skip events (emission injected via a callback so it is testable in isolation). Consumed by the coach strips; the modal does not thread it yet (Phase 2b). |
+| `DailyOsOnboardingSession` | `state/daily_os_onboarding_session.dart` | Walkthrough session contract: stable id, target date, `auto`/`replay` origin, tips-visible state, and exactly-once guards for the stage and skip events (emission injected via a callback so it is testable in isolation). Consumed by the coach strips; the modal does not thread it yet (Phase 2b). |
 | `DailyOsOnboardingSpotlight` | `ui/widgets/daily_os_onboarding_spotlight.dart` | Presentational full-screen coaching overlay: dims the surface, cuts a highlight hole around a measured target rect (the check-in CTA), and floats a glass card with one primary action. Tap-inside-target and the card's action both proceed; scrim taps dismiss. Attention ring pulses under normal motion, static under `MediaQuery.disableAnimationsOf`. Copy/callbacks/rect all injected — the wiring layer (Phase 2b) measures the CTA and inserts it into an `Overlay`. |
 | `DailyOsOnboardingCoachStrip` | `ui/widgets/daily_os_onboarding_coach_strip.dart` | Presentational static glass banner narrating one modal beat, with an optional injected "hide tips" affordance. No motion, no session/metrics logic of its own. |
 | `DailyOsOnboardingSessionController` | `state/daily_os_onboarding_session_controller.dart` | Holds the single active session (or null). `start`/`end` own the lifecycle; `complete` records the materialized-task bucket + completion and retires the cadence; `dismiss` records the skip. Wires the session's events to `OnboardingMetricsRepository` (best-effort, tagged by origin). |
