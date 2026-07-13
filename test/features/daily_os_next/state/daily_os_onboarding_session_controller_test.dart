@@ -212,6 +212,34 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('asynchronous metrics failures are swallowed', () async {
+      when(
+        () => repo.recordEvent(
+          any(),
+          provider: any(named: 'provider'),
+          reason: any(named: 'reason'),
+          valueBucket: any(named: 'valueBucket'),
+        ),
+      ).thenAnswer(
+        (_) => Future<void>.error(StateError('metrics unavailable')),
+      );
+      final errors = <Object>[];
+
+      await runZonedGuarded(
+        () async {
+          final container = makeContainer();
+          controllerOf(container)
+              .start(origin: DailyOsOnboardingOrigin.auto)
+              .recordStageOnce(OnboardingEventName.dailyOsReconcileReached);
+          await Future<void>.value();
+          await Future<void>.value();
+        },
+        (error, _) => errors.add(error),
+      );
+
+      expect(errors, isEmpty);
+    });
   });
 
   group('complete', () {

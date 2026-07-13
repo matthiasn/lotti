@@ -116,23 +116,33 @@ bool _isSameLocalDay(DateTime a, DateTime b) {
 /// This is the same truth the real `DayPlanningCreate` drafting wake gates on:
 /// `DayAgentWorkflow` fails with `'No inference provider configured'` unless the
 /// planner's profile resolves a thinking slot, which ultimately requires **at
-/// least one configured inference provider that is usable** (API key set, or a
-/// keyless local provider with a base URL). Gating the walkthrough on this
-/// keeps us from inviting a user into a capture-and-draft flow that is
-/// guaranteed to fail — and, reading the reactive config controller, it flips
-/// to `true` the moment the user connects a provider.
+/// least one configured text-inference provider that is usable** (API key set,
+/// or a keyless local provider with a base URL). Audio-only providers are not
+/// sufficient because they can only serve the optional transcription slot.
+/// Gating the walkthrough on this keeps us from inviting a user into a
+/// capture-and-draft flow that is guaranteed to fail — and, reading the
+/// reactive config controller, it flips to `true` the moment the user connects
+/// a suitable provider.
 ///
 /// Transcription/image slots are non-fatal (resolved best-effort), so the
-/// gate is the drafting thinking slot, mirrored here as "a usable provider
-/// exists" — which is upstream of profile/template seeding and needs no
-/// planner agent to exist yet.
+/// gate is the drafting thinking slot, mirrored here as "a usable, non-audio
+/// provider exists" — which is upstream of profile/template seeding and needs
+/// no planner agent to exist yet.
+const Set<InferenceProviderType> _audioOnlyProviderTypes = {
+  InferenceProviderType.mlxAudio,
+  InferenceProviderType.voxtral,
+  InferenceProviderType.whisper,
+};
+
 final FutureProvider<bool> dailyOsOnboardingProviderReadyProvider =
     FutureProvider<bool>((ref) async {
       final providers = await ref.watch(
         aiConfigByTypeControllerProvider(AiConfigType.inferenceProvider).future,
       );
       return providers.whereType<AiConfigInferenceProvider>().any(
-        (provider) => provider.isUsable,
+        (provider) =>
+            provider.isUsable &&
+            !_audioOnlyProviderTypes.contains(provider.inferenceProviderType),
       );
     }, name: 'dailyOsOnboardingProviderReadyProvider');
 

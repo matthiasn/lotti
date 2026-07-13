@@ -746,7 +746,8 @@ teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 > stage events), and the modal's typed result drives completion (retiring the
 > cadence) or a skip. `dailyOsOnboardingProviderReadyProvider` now reflects the
 > **real** readiness the drafting flow needs — at least one *usable* configured
-> inference provider — so with a provider connected and the off-by-default
+> text-inference provider (audio-only providers do not qualify) — so with a
+> suitable provider connected and the off-by-default
 > `dailyOsOnboardingEnabledFlag` turned on, the walkthrough auto-shows to a
 > genuinely new Daily OS user on today's unplanned surface. It stays **inert by
 > default** (flag off). Still **deferred**: the completion **celebration** beat

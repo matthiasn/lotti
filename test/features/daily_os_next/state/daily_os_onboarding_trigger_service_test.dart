@@ -204,6 +204,22 @@ void main() {
     test('true for a keyless local provider with a base URL', () async {
       expect(await readReady([testLocalInferenceProvider()]), isTrue);
     });
+
+    test('false when every usable provider is audio-only', () async {
+      for (final providerType in const {
+        InferenceProviderType.mlxAudio,
+        InferenceProviderType.voxtral,
+        InferenceProviderType.whisper,
+      }) {
+        expect(
+          await readReady([
+            testInferenceProvider(inferenceProviderType: providerType),
+          ]),
+          isFalse,
+          reason: '${providerType.name} cannot serve the thinking slot',
+        );
+      }
+    });
   });
 
   group('shouldAutoShowDailyOsOnboarding', () {
@@ -231,6 +247,7 @@ void main() {
       bool onboardingEnabled = true,
       bool providerReady = true,
       bool welcomeStillOwed = false,
+      bool useRealWelcomeGate = false,
       bool whatsNewUnseen = false,
       int everPlanCount = 0,
       DraftPlan? todayPlan,
@@ -244,6 +261,9 @@ void main() {
       when(
         () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
       ).thenAnswer((_) async => whatsNewUnseen);
+      when(
+        () => mockJournalDb.getConfigFlag(enableOnboardingFtueFlag),
+      ).thenAnswer((_) async => true);
 
       final mockAgentRepo = MockAgentRepository();
       when(
@@ -268,9 +288,10 @@ void main() {
           ),
           // The general FTUE welcome's own gate, resolved directly so this
           // test does not re-plumb the welcome's dependencies.
-          shouldAutoShowOnboardingProvider.overrideWith(
-            (ref) async => welcomeStillOwed,
-          ),
+          if (!useRealWelcomeGate)
+            shouldAutoShowOnboardingProvider.overrideWith(
+              (ref) async => welcomeStillOwed,
+            ),
         ],
       );
       addTearDown(container.dispose);
@@ -295,6 +316,36 @@ void main() {
     test('false while the general FTUE welcome is still owed', () async {
       final container = createContainer(welcomeStillOwed: true);
       expect(await read(container), isFalse);
+    });
+
+    test('re-evaluates after the general FTUE welcome completes', () async {
+      final container = createContainer(useRealWelcomeGate: true);
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        final subscription = container.listen(
+          shouldAutoShowDailyOsOnboardingProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+
+        expect(
+          await container.read(
+            shouldAutoShowDailyOsOnboardingProvider.future,
+          ),
+          isFalse,
+        );
+
+        await container
+            .read(onboardingWelcomeCadenceProvider.notifier)
+            .markCompleted();
+
+        expect(
+          await container.read(
+            shouldAutoShowDailyOsOnboardingProvider.future,
+          ),
+          isTrue,
+        );
+      });
     });
 
     test("false while What's New has unseen content", () async {

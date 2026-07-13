@@ -491,6 +491,47 @@ void main() {
         'true',
       );
     });
+
+    test(
+      'markCompleted refreshes the currently watched welcome gate',
+      () async {
+        final mockJournalDb = MockJournalDb();
+        when(
+          () => mockJournalDb.getConfigFlag(enableOnboardingFtueFlag),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
+        ).thenAnswer((_) async => false);
+        final container = ProviderContainer(
+          overrides: [
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            whatsNewControllerProvider.overrideWith(
+              _NoUnseenWhatsNewController.new,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        final subscription = container.listen(
+          shouldAutoShowOnboardingProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+
+        expect(
+          await container.read(shouldAutoShowOnboardingProvider.future),
+          isTrue,
+        );
+
+        await container
+            .read(onboardingWelcomeCadenceProvider.notifier)
+            .markCompleted();
+
+        expect(
+          await container.read(shouldAutoShowOnboardingProvider.future),
+          isFalse,
+        );
+      },
+    );
   });
 
   // Both cadence writes run fire-and-forget from a modal callback, so a

@@ -106,12 +106,28 @@ class DailyOsOnboardingSessionController
   }) {
     if (!getIt.isRegistered<OnboardingMetricsRepository>()) return;
     unawaited(
-      getIt<OnboardingMetricsRepository>().recordEvent(
+      _recordBestEffort(
+        getIt<OnboardingMetricsRepository>(),
         event,
         reason: reason ?? origin.name,
         valueBucket: valueBucket,
       ),
     );
+  }
+
+  Future<void> _recordBestEffort(
+    OnboardingMetricsRepository repository,
+    OnboardingEventName event, {
+    required String reason,
+    int? valueBucket,
+  }) async {
+    try {
+      await repository.recordEvent(
+        event,
+        reason: reason,
+        valueBucket: valueBucket,
+      );
+    } catch (_) {}
   }
 }
 
