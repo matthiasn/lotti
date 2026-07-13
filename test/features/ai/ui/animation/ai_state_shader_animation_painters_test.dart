@@ -12,12 +12,14 @@ void main() {
   group('AI state shader painters', () {
     // One shared load per program instead of per-test asset reads.
     late ui.FragmentProgram voiceProgram;
+    late ui.FragmentShader voiceShader;
     late ui.FragmentProgram thinkingProgram;
 
     setUpAll(() async {
       voiceProgram = await ui.FragmentProgram.fromAsset(
         AiStateShaderAssets.voiceInput,
       );
+      voiceShader = voiceProgram.fragmentShader();
       thinkingProgram = await ui.FragmentProgram.fromAsset(
         AiStateShaderAssets.thinkingLine,
       );
@@ -27,40 +29,37 @@ void main() {
       _,
     ) async {
       final painter = AiVoiceInputShaderPainter(
-        program: voiceProgram,
+        shader: voiceShader,
         dbfs: -18,
         dbfsFloor: -80,
         time: 1.4,
         intensity: 0.9,
         lineDensity: 24,
         orbitalMix: 0.55,
-        route: AiVoiceShaderRoute.tensionLoop,
         primaryColor: const Color(0xFF63D7C7),
         secondaryColor: const Color(0xFFE9EEF2),
         backgroundColor: const Color(0x00000000),
       );
       final samePainter = AiVoiceInputShaderPainter(
-        program: voiceProgram,
+        shader: voiceShader,
         dbfs: -18,
         dbfsFloor: -80,
         time: 1.4,
         intensity: 0.9,
         lineDensity: 24,
         orbitalMix: 0.55,
-        route: AiVoiceShaderRoute.tensionLoop,
         primaryColor: const Color(0xFF63D7C7),
         secondaryColor: const Color(0xFFE9EEF2),
         backgroundColor: const Color(0x00000000),
       );
       final changedPainter = AiVoiceInputShaderPainter(
-        program: voiceProgram,
+        shader: voiceShader,
         dbfs: -12,
         dbfsFloor: -80,
         time: 1.4,
         intensity: 0.9,
         lineDensity: 24,
         orbitalMix: 0.55,
-        route: AiVoiceShaderRoute.tensionLoop,
         primaryColor: const Color(0xFF63D7C7),
         secondaryColor: const Color(0xFFE9EEF2),
         backgroundColor: const Color(0x00000000),
@@ -136,25 +135,11 @@ void main() {
       expect(changedOpacityPainter.shouldRepaint(painter), isTrue);
     });
 
-    testWidgets('changing only the shader route forces a repaint', (
+    testWidgets('changing only the thinking shader route forces a repaint', (
       _,
     ) async {
-      // The route selects a different visual program branch inside the shader,
-      // so two painters that differ in nothing but their route must repaint.
-      AiVoiceInputShaderPainter voice(AiVoiceShaderRoute route) =>
-          AiVoiceInputShaderPainter(
-            program: voiceProgram,
-            dbfs: -18,
-            dbfsFloor: -80,
-            time: 1.4,
-            intensity: 0.9,
-            lineDensity: 24,
-            orbitalMix: 0.55,
-            route: route,
-            primaryColor: const Color(0xFF63D7C7),
-            secondaryColor: const Color(0xFFE9EEF2),
-            backgroundColor: const Color(0x00000000),
-          );
+      // The route selects a different visual program branch inside the
+      // thinking shader, so changing only that input must repaint.
       AiThinkingLineShaderPainter thinking(AiThinkingShaderRoute route) =>
           AiThinkingLineShaderPainter(
             program: thinkingProgram,
@@ -169,21 +154,6 @@ void main() {
             secondaryColor: const Color(0xFFE9EEF2),
             backgroundColor: const Color(0x00000000),
           );
-
-      for (final route in AiVoiceShaderRoute.values) {
-        final other = AiVoiceShaderRoute
-            .values[(route.index + 1) % AiVoiceShaderRoute.values.length];
-        expect(
-          voice(route).shouldRepaint(voice(other)),
-          isTrue,
-          reason: 'voice $route vs $other must repaint',
-        );
-        expect(
-          voice(route).shouldRepaint(voice(route)),
-          isFalse,
-          reason: 'voice $route vs itself must not repaint',
-        );
-      }
 
       for (final route in AiThinkingShaderRoute.values) {
         final other = AiThinkingShaderRoute
@@ -209,7 +179,6 @@ void main() {
         intensity: 0.8,
         lineDensity: 20,
         orbitalMix: 0.5,
-        route: AiVoiceShaderRoute.elasticMembrane,
         primaryColor: const Color(0xFF63D7C7),
         secondaryColor: const Color(0xFFE9EEF2),
         backgroundColor: const Color(0x11000000),
@@ -221,7 +190,6 @@ void main() {
         intensity: 0.8,
         lineDensity: 20,
         orbitalMix: 0.5,
-        route: AiVoiceShaderRoute.elasticMembrane,
         primaryColor: const Color(0xFF63D7C7),
         secondaryColor: const Color(0xFFE9EEF2),
         backgroundColor: const Color(0x11000000),
@@ -233,7 +201,6 @@ void main() {
         intensity: 0.8,
         lineDensity: 20,
         orbitalMix: 0.5,
-        route: AiVoiceShaderRoute.elasticMembrane,
         primaryColor: const Color(0xFF63D7C7),
         secondaryColor: const Color(0xFFE9EEF2),
         backgroundColor: const Color(0x11000000),
@@ -317,12 +284,14 @@ void main() {
 
   group('shouldRepaint properties', () {
     late ui.FragmentProgram voiceProgram;
+    late ui.FragmentShader voiceShader;
     late ui.FragmentProgram thinkingProgram;
 
     setUpAll(() async {
       voiceProgram = await ui.FragmentProgram.fromAsset(
         AiStateShaderAssets.voiceInput,
       );
+      voiceShader = voiceProgram.fragmentShader();
       thinkingProgram = await ui.FragmentProgram.fromAsset(
         AiStateShaderAssets.thinkingLine,
       );
@@ -341,19 +310,16 @@ void main() {
                 (bumpField == i ? 1 : 0)),
       );
       return AiVoiceInputShaderPainter(
-        program: voiceProgram,
+        shader: voiceShader,
         dbfs: f(0),
         dbfsFloor: f(1),
         time: f(2),
         intensity: f(3),
         lineDensity: f(4),
         orbitalMix: f(5),
-        route:
-            AiVoiceShaderRoute.values[(seed + (bumpField == 6 ? 1 : 0)) %
-                AiVoiceShaderRoute.values.length],
-        primaryColor: c(7),
-        secondaryColor: c(8),
-        backgroundColor: c(9),
+        primaryColor: c(6),
+        secondaryColor: c(7),
+        backgroundColor: c(8),
       );
     }
 
@@ -387,7 +353,7 @@ void main() {
 
     glados.Glados2<int, int>(
       glados.IntAnys(glados.any).intInRange(0, 1 << 16),
-      glados.IntAnys(glados.any).intInRange(0, 10),
+      glados.IntAnys(glados.any).intInRange(0, 9),
       glados.ExploreConfig(numRuns: 120),
     ).test(
       'voice painter repaints iff any field differs',

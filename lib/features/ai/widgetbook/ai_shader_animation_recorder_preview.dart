@@ -468,7 +468,6 @@ class _VoiceRecorderDrivenPreviewState
       intensity: widget.config.intensity,
       lineDensity: widget.config.lineDensity,
       orbitalMix: widget.config.orbitalMix,
-      route: widget.config.route,
       primaryColor: widget.config.primaryColor,
       secondaryColor: widget.config.secondaryColor,
       backgroundColor: widget.config.backgroundColor,

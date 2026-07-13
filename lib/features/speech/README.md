@@ -102,6 +102,14 @@ audio file, and creates no entry — nothing is transcribed and no task agent is
 woken). The controller also has `pause()` and `resume()`, but that branch is
 not surfaced by the current modal UI.
 
+`AudioRecordingModal.show()` hosts the Wolt sheet on the root navigator by
+default; callers can explicitly opt into their local navigator. Finishing a
+recording returns the created entry ID through that modal route. The content
+pops the route exactly once, and an unlinked recording navigates to its new
+journal entry only after the Wolt route has completed. Keeping navigation out
+of the sheet's teardown prevents nested task navigators from trying to
+reactivate an element that has already been removed.
+
 ### Recorder state
 
 `AudioRecorderState` currently carries:
@@ -147,13 +155,17 @@ mobile `AudioRecordingIndicator` derive visibility from
 ```mermaid
 sequenceDiagram
   participant User as "User"
-  participant Modal as "AudioRecordingModal"
+  participant Presenter as "AudioRecordingModal.show"
+  participant Modal as "AudioRecordingModalContent"
+  participant Navigator as "selected Navigator"
   participant Sidebar as "SidebarAudioRecordingSection"
   participant Ctl as "AudioRecorderController"
   participant Repo as "AudioRecorderRepository"
   participant Speech as "SpeechRepository"
   participant Persist as "PersistenceLogic"
+  participant AppNav as "NavService"
 
+  Presenter->>Navigator: show Wolt sheet (root by default)
   User->>Modal: tap record
   Modal->>Ctl: record(linkedId)
   Ctl->>Ctl: pause active AudioPlayerController if needed
@@ -169,6 +181,12 @@ sequenceDiagram
   Ctl->>Speech: createAudioEntry(audioNote, linkedId, categoryId)
   Speech->>Persist: createDbEntity(JournalAudio)
   Ctl->>Ctl: reset recorder state
+  Ctl-->>Modal: created entry ID
+  Modal->>Navigator: pop(created entry ID) once
+  Navigator-->>Presenter: Wolt route completed
+  opt recording is not linked to an existing entry
+    Presenter->>AppNav: open /journal/created-entry-ID
+  end
 ```
 
 The persisted `JournalAudio` is created from `AudioData` and stored through

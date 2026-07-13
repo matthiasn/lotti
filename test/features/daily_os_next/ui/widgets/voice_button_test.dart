@@ -71,7 +71,6 @@ void main() {
 
     final shaderFinder = find.byType(AiVoiceInputShader);
     final shader = tester.widget<AiVoiceInputShader>(shaderFinder);
-    expect(shader.route, AiVoiceShaderRoute.tensionLoop);
     expect(shader.dbfs, -18);
     expect(shader.dbfsFloor, -72);
     expect(shader.size, VoiceButton.shaderSizeFor(buttonSize));

@@ -18,6 +18,25 @@ void main() {
       expect(pubspec, contains('shaders:'));
     });
 
+    test('voice shader ships the bounded shared-field production program', () {
+      final source = File(AiStateShaderAssets.voiceInput).readAsStringSync();
+
+      expect(source, contains('vec4 pressure = vec4('));
+      expect(source, contains('float crossingMask = max('));
+      expect(source, isNot(contains('uVariant')));
+      expect(source, isNot(contains('vec4 elasticMembrane(')));
+      expect(source, isNot(contains('vec4 impactRipples(')));
+      expect(source, isNot(contains('vec4 liquidPulse(')));
+      expect(source, isNot(contains('vec4 resonanceBraid(')));
+      expect(source, isNot(contains('pressureField(')));
+      expect(source, isNot(contains('contourRing(')));
+      expect(RegExp(r'\bsin\(').allMatches(source), hasLength(5));
+      expect(RegExp(r'\bcos\(').allMatches(source), hasLength(9));
+      expect(source, isNot(contains('pow(')));
+      expect(source, isNot(contains('exp(')));
+      expect(source.length, lessThan(13000));
+    });
+
     testWidgets('compile as Flutter runtime-effect shaders', (tester) async {
       final voiceProgram = await ui.FragmentProgram.fromAsset(
         AiStateShaderAssets.voiceInput,
@@ -57,18 +76,7 @@ void main() {
   });
 
   group('AiVoiceInputShader', () {
-    test('exposes five deformed-circle voice routes', () {
-      expect(AiVoiceShaderRoute.values, hasLength(5));
-      expect(AiVoiceShaderRoute.values.map((route) => route.label), [
-        'Elastic membrane',
-        'Impact ripples',
-        'Tension loop',
-        'Liquid pulse',
-        'Resonance braid',
-      ]);
-    });
-
-    test('defaults to the hotter tension loop route at production speed', () {
+    test('uses the production tension-loop speed', () {
       const shader = AiVoiceInputShader(
         dbfs: -24,
         size: 160,
@@ -77,7 +85,6 @@ void main() {
         backgroundColor: Color(0x00000000),
       );
 
-      expect(shader.route, AiVoiceShaderRoute.tensionLoop);
       expect(shader.speed, 2);
     });
 
@@ -96,7 +103,6 @@ void main() {
             intensity: 0.9,
             lineDensity: 24,
             orbitalMix: 0.6,
-            route: AiVoiceShaderRoute.resonanceBraid,
             primaryColor: const Color(0xFF63D7C7),
             secondaryColor: const Color(0xFFE9EEF2),
             backgroundColor: const Color(0x00000000),
@@ -112,6 +118,46 @@ void main() {
         isA<AiVoiceInputShaderPainter>(),
       );
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('reuses one fragment shader across widget updates', (
+      tester,
+    ) async {
+      final program = await ui.FragmentProgram.fromAsset(
+        AiStateShaderAssets.voiceInput,
+      );
+      Future<ui.FragmentProgram> loadProgram() async => program;
+
+      Widget build(double dbfs) => TestSurface(
+        child: AiVoiceInputShader(
+          dbfs: dbfs,
+          size: 160,
+          primaryColor: const Color(0xFF63D7C7),
+          secondaryColor: const Color(0xFFE9EEF2),
+          backgroundColor: const Color(0x00000000),
+          timeOverride: 1.25,
+          programLoader: loadProgram,
+        ),
+      );
+
+      await tester.pumpWidget(build(-24));
+      await tester.pump();
+      final first =
+          hCustomPaintUnder<AiVoiceInputShader>(tester).painter!
+              as AiVoiceInputShaderPainter;
+
+      await tester.pumpWidget(build(-12));
+      await tester.pump();
+      final second =
+          hCustomPaintUnder<AiVoiceInputShader>(tester).painter!
+              as AiVoiceInputShaderPainter;
+
+      expect(identical(second.shader, first.shader), isTrue);
+      expect(second.dbfs, -12);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      expect(second.shader.debugDisposed, isTrue);
     });
 
     testWidgets('wraps output in Semantics with the provided label', (

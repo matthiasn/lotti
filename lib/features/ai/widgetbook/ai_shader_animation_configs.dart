@@ -12,7 +12,6 @@ class _VoiceShaderConfig {
     required this.intensity,
     required this.lineDensity,
     required this.orbitalMix,
-    required this.route,
     required this.primaryColor,
     required this.secondaryColor,
     required this.backgroundColor,
@@ -28,7 +27,6 @@ class _VoiceShaderConfig {
   final double intensity;
   final double lineDensity;
   final double orbitalMix;
-  final AiVoiceShaderRoute route;
   final Color primaryColor;
   final Color secondaryColor;
   final Color backgroundColor;
@@ -77,12 +75,6 @@ _VoiceShaderConfig _voiceConfigFromKnobs(BuildContext context) {
     ),
     useRecorderVoiceProcessing: context.knobs.boolean(
       label: 'Voice / recorder voice processing',
-    ),
-    route: context.knobs.object.dropdown(
-      label: 'Voice / route',
-      options: AiVoiceShaderRoute.values,
-      initialOption: AiVoiceShaderRoute.tensionLoop,
-      labelBuilder: (route) => route.label,
     ),
     manualDbfs: context.knobs.double.slider(
       label: 'Voice / manual dBFS',

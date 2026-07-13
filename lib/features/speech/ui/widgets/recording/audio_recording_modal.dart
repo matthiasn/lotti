@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -40,9 +41,11 @@ class AudioRecordingModal {
       controller.setCategoryId(categoryId);
     }
 
+    String? createdId;
     try {
-      await ModalUtils.showSinglePageModal<void>(
+      createdId = await ModalUtils.showSinglePageModal<String>(
         context: context,
+        useRootNavigator: useRootNavigator,
         hasTopBarLayer: false,
         showCloseButton: false,
         padding: ModalUtils.defaultPadding.copyWith(bottom: 20),
@@ -57,6 +60,13 @@ class AudioRecordingModal {
       // Modal has been dismissed (either by stop button, back gesture, or tapping outside)
       // Always set modal visibility to false after dismissal
       controller.setModalVisible(modalVisible: false);
+    }
+
+    // Navigate only after Wolt has completed the modal route. Starting a page
+    // navigation from inside the sheet's own teardown can make Flutter try to
+    // reactivate an element that the nested navigator has already removed.
+    if (linkedId == null && createdId != null) {
+      beamToNamed('/journal/$createdId');
     }
   }
 }
@@ -187,11 +197,13 @@ class _AudioRecordingModalContentState
     ThemeData theme,
   ) {
     if (style == RecordingStyle.modern) {
+      final tokens = context.designTokens;
       return AiVoiceInputShader(
         dbfs: state.dBFS,
         size: 220,
-        primaryColor: theme.colorScheme.primary,
-        secondaryColor: theme.colorScheme.onSurface,
+        intensity: 1,
+        primaryColor: tokens.colors.interactive.enabled,
+        secondaryColor: tokens.colors.text.highEmphasis,
         backgroundColor: Colors.transparent,
       );
     }
@@ -215,25 +227,21 @@ class _AudioRecordingModalContentState
     final controller = ref.read(audioRecorderControllerProvider.notifier);
     final state = ref.read(audioRecorderControllerProvider);
 
+    String? createdId;
     try {
-      final String? createdId;
       if (state.isRealtimeMode) {
         createdId = await controller.stopRealtime();
       } else {
         createdId = await controller.stop();
       }
+    } catch (_) {}
 
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-      if (widget.linkedId == null && createdId != null) {
-        beamToNamed('/journal/$createdId');
-      }
-    } catch (_) {
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-    }
+    if (!mounted) return;
+
+    // Pop exactly once and return the created entry to [AudioRecordingModal].
+    // The previous catch-all called pop a second time when the first pop or the
+    // following navigation failed, racing Wolt's inactive-element teardown.
+    Navigator.of(context).pop(createdId);
   }
 
   /// Discards the in-progress recording entirely and closes the sheet.

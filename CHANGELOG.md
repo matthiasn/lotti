@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pausing AI entirely. Reports keep immutable model/provider attribution after
   later setup changes. Automatic task-related updates can also be switched off
   without removing the manual Run now action or the existing report.
+### Fixed
+- **The energy-orb recording visualization no longer overwhelms Linux
+  rendering.** The orb now compiles only its production shader and reuses the
+  loaded fragment shader as live audio levels change, avoiding the prolonged
+  Settings stall and recording crash seen on affected Linux graphics stacks.
+  Finishing a recording also dismisses its sheet exactly once before opening
+  the saved entry, avoiding a nested-navigator teardown failure.
 
 ## [0.9.1039]
 ### Added

@@ -1,8 +1,9 @@
 # Audio Recording UI Components
 
 This directory contains the UI components for audio recording functionality in
-Lotti. The recording system provides a visual VU meter, recording controls, and
-status indicators driven by the same live dBFS stream.
+Lotti. The recording system provides a selectable analog VU meter or energy
+orb, recording controls, and status indicators driven by the same live dBFS
+stream.
 
 ## Components Overview
 
@@ -32,13 +33,18 @@ AnalogVuMeter(
 The main recording interface presented as a modal bottom sheet.
 
 **Features:**
-- Displays the VU meter for visual audio feedback
+- Displays the persisted recording-style choice: analog VU meter or the
+  dBFS-reactive energy orb
 - Shows recording duration in H:MM:SS format
 - Standard/Realtime transcription mode toggle (shown when realtime transcription
   is available and recording has not started)
 - Record/Stop button with recording status indicator
 - Integrates with Riverpod state management via `AudioRecorderController`
 - Automatically pauses any playing audio when recording starts
+- Uses the root navigator by default so the sheet remains stable above nested
+  desktop task navigators
+- Returns the created entry ID through the modal result, dismisses the sheet
+  once, and only then opens an unlinked recording's journal entry
 
 **Usage:**
 ```dart
@@ -46,7 +52,26 @@ AudioRecordingModal.show(
   context,
   linkedId: entryId,      // Optional: Link recording to existing entry
   categoryId: categoryId, // Optional: Assign category
+  useRootNavigator: true, // Default: host above nested task navigators
 )
+```
+
+```mermaid
+sequenceDiagram
+  participant Caller
+  participant Sheet as AudioRecordingModalContent
+  participant Controller as AudioRecorderController
+  participant Navigator
+  participant AppNav as NavService
+
+  Caller->>Navigator: show Wolt sheet
+  Sheet->>Controller: stop() or stopRealtime()
+  Controller-->>Sheet: created entry ID
+  Sheet->>Navigator: pop(created entry ID) once
+  Navigator-->>Caller: modal future completes
+  opt unlinked recording produced an entry
+    Caller->>AppNav: open journal entry
+  end
 ```
 
 ### 3. AudioRecordingOrb
@@ -210,12 +235,14 @@ The recording system uses:
 ## Usage Flow
 
 1. User taps "Audio Recording" in create entry modal
-2. `AudioRecordingModal` opens showing VU meter
+2. `AudioRecordingModal` opens showing the selected VU meter or energy orb
 3. User taps record button to start
-4. VU meter shows real-time audio levels
+4. The selected visualizer shows real-time audio levels
 5. Persistent indicators appear if user navigates away: the desktop sidebar
    card sits above the running timer card; the mobile pill sits in the bottom
    navigation overlay
-6. User taps stop to end recording
-7. If auto-transcribe enabled, transcription begins
-8. Audio entry is created and saved
+6. User taps stop to end recording; the created ID is returned while the sheet
+   is dismissed exactly once
+7. An unlinked recording opens only after the modal route has completed
+8. If auto-transcribe is enabled, transcription begins
+9. The audio entry is created and saved
