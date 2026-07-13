@@ -4,10 +4,10 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
+import 'package:lotti/features/ai/ui/widgets/inference_profile_picker_modal.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
@@ -55,7 +55,7 @@ class AgentCreationModal {
         // Page 1: Profile selection
         ModalUtils.modalSheetPage(
           context: modalContext,
-          title: modalContext.messages.inferenceProfilesTitle,
+          title: modalContext.messages.inferenceProfileChooseTitle,
           padding: const EdgeInsets.symmetric(vertical: 20),
           onTapBack: singleTemplate != null
               ? null
@@ -174,110 +174,21 @@ class _ProfileSelectionPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profilesAsync = ref.watch(inferenceProfileControllerProvider);
+    final profiles = (profilesAsync.value ?? const <AiConfig>[])
+        .whereType<AiConfigInferenceProfile>()
+        .where((profile) => isDesktop || !profile.desktopOnly)
+        .toList();
 
-    return switch (profilesAsync) {
-      AsyncData(:final value) => _ProfileList(
-        configs: value,
-        onProfileSelected: onProfileSelected,
-      ),
-      AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError() => Center(child: Text(context.messages.commonError)),
-    };
-  }
-}
-
-class _ProfileList extends StatefulWidget {
-  const _ProfileList({
-    required this.configs,
-    required this.onProfileSelected,
-  });
-
-  final List<AiConfig> configs;
-  final ValueChanged<String> onProfileSelected;
-
-  @override
-  State<_ProfileList> createState() => _ProfileListState();
-}
-
-class _ProfileListState extends State<_ProfileList> {
-  String? _hoveredId;
-
-  List<AiConfigInferenceProfile> _filteredProfiles(List<AiConfig> configs) {
-    final profiles = configs.whereType<AiConfigInferenceProfile>().toList();
-    return isDesktop
-        ? profiles
-        : profiles.where((p) => !p.desktopOnly).toList();
-  }
-
-  @override
-  void didUpdateWidget(covariant _ProfileList oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!identical(widget.configs, oldWidget.configs) && _hoveredId != null) {
-      final filtered = _filteredProfiles(widget.configs);
-      if (!filtered.any((p) => p.id == _hoveredId)) {
-        _hoveredId = null;
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final filtered = _filteredProfiles(widget.configs);
-
-    if (filtered.isEmpty) {
-      return Center(
-        child: Text(
-          context.messages.inferenceProfilesEmpty,
-          style: context.textTheme.bodyLarge?.copyWith(
-            color: context.colorScheme.onSurfaceVariant,
-          ),
-        ),
+    if (profiles.isNotEmpty || profilesAsync.hasValue) {
+      return InferenceProfilePickerList(
+        profiles: profiles,
+        selectedProfileId: null,
+        onSelected: onProfileSelected,
       );
     }
-
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final (index, profile) in filtered.indexed)
-            DesignSystemListItem(
-              key: ValueKey(profile.id),
-              title: profile.name,
-              subtitle: profile.thinkingModelId,
-              leading: Icon(
-                Icons.tune,
-                size: 20,
-                color: tokens.colors.interactive.enabled,
-              ),
-              trailing: profile.desktopOnly
-                  ? Icon(
-                      Icons.desktop_windows_outlined,
-                      size: 16,
-                      color: tokens.colors.text.mediumEmphasis,
-                    )
-                  : null,
-              showDivider: index < filtered.length - 1,
-              dividerColor:
-                  index < filtered.length - 1 &&
-                      (_hoveredId == profile.id ||
-                          _hoveredId == filtered[index + 1].id)
-                  ? Colors.transparent
-                  : null,
-              onTap: () => widget.onProfileSelected(profile.id),
-              onHoverChanged: (hovered) {
-                setState(() {
-                  if (hovered) {
-                    _hoveredId = profile.id;
-                  } else if (_hoveredId == profile.id) {
-                    _hoveredId = null;
-                  }
-                });
-              },
-            ),
-        ],
-      ),
-    );
+    if (profilesAsync.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return Center(child: Text(context.messages.commonError));
   }
 }

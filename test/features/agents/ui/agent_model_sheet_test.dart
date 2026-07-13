@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -67,10 +70,12 @@ void main() {
 
   late MockTaskAgentService service;
   late MockJournalDb journalDb;
+  late GlobalKey<ScaffoldMessengerState> taskMessengerKey;
 
   setUp(() {
     service = MockTaskAgentService();
     journalDb = MockJournalDb();
+    taskMessengerKey = GlobalKey<ScaffoldMessengerState>();
     when(
       () => service.updateAutomaticUpdates(
         agentId: any(named: 'agentId'),
@@ -138,15 +143,18 @@ void main() {
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        Scaffold(
-          body: Builder(
-            builder: (context) => FilledButton(
-              onPressed: () => AgentModelSheet.show(
-                context: context,
-                taskId: 'task-1',
-                agentId: 'agent-1',
+        ScaffoldMessenger(
+          key: taskMessengerKey,
+          child: Scaffold(
+            body: Builder(
+              builder: (context) => FilledButton(
+                onPressed: () => AgentModelSheet.show(
+                  context: context,
+                  taskId: 'task-1',
+                  agentId: 'agent-1',
+                ),
+                child: const Text('Open'),
               ),
-              child: const Text('Open'),
             ),
           ),
         ),
@@ -214,30 +222,11 @@ void main() {
   );
 
   testWidgets(
-    'automation checkbox persists off and profile/model choices save',
+    'automation checkbox persists off',
     (
       tester,
     ) async {
       await openSheet(tester);
-
-      await tester.tap(find.text('Saved profile'));
-      await tester.pump();
-      await tester.pump();
-      verify(
-        () => service.updateAgentProfile(
-          agentId: 'agent-1',
-          profileId: 'profile-1',
-        ),
-      ).called(1);
-
-      await tester.tap(find.text('Choose a thinking model'));
-      await tester.pump();
-      verify(
-        () => service.updateAgentThinkingModelOverride(
-          agentId: 'agent-1',
-          modelConfigId: 'model-1',
-        ),
-      ).called(1);
 
       await tester.drag(
         find.byType(Scrollable).last,
@@ -254,6 +243,73 @@ void main() {
       ).called(1);
     },
   );
+
+  testWidgets(
+    'profile choice waits for persistence, closes, and toasts in task scope',
+    (tester) async {
+      final saveCompleter = Completer<void>();
+      when(
+        () => service.updateAgentProfile(
+          agentId: any(named: 'agentId'),
+          profileId: any(named: 'profileId'),
+        ),
+      ).thenAnswer((_) => saveCompleter.future);
+      await openSheet(tester);
+
+      await tester.tap(find.text('Saved profile'));
+      await tester.pump();
+
+      expect(find.text('Agent setup'), findsOneWidget);
+      expect(find.byType(DesignSystemToast), findsNothing);
+
+      saveCompleter.complete();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      verify(
+        () => service.updateAgentProfile(
+          agentId: 'agent-1',
+          profileId: 'profile-1',
+        ),
+      ).called(1);
+      expect(find.text('Agent setup'), findsNothing);
+      expect(
+        find.text(
+          'Using Saved profile for every future agent update until you change it.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(taskMessengerKey),
+          matching: find.byType(DesignSystemToast),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('model choice persists and closes the outer setup modal', (
+    tester,
+  ) async {
+    await openSheet(tester);
+
+    await tester.tap(find.text('Choose a thinking model'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    verify(
+      () => service.updateAgentThinkingModelOverride(
+        agentId: 'agent-1',
+        modelConfigId: 'model-1',
+      ),
+    ).called(1);
+    expect(find.text('Agent setup'), findsNothing);
+    expect(
+      find.textContaining('Using Qwen 3.5 Plus'),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('No AI setup requires confirmation and persists disabled mode', (
     tester,

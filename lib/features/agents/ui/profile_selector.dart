@@ -1,13 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/ai/ui/widgets/inference_profile_picker_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/selection/selection_modal_base.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 
 /// Inference profiles usable on this platform: `desktopOnly` profiles are
@@ -25,31 +24,27 @@ List<AiConfigInferenceProfile> _platformProfiles(
 
 /// Opens the shared profile-selection modal; selecting a profile invokes
 /// [onProfileSelected] and pops the modal.
-void _showProfilePicker({
+Future<void> _showProfilePicker({
   required BuildContext context,
   required List<AiConfigInferenceProfile> profiles,
   required String? selectedProfileId,
   required ValueChanged<String?> onProfileSelected,
-}) {
-  SelectionModalBase.show(
+}) async {
+  final selectedId = await InferenceProfilePickerModal.show(
     context: context,
-    title: context.messages.agentDefaultProfileLabel,
-    builder: (modalContext) => _ProfilePickerContent(
-      profiles: profiles,
-      selectedProfileId: selectedProfileId,
-      onSelected: (id) {
-        onProfileSelected(id);
-        Navigator.of(modalContext).pop();
-      },
-    ),
+    profiles: profiles,
+    selectedProfileId: selectedProfileId,
   );
+  if (selectedId != null && context.mounted) {
+    onProfileSelected(selectedId);
+  }
 }
 
 /// Lists inference profiles for selection in agent/template contexts.
 ///
 /// Filters out `desktopOnly` profiles on non-desktop platforms.
 /// Pre-selects the given [selectedProfileId] if provided.
-class ProfileSelector extends ConsumerWidget {
+class ProfileSelector extends StatelessWidget {
   const ProfileSelector({
     required this.selectedProfileId,
     required this.onProfileSelected,
@@ -65,56 +60,11 @@ class ProfileSelector extends ConsumerWidget {
   final String? hintText;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final filtered = _platformProfiles(
-      ref.watch(inferenceProfileControllerProvider),
-    );
-
-    final selected = selectedProfileId != null
-        ? filtered.where((p) => p.id == selectedProfileId).firstOrNull
-        : null;
-
-    return InkWell(
-      onTap: filtered.isNotEmpty
-          ? () => _showProfilePicker(
-              context: context,
-              profiles: filtered,
-              selectedProfileId: selectedProfileId,
-              onProfileSelected: onProfileSelected,
-            )
-          : null,
-      borderRadius: BorderRadius.circular(12),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: context.messages.agentDefaultProfileLabel,
-          border: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
-          suffixIcon: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (selectedProfileId != null)
-                IconButton(
-                  icon: const Icon(Icons.clear, size: 18),
-                  onPressed: () => onProfileSelected(null),
-                ),
-              const Icon(Icons.arrow_drop_down),
-            ],
-          ),
-          enabled: filtered.isNotEmpty,
-        ),
-        child: selected != null
-            ? Text(
-                selected.name,
-                style: context.textTheme.bodyLarge,
-              )
-            : Text(
-                hintText ?? context.messages.inferenceProfileSelectProfile,
-                style: context.textTheme.bodyLarge?.copyWith(
-                  color: context.colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-      ),
+  Widget build(BuildContext context) {
+    return SettingsProfilePickerField(
+      selectedProfileId: selectedProfileId,
+      onProfileSelected: onProfileSelected,
+      hintText: hintText,
     );
   }
 }
@@ -153,110 +103,18 @@ class SettingsProfilePickerField extends ConsumerWidget {
       label: context.messages.agentDefaultProfileLabel,
       valueText: selected?.name,
       hintText: hintText ?? context.messages.inferenceProfileSelectProfile,
+      enabled: filtered.isNotEmpty,
       onClear: selected != null ? () => onProfileSelected(null) : null,
       onTap: () {
-        if (filtered.isNotEmpty) {
+        unawaited(
           _showProfilePicker(
             context: context,
             profiles: filtered,
             selectedProfileId: selectedProfileId,
             onProfileSelected: onProfileSelected,
-          );
-        }
+          ),
+        );
       },
-    );
-  }
-}
-
-class _ProfilePickerContent extends StatelessWidget {
-  const _ProfilePickerContent({
-    required this.profiles,
-    required this.selectedProfileId,
-    required this.onSelected,
-  });
-
-  final List<AiConfigInferenceProfile> profiles;
-  final String? selectedProfileId;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: profiles.map((profile) {
-          final isSelected = profile.id == selectedProfileId;
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Material(
-              color: isSelected
-                  ? context.colorScheme.primaryContainer.withValues(alpha: 0.15)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                onTap: () => onSelected(profile.id),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              profile.name,
-                              style: context.textTheme.bodyLarge?.copyWith(
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                                color: isSelected
-                                    ? context.colorScheme.primary
-                                    : context.colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              profile.thinkingModelId,
-                              style: monoMetaStyle(
-                                context.designTokens,
-                                context.designTokens.colors,
-                                base: context.textTheme.bodySmall,
-                                color: context.colorScheme.onSurface.withValues(
-                                  alpha: 0.6,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (profile.desktopOnly)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Icon(
-                            Icons.desktop_windows_outlined,
-                            size: 16,
-                            color: context.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      if (isSelected)
-                        Icon(
-                          Icons.check_rounded,
-                          color: context.colorScheme.primary,
-                          size: 20,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
     );
   }
 }

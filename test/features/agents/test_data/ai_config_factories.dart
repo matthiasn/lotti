@@ -42,6 +42,7 @@ AiConfigInferenceProvider testLocalInferenceProvider({
 AiConfigInferenceProfile testInferenceProfile({
   String id = 'profile-001',
   String name = 'Test Profile',
+  String? description,
   String thinkingModelId = 'models/gemini-3-flash-preview',
   String? thinkingHighEndModelId,
   String? imageRecognitionModelId,
@@ -55,6 +56,7 @@ AiConfigInferenceProfile testInferenceProfile({
   return AiConfig.inferenceProfile(
         id: id,
         name: name,
+        description: description,
         thinkingModelId: thinkingModelId,
         thinkingHighEndModelId: thinkingHighEndModelId,
         imageRecognitionModelId: imageRecognitionModelId,

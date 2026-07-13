@@ -182,7 +182,7 @@ void main() {
 
     // Profile page is shown directly (skipped template page).
     expect(
-      find.text(context.messages.inferenceProfilesTitle),
+      find.text(context.messages.inferenceProfileChooseTitle),
       findsOneWidget,
     );
     expect(find.text('Fast Flash'), findsOneWidget);
@@ -300,12 +300,13 @@ void main() {
     );
   });
 
-  testWidgets('profile page shows thinking model ID as subtitle', (
+  testWidgets('profile page shows description without exposing model ID', (
     tester,
   ) async {
     final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
     final profile = testInferenceProfile(
       name: 'Test Prof',
+      description: 'Private profile for sensitive work',
       thinkingModelId: 'gemini-2.5-pro',
     );
 
@@ -324,7 +325,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Test Prof'), findsOneWidget);
-    expect(find.text('gemini-2.5-pro'), findsOneWidget);
+    expect(find.text('Private profile for sensitive work'), findsOneWidget);
+    expect(find.text('gemini-2.5-pro'), findsNothing);
   });
 
   testWidgets('returns null when templates list is empty', (tester) async {
@@ -385,7 +387,7 @@ void main() {
 
     // Page 1: profile selection.
     expect(
-      find.text(context.messages.inferenceProfilesTitle),
+      find.text(context.messages.inferenceProfileChooseTitle),
       findsOneWidget,
     );
 
@@ -446,7 +448,7 @@ void main() {
   );
 
   testWidgets(
-    'hovering a profile row turns the divider above it transparent',
+    'shared profile rows keep stable dividers during hover',
     (tester) async {
       final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
 
@@ -490,8 +492,8 @@ void main() {
       final dividersAfter = tester
           .widgetList<Divider>(find.byType(Divider))
           .toList();
-      expect(dividersAfter[0].color, Colors.transparent);
-      expect(dividersAfter[1].color, Colors.transparent);
+      expect(dividersAfter[0].color, isNot(Colors.transparent));
+      expect(dividersAfter[1].color, isNot(Colors.transparent));
 
       // Pointer leaves — dividers return to default color.
       await gesture.moveTo(const Offset(-100, -100));
@@ -729,8 +731,7 @@ void main() {
   );
 
   testWidgets(
-    '_ProfileListState.didUpdateWidget clears hoveredId when hovered profile '
-    'disappears from the updated list',
+    'profile stream updates replace rows without leaving the picker',
     (tester) async {
       final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
       final streamController = StreamController<List<AiConfig>>();
@@ -776,32 +777,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Hover the top row 'Alpha' so _hoveredId = 'p-a'. The single divider
-      // (between Alpha and Beta, index 0) turns transparent.
-      final gesture = await tester.createGesture(
-        kind: PointerDeviceKind.mouse,
-      );
-      addTearDown(gesture.removePointer);
-      await gesture.addPointer(location: Offset.zero);
-      final topRowCenter = tester.getCenter(find.text('Alpha'));
-      await gesture.moveTo(topRowCenter);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Alpha'), findsOneWidget);
+      expect(find.text('Beta'), findsOneWidget);
 
-      final dividersHovered = tester
-          .widgetList<Divider>(find.byType(Divider))
-          .toList();
-      expect(dividersHovered, hasLength(1));
-      expect(dividersHovered[0].color, Colors.transparent);
-
-      // Emit a new same-length list that drops 'Alpha' (id 'p-a') while the
-      // mouse stays at the top row's screen position. This fires
-      // _ProfileListState.didUpdateWidget (line 213): configs changed AND
-      // _hoveredId == 'p-a', which is now absent from the filtered list, so
-      // lines 214-216 reset _hoveredId to null. The pointer then re-enters the
-      // new top row 'Beta' (id 'p-b'), so the surviving divider — now between
-      // Beta (index 0) and Gamma (index 1) — is transparent because Beta is
-      // hovered, NOT because the stale 'p-a' leaked.
+      // A background refresh replaces the rows in place. The profile page
+      // remains visible instead of flashing a loading shell.
       streamController.add([
         testInferenceProfile(id: 'p-b', name: 'Beta'),
         testInferenceProfile(id: 'p-c', name: 'Gamma'),
@@ -812,20 +792,7 @@ void main() {
       expect(find.text('Alpha'), findsNothing);
       expect(find.text('Beta'), findsOneWidget);
       expect(find.text('Gamma'), findsOneWidget);
-
-      // Move the pointer fully off the list: Beta's hover-exit clears
-      // _hoveredId, and because the stale 'p-a' was already cleared by
-      // didUpdateWidget there is nothing else hovered — the divider returns to
-      // its opaque default, proving no stale hover id survived the list change.
-      await gesture.moveTo(const Offset(-300, -300));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      final dividersAfterExit = tester
-          .widgetList<Divider>(find.byType(Divider))
-          .toList();
-      expect(dividersAfterExit, hasLength(1));
-      expect(dividersAfterExit[0].color, isNot(Colors.transparent));
+      expect(find.text('Choose an inference profile'), findsOneWidget);
     },
   );
 

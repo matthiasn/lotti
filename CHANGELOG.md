@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   later setup changes. Automatic task-related updates can also be switched off
   without removing the manual Run now action or the existing report.
 ### Fixed
+- **AI profile and model choices now use one consistent picker flow.** Task-agent
+  profile and model changes finish saving before the setup sheet closes, and
+  their confirmation stays inside the task column instead of spanning the app.
+  Category defaults, agent creation, agent templates, inference-profile slots,
+  and task-agent setup now share the same design-system selection language.
 - **The energy-orb recording visualization no longer overwhelms Linux
   rendering.** The orb now compiles only its production shader and reuses the
   loaded fragment shader as live audio levels change, avoiding the prolonged

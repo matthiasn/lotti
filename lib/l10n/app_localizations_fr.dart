@@ -5533,6 +5533,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Peut être choisi pour de nouvelles entrées si actif';
 
   @override
+  String get inferenceProfileChooseModelTitle => 'Choisis un modèle';
+
+  @override
+  String get inferenceProfileChooseTitle => 'Choisis un profil d’inférence';
+
+  @override
   String get inferenceProfileCreateTitle => 'Créer un profil';
 
   @override
@@ -5598,10 +5604,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inferenceProfileSaveButton => 'Enregistrer';
 
   @override
-  String get inferenceProfileSelectModel => 'Sélectionner un modèle…';
+  String get inferenceProfileSelectModel => 'Choisis un modèle…';
 
   @override
-  String get inferenceProfileSelectProfile => 'Sélectionner un profil…';
+  String get inferenceProfileSelectProfile => 'Choisis un profil…';
 
   @override
   String get inferenceProfilesEmpty => 'Aucun profil d\'inférence';
@@ -9017,7 +9023,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskAgentChooseModel => 'Choisir un modèle de réflexion';
 
   @override
-  String get taskAgentChooseProfile => 'Choisir une configuration enregistrée';
+  String get taskAgentChooseProfile => 'Choisis un profil d’inférence';
 
   @override
   String taskAgentCountdownTooltip(String countdown) {
@@ -9077,13 +9083,18 @@ class AppLocalizationsFr extends AppLocalizations {
       'Choisis une configuration enregistrée ou un modèle avant de lancer l’agent.';
 
   @override
+  String taskAgentProfileChangedToast(String profile) {
+    return '$profile sera utilisé pour toutes les futures mises à jour de l’agent jusqu’à ce que tu le changes.';
+  }
+
+  @override
   String get taskAgentProfileDefaultBadge => 'Réglage du profil';
 
   @override
-  String get taskAgentRunNowTooltip => 'Exécuter maintenant';
+  String get taskAgentRouteVia => 'via';
 
   @override
-  String get taskAgentRouteVia => 'via';
+  String get taskAgentRunNowTooltip => 'Exécuter maintenant';
 
   @override
   String taskAgentSetupAndReportSemantics(String identity) {

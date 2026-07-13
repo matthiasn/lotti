@@ -47,6 +47,37 @@ The key split is between skills and profiles:
 
 That split is what lets the app move the same skill between providers without rewriting the prompt contract.
 
+## Configuration Selection UI
+
+AI configuration editors share two design-system selection primitives rather
+than owning feature-specific modal rows:
+
+- `InferenceProfilePickerModal` and its embeddable
+  `InferenceProfilePickerList` render named inference profiles for category
+  defaults, template settings, agent creation, and task-agent setup. The list
+  uses the profile description as secondary text and marks the persisted
+  selection without exposing internal model IDs.
+- `InferenceProviderModelPickerModal` renders model choices for inference-profile
+  slots, task-agent overrides, and per-invocation skill overrides. With multiple
+  providers it drills from provider to model; with one provider it opens the
+  model list directly. `selectedModelId` identifies the active choice while
+  `defaultModelId` independently marks the profile default.
+
+Closed fields use `SettingsPickerField`, so settings pages keep the same label,
+value, disabled, and tap affordances. Async Riverpod consumers retain their last
+rendered values during background reloads; a provider refresh does not replace
+an established picker with a full loading shell.
+
+```mermaid
+flowchart LR
+  Profiles["Category / template / agent creation / task agent"] --> ProfilePicker["InferenceProfilePickerModal or list"]
+  Slots["Profile slots / task override / one-run override"] --> ModelPicker["InferenceProviderModelPickerModal"]
+  ModelPicker --> Providers{"provider count"}
+  Providers -->|one| Models["model rows"]
+  Providers -->|many| ProviderRows["provider rows"]
+  ProviderRows --> Models
+```
+
 ## Main Execution Paths
 
 ### Legacy prompt path

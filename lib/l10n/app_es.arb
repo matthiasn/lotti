@@ -2355,6 +2355,8 @@
   "imageViewerDownloadTooltip": "Descargar imagen",
   "inactiveLabel": "Inactivo",
   "inactiveSwitchDescription": "Se puede elegir para nuevas entradas cuando está activo",
+  "inferenceProfileChooseModelTitle": "Elige un modelo",
+  "inferenceProfileChooseTitle": "Elige un perfil de inferencia",
   "inferenceProfileCreateTitle": "Crear perfil",
   "inferenceProfileDescriptionLabel": "Descripción",
   "inferenceProfileDesktopOnly": "Solo escritorio",
@@ -2381,8 +2383,8 @@
   "inferenceProfilePinnedHostNoneLabel": "Sin fijar (sin auto-disparador)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (este dispositivo)",
   "inferenceProfileSaveButton": "Guardar",
-  "inferenceProfileSelectModel": "Seleccionar un modelo…",
-  "inferenceProfileSelectProfile": "Seleccionar un perfil…",
+  "inferenceProfileSelectModel": "Elige un modelo…",
+  "inferenceProfileSelectProfile": "Elige un perfil…",
   "inferenceProfilesEmpty": "Aún no hay perfiles de inferencia",
   "inferenceProfileSkillModelRequired": "Requiere modelo de {slotName}",
   "@inferenceProfileSkillModelRequired": {
@@ -3629,7 +3631,7 @@
   "taskAgentAutomaticUpdatesOnDescription": "Cuando cambia algo relacionado con esta tarea, empieza una cuenta atrás de dos minutos. Los cambios durante la cuenta atrás se agrupan en una sola actualización.",
   "taskAgentCancelTimerTooltip": "Cancelar la actualización automática pendiente",
   "taskAgentChooseModel": "Elegir un modelo de razonamiento",
-  "taskAgentChooseProfile": "Elegir una configuración guardada",
+  "taskAgentChooseProfile": "Elige un perfil de inferencia",
   "taskAgentCountdownTooltip": "Próxima ejecución automática en {countdown}",
   "@taskAgentCountdownTooltip": {
     "placeholders": {
@@ -3660,9 +3662,17 @@
   "taskAgentNoProfilesAvailable": "No hay perfiles disponibles en este dispositivo",
   "taskAgentNoProfileSelected": "Sin configuración de IA",
   "taskAgentNoProfileSelectedDescription": "Elige una configuración guardada o un modelo antes de ejecutar el agente.",
+  "taskAgentProfileChangedToast": "Se usará {profile} para todas las futuras actualizaciones del agente hasta que lo cambies.",
+  "@taskAgentProfileChangedToast": {
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
   "taskAgentProfileDefaultBadge": "Predeterminado del perfil",
-  "taskAgentRunNowTooltip": "Ejecutar ahora",
   "taskAgentRouteVia": "vía",
+  "taskAgentRunNowTooltip": "Ejecutar ahora",
   "taskAgentSetupAndReportSemantics": "Este informe y la configuración actual usan {identity}. Activa para cambiarla.",
   "taskAgentSetupBroken": "La configuración de IA seleccionada no está disponible",
   "taskAgentSetupChangedToast": "Se usará {model} para cada actualización futura hasta que lo cambies.",

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_provider_model_picker_modal.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -75,6 +76,7 @@ void main() {
       required List<AiConfigInferenceProvider> providers,
       required void Function(String?) onResult,
       String? defaultModelId,
+      String? selectedModelId,
     }) async {
       await tester.pumpWidget(
         makeTestableWidget(
@@ -85,6 +87,7 @@ void main() {
                   final picked = await InferenceProviderModelPickerModal.show(
                     context: context,
                     defaultModelId: defaultModelId,
+                    selectedModelId: selectedModelId,
                     models: models,
                     providers: providers,
                     title: 'Pick a model',
@@ -196,6 +199,39 @@ void main() {
         await tester.tap(find.text('Model Two'));
         await tester.pumpAndSettle();
         expect(result, 'm2');
+      },
+    );
+
+    testWidgets(
+      'separates the selected override from the profile default',
+      (tester) async {
+        await pumpHost(
+          tester,
+          models: [
+            _model(id: 'm1', name: 'Profile Model'),
+            _model(id: 'm2', name: 'Override Model'),
+          ],
+          providers: [_provider(id: 'openai')],
+          defaultModelId: 'm1',
+          selectedModelId: 'm2',
+          onResult: (_) {},
+        );
+
+        expect(find.text('Default'), findsOneWidget);
+        expect(find.text('Selected'), findsOneWidget);
+        final rows = tester.widgetList<DesignSystemListItem>(
+          find.byType(DesignSystemListItem),
+        );
+        final defaultRow = rows.singleWhere(
+          (row) => row.title == 'Profile Model',
+        );
+        final selectedRow = rows.singleWhere(
+          (row) => row.title == 'Override Model',
+        );
+        expect(defaultRow.selected, isFalse);
+        expect(defaultRow.activated, isFalse);
+        expect(selectedRow.selected, isTrue);
+        expect(selectedRow.activated, isTrue);
       },
     );
 

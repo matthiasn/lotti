@@ -5503,6 +5503,12 @@ class AppLocalizationsCs extends AppLocalizations {
       'Lze vybrat pro nové záznamy, když je zapnuto';
 
   @override
+  String get inferenceProfileChooseModelTitle => 'Vyber model';
+
+  @override
+  String get inferenceProfileChooseTitle => 'Vyber profil inference';
+
+  @override
   String get inferenceProfileCreateTitle => 'Create Profile';
 
   @override
@@ -5568,10 +5574,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileSaveButton => 'Save';
 
   @override
-  String get inferenceProfileSelectModel => 'Select a model…';
+  String get inferenceProfileSelectModel => 'Choose a model…';
 
   @override
-  String get inferenceProfileSelectProfile => 'Vyberte profil…';
+  String get inferenceProfileSelectProfile => 'Vyber profil…';
 
   @override
   String get inferenceProfilesEmpty => 'No inference profiles yet';
@@ -8947,7 +8953,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentChooseModel => 'Vybrat model pro uvažování';
 
   @override
-  String get taskAgentChooseProfile => 'Vybrat uložené nastavení';
+  String get taskAgentChooseProfile => 'Vyber profil inference';
 
   @override
   String taskAgentCountdownTooltip(String countdown) {
@@ -9007,13 +9013,18 @@ class AppLocalizationsCs extends AppLocalizations {
       'Než agenta spustíš, vyber uložené nastavení nebo model.';
 
   @override
+  String taskAgentProfileChangedToast(String profile) {
+    return 'Pro všechny budoucí aktualizace agenta se bude používat $profile, dokud ho nezměníš.';
+  }
+
+  @override
   String get taskAgentProfileDefaultBadge => 'Výchozí model profilu';
 
   @override
-  String get taskAgentRunNowTooltip => 'Spustit nyní';
+  String get taskAgentRouteVia => 'přes';
 
   @override
-  String get taskAgentRouteVia => 'přes';
+  String get taskAgentRunNowTooltip => 'Spustit nyní';
 
   @override
   String taskAgentSetupAndReportSemantics(String identity) {

@@ -2164,6 +2164,8 @@
   "imageViewerDownloadTooltip": "Stáhnout obrázek",
   "inactiveLabel": "Neaktivní",
   "inactiveSwitchDescription": "Lze vybrat pro nové záznamy, když je zapnuto",
+  "inferenceProfileChooseModelTitle": "Vyber model",
+  "inferenceProfileChooseTitle": "Vyber profil inference",
   "inferenceProfileDetailLoadError": "Profil se nepodařilo načíst: {error}",
   "@inferenceProfileDetailLoadError": {
     "placeholders": {
@@ -2180,7 +2182,7 @@
   "inferenceProfilePinnedHostNoneHelper": "Synchronizované zvukové záznamy se nebudou automaticky přepisovat, dokud nebude připnuté nějaké zařízení.",
   "inferenceProfilePinnedHostNoneLabel": "Nepřipnuto (bez automatického spuštění)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (toto zařízení)",
-  "inferenceProfileSelectProfile": "Vyberte profil…",
+  "inferenceProfileSelectProfile": "Vyber profil…",
   "inferenceProfileSkillModelRequired": "Vyžaduje nastavení modelu {slotName}",
   "@inferenceProfileSkillModelRequired": {
     "placeholders": {
@@ -3413,7 +3415,7 @@
   "taskAgentAutomaticUpdatesOnDescription": "Když se změní něco souvisejícího s tímto úkolem, spustí se dvouminutový odpočet. Změny během odpočtu se sloučí do jedné aktualizace.",
   "taskAgentCancelTimerTooltip": "Zrušit čekající automatickou aktualizaci",
   "taskAgentChooseModel": "Vybrat model pro uvažování",
-  "taskAgentChooseProfile": "Vybrat uložené nastavení",
+  "taskAgentChooseProfile": "Vyber profil inference",
   "taskAgentCountdownTooltip": "Příští automatické spuštění za {countdown}",
   "@taskAgentCountdownTooltip": {
     "placeholders": {
@@ -3444,9 +3446,17 @@
   "taskAgentNoProfilesAvailable": "Na tomto zařízení nejsou dostupné žádné profily",
   "taskAgentNoProfileSelected": "Žádné nastavení AI",
   "taskAgentNoProfileSelectedDescription": "Než agenta spustíš, vyber uložené nastavení nebo model.",
+  "taskAgentProfileChangedToast": "Pro všechny budoucí aktualizace agenta se bude používat {profile}, dokud ho nezměníš.",
+  "@taskAgentProfileChangedToast": {
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
   "taskAgentProfileDefaultBadge": "Výchozí model profilu",
-  "taskAgentRunNowTooltip": "Spustit nyní",
   "taskAgentRouteVia": "přes",
+  "taskAgentRunNowTooltip": "Spustit nyní",
   "taskAgentSetupAndReportSemantics": "Tato zpráva i aktuální nastavení používají {identity}. Aktivuj pro změnu nastavení.",
   "taskAgentSetupBroken": "Vybrané nastavení AI není dostupné",
   "taskAgentSetupChangedToast": "Pro všechny budoucí aktualizace se bude používat {model}, dokud ho nezměníš.",

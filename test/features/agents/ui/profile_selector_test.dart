@@ -153,9 +153,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.clear), findsOneWidget);
+    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.clear));
+    await tester.tap(find.byIcon(Icons.close_rounded));
     await tester.pumpAndSettle();
 
     expect(clearedTo, isNull);
@@ -252,7 +252,7 @@ void main() {
       findsOneWidget,
     );
     // The dropdown arrow is still visible but InkWell.onTap is null.
-    expect(find.byIcon(Icons.arrow_drop_down), findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
   });
 
   group('SettingsProfilePickerField', () {

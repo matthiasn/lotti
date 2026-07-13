@@ -145,6 +145,35 @@ identity line. Different routes render separate `Current setup` and `This
 report` lines. Agent Internals opens the same `AgentModelSheet`; it does not own
 a second profile mutation path.
 
+`AgentModelSheet` uses the shared AI selection surfaces. Profile choices render
+through `InferenceProfilePickerList`; direct model choices render through
+`InferenceProviderModelPickerModal`, which separates the current task override
+from the base profile's default model. Both are terminal choices: the controller
+persists the new `AgentInferenceSetup` first, then closes the setup sheet and
+shows the localized confirmation through the `ScaffoldMessenger` captured from
+the task-details column. A failed write leaves the sheet open and reports the
+error there. Capturing the messenger before opening the root-navigator modal is
+what keeps successful feedback constrained to the task column.
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant Sheet as AgentModelSheet
+  participant Controller as AgentInstanceController
+  participant TaskUI as Task-column ScaffoldMessenger
+
+  User->>Sheet: choose profile or model
+  Sheet->>Controller: persist inference setup
+  alt write succeeds
+    Controller-->>Sheet: true
+    Sheet->>Sheet: close setup route
+    Sheet->>TaskUI: show scoped confirmation
+  else write fails
+    Controller-->>Sheet: false / throws
+    Sheet->>Sheet: remain open and show error
+  end
+```
+
 ```mermaid
 flowchart TD
   Init["agentInitializationProvider"]

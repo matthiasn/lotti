@@ -150,7 +150,10 @@ Both modes of `CategoryDetailsPage` render inside the shared settings-detail kit
   - basic settings (name, color, icon)
   - options (the `CategorySwitchTiles` switch rows in the shared definitions-editor order: favorite, private, active, day planning)
   - default language
-  - AI defaults via `SettingsProfilePickerField` and `TemplateSelector`
+  - AI defaults via `SettingsProfilePickerField` and `TemplateSelector`; the
+    profile field opens the shared `InferenceProfilePickerModal` used by agent
+    configuration surfaces and preserves its rendered value during background
+    provider reloads
   - speech dictionary
   - checklist correction examples
 

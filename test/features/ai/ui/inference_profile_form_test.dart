@@ -12,10 +12,11 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
+import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -26,6 +27,16 @@ DesignSystemToggle _toggleIn(WidgetTester tester, Finder rowFinder) =>
     tester.widget<DesignSystemToggle>(
       find.descendant(of: rowFinder, matching: find.byType(DesignSystemToggle)),
     );
+
+Finder _pickerField(String label) => find.ancestor(
+  of: find.text(label, skipOffstage: false),
+  matching: find.byType(SettingsPickerField),
+);
+
+Finder _pickerTapTarget(String label) => find.descendant(
+  of: _pickerField(label),
+  matching: find.byType(InkWell),
+);
 
 void main() {
   late StreamController<List<AiConfig>> profileStreamController;
@@ -138,11 +149,19 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Thinking *'), findsOneWidget);
-      expect(find.text('Thinking (High-End)'), findsOneWidget);
-      expect(find.text('Image Recognition'), findsOneWidget);
-      expect(find.text('Transcription'), findsOneWidget);
-      expect(find.text('Image Generation'), findsOneWidget);
+      expect(
+        find.byType(SettingsPickerField, skipOffstage: false),
+        findsNWidgets(5),
+      );
+      for (final label in [
+        'Thinking *',
+        'Thinking (High-End)',
+        'Image Recognition',
+        'Transcription',
+        'Image Generation',
+      ]) {
+        expect(find.text(label, skipOffstage: false), findsOneWidget);
+      }
     });
 
     testWidgets('shows save button in app bar', (tester) async {
@@ -273,7 +292,7 @@ void main() {
         expect(find.text(label), findsOneWidget);
       }
       // At least the visible slots should show placeholders.
-      expect(find.text('Select a model…'), findsAtLeastNWidgets(1));
+      expect(find.text('Choose a model…'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('shows snackbar when saving without thinking model', (
@@ -487,7 +506,7 @@ void main() {
 
         // Clearing the slot drops the dangling id and reveals the
         // placeholder again.
-        await tester.tap(find.byIcon(Icons.clear).first);
+        await tester.tap(find.byIcon(Icons.close_rounded).first);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -495,7 +514,7 @@ void main() {
           find.text('Model unavailable — its provider may have been removed'),
           findsNothing,
         );
-        expect(find.text('Select a model…'), findsAtLeastNWidgets(1));
+        expect(find.text('Choose a model…'), findsAtLeastNWidgets(1));
       },
     );
 
@@ -533,14 +552,14 @@ void main() {
       expect(find.text('Flash'), findsOneWidget);
 
       // Tap the clear button.
-      await tester.tap(find.byIcon(Icons.clear));
+      await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       // Model name should be gone, placeholder shown.
       expect(find.text('Flash'), findsNothing);
       // Should now show placeholder or raw ID gone.
-      expect(find.text('Select a model…'), findsAtLeastNWidgets(1));
+      expect(find.text('Choose a model…'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('desktop-only toggle changes value', (tester) async {
@@ -683,11 +702,24 @@ void main() {
       expect(find.text('Other Model'), findsNothing);
     });
 
-    testWidgets('model picker shows provider name in subtitle', (tester) async {
+    testWidgets('model picker shows branded provider header and wire IDs', (
+      tester,
+    ) async {
       final thinkingModel = AiConfig.model(
         id: 'tm-1',
         name: 'Flash',
         providerModelId: 'models/flash',
+        inferenceProviderId: 'prov-1',
+        createdAt: DateTime(2024),
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+        supportsFunctionCalling: true,
+      );
+      final secondModel = AiConfig.model(
+        id: 'tm-2',
+        name: 'Pro',
+        providerModelId: 'models/pro',
         inferenceProviderId: 'prov-1',
         createdAt: DateTime(2024),
         inputModalities: const [Modality.text],
@@ -707,7 +739,7 @@ void main() {
 
       await tester.pumpWidget(
         buildSubject(
-          models: [thinkingModel],
+          models: [thinkingModel, secondModel],
           providers: [provider],
         ),
       );
@@ -719,9 +751,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Provider name should appear as part of the subtitle.
-      expect(find.textContaining('Google AI'), findsOneWidget);
+      expect(find.text('Google Gemini'), findsOneWidget);
       expect(find.textContaining('models/flash'), findsOneWidget);
+      expect(find.textContaining('models/pro'), findsOneWidget);
     });
 
     testWidgets('model picker shows checkmark for selected model', (
@@ -731,6 +763,17 @@ void main() {
         id: 'tm-1',
         name: 'Flash',
         providerModelId: 'models/flash',
+        inferenceProviderId: 'prov-1',
+        createdAt: DateTime(2024),
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+        supportsFunctionCalling: true,
+      );
+      final secondModel = AiConfig.model(
+        id: 'tm-2',
+        name: 'Pro',
+        providerModelId: 'models/pro',
         inferenceProviderId: 'prov-1',
         createdAt: DateTime(2024),
         inputModalities: const [Modality.text],
@@ -749,7 +792,7 @@ void main() {
       await tester.pumpWidget(
         buildSubject(
           existingProfile: profile,
-          models: [thinkingModel],
+          models: [thinkingModel, secondModel],
         ),
       );
       await tester.pump();
@@ -764,12 +807,9 @@ void main() {
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);
     });
 
-    group('model picker search field', () {
-      // Three thinking-eligible models across two providers — the
-      // shared fixture lets the search tests assert filter narrowing
-      // (one match), filter widening via clear, provider-name match
-      // (cross-row scoping), and the no-match empty state without
-      // re-declaring rows in every test.
+    group('shared provider/model picker integration', () {
+      // Three thinking-eligible models across two providers exercise the
+      // provider-first navigation used everywhere model selection appears.
       final flashModel = AiConfig.model(
         id: 'm-1',
         name: 'Gemini Flash',
@@ -822,24 +862,17 @@ void main() {
       );
 
       Future<void> openThinkingPicker(WidgetTester tester) async {
+        tester.view.physicalSize = const Size(1000, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
         await tester.tap(find.byType(InkWell).first);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
       }
 
-      // Scope the TextField finder to the search field inside the
-      // picker — the underlying profile form also renders TextFields
-      // (name, description, …) which would otherwise satisfy a bare
-      // `find.byType(TextField)` and trip "Too many elements".
-      Finder searchTextField() => find.descendant(
-        of: find.byType(DesignSystemSearch),
-        matching: find.byType(TextField),
-      );
-
       testWidgets(
-        'typing a query that matches one model by display name '
-        'narrows the list to that row — proves the substring filter '
-        'runs against AiConfigModel.name',
+        'opens with provider rows instead of a mixed flat model list',
         (tester) async {
           await tester.pumpWidget(
             buildSubject(
@@ -851,68 +884,8 @@ void main() {
           await tester.pump(const Duration(milliseconds: 300));
           await openThinkingPicker(tester);
 
-          // All three rows visible before any input.
-          expect(find.text('Gemini Flash'), findsOneWidget);
-          expect(find.text('Gemini Pro'), findsOneWidget);
-          expect(find.text('Claude Sonnet'), findsOneWidget);
-
-          await tester.enterText(searchTextField(), 'sonnet');
-          await tester.pump();
-
-          // Only the Sonnet row remains; the Gemini rows are filtered out.
-          expect(find.text('Claude Sonnet'), findsOneWidget);
-          expect(find.text('Gemini Flash'), findsNothing);
-          expect(find.text('Gemini Pro'), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'typing a provider name surfaces every model owned by that '
-        'provider — proves the filter widens to the resolved provider '
-        'label, not just the model row text, so users can pivot by '
-        'provider without remembering each model name',
-        (tester) async {
-          await tester.pumpWidget(
-            buildSubject(
-              models: [flashModel, proModel, sonnetModel],
-              providers: [googleProvider, anthropicProvider],
-            ),
-          );
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-          await openThinkingPicker(tester);
-
-          await tester.enterText(searchTextField(), 'Google');
-          await tester.pump();
-
-          // Both Gemini rows match via the Google AI provider label.
-          // Claude Sonnet (Anthropic) is filtered out.
-          expect(find.text('Gemini Flash'), findsOneWidget);
-          expect(find.text('Gemini Pro'), findsOneWidget);
-          expect(find.text('Claude Sonnet'), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'a query that matches no model surfaces the localised '
-        '"No matches" empty state instead of leaving the list region '
-        'blank — the user gets explicit feedback that the filter, not '
-        'the data, is responsible for the empty surface',
-        (tester) async {
-          await tester.pumpWidget(
-            buildSubject(
-              models: [flashModel, proModel, sonnetModel],
-              providers: [googleProvider, anthropicProvider],
-            ),
-          );
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-          await openThinkingPicker(tester);
-
-          await tester.enterText(searchTextField(), 'zzz-nope');
-          await tester.pump();
-
-          expect(find.text('No matches'), findsOneWidget);
+          expect(find.text('Google Gemini'), findsWidgets);
+          expect(find.text('Anthropic Claude'), findsOneWidget);
           expect(find.text('Gemini Flash'), findsNothing);
           expect(find.text('Gemini Pro'), findsNothing);
           expect(find.text('Claude Sonnet'), findsNothing);
@@ -920,9 +893,7 @@ void main() {
       );
 
       testWidgets(
-        'clearing the query via the search field clear affordance '
-        'restores every model — proves the filter state resets to the '
-        'unfiltered list rather than leaving stale matches on screen',
+        'choosing a provider shows only that provider models',
         (tester) async {
           await tester.pumpWidget(
             buildSubject(
@@ -934,18 +905,90 @@ void main() {
           await tester.pump(const Duration(milliseconds: 300));
           await openThinkingPicker(tester);
 
-          await tester.enterText(searchTextField(), 'sonnet');
-          await tester.pump();
-          expect(find.text('Gemini Flash'), findsNothing);
-
-          // DesignSystemSearch renders the clear affordance as
-          // Icons.cancel_rounded inside its decoration.
-          await tester.tap(find.byIcon(Icons.cancel_rounded));
-          await tester.pump();
+          await tester.tap(find.text('Google Gemini'));
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.text('Gemini Flash'), findsOneWidget);
           expect(find.text('Gemini Pro'), findsOneWidget);
-          expect(find.text('Claude Sonnet'), findsOneWidget);
+          expect(find.text('Claude Sonnet'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'choosing a model closes the picker and updates the slot field',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              models: [flashModel, proModel, sonnetModel],
+              providers: [googleProvider, anthropicProvider],
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          await openThinkingPicker(tester);
+
+          await tester.tap(find.text('Anthropic Claude'));
+          await tester.pump(const Duration(milliseconds: 300));
+          final sonnetRow = tester
+              .widgetList<DesignSystemListItem>(
+                find.byType(DesignSystemListItem),
+              )
+              .singleWhere((row) => row.title == 'Claude Sonnet');
+          sonnetRow.onTap!();
+          await tester.pump(const Duration(seconds: 1));
+
+          final thinkingField = tester.widget<SettingsPickerField>(
+            _pickerField('Thinking *'),
+          );
+          expect(thinkingField.valueText, 'Claude Sonnet');
+          expect(find.text('Choose a model').hitTestable(), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'provider model page can return to the provider list',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              models: [flashModel, proModel, sonnetModel],
+              providers: [googleProvider, anthropicProvider],
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          await openThinkingPicker(tester);
+
+          await tester.tap(find.text('Google Gemini'));
+          await tester.pump(const Duration(milliseconds: 300));
+          final backButton = tester.widget<IconButton>(
+            find
+                .ancestor(
+                  of: find.byIcon(Icons.arrow_back_rounded).last,
+                  matching: find.byType(IconButton),
+                )
+                .first,
+          );
+          backButton.onPressed!();
+          // The first frame starts Wolt's page transition; the second lets the
+          // newly active page become interactive.
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump(const Duration(milliseconds: 300));
+
+          final providerRows = tester
+              .widgetList<DesignSystemListItem>(
+                find.byType(DesignSystemListItem),
+              )
+              .where(
+                (row) =>
+                    row.title == 'Google Gemini' ||
+                    row.title == 'Anthropic Claude',
+              )
+              .toList();
+          expect(
+            providerRows.map((row) => row.title),
+            containsAll(<String>['Google Gemini', 'Anthropic Claude']),
+          );
+          expect(find.text('Gemini Flash').hitTestable(), findsNothing);
         },
       );
     });
@@ -1519,7 +1562,7 @@ void main() {
 
       // Scroll to the high-end slot and select a model.
       await tester.scrollUntilVisible(
-        find.text('Thinking (High-End)'),
+        find.text('Thinking (High-End)', skipOffstage: false),
         200,
         scrollable: find.byType(Scrollable).first,
       );
@@ -1527,11 +1570,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the high-end thinking slot (second InkWell).
-      final highEndSlot = find.ancestor(
-        of: find.text('Thinking (High-End)'),
-        matching: find.byType(InkWell),
-      );
-      await tester.tap(highEndSlot.first);
+      await tester.tap(_pickerTapTarget('Thinking (High-End)').first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -1662,7 +1701,7 @@ void main() {
 
         // Scroll to the Image Recognition slot.
         await tester.scrollUntilVisible(
-          find.text('Image Recognition'),
+          find.text('Image Recognition', skipOffstage: false),
           200,
           scrollable: find.byType(Scrollable).first,
         );
@@ -1670,12 +1709,9 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Open the image recognition picker.
-        final irSlot = find.ancestor(
-          of: find.text('Image Recognition'),
-          matching: find.byType(InkWell),
-        );
-        await tester.ensureVisible(irSlot.first);
-        await tester.tap(irSlot.first);
+        final irSlot = _pickerTapTarget('Image Recognition').first;
+        await tester.ensureVisible(irSlot);
+        await tester.tap(irSlot);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1726,7 +1762,7 @@ void main() {
 
         // Scroll to the Transcription slot.
         await tester.scrollUntilVisible(
-          find.text('Transcription'),
+          find.text('Transcription', skipOffstage: false),
           200,
           scrollable: find.byType(Scrollable).first,
         );
@@ -1734,12 +1770,9 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Open the transcription picker.
-        final trSlot = find.ancestor(
-          of: find.text('Transcription'),
-          matching: find.byType(InkWell),
-        );
-        await tester.ensureVisible(trSlot.first);
-        await tester.tap(trSlot.first);
+        final trSlot = _pickerTapTarget('Transcription').first;
+        await tester.ensureVisible(trSlot);
+        await tester.tap(trSlot);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1790,7 +1823,7 @@ void main() {
 
         // Scroll to the Image Generation slot.
         await tester.scrollUntilVisible(
-          find.text('Image Generation'),
+          find.text('Image Generation', skipOffstage: false),
           200,
           scrollable: find.byType(Scrollable).first,
         );
@@ -1798,12 +1831,9 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Open the image generation picker.
-        final igSlot = find.ancestor(
-          of: find.text('Image Generation'),
-          matching: find.byType(InkWell),
-        );
-        await tester.ensureVisible(igSlot.first);
-        await tester.tap(igSlot.first);
+        final igSlot = _pickerTapTarget('Image Generation').first;
+        await tester.ensureVisible(igSlot);
+        await tester.tap(igSlot);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
