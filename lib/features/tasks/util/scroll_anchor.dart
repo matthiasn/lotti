@@ -145,13 +145,18 @@ class ScrollAnchor {
   ///
   /// This is used when the changing region is wholly above the viewport, so
   /// its height delta is also the exact visual drift of all later content.
-  /// [ScrollPosition.correctPixels] is the layout-safe counterpart to
+  /// [ScrollPosition.correctBy] is the layout-safe counterpart to
   /// [ScrollController.jumpTo]. The estimated extent includes the same delta
   /// because the viewport publishes its new dimensions after descendants lay
-  /// out.
-  void correctByLayoutDelta(double delta) {
-    if (_disposed || _anchorTop == null || delta.abs() <= tolerance) return;
-    final position = _positionForCorrection();
+  /// out. Set [requireHold] to false when the changing render object measured
+  /// the delta itself; this covers descendant-only rebuilds that cannot call
+  /// [hold] before layout.
+  void correctByLayoutDelta(
+    double delta, {
+    bool requireHold = true,
+  }) {
+    if (_disposed || delta.abs() <= tolerance) return;
+    final position = _positionForLayoutCorrection(requireHold: requireHold);
     if (position == null) return;
     final estimatedMaxScrollExtent = math.max(
       position.minScrollExtent,
@@ -166,11 +171,21 @@ class ScrollAnchor {
       tolerance: tolerance,
     );
     if (target != null) {
-      position.correctPixels(target);
-      _expectedOffset = target;
-    } else {
+      position.correctBy(target - position.pixels);
+      if (_anchorTop != null) _expectedOffset = target;
+    } else if (_anchorTop != null) {
       _expectedOffset = controller.offset;
     }
+  }
+
+  ScrollPosition? _positionForLayoutCorrection({required bool requireHold}) {
+    if (_anchorTop != null) return _positionForCorrection();
+    if (requireHold || controller.positions.length != 1) return null;
+    final position = controller.position;
+    // An unannounced descendant size change can be corrected safely while the
+    // viewport is idle. Never override a drag, ballistic scroll, or animateTo.
+    if (position.isScrollingNotifier.value) return null;
+    return position;
   }
 
   ScrollPosition? _positionForCorrection() {

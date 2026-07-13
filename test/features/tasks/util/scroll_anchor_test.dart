@@ -248,6 +248,63 @@ void main() {
       expect(state.anchor.isHolding, isTrue);
     });
 
+    testWidgets('updates the held offset for a layout delta', (tester) async {
+      final harnessKey = GlobalKey<_AnchorHarnessState>();
+      await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+      await tester.pump();
+
+      final state = harnessKey.currentState!;
+      state.controller.jumpTo(120);
+      await tester.pump();
+      state.anchor.hold();
+
+      state.anchor.correctByLayoutDelta(100);
+
+      expect(state.controller.offset, 220);
+      expect(state.anchor.isHolding, isTrue);
+    });
+
+    testWidgets('corrects a measured layout delta without a prior hold', (
+      tester,
+    ) async {
+      final harnessKey = GlobalKey<_AnchorHarnessState>();
+      await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+      await tester.pump();
+
+      final state = harnessKey.currentState!;
+      state.controller.jumpTo(120);
+      await tester.pump();
+
+      state.anchor.correctByLayoutDelta(100, requireHold: false);
+
+      expect(state.controller.offset, 220);
+      expect(state.anchor.isHolding, isFalse);
+    });
+
+    testWidgets('does not correct an unheld delta during active scrolling', (
+      tester,
+    ) async {
+      final harnessKey = GlobalKey<_AnchorHarnessState>();
+      await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+      await tester.pump();
+
+      final state = harnessKey.currentState!;
+      final scrolling = state.controller.animateTo(
+        500,
+        duration: const Duration(seconds: 1),
+        curve: Curves.linear,
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      final offsetDuringScroll = state.controller.offset;
+
+      state.anchor.correctByLayoutDelta(100, requireHold: false);
+
+      expect(state.controller.offset, offsetDuringScroll);
+      expect(state.anchor.isHolding, isFalse);
+      state.controller.jumpTo(offsetDuringScroll);
+      await scrolling;
+    });
+
     testWidgets('does nothing when locate returns null (anchor absent)', (
       tester,
     ) async {

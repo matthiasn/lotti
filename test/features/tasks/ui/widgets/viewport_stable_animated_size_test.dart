@@ -6,6 +6,32 @@ import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.da
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  test('task scroll scope notifies dependants only for a new controller', () {
+    final firstController = ScrollController();
+    final secondController = ScrollController();
+    addTearDown(firstController.dispose);
+    addTearDown(secondController.dispose);
+    final oldScope = TaskScrollStabilityScope(
+      controller: firstController,
+      child: const SizedBox.shrink(),
+    );
+
+    expect(
+      TaskScrollStabilityScope(
+        controller: firstController,
+        child: const SizedBox.shrink(),
+      ).updateShouldNotify(oldScope),
+      isFalse,
+    );
+    expect(
+      TaskScrollStabilityScope(
+        controller: secondController,
+        child: const SizedBox.shrink(),
+      ).updateShouldNotify(oldScope),
+      isTrue,
+    );
+  });
+
   testWidgets('is a direct pass-through outside the task scroll scope', (
     tester,
   ) async {
@@ -50,7 +76,7 @@ void main() {
   ]) {
     testWidgets(
       'pins later content before paint while an off-screen region '
-      '${scenario.name}',
+      '${scenario.name} from a descendant-only rebuild',
       (tester) async {
         final paintedMarkerTops = <double>[];
         final key = GlobalKey<_StableSizeHarnessState>();
@@ -71,7 +97,7 @@ void main() {
         final markerTop = tester.getTopLeft(find.byKey(_markerKey)).dy;
         paintedMarkerTops.clear();
 
-        state.setHeight(scenario.finalHeight);
+        state.resizeDescendant(scenario.finalHeight);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
 
@@ -111,6 +137,27 @@ void main() {
     );
   }
 
+  testWidgets('also stabilizes a parent-driven wrapper update', (
+    tester,
+  ) async {
+    final key = GlobalKey<_StableSizeHarnessState>();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(_StableSizeHarness(key: key)),
+    );
+    await tester.pump();
+
+    final state = key.currentState!..controller.jumpTo(500);
+    await tester.pump();
+    final markerTop = tester.getTopLeft(find.byKey(_markerKey)).dy;
+
+    state.rebuildWithHeight(250);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(state.controller.offset, closeTo(700, 1));
+    expect(tester.getTopLeft(find.byKey(_markerKey)).dy, closeTo(markerTop, 1));
+  });
+
   testWidgets('keeps scroll offset fixed when the growing region is visible', (
     tester,
   ) async {
@@ -125,7 +172,7 @@ void main() {
     final offsetBefore = state.controller.offset;
     final topBefore = tester.getTopLeft(find.byKey(_animatedSizeKey)).dy;
 
-    state.setHeight(250);
+    state.resizeDescendant(250);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 120));
 
@@ -139,6 +186,43 @@ void main() {
       inExclusiveRange(50, 250),
     );
   });
+
+  testWidgets('holds visible content while growing at the bottom extent', (
+    tester,
+  ) async {
+    final paintedMarkerTops = <double>[];
+    final key = GlobalKey<_StableSizeHarnessState>();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        _StableSizeHarness(
+          key: key,
+          markerSpacer: 1200,
+          onMarkerPaint: paintedMarkerTops.add,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final state = key.currentState!;
+    state.controller.jumpTo(state.controller.position.maxScrollExtent);
+    await tester.pump();
+    final markerTop = tester.getTopLeft(find.byKey(_markerKey)).dy;
+    paintedMarkerTops.clear();
+
+    state.resizeDescendant(250);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+
+    expect(tester.getTopLeft(find.byKey(_markerKey)).dy, closeTo(markerTop, 1));
+    expect(paintedMarkerTops.last, closeTo(markerTop, 1));
+
+    await tester.pump(const Duration(milliseconds: 180));
+    expect(
+      state.controller.offset,
+      closeTo(state.controller.position.maxScrollExtent, 1),
+    );
+    expect(tester.getTopLeft(find.byKey(_markerKey)).dy, closeTo(markerTop, 1));
+  });
 }
 
 const _animatedSizeKey = Key('stable-animated-size');
@@ -147,11 +231,13 @@ const _markerKey = Key('stable-marker');
 class _StableSizeHarness extends StatefulWidget {
   const _StableSizeHarness({
     this.initialHeight = 50,
+    this.markerSpacer = 0,
     this.onMarkerPaint,
     super.key,
   });
 
   final double initialHeight;
+  final double markerSpacer;
   final ValueChanged<double>? onMarkerPaint;
 
   @override
@@ -160,18 +246,25 @@ class _StableSizeHarness extends StatefulWidget {
 
 class _StableSizeHarnessState extends State<_StableSizeHarness> {
   final ScrollController controller = ScrollController();
-  late double height;
+  late final ValueNotifier<double> height;
 
   @override
   void initState() {
     super.initState();
-    height = widget.initialHeight;
+    height = ValueNotifier(widget.initialHeight);
   }
 
-  void setHeight(double value) => setState(() => height = value);
+  // ignore: use_setters_to_change_properties
+  void resizeDescendant(double value) => height.value = value;
+
+  void rebuildWithHeight(double value) {
+    height.value = value;
+    setState(() {});
+  }
 
   @override
   void dispose() {
+    height.dispose();
     controller.dispose();
     super.dispose();
   }
@@ -190,13 +283,19 @@ class _StableSizeHarnessState extends State<_StableSizeHarness> {
                 const SizedBox(height: 400),
                 ViewportStableAnimatedSize(
                   key: _animatedSizeKey,
-                  child: SizedBox(height: height),
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: height,
+                    builder: (context, value, child) {
+                      return SizedBox(height: value);
+                    },
+                  ),
                 ),
+                SizedBox(height: widget.markerSpacer),
                 _PaintPositionRecorder(
                   onPaint: widget.onMarkerPaint,
                   child: const SizedBox(key: _markerKey, height: 40),
                 ),
-                const SizedBox(height: 1600),
+                SizedBox(height: 1600 - widget.markerSpacer),
               ],
             ),
           ),

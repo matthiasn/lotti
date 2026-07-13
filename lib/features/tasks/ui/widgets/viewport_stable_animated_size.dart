@@ -100,6 +100,12 @@ class _ViewportStableAnimatedSizeState
     if (bottom <= viewportTop) _anchor?.hold();
   }
 
+  bool _isFullyAboveViewport() {
+    final bottom = _bottomGlobal();
+    final viewportTop = _viewportTopGlobal();
+    return bottom != null && viewportTop != null && bottom <= viewportTop;
+  }
+
   @override
   void dispose() {
     _anchor?.dispose();
@@ -111,7 +117,12 @@ class _ViewportStableAnimatedSizeState
     if (_controller == null) return widget.child;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return _HeightDeltaReporter(
-      onHeightDelta: (delta) => _anchor?.correctByLayoutDelta(delta),
+      isFullyAboveViewport: _isFullyAboveViewport,
+      onHeightDelta: (delta, {required wasFullyAboveViewport}) {
+        if (wasFullyAboveViewport) {
+          _anchor?.correctByLayoutDelta(delta, requireHold: false);
+        }
+      },
       child: AnimatedSize(
         alignment: Alignment.topCenter,
         duration: reduceMotion ? Duration.zero : widget.duration,
@@ -124,15 +135,24 @@ class _ViewportStableAnimatedSizeState
 
 class _HeightDeltaReporter extends SingleChildRenderObjectWidget {
   const _HeightDeltaReporter({
+    required this.isFullyAboveViewport,
     required this.onHeightDelta,
     required super.child,
   });
 
-  final ValueChanged<double> onHeightDelta;
+  final bool Function() isFullyAboveViewport;
+  final void Function(
+    double delta, {
+    required bool wasFullyAboveViewport,
+  })
+  onHeightDelta;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
-    return _RenderHeightDeltaReporter(onHeightDelta);
+    return _RenderHeightDeltaReporter(
+      isFullyAboveViewport: isFullyAboveViewport,
+      onHeightDelta: onHeightDelta,
+    );
   }
 
   @override
@@ -140,24 +160,47 @@ class _HeightDeltaReporter extends SingleChildRenderObjectWidget {
     BuildContext context,
     _RenderHeightDeltaReporter renderObject,
   ) {
-    renderObject.onHeightDelta = onHeightDelta;
+    renderObject
+      ..isFullyAboveViewport = isFullyAboveViewport
+      ..onHeightDelta = onHeightDelta;
   }
 }
 
 class _RenderHeightDeltaReporter extends RenderProxyBox {
-  _RenderHeightDeltaReporter(this.onHeightDelta);
+  _RenderHeightDeltaReporter({
+    required this.isFullyAboveViewport,
+    required this.onHeightDelta,
+  });
 
-  ValueChanged<double> onHeightDelta;
+  bool Function() isFullyAboveViewport;
+  void Function(
+    double delta, {
+    required bool wasFullyAboveViewport,
+  })
+  onHeightDelta;
   double? _previousHeight;
+  bool _wasFullyAboveViewport = false;
 
   @override
   void performLayout() {
-    super.performLayout();
+    // Use the position captured during the previous paint. Paint transforms
+    // cannot be queried safely from inside layout, while the last painted
+    // geometry is precisely the state whose visible position must be held.
     final previousHeight = _previousHeight;
+    super.performLayout();
     final currentHeight = size.height;
     _previousHeight = currentHeight;
     if (previousHeight != null) {
-      onHeightDelta(currentHeight - previousHeight);
+      onHeightDelta(
+        currentHeight - previousHeight,
+        wasFullyAboveViewport: _wasFullyAboveViewport,
+      );
     }
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    _wasFullyAboveViewport = isFullyAboveViewport();
+    super.paint(context, offset);
   }
 }
