@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' show TimeOfDay, immutable;
 import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// The editable model behind the start/end date-time editor.
 ///
@@ -23,11 +24,11 @@ class EntryDateTimeRange {
   });
 
   /// Decompose two timestamps into the editor model. Opens in shared-date mode
-  /// when the two fall on the same day, OR form a plain overnight span (end day
-  /// is start day + 1 and the end clock is before the start clock) — that case
-  /// is reproduced exactly by the auto-roll. Anything else (e.g. an exactly-24h
-  /// same-clock next-day entry, or a multi-day span) opens in different-dates
-  /// mode.
+  /// when ordered bounds fall on the same day, OR form a plain overnight span
+  /// (end day is start day + 1 and the end clock is before the start clock) —
+  /// that case is reproduced exactly by the auto-roll. Anything else (e.g. an
+  /// inverted range, exactly-24h same-clock next-day entry, or multi-day span)
+  /// opens in different-dates mode so both absolute endpoints round-trip.
   factory EntryDateTimeRange.fromBounds(DateTime dateFrom, DateTime dateTo) {
     final startDate = dateFrom.dateOnly;
     final startTime = TimeOfDay(hour: dateFrom.hour, minute: dateFrom.minute);
@@ -38,7 +39,8 @@ class EntryDateTimeRange {
         endDate.isSameCalendarDay(startDate.addCalendarDays(1)) &&
         endBeforeStart;
     final differentDates =
-        !endDate.isSameCalendarDay(startDate) && !pureOvernight;
+        dateTo.isBefore(dateFrom) ||
+        (!endDate.isSameCalendarDay(startDate) && !pureOvernight);
     return EntryDateTimeRange(
       startDate: startDate,
       startTime: startTime,
@@ -56,21 +58,33 @@ class EntryDateTimeRange {
 
   static int _minutes(TimeOfDay t) => t.hour * 60 + t.minute;
 
-  static DateTime _dateAndTime(DateTime date, TimeOfDay time) => date.isUtc
-      ? DateTime.utc(
-          date.year,
-          date.month,
-          date.day,
-          time.hour,
-          time.minute,
-        )
-      : DateTime(
-          date.year,
-          date.month,
-          date.day,
-          time.hour,
-          time.minute,
-        );
+  static DateTime _dateAndTime(DateTime date, TimeOfDay time) {
+    if (date is tz.TZDateTime) {
+      return tz.TZDateTime(
+        date.location,
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    }
+    return date.isUtc
+        ? DateTime.utc(
+            date.year,
+            date.month,
+            date.day,
+            time.hour,
+            time.minute,
+          )
+        : DateTime(
+            date.year,
+            date.month,
+            date.day,
+            time.hour,
+            time.minute,
+          );
+  }
 
   /// In shared-date mode, whether the end clock falls before the start clock so
   /// the end is auto-rolled to the next day.

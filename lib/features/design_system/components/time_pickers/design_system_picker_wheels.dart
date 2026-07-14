@@ -159,12 +159,8 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
                           '${materialLocalizations.postMeridiemAbbreviation}',
                       looping: false,
                       labelBuilder: (index) => index == 0
-                          ? MaterialLocalizations.of(
-                              context,
-                            ).anteMeridiemAbbreviation
-                          : MaterialLocalizations.of(
-                              context,
-                            ).postMeridiemAbbreviation,
+                          ? materialLocalizations.anteMeridiemAbbreviation
+                          : materialLocalizations.postMeridiemAbbreviation,
                       selectedStyle: pickerStyle,
                       focusedStyle: pickerStyle.copyWith(
                         color: tokens.colors.interactive.enabled,
@@ -273,9 +269,10 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
   }
 
   void _handleSelectedItemChanged(int index) {
-    if (_selectedItem.value == index) return;
-    _selectedItem.value = index;
-    widget.onSelectedItemChanged(index);
+    final normalizedIndex = widget.looping ? index % widget.itemCount : index;
+    if (_selectedItem.value == normalizedIndex) return;
+    _selectedItem.value = normalizedIndex;
+    widget.onSelectedItemChanged(normalizedIndex);
   }
 
   void _adjust(int delta) {

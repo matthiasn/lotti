@@ -452,6 +452,22 @@ void main() {
       });
     });
 
+    testWidgets('Start Now preserves an earlier end and disables Save', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(DateTime(2024, 6, 15, 16, 45)), () async {
+        final tracker = await openModal(tester, _sameDay);
+
+        await tester.tap(quickAction('Set start date and time to now'));
+        await tester.pump();
+
+        expect(find.text('Invalid Date Range'), findsOneWidget);
+        expect(find.textContaining('Ends Sun 16 Jun'), findsNothing);
+        expect(saveButton(tester).onPressed, isNull);
+        expect(tracker.updateFromToCalls, isEmpty);
+      });
+    });
+
     testWidgets('Today can update an explicit end date', (tester) async {
       await withClock(Clock.fixed(DateTime.utc(2024, 6, 20, 8)), () async {
         final tracker = await openModal(tester, _utcMultiDay);

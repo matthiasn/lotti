@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 class _GeneratedDateTimeParts {
   const _GeneratedDateTimeParts({
@@ -70,6 +72,8 @@ extension _AnyDateTimeParts on glados.Any {
 }
 
 void main() {
+  setUpAll(tz_data.initializeTimeZones);
+
   group('DateUtilsExtension', () {
     final testDate = DateTime(2024, 7, 27, 18, 30, 15);
 
@@ -122,6 +126,25 @@ void main() {
       expect(local.addCalendarDays(1).isUtc, isFalse);
       expect(utc.addCalendarDays(1), DateTime.utc(2024, 10, 28, 23, 30));
       expect(utc.addCalendarDays(1).isUtc, isTrue);
+    });
+
+    test('calendar helpers preserve a named timezone across DST fallback', () {
+      final berlin = tz.getLocation('Europe/Berlin');
+      final beforeFallback = tz.TZDateTime(berlin, 2024, 10, 26, 23, 30);
+      final afterFallback = beforeFallback.addCalendarDays(1);
+
+      expect(beforeFallback.timeZoneOffset, const Duration(hours: 2));
+      expect(afterFallback, tz.TZDateTime(berlin, 2024, 10, 27, 23, 30));
+      expect(afterFallback.timeZoneOffset, const Duration(hours: 1));
+      expect(
+        afterFallback.difference(beforeFallback),
+        const Duration(hours: 25),
+      );
+      expect(beforeFallback.dateOnly, tz.TZDateTime(berlin, 2024, 10, 26));
+      expect(
+        DateTime.utc(2024, 10, 27).dateOnlyInZoneOf(beforeFallback),
+        tz.TZDateTime(berlin, 2024, 10, 27),
+      );
     });
 
     test('ymd returns date in YYYY-MM-DD format', () {

@@ -222,7 +222,7 @@ A few detail-level behaviors are worth calling out because they are easy to miss
 2. activating either date transitions to an in-sheet calendar page with Back,
    Close, Today, and Done controls.
 
-The editable model is the pure, testable [`EntryDateTimeRange`](ui/widgets/entry_details/entry_datetime_range.dart) — a `startDate` (day only) + `startTime` + `endTime` + an optional `endDateOverride` — from which `dateFrom`/`dateTo` are *derived* (they can never desync). Date decomposition and recomposition retain the entry's UTC/local timezone kind. **Now** and **Today** read the injectable clock and normalize it to that same timezone before changing an endpoint, so shortcuts are deterministic in tests and cannot mix UTC and local bounds. The glass Save footer remains fixed while the regular Wolt page owns overflow scrolling. Its content padding reserves the footer's occupied height, and the status reserves the next-day chip row in both states, so neither crossing midnight nor exposing the chip moves the sheet. Save stays disabled until the range both changed and is valid.
+The editable model is the pure, testable [`EntryDateTimeRange`](ui/widgets/entry_details/entry_datetime_range.dart) — a `startDate` (day only) + `startTime` + `endTime` + an optional `endDateOverride` — from which `dateFrom`/`dateTo` are *derived* (they can never desync). Date decomposition and recomposition retain the entry's timezone semantics, including UTC, device-local, and named zones. **Now** and **Today** read the injectable clock and normalize it to that same timezone before changing an endpoint, so shortcuts are deterministic in tests and cannot mix timezone kinds. Endpoint-level **Now** actions preserve the opposite absolute endpoint; if **Start Now** moves past the stored end, the model exposes that exact inverted range as invalid instead of silently rolling the end into tomorrow. The glass Save footer remains fixed while the regular Wolt page owns overflow scrolling. Its content padding reserves the footer's occupied height, and the status reserves the next-day chip row in both states, so neither crossing midnight nor exposing the chip moves the sheet. Save stays disabled until the range both changed and is valid.
 
 ```mermaid
 stateDiagram-v2
@@ -241,9 +241,9 @@ stateDiagram-v2
 
 ```mermaid
 stateDiagram-v2
-    [*] --> SharedDate: end day == start day
+    [*] --> SharedDate: ordered bounds AND end day == start day
     [*] --> SharedDate: end day == start+1 AND end clock < start clock (plain overnight)
-    [*] --> DifferentDates: otherwise (multi-day, or exact-24h same-clock next day)
+    [*] --> DifferentDates: otherwise (inverted, multi-day, or exact-24h same-clock next day)
 
     SharedDate --> SharedDate: select date / spin times / use Now
     note right of SharedDate

@@ -2,8 +2,12 @@ import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_range.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
+  setUpAll(tz_data.initializeTimeZones);
+
   group('EntryDateTimeRange.fromBounds', () {
     test('same-day entry opens in shared-date mode', () {
       final r = EntryDateTimeRange.fromBounds(
@@ -39,16 +43,20 @@ void main() {
       },
     );
 
-    test('plain overnight span survives a local DST-ending day', () {
-      final range = EntryDateTimeRange.fromBounds(
-        DateTime(2024, 10, 27, 23, 30),
-        DateTime(2024, 10, 28, 0, 30),
-      );
+    test('plain overnight span crosses a controlled DST fallback', () {
+      final berlin = tz.getLocation('Europe/Berlin');
+      final start = tz.TZDateTime(berlin, 2024, 10, 26, 23, 30);
+      final end = tz.TZDateTime(berlin, 2024, 10, 27, 4, 30);
+
+      expect(start.timeZoneOffset, const Duration(hours: 2));
+      expect(end.timeZoneOffset, const Duration(hours: 1));
+
+      final range = EntryDateTimeRange.fromBounds(start, end);
 
       expect(range.differentDates, isFalse);
       expect(range.overnightAuto, isTrue);
-      expect(range.dateTo, DateTime(2024, 10, 28, 0, 30));
-      expect(range.duration, const Duration(hours: 1));
+      expect(range.dateTo, end);
+      expect(range.duration, const Duration(hours: 6));
     });
 
     test(
@@ -204,6 +212,17 @@ void main() {
       expect(next.dateFrom, DateTime(2024, 6, 16, 8, 30));
       expect(next.dateTo, base.dateTo);
       expect(next.differentDates, isTrue);
+      expect(next.valid, isFalse);
+    });
+
+    test('withStart preserves an earlier same-day end as an invalid range', () {
+      final next = base.withStart(DateTime(2024, 6, 15, 14));
+
+      expect(next.dateFrom, DateTime(2024, 6, 15, 14));
+      expect(next.dateTo, base.dateTo);
+      expect(next.endDateOverride, DateTime(2024, 6, 15));
+      expect(next.differentDates, isTrue);
+      expect(next.duration, const Duration(hours: -4));
       expect(next.valid, isFalse);
     });
 

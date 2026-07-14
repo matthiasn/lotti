@@ -163,6 +163,42 @@ void main() {
     expect(changed, DateTime(2024, 6, 15, 23));
   });
 
+  testWidgets('looping columns defensively normalize absolute indices', (
+    tester,
+  ) async {
+    final semanticsHandle = tester.ensureSemantics();
+    DateTime? changed;
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        DesignSystemTimeWheel(
+          initialDateTime: DateTime(2024, 6, 15, 14, 30),
+          use24hFormat: true,
+          onDateTimeChanged: (value) => changed = value,
+        ),
+      ),
+    );
+
+    final hourWheel = tester.widget<ListWheelScrollView>(
+      find.byType(ListWheelScrollView).first,
+    );
+    hourWheel.onSelectedItemChanged!(12005);
+    await tester.pump();
+
+    final hour = tester.getSemantics(find.bySemanticsLabel('Hour'));
+    expect(hour.value, '05');
+    tester.binding.performSemanticsAction(
+      SemanticsActionEvent(
+        type: SemanticsAction.increase,
+        nodeId: hour.id,
+        viewId: tester.view.viewId,
+      ),
+    );
+    await tester.pump();
+
+    expect(changed, DateTime(2024, 6, 15, 6, 30));
+    semanticsHandle.dispose();
+  });
+
   testWidgets(
     'Linux pointer scroll accumulates fine deltas and keeps accepting '
     'large events',
