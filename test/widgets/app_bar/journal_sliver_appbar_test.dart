@@ -342,7 +342,15 @@ void main() {
       // Verify the modal contains expected components
       expect(find.byType(JournalFilter), findsOneWidget);
       expect(find.byType(EntryTypeFilter), findsOneWidget);
+      expect(find.byType(TaskCategoryFilterOverviewRow), findsOneWidget);
+      expect(find.byType(TaskCategoryFilter), findsNothing);
+
+      final barrierCount = find.byType(ModalBarrier).evaluate().length;
+      await tester.tap(find.byType(TaskCategoryFilterOverviewRow));
+      await tester.pump(const Duration(milliseconds: 500));
+
       expect(find.byType(TaskCategoryFilter), findsOneWidget);
+      expect(find.byType(ModalBarrier), findsNWidgets(barrierCount));
     });
 
     testWidgets('modal can be closed by tapping outside', (tester) async {

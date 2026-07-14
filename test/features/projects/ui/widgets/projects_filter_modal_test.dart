@@ -65,7 +65,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Tasks Filter'), findsOneWidget);
+      expect(find.text('Filter projects'), findsOneWidget);
       expect(find.text('Status'), findsOneWidget);
       expect(find.text('Category'), findsOneWidget);
     },

@@ -1,11 +1,10 @@
-// ignore_for_file: avoid_redundant_argument_values
+import 'dart:ui' show CheckedState;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -16,18 +15,15 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
-import '../../../../test_helper.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
-  late FakeJournalPageController fakeController;
-  late JournalPageState mockState;
-  late MockPagingController mockPagingController;
-  late MockEntitiesCacheService mockEntitiesCacheService;
+  late FakeJournalPageController controller;
+  late MockPagingController pagingController;
+  late MockEntitiesCacheService cache;
 
-  // Mock categories
-  final mockCategories = [
+  final categories = [
     CategoryDefinition(
       id: 'cat1',
       createdAt: DateTime(2023),
@@ -64,526 +60,160 @@ void main() {
   ];
 
   setUp(() async {
-    TestWidgetsFlutterBinding.ensureInitialized();
-
-    // Register a mock for the HapticFeedback service
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform, (
-          MethodCall methodCall,
-        ) async {
-          return null;
-        });
-
-    mockPagingController = MockPagingController();
-    mockEntitiesCacheService = MockEntitiesCacheService();
-
-    // Set up mock state
-    mockState = JournalPageState(
-      match: '',
-      filters: {},
-      showPrivateEntries: false,
-      selectedEntryTypes: const [],
-      fullTextMatches: {},
-      showTasks: true,
-      pagingController: mockPagingController,
-      taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
-      selectedTaskStatuses: {'OPEN'},
-      selectedCategoryIds: {'cat1'},
-      selectedLabelIds: const {},
-    );
-
-    // Set up EntitiesCacheService mock
-    when(
-      () => mockEntitiesCacheService.sortedCategories,
-    ).thenReturn(mockCategories);
-
+    pagingController = MockPagingController();
+    cache = MockEntitiesCacheService();
+    when(() => cache.sortedCategories).thenReturn(categories);
     await setUpTestGetIt(
       additionalSetup: () {
-        getIt.registerSingleton<EntitiesCacheService>(
-          mockEntitiesCacheService,
-        );
+        getIt.registerSingleton<EntitiesCacheService>(cache);
       },
     );
   });
 
   tearDown(tearDownTestGetIt);
 
-  Widget buildWithState(JournalPageState state) {
-    fakeController = FakeJournalPageController(state);
-
-    return WidgetTestBench(
-      child: ProviderScope(
-        overrides: [
-          journalPageScopeProvider.overrideWithValue(true),
-          journalPageControllerProvider(
-            true,
-          ).overrideWith(() => fakeController),
-        ],
-        child: const TaskCategoryFilter(),
-      ),
+  JournalPageState state({Set<String> selectedIds = const {'cat1'}}) {
+    return JournalPageState(
+      showTasks: true,
+      pagingController: pagingController,
+      taskStatuses: const ['OPEN'],
+      selectedTaskStatuses: const {'OPEN'},
+      selectedCategoryIds: selectedIds,
     );
   }
 
-  group('TaskCategoryFilter', () {
-    testWidgets('renders correctly with categories', (tester) async {
-      await tester.pumpWidget(buildWithState(mockState));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Verify the widget is rendered
-      expect(find.byType(TaskCategoryFilter), findsOneWidget);
-
-      // By default only favorites and selected categories show. Pin the
-      // exact chip set by label: the two favorites, the unassigned chip,
-      // the "All" chip, and the "..." expander — and nothing else.
-      final messages = tester.element(find.byType(TaskCategoryFilter)).messages;
-      final chipLabels = tester
-          .widgetList<DesignSystemFilterChoicePill>(
-            find.byType(DesignSystemFilterChoicePill),
-          )
-          .map((chip) => chip.label)
-          .toList();
-      expect(
-        chipLabels,
-        containsAll(<String>[
-          'Work',
-          'Health',
-          messages.taskCategoryUnassignedLabel,
-          '...',
-        ]),
-      );
-      // Non-favorite 'Personal' must not appear by default.
-      expect(chipLabels, isNot(contains('Personal')));
-      expect(chipLabels, hasLength(5));
-
-      // Verify the "All" chip is rendered
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is DesignSystemFilterChoicePill &&
-              widget.label.toLowerCase().contains('all'),
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('toggles between showing favorites and all categories', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildWithState(mockState));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Initially, we should see only favorites (2) + unassigned + all + "..." button = 5 chips
-      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(5));
-
-      // Find and tap the "..." chip to show all categories
-      final ellipsisChip = find.byWidgetPredicate(
-        (widget) =>
-            widget is DesignSystemFilterChoicePill && widget.label == '...',
-      );
-      expect(ellipsisChip, findsOneWidget);
-
-      await tester.tap(ellipsisChip);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Now we should see all categories (3) + unassigned + all = 5 chips (no "..." button)
-      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(5));
-      expect(ellipsisChip, findsNothing);
-    });
-
-    testWidgets(
-      'calls toggleSelectedCategoryIds when category chip is tapped',
-      (tester) async {
-        await tester.pumpWidget(buildWithState(mockState));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Find a category chip and tap it
-        final workChip = find.byWidgetPredicate(
-          (widget) =>
-              widget is DesignSystemFilterChoicePill && widget.label == 'Work',
-        );
-        expect(workChip, findsOneWidget);
-
-        await tester.tap(workChip);
-        await tester.pump();
-
-        // Verify that toggleSelectedCategoryIds was called
-        expect(fakeController.toggledCategoryIds, contains('cat1'));
-      },
+  Widget subject(Widget child, {Set<String> selectedIds = const {'cat1'}}) {
+    controller = FakeJournalPageController(state(selectedIds: selectedIds));
+    return makeTestableWidget(
+      Material(child: child),
+      overrides: [
+        journalPageScopeProvider.overrideWithValue(true),
+        journalPageControllerProvider(
+          true,
+        ).overrideWith(() => controller),
+      ],
     );
+  }
 
-    testWidgets(
-      'calls toggleSelectedCategoryIds when unassigned chip is tapped',
-      (tester) async {
-        await tester.pumpWidget(buildWithState(mockState));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+  Finder row(String title) => find.byWidgetPredicate(
+    (widget) => widget is DesignSystemSelectionRow && widget.title == title,
+  );
 
-        // The unassigned chip carries the localized label and maps to the
-        // empty-string sentinel id.
-        final messages = tester
-            .element(find.byType(TaskCategoryFilter))
-            .messages;
-        final unassignedChip = find.byWidgetPredicate(
-          (widget) =>
-              widget is DesignSystemFilterChoicePill &&
-              widget.label == messages.taskCategoryUnassignedLabel,
-        );
-        expect(unassignedChip, findsOneWidget);
+  testWidgets('renders all categories as divider-free searchable rows', (
+    tester,
+  ) async {
+    await tester.pumpWidget(subject(const TaskCategoryFilter()));
+    await tester.pump();
 
-        await tester.tap(unassignedChip);
-        await tester.pump();
-
-        // The sentinel: unassigned toggles the empty-string category id —
-        // exactly once, with no other ids touched.
-        expect(fakeController.toggledCategoryIds, ['']);
-      },
+    expect(find.byType(DesignSystemSearch), findsOneWidget);
+    expect(row('Work'), findsOneWidget);
+    expect(row('Personal'), findsOneWidget);
+    expect(row('Health'), findsOneWidget);
+    expect(find.text('...'), findsNothing);
+    expect(
+      tester.widget<DesignSystemSelectionRow>(row('Work')).selected,
+      isTrue,
     );
+    expect(
+      tester.getSemantics(row('Work')).flagsCollection.isChecked,
+      CheckedState.isTrue,
+    );
+  });
 
-    testWidgets('calls selectedAllCategories when all chip is tapped', (
+  testWidgets('category, unassigned, and all rows invoke their exact actions', (
+    tester,
+  ) async {
+    await tester.pumpWidget(subject(const TaskCategoryFilter()));
+    await tester.pump();
+    final messages = tester.element(find.byType(TaskCategoryFilter)).messages;
+
+    await tester.tap(row('Work'));
+    await tester.tap(row(messages.taskCategoryUnassignedLabel));
+    await tester.tap(row(messages.taskCategoryAllLabel));
+
+    expect(controller.toggledCategoryIds, ['cat1', '']);
+    expect(controller.selectAllCategoriesCalled, 1);
+  });
+
+  testWidgets('search is case-insensitive and exposes a live empty state', (
+    tester,
+  ) async {
+    await tester.pumpWidget(subject(const TaskCategoryFilter()));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'PER');
+    await tester.pump();
+    expect(row('Personal'), findsOneWidget);
+    expect(row('Work'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'missing');
+    await tester.pump();
+    final emptyLabel = tester
+        .element(find.byType(TaskCategoryFilter))
+        .messages
+        .filterSelectionNoMatches;
+    expect(find.text(emptyLabel), findsOneWidget);
+    expect(
+      tester.getSemantics(find.text(emptyLabel)).flagsCollection.isLiveRegion,
+      isTrue,
+    );
+  });
+
+  testWidgets('empty catalogs still expose All and Unassigned', (tester) async {
+    when(() => cache.sortedCategories).thenReturn([]);
+    await tester.pumpWidget(subject(const TaskCategoryFilter()));
+    await tester.pump();
+    final messages = tester.element(find.byType(TaskCategoryFilter)).messages;
+
+    expect(row(messages.taskCategoryAllLabel), findsOneWidget);
+    expect(row(messages.taskCategoryUnassignedLabel), findsOneWidget);
+  });
+
+  testWidgets(
+    'overview summarizes selection and navigates in the parent flow',
+    (
       tester,
     ) async {
-      await tester.pumpWidget(buildWithState(mockState));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Find the "All" chip
-      final allChip = find.byWidgetPredicate(
-        (widget) =>
-            widget is DesignSystemFilterChoicePill &&
-            widget.label.toLowerCase().contains('all'),
-      );
-      expect(allChip, findsOneWidget);
-
-      await tester.tap(allChip);
-      await tester.pump();
-
-      // Verify that selectedAllCategories was called
-      expect(fakeController.selectAllCategoriesCalled, 1);
-    });
-
-    testWidgets('renders unassigned and all chips when no categories', (
-      tester,
-    ) async {
-      // Set up EntitiesCacheService mock to return empty categories
-      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
-
-      await tester.pumpWidget(buildWithState(mockState));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Verify that the widget is rendered
-      expect(find.byType(TaskCategoryFilter), findsOneWidget);
-
-      // Should show unassigned chip, all chip, and "..." button
-      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(3));
-
-      // Verify the "All" chip is rendered
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is DesignSystemFilterChoicePill &&
-              widget.label.toLowerCase().contains('all'),
+      var navigationCalls = 0;
+      await tester.pumpWidget(
+        subject(
+          TaskCategoryFilterOverviewRow(onPressed: () => navigationCalls++),
+          selectedIds: const {'cat1', 'cat2', 'cat3', ''},
         ),
-        findsOneWidget,
       );
-    });
-
-    testWidgets('selects unassigned by default when no categories exist', (
-      tester,
-    ) async {
-      // Set up EntitiesCacheService mock to return empty categories
-      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
-
-      // Update the mock state to have unassigned selected by default
-      final stateWithUnassigned = JournalPageState(
-        match: '',
-        filters: {},
-        showPrivateEntries: false,
-        selectedEntryTypes: const [],
-        fullTextMatches: {},
-        showTasks: true,
-        pagingController: mockPagingController,
-        taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        selectedTaskStatuses: {'OPEN'},
-        selectedCategoryIds: {''}, // Unassigned is selected
-        selectedLabelIds: const {},
-      );
-
-      await tester.pumpWidget(buildWithState(stateWithUnassigned));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      // Find the unassigned chip
-      final chips = tester.widgetList<DesignSystemFilterChoicePill>(
-        find.byType(DesignSystemFilterChoicePill),
+      final overview = tester.widget<DesignSystemSelectionRow>(
+        find.byType(DesignSystemSelectionRow),
       );
+      expect(overview.subtitle, 'Work, Personal +2');
+      expect(overview.type, DesignSystemSelectionRowType.navigation);
+      await tester.tap(find.byType(DesignSystemSelectionRow));
+      expect(navigationCalls, 1);
+    },
+  );
 
-      DesignSystemFilterChoicePill? unassignedChip;
-      for (final chip in chips) {
-        if (!chip.label.toLowerCase().contains('all')) {
-          unassignedChip = chip;
-          break;
-        }
-      }
+  testWidgets('overview uses All when no category filter is active', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      subject(
+        TaskCategoryFilterOverviewRow(onPressed: () {}),
+        selectedIds: const {},
+      ),
+    );
+    await tester.pump();
+    final messages = tester
+        .element(find.byType(TaskCategoryFilterOverviewRow))
+        .messages;
 
-      expect(unassignedChip, isNotNull);
-      expect(unassignedChip!.selected, isTrue);
-    });
-
-    testWidgets('shows multiple selected categories', (tester) async {
-      // Update state to have multiple categories selected
-      final stateWithMultiple = JournalPageState(
-        match: '',
-        filters: {},
-        showPrivateEntries: false,
-        selectedEntryTypes: const [],
-        fullTextMatches: {},
-        showTasks: true,
-        pagingController: mockPagingController,
-        taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        selectedTaskStatuses: {'OPEN'},
-        selectedCategoryIds: {'cat1', 'cat2'},
-        selectedLabelIds: const {},
-      );
-
-      await tester.pumpWidget(buildWithState(stateWithMultiple));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Find selected chips
-      final selectedChips = tester
-          .widgetList<DesignSystemFilterChoicePill>(
-            find.byType(DesignSystemFilterChoicePill),
+    expect(
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.byType(DesignSystemSelectionRow),
           )
-          .where((chip) => chip.selected)
-          .toList();
-
-      // Should have 2 selected (Work and Personal)
-      expect(selectedChips.length, 2);
-    });
-
-    testWidgets('displays category colors correctly', (tester) async {
-      await tester.pumpWidget(buildWithState(mockState));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Find the Work category chip
-      final workChip = find.byWidgetPredicate(
-        (widget) =>
-            widget is DesignSystemFilterChoicePill && widget.label == 'Work',
-      );
-
-      expect(workChip, findsOneWidget);
-
-      // The category color renders as a leading dot on the pill.
-      final colorDot = find.descendant(
-        of: workChip,
-        matching: find.byWidgetPredicate((widget) {
-          final decoration = widget is Container ? widget.decoration : null;
-          return decoration is BoxDecoration &&
-              decoration.color == const Color(0xFFFF0000);
-        }),
-      );
-      expect(colorDot, findsOneWidget);
-    });
-
-    testWidgets('shows only favorite and selected categories by default', (
-      tester,
-    ) async {
-      // Create a non-favorite, non-selected category
-      final allCategories = [
-        ...mockCategories,
-        CategoryDefinition(
-          id: 'cat4',
-          createdAt: DateTime(2023),
-          updatedAt: DateTime(2023),
-          name: 'Hidden',
-          vectorClock: null,
-          private: false,
-          active: true,
-          favorite: false, // Not favorite
-          color: '#FFFF00',
-        ),
-      ];
-
-      when(
-        () => mockEntitiesCacheService.sortedCategories,
-      ).thenReturn(allCategories);
-
-      await tester.pumpWidget(buildWithState(mockState));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Should not find the Hidden category
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is DesignSystemFilterChoicePill &&
-              widget.label == 'Hidden',
-        ),
-        findsNothing,
-      );
-    });
-
-    testWidgets('all chip shows correct selection state', (tester) async {
-      // First state - some categories selected
-      await tester.pumpWidget(buildWithState(mockState));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      var allChip = find.byWidgetPredicate(
-        (widget) =>
-            widget is DesignSystemFilterChoicePill &&
-            widget.label.toLowerCase().contains('all'),
-      );
-
-      // All chip should not be selected when categories are selected
-      expect(
-        tester.widget<DesignSystemFilterChoicePill>(allChip).selected,
-        equals(false),
-      );
-
-      // Update state to no categories selected using the controller
-      final stateNoneSelected = JournalPageState(
-        match: '',
-        filters: {},
-        showPrivateEntries: false,
-        selectedEntryTypes: const [],
-        fullTextMatches: {},
-        showTasks: true,
-        pagingController: mockPagingController,
-        taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        selectedTaskStatuses: {'OPEN'},
-        selectedCategoryIds: {},
-        selectedLabelIds: const {},
-      );
-
-      // Update state through the controller (not rebuilding widget tree)
-      fakeController.updateState(stateNoneSelected);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      allChip = find.byWidgetPredicate(
-        (widget) =>
-            widget is DesignSystemFilterChoicePill &&
-            widget.label.toLowerCase().contains('all'),
-      );
-
-      // All chip should be selected when no categories are selected
-      expect(
-        tester.widget<DesignSystemFilterChoicePill>(allChip).selected,
-        equals(true),
-      );
-    });
-
-    testWidgets('tapping ellipsis chip shows all categories and hides itself', (
-      tester,
-    ) async {
-      // Use all categories - 2 favorites and 1 non-favorite
-      when(
-        () => mockEntitiesCacheService.sortedCategories,
-      ).thenReturn(mockCategories);
-
-      await tester.pumpWidget(buildWithState(mockState));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Initially, only favorites should be visible (Work and Health)
-      // Plus unassigned, all, and ellipsis = 5 total
-      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(5));
-
-      // Verify Personal category is not visible initially
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is DesignSystemFilterChoicePill &&
-              widget.label == 'Personal',
-        ),
-        findsNothing,
-      );
-
-      // Find and tap the ellipsis chip
-      final ellipsisChip = find.byWidgetPredicate(
-        (widget) =>
-            widget is DesignSystemFilterChoicePill && widget.label == '...',
-      );
-      expect(ellipsisChip, findsOneWidget);
-
-      await tester.tap(ellipsisChip);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // After tapping, all categories should be visible
-      // All 3 categories + unassigned + all = 5 total (no ellipsis)
-      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(5));
-
-      // Verify Personal category is now visible
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is DesignSystemFilterChoicePill &&
-              widget.label == 'Personal',
-        ),
-        findsOneWidget,
-      );
-
-      // Ellipsis chip should be hidden
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is DesignSystemFilterChoicePill && widget.label == '...',
-        ),
-        findsNothing,
-      );
-    });
-
-    testWidgets('ellipsis chip behavior with only favorite categories', (
-      tester,
-    ) async {
-      // Use only favorite categories (which are shown by default)
-      final favoriteCategories = mockCategories
-          .where((c) => c.favorite ?? false)
-          .toList();
-
-      when(
-        () => mockEntitiesCacheService.sortedCategories,
-      ).thenReturn(favoriteCategories);
-
-      await tester.pumpWidget(buildWithState(mockState));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Even with only favorites, ellipsis is shown initially
-      // 2 favorites + unassigned + all + ellipsis = 5 total
-      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(5));
-
-      // Find and tap the ellipsis chip
-      final ellipsisChip = find.byWidgetPredicate(
-        (widget) =>
-            widget is DesignSystemFilterChoicePill && widget.label == '...',
-      );
-      expect(ellipsisChip, findsOneWidget);
-
-      await tester.tap(ellipsisChip);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // After tapping, ellipsis should disappear
-      // 2 favorites + unassigned + all = 4 total
-      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(4));
-
-      // Verify ellipsis chip is no longer present
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is DesignSystemFilterChoicePill && widget.label == '...',
-        ),
-        findsNothing,
-      );
-    });
+          .subtitle,
+      messages.taskCategoryAllLabel,
+    );
   });
 }

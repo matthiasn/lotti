@@ -295,7 +295,7 @@ void main() {
       expect(result.selectedPriorityId, 'p1');
       expect(result.hasCategoryField, isTrue);
       expect(result.categoryField!.selectedIds, {'cat-1'});
-      expect(result.categoryField!.options, hasLength(2));
+      expect(result.categoryField!.options, hasLength(3));
       expect(result.hasLabelField, isTrue);
       expect(result.labelField!.selectedIds, {'label-1'});
       expect(result.hasAgentFilter, isTrue);

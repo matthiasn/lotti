@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 
@@ -581,7 +582,7 @@ void main() {
 
   group('DesignSystemTaskFilterSheet', () {
     testWidgets(
-      'supports sort changes, field taps, chip removal, and apply callbacks',
+      'supports sort changes, field navigation, summaries, and apply callbacks',
       (tester) async {
         final tappedSections = <DesignSystemTaskFilterSection>[];
         DesignSystemTaskFilterState? appliedState;
@@ -594,8 +595,7 @@ void main() {
         );
 
         expect(find.text('Apply'), findsOneWidget);
-        expect(find.byIcon(Icons.new_releases), findsOneWidget);
-        expect(find.text('7'), findsOneWidget);
+        expect(find.byIcon(Icons.new_releases_rounded), findsOneWidget);
 
         await tester.tap(
           find.byKey(
@@ -615,6 +615,17 @@ void main() {
         final labelField = find.byKey(
           const ValueKey('design-system-task-filter-field-label'),
         );
+        DesignSystemSelectionRow row(Finder field) =>
+            tester.widget<DesignSystemSelectionRow>(
+              find.descendant(
+                of: field,
+                matching: find.byType(DesignSystemSelectionRow),
+              ),
+            );
+
+        expect(row(statusField).subtitle, 'Open, In progress');
+        expect(row(categoryField).subtitle, 'Learn, Study');
+        expect(row(labelField).subtitle, 'AI Coding, Agents');
 
         await tester.ensureVisible(statusField);
         await tester.pump();
@@ -644,30 +655,10 @@ void main() {
           ],
         );
 
-        await tester.tap(
-          find.byKey(
-            const ValueKey('design-system-task-filter-remove-status-open'),
-          ),
-        );
-        await tester.pump();
-        await tester.tap(
-          find.byKey(
-            const ValueKey('design-system-task-filter-remove-category-learn'),
-          ),
-        );
-        await tester.pump();
-        await tester.tap(
-          find.byKey(
-            const ValueKey('design-system-task-filter-remove-label-ai-coding'),
-          ),
-        );
-        await tester.pump();
-
-        expect(state.value.statusField!.selectedIds, {'in-progress'});
-        expect(state.value.categoryField!.selectedIds, {'study'});
-        expect(state.value.labelField!.selectedIds, {'agents'});
-        expect(state.value.appliedCount, 4);
-        expect(find.text('4'), findsOneWidget);
+        expect(state.value.statusField!.selectedIds, {'open', 'in-progress'});
+        expect(state.value.categoryField!.selectedIds, {'learn', 'study'});
+        expect(state.value.labelField!.selectedIds, {'ai-coding', 'agents'});
+        expect(state.value.appliedCount, 7);
 
         final applyButton = find.byKey(
           const ValueKey('design-system-task-filter-apply'),
@@ -697,14 +688,8 @@ void main() {
           onClearAllPressed: (nextState) => clearedState = nextState,
         );
 
-        expect(find.text('0'), findsOneWidget);
-        expect(
-          find.byKey(
-            const ValueKey('design-system-task-filter-remove-status-open'),
-          ),
-          findsNothing,
-        );
-        expect(find.byIcon(Icons.new_releases), findsOneWidget);
+        expect(find.text('All'), findsNWidgets(4));
+        expect(find.byIcon(Icons.new_releases_rounded), findsOneWidget);
 
         await tester.tap(
           find.byKey(
@@ -714,7 +699,7 @@ void main() {
         await tester.pump();
 
         expect(state.value.selectedPriorityId, 'p0');
-        expect(find.text('1'), findsOneWidget);
+        expect(state.value.appliedCount, 1);
 
         final clearButton = find.byKey(
           const ValueKey('design-system-task-filter-clear'),
@@ -729,7 +714,7 @@ void main() {
           state.value.selectedPriorityId,
           DesignSystemTaskFilterState.allPriorityId,
         );
-        expect(find.text('0'), findsOneWidget);
+        expect(state.value.appliedCount, 0);
       },
     );
 
@@ -773,7 +758,6 @@ void main() {
         find.byKey(const ValueKey('design-system-task-filter-field-label')),
         findsNothing,
       );
-      expect(find.text('2'), findsOneWidget);
     });
   });
 
@@ -901,10 +885,9 @@ void main() {
       expect(find.text('Alpha'), findsOneWidget);
     });
 
-    testWidgets('project field supports chip removal and tap callback', (
+    testWidgets('project field summarizes selection and supports navigation', (
       tester,
     ) async {
-      DesignSystemTaskFilterState? lastChanged;
       final tappedSections = <DesignSystemTaskFilterSection>[];
 
       await _pumpSheetWithState(
@@ -922,29 +905,25 @@ void main() {
             selectedIds: {'p1', 'p2'},
           ),
         ),
-        onChanged: (s) => lastChanged = s,
         onFieldPressed: tappedSections.add,
       );
 
-      // Tap the project field to trigger onFieldPressed
-      await tester.tap(
-        find.byKey(
-          const ValueKey('design-system-task-filter-field-project'),
+      final projectField = find.byKey(
+        const ValueKey('design-system-task-filter-field-project'),
+      );
+      final projectRow = tester.widget<DesignSystemSelectionRow>(
+        find.descendant(
+          of: projectField,
+          matching: find.byType(DesignSystemSelectionRow),
         ),
       );
+      expect(projectRow.subtitle, 'Alpha, Beta');
+
+      // Tap the project field to trigger onFieldPressed
+      await tester.tap(projectField);
       await tester.pump();
 
       expect(tappedSections, [DesignSystemTaskFilterSection.project]);
-
-      // Remove a project chip
-      await tester.tap(
-        find.byKey(
-          const ValueKey('design-system-task-filter-remove-project-p1'),
-        ),
-      );
-      await tester.pump();
-
-      expect(lastChanged!.projectField!.selectedIds, {'p2'});
     });
   });
 

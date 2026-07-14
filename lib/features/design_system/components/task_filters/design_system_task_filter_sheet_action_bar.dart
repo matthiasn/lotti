@@ -262,20 +262,23 @@ class _SaveNamePopupState extends State<_SaveNamePopup> {
               ),
             ),
             SizedBox(height: spacing.step4),
-            DesignSystemModalActionBar(
-              secondary: [
+            Row(
+              children: [
                 DesignSystemButton(
                   label: messages.tasksSavedFiltersSavePopupCancel,
                   variant: DesignSystemButtonVariant.secondary,
                   onPressed: widget.onCancel,
                 ),
+                SizedBox(width: spacing.step3),
+                Expanded(
+                  child: DesignSystemButton(
+                    key: DesignSystemTaskFilterActionBar.saveNamePopupCommitKey,
+                    label: messages.tasksSavedFiltersSavePopupSave,
+                    fullWidth: true,
+                    onPressed: _canCommit ? _commit : null,
+                  ),
+                ),
               ],
-              primary: DesignSystemButton(
-                key: DesignSystemTaskFilterActionBar.saveNamePopupCommitKey,
-                label: messages.tasksSavedFiltersSavePopupSave,
-                fullWidth: true,
-                onPressed: _canCommit ? _commit : null,
-              ),
             ),
           ],
         ),
