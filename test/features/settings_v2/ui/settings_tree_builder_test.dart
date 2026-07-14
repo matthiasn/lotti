@@ -73,6 +73,7 @@ void main() {
       [
         'ai',
         'agents',
+        'daily-os',
         'sync',
         'definitions',
         'recording-style',
