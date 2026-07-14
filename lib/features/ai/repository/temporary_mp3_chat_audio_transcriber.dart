@@ -97,6 +97,13 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
     throw ArgumentError('API key cannot be empty');
   }
 
+  final Uint8List sourceBytes;
+  try {
+    sourceBytes = base64Decode(audioBase64);
+  } on FormatException catch (error) {
+    throw ArgumentError('Audio data must be valid base64: ${error.message}');
+  }
+
   final requestId = '${provider.requestIdPrefix}${const Uuid().v4()}';
   File? temporaryMp3File;
   var timeoutStage = 'preparing the temporary MP3';
@@ -114,7 +121,6 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
       return remaining;
     }
 
-    final sourceBytes = base64Decode(audioBase64);
     final conversionTimeout = remainingTimeoutOrThrow();
     temporaryMp3File = await audioToTemporaryMp3Encoder(
       sourceBytes,

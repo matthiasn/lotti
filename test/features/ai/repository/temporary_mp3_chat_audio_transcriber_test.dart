@@ -224,4 +224,40 @@ void main() {
 
     expect(encodedFile.existsSync(), isFalse);
   });
+
+  test('rejects malformed input audio before MP3 encoding', () async {
+    var encoderCalled = false;
+    final client = MockClient((_) async => http.Response('', 200));
+    addTearDown(client.close);
+
+    await expectLater(
+      transcribeTemporaryMp3ChatAudio(
+        httpClient: client,
+        provider: const TemporaryMp3ChatAudioProvider(
+          repositoryName: 'MistralInferenceRepository',
+          displayName: 'Mistral',
+          requestIdPrefix: 'mistral-audio-',
+          payloadDialect: ChatAudioPayloadDialect.mistral,
+        ),
+        model: model,
+        audioBase64: '%%%',
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        prompt: prompt,
+        audioToTemporaryMp3Encoder: (_) async {
+          encoderCalled = true;
+          return temporaryMp3();
+        },
+      ).toList(),
+      throwsA(
+        isA<ArgumentError>().having(
+          (error) => error.message,
+          'message',
+          contains('Audio data must be valid base64'),
+        ),
+      ),
+    );
+
+    expect(encoderCalled, isFalse);
+  });
 }
