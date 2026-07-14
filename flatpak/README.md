@@ -10,9 +10,27 @@ cd flatpak
 # Output in direct-build/output/
 ```
 
-## How It Works
+## Runtime Architecture
 
 The script uses [flatpak-flutter](https://github.com/TheAppgineer/flatpak-flutter) (pinned to v0.11.0) to generate offline build manifests. This replaces the complex 12,000+ line `manifest_tool` Python orchestrator with a ~110-line bash wrapper plus a local foreign-dependency overlay.
+
+```mermaid
+flowchart LR
+    Release[Tag or manual release] --> Workflow[flathub-release-pr.yml]
+    Workflow --> Prepare[prepare_flathub_build.sh]
+    Template[Manifest template] --> Prepare
+    Lock[pubspec.lock] --> Generator[flatpak-flutter 0.11.0]
+    Overlay[flatpak_flutter_extra] --> Generator
+    Prepare --> Generator
+    Generator --> Output[Offline manifest and sources]
+    Output --> FlathubPR[Flathub release branch and PR]
+    FlathubPR --> Builder[Flathub x86_64 and aarch64 builds]
+```
+
+The overlay is part of the release input, not a post-processing step in the
+Flathub repository. Versioned entries add offline sources or patches for
+hosted Pub packages before `flatpak-flutter` emits
+`generated/sources/pubspec.json`.
 
 ### What It Does
 
@@ -191,6 +209,16 @@ dependency files.
 Some upstream packages ship patched files with CRLF line endings. Keep those
 patches generated from the upstream file's real line endings so the Flathub
 builder's plain `patch -p1` invocation applies them.
+
+Current version-specific native patches include:
+
+- `sqlite3_flutter_libs 0.5.42`: pins the SQLite archive hash so CMake uses the
+  source downloaded during Flatpak's network-enabled source phase.
+- `objectbox_flutter_libs 5.3.1` and `5.3.2`: pins the per-architecture
+  ObjectBox archive hashes for the same offline build flow.
+- `flutter_lame 1.0.3`: raises bundled LAME's CMake compatibility floor from
+  3.0 to 3.5. CMake 4.x in the Flathub 25.08 SDK no longer accepts compatibility
+  levels below 3.5.
 
 ### com.matthiasn.lotti.flatpak-flutter.yml
 

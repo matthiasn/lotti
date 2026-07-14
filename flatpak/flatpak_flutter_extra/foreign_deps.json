@@ -90,5 +90,18 @@
                 ]
             }
         }
+    },
+    "flutter_lame": {
+        "1.0.3": {
+            "manifest": {
+                "sources": [
+                    {
+                        "type": "patch",
+                        "path": "flutter_lame/1.0.3-CMakeLists.txt.patch",
+                        "dest": "$PUB_DEV"
+                    }
+                ]
+            }
+        }
     }
 }
