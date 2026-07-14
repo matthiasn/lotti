@@ -63,8 +63,14 @@ class TaskAgentSetupOptions {
   final List<AiConfigInferenceProvider> providers;
 }
 
+/// Cached setup catalog shared by every page of the adaptive agent sheet.
+///
+/// This deliberately is not auto-disposed: Wolt pages mount independently,
+/// and rebuilding the same repository query between pages causes a visible
+/// empty-state flash. Repository dependency changes still recompute the value,
+/// while consumers use the previous snapshot during that refresh.
 final FutureProvider<TaskAgentSetupOptions> taskAgentSetupOptionsProvider =
-    FutureProvider.autoDispose<TaskAgentSetupOptions>(
+    FutureProvider<TaskAgentSetupOptions>(
       taskAgentSetupOptions,
       name: 'taskAgentSetupOptionsProvider',
     );

@@ -178,11 +178,11 @@ void main() {
             bg: tokens.colors.alert.error.defaultColor,
           ),
           DesignSystemButtonVariant.dangerSecondary: (
-            fg: tokens.colors.alert.error.defaultColor,
+            fg: tokens.colors.alert.error.hover,
             bg: tokens.colors.surface.enabled,
           ),
           DesignSystemButtonVariant.dangerTertiary: (
-            fg: tokens.colors.alert.error.defaultColor,
+            fg: tokens.colors.alert.error.hover,
             bg: null,
           ),
         };
@@ -229,6 +229,55 @@ void main() {
         }
       });
     }
+
+    testWidgets('danger content preserves contrast across interactive surface '
+        'states', (tester) async {
+      for (final variant in [
+        DesignSystemButtonVariant.dangerSecondary,
+        DesignSystemButtonVariant.dangerTertiary,
+      ]) {
+        for (final (state, expectedColor) in [
+          (
+            DesignSystemButtonVisualState.hover,
+            dsTokensDark.colors.alert.error.pressed,
+          ),
+          (
+            DesignSystemButtonVisualState.pressed,
+            dsTokensDark.colors.text.highEmphasis,
+          ),
+        ]) {
+          final buttonKey = Key('${variant.name}-${state.name}');
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              DesignSystemButton(
+                key: buttonKey,
+                label: variant.name,
+                variant: variant,
+                forcedState: state,
+                onPressed: _noop,
+              ),
+              theme: DesignSystemTheme.dark(),
+            ),
+          );
+
+          final label = tester.widget<RichText>(
+            find.descendant(
+              of: find.byKey(buttonKey),
+              matching: find.byWidgetPredicate(
+                (widget) =>
+                    widget is RichText &&
+                    widget.text.toPlainText() == variant.name,
+              ),
+            ),
+          );
+          expect(
+            label.text.style?.color,
+            expectedColor,
+            reason: '${variant.name} ${state.name}',
+          );
+        }
+      }
+    });
 
     testWidgets('renders a disabled button as a neutral pill without the brand '
         'hue', (tester) async {

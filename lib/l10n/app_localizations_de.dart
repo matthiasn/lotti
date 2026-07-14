@@ -9057,6 +9057,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wenn sich etwas an oder im Zusammenhang mit dieser Aufgabe ändert, startet ein zweiminütiger Countdown. Änderungen währenddessen werden in einem Update gebündelt.';
 
   @override
+  String get taskAgentAutomaticUpdatesSummary =>
+      'Aufgabenänderungen werden gebündelt und nach zwei Minuten aktualisiert.';
+
+  @override
+  String get taskAgentAutomationSection => 'Automatisierung';
+
+  @override
   String get taskAgentCancelTimerTooltip =>
       'Ausstehendes automatisches Update abbrechen';
 
@@ -9096,7 +9103,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der aktuelle Bericht bleibt sichtbar, aber der Agent kann erst wieder laufen, wenn du eine Einrichtung auswählst.';
 
   @override
-  String get taskAgentDisableConfirmTitle => 'KI-Einrichtung ausschalten?';
+  String get taskAgentDisableConfirmTitle =>
+      'KI für diesen Agenten ausschalten?';
+
+  @override
+  String get taskAgentInferenceProfileLabel => 'Inferenzprofil';
 
   @override
   String get taskAgentModelPickerTitle => 'Denkmodell wählen';
@@ -9138,6 +9149,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskAgentRunNowTooltip => 'Jetzt ausführen';
 
   @override
+  String get taskAgentSavingSetup => 'Agent-Einrichtung wird gespeichert';
+
+  @override
   String taskAgentSetupAndReportSemantics(String identity) {
     return 'Dieser Bericht und die aktuelle Einrichtung verwenden $identity. Aktivieren, um die Einrichtung zu ändern.';
   }
@@ -9150,6 +9164,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String taskAgentSetupChangedToast(String model) {
     return '$model wird für jedes zukünftige Agent-Update verwendet, bis du es änderst.';
   }
+
+  @override
+  String get taskAgentSetupChoiceHelp =>
+      'Wähle ein Profil für die Standardwerte oder überschreibe nur das Denkmodell.';
 
   @override
   String get taskAgentSetupOriginCategory =>
@@ -9181,7 +9199,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskAgentSetupTitle => 'Agent-Einrichtung';
 
   @override
+  String get taskAgentThinkingModelLabel => 'Denkmodell';
+
+  @override
   String get taskAgentThisReportHeader => 'Dieser Bericht';
+
+  @override
+  String get taskAgentTurnOffSetup => 'KI für diesen Agenten ausschalten';
 
   @override
   String get taskAgentUseCategoryDefault => 'Kategorie-Standard kopieren';

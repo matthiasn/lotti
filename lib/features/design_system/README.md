@@ -308,6 +308,13 @@ A few implementation patterns repeat across the DS and are worth treating as con
 
 Representative components such as `DesignSystemButton`, `DesignSystemCheckbox`, and `DesignSystemSplitButton` derive padding, radii, icon size, and text style from `context.designTokens`, not local magic numbers.
 
+Destructive secondary and tertiary button labels use the stronger existing
+error interaction tokens rather than the filled-action default red. This keeps
+small danger labels at AA contrast on light and dark host surfaces; their
+pressed state uses the high-emphasis content token because the dark pressed
+surface cannot retain 4.5:1 with the available error palette. The filled danger
+button continues to use the default error token as its surface.
+
 ### Shell-Aware Overlay Spacing
 
 The bottom navigation shell is an app-level overlay docked flush against

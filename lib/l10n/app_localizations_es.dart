@@ -9154,6 +9154,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cuando cambia algo relacionado con esta tarea, empieza una cuenta atrás de dos minutos. Los cambios durante la cuenta atrás se agrupan en una sola actualización.';
 
   @override
+  String get taskAgentAutomaticUpdatesSummary =>
+      'Agrupa los cambios de la tarea y actualiza después de dos minutos.';
+
+  @override
+  String get taskAgentAutomationSection => 'Automatización';
+
+  @override
   String get taskAgentCancelTimerTooltip =>
       'Cancelar la actualización automática pendiente';
 
@@ -9194,7 +9201,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get taskAgentDisableConfirmTitle =>
-      '¿Desactivar la configuración de IA?';
+      '¿Desactivar la IA para este agente?';
+
+  @override
+  String get taskAgentInferenceProfileLabel => 'Perfil de inferencia';
 
   @override
   String get taskAgentModelPickerTitle => 'Elegir modelo de razonamiento';
@@ -9236,6 +9246,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskAgentRunNowTooltip => 'Ejecutar ahora';
 
   @override
+  String get taskAgentSavingSetup => 'Guardando la configuración del agente';
+
+  @override
   String taskAgentSetupAndReportSemantics(String identity) {
     return 'Este informe y la configuración actual usan $identity. Activa para cambiarla.';
   }
@@ -9248,6 +9261,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String taskAgentSetupChangedToast(String model) {
     return 'Se usará $model para cada actualización futura hasta que lo cambies.';
   }
+
+  @override
+  String get taskAgentSetupChoiceHelp =>
+      'Elige un perfil para los valores predeterminados o sustituye solo el modelo de razonamiento.';
 
   @override
   String get taskAgentSetupOriginCategory =>
@@ -9279,7 +9296,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskAgentSetupTitle => 'Configuración del agente';
 
   @override
+  String get taskAgentThinkingModelLabel => 'Modelo de razonamiento';
+
+  @override
   String get taskAgentThisReportHeader => 'Este informe';
+
+  @override
+  String get taskAgentTurnOffSetup => 'Desactivar la IA para este agente';
 
   @override
   String get taskAgentUseCategoryDefault =>

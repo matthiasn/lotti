@@ -78,5 +78,36 @@ void main() {
         EdgeInsets.symmetric(horizontal: dsTokensDark.spacing.step5),
       );
     });
+
+    testWidgets('outline-only variant leaves the host surface unpainted', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Theme(
+            data: DesignSystemTheme.dark(),
+            child: const Scaffold(
+              body: DesignSystemGroupedList(
+                filled: false,
+                children: [Text('Outlined row')],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final box = tester.widget<DecoratedBox>(
+        find.descendant(
+          of: find.byType(DesignSystemGroupedList),
+          matching: find.byType(DecoratedBox),
+        ),
+      );
+      final decoration = box.decoration as BoxDecoration;
+      expect(decoration.color, isNull);
+      expect(
+        decoration.border!.top.color,
+        dsTokensDark.colors.decorative.level01,
+      );
+    });
   });
 }

@@ -10,6 +10,7 @@ class DesignSystemGroupedList extends StatelessWidget {
   const DesignSystemGroupedList({
     required this.children,
     this.padding,
+    this.filled = true,
     super.key,
   });
 
@@ -21,6 +22,10 @@ class DesignSystemGroupedList extends StatelessWidget {
   /// [EdgeInsets.zero].
   final EdgeInsetsGeometry? padding;
 
+  /// Whether to paint the standard grouped-list fill. Set to `false` when the
+  /// host surface should continue through the outline unchanged.
+  final bool filled;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -30,7 +35,7 @@ class DesignSystemGroupedList extends StatelessWidget {
           padding ?? EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: tokens.colors.background.level02,
+          color: filled ? tokens.colors.background.level02 : null,
           borderRadius: BorderRadius.circular(tokens.radii.m),
           border: Border.all(color: tokens.colors.decorative.level01),
         ),

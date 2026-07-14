@@ -1,4 +1,4 @@
-import 'dart:ui' show CheckedState, Tristate;
+import 'dart:ui' show CheckedState, SemanticsAction, Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -53,6 +53,8 @@ void main() {
 
     final semantics = tester.getSemantics(find.byKey(const Key('multi-row')));
     expect(semantics.flagsCollection.isChecked, CheckedState.isTrue);
+    expect(semantics.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+    expect(find.bySemanticsLabel('Design system'), findsOneWidget);
     expect(find.byType(DesignSystemCheckbox), findsOneWidget);
 
     await tester.tap(find.text('Design system'));
@@ -105,6 +107,28 @@ void main() {
     expect(semantics.label, contains('Connect its provider first'));
     expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
     handle.dispose();
+  });
+
+  testWidgets('iconless action preserves the minimum interactive height', (
+    tester,
+  ) async {
+    var taps = 0;
+    await _pump(
+      tester,
+      DesignSystemSelectionRow(
+        key: const Key('iconless-action'),
+        title: 'Clear selection',
+        type: DesignSystemSelectionRowType.action,
+        onTap: () => taps++,
+      ),
+    );
+
+    expect(
+      tester.getSize(find.byKey(const Key('iconless-action'))).height,
+      greaterThanOrEqualTo(dsTokensLight.spacing.step9),
+    );
+    await tester.tap(find.byKey(const Key('iconless-action')));
+    expect(taps, 1);
   });
 
   testWidgets('keyboard focus uses the token focus fill and outline', (

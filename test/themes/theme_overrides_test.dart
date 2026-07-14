@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/motion_tokens.dart';
 import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 void main() {
   group('withOverrides theme configuration', () {
@@ -223,6 +225,24 @@ void main() {
         themedData.inputDecorationTheme.border,
         isA<OutlineInputBorder>(),
       );
+    });
+
+    test('uses synchronized design-system motion for modal pagination', () {
+      final themedData = withOverrides(ThemeData.light());
+      final pagination = themedData
+          .extension<WoltModalSheetThemeData>()!
+          .animationStyle!
+          .paginationAnimationStyle;
+
+      expect(pagination.paginationDuration, MotionDurations.medium4);
+      expect(
+        pagination.modalSheetHeightTransitionCurve,
+        MotionCurves.emphasizedDecelerate,
+      );
+      expect(pagination.mainContentIncomingOpacityCurve.transform(0.25), 0);
+      expect(pagination.mainContentOutgoingOpacityCurve.transform(0.5), 1);
+      expect(pagination.incomingMainContentSlideBeginOffset, Offset.zero);
+      expect(pagination.outgoingMainContentSlideEndOffset, Offset.zero);
     });
   });
 

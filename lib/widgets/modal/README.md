@@ -39,7 +39,11 @@ app's styling and responsive behavior. Key static members:
 - `showMultiPageModal<T>({...})` — show a multi-page modal with an optional
   `pageIndexNotifier`; `modalTypeBuilderOverride` lets a dense flow keep the
   shared Wolt page/navigation behavior while supplying a flow-specific
-  responsive dialog constraint.
+  responsive dialog constraint. Pagination inherits the app-level Wolt
+  animation style:
+  a design-system-timed staggered fade and full-duration eased height
+  transition, with no lateral content jump. The outgoing page clears before
+  the incoming page becomes legible, avoiding overlapping labels.
 - `showBottomSheet<T>({...})` — thin wrapper over `showModalBottomSheet` that
   applies the root-navigator heuristic.
 

@@ -60,7 +60,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Adaptive modal title.
-      expect(find.text('Change Status'), findsOneWidget);
+      expect(find.text('Change status'), findsOneWidget);
 
       // All 6 options
       // "Open" appears twice: once in the picker widget behind the sheet,
@@ -170,7 +170,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Change Status'), findsOneWidget);
+      expect(find.text('Change status'), findsOneWidget);
 
       await tester.ensureVisible(find.text('Completed'));
       await tester.pump();
@@ -179,7 +179,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Sheet should be dismissed
-      expect(find.text('Change Status'), findsNothing);
+      expect(find.text('Change status'), findsNothing);
     });
   });
 }

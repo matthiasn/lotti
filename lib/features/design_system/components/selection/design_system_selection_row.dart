@@ -25,7 +25,8 @@ enum DesignSystemSelectionRowType {
 /// own semantic icon or metadata. The full-width selected band deliberately
 /// remains selected while hovered; keyboard focus is added by the underlying
 /// [DesignSystemListItem]. Homogeneous option lists do not render dividers, so
-/// an active row is never bisected by a partial-width rule.
+/// an active row is never bisected by a partial-width rule. Every row preserves
+/// the design system's minimum interactive height, including iconless actions.
 class DesignSystemSelectionRow extends StatelessWidget {
   const DesignSystemSelectionRow({
     required this.title,
@@ -85,24 +86,27 @@ class DesignSystemSelectionRow extends StatelessWidget {
       checked: isMulti ? selected : null,
       enabled: onTap != null,
       onTap: onTap,
-      child: DesignSystemListItem(
-        title: title,
-        subtitle: subtitle,
-        subtitleMaxLines: subtitleMaxLines,
-        leading: leading == null
-            ? null
-            : SizedBox(
-                width: tokens.spacing.step8,
-                child: Center(child: leading),
-              ),
-        trailing: trailing,
-        trailingExtra: standardTrailing,
-        activated: (isSingle || isMulti) && selected,
-        activatedBackgroundColor: tokens.colors.surface.selected,
-        onTap: onTap,
-        onHoverChanged: onHoverChanged,
-        onFocusChanged: onFocusChanged,
-        excludeFromSemantics: true,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: tokens.spacing.step9),
+        child: DesignSystemListItem(
+          title: title,
+          subtitle: subtitle,
+          subtitleMaxLines: subtitleMaxLines,
+          leading: leading == null
+              ? null
+              : SizedBox(
+                  width: tokens.spacing.step8,
+                  child: Center(child: leading),
+                ),
+          trailing: trailing,
+          trailingExtra: standardTrailing,
+          activated: (isSingle || isMulti) && selected,
+          activatedBackgroundColor: tokens.colors.surface.selected,
+          onTap: onTap,
+          onHoverChanged: onHoverChanged,
+          onFocusChanged: onFocusChanged,
+          excludeFromSemantics: true,
+        ),
       ),
     );
   }

@@ -373,6 +373,11 @@ class _ButtonVariantSpec {
       DesignSystemButtonVisualState.pressed =>
         tokens.colors.alert.error.pressed,
     };
+    final dangerContentColor = switch (visualState) {
+      DesignSystemButtonVisualState.idle => tokens.colors.alert.error.hover,
+      DesignSystemButtonVisualState.hover => tokens.colors.alert.error.pressed,
+      DesignSystemButtonVisualState.pressed => tokens.colors.text.highEmphasis,
+    };
 
     return switch (variant) {
       DesignSystemButtonVariant.primary => _ButtonVariantSpec(
@@ -394,11 +399,11 @@ class _ButtonVariantSpec {
         backgroundColor: dangerColor,
       ),
       DesignSystemButtonVariant.dangerSecondary => _ButtonVariantSpec(
-        foregroundColor: tokens.colors.alert.error.defaultColor,
+        foregroundColor: dangerContentColor,
         backgroundColor: surfaceColor,
       ),
       DesignSystemButtonVariant.dangerTertiary => _ButtonVariantSpec(
-        foregroundColor: tokens.colors.alert.error.defaultColor,
+        foregroundColor: dangerContentColor,
         backgroundColor: visualState == DesignSystemButtonVisualState.idle
             ? null
             : surfaceColor,

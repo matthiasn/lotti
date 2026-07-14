@@ -57,6 +57,10 @@ than owning feature-specific modal rows:
   rows one full-width anatomy with token-backed selection, hover, keyboard
   focus, typography, semantics, and trailing affordances. Homogeneous options
   have no inset dividers that can remain visible through an active row.
+- provider and model drill-downs additionally share
+  `InferenceProviderSelectionRow` and `InferenceModelSelectionRow`, so branded
+  provider tiles, model accent dots, default markers, and selected markers are
+  identical in standalone pickers and embedded setup flows.
 
 - `InferenceProfilePickerModal` and its embeddable
   `InferenceProfilePickerList` render named inference profiles for category

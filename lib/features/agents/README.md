@@ -151,13 +151,37 @@ index; it never opens a second picker modal over the setup sheet. A single
 provider skips the provider page, while multiple providers drill down and use
 the Wolt back affordance to return within the same route. Every branch uses
 `DesignSystemSelectionRow`, matching the standalone AI pickers without coupling
-the setup flow to their modal wrappers.
+the setup flow to their modal wrappers. Provider and model branches reuse
+`InferenceProviderSelectionRow` and `InferenceModelSelectionRow`, so their
+branding and selection markers stay identical to the standalone inference
+picker. Persistence temporarily replaces actionable semantics with one live
+“saving” status, and the inline disable confirmation receives focus and a live
+announcement when it appears.
+
+The overview is a settings summary, not another picker page. A grouped
+`Current setup` card exposes the active inference profile and effective
+thinking route as noun-labeled navigation rows; a second grouped card contains
+the compact automatic-updates toggle. Both groups use the outline-only variant,
+so the modal surface continues through them without a darker or lighter fill.
+The destructive `Turn off AI for this agent` action is isolated below both
+groups and expands its confirmation in place.
+`taskAgentSetupOptionsProvider` retains the loaded profile/model/provider
+catalog across independently mounted Wolt pages, and consumers unwrap the last
+successful async value during refreshes, so navigation never flashes an empty
+page after the overview has loaded.
 
 Profile and model rows are terminal choices: the shared flow controller
 persists the new `AgentInferenceSetup` first, then closes the whole setup route
 and shows the localized confirmation through the `ScaffoldMessenger` captured
-from the task-details column. A failed write leaves the route open and reports
-the error there. “No AI setup” is deliberately not another page: tapping it
+from the task-details column. Model rows optimistically move the selection
+marker as soon as the tap is accepted, while the busy guard prevents a second
+write; a failed write restores the persisted selection, leaves the route open,
+and reports the error there. Navigation and toast delivery use the stable
+navigator and messenger captured when the sheet opens, so a database-driven
+Wolt page rebuild cannot misclassify a successful save as a failure. The
+controller also binds the exact modal route and closes only while that route is
+still current, so completing a save after manual dismissal cannot pop the task
+screen underneath. “No AI setup” is deliberately not another page: tapping it
 reveals a compact inline explanation and Cancel / confirm actions directly
 under the originating row, preserving context and avoiding unnecessary back
 navigation.

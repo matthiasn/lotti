@@ -41,6 +41,48 @@ void main() {
     expect(received, isTrue);
   });
 
+  testWidgets('exposes one toggled semantic action for the whole row', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    var callCount = 0;
+    bool? received;
+    await tester.pumpWidget(
+      WidgetTestBench(
+        child: SettingsSwitchRow(
+          title: 'Private',
+          subtitle: 'Hide from shared views',
+          value: true,
+          onChanged: (value) {
+            callCount++;
+            received = value;
+          },
+        ),
+      ),
+    );
+
+    final action = find.bySemanticsLabel('Private');
+    expect(action, findsOneWidget);
+    expect(
+      tester.getSemantics(action),
+      matchesSemantics(
+        label: 'Private',
+        hint: 'Hide from shared views',
+        isButton: true,
+        isEnabled: true,
+        hasEnabledState: true,
+        isToggled: true,
+        hasToggledState: true,
+        hasTapAction: true,
+      ),
+    );
+
+    await tester.tapAt(tester.getCenter(find.byType(DesignSystemToggle)));
+    expect(callCount, 1);
+    expect(received, isFalse);
+    semantics.dispose();
+  });
+
   testWidgets('tapping reports the inverse of the current value', (
     tester,
   ) async {

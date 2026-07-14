@@ -9102,6 +9102,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Když se změní něco souvisejícího s tímto úkolem, spustí se dvouminutový odpočet. Změny během odpočtu se sloučí do jedné aktualizace.';
 
   @override
+  String get taskAgentAutomaticUpdatesSummary =>
+      'Změny úkolu se seskupí a aktualizace proběhne po dvou minutách.';
+
+  @override
+  String get taskAgentAutomationSection => 'Automatizace';
+
+  @override
   String get taskAgentCancelTimerTooltip =>
       'Zrušit čekající automatickou aktualizaci';
 
@@ -9141,7 +9148,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Aktuální zpráva zůstane viditelná, ale agent se nespustí, dokud nevybereš nastavení.';
 
   @override
-  String get taskAgentDisableConfirmTitle => 'Vypnout nastavení AI?';
+  String get taskAgentDisableConfirmTitle => 'Vypnout AI pro tohoto agenta?';
+
+  @override
+  String get taskAgentInferenceProfileLabel => 'Inferenční profil';
 
   @override
   String get taskAgentModelPickerTitle => 'Vybrat model pro uvažování';
@@ -9183,6 +9193,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentRunNowTooltip => 'Spustit nyní';
 
   @override
+  String get taskAgentSavingSetup => 'Ukládání nastavení agenta';
+
+  @override
   String taskAgentSetupAndReportSemantics(String identity) {
     return 'Tato zpráva i aktuální nastavení používají $identity. Aktivuj pro změnu nastavení.';
   }
@@ -9194,6 +9207,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String taskAgentSetupChangedToast(String model) {
     return 'Pro všechny budoucí aktualizace se bude používat $model, dokud ho nezměníš.';
   }
+
+  @override
+  String get taskAgentSetupChoiceHelp =>
+      'Vyber profil pro výchozí nastavení, nebo přepiš jen model pro uvažování.';
 
   @override
   String get taskAgentSetupOriginCategory =>
@@ -9225,7 +9242,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentSetupTitle => 'Nastavení agenta';
 
   @override
+  String get taskAgentThinkingModelLabel => 'Model pro uvažování';
+
+  @override
   String get taskAgentThisReportHeader => 'Tato zpráva';
+
+  @override
+  String get taskAgentTurnOffSetup => 'Vypnout AI pro tohoto agenta';
 
   @override
   String get taskAgentUseCategoryDefault =>
