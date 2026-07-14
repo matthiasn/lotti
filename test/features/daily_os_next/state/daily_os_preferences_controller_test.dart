@@ -14,6 +14,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -243,16 +244,7 @@ void main() {
     late TestGetItMocks mocks;
     late ProviderContainer container;
 
-    setUpAll(() {
-      registerFallbackValue(
-        const SyncMessage.dailyOsUserName(
-          userName: '',
-          updatedAt: 0,
-          status: SyncEntryStatus.update,
-        ),
-      );
-      registerFallbackValue(StackTrace.empty);
-    });
+    setUpAll(registerAllFallbackValues);
 
     setUp(() async {
       outboxService = MockOutboxService();
