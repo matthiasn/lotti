@@ -2340,7 +2340,7 @@
   "journalDateInvalid": "Neplatné časové rozmezí",
   "journalDateLabel": "Datum",
   "journalDateNowButton": "Nyní",
-  "journalDateSaveButton": "ULOŽIT",
+  "journalDateSaveButton": "Uložit",
   "journalDateTimeRangeTitle": "Datum a čas",
   "journalDateToLabel": "Datum do:",
   "journalDeleteConfirm": "ANO, SMAZAT TENTO ZÁZNAM",
@@ -2374,6 +2374,8 @@
   "journalOvernightNextDay": "Končí {date} (další den)",
   "journalPrivateTooltip": "pouze soukromé",
   "journalSearchHint": "Hledat deník...",
+  "journalSetEndDateTimeNowSemantic": "Nastavit koncové datum a čas na teď",
+  "journalSetStartDateTimeNowSemantic": "Nastavit počáteční datum a čas na teď",
   "journalShareHint": "Sdílet",
   "journalShowLinkHint": "Zobrazit odkaz",
   "journalShowMapHint": "Zobrazit mapu",
@@ -3563,6 +3565,7 @@
   "taskDueYesterday": "Včera splatné",
   "taskEditTitleLabel": "Upravit název úkolu",
   "taskEstimateLabel": "Odhad:",
+  "taskEstimateModalTitle": "Odhad",
   "taskEstimateProgressLabel": "{tracked} z {estimate}",
   "@taskEstimateProgressLabel": {
     "placeholders": {

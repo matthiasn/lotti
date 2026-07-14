@@ -215,6 +215,7 @@ class ModalUtils {
     ValueNotifier<int>? pageIndexNotifier,
     bool barrierDismissible = true,
     Widget Function(Widget)? modalDecorator,
+    WoltModalType Function(BuildContext)? modalTypeBuilderOverride,
   }) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -223,7 +224,7 @@ class ModalUtils {
       useRootNavigator: shouldUseRootNavigatorForBottomSheet(context),
       modalDecorator: modalDecorator,
       pageListBuilder: pageListBuilder,
-      modalTypeBuilder: modalTypeBuilder,
+      modalTypeBuilder: modalTypeBuilderOverride ?? modalTypeBuilder,
       pageIndexNotifier: pageIndexNotifier,
       barrierDismissible: barrierDismissible,
       modalBarrierColor: getModalBarrierColor(isDark: isDark, context: context),

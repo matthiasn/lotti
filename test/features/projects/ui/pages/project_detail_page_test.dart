@@ -986,10 +986,10 @@ void main() {
           matching: find.byType(InkWell),
         );
         await tester.tap(inkWell.first);
+        await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // A date picker dialog should appear
-        expect(find.byType(DatePickerDialog), findsOneWidget);
+        expect(find.byType(CalendarDatePicker), findsOneWidget);
       });
 
       testWidgets(
@@ -1007,10 +1007,10 @@ void main() {
             matching: find.byType(InkWell),
           );
           await tester.tap(inkWell.first);
+          await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          // Tap OK in the date picker to confirm
-          await tester.tap(find.text('OK'));
+          await tester.tap(find.text('Done'));
           await tester.pump(const Duration(milliseconds: 300));
 
           // updateTargetDate should have been called

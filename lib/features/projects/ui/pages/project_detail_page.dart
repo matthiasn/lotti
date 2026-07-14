@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
@@ -140,15 +141,16 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
         ? lastDate
         : initialDate;
 
-    final picked = await showDatePicker(
+    final result = await showDesignSystemDatePicker(
       context: context,
+      title: context.messages.projectTargetDateLabel,
       initialDate: clampedInitial,
       firstDate: firstDate,
       lastDate: lastDate,
+      allowClear: currentDate != null,
     );
-    if (picked != null) {
-      controller.updateTargetDate(picked);
-    }
+    if (!mounted || result == null) return;
+    controller.updateTargetDate(result.cleared ? null : result.date);
   }
 
   @override

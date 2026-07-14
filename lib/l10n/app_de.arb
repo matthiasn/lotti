@@ -2547,7 +2547,7 @@
   "journalDateInvalid": "Ungültiger Datumsbereich",
   "journalDateLabel": "Datum",
   "journalDateNowButton": "Jetzt",
-  "journalDateSaveButton": "SPEICHERN",
+  "journalDateSaveButton": "Speichern",
   "journalDateTimeRangeTitle": "Datum & Uhrzeit",
   "journalDateToLabel": "Datum bis:",
   "journalDeleteConfirm": "JA, DIESEN EINTRAG LÖSCHEN",
@@ -2581,6 +2581,8 @@
   "journalOvernightNextDay": "Endet {date} (nächster Tag)",
   "journalPrivateTooltip": "nur privat",
   "journalSearchHint": "Tagebuch durchsuchen...",
+  "journalSetEndDateTimeNowSemantic": "Enddatum und -zeit auf jetzt setzen",
+  "journalSetStartDateTimeNowSemantic": "Startdatum und -zeit auf jetzt setzen",
   "journalShareHint": "Teilen",
   "journalShowLinkHint": "Link anzeigen",
   "journalShowMapHint": "Karte anzeigen",
@@ -3778,6 +3780,7 @@
   "taskDueYesterday": "Gestern fällig",
   "taskEditTitleLabel": "Aufgabentitel bearbeiten",
   "taskEstimateLabel": "Schätzung:",
+  "taskEstimateModalTitle": "Schätzung",
   "taskEstimateProgressLabel": "{tracked} von {estimate}",
   "@taskEstimateProgressLabel": {
     "placeholders": {

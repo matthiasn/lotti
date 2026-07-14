@@ -1,6 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/tasks/ui/header/task_due_date_widget.dart';
 
 import '../../../../test_helper.dart';
@@ -35,13 +35,17 @@ void main() {
 
       // Verify modal elements are shown
       expect(find.text('Due Date'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Cancel'), findsNothing);
       expect(find.text('Clear'), findsOneWidget);
       expect(find.text('Done'), findsOneWidget);
-      expect(find.byType(CupertinoDatePicker), findsOneWidget);
+      expect(find.text('Today'), findsOneWidget);
+      expect(find.text('Sunday, June 15, 2025'), findsOneWidget);
+      expect(find.byType(CalendarDatePicker), findsOneWidget);
     });
 
-    testWidgets('Cancel button closes modal without callback', (tester) async {
+    testWidgets('Close button dismisses modal without callback', (
+      tester,
+    ) async {
       var callbackCalled = false;
 
       await tester.pumpWidget(
@@ -69,7 +73,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.byTooltip('Close'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -168,8 +172,44 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Verify picker is shown (will use DateTime.now as default)
-      expect(find.byType(CupertinoDatePicker), findsOneWidget);
+      expect(find.byType(CalendarDatePicker), findsOneWidget);
+      expect(find.text('Clear'), findsNothing);
     });
+
+    testWidgets(
+      'Today updates the complete due date and enables confirmation',
+      (
+        tester,
+      ) async {
+        DateTime? resultDate;
+        final initialDate = DateTime(2025, 6, 15);
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showDueDatePicker(
+                  context: context,
+                  initialDate: initialDate,
+                  onDueDateChanged: (date) async => resultDate = date,
+                ),
+                child: const Text('Open Picker'),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open Picker'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Today'));
+        await tester.pump();
+        await tester.tap(find.text('Done'));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(resultDate, isNotNull);
+        expect(resultDate, isNot(initialDate));
+      },
+    );
 
     testWidgets('Done does not call callback if date unchanged', (
       tester,
@@ -242,14 +282,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Simulate user scrolling the date picker by dragging
-      final pickerFinder = find.byType(CupertinoDatePicker);
-      expect(pickerFinder, findsOneWidget);
-
-      // Drag down to change the date (simulates user interaction)
-      await tester.drag(pickerFinder, const Offset(0, -50));
+      expect(find.byType(CalendarDatePicker), findsOneWidget);
+      await tester.tap(find.text('16'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap Done after changing date
       await tester.tap(find.text('Done'));
@@ -291,11 +326,8 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Scroll to change the date
-        final pickerFinder = find.byType(CupertinoDatePicker);
-        await tester.drag(pickerFinder, const Offset(0, -100));
+        await tester.tap(find.text('16'));
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Done'));
         await tester.pump();
@@ -350,7 +382,14 @@ void main() {
       },
     );
 
-    testWidgets('modal has proper layout with three buttons', (tester) async {
+    testWidgets('phone layout keeps Clear and dominant Done action visible', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(402, 874)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
       await tester.pumpWidget(
         WidgetTestBench(
           child: Builder(
@@ -374,21 +413,19 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // All three buttons should be in the same Row
-      final cancelButton = find.text('Cancel');
-      final clearButton = find.text('Clear');
-      final doneButton = find.text('Done');
+      final clearButton = find.widgetWithText(DesignSystemButton, 'Clear');
+      final doneButton = find.widgetWithText(DesignSystemButton, 'Done');
 
-      expect(cancelButton, findsOneWidget);
+      expect(find.text('Cancel'), findsNothing);
       expect(clearButton, findsOneWidget);
       expect(doneButton, findsOneWidget);
 
-      // Verify they share a common Row ancestor
-      final rowFinder = find.ancestor(
-        of: cancelButton,
-        matching: find.byType(Row),
+      expect(tester.getCenter(doneButton).dy, tester.getCenter(clearButton).dy);
+      expect(
+        tester.getSize(doneButton).width,
+        greaterThan(tester.getSize(clearButton).width),
       );
-      expect(rowFinder, findsWidgets);
+      expect(tester.takeException(), isNull);
     });
   });
 }

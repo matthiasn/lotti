@@ -166,6 +166,23 @@ Two important boundaries:
 
 Checklist content is modeled separately through checklist entities and linked checklist-item entities. That split matters because the UI allows drag, drop, reorder, export, and cross-checklist movement without flattening everything into one giant task row.
 
+### Due Date and Estimate Pickers
+
+The detail header routes due-date edits through `showDueDatePicker` and
+estimate edits through `showEstimatePicker`:
+
+- due dates use the shared `DesignSystemCalendarPicker`, so the selected value
+  includes its weekday and the month grid exposes weekday headers. **Today**
+  updates the draft, **Clear** produces an explicit null result, and dismissal
+  remains distinct from either action;
+- estimates use `DesignSystemDurationWheel` in the same token-backed frame and
+  shared glass action footer. The draft is committed only when Done confirms a
+  changed duration; Clear resets a non-zero estimate.
+
+Both pickers use the responsive modal contract: a bottom sheet on narrow
+layouts and a dialog on wide layouts, with the same surface color inside the
+subtle frame in light and dark themes.
+
 ## Task Detail Composition
 
 `TaskDetailsPage` is the main task surface. It composes:

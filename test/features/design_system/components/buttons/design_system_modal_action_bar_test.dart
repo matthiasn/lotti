@@ -21,9 +21,13 @@ void main() {
     onPressed: () {},
   );
 
-  Future<void> pumpBar(WidgetTester tester, DesignSystemModalActionBar bar) {
+  Future<void> pumpBar(
+    WidgetTester tester,
+    DesignSystemModalActionBar bar, {
+    double width = 600,
+  }) {
     return tester.pumpWidget(
-      makeTestableWidgetWithScaffold(SizedBox(width: 600, child: bar)),
+      makeTestableWidgetWithScaffold(SizedBox(width: width, child: bar)),
     );
   }
 
@@ -140,6 +144,34 @@ void main() {
       greaterThan(500),
       reason: 'a lone primary should fill most of the 600px row',
     );
+  });
+
+  testWidgets('narrow layouts wrap secondaries above a full-width primary', (
+    tester,
+  ) async {
+    await pumpBar(
+      tester,
+      DesignSystemModalActionBar(
+        secondary: [secondaryBtn('Cancel'), secondaryBtn('Clear')],
+        primary: primaryBtn('Done'),
+      ),
+      width: 320,
+    );
+    await tester.pump();
+
+    final cancelCenter = tester.getCenter(
+      find.widgetWithText(DesignSystemButton, 'Cancel'),
+    );
+    final doneCenter = tester.getCenter(
+      find.widgetWithText(DesignSystemButton, 'Done'),
+    );
+    final doneWidth = tester
+        .getSize(find.widgetWithText(DesignSystemButton, 'Done'))
+        .width;
+
+    expect(doneCenter.dy, greaterThan(cancelCenter.dy));
+    expect(doneWidth, 320);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('glass: true renders the bar on a DesignSystemGlassStrip', (

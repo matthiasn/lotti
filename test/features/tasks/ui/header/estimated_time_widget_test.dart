@@ -64,6 +64,15 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Estimate'), findsOneWidget);
+      expect(find.text('Estimate:'), findsNothing);
+      expect(find.text('Clear'), findsOneWidget);
+      final picker = tester.widget<CupertinoTimerPicker>(
+        find.byType(CupertinoTimerPicker),
+      );
+      expect(picker.itemExtent, 48);
+      expect(picker.selectionOverlayBuilder, isNotNull);
+
       // Without changing the picker value, tapping Done should not call callback.
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
@@ -110,6 +119,7 @@ void main() {
         find.byType(CupertinoTimerPicker),
       );
       expect(picker.initialTimerDuration, Duration.zero);
+      expect(find.text('Clear'), findsNothing);
 
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
@@ -161,5 +171,38 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selected, equals(const Duration(hours: 3)));
+  });
+
+  testWidgets('Clear resets a non-zero estimate without wheel manipulation', (
+    tester,
+  ) async {
+    Duration? selected;
+
+    await tester.pumpWidget(
+      WidgetTestBench(
+        child: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => showEstimatePicker(
+                  context: context,
+                  initialDuration: const Duration(minutes: 30),
+                  onEstimateChanged: (duration) async => selected = duration,
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Clear'));
+    await tester.pumpAndSettle();
+
+    expect(selected, Duration.zero);
+    expect(find.text('Estimate'), findsNothing);
   });
 }

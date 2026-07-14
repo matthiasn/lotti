@@ -2,8 +2,12 @@ import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_range.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
+  setUpAll(tz_data.initializeTimeZones);
+
   group('EntryDateTimeRange.fromBounds', () {
     test('same-day entry opens in shared-date mode', () {
       final r = EntryDateTimeRange.fromBounds(
@@ -38,6 +42,22 @@ void main() {
         expect(r.valid, isTrue);
       },
     );
+
+    test('plain overnight span crosses a controlled DST fallback', () {
+      final berlin = tz.getLocation('Europe/Berlin');
+      final start = tz.TZDateTime(berlin, 2024, 10, 26, 23, 30);
+      final end = tz.TZDateTime(berlin, 2024, 10, 27, 4, 30);
+
+      expect(start.timeZoneOffset, const Duration(hours: 2));
+      expect(end.timeZoneOffset, const Duration(hours: 1));
+
+      final range = EntryDateTimeRange.fromBounds(start, end);
+
+      expect(range.differentDates, isFalse);
+      expect(range.overnightAuto, isTrue);
+      expect(range.dateTo, end);
+      expect(range.duration, const Duration(hours: 6));
+    });
 
     test(
       'exactly-24h same-clock next-day entry opens in different-dates mode',
@@ -74,6 +94,21 @@ void main() {
         expect(r.valid, isTrue);
       },
     );
+
+    test('UTC bounds round-trip without changing timezone kind', () {
+      final from = DateTime.utc(2024, 6, 15, 23, 30);
+      final to = DateTime.utc(2024, 6, 16, 0, 30);
+
+      final range = EntryDateTimeRange.fromBounds(from, to);
+
+      expect(range.startDate, DateTime.utc(2024, 6, 15));
+      expect(range.startDate.isUtc, isTrue);
+      expect(range.dateFrom, from);
+      expect(range.dateTo, to);
+      expect(range.dateFrom.isUtc, isTrue);
+      expect(range.dateTo.isUtc, isTrue);
+      expect(range.duration, const Duration(hours: 1));
+    });
   });
 
   group('derivation', () {
@@ -163,6 +198,54 @@ void main() {
       );
       expect(cleared.endDateOverride, isNull);
     });
+  });
+
+  group('endpoint replacement', () {
+    final base = EntryDateTimeRange.fromBounds(
+      DateTime(2024, 6, 15, 9),
+      DateTime(2024, 6, 15, 10),
+    );
+
+    test('withStart changes only the absolute start endpoint', () {
+      final next = base.withStart(DateTime(2024, 6, 16, 8, 30));
+
+      expect(next.dateFrom, DateTime(2024, 6, 16, 8, 30));
+      expect(next.dateTo, base.dateTo);
+      expect(next.differentDates, isTrue);
+      expect(next.valid, isFalse);
+    });
+
+    test('withStart preserves an earlier same-day end as an invalid range', () {
+      final next = base.withStart(DateTime(2024, 6, 15, 14));
+
+      expect(next.dateFrom, DateTime(2024, 6, 15, 14));
+      expect(next.dateTo, base.dateTo);
+      expect(next.endDateOverride, DateTime(2024, 6, 15));
+      expect(next.differentDates, isTrue);
+      expect(next.duration, const Duration(hours: -4));
+      expect(next.valid, isFalse);
+    });
+
+    test('withEnd changes only the absolute end endpoint', () {
+      final next = base.withEnd(DateTime(2024, 6, 17, 18, 45));
+
+      expect(next.dateFrom, base.dateFrom);
+      expect(next.dateTo, DateTime(2024, 6, 17, 18, 45));
+      expect(next.differentDates, isTrue);
+      expect(next.valid, isTrue);
+    });
+
+    test(
+      'endpoint replacement keeps a representable same-day range compact',
+      () {
+        final next = base.withEnd(DateTime(2024, 6, 15, 11, 30));
+
+        expect(next.dateFrom, base.dateFrom);
+        expect(next.dateTo, DateTime(2024, 6, 15, 11, 30));
+        expect(next.differentDates, isFalse);
+        expect(next.overnightAuto, isFalse);
+      },
+    );
   });
 
   // Glados property: fromBounds() round-trips any start <= end pair back to the

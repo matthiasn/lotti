@@ -5,10 +5,10 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// The app's standard modal/sheet action bar.
 ///
 /// Layout rule (selected by the design panel as the "dominant primary" / V3
-/// pattern): [secondary] actions keep their intrinsic width on the leading
-/// edge, and the [primary] action flexes to fill the trailing width with its
-/// label centered — so the primary is signalled three ways at once (size,
-/// colour, trailing position) rather than relying on colour alone.
+/// pattern): at comfortable widths [secondary] actions keep their intrinsic
+/// width on the leading edge, and the [primary] action flexes to fill the
+/// trailing width. On narrow or large-text layouts, the secondaries wrap above
+/// a full-width primary so translations never squeeze or clip the actions.
 ///
 /// A larger gutter (`spacing.step5`) separates the last secondary from the
 /// primary so a mildly-destructive secondary (e.g. a "Clear" button) is harder
@@ -49,7 +49,36 @@ class DesignSystemModalActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final row = Row(
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final content = LayoutBuilder(
+      builder: (context, constraints) {
+        final narrowBreakpoint = secondary.length > 1
+            ? tokens.spacing.step13 * 2 + tokens.spacing.step11
+            : tokens.spacing.step13 * 2;
+        final stacked =
+            constraints.maxWidth < narrowBreakpoint || textScale > 1.3;
+        return stacked
+            ? _StackedActionLayout(primary: primary, secondary: secondary)
+            : _WideActionLayout(primary: primary, secondary: secondary);
+      },
+    );
+    final padded = padding == null
+        ? content
+        : Padding(padding: padding!, child: content);
+    return glass ? DesignSystemGlassStrip(child: padded) : padded;
+  }
+}
+
+class _WideActionLayout extends StatelessWidget {
+  const _WideActionLayout({required this.primary, required this.secondary});
+
+  final Widget primary;
+  final List<Widget> secondary;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Row(
       children: [
         for (var i = 0; i < secondary.length; i++) ...[
           secondary[i],
@@ -64,9 +93,31 @@ class DesignSystemModalActionBar extends StatelessWidget {
         Expanded(child: primary),
       ],
     );
-    final padded = padding == null
-        ? row
-        : Padding(padding: padding!, child: row);
-    return glass ? DesignSystemGlassStrip(child: padded) : padded;
+  }
+}
+
+class _StackedActionLayout extends StatelessWidget {
+  const _StackedActionLayout({required this.primary, required this.secondary});
+
+  final Widget primary;
+  final List<Widget> secondary;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (secondary.isNotEmpty) ...[
+          Wrap(
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step3,
+            children: secondary,
+          ),
+          SizedBox(height: tokens.spacing.step3),
+        ],
+        primary,
+      ],
+    );
   }
 }

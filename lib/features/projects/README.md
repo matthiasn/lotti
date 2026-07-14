@@ -149,6 +149,25 @@ The modal resolves to the freshly created `ProjectEntry` (or `null` when
 dismissed); the list refreshes on its own because it watches
 `projectsOverviewProvider`.
 
+### Target Date Selection
+
+Project creation and both project detail routes use
+`showDesignSystemDatePicker` for `ProjectData.targetDate`. The shared calendar
+shows weekday headers, renders the selected date with its full weekday, and
+offers Today without introducing a project-specific picker model. Confirmation
+updates the create-form draft or calls the relevant detail controller;
+dismissal leaves the target date unchanged, and the surrounding project field
+owns clearing where that action is available. A result arriving after the
+detail page is disposed is ignored.
+
+```mermaid
+flowchart LR
+  Field["Project target-date field"] --> Calendar["Shared design-system calendar"]
+  Calendar -->|Done| Draft["Create draft or detail controller"]
+  Calendar -->|Dismiss| Unchanged["Existing target date unchanged"]
+  Draft --> Persist["ProjectRepository persistence path"]
+```
+
 ## Repository Responsibilities
 
 `ProjectRepository` owns the data-heavy part of the feature:

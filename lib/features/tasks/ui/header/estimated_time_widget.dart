@@ -1,8 +1,9 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 Future<void> showEstimatePicker({
@@ -10,6 +11,7 @@ Future<void> showEstimatePicker({
   required Duration initialDuration,
   required Future<void> Function(Duration newDuration) onEstimateChanged,
 }) async {
+  final tokens = context.designTokens;
   var selectedDuration = initialDuration;
 
   await ModalUtils.showSinglePageModal<void>(
@@ -22,9 +24,20 @@ Future<void> showEstimatePicker({
         },
       );
     },
-    title: context.messages.taskEstimateLabel,
+    title: context.messages.taskEstimateModalTitle,
+    padding: EdgeInsets.fromLTRB(
+      tokens.spacing.step5,
+      tokens.spacing.step5,
+      tokens.spacing.step5,
+      tokens.spacing.step11 + tokens.spacing.step6,
+    ),
     stickyActionBarBuilder: (modalContext) => _EstimatedTimeStickyActionBar(
-      onCancel: () => Navigator.of(modalContext).pop(),
+      onClear: initialDuration == Duration.zero
+          ? null
+          : () async {
+              Navigator.of(modalContext).pop();
+              await onEstimateChanged(Duration.zero);
+            },
       onDone: () async {
         Navigator.of(modalContext).pop();
         if (selectedDuration != initialDuration) {
@@ -32,7 +45,6 @@ Future<void> showEstimatePicker({
         }
       },
     ),
-    padding: const EdgeInsets.only(bottom: 40),
   );
 }
 
@@ -51,9 +63,12 @@ class _EstimatedTimePicker extends StatefulWidget {
 }
 
 class _EstimatedTimePickerState extends State<_EstimatedTimePicker> {
+  late Duration _selectedDuration;
+
   @override
   void initState() {
     super.initState();
+    _selectedDuration = widget.initialDuration;
     // Pass initial value to callback
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onDurationChanged(widget.initialDuration);
@@ -62,18 +77,28 @@ class _EstimatedTimePickerState extends State<_EstimatedTimePicker> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoTheme(
-      data: CupertinoThemeData(
-        textTheme: CupertinoTextThemeData(
-          pickerTextStyle: context.textTheme.titleLarge?.withTabularFigures,
-        ),
+    final tokens = context.designTokens;
+    final durationLabel = context.messages
+        .designSystemMyDailyDurationHoursMinutesCompact(
+          _selectedDuration.inHours,
+          _selectedDuration.inMinutes.remainder(60),
+        );
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
+        border: Border.all(color: tokens.colors.decorative.level01),
       ),
-      child: SizedBox(
-        height: 265,
-        child: CupertinoTimerPicker(
-          onTimerDurationChanged: widget.onDurationChanged,
-          initialTimerDuration: widget.initialDuration,
-          mode: CupertinoTimerPickerMode.hm,
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.cardPadding),
+        child: DesignSystemDurationWheel(
+          initialDuration: widget.initialDuration,
+          semanticsLabel:
+              '${context.messages.taskEstimateModalTitle}: $durationLabel',
+          semanticsLiveRegion: true,
+          onDurationChanged: (duration) {
+            setState(() => _selectedDuration = duration);
+            widget.onDurationChanged(duration);
+          },
         ),
       ),
     );
@@ -83,28 +108,34 @@ class _EstimatedTimePickerState extends State<_EstimatedTimePicker> {
 /// Sticky action bar for the estimated time selection modal
 class _EstimatedTimeStickyActionBar extends StatelessWidget {
   const _EstimatedTimeStickyActionBar({
-    required this.onCancel,
+    required this.onClear,
     required this.onDone,
   });
 
-  final VoidCallback onCancel;
+  final VoidCallback? onClear;
   final VoidCallback onDone;
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return DesignSystemModalActionBar(
       glass: true,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.all(tokens.spacing.step5),
       secondary: [
-        DesignSystemButton(
-          label: context.messages.cancelButton,
-          variant: DesignSystemButtonVariant.secondary,
-          size: DesignSystemButtonSize.large,
-          onPressed: onCancel,
-        ),
+        if (onClear != null)
+          DesignSystemButton(
+            label: context.messages.clearButton,
+            semanticsLabel:
+                '${context.messages.clearButton} '
+                '${context.messages.taskEstimateModalTitle}',
+            variant: DesignSystemButtonVariant.secondary,
+            size: DesignSystemButtonSize.large,
+            onPressed: onClear,
+          ),
       ],
       primary: DesignSystemButton(
         label: context.messages.doneButton,
+        leadingIcon: Icons.check_rounded,
         size: DesignSystemButtonSize.large,
         fullWidth: true,
         onPressed: onDone,

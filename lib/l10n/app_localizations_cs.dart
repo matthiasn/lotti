@@ -5990,7 +5990,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalDateNowButton => 'Nyní';
 
   @override
-  String get journalDateSaveButton => 'ULOŽIT';
+  String get journalDateSaveButton => 'Uložit';
 
   @override
   String get journalDateTimeRangeTitle => 'Datum a čas';
@@ -6094,6 +6094,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get journalSearchHint => 'Hledat deník...';
+
+  @override
+  String get journalSetEndDateTimeNowSemantic =>
+      'Nastavit koncové datum a čas na teď';
+
+  @override
+  String get journalSetStartDateTimeNowSemantic =>
+      'Nastavit počáteční datum a čas na teď';
 
   @override
   String get journalShareHint => 'Sdílet';
@@ -9272,6 +9280,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskEstimateLabel => 'Odhad:';
+
+  @override
+  String get taskEstimateModalTitle => 'Odhad';
 
   @override
   String taskEstimateProgressLabel(String tracked, String estimate) {
