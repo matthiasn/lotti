@@ -90,6 +90,7 @@ Current message families in `model/sync_message.dart`:
 - `savedTaskFilterDelete`
 - `configFlag`
 - `themingSelection`
+- `dailyOsUserName`
 - `notification`
 - `notificationStateUpdate`
 - `backfillRequest`

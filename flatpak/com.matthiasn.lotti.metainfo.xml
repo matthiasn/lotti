@@ -35,6 +35,7 @@
     <release version="0.9.1044" date="2026-07-14">
       <description>
           <p>Daily OS now has a discoverable settings page for choosing its default inference profile and preferred name, plus per-planner profile and thinking-model overrides. Setup explains that assembled planning context is sent to the selected provider and identifies whether its configured endpoint is local or remote.</p>
+          <p>The preferred name you set for Daily OS now syncs across your devices, with the most recent edit winning, so each device greets you the same way.</p>
       </description>
     </release>
     <release version="0.9.1043" date="2026-07-14">

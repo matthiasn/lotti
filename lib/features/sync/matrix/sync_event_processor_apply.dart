@@ -172,6 +172,59 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           );
         }
         return null;
+      case SyncDailyOsUserName(:final userName, :final updatedAt):
+        try {
+          // Last-write-wins on the persisted timestamp, mirroring theming.
+          final localUpdatedAtStr = await _settingsDb.itemByKey(
+            dailyOsUserNameUpdatedAtSettingsKey,
+          );
+          final localUpdatedAt = localUpdatedAtStr != null
+              ? int.tryParse(localUpdatedAtStr)
+              : 0;
+
+          if (updatedAt < (localUpdatedAt ?? 0)) {
+            _trace(
+              'dailyOsUserNameSync.ignored.stale incoming=$updatedAt '
+              'local=$localUpdatedAt',
+              subDomain: 'processor.apply',
+            );
+            return null;
+          }
+
+          await _settingsDb.saveSettingsItem(
+            dailyOsUserNameSettingsKey,
+            userName,
+          );
+          await _settingsDb.saveSettingsItem(
+            dailyOsUserNameUpdatedAtSettingsKey,
+            updatedAt.toString(),
+          );
+          // A name received from another device is already published; mark it
+          // synced so this device does not bootstrap-republish it.
+          await _settingsDb.saveSettingsItem(
+            dailyOsUserNameSyncedAtSettingsKey,
+            updatedAt.toString(),
+          );
+
+          _updateNotifications.notify(
+            {settingsNotification},
+            fromSync: true,
+          );
+
+          // Content-free: never log the greeting name itself.
+          _trace(
+            'apply dailyOsUserName updatedAt=$updatedAt',
+            subDomain: 'processor.apply',
+          );
+        } catch (e, st) {
+          _loggingService.error(
+            LogDomain.dailyOs,
+            e,
+            stackTrace: st,
+            subDomain: 'apply',
+          );
+        }
+        return null;
       case SyncBackfillRequest():
         // Handle backfill request - another device is asking for a missing entry
         await backfillResponseHandler.handleBackfillRequest(syncMessage);

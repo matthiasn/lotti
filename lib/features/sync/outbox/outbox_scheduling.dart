@@ -32,6 +32,7 @@ int priorityForMessage(SyncMessage message) {
     SyncConsumptionEvent() => OutboxPriority.low.index,
     SyncAgentBundle() => OutboxPriority.normal.index,
     SyncThemingSelection() => OutboxPriority.normal.index,
+    SyncDailyOsUserName() => OutboxPriority.normal.index,
     SyncEntityDefinition() => OutboxPriority.low.index,
     SyncAiConfig() => OutboxPriority.low.index,
     SyncAiConfigDelete() => OutboxPriority.low.index,

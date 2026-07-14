@@ -1247,6 +1247,126 @@ void main() {
     });
   });
 
+  group('SyncEventProcessor - SyncDailyOsUserName', () {
+    Event createNameEvent(SyncMessage message) {
+      final event = MockEvent();
+      final encoded = base64.encode(utf8.encode(json.encode(message.toJson())));
+      when(() => event.eventId).thenReturn('event-id');
+      when(() => event.originServerTs).thenReturn(DateTime(2024));
+      when(() => event.content).thenReturn({
+        'msgtype': 'com.lotti.sync.message',
+        'body': 'sync',
+        'data': encoded,
+      });
+      when(() => event.text).thenReturn(encoded);
+      return event;
+    }
+
+    test('applies a newer name and notifies settings listeners', () async {
+      final timestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
+      final message = SyncMessage.dailyOsUserName(
+        userName: 'Sam',
+        updatedAt: timestamp,
+        status: SyncEntryStatus.update,
+      );
+
+      await processor.process(
+        event: createNameEvent(message),
+        journalDb: journalDb,
+      );
+
+      verify(
+        () => settingsDb.saveSettingsItem('DAILY_OS_USER_NAME', 'Sam'),
+      ).called(1);
+      verify(
+        () => settingsDb.saveSettingsItem(
+          'DAILY_OS_USER_NAME_UPDATED_AT',
+          '$timestamp',
+        ),
+      ).called(1);
+      // A received name is marked synced so this device won't re-publish it.
+      verify(
+        () => settingsDb.saveSettingsItem(
+          'DAILY_OS_USER_NAME_SYNCED_AT',
+          '$timestamp',
+        ),
+      ).called(1);
+      verify(
+        () => updateNotifications.notify(any(), fromSync: true),
+      ).called(1);
+    });
+
+    test('ignores a stale name based on the stored timestamp', () async {
+      when(
+        () => settingsDb.itemByKey('DAILY_OS_USER_NAME_UPDATED_AT'),
+      ).thenAnswer((_) async => '9999999999999');
+
+      const message = SyncMessage.dailyOsUserName(
+        userName: 'Stale',
+        updatedAt: 1000000000000,
+        status: SyncEntryStatus.update,
+      );
+
+      await processor.process(
+        event: createNameEvent(message),
+        journalDb: journalDb,
+      );
+
+      verifyNever(
+        () => settingsDb.saveSettingsItem('DAILY_OS_USER_NAME', any()),
+      );
+    });
+
+    test('accepts the name when no local timestamp exists', () async {
+      when(
+        () => settingsDb.itemByKey('DAILY_OS_USER_NAME_UPDATED_AT'),
+      ).thenAnswer((_) async => null);
+
+      final timestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
+      final message = SyncMessage.dailyOsUserName(
+        userName: 'Sam',
+        updatedAt: timestamp,
+        status: SyncEntryStatus.update,
+      );
+
+      await processor.process(
+        event: createNameEvent(message),
+        journalDb: journalDb,
+      );
+
+      verify(
+        () => settingsDb.saveSettingsItem('DAILY_OS_USER_NAME', 'Sam'),
+      ).called(1);
+    });
+
+    test('catches and logs a persistence failure during apply', () async {
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenThrow(Exception('DB error'));
+
+      final message = SyncMessage.dailyOsUserName(
+        userName: 'Sam',
+        updatedAt: DateTime(2024, 3, 15).millisecondsSinceEpoch,
+        status: SyncEntryStatus.update,
+      );
+
+      // Should not throw — the error is caught and logged.
+      await processor.process(
+        event: createNameEvent(message),
+        journalDb: journalDb,
+      );
+
+      verify(
+        () => loggingService.error(
+          LogDomain.dailyOs,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'apply',
+        ),
+      ).called(1);
+    });
+  });
+
   group('SyncEventProcessor - Backfill Messages', () {
     test('SyncBackfillRequest throws when no handler configured', () async {
       const message = SyncBackfillRequest(

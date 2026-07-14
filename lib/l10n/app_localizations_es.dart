@@ -7759,7 +7759,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsAboutDailyOsUserNameHelper =>
-      'Se usa solo para el saludo de Daily OS en este dispositivo.';
+      'Se usa para el saludo de Daily OS y se sincroniza con tus dispositivos.';
 
   @override
   String get settingsAboutDailyOsUserNameLabel => 'Tu nombre';
@@ -9034,6 +9034,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncPayloadConsumptionEvent => 'Consumo de IA';
+
+  @override
+  String get syncPayloadDailyOsUserName => 'Nombre de Daily OS';
 
   @override
   String get syncPayloadEntityDefinition => 'Definición de entidad';

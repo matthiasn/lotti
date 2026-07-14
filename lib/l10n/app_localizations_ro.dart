@@ -7770,7 +7770,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsAboutDailyOsUserNameHelper =>
-      'Folosit doar pentru salutul Daily OS pe acest dispozitiv.';
+      'Folosit pentru salutul Daily OS și sincronizat pe dispozitivele dvs.';
 
   @override
   String get settingsAboutDailyOsUserNameLabel => 'Numele dvs.';
@@ -9045,6 +9045,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPayloadConsumptionEvent => 'Consum AI';
+
+  @override
+  String get syncPayloadDailyOsUserName => 'Nume Daily OS';
 
   @override
   String get syncPayloadEntityDefinition => 'Definiție entitate';

@@ -398,6 +398,7 @@ class MatrixService {
       savedTaskFilterDelete: (_) => 'savedTaskFilterDelete',
       configFlag: (_) => 'configFlag',
       themingSelection: (_) => 'themingSelection',
+      dailyOsUserName: (_) => 'dailyOsUserName',
       notification: (_) => 'notification',
       notificationStateUpdate: (_) => 'notificationStateUpdate',
       consumptionEvent: (_) => 'consumptionEvent',

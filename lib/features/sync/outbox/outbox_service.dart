@@ -430,6 +430,10 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
             msg: msg,
             commonFields: commonFields,
           ),
+        final SyncDailyOsUserName msg => _enqueueWriter.enqueueDailyOsUserName(
+          msg: msg,
+          commonFields: commonFields,
+        ),
         final SyncNotification msg => _enqueueWriter.enqueueNotification(
           msg: msg,
           commonFields: commonFields,

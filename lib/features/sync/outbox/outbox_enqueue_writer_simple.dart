@@ -146,6 +146,17 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'mode=${msg.themeMode}',
   );
 
+  Future<bool> enqueueDailyOsUserName({
+    required SyncDailyOsUserName msg,
+    required OutboxCompanion commonFields,
+  }) => enqueueSimple(
+    commonFields: commonFields,
+    subject: 'dailyOsUserName',
+    logMessage:
+        'enqueue type=SyncDailyOsUserName subject=dailyOsUserName '
+        'updatedAt=${msg.updatedAt}',
+  );
+
   /// Enqueues a notification message: validates the payload path stays within
   /// the documents root, folds the message's own clock into
   /// `coveredVectorClocks`, sizes the row including the on-disk attachment, and

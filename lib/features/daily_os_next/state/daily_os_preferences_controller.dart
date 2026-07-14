@@ -1,18 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
+import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_preferences_keys.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 
-const dailyOsUserNameSettingsKey = 'DAILY_OS_USER_NAME';
-const dailyOsExcludedCategoryIdsSettingsKey = 'DAILY_OS_EXCLUDED_CATEGORY_IDS';
-const dailyOsTimelineGesturesLearnedSettingsKey =
-    'DAILY_OS_TIMELINE_GESTURES_LEARNED';
-const dailyOsDayFooterHintRetiredSettingsKey =
-    'DAILY_OS_DAY_FOOTER_HINT_RETIRED';
+export 'package:lotti/features/daily_os_next/state/daily_os_preferences_keys.dart';
 
 /// User-scoped Daily OS settings, persisted in [SettingsDb]: the greeting
 /// name, the set of category ids excluded from the day flow, and one-shot
@@ -68,12 +70,32 @@ class DailyOsPreferences {
 /// ensure an in-flight async load never clobbers a value the user has already
 /// changed in this session; coachmark flags need no guard because they only
 /// ever flip false→true.
+///
+/// The greeting name additionally syncs across a user's devices: [setUserName]
+/// stamps a last-write timestamp and enqueues a debounced
+/// `SyncMessage.dailyOsUserName`, and an inbound synced change (surfaced as a
+/// `settingsNotification`) reloads the name here under last-write-wins. On load,
+/// a name that exists locally but was never published — a pre-sync name, or one
+/// edited while the outbox was unavailable — is bootstrapped once so it still
+/// reaches other devices without a re-edit. The excluded-category set and
+/// coachmark flags remain device-local.
 class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
   bool _userNameEdited = false;
   bool _categoriesEdited = false;
 
+  StreamSubscription<Set<String>>? _settingsNotificationSub;
+  final _syncDebounceKey =
+      'daily_os.userName.sync.${identityHashCode(Object())}';
+
   @override
   DailyOsPreferences build() {
+    ref.onDispose(() {
+      unawaited(_settingsNotificationSub?.cancel());
+      EasyDebounce.cancel(_syncDebounceKey);
+    });
+    // Subscribe before the initial load so a synced name arriving during the
+    // load window is not missed.
+    _watchSyncedUserName();
     unawaited(_load());
     return DailyOsPreferences();
   }
@@ -83,6 +105,8 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
     final values = await getIt<SettingsDb>().itemsByKeys(
       const [
         dailyOsUserNameSettingsKey,
+        dailyOsUserNameUpdatedAtSettingsKey,
+        dailyOsUserNameSyncedAtSettingsKey,
         dailyOsExcludedCategoryIdsSettingsKey,
         dailyOsTimelineGesturesLearnedSettingsKey,
         dailyOsDayFooterHintRetiredSettingsKey,
@@ -114,6 +138,39 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
           values[dailyOsDayFooterHintRetiredSettingsKey] == 'true',
     );
     state = next;
+
+    _bootstrapUserNameSyncIfNeeded(
+      name: values[dailyOsUserNameSettingsKey]?.trim() ?? '',
+      storedUpdatedAt: values[dailyOsUserNameUpdatedAtSettingsKey],
+      storedSyncedAt: values[dailyOsUserNameSyncedAtSettingsKey],
+    );
+  }
+
+  /// Oldest-possible last-write stamp for a name that predates sync. Any real
+  /// edit on any device carries a much larger epoch-millis stamp and so wins
+  /// last-write-wins, meaning bootstrapping never clobbers an explicit choice.
+  static const _bootstrapUpdatedAt = 1;
+
+  /// Publishes a locally stored name this device has never synced — an existing
+  /// pre-sync name, or one edited while the outbox was unavailable — exactly
+  /// once, so it reaches the user's other devices without a re-edit.
+  ///
+  /// [dailyOsUserNameSyncedAtSettingsKey] records the timestamp last actually
+  /// enqueued (written on enqueue success and by inbound apply), so a name is
+  /// bootstrapped only until it has been published, and a name received from
+  /// another device is never re-published.
+  void _bootstrapUserNameSyncIfNeeded({
+    required String name,
+    required String? storedUpdatedAt,
+    required String? storedSyncedAt,
+  }) {
+    // A live edit this session already enqueued through setUserName.
+    if (_userNameEdited || name.isEmpty) return;
+    if (!getIt.isRegistered<OutboxService>()) return;
+    final updatedAt =
+        int.tryParse(storedUpdatedAt ?? '') ?? _bootstrapUpdatedAt;
+    if (int.tryParse(storedSyncedAt ?? '') == updatedAt) return;
+    _enqueueUserNameSync(name, updatedAt);
   }
 
   /// Permanently retires the timeline's gesture hint — called the first
@@ -133,10 +190,94 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
   }
 
   void setUserName(String value) {
-    _userNameEdited = true;
     final trimmed = value.trim();
+    // Skip a no-op edit: this avoids a redundant write, timestamp bump, and
+    // outbound sync message, and closes any echo loop when the text field is
+    // repopulated with a name that just arrived from another device.
+    if (trimmed == state.userName) return;
+    _userNameEdited = true;
     state = state.copyWith(userName: trimmed);
+    // Persist the name and a fresh last-write timestamp together so the
+    // outbound sync message and the local settings row agree on the winner.
+    final updatedAt = clock.now().millisecondsSinceEpoch;
     _save(dailyOsUserNameSettingsKey, trimmed);
+    _save(dailyOsUserNameUpdatedAtSettingsKey, updatedAt.toString());
+    _enqueueUserNameSync(trimmed, updatedAt);
+  }
+
+  /// Debounced outbound sync of the greeting name. Coalesces rapid keystrokes
+  /// into one message and is a no-op before sync is configured
+  /// (`OutboxService` unregistered).
+  void _enqueueUserNameSync(String userName, int updatedAt) {
+    EasyDebounce.debounce(
+      _syncDebounceKey,
+      const Duration(milliseconds: 250),
+      () async {
+        if (!getIt.isRegistered<OutboxService>()) return;
+        try {
+          await getIt<OutboxService>().enqueueMessage(
+            SyncMessage.dailyOsUserName(
+              userName: userName,
+              updatedAt: updatedAt,
+              status: SyncEntryStatus.update,
+            ),
+          );
+          // Record what we published so this name is not bootstrapped again.
+          _save(dailyOsUserNameSyncedAtSettingsKey, updatedAt.toString());
+        } catch (e, st) {
+          if (getIt.isRegistered<DomainLogger>()) {
+            getIt<DomainLogger>().error(
+              LogDomain.dailyOs,
+              e,
+              stackTrace: st,
+              subDomain: 'enqueue',
+            );
+          }
+        }
+      },
+    );
+  }
+
+  /// Reloads the greeting name when a synced settings change lands, so an
+  /// already-open Daily OS surface reflects a name set on another device.
+  void _watchSyncedUserName() {
+    if (!getIt.isRegistered<UpdateNotifications>()) return;
+    _settingsNotificationSub = getIt<UpdateNotifications>().updateStream.listen(
+      (ids) async {
+        // Reload on every settings notification. Each reload reads the current
+        // stored value, so overlapping notifications never strand the
+        // controller on a stale name — there is no in-flight guard to drop a
+        // newer update.
+        if (!ids.contains(settingsNotification)) return;
+        try {
+          await _reloadUserNameFromSettings();
+        } catch (e, st) {
+          if (getIt.isRegistered<DomainLogger>()) {
+            getIt<DomainLogger>().error(
+              LogDomain.dailyOs,
+              e,
+              stackTrace: st,
+              subDomain: 'reload',
+            );
+          }
+        }
+      },
+    );
+  }
+
+  Future<void> _reloadUserNameFromSettings() async {
+    if (!getIt.isRegistered<SettingsDb>()) return;
+    // The apply phase already resolved last-write-wins before writing, so the
+    // stored value is authoritative — override even a locally edited name. The
+    // reload never enqueues, so it cannot echo back to other devices.
+    final stored = await getIt<SettingsDb>().itemByKey(
+      dailyOsUserNameSettingsKey,
+    );
+    if (!ref.mounted) return;
+    final synced = stored?.trim() ?? '';
+    if (synced != state.userName) {
+      state = state.copyWith(userName: synced);
+    }
   }
 
   void setCategoryEnabled(String categoryId, {required bool enabled}) {

@@ -13039,7 +13039,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsAboutDailyOsUserNameHelper.
   ///
   /// In en, this message translates to:
-  /// **'Used only for the Daily OS greeting on this device.'**
+  /// **'Used for the Daily OS greeting and synced across your devices.'**
   String get settingsAboutDailyOsUserNameHelper;
 
   /// No description provided for @settingsAboutDailyOsUserNameLabel.
@@ -15252,6 +15252,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI consumption'**
   String get syncPayloadConsumptionEvent;
+
+  /// No description provided for @syncPayloadDailyOsUserName.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS name'**
+  String get syncPayloadDailyOsUserName;
 
   /// No description provided for @syncPayloadEntityDefinition.
   ///

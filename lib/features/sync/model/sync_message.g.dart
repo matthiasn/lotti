@@ -193,6 +193,23 @@ Map<String, dynamic> _$SyncThemingSelectionToJson(
   'runtimeType': instance.$type,
 };
 
+SyncDailyOsUserName _$SyncDailyOsUserNameFromJson(Map<String, dynamic> json) =>
+    SyncDailyOsUserName(
+      userName: json['userName'] as String,
+      updatedAt: (json['updatedAt'] as num).toInt(),
+      status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncDailyOsUserNameToJson(
+  SyncDailyOsUserName instance,
+) => <String, dynamic>{
+  'userName': instance.userName,
+  'updatedAt': instance.updatedAt,
+  'status': _$SyncEntryStatusEnumMap[instance.status]!,
+  'runtimeType': instance.$type,
+};
+
 SyncNotification _$SyncNotificationFromJson(Map<String, dynamic> json) =>
     SyncNotification(
       id: json['id'] as String,

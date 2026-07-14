@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   model. The app states that assembled planning context is sent to the selected
   provider, identifies local versus remote endpoints, and guides you to setup
   before the first check-in when no usable profile is configured.
+- **Your Daily OS name now follows you across devices.** The preferred name you
+  set for Daily OS syncs to your other devices, with the most recent edit
+  winning, so each device greets you the same way.
 
 ## [0.9.1043]
 ### Changed

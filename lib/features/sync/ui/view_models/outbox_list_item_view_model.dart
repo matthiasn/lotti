@@ -159,6 +159,7 @@ class OutboxListItemViewModel {
         savedTaskFilterDelete: (_) => messages.syncPayloadSavedTaskFilterDelete,
         configFlag: (_) => messages.syncPayloadConfigFlag,
         themingSelection: (_) => messages.syncPayloadThemingSelection,
+        dailyOsUserName: (_) => messages.syncPayloadDailyOsUserName,
         notification: (_) => messages.syncPayloadNotification,
         notificationStateUpdate: (_) =>
             messages.syncPayloadNotificationStateUpdate,

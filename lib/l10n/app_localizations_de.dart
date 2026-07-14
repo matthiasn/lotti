@@ -7670,7 +7670,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsAboutDailyOsUserNameHelper =>
-      'Wird nur für die Daily-OS-Begrüßung auf diesem Gerät verwendet.';
+      'Wird für die Daily-OS-Begrüßung verwendet und mit deinen Geräten synchronisiert.';
 
   @override
   String get settingsAboutDailyOsUserNameLabel => 'Dein Name';
@@ -8937,6 +8937,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPayloadConsumptionEvent => 'KI-Verbrauch';
+
+  @override
+  String get syncPayloadDailyOsUserName => 'Daily-OS-Name';
 
   @override
   String get syncPayloadEntityDefinition => 'Entitätsdefinition';

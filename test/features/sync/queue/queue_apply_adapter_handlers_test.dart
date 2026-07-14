@@ -371,6 +371,15 @@ void main() {
       expect(wraps(message), isFalse);
     });
 
+    test('SyncDailyOsUserName bypasses outer wrap (settings_db)', () {
+      const message = SyncMessage.dailyOsUserName(
+        userName: 'Sam',
+        updatedAt: 1,
+        status: SyncEntryStatus.initial,
+      );
+      expect(wraps(message), isFalse);
+    });
+
     test('SyncBackfillRequest wraps conservatively', () {
       const message = SyncMessage.backfillRequest(
         entries: <BackfillRequestEntry>[],
