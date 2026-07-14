@@ -157,17 +157,31 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
 
     timeoutStage = 'waiting for the Voxtral response';
     final requestTimeout = remainingTimeoutOrThrow();
-    final response = await httpClient
-        .post(
-          _buildEndpointUri(normalizedBaseUrl, 'chat/completions'),
-          headers: {
+    final abortTrigger = Completer<void>();
+    final request =
+        http.AbortableRequest(
+            'POST',
+            _buildEndpointUri(normalizedBaseUrl, 'chat/completions'),
+            abortTrigger: abortTrigger.future,
+          )
+          ..headers.addAll({
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Authorization': 'Bearer $normalizedApiKey',
+          })
+          ..body = jsonEncode(body);
+    final response = await httpClient
+        .send(request)
+        .then(http.Response.fromStream)
+        .timeout(
+          requestTimeout,
+          onTimeout: () {
+            abortTrigger.complete();
+            throw TimeoutException(
+              '${provider.displayName} chat-audio HTTP request timed out',
+            );
           },
-          body: jsonEncode(body),
-        )
-        .timeout(requestTimeout);
+        );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw TranscriptionException(

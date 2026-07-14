@@ -55,9 +55,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   static const _providerName = 'MeliousInferenceRepository';
   static const _modelListTimeout = Duration(seconds: 15);
   static const _imageGenerationTimeout = Duration(seconds: 180);
-  // Voxtral can process recordings up to 30 minutes, and local preparation is
-  // included in this deadline. Match the native Voxtral route's long-audio
-  // allowance instead of applying the general short-request timeout.
   // Generous because the non-streaming impact path buffers the entire
   // response: nothing is emitted (and no onProgress fires) until the full
   // body arrives or this timeout trips.
