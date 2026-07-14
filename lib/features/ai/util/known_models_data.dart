@@ -794,18 +794,18 @@ const List<KnownModel> mistralModels = [
         'Frontier-class multimodal reasoning model with 128k context. '
         'Supports function calling, vision, and document AI.',
   ),
-  // Audio transcription model — uses /v1/audio/transcriptions endpoint
+  // Instruction-following audio model — uses /v1/chat/completions with a
+  // temporary MP3 so the transcription prompt can include task context.
   KnownModel(
     providerModelId: 'voxtral-mini-latest',
-    name: 'Voxtral Mini Transcribe',
+    name: 'Voxtral Mini',
     inputModalities: [Modality.text, Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description:
-        'High-accuracy cloud transcription model. '
-        'Supports M4A, MP3, WAV, FLAC, and OGG up to 1 GB. '
-        'Up to 3 hours of audio with 13 languages, speaker diarization, '
-        'and context biasing.',
+        'Instruction-following cloud audio model. Transcribes temporary MP3 '
+        'audio through chat completions so task instructions and speech '
+        'dictionary context are applied during recognition.',
   ),
   // Real-time transcription model — uses WebSocket streaming endpoint
   KnownModel(

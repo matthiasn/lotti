@@ -30,11 +30,12 @@ import 'package:uuid/uuid.dart';
 /// Audio transcription, multi-turn, image generation, model install, and
 /// resource cleanup paths for [CloudInferenceRepository].
 ///
-/// Routes `generateWithAudio` to the dedicated transcription repositories
-/// (Whisper, Voxtral, OpenAI, Mistral, Melious) or the in-process MLX Audio channel,
-/// `generateWithMessages` to the provider-specific multi-turn implementations,
-/// and `generateImage` to the Gemini/DashScope image APIs. Owns the HTTP-backed
-/// sub-repositories so [close] can dispose them.
+/// Routes `generateWithAudio` to contextual chat-audio, dedicated
+/// transcription repositories (Whisper, Voxtral, OpenAI, Mistral, Melious),
+/// or the in-process MLX Audio channel; `generateWithMessages` to the
+/// provider-specific multi-turn implementations; and `generateImage` to the
+/// Gemini/DashScope image APIs. Owns the HTTP-backed sub-repositories so
+/// [close] can dispose them.
 class CloudInferenceGenerateMore {
   CloudInferenceGenerateMore({
     required this._ref,
@@ -160,8 +161,30 @@ class CloudInferenceGenerateMore {
       );
     }
 
-    // For Mistral transcription models, use the dedicated transcription endpoint.
-    // Mistral's /v1/audio/transcriptions accepts M4A natively via multipart.
+    // Instruction-following Mistral Voxtral models use contextual chat audio.
+    // The repository converts the archived M4A to a temporary MP3 and applies
+    // Mistral's provider-specific input_audio JSON shape.
+    if (provider.inferenceProviderType == InferenceProviderType.mistral &&
+        MistralInferenceRepository.isMistralChatAudioModel(model)) {
+      developer.log(
+        'Using Mistral chat-audio endpoint for model: $model',
+        name: 'CloudInferenceRepository',
+      );
+      return _mistralRepository.transcribeChatAudio(
+        model: model,
+        audioBase64: audioBase64,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        prompt: _promptWithSpeechDictionary(
+          prompt,
+          speechDictionaryTerms,
+        ),
+        maxCompletionTokens: maxCompletionTokens,
+      );
+    }
+
+    // Transcription-only Mistral Voxtral models keep their dedicated endpoint,
+    // which provides diarization, timestamps, and context_bias.
     if (provider.inferenceProviderType == InferenceProviderType.mistral &&
         MistralTranscriptionRepository.isMistralTranscriptionModel(model)) {
       developer.log(

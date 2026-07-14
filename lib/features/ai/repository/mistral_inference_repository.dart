@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
@@ -17,10 +20,45 @@ import 'package:openai_dart/openai_dart.dart';
 /// differences, particularly for tool calls where the content field may be
 /// returned as an array instead of a string.
 class MistralInferenceRepository {
-  MistralInferenceRepository({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+  MistralInferenceRepository({
+    http.Client? httpClient,
+    AudioToTemporaryMp3Encoder? audioToTemporaryMp3Encoder,
+    TemporaryAudioFileReader? temporaryFileReader,
+    TemporaryAudioFileDeleter? temporaryFileDeleter,
+    Clock? clockSource,
+  }) : _httpClient = httpClient ?? http.Client(),
+       _audioToTemporaryMp3Encoder =
+           audioToTemporaryMp3Encoder ?? encodeAudioBytesToTemporaryMp3,
+       _temporaryFileReader =
+           temporaryFileReader ?? ((file) => file.readAsBytes()),
+       _temporaryFileDeleter =
+           temporaryFileDeleter ?? ((file) => file.deleteSync()),
+       _clock = clockSource ?? clock;
 
   final http.Client _httpClient;
+  final AudioToTemporaryMp3Encoder _audioToTemporaryMp3Encoder;
+  final TemporaryAudioFileReader _temporaryFileReader;
+  final TemporaryAudioFileDeleter _temporaryFileDeleter;
+  final Clock _clock;
+
+  /// Whether [model] supports Mistral's instruction-following chat-audio API.
+  ///
+  /// Mistral currently documents the `latest` aliases and the 25.07 Mini and
+  /// Small releases for `/chat/completions`. Transcribe 2, realtime, and TTS
+  /// variants use their dedicated audio endpoints instead.
+  static bool isMistralChatAudioModel(String model) {
+    final normalized = model.trim().toLowerCase();
+    if (!normalized.startsWith('voxtral-mini-') &&
+        !normalized.startsWith('voxtral-small-')) {
+      return false;
+    }
+    if (normalized.contains('transcribe') ||
+        normalized.contains('realtime') ||
+        normalized.contains('-tts-')) {
+      return false;
+    }
+    return normalized.endsWith('-latest') || normalized.endsWith('-2507');
+  }
 
   /// Safely log exception to LoggingService if available
   void _logException(
@@ -384,6 +422,42 @@ class MistralInferenceRepository {
     }
     return body.length > 160 ? '${body.substring(0, 160)}…' : body;
   }
+
+  /// Transcribes with an instruction-following Voxtral model through Mistral's
+  /// buffered `/chat/completions` endpoint.
+  ///
+  /// Lotti keeps the archived M4A untouched and sends a temporary 64 kbps MP3.
+  /// Mistral's native payload represents `input_audio` as the base64 string,
+  /// unlike the OpenAI-compatible object used by Melious. Task instructions
+  /// and speech-dictionary context remain in the adjacent text content part.
+  Stream<CreateChatCompletionStreamResponse> transcribeChatAudio({
+    required String model,
+    required String audioBase64,
+    required String baseUrl,
+    required String apiKey,
+    required String prompt,
+    int? maxCompletionTokens,
+    Duration timeout = temporaryMp3ChatAudioTimeout,
+  }) => transcribeTemporaryMp3ChatAudio(
+    httpClient: _httpClient,
+    provider: const TemporaryMp3ChatAudioProvider(
+      repositoryName: 'MistralInferenceRepository',
+      displayName: 'Mistral',
+      requestIdPrefix: 'mistral-audio-',
+      payloadDialect: ChatAudioPayloadDialect.mistral,
+    ),
+    model: model,
+    audioBase64: audioBase64,
+    baseUrl: baseUrl,
+    apiKey: apiKey,
+    prompt: prompt,
+    maxCompletionTokens: maxCompletionTokens,
+    timeout: timeout,
+    audioToTemporaryMp3Encoder: _audioToTemporaryMp3Encoder,
+    temporaryFileReader: _temporaryFileReader,
+    temporaryFileDeleter: _temporaryFileDeleter,
+    clockSource: _clock,
+  );
 
   /// Generate text using the Mistral API with streaming support.
   ///

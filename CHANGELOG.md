@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   longer flashes an empty state. Page changes now use a calm staggered fade
   while the sheet eases smoothly to its new height, and a tapped thinking model
   shows its selected state immediately while the change is saved.
+- **Mistral Voxtral now supports contextual chat transcription.**
+  Instruction-following Voxtral Mini and Small models use the same temporary
+  MP3 path as Melious, so long recordings stay compact while task instructions
+  and speech-dictionary terms are applied during recognition. The archived M4A
+  remains unchanged and temporary files are removed after every request.
 
 ## [0.9.1044]
 ### Changed

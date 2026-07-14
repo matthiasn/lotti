@@ -3407,7 +3407,7 @@ void main() {
 
     group('generateWithAudio with Mistral transcription models', () {
       test(
-        'routes voxtral-mini-latest to Mistral transcription endpoint',
+        'routes voxtral-mini-transcribe-2602 to Mistral transcription endpoint',
         () async {
           final mistralProvider = AiConfigInferenceProvider(
             id: 'mistral-provider',
@@ -3429,7 +3429,7 @@ void main() {
 
           final stream = repository.generateWithAudio(
             'Transcribe this audio',
-            model: 'voxtral-mini-latest',
+            model: 'voxtral-mini-transcribe-2602',
             audioBase64: 'dGVzdC1hdWRpby1kYXRh',
             baseUrl: 'https://api.mistral.ai/v1',
             apiKey: 'test-key',
@@ -3452,12 +3452,15 @@ void main() {
             request.url.toString(),
             equals('https://api.mistral.ai/v1/audio/transcriptions'),
           );
-          expect(request.fields['model'], equals('voxtral-mini-latest'));
+          expect(
+            request.fields['model'],
+            equals('voxtral-mini-transcribe-2602'),
+          );
         },
       );
 
       test(
-        'routes voxtral-small-2507 to Mistral transcription endpoint',
+        'routes voxtral-mini-2602 to Mistral transcription endpoint',
         () async {
           final mistralProvider = AiConfigInferenceProvider(
             id: 'mistral-provider',
@@ -3479,7 +3482,7 @@ void main() {
 
           final stream = repository.generateWithAudio(
             'Transcribe',
-            model: 'voxtral-small-2507',
+            model: 'voxtral-mini-2602',
             audioBase64: 'dGVzdC1hdWRpby1kYXRh',
             baseUrl: 'https://api.mistral.ai/v1',
             apiKey: 'test-key',
@@ -3508,7 +3511,7 @@ void main() {
 
           final stream = repository.generateWithAudio(
             'Transcribe',
-            model: 'voxtral-mini-latest',
+            model: 'voxtral-mini-transcribe-2602',
             audioBase64: 'dGVzdC1hdWRpby1kYXRh',
             baseUrl: 'https://example.com/v1',
             apiKey: 'test-key',
@@ -3543,7 +3546,7 @@ void main() {
 
           final stream = repository.generateWithAudio(
             'Transcribe this audio',
-            model: 'voxtral-mini-latest',
+            model: 'voxtral-mini-transcribe-2602',
             audioBase64: 'dGVzdC1hdWRpby1kYXRh',
             baseUrl: 'https://api.mistral.ai/v1',
             apiKey: 'test-key',
