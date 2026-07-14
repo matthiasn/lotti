@@ -79,7 +79,63 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
   TemporaryAudioFileReader temporaryFileReader = _readTemporaryFile,
   TemporaryAudioFileDeleter temporaryFileDeleter = _deleteTemporaryFile,
   Clock? clockSource,
-}) async* {
+}) {
+  final abortTrigger = Completer<void>();
+  var canceled = false;
+  late final StreamController<CreateChatCompletionStreamResponse> controller;
+
+  Future<void> transcribe() async {
+    try {
+      final chunk = await _transcribeTemporaryMp3ChatAudio(
+        httpClient: httpClient,
+        provider: provider,
+        model: model,
+        audioBase64: audioBase64,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        prompt: prompt,
+        maxCompletionTokens: maxCompletionTokens,
+        timeout: timeout,
+        audioToTemporaryMp3Encoder: audioToTemporaryMp3Encoder,
+        temporaryFileReader: temporaryFileReader,
+        temporaryFileDeleter: temporaryFileDeleter,
+        clockSource: clockSource,
+        abortTrigger: abortTrigger,
+      );
+      if (!canceled) controller.add(chunk);
+    } catch (error, stackTrace) {
+      if (!canceled) controller.addError(error, stackTrace);
+    } finally {
+      if (!canceled) await controller.close();
+    }
+  }
+
+  controller = StreamController<CreateChatCompletionStreamResponse>(
+    onListen: () => unawaited(transcribe()),
+    onCancel: () {
+      canceled = true;
+      if (!abortTrigger.isCompleted) abortTrigger.complete();
+    },
+  );
+  return controller.stream;
+}
+
+Future<CreateChatCompletionStreamResponse> _transcribeTemporaryMp3ChatAudio({
+  required http.Client httpClient,
+  required TemporaryMp3ChatAudioProvider provider,
+  required String model,
+  required String audioBase64,
+  required String baseUrl,
+  required String apiKey,
+  required String prompt,
+  required Duration timeout,
+  required AudioToTemporaryMp3Encoder audioToTemporaryMp3Encoder,
+  required TemporaryAudioFileReader temporaryFileReader,
+  required TemporaryAudioFileDeleter temporaryFileDeleter,
+  required Completer<void> abortTrigger,
+  int? maxCompletionTokens,
+  Clock? clockSource,
+}) async {
   final normalizedModel = model.trim();
   final normalizedBaseUrl = baseUrl.trim();
   final normalizedApiKey = apiKey.trim();
@@ -157,7 +213,6 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
 
     timeoutStage = 'waiting for the Voxtral response';
     final requestTimeout = remainingTimeoutOrThrow();
-    final abortTrigger = Completer<void>();
     final request =
         http.AbortableRequest(
             'POST',
@@ -170,18 +225,23 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
             'Authorization': 'Bearer $normalizedApiKey',
           })
           ..body = jsonEncode(body);
-    final response = await httpClient
-        .send(request)
-        .then(http.Response.fromStream)
-        .timeout(
-          requestTimeout,
-          onTimeout: () {
-            abortTrigger.complete();
-            throw TimeoutException(
-              '${provider.displayName} chat-audio HTTP request timed out',
-            );
-          },
-        );
+    late final http.Response response;
+    try {
+      response = await httpClient
+          .send(request)
+          .then(http.Response.fromStream)
+          .timeout(
+            requestTimeout,
+            onTimeout: () {
+              if (!abortTrigger.isCompleted) abortTrigger.complete();
+              throw TimeoutException(
+                '${provider.displayName} chat-audio HTTP request timed out',
+              );
+            },
+          );
+    } finally {
+      if (!abortTrigger.isCompleted) abortTrigger.complete();
+    }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw TranscriptionException(
@@ -214,7 +274,7 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
     final responseId = decoded['id'];
     final responseCreated = decoded['created'];
     final responseModel = decoded['model'];
-    yield CreateChatCompletionStreamResponse(
+    return CreateChatCompletionStreamResponse(
       id: responseId is String ? responseId : requestId,
       choices: [
         ChatCompletionStreamResponseChoice(

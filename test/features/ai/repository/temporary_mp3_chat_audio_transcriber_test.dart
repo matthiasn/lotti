@@ -375,6 +375,55 @@ void main() {
     });
   });
 
+  test('stream cancellation aborts the request and removes the MP3', () async {
+    final requestStarted = Completer<http.AbortableRequest>();
+    final responseCompleter = Completer<http.StreamedResponse>();
+    final cleanupCompleted = Completer<void>();
+    final client = MockClient.streaming((request, _) {
+      final abortableRequest = request as http.AbortableRequest;
+      requestStarted.complete(abortableRequest);
+      abortableRequest.abortTrigger!.then((_) {
+        if (!responseCompleter.isCompleted) {
+          responseCompleter.completeError(
+            http.RequestAbortedException(request.url),
+          );
+        }
+      });
+      return responseCompleter.future;
+    });
+    addTearDown(client.close);
+    late File encodedFile;
+    Object? failure;
+
+    final subscription = transcribeTemporaryMp3ChatAudio(
+      httpClient: client,
+      provider: mistralProvider,
+      model: model,
+      audioBase64: base64Encode(sourceBytes),
+      baseUrl: baseUrl,
+      apiKey: apiKey,
+      prompt: prompt,
+      audioToTemporaryMp3Encoder: (_) async {
+        return encodedFile = temporaryMp3();
+      },
+      temporaryFileReader: (_) async => Uint8List.fromList([1, 2, 3]),
+      temporaryFileDeleter: (file) {
+        file.deleteSync();
+        cleanupCompleted.complete();
+      },
+    ).listen((_) {}, onError: (Object error) => failure = error);
+
+    final request = await requestStarted.future;
+    expect(request.abortTrigger, isNotNull);
+
+    await subscription.cancel();
+    await request.abortTrigger;
+    await cleanupCompleted.future;
+
+    expect(failure, isNull);
+    expect(encodedFile.existsSync(), isFalse);
+  });
+
   test('rejects malformed input audio before MP3 encoding', () async {
     var encoderCalled = false;
     final client = MockClient((_) async => http.Response('', 200));
