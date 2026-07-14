@@ -4314,7 +4314,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsSettingsChooseModelTitle =>
-      'Choisir une dérogation de modèle';
+      'Choisir un remplacement de modèle';
 
   @override
   String get dailyOsSettingsChooseProfileDescription =>
@@ -4329,7 +4329,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsSettingsDefaultProfileDescription =>
-      'Utilisé par Daily OS sauf si l’instance du planificateur a une dérogation.';
+      'Utilisé par Daily OS sauf si l’instance du planificateur a un remplacement.';
 
   @override
   String get dailyOsSettingsDefaultProfileMissing => 'Choisis un profil';
@@ -4340,7 +4340,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsSettingsDirectOverrideActive =>
-      'La dérogation directe du modèle est active.';
+      'Le remplacement direct du modèle est actif.';
 
   @override
   String get dailyOsSettingsInferenceTitle => 'Profil d’inférence par défaut';
@@ -4351,7 +4351,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsSettingsInstanceOverrideDescription =>
-      'Utilise le profil Daily OS par défaut, choisis une dérogation de profil ou remplace uniquement le modèle de réflexion de ce planificateur.';
+      'Utilise le profil Daily OS par défaut, choisis un remplacement de profil ou remplace uniquement le modèle de réflexion de ce planificateur.';
 
   @override
   String get dailyOsSettingsInstanceOverrideTitle => 'Inférence Daily OS';
@@ -4383,7 +4383,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsSettingsProfileOverrideActive =>
-      'Dérogation de profil active';
+      'Remplacement de profil actif';
 
   @override
   String dailyOsSettingsRemoteDisclosure(String provider, String host) {

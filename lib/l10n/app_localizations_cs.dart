@@ -4331,7 +4331,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Použij výchozí profil Daily OS, vyber přepsání profilu nebo přepiš jen model uvažování tohoto plánovače.';
 
   @override
-  String get dailyOsSettingsInstanceOverrideTitle => 'Inference Daily OS';
+  String get dailyOsSettingsInstanceOverrideTitle => 'Inference pro Daily OS';
 
   @override
   String get dailyOsSettingsLocalDisclosure =>

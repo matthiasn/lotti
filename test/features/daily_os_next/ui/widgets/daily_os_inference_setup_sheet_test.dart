@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -99,9 +101,10 @@ void main() {
     tester,
   ) async {
     final service = MockDayAgentService();
+    final update = Completer<void>();
     when(
       service.resetPlannerInferenceToDefault,
-    ).thenAnswer((_) async {});
+    ).thenAnswer((_) => update.future);
 
     await pumpSheet(tester, service: service, planner: identity);
     expect(find.text('Direct model'), findsOneWidget);
@@ -112,15 +115,26 @@ void main() {
     await tester.pump();
 
     verify(service.resetPlannerInferenceToDefault).called(1);
+    expect(
+      find.byKey(const Key('daily_os_inference_reset_progress')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('daily_os_inference_model_progress')),
+      findsNothing,
+    );
+    update.complete();
+    await tester.pumpAndSettle();
   });
 
   testWidgets('chooses a persistent profile override for the planner', (
     tester,
   ) async {
     final service = MockDayAgentService();
+    final update = Completer<void>();
     when(
       () => service.updatePlannerProfileOverride(instanceProfile.id),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((_) => update.future);
     final inheritedPlanner = identity.copyWith(
       config: AgentConfig(
         profileId: profile.id,
@@ -142,5 +156,43 @@ void main() {
     verify(
       () => service.updatePlannerProfileOverride(instanceProfile.id),
     ).called(1);
+    expect(
+      find.byKey(const Key('daily_os_inference_profile_progress')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('daily_os_inference_model_progress')),
+      findsNothing,
+    );
+    update.complete();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('shows model progress on the model action only', (tester) async {
+    final service = MockDayAgentService();
+    final update = Completer<void>();
+    when(
+      () => service.updatePlannerThinkingModelOverride(model.id),
+    ).thenAnswer((_) => update.future);
+
+    await pumpSheet(tester, service: service, planner: identity);
+    await tester.tap(find.text('Direct model').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Direct model').last);
+    await tester.pump();
+
+    verify(
+      () => service.updatePlannerThinkingModelOverride(model.id),
+    ).called(1);
+    expect(
+      find.byKey(const Key('daily_os_inference_model_progress')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('daily_os_inference_profile_progress')),
+      findsNothing,
+    );
+    update.complete();
+    await tester.pumpAndSettle();
   });
 }

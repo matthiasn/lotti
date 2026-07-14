@@ -21,14 +21,25 @@ DailyOsInferenceEndpointKind dailyOsInferenceEndpointKind(
     return DailyOsInferenceEndpointKind.onDevice;
   }
 
-  final baseUrl = provider.baseUrl.trim();
-  final normalizedUrl = baseUrl.contains('://') ? baseUrl : 'http://$baseUrl';
-  final uri = Uri.tryParse(normalizedUrl);
-  final host = uri?.host.toLowerCase();
+  final host = dailyOsInferenceEndpointHost(provider)?.toLowerCase();
   if (host == 'localhost' || host == '::1' || _isIpv4Loopback(host)) {
     return DailyOsInferenceEndpointKind.onDevice;
   }
   return DailyOsInferenceEndpointKind.remote;
+}
+
+/// Returns the configured endpoint host after normalizing scheme-less URLs.
+///
+/// Provider settings accept values such as `localhost:11434` and
+/// `inference.example.com:443`. Prefixing a temporary scheme makes Dart parse
+/// those values as authorities instead of treating the text before `:` as a
+/// URI scheme.
+String? dailyOsInferenceEndpointHost(AiConfigInferenceProvider provider) {
+  final baseUrl = provider.baseUrl.trim();
+  if (baseUrl.isEmpty) return null;
+  final normalizedUrl = baseUrl.contains('://') ? baseUrl : 'http://$baseUrl';
+  final host = Uri.tryParse(normalizedUrl)?.host.trim();
+  return host == null || host.isEmpty ? null : host;
 }
 
 bool _isIpv4Loopback(String? host) {

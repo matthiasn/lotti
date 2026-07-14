@@ -48,14 +48,17 @@ class _DailyOsInferenceSetupSheetBody extends ConsumerStatefulWidget {
 
 class _DailyOsInferenceSetupSheetBodyState
     extends ConsumerState<_DailyOsInferenceSetupSheetBody> {
-  bool _busy = false;
+  _PendingInferenceAction? _pendingAction;
+
+  bool get _busy => _pendingAction != null;
 
   Future<void> _persist(
     Future<void> Function() update, {
     required String successTitle,
+    required _PendingInferenceAction action,
   }) async {
     if (_busy) return;
-    setState(() => _busy = true);
+    setState(() => _pendingAction = action);
     try {
       await update();
       if (!mounted) return;
@@ -84,7 +87,7 @@ class _DailyOsInferenceSetupSheetBodyState
         );
       }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _pendingAction = null);
     }
   }
 
@@ -116,6 +119,7 @@ class _DailyOsInferenceSetupSheetBodyState
       successTitle: context.messages.dailyOsSettingsProfileChanged(
         profile?.name ?? selectedId,
       ),
+      action: _PendingInferenceAction.profile,
     );
   }
 
@@ -151,6 +155,15 @@ class _DailyOsInferenceSetupSheetBodyState
       successTitle: context.messages.dailyOsSettingsModelChanged(
         model?.name ?? selectedId,
       ),
+      action: _PendingInferenceAction.model,
+    );
+  }
+
+  Widget _progressIndicator(DsTokens tokens, Key key) {
+    return SizedBox.square(
+      key: key,
+      dimension: tokens.spacing.step5,
+      child: const CircularProgressIndicator(strokeWidth: 2),
     );
   }
 
@@ -190,7 +203,12 @@ class _DailyOsInferenceSetupSheetBodyState
           title: context.messages.dailyOsSettingsUseDefault,
           subtitle: context.messages.dailyOsSettingsUseDefaultDescription,
           leading: const Icon(Icons.account_tree_outlined),
-          trailing: !hasProfileOverride && overrideId == null
+          trailing: _pendingAction == _PendingInferenceAction.reset
+              ? _progressIndicator(
+                  tokens,
+                  const Key('daily_os_inference_reset_progress'),
+                )
+              : !hasProfileOverride && overrideId == null
               ? const Icon(Icons.check_rounded)
               : null,
           selected: !hasProfileOverride && overrideId == null,
@@ -201,6 +219,7 @@ class _DailyOsInferenceSetupSheetBodyState
                       .read(dayAgentServiceProvider)
                       .resetPlannerInferenceToDefault(),
                   successTitle: context.messages.dailyOsSettingsDefaultRestored,
+                  action: _PendingInferenceAction.reset,
                 ),
           showDivider: true,
         ),
@@ -213,7 +232,12 @@ class _DailyOsInferenceSetupSheetBodyState
               ? context.messages.dailyOsSettingsProfileOverrideActive
               : context.messages.dailyOsSettingsChooseProfileDescription,
           leading: const Icon(Icons.schema_outlined),
-          trailing: const Icon(Icons.chevron_right_rounded),
+          trailing: _pendingAction == _PendingInferenceAction.profile
+              ? _progressIndicator(
+                  tokens,
+                  const Key('daily_os_inference_profile_progress'),
+                )
+              : const Icon(Icons.chevron_right_rounded),
           selected: hasProfileOverride,
           onTap: _busy || config == null || options == null
               ? null
@@ -228,10 +252,10 @@ class _DailyOsInferenceSetupSheetBodyState
               ? context.messages.dailyOsSettingsChooseModelDescription
               : context.messages.dailyOsSettingsDirectOverrideActive,
           leading: const Icon(Icons.psychology_outlined),
-          trailing: _busy
-              ? SizedBox.square(
-                  dimension: tokens.spacing.step5,
-                  child: const CircularProgressIndicator(strokeWidth: 2),
+          trailing: _pendingAction == _PendingInferenceAction.model
+              ? _progressIndicator(
+                  tokens,
+                  const Key('daily_os_inference_model_progress'),
                 )
               : const Icon(Icons.chevron_right_rounded),
           selected: overrideId != null,
@@ -252,6 +276,8 @@ class _DailyOsInferenceSetupSheetBodyState
     );
   }
 }
+
+enum _PendingInferenceAction { reset, profile, model }
 
 bool _hasProfileOverride(AgentInferenceSetup? setup) =>
     setup?.origin == AgentInferenceSetupOrigin.user &&

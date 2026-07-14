@@ -46,6 +46,15 @@ void main() {
       );
     });
 
+    test('extracts the host from a scheme-less remote endpoint', () {
+      expect(
+        dailyOsInferenceEndpointHost(
+          _provider(baseUrl: 'inference.example.com:11434/v1'),
+        ),
+        'inference.example.com',
+      );
+    });
+
     test('classifies the embedded MLX Audio provider as on-device', () {
       expect(
         dailyOsInferenceEndpointKind(

@@ -267,7 +267,7 @@ class _Disclosure extends StatelessWidget {
     final route = this.route;
     final configuredHost = route == null
         ? null
-        : Uri.tryParse(route.provider.baseUrl)?.host;
+        : dailyOsInferenceEndpointHost(route.provider);
     final configuredEndpoint = route == null
         ? null
         : configuredHost?.isNotEmpty ?? false

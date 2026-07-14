@@ -1949,17 +1949,17 @@
   "dailyOsOnboardingSpotlightMessage": "Touche ici et dis ce qui te préoccupe – j'en fais une tâche et j'organise ta journée autour.",
   "dailyOsOnboardingSpotlightTitle": "Transforme tes mots en plan",
   "dailyOsSettingsChooseModelDescription": "Remplace uniquement le modèle de réflexion du planificateur.",
-  "dailyOsSettingsChooseModelTitle": "Choisir une dérogation de modèle",
+  "dailyOsSettingsChooseModelTitle": "Choisir un remplacement de modèle",
   "dailyOsSettingsChooseProfileDescription": "Remplace le profil d'inférence complet pour ce planificateur.",
   "dailyOsSettingsChooseProfileTitle": "Choisir le profil Daily OS",
   "dailyOsSettingsDataDisclosure": "Daily OS envoie les tâches, captures, plans, préférences apprises et autres éléments de contexte de planification assemblés au fournisseur sélectionné pour traitement.",
-  "dailyOsSettingsDefaultProfileDescription": "Utilisé par Daily OS sauf si l’instance du planificateur a une dérogation.",
+  "dailyOsSettingsDefaultProfileDescription": "Utilisé par Daily OS sauf si l’instance du planificateur a un remplacement.",
   "dailyOsSettingsDefaultProfileMissing": "Choisis un profil",
   "dailyOsSettingsDefaultRestored": "Réglage Daily OS par défaut rétabli",
-  "dailyOsSettingsDirectOverrideActive": "La dérogation directe du modèle est active.",
+  "dailyOsSettingsDirectOverrideActive": "Le remplacement direct du modèle est actif.",
   "dailyOsSettingsInferenceTitle": "Profil d’inférence par défaut",
   "dailyOsSettingsInstanceCurrentSetup": "Configuration actuelle du planificateur",
-  "dailyOsSettingsInstanceOverrideDescription": "Utilise le profil Daily OS par défaut, choisis une dérogation de profil ou remplace uniquement le modèle de réflexion de ce planificateur.",
+  "dailyOsSettingsInstanceOverrideDescription": "Utilise le profil Daily OS par défaut, choisis un remplacement de profil ou remplace uniquement le modèle de réflexion de ce planificateur.",
   "dailyOsSettingsInstanceOverrideTitle": "Inférence Daily OS",
   "dailyOsSettingsLocalDisclosure": "Le point de terminaison sélectionné se trouve sur cet appareil.",
   "dailyOsSettingsModelChanged": "Daily OS utilise maintenant {model}",
@@ -1981,7 +1981,7 @@
       }
     }
   },
-  "dailyOsSettingsProfileOverrideActive": "Dérogation de profil active",
+  "dailyOsSettingsProfileOverrideActive": "Remplacement de profil actif",
   "dailyOsSettingsRemoteDisclosure": "Daily OS envoie le contexte de planification assemblé à {provider} sur {host} pour un traitement à distance.",
   "@dailyOsSettingsRemoteDisclosure": {
     "placeholders": {

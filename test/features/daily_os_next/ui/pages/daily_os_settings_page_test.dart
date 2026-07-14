@@ -74,7 +74,11 @@ void main() {
     ).thenAnswer((_) async {});
   });
 
-  Future<void> pumpSettings(WidgetTester tester) async {
+  Future<void> pumpSettings(
+    WidgetTester tester, {
+    AiConfigInferenceProvider? provider,
+  }) async {
+    final configuredProvider = provider ?? _provider;
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const DailyOsSettingsBody(),
@@ -85,7 +89,7 @@ void main() {
             (ref) async => TaskAgentSetupOptions(
               profiles: [profileA, profileB],
               models: [modelA, modelB],
-              providers: [_provider],
+              providers: [configuredProvider],
             ),
           ),
           dailyOsPreferencesControllerProvider.overrideWith(
@@ -122,6 +126,26 @@ void main() {
       matching: find.byType(TextField),
     );
     expect(tester.widget<TextField>(field).controller?.text, 'Alex');
+  });
+
+  testWidgets('normalizes a scheme-less host in the remote disclosure', (
+    tester,
+  ) async {
+    await pumpSettings(
+      tester,
+      provider: _provider.copyWith(baseUrl: 'inference.example.com:11434/v1'),
+    );
+
+    final messages = tester.element(find.byType(DailyOsSettingsBody)).messages;
+    expect(
+      find.textContaining(
+        messages.dailyOsSettingsRemoteDisclosure(
+          'Private Cloud',
+          'inference.example.com',
+        ),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('persists a profile selected through the shared picker', (

@@ -1769,7 +1769,7 @@
   "dailyOsSettingsInferenceTitle": "Výchozí inferenční profil",
   "dailyOsSettingsInstanceCurrentSetup": "Aktuální nastavení plánovače",
   "dailyOsSettingsInstanceOverrideDescription": "Použij výchozí profil Daily OS, vyber přepsání profilu nebo přepiš jen model uvažování tohoto plánovače.",
-  "dailyOsSettingsInstanceOverrideTitle": "Inference Daily OS",
+  "dailyOsSettingsInstanceOverrideTitle": "Inference pro Daily OS",
   "dailyOsSettingsLocalDisclosure": "Vybraný koncový bod je na tomto zařízení.",
   "dailyOsSettingsModelChanged": "Daily OS nyní používá {model}",
   "@dailyOsSettingsModelChanged": {

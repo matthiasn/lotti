@@ -225,20 +225,27 @@ class DayAgentService {
   /// Selecting a profile clears any direct thinking-model override so the
   /// newly selected profile is authoritative in every capability slot.
   Future<void> updatePlannerProfileOverride(String profileId) async {
-    final planner = await agentService.getAgent(dailyOsPlannerAgentId);
-    if (planner == null) {
-      throw StateError('Daily OS planner has not been created yet');
-    }
+    String? updatedPlannerId;
+    await syncService.runInTransaction(() async {
+      final planner = await agentService.getAgent(dailyOsPlannerAgentId);
+      if (planner == null) {
+        throw StateError('Daily OS planner has not been created yet');
+      }
 
-    await _persistPlannerInferenceSetup(
-      planner: planner,
-      profileId: profileId,
-      setup: AgentInferenceSetup(
-        mode: AgentInferenceSetupMode.configured,
-        origin: AgentInferenceSetupOrigin.user,
-        baseProfileId: profileId,
-      ),
-    );
+      await _persistPlannerInferenceSetup(
+        planner: planner,
+        profileId: profileId,
+        setup: AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.configured,
+          origin: AgentInferenceSetupOrigin.user,
+          baseProfileId: profileId,
+        ),
+      );
+      updatedPlannerId = planner.agentId;
+    });
+    if (updatedPlannerId case final plannerId?) {
+      onPersistedStateChanged?.call(plannerId);
+    }
   }
 
   /// Persists a direct thinking-model override for the Daily OS planner.
@@ -246,63 +253,77 @@ class DayAgentService {
   /// The planner's current base profile remains in place so its other
   /// capability slots stay available.
   Future<void> updatePlannerThinkingModelOverride(String modelConfigId) async {
-    final planner = await agentService.getAgent(dailyOsPlannerAgentId);
-    if (planner == null) {
-      throw StateError('Daily OS planner has not been created yet');
-    }
-    final template = await templateService.getTemplate(dayAgentTemplateId);
-    if (template == null) {
-      throw StateError('Daily OS template $dayAgentTemplateId not found');
-    }
-    final currentSetup = planner.config.inferenceSetup;
-    final baseProfileId =
-        currentSetup?.mode == AgentInferenceSetupMode.configured
-        ? currentSetup?.baseProfileId ??
-              planner.config.profileId ??
-              template.profileId
-        : planner.config.profileId ?? template.profileId;
-    if (baseProfileId == null) {
-      throw StateError('Choose a Daily OS default profile first');
-    }
+    String? updatedPlannerId;
+    await syncService.runInTransaction(() async {
+      final planner = await agentService.getAgent(dailyOsPlannerAgentId);
+      if (planner == null) {
+        throw StateError('Daily OS planner has not been created yet');
+      }
+      final template = await templateService.getTemplate(dayAgentTemplateId);
+      if (template == null) {
+        throw StateError('Daily OS template $dayAgentTemplateId not found');
+      }
+      final currentSetup = planner.config.inferenceSetup;
+      final baseProfileId =
+          currentSetup?.mode == AgentInferenceSetupMode.configured
+          ? currentSetup?.baseProfileId ??
+                planner.config.profileId ??
+                template.profileId
+          : planner.config.profileId ?? template.profileId;
+      if (baseProfileId == null) {
+        throw StateError('Choose a Daily OS default profile first');
+      }
 
-    await _persistPlannerInferenceSetup(
-      planner: planner,
-      profileId: baseProfileId,
-      setup: AgentInferenceSetup(
-        mode: AgentInferenceSetupMode.configured,
-        origin: AgentInferenceSetupOrigin.user,
-        baseProfileId: baseProfileId,
-        thinkingModelOverrideId: modelConfigId,
-        originEntityId: currentSetup?.originEntityId,
-      ),
-    );
+      await _persistPlannerInferenceSetup(
+        planner: planner,
+        profileId: baseProfileId,
+        setup: AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.configured,
+          origin: AgentInferenceSetupOrigin.user,
+          baseProfileId: baseProfileId,
+          thinkingModelOverrideId: modelConfigId,
+          originEntityId: currentSetup?.originEntityId,
+        ),
+      );
+      updatedPlannerId = planner.agentId;
+    });
+    if (updatedPlannerId case final plannerId?) {
+      onPersistedStateChanged?.call(plannerId);
+    }
   }
 
   /// Clears every planner override and follows the current Daily OS default.
   Future<void> resetPlannerInferenceToDefault() async {
-    final planner = await agentService.getAgent(dailyOsPlannerAgentId);
-    if (planner == null) {
-      throw StateError('Daily OS planner has not been created yet');
-    }
-    final template = await templateService.getTemplate(dayAgentTemplateId);
-    if (template == null) {
-      throw StateError('Daily OS template $dayAgentTemplateId not found');
-    }
-    final profileId = template.profileId;
-    if (profileId == null) {
-      throw StateError('Choose a Daily OS default profile first');
-    }
+    String? updatedPlannerId;
+    await syncService.runInTransaction(() async {
+      final planner = await agentService.getAgent(dailyOsPlannerAgentId);
+      if (planner == null) {
+        throw StateError('Daily OS planner has not been created yet');
+      }
+      final template = await templateService.getTemplate(dayAgentTemplateId);
+      if (template == null) {
+        throw StateError('Daily OS template $dayAgentTemplateId not found');
+      }
+      final profileId = template.profileId;
+      if (profileId == null) {
+        throw StateError('Choose a Daily OS default profile first');
+      }
 
-    await _persistPlannerInferenceSetup(
-      planner: planner,
-      profileId: profileId,
-      setup: AgentInferenceSetup(
-        mode: AgentInferenceSetupMode.configured,
-        origin: AgentInferenceSetupOrigin.templateSnapshot,
-        baseProfileId: profileId,
-        originEntityId: dayAgentTemplateId,
-      ),
-    );
+      await _persistPlannerInferenceSetup(
+        planner: planner,
+        profileId: profileId,
+        setup: AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.configured,
+          origin: AgentInferenceSetupOrigin.templateSnapshot,
+          baseProfileId: profileId,
+          originEntityId: dayAgentTemplateId,
+        ),
+      );
+      updatedPlannerId = planner.agentId;
+    });
+    if (updatedPlannerId case final plannerId?) {
+      onPersistedStateChanged?.call(plannerId);
+    }
   }
 
   Future<void> _persistPlannerInferenceSetup({
@@ -318,7 +339,6 @@ class DayAgentService {
       updatedAt: clock.now(),
     );
     await syncService.upsertEntity(updated);
-    onPersistedStateChanged?.call(planner.agentId);
   }
 
   /// Idempotent, best-effort migration from the old per-day identity model to

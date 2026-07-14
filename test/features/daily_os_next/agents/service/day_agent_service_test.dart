@@ -16,13 +16,30 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../agents/test_utils.dart';
 
+class _TransactionTrackingAgentSyncService extends MockAgentSyncService {
+  final events = <String>[];
+  bool inTransaction = false;
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    events.add('transaction:start');
+    inTransaction = true;
+    try {
+      return await action();
+    } finally {
+      inTransaction = false;
+      events.add('transaction:end');
+    }
+  }
+}
+
 void main() {
   setUpAll(registerAllFallbackValues);
 
   late MockAgentService agentService;
   late MockAgentRepository repository;
   late MockWakeOrchestrator orchestrator;
-  late MockAgentSyncService syncService;
+  late _TransactionTrackingAgentSyncService syncService;
   late MockAgentTemplateService templateService;
   late MockDomainLogger domainLogger;
   late DayAgentService service;
@@ -71,7 +88,7 @@ void main() {
     agentService = MockAgentService();
     repository = MockAgentRepository();
     orchestrator = MockWakeOrchestrator();
-    syncService = MockAgentSyncService();
+    syncService = _TransactionTrackingAgentSyncService();
     templateService = MockAgentTemplateService();
     domainLogger = MockDomainLogger();
     changedTokens = [];
@@ -93,7 +110,9 @@ void main() {
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);
-    when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+    when(() => syncService.upsertEntity(any())).thenAnswer((_) async {
+      syncService.events.add('write');
+    });
     when(() => syncService.upsertLink(any())).thenAnswer((_) async {});
     when(
       () => orchestrator.enqueueManualWake(
@@ -131,7 +150,10 @@ void main() {
       syncService: syncService,
       templateService: templateService,
       domainLogger: domainLogger,
-      onPersistedStateChanged: changedTokens.add,
+      onPersistedStateChanged: (token) {
+        syncService.events.add('notify');
+        changedTokens.add(token);
+      },
     );
   });
 
@@ -1343,7 +1365,11 @@ void main() {
       );
       when(
         () => agentService.getAgent(dailyOsPlannerAgentId),
-      ).thenAnswer((_) async => planner);
+      ).thenAnswer((_) async {
+        expect(syncService.inTransaction, isTrue);
+        syncService.events.add('read:planner');
+        return planner;
+      });
 
       await service.updatePlannerProfileOverride('profile-instance');
 
@@ -1359,6 +1385,13 @@ void main() {
         updated.config.inferenceSetup?.origin,
         AgentInferenceSetupOrigin.user,
       );
+      expect(syncService.events, [
+        'transaction:start',
+        'read:planner',
+        'write',
+        'transaction:end',
+        'notify',
+      ]);
     });
 
     test(
@@ -1377,10 +1410,18 @@ void main() {
         );
         when(
           () => agentService.getAgent(dailyOsPlannerAgentId),
-        ).thenAnswer((_) async => planner);
+        ).thenAnswer((_) async {
+          expect(syncService.inTransaction, isTrue);
+          syncService.events.add('read:planner');
+          return planner;
+        });
         when(
           () => templateService.getTemplate(dayAgentTemplateId),
-        ).thenAnswer((_) async => plannerTemplate);
+        ).thenAnswer((_) async {
+          expect(syncService.inTransaction, isTrue);
+          syncService.events.add('read:template');
+          return plannerTemplate;
+        });
 
         await service.updatePlannerThinkingModelOverride('model-user');
 
@@ -1401,6 +1442,14 @@ void main() {
           updated.config.inferenceSetup?.origin,
           AgentInferenceSetupOrigin.user,
         );
+        expect(syncService.events, [
+          'transaction:start',
+          'read:planner',
+          'read:template',
+          'write',
+          'transaction:end',
+          'notify',
+        ]);
       },
     );
 
@@ -1408,10 +1457,18 @@ void main() {
       final planner = identity(id: dailyOsPlannerAgentId);
       when(
         () => agentService.getAgent(dailyOsPlannerAgentId),
-      ).thenAnswer((_) async => planner);
+      ).thenAnswer((_) async {
+        expect(syncService.inTransaction, isTrue);
+        syncService.events.add('read:planner');
+        return planner;
+      });
       when(
         () => templateService.getTemplate(dayAgentTemplateId),
-      ).thenAnswer((_) async => plannerTemplate);
+      ).thenAnswer((_) async {
+        expect(syncService.inTransaction, isTrue);
+        syncService.events.add('read:template');
+        return plannerTemplate;
+      });
 
       await service.resetPlannerInferenceToDefault();
 
@@ -1425,6 +1482,14 @@ void main() {
         updated.config.inferenceSetup?.origin,
         AgentInferenceSetupOrigin.templateSnapshot,
       );
+      expect(syncService.events, [
+        'transaction:start',
+        'read:planner',
+        'read:template',
+        'write',
+        'transaction:end',
+        'notify',
+      ]);
     });
   });
 }
