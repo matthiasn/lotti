@@ -24,6 +24,7 @@ import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
@@ -50,6 +51,7 @@ import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
+import 'package:lotti/features/tts/ui/speech_settings_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -994,6 +996,41 @@ void main() {
       expect(pages[1].child, isA<ThemingPage>());
     });
 
+    test('buildPages builds SpeechSettingsPage', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/speech'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(mockBuildContext, beamState);
+      // Top-level leaf — opens directly beneath the root, no branch hub.
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SpeechSettingsPage>());
+    });
+
+    test(
+      'buildPages builds CelebrationSettingsPage for advanced/animations',
+      () {
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/settings/advanced/animations'),
+        );
+        final location = SettingsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final pages = location.buildPages(mockBuildContext, beamState);
+        // Lives under the Advanced branch, so the hub stays in the stack
+        // beneath it (a back tap returns to Advanced).
+        expect(pages.length, 3);
+        expect(pages[0].child, isA<SettingsMobileRootPage>());
+        expect(pages[1].child, isA<SettingsMobileBranchPage>());
+        expect(
+          (pages[1].child as SettingsMobileBranchPage).branchId,
+          'advanced',
+        );
+        expect(pages[2].child, isA<CelebrationSettingsPage>());
+      },
+    );
+
     test('buildPages builds OnboardingSettingsPage', () {
       final routeInformation = RouteInformation(
         uri: Uri.parse('/settings/onboarding'),
@@ -1354,6 +1391,56 @@ void main() {
       expect(hub, isA<SettingsMobileBranchPage>());
       expect((hub as SettingsMobileBranchPage).branchId, 'sync');
       expect(pages[2].child, isA<BackfillSettingsPage>());
+    });
+
+    group('sync hub keeps a stable page key across the drill-down', () {
+      // The Sync Settings hub must carry the SAME ValueKey for the bare
+      // `/settings/sync` URL and every `/settings/sync/*` leaf. A stable key
+      // is what lets a back tap from a leaf (e.g. Backfill) pop cleanly to
+      // reveal the existing hub beneath it. A key that flipped between the
+      // base and leaf states (the old `settings-sync-base`) made Navigator
+      // swap the underlying page instead of revealing it, playing the wrong
+      // pop animation — the bug this guards against. Definitions/Advanced/AI
+      // already follow this one-stable-key rule.
+      const expectedHubKey = ValueKey('settings-sync');
+
+      List<BeamPage> buildFor(String uri) {
+        final routeInformation = RouteInformation(uri: Uri.parse(uri));
+        final location = SettingsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        return location.buildPages(mockBuildContext, beamState);
+      }
+
+      BeamPage hubPage(List<BeamPage> pages) =>
+          pages.firstWhere((p) => p.child is SyncFeatureGate);
+
+      test('bare /settings/sync uses the settings-sync key', () {
+        expect(hubPage(buildFor('/settings/sync')).key, expectedHubKey);
+      });
+
+      for (final leaf in const [
+        '/settings/sync/provisioned',
+        '/settings/sync/matrix/maintenance',
+        '/settings/sync/node-profile',
+        '/settings/sync/backfill',
+        '/settings/sync/stats',
+        '/settings/sync/outbox',
+      ]) {
+        test('$leaf keeps the hub on the settings-sync key', () {
+          expect(hubPage(buildFor(leaf)).key, expectedHubKey);
+        });
+      }
+
+      test(
+        'hub key is identical between the bare URL and a leaf so back pops '
+        'cleanly instead of swapping the page',
+        () {
+          final baseKey = hubPage(buildFor('/settings/sync')).key;
+          final leafKey = hubPage(buildFor('/settings/sync/backfill')).key;
+          expect(baseKey, leafKey);
+          expect(baseKey, expectedHubKey);
+        },
+      );
     });
 
     test('categories navigation stack has list page', () {
