@@ -295,4 +295,31 @@ void main() {
     expect(find.text('Choose Daily OS profile'), findsOneWidget);
     expect(find.text('Profile override active'), findsOneWidget);
   });
+
+  testWidgets('disables the model override until a base profile exists', (
+    tester,
+  ) async {
+    final service = MockDayAgentService();
+    final noProfilePlanner = identity.copyWith(
+      config: const AgentConfig(
+        inferenceSetup: AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.configured,
+          origin: AgentInferenceSetupOrigin.user,
+        ),
+      ),
+    );
+
+    await pumpSheet(tester, service: service, planner: noProfilePlanner);
+    final messages = tester.element(find.byType(FilledButton)).messages;
+
+    // With no base profile the model row is inert: tapping it must not open
+    // the picker or reach the service (which would throw and fail closed).
+    await tester.tap(find.text(messages.dailyOsSettingsChooseModelTitle));
+    await tester.pumpAndSettle();
+    expect(find.text('Direct model'), findsNothing);
+    verifyNever(() => service.updatePlannerThinkingModelOverride(any()));
+
+    // The profile row stays enabled as the path forward.
+    expect(find.text('Choose Daily OS profile'), findsOneWidget);
+  });
 }

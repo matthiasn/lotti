@@ -45,10 +45,13 @@ String? dailyOsInferenceEndpointHost(AiConfigInferenceProvider provider) {
 bool _isIpv4Loopback(String? host) {
   if (host == null) return false;
   final parts = host.split('.');
-  if (parts.length != 4 || parts.any((part) => int.tryParse(part) == null)) {
+  if (parts.length != 4) return false;
+  final octets = parts.map(int.tryParse).toList();
+  if (octets.any((octet) => octet == null || octet < 0 || octet > 255)) {
     return false;
   }
-  return int.parse(parts.first) == 127;
+  // The entire 127.0.0.0/8 block is loopback (RFC 5735).
+  return octets.first == 127;
 }
 
 /// Setup facts used by the Daily OS surface to make missing configuration

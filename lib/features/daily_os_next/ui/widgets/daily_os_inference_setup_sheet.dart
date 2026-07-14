@@ -183,6 +183,10 @@ class _DailyOsInferenceSetupSheetBodyState
     final overrideModel = options?.models.firstWhereOrNull(
       (value) => value.id == overrideId,
     );
+    // A direct model override needs a base profile to attach to; without one
+    // the write would fail closed. Keep the profile row as the path forward.
+    final canOverrideModel =
+        (setup?.baseProfileId ?? config?.profileId) != null;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -257,7 +261,7 @@ class _DailyOsInferenceSetupSheetBodyState
                 )
               : const Icon(Icons.chevron_right_rounded),
           selected: overrideId != null,
-          onTap: _busy || config == null || options == null
+          onTap: _busy || config == null || options == null || !canOverrideModel
               ? null
               : () => _chooseModel(config, options),
         ),

@@ -266,25 +266,9 @@ class _Disclosure extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final route = this.route;
-    final configuredHost = route == null
-        ? null
-        : dailyOsInferenceEndpointHost(route.provider);
-    final configuredEndpoint = route == null
-        ? null
-        : configuredHost?.isNotEmpty ?? false
-        ? configuredHost!
-        : route.provider.baseUrl.trim().isNotEmpty
-        ? route.provider.baseUrl
-        : route.provider.name;
     final endpointText = route == null
         ? null
-        : dailyOsInferenceEndpointKind(route.provider) ==
-              DailyOsInferenceEndpointKind.onDevice
-        ? context.messages.dailyOsSettingsLocalDisclosure
-        : context.messages.dailyOsSettingsRemoteDisclosure(
-            route.provider.name,
-            configuredEndpoint!,
-          );
+        : _endpointDisclosure(context, route.provider);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -317,6 +301,32 @@ class _Disclosure extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Local vs. remote disclosure line for [provider]. Loopback and embedded
+  /// endpoints are described as on-device; everything else is remote and
+  /// names the configured endpoint.
+  String _endpointDisclosure(
+    BuildContext context,
+    AiConfigInferenceProvider provider,
+  ) {
+    if (dailyOsInferenceEndpointKind(provider) ==
+        DailyOsInferenceEndpointKind.onDevice) {
+      return context.messages.dailyOsSettingsLocalDisclosure;
+    }
+    return context.messages.dailyOsSettingsRemoteDisclosure(
+      provider.name,
+      _endpointLabel(provider),
+    );
+  }
+
+  /// Best available identifier for the configured endpoint: the parsed host,
+  /// then the raw base URL, then the provider name.
+  String _endpointLabel(AiConfigInferenceProvider provider) {
+    final host = dailyOsInferenceEndpointHost(provider);
+    if (host != null && host.isNotEmpty) return host;
+    if (provider.baseUrl.trim().isNotEmpty) return provider.baseUrl;
+    return provider.name;
   }
 }
 

@@ -130,4 +130,37 @@ void main() {
       expect(status.needsAttention, isFalse);
     },
   );
+
+  test(
+    'a resolvable legacy route without an explicit profile still needs setup',
+    () async {
+      // The seeded Shepherd template resolves through its legacy Gemini
+      // modelId (routeReady true) but has no explicit profileId. Daily OS
+      // deliberately treats this as unconfigured and blocks check-in until the
+      // user makes an explicit provider choice, rather than silently routing
+      // their planning context to the default provider.
+      final legacyTemplate = makeTestTemplate(
+        id: dayAgentTemplateId,
+        agentId: dayAgentTemplateId,
+        kind: AgentTemplateKind.dayAgent,
+      );
+      final container = ProviderContainer(
+        overrides: [
+          dailyOsOnboardingProviderReadyProvider.overrideWith(
+            (ref) async => true,
+          ),
+          agentTemplateProvider.overrideWith((ref, id) async => legacyTemplate),
+          dailyOsPreferencesControllerProvider.overrideWith(
+            _PreferencesController.new,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final status = await container.read(dailyOsSetupStatusProvider.future);
+
+      expect(status.hasInferenceRoute, isFalse);
+      expect(status.needsAttention, isTrue);
+    },
+  );
 }

@@ -160,12 +160,16 @@ selection.
 ### Existing legacy route
 
 An installation can currently resolve the seeded Shepherd template through its
-legacy Gemini model even when no profile has been explicitly selected.
+legacy Gemini model even when no profile has been explicitly selected. The
+runtime resolver keeps this fallback so an already-running planner never breaks.
 
-Preserve this route for backward compatibility, but display it honestly as a
-legacy/default route. Do not describe it as the user’s choice. The contextual
-setup nudge remains eligible until the user selects a Daily OS profile or writes
-an explicit planner override.
+The Daily OS surface, however, treats "resolvable but no explicit profile" as
+unconfigured: `hasInferenceRoute` requires both a resolvable route and an
+explicit `template.profileId`, so the setup gate stays active until the user
+makes a deliberate provider choice. This is the privacy-forward stance — Daily
+OS does not silently route assembled planning context to a default provider the
+user never chose. It blocks the inference-dependent check-in and sends the user
+to setup instead, rather than presenting the legacy model as their selection.
 
 ## Information architecture
 
