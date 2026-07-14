@@ -61,7 +61,10 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   static const _providerName = 'MeliousInferenceRepository';
   static const _modelListTimeout = Duration(seconds: 15);
   static const _imageGenerationTimeout = Duration(seconds: 180);
-  static const _chatAudioTimeout = Duration(seconds: 60);
+  // Voxtral can process recordings up to 30 minutes, and local preparation is
+  // included in this deadline. Match the native Voxtral route's long-audio
+  // allowance instead of applying the general short-request timeout.
+  static const _chatAudioTimeout = Duration(minutes: 15);
   // Generous because the non-streaming impact path buffers the entire
   // response: nothing is emitted (and no onProgress fires) until the full
   // body arrives or this timeout trips.
@@ -695,6 +698,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     final requestId = 'melious-audio-${const Uuid().v4()}';
 
     File? temporaryMp3File;
+    var timeoutStage = 'preparing the temporary MP3';
     try {
       final deadline = _clock.now().add(timeout);
       Duration remainingTimeoutOrThrow() {
@@ -706,10 +710,12 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       }
 
       final sourceBytes = base64Decode(audioBase64);
+      final preparationStopwatch = Stopwatch()..start();
       final conversionTimeout = remainingTimeoutOrThrow();
       temporaryMp3File = await _audioToTemporaryMp3Encoder(
         sourceBytes,
       ).timeout(conversionTimeout);
+      timeoutStage = 'reading the temporary MP3';
       final mp3Bytes = await _temporaryFileReader(temporaryMp3File).timeout(
         remainingTimeoutOrThrow(),
       );
@@ -718,6 +724,13 @@ class MeliousInferenceRepository extends TranscriptionRepository {
           'Temporary MP3 encoder produced an empty file',
         );
       }
+      preparationStopwatch.stop();
+      developer.log(
+        'Prepared Voxtral MP3 in ${preparationStopwatch.elapsedMilliseconds} '
+        'ms (${sourceBytes.length} source bytes, ${mp3Bytes.length} MP3 bytes; '
+        'request $requestId)',
+        name: _providerName,
+      );
       final messageContent = [
         {
           'type': 'input_audio',
@@ -743,6 +756,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         'temperature': 0.0,
         'max_tokens': ?maxCompletionTokens,
       };
+      timeoutStage = 'waiting for the Voxtral response';
+      final requestStopwatch = Stopwatch()..start();
       final requestTimeout = remainingTimeoutOrThrow();
       final response = await httpClient
           .post(
@@ -755,6 +770,12 @@ class MeliousInferenceRepository extends TranscriptionRepository {
             body: jsonEncode(body),
           )
           .timeout(requestTimeout);
+      requestStopwatch.stop();
+      developer.log(
+        'Received Voxtral response in ${requestStopwatch.elapsedMilliseconds} '
+        'ms with HTTP ${response.statusCode} (request $requestId)',
+        name: _providerName,
+      );
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw TranscriptionException(
@@ -824,7 +845,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       );
     } on TimeoutException catch (error) {
       throw TranscriptionException(
-        'Melious chat-audio request timed out after '
+        'Melious chat-audio request timed out while $timeoutStage after '
         '${timeout.inSeconds} seconds (request $requestId)',
         provider: _providerName,
         statusCode: httpStatusRequestTimeout,

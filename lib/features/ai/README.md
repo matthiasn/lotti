@@ -306,9 +306,11 @@ to `LameMp3Encoder`; the package keeps synchronous native encoding on a worker
 isolate. No FFmpeg binary is bundled. Conversion failure aborts the request and
 surfaces decoder or encoder detail because a transcription-endpoint fallback
 cannot apply task context during recognition. Requests reject empty responses,
-share one 60-second deadline across preparation and HTTP, and surface
-structured provider detail with a correlation id. `flutter_lame` does not ship
-a Web backend; Lotti currently has no Web application target.
+share one 15-minute long-audio deadline across preparation and HTTP, and
+surface structured provider detail with a correlation id. Domain logs record
+temporary-MP3 preparation and buffered Voxtral response time separately so a
+slow provider response is distinguishable from local encoding. `flutter_lame`
+does not ship a Web backend; Lotti currently has no Web application target.
 
 ```mermaid
 sequenceDiagram

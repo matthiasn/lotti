@@ -1169,7 +1169,11 @@ void main() {
           isA<TranscriptionException>().having(
             (error) => error.message,
             'message',
-            allOf(contains('timed out'), contains('request melious-audio-')),
+            allOf(
+              contains('timed out'),
+              contains('preparing the temporary MP3'),
+              contains('request melious-audio-'),
+            ),
           ),
         ),
       );
@@ -1202,7 +1206,46 @@ void main() {
       );
     });
 
-    test('transcribeChatAudio shares its timeout across both stages', () {
+    test(
+      'transcribeChatAudio default permits preparation longer than 60 seconds',
+      () async {
+        final startedAt = DateTime(2024, 3, 15, 12);
+        var currentTime = startedAt;
+        var requestSent = false;
+        late File temporaryMp3;
+        final repository = MeliousInferenceRepository(
+          clockSource: Clock(() => currentTime),
+          httpClient: MockClient((_) async {
+            requestSent = true;
+            return _voxtralChatResponse();
+          }),
+          audioToTemporaryMp3Encoder: (_) async {
+            currentTime = startedAt.add(const Duration(seconds: 61));
+            return temporaryMp3 = _temporaryMp3File();
+          },
+        );
+        addTearDown(repository.close);
+
+        final responses = await repository
+            .transcribeChatAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              prompt: 'Transcribe.',
+            )
+            .toList();
+
+        expect(requestSent, isTrue);
+        expect(
+          responses.single.choices?.single.delta?.content,
+          'Lotti uses Voxtral.',
+        );
+        expect(temporaryMp3.existsSync(), isFalse);
+      },
+    );
+
+    test('transcribeChatAudio shares an explicit timeout across stages', () {
       fakeAsync((async) {
         final startedAt = DateTime(2024, 3, 15, 12);
         var currentTime = startedAt;
@@ -1226,6 +1269,7 @@ void main() {
               baseUrl: baseUrl,
               apiKey: apiKey,
               prompt: 'Transcribe.',
+              timeout: const Duration(seconds: 60),
             )
             .toList()
             .then<void>(
@@ -1249,7 +1293,11 @@ void main() {
           isA<TranscriptionException>().having(
             (error) => error.message,
             'message',
-            allOf(contains('timed out'), contains('request melious-audio-')),
+            allOf(
+              contains('timed out'),
+              contains('waiting for the Voxtral response'),
+              contains('request melious-audio-'),
+            ),
           ),
         );
         expect(temporaryMp3.existsSync(), isFalse);
@@ -1285,6 +1333,7 @@ void main() {
                 baseUrl: baseUrl,
                 apiKey: apiKey,
                 prompt: 'Transcribe.',
+                timeout: const Duration(seconds: 60),
               )
               .toList()
               .then<void>(
