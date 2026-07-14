@@ -164,7 +164,7 @@ The automatic branch is intentionally strict:
 
 - transcription updates `JournalAudio.transcripts` and `entryText`
 - image analysis appends text to the `JournalImage` entry
-- coding/design/research prompt generation creates an `AiResponseEntry` linked to the parent task when a task can be resolved; image-prompt generation keeps the entry link
+- coding/design/research prompt generation creates an `AiResponseEntry` linked to the parent task when one resolves, and additionally links it back to the source audio/text entry so the prompt appears in both linked-entries lists (falling back to a single link on the source entry when no task resolves); image-prompt generation keeps the entry link. In linked-entries lists these prompts render under the `Code` activity-filter pill and are exempt from the generic `showAiEntry` gate that keeps transcripts and image analyses collapsed
 - image generation imports a generated image, sets it as task cover art, then triggers automatic image analysis on the generated image
 
 #### Context injection

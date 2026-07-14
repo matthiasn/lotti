@@ -605,25 +605,54 @@ class UnifiedAiInferenceRepository {
 
     if (shouldSaveEntry) {
       try {
-        // Coding prompts attach to the parent task (like cover art) rather
-        // than the triggering audio/image entry. This makes each generated
-        // prompt part of the task context, so later prompts can build on
-        // earlier ones. Reuses the parent task already resolved for tool
-        // calls above; falls back to the source entity when no parent task
-        // can be resolved (e.g. an unlinked entry).
+        // Coding prompts attach to the parent task (like cover art). This
+        // makes each generated prompt part of the task context, so later
+        // prompts can build on earlier ones. Reuses the parent task already
+        // resolved for tool calls above; falls back to the source entity when
+        // no parent task can be resolved (e.g. an unlinked entry).
         var linkedId = entity.id;
         if (promptConfig.aiResponseType == AiResponseType.promptGeneration &&
             taskForToolCalls != null) {
           linkedId = taskForToolCalls.id;
         }
-        aiResponseEntry = await ref
-            .read(aiInputRepositoryProvider)
-            .createAiResponseEntry(
-              data: data,
-              start: start,
-              linkedId: linkedId,
-              categoryId: entity.meta.categoryId,
+        final aiInputRepository = ref.read(aiInputRepositoryProvider);
+        aiResponseEntry = await aiInputRepository.createAiResponseEntry(
+          data: data,
+          start: start,
+          linkedId: linkedId,
+          categoryId: entity.meta.categoryId,
+        );
+
+        // Additionally link the coding prompt back to the source entry so it
+        // shows in both the task's and the originating audio/text entry's
+        // linked-entries lists. Skipped when the primary link already IS the
+        // source entry (no parent task), which would create a duplicate
+        // self-link.
+        //
+        // Isolated in its own try/catch so a back-link failure is not
+        // misattributed to `createAiResponseEntry` in the shared catch below
+        // (the primary write already succeeded) and does not mask it.
+        if (aiResponseEntry != null && linkedId != entity.id) {
+          try {
+            final linked = await aiInputRepository.createLink(
+              fromId: entity.id,
+              toId: aiResponseEntry.id,
             );
+            if (!linked) {
+              developer.log(
+                'Secondary link from ${entity.id} to '
+                '${aiResponseEntry.id} not created',
+                name: 'UnifiedAiInferenceRepository',
+              );
+            }
+          } catch (linkError) {
+            developer.log(
+              'createLink failed: $linkError',
+              name: 'UnifiedAiInferenceRepository',
+              error: linkError,
+            );
+          }
+        }
         developer.log(
           'createAiResponseEntry result: ${aiResponseEntry?.id ?? "null"}',
           name: 'UnifiedAiInferenceRepository',

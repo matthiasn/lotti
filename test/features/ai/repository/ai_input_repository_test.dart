@@ -1731,6 +1731,49 @@ void main() {
       });
     });
 
+    group('createLink', () {
+      test(
+        'delegates to PersistenceLogic.createLink with fromId/toId',
+        () async {
+          when(
+            () => mockPersistenceLogic.createLink(
+              fromId: any(named: 'fromId'),
+              toId: any(named: 'toId'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          final result = await repository.createLink(
+            fromId: 'from-1',
+            toId: 'to-1',
+          );
+
+          expect(result, isTrue);
+          verify(
+            () => mockPersistenceLogic.createLink(
+              fromId: 'from-1',
+              toId: 'to-1',
+            ),
+          ).called(1);
+        },
+      );
+
+      test('propagates a false result from PersistenceLogic', () async {
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        final result = await repository.createLink(
+          fromId: 'from-2',
+          toId: 'to-2',
+        );
+
+        expect(result, isFalse);
+      });
+    });
+
     // Tests for buildTaskDetailsJson method
     group('buildTaskDetailsJson', () {
       test('returns JSON string for valid task', () async {

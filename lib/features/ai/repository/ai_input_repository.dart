@@ -79,6 +79,19 @@ class AiInputRepository {
     );
   }
 
+  /// Creates a directed link from [fromId] to [toId].
+  ///
+  /// Used to give a generated response a second parent beyond the one
+  /// established at creation time — e.g. a coding prompt is created linked to
+  /// its parent task and then additionally linked from the source audio/text
+  /// entry so it surfaces in both linked-entries lists.
+  Future<bool> createLink({
+    required String fromId,
+    required String toId,
+  }) async {
+    return getIt<PersistenceLogic>().createLink(fromId: fromId, toId: toId);
+  }
+
   Future<AiInputTaskObject?> generate(String id) async {
     // Provider is keepAlive, so ref is always valid - no keepAlive() needed
     final progressRepository = ref.read(taskProgressRepositoryProvider);
