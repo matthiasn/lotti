@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -710,11 +710,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       }
 
       final sourceBytes = base64Decode(audioBase64);
-      _logChatAudioTiming(
-        'Preparing Voxtral MP3 from ${sourceBytes.length} source bytes '
-        '(request $requestId)',
-      );
-      final preparationStopwatch = Stopwatch()..start();
       final conversionTimeout = remainingTimeoutOrThrow();
       temporaryMp3File = await _audioToTemporaryMp3Encoder(
         sourceBytes,
@@ -728,12 +723,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
           'Temporary MP3 encoder produced an empty file',
         );
       }
-      preparationStopwatch.stop();
-      _logChatAudioTiming(
-        'Prepared Voxtral MP3 in ${preparationStopwatch.elapsedMilliseconds} '
-        'ms (${sourceBytes.length} source bytes, ${mp3Bytes.length} MP3 bytes; '
-        'request $requestId)',
-      );
       final messageContent = [
         {
           'type': 'input_audio',
@@ -760,11 +749,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         'max_tokens': ?maxCompletionTokens,
       };
       timeoutStage = 'waiting for the Voxtral response';
-      _logChatAudioTiming(
-        'Sending ${mp3Bytes.length} MP3 bytes to Voxtral as format=mp3 '
-        '(request $requestId)',
-      );
-      final requestStopwatch = Stopwatch()..start();
       final requestTimeout = remainingTimeoutOrThrow();
       final response = await httpClient
           .post(
@@ -777,11 +761,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
             body: jsonEncode(body),
           )
           .timeout(requestTimeout);
-      requestStopwatch.stop();
-      _logChatAudioTiming(
-        'Received Voxtral response in ${requestStopwatch.elapsedMilliseconds} '
-        'ms with HTTP ${response.statusCode} (request $requestId)',
-      );
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw TranscriptionException(
@@ -1378,14 +1357,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     return value.length > maxLength
         ? '${value.substring(0, maxLength)}...'
         : value;
-  }
-
-  static void _logChatAudioTiming(String message) {
-    developer.log(message, name: _providerName);
-    assert(() {
-      debugPrint('$_providerName: $message');
-      return true;
-    }(), 'Melious chat-audio timing log must complete');
   }
 
   static String _extractErrorMessage(String body, int statusCode) {
