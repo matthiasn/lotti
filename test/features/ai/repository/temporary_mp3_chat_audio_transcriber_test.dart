@@ -35,6 +35,12 @@ void main() {
   const baseUrl = 'https://api.example.com/v1';
   const apiKey = 'secret-key';
   const prompt = 'Transcribe this recording.';
+  const mistralProvider = TemporaryMp3ChatAudioProvider(
+    repositoryName: 'MistralInferenceRepository',
+    displayName: 'Mistral',
+    requestIdPrefix: 'mistral-audio-',
+    payloadDialect: ChatAudioPayloadDialect.mistral,
+  );
 
   final dialectCases =
       <
@@ -161,12 +167,7 @@ void main() {
 
     final chunks = await transcribeTemporaryMp3ChatAudio(
       httpClient: client,
-      provider: const TemporaryMp3ChatAudioProvider(
-        repositoryName: 'MistralInferenceRepository',
-        displayName: 'Mistral',
-        requestIdPrefix: 'mistral-audio-',
-        payloadDialect: ChatAudioPayloadDialect.mistral,
-      ),
+      provider: mistralProvider,
       model: model,
       audioBase64: base64Encode(sourceBytes),
       baseUrl: baseUrl,
@@ -193,12 +194,7 @@ void main() {
     await expectLater(
       transcribeTemporaryMp3ChatAudio(
         httpClient: client,
-        provider: const TemporaryMp3ChatAudioProvider(
-          repositoryName: 'MistralInferenceRepository',
-          displayName: 'Mistral',
-          requestIdPrefix: 'mistral-audio-',
-          payloadDialect: ChatAudioPayloadDialect.mistral,
-        ),
+        provider: mistralProvider,
         model: model,
         audioBase64: base64Encode(sourceBytes),
         baseUrl: baseUrl,
@@ -225,6 +221,95 @@ void main() {
     expect(encodedFile.existsSync(), isFalse);
   });
 
+  final longRawErrorBody = List.filled(250, 'x').join();
+  final errorResponseCases = <({String body, String expected, String name})>[
+    (
+      body: jsonEncode({'error': 'plain provider error'}),
+      expected: 'plain provider error',
+      name: 'a string error',
+    ),
+    (
+      body: jsonEncode({'message': 'top-level provider message'}),
+      expected: 'top-level provider message',
+      name: 'a top-level message',
+    ),
+    (
+      body: longRawErrorBody,
+      expected: '${longRawErrorBody.substring(0, 240)}...',
+      name: 'a clipped raw body',
+    ),
+  ];
+
+  for (final testCase in errorResponseCases) {
+    test('provider failures preserve ${testCase.name}', () async {
+      late File encodedFile;
+      final client = MockClient(
+        (_) async => http.Response(testCase.body, 400),
+      );
+      addTearDown(client.close);
+
+      await expectLater(
+        transcribeTemporaryMp3ChatAudio(
+          httpClient: client,
+          provider: mistralProvider,
+          model: model,
+          audioBase64: base64Encode(sourceBytes),
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          prompt: prompt,
+          audioToTemporaryMp3Encoder: (_) async {
+            return encodedFile = temporaryMp3();
+          },
+        ).toList(),
+        throwsA(
+          isA<TranscriptionException>().having(
+            (error) => error.message,
+            'message',
+            contains(testCase.expected),
+          ),
+        ),
+      );
+
+      expect(encodedFile.existsSync(), isFalse);
+    });
+  }
+
+  test('cleanup failure does not mask a successful transcription', () async {
+    late File encodedFile;
+    final client = MockClient(
+      (_) async => http.Response(
+        jsonEncode({
+          'choices': [
+            {
+              'message': {'content': 'the transcript'},
+            },
+          ],
+        }),
+        200,
+      ),
+    );
+    addTearDown(client.close);
+
+    final chunks = await transcribeTemporaryMp3ChatAudio(
+      httpClient: client,
+      provider: mistralProvider,
+      model: model,
+      audioBase64: base64Encode(sourceBytes),
+      baseUrl: baseUrl,
+      apiKey: apiKey,
+      prompt: prompt,
+      audioToTemporaryMp3Encoder: (_) async {
+        return encodedFile = temporaryMp3();
+      },
+      temporaryFileDeleter: (_) {
+        throw const FileSystemException('delete failed');
+      },
+    ).toList();
+
+    expect(chunks.single.choices?.single.delta?.content, 'the transcript');
+    expect(encodedFile.existsSync(), isTrue);
+  });
+
   test('rejects malformed input audio before MP3 encoding', () async {
     var encoderCalled = false;
     final client = MockClient((_) async => http.Response('', 200));
@@ -233,12 +318,7 @@ void main() {
     await expectLater(
       transcribeTemporaryMp3ChatAudio(
         httpClient: client,
-        provider: const TemporaryMp3ChatAudioProvider(
-          repositoryName: 'MistralInferenceRepository',
-          displayName: 'Mistral',
-          requestIdPrefix: 'mistral-audio-',
-          payloadDialect: ChatAudioPayloadDialect.mistral,
-        ),
+        provider: mistralProvider,
         model: model,
         audioBase64: '%%%',
         baseUrl: baseUrl,
