@@ -973,7 +973,9 @@ void main() {
         expect(chunks.single.created, 0);
         expect(chunks.single.model, 'voxtral-small-24b-2507');
         expect(captured?.url.toString(), '$baseUrl/chat/completions');
+        expect(captured?.headers['Accept'], 'application/json');
         final body = jsonDecode(captured!.body) as Map<String, dynamic>;
+        expect(body['stream'], isFalse);
         final messages = body['messages']! as List<dynamic>;
         final content =
             (messages.single as Map<String, dynamic>)['content']!

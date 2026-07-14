@@ -267,13 +267,17 @@ For developers:
 - `make l10n` — regenerate localizations
 - `fvm flutter run -d macos` — run on macOS (or `-d <device>` for others)
 
-**Linux only** — install emoji font support for proper rendering:
+**Linux only** — install the AAC decoder used to prepare temporary Voxtral MP3
+uploads, plus emoji font support for proper rendering:
 ```bash
-# Debian/Ubuntu: sudo apt install fonts-noto-color-emoji
-# Fedora: sudo dnf install google-noto-emoji-color-fonts
-# Arch:   sudo pacman -S noto-fonts-emoji
+# Debian/Ubuntu: sudo apt install gstreamer1.0-libav fonts-noto-color-emoji
+# Fedora: sudo dnf install gstreamer1-plugin-libav google-noto-emoji-color-fonts
+# Arch:   sudo pacman -S gst-libav noto-fonts-emoji
 ./linux/install_emoji_fonts.sh
 ```
+
+The Flatpak runtime already supplies the AAC decoder; no host package is needed
+for the Flatpak build.
 
 See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) for the full developer setup.
 

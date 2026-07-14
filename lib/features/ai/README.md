@@ -298,8 +298,14 @@ after success, provider failure, transport failure, or timeout. The audio block
 precedes the text block so the task prompt and category speech dictionary guide
 recognition.
 
-Decoding is implemented by `audio_decoder`: AVFoundation on iOS and macOS,
-MediaCodec on Android, Media Foundation on Windows, and GStreamer on Linux.
+Decoding uses `audio_decoder` with AVFoundation on iOS and macOS, MediaCodec on
+Android, and Media Foundation on Windows. Linux uses Lotti's GStreamer pipeline,
+which writes PCM WAV directly and monitors the pipeline bus so missing codecs
+cannot leave transcription waiting indefinitely. AAC/M4A decoding requires the
+`gstreamer1.0-libav` package on Ubuntu/Debian (`gstreamer1-plugin-libav` on
+Fedora and `gst-libav` on Arch); the Flatpak runtime already includes it. When
+the decoder is absent, the native channel returns an immediate installation
+hint that is surfaced by the transcription request.
 MP3 encoding uses the LAME C source bundled by `flutter_lame` on Android, iOS,
 Linux, macOS, and Windows. Lotti feeds normalized `Float64List` channel samples
 to `LameMp3Encoder`; the package keeps synchronous native encoding on a worker
