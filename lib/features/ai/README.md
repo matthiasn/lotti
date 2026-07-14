@@ -288,30 +288,44 @@ The default Melious profile uses `mistral-small-4-119b-instruct` for thinking
 and image recognition, `glm-5.2` for the high-end thinking slot,
 `flux-2-klein-9b` for image generation, and `voxtral-small-24b-2507` for
 transcription. Melious' chat adapter stalls on the archived M4A bytes produced
-by Lotti, so the provider route converts a temporary copy to PCM WAV and sends
-that through buffered `/chat/completions`; the original M4A is never modified,
-and both scratch files are deleted in `finally`. The audio block precedes the
-text block so the task prompt and category speech dictionary guide recognition.
-Conversion is implemented by `audio_decoder`: AVFoundation on iOS and macOS,
+by Lotti. Sending decoded PCM WAV fixed short recordings but exceeded the
+provider request-size limit for longer recordings, so the provider route now
+decodes a temporary copy to PCM WAV, streams normalized samples through LAME in
+one-second chunks, and sends a 64 kbps temporary MP3 through buffered
+`/chat/completions`. The original M4A is never modified. M4A and WAV decoder
+scratch files are removed as soon as decoding finishes, and the MP3 is deleted
+after success, provider failure, transport failure, or timeout. The audio block
+precedes the text block so the task prompt and category speech dictionary guide
+recognition.
+
+Decoding is implemented by `audio_decoder`: AVFoundation on iOS and macOS,
 MediaCodec on Android, Media Foundation on Windows, and GStreamer on Linux.
-No FFmpeg binary is bundled. Conversion failure aborts the request and surfaces
-the native decoder detail because a transcription-endpoint fallback cannot
-apply task context during recognition. Requests reject empty responses, time
-out after 60 seconds, and surface structured provider detail with a correlation
-id.
+MP3 encoding uses the LAME C source bundled by `flutter_lame` on Android, iOS,
+Linux, macOS, and Windows. Lotti feeds normalized `Float64List` channel samples
+to `LameMp3Encoder`; the package keeps synchronous native encoding on a worker
+isolate. No FFmpeg binary is bundled. Conversion failure aborts the request and
+surfaces decoder or encoder detail because a transcription-endpoint fallback
+cannot apply task context during recognition. Requests reject empty responses,
+share one 60-second deadline across preparation and HTTP, and surface
+structured provider detail with a correlation id. `flutter_lame` does not ship
+a Web backend; Lotti currently has no Web application target.
 
 ```mermaid
 sequenceDiagram
   participant Archive as M4A master
   participant Scratch as Temporary files
   participant Decoder as Native decoder
+  participant LAME as Bundled LAME worker
   participant Melious as Voxtral chat
   Archive->>Scratch: copy bytes to unique .m4a
   Scratch->>Decoder: decode .m4a to PCM .wav
   Decoder-->>Scratch: write RIFF/WAVE output
-  Scratch->>Melious: WAV audio block + task/dictionary context
+  Scratch->>LAME: normalized PCM chunks (one second/channel)
+  LAME-->>Scratch: write 64 kbps .mp3
+  Scratch->>Scratch: delete decoder .m4a and .wav
+  Scratch->>Melious: MP3 audio block + task/dictionary context
   Melious-->>Scratch: contextual transcript or provider error
-  Scratch->>Scratch: delete .m4a and .wav in finally
+  Scratch->>Scratch: delete .mp3 in finally
 ```
 
 Whisper and explicit transcription model IDs still use the transcription

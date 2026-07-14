@@ -37,6 +37,7 @@
           <p>Date and time pickers are now clearer and steadier across the app. Entry ranges show weekdays, include Start and End Now actions, and transition to a calendar page within the same sheet. Due dates and project target dates share the same weekday calendar, while tighter wheel controls and stable status spacing keep the layout compact without jumping in light or dark mode.</p>
           <p>Daily OS now has a discoverable settings page for choosing its default inference profile and preferred name, plus per-planner profile and thinking-model overrides. Setup explains that assembled planning context is sent to the selected provider and identifies whether its configured endpoint is local or remote.</p>
           <p>The preferred name you set for Daily OS now syncs across your devices, with the most recent edit winning, so each device greets you the same way.</p>
+          <p>Long Melious Voxtral recordings now use a temporary MP3 for transcription instead of an oversized WAV upload. The archived M4A remains unchanged, and temporary decoder and MP3 files are removed after successful and failed requests.</p>
           <p>AI coding prompts now show up under their task. A generated coding prompt is linked to both its parent task and the audio or text note it came from, and appears in each of their linked-entries lists under the Code activity filter. Previously the prompt was created but stayed hidden from the task timeline.</p>
       </description>
     </release>
