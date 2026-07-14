@@ -251,7 +251,14 @@ stateDiagram-v2
   **Today** action, token-backed framing, and the shared modal action bar. The
   time-of-day picker uses fixed-extent hour/minute wheels with cylindrical
   perspective, non-bouncing settle behavior, a token-selected row, 12/24-hour
-  layouts, and adjustable semantics for each column. The duration picker keeps
+  layouts, and adjustable semantics for each column. Desktop pointer-scroll
+  deltas accumulate to a row threshold, with each event limited to one row so
+  large Linux wheel deltas cannot skip values or lock further input. Drag
+  velocity is capped by column: deliberate movement still accelerates across
+  several rows, while extreme desktop fling values cannot launch the wheel.
+  Looping columns start many cycles from either boundary so hours remain
+  reachable in both directions, and cached delegates avoid rebuilding the full
+  hour/minute lists on every selection tick. The duration picker keeps
   Cupertino's hours/minutes wheel while applying the same typography and
   selected-row treatment. Feature code owns the draft value and persistence;
   these components own presentation and interaction semantics.

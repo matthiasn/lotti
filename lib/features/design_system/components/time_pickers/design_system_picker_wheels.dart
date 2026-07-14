@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
@@ -31,7 +32,8 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
   static const _diameterRatio = 1.07;
   static const _squeeze = 1.45;
   static const _overAndUnderCenterOpacity = 0.447;
-
+  static const _hourMaxFlingRowsPerSecond = 8.0;
+  static const _minuteMaxFlingRowsPerSecond = 20.0;
   late int _hourIndex;
   late int _minuteIndex;
   late int _periodIndex;
@@ -98,6 +100,7 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
                     initialItem: _hourIndex,
                     selectedItem: _hourIndex,
                     itemExtent: tokens.spacing.step8,
+                    maxFlingRowsPerSecond: _hourMaxFlingRowsPerSecond,
                     semanticsLabel: materialLocalizations.timePickerHourLabel,
                     labelBuilder: (index) => widget.use24hFormat
                         ? index.toString().padLeft(2, '0')
@@ -106,8 +109,7 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
                     unselectedStyle: pickerStyle.copyWith(
                       color: tokens.colors.text.mediumEmphasis,
                     ),
-                    onSelectedItemChanged: (index) =>
-                        setState(() => _hourIndex = index),
+                    onSelectedItemChanged: (index) => _hourIndex = index,
                     onScrollEnd: _notifyChanged,
                   ),
                 ),
@@ -118,14 +120,14 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
                     initialItem: _minuteIndex,
                     selectedItem: _minuteIndex,
                     itemExtent: tokens.spacing.step8,
+                    maxFlingRowsPerSecond: _minuteMaxFlingRowsPerSecond,
                     semanticsLabel: materialLocalizations.timePickerMinuteLabel,
                     labelBuilder: (index) => index.toString().padLeft(2, '0'),
                     selectedStyle: pickerStyle,
                     unselectedStyle: pickerStyle.copyWith(
                       color: tokens.colors.text.mediumEmphasis,
                     ),
-                    onSelectedItemChanged: (index) =>
-                        setState(() => _minuteIndex = index),
+                    onSelectedItemChanged: (index) => _minuteIndex = index,
                     onScrollEnd: _notifyChanged,
                   ),
                 ),
@@ -136,6 +138,7 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
                       initialItem: _periodIndex,
                       selectedItem: _periodIndex,
                       itemExtent: tokens.spacing.step8,
+                      maxFlingRowsPerSecond: 0,
                       semanticsLabel:
                           '${materialLocalizations.anteMeridiemAbbreviation} / '
                           '${materialLocalizations.postMeridiemAbbreviation}',
@@ -151,8 +154,7 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
                       unselectedStyle: pickerStyle.copyWith(
                         color: tokens.colors.text.mediumEmphasis,
                       ),
-                      onSelectedItemChanged: (index) =>
-                          setState(() => _periodIndex = index),
+                      onSelectedItemChanged: (index) => _periodIndex = index,
                       onScrollEnd: _notifyChanged,
                     ),
                   ),
@@ -171,6 +173,7 @@ class _FixedExtentWheelColumn extends StatefulWidget {
     required this.initialItem,
     required this.selectedItem,
     required this.itemExtent,
+    required this.maxFlingRowsPerSecond,
     required this.semanticsLabel,
     required this.labelBuilder,
     required this.selectedStyle,
@@ -184,6 +187,7 @@ class _FixedExtentWheelColumn extends StatefulWidget {
   final int initialItem;
   final int selectedItem;
   final double itemExtent;
+  final double maxFlingRowsPerSecond;
   final String semanticsLabel;
   final String Function(int) labelBuilder;
   final TextStyle selectedStyle;
@@ -198,87 +202,206 @@ class _FixedExtentWheelColumn extends StatefulWidget {
 }
 
 class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
+  static const _loopingTurns = 1000;
+
   late final FixedExtentScrollController _controller;
+  late final ValueNotifier<int> _selectedItem;
+  late List<Widget> _children;
+  var _pointerScrollDistance = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _controller = FixedExtentScrollController(initialItem: widget.initialItem);
+    _controller = FixedExtentScrollController(
+      initialItem: widget.looping
+          ? widget.itemCount * _loopingTurns + widget.initialItem
+          : widget.initialItem,
+    );
+    _selectedItem = ValueNotifier(widget.selectedItem);
+    _children = _buildChildren();
+  }
+
+  @override
+  void didUpdateWidget(covariant _FixedExtentWheelColumn oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.itemCount != oldWidget.itemCount ||
+        widget.selectedStyle != oldWidget.selectedStyle ||
+        widget.unselectedStyle != oldWidget.unselectedStyle) {
+      _children = _buildChildren();
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _selectedItem.dispose();
     super.dispose();
   }
 
   int? _adjustedIndex(int delta) {
     if (widget.looping) {
-      return (widget.selectedItem + delta) % widget.itemCount;
+      return (_selectedItem.value + delta) % widget.itemCount;
     }
-    final next = widget.selectedItem + delta;
+    final next = _selectedItem.value + delta;
     return next >= 0 && next < widget.itemCount ? next : null;
+  }
+
+  void _handleSelectedItemChanged(int index) {
+    if (_selectedItem.value == index) return;
+    _selectedItem.value = index;
+    widget.onSelectedItemChanged(index);
   }
 
   void _adjust(int delta) {
     final next = _adjustedIndex(delta);
     if (next == null) return;
-    _controller.jumpToItem(next);
-    widget.onSelectedItemChanged(next);
+    _controller.jumpToItem(
+      widget.looping ? _controller.selectedItem + delta : next,
+    );
+    _handleSelectedItemChanged(next);
     widget.onScrollEnd();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final children = List.generate(
-      widget.itemCount,
-      (index) => Center(
-        child: Text(
-          widget.labelBuilder(index),
-          style: index == widget.selectedItem
-              ? widget.selectedStyle
-              : widget.unselectedStyle,
-        ),
-      ),
+  void _handlePointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent || event.scrollDelta.dy == 0) return;
+    GestureBinding.instance.pointerSignalResolver.register(
+      event,
+      _handleResolvedPointerScroll,
     );
-    final increasedIndex = _adjustedIndex(1);
-    final decreasedIndex = _adjustedIndex(-1);
-    return Semantics(
-      container: true,
-      label: widget.semanticsLabel,
-      value: widget.labelBuilder(widget.selectedItem),
-      increasedValue: increasedIndex == null
-          ? null
-          : widget.labelBuilder(increasedIndex),
-      decreasedValue: decreasedIndex == null
-          ? null
-          : widget.labelBuilder(decreasedIndex),
-      selected: true,
-      onIncrease: increasedIndex == null ? null : () => _adjust(1),
-      onDecrease: decreasedIndex == null ? null : () => _adjust(-1),
-      child: ExcludeSemantics(
-        child: NotificationListener<ScrollEndNotification>(
-          onNotification: (_) {
-            widget.onScrollEnd();
-            return false;
-          },
-          child: ListWheelScrollView.useDelegate(
-            controller: _controller,
-            itemExtent: widget.itemExtent,
-            physics: const FixedExtentScrollPhysics(),
-            diameterRatio: _DesignSystemTimeWheelState._diameterRatio,
-            squeeze: _DesignSystemTimeWheelState._squeeze,
-            overAndUnderCenterOpacity:
-                _DesignSystemTimeWheelState._overAndUnderCenterOpacity,
-            onSelectedItemChanged: widget.onSelectedItemChanged,
-            childDelegate: widget.looping
-                ? ListWheelChildLoopingListDelegate(children: children)
-                : ListWheelChildListDelegate(children: children),
+  }
+
+  void _handleResolvedPointerScroll(PointerSignalEvent event) {
+    final scrollEvent = event as PointerScrollEvent
+      ..respond(allowPlatformDefault: false);
+    if (!_controller.hasClients) return;
+
+    _pointerScrollDistance += scrollEvent.scrollDelta.dy;
+    if (_pointerScrollDistance.abs() < widget.itemExtent / 2) return;
+
+    final direction = _pointerScrollDistance.sign;
+    _pointerScrollDistance = 0;
+    _controller.position.pointerScroll(direction * widget.itemExtent);
+  }
+
+  List<Widget> _buildChildren() => List.generate(
+    widget.itemCount,
+    (index) => Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerSignal: _handlePointerSignal,
+      child: SizedBox.expand(
+        child: Center(
+          child: ValueListenableBuilder(
+            valueListenable: _selectedItem,
+            builder: (context, selectedItem, _) => Text(
+              widget.labelBuilder(index),
+              style: index == selectedItem
+                  ? widget.selectedStyle
+                  : widget.unselectedStyle,
+            ),
           ),
         ),
       ),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: _selectedItem,
+      builder: (context, selectedItem, _) {
+        final increasedIndex = _adjustedIndex(1);
+        final decreasedIndex = _adjustedIndex(-1);
+        return Semantics(
+          container: true,
+          label: widget.semanticsLabel,
+          value: widget.labelBuilder(selectedItem),
+          increasedValue: increasedIndex == null
+              ? null
+              : widget.labelBuilder(increasedIndex),
+          decreasedValue: decreasedIndex == null
+              ? null
+              : widget.labelBuilder(decreasedIndex),
+          selected: true,
+          onIncrease: increasedIndex == null ? null : () => _adjust(1),
+          onDecrease: decreasedIndex == null ? null : () => _adjust(-1),
+          child: ExcludeSemantics(
+            child: NotificationListener<ScrollEndNotification>(
+              onNotification: (_) {
+                widget.onScrollEnd();
+                return false;
+              },
+              child: ListWheelScrollView.useDelegate(
+                controller: _controller,
+                itemExtent: widget.itemExtent,
+                physics: widget.maxFlingRowsPerSecond == 0
+                    ? const _PreciseFixedExtentScrollPhysics()
+                    : _ControlledFixedExtentScrollPhysics(
+                        itemExtent: widget.itemExtent,
+                        maxFlingRowsPerSecond: widget.maxFlingRowsPerSecond,
+                      ),
+                diameterRatio: _DesignSystemTimeWheelState._diameterRatio,
+                squeeze: _DesignSystemTimeWheelState._squeeze,
+                overAndUnderCenterOpacity:
+                    _DesignSystemTimeWheelState._overAndUnderCenterOpacity,
+                onSelectedItemChanged: _handleSelectedItemChanged,
+                dragStartBehavior: DragStartBehavior.down,
+                childDelegate: widget.looping
+                    ? ListWheelChildLoopingListDelegate(children: _children)
+                    : ListWheelChildListDelegate(children: _children),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
+}
+
+/// Snaps to the nearest row at release without adding slot-machine momentum.
+class _PreciseFixedExtentScrollPhysics extends FixedExtentScrollPhysics {
+  const _PreciseFixedExtentScrollPhysics({super.parent});
+
+  @override
+  _PreciseFixedExtentScrollPhysics applyTo(ScrollPhysics? ancestor) =>
+      _PreciseFixedExtentScrollPhysics(parent: buildParent(ancestor));
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) => super.createBallisticSimulation(position, 0);
+}
+
+/// Preserves wheel momentum while preventing extreme desktop fling velocity.
+class _ControlledFixedExtentScrollPhysics extends FixedExtentScrollPhysics {
+  const _ControlledFixedExtentScrollPhysics({
+    required this.itemExtent,
+    required this.maxFlingRowsPerSecond,
+    super.parent,
+  });
+
+  final double itemExtent;
+  final double maxFlingRowsPerSecond;
+
+  @override
+  double get maxFlingVelocity => itemExtent * maxFlingRowsPerSecond;
+
+  @override
+  _ControlledFixedExtentScrollPhysics applyTo(ScrollPhysics? ancestor) =>
+      _ControlledFixedExtentScrollPhysics(
+        itemExtent: itemExtent,
+        maxFlingRowsPerSecond: maxFlingRowsPerSecond,
+        parent: buildParent(ancestor),
+      );
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) => super.createBallisticSimulation(
+    position,
+    velocity.clamp(-maxFlingVelocity, maxFlingVelocity),
+  );
 }
 
 /// Token-backed hour/minute duration wheel used by estimate modals.
