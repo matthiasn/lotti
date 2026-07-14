@@ -10374,6 +10374,12 @@ abstract class AppLocalizations {
   /// **'Starred'**
   String get journalFilterStarred;
 
+  /// No description provided for @journalFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter journal'**
+  String get journalFilterTitle;
+
   /// No description provided for @journalHideLinkHint.
   ///
   /// In en, this message translates to:
@@ -16192,7 +16198,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksFilterTitle.
   ///
   /// In en, this message translates to:
-  /// **'Tasks Filter'**
+  /// **'Filter tasks'**
   String get tasksFilterTitle;
 
   /// No description provided for @taskShowcaseAudio.

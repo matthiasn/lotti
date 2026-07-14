@@ -2563,6 +2563,7 @@
   "journalFilterPrivate": "Privados",
   "journalFilterShowTitle": "Mostrar",
   "journalFilterStarred": "Destacados",
+  "journalFilterTitle": "Filtrar diario",
   "journalHideLinkHint": "Ocultar enlace",
   "journalHideMapHint": "Ocultar mapa",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
@@ -3888,7 +3889,7 @@
   "tasksAgentFilterTitle": "Agente",
   "tasksFilterApplyTitle": "Aplicar filtro",
   "tasksFilterClearAll": "Borrar todo",
-  "tasksFilterTitle": "Filtro de tareas",
+  "tasksFilterTitle": "Filtrar tareas",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed, plural, =1{1 / {total} hecho} other{{completed} / {total} hechos}}",
   "@taskShowcaseCompletedCount": {

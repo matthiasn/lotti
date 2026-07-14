@@ -6023,6 +6023,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalFilterStarred => 'Favoriten';
 
   @override
+  String get journalFilterTitle => 'Tagebuch filtern';
+
+  @override
   String get journalHideLinkHint => 'Link ausblenden';
 
   @override
@@ -9467,7 +9470,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksFilterClearAll => 'Alles löschen';
 
   @override
-  String get tasksFilterTitle => 'Aufgabenfilter';
+  String get tasksFilterTitle => 'Aufgaben filtern';
 
   @override
   String get taskShowcaseAudio => 'Audio';

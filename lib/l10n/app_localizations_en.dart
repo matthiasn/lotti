@@ -5952,6 +5952,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalFilterStarred => 'Starred';
 
   @override
+  String get journalFilterTitle => 'Filter journal';
+
+  @override
   String get journalHideLinkHint => 'Hide link';
 
   @override
@@ -9343,7 +9346,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksFilterClearAll => 'Clear all';
 
   @override
-  String get tasksFilterTitle => 'Tasks Filter';
+  String get tasksFilterTitle => 'Filter tasks';
 
   @override
   String get taskShowcaseAudio => 'Audio';

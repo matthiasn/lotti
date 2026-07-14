@@ -74,9 +74,12 @@ class ModalUtils {
           (title != null
               ? Container(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    title,
-                    style: modalTitleStyle(context),
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      title,
+                      style: modalTitleStyle(context),
+                    ),
                   ),
                 )
               : null),
@@ -260,9 +263,12 @@ class ModalUtils {
           (title != null
               ? Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    title,
-                    style: modalTitleStyle(context),
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      title,
+                      style: modalTitleStyle(context),
+                    ),
                   ),
                 )
               : null),

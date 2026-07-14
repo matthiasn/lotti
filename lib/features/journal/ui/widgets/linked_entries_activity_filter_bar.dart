@@ -35,6 +35,10 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
     final sortOrder = ref.watch(
       linkedEntriesSortControllerProvider(entryId),
     );
+    final includeHidden = ref.watch(includeHiddenControllerProvider(entryId));
+    final showFlaggedOnly = ref.watch(
+      showFlaggedOnlyControllerProvider(entryId),
+    );
 
     return Padding(
       padding: EdgeInsets.only(
@@ -64,6 +68,8 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
           _FilterTrigger(
             entryId: entryId,
             sortOrder: sortOrder,
+            includeHidden: includeHidden,
+            showFlaggedOnly: showFlaggedOnly,
           ),
         ],
       ),
@@ -72,10 +78,17 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
 }
 
 class _FilterTrigger extends StatelessWidget {
-  const _FilterTrigger({required this.entryId, required this.sortOrder});
+  const _FilterTrigger({
+    required this.entryId,
+    required this.sortOrder,
+    required this.includeHidden,
+    required this.showFlaggedOnly,
+  });
 
   final String entryId;
   final LinkedEntriesSortOrder sortOrder;
+  final bool includeHidden;
+  final bool showFlaggedOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -87,40 +100,29 @@ class _FilterTrigger extends StatelessWidget {
       LinkedEntriesSortOrder.oldestFirst =>
         messages.journalLinkedEntriesSortOldestFirst,
     };
-    final color = tokens.colors.text.lowEmphasis;
+    final activeLabels = [
+      if (includeHidden) messages.journalLinkedEntriesShowHidden,
+      if (showFlaggedOnly) messages.journalLinkedEntriesShowFlaggedOnly,
+    ];
+    final semanticsLabel = [
+      messages.journalLinkedEntriesFilterModalTitle,
+      label,
+      ...activeLabels,
+    ].join(', ');
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => showLinkedEntriesFilterModal(
-          context: context,
-          entryId: entryId,
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step3,
-            vertical: tokens.spacing.step2,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.sort,
-                size: 16,
-                color: tokens.colors.interactive.enabled,
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                label,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: color,
-                  height: 1,
-                ),
-              ),
-            ],
-          ),
-        ),
+    return DesignSystemFilterChoicePill(
+      label: label,
+      semanticsLabel: semanticsLabel,
+      selected: activeLabels.isNotEmpty,
+      role: DesignSystemFilterChoiceRole.action,
+      leading: Icon(
+        Icons.filter_list_rounded,
+        size: tokens.spacing.step5,
+        color: tokens.colors.interactive.enabled,
+      ),
+      onTap: () => showLinkedEntriesFilterModal(
+        context: context,
+        entryId: entryId,
       ),
     );
   }
@@ -141,57 +143,16 @@ class _ActivityPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spec = _ActivityPillSpec.of(context, kind);
-    final radius = BorderRadius.circular(20);
-    final accent = spec.accent;
-    final activeBg = accent.withValues(alpha: 0.15);
-    final activeBorder = accent.withValues(alpha: spec.borderAlpha);
-
-    final inactiveLabelColor = tokens.colors.text.lowEmphasis;
-    final inactiveBorderColor = tokens.colors.decorative.level01;
-
-    final bgColor = active ? activeBg : Colors.transparent;
-    final borderColor = active ? activeBorder : inactiveBorderColor;
-    final labelColor = active ? accent : inactiveLabelColor;
-
-    return Semantics(
-      button: true,
-      toggled: active,
+    return DesignSystemFilterChoicePill(
       label: spec.label,
-      excludeSemantics: true,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: radius,
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: DesignSystemFilterChoicePill.animationDuration,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: radius,
-              border: Border.all(color: borderColor),
-            ),
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step3,
-              vertical: tokens.spacing.step2,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(spec.icon, size: 16, color: labelColor),
-                SizedBox(width: tokens.spacing.step2),
-                Text(
-                  spec.label,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: labelColor,
-                    fontWeight: FontWeight.w500,
-                    height: 1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      selected: active,
+      role: DesignSystemFilterChoiceRole.multiSelect,
+      leading: Icon(
+        spec.icon,
+        size: tokens.spacing.step5,
+        color: tokens.colors.interactive.enabled,
       ),
+      onTap: onTap,
     );
   }
 }
@@ -200,50 +161,33 @@ class _ActivityPillSpec {
   const _ActivityPillSpec({
     required this.label,
     required this.icon,
-    required this.accent,
-    required this.borderAlpha,
   });
 
   factory _ActivityPillSpec.of(
     BuildContext context,
     LinkedEntryActivityFilter kind,
   ) {
-    final tokens = context.designTokens;
     final messages = context.messages;
     return switch (kind) {
       LinkedEntryActivityFilter.timer => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterTimer,
         icon: Icons.timer_outlined,
-        accent: tokens.colors.alert.warning.defaultColor,
-        borderAlpha: 1,
       ),
-      // Audio / Images use Figma-spec hex values that aren't in the token
-      // set yet. Border alpha is 0.7 per the Figma activity-filter pills.
       LinkedEntryActivityFilter.audio => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterAudio,
         icon: Icons.mic_none_outlined,
-        accent: const Color(0xFF9966E5),
-        borderAlpha: 0.7,
       ),
       LinkedEntryActivityFilter.images => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterImages,
         icon: Icons.photo_outlined,
-        accent: const Color(0xFF619EFF),
-        borderAlpha: 0.7,
       ),
-      // Code (coding prompts) uses a Figma-spec green that isn't in the
-      // token set yet. Border alpha matches the Audio/Images pills.
       LinkedEntryActivityFilter.code => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterCode,
         icon: Icons.code,
-        accent: const Color(0xFF34C759),
-        borderAlpha: 0.7,
       ),
     };
   }
 
   final String label;
   final IconData icon;
-  final Color accent;
-  final double borderAlpha;
 }

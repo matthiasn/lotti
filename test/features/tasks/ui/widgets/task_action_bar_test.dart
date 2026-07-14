@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -215,21 +214,21 @@ void main() {
   }
 
   test('dark glass footer palette shields controls from bright content', () {
-    final palette = DesignSystemFilterPalette.fromTokens(dsTokensDark);
+    final colors = DesignSystemGlassStrip.overlayColors(dsTokensDark);
 
     expect(
-      palette.glassFooterOverlayStart.computeLuminance(),
+      colors.first.computeLuminance(),
       lessThan(0.05),
     );
     expect(
-      palette.glassFooterOverlayEnd.computeLuminance(),
+      colors.last.computeLuminance(),
       lessThan(0.05),
     );
-    expect(palette.glassFooterOverlayStart.a, greaterThanOrEqualTo(0.65));
-    expect(palette.glassFooterOverlayEnd.a, greaterThanOrEqualTo(0.85));
+    expect(colors.first.a, greaterThanOrEqualTo(0.65));
+    expect(colors.last.a, greaterThanOrEqualTo(0.85));
     expect(
-      palette.glassFooterOverlayEnd.a,
-      greaterThan(palette.glassFooterOverlayStart.a),
+      colors.last.a,
+      greaterThan(colors.first.a),
     );
   });
 

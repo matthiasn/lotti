@@ -6070,6 +6070,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get journalFilterStarred => 'Destacados';
 
   @override
+  String get journalFilterTitle => 'Filtrar diario';
+
+  @override
   String get journalHideLinkHint => 'Ocultar enlace';
 
   @override
@@ -9566,7 +9569,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksFilterClearAll => 'Borrar todo';
 
   @override
-  String get tasksFilterTitle => 'Filtro de tareas';
+  String get tasksFilterTitle => 'Filtrar tareas';
 
   @override
   String get taskShowcaseAudio => 'Audio';

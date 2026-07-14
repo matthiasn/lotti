@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
@@ -77,19 +76,6 @@ class _TaskFilterOverviewPageState extends State<_TaskFilterOverviewPage> {
                   DesignSystemTaskFilterSheet(
                     state: state,
                     onChanged: (nextState) {
-                      setState(() => _state = nextState);
-                    },
-                    onFieldPressed: (section) async {
-                      final nextState =
-                          await showDesignSystemTaskFilterFieldSelectionModal(
-                            context: context,
-                            draftState: state,
-                            section: section,
-                          );
-                      if (!mounted || nextState == null) {
-                        return;
-                      }
-
                       setState(() => _state = nextState);
                     },
                   ),

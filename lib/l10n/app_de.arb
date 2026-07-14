@@ -2563,6 +2563,7 @@
   "journalFilterPrivate": "Privat",
   "journalFilterShowTitle": "Anzeigen",
   "journalFilterStarred": "Favoriten",
+  "journalFilterTitle": "Tagebuch filtern",
   "journalHideLinkHint": "Link ausblenden",
   "journalHideMapHint": "Karte ausblenden",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
@@ -3888,7 +3889,7 @@
   "tasksAgentFilterTitle": "Agent",
   "tasksFilterApplyTitle": "Filter anwenden",
   "tasksFilterClearAll": "Alles löschen",
-  "tasksFilterTitle": "Aufgabenfilter",
+  "tasksFilterTitle": "Aufgaben filtern",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} erledigt",
   "@taskShowcaseCompletedCount": {

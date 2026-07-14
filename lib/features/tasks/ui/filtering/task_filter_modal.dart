@@ -12,11 +12,10 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_project_selection_modal.dart';
 import 'package:lotti/features/tasks/ui/filtering/tasks_filter_sheet_state.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filter_toast.dart';
-import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
@@ -49,12 +48,15 @@ Future<void> showTaskFilterModal(
 
   if (!context.mounted) return;
 
-  final initialState = buildTasksFilterSheetState(
-    context,
-    controllerState: controllerState,
-    categories: categories,
-    labels: labels,
-    projectsWithCategories: allProjectsWithCategories,
+  final initialState = _pruneProjectsForSelectedCategories(
+    buildTasksFilterSheetState(
+      context,
+      controllerState: controllerState,
+      categories: categories,
+      labels: labels,
+      projectsWithCategories: allProjectsWithCategories,
+    ),
+    allProjectsWithCategories,
   );
 
   // Snapshot the saved-filter state for the Save flow.
@@ -145,78 +147,71 @@ Future<void> showTaskFilterModal(
         ),
       );
     },
-    onFieldPressed: (sheetContext, draftState, section) async {
-      if (section == DesignSystemTaskFilterSection.project) {
-        return _handleProjectFieldPressed(
-          sheetContext,
-          draftState: draftState,
+    fieldPageConfigs: {
+      DesignSystemTaskFilterSection.category: DesignSystemFilterFieldPageConfig(
+        searchHintText: context.messages.categorySearchPlaceholder,
+        normalizeState: (state) => _pruneProjectsForSelectedCategories(
+          state,
+          allProjectsWithCategories,
+        ),
+      ),
+      DesignSystemTaskFilterSection.label: DesignSystemFilterFieldPageConfig(
+        searchHintText: context.messages.tasksLabelsSheetSearchHint,
+      ),
+      DesignSystemTaskFilterSection.project: DesignSystemFilterFieldPageConfig(
+        searchHintText: context.messages.projectShowcaseSearchHint,
+        groupsBuilder: (state) => _projectGroups(
+          state,
           allProjectsWithCategories: allProjectsWithCategories,
           categories: categories,
-        );
-      }
-
-      return showDesignSystemTaskFilterFieldSelectionModal(
-        context: sheetContext,
-        draftState: draftState,
-        section: section,
-        appearanceResolver: section == DesignSystemTaskFilterSection.status
-            ? (optionId) {
-                final icon = taskIconFromStatusString(optionId);
-                final color = taskColorFromStatusString(
-                  optionId,
-                  brightness: Theme.of(sheetContext).brightness,
-                );
-                return DesignSystemFilterSelectionOptionAppearance(
-                  icon: icon,
-                  foregroundColor: color,
-                );
-              }
-            : null,
-      );
+        ),
+      ),
     },
   );
 }
 
-/// Handles the project field press — shows the grouped project selection modal.
-Future<DesignSystemTaskFilterState?> _handleProjectFieldPressed(
-  BuildContext context, {
-  required DesignSystemTaskFilterState draftState,
+List<DesignSystemFilterSelectionGroup> _projectGroups(
+  DesignSystemTaskFilterState state, {
   required List<ProjectWithCategory> allProjectsWithCategories,
   required List<CategoryDefinition> categories,
-}) async {
-  // Filter projects based on current category selection in the draft state
+}) {
   final selectedCategoryIds =
-      draftState.categoryField?.selectedIds ?? const <String>{};
+      state.categoryField?.selectedIds ?? const <String>{};
+  return [
+    for (final category in categories)
+      if (selectedCategoryIds.isEmpty ||
+          selectedCategoryIds.contains(category.id))
+        DesignSystemFilterSelectionGroup(
+          label: category.name,
+          optionIds: {
+            for (final project in allProjectsWithCategories)
+              if (project.categoryId == category.id) project.project.meta.id,
+          },
+        ),
+  ];
+}
 
-  final filteredProjects = selectedCategoryIds.isEmpty
-      ? allProjectsWithCategories
-      : allProjectsWithCategories
-            .where((p) => selectedCategoryIds.contains(p.categoryId))
-            .toList();
-
-  if (filteredProjects.isEmpty) return null;
-
-  // Build the list of categories relevant to the filtered projects
-  final relevantCategoryIds = filteredProjects.map((p) => p.categoryId).toSet();
-  final relevantCategories = categories
-      .where((c) => relevantCategoryIds.contains(c.id))
-      .toList();
-
-  final selectedIds = await showProjectSelectionModal(
-    context: context,
-    projects: filteredProjects,
-    categories: relevantCategories,
-    initialSelectedIds: draftState.projectField?.selectedIds ?? const {},
+DesignSystemTaskFilterState _pruneProjectsForSelectedCategories(
+  DesignSystemTaskFilterState state,
+  List<ProjectWithCategory> allProjectsWithCategories,
+) {
+  final projectField = state.projectField;
+  if (projectField == null) return state;
+  final selectedCategoryIds =
+      state.categoryField?.selectedIds ?? const <String>{};
+  final allowedProjectIds = {
+    for (final project in allProjectsWithCategories)
+      if (selectedCategoryIds.isEmpty ||
+          selectedCategoryIds.contains(project.categoryId))
+        project.project.meta.id,
+  };
+  final normalizedIds = projectField.selectedIds.intersection(
+    allowedProjectIds,
   );
-
-  if (selectedIds == null) return null;
-
-  final updatedField = draftState.projectField?.copyWith(
-    selectedIds: selectedIds,
+  if (normalizedIds.length == projectField.selectedIds.length) return state;
+  return state.copyWith(
+    projectField: projectField.copyWith(selectedIds: normalizedIds),
   );
-  return updatedField != null
-      ? draftState.copyWith(projectField: updatedField)
-      : draftState;
 }
 
 /// Fetches projects for the selected categories (or all categories if none).

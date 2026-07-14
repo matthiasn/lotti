@@ -2356,6 +2356,7 @@
   "journalFilterPrivate": "Soukromé",
   "journalFilterShowTitle": "Zobrazit",
   "journalFilterStarred": "Oblíbené",
+  "journalFilterTitle": "Filtrovat deník",
   "journalHideLinkHint": "Skrýt odkaz",
   "journalHideMapHint": "Skrýt mapu",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
@@ -3673,7 +3674,7 @@
   "tasksAgentFilterTitle": "Agent",
   "tasksFilterApplyTitle": "Použít filtr",
   "tasksFilterClearAll": "Vymazat vše",
-  "tasksFilterTitle": "Filtr úkolů",
+  "tasksFilterTitle": "Filtrovat úkoly",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} hotovo",
   "@taskShowcaseCompletedCount": {

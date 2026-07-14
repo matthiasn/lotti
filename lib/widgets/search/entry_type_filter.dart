@@ -50,24 +50,13 @@ class EntryTypeFilter extends ConsumerWidget {
     );
 
     final tokens = context.designTokens;
-    final palette = DesignSystemFilterPalette.fromTokens(tokens);
-    final textStyle = tokens.typography.styles.body.bodyMedium;
-
     return Wrap(
       runSpacing: tokens.spacing.step2,
       spacing: tokens.spacing.step2,
       children: [
-        ...filteredEntryTypes.map(
-          (type) => EntryTypeChip(
-            type,
-            palette: palette,
-            textStyle: textStyle,
-          ),
-        ),
+        ...filteredEntryTypes.map(EntryTypeChip.new),
         EntryTypeAllChip(
           filteredEntryTypes: filteredEntryTypes,
-          palette: palette,
-          textStyle: textStyle,
         ),
       ],
     );
@@ -75,16 +64,9 @@ class EntryTypeFilter extends ConsumerWidget {
 }
 
 class EntryTypeChip extends ConsumerWidget {
-  const EntryTypeChip(
-    this.entryType, {
-    required this.palette,
-    required this.textStyle,
-    super.key,
-  });
+  const EntryTypeChip(this.entryType, {super.key});
 
   final String entryType;
-  final DesignSystemFilterPalette palette;
-  final TextStyle textStyle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -109,14 +91,15 @@ class EntryTypeChip extends ConsumerWidget {
     return DesignSystemFilterChoicePill(
       label: _entryTypeLabel(context, entryType),
       selected: isSelected,
-      palette: palette,
-      textStyle: textStyle,
+      role: DesignSystemFilterChoiceRole.multiSelect,
       onTap: onTap,
       onLongPress: onLongPress,
       leading: Icon(
         entryTypeIcon(entryType),
-        size: 16,
-        color: isSelected ? palette.accent : palette.secondaryText,
+        size: context.designTokens.spacing.step5,
+        color: isSelected
+            ? context.designTokens.colors.interactive.enabled
+            : context.designTokens.colors.text.mediumEmphasis,
       ),
     );
   }
@@ -125,14 +108,10 @@ class EntryTypeChip extends ConsumerWidget {
 class EntryTypeAllChip extends ConsumerWidget {
   const EntryTypeAllChip({
     required this.filteredEntryTypes,
-    required this.palette,
-    required this.textStyle,
     super.key,
   });
 
   final List<String> filteredEntryTypes;
-  final DesignSystemFilterPalette palette;
-  final TextStyle textStyle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -159,8 +138,7 @@ class EntryTypeAllChip extends ConsumerWidget {
     return DesignSystemFilterChoicePill(
       label: context.messages.taskStatusAll,
       selected: isSelected,
-      palette: palette,
-      textStyle: textStyle,
+      role: DesignSystemFilterChoiceRole.multiSelect,
       onTap: onTap,
     );
   }

@@ -1,147 +1,245 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-typedef DesignSystemFilterFieldHandler =
-    Future<DesignSystemTaskFilterState?> Function(
-      BuildContext context,
-      DesignSystemTaskFilterState draftState,
-      DesignSystemTaskFilterSection section,
-    );
-
-/// Save handler for the filter modal. Receives the trimmed name the user
-/// committed in the Save popup along with the modal's current draft state,
-/// so the consumer can persist the in-modal edits — not the previously
-/// applied filter — to the saved-filter sidebar.
-///
-/// May return a [Future]; the modal layer awaits it so persistence failures
-/// keep the modal open instead of silently dismissing.
+/// Save handler for the filter modal. Receives the trimmed name and the
+/// route-scoped draft currently visible in the flow.
 typedef DesignSystemFilterSaveHandler =
     FutureOr<void> Function(String name, DesignSystemTaskFilterState state);
 
-/// Shows the design system task filter modal using Wolt modal sheet.
+/// Shows an adaptive, multi-page filter flow in one Wolt route.
 ///
-/// On mobile the modal appears as a bottom sheet; on desktop as a centered
-/// dialog — determined automatically by [ModalUtils.modalTypeBuilder].
-///
-/// The action bar (Clear All + Apply) is rendered as a sticky action bar that
-/// remains visible while the filter sections scroll. State is shared between
-/// the scrollable content and the sticky action bar via a [ValueNotifier].
-///
-/// When [onSavePressed] is supplied, an additional Save affordance is rendered
-/// next to Apply. Committing the inline name popup applies the current draft
-/// state via [onApplied], awaits [onSavePressed] with the committed name and
-/// that same draft, and closes the modal on success — so Save is "apply +
-/// save + close" in one action and the saved filter always reflects what's
-/// currently visible in the modal. If [onSavePressed] throws, the modal
-/// stays open so the user can retry. The button is disabled when [canSave]
-/// is false (typically because the filter has no clauses to save).
+/// Every available status/category/label/project field becomes a prebuilt
+/// child page. The root and child pages edit one [ValueNotifier] draft, so
+/// navigation never stacks a second barrier or flashes while initializing a
+/// page. Closing discards the draft; Apply commits once and closes.
 Future<void> showDesignSystemFilterModal({
   required BuildContext context,
   required DesignSystemTaskFilterState initialState,
   required ValueChanged<DesignSystemTaskFilterState> onApplied,
-  DesignSystemFilterFieldHandler? onFieldPressed,
+  Map<DesignSystemTaskFilterSection, DesignSystemFilterFieldPageConfig>
+      fieldPageConfigs =
+      const {},
   Widget Function(Widget)? modalDecorator,
   DesignSystemFilterSaveHandler? onSavePressed,
   bool canSave = false,
   String? initialSaveName,
 }) async {
   final stateNotifier = ValueNotifier(initialState);
+  final pageIndexNotifier = ValueNotifier(0);
+  final sections = [
+    for (final section in DesignSystemTaskFilterSection.values)
+      if (initialState.fieldFor(section) != null) section,
+  ];
+  final pageIndexForSection = {
+    for (final (index, section) in sections.indexed) section: index + 1,
+  };
 
-  try {
-    await ModalUtils.showSinglePageModal<void>(
-      context: context,
-      title: context.messages.tasksFilterTitle,
-      useRootNavigator: true,
-      modalDecorator: modalDecorator,
-      padding: const EdgeInsets.only(left: 20, top: 8, right: 20, bottom: 20),
-      stickyActionBarBuilder: (modalContext) {
-        return ValueListenableBuilder<DesignSystemTaskFilterState>(
-          valueListenable: stateNotifier,
-          builder: (ctx, state, _) {
-            return DesignSystemTaskFilterActionBar(
-              state: state,
-              onChanged: (next) => stateNotifier.value = next,
-              onApplyPressed: (next) {
-                onApplied(next);
-                Navigator.of(ctx).pop();
-              },
-              onClearAllPressed: (next) => stateNotifier.value = next,
-              // Save = apply + save + close. The action bar still hands us
-              // just the committed name; the modal layer captures the
-              // current draft state, applies it, awaits persistence, and
-              // only pops on success — a thrown handler keeps the modal
-              // open so the user can retry.
-              onSavePressed: onSavePressed == null
-                  ? null
-                  : (name) {
-                      unawaited(
-                        _handleSavePressed(
-                          ctx,
-                          name: name,
-                          stateNotifier: stateNotifier,
-                          onApplied: onApplied,
-                          onSavePressed: onSavePressed,
-                        ),
-                      );
-                    },
-              canSave: canSave,
-              initialSaveName: initialSaveName,
-            );
-          },
-        );
-      },
-      builder: (modalContext) {
-        return ValueListenableBuilder<DesignSystemTaskFilterState>(
-          valueListenable: stateNotifier,
-          builder: (ctx, draftState, _) {
-            final spacing = ctx.designTokens.spacing;
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DesignSystemTaskFilterSheet(
-                  state: draftState,
-                  onChanged: (next) => stateNotifier.value = next,
-                  onFieldPressed: onFieldPressed == null
-                      ? null
-                      : (section) async {
-                          final nextState = await onFieldPressed(
-                            ctx,
-                            stateNotifier.value,
-                            section,
-                          );
-                          if (!ctx.mounted || nextState == null) return;
-                          stateNotifier.value = nextState;
-                        },
-                ),
-                // Clearance for the floating glass footer at the bottom of
-                // the modal. The footer is ~96 tall (padT 16 + button 56 +
-                // padB 24); `step10` (64) leaves the last filter section
-                // visibly crowded against the divider. `step12` (96)
-                // matches the footer height so the last item sits flush
-                // above the divider when fully scrolled, with a clear
-                // breathing-room gap when not scrolled.
-                SizedBox(height: spacing.step12),
-              ],
-            );
-          },
-        );
-      },
+  Widget decorateFlow(Widget child) {
+    final backAware = _FilterFlowBackHandler(
+      pageIndexNotifier: pageIndexNotifier,
+      child: child,
     );
-  } finally {
-    stateNotifier.dispose();
+    return _FilterFlowLifetime(
+      stateNotifier: stateNotifier,
+      pageIndexNotifier: pageIndexNotifier,
+      child: modalDecorator?.call(backAware) ?? backAware,
+    );
+  }
+
+  await ModalUtils.showMultiPageModal<void>(
+    context: context,
+    pageIndexNotifier: pageIndexNotifier,
+    modalDecorator: decorateFlow,
+    pageListBuilder: (modalContext) {
+      final spacing = modalContext.designTokens.spacing;
+      final pagePadding = EdgeInsets.fromLTRB(
+        spacing.step5,
+        spacing.step2,
+        spacing.step5,
+        spacing.step5,
+      );
+
+      return [
+        ModalUtils.modalSheetPage(
+          context: modalContext,
+          title: initialState.title,
+          showCloseButton: true,
+          padding: pagePadding,
+          stickyActionBar: ValueListenableBuilder(
+            valueListenable: stateNotifier,
+            builder: (context, state, _) {
+              return DesignSystemTaskFilterActionBar(
+                state: state,
+                onChanged: (next) => stateNotifier.value = next,
+                onApplyPressed: (next) {
+                  onApplied(next);
+                  Navigator.of(context).pop();
+                },
+                onClearAllPressed: (next) => stateNotifier.value = next,
+                onSavePressed: onSavePressed == null
+                    ? null
+                    : (name) {
+                        unawaited(
+                          _handleSavePressed(
+                            context,
+                            name: name,
+                            stateNotifier: stateNotifier,
+                            onApplied: onApplied,
+                            onSavePressed: onSavePressed,
+                          ),
+                        );
+                      },
+                canSave: canSave,
+                initialSaveName: initialSaveName,
+              );
+            },
+          ),
+          child: ValueListenableBuilder(
+            valueListenable: stateNotifier,
+            builder: (context, state, _) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DesignSystemTaskFilterSheet(
+                    state: state,
+                    onChanged: (next) => stateNotifier.value = next,
+                    onFieldPressed: (section) {
+                      final nextPage = pageIndexForSection[section];
+                      if (nextPage != null) {
+                        pageIndexNotifier.value = nextPage;
+                      }
+                    },
+                  ),
+                  SizedBox(height: spacing.step12),
+                ],
+              );
+            },
+          ),
+        ),
+        for (final section in sections)
+          ModalUtils.modalSheetPage(
+            context: modalContext,
+            title: initialState.fieldFor(section)!.label,
+            showCloseButton: true,
+            onTapBack: () => pageIndexNotifier.value = 0,
+            padding: pagePadding,
+            stickyActionBar: _SelectionPageActionBar(
+              onDone: () => pageIndexNotifier.value = 0,
+            ),
+            child: DesignSystemFilterSelectionPage(
+              stateNotifier: stateNotifier,
+              section: section,
+              config:
+                  fieldPageConfigs[section] ??
+                  const DesignSystemFilterFieldPageConfig(),
+            ),
+          ),
+      ];
+    },
+  );
+}
+
+/// Owns the route-scoped notifiers until Wolt's exit animation has actually
+/// removed the route subtree. The modal future can complete as soon as pop is
+/// requested, which is too early to dispose listenables still used by fading
+/// pages and sticky action bars.
+class _FilterFlowLifetime extends StatefulWidget {
+  const _FilterFlowLifetime({
+    required this.stateNotifier,
+    required this.pageIndexNotifier,
+    required this.child,
+  });
+
+  final ValueNotifier<DesignSystemTaskFilterState> stateNotifier;
+  final ValueNotifier<int> pageIndexNotifier;
+  final Widget child;
+
+  @override
+  State<_FilterFlowLifetime> createState() => _FilterFlowLifetimeState();
+}
+
+class _FilterFlowLifetimeState extends State<_FilterFlowLifetime> {
+  @override
+  void dispose() {
+    widget.stateNotifier.dispose();
+    widget.pageIndexNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+class _SelectionPageActionBar extends StatelessWidget {
+  const _SelectionPageActionBar({required this.onDone});
+
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+    return DesignSystemModalActionBar(
+      glass: true,
+      padding: EdgeInsets.all(spacing.step5),
+      primary: DesignSystemButton(
+        key: const ValueKey('design-system-filter-selection-apply'),
+        label: context.messages.doneButton,
+        leadingIcon: Icons.check_rounded,
+        size: DesignSystemButtonSize.large,
+        fullWidth: true,
+        onPressed: onDone,
+      ),
+    );
   }
 }
 
-/// Drives the Save flow off-thread: applies the draft, awaits the consumer's
-/// persistence handler, and pops the modal only when persistence succeeds.
-/// On failure the modal is left open so the user can retry; the error is
-/// rethrown by [onSavePressed] callers when they want telemetry.
+class _FilterFlowBackHandler extends StatelessWidget {
+  const _FilterFlowBackHandler({
+    required this.pageIndexNotifier,
+    required this.child,
+  });
+
+  final ValueNotifier<int> pageIndexNotifier;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: pageIndexNotifier,
+      child: child,
+      builder: (context, pageIndex, child) {
+        final body = PopScope<void>(
+          canPop: pageIndex == 0,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && pageIndexNotifier.value != 0) {
+              pageIndexNotifier.value = 0;
+            }
+          },
+          child: child!,
+        );
+        if (pageIndex == 0) return body;
+        return CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.escape): () {
+              pageIndexNotifier.value = 0;
+            },
+          },
+          child: Focus(autofocus: true, child: body),
+        );
+      },
+    );
+  }
+}
+
 Future<void> _handleSavePressed(
   BuildContext context, {
   required String name,
@@ -154,8 +252,6 @@ Future<void> _handleSavePressed(
   try {
     await onSavePressed(name, draft);
   } catch (_) {
-    // Persistence failed — leave the modal open. The consumer is
-    // responsible for surfacing the error (logging, toast, etc.).
     return;
   }
   if (!context.mounted) return;

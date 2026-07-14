@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_project_selection_modal.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
+
+/// A project paired with its owning category for grouped filter presentation.
+@immutable
+class ProjectWithCategory {
+  const ProjectWithCategory({
+    required this.project,
+    required this.categoryId,
+  });
+
+  final ProjectEntry project;
+  final String categoryId;
+}
 
 /// Toggle IDs used by the tasks filter sheet.
 abstract final class TasksFilterToggleIds {
@@ -180,6 +192,10 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
 
   // Category options — include category icon and color
   final categoryOptions = [
+    DesignSystemTaskFilterOption(
+      id: '',
+      label: messages.taskCategoryUnassignedLabel,
+    ),
     for (final category in categories)
       DesignSystemTaskFilterOption(
         id: category.id,
@@ -191,6 +207,10 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
 
   // Label options — include label color as dot indicator
   final labelOptions = [
+    DesignSystemTaskFilterOption(
+      id: '',
+      label: messages.tasksQuickFilterUnassignedLabel,
+    ),
     for (final label in labels)
       DesignSystemTaskFilterOption(
         id: label.id,
@@ -255,7 +275,7 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
   ];
 
   return DesignSystemTaskFilterState(
-    title: messages.tasksFilterApplyTitle,
+    title: messages.tasksFilterTitle,
     clearAllLabel: messages.tasksFilterClearAll,
     applyLabel: messages.tasksLabelsSheetApply,
     sortLabel: messages.tasksSortByLabel,

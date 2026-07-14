@@ -3077,6 +3077,7 @@
   "journalFilterPrivate": "Private",
   "journalFilterShowTitle": "Show",
   "journalFilterStarred": "Starred",
+  "journalFilterTitle": "Filter journal",
   "journalHideLinkHint": "Hide link",
   "journalHideMapHint": "Hide map",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
@@ -4411,7 +4412,6 @@
   },
   "taskAgentSetupBroken": "Selected AI setup is unavailable",
   "taskAgentSetupChangedToast": "Using {model} for every future agent update until you change it.",
-  "taskAgentSetupChoiceHelp": "Choose a profile for its defaults, or override only the thinking model.",
   "@taskAgentSetupChangedToast": {
     "placeholders": {
       "model": {
@@ -4419,6 +4419,7 @@
       }
     }
   },
+  "taskAgentSetupChoiceHelp": "Choose a profile for its defaults, or override only the thinking model.",
   "taskAgentSetupOriginCategory": "Copied from the category default when this agent was created",
   "taskAgentSetupOriginDisabled": "Disabled",
   "taskAgentSetupOriginLegacy": "Legacy setup",
@@ -4566,7 +4567,7 @@
   "tasksAgentFilterTitle": "Agent",
   "tasksFilterApplyTitle": "Apply filter",
   "tasksFilterClearAll": "Clear all",
-  "tasksFilterTitle": "Tasks Filter",
+  "tasksFilterTitle": "Filter tasks",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} done",
   "@taskShowcaseCompletedCount": {

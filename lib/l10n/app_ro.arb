@@ -2563,6 +2563,7 @@
   "journalFilterPrivate": "Private",
   "journalFilterShowTitle": "Afișează",
   "journalFilterStarred": "Favorite",
+  "journalFilterTitle": "Filtrați jurnalul",
   "journalHideLinkHint": "Ascunde linkul",
   "journalHideMapHint": "Ascunde harta",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
@@ -3888,7 +3889,7 @@
   "tasksAgentFilterTitle": "Agent",
   "tasksFilterApplyTitle": "Aplică filtrul",
   "tasksFilterClearAll": "Șterge tot",
-  "tasksFilterTitle": "Filtru sarcini",
+  "tasksFilterTitle": "Filtrați sarcinile",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} finalizate",
   "@taskShowcaseCompletedCount": {

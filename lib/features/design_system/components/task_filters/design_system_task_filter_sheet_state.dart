@@ -349,6 +349,17 @@ class DesignSystemTaskFilterState {
   bool get hasAgentFilter => agentFilterOptions.isNotEmpty;
   bool get hasSearchMode => searchModeOptions.isNotEmpty;
 
+  /// Returns the field model for [section], or `null` when that section is not
+  /// part of this filter flow.
+  DesignSystemTaskFilterFieldState? fieldFor(
+    DesignSystemTaskFilterSection section,
+  ) => switch (section) {
+    DesignSystemTaskFilterSection.status => statusField,
+    DesignSystemTaskFilterSection.category => categoryField,
+    DesignSystemTaskFilterSection.label => labelField,
+    DesignSystemTaskFilterSection.project => projectField,
+  };
+
   int get appliedCount =>
       (statusField?.selectedIds.length ?? 0) +
       (categoryField?.selectedIds.length ?? 0) +
@@ -494,6 +505,26 @@ class DesignSystemTaskFilterState {
       DesignSystemTaskFilterSection.project => copyWith(
         projectField: projectField?.removeSelection(id),
       ),
+    };
+  }
+
+  /// Replaces the selected IDs for [section] while preserving its catalog and
+  /// label. Missing sections are ignored so a generic flow can safely route
+  /// selection events without feature-specific null checks.
+  DesignSystemTaskFilterState replaceFieldSelection(
+    DesignSystemTaskFilterSection section,
+    Set<String> selectedIds,
+  ) {
+    final field = fieldFor(section);
+    if (field == null || field.selectedIds == selectedIds) return this;
+    final updated = field.copyWith(selectedIds: selectedIds);
+    return switch (section) {
+      DesignSystemTaskFilterSection.status => copyWith(statusField: updated),
+      DesignSystemTaskFilterSection.category => copyWith(
+        categoryField: updated,
+      ),
+      DesignSystemTaskFilterSection.label => copyWith(labelField: updated),
+      DesignSystemTaskFilterSection.project => copyWith(projectField: updated),
     };
   }
 

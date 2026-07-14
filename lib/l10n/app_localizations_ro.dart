@@ -6087,6 +6087,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalFilterStarred => 'Favorite';
 
   @override
+  String get journalFilterTitle => 'Filtrați jurnalul';
+
+  @override
   String get journalHideLinkHint => 'Ascunde linkul';
 
   @override
@@ -9579,7 +9582,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksFilterClearAll => 'Șterge tot';
 
   @override
-  String get tasksFilterTitle => 'Filtru sarcini';
+  String get tasksFilterTitle => 'Filtrați sarcinile';
 
   @override
   String get taskShowcaseAudio => 'Audio';

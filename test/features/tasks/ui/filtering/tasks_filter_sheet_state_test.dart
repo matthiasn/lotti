@@ -6,7 +6,6 @@ import 'package:glados/glados.dart' show AnyUtils, Glados, ListAnys, any;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_project_selection_modal.dart';
 import 'package:lotti/features/tasks/ui/filtering/tasks_filter_sheet_state.dart';
 
 import '../../../../helpers/entity_factories.dart';

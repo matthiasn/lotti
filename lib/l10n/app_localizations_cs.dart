@@ -6039,6 +6039,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalFilterStarred => 'Oblíbené';
 
   @override
+  String get journalFilterTitle => 'Filtrovat deník';
+
+  @override
   String get journalHideLinkHint => 'Skrýt odkaz';
 
   @override
@@ -9511,7 +9514,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksFilterClearAll => 'Vymazat vše';
 
   @override
-  String get tasksFilterTitle => 'Filtr úkolů';
+  String get tasksFilterTitle => 'Filtrovat úkoly';
 
   @override
   String get taskShowcaseAudio => 'Audio';

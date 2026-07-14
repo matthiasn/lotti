@@ -6077,6 +6077,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalFilterStarred => 'Favoris';
 
   @override
+  String get journalFilterTitle => 'Filtrer le journal';
+
+  @override
   String get journalHideLinkHint => 'Masquer le lien';
 
   @override
@@ -9585,7 +9588,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksFilterClearAll => 'Tout effacer';
 
   @override
-  String get tasksFilterTitle => 'Filtre des tâches';
+  String get tasksFilterTitle => 'Filtrer les tâches';
 
   @override
   String get taskShowcaseAudio => 'Audio';
