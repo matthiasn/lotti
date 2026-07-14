@@ -11,9 +11,12 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
-import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/ai/ui/widgets/inference_selection_rows.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -44,6 +47,17 @@ void main() {
     outputModalities: const [Modality.text],
     isReasoningModel: true,
     publisher: 'Alibaba',
+    supportsFunctionCalling: true,
+  );
+  final secondModel = AiConfigModel(
+    id: 'model-2',
+    name: 'Qwen 3.5 Max',
+    providerModelId: 'qwen3.5-max',
+    inferenceProviderId: provider.id,
+    createdAt: DateTime(2024),
+    inputModalities: const [Modality.text],
+    outputModalities: const [Modality.text],
+    isReasoningModel: true,
     supportsFunctionCalling: true,
   );
   final profile = AiConfigInferenceProfile(
@@ -171,6 +185,35 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   }
 
+  Future<void> openProfilePage(WidgetTester tester) async {
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('agent-choose-profile')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('agent-choose-profile')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+  }
+
+  Future<void> openModelPage(WidgetTester tester) async {
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('agent-choose-model')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('agent-choose-model')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+  }
+
+  Future<void> revealDisableConfirmation(WidgetTester tester) async {
+    await tester.tap(find.byKey(const ValueKey('agent-disable')));
+    await tester.pump();
+    await tester.ensureVisible(find.text('Turn off'));
+    await tester.pump();
+  }
+
   testWidgets(
     'shows current route, source, persistent actions, and automation',
     (
@@ -180,34 +223,36 @@ void main() {
 
       expect(find.text('Agent setup'), findsOneWidget);
       expect(
-        find.text('Qwen 3.5 Plus · Alibaba · via Melious.ai'),
-        findsNWidgets(2),
-      );
-      expect(find.text('Saved profile · Profile default'), findsOneWidget);
-      expect(find.text('You chose this for this agent'), findsOneWidget);
-      expect(find.text('Copy category default'), findsOneWidget);
-      expect(
-        find.text(
-          'Copies the category’s current setup. Later category changes won’t '
-          'affect this agent.',
-        ),
+        find.text('Qwen 3.5 Plus · Melious.ai\nProfile default'),
         findsOneWidget,
       );
       expect(find.text('Saved profile'), findsOneWidget);
-      expect(find.text('Choose a thinking model'), findsOneWidget);
-      expect(find.text('No AI setup'), findsOneWidget);
-      expect(find.text('Automatic updates'), findsOneWidget);
+      expect(find.text('Inference profile'), findsOneWidget);
+      expect(find.text('Thinking model'), findsOneWidget);
       expect(
         find.text(
-          'When anything related to this task changes, a two-minute countdown starts. Changes '
-          'during the countdown are bundled into one update.',
+          'Choose a profile for its defaults, or override only the thinking model.',
         ),
         findsOneWidget,
       );
+      expect(find.text('Turn off AI for this agent'), findsOneWidget);
+      expect(find.byType(DesignSystemGroupedList), findsNWidgets(2));
+      final groupedLists = find.byType(DesignSystemGroupedList);
+      for (var index = 0; index < 2; index++) {
+        final box = tester.widget<DecoratedBox>(
+          find
+              .descendant(
+                of: groupedLists.at(index),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
+        );
+        expect((box.decoration as BoxDecoration).color, isNull);
+      }
+      expect(find.byType(Divider), findsNothing);
+      expect(find.text('Automatic updates'), findsOneWidget);
       expect(
-        find.text(
-          'Changes apply to every future update until you change them.',
-        ),
+        find.text('Bundle task changes and update after two minutes.'),
         findsOneWidget,
       );
       expect(
@@ -217,6 +262,20 @@ void main() {
             )
             .height,
         greaterThanOrEqualTo(kMinInteractiveDimension),
+      );
+
+      await openProfilePage(tester);
+      expect(find.text('Copy category default'), findsOneWidget);
+      expect(
+        find.text(
+          'Copies the category’s current setup. Later category changes won’t '
+          'affect this agent.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byType(DesignSystemSelectionRow),
+        findsNWidgets(2),
       );
     },
   );
@@ -247,6 +306,7 @@ void main() {
   testWidgets(
     'profile choice waits for persistence, closes, and toasts in task scope',
     (tester) async {
+      final semanticsHandle = tester.ensureSemantics();
       final saveCompleter = Completer<void>();
       when(
         () => service.updateAgentProfile(
@@ -256,11 +316,15 @@ void main() {
       ).thenAnswer((_) => saveCompleter.future);
       await openSheet(tester);
 
-      await tester.tap(find.text('Saved profile'));
+      await openProfilePage(tester);
+      await tester.tap(
+        find.byKey(const ValueKey('agent-profile-profile-1')),
+      );
       await tester.pump();
 
-      expect(find.text('Agent setup'), findsOneWidget);
+      expect(find.text('Choose an inference profile'), findsOneWidget);
       expect(find.byType(DesignSystemToast), findsNothing);
+      expect(find.bySemanticsLabel('Saving agent setup'), findsOneWidget);
 
       saveCompleter.complete();
       await tester.pump();
@@ -286,39 +350,233 @@ void main() {
         ),
         findsOneWidget,
       );
+      semanticsHandle.dispose();
     },
   );
 
-  testWidgets('model choice persists and closes the outer setup modal', (
+  testWidgets('model choice responds immediately, persists, and closes', (
     tester,
   ) async {
-    await openSheet(tester);
+    final saveCompleter = Completer<void>();
+    when(
+      () => service.updateAgentThinkingModelOverride(
+        agentId: any(named: 'agentId'),
+        modelConfigId: any(named: 'modelConfigId'),
+      ),
+    ).thenAnswer((_) => saveCompleter.future);
+    await openSheet(
+      tester,
+      setupOptions: TaskAgentSetupOptions(
+        profiles: [profile],
+        models: [model, secondModel],
+        providers: [provider],
+      ),
+    );
 
-    await tester.tap(find.text('Choose a thinking model'));
+    await openModelPage(tester);
+    final secondModelFinder = find.descendant(
+      of: find.byKey(const ValueKey('agent-model-model-2')),
+      matching: find.byType(DesignSystemSelectionRow),
+    );
+    expect(
+      tester.widget<DesignSystemSelectionRow>(secondModelFinder).selected,
+      isFalse,
+    );
+    await tester.tap(find.byKey(const ValueKey('agent-model-model-2')));
+    await tester.pump();
+
+    expect(
+      tester.widget<DesignSystemSelectionRow>(secondModelFinder).selected,
+      isTrue,
+    );
+    expect(find.bySemanticsLabel('Saving agent setup'), findsOneWidget);
+    expect(find.text('Choose thinking model'), findsOneWidget);
+
+    saveCompleter.complete();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
     verify(
       () => service.updateAgentThinkingModelOverride(
         agentId: 'agent-1',
-        modelConfigId: 'model-1',
+        modelConfigId: 'model-2',
       ),
     ).called(1);
     expect(find.text('Agent setup'), findsNothing);
+    expect(find.textContaining('Using Qwen 3.5 Max'), findsOneWidget);
+  });
+
+  testWidgets(
+    'pending model save never pops the route beneath a dismissed sheet',
+    (
+      tester,
+    ) async {
+      final saveCompleter = Completer<void>();
+      when(
+        () => service.updateAgentThinkingModelOverride(
+          agentId: any(named: 'agentId'),
+          modelConfigId: any(named: 'modelConfigId'),
+        ),
+      ).thenAnswer((_) => saveCompleter.future);
+      await openSheet(
+        tester,
+        setupOptions: TaskAgentSetupOptions(
+          profiles: [profile],
+          models: [model, secondModel],
+          providers: [provider],
+        ),
+      );
+
+      await openModelPage(tester);
+      await tester.tap(find.byKey(const ValueKey('agent-model-model-2')));
+      await tester.pump();
+      await tester.tap(find.byTooltip('Close').last);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Open'), findsOneWidget);
+
+      saveCompleter.complete();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      verify(
+        () => service.updateAgentThinkingModelOverride(
+          agentId: 'agent-1',
+          modelConfigId: 'model-2',
+        ),
+      ).called(1);
+      expect(find.text('Open'), findsOneWidget);
+    },
+  );
+
+  testWidgets('multiple providers drill down and back within the same modal', (
+    tester,
+  ) async {
+    final secondProvider = AiConfigInferenceProvider(
+      id: 'provider-2',
+      baseUrl: 'http://localhost:11434',
+      apiKey: '',
+      name: 'Local Ollama',
+      createdAt: DateTime(2024),
+      inferenceProviderType: InferenceProviderType.ollama,
+    );
+    final secondModel = AiConfigModel(
+      id: 'model-2',
+      name: 'Llama Local',
+      providerModelId: 'llama:latest',
+      inferenceProviderId: secondProvider.id,
+      createdAt: DateTime(2024),
+      inputModalities: const [Modality.text],
+      outputModalities: const [Modality.text],
+      isReasoningModel: false,
+    );
+    await openSheet(
+      tester,
+      config: AgentConfig(
+        automaticUpdatesEnabled: true,
+        inferenceSetup: AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.configured,
+          origin: AgentInferenceSetupOrigin.user,
+          baseProfileId: profile.id,
+          thinkingModelOverrideId: secondModel.id,
+        ),
+      ),
+      setupOptions: TaskAgentSetupOptions(
+        profiles: [profile],
+        models: [model, secondModel],
+        providers: [provider, secondProvider],
+      ),
+    );
+
+    await openModelPage(tester);
+    expect(find.text('Choose a provider'), findsOneWidget);
     expect(
-      find.textContaining('Using Qwen 3.5 Plus'),
+      find.byKey(const ValueKey('agent-provider-provider-1')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const ValueKey('agent-provider-provider-2')),
+      findsOneWidget,
+    );
+    expect(find.byType(InferenceProviderSelectionRow), findsNWidgets(2));
+    expect(find.byType(Divider), findsNothing);
+
+    final modelBackButton = tester
+        .widgetList<IconButton>(find.byType(IconButton))
+        .where((button) => button.tooltip == 'Back')
+        .last;
+    modelBackButton.onPressed!();
+    await tester.pumpAndSettle();
+    expect(find.text('Agent setup'), findsOneWidget);
+
+    await openModelPage(tester);
+    await tester.tap(
+      find.byKey(const ValueKey('agent-provider-provider-2')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Llama Local'), findsOneWidget);
+    final selectedRow = tester.widget<DesignSystemSelectionRow>(
+      find.descendant(
+        of: find.byKey(const ValueKey('agent-model-model-2')),
+        matching: find.byType(DesignSystemSelectionRow),
+      ),
+    );
+    expect(selectedRow.selected, isTrue);
+    expect(selectedRow.selectedLabel, 'Selected');
+    expect(find.byType(InferenceModelSelectionRow), findsOneWidget);
+
+    final selectedModelBackButton = tester
+        .widgetList<IconButton>(find.byType(IconButton))
+        .where((button) => button.tooltip == 'Back')
+        .last;
+    selectedModelBackButton.onPressed!();
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('agent-provider-provider-2')),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('agent-provider-provider-2')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('agent-model-model-2')));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    verify(
+      () => service.updateAgentThinkingModelOverride(
+        agentId: 'agent-1',
+        modelConfigId: 'model-2',
+      ),
+    ).called(1);
+    expect(find.text('Agent setup'), findsNothing);
   });
 
   testWidgets('No AI setup requires confirmation and persists disabled mode', (
     tester,
   ) async {
+    final semanticsHandle = tester.ensureSemantics();
     await openSheet(tester);
 
-    await tester.tap(find.text('No AI setup'));
-    await tester.pump();
-    expect(find.text('Turn off AI setup?'), findsOneWidget);
+    await revealDisableConfirmation(tester);
+    expect(find.text('Turn off AI for this agent?'), findsOneWidget);
+    expect(find.byKey(const ValueKey('agent-disable')), findsNothing);
+    expect(
+      Focus.of(
+        tester.element(find.text('Turn off AI for this agent?')),
+      ).hasFocus,
+      isTrue,
+    );
+    final confirmationSemantics = tester.getSemantics(
+      find.byKey(const ValueKey('agent-disable-confirmation')),
+    );
+    expect(
+      confirmationSemantics.label,
+      startsWith('Turn off AI for this agent?'),
+    );
+    expect(
+      confirmationSemantics.label,
+      contains('The current report stays visible'),
+    );
     await tester.tap(find.text('Turn off'));
     await tester.pump();
 
@@ -332,6 +590,7 @@ void main() {
             as AgentInferenceSetup;
     expect(setup.mode, AgentInferenceSetupMode.disabled);
     expect(setup.origin, AgentInferenceSetupOrigin.user);
+    semanticsHandle.dispose();
   });
 
   testWidgets('category without a default persists visible no-setup state', (
@@ -357,10 +616,11 @@ void main() {
     );
     await openSheet(tester);
 
+    await openProfilePage(tester);
     await tester.tap(find.text('Copy category default'));
     await tester.pump();
 
-    expect(find.text('Agent setup'), findsOneWidget);
+    expect(find.text('Choose an inference profile'), findsOneWidget);
 
     saveCompleter.complete();
     await tester.pump();
@@ -397,6 +657,7 @@ void main() {
     );
     await openSheet(tester);
 
+    await openProfilePage(tester);
     await tester.tap(find.text('Copy category default'));
     await tester.pump();
 
@@ -413,48 +674,6 @@ void main() {
     expect(find.textContaining('Using Saved profile'), findsWidgets);
   });
 
-  testWidgets('origin labels cover disabled, category, template, and legacy', (
-    tester,
-  ) async {
-    final cases = <(ResolvedAgentSetup, String)>[
-      (
-        const ResolvedAgentSetup(status: AgentSetupResolutionStatus.disabled),
-        'Disabled',
-      ),
-      (
-        ResolvedAgentSetup(
-          status: AgentSetupResolutionStatus.resolved,
-          profile: resolved.profile,
-          setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
-        ),
-        'Copied from the category default when this agent was created',
-      ),
-      (
-        ResolvedAgentSetup(
-          status: AgentSetupResolutionStatus.resolved,
-          profile: resolved.profile,
-          setupOrigin: AgentInferenceSetupOrigin.templateSnapshot,
-        ),
-        'Copied from the template',
-      ),
-      (
-        ResolvedAgentSetup(
-          status: AgentSetupResolutionStatus.resolved,
-          profile: resolved.profile,
-          setupOrigin: AgentInferenceSetupOrigin.unknown,
-        ),
-        'Legacy setup',
-      ),
-    ];
-
-    for (final (setup, expected) in cases) {
-      await openSheet(tester, resolvedSetup: setup);
-      expect(find.text(expected), findsOneWidget);
-      await tester.tap(find.byTooltip('Close'));
-      await tester.pumpAndSettle();
-    }
-  });
-
   testWidgets('broken profile routes and empty model state remain explicit', (
     tester,
   ) async {
@@ -466,13 +685,16 @@ void main() {
         providers: [provider],
       ),
     );
-    expect(find.text('Selected AI setup is unavailable'), findsOneWidget);
     expect(
       find.text('No compatible thinking models available'),
       findsOneWidget,
     );
+    await openProfilePage(tester);
+    expect(find.text('Selected AI setup is unavailable'), findsOneWidget);
     await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
 
     await openSheet(
       tester,
@@ -482,24 +704,48 @@ void main() {
         providers: const [],
       ),
     );
+    await openProfilePage(tester);
     expect(find.text('Selected AI setup is unavailable'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back').last);
+    await tester.pumpAndSettle();
+    await openModelPage(tester);
+    expect(
+      find.byKey(const ValueKey('agent-model-model-1')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('failed save shows an error and restores interaction', (
     tester,
   ) async {
     when(
-      () => service.updateAgentProfile(
+      () => service.updateAgentThinkingModelOverride(
         agentId: any(named: 'agentId'),
-        profileId: any(named: 'profileId'),
+        modelConfigId: any(named: 'modelConfigId'),
       ),
     ).thenThrow(StateError('save failed'));
-    await openSheet(tester);
+    await openSheet(
+      tester,
+      setupOptions: TaskAgentSetupOptions(
+        profiles: [profile],
+        models: [model, secondModel],
+        providers: [provider],
+      ),
+    );
 
-    await tester.tap(find.text('Saved profile'));
+    await openModelPage(tester);
+    final secondModelFinder = find.descendant(
+      of: find.byKey(const ValueKey('agent-model-model-2')),
+      matching: find.byType(DesignSystemSelectionRow),
+    );
+    await tester.tap(find.byKey(const ValueKey('agent-model-model-2')));
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Error'), findsWidgets);
+    expect(
+      tester.widget<DesignSystemSelectionRow>(secondModelFinder).selected,
+      isFalse,
+    );
     expect(
       tester
           .widgetList<AbsorbPointer>(find.byType(AbsorbPointer))
@@ -524,7 +770,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Use profile default'));
+    await tester.tap(find.byKey(const ValueKey('agent-clear-override')));
     await tester.pump();
     verify(
       () => service.updateAgentThinkingModelOverride(
@@ -533,8 +779,7 @@ void main() {
       ),
     ).called(1);
 
-    await tester.tap(find.text('No AI setup'));
-    await tester.pump();
+    await revealDisableConfirmation(tester);
     await tester.tap(find.text('Cancel'));
     await tester.pump();
     verifyNever(
@@ -567,15 +812,17 @@ void main() {
       ),
     );
 
-    expect(find.text('No AI setup'), findsWidgets);
-    expect(find.text('No profiles available on this device'), findsOneWidget);
+    expect(find.text('No AI setup'), findsOneWidget);
     expect(
       find.text('Choose an AI setup before turning on automatic updates.'),
       findsOneWidget,
     );
-    final checkbox = tester.widget<DesignSystemCheckbox>(
+    final switchRow = tester.widget<SettingsSwitchRow>(
       find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
     );
-    expect(checkbox.onChanged, isNull);
+    expect(switchRow.enabled, isFalse);
+
+    await openProfilePage(tester);
+    expect(find.text('No profiles available on this device'), findsOneWidget);
   });
 }

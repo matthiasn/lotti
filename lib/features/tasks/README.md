@@ -699,6 +699,16 @@ The task detail metadata band is concentrated entirely inside `DesktopTaskHeader
 - estimate
 - labels
 
+Each selection control opens the same adaptive Wolt presentation contract:
+compact layouts render a bottom sheet and wide layouts render a dialog. Status
+and priority use `TaskStatusModalContent` and `TaskPriorityModalContent`;
+category, project, and labels embed their shared feature pickers. All option
+lists converge on `DesignSystemSelectionRow`, so typography, the fixed leading
+rail, full-width selected/hover/focus states, accessibility semantics, and
+trailing checks or chevrons stay identical. Homogeneous options do not render
+dividers, preventing a shorter rule from showing through a selected or hovered
+row.
+
 Ellipsis actions (share, extended actions, speech modal) are NOT owned by the connector — `ExtendedHeaderModal.show` is invoked from the pinned app bar's `more_vert` button (`TaskCompactAppBar` / `TaskExpandableAppBar`), not the header.
 
 Notable behavior already implemented:

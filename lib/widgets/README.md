@@ -367,7 +367,7 @@ Sticky bottom action bar on `DesignSystemGlassStrip` (hairline + backdrop blur +
 Token-driven section header (quiet medium-emphasis title, optional description) above a grouped card matching `DesignSystemGroupedList`'s surface (background level02, decorative hairline, radii.m). Spaces its children with `cardItemSpacing` — no manual separators needed.
 
 ### SettingsSwitchRow
-Toggle row (title, optional subtitle/icon, `DesignSystemToggle`) used inside form sections; the whole row is tappable. Also wrapped by `FormSwitch` for `flutter_form_builder` forms.
+Toggle row (title, optional subtitle/icon, `DesignSystemToggle`) used inside form sections. The whole row is one tappable, keyboard-focusable, toggled semantic action; its visible subtitle becomes the semantic hint, and the trailing switch is visual-only so it does not create a duplicate focus or screen-reader target. Also wrapped by `FormSwitch` for `flutter_form_builder` forms.
 
 ## UI Widgets
 

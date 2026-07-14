@@ -3,8 +3,10 @@ import 'package:lotti/features/design_system/components/toggles/design_system_to
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Toggle row for settings definition forms: title + optional subtitle on
-/// the left, a [DesignSystemToggle] on the right. The whole row is
-/// tappable. Sits inside a `SettingsFormSection` card, which provides the
+/// the left, a [DesignSystemToggle] on the right. The whole row is one
+/// tappable, focusable toggle action; the trailing control is visual-only so
+/// assistive technology and keyboard traversal never encounter a duplicate
+/// action. Sits inside a `SettingsFormSection` card, which provides the
 /// surrounding padding.
 class SettingsSwitchRow extends StatelessWidget {
   const SettingsSwitchRow({
@@ -32,65 +34,80 @@ class SettingsSwitchRow extends StatelessWidget {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
     final interactive = enabled && onChanged != null;
+    final toggle = interactive ? () => onChanged!(!value) : null;
 
-    return InkWell(
-      onTap: interactive ? () => onChanged!(!value) : null,
-      borderRadius: BorderRadius.circular(tokens.radii.s),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: spacing.step2),
-        child: Row(
-          // Anchor leading icons and the toggle to the title line rather
-          // than the row center, so two-line rows don't float their glyph
-          // beside the subtitle.
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (icon != null) ...[
-              Padding(
-                padding: EdgeInsets.only(
-                  top:
-                      (tokens.typography.lineHeight.subtitle2 - spacing.step5) /
-                      2,
+    return Semantics(
+      button: true,
+      enabled: interactive,
+      toggled: value,
+      label: title,
+      hint: subtitle,
+      onTap: toggle,
+      excludeSemantics: true,
+      child: InkWell(
+        excludeFromSemantics: true,
+        onTap: toggle,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: spacing.step2),
+          child: Row(
+            // Anchor leading icons and the toggle to the title line rather
+            // than the row center, so two-line rows don't float their glyph
+            // beside the subtitle.
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (icon != null) ...[
+                Padding(
+                  padding: EdgeInsets.only(
+                    top:
+                        (tokens.typography.lineHeight.subtitle2 -
+                            spacing.step5) /
+                        2,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: spacing.step5,
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
                 ),
-                child: Icon(
-                  icon,
-                  size: spacing.step5,
-                  color: tokens.colors.text.mediumEmphasis,
+                SizedBox(width: spacing.step3),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(
+                            color: tokens.colors.text.highEmphasis,
+                          ),
+                    ),
+                    if (subtitle != null) ...[
+                      SizedBox(height: spacing.step1),
+                      Text(
+                        subtitle!,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               SizedBox(width: spacing.step3),
-            ],
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                      color: tokens.colors.text.highEmphasis,
-                    ),
+              ExcludeFocus(
+                child: IgnorePointer(
+                  child: DesignSystemToggle(
+                    value: value,
+                    semanticsLabel: title,
+                    enabled: interactive,
+                    onChanged: onChanged ?? (_) {},
                   ),
-                  if (subtitle != null) ...[
-                    SizedBox(height: spacing.step1),
-                    Text(
-                      subtitle!,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                    ),
-                  ],
-                ],
+                ),
               ),
-            ),
-            SizedBox(width: spacing.step3),
-            // The row's InkWell handles taps; the toggle still gets its own
-            // handler so direct hits behave identically.
-            DesignSystemToggle(
-              value: value,
-              semanticsLabel: title,
-              enabled: interactive,
-              onChanged: interactive ? onChanged! : (_) {},
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

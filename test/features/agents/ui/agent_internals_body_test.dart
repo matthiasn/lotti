@@ -204,7 +204,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Agent setup'), findsWidgets);
-    expect(find.text('You chose this for this agent'), findsOneWidget);
+    expect(find.text('Current setup'), findsWidgets);
+    expect(find.text('Inference profile'), findsOneWidget);
+    expect(find.text(profile.name), findsOneWidget);
+    expect(find.text('Thinking model'), findsOneWidget);
+    expect(find.text('Test Model · Gemini\nProfile default'), findsOneWidget);
   });
 
   testWidgets('setup row distinguishes a broken setup from no selection', (

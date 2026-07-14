@@ -2,8 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
+import 'package:lotti/features/ai/ui/widgets/inference_selection_rows.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -89,7 +88,7 @@ class InferenceProviderModelPickerModal {
       return ModalUtils.showSinglePageModal<String>(
         context: context,
         titleWidget: _ProviderPageTitle(provider: onlyProvider),
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: EdgeInsets.zero,
         builder: (modalContext) => _ModelList(
           models: orderModelsDefaultFirst(validModels, defaultModelId),
           providerType: onlyProvider?.inferenceProviderType,
@@ -122,7 +121,7 @@ class InferenceProviderModelPickerModal {
           context: modalContext,
           title: title,
           showCloseButton: true,
-          padding: const EdgeInsets.symmetric(vertical: 20),
+          padding: EdgeInsets.zero,
           child: _ProviderPage(
             providerOrder: providerOrder,
             modelsByProvider: modelsByProvider,
@@ -146,7 +145,7 @@ class InferenceProviderModelPickerModal {
           // Same dismiss affordance as page 1 so the two pages read as one
           // picker (back arrow + branded title + close).
           showCloseButton: true,
-          padding: const EdgeInsets.symmetric(vertical: 20),
+          padding: EdgeInsets.zero,
           onTapBack: () => pageIndexNotifier.value = 0,
           titleWidget: ValueListenableBuilder<AiConfigInferenceProvider?>(
             valueListenable: selectedProvider,
@@ -178,7 +177,6 @@ class InferenceProviderModelPickerModal {
   /// Returns [models] with the default (if present) moved to the front, the
   /// rest keeping their relative order. Pure ordering function (no context, no
   /// state) so it can be unit-tested directly.
-  @visibleForTesting
   static List<AiConfigModel> orderModelsDefaultFirst(
     List<AiConfigModel> models,
     String? defaultModelId,
@@ -236,7 +234,6 @@ class _ProviderPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     final defaultModel = this.defaultModel;
 
     return _PickerScrollView(
@@ -251,7 +248,7 @@ class _ProviderPage extends StatelessWidget {
             // The default renders as the same model-row lockup it gets on
             // page 2 (accent dot + name + wire id + Default marker), so it
             // reads as a model with a shortcut — never a duplicate provider.
-            _ModelRow(
+            InferenceModelSelectionRow(
               model: defaultModel,
               providerType: defaultProvider?.inferenceProviderType,
               isDefault: true,
@@ -259,25 +256,15 @@ class _ProviderPage extends StatelessWidget {
               defaultBadgeLabel: defaultBadgeLabel,
               onTap: onDefaultSelected,
             ),
-            // A hairline structurally separates the one-tap default zone from
-            // the browse-by-provider list, so the shortcut doesn't rely on its
-            // tint alone to read as "skip the steps".
-            Divider(
-              height: 1,
-              thickness: 1,
-              indent: tokens.spacing.step5,
-              color: tokens.colors.decorative.level01,
-            ),
             _SectionLabel(
               text: context.messages.aiModelPickerByProviderLabel,
               tightTop: true,
             ),
           ],
-          for (final (index, providerId) in providerOrder.indexed)
-            _ProviderRow(
+          for (final providerId in providerOrder)
+            InferenceProviderSelectionRow(
               provider: providersById[providerId],
               modelCount: modelsByProvider[providerId]?.length ?? 0,
-              showDivider: index < providerOrder.length - 1,
               onTap: () {
                 final provider = providersById[providerId];
                 if (provider != null) onProviderSelected(provider);
@@ -285,42 +272,6 @@ class _ProviderPage extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-/// A single provider row — branded tile, name, model count, drill-down chevron.
-class _ProviderRow extends StatelessWidget {
-  const _ProviderRow({
-    required this.provider,
-    required this.modelCount,
-    required this.showDivider,
-    required this.onTap,
-  });
-
-  final AiConfigInferenceProvider? provider;
-  final int modelCount;
-  final bool showDivider;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return DesignSystemListItem(
-      size: DesignSystemListItemSize.small,
-      title: aiProviderDisplayName(
-        type: provider?.inferenceProviderType,
-        messages: context.messages,
-      ),
-      subtitle: context.messages.aiModelPickerProviderModelCount(modelCount),
-      leading: _ProviderTile(type: provider?.inferenceProviderType),
-      trailing: Icon(
-        Icons.chevron_right_rounded,
-        color: tokens.colors.text.mediumEmphasis,
-        size: tokens.spacing.step6,
-      ),
-      showDivider: showDivider,
-      onTap: onTap,
     );
   }
 }
@@ -355,7 +306,7 @@ class _ModelList extends StatelessWidget {
           // default's activated band carry the structure, and a divider would
           // collide with that band.
           for (final model in models)
-            _ModelRow(
+            InferenceModelSelectionRow(
               model: model,
               providerType: providerType,
               isDefault: model.id == defaultModelId,
@@ -364,113 +315,6 @@ class _ModelList extends StatelessWidget {
               onTap: () => onSelected(model.id),
             ),
         ],
-      ),
-    );
-  }
-}
-
-/// One selectable model — used identically for the page-1 default shortcut and
-/// every page-2 model row, so the default reads as the same object in both
-/// places. A small provider-accent dot fills the leading rail (aligning the
-/// text column and carrying the provider brand the header promises); the
-/// default gets the single-accent marker plus a stronger activated tint.
-class _ModelRow extends StatelessWidget {
-  const _ModelRow({
-    required this.model,
-    required this.providerType,
-    required this.isDefault,
-    required this.isSelected,
-    required this.defaultBadgeLabel,
-    required this.onTap,
-  });
-
-  final AiConfigModel model;
-  final InferenceProviderType? providerType;
-  final bool isDefault;
-  final bool isSelected;
-  final String defaultBadgeLabel;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return DesignSystemListItem(
-      size: DesignSystemListItemSize.small,
-      title: model.name,
-      subtitle: model.providerModelId.isNotEmpty ? model.providerModelId : null,
-      subtitleMaxLines: 2,
-      // The default leads with the single selection accent (matching its band
-      // + marker) so the strongest scan position reinforces "selected"; other
-      // rows lead with their provider's brand accent for grouping.
-      leading: _LeadingDot(
-        color: isSelected
-            ? tokens.colors.interactive.enabled
-            : aiProviderAccent(type: providerType, tokens: tokens),
-      ),
-      trailing: isSelected || isDefault
-          ? _ModelStatusMarker(
-              label: isDefault
-                  ? defaultBadgeLabel
-                  : context.messages.designSystemSelectedLabel,
-              showCheck: isSelected,
-            )
-          : null,
-      activated: isSelected,
-      selected: isSelected,
-      activatedBackgroundColor: isSelected
-          ? DesignSystemListPalette.activatedFillStrong(tokens)
-          : null,
-      onTap: onTap,
-    );
-  }
-}
-
-/// Branded square tile for a provider — accent-tinted surface + the provider's
-/// icon in its accent hue. Falls back to a neutral interactive accent for
-/// providers without a brand token.
-class _ProviderTile extends StatelessWidget {
-  const _ProviderTile({required this.type});
-
-  final InferenceProviderType? type;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Container(
-      width: tokens.spacing.step8,
-      height: tokens.spacing.step8,
-      decoration: BoxDecoration(
-        color: aiProviderSurface(type: type, tokens: tokens),
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-      ),
-      child: Icon(
-        aiProviderIcon(type),
-        color: aiProviderAccent(type: type, tokens: tokens),
-        size: tokens.spacing.step6,
-      ),
-    );
-  }
-}
-
-/// Small coloured dot occupying a model row's leading rail — keeps model titles
-/// on the same column as the provider step. The [color] carries either the
-/// provider's brand accent (grouping) or the selection accent (the default).
-class _LeadingDot extends StatelessWidget {
-  const _LeadingDot({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return SizedBox(
-      width: tokens.spacing.step8,
-      child: Center(
-        child: Container(
-          width: tokens.spacing.step5,
-          height: tokens.spacing.step5,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
       ),
     );
   }
@@ -489,7 +333,7 @@ class _ProviderPageTitle extends StatelessWidget {
     final tokens = context.designTokens;
     final type = provider?.inferenceProviderType;
     return Padding(
-      padding: const EdgeInsets.only(top: 4),
+      padding: EdgeInsets.only(top: tokens.spacing.step2),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -509,37 +353,6 @@ class _ProviderPageTitle extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Single-accent default marker: the badge label + a check, both in the
-/// interactive accent. Deliberately not a filled pill (no second hue).
-class _ModelStatusMarker extends StatelessWidget {
-  const _ModelStatusMarker({required this.label, required this.showCheck});
-
-  final String label;
-  final bool showCheck;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final accent = tokens.colors.interactive.enabled;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: accent,
-            fontWeight: tokens.typography.weight.semiBold,
-          ),
-        ),
-        if (showCheck) ...[
-          SizedBox(width: tokens.spacing.step2),
-          Icon(Icons.check_rounded, color: accent, size: tokens.spacing.step6),
-        ],
-      ],
     );
   }
 }

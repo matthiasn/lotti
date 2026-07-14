@@ -1,12 +1,85 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// A tappable widget that shows the current project status and opens a
-/// bottom sheet to choose from all project status variants.
+/// Opens the adaptive project-status picker.
+///
+/// The same Wolt route renders as a bottom sheet on compact widths and a dialog
+/// on larger widths. A `null` result means the flow was dismissed or the
+/// already-selected status was chosen.
+Future<ProjectStatus?> showProjectStatusPickerModal({
+  required BuildContext context,
+  required ProjectStatus currentStatus,
+}) {
+  return ModalUtils.showSinglePageModal<ProjectStatus>(
+    context: context,
+    title: context.messages.projectStatusChangeTitle,
+    padding: EdgeInsets.zero,
+    builder: (modalContext) => ProjectStatusModalContent(
+      currentStatus: currentStatus,
+    ),
+  );
+}
+
+/// Shared full-width option list for choosing a project status.
+class ProjectStatusModalContent extends StatelessWidget {
+  const ProjectStatusModalContent({
+    required this.currentStatus,
+    super.key,
+  });
+
+  final ProjectStatus currentStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final kind in allProjectStatusKinds)
+            Builder(
+              builder: (context) {
+                final representative = buildProjectStatus(
+                  kind,
+                  DateTime(2000),
+                );
+                final (label, color, icon) = projectStatusAttributes(
+                  context,
+                  representative,
+                );
+                final isSelected =
+                    representative.runtimeType == currentStatus.runtimeType;
+
+                return DesignSystemSelectionRow(
+                  key: ValueKey('project-status-${kind.name}'),
+                  title: label,
+                  type: DesignSystemSelectionRowType.singleSelect,
+                  selected: isSelected,
+                  leading: Icon(
+                    icon,
+                    color: color,
+                    size: tokens.spacing.step6,
+                  ),
+                  onTap: () => Navigator.of(context).pop(
+                    isSelected ? null : buildProjectStatus(kind, clock.now()),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A tappable row showing the current status and opening the shared picker.
 class ProjectStatusPicker extends StatelessWidget {
   const ProjectStatusPicker({
     required this.currentStatus,
@@ -19,105 +92,31 @@ class ProjectStatusPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final (label, color, icon) = projectStatusAttributes(
       context,
       currentStatus,
     );
 
-    return InkWell(
-      onTap: () => _showStatusSheet(context),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withValues(alpha: 0.3),
-          ),
-          color: color.withValues(alpha: 0.08),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              size: 20,
-            ),
-          ],
-        ),
+    return DesignSystemSelectionRow(
+      title: label,
+      type: DesignSystemSelectionRowType.navigation,
+      leading: Icon(
+        icon,
+        color: color,
+        size: tokens.spacing.step6,
       ),
+      onTap: () => _showStatusPicker(context),
     );
   }
 
-  void _showStatusSheet(BuildContext context) {
-    final messages = context.messages;
-
-    ModalUtils.showBottomSheet<void>(
+  Future<void> _showStatusPicker(BuildContext context) async {
+    final selected = await showProjectStatusPickerModal(
       context: context,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    messages.projectStatusChangeTitle,
-                    style: Theme.of(sheetContext).textTheme.titleMedium,
-                  ),
-                ),
-                ...allProjectStatusKinds.map((kind) {
-                  final representative = buildProjectStatus(
-                    kind,
-                    DateTime(2000),
-                  );
-                  final (label, color, icon) = projectStatusAttributes(
-                    context,
-                    representative,
-                  );
-                  final isSelected =
-                      representative.runtimeType == currentStatus.runtimeType;
-
-                  return ListTile(
-                    leading: Icon(icon, color: color),
-                    title: Text(
-                      label,
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                    trailing: isSelected
-                        ? Icon(Icons.check, color: color)
-                        : null,
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      if (!isSelected) {
-                        onStatusChanged(buildProjectStatus(kind, clock.now()));
-                      }
-                    },
-                  );
-                }),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        );
-      },
+      currentStatus: currentStatus,
     );
+    if (selected != null) {
+      onStatusChanged(selected);
+    }
   }
 }

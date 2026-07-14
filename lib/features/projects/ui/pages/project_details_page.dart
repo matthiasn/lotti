@@ -2,7 +2,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -11,12 +10,10 @@ import 'package:lotti/features/design_system/components/calendar_pickers/design_
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
-import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
+import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/widgets/modal/index.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 
 /// Read-first project detail surface rendered in the desktop right pane and as
@@ -174,62 +171,9 @@ class ProjectDetailsPage extends ConsumerWidget {
     WidgetRef ref,
     ProjectEntry project,
   ) async {
-    final selected = await ModalUtils.showBottomSheet<ProjectStatus>(
+    final selected = await showProjectStatusPickerModal(
       context: context,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  context.messages.projectStatusChangeTitle,
-                  style: Theme.of(sheetContext).textTheme.titleMedium,
-                ),
-              ),
-              for (final kind in allProjectStatusKinds)
-                Builder(
-                  builder: (_) {
-                    final option = buildProjectStatus(kind, DateTime(2000));
-                    final isSelected =
-                        option.runtimeType == project.data.status.runtimeType;
-                    final (label, color, icon) = projectStatusAttributes(
-                      context,
-                      option,
-                    );
-
-                    return ListTile(
-                      leading: Icon(icon, color: color),
-                      title: Text(
-                        label,
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                        ),
-                      ),
-                      trailing: isSelected
-                          ? Icon(Icons.check_rounded, color: color)
-                          : null,
-                      onTap: () {
-                        if (isSelected) {
-                          Navigator.of(sheetContext).pop();
-                          return;
-                        }
-                        Navigator.of(sheetContext).pop(
-                          buildProjectStatus(kind, clock.now()),
-                        );
-                      },
-                    );
-                  },
-                ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
+      currentStatus: project.data.status,
     );
 
     if (selected == null) {

@@ -248,7 +248,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
 
         // Bottom sheet should appear with status options
-        // "Change Status" appears twice: section title + sheet title
+        // "Change status" appears twice: section title + sheet title
         expect(find.text('Active'), findsOneWidget);
         expect(find.text('Completed'), findsOneWidget);
         expect(find.text('Archived'), findsOneWidget);

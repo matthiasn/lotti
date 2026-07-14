@@ -200,7 +200,12 @@ ThemeData withOverrides(ThemeData themeData) {
       const WoltModalSheetThemeData(
         animationStyle: WoltModalSheetAnimationStyle(
           paginationAnimationStyle: WoltModalSheetPaginationAnimationStyle(
-            modalSheetHeightTransitionCurve: Interval(0, 0.1),
+            paginationDuration: MotionDurations.medium4,
+            modalSheetHeightTransitionCurve: MotionCurves.emphasizedDecelerate,
+            mainContentIncomingSlidePositionCurve: MotionCurves.standard,
+            mainContentOutgoingSlidePositionCurve: MotionCurves.standard,
+            incomingMainContentSlideBeginOffset: Offset.zero,
+            outgoingMainContentSlideEndOffset: Offset.zero,
           ),
         ),
       ),

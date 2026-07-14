@@ -52,6 +52,16 @@ That split is what lets the app move the same skill between providers without re
 AI configuration editors share two design-system selection primitives rather
 than owning feature-specific modal rows:
 
+- every profile, provider, model, and Gemini thinking-mode option is a
+  `DesignSystemSelectionRow`. This gives terminal choices and provider drill-in
+  rows one full-width anatomy with token-backed selection, hover, keyboard
+  focus, typography, semantics, and trailing affordances. Homogeneous options
+  have no inset dividers that can remain visible through an active row.
+- provider and model drill-downs additionally share
+  `InferenceProviderSelectionRow` and `InferenceModelSelectionRow`, so branded
+  provider tiles, model accent dots, default markers, and selected markers are
+  identical in standalone pickers and embedded setup flows.
+
 - `InferenceProfilePickerModal` and its embeddable
   `InferenceProfilePickerList` render named inference profiles for category
   defaults, template settings, agent creation, task-agent setup, and Daily OS
@@ -67,6 +77,11 @@ than owning feature-specific modal rows:
   Callers that require an explicit confirmation even when only one compatible
   model exists pass `autoSelectSingleCandidate: false`; Daily OS uses this so
   a single configured provider/model is still an informed user choice.
+
+All standalone pickers use the adaptive Wolt modal helper: compact layouts get
+a bottom sheet and wide layouts get a dialog without changing the content or
+selection behavior. Embeddable list bodies let larger flows, notably task-agent
+setup, reuse the same rows without opening a modal on top of a modal.
 
 Closed fields use `SettingsPickerField`, so settings pages keep the same label,
 value, disabled, and tap affordances. Async Riverpod consumers retain their last

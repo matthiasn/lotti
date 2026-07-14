@@ -11,7 +11,6 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
@@ -23,9 +22,9 @@ import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/estimated_time_widget.dart';
 import 'package:lotti/features/tasks/ui/header/task_consumption_chip.dart';
 import 'package:lotti/features/tasks/ui/header/task_due_date_widget.dart';
+import 'package:lotti/features/tasks/ui/header/task_priority_modal_content.dart';
 import 'package:lotti/features/tasks/ui/header/task_status_modal_content.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -182,6 +181,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
       // Strip the trailing colon so the picker title matches the other
       // pickers (e.g. "Select priority", "Labels"), which carry no colon.
       title: stripTrailingColon(context.messages.taskStatusLabel),
+      padding: EdgeInsets.zero,
       builder: (_) => TaskStatusModalContent(task: task),
     );
     if (selected != null) {
@@ -199,67 +199,15 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     final selected = await ModalUtils.showSinglePageModal<String>(
       context: context,
       title: context.messages.tasksPriorityPickerTitle,
-      builder: (ctx) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final p in TaskPriority.values)
-            Padding(
-              // Inset each row so its hover/selection highlight is a rounded,
-              // contained shape rather than a sharp edge-to-edge band. Matches
-              // the shared EntityPickerSheet rows (inset step3, radii.l) so the
-              // status / priority / label pickers read as one family.
-              padding: EdgeInsets.symmetric(
-                horizontal: ctx.designTokens.spacing.step3,
-                vertical: ctx.designTokens.spacing.step1,
-              ),
-              child: ListTile(
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: ctx.designTokens.spacing.step3,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ctx.designTokens.radii.l),
-                ),
-                leading: SizedBox(
-                  width: 56,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TaskShowcasePriorityGlyph(priority: p),
-                      SizedBox(width: ctx.designTokens.spacing.step2),
-                      Text(
-                        p.short,
-                        style: ctx.designTokens.typography.styles.body.bodySmall
-                            .copyWith(
-                              color: TaskShowcasePalette.highText(ctx),
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                title: Text(_priorityDescription(ctx, p)),
-                trailing: current == p ? const Icon(Icons.check) : null,
-                onTap: () => Navigator.of(ctx).pop(p.short),
-              ),
-            ),
-        ],
+      padding: EdgeInsets.zero,
+      builder: (modalContext) => TaskPriorityModalContent(
+        currentPriority: current,
+        onSelected: (priority) =>
+            Navigator.of(modalContext).pop(priority.short),
       ),
     );
     if (selected != null) {
       await controller.updateTaskPriority(selected);
-    }
-  }
-
-  String _priorityDescription(BuildContext context, TaskPriority p) {
-    final m = context.messages;
-    switch (p) {
-      case TaskPriority.p0Urgent:
-        return m.tasksPriorityP0Description;
-      case TaskPriority.p1High:
-        return m.tasksPriorityP1Description;
-      case TaskPriority.p2Medium:
-        return m.tasksPriorityP2Description;
-      case TaskPriority.p3Low:
-        return m.tasksPriorityP3Description;
     }
   }
 

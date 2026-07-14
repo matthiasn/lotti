@@ -2,25 +2,19 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Whether the picker assigns a single entity or edits a set of entities.
 enum PickerMode { single, multi }
 
-/// One row in the picker list — either a selectable [PickerItem] or a
-/// [PickerDivider] (used to separate groups, e.g. favorites from the rest).
-sealed class PickerEntry {
-  const PickerEntry();
-}
-
 /// A selectable row. The owning feature (categories, labels, …) supplies the
 /// [leading] visual (icon chip, colour dot, …), the [title], an optional
 /// [subtitle], and any decorative [badges] (already semantically labelled).
-class PickerItem extends PickerEntry {
+class PickerItem {
   const PickerItem({
     required this.id,
     required this.leading,
@@ -46,11 +40,6 @@ class PickerItem extends PickerEntry {
 
   final bool enabled;
   final Key? rowKey;
-}
-
-/// A non-interactive divider between groups of items.
-class PickerDivider extends PickerEntry {
-  const PickerDivider();
 }
 
 /// The shared, feature-agnostic picker body: a [DesignSystemSearch] field, a
@@ -87,7 +76,7 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
   final PickerMode mode;
 
   /// Builds the ordered entries to show for the current trimmed search query.
-  final List<PickerEntry> Function(String query) entriesBuilder;
+  final List<PickerItem> Function(String query) entriesBuilder;
 
   final String searchHintText;
 
@@ -179,7 +168,12 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.only(bottom: tokens.spacing.step5),
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step5,
+              0,
+              tokens.spacing.step5,
+              tokens.spacing.step5,
+            ),
             child: DesignSystemSearch(
               // Match the tasks/projects tab search (the small variant), whose
               // radii.l corner also lines up with the selection pills below.
@@ -238,7 +232,7 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
 
   Widget _buildList(
     DsTokens tokens,
-    List<PickerEntry> entries,
+    List<PickerItem> entries,
     Set<String> staged,
     bool showCreate,
   ) {
@@ -249,14 +243,7 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
             : 0,
       ),
       children: [
-        for (final entry in entries)
-          if (entry is PickerDivider)
-            Divider(
-              height: tokens.spacing.step6,
-              color: tokens.colors.decorative.level01,
-            )
-          else
-            _row(entry as PickerItem, staged),
+        for (final entry in entries) _row(entry, staged),
         if (showCreate)
           _PickerCreateRow(
             query: _query.trim(),
@@ -303,8 +290,8 @@ Widget buildPickerApplyFooter({
   );
 }
 
-/// A single tappable row. In multi mode the trailing affordance is a
-/// [DesignSystemCheckbox]; in single mode a selected row shows a check.
+/// A single tappable row. Multi-select rows show the shared checkbox
+/// affordance; single-select rows show the shared selected marker.
 class _PickerItemRow extends StatelessWidget {
   const _PickerItemRow({
     required this.item,
@@ -320,111 +307,21 @@ class _PickerItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final spacing = tokens.spacing;
-
-    final trailing = multi
-        ? DesignSystemCheckbox(
-            value: selected,
-            // Required non-null by DesignSystemCheckbox's assert, but excluded
-            // from semantics below (the row's own Semantics node carries the
-            // accessible name + checked state), so it is never announced here.
-            semanticsLabel: item.title,
-            onChanged: onTap == null ? null : (_) => onTap!(),
-          )
-        : selected
-        ? Icon(
-            Icons.check_rounded,
-            color: tokens.colors.interactive.enabled,
-          )
-        : null;
-
-    final titleStyle = tokens.typography.styles.subtitle.subtitle1.copyWith(
-      color: item.enabled
-          ? tokens.colors.text.highEmphasis
-          : tokens.colors.text.lowEmphasis,
-    );
-
-    // Explicit, deterministic semantics: one node with the full label + state
-    // + tap action; the visual subtree is excluded so nothing is announced
-    // twice or relies on implicit label merging.
-    return Semantics(
-      label: item.semanticLabel ?? item.title,
-      selected: multi ? null : selected,
-      checked: multi ? selected : null,
-      enabled: item.enabled,
-      button: multi ? null : true,
+    final badges = item.badges.isEmpty
+        ? null
+        : Row(mainAxisSize: MainAxisSize.min, children: item.badges);
+    return DesignSystemSelectionRow(
+      key: item.rowKey,
+      title: item.title,
+      subtitle: item.subtitle,
+      leading: item.leading,
+      trailing: badges,
+      type: multi
+          ? DesignSystemSelectionRowType.multiSelect
+          : DesignSystemSelectionRowType.singleSelect,
+      selected: selected,
+      semanticLabel: item.semanticLabel,
       onTap: onTap,
-      child: ExcludeSemantics(
-        child: Padding(
-          // Inset each row so the selected / hover pill floats with breathing
-          // room instead of running edge-to-edge of the modal.
-          padding: EdgeInsets.symmetric(
-            horizontal: spacing.step3,
-            vertical: spacing.step1,
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              key: item.rowKey,
-              borderRadius: BorderRadius.circular(tokens.radii.l),
-              onTap: onTap,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: selected
-                      ? tokens.colors.surface.selected
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(tokens.radii.l),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: spacing.step3,
-                    vertical: spacing.step4,
-                  ),
-                  child: Row(
-                    children: [
-                      item.leading,
-                      SizedBox(width: spacing.step4),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              item.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: titleStyle,
-                            ),
-                            if (item.subtitle case final subtitle?)
-                              Text(
-                                subtitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: tokens.typography.styles.others.caption
-                                    .copyWith(
-                                      color: tokens.colors.text.mediumEmphasis,
-                                    ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      for (final badge in item.badges) ...[
-                        SizedBox(width: spacing.step2),
-                        badge,
-                      ],
-                      if (trailing != null) ...[
-                        SizedBox(width: spacing.step3),
-                        trailing,
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -445,56 +342,12 @@ class _PickerCreateRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final spacing = tokens.spacing;
-
-    // A single semantics node for the whole row: the label is the query text
-    // and the visual children are excluded, so no MergeSemantics is needed.
-    return Semantics(
-      button: true,
-      label: query,
-      // Match the item rows' inset so the create row's tap surface lines up
-      // with the floating selection pills above it.
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: spacing.step3,
-          vertical: spacing.step1,
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            key: rowKey,
-            borderRadius: BorderRadius.circular(tokens.radii.l),
-            onTap: onTap,
-            child: ExcludeSemantics(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: spacing.step3,
-                  vertical: spacing.step4,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.add_circle_outline,
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                    SizedBox(width: spacing.step4),
-                    Expanded(
-                      child: Text(
-                        query,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.subtitle.subtitle1
-                            .copyWith(color: tokens.colors.text.mediumEmphasis),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return DesignSystemSelectionRow(
+      key: rowKey,
+      title: query,
+      leading: const Icon(Icons.add_circle_outline),
+      type: DesignSystemSelectionRowType.action,
+      onTap: onTap,
     );
   }
 }

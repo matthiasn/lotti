@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_profile_picker_modal.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 
 import '../../../../test_helper.dart';
 
@@ -49,12 +49,12 @@ void main() {
       expect(find.byTooltip('Desktop Only'), findsOneWidget);
       expect(find.text('internal-private'), findsNothing);
 
-      final selectedRow = tester.widget<DesignSystemListItem>(
+      final selectedRow = tester.widget<DesignSystemSelectionRow>(
         find.byKey(const ValueKey('private')),
       );
       expect(selectedRow.selected, isTrue);
-      expect(selectedRow.activated, isTrue);
-      expect(selectedRow.semanticsLabel, contains('Desktop Only'));
+      expect(selectedRow.semanticLabel, contains('Desktop Only'));
+      expect(find.byType(Divider), findsNothing);
     },
   );
 

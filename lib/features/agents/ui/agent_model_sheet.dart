@@ -15,9 +15,10 @@ import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_provider_model_picker_modal.dart';
-import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
+import 'package:lotti/features/ai/ui/widgets/inference_selection_rows.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -25,7 +26,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
+/// Adaptive task-agent setup flow presented as one multi-page Wolt route.
 class AgentModelSheet {
   const AgentModelSheet._();
 
@@ -34,64 +37,149 @@ class AgentModelSheet {
     required String taskId,
     required String agentId,
   }) {
-    final taskMessenger = ScaffoldMessenger.of(context);
-    return ModalUtils.showSinglePageModal<void>(
-      context: context,
-      title: context.messages.taskAgentSetupTitle,
-      padding: EdgeInsets.zero,
-      builder: (_) => _AgentModelSheetBody(
-        taskId: taskId,
-        agentId: agentId,
-        taskMessenger: taskMessenger,
+    final pageIndex = ValueNotifier<int>(0);
+    final selectedProviderId = ValueNotifier<String?>(null);
+    final modelBackPage = ValueNotifier<int>(0);
+    final controller = _AgentSetupFlowController(
+      container: ProviderScope.containerOf(context),
+      taskId: taskId,
+      agentId: agentId,
+      navigator: Navigator.of(
+        context,
+        rootNavigator: ModalUtils.shouldUseRootNavigatorForBottomSheet(context),
       ),
+      taskMessenger: ScaffoldMessenger.of(context),
+      errorTitle: context.messages.commonError,
+    );
+
+    return ModalUtils.showMultiPageModal<void>(
+      context: context,
+      pageIndexNotifier: pageIndex,
+      pageListBuilder: (modalContext) {
+        controller.bindModalRoute(modalContext);
+        return [
+          ModalUtils.modalSheetPage(
+            context: modalContext,
+            title: modalContext.messages.taskAgentSetupTitle,
+            showCloseButton: true,
+            padding: EdgeInsets.zero,
+            child: _AgentSetupOverviewPage(
+              agentId: agentId,
+              controller: controller,
+              onChooseProfile: () => pageIndex.value = 1,
+              onChooseModel: (options) {
+                final providerIds = _providerIdsForModels(options);
+                if (providerIds.length == 1) {
+                  selectedProviderId.value = providerIds.single;
+                  modelBackPage.value = 0;
+                  pageIndex.value = 3;
+                } else {
+                  modelBackPage.value = 2;
+                  pageIndex.value = 2;
+                }
+              },
+            ),
+          ),
+          ModalUtils.modalSheetPage(
+            context: modalContext,
+            title: modalContext.messages.taskAgentChooseProfile,
+            showCloseButton: true,
+            padding: EdgeInsets.zero,
+            onTapBack: () => pageIndex.value = 0,
+            child: _AgentProfilePage(
+              agentId: agentId,
+              controller: controller,
+            ),
+          ),
+          ModalUtils.modalSheetPage(
+            context: modalContext,
+            title: modalContext.messages.aiModelPickerByProviderLabel,
+            showCloseButton: true,
+            padding: EdgeInsets.zero,
+            onTapBack: () => pageIndex.value = 0,
+            child: _AgentProviderPage(
+              controller: controller,
+              onProviderSelected: (providerId) {
+                selectedProviderId.value = providerId;
+                modelBackPage.value = 2;
+                pageIndex.value = 3;
+              },
+            ),
+          ),
+          ModalUtils.modalSheetPage(
+            context: modalContext,
+            title: modalContext.messages.taskAgentModelPickerTitle,
+            showCloseButton: true,
+            padding: EdgeInsets.zero,
+            onTapBack: () => pageIndex.value = modelBackPage.value,
+            child: _AgentModelPage(
+              agentId: agentId,
+              controller: controller,
+              selectedProviderId: selectedProviderId,
+            ),
+          ),
+        ];
+      },
     );
   }
 }
 
-class _AgentModelSheetBody extends ConsumerStatefulWidget {
-  const _AgentModelSheetBody({
-    required this.taskId,
-    required this.agentId,
-    required this.taskMessenger,
-  });
-
-  final String taskId;
-  final String agentId;
-  final ScaffoldMessengerState taskMessenger;
-
-  @override
-  ConsumerState<_AgentModelSheetBody> createState() =>
-      _AgentModelSheetBodyState();
+List<String> _providerIdsForModels(TaskAgentSetupOptions options) {
+  final configuredProviderIds = options.providers
+      .map((value) => value.id)
+      .toSet();
+  final ids = <String>{};
+  for (final model in options.models) {
+    if (configuredProviderIds.contains(model.inferenceProviderId)) {
+      ids.add(model.inferenceProviderId);
+    }
+  }
+  if (ids.isNotEmpty) return ids.toList();
+  return options.models
+      .map((model) => model.inferenceProviderId)
+      .toSet()
+      .toList();
 }
 
-class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
-  bool _busy = false;
+class _AgentSetupFlowController {
+  _AgentSetupFlowController({
+    required this.container,
+    required this.taskId,
+    required this.agentId,
+    required this.navigator,
+    required this.taskMessenger,
+    required this.errorTitle,
+  });
 
-  String _originLabel(BuildContext context, ResolvedAgentSetup? setup) {
-    if (setup?.status == AgentSetupResolutionStatus.disabled) {
-      return context.messages.taskAgentSetupOriginDisabled;
-    }
-    return switch (setup?.setupOrigin) {
-      AgentInferenceSetupOrigin.user =>
-        context.messages.taskAgentSetupOriginUser,
-      AgentInferenceSetupOrigin.categorySnapshot =>
-        context.messages.taskAgentSetupOriginCategory,
-      AgentInferenceSetupOrigin.templateSnapshot =>
-        context.messages.taskAgentSetupOriginTemplate,
-      AgentInferenceSetupOrigin.unknown ||
-      null => context.messages.taskAgentSetupOriginLegacy,
-    };
+  final ProviderContainer container;
+  final String taskId;
+  final String agentId;
+  final NavigatorState navigator;
+  final ScaffoldMessengerState taskMessenger;
+  final String errorTitle;
+  final busy = ValueNotifier<bool>(false);
+  final confirmDisable = ValueNotifier<bool>(false);
+  ModalRoute<dynamic>? _modalRoute;
+
+  void bindModalRoute(BuildContext context) {
+    _modalRoute ??= ModalRoute.of(context);
   }
 
-  Future<bool> _persist(Future<void> Function() action) async {
-    if (_busy) return false;
-    setState(() => _busy = true);
+  void _closeModalIfCurrent() {
+    final route = _modalRoute;
+    if (route?.isCurrent == true && navigator.mounted) navigator.pop();
+  }
+
+  Future<bool> _persist(
+    Future<void> Function() action,
+  ) async {
+    if (busy.value) return false;
+    busy.value = true;
     try {
       await action();
-      if (!mounted) return false;
-      ref
-        ..invalidate(agentIdentityProvider(widget.agentId))
-        ..invalidate(taskAgentResolvedSetupProvider(widget.agentId));
+      container
+        ..invalidate(agentIdentityProvider(agentId))
+        ..invalidate(taskAgentResolvedSetupProvider(agentId));
       return true;
     } catch (error, stackTrace) {
       developer.log(
@@ -100,36 +188,41 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
         error: error,
         stackTrace: stackTrace,
       );
-      if (!mounted) return false;
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: context.messages.commonError,
-      );
+      if (taskMessenger.mounted) {
+        taskMessenger.showDesignSystemToast(
+          tone: DesignSystemToastTone.error,
+          title: errorTitle,
+        );
+      }
       return false;
     } finally {
-      if (mounted) setState(() => _busy = false);
+      busy.value = false;
     }
   }
 
-  Future<void> _persistTerminalChoice(
+  Future<bool> _persistTerminalChoice(
     Future<void> Function() action, {
     required String successTitle,
   }) async {
     final persisted = await _persist(action);
-    if (!persisted || !mounted) return;
-    Navigator.of(context).pop();
-    if (widget.taskMessenger.mounted) {
-      widget.taskMessenger.showDesignSystemToast(
+    if (!persisted) return false;
+    _closeModalIfCurrent();
+    if (taskMessenger.mounted) {
+      taskMessenger.showDesignSystemToast(
         tone: DesignSystemToastTone.success,
         title: successTitle,
       );
     }
+    return true;
   }
 
-  Future<void> _useCategoryDefault(TaskAgentSetupOptions options) async {
+  Future<void> useCategoryDefault(
+    BuildContext context,
+    TaskAgentSetupOptions options,
+  ) async {
     final messages = context.messages;
-    final journalDb = ref.read(journalDbProvider);
-    final entity = await journalDb.journalEntityById(widget.taskId);
+    final journalDb = container.read(journalDbProvider);
+    final entity = await journalDb.journalEntityById(taskId);
     final categoryId = entity is Task ? entity.categoryId : null;
     final category = categoryId == null
         ? null
@@ -143,10 +236,11 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
         : options.models
               .where((value) => value.id == profile.thinkingModelId)
               .firstOrNull;
-    Future<void> action() => ref
+    if (!context.mounted) return;
+    Future<void> action() => container
         .read(taskAgentServiceProvider)
         .updateAgentInferenceSetup(
-          agentId: widget.agentId,
+          agentId: agentId,
           setup: AgentInferenceSetup(
             mode: profileId == null
                 ? AgentInferenceSetupMode.disabled
@@ -156,341 +250,667 @@ class _AgentModelSheetBodyState extends ConsumerState<_AgentModelSheetBody> {
             originEntityId: categoryId,
           ),
         );
+
     if (profile == null || model == null) {
       final persisted = await _persist(action);
-      if (persisted && mounted) {
-        Navigator.of(context).pop();
-      }
+      if (persisted) _closeModalIfCurrent();
       return;
     }
-    final successTitle = messages.taskAgentProfileChangedToast(
-      profile.name,
-    );
     await _persistTerminalChoice(
       action,
-      successTitle: successTitle,
+      successTitle: messages.taskAgentProfileChangedToast(profile.name),
     );
   }
 
-  Future<void> _chooseProfile(
-    AiConfigInferenceProfile profile,
-  ) async {
-    await _persistTerminalChoice(
-      () => ref
-          .read(taskAgentServiceProvider)
-          .updateAgentProfile(agentId: widget.agentId, profileId: profile.id),
-      successTitle: context.messages.taskAgentProfileChangedToast(profile.name),
-    );
-  }
-
-  String _profileRoute(
+  Future<bool> chooseProfile(
     BuildContext context,
     AiConfigInferenceProfile profile,
+  ) => _persistTerminalChoice(
+    () => container
+        .read(taskAgentServiceProvider)
+        .updateAgentProfile(agentId: agentId, profileId: profile.id),
+    successTitle: context.messages.taskAgentProfileChangedToast(profile.name),
+  );
+
+  Future<bool> chooseModel(
+    BuildContext context,
+    String modelId,
     TaskAgentSetupOptions options,
   ) {
     final model = options.models
-        .where((value) => value.id == profile.thinkingModelId)
+        .where((value) => value.id == modelId)
         .firstOrNull;
-    if (model == null) return context.messages.taskAgentSetupBroken;
-    final provider = options.providers
-        .where((value) => value.id == model.inferenceProviderId)
-        .firstOrNull;
-    if (provider == null) return context.messages.taskAgentSetupBroken;
-    return formatInferenceRouteIdentity(
-      InferenceRouteSnapshot(
-        modelConfigId: model.id,
-        providerModelId: model.providerModelId,
-        modelName: model.name,
-        publisherName: model.publisher,
-        servingProviderConfigId: provider.id,
-        servingProviderType: provider.inferenceProviderType,
-        servingProviderName: provider.name,
-        runtimeSettings: const {},
-      ),
-      viaLabel: context.messages.taskAgentRouteVia,
-    );
-  }
-
-  Future<void> _chooseModel(
-    AgentConfig config,
-    TaskAgentSetupOptions options,
-  ) async {
-    final profileId = config.inferenceSetup?.baseProfileId;
-    final profile = options.profiles
-        .where((value) => value.id == profileId)
-        .firstOrNull;
-    final selectedId = await InferenceProviderModelPickerModal.show(
-      context: context,
-      defaultModelId: profile?.thinkingModelId,
-      selectedModelId:
-          config.inferenceSetup?.thinkingModelOverrideId ??
-          profile?.thinkingModelId,
-      models: options.models,
-      providers: options.providers,
-      title: context.messages.taskAgentModelPickerTitle,
-      defaultBadgeLabel: context.messages.taskAgentProfileDefaultBadge,
-    );
-    if (selectedId == null || !mounted) return;
-    final model = options.models
-        .where((value) => value.id == selectedId)
-        .firstOrNull;
-    await _persistTerminalChoice(
-      () => ref
+    return _persistTerminalChoice(
+      () => container
           .read(taskAgentServiceProvider)
           .updateAgentThinkingModelOverride(
-            agentId: widget.agentId,
-            modelConfigId: selectedId,
+            agentId: agentId,
+            modelConfigId: modelId,
           ),
       successTitle: context.messages.taskAgentSetupChangedToast(
-        model?.name ?? selectedId,
+        model?.name ?? modelId,
       ),
     );
   }
 
-  Future<void> _disableSetup() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.messages.taskAgentDisableConfirmTitle),
-        content: Text(context.messages.taskAgentDisableConfirmBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(context.messages.taskAgentDisableConfirmAction),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    await _persist(
-      () => ref
+  Future<void> clearOverride() => _persist(
+    () => container
+        .read(taskAgentServiceProvider)
+        .updateAgentThinkingModelOverride(
+          agentId: agentId,
+          modelConfigId: null,
+        ),
+  );
+
+  Future<void> updateAutomaticUpdates({
+    required bool enabled,
+  }) => _persist(
+    () => container
+        .read(taskAgentServiceProvider)
+        .updateAutomaticUpdates(agentId: agentId, enabled: enabled),
+  );
+
+  Future<void> disable() async {
+    final persisted = await _persist(
+      () => container
           .read(taskAgentServiceProvider)
           .updateAgentInferenceSetup(
-            agentId: widget.agentId,
+            agentId: agentId,
             setup: const AgentInferenceSetup(
               mode: AgentInferenceSetupMode.disabled,
               origin: AgentInferenceSetupOrigin.user,
             ),
           ),
     );
+    if (persisted) _closeModalIfCurrent();
   }
+}
+
+class _AgentBusyGuard extends StatelessWidget {
+  const _AgentBusyGuard({required this.controller, required this.child});
+
+  final _AgentSetupFlowController controller;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: controller.busy,
+      builder: (context, busy, child) {
+        final guardedChild = AbsorbPointer(
+          absorbing: busy,
+          child: busy ? ExcludeSemantics(child: child) : child,
+        );
+        if (!busy) return guardedChild;
+        return Semantics(
+          container: true,
+          liveRegion: true,
+          label: context.messages.taskAgentSavingSetup,
+          child: guardedChild,
+        );
+      },
+      child: child,
+    );
+  }
+}
+
+class _AgentSetupOverviewPage extends ConsumerWidget {
+  const _AgentSetupOverviewPage({
+    required this.agentId,
+    required this.controller,
+    required this.onChooseProfile,
+    required this.onChooseModel,
+  });
+
+  final String agentId;
+  final _AgentSetupFlowController controller;
+  final VoidCallback onChooseProfile;
+  final ValueChanged<TaskAgentSetupOptions> onChooseModel;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final identity = ref
-        .watch(agentIdentityProvider(widget.agentId))
+        .watch(agentIdentityProvider(agentId))
+        .unwrapPrevious()
         .value
         ?.mapOrNull(agent: (value) => value);
     final setup = ref
-        .watch(taskAgentResolvedSetupProvider(widget.agentId))
+        .watch(taskAgentResolvedSetupProvider(agentId))
+        .unwrapPrevious()
         .value;
-    final options = ref.watch(taskAgentSetupOptionsProvider).value;
-    final currentRoute = setup?.profile == null
-        ? null
-        : formatInferenceRouteIdentity(
-            InferenceRouteSnapshot.fromResolvedProfile(setup!.profile!),
-            viaLabel: context.messages.taskAgentRouteVia,
-          );
+    final options = ref
+        .watch(taskAgentSetupOptionsProvider)
+        .unwrapPrevious()
+        .value;
     final config = identity?.config;
     final currentProfile = options?.profiles
         .where(
           (profile) => profile.id == config?.inferenceSetup?.baseProfileId,
         )
         .firstOrNull;
-    final currentProfileContext = currentProfile == null
+    final resolvedProfile = setup?.profile;
+    final resolvedModelName = resolvedProfile?.thinkingModel?.name;
+    final modelRoute = resolvedProfile == null
         ? null
-        : '${currentProfile.name} · '
-              '${config?.inferenceSetup?.thinkingModelOverrideId == null ? context.messages.taskAgentProfileDefaultBadge : context.messages.taskAgentDirectModelOverride}';
-    final effectiveAutomaticUpdates =
-        config?.automaticUpdatesEnabledEffective ?? false;
+        : '${resolvedModelName ?? resolvedProfile.thinkingModelId} · '
+              '${resolvedProfile.thinkingProvider.name}';
+    final modelSource = config?.inferenceSetup?.thinkingModelOverrideId == null
+        ? context.messages.taskAgentProfileDefaultBadge
+        : context.messages.taskAgentDirectModelOverride;
+    final modelDescription = modelRoute == null
+        ? (setup?.status == AgentSetupResolutionStatus.disabled
+              ? context.messages.taskAgentNoProfileSelected
+              : context.messages.taskAgentSetupBroken)
+        : '$modelRoute\n$modelSource';
+    final automaticUpdates = config?.automaticUpdatesEnabledEffective ?? false;
+
+    return _AgentBusyGuard(
+      controller: controller,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.step5,
+            tokens.spacing.step4,
+            tokens.spacing.step5,
+            tokens.spacing.step7,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _AgentSetupSection(
+                label: context.messages.taskAgentCurrentSetupLabel,
+                description: context.messages.taskAgentSetupChoiceHelp,
+                child: DesignSystemGroupedList(
+                  padding: EdgeInsets.zero,
+                  filled: false,
+                  children: [
+                    DesignSystemSelectionRow(
+                      key: const ValueKey('agent-choose-profile'),
+                      title: context.messages.taskAgentInferenceProfileLabel,
+                      subtitle:
+                          currentProfile?.name ??
+                          context.messages.taskAgentNoProfileSelected,
+                      type: DesignSystemSelectionRowType.navigation,
+                      leading: Icon(
+                        Icons.account_tree_outlined,
+                        color: tokens.colors.text.mediumEmphasis,
+                        size: tokens.spacing.step6,
+                      ),
+                      onTap: options == null ? null : onChooseProfile,
+                    ),
+                    DesignSystemSelectionRow(
+                      key: const ValueKey('agent-choose-model'),
+                      title: context.messages.taskAgentThinkingModelLabel,
+                      subtitle: options != null && options.models.isEmpty
+                          ? context.messages.taskAgentNoModelsAvailable
+                          : modelDescription,
+                      type: DesignSystemSelectionRowType.navigation,
+                      leading: Icon(
+                        Icons.psychology_outlined,
+                        color: tokens.colors.text.mediumEmphasis,
+                        size: tokens.spacing.step6,
+                      ),
+                      onTap:
+                          config == null ||
+                              options == null ||
+                              options.models.isEmpty
+                          ? null
+                          : () => onChooseModel(options),
+                    ),
+                    if (config?.inferenceSetup?.thinkingModelOverrideId != null)
+                      DesignSystemSelectionRow(
+                        key: const ValueKey('agent-clear-override'),
+                        title: context.messages.taskAgentUseProfileDefault,
+                        type: DesignSystemSelectionRowType.action,
+                        leading: Icon(
+                          Icons.undo_rounded,
+                          color: tokens.colors.text.mediumEmphasis,
+                          size: tokens.spacing.step6,
+                        ),
+                        onTap: controller.clearOverride,
+                      ),
+                  ],
+                ),
+              ),
+              SizedBox(height: tokens.spacing.sectionGap),
+              _AgentSetupSection(
+                label: context.messages.taskAgentAutomationSection,
+                child: DesignSystemGroupedList(
+                  padding: EdgeInsets.zero,
+                  filled: false,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(tokens.spacing.cardPadding),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: tokens.spacing.step9,
+                        ),
+                        child: SettingsSwitchRow(
+                          key: const Key('taskAgentAutomaticUpdatesCheckbox'),
+                          title:
+                              context.messages.taskAgentAutomaticUpdatesLabel,
+                          subtitle:
+                              config?.inferenceSetup?.mode ==
+                                  AgentInferenceSetupMode.disabled
+                              ? context
+                                    .messages
+                                    .taskAgentAutomaticUpdatesNeedsSetup
+                              : context
+                                    .messages
+                                    .taskAgentAutomaticUpdatesSummary,
+                          value: automaticUpdates,
+                          enabled:
+                              config?.inferenceSetup?.mode !=
+                              AgentInferenceSetupMode.disabled,
+                          onChanged: (value) =>
+                              controller.updateAutomaticUpdates(enabled: value),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: tokens.spacing.step5),
+              ValueListenableBuilder<bool>(
+                valueListenable: controller.confirmDisable,
+                builder: (context, visible, _) => visible
+                    ? const SizedBox.shrink()
+                    : Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: DesignSystemButton(
+                          key: const ValueKey('agent-disable'),
+                          label: context.messages.taskAgentTurnOffSetup,
+                          variant: DesignSystemButtonVariant.dangerTertiary,
+                          size: DesignSystemButtonSize.medium,
+                          leadingIcon: Icons.pause_circle_outline_rounded,
+                          onPressed: () =>
+                              controller.confirmDisable.value = true,
+                        ),
+                      ),
+              ),
+              ValueListenableBuilder<bool>(
+                valueListenable: controller.confirmDisable,
+                builder: (context, visible, _) {
+                  if (!visible) return const SizedBox.shrink();
+                  final title = context.messages.taskAgentDisableConfirmTitle;
+                  final body = context.messages.taskAgentDisableConfirmBody;
+                  return Padding(
+                    padding: EdgeInsets.only(top: tokens.spacing.step4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Focus(
+                          autofocus: true,
+                          child: Semantics(
+                            key: const ValueKey(
+                              'agent-disable-confirmation',
+                            ),
+                            container: true,
+                            liveRegion: true,
+                            label: '$title $body',
+                            child: ExcludeSemantics(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .subtitle
+                                        .subtitle2,
+                                  ),
+                                  SizedBox(height: tokens.spacing.step2),
+                                  Text(
+                                    body,
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .body
+                                        .bodyMedium
+                                        .copyWith(
+                                          color:
+                                              tokens.colors.text.mediumEmphasis,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: tokens.spacing.step4),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DesignSystemButton(
+                                label: MaterialLocalizations.of(
+                                  context,
+                                ).cancelButtonLabel,
+                                variant: DesignSystemButtonVariant.secondary,
+                                size: DesignSystemButtonSize.medium,
+                                fullWidth: true,
+                                onPressed: () =>
+                                    controller.confirmDisable.value = false,
+                              ),
+                            ),
+                            SizedBox(width: tokens.spacing.step3),
+                            Expanded(
+                              child: DesignSystemButton(
+                                label: context
+                                    .messages
+                                    .taskAgentDisableConfirmAction,
+                                variant: DesignSystemButtonVariant.danger,
+                                size: DesignSystemButtonSize.medium,
+                                fullWidth: true,
+                                onPressed: controller.disable,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AgentSetupSection extends StatelessWidget {
+  const _AgentSetupSection({
+    required this.label,
+    required this.child,
+    this.description,
+  });
+
+  final String label;
+  final String? description;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          label,
+          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+        if (description case final description?) ...[
+          SizedBox(height: tokens.spacing.step1),
+          Text(
+            description,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        ],
+        SizedBox(height: tokens.spacing.step3),
+        child,
+      ],
+    );
+  }
+}
+
+class _AgentProfilePage extends ConsumerWidget {
+  const _AgentProfilePage({
+    required this.agentId,
+    required this.controller,
+  });
+
+  final String agentId;
+  final _AgentSetupFlowController controller;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final options = ref
+        .watch(taskAgentSetupOptionsProvider)
+        .unwrapPrevious()
+        .value;
+    final config = ref
+        .watch(agentIdentityProvider(agentId))
+        .unwrapPrevious()
+        .value
+        ?.mapOrNull(agent: (value) => value)
+        ?.config;
     final profiles =
         options?.profiles
             .where((profile) => isDesktop || !profile.desktopOnly)
             .toList() ??
         const <AiConfigInferenceProfile>[];
 
-    return AbsorbPointer(
-      absorbing: _busy,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          tokens.spacing.step5,
-          tokens.spacing.step4,
-          tokens.spacing.step5,
-          tokens.spacing.step7,
-        ),
+    return _AgentBusyGuard(
+      controller: controller,
+      child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              context.messages.taskAgentCurrentSetupLabel,
-              style: tokens.typography.styles.subtitle.subtitle2,
-            ),
-            SizedBox(height: tokens.spacing.step2),
-            Text(
-              currentRoute ??
-                  (setup?.status == AgentSetupResolutionStatus.disabled
-                      ? context.messages.taskAgentNoProfileSelected
-                      : context.messages.taskAgentSetupBroken),
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: currentRoute == null
-                    ? tokens.colors.alert.error.defaultColor
-                    : tokens.colors.text.highEmphasis,
-              ),
-            ),
-            if (currentProfileContext != null) ...[
-              SizedBox(height: tokens.spacing.step2),
-              Text(
-                currentProfileContext,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-              ),
-            ],
-            SizedBox(height: tokens.spacing.step2),
-            Text(
-              _originLabel(context, setup),
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step5),
-            DesignSystemListItem(
+            DesignSystemSelectionRow(
               title: context.messages.taskAgentUseCategoryDefault,
               subtitle: context.messages.taskAgentUseCategoryDefaultDescription,
               subtitleMaxLines: null,
-              leading: const Icon(Icons.category_outlined),
-              trailing: const Icon(Icons.chevron_right_rounded),
+              type: DesignSystemSelectionRowType.action,
+              leading: Icon(
+                Icons.category_outlined,
+                color: tokens.colors.text.mediumEmphasis,
+                size: tokens.spacing.step6,
+              ),
               onTap: options == null
                   ? null
-                  : () => _useCategoryDefault(options),
-              showDivider: true,
+                  : () => controller.useCategoryDefault(context, options),
             ),
             if (profiles.isEmpty)
-              DesignSystemListItem(
+              DesignSystemSelectionRow(
                 title: context.messages.taskAgentNoProfilesAvailable,
-                leading: const Icon(Icons.account_tree_outlined),
+                type: DesignSystemSelectionRowType.action,
+                leading: Icon(
+                  Icons.account_tree_outlined,
+                  color: tokens.colors.text.mediumEmphasis,
+                  size: tokens.spacing.step6,
+                ),
+                onTap: null,
               )
-            else if (options != null) ...[
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step4,
-                  vertical: tokens.spacing.step2,
-                ),
-                child: Text(
-                  context.messages.taskAgentChooseProfile,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              ),
+            else if (options != null)
               for (final profile in profiles)
-                DesignSystemListItem(
+                DesignSystemSelectionRow(
+                  key: ValueKey('agent-profile-${profile.id}'),
                   title: profile.name,
                   subtitle: _profileRoute(context, profile, options),
                   subtitleMaxLines: null,
-                  leading: const Icon(Icons.account_tree_outlined),
-                  trailing: config?.inferenceSetup?.baseProfileId == profile.id
-                      ? const Icon(Icons.check_rounded)
-                      : null,
-                  activated:
-                      config?.inferenceSetup?.baseProfileId == profile.id,
+                  type: DesignSystemSelectionRowType.singleSelect,
                   selected: config?.inferenceSetup?.baseProfileId == profile.id,
-                  activatedBackgroundColor:
-                      config?.inferenceSetup?.baseProfileId == profile.id
-                      ? DesignSystemListPalette.activatedFillStrong(tokens)
-                      : null,
-                  onTap: () => _chooseProfile(profile),
-                  showDivider: true,
+                  leading: Icon(
+                    Icons.account_tree_outlined,
+                    color: tokens.colors.text.mediumEmphasis,
+                    size: tokens.spacing.step6,
+                  ),
+                  onTap: () => controller.chooseProfile(context, profile),
                 ),
-            ],
-            DesignSystemListItem(
-              title: context.messages.taskAgentChooseModel,
-              subtitle: options != null && options.models.isEmpty
-                  ? context.messages.taskAgentNoModelsAvailable
-                  : null,
-              leading: const Icon(Icons.psychology_outlined),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: config == null || options == null || options.models.isEmpty
-                  ? null
-                  : () => _chooseModel(config, options),
-              showDivider: true,
-            ),
-            if (config?.inferenceSetup?.thinkingModelOverrideId != null)
-              DesignSystemListItem(
-                title: context.messages.taskAgentUseProfileDefault,
-                leading: const Icon(Icons.undo_rounded),
-                onTap: () => _persist(
-                  () => ref
-                      .read(taskAgentServiceProvider)
-                      .updateAgentThinkingModelOverride(
-                        agentId: widget.agentId,
-                        modelConfigId: null,
-                      ),
-                ),
-                showDivider: true,
-              ),
-            DesignSystemListItem(
-              title: context.messages.taskAgentNoAiSetup,
-              subtitle: context.messages.taskAgentNoAiSetupDescription,
-              subtitleMaxLines: null,
-              leading: const Icon(Icons.pause_circle_outline_rounded),
-              onTap: _disableSetup,
-              showDivider: true,
-            ),
-            SizedBox(height: tokens.spacing.step5),
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: kMinInteractiveDimension,
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: DesignSystemCheckbox(
-                  key: const Key('taskAgentAutomaticUpdatesCheckbox'),
-                  value: effectiveAutomaticUpdates,
-                  label: context.messages.taskAgentAutomaticUpdatesLabel,
-                  labelMaxLines: null,
-                  onChanged:
-                      config?.inferenceSetup?.mode ==
-                          AgentInferenceSetupMode.disabled
-                      ? null
-                      : (value) => _persist(
-                          () => ref
-                              .read(taskAgentServiceProvider)
-                              .updateAutomaticUpdates(
-                                agentId: widget.agentId,
-                                enabled: value ?? false,
-                              ),
-                        ),
-                ),
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step2),
-            Text(
-              config?.inferenceSetup?.mode == AgentInferenceSetupMode.disabled
-                  ? context.messages.taskAgentAutomaticUpdatesNeedsSetup
-                  : effectiveAutomaticUpdates
-                  ? context.messages.taskAgentAutomaticUpdatesOnDescription
-                  : context.messages.taskAgentAutomaticUpdatesOffDescription,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step3),
-            Text(
-              context.messages.taskAgentSetupPersistenceDescription,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ),
           ],
         ),
       ),
     );
   }
+}
+
+class _AgentProviderPage extends ConsumerWidget {
+  const _AgentProviderPage({
+    required this.controller,
+    required this.onProviderSelected,
+  });
+
+  final _AgentSetupFlowController controller;
+  final ValueChanged<String> onProviderSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final options = ref
+        .watch(taskAgentSetupOptionsProvider)
+        .unwrapPrevious()
+        .value;
+    if (options == null) return const SizedBox.shrink();
+    final providerIds = _providerIdsForModels(options);
+
+    return _AgentBusyGuard(
+      controller: controller,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final providerId in providerIds)
+              Builder(
+                builder: (context) {
+                  final provider = options.providers
+                      .where((value) => value.id == providerId)
+                      .firstOrNull;
+                  final modelCount = options.models
+                      .where(
+                        (model) => model.inferenceProviderId == providerId,
+                      )
+                      .length;
+                  return InferenceProviderSelectionRow(
+                    key: ValueKey('agent-provider-$providerId'),
+                    provider: provider,
+                    modelCount: modelCount,
+                    onTap: () => onProviderSelected(providerId),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AgentModelPage extends ConsumerStatefulWidget {
+  const _AgentModelPage({
+    required this.agentId,
+    required this.controller,
+    required this.selectedProviderId,
+  });
+
+  final String agentId;
+  final _AgentSetupFlowController controller;
+  final ValueNotifier<String?> selectedProviderId;
+
+  @override
+  ConsumerState<_AgentModelPage> createState() => _AgentModelPageState();
+}
+
+class _AgentModelPageState extends ConsumerState<_AgentModelPage> {
+  String? _pendingModelId;
+
+  @override
+  Widget build(BuildContext context) {
+    final options = ref
+        .watch(taskAgentSetupOptionsProvider)
+        .unwrapPrevious()
+        .value;
+    final config = ref
+        .watch(agentIdentityProvider(widget.agentId))
+        .unwrapPrevious()
+        .value
+        ?.mapOrNull(agent: (value) => value)
+        ?.config;
+    if (options == null) return const SizedBox.shrink();
+    final profile = options.profiles
+        .where(
+          (value) => value.id == config?.inferenceSetup?.baseProfileId,
+        )
+        .firstOrNull;
+    final defaultModelId = profile?.thinkingModelId;
+    final selectedModelId =
+        _pendingModelId ??
+        config?.inferenceSetup?.thinkingModelOverrideId ??
+        defaultModelId;
+
+    return _AgentBusyGuard(
+      controller: widget.controller,
+      child: ValueListenableBuilder<String?>(
+        valueListenable: widget.selectedProviderId,
+        builder: (context, providerId, _) {
+          if (providerId == null) return const SizedBox.shrink();
+          final provider = options.providers
+              .where((value) => value.id == providerId)
+              .firstOrNull;
+          final models =
+              InferenceProviderModelPickerModal.orderModelsDefaultFirst(
+                options.models
+                    .where(
+                      (model) => model.inferenceProviderId == providerId,
+                    )
+                    .toList(),
+                defaultModelId,
+              );
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final model in models)
+                  InferenceModelSelectionRow(
+                    key: ValueKey('agent-model-${model.id}'),
+                    model: model,
+                    providerType: provider?.inferenceProviderType,
+                    isDefault: model.id == defaultModelId,
+                    isSelected: model.id == selectedModelId,
+                    defaultBadgeLabel:
+                        context.messages.taskAgentProfileDefaultBadge,
+                    onTap: () async {
+                      if (_pendingModelId != null) return;
+                      setState(() => _pendingModelId = model.id);
+                      final persisted = await widget.controller.chooseModel(
+                        context,
+                        model.id,
+                        options,
+                      );
+                      if (!persisted && mounted) {
+                        setState(() => _pendingModelId = null);
+                      }
+                    },
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+String _profileRoute(
+  BuildContext context,
+  AiConfigInferenceProfile profile,
+  TaskAgentSetupOptions options,
+) {
+  final model = options.models
+      .where((value) => value.id == profile.thinkingModelId)
+      .firstOrNull;
+  if (model == null) return context.messages.taskAgentSetupBroken;
+  final provider = options.providers
+      .where((value) => value.id == model.inferenceProviderId)
+      .firstOrNull;
+  if (provider == null) return context.messages.taskAgentSetupBroken;
+  return formatInferenceRouteIdentity(
+    InferenceRouteSnapshot(
+      modelConfigId: model.id,
+      providerModelId: model.providerModelId,
+      modelName: model.name,
+      publisherName: model.publisher,
+      servingProviderConfigId: provider.id,
+      servingProviderType: provider.inferenceProviderType,
+      servingProviderName: provider.name,
+      runtimeSettings: const {},
+    ),
+    viaLabel: context.messages.taskAgentRouteVia,
+  );
 }

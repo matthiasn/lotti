@@ -9167,6 +9167,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Când se modifică ceva legat de această sarcină, începe o numărătoare inversă de două minute. Modificările din acest interval sunt grupate într-o singură actualizare.';
 
   @override
+  String get taskAgentAutomaticUpdatesSummary =>
+      'Modificările sarcinii sunt grupate, iar actualizarea are loc după două minute.';
+
+  @override
+  String get taskAgentAutomationSection => 'Automatizare';
+
+  @override
   String get taskAgentCancelTimerTooltip =>
       'Anulați actualizarea automată în așteptare';
 
@@ -9206,7 +9213,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Raportul curent rămâne vizibil, dar agentul nu poate rula până când alegeți o configurare.';
 
   @override
-  String get taskAgentDisableConfirmTitle => 'Dezactivați configurarea AI?';
+  String get taskAgentDisableConfirmTitle =>
+      'Dezactivați AI pentru acest agent?';
+
+  @override
+  String get taskAgentInferenceProfileLabel => 'Profil de inferență';
 
   @override
   String get taskAgentModelPickerTitle => 'Alegeți modelul de raționament';
@@ -9248,6 +9259,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentRunNowTooltip => 'Rulează acum';
 
   @override
+  String get taskAgentSavingSetup => 'Se salvează configurarea agentului';
+
+  @override
   String taskAgentSetupAndReportSemantics(String identity) {
     return 'Acest raport și configurarea curentă folosesc $identity. Activați pentru a modifica configurarea.';
   }
@@ -9260,6 +9274,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String taskAgentSetupChangedToast(String model) {
     return '$model va fi folosit pentru toate actualizările viitoare până când îl schimbați.';
   }
+
+  @override
+  String get taskAgentSetupChoiceHelp =>
+      'Alegeți un profil pentru valorile implicite sau înlocuiți doar modelul de raționament.';
 
   @override
   String get taskAgentSetupOriginCategory =>
@@ -9291,7 +9309,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentSetupTitle => 'Configurarea agentului';
 
   @override
+  String get taskAgentThinkingModelLabel => 'Model de raționament';
+
+  @override
   String get taskAgentThisReportHeader => 'Acest raport';
+
+  @override
+  String get taskAgentTurnOffSetup => 'Dezactivați AI pentru acest agent';
 
   @override
   String get taskAgentUseCategoryDefault =>

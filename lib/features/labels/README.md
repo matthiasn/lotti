@@ -262,7 +262,11 @@ The main pieces are:
 
 - `EntryLabelsDisplay` for showing assigned chips on generic entry surfaces; with `showHeader`/`showEditButton` it also renders a "Labels" header and an edit button that opens the selector
 - `LabelSelectionModalUtils.openLabelSelector` opens the unified picker (`EntityPickerSheet`, the same one categories use) as a Wolt sheet, scoped to the entry's category but unioned with already-assigned labels
-- `EntityPickerSheet` (`lib/widgets/picker/`) renders the rows; the apply footer commits via `LabelsRepository.setLabels`
+- `EntityPickerSheet` (`lib/widgets/picker/`) renders full-width
+  `DesignSystemSelectionRow` options with no per-option dividers; its staged
+  multi-select state uses the same selected, hover, focus, typography, and
+  checkbox language as category selection. The apply footer commits via
+  `LabelsRepository.setLabels`
 - `DesktopTaskHeader` in `features/tasks` for the task-specific "Add Label" / assigned-label surface — assigned labels render as filled `DsPill` chips (`DsPillVariant.filled`) with a leading color dot and the same long-press description dialog; the "Add Label" placeholder chip opens the selector when no labels are assigned
 
 `LabelChip` itself is intentionally modest: neutral chip chrome, a colored dot, and a tooltip that prefers the description over the bare name.

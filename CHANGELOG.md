@@ -4,13 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1044]
+## [0.9.1045]
 ### Changed
 - **Date and time pickers are clearer and steadier across the app.** Entry
   ranges now show weekdays, include Start/End **Now** actions, and move into a
   calendar page within the same sheet. Due dates and project target dates use
   the same weekday calendar, while tighter wheel controls and stable status
   spacing keep the layout compact without jumping in light or dark mode.
+- **Pickers now feel like one coherent part of Lotti.** Task status, priority,
+  labels, category and project, project status, AI profiles and models, and
+  Gemini thinking mode now share the same full-width selection rows, selected
+  state, typography, hover/focus treatment, and adaptive phone-sheet or desktop
+  dialog presentation. Task-agent AI setup keeps profile, provider, and model
+  choices inside one navigable sheet, while pausing AI uses an inline
+  confirmation instead of opening another modal. Its overview now groups the
+  active profile, effective model, and automation into a compact settings
+  hierarchy, and keeps the loaded AI catalog between pages so navigation no
+  longer flashes an empty state. Page changes now use a calm staggered fade
+  while the sheet eases smoothly to its new height, and a tapped thinking model
+  shows its selected state immediately while the change is saved.
+
+## [0.9.1044]
+### Changed
 - **Daily OS now lets you choose its AI route explicitly.** A discoverable
   Daily OS settings page owns the default inference profile and preferred name,
   while the planner instance can override its full profile or only its thinking

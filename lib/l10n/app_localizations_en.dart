@@ -7193,7 +7193,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectStatusArchived => 'Archived';
 
   @override
-  String get projectStatusChangeTitle => 'Change Status';
+  String get projectStatusChangeTitle => 'Change status';
 
   @override
   String get projectStatusCompleted => 'Completed';
@@ -8937,6 +8937,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'When anything related to this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.';
 
   @override
+  String get taskAgentAutomaticUpdatesSummary =>
+      'Bundle task changes and update after two minutes.';
+
+  @override
+  String get taskAgentAutomationSection => 'Automation';
+
+  @override
   String get taskAgentCancelTimerTooltip => 'Cancel pending automatic update';
 
   @override
@@ -8975,7 +8982,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The current report stays visible, but this agent cannot run until you choose a setup.';
 
   @override
-  String get taskAgentDisableConfirmTitle => 'Turn off AI setup?';
+  String get taskAgentDisableConfirmTitle => 'Turn off AI for this agent?';
+
+  @override
+  String get taskAgentInferenceProfileLabel => 'Inference profile';
 
   @override
   String get taskAgentModelPickerTitle => 'Choose thinking model';
@@ -9017,6 +9027,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskAgentRunNowTooltip => 'Run now';
 
   @override
+  String get taskAgentSavingSetup => 'Saving agent setup';
+
+  @override
   String taskAgentSetupAndReportSemantics(String identity) {
     return 'This report and current setup use $identity. Activate to change setup.';
   }
@@ -9028,6 +9041,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String taskAgentSetupChangedToast(String model) {
     return 'Using $model for every future agent update until you change it.';
   }
+
+  @override
+  String get taskAgentSetupChoiceHelp =>
+      'Choose a profile for its defaults, or override only the thinking model.';
 
   @override
   String get taskAgentSetupOriginCategory =>
@@ -9058,7 +9075,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskAgentSetupTitle => 'Agent setup';
 
   @override
+  String get taskAgentThinkingModelLabel => 'Thinking model';
+
+  @override
   String get taskAgentThisReportHeader => 'This report';
+
+  @override
+  String get taskAgentTurnOffSetup => 'Turn off AI for this agent';
 
   @override
   String get taskAgentUseCategoryDefault => 'Copy category default';

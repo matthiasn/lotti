@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 
@@ -34,10 +35,7 @@ class TaskStatusModalContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentStatus = task.data.status.toDbString;
     final resolveLabel = labelResolver ?? taskLabelFromStatusString;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    final brightness = theme.brightness;
+    final brightness = Theme.of(context).brightness;
     final tokens = context.designTokens;
 
     return Column(
@@ -51,53 +49,17 @@ class TaskStatusModalContent extends StatelessWidget {
         final icon = taskIconFromStatusString(status);
         final label = resolveLabel(status, context);
 
-        return Padding(
-          // Inset each row so its hover/selection highlight is a rounded,
-          // contained shape rather than a sharp edge-to-edge band. Matches the
-          // shared EntityPickerSheet rows (inset step3, radii.l) so the status
-          // / priority / label pickers read as one consistent family.
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step3,
-            vertical: tokens.spacing.step1,
+        return DesignSystemSelectionRow(
+          key: ValueKey('task-status-$status'),
+          title: label,
+          type: DesignSystemSelectionRowType.singleSelect,
+          selected: isSelected,
+          leading: Icon(
+            icon,
+            color: statusColor,
+            size: tokens.spacing.step6,
           ),
-          child: Semantics(
-            button: true,
-            selected: isSelected,
-            label: label,
-            child: InkWell(
-              onTap: () => Navigator.pop(context, status),
-              borderRadius: BorderRadius.circular(tokens.radii.l),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step3,
-                  vertical: tokens.spacing.step4,
-                ),
-                child: Row(
-                  children: [
-                    Icon(icon, color: statusColor, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        label,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                    if (isSelected)
-                      Icon(
-                        Icons.check_rounded,
-                        size: 18,
-                        color: colorScheme.primary,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          onTap: () => Navigator.pop(context, status),
         );
       }).toList(),
     );

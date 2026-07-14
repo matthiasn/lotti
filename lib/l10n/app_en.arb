@@ -3643,7 +3643,7 @@
   "projectShowcaseViewBlocker": "View blocker",
   "projectStatusActive": "Active",
   "projectStatusArchived": "Archived",
-  "projectStatusChangeTitle": "Change Status",
+  "projectStatusChangeTitle": "Change status",
   "projectStatusCompleted": "Completed",
   "projectStatusMonitoring": "Monitoring",
   "projectStatusOnHold": "On Hold",
@@ -4353,6 +4353,8 @@
   "taskAgentAutomaticUpdatesOffBadge": "Automatic updates off · Use Run now to update",
   "taskAgentAutomaticUpdatesOffDescription": "Automatic updates are off. Use Run now to update this report.",
   "taskAgentAutomaticUpdatesOnDescription": "When anything related to this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.",
+  "taskAgentAutomaticUpdatesSummary": "Bundle task changes and update after two minutes.",
+  "taskAgentAutomationSection": "Automation",
   "taskAgentCancelTimerTooltip": "Cancel pending automatic update",
   "taskAgentChooseModel": "Choose a thinking model",
   "taskAgentChooseProfile": "Choose an inference profile",
@@ -4378,7 +4380,8 @@
   "taskAgentDirectModelOverride": "Direct model override",
   "taskAgentDisableConfirmAction": "Turn off",
   "taskAgentDisableConfirmBody": "The current report stays visible, but this agent cannot run until you choose a setup.",
-  "taskAgentDisableConfirmTitle": "Turn off AI setup?",
+  "taskAgentDisableConfirmTitle": "Turn off AI for this agent?",
+  "taskAgentInferenceProfileLabel": "Inference profile",
   "taskAgentModelPickerTitle": "Choose thinking model",
   "taskAgentNoAiSetup": "No AI setup",
   "taskAgentNoAiSetupDescription": "Pauses agent inference until you choose a profile or model.",
@@ -4397,6 +4400,7 @@
   "taskAgentProfileDefaultBadge": "Profile default",
   "taskAgentRouteVia": "via",
   "taskAgentRunNowTooltip": "Run now",
+  "taskAgentSavingSetup": "Saving agent setup",
   "taskAgentSetupAndReportSemantics": "This report and current setup use {identity}. Activate to change setup.",
   "@taskAgentSetupAndReportSemantics": {
     "placeholders": {
@@ -4407,6 +4411,7 @@
   },
   "taskAgentSetupBroken": "Selected AI setup is unavailable",
   "taskAgentSetupChangedToast": "Using {model} for every future agent update until you change it.",
+  "taskAgentSetupChoiceHelp": "Choose a profile for its defaults, or override only the thinking model.",
   "@taskAgentSetupChangedToast": {
     "placeholders": {
       "model": {
@@ -4429,7 +4434,9 @@
     }
   },
   "taskAgentSetupTitle": "Agent setup",
+  "taskAgentThinkingModelLabel": "Thinking model",
   "taskAgentThisReportHeader": "This report",
+  "taskAgentTurnOffSetup": "Turn off AI for this agent",
   "taskAgentUseCategoryDefault": "Copy category default",
   "taskAgentUseCategoryDefaultDescription": "Copies the category’s current setup. Later category changes won’t affect this agent.",
   "taskAgentUseProfileDefault": "Use profile default",

@@ -448,7 +448,7 @@ void main() {
   );
 
   testWidgets(
-    'shared profile rows keep stable dividers during hover',
+    'shared profile rows omit dividers throughout hover',
     (tester) async {
       final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
 
@@ -470,15 +470,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Single template skips to profile page directly. Three profiles → 2
-      // dividers, both opaque before hover.
-      final dividersBefore = tester
-          .widgetList<Divider>(find.byType(Divider))
-          .toList();
-      expect(dividersBefore, hasLength(2));
-      for (final d in dividersBefore) {
-        expect(d.color, isNot(Colors.transparent));
-      }
+      // Single template skips to the shared profile selection page. Selection
+      // rows intentionally omit inset dividers so hover and selected fills
+      // remain one uninterrupted full-width band.
+      expect(find.textContaining('Profile '), findsNWidgets(3));
+      expect(find.byType(Divider), findsNothing);
 
       final gesture = await tester.createGesture(
         kind: PointerDeviceKind.mouse,
@@ -489,23 +485,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final dividersAfter = tester
-          .widgetList<Divider>(find.byType(Divider))
-          .toList();
-      expect(dividersAfter[0].color, isNot(Colors.transparent));
-      expect(dividersAfter[1].color, isNot(Colors.transparent));
+      expect(find.byType(Divider), findsNothing);
 
       // Pointer leaves — dividers return to default color.
       await gesture.moveTo(const Offset(-100, -100));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final dividersFinal = tester
-          .widgetList<Divider>(find.byType(Divider))
-          .toList();
-      for (final d in dividersFinal) {
-        expect(d.color, isNot(Colors.transparent));
-      }
+      expect(find.byType(Divider), findsNothing);
     },
   );
 

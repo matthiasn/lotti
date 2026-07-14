@@ -9175,6 +9175,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Quand quelque chose lié à cette tâche change, un compte à rebours de deux minutes démarre. Les changements effectués pendant ce délai sont regroupés dans une seule mise à jour.';
 
   @override
+  String get taskAgentAutomaticUpdatesSummary =>
+      'Regroupe les modifications de la tâche et actualise après deux minutes.';
+
+  @override
+  String get taskAgentAutomationSection => 'Automatisation';
+
+  @override
   String get taskAgentCancelTimerTooltip =>
       'Annuler la mise à jour automatique en attente';
 
@@ -9214,7 +9221,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le rapport actuel reste visible, mais l’agent ne peut plus s’exécuter tant que tu n’as pas choisi de configuration.';
 
   @override
-  String get taskAgentDisableConfirmTitle => 'Désactiver la configuration IA ?';
+  String get taskAgentDisableConfirmTitle => 'Désactiver l’IA pour cet agent ?';
+
+  @override
+  String get taskAgentInferenceProfileLabel => 'Profil d’inférence';
 
   @override
   String get taskAgentModelPickerTitle => 'Choisir un modèle de réflexion';
@@ -9256,6 +9266,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskAgentRunNowTooltip => 'Exécuter maintenant';
 
   @override
+  String get taskAgentSavingSetup =>
+      'Enregistrement de la configuration de l’agent';
+
+  @override
   String taskAgentSetupAndReportSemantics(String identity) {
     return 'Ce rapport et la configuration actuelle utilisent $identity. Active pour la modifier.';
   }
@@ -9268,6 +9282,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String taskAgentSetupChangedToast(String model) {
     return '$model sera utilisé pour chaque future mise à jour jusqu’à ce que tu le changes.';
   }
+
+  @override
+  String get taskAgentSetupChoiceHelp =>
+      'Choisis un profil pour les valeurs par défaut ou remplace uniquement le modèle de raisonnement.';
 
   @override
   String get taskAgentSetupOriginCategory =>
@@ -9299,7 +9317,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskAgentSetupTitle => 'Configuration de l’agent';
 
   @override
+  String get taskAgentThinkingModelLabel => 'Modèle de raisonnement';
+
+  @override
   String get taskAgentThisReportHeader => 'Ce rapport';
+
+  @override
+  String get taskAgentTurnOffSetup => 'Désactiver l’IA pour cet agent';
 
   @override
   String get taskAgentUseCategoryDefault => 'Copier le réglage de la catégorie';

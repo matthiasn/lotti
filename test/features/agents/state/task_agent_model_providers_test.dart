@@ -128,6 +128,19 @@ void main() {
       expect(options.models, [capable]);
       expect(options.profiles, isEmpty);
       expect(options.providers, [google]);
+
+      await Future<void>.value();
+      final cached = await container.read(taskAgentSetupOptionsProvider.future);
+      expect(cached, same(options));
+      verify(
+        () => repository.getConfigsByType(AiConfigType.inferenceProfile),
+      ).called(1);
+      verify(
+        () => repository.getConfigsByType(AiConfigType.model),
+      ).called(1);
+      verify(
+        () => repository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).called(1);
     },
   );
 

@@ -211,9 +211,12 @@ Important implementation details:
 - reads categories from the cache; callers may pass an explicit `options` list
   (e.g. day-plan-only for Daily OS processing, or inactive-inclusive for the
   dashboard-settings picker) rather than the default `sortedCategories`
-- groups favorites before non-favorites with one divider; selected rows are
-  tinted and checked (multi via `DesignSystemCheckbox`, single via a trailing
-  check) and private/favorite state is exposed to screen readers
+- groups favorites before non-favorites without inserting a rule between them;
+  the star remains the group cue. Option rows use `DesignSystemSelectionRow`,
+  so single and multi selection share the same full-width
+  selected/hover/focus surface and fixed leading rail. There are no dividers
+  that can remain visible next to an active row, and private/favorite state
+  remains exposed to screen readers
 - when search has no match it offers a "create" row that opens
   `CategoryCreateModal` with the search text prefilled (single returns the new
   category and closes; multi adds it to the staged set and stays open)

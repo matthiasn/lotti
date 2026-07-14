@@ -401,7 +401,7 @@ void main() {
       expect(find.text('Category 3'), findsNothing);
     });
 
-    testWidgets('orders favorites before others with a divider between', (
+    testWidgets('orders favorites before others without row dividers', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -422,7 +422,7 @@ void main() {
           .getTopLeft(find.byKey(const ValueKey('category-picker-row-cat2')))
           .dy;
       expect(yFavorite, lessThan(yOther));
-      expect(find.byType(Divider), findsOneWidget);
+      expect(find.byType(Divider), findsNothing);
     });
 
     testWidgets('offers to create a category when the search has no matches', (

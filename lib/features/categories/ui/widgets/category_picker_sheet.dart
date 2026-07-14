@@ -84,6 +84,7 @@ Future<CategorySingleResult?> showCategoryPicker({
   return ModalUtils.showSinglePageModal<CategorySingleResult>(
     context: context,
     title: title,
+    padding: EdgeInsets.zero,
     builder: (modalContext) => CategoryPickerSheet(
       mode: CategoryPickerMode.single,
       options: options ?? getIt<EntitiesCacheService>().sortedCategories,
@@ -119,9 +120,10 @@ Future<CategoryMultiResult?> showCategoryMultiPicker({
     final raw = await ModalUtils.showSinglePageModal<Set<String>>(
       context: context,
       title: title,
+      padding: EdgeInsets.zero,
       stickyActionBarBuilder: (footerContext) => buildPickerApplyFooter(
         context: footerContext,
-        label: applyLabel ?? footerContext.messages.doneButton,
+        label: applyLabel ?? footerContext.messages.tasksLabelsSheetApply,
         onTap: () => Navigator.of(footerContext).pop(staged.value),
         buttonKey: const ValueKey('category-picker-apply'),
       ),
@@ -242,7 +244,7 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
   /// options snapshot may not yet contain a freshly-created category).
   CategoryDefinition? _lastCreated;
 
-  List<PickerEntry> _entries(String query) {
+  List<PickerItem> _entries(String query) {
     final q = query.toLowerCase();
     final filtered = q.isEmpty
         ? widget.options
@@ -283,7 +285,6 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
         _clearItem(),
       if (_multi && widget.showUnassignedRow) _unassignedItem(),
       for (final c in favorites) _categoryItem(c),
-      if (favorites.isNotEmpty && others.isNotEmpty) const PickerDivider(),
       for (final c in others) _categoryItem(c),
     ];
   }

@@ -46,6 +46,7 @@ lib/features/design_system/
 │   ├── dropdowns/
 │   ├── motion/           # staggered entrance, strikethrough wipe
 │   ├── navigation/
+│   ├── selection/        # shared single/multi/navigation/action picker rows
 │   ├── task_filters/
 │   ├── task_list_items/
 │   └── ...
@@ -177,6 +178,12 @@ Representative primitive-ish components:
 - text inputs and textareas
 - chips, badges, avatars, dividers, tooltips
 - dropdowns, lists, spinners, progress bars, scrollbars
+- selection rows (`components/selection/design_system_selection_row.dart`) —
+  one full-width row anatomy for terminal single choice, staged multi-choice,
+  in-flow navigation, and actions. The component fixes the leading rail,
+  typography, selected surface, hover/focus behavior, semantics, and standard
+  trailing affordance. Homogeneous option lists intentionally omit dividers:
+  selected and hovered fills are never cut by a shorter inset rule.
 
 Representative composite or feature-shaped components:
 
@@ -300,6 +307,13 @@ A few implementation patterns repeat across the DS and are worth treating as con
 ### Token-First Sizing and Styling
 
 Representative components such as `DesignSystemButton`, `DesignSystemCheckbox`, and `DesignSystemSplitButton` derive padding, radii, icon size, and text style from `context.designTokens`, not local magic numbers.
+
+Destructive secondary and tertiary button labels use the stronger existing
+error interaction tokens rather than the filled-action default red. This keeps
+small danger labels at AA contrast on light and dark host surfaces; their
+pressed state uses the high-emphasis content token because the dark pressed
+surface cannot retain 4.5:1 with the available error palette. The filled danger
+button continues to use the default error token as its surface.
 
 ### Shell-Aware Overlay Spacing
 

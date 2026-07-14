@@ -12433,7 +12433,7 @@ abstract class AppLocalizations {
   /// No description provided for @projectStatusChangeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Change Status'**
+  /// **'Change status'**
   String get projectStatusChangeTitle;
 
   /// No description provided for @projectStatusCompleted.
@@ -15469,6 +15469,18 @@ abstract class AppLocalizations {
   /// **'When anything related to this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.'**
   String get taskAgentAutomaticUpdatesOnDescription;
 
+  /// No description provided for @taskAgentAutomaticUpdatesSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundle task changes and update after two minutes.'**
+  String get taskAgentAutomaticUpdatesSummary;
+
+  /// No description provided for @taskAgentAutomationSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Automation'**
+  String get taskAgentAutomationSection;
+
   /// No description provided for @taskAgentCancelTimerTooltip.
   ///
   /// In en, this message translates to:
@@ -15538,8 +15550,14 @@ abstract class AppLocalizations {
   /// No description provided for @taskAgentDisableConfirmTitle.
   ///
   /// In en, this message translates to:
-  /// **'Turn off AI setup?'**
+  /// **'Turn off AI for this agent?'**
   String get taskAgentDisableConfirmTitle;
+
+  /// No description provided for @taskAgentInferenceProfileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inference profile'**
+  String get taskAgentInferenceProfileLabel;
 
   /// No description provided for @taskAgentModelPickerTitle.
   ///
@@ -15607,6 +15625,12 @@ abstract class AppLocalizations {
   /// **'Run now'**
   String get taskAgentRunNowTooltip;
 
+  /// No description provided for @taskAgentSavingSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving agent setup'**
+  String get taskAgentSavingSetup;
+
   /// No description provided for @taskAgentSetupAndReportSemantics.
   ///
   /// In en, this message translates to:
@@ -15624,6 +15648,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Using {model} for every future agent update until you change it.'**
   String taskAgentSetupChangedToast(String model);
+
+  /// No description provided for @taskAgentSetupChoiceHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a profile for its defaults, or override only the thinking model.'**
+  String get taskAgentSetupChoiceHelp;
 
   /// No description provided for @taskAgentSetupOriginCategory.
   ///
@@ -15673,11 +15703,23 @@ abstract class AppLocalizations {
   /// **'Agent setup'**
   String get taskAgentSetupTitle;
 
+  /// No description provided for @taskAgentThinkingModelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking model'**
+  String get taskAgentThinkingModelLabel;
+
   /// No description provided for @taskAgentThisReportHeader.
   ///
   /// In en, this message translates to:
   /// **'This report'**
   String get taskAgentThisReportHeader;
+
+  /// No description provided for @taskAgentTurnOffSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off AI for this agent'**
+  String get taskAgentTurnOffSetup;
 
   /// No description provided for @taskAgentUseCategoryDefault.
   ///
