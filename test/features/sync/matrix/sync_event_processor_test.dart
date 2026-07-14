@@ -1331,6 +1331,33 @@ void main() {
         () => settingsDb.saveSettingsItem('DAILY_OS_USER_NAME', 'Sam'),
       ).called(1);
     });
+
+    test('catches and logs a persistence failure during apply', () async {
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenThrow(Exception('DB error'));
+
+      final message = SyncMessage.dailyOsUserName(
+        userName: 'Sam',
+        updatedAt: DateTime(2024, 3, 15).millisecondsSinceEpoch,
+        status: SyncEntryStatus.update,
+      );
+
+      // Should not throw — the error is caught and logged.
+      await processor.process(
+        event: createNameEvent(message),
+        journalDb: journalDb,
+      );
+
+      verify(
+        () => loggingService.error(
+          LogDomain.dailyOs,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'apply',
+        ),
+      ).called(1);
+    });
   });
 
   group('SyncEventProcessor - Backfill Messages', () {

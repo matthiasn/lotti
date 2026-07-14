@@ -80,9 +80,6 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
   bool _userNameEdited = false;
   bool _categoriesEdited = false;
 
-  /// True while applying a name arriving from another device, so the reload
-  /// does not re-enqueue an outbound sync message (theme-style ping-pong).
-  bool _isApplyingSyncedName = false;
   StreamSubscription<Set<String>>? _settingsNotificationSub;
   final _syncDebounceKey =
       'daily_os.userName.sync.${identityHashCode(Object())}';
@@ -155,8 +152,12 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
   }
 
   void setUserName(String value) {
-    _userNameEdited = true;
     final trimmed = value.trim();
+    // Skip a no-op edit: this avoids a redundant write, timestamp bump, and
+    // outbound sync message, and closes any echo loop when the text field is
+    // repopulated with a name that just arrived from another device.
+    if (trimmed == state.userName) return;
+    _userNameEdited = true;
     state = state.copyWith(userName: trimmed);
     // Persist the name and a fresh last-write timestamp together so the
     // outbound sync message and the local settings row agree on the winner.
@@ -167,10 +168,9 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
   }
 
   /// Debounced outbound sync of the greeting name. Coalesces rapid keystrokes
-  /// into one message, skips while applying a synced change, and is a no-op
-  /// before sync is configured (`OutboxService` unregistered).
+  /// into one message and is a no-op before sync is configured
+  /// (`OutboxService` unregistered).
   void _enqueueUserNameSync(String userName, int updatedAt) {
-    if (_isApplyingSyncedName) return;
     EasyDebounce.debounce(
       _syncDebounceKey,
       const Duration(milliseconds: 250),
@@ -204,10 +204,11 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
     if (!getIt.isRegistered<UpdateNotifications>()) return;
     _settingsNotificationSub = getIt<UpdateNotifications>().updateStream.listen(
       (ids) async {
-        if (!ids.contains(settingsNotification) || _isApplyingSyncedName) {
-          return;
-        }
-        _isApplyingSyncedName = true;
+        // Reload on every settings notification. Each reload reads the current
+        // stored value, so overlapping notifications never strand the
+        // controller on a stale name — there is no in-flight guard to drop a
+        // newer update.
+        if (!ids.contains(settingsNotification)) return;
         try {
           await _reloadUserNameFromSettings();
         } catch (e, st) {
@@ -220,7 +221,6 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
             );
           }
         }
-        _isApplyingSyncedName = false;
       },
     );
   }
@@ -228,7 +228,8 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
   Future<void> _reloadUserNameFromSettings() async {
     if (!getIt.isRegistered<SettingsDb>()) return;
     // The apply phase already resolved last-write-wins before writing, so the
-    // stored value is authoritative — override even a locally edited name.
+    // stored value is authoritative — override even a locally edited name. The
+    // reload never enqueues, so it cannot echo back to other devices.
     final stored = await getIt<SettingsDb>().itemByKey(
       dailyOsUserNameSettingsKey,
     );

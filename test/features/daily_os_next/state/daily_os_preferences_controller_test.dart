@@ -408,5 +408,58 @@ void main() {
         ).called(1);
       });
     });
+
+    test('re-setting the current name is a no-op with no redundant sync', () {
+      fakeAsync((async) {
+        final notifier = container.read(
+          dailyOsPreferencesControllerProvider.notifier,
+        )..setUserName('Sam');
+        async
+          ..elapse(const Duration(milliseconds: 400))
+          ..flushMicrotasks();
+        clearInteractions(outboxService);
+        clearInteractions(mocks.settingsDb);
+
+        notifier.setUserName('  Sam  '); // trims to the current value
+        async
+          ..elapse(const Duration(milliseconds: 400))
+          ..flushMicrotasks();
+
+        verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+        verifyNever(
+          () => mocks.settingsDb.saveSettingsItem(
+            dailyOsUserNameSettingsKey,
+            any(),
+          ),
+        );
+      });
+    });
+
+    test('a reload failure is caught and logged', () {
+      when(
+        () => mocks.settingsDb.itemByKey(dailyOsUserNameSettingsKey),
+      ).thenThrow(StateError('db down'));
+
+      fakeAsync((async) {
+        container.read(dailyOsPreferencesControllerProvider);
+        async
+          ..elapse(const Duration(milliseconds: 100))
+          ..flushMicrotasks();
+
+        notifications.add({settingsNotification});
+        async
+          ..elapse(const Duration(milliseconds: 100))
+          ..flushMicrotasks();
+
+        verify(
+          () => domainLogger.error(
+            LogDomain.dailyOs,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'reload',
+          ),
+        ).called(1);
+      });
+    });
   });
 }
