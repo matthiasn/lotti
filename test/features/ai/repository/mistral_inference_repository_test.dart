@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -37,6 +38,89 @@ void main() {
   });
 
   group('MistralInferenceRepository', () {
+    group('chat audio', () {
+      final modelCases = <String, bool>{
+        'voxtral-mini-latest': true,
+        'voxtral-small-latest': true,
+        'voxtral-mini-2507': true,
+        'voxtral-small-2507': true,
+        'voxtral-small-24b-2507': true,
+        'voxtral-mini-transcribe-2602': false,
+        'voxtral-mini-transcribe-realtime-2602': false,
+        'voxtral-mini-tts-2603': false,
+        'voxtral-mini-2602': false,
+        'mistral-small-latest': false,
+      };
+      for (final MapEntry(key: model, value: expected) in modelCases.entries) {
+        test('classifies $model as chatAudio=$expected', () {
+          expect(
+            MistralInferenceRepository.isMistralChatAudioModel(model),
+            expected,
+          );
+        });
+      }
+
+      test('sends Mistral base64 MP3 shape and removes the file', () async {
+        late http.Request capturedRequest;
+        final temporaryDirectory = await Directory.systemTemp.createTemp(
+          'lotti_mistral_chat_audio_test_',
+        );
+        addTearDown(() => temporaryDirectory.delete(recursive: true));
+        final mp3File = File('${temporaryDirectory.path}/request.mp3')
+          ..writeAsBytesSync([0x49, 0x44, 0x33, 7]);
+        final client = MockClient((request) async {
+          capturedRequest = request;
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {'content': 'Mistral transcript'},
+                },
+              ],
+            }),
+            200,
+          );
+        });
+        final chatRepository = MistralInferenceRepository(
+          httpClient: client,
+          audioToTemporaryMp3Encoder: (_) async => mp3File,
+        );
+        addTearDown(chatRepository.close);
+
+        final chunks = await chatRepository
+            .transcribeChatAudio(
+              model: 'voxtral-mini-latest',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: 'https://api.mistral.ai/v1',
+              apiKey: 'mistral-key',
+              prompt: 'Transcribe with context.',
+              maxCompletionTokens: 1024,
+            )
+            .toList();
+
+        expect(mp3File.existsSync(), isFalse);
+        expect(capturedRequest.url.path, '/v1/chat/completions');
+        final body = jsonDecode(capturedRequest.body) as Map<String, dynamic>;
+        expect(body.containsKey('request_id'), isFalse);
+        expect(body['stream'], isFalse);
+        expect(body['max_tokens'], 1024);
+        final messages = body['messages']! as List<dynamic>;
+        final message = messages.single as Map<String, dynamic>;
+        final content = message['content']! as List<dynamic>;
+        expect(content, [
+          {
+            'type': 'input_audio',
+            'input_audio': base64Encode([0x49, 0x44, 0x33, 7]),
+          },
+          {'type': 'text', 'text': 'Transcribe with context.'},
+        ]);
+        expect(
+          chunks.single.choices?.single.delta?.content,
+          'Mistral transcript',
+        );
+      });
+    });
+
     group('listModels', () {
       const baseUrl = 'https://api.mistral.ai/v1';
       const apiKey = 'mistral-key';

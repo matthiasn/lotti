@@ -215,8 +215,10 @@ class SkillInferenceRunner {
         // 6. Collect streaming response.
         final collected = await _collectStream(responseStream);
 
-        // Transcription runs on the /audio/transcriptions endpoint, which does
-        // not report environmental impact — record tokens only (impact null).
+        // Audio providers report token usage inconsistently and this surface
+        // has no impact side-channel. Preserve any returned usage while leaving
+        // environmental impact unset for both chat-audio and transcription
+        // endpoints.
         await _recordConsumption(
           entryId: audioEntryId,
           taskId: linkedTaskId,

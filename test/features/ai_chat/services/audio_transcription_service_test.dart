@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
@@ -88,9 +89,11 @@ AiConfig _audioModel({
 /// a provider type + a `providerModelId` shape that the predicates in
 /// `debugSelectBatchAudioModel` discriminate on.
 enum _ModelKind {
-  /// Mistral provider + a `voxtral-` model → Mistral offline transcription
-  /// (highest priority).
-  mistralVoxtral,
+  /// Mistral provider + an instruction-following Voxtral chat-audio model.
+  mistralChatAudio,
+
+  /// Mistral provider + a transcription-only Voxtral model.
+  mistralTranscription,
 
   /// Mistral provider + a non-voxtral model → generic Mistral batch.
   mistralOther,
@@ -112,7 +115,8 @@ enum _ModelKind {
 }
 
 InferenceProviderType _providerTypeFor(_ModelKind kind) => switch (kind) {
-  _ModelKind.mistralVoxtral ||
+  _ModelKind.mistralChatAudio ||
+  _ModelKind.mistralTranscription ||
   _ModelKind.mistralOther => InferenceProviderType.mistral,
   _ModelKind.meliousWhisper ||
   _ModelKind.meliousVoxtral => InferenceProviderType.melious,
@@ -122,7 +126,8 @@ InferenceProviderType _providerTypeFor(_ModelKind kind) => switch (kind) {
 };
 
 String _providerModelIdFor(_ModelKind kind, int index) => switch (kind) {
-  _ModelKind.mistralVoxtral => 'voxtral-mini-latest-$index',
+  _ModelKind.mistralChatAudio => 'voxtral-mini-latest',
+  _ModelKind.mistralTranscription => 'voxtral-mini-transcribe-2602',
   _ModelKind.mistralOther => 'mistral-large-audio-$index',
   _ModelKind.meliousWhisper => 'openai/whisper-large-v3',
   _ModelKind.meliousVoxtral => 'voxtral-small-24b-2507',
@@ -631,8 +636,8 @@ void main() {
     expect(chunks, ['content']);
   });
 
-  group('offline bias-capable model selection', () {
-    test('prefers Mistral offline over MLX Qwen when both exist', () async {
+  group('context-capable model selection', () {
+    test('prefers Mistral chat audio over MLX Qwen when both exist', () async {
       final aiRepo = isolatedRepo();
       await aiRepo.saveConfig(
         _provider(
@@ -791,7 +796,7 @@ void main() {
     );
 
     test(
-      'uses Mistral offline context bias when Qwen is unavailable',
+      'forwards dictionary terms to Mistral chat audio when Qwen is unavailable',
       () async {
         final aiRepo = isolatedRepo();
         await aiRepo.saveConfig(
@@ -875,6 +880,20 @@ void main() {
     expect(selected.providerModelId, 'voxtral-small-24b-2507');
   });
 
+  test('batch selector prefers Mistral chat audio over transcription', () {
+    final inputs = _buildSelectionInputs([
+      _ModelKind.mistralTranscription,
+      _ModelKind.mistralChatAudio,
+    ]);
+
+    final selected = debugSelectBatchAudioModel(
+      inputs.models,
+      inputs.providers,
+    );
+
+    expect(selected.providerModelId, 'voxtral-mini-latest');
+  });
+
   group('batch model-selection priority (property)', () {
     glados.Glados<List<_ModelKind>>(
       glados.any.nonEmptyList(glados.any.choose(_ModelKind.values)),
@@ -895,6 +914,11 @@ void main() {
         bool isMistral(AiConfigModel m) =>
             providerType[m.inferenceProviderId] ==
             InferenceProviderType.mistral;
+        bool isMistralChatAudio(AiConfigModel m) =>
+            isMistral(m) &&
+            MistralInferenceRepository.isMistralChatAudioModel(
+              m.providerModelId,
+            );
         bool isMistralVoxtral(AiConfigModel m) =>
             isMistral(m) && m.providerModelId.startsWith('voxtral-');
         bool isMeliousVoxtral(AiConfigModel m) =>
@@ -916,11 +940,17 @@ void main() {
         expect(inputs.models, contains(selected), reason: 'kinds=$kinds');
 
         // Priority: each higher tier, when present, forces the pick into it.
-        if (inputs.models.any(isMistralVoxtral)) {
+        if (inputs.models.any(isMistralChatAudio)) {
+          expect(
+            isMistralChatAudio(selected),
+            isTrue,
+            reason: 'Mistral chat audio wins; kinds=$kinds',
+          );
+        } else if (inputs.models.any(isMistralVoxtral)) {
           expect(
             isMistralVoxtral(selected),
             isTrue,
-            reason: 'voxtral wins; kinds=$kinds',
+            reason: 'Mistral transcription wins; kinds=$kinds',
           );
         } else if (inputs.models.any(isMistral)) {
           expect(

@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
-import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
@@ -11,6 +9,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
+import 'package:lotti/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
@@ -26,11 +25,6 @@ typedef MeliousChatCompletionStreamFactory =
       required CreateChatCompletionRequest request,
     });
 
-typedef MeliousAudioToTemporaryMp3Encoder =
-    Future<File> Function(Uint8List bytes);
-typedef MeliousTemporaryFileReader = Future<Uint8List> Function(File file);
-typedef MeliousTemporaryFileDeleter = void Function(File file);
-
 /// Melious.ai inference repository.
 ///
 /// Melious is OpenAI-compatible for chat, vision chat, audio transcription,
@@ -43,9 +37,9 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     super.httpClient,
     CloudInferenceRequestHelpers? helpers,
     MeliousChatCompletionStreamFactory? chatCompletionStreamFactory,
-    MeliousAudioToTemporaryMp3Encoder? audioToTemporaryMp3Encoder,
-    MeliousTemporaryFileReader? temporaryFileReader,
-    MeliousTemporaryFileDeleter? temporaryFileDeleter,
+    AudioToTemporaryMp3Encoder? audioToTemporaryMp3Encoder,
+    TemporaryAudioFileReader? temporaryFileReader,
+    TemporaryAudioFileDeleter? temporaryFileDeleter,
     Clock? clockSource,
   }) : _helpers = helpers ?? const CloudInferenceRequestHelpers(),
        _chatCompletionStreamFactory =
@@ -64,7 +58,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   // Voxtral can process recordings up to 30 minutes, and local preparation is
   // included in this deadline. Match the native Voxtral route's long-audio
   // allowance instead of applying the general short-request timeout.
-  static const _chatAudioTimeout = Duration(minutes: 15);
   // Generous because the non-streaming impact path buffers the entire
   // response: nothing is emitted (and no onProgress fires) until the full
   // body arrives or this timeout trips.
@@ -79,9 +72,9 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
   final CloudInferenceRequestHelpers _helpers;
   final MeliousChatCompletionStreamFactory _chatCompletionStreamFactory;
-  final MeliousAudioToTemporaryMp3Encoder _audioToTemporaryMp3Encoder;
-  final MeliousTemporaryFileReader _temporaryFileReader;
-  final MeliousTemporaryFileDeleter _temporaryFileDeleter;
+  final AudioToTemporaryMp3Encoder _audioToTemporaryMp3Encoder;
+  final TemporaryAudioFileReader _temporaryFileReader;
+  final TemporaryAudioFileDeleter _temporaryFileDeleter;
   final Clock _clock;
 
   /// Fetches the live Melious model catalog and maps `_meta` capability data
@@ -677,194 +670,28 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     required String apiKey,
     required String prompt,
     int? maxCompletionTokens,
-    Duration timeout = _chatAudioTimeout,
-  }) async* {
-    final normalizedModel = model.trim();
-    final normalizedBaseUrl = baseUrl.trim();
-    final normalizedApiKey = apiKey.trim();
-    if (normalizedModel.isEmpty) {
-      throw ArgumentError('Model name cannot be empty');
-    }
-    if (audioBase64.isEmpty) {
-      throw ArgumentError('Audio data cannot be empty');
-    }
-    if (normalizedBaseUrl.isEmpty) {
-      throw ArgumentError('Base URL cannot be empty');
-    }
-    if (normalizedApiKey.isEmpty) {
-      throw ArgumentError('API key cannot be empty');
-    }
-
-    final requestId = 'melious-audio-${const Uuid().v4()}';
-
-    File? temporaryMp3File;
-    var timeoutStage = 'preparing the temporary MP3';
-    try {
-      final deadline = _clock.now().add(timeout);
-      Duration remainingTimeoutOrThrow() {
-        final remaining = deadline.difference(_clock.now());
-        if (remaining <= Duration.zero) {
-          throw TimeoutException('Melious chat-audio deadline exhausted');
-        }
-        return remaining;
-      }
-
-      final sourceBytes = base64Decode(audioBase64);
-      final conversionTimeout = remainingTimeoutOrThrow();
-      temporaryMp3File = await _audioToTemporaryMp3Encoder(
-        sourceBytes,
-      ).timeout(conversionTimeout);
-      timeoutStage = 'reading the temporary MP3';
-      final mp3Bytes = await _temporaryFileReader(temporaryMp3File).timeout(
-        remainingTimeoutOrThrow(),
-      );
-      if (mp3Bytes.isEmpty) {
-        throw const TemporaryMp3EncodingException(
-          'Temporary MP3 encoder produced an empty file',
-        );
-      }
-      final messageContent = [
-        {
-          'type': 'input_audio',
-          'input_audio': {
-            'data': base64Encode(mp3Bytes),
-            'format': 'mp3',
-          },
-        },
-        {'type': 'text', 'text': prompt},
-      ];
-
-      final uri = _buildEndpointUri(normalizedBaseUrl, 'chat/completions');
-      final body = <String, dynamic>{
-        'model': normalizedModel,
-        'request_id': requestId,
-        'messages': [
-          {
-            'role': 'user',
-            'content': messageContent,
-          },
-        ],
-        'stream': false,
-        'temperature': 0.0,
-        'max_tokens': ?maxCompletionTokens,
-      };
-      timeoutStage = 'waiting for the Voxtral response';
-      final requestTimeout = remainingTimeoutOrThrow();
-      final response = await httpClient
-          .post(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Authorization': 'Bearer $normalizedApiKey',
-            },
-            body: jsonEncode(body),
-          )
-          .timeout(requestTimeout);
-
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw TranscriptionException(
-          'HTTP ${response.statusCode}: '
-          '${_extractErrorMessage(response.body, response.statusCode)} '
-          '(request $requestId)',
-          provider: _providerName,
-          statusCode: response.statusCode,
-        );
-      }
-
-      final decoded = jsonDecode(response.body);
-      if (decoded is! Map<String, dynamic>) {
-        throw TranscriptionException(
-          'Melious returned an invalid chat-audio response '
-          '(request $requestId)',
-          provider: _providerName,
-        );
-      }
-      final choices = decoded['choices'];
-      final firstChoice = choices is List && choices.isNotEmpty
-          ? choices.first
-          : null;
-      final message = firstChoice is Map<String, dynamic>
-          ? firstChoice['message']
-          : null;
-      final content = message is Map<String, dynamic>
-          ? message['content']
-          : null;
-      if (content is! String || content.trim().isEmpty) {
-        throw TranscriptionException(
-          'Melious returned no transcript for $normalizedModel '
-          '(request $requestId)',
-          provider: _providerName,
-        );
-      }
-      final responseId = decoded['id'];
-      final responseCreated = decoded['created'];
-      final responseModel = decoded['model'];
-
-      yield CreateChatCompletionStreamResponse(
-        id: responseId is String ? responseId : requestId,
-        choices: [
-          ChatCompletionStreamResponseChoice(
-            delta: ChatCompletionStreamResponseDelta(content: content),
-            index: 0,
-            finishReason: ChatCompletionFinishReason.stop,
-          ),
-        ],
-        object: 'chat.completion.chunk',
-        created: responseCreated is int ? responseCreated : 0,
-        model: responseModel is String ? responseModel : normalizedModel,
-        usage: parseCompletionUsage(decoded['usage']),
-      );
-    } on TranscriptionException catch (error) {
-      if (error.message.contains('(request ')) rethrow;
-      final statusPrefix =
-          error.statusCode != null &&
-              !error.message.contains('HTTP ${error.statusCode}')
-          ? 'HTTP ${error.statusCode}: '
-          : '';
-      throw TranscriptionException(
-        '$statusPrefix${error.message} (request $requestId)',
-        provider: error.provider ?? _providerName,
-        statusCode: error.statusCode,
-        originalError: error.originalError ?? error,
-      );
-    } on TimeoutException catch (error) {
-      throw TranscriptionException(
-        'Melious chat-audio request timed out while $timeoutStage after '
-        '${timeout.inSeconds} seconds (request $requestId)',
-        provider: _providerName,
-        statusCode: httpStatusRequestTimeout,
-        originalError: error,
-      );
-    } on FormatException catch (error) {
-      throw TranscriptionException(
-        'Melious chat-audio response was not valid JSON '
-        '(request $requestId)',
-        provider: _providerName,
-        originalError: error,
-      );
-    } on Exception catch (error) {
-      throw TranscriptionException(
-        'Melious chat-audio request failed: $error (request $requestId)',
-        provider: _providerName,
-        originalError: error,
-      );
-    } finally {
-      final file = temporaryMp3File;
-      if (file != null) {
-        try {
-          if (file.existsSync()) _temporaryFileDeleter(file);
-        } on FileSystemException catch (error, stackTrace) {
-          developer.log(
-            'Failed to delete temporary Voxtral MP3 file',
-            name: _providerName,
-            error: error,
-            stackTrace: stackTrace,
-          );
-        }
-      }
-    }
-  }
+    Duration timeout = temporaryMp3ChatAudioTimeout,
+  }) => transcribeTemporaryMp3ChatAudio(
+    httpClient: httpClient,
+    provider: const TemporaryMp3ChatAudioProvider(
+      repositoryName: _providerName,
+      displayName: 'Melious',
+      requestIdPrefix: 'melious-audio-',
+      payloadDialect: ChatAudioPayloadDialect.openAi,
+      includeRequestIdInBody: true,
+    ),
+    model: model,
+    audioBase64: audioBase64,
+    baseUrl: baseUrl,
+    apiKey: apiKey,
+    prompt: prompt,
+    maxCompletionTokens: maxCompletionTokens,
+    timeout: timeout,
+    audioToTemporaryMp3Encoder: _audioToTemporaryMp3Encoder,
+    temporaryFileReader: _temporaryFileReader,
+    temporaryFileDeleter: _temporaryFileDeleter,
+    clockSource: _clock,
+  );
 
   /// Generates an image through Melious' `/images/generations` endpoint.
   ///

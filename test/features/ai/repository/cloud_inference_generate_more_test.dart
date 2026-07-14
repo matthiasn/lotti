@@ -120,6 +120,48 @@ void main() {
 
   group('generateWithAudio routing', () {
     test(
+      'routes Mistral instruction-following Voxtral through MP3 chat audio',
+      () async {
+        final mistralRepository = _FakeMistralInferenceRepository();
+        addTearDown(mistralRepository.close);
+        final mistralGenerateMore = createGenerateMore(
+          mistralRepository: mistralRepository,
+        );
+        final mistralProvider = providerOfType(
+          InferenceProviderType.mistral,
+        );
+
+        final chunks = await mistralGenerateMore
+            .generateWithAudio(
+              prompt,
+              model: 'voxtral-mini-latest',
+              audioBase64: 'mistral-audio',
+              baseUrl: mistralProvider.baseUrl,
+              apiKey: mistralProvider.apiKey,
+              provider: mistralProvider,
+              maxCompletionTokens: 768,
+              speechDictionaryTerms: const ['Lotti', 'Voxtral'],
+            )
+            .toList();
+
+        expect(chunks.single.id, 'mistral-voxtral-chat');
+        expect(
+          chunks.single.choices?.single.delta?.content,
+          'mistral voxtral chat text',
+        );
+        final request = mistralRepository.chatAudioCalls.single;
+        expect(request.model, 'voxtral-mini-latest');
+        expect(request.audioBase64, 'mistral-audio');
+        expect(request.baseUrl, baseUrl);
+        expect(request.apiKey, 'key');
+        expect(request.maxCompletionTokens, 768);
+        expect(request.prompt, contains('SPEECH DICTIONARY'));
+        expect(request.prompt, contains('"Lotti"'));
+        expect(request.prompt, contains('"Voxtral"'));
+      },
+    );
+
+    test(
       'routes Whisper provider through the transcription endpoint',
       () async {
         const audioBase64 = 'audio-base64';
@@ -627,6 +669,17 @@ void main() {
 }
 
 class _FakeMistralInferenceRepository extends MistralInferenceRepository {
+  final chatAudioCalls =
+      <
+        ({
+          String model,
+          String audioBase64,
+          String baseUrl,
+          String apiKey,
+          String prompt,
+          int? maxCompletionTokens,
+        })
+      >[];
   final messageCalls =
       <
         ({
@@ -634,6 +687,32 @@ class _FakeMistralInferenceRepository extends MistralInferenceRepository {
           ReasoningEffort? reasoningEffort,
         })
       >[];
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> transcribeChatAudio({
+    required String model,
+    required String audioBase64,
+    required String baseUrl,
+    required String apiKey,
+    required String prompt,
+    int? maxCompletionTokens,
+    Duration timeout = const Duration(minutes: 15),
+  }) {
+    chatAudioCalls.add((
+      model: model,
+      audioBase64: audioBase64,
+      baseUrl: baseUrl,
+      apiKey: apiKey,
+      prompt: prompt,
+      maxCompletionTokens: maxCompletionTokens,
+    ));
+    return Stream.value(
+      _FakeMeliousInferenceRepository._chunk(
+        id: 'mistral-voxtral-chat',
+        content: 'mistral voxtral chat text',
+      ),
+    );
+  }
 
   @override
   Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({

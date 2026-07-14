@@ -1044,14 +1044,14 @@ void main() {
         );
       });
 
-      test('Voxtral Mini Transcribe should have audio input', () {
+      test('Voxtral Mini should have audio input', () {
         final audioModel = mistralModels.firstWhere(
           (m) => m.providerModelId == ftueMistralAudioModelId,
         );
         expect(
           audioModel.inputModalities,
           contains(Modality.audio),
-          reason: 'Voxtral Mini Transcribe should accept audio input',
+          reason: 'Voxtral Mini should accept audio input',
         );
         expect(audioModel.outputModalities, contains(Modality.text));
       });
@@ -1322,7 +1322,7 @@ void main() {
         );
         expect(models.reasoning.isReasoningModel, isTrue);
 
-        // Verify audio model (Voxtral Mini Transcribe)
+        // Verify audio model (Voxtral Mini)
         expect(models.audio.providerModelId, equals(ftueMistralAudioModelId));
         expect(models.audio.inputModalities, contains(Modality.audio));
       });

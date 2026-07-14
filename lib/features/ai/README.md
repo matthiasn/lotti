@@ -313,6 +313,17 @@ after success, provider failure, transport failure, or timeout. The audio block
 precedes the text block so the task prompt and category speech dictionary guide
 recognition.
 
+Mistral's instruction-following `voxtral-mini-latest`,
+`voxtral-small-latest`, and 25.07 Voxtral Mini/Small models use the same
+temporary-MP3 lifecycle and buffered chat route. The shared
+`temporary_mp3_chat_audio_transcriber.dart` owns the deadline, conversion,
+cleanup, request errors, and response normalization for both providers. Only
+the JSON audio part differs: Melious uses the OpenAI-compatible
+`input_audio: {data, format: mp3}` object, while Mistral's native API expects
+`input_audio` to contain the base64 MP3 string directly. Mistral Transcribe 2
+and other transcription-only variants remain on `/audio/transcriptions`, where
+diarization, timestamps, and native `context_bias` are available.
+
 Decoding uses `audio_decoder` with AVFoundation on iOS and macOS, MediaCodec on
 Android, and Media Foundation on Windows. Linux uses Lotti's GStreamer pipeline,
 which writes PCM WAV directly and monitors the pipeline bus so missing codecs
@@ -337,15 +348,15 @@ sequenceDiagram
   participant Scratch as Temporary files
   participant Decoder as Native decoder
   participant LAME as Bundled LAME worker
-  participant Melious as Voxtral chat
+  participant ChatProvider as Melious or Mistral Voxtral chat
   Archive->>Scratch: copy bytes to unique .m4a
   Scratch->>Decoder: decode .m4a to PCM .wav
   Decoder-->>Scratch: write RIFF/WAVE output
   Scratch->>LAME: normalized PCM chunks (one second/channel)
   LAME-->>Scratch: write 64 kbps .mp3
   Scratch->>Scratch: delete decoder .m4a and .wav
-  Scratch->>Melious: MP3 audio block + task/dictionary context
-  Melious-->>Scratch: contextual transcript or provider error
+  Scratch->>ChatProvider: provider-shaped MP3 block + task/dictionary context
+  ChatProvider-->>Scratch: contextual transcript or provider error
   Scratch->>Scratch: delete .mp3 in finally
 ```
 
@@ -608,10 +619,12 @@ flowchart LR
 ```
 
 The direct `AudioTranscriptionService` path used by Daily OS capture/refine
-prefers Mistral's non-realtime Voxtral transcription model over MLX Qwen when
-both are configured, then falls back to MLX Qwen, Gemini Flash, or the first
-remaining audio-capable model. Realtime-only Mistral models stay excluded from
-that batch verifier because they require the WebSocket pipeline.
+prefers a Mistral instruction-following Voxtral chat-audio model, then a
+Mistral transcription-only Voxtral model, then any other configured Mistral
+audio model. It next considers contextual Melious Voxtral, Melious STT, MLX
+Qwen, Gemini Flash, and the first remaining audio-capable model. Realtime-only
+Mistral models stay excluded from that batch verifier because they require the
+WebSocket pipeline.
 
 **Synced-audio auto-trigger uses a different path.** When a `JournalAudio`
 arrives over Matrix sync (recorded on another device), `SyncedAudioInferenceDispatcher`
@@ -874,7 +887,7 @@ It is now a thin **facade**: every public method delegates to one of two collabo
 | --- | --- | --- |
 | `generate()` | Ollama, Gemini, Mistral, Melious | OpenAI-compatible chat streaming; explicit reasoning effort is forwarded where supported, but omitted from Mistral requests |
 | `generateWithImages()` | Ollama, Melious, Mistral OCR (`/v1/ocr` for `mistral-ocr-*`) | OpenAI-compatible multimodal chat; Gemini receives `reasoning_effort` for its thinking mode |
-| `generateWithAudio()` | Whisper, Voxtral, MLX Audio native bridge, oMLX transcription endpoint, OpenAI transcription endpoint, Mistral transcription endpoint, Melious transcription endpoint | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` for its thinking mode |
+| `generateWithAudio()` | Whisper, Voxtral, MLX Audio native bridge, oMLX/OpenAI/Mistral/Melious transcription endpoints, temporary-MP3 Mistral and Melious Voxtral chat audio | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` for its thinking mode |
 | `generateWithMessages()` | Gemini, Ollama, Mistral, Melious | OpenAI-compatible full-history chat; explicit reasoning effort is forwarded where supported, but omitted from Mistral requests |
 | `generateImage()` | Gemini, Alibaba DashScope, Melious | Unsupported for all other provider types |
 
@@ -1009,9 +1022,10 @@ For speech dictionary support, `UnifiedAiInferenceRepository` and
 `PromptBuilderHelper.getSpeechDictionaryTerms()`. The MLX Audio branch forwards
 those terms across the channel with the transcription request. Qwen3-ASR uses
 that list as prompt context for post-recording transcription today. Chat-audio
-requests that use the OpenAI-compatible fallback append the same dictionary
-block to the user message, while Mistral continues to use its dedicated
-`context_bias` parameter. Decoder-level
+requests append the same dictionary block to the user message, including the
+temporary-MP3 Mistral and Melious Voxtral paths. Mistral transcription-only
+models instead receive the terms through their dedicated `context_bias`
+parameter. Decoder-level
 dictionary/G2P integration remains a separate native bridge follow-up once that
 SDK surface is stable.
 

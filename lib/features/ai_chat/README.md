@@ -284,9 +284,11 @@ is treated as a failure rather than a successful empty dictation.
 
 - reads AI configs
 - finds audio-capable models
-- prefers Mistral offline transcription models first, so their `context_bias`
-  parameter can receive the category speech dictionary terms
-- then any configured Mistral audio model
+- prefers instruction-following Mistral Voxtral models, which receive the task
+  prompt and category speech dictionary beside a temporary MP3 in buffered
+  `/chat/completions`
+- then Mistral transcription-only Voxtral models through
+  `/audio/transcriptions`, followed by any other configured Mistral audio model
 - then Melious Voxtral models: the M4A master remains untouched while a native
   decoder produces temporary PCM and bundled LAME emits a 64 kbps temporary MP3
   for contextual `/chat/completions`; decoder scratch files and the MP3 are
@@ -310,7 +312,7 @@ sequenceDiagram
   participant Cloud as "CloudInferenceRepository"
   participant MLX as "MlxAudioChannel"
   participant LAME as "Temporary MP3 encoder"
-  participant Melious as "Melious Voxtral"
+  participant VoxtralChat as "Mistral or Melious Voxtral chat"
 
   UI->>File: record m4a in temp dir
   UI->>Batch: transcribeStream(filePath)
@@ -318,12 +320,12 @@ sequenceDiagram
   alt MLX Audio provider
     Batch->>MLX: transcribeFile(filePath, modelId)
     MLX-->>Batch: final transcript
-  else Melious Voxtral
+  else Mistral or Melious chat-capable Voxtral
     Batch->>Cloud: generateWithAudio(m4a bytes, prompt context)
     Cloud->>LAME: decode PCM and encode 64 kbps MP3
     LAME-->>Cloud: temporary .mp3 path
-    Cloud->>Melious: input_audio format=mp3
-    Melious-->>Cloud: contextual transcript or provider error
+    Cloud->>VoxtralChat: provider-shaped MP3 input_audio + text context
+    VoxtralChat-->>Cloud: contextual transcript or provider error
     Cloud->>Cloud: delete temporary .mp3 in finally
     Cloud-->>Batch: transcript chunk or detailed error
   else HTTP provider

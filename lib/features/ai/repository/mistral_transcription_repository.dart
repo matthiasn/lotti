@@ -13,7 +13,9 @@ import 'package:uuid/uuid.dart';
 ///
 /// Mistral's Voxtral Transcribe 2 (released 2026-02-04) supports M4A, MP3,
 /// WAV, FLAC, and OGG up to 1 GB / 3 hours per request via multipart/form-data.
-/// This avoids the chat completions endpoint which doesn't accept M4A audio.
+/// This remains the path for transcription-only Voxtral variants and callers
+/// that need diarization/timestamps. Instruction-following Voxtral Mini/Small
+/// models use temporary MP3 chat audio in `MistralInferenceRepository`.
 ///
 /// Diarization is always enabled (`diarize=true`), providing speaker
 /// attribution in the response segments. When multiple speakers are detected,
@@ -24,12 +26,13 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
   static const _providerName = 'MistralTranscription';
   static const _uuid = Uuid();
 
-  /// Checks if a model is a Mistral transcription model that requires
-  /// the `/v1/audio/transcriptions` endpoint instead of chat completions.
+  /// Checks if a model belongs to Mistral's Voxtral family.
   ///
   /// Uses a `voxtral-` prefix check. This is safe because the caller in
-  /// `CloudInferenceRepository` also gates on `InferenceProviderType.mistral`,
-  /// so local Voxtral models (which use a different provider type) won't match.
+  /// `CloudInferenceRepository` also gates on `InferenceProviderType.mistral`
+  /// and checks chat-capable models first. This broad fallback therefore keeps
+  /// transcription-only and future Voxtral variants on the dedicated endpoint
+  /// without affecting local Voxtral providers.
   static bool isMistralTranscriptionModel(String model) {
     return model.startsWith('voxtral-');
   }

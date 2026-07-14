@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
@@ -155,9 +156,10 @@ class AudioTranscriptionService {
 }
 
 /// Test-only access to the batch audio-model selection priority, so its
-/// ordering algebra (Mistral-offline > Mistral-batch > Melious-chat-audio >
-/// Melious-STT > MLX-Qwen > flash-preferred > first) can be property-tested
-/// without driving the streaming pipeline.
+/// ordering algebra (Mistral-chat-audio > Mistral-transcription >
+/// Mistral-batch > Melious-chat-audio > Melious-STT > MLX-Qwen >
+/// flash-preferred > first) can be property-tested without driving the
+/// streaming pipeline.
 @visibleForTesting
 AiConfigModel debugSelectBatchAudioModel(
   List<AiConfigModel> audioModels,
@@ -177,15 +179,26 @@ AiConfigModel _selectBatchAudioModel(
         type;
   }
 
-  final mistralOffline = audioModels.firstWhereOrNull(
+  final mistralChatAudio = audioModels.firstWhereOrNull(
+    (model) =>
+        hasProviderType(model, InferenceProviderType.mistral) &&
+        MistralInferenceRepository.isMistralChatAudioModel(
+          model.providerModelId,
+        ),
+  );
+  if (mistralChatAudio != null) {
+    return mistralChatAudio;
+  }
+
+  final mistralTranscription = audioModels.firstWhereOrNull(
     (model) =>
         hasProviderType(model, InferenceProviderType.mistral) &&
         MistralTranscriptionRepository.isMistralTranscriptionModel(
           model.providerModelId,
         ),
   );
-  if (mistralOffline != null) {
-    return mistralOffline;
+  if (mistralTranscription != null) {
+    return mistralTranscription;
   }
 
   final mistralBatch = audioModels.firstWhereOrNull(
