@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -308,6 +310,118 @@ void main() {
 
     expect(chunks.single.choices?.single.delta?.content, 'the transcript');
     expect(encodedFile.existsSync(), isTrue);
+  });
+
+  test('request timeout signals HTTP abortion and removes the MP3', () {
+    fakeAsync((async) {
+      http.AbortableRequest? capturedRequest;
+      final client = MockClient.streaming((request, _) {
+        capturedRequest = request as http.AbortableRequest;
+        return Completer<http.StreamedResponse>().future;
+      });
+      late File encodedFile;
+      Object? failure;
+      var completed = false;
+      var aborted = false;
+
+      transcribeTemporaryMp3ChatAudio(
+        httpClient: client,
+        provider: mistralProvider,
+        model: model,
+        audioBase64: base64Encode(sourceBytes),
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        prompt: prompt,
+        timeout: const Duration(seconds: 1),
+        audioToTemporaryMp3Encoder: (_) async {
+          return encodedFile = temporaryMp3();
+        },
+        temporaryFileReader: (_) async => Uint8List.fromList([1, 2, 3]),
+      ).toList().then<void>(
+        (_) {
+          completed = true;
+        },
+        onError: (Object error, StackTrace _) {
+          failure = error;
+          completed = true;
+        },
+      );
+
+      async.flushMicrotasks();
+      capturedRequest!.abortTrigger!.then((_) => aborted = true);
+      async.flushMicrotasks();
+      expect(aborted, isFalse);
+      expect(completed, isFalse);
+
+      async
+        ..elapse(const Duration(seconds: 1))
+        ..flushMicrotasks();
+
+      expect(aborted, isTrue);
+      expect(completed, isTrue);
+      expect(
+        failure,
+        isA<TranscriptionException>().having(
+          (error) => error.message,
+          'message',
+          allOf(
+            contains('timed out'),
+            contains('waiting for the Voxtral response'),
+          ),
+        ),
+      );
+      expect(encodedFile.existsSync(), isFalse);
+      client.close();
+    });
+  });
+
+  test('stream cancellation aborts the request and removes the MP3', () async {
+    final requestStarted = Completer<http.AbortableRequest>();
+    final responseCompleter = Completer<http.StreamedResponse>();
+    final cleanupCompleted = Completer<void>();
+    final client = MockClient.streaming((request, _) {
+      final abortableRequest = request as http.AbortableRequest;
+      requestStarted.complete(abortableRequest);
+      abortableRequest.abortTrigger!.then((_) {
+        if (!responseCompleter.isCompleted) {
+          responseCompleter.completeError(
+            http.RequestAbortedException(request.url),
+          );
+        }
+      });
+      return responseCompleter.future;
+    });
+    addTearDown(client.close);
+    late File encodedFile;
+    Object? failure;
+
+    final subscription = transcribeTemporaryMp3ChatAudio(
+      httpClient: client,
+      provider: mistralProvider,
+      model: model,
+      audioBase64: base64Encode(sourceBytes),
+      baseUrl: baseUrl,
+      apiKey: apiKey,
+      prompt: prompt,
+      audioToTemporaryMp3Encoder: (_) async {
+        return encodedFile = temporaryMp3();
+      },
+      temporaryFileReader: (_) async => Uint8List.fromList([1, 2, 3]),
+      temporaryFileDeleter: (file) {
+        file.deleteSync();
+        cleanupCompleted.complete();
+      },
+    ).listen((_) {}, onError: (Object error) => failure = error);
+
+    final request = await requestStarted.future;
+    expect(request.abortTrigger, isNotNull);
+
+    await subscription.cancel();
+    await request.abortTrigger;
+    await cleanupCompleted.future;
+
+    expect(failure, isNull);
+    expect(encodedFile.existsSync(), isFalse);
   });
 
   test('rejects malformed input audio before MP3 encoding', () async {
