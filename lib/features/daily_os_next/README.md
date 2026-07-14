@@ -87,6 +87,33 @@ Runtime behavior:
   stay visible. Each legacy agent is migrated under its own try/catch, so one
   failure neither blocks planner creation nor stops the others.
 - The shared template service seeds the `Shepherd` day-agent template.
+- Daily OS inference settings are split across two synced ownership levels.
+  The `Shepherd` template's `profileId` is the general default; the
+  `daily_os_planner` identity's typed `AgentInferenceSetup` is the optional
+  instance override. `DayAgentService.updateDefaultInferenceProfile` updates
+  an existing planner only while it still follows a `templateSnapshot`, so a
+  later default change never replaces a user-owned profile or direct model
+  override. Clearing the override copies the current template profile back
+  into the planner as a new template snapshot.
+
+```mermaid
+flowchart LR
+  Settings["Settings → Daily OS"] -->|choose profile| Template["Shepherd template.profileId"]
+  Template -->|template snapshot| Planner["daily_os_planner AgentInferenceSetup"]
+  Internals["Planner internals"] -->|optional profile / direct model| Planner
+  Planner --> Resolver["ProfileResolver"]
+  Resolver --> Context["Assembled tasks, captures, plans, and preferences"]
+  Context --> Provider["User-selected provider endpoint"]
+```
+
+The settings page lists every configured compatible profile/provider route; it
+does not maintain a provider denylist. The selected endpoint determines the
+privacy boundary. Daily OS **sends** its assembled planning context to that
+provider for processing. Loopback and embedded endpoints are described as
+on-device; every other configured endpoint is described as remote with its
+provider and host. The Day surface links to these settings from its overflow
+menu, blocks a new check-in when no route resolves, and shows a non-blocking
+preferred-name prompt when inference is ready but personalization is missing.
 - `DayAgentWorkflow` builds the prompt from template directives, the planner's
   durable knowledge (a compact always-on **hook index** plus scoped full
   statements), recent private observations, the day's `day_log`, and — for

@@ -1728,6 +1728,7 @@
   "dailyOsNextDayLockInCta": "Fixează",
   "dailyOsNextDayMenuDeletePlan": "Ștergere plan",
   "dailyOsNextDayMenuInspectAgent": "Inspectare agent",
+  "dailyOsNextDayMenuSettings": "Setări Daily OS",
   "dailyOsNextDayMoreTooltip": "Mai mult",
   "dailyOsNextDayRefineCta": "Ajustați",
   "dailyOsNextDayRefineFooterHint": "Vorbiți pentru a reorganiza planul — vedeți fiecare schimbare înainte ca ceva să fie salvat.",
@@ -1947,6 +1948,59 @@
   "dailyOsOnboardingSpotlightDismiss": "Nu acum",
   "dailyOsOnboardingSpotlightMessage": "Atingeți aici și spuneți ce vă preocupă – transform totul într-o sarcină și vă construiesc ziua în jurul ei.",
   "dailyOsOnboardingSpotlightTitle": "Transformați vorbele în plan",
+  "dailyOsSettingsChooseModelDescription": "Suprascrieți doar modelul de raționament al planificatorului.",
+  "dailyOsSettingsChooseModelTitle": "Alegeți suprascrierea modelului",
+  "dailyOsSettingsChooseProfileDescription": "Suprascrieți întregul profil de inferență pentru acest planificator.",
+  "dailyOsSettingsChooseProfileTitle": "Alegeți profilul Daily OS",
+  "dailyOsSettingsDataDisclosure": "Daily OS trimite sarcinile, capturile, planurile, preferințele învățate și restul contextului de planificare asamblat către furnizorul selectat pentru procesare.",
+  "dailyOsSettingsDefaultProfileDescription": "Este folosit de Daily OS dacă instanța planificatorului nu are o suprascriere.",
+  "dailyOsSettingsDefaultProfileMissing": "Alegeți un profil",
+  "dailyOsSettingsDefaultRestored": "Setarea implicită Daily OS a fost restaurată",
+  "dailyOsSettingsDirectOverrideActive": "Suprascrierea directă a modelului este activă.",
+  "dailyOsSettingsInferenceTitle": "Profil de inferență implicit",
+  "dailyOsSettingsInstanceCurrentSetup": "Configurația actuală a planificatorului",
+  "dailyOsSettingsInstanceOverrideDescription": "Folosiți profilul Daily OS implicit, alegeți o suprascriere de profil sau suprascrieți doar modelul de raționament al acestui planificator.",
+  "dailyOsSettingsInstanceOverrideTitle": "Inferență Daily OS",
+  "dailyOsSettingsLocalDisclosure": "Punctul final selectat se află pe acest dispozitiv.",
+  "dailyOsSettingsModelChanged": "Daily OS folosește acum {model}",
+  "@dailyOsSettingsModelChanged": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsNameNudgeAction": "Adăugați numele",
+  "dailyOsSettingsNameNudgeBody": "Un nume preferat face check-in-urile mai personale. Puteți continua planificarea și fără el.",
+  "dailyOsSettingsNameNudgeTitle": "Cum doriți să vi se adreseze Daily OS?",
+  "dailyOsSettingsProfileChanged": "Daily OS folosește acum {profile}",
+  "@dailyOsSettingsProfileChanged": {
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsProfileOverrideActive": "Suprascrierea profilului este activă",
+  "dailyOsSettingsRemoteDisclosure": "Daily OS trimite contextul de planificare asamblat către {provider}, la {host}, pentru procesare la distanță.",
+  "@dailyOsSettingsRemoteDisclosure": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsSetupAction": "Configurați Daily OS",
+  "dailyOsSettingsSetupRequiredBody": "Daily OS are nevoie de alegerea dvs. privind furnizorul înainte de a vă procesa contextul de planificare.",
+  "dailyOsSettingsSetupRequiredTitle": "Alegeți un profil de inferență",
+  "dailyOsSettingsSubtitle": "Alegeți cum să vi se adreseze Daily OS și ce profil de inferență să vă planifice zilele.",
+  "dailyOsSettingsTitle": "Daily OS",
+  "dailyOsSettingsTreeSubtitle": "Planificare, personalizare și furnizor AI",
+  "dailyOsSettingsUseDefault": "Folosiți setarea implicită Daily OS",
+  "dailyOsSettingsUseDefaultDescription": "Urmează profilul selectat în setările Daily OS.",
   "dailyOsTodayButton": "Astăzi",
   "dashboardActiveLabel": "Activ",
   "dashboardActiveSwitchDescription": "Afișat în lista panourilor de bord",

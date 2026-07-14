@@ -155,6 +155,17 @@ the task-details column. A failed write leaves the sheet open and reports the
 error there. Capturing the messenger before opening the root-navigator modal is
 what keeps successful feedback constrained to the task column.
 
+Daily OS uses the same resolution and picker primitives without depending on
+the task-agent service. The planner's Stats tab detects `AgentKinds.dayAgent`
+and opens `DailyOsInferenceSetupSheet`: “Use Daily OS default” clears the
+instance override, “Choose Daily OS profile” opens the shared profile picker,
+and “Choose model override” opens the shared provider-first
+`InferenceProviderModelPickerModal`. All paths persist through
+`DayAgentService` before closing. A profile choice clears the direct model
+override; a later model choice retains that profile as its base. The general
+default remains on the day-agent template, so the instance sheet cannot
+silently change the default for future planner creation.
+
 ```mermaid
 sequenceDiagram
   participant User

@@ -6294,6 +6294,12 @@ abstract class AppLocalizations {
   /// **'Inspect agent'**
   String get dailyOsNextDayMenuInspectAgent;
 
+  /// No description provided for @dailyOsNextDayMenuSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS settings'**
+  String get dailyOsNextDayMenuSettings;
+
   /// No description provided for @dailyOsNextDayMoreTooltip.
   ///
   /// In en, this message translates to:
@@ -7217,6 +7223,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Turn talk into a plan'**
   String get dailyOsOnboardingSpotlightTitle;
+
+  /// No description provided for @dailyOsSettingsChooseModelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Override only the planner\'s thinking model.'**
+  String get dailyOsSettingsChooseModelDescription;
+
+  /// No description provided for @dailyOsSettingsChooseModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose model override'**
+  String get dailyOsSettingsChooseModelTitle;
+
+  /// No description provided for @dailyOsSettingsChooseProfileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Override the full inference profile for this planner.'**
+  String get dailyOsSettingsChooseProfileDescription;
+
+  /// No description provided for @dailyOsSettingsChooseProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Daily OS profile'**
+  String get dailyOsSettingsChooseProfileTitle;
+
+  /// No description provided for @dailyOsSettingsDataDisclosure.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS sends relevant tasks, captures, plans, learned preferences, and other assembled planning context to the selected provider for processing.'**
+  String get dailyOsSettingsDataDisclosure;
+
+  /// No description provided for @dailyOsSettingsDefaultProfileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Used by Daily OS unless the planner instance has an override.'**
+  String get dailyOsSettingsDefaultProfileDescription;
+
+  /// No description provided for @dailyOsSettingsDefaultProfileMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a profile'**
+  String get dailyOsSettingsDefaultProfileMissing;
+
+  /// No description provided for @dailyOsSettingsDefaultRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS default restored'**
+  String get dailyOsSettingsDefaultRestored;
+
+  /// No description provided for @dailyOsSettingsDirectOverrideActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct model override is active.'**
+  String get dailyOsSettingsDirectOverrideActive;
+
+  /// No description provided for @dailyOsSettingsInferenceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Default inference profile'**
+  String get dailyOsSettingsInferenceTitle;
+
+  /// No description provided for @dailyOsSettingsInstanceCurrentSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Current planner setup'**
+  String get dailyOsSettingsInstanceCurrentSetup;
+
+  /// No description provided for @dailyOsSettingsInstanceOverrideDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the Daily OS default profile, choose a profile override, or override only this planner\'s thinking model.'**
+  String get dailyOsSettingsInstanceOverrideDescription;
+
+  /// No description provided for @dailyOsSettingsInstanceOverrideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS inference'**
+  String get dailyOsSettingsInstanceOverrideTitle;
+
+  /// No description provided for @dailyOsSettingsLocalDisclosure.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected endpoint is on this device.'**
+  String get dailyOsSettingsLocalDisclosure;
+
+  /// No description provided for @dailyOsSettingsModelChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS now uses {model}'**
+  String dailyOsSettingsModelChanged(String model);
+
+  /// No description provided for @dailyOsSettingsNameNudgeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add name'**
+  String get dailyOsSettingsNameNudgeAction;
+
+  /// No description provided for @dailyOsSettingsNameNudgeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding a preferred name makes check-ins more personal. You can keep planning without it.'**
+  String get dailyOsSettingsNameNudgeBody;
+
+  /// No description provided for @dailyOsSettingsNameNudgeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How should Daily OS address you?'**
+  String get dailyOsSettingsNameNudgeTitle;
+
+  /// No description provided for @dailyOsSettingsProfileChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS now uses {profile}'**
+  String dailyOsSettingsProfileChanged(String profile);
+
+  /// No description provided for @dailyOsSettingsProfileOverrideActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile override active'**
+  String get dailyOsSettingsProfileOverrideActive;
+
+  /// No description provided for @dailyOsSettingsRemoteDisclosure.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS sends the assembled planning context to {provider} at {host} for remote processing.'**
+  String dailyOsSettingsRemoteDisclosure(String provider, String host);
+
+  /// No description provided for @dailyOsSettingsSetupAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up Daily OS'**
+  String get dailyOsSettingsSetupAction;
+
+  /// No description provided for @dailyOsSettingsSetupRequiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS needs your provider choice before it can process your planning context.'**
+  String get dailyOsSettingsSetupRequiredBody;
+
+  /// No description provided for @dailyOsSettingsSetupRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an inference profile'**
+  String get dailyOsSettingsSetupRequiredTitle;
+
+  /// No description provided for @dailyOsSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how Daily OS addresses you and which inference profile plans your days.'**
+  String get dailyOsSettingsSubtitle;
+
+  /// No description provided for @dailyOsSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS'**
+  String get dailyOsSettingsTitle;
+
+  /// No description provided for @dailyOsSettingsTreeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Planning, personalization, and AI provider'**
+  String get dailyOsSettingsTreeSubtitle;
+
+  /// No description provided for @dailyOsSettingsUseDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Daily OS default'**
+  String get dailyOsSettingsUseDefault;
+
+  /// No description provided for @dailyOsSettingsUseDefaultDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the profile selected in Daily OS settings.'**
+  String get dailyOsSettingsUseDefaultDescription;
 
   /// No description provided for @dailyOsTodayButton.
   ///

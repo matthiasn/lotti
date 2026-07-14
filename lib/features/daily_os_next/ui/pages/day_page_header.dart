@@ -14,7 +14,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-enum _DayMenuAction { inspectAgent, knowledge, deletePlan }
+enum _DayMenuAction { settings, inspectAgent, knowledge, deletePlan }
 
 class DayHeader extends StatelessWidget {
   const DayHeader({
@@ -26,6 +26,7 @@ class DayHeader extends StatelessWidget {
     required this.onBack,
     required this.onInspectAgent,
     required this.onDeletePlan,
+    this.onSettings,
     super.key,
   });
 
@@ -40,6 +41,7 @@ class DayHeader extends StatelessWidget {
   final ValueChanged<PlanView> onViewChanged;
   final VoidCallback onBack;
   final VoidCallback onInspectAgent;
+  final VoidCallback? onSettings;
   final VoidCallback onDeletePlan;
 
   @override
@@ -72,6 +74,8 @@ class DayHeader extends StatelessWidget {
               tooltip: context.messages.dailyOsNextDayMoreTooltip,
               onSelected: (action) {
                 switch (action) {
+                  case _DayMenuAction.settings:
+                    onSettings?.call();
                   case _DayMenuAction.inspectAgent:
                     onInspectAgent();
                   case _DayMenuAction.knowledge:
@@ -81,6 +85,17 @@ class DayHeader extends StatelessWidget {
                 }
               },
               itemBuilder: (popupContext) => [
+                if (onSettings != null)
+                  PopupMenuItem<_DayMenuAction>(
+                    value: _DayMenuAction.settings,
+                    child: ListTile(
+                      leading: const Icon(Icons.settings_outlined),
+                      title: Text(
+                        popupContext.messages.dailyOsNextDayMenuSettings,
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
                 PopupMenuItem<_DayMenuAction>(
                   value: _DayMenuAction.inspectAgent,
                   child: ListTile(

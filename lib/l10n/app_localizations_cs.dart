@@ -3737,6 +3737,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDayMenuInspectAgent => 'Prozkoumat agenta';
 
   @override
+  String get dailyOsNextDayMenuSettings => 'Nastavení Daily OS';
+
+  @override
   String get dailyOsNextDayMoreTooltip => 'Více';
 
   @override
@@ -4282,6 +4285,114 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsOnboardingSpotlightTitle => 'Proměň řeč v plán';
+
+  @override
+  String get dailyOsSettingsChooseModelDescription =>
+      'Přepiš pouze model uvažování plánovače.';
+
+  @override
+  String get dailyOsSettingsChooseModelTitle => 'Vybrat přepsání modelu';
+
+  @override
+  String get dailyOsSettingsChooseProfileDescription =>
+      'Přepiš celý inferenční profil pro tento plánovač.';
+
+  @override
+  String get dailyOsSettingsChooseProfileTitle => 'Vybrat profil Daily OS';
+
+  @override
+  String get dailyOsSettingsDataDisclosure =>
+      'Daily OS odesílá relevantní úkoly, záznamy, plány, naučené preference a další sestavený kontext plánování vybranému poskytovateli ke zpracování.';
+
+  @override
+  String get dailyOsSettingsDefaultProfileDescription =>
+      'Daily OS ho použije, pokud instance plánovače nemá vlastní nastavení.';
+
+  @override
+  String get dailyOsSettingsDefaultProfileMissing => 'Vyber profil';
+
+  @override
+  String get dailyOsSettingsDefaultRestored =>
+      'Výchozí nastavení Daily OS obnoveno';
+
+  @override
+  String get dailyOsSettingsDirectOverrideActive =>
+      'Přímé přepsání modelu je aktivní.';
+
+  @override
+  String get dailyOsSettingsInferenceTitle => 'Výchozí inferenční profil';
+
+  @override
+  String get dailyOsSettingsInstanceCurrentSetup =>
+      'Aktuální nastavení plánovače';
+
+  @override
+  String get dailyOsSettingsInstanceOverrideDescription =>
+      'Použij výchozí profil Daily OS, vyber přepsání profilu nebo přepiš jen model uvažování tohoto plánovače.';
+
+  @override
+  String get dailyOsSettingsInstanceOverrideTitle => 'Inference pro Daily OS';
+
+  @override
+  String get dailyOsSettingsLocalDisclosure =>
+      'Vybraný koncový bod je na tomto zařízení.';
+
+  @override
+  String dailyOsSettingsModelChanged(String model) {
+    return 'Daily OS nyní používá $model';
+  }
+
+  @override
+  String get dailyOsSettingsNameNudgeAction => 'Přidat jméno';
+
+  @override
+  String get dailyOsSettingsNameNudgeBody =>
+      'Preferované jméno udělá check-iny osobnější. Plánovat můžeš i bez něj.';
+
+  @override
+  String get dailyOsSettingsNameNudgeTitle => 'Jak tě má Daily OS oslovovat?';
+
+  @override
+  String dailyOsSettingsProfileChanged(String profile) {
+    return 'Daily OS nyní používá $profile';
+  }
+
+  @override
+  String get dailyOsSettingsProfileOverrideActive =>
+      'Přepsání profilu je aktivní';
+
+  @override
+  String dailyOsSettingsRemoteDisclosure(String provider, String host) {
+    return 'Daily OS odesílá sestavený kontext plánování poskytovateli $provider na $host ke vzdálenému zpracování.';
+  }
+
+  @override
+  String get dailyOsSettingsSetupAction => 'Nastavit Daily OS';
+
+  @override
+  String get dailyOsSettingsSetupRequiredBody =>
+      'Daily OS potřebuje tvou volbu poskytovatele, než může zpracovat kontext plánování.';
+
+  @override
+  String get dailyOsSettingsSetupRequiredTitle => 'Vyber inferenční profil';
+
+  @override
+  String get dailyOsSettingsSubtitle =>
+      'Zvol, jak tě má Daily OS oslovovat a který inferenční profil má plánovat tvé dny.';
+
+  @override
+  String get dailyOsSettingsTitle => 'Daily OS';
+
+  @override
+  String get dailyOsSettingsTreeSubtitle =>
+      'Plánování, přizpůsobení a poskytovatel AI';
+
+  @override
+  String get dailyOsSettingsUseDefault => 'Použít výchozí nastavení Daily OS';
+
+  @override
+  String get dailyOsSettingsUseDefaultDescription =>
+      'Použije profil vybraný v nastavení Daily OS.';
 
   @override
   String get dailyOsTodayButton => 'Dnes';

@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
@@ -122,6 +123,10 @@ Widget _wrap(
   Size size = const Size(1400, 1200),
   MediaQueryData? mediaQueryData,
   ThemeData? theme,
+  DailyOsSetupStatus setupStatus = const DailyOsSetupStatus(
+    hasInferenceRoute: true,
+    hasPreferredName: true,
+  ),
 }) {
   return makeTestableWidgetNoScroll(
     child,
@@ -135,6 +140,9 @@ Widget _wrap(
       // RefinePage builds a CaptureController; stub so it doesn't read
       // the realtime service providers during dispose.
       captureControllerProvider.overrideWith(_stubCapture),
+      dailyOsSetupStatusProvider.overrideWith(
+        (ref) async => setupStatus,
+      ),
       ...overrides,
     ],
     mediaQueryData: mediaQueryData ?? MediaQueryData(size: size),
@@ -281,6 +289,94 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'missing inference replaces check-in with a discoverable setup action',
+      (tester) async {
+        _setSurface(tester);
+        final routes = <String>[];
+        nav_service.beamToNamedOverride = routes.add;
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(
+              draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+              hasPlan: false,
+              onCheckIn: () => fail('check-in must stay blocked'),
+            ),
+            setupStatus: const DailyOsSetupStatus(
+              hasInferenceRoute: false,
+              hasPreferredName: false,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        expect(
+          find.text(messages.dailyOsSettingsSetupRequiredTitle),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(messages.dailyOsSettingsNameNudgeBody),
+          findsOneWidget,
+        );
+        expect(
+          find.text(messages.dailyOsSettingsSetupAction),
+          findsNWidgets(2),
+        );
+        expect(find.text(messages.dailyOsNextDayCheckInCta), findsNothing);
+
+        await tester.tap(find.byIcon(Icons.more_vert_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.tap(find.text(messages.dailyOsNextDayMenuSettings));
+        await tester.pump();
+        final setupActions = find.text(messages.dailyOsSettingsSetupAction);
+        await tester.tap(setupActions.at(0));
+        await tester.pump();
+        await tester.tap(setupActions.at(1));
+        await tester.pump();
+
+        expect(routes, [
+          '/settings/daily-os',
+          '/settings/daily-os',
+          '/settings/daily-os',
+        ]);
+      },
+    );
+
+    testWidgets('missing name stays discoverable without blocking check-in', (
+      tester,
+    ) async {
+      _setSurface(tester);
+      var checkIns = 0;
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(
+            draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+            hasPlan: false,
+            onCheckIn: () => checkIns++,
+          ),
+          setupStatus: const DailyOsSetupStatus(
+            hasInferenceRoute: true,
+            hasPreferredName: false,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DayPage)).messages;
+      expect(
+        find.text(messages.dailyOsSettingsNameNudgeTitle),
+        findsOneWidget,
+      );
+      expect(find.text(messages.dailyOsNextDayCheckInCta), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('daily_os_day_check_in_cta')));
+      expect(checkIns, 1);
+    });
 
     testWidgets(
       'a failing inline rename surfaces the error toast instead of an '

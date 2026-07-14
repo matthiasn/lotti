@@ -54,14 +54,19 @@ than owning feature-specific modal rows:
 
 - `InferenceProfilePickerModal` and its embeddable
   `InferenceProfilePickerList` render named inference profiles for category
-  defaults, template settings, agent creation, and task-agent setup. The list
+  defaults, template settings, agent creation, task-agent setup, and Daily OS
+  defaults. The list
   uses the profile description as secondary text and marks the persisted
   selection without exposing internal model IDs.
 - `InferenceProviderModelPickerModal` renders model choices for inference-profile
-  slots, task-agent overrides, and per-invocation skill overrides. With multiple
+  slots, task-agent overrides, Daily OS planner overrides, and per-invocation
+  skill overrides. With multiple
   providers it drills from provider to model; with one provider it opens the
   model list directly. `selectedModelId` identifies the active choice while
   `defaultModelId` independently marks the profile default.
+  Callers that require an explicit confirmation even when only one compatible
+  model exists pass `autoSelectSingleCandidate: false`; Daily OS uses this so
+  a single configured provider/model is still an informed user choice.
 
 Closed fields use `SettingsPickerField`, so settings pages keep the same label,
 value, disabled, and tap affordances. Async Riverpod consumers retain their last
@@ -70,8 +75,8 @@ an established picker with a full loading shell.
 
 ```mermaid
 flowchart LR
-  Profiles["Category / template / agent creation / task agent"] --> ProfilePicker["InferenceProfilePickerModal or list"]
-  Slots["Profile slots / task override / one-run override"] --> ModelPicker["InferenceProviderModelPickerModal"]
+  Profiles["Category / template / agent creation / task agent / Daily OS"] --> ProfilePicker["InferenceProfilePickerModal or list"]
+  Slots["Profile slots / agent override / one-run override"] --> ModelPicker["InferenceProviderModelPickerModal"]
   ModelPicker --> Providers{"provider count"}
   Providers -->|one| Models["model rows"]
   Providers -->|many| ProviderRows["provider rows"]

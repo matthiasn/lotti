@@ -86,6 +86,7 @@ void main() {
         'onboarding',
         'ai',
         'agents',
+        'daily-os',
         'sync',
         'definitions',
         'recording-style',
@@ -119,12 +120,13 @@ void main() {
       // Entity definitions (habits / categories / labels / dashboards
       // / measurables) collapse into the single `definitions` branch;
       // config flags reparent under `advanced`. Root reads as
-      // AI · Agents · Sync · Definitions · Theming · Advanced.
+      // AI · Agents · Daily OS · Sync · Definitions · Theming · Advanced.
       final rootIds = _tree().map((n) => n.id).toList();
       expect(rootIds, [
         'whats-new',
         'ai',
         'agents',
+        'daily-os',
         'sync',
         'definitions',
         'recording-style',
@@ -404,6 +406,7 @@ void main() {
         'agents/instances': 'agents-instances',
         'agents/souls': 'agents-souls',
         'agents/pending-wakes': 'agents-pending-wakes',
+        'daily-os': 'daily-os',
         'definitions/habits': 'habits',
         'definitions/categories': 'categories',
         'definitions/labels': 'labels',
@@ -519,6 +522,7 @@ void main() {
       expect(ids, [
         'ai',
         'agents',
+        'daily-os',
         // Sync branch is gated by enableMatrix — flag off drops the
         // entire Sync surface, matching the mobile root list.
         'definitions',

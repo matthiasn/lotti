@@ -3683,6 +3683,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextDayMenuInspectAgent => 'Inspect agent';
 
   @override
+  String get dailyOsNextDayMenuSettings => 'Daily OS settings';
+
+  @override
   String get dailyOsNextDayMoreTooltip => 'More';
 
   @override
@@ -4220,6 +4223,112 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsOnboardingSpotlightTitle => 'Turn talk into a plan';
+
+  @override
+  String get dailyOsSettingsChooseModelDescription =>
+      'Override only the planner\'s thinking model.';
+
+  @override
+  String get dailyOsSettingsChooseModelTitle => 'Choose model override';
+
+  @override
+  String get dailyOsSettingsChooseProfileDescription =>
+      'Override the full inference profile for this planner.';
+
+  @override
+  String get dailyOsSettingsChooseProfileTitle => 'Choose Daily OS profile';
+
+  @override
+  String get dailyOsSettingsDataDisclosure =>
+      'Daily OS sends relevant tasks, captures, plans, learned preferences, and other assembled planning context to the selected provider for processing.';
+
+  @override
+  String get dailyOsSettingsDefaultProfileDescription =>
+      'Used by Daily OS unless the planner instance has an override.';
+
+  @override
+  String get dailyOsSettingsDefaultProfileMissing => 'Choose a profile';
+
+  @override
+  String get dailyOsSettingsDefaultRestored => 'Daily OS default restored';
+
+  @override
+  String get dailyOsSettingsDirectOverrideActive =>
+      'Direct model override is active.';
+
+  @override
+  String get dailyOsSettingsInferenceTitle => 'Default inference profile';
+
+  @override
+  String get dailyOsSettingsInstanceCurrentSetup => 'Current planner setup';
+
+  @override
+  String get dailyOsSettingsInstanceOverrideDescription =>
+      'Use the Daily OS default profile, choose a profile override, or override only this planner\'s thinking model.';
+
+  @override
+  String get dailyOsSettingsInstanceOverrideTitle => 'Daily OS inference';
+
+  @override
+  String get dailyOsSettingsLocalDisclosure =>
+      'The selected endpoint is on this device.';
+
+  @override
+  String dailyOsSettingsModelChanged(String model) {
+    return 'Daily OS now uses $model';
+  }
+
+  @override
+  String get dailyOsSettingsNameNudgeAction => 'Add name';
+
+  @override
+  String get dailyOsSettingsNameNudgeBody =>
+      'Adding a preferred name makes check-ins more personal. You can keep planning without it.';
+
+  @override
+  String get dailyOsSettingsNameNudgeTitle =>
+      'How should Daily OS address you?';
+
+  @override
+  String dailyOsSettingsProfileChanged(String profile) {
+    return 'Daily OS now uses $profile';
+  }
+
+  @override
+  String get dailyOsSettingsProfileOverrideActive => 'Profile override active';
+
+  @override
+  String dailyOsSettingsRemoteDisclosure(String provider, String host) {
+    return 'Daily OS sends the assembled planning context to $provider at $host for remote processing.';
+  }
+
+  @override
+  String get dailyOsSettingsSetupAction => 'Set up Daily OS';
+
+  @override
+  String get dailyOsSettingsSetupRequiredBody =>
+      'Daily OS needs your provider choice before it can process your planning context.';
+
+  @override
+  String get dailyOsSettingsSetupRequiredTitle => 'Choose an inference profile';
+
+  @override
+  String get dailyOsSettingsSubtitle =>
+      'Choose how Daily OS addresses you and which inference profile plans your days.';
+
+  @override
+  String get dailyOsSettingsTitle => 'Daily OS';
+
+  @override
+  String get dailyOsSettingsTreeSubtitle =>
+      'Planning, personalization, and AI provider';
+
+  @override
+  String get dailyOsSettingsUseDefault => 'Use Daily OS default';
+
+  @override
+  String get dailyOsSettingsUseDefaultDescription =>
+      'Follow the profile selected in Daily OS settings.';
 
   @override
   String get dailyOsTodayButton => 'Today';

@@ -1728,6 +1728,7 @@
   "dailyOsNextDayLockInCta": "Festmachen",
   "dailyOsNextDayMenuDeletePlan": "Plan löschen",
   "dailyOsNextDayMenuInspectAgent": "Agent prüfen",
+  "dailyOsNextDayMenuSettings": "Daily-OS-Einstellungen",
   "dailyOsNextDayMoreTooltip": "Mehr",
   "dailyOsNextDayRefineCta": "Anpassen",
   "dailyOsNextDayRefineFooterHint": "Sprich, um den Plan umzubauen — du siehst jede Änderung, bevor etwas gespeichert wird.",
@@ -1947,6 +1948,59 @@
   "dailyOsOnboardingSpotlightDismiss": "Nicht jetzt",
   "dailyOsOnboardingSpotlightMessage": "Tippe hier und sag, was dir im Kopf herumgeht – ich mache eine Aufgabe daraus und baue deinen Tag darum herum.",
   "dailyOsOnboardingSpotlightTitle": "Mach aus Worten einen Plan",
+  "dailyOsSettingsChooseModelDescription": "Überschreibe nur das Denkmodell des Planers.",
+  "dailyOsSettingsChooseModelTitle": "Modellüberschreibung auswählen",
+  "dailyOsSettingsChooseProfileDescription": "Überschreibe das gesamte Inferenzprofil für diesen Planer.",
+  "dailyOsSettingsChooseProfileTitle": "Daily-OS-Profil auswählen",
+  "dailyOsSettingsDataDisclosure": "Daily OS sendet relevante Aufgaben, Erfassungen, Pläne, gelernte Präferenzen und weiteren zusammengestellten Planungskontext zur Verarbeitung an den ausgewählten Anbieter.",
+  "dailyOsSettingsDefaultProfileDescription": "Wird von Daily OS verwendet, sofern die Planer-Instanz keine Überschreibung hat.",
+  "dailyOsSettingsDefaultProfileMissing": "Profil auswählen",
+  "dailyOsSettingsDefaultRestored": "Daily-OS-Standard wiederhergestellt",
+  "dailyOsSettingsDirectOverrideActive": "Direkte Modellüberschreibung ist aktiv.",
+  "dailyOsSettingsInferenceTitle": "Standard-Inferenzprofil",
+  "dailyOsSettingsInstanceCurrentSetup": "Aktuelle Planer-Konfiguration",
+  "dailyOsSettingsInstanceOverrideDescription": "Verwende das Daily-OS-Standardprofil, wähle eine Profilüberschreibung oder überschreibe nur das Denkmodell dieses Planers.",
+  "dailyOsSettingsInstanceOverrideTitle": "Daily-OS-Inferenz",
+  "dailyOsSettingsLocalDisclosure": "Der ausgewählte Endpunkt befindet sich auf diesem Gerät.",
+  "dailyOsSettingsModelChanged": "Daily OS verwendet jetzt {model}",
+  "@dailyOsSettingsModelChanged": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsNameNudgeAction": "Namen hinzufügen",
+  "dailyOsSettingsNameNudgeBody": "Mit einem bevorzugten Namen werden Check-ins persönlicher. Du kannst auch ohne ihn weiterplanen.",
+  "dailyOsSettingsNameNudgeTitle": "Wie soll Daily OS dich ansprechen?",
+  "dailyOsSettingsProfileChanged": "Daily OS verwendet jetzt {profile}",
+  "@dailyOsSettingsProfileChanged": {
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsProfileOverrideActive": "Profilüberschreibung aktiv",
+  "dailyOsSettingsRemoteDisclosure": "Daily OS sendet den zusammengestellten Planungskontext zur entfernten Verarbeitung an {provider} unter {host}.",
+  "@dailyOsSettingsRemoteDisclosure": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsSetupAction": "Daily OS einrichten",
+  "dailyOsSettingsSetupRequiredBody": "Daily OS braucht deine Anbieterwahl, bevor dein Planungskontext verarbeitet werden kann.",
+  "dailyOsSettingsSetupRequiredTitle": "Inferenzprofil auswählen",
+  "dailyOsSettingsSubtitle": "Lege fest, wie Daily OS dich anspricht und welches Inferenzprofil deine Tage plant.",
+  "dailyOsSettingsTitle": "Daily OS",
+  "dailyOsSettingsTreeSubtitle": "Planung, Personalisierung und KI-Anbieter",
+  "dailyOsSettingsUseDefault": "Daily-OS-Standard verwenden",
+  "dailyOsSettingsUseDefaultDescription": "Folge dem in den Daily-OS-Einstellungen ausgewählten Profil.",
   "dailyOsTodayButton": "Heute",
   "dashboardActiveLabel": "Aktiv",
   "dashboardActiveSwitchDescription": "Wird in der Dashboard-Liste angezeigt",

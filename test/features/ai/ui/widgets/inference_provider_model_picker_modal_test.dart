@@ -77,6 +77,7 @@ void main() {
       required void Function(String?) onResult,
       String? defaultModelId,
       String? selectedModelId,
+      bool autoSelectSingleCandidate = true,
     }) async {
       await tester.pumpWidget(
         makeTestableWidget(
@@ -92,6 +93,7 @@ void main() {
                     providers: providers,
                     title: 'Pick a model',
                     defaultBadgeLabel: 'Default',
+                    autoSelectSingleCandidate: autoSelectSingleCandidate,
                   );
                   onResult(picked);
                 },
@@ -141,6 +143,30 @@ void main() {
       expect(called, isTrue);
       expect(result, 'solo');
       expect(find.text('Solo'), findsNothing);
+    });
+
+    testWidgets('can require an explicit tap for the only model', (
+      tester,
+    ) async {
+      String? result;
+      var called = false;
+      await pumpHost(
+        tester,
+        models: [_model(id: 'solo', name: 'Solo')],
+        providers: [_provider(id: 'openai')],
+        autoSelectSingleCandidate: false,
+        onResult: (r) {
+          result = r;
+          called = true;
+        },
+      );
+
+      expect(called, isFalse);
+      expect(find.text('Solo'), findsOneWidget);
+      await tester.tap(find.text('Solo'));
+      await tester.pumpAndSettle();
+      expect(called, isTrue);
+      expect(result, 'solo');
     });
 
     testWidgets(

@@ -3761,6 +3761,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDayMenuInspectAgent => 'Inspectare agent';
 
   @override
+  String get dailyOsNextDayMenuSettings => 'Setări Daily OS';
+
+  @override
   String get dailyOsNextDayMoreTooltip => 'Mai mult';
 
   @override
@@ -4310,6 +4313,117 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsOnboardingSpotlightTitle => 'Transformați vorbele în plan';
+
+  @override
+  String get dailyOsSettingsChooseModelDescription =>
+      'Suprascrieți doar modelul de raționament al planificatorului.';
+
+  @override
+  String get dailyOsSettingsChooseModelTitle =>
+      'Alegeți suprascrierea modelului';
+
+  @override
+  String get dailyOsSettingsChooseProfileDescription =>
+      'Suprascrieți întregul profil de inferență pentru acest planificator.';
+
+  @override
+  String get dailyOsSettingsChooseProfileTitle => 'Alegeți profilul Daily OS';
+
+  @override
+  String get dailyOsSettingsDataDisclosure =>
+      'Daily OS trimite sarcinile, capturile, planurile, preferințele învățate și restul contextului de planificare asamblat către furnizorul selectat pentru procesare.';
+
+  @override
+  String get dailyOsSettingsDefaultProfileDescription =>
+      'Este folosit de Daily OS dacă instanța planificatorului nu are o suprascriere.';
+
+  @override
+  String get dailyOsSettingsDefaultProfileMissing => 'Alegeți un profil';
+
+  @override
+  String get dailyOsSettingsDefaultRestored =>
+      'Setarea implicită Daily OS a fost restaurată';
+
+  @override
+  String get dailyOsSettingsDirectOverrideActive =>
+      'Suprascrierea directă a modelului este activă.';
+
+  @override
+  String get dailyOsSettingsInferenceTitle => 'Profil de inferență implicit';
+
+  @override
+  String get dailyOsSettingsInstanceCurrentSetup =>
+      'Configurația actuală a planificatorului';
+
+  @override
+  String get dailyOsSettingsInstanceOverrideDescription =>
+      'Folosiți profilul Daily OS implicit, alegeți o suprascriere de profil sau suprascrieți doar modelul de raționament al acestui planificator.';
+
+  @override
+  String get dailyOsSettingsInstanceOverrideTitle => 'Inferență Daily OS';
+
+  @override
+  String get dailyOsSettingsLocalDisclosure =>
+      'Punctul final selectat se află pe acest dispozitiv.';
+
+  @override
+  String dailyOsSettingsModelChanged(String model) {
+    return 'Daily OS folosește acum $model';
+  }
+
+  @override
+  String get dailyOsSettingsNameNudgeAction => 'Adăugați numele';
+
+  @override
+  String get dailyOsSettingsNameNudgeBody =>
+      'Un nume preferat face check-in-urile mai personale. Puteți continua planificarea și fără el.';
+
+  @override
+  String get dailyOsSettingsNameNudgeTitle =>
+      'Cum doriți să vi se adreseze Daily OS?';
+
+  @override
+  String dailyOsSettingsProfileChanged(String profile) {
+    return 'Daily OS folosește acum $profile';
+  }
+
+  @override
+  String get dailyOsSettingsProfileOverrideActive =>
+      'Suprascrierea profilului este activă';
+
+  @override
+  String dailyOsSettingsRemoteDisclosure(String provider, String host) {
+    return 'Daily OS trimite contextul de planificare asamblat către $provider, la $host, pentru procesare la distanță.';
+  }
+
+  @override
+  String get dailyOsSettingsSetupAction => 'Configurați Daily OS';
+
+  @override
+  String get dailyOsSettingsSetupRequiredBody =>
+      'Daily OS are nevoie de alegerea dvs. privind furnizorul înainte de a vă procesa contextul de planificare.';
+
+  @override
+  String get dailyOsSettingsSetupRequiredTitle =>
+      'Alegeți un profil de inferență';
+
+  @override
+  String get dailyOsSettingsSubtitle =>
+      'Alegeți cum să vi se adreseze Daily OS și ce profil de inferență să vă planifice zilele.';
+
+  @override
+  String get dailyOsSettingsTitle => 'Daily OS';
+
+  @override
+  String get dailyOsSettingsTreeSubtitle =>
+      'Planificare, personalizare și furnizor AI';
+
+  @override
+  String get dailyOsSettingsUseDefault => 'Folosiți setarea implicită Daily OS';
+
+  @override
+  String get dailyOsSettingsUseDefaultDescription =>
+      'Urmează profilul selectat în setările Daily OS.';
 
   @override
   String get dailyOsTodayButton => 'Astăzi';

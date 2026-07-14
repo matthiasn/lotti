@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_result.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/utils/device_region.dart';
 import 'package:lotti/utils/first_day_of_week_picker.dart';
 
@@ -48,6 +50,12 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   /// like the previous fire-and-forget open. During a walkthrough it records
   /// completion (retiring the auto-show cadence) or a dismissal skip.
   Future<void> _runCheckIn(DateTime date) async {
+    final setupStatus = await ref.read(dailyOsSetupStatusProvider.future);
+    if (!mounted) return;
+    if (!setupStatus.hasInferenceRoute) {
+      nav_service.beamToNamed('/settings/daily-os');
+      return;
+    }
     final result = await showDayPlanningModal(
       context: context,
       dayDate: date,

@@ -15,6 +15,7 @@ import 'package:lotti/features/categories/ui/pages/categories_list_page.dart'
     as new_categories;
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart'
     as new_category_details;
+import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
@@ -115,6 +116,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/agents/souls/:soulId',
     '/settings/agents/souls/:soulId/review',
     '/settings/agents/instances/:agentId',
+    '/settings/daily-os',
     '/settings/flags',
     '/settings/recording-style',
     '/settings/theming',
@@ -565,6 +567,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: AgentDetailPage(
             agentId: state.pathParameters['agentId']!,
           ),
+        ),
+
+      if (path == '/settings/daily-os')
+        const BeamPage(
+          key: ValueKey('settings-daily-os'),
+          child: DailyOsSettingsPage(),
         ),
 
       // Flags
