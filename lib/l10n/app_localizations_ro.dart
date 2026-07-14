@@ -6038,7 +6038,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalDateNowButton => 'acum';
 
   @override
-  String get journalDateSaveButton => 'SALVEAZĂ';
+  String get journalDateSaveButton => 'Salvează';
 
   @override
   String get journalDateTimeRangeTitle => 'Dată și oră';
@@ -6142,6 +6142,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get journalSearchHint => 'Cautare jurnal...';
+
+  @override
+  String get journalSetEndDateTimeNowSemantic =>
+      'Setați data și ora de final la momentul actual';
+
+  @override
+  String get journalSetStartDateTimeNowSemantic =>
+      'Setați data și ora de început la momentul actual';
 
   @override
   String get journalShareHint => 'Partajează';
@@ -9339,6 +9347,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskEstimateLabel => 'Timp Estimat:';
+
+  @override
+  String get taskEstimateModalTitle => 'Timp estimat';
 
   @override
   String taskEstimateProgressLabel(String tracked, String estimate) {

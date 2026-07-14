@@ -5903,7 +5903,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalDateNowButton => 'Now';
 
   @override
-  String get journalDateSaveButton => 'SAVE';
+  String get journalDateSaveButton => 'Save';
 
   @override
   String get journalDateTimeRangeTitle => 'Date & Time';
@@ -6006,6 +6006,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get journalSearchHint => 'Search journal...';
+
+  @override
+  String get journalSetEndDateTimeNowSemantic => 'Set end date and time to now';
+
+  @override
+  String get journalSetStartDateTimeNowSemantic =>
+      'Set start date and time to now';
 
   @override
   String get journalShareHint => 'Share';
@@ -9107,6 +9114,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskEstimateLabel => 'Estimate:';
 
   @override
+  String get taskEstimateModalTitle => 'Estimate';
+
+  @override
   String taskEstimateProgressLabel(String tracked, String estimate) {
     return '$tracked of $estimate';
   }
@@ -9928,7 +9938,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get journalDateNowButton => 'Now';
 
   @override
-  String get journalDateSaveButton => 'SAVE';
+  String get journalDateSaveButton => 'Save';
 
   @override
   String get journalDateToLabel => 'Date to:';

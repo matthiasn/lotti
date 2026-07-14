@@ -10281,7 +10281,7 @@ abstract class AppLocalizations {
   /// No description provided for @journalDateSaveButton.
   ///
   /// In en, this message translates to:
-  /// **'SAVE'**
+  /// **'Save'**
   String get journalDateSaveButton;
 
   /// No description provided for @journalDateTimeRangeTitle.
@@ -10481,6 +10481,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search journal...'**
   String get journalSearchHint;
+
+  /// No description provided for @journalSetEndDateTimeNowSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Set end date and time to now'**
+  String get journalSetEndDateTimeNowSemantic;
+
+  /// No description provided for @journalSetStartDateTimeNowSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Set start date and time to now'**
+  String get journalSetStartDateTimeNowSemantic;
 
   /// No description provided for @journalShareHint.
   ///
@@ -15750,6 +15762,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Estimate:'**
   String get taskEstimateLabel;
+
+  /// No description provided for @taskEstimateModalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate'**
+  String get taskEstimateModalTitle;
 
   /// No description provided for @taskEstimateProgressLabel.
   ///

@@ -912,9 +912,10 @@ void main() {
 
           // Invoke the onTargetDateTap callback.
           content.onTargetDateTap!();
+          await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          expect(find.byType(DatePickerDialog), findsOneWidget);
+          expect(find.byType(CalendarDatePicker), findsOneWidget);
         },
       );
 
@@ -977,14 +978,14 @@ void main() {
 
               // Open the date picker.
               content.onTargetDateTap!();
+              await tester.pump();
               await tester.pump(const Duration(milliseconds: 300));
 
-              expect(find.byType(DatePickerDialog), findsOneWidget);
+              expect(find.byType(CalendarDatePicker), findsOneWidget);
 
-              // Tap "OK" to confirm the default date selection.
-              final okButton = find.text('OK');
-              await tester.ensureVisible(okButton);
-              await tester.tap(okButton);
+              final doneButton = find.text('Done');
+              await tester.ensureVisible(doneButton);
+              await tester.tap(doneButton);
               await tester.pump();
               await tester.pump(const Duration(milliseconds: 300));
 

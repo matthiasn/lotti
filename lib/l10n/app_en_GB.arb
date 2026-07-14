@@ -78,7 +78,7 @@
   "journalDateFromLabel": "Date from:",
   "journalDateInvalid": "Invalid Date Range",
   "journalDateNowButton": "Now",
-  "journalDateSaveButton": "SAVE",
+  "journalDateSaveButton": "Save",
   "journalDateToLabel": "Date to:",
   "journalDeleteConfirm": "YES, DELETE THIS ENTRY",
   "journalDeleteHint": "Delete entry",

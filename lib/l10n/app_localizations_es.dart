@@ -6021,7 +6021,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get journalDateNowButton => 'Ahora';
 
   @override
-  String get journalDateSaveButton => 'GUARDAR';
+  String get journalDateSaveButton => 'Guardar';
 
   @override
   String get journalDateTimeRangeTitle => 'Fecha y hora';
@@ -6125,6 +6125,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get journalSearchHint => 'Buscar en el diario...';
+
+  @override
+  String get journalSetEndDateTimeNowSemantic =>
+      'Establecer la fecha y hora de fin al momento actual';
+
+  @override
+  String get journalSetStartDateTimeNowSemantic =>
+      'Establecer la fecha y hora de inicio al momento actual';
 
   @override
   String get journalShareHint => 'Compartir';
@@ -9327,6 +9335,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get taskEstimateLabel => 'Estimación:';
+
+  @override
+  String get taskEstimateModalTitle => 'Estimación';
 
   @override
   String taskEstimateProgressLabel(String tracked, String estimate) {

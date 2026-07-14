@@ -3061,7 +3061,7 @@
   "journalDateInvalid": "Invalid Date Range",
   "journalDateLabel": "Date",
   "journalDateNowButton": "Now",
-  "journalDateSaveButton": "SAVE",
+  "journalDateSaveButton": "Save",
   "journalDateTimeRangeTitle": "Date & Time",
   "journalDateToLabel": "Date to:",
   "journalDeleteConfirm": "YES, DELETE THIS ENTRY",
@@ -3104,6 +3104,8 @@
   },
   "journalPrivateTooltip": "private only",
   "journalSearchHint": "Search journal...",
+  "journalSetEndDateTimeNowSemantic": "Set end date and time to now",
+  "journalSetStartDateTimeNowSemantic": "Set start date and time to now",
   "journalShareHint": "Share",
   "journalShowLinkHint": "Show link",
   "journalShowMapHint": "Show map",
@@ -4456,6 +4458,7 @@
   "taskDueYesterday": "Due Yesterday",
   "taskEditTitleLabel": "Edit task title",
   "taskEstimateLabel": "Estimate:",
+  "taskEstimateModalTitle": "Estimate",
   "taskEstimateProgressLabel": "{tracked} of {estimate}",
   "@taskEstimateProgressLabel": {
     "placeholders": {

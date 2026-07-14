@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
@@ -150,21 +151,22 @@ class ProjectDetailsPage extends ConsumerWidget {
         ? lastDate
         : initialDate;
 
-    final picked = await showDatePicker(
+    final result = await showDesignSystemDatePicker(
       context: context,
+      title: context.messages.projectTargetDateLabel,
       initialDate: clampedInitial,
       firstDate: firstDate,
       lastDate: lastDate,
+      allowClear: currentDate != null,
     );
 
-    if (picked == null) {
-      return;
-    }
+    if (result == null) return;
 
     final controller = ref.read(
       projectDetailControllerProvider(projectId).notifier,
     );
-    await (controller..updateTargetDate(picked)).saveChanges();
+    await (controller..updateTargetDate(result.cleared ? null : result.date))
+        .saveChanges();
   }
 
   Future<void> _pickStatus(

@@ -37,7 +37,9 @@ app's styling and responsive behavior. Key static members:
 - `showSinglePageModal<T>({...})` — show a single styled page.
 - `showSingleSliverPageModal<T>({...})` — show a single sliver-based page.
 - `showMultiPageModal<T>({...})` — show a multi-page modal with an optional
-  `pageIndexNotifier`.
+  `pageIndexNotifier`; `modalTypeBuilderOverride` lets a dense flow keep the
+  shared Wolt page/navigation behavior while supplying a flow-specific
+  responsive dialog constraint.
 - `showBottomSheet<T>({...})` — thin wrapper over `showModalBottomSheet` that
   applies the root-navigator heuristic.
 

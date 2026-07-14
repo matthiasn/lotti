@@ -90,6 +90,22 @@ class EntryDateTimeRange {
   /// auto-roll guarantees it); only reachable in different-dates mode.
   bool get valid => !dateTo.isBefore(dateFrom);
 
+  /// Replaces the complete start endpoint while preserving the absolute end.
+  ///
+  /// Re-deriving through [EntryDateTimeRange.fromBounds] chooses shared-date,
+  /// automatic-overnight, or explicit-end-date mode from the resulting bounds
+  /// instead of silently moving the end when the start day changes.
+  EntryDateTimeRange withStart(DateTime start) =>
+      EntryDateTimeRange.fromBounds(start, dateTo);
+
+  /// Replaces the complete end endpoint while preserving the absolute start.
+  ///
+  /// This is the endpoint-level operation used by the editor's End Now action:
+  /// a historical start stays historical while the end becomes the supplied
+  /// timestamp, revealing an explicit end date when the two days differ.
+  EntryDateTimeRange withEnd(DateTime end) =>
+      EntryDateTimeRange.fromBounds(dateFrom, end);
+
   EntryDateTimeRange copyWith({
     DateTime? startDate,
     TimeOfDay? startTime,

@@ -2547,7 +2547,7 @@
   "journalDateInvalid": "Dată invalidă",
   "journalDateLabel": "Dată",
   "journalDateNowButton": "acum",
-  "journalDateSaveButton": "SALVEAZĂ",
+  "journalDateSaveButton": "Salvează",
   "journalDateTimeRangeTitle": "Dată și oră",
   "journalDateToLabel": "Până la:",
   "journalDeleteConfirm": "DA, ȘTERGE ACEASTĂ INTRARE",
@@ -2581,6 +2581,8 @@
   "journalOvernightNextDay": "Se termină {date} (ziua următoare)",
   "journalPrivateTooltip": "Privat",
   "journalSearchHint": "Cautare jurnal...",
+  "journalSetEndDateTimeNowSemantic": "Setați data și ora de final la momentul actual",
+  "journalSetStartDateTimeNowSemantic": "Setați data și ora de început la momentul actual",
   "journalShareHint": "Partajează",
   "journalShowLinkHint": "Arată linkul",
   "journalShowMapHint": "Arată harta",
@@ -3778,6 +3780,7 @@
   "taskDueYesterday": "Scadent ieri",
   "taskEditTitleLabel": "Editați titlul sarcinii",
   "taskEstimateLabel": "Timp Estimat:",
+  "taskEstimateModalTitle": "Timp estimat",
   "taskEstimateProgressLabel": "{tracked} din {estimate}",
   "@taskEstimateProgressLabel": {
     "placeholders": {

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1044]
 ### Changed
+- **Date and time pickers are clearer and steadier across the app.** Entry
+  ranges now show weekdays, include Start/End **Now** actions, and move into a
+  calendar page within the same sheet. Due dates and project target dates use
+  the same weekday calendar, while tighter wheel controls and stable status
+  spacing keep the layout compact without jumping in light or dark mode.
 - **Daily OS now lets you choose its AI route explicitly.** A discoverable
   Daily OS settings page owns the default inference profile and preferred name,
   while the planner instance can override its full profile or only its thinking

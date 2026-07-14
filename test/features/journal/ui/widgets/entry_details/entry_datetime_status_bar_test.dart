@@ -27,7 +27,11 @@ void main() {
 
     expect(find.text('Duration'), findsOneWidget);
     expect(find.text('45m'), findsOneWidget);
-    expect(find.byType(DsPill), findsNothing);
+    expect(find.byType(DsPill), findsOneWidget);
+    expect(
+      tester.widget<Visibility>(find.byType(Visibility)).visible,
+      isFalse,
+    );
     expect(find.text('Invalid Date Range'), findsNothing);
   });
 
@@ -49,6 +53,40 @@ void main() {
     expect(find.textContaining('(next day)'), findsOneWidget);
   });
 
+  testWidgets('crossing midnight does not change the status height', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      EntryDateTimeRange(
+        startDate: _date,
+        startTime: const TimeOfDay(hour: 14, minute: 30),
+        endTime: const TimeOfDay(hour: 15, minute: 15),
+        differentDates: false,
+      ),
+    );
+    final sameDayHeight = tester
+        .getSize(
+          find.byType(EntryDateTimeStatusBar),
+        )
+        .height;
+
+    await pump(
+      tester,
+      EntryDateTimeRange(
+        startDate: _date,
+        startTime: const TimeOfDay(hour: 23, minute: 30),
+        endTime: const TimeOfDay(hour: 0, minute: 30),
+        differentDates: false,
+      ),
+    );
+
+    expect(
+      tester.getSize(find.byType(EntryDateTimeStatusBar)).height,
+      sameDayHeight,
+    );
+  });
+
   testWidgets('an invalid range shows the warning instead of a duration', (
     tester,
   ) async {
@@ -66,6 +104,27 @@ void main() {
     expect(find.text('Invalid Date Range'), findsOneWidget);
     expect(find.text('Duration'), findsNothing);
     expect(find.byType(DsPill), findsNothing);
+  });
+
+  testWidgets('narrow layouts omit the repeated year from the range label', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(320, 640)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pump(
+      tester,
+      EntryDateTimeRange(
+        startDate: _date,
+        startTime: const TimeOfDay(hour: 14, minute: 30),
+        endTime: const TimeOfDay(hour: 15, minute: 15),
+        differentDates: false,
+      ),
+    );
+
+    expect(find.textContaining('Sat, Jun 15 ·'), findsOneWidget);
+    expect(find.textContaining('2024'), findsNothing);
   });
 }
 

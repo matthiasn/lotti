@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -190,14 +191,16 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
   Future<void> _pickTargetDate() async {
     final today = DateTime.now();
     final baseDate = DateTime(today.year, today.month, today.day);
-    final picked = await showDatePicker(
+    final result = await showDesignSystemDatePicker(
       context: context,
+      title: context.messages.projectTargetDateLabel,
       initialDate: _targetDate ?? baseDate,
       firstDate: baseDate,
       lastDate: DateTime(baseDate.year + 5, baseDate.month, baseDate.day),
+      allowClear: _targetDate != null,
     );
-    if (!mounted || picked == null) return;
-    setState(() => _targetDate = picked);
+    if (!mounted || result == null) return;
+    setState(() => _targetDate = result.cleared ? null : result.date);
   }
 
   /// Finds the first available projectAgent template and provisions an agent.

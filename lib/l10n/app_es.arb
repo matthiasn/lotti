@@ -2547,7 +2547,7 @@
   "journalDateInvalid": "Intervalo de fechas no válido",
   "journalDateLabel": "Fecha",
   "journalDateNowButton": "Ahora",
-  "journalDateSaveButton": "GUARDAR",
+  "journalDateSaveButton": "Guardar",
   "journalDateTimeRangeTitle": "Fecha y hora",
   "journalDateToLabel": "Fecha hasta:",
   "journalDeleteConfirm": "SÍ, BORRAR ESTA ENTRADA",
@@ -2581,6 +2581,8 @@
   "journalOvernightNextDay": "Termina {date} (día siguiente)",
   "journalPrivateTooltip": "solo privado",
   "journalSearchHint": "Buscar en el diario...",
+  "journalSetEndDateTimeNowSemantic": "Establecer la fecha y hora de fin al momento actual",
+  "journalSetStartDateTimeNowSemantic": "Establecer la fecha y hora de inicio al momento actual",
   "journalShareHint": "Compartir",
   "journalShowLinkHint": "Mostrar enlace",
   "journalShowMapHint": "Mostrar mapa",
@@ -3778,6 +3780,7 @@
   "taskDueYesterday": "Venció ayer",
   "taskEditTitleLabel": "Editar título de la tarea",
   "taskEstimateLabel": "Estimación:",
+  "taskEstimateModalTitle": "Estimación",
   "taskEstimateProgressLabel": "{tracked} de {estimate}",
   "@taskEstimateProgressLabel": {
     "placeholders": {

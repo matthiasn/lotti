@@ -214,9 +214,28 @@ A few detail-level behaviors are worth calling out because they are easy to miss
 
 ### Start/End Date-Time Editor
 
-[`entry_datetime_multipage_modal.dart`](ui/widgets/entry_details/entry_datetime_multipage_modal.dart) edits an entry's `dateFrom`/`dateTo` and commits them via `EntryController.updateFromTo`. It is a single-page modal: one **Date** wheel over **paired Start/End time wheels**, so the date is entered once and stamped onto both timestamps rather than picked twice.
+[`entry_datetime_multipage_modal.dart`](ui/widgets/entry_details/entry_datetime_multipage_modal.dart) edits an entry's `dateFrom`/`dateTo` and commits them via `EntryController.updateFromTo`. Its Wolt modal has two reusable pages rather than stacking a date dialog over the editor:
 
-The editable model is the pure, testable [`EntryDateTimeRange`](ui/widgets/entry_details/entry_datetime_range.dart) — a `startDate` (day only) + `startTime` + `endTime` + an optional `endDateOverride` — from which `dateFrom`/`dateTo` are *derived* (they can never desync). The pinned glass bar shows a live duration (`formatRangeDuration`, multi-day aware) and disables Save until the range both changed and is valid.
+1. the overview shows a full-weekday date control, optional separate end date,
+   paired Start/End time wheels, endpoint-specific **Now** actions, and the live
+   range status;
+2. activating either date transitions to an in-sheet calendar page with Back,
+   Close, Today, and Done controls.
+
+The editable model is the pure, testable [`EntryDateTimeRange`](ui/widgets/entry_details/entry_datetime_range.dart) — a `startDate` (day only) + `startTime` + `endTime` + an optional `endDateOverride` — from which `dateFrom`/`dateTo` are *derived* (they can never desync). The glass Save footer remains fixed while the regular Wolt page owns overflow scrolling. Its content padding reserves the footer's occupied height, and the status reserves the next-day chip row in both states, so neither crossing midnight nor exposing the chip moves the sheet. Save stays disabled until the range both changed and is valid.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Overview
+    Overview --> StartCalendar: activate start date
+    Overview --> EndCalendar: activate end date
+    StartCalendar --> Overview: Back or Done
+    EndCalendar --> Overview: Back or Done
+    Overview --> Persisted: Save changed valid range
+    Overview --> Dismissed: Close
+    StartCalendar --> Dismissed: Close
+    EndCalendar --> Dismissed: Close
+```
 
 `EntryDateTimeRange.fromBounds` decides which mode an existing entry opens in:
 
@@ -226,19 +245,19 @@ stateDiagram-v2
     [*] --> SharedDate: end day == start+1 AND end clock < start clock (plain overnight)
     [*] --> DifferentDates: otherwise (multi-day, or exact-24h same-clock next day)
 
-    SharedDate --> SharedDate: spin date / times
+    SharedDate --> SharedDate: select date / spin times / use Now
     note right of SharedDate
-      one Date wheel + two time wheels.
+      one date control + two time wheels.
       end clock < start clock auto-rolls
       dateTo to the next day and shows a
-      teal "+1 day" chip (overnightAuto).
+      teal next-day chip (overnightAuto).
     end note
 
-    SharedDate --> DifferentDates: toggle "Ends on another day" ON\n(freeze endDateOverride = current end day)
+    SharedDate --> DifferentDates: toggle separate end date ON\n(freeze endDateOverride = current end day)
     DifferentDates --> SharedDate: toggle OFF\n(clear endDateOverride; end collapses onto start date)
     note right of DifferentDates
-      reveals a second End date wheel;
-      dateTo decomposes independently.
+      reveals a second End date control;
+      either date opens the same calendar page.
       Save is gated on dateTo >= dateFrom.
     end note
 ```

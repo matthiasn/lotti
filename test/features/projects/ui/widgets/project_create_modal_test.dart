@@ -479,9 +479,9 @@ void main() {
       await tester.tap(find.byIcon(Icons.calendar_today));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.byType(DatePickerDialog), findsOneWidget);
+      expect(find.byType(CalendarDatePicker), findsOneWidget);
 
-      await tester.tap(find.text('OK'));
+      await tester.tap(find.text('Done'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

@@ -245,7 +245,16 @@ stateDiagram-v2
 ```
 
 
-- calendar and time pickers
+- calendar and time pickers (`components/calendar_pickers/` and
+  `components/time_pickers/`) — the shared calendar wraps Material's
+  locale-aware month grid with a full weekday date readout, a contextual
+  **Today** action, token-backed framing, and the shared modal action bar. The
+  time-of-day picker uses fixed-extent hour/minute wheels with cylindrical
+  perspective, non-bouncing settle behavior, a token-selected row, 12/24-hour
+  layouts, and adjustable semantics for each column. The duration picker keeps
+  Cupertino's hours/minutes wheel while applying the same typography and
+  selected-row treatment. Feature code owns the draft value and persistence;
+  these components own presentation and interaction semantics.
 - file upload surface
 
 The tabs component is intentionally content-sized by default. Segmented tab
@@ -310,6 +319,8 @@ Several components enforce accessible naming at construction time. Examples:
 - `DesignSystemSplitButton` resolves explicit semantics labels for primary and dropdown actions
 - `DesignSystemCheckbox` requires either a visible label or a semantics label
 - `DesignSystemTooltipIcon` maps tooltip text into semantics by default
+- `DesignSystemTimeWheel` exposes hour, minute, and AM/PM columns as separate
+  adjustable semantic controls, including next/previous values
 
 This is not universal policy machinery hidden somewhere central. It is encoded directly in component constructors and `Semantics` wrappers, which is better because the rule stays close to the widget that can violate it.
 

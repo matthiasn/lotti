@@ -165,6 +165,43 @@ void main() {
     });
   });
 
+  group('endpoint replacement', () {
+    final base = EntryDateTimeRange.fromBounds(
+      DateTime(2024, 6, 15, 9),
+      DateTime(2024, 6, 15, 10),
+    );
+
+    test('withStart changes only the absolute start endpoint', () {
+      final next = base.withStart(DateTime(2024, 6, 16, 8, 30));
+
+      expect(next.dateFrom, DateTime(2024, 6, 16, 8, 30));
+      expect(next.dateTo, base.dateTo);
+      expect(next.differentDates, isTrue);
+      expect(next.valid, isFalse);
+    });
+
+    test('withEnd changes only the absolute end endpoint', () {
+      final next = base.withEnd(DateTime(2024, 6, 17, 18, 45));
+
+      expect(next.dateFrom, base.dateFrom);
+      expect(next.dateTo, DateTime(2024, 6, 17, 18, 45));
+      expect(next.differentDates, isTrue);
+      expect(next.valid, isTrue);
+    });
+
+    test(
+      'endpoint replacement keeps a representable same-day range compact',
+      () {
+        final next = base.withEnd(DateTime(2024, 6, 15, 11, 30));
+
+        expect(next.dateFrom, base.dateFrom);
+        expect(next.dateTo, DateTime(2024, 6, 15, 11, 30));
+        expect(next.differentDates, isFalse);
+        expect(next.overnightAuto, isFalse);
+      },
+    );
+  });
+
   // Glados property: fromBounds() round-trips any start <= end pair back to the
   // same two timestamps (at minute precision), and the result is always valid —
   // regardless of whether it lands in shared, overnight, or different-dates mode.

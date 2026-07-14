@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -8,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -42,6 +42,11 @@ final JournalEntry _sameDay = _entry(
   id: 'e-same',
   from: DateTime(2024, 6, 15, 14, 30),
   to: DateTime(2024, 6, 15, 15, 15),
+);
+final JournalEntry _futureEntry = _entry(
+  id: 'e-future',
+  from: DateTime(2100, 6, 15, 14, 30),
+  to: DateTime(2100, 6, 15, 15, 15),
 );
 final JournalEntry _overnight = _entry(
   id: 'e-night',
@@ -144,6 +149,7 @@ void main() {
       WidgetTester tester,
       JournalEntity entry, {
       Override? overrideController,
+      MediaQueryData? mediaQueryData,
     }) async {
       final (
         trackedOverride,
@@ -156,6 +162,7 @@ void main() {
         makeTestableWidgetWithScaffold(
           _Launcher(entry: entry),
           overrides: [overrideController ?? trackedOverride],
+          mediaQueryData: mediaQueryData,
         ),
       );
       await tester.pump();
@@ -166,24 +173,122 @@ void main() {
 
     DesignSystemButton saveButton(WidgetTester tester) =>
         tester.widget<DesignSystemButton>(
-          find.widgetWithText(DesignSystemButton, 'SAVE'),
+          find.widgetWithText(DesignSystemButton, 'Save'),
         );
+
+    Finder quickAction(String semanticsLabel) => find.byWidgetPredicate(
+      (widget) =>
+          widget is DesignSystemButton &&
+          widget.semanticsLabel == semanticsLabel,
+    );
 
     testWidgets('renders the title and the one-date / two-times controls', (
       tester,
     ) async {
-      await openModal(tester, _sameDay);
+      await openModal(
+        tester,
+        _sameDay,
+        mediaQueryData: const MediaQueryData(size: Size(800, 900)),
+      );
 
       expect(find.text('Date & Time'), findsOneWidget);
-      expect(find.text('Date'), findsOneWidget);
       expect(find.text('Start time'), findsOneWidget);
       expect(find.text('End time'), findsOneWidget);
-      // The shared date affordance and the different-dates toggle.
+      expect(find.text('Saturday, June 15, 2024'), findsOneWidget);
+      // The shared date affordance, endpoint shortcuts, and explicit-date mode.
       expect(find.text('Today'), findsOneWidget);
+      expect(find.text('Now'), findsNWidgets(2));
+      expect(find.text('Pick a separate end date'), findsOneWidget);
       expect(find.byType(DesignSystemToggle), findsOneWidget);
-      // The pinned duration readout (45m for 14:30 -> 15:15).
+      expect(
+        quickAction('Set start date and time to now'),
+        findsOneWidget,
+      );
+      expect(quickAction('Set end date and time to now'), findsOneWidget);
+      // The pinned duration and absolute endpoint readout.
       expect(find.text('Duration'), findsOneWidget);
       expect(find.text('45m'), findsOneWidget);
+      expect(find.textContaining('Sat, Jun 15'), findsOneWidget);
+
+      final pickers = find.byType(DesignSystemTimeWheel);
+      expect(pickers, findsNWidgets(2));
+      expect(find.byType(CalendarDatePicker), findsNothing);
+      expect(find.byType(ListWheelScrollView), findsNWidgets(6));
+    });
+
+    testWidgets('date button transitions to the shared weekday calendar and '
+        'back', (
+      tester,
+    ) async {
+      await openModal(tester, _sameDay);
+      final modalBarrierCount = find.byType(ModalBarrier).evaluate().length;
+
+      await tester.tap(find.text('Saturday, June 15, 2024'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CalendarDatePicker), findsOneWidget);
+      expect(find.byType(ModalBarrier), findsNWidgets(modalBarrierCount));
+      expect(find.byTooltip('Back'), findsOneWidget);
+      expect(find.text('Start date'), findsOneWidget);
+      expect(find.text('Saturday, June 15, 2024'), findsWidgets);
+      expect(find.text('Done'), findsOneWidget);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(CalendarDatePicker),
+          matching: find.text('16'),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Sunday, June 16, 2024'), findsOneWidget);
+
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Date & Time'), findsOneWidget);
+      expect(find.text('Sunday, June 16, 2024'), findsOneWidget);
+      expect(saveButton(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('the reusable calendar page edits the explicit end date', (
+      tester,
+    ) async {
+      await openModal(tester, _sameDay);
+
+      await tester.tap(find.byType(DesignSystemToggle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Saturday, June 15, 2024').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('End date'), findsWidgets);
+      expect(find.byType(CalendarDatePicker), findsOneWidget);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(CalendarDatePicker),
+          matching: find.text('17'),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Monday, June 17, 2024'), findsOneWidget);
+      expect(saveButton(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('calendar Back returns to the unchanged overview', (
+      tester,
+    ) async {
+      await openModal(tester, _sameDay);
+      await tester.tap(find.text('Saturday, June 15, 2024'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Date & Time'), findsOneWidget);
+      expect(saveButton(tester).onPressed, isNull);
     });
 
     testWidgets('same-day opens with the toggle off and reveals an End date '
@@ -251,7 +356,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(saveButton(tester).onPressed, isNotNull);
 
-      await tester.tap(find.widgetWithText(DesignSystemButton, 'SAVE'));
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
       await tester.pumpAndSettle();
 
       expect(tracker.updateFromToCalls, hasLength(1));
@@ -270,42 +375,140 @@ void main() {
 
       await tester.tap(find.text('Today'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(DesignSystemButton, 'SAVE'));
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
       await tester.pumpAndSettle();
 
       // updateFromTo threw → caught → the modal stays open.
       expect(find.text('Date & Time'), findsOneWidget);
     });
 
-    testWidgets('spinning the date and time wheels changes the range and '
+    testWidgets(
+      'End Now preserves the start and sets a complete end endpoint',
+      (
+        tester,
+      ) async {
+        final tracker = await openModal(tester, _sameDay);
+
+        await tester.tap(quickAction('Set end date and time to now'));
+        await tester.pumpAndSettle();
+
+        expect(
+          tester
+              .widget<DesignSystemToggle>(find.byType(DesignSystemToggle))
+              .value,
+          isTrue,
+        );
+        expect(find.text('End date'), findsOneWidget);
+        expect(saveButton(tester).onPressed, isNotNull);
+
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
+        await tester.pumpAndSettle();
+
+        expect(tracker.updateFromToCalls, hasLength(1));
+        expect(
+          tracker.updateFromToCalls.single['dateFrom'],
+          _sameDay.meta.dateFrom,
+        );
+        expect(
+          tracker.updateFromToCalls.single['dateTo']!.isAfter(
+            _sameDay.meta.dateTo,
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    testWidgets('Start Now changes the complete start endpoint', (
+      tester,
+    ) async {
+      await openModal(tester, _futureEntry);
+
+      await tester.tap(quickAction('Set start date and time to now'));
+      await tester.pump();
+
+      expect(saveButton(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('Today can update an explicit end date', (tester) async {
+      await openModal(tester, _multiDay);
+
+      final endToday = quickAction('End date, Today');
+      await tester.tap(endToday);
+      await tester.pump();
+
+      expect(saveButton(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('end time wheel callback updates the range', (tester) async {
+      await openModal(tester, _sameDay);
+      final endWheel = tester.widget<DesignSystemTimeWheel>(
+        find.byType(DesignSystemTimeWheel).last,
+      );
+
+      endWheel.onDateTimeChanged(DateTime(2024, 6, 15, 16));
+      await tester.pump();
+
+      expect(saveButton(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('iPhone-width layout keeps paired times readable', (
+      tester,
+    ) async {
+      await openModal(
+        tester,
+        _sameDay,
+        mediaQueryData: const MediaQueryData(
+          size: Size(402, 874),
+          padding: EdgeInsets.only(top: 47, bottom: 34),
+          alwaysUse24HourFormat: true,
+        ),
+      );
+
+      final startCenter = tester.getCenter(find.text('Start time'));
+      final endCenter = tester.getCenter(find.text('End time'));
+      expect((startCenter.dy - endCenter.dy).abs(), lessThan(1));
+      expect(endCenter.dx, greaterThan(startCenter.dx));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('large text stacks endpoint time controls on narrow screens', (
+      tester,
+    ) async {
+      await openModal(
+        tester,
+        _sameDay,
+        mediaQueryData: const MediaQueryData(
+          size: Size(402, 874),
+          padding: EdgeInsets.only(top: 47, bottom: 34),
+          alwaysUse24HourFormat: true,
+          textScaler: TextScaler.linear(2),
+        ),
+      );
+
+      final startCenter = tester.getCenter(find.text('Start time'));
+      final endCenter = tester.getCenter(find.text('End time'));
+      expect(endCenter.dy, greaterThan(startCenter.dy));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('spinning the time wheels changes the range and '
         'enables Save', (tester) async {
       await openModal(tester, _sameDay);
       expect(saveButton(tester).onPressed, isNull);
 
-      // Large drags cross several wheel items so each wheel's onDateTimeChanged
-      // fires and the derived range actually changes.
-      final pickers = find.byType(CupertinoDatePicker);
-      await tester.drag(pickers.at(0), const Offset(0, -120)); // shared date
-      await tester.pumpAndSettle();
-      await tester.drag(pickers.at(1), const Offset(0, -100)); // start time
-      await tester.pumpAndSettle();
-      await tester.drag(pickers.at(2), const Offset(0, -100)); // end time
+      // Large drags cross several items so each settled-change callback fires.
+      final wheels = find.byType(ListWheelScrollView);
+      await tester.drag(wheels.at(0), const Offset(0, -100)); // start hour
       await tester.pumpAndSettle();
 
       expect(saveButton(tester).onPressed, isNotNull);
     });
 
-    testWidgets('multi-day: spinning the end date works and toggling off '
-        'collapses back to a single date', (tester) async {
+    testWidgets('multi-day toggling off collapses back to a single date', (
+      tester,
+    ) async {
       await openModal(tester, _multiDay);
       expect(find.text('End date'), findsOneWidget);
-
-      // The end-date wheel is the second CupertinoDatePicker in this layout.
-      await tester.drag(
-        find.byType(CupertinoDatePicker).at(1),
-        const Offset(0, -120),
-      );
-      await tester.pumpAndSettle();
 
       // Toggling off clears the override and collapses to a single shared date.
       await tester.tap(find.byType(DesignSystemToggle));
@@ -318,7 +521,7 @@ void main() {
         isFalse,
       );
       expect(find.text('End date'), findsNothing);
-      expect(find.text('Date'), findsOneWidget);
+      expect(find.textContaining('Friday, June 14, 2024'), findsOneWidget);
     });
   });
 }
