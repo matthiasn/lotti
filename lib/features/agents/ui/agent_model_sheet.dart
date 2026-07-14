@@ -128,14 +128,13 @@ List<String> _providerIdsForModels(TaskAgentSetupOptions options) {
   final configuredProviderIds = options.providers
       .map((value) => value.id)
       .toSet();
-  final ids = <String>[];
+  final ids = <String>{};
   for (final model in options.models) {
-    if (configuredProviderIds.contains(model.inferenceProviderId) &&
-        !ids.contains(model.inferenceProviderId)) {
+    if (configuredProviderIds.contains(model.inferenceProviderId)) {
       ids.add(model.inferenceProviderId);
     }
   }
-  if (ids.isNotEmpty) return ids;
+  if (ids.isNotEmpty) return ids.toList();
   return options.models
       .map((model) => model.inferenceProviderId)
       .toSet()
