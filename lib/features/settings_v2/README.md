@@ -42,7 +42,14 @@ platform fork point: `isDesktopLayout(context)` renders `SettingsV2Page`, else
   right-hand pane by the panel registry.
 - **Mobile:** `SettingsLocation.buildPages` builds a real Beamer page stack
   starting at `SettingsMobileRootPage`, inserting `SettingsMobileBranchPage`
-  hubs for the two pure-navigation branches (`definitions`, `advanced`).
+  hubs for the two pure-navigation branches (`definitions`, `advanced`) and for
+  the feature-gated `sync` hub. A branch hub that sits beneath its leaves keeps
+  **one stable `ValueKey` across the bare URL and every leaf** (e.g. the sync
+  hub is always `settings-sync` for `/settings/sync` and all `/settings/sync/*`
+  leaves). The stable key is what lets a back tap from a leaf pop cleanly to
+  reveal the existing hub beneath it; a key that changed between the base and
+  leaf states would make Navigator swap the page and play the wrong pop
+  animation.
 
 ## Directory Shape
 

@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Daily OS is now available to everyone.** The Daily OS day-planning surface
   no longer sits behind a Settings → Advanced → Flags toggle — its calendar tab
   appears in the main navigation for all users.
+### Fixed
+- **Sync settings pages now slide back consistently.** Returning from a Sync
+  sub-page (such as Backfill sync) to Sync settings uses the same clean pop
+  animation as every other settings screen, instead of the jarring page-swap
+  transition it played before.
 
 ## [0.9.1042]
 ### Added

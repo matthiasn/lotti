@@ -274,17 +274,18 @@ class SettingsLocation extends BeamLocation<BeamState> {
       // (`/settings/sync/provisioned`), not a branch header, so the bare
       // branch hub just lists its rows. `SyncFeatureGate` preserves the
       // deep-link bounce back to `/settings` when Matrix sync is disabled.
-      if (path == '/settings/sync')
+      //
+      // The hub is emitted with the SAME `ValueKey('settings-sync')` for the
+      // bare `/settings/sync` URL and for every `/settings/sync/*` leaf. A
+      // stable key is what lets the back gesture from a leaf (e.g. Backfill)
+      // pop cleanly to reveal the existing hub page beneath it. Splitting the
+      // key between base and leaf states (the previous `settings-sync-base`)
+      // made Navigator swap the underlying page instead of revealing it,
+      // producing the wrong pop animation. The Definitions/Advanced/AI
+      // branches use the same one-stable-key rule.
+      if (path == '/settings/sync' || path.startsWith('/settings/sync/'))
         const BeamPage(
           key: ValueKey('settings-sync'),
-          title: 'Sync Settings',
-          child: SyncFeatureGate(
-            child: SettingsMobileBranchPage(branchId: 'sync'),
-          ),
-        ),
-      if (path != '/settings/sync' && path.startsWith('/settings/sync/'))
-        const BeamPage(
-          key: ValueKey('settings-sync-base'),
           title: 'Sync Settings',
           child: SyncFeatureGate(
             child: SettingsMobileBranchPage(branchId: 'sync'),

@@ -35,6 +35,7 @@
     <release version="0.9.1043" date="2026-07-14">
       <description>
           <p>Daily OS is now available to everyone. The Daily OS day-planning surface no longer sits behind a feature flag and appears in the main navigation for all users.</p>
+          <p>Returning from a Sync sub-page such as Backfill sync to Sync settings now uses the same clean pop animation as every other settings screen, instead of the jarring page-swap transition it played before.</p>
       </description>
     </release>
     <release version="0.9.1042" date="2026-07-13">
