@@ -35,9 +35,7 @@ class EntryDateTimeRange {
     final endDate = dateTo.dateOnly;
     final endBeforeStart = _minutes(endTime) < _minutes(startTime);
     final pureOvernight =
-        endDate.isSameCalendarDay(
-          startDate.add(const Duration(days: 1)),
-        ) &&
+        endDate.isSameCalendarDay(startDate.addCalendarDays(1)) &&
         endBeforeStart;
     final differentDates =
         !endDate.isSameCalendarDay(startDate) && !pureOvernight;
@@ -84,7 +82,7 @@ class EntryDateTimeRange {
     // [endDateOverride], but fall back to the start day rather than crashing if
     // the invariant is ever violated (e.g. a bare copyWith(differentDates: true)).
     if (differentDates) return endDateOverride ?? startDate;
-    return overnightAuto ? startDate.add(const Duration(days: 1)) : startDate;
+    return overnightAuto ? startDate.addCalendarDays(1) : startDate;
   }
 
   DateTime get dateFrom => _dateAndTime(startDate, startTime);

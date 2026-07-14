@@ -114,6 +114,16 @@ void main() {
       expect(nextDayUtc.compareCalendarDay(testDate), isPositive);
     });
 
+    test('addCalendarDays preserves wall time and timezone kind', () {
+      final local = DateTime(2024, 10, 27, 23, 30);
+      final utc = DateTime.utc(2024, 10, 27, 23, 30);
+
+      expect(local.addCalendarDays(1), DateTime(2024, 10, 28, 23, 30));
+      expect(local.addCalendarDays(1).isUtc, isFalse);
+      expect(utc.addCalendarDays(1), DateTime.utc(2024, 10, 28, 23, 30));
+      expect(utc.addCalendarDays(1).isUtc, isTrue);
+    });
+
     test('ymd returns date in YYYY-MM-DD format', () {
       expect(testDate.ymd, '2024-07-27');
     });

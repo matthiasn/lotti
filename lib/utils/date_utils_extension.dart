@@ -12,6 +12,29 @@ extension DateUtilsExtension on DateTime {
       ? DateTime.utc(year, month, day)
       : DateTime(year, month, day);
 
+  /// Moves by calendar days without assuming every local day is 24 hours.
+  DateTime addCalendarDays(int days) => isUtc
+      ? DateTime.utc(
+          year,
+          month,
+          day + days,
+          hour,
+          minute,
+          second,
+          millisecond,
+          microsecond,
+        )
+      : DateTime(
+          year,
+          month,
+          day + days,
+          hour,
+          minute,
+          second,
+          millisecond,
+          microsecond,
+        );
+
   /// Compares calendar components without converting either timezone.
   bool isSameCalendarDay(DateTime other) =>
       year == other.year && month == other.month && day == other.day;

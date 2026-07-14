@@ -39,6 +39,18 @@ void main() {
       },
     );
 
+    test('plain overnight span survives a local DST-ending day', () {
+      final range = EntryDateTimeRange.fromBounds(
+        DateTime(2024, 10, 27, 23, 30),
+        DateTime(2024, 10, 28, 0, 30),
+      );
+
+      expect(range.differentDates, isFalse);
+      expect(range.overnightAuto, isTrue);
+      expect(range.dateTo, DateTime(2024, 10, 28, 0, 30));
+      expect(range.duration, const Duration(hours: 1));
+    });
+
     test(
       'exactly-24h same-clock next-day entry opens in different-dates mode',
       () {
