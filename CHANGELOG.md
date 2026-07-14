@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1044]
+## [0.9.1045]
 ### Changed
 - **Date and time pickers are clearer and steadier across the app.** Entry
   ranges now show weekdays, include Start/End **Now** actions, and move into a
@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   longer flashes an empty state. Page changes now use a calm staggered fade
   while the sheet eases smoothly to its new height, and a tapped thinking model
   shows its selected state immediately while the change is saved.
+
+## [0.9.1044]
+### Changed
 - **Daily OS now lets you choose its AI route explicitly.** A discoverable
   Daily OS settings page owns the default inference profile and preferred name,
   while the planner instance can override its full profile or only its thinking
