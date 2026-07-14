@@ -256,6 +256,8 @@ stateDiagram-v2
   large Linux wheel deltas cannot skip values or lock further input. Drag
   velocity is capped by column: deliberate movement still accelerates across
   several rows, while extreme desktop fling values cannot launch the wheel.
+  Each column participates in focus traversal, uses the interactive accent for
+  visible focus, and handles Up/Down (including key repeat) as one-row changes.
   Looping columns start many cycles from either boundary so hours remain
   reachable in both directions, and cached delegates avoid rebuilding the full
   hour/minute lists on every selection tick. The duration picker keeps

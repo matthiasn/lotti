@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Token-backed time-of-day wheel shared by date/time modals.
@@ -106,6 +107,9 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
                         ? index.toString().padLeft(2, '0')
                         : '${index + 1}',
                     selectedStyle: pickerStyle,
+                    focusedStyle: pickerStyle.copyWith(
+                      color: tokens.colors.interactive.enabled,
+                    ),
                     unselectedStyle: pickerStyle.copyWith(
                       color: tokens.colors.text.mediumEmphasis,
                     ),
@@ -124,6 +128,9 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
                     semanticsLabel: materialLocalizations.timePickerMinuteLabel,
                     labelBuilder: (index) => index.toString().padLeft(2, '0'),
                     selectedStyle: pickerStyle,
+                    focusedStyle: pickerStyle.copyWith(
+                      color: tokens.colors.interactive.enabled,
+                    ),
                     unselectedStyle: pickerStyle.copyWith(
                       color: tokens.colors.text.mediumEmphasis,
                     ),
@@ -151,6 +158,9 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
                               context,
                             ).postMeridiemAbbreviation,
                       selectedStyle: pickerStyle,
+                      focusedStyle: pickerStyle.copyWith(
+                        color: tokens.colors.interactive.enabled,
+                      ),
                       unselectedStyle: pickerStyle.copyWith(
                         color: tokens.colors.text.mediumEmphasis,
                       ),
@@ -177,6 +187,7 @@ class _FixedExtentWheelColumn extends StatefulWidget {
     required this.semanticsLabel,
     required this.labelBuilder,
     required this.selectedStyle,
+    required this.focusedStyle,
     required this.unselectedStyle,
     required this.onSelectedItemChanged,
     required this.onScrollEnd,
@@ -191,6 +202,7 @@ class _FixedExtentWheelColumn extends StatefulWidget {
   final String semanticsLabel;
   final String Function(int) labelBuilder;
   final TextStyle selectedStyle;
+  final TextStyle focusedStyle;
   final TextStyle unselectedStyle;
   final ValueChanged<int> onSelectedItemChanged;
   final VoidCallback onScrollEnd;
@@ -205,7 +217,9 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
   static const _loopingTurns = 1000;
 
   late final FixedExtentScrollController _controller;
+  late final FocusNode _focusNode;
   late final ValueNotifier<int> _selectedItem;
+  late final Listenable _visualState;
   late List<Widget> _children;
   var _pointerScrollDistance = 0.0;
 
@@ -217,7 +231,9 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
           ? widget.itemCount * _loopingTurns + widget.initialItem
           : widget.initialItem,
     );
+    _focusNode = FocusNode(debugLabel: widget.semanticsLabel);
     _selectedItem = ValueNotifier(widget.selectedItem);
+    _visualState = Listenable.merge([_selectedItem, _focusNode]);
     _children = _buildChildren();
   }
 
@@ -226,6 +242,7 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
     super.didUpdateWidget(oldWidget);
     if (widget.itemCount != oldWidget.itemCount ||
         widget.selectedStyle != oldWidget.selectedStyle ||
+        widget.focusedStyle != oldWidget.focusedStyle ||
         widget.unselectedStyle != oldWidget.unselectedStyle) {
       _children = _buildChildren();
     }
@@ -234,6 +251,7 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     _selectedItem.dispose();
     super.dispose();
   }
@@ -260,6 +278,21 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
     );
     _handleSelectedItemChanged(next);
     widget.onScrollEnd();
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      _adjust(-1);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      _adjust(1);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   void _handlePointerSignal(PointerSignalEvent event) {
@@ -290,12 +323,14 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
       onPointerSignal: _handlePointerSignal,
       child: SizedBox.expand(
         child: Center(
-          child: ValueListenableBuilder(
-            valueListenable: _selectedItem,
-            builder: (context, selectedItem, _) => Text(
+          child: AnimatedBuilder(
+            animation: _visualState,
+            builder: (context, _) => Text(
               widget.labelBuilder(index),
-              style: index == selectedItem
-                  ? widget.selectedStyle
+              style: index == _selectedItem.value
+                  ? _focusNode.hasFocus
+                        ? widget.focusedStyle
+                        : widget.selectedStyle
                   : widget.unselectedStyle,
             ),
           ),
@@ -306,53 +341,64 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: _selectedItem,
-      builder: (context, selectedItem, _) {
-        final increasedIndex = _adjustedIndex(1);
-        final decreasedIndex = _adjustedIndex(-1);
-        return Semantics(
-          container: true,
-          label: widget.semanticsLabel,
-          value: widget.labelBuilder(selectedItem),
-          increasedValue: increasedIndex == null
-              ? null
-              : widget.labelBuilder(increasedIndex),
-          decreasedValue: decreasedIndex == null
-              ? null
-              : widget.labelBuilder(decreasedIndex),
-          selected: true,
-          onIncrease: increasedIndex == null ? null : () => _adjust(1),
-          onDecrease: decreasedIndex == null ? null : () => _adjust(-1),
-          child: ExcludeSemantics(
-            child: NotificationListener<ScrollEndNotification>(
-              onNotification: (_) {
-                widget.onScrollEnd();
-                return false;
-              },
-              child: ListWheelScrollView.useDelegate(
-                controller: _controller,
-                itemExtent: widget.itemExtent,
-                physics: widget.maxFlingRowsPerSecond == 0
-                    ? const _PreciseFixedExtentScrollPhysics()
-                    : _ControlledFixedExtentScrollPhysics(
-                        itemExtent: widget.itemExtent,
-                        maxFlingRowsPerSecond: widget.maxFlingRowsPerSecond,
-                      ),
-                diameterRatio: _DesignSystemTimeWheelState._diameterRatio,
-                squeeze: _DesignSystemTimeWheelState._squeeze,
-                overAndUnderCenterOpacity:
-                    _DesignSystemTimeWheelState._overAndUnderCenterOpacity,
-                onSelectedItemChanged: _handleSelectedItemChanged,
-                dragStartBehavior: DragStartBehavior.down,
-                childDelegate: widget.looping
-                    ? ListWheelChildLoopingListDelegate(children: _children)
-                    : ListWheelChildListDelegate(children: _children),
+    return Focus(
+      focusNode: _focusNode,
+      onKeyEvent: _handleKeyEvent,
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) => _focusNode.requestFocus(),
+        child: AnimatedBuilder(
+          animation: _visualState,
+          builder: (context, _) {
+            final selectedItem = _selectedItem.value;
+            final increasedIndex = _adjustedIndex(1);
+            final decreasedIndex = _adjustedIndex(-1);
+            return Semantics(
+              container: true,
+              label: widget.semanticsLabel,
+              value: widget.labelBuilder(selectedItem),
+              increasedValue: increasedIndex == null
+                  ? null
+                  : widget.labelBuilder(increasedIndex),
+              decreasedValue: decreasedIndex == null
+                  ? null
+                  : widget.labelBuilder(decreasedIndex),
+              focusable: true,
+              focused: _focusNode.hasFocus,
+              selected: true,
+              onIncrease: increasedIndex == null ? null : () => _adjust(1),
+              onDecrease: decreasedIndex == null ? null : () => _adjust(-1),
+              child: ExcludeSemantics(
+                child: NotificationListener<ScrollEndNotification>(
+                  onNotification: (_) {
+                    widget.onScrollEnd();
+                    return false;
+                  },
+                  child: ListWheelScrollView.useDelegate(
+                    controller: _controller,
+                    itemExtent: widget.itemExtent,
+                    physics: widget.maxFlingRowsPerSecond == 0
+                        ? const _PreciseFixedExtentScrollPhysics()
+                        : _ControlledFixedExtentScrollPhysics(
+                            itemExtent: widget.itemExtent,
+                            maxFlingRowsPerSecond: widget.maxFlingRowsPerSecond,
+                          ),
+                    diameterRatio: _DesignSystemTimeWheelState._diameterRatio,
+                    squeeze: _DesignSystemTimeWheelState._squeeze,
+                    overAndUnderCenterOpacity:
+                        _DesignSystemTimeWheelState._overAndUnderCenterOpacity,
+                    onSelectedItemChanged: _handleSelectedItemChanged,
+                    dragStartBehavior: DragStartBehavior.down,
+                    childDelegate: widget.looping
+                        ? ListWheelChildLoopingListDelegate(children: _children)
+                        : ListWheelChildListDelegate(children: _children),
+                  ),
+                ),
               ),
-            ),
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 }

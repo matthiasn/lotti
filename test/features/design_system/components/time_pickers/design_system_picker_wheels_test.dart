@@ -2,8 +2,10 @@ import 'package:flutter/cupertino.dart' show CupertinoTimerPicker;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -206,6 +208,41 @@ void main() {
     expect(changed, isNotNull);
     final advancedHours = (changed!.hour - 14 + 24) % 24;
     expect(advancedHours, inInclusiveRange(2, 4));
+  });
+
+  testWidgets('keyboard arrows adjust focused columns one row at a time', (
+    tester,
+  ) async {
+    DateTime? changed;
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        DesignSystemTimeWheel(
+          initialDateTime: DateTime(2024, 6, 15, 14, 30),
+          use24hFormat: true,
+          onDateTimeChanged: (value) => changed = value,
+        ),
+      ),
+    );
+
+    final wheels = find.byType(ListWheelScrollView);
+    await tester.tap(wheels.first);
+    await tester.pump();
+
+    final tokens = tester.element(wheels.first).designTokens;
+    expect(
+      tester.widget<Text>(find.text('14').first).style!.color,
+      tokens.colors.interactive.enabled,
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pump();
+    expect(changed, DateTime(2024, 6, 15, 15, 30));
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pump();
+    expect(changed, DateTime(2024, 6, 15, 15, 29));
   });
 
   testWidgets('settled selection does not rebuild the wheel delegate', (
