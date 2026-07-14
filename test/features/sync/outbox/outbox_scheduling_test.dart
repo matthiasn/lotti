@@ -20,6 +20,7 @@ enum _GeneratedPriorityMessageKind {
   aiConfig,
   aiConfigDelete,
   themingSelection,
+  dailyOsUserName,
   backfillRequest,
   backfillResponse,
   agentEntity,
@@ -104,6 +105,12 @@ class _GeneratedPriorityScenario {
           updatedAt: counterSlot,
           status: status,
         ),
+      _GeneratedPriorityMessageKind.dailyOsUserName =>
+        SyncMessage.dailyOsUserName(
+          userName: 'name-$counterSlot',
+          updatedAt: counterSlot,
+          status: status,
+        ),
       _GeneratedPriorityMessageKind.backfillRequest =>
         SyncMessage.backfillRequest(
           entries: [
@@ -185,6 +192,7 @@ class _GeneratedPriorityScenario {
       _GeneratedPriorityMessageKind.notification ||
       _GeneratedPriorityMessageKind.notificationStateUpdate ||
       _GeneratedPriorityMessageKind.themingSelection ||
+      _GeneratedPriorityMessageKind.dailyOsUserName ||
       _GeneratedPriorityMessageKind.configFlag ||
       _GeneratedPriorityMessageKind.outboxBundle => OutboxPriority.normal.index,
       _GeneratedPriorityMessageKind.entityDefinition ||

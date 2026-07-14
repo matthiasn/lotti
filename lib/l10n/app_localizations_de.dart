@@ -8939,6 +8939,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPayloadConsumptionEvent => 'KI-Verbrauch';
 
   @override
+  String get syncPayloadDailyOsUserName => 'Daily-OS-Name';
+
+  @override
   String get syncPayloadEntityDefinition => 'Entitätsdefinition';
 
   @override

@@ -18,7 +18,7 @@ mixin _$AgentConfig {
 /// Maximum number of tool-call turns per wake.
  int get maxTurnsPerWake;/// Model identifier to use for inference.
  String get modelId;/// Inference profile ID — takes precedence over [modelId] when set.
- String? get profileId;/// Typed persistent inference setup for task agents.
+ String? get profileId;/// Typed persistent inference setup for agent instances.
 ///
 /// Null preserves the legacy profile/template/model resolution chain.
 /// Once present, this setup is authoritative: configured setups resolve
@@ -256,7 +256,7 @@ class _AgentConfig implements AgentConfig {
 @override@JsonKey() final  String modelId;
 /// Inference profile ID — takes precedence over [modelId] when set.
 @override final  String? profileId;
-/// Typed persistent inference setup for task agents.
+/// Typed persistent inference setup for agent instances.
 ///
 /// Null preserves the legacy profile/template/model resolution chain.
 /// Once present, this setup is authoritative: configured setups resolve
@@ -362,7 +362,7 @@ mixin _$AgentInferenceSetup {
 
 @JsonKey(unknownEnumValue: AgentInferenceSetupMode.disabled) AgentInferenceSetupMode get mode;@JsonKey(unknownEnumValue: AgentInferenceSetupOrigin.unknown) AgentInferenceSetupOrigin get origin;/// Base inference profile. Its non-thinking slots remain available when a
 /// direct thinking-model override is selected.
- String? get baseProfileId;/// Config-row ID (`AiConfigModel.id`) for the task agent's thinking model.
+ String? get baseProfileId;/// Config-row ID (`AiConfigModel.id`) for the agent's thinking model.
 /// This is deliberately not a provider-native `providerModelId`.
  String? get thinkingModelOverrideId;/// Category/template ID whose default was copied, when applicable.
  String? get originEntityId;
@@ -571,7 +571,7 @@ class _AgentInferenceSetup implements AgentInferenceSetup {
 /// Base inference profile. Its non-thinking slots remain available when a
 /// direct thinking-model override is selected.
 @override final  String? baseProfileId;
-/// Config-row ID (`AiConfigModel.id`) for the task agent's thinking model.
+/// Config-row ID (`AiConfigModel.id`) for the agent's thinking model.
 /// This is deliberately not a provider-native `providerModelId`.
 @override final  String? thinkingModelOverrideId;
 /// Category/template ID whose default was copied, when applicable.

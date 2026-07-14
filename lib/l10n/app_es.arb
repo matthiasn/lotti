@@ -3660,6 +3660,7 @@
   "syncPayloadBackfillResponse": "Respuesta de relleno",
   "syncPayloadConfigFlag": "Indicador de configuración",
   "syncPayloadConsumptionEvent": "Consumo de IA",
+  "syncPayloadDailyOsUserName": "Nombre de Daily OS",
   "syncPayloadEntityDefinition": "Definición de entidad",
   "syncPayloadEntryLink": "Enlace de entrada",
   "syncPayloadJournalEntity": "Entrada de diario",

@@ -8823,6 +8823,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPayloadConsumptionEvent => 'AI consumption';
 
   @override
+  String get syncPayloadDailyOsUserName => 'Daily OS name';
+
+  @override
   String get syncPayloadEntityDefinition => 'Entity definition';
 
   @override

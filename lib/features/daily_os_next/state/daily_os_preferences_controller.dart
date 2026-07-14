@@ -1,18 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
+import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_preferences_keys.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 
-const dailyOsUserNameSettingsKey = 'DAILY_OS_USER_NAME';
-const dailyOsExcludedCategoryIdsSettingsKey = 'DAILY_OS_EXCLUDED_CATEGORY_IDS';
-const dailyOsTimelineGesturesLearnedSettingsKey =
-    'DAILY_OS_TIMELINE_GESTURES_LEARNED';
-const dailyOsDayFooterHintRetiredSettingsKey =
-    'DAILY_OS_DAY_FOOTER_HINT_RETIRED';
+export 'package:lotti/features/daily_os_next/state/daily_os_preferences_keys.dart';
 
 /// User-scoped Daily OS settings, persisted in [SettingsDb]: the greeting
 /// name, the set of category ids excluded from the day flow, and one-shot
@@ -68,12 +70,32 @@ class DailyOsPreferences {
 /// ensure an in-flight async load never clobbers a value the user has already
 /// changed in this session; coachmark flags need no guard because they only
 /// ever flip false→true.
+///
+/// The greeting name additionally syncs across a user's devices: [setUserName]
+/// stamps a last-write timestamp and enqueues a debounced
+/// `SyncMessage.dailyOsUserName`, and an inbound synced change (surfaced as a
+/// `settingsNotification`) reloads the name here under last-write-wins. The
+/// excluded-category set and coachmark flags remain device-local.
 class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
   bool _userNameEdited = false;
   bool _categoriesEdited = false;
 
+  /// True while applying a name arriving from another device, so the reload
+  /// does not re-enqueue an outbound sync message (theme-style ping-pong).
+  bool _isApplyingSyncedName = false;
+  StreamSubscription<Set<String>>? _settingsNotificationSub;
+  final _syncDebounceKey =
+      'daily_os.userName.sync.${identityHashCode(Object())}';
+
   @override
   DailyOsPreferences build() {
+    ref.onDispose(() {
+      unawaited(_settingsNotificationSub?.cancel());
+      EasyDebounce.cancel(_syncDebounceKey);
+    });
+    // Subscribe before the initial load so a synced name arriving during the
+    // load window is not missed.
+    _watchSyncedUserName();
     unawaited(_load());
     return DailyOsPreferences();
   }
@@ -136,7 +158,85 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
     _userNameEdited = true;
     final trimmed = value.trim();
     state = state.copyWith(userName: trimmed);
+    // Persist the name and a fresh last-write timestamp together so the
+    // outbound sync message and the local settings row agree on the winner.
+    final updatedAt = clock.now().millisecondsSinceEpoch;
     _save(dailyOsUserNameSettingsKey, trimmed);
+    _save(dailyOsUserNameUpdatedAtSettingsKey, updatedAt.toString());
+    _enqueueUserNameSync(trimmed, updatedAt);
+  }
+
+  /// Debounced outbound sync of the greeting name. Coalesces rapid keystrokes
+  /// into one message, skips while applying a synced change, and is a no-op
+  /// before sync is configured (`OutboxService` unregistered).
+  void _enqueueUserNameSync(String userName, int updatedAt) {
+    if (_isApplyingSyncedName) return;
+    EasyDebounce.debounce(
+      _syncDebounceKey,
+      const Duration(milliseconds: 250),
+      () async {
+        if (!getIt.isRegistered<OutboxService>()) return;
+        try {
+          await getIt<OutboxService>().enqueueMessage(
+            SyncMessage.dailyOsUserName(
+              userName: userName,
+              updatedAt: updatedAt,
+              status: SyncEntryStatus.update,
+            ),
+          );
+        } catch (e, st) {
+          if (getIt.isRegistered<DomainLogger>()) {
+            getIt<DomainLogger>().error(
+              LogDomain.dailyOs,
+              e,
+              stackTrace: st,
+              subDomain: 'enqueue',
+            );
+          }
+        }
+      },
+    );
+  }
+
+  /// Reloads the greeting name when a synced settings change lands, so an
+  /// already-open Daily OS surface reflects a name set on another device.
+  void _watchSyncedUserName() {
+    if (!getIt.isRegistered<UpdateNotifications>()) return;
+    _settingsNotificationSub = getIt<UpdateNotifications>().updateStream.listen(
+      (ids) async {
+        if (!ids.contains(settingsNotification) || _isApplyingSyncedName) {
+          return;
+        }
+        _isApplyingSyncedName = true;
+        try {
+          await _reloadUserNameFromSettings();
+        } catch (e, st) {
+          if (getIt.isRegistered<DomainLogger>()) {
+            getIt<DomainLogger>().error(
+              LogDomain.dailyOs,
+              e,
+              stackTrace: st,
+              subDomain: 'reload',
+            );
+          }
+        }
+        _isApplyingSyncedName = false;
+      },
+    );
+  }
+
+  Future<void> _reloadUserNameFromSettings() async {
+    if (!getIt.isRegistered<SettingsDb>()) return;
+    // The apply phase already resolved last-write-wins before writing, so the
+    // stored value is authoritative — override even a locally edited name.
+    final stored = await getIt<SettingsDb>().itemByKey(
+      dailyOsUserNameSettingsKey,
+    );
+    if (!ref.mounted) return;
+    final synced = stored?.trim() ?? '';
+    if (synced != state.userName) {
+      state = state.copyWith(userName: synced);
+    }
   }
 
   void setCategoryEnabled(String categoryId, {required bool enabled}) {

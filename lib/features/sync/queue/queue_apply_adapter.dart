@@ -338,6 +338,8 @@ class QueueApplyAdapter {
       configFlag: (_) => true,
       // settings_db.
       themingSelection: (_) => false,
+      // settings_db (Daily OS greeting name).
+      dailyOsUserName: (_) => false,
       // notifications_db.
       notification: (_) => false,
       notificationStateUpdate: (_) => false,

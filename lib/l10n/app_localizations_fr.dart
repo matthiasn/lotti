@@ -9056,6 +9056,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncPayloadConsumptionEvent => 'Consommation IA';
 
   @override
+  String get syncPayloadDailyOsUserName => 'Nom Daily OS';
+
+  @override
   String get syncPayloadEntityDefinition => 'Définition d\'entité';
 
   @override

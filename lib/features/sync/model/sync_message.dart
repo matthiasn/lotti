@@ -132,6 +132,18 @@ sealed class SyncMessage with _$SyncMessage {
     required SyncEntryStatus status,
   }) = SyncThemingSelection;
 
+  /// The Daily OS greeting name, synced across a user's devices.
+  ///
+  /// Carries no vector clock — receivers upsert the `DAILY_OS_USER_NAME`
+  /// settings key under last-write-wins keyed on [updatedAt] (epoch millis),
+  /// mirroring [SyncThemingSelection]. It is a device-preference value, not
+  /// journal data, so it does not participate in gap detection.
+  const factory SyncMessage.dailyOsUserName({
+    required String userName,
+    required int updatedAt,
+    required SyncEntryStatus status,
+  }) = SyncDailyOsUserName;
+
   const factory SyncMessage.notification({
     required String id,
     required String jsonPath,

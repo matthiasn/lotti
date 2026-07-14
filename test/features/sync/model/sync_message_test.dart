@@ -114,6 +114,40 @@ void main() {
     });
   });
 
+  group('SyncMessage.dailyOsUserName', () {
+    test('serializes to JSON correctly', () {
+      const message = SyncMessage.dailyOsUserName(
+        userName: 'Sam',
+        updatedAt: 1234567890,
+        status: SyncEntryStatus.update,
+      );
+
+      final json = message.toJson();
+
+      expect(json['runtimeType'], 'dailyOsUserName');
+      expect(json['userName'], 'Sam');
+      expect(json['updatedAt'], 1234567890);
+      expect(json['status'], 'update');
+    });
+
+    test('round-trip preserves all fields', () {
+      const original =
+          SyncMessage.dailyOsUserName(
+                userName: 'Sam',
+                updatedAt: 9876543210,
+                status: SyncEntryStatus.initial,
+              )
+              as SyncDailyOsUserName;
+
+      final decoded =
+          SyncMessage.fromJson(original.toJson()) as SyncDailyOsUserName;
+
+      expect(decoded.userName, original.userName);
+      expect(decoded.updatedAt, original.updatedAt);
+      expect(decoded.status, original.status);
+    });
+  });
+
   group('SyncMessage.syncNodeProfile', () {
     final updatedAt = DateTime.utc(2026, 3, 15, 12, 30);
 

@@ -300,6 +300,19 @@ void main() {
             ),
             expectedLabel: (ctx) => ctx.messages.syncPayloadConsumptionEvent,
           ),
+          (
+            name: 'daily os user name',
+            item: payloadItem(
+              id: 16,
+              message: const SyncMessage.dailyOsUserName(
+                userName: 'Sam',
+                updatedAt: 0,
+                status: SyncEntryStatus.update,
+              ).toJson(),
+              subject: 'dailyOsUserName',
+            ),
+            expectedLabel: (ctx) => ctx.messages.syncPayloadDailyOsUserName,
+          ),
         ];
 
     for (final c in payloadKindCases) {

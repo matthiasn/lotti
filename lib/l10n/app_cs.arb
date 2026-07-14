@@ -3445,6 +3445,7 @@
   "syncPayloadBackfillResponse": "Odpověď na doplnění",
   "syncPayloadConfigFlag": "Konfigurační příznak",
   "syncPayloadConsumptionEvent": "Spotřeba AI",
+  "syncPayloadDailyOsUserName": "Jméno Daily OS",
   "syncPayloadEntityDefinition": "Definice entity",
   "syncPayloadEntryLink": "Odkaz na položku",
   "syncPayloadJournalEntity": "Položka deníku",

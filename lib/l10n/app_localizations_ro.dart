@@ -9047,6 +9047,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadConsumptionEvent => 'Consum AI';
 
   @override
+  String get syncPayloadDailyOsUserName => 'Nume Daily OS';
+
+  @override
   String get syncPayloadEntityDefinition => 'Definiție entitate';
 
   @override

@@ -15253,6 +15253,12 @@ abstract class AppLocalizations {
   /// **'AI consumption'**
   String get syncPayloadConsumptionEvent;
 
+  /// No description provided for @syncPayloadDailyOsUserName.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS name'**
+  String get syncPayloadDailyOsUserName;
+
   /// No description provided for @syncPayloadEntityDefinition.
   ///
   /// In en, this message translates to:

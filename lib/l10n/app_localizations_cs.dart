@@ -8986,6 +8986,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadConsumptionEvent => 'Spotřeba AI';
 
   @override
+  String get syncPayloadDailyOsUserName => 'Jméno Daily OS';
+
+  @override
   String get syncPayloadEntityDefinition => 'Definice entity';
 
   @override

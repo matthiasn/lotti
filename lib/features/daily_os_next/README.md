@@ -316,11 +316,14 @@ stateDiagram-v2
   for quiet helper lines. No daily-os-next surface uses the legacy
   12/700/+8-tracking overline token directly.
 - `DailyOsPreferencesController` persists Daily OS personalization in
-  `SettingsDb`. The user's display name is edited from Settings > Advanced >
-  About and read by the Capture greeting. Category exclusions are edited from
-  the processing filter button; `ReconcileController` applies the same
-  preference to parsed capture items and pending decisions before the user sees
-  them.
+  `SettingsDb`. The user's display name is edited from the Daily OS settings
+  page (Settings > Daily OS) and read by the Capture greeting. It syncs across
+  the user's devices: an edit stamps a last-write timestamp and enqueues a
+  debounced `SyncMessage.dailyOsUserName`, and an inbound synced change reloads
+  the name here under last-write-wins (mirroring theming). Category exclusions
+  are edited from the processing filter button and stay device-local;
+  `ReconcileController` applies the same preference to parsed capture items and
+  pending decisions before the user sees them.
 - Day-plan category availability is strictly opt-in via the category editor's
   "Day planning" switch (`CategoryDefinition.isAvailableForDayPlan`). The pure
   predicates in `logic/day_plan_availability.dart` define the day-plan

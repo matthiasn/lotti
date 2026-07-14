@@ -3963,6 +3963,26 @@ void main() {
     );
   });
 
+  group('SyncDailyOsUserName', () {
+    test('enqueues the Daily OS name message with correct subject', () async {
+      final message = SyncMessage.dailyOsUserName(
+        userName: 'Sam',
+        updatedAt: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch,
+        status: SyncEntryStatus.update,
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'dailyOsUserName');
+    });
+  });
+
   group('SyncThemingSelection', () {
     test('enqueues theming message with correct subject', () async {
       final message = SyncMessage.themingSelection(

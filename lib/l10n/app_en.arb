@@ -4317,6 +4317,7 @@
   "syncPayloadBackfillResponse": "Backfill response",
   "syncPayloadConfigFlag": "Config flag",
   "syncPayloadConsumptionEvent": "AI consumption",
+  "syncPayloadDailyOsUserName": "Daily OS name",
   "syncPayloadEntityDefinition": "Entity definition",
   "syncPayloadEntryLink": "Entry link",
   "syncPayloadJournalEntity": "Journal entry",

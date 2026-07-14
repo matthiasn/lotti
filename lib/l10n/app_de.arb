@@ -3660,6 +3660,7 @@
   "syncPayloadBackfillResponse": "Nachfüllantwort",
   "syncPayloadConfigFlag": "Konfigurationsflag",
   "syncPayloadConsumptionEvent": "KI-Verbrauch",
+  "syncPayloadDailyOsUserName": "Daily-OS-Name",
   "syncPayloadEntityDefinition": "Entitätsdefinition",
   "syncPayloadEntryLink": "Eintragsverknüpfung",
   "syncPayloadJournalEntity": "Journaleintrag",

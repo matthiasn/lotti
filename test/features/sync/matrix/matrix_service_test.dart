@@ -1170,6 +1170,11 @@ void main() {
         updatedAt: 0,
         status: SyncEntryStatus.initial,
       ),
+      'dailyOsUserName': const SyncMessage.dailyOsUserName(
+        userName: 'Sam',
+        updatedAt: 0,
+        status: SyncEntryStatus.initial,
+      ),
       'backfillRequest': const SyncMessage.backfillRequest(
         entries: [],
         requesterId: 'host-1',
