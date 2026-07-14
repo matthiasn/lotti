@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_provider_model_picker_modal.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -245,8 +245,8 @@ void main() {
 
         expect(find.text('Default'), findsOneWidget);
         expect(find.text('Selected'), findsOneWidget);
-        final rows = tester.widgetList<DesignSystemListItem>(
-          find.byType(DesignSystemListItem),
+        final rows = tester.widgetList<DesignSystemSelectionRow>(
+          find.byType(DesignSystemSelectionRow),
         );
         final defaultRow = rows.singleWhere(
           (row) => row.title == 'Profile Model',
@@ -255,9 +255,8 @@ void main() {
           (row) => row.title == 'Override Model',
         );
         expect(defaultRow.selected, isFalse);
-        expect(defaultRow.activated, isFalse);
         expect(selectedRow.selected, isTrue);
-        expect(selectedRow.activated, isTrue);
+        expect(find.byType(Divider), findsNothing);
       },
     );
 

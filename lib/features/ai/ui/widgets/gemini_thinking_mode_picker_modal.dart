@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/selection/selection_modal_base.dart';
-import 'package:lotti/widgets/selection/selection_option.dart';
 
 /// Reusable Gemini thinking-mode picker.
 ///
@@ -41,22 +41,27 @@ class GeminiThinkingModePickerContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const modes = GeminiThinkingMode.values;
-    return SelectionModalContent(
-      children: [
-        SelectionOptionsList(
-          itemCount: modes.length,
-          itemBuilder: (context, index) {
-            final mode = modes[index];
-            return SelectionOption(
+    final tokens = context.designTokens;
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final mode in modes)
+            DesignSystemSelectionRow(
+              key: ValueKey('gemini-thinking-${mode.name}'),
               title: label(context, mode),
-              description: description(context, mode),
-              icon: icon(mode),
-              isSelected: mode == selectedMode,
+              subtitle: description(context, mode),
+              type: DesignSystemSelectionRowType.singleSelect,
+              selected: mode == selectedMode,
+              leading: Icon(
+                icon(mode),
+                color: tokens.colors.text.mediumEmphasis,
+                size: tokens.spacing.step6,
+              ),
               onTap: () => onChanged(mode),
-            );
-          },
-        ),
-      ],
+            ),
+        ],
+      ),
     );
   }
 

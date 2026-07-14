@@ -46,6 +46,7 @@ lib/features/design_system/
 │   ├── dropdowns/
 │   ├── motion/           # staggered entrance, strikethrough wipe
 │   ├── navigation/
+│   ├── selection/        # shared single/multi/navigation/action picker rows
 │   ├── task_filters/
 │   ├── task_list_items/
 │   └── ...
@@ -177,6 +178,12 @@ Representative primitive-ish components:
 - text inputs and textareas
 - chips, badges, avatars, dividers, tooltips
 - dropdowns, lists, spinners, progress bars, scrollbars
+- selection rows (`components/selection/design_system_selection_row.dart`) —
+  one full-width row anatomy for terminal single choice, staged multi-choice,
+  in-flow navigation, and actions. The component fixes the leading rail,
+  typography, selected surface, hover/focus behavior, semantics, and standard
+  trailing affordance. Homogeneous option lists intentionally omit dividers:
+  selected and hovered fills are never cut by a shorter inset rule.
 
 Representative composite or feature-shaped components:
 

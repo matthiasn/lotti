@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -171,6 +172,35 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   }
 
+  Future<void> openProfilePage(WidgetTester tester) async {
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('agent-choose-profile')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('agent-choose-profile')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+  }
+
+  Future<void> openModelPage(WidgetTester tester) async {
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('agent-choose-model')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('agent-choose-model')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+  }
+
+  Future<void> revealDisableConfirmation(WidgetTester tester) async {
+    await tester.tap(find.byKey(const ValueKey('agent-disable')));
+    await tester.pump();
+    await tester.ensureVisible(find.text('Turn off'));
+    await tester.pump();
+  }
+
   testWidgets(
     'shows current route, source, persistent actions, and automation',
     (
@@ -181,21 +211,14 @@ void main() {
       expect(find.text('Agent setup'), findsOneWidget);
       expect(
         find.text('Qwen 3.5 Plus · Alibaba · via Melious.ai'),
-        findsNWidgets(2),
+        findsOneWidget,
       );
       expect(find.text('Saved profile · Profile default'), findsOneWidget);
       expect(find.text('You chose this for this agent'), findsOneWidget);
-      expect(find.text('Copy category default'), findsOneWidget);
-      expect(
-        find.text(
-          'Copies the category’s current setup. Later category changes won’t '
-          'affect this agent.',
-        ),
-        findsOneWidget,
-      );
       expect(find.text('Saved profile'), findsOneWidget);
       expect(find.text('Choose a thinking model'), findsOneWidget);
       expect(find.text('No AI setup'), findsOneWidget);
+      expect(find.byType(Divider), findsNothing);
       expect(find.text('Automatic updates'), findsOneWidget);
       expect(
         find.text(
@@ -217,6 +240,20 @@ void main() {
             )
             .height,
         greaterThanOrEqualTo(kMinInteractiveDimension),
+      );
+
+      await openProfilePage(tester);
+      expect(find.text('Copy category default'), findsOneWidget);
+      expect(
+        find.text(
+          'Copies the category’s current setup. Later category changes won’t '
+          'affect this agent.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byType(DesignSystemSelectionRow),
+        findsNWidgets(2),
       );
     },
   );
@@ -256,10 +293,13 @@ void main() {
       ).thenAnswer((_) => saveCompleter.future);
       await openSheet(tester);
 
-      await tester.tap(find.text('Saved profile'));
+      await openProfilePage(tester);
+      await tester.tap(
+        find.byKey(const ValueKey('agent-profile-profile-1')),
+      );
       await tester.pump();
 
-      expect(find.text('Agent setup'), findsOneWidget);
+      expect(find.text('Choose an inference profile'), findsOneWidget);
       expect(find.byType(DesignSystemToast), findsNothing);
 
       saveCompleter.complete();
@@ -294,7 +334,9 @@ void main() {
   ) async {
     await openSheet(tester);
 
-    await tester.tap(find.text('Choose a thinking model'));
+    await openModelPage(tester);
+    expect(find.text('Qwen 3.5 Plus'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('agent-model-model-1')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -311,13 +353,109 @@ void main() {
     );
   });
 
+  testWidgets('multiple providers drill down and back within the same modal', (
+    tester,
+  ) async {
+    final secondProvider = AiConfigInferenceProvider(
+      id: 'provider-2',
+      baseUrl: 'http://localhost:11434',
+      apiKey: '',
+      name: 'Local Ollama',
+      createdAt: DateTime(2024),
+      inferenceProviderType: InferenceProviderType.ollama,
+    );
+    final secondModel = AiConfigModel(
+      id: 'model-2',
+      name: 'Llama Local',
+      providerModelId: 'llama:latest',
+      inferenceProviderId: secondProvider.id,
+      createdAt: DateTime(2024),
+      inputModalities: const [Modality.text],
+      outputModalities: const [Modality.text],
+      isReasoningModel: false,
+    );
+    await openSheet(
+      tester,
+      config: AgentConfig(
+        automaticUpdatesEnabled: true,
+        inferenceSetup: AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.configured,
+          origin: AgentInferenceSetupOrigin.user,
+          baseProfileId: profile.id,
+          thinkingModelOverrideId: secondModel.id,
+        ),
+      ),
+      setupOptions: TaskAgentSetupOptions(
+        profiles: [profile],
+        models: [model, secondModel],
+        providers: [provider, secondProvider],
+      ),
+    );
+
+    await openModelPage(tester);
+    expect(
+      find.byKey(const ValueKey('agent-provider-provider-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('agent-provider-provider-2')),
+      findsOneWidget,
+    );
+    expect(find.byType(Divider), findsNothing);
+
+    final modelBackButton = tester
+        .widgetList<IconButton>(find.byType(IconButton))
+        .where((button) => button.tooltip == 'Back')
+        .last;
+    modelBackButton.onPressed!();
+    await tester.pumpAndSettle();
+    expect(find.text('Agent setup'), findsOneWidget);
+
+    await openModelPage(tester);
+    await tester.tap(
+      find.byKey(const ValueKey('agent-provider-provider-2')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Llama Local'), findsOneWidget);
+    final selectedRow = tester.widget<DesignSystemSelectionRow>(
+      find.byKey(const ValueKey('agent-model-model-2')),
+    );
+    expect(selectedRow.selected, isTrue);
+    expect(selectedRow.selectedLabel, 'Selected');
+
+    final selectedModelBackButton = tester
+        .widgetList<IconButton>(find.byType(IconButton))
+        .where((button) => button.tooltip == 'Back')
+        .last;
+    selectedModelBackButton.onPressed!();
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('agent-provider-provider-2')),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('agent-provider-provider-2')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('agent-model-model-2')));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    verify(
+      () => service.updateAgentThinkingModelOverride(
+        agentId: 'agent-1',
+        modelConfigId: 'model-2',
+      ),
+    ).called(1);
+    expect(find.text('Agent setup'), findsNothing);
+  });
+
   testWidgets('No AI setup requires confirmation and persists disabled mode', (
     tester,
   ) async {
     await openSheet(tester);
 
-    await tester.tap(find.text('No AI setup'));
-    await tester.pump();
+    await revealDisableConfirmation(tester);
     expect(find.text('Turn off AI setup?'), findsOneWidget);
     await tester.tap(find.text('Turn off'));
     await tester.pump();
@@ -357,10 +495,11 @@ void main() {
     );
     await openSheet(tester);
 
+    await openProfilePage(tester);
     await tester.tap(find.text('Copy category default'));
     await tester.pump();
 
-    expect(find.text('Agent setup'), findsOneWidget);
+    expect(find.text('Choose an inference profile'), findsOneWidget);
 
     saveCompleter.complete();
     await tester.pump();
@@ -397,6 +536,7 @@ void main() {
     );
     await openSheet(tester);
 
+    await openProfilePage(tester);
     await tester.tap(find.text('Copy category default'));
     await tester.pump();
 
@@ -466,11 +606,12 @@ void main() {
         providers: [provider],
       ),
     );
-    expect(find.text('Selected AI setup is unavailable'), findsOneWidget);
     expect(
       find.text('No compatible thinking models available'),
       findsOneWidget,
     );
+    await openProfilePage(tester);
+    expect(find.text('Selected AI setup is unavailable'), findsOneWidget);
     await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
 
@@ -482,7 +623,15 @@ void main() {
         providers: const [],
       ),
     );
+    await openProfilePage(tester);
     expect(find.text('Selected AI setup is unavailable'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back').last);
+    await tester.pumpAndSettle();
+    await openModelPage(tester);
+    expect(
+      find.byKey(const ValueKey('agent-model-model-1')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('failed save shows an error and restores interaction', (
@@ -496,7 +645,10 @@ void main() {
     ).thenThrow(StateError('save failed'));
     await openSheet(tester);
 
-    await tester.tap(find.text('Saved profile'));
+    await openProfilePage(tester);
+    await tester.tap(
+      find.byKey(const ValueKey('agent-profile-profile-1')),
+    );
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Error'), findsWidgets);
@@ -524,7 +676,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Use profile default'));
+    await tester.tap(find.byKey(const ValueKey('agent-clear-override')));
     await tester.pump();
     verify(
       () => service.updateAgentThinkingModelOverride(
@@ -533,8 +685,7 @@ void main() {
       ),
     ).called(1);
 
-    await tester.tap(find.text('No AI setup'));
-    await tester.pump();
+    await revealDisableConfirmation(tester);
     await tester.tap(find.text('Cancel'));
     await tester.pump();
     verifyNever(
@@ -567,8 +718,7 @@ void main() {
       ),
     );
 
-    expect(find.text('No AI setup'), findsWidgets);
-    expect(find.text('No profiles available on this device'), findsOneWidget);
+    expect(find.text('No AI setup'), findsNWidgets(2));
     expect(
       find.text('Choose an AI setup before turning on automatic updates.'),
       findsOneWidget,
@@ -577,5 +727,8 @@ void main() {
       find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
     );
     expect(checkbox.onChanged, isNull);
+
+    await openProfilePage(tester);
+    expect(find.text('No profiles available on this device'), findsOneWidget);
   });
 }

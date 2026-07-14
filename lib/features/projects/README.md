@@ -385,6 +385,24 @@ Projects surface in:
   `ModalUtils.showSinglePageModal`. No project health is surfaced on the task
   page.
 
+Project and project-status selection share the same modal contract as the task
+metadata pickers. `ProjectSelectionModalContent` retains its async provider
+boundary while delegating established data to `ProjectSelectionModalBody`, so
+background refreshes do not replace an already-visible list. The body and
+`ProjectStatusModalContent` render `DesignSystemSelectionRow` options with no
+per-option dividers. `showProjectStatusPickerModal` uses the adaptive Wolt
+helper, producing a bottom sheet on compact layouts and a dialog on wide ones;
+both the current and legacy detail pages call this helper instead of presenting
+a standalone page.
+
+```mermaid
+flowchart LR
+  TaskProject["Task project field"] --> ProjectModal["Adaptive project picker"]
+  DetailStatus["Project status field"] --> StatusModal["Adaptive status picker"]
+  ProjectModal --> ProjectRows["DesignSystemSelectionRow options"]
+  StatusModal --> StatusRows["DesignSystemSelectionRow options"]
+```
+
 ## When the Project Agent Actually Wakes
 
 Plainly: the project agent is not supposed to wake for every microscopic ripple

@@ -11,6 +11,7 @@ enum DesignSystemListItemSize {
 enum DesignSystemListItemVisualState {
   idle,
   hover,
+  focused,
   pressed,
 }
 
@@ -47,7 +48,9 @@ class DesignSystemListItem extends StatefulWidget {
     this.pressedBackgroundColor,
     this.onTap,
     this.onHoverChanged,
+    this.onFocusChanged,
     this.semanticsLabel,
+    this.excludeFromSemantics = false,
     this.forcedState,
     super.key,
   }) : assert(
@@ -95,7 +98,20 @@ class DesignSystemListItem extends StatefulWidget {
   /// between two rows when either one is hovered, matching the
   /// task-list behaviour.
   final ValueChanged<bool>? onHoverChanged;
+
+  /// Fires whenever keyboard focus enters or leaves the row.
+  ///
+  /// Selection lists use this to coordinate adjacent decoration while keeping
+  /// the row itself responsible for its token-driven focus treatment.
+  final ValueChanged<bool>? onFocusChanged;
   final String? semanticsLabel;
+
+  /// Suppresses the semantics contributed by the internal [InkWell].
+  ///
+  /// Set this when a higher-level component (for example a single- or
+  /// multi-selection row) provides one deterministic semantics node for the
+  /// entire row and its state.
+  final bool excludeFromSemantics;
   final DesignSystemListItemVisualState? forcedState;
 
   @override
@@ -105,6 +121,7 @@ class DesignSystemListItem extends StatefulWidget {
 class _DesignSystemListItemState extends State<DesignSystemListItem> {
   bool _hovered = false;
   bool _pressed = false;
+  bool _focused = false;
 
   @override
   void didUpdateWidget(covariant DesignSystemListItem oldWidget) {
@@ -113,6 +130,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
         (oldWidget.onTap == null) != (widget.onTap == null)) {
       _hovered = false;
       _pressed = false;
+      _focused = false;
     }
   }
 
@@ -120,6 +138,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
     if (widget.forcedState != null) return widget.forcedState!;
     if (!enabled) return DesignSystemListItemVisualState.idle;
     if (_pressed) return DesignSystemListItemVisualState.pressed;
+    if (_focused) return DesignSystemListItemVisualState.focused;
     if (_hovered) return DesignSystemListItemVisualState.hover;
     return DesignSystemListItemVisualState.idle;
   }
@@ -138,10 +157,13 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
             DesignSystemListItemVisualState.idle => Colors.transparent,
             DesignSystemListItemVisualState.hover =>
               widget.hoverBackgroundColor ?? tokens.colors.surface.hover,
+            DesignSystemListItemVisualState.focused =>
+              tokens.colors.surface.focusPressed,
             DesignSystemListItemVisualState.pressed =>
               widget.pressedBackgroundColor ??
                   tokens.colors.surface.focusPressed,
           };
+    final focused = visualState == DesignSystemListItemVisualState.focused;
 
     final item = Column(
       mainAxisSize: MainAxisSize.min,
@@ -149,9 +171,23 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
         Material(
           color: Colors.transparent,
           child: Ink(
-            decoration: BoxDecoration(color: backgroundColor),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              border: Border.all(
+                color: focused
+                    ? tokens.colors.interactive.enabled
+                    : Colors.transparent,
+                width: tokens.spacing.step1,
+              ),
+            ),
             child: InkWell(
               onTap: widget.onTap,
+              excludeFromSemantics: widget.excludeFromSemantics,
+              overlayColor: WidgetStateProperty.all(Colors.transparent),
+              splashColor: Colors.transparent,
+              hoverColor: Colors.transparent,
+              focusColor: Colors.transparent,
+              highlightColor: Colors.transparent,
               onHover: enabled
                   ? (value) {
                       // Internal hover state is suppressed while a
@@ -162,6 +198,14 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
                         setState(() => _hovered = value);
                       }
                       widget.onHoverChanged?.call(value);
+                    }
+                  : null,
+              onFocusChange: enabled
+                  ? (value) {
+                      if (widget.forcedState == null) {
+                        setState(() => _focused = value);
+                      }
+                      widget.onFocusChanged?.call(value);
                     }
                   : null,
               onHighlightChanged: widget.forcedState == null && enabled
@@ -219,7 +263,11 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
       ],
     );
 
-    return item.withDisabledOpacity(
+    final semanticItem = widget.excludeFromSemantics
+        ? ExcludeSemantics(child: item)
+        : item;
+
+    return semanticItem.withDisabledOpacity(
       enabled: enabled || widget.forcedState != null,
       disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );

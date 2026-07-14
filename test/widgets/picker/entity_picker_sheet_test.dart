@@ -19,6 +19,7 @@ void main() {
     String? subtitle,
     String? semanticLabel,
     bool enabled = true,
+    List<Widget> badges = const [],
   }) => PickerItem(
     id: id,
     rowKey: ValueKey('row-$id'),
@@ -27,12 +28,13 @@ void main() {
     subtitle: subtitle,
     semanticLabel: semanticLabel,
     enabled: enabled,
+    badges: badges,
   );
 
   Future<void> pumpSheet(
     WidgetTester tester, {
     required PickerMode mode,
-    required List<PickerEntry> Function(String query) entriesBuilder,
+    required List<PickerItem> Function(String query) entriesBuilder,
     String? selectedId,
     ValueNotifier<Set<String>>? staged,
     void Function(String id)? onPick,
@@ -62,22 +64,8 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  // The title color the row applies for a given row key.
-  Color titleColor(WidgetTester tester, String rowId) {
-    final text = tester.widget<Text>(
-      find.descendant(
-        of: find.byKey(ValueKey('row-$rowId')),
-        matching: find.text(rowId),
-      ),
-    );
-    return text.style!.color!;
-  }
-
-  DsTokens tokensOf(WidgetTester tester) =>
-      tester.element(find.byType(EntityPickerSheet)).designTokens;
-
   group('single mode', () {
-    testWidgets('renders items and a divider, applies the tapped id', (
+    testWidgets('renders items without dividers and applies the tapped id', (
       tester,
     ) async {
       String? picked;
@@ -85,16 +73,12 @@ void main() {
         tester,
         mode: PickerMode.single,
         onPick: (id) => picked = id,
-        entriesBuilder: (_) => [
-          item('alpha'),
-          const PickerDivider(),
-          item('beta'),
-        ],
+        entriesBuilder: (_) => [item('alpha'), item('beta')],
       );
 
       expect(find.text('alpha'), findsOneWidget);
       expect(find.text('beta'), findsOneWidget);
-      expect(find.byType(Divider), findsOneWidget);
+      expect(find.byType(Divider), findsNothing);
 
       await tester.tap(find.text('beta'));
       await tester.pump();
@@ -124,6 +108,35 @@ void main() {
           matching: find.byIcon(Icons.check_rounded),
         ),
         findsNothing,
+      );
+    });
+
+    testWidgets('renders row metadata badges before the selection marker', (
+      tester,
+    ) async {
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        selectedId: 'alpha',
+        entriesBuilder: (_) => [
+          item(
+            'alpha',
+            badges: const [Text('Default')],
+          ),
+        ],
+      );
+
+      final row = find.byKey(const ValueKey('row-alpha'));
+      expect(
+        find.descendant(of: row, matching: find.text('Default')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.byIcon(Icons.check_rounded),
+        ),
+        findsOneWidget,
       );
     });
 
@@ -166,11 +179,22 @@ void main() {
       // The disabled row swallows the tap: onPick was never called.
       expect(picked, isNull);
 
-      final tokens = tokensOf(tester);
-      // The disabled title is rendered with the low-emphasis token, the
-      // enabled one with high-emphasis — a real visual distinction.
-      expect(titleColor(tester, 'off'), tokens.colors.text.lowEmphasis);
-      expect(titleColor(tester, 'on'), tokens.colors.text.highEmphasis);
+      final disabledOpacity = tester.widget<Opacity>(
+        find.descendant(
+          of: find.byKey(const ValueKey('row-off')),
+          matching: find.byType(Opacity),
+        ),
+      );
+      expect(
+        disabledOpacity.opacity,
+        tester
+            .element(find.byType(EntityPickerSheet))
+            .designTokens
+            .colors
+            .text
+            .lowEmphasis
+            .a,
+      );
     });
 
     testWidgets('a disabled row announces a disabled semantics state', (

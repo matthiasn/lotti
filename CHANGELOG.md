@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   calendar page within the same sheet. Due dates and project target dates use
   the same weekday calendar, while tighter wheel controls and stable status
   spacing keep the layout compact without jumping in light or dark mode.
+- **Pickers now feel like one coherent part of Lotti.** Task status, priority,
+  labels, category and project, project status, AI profiles and models, and
+  Gemini thinking mode now share the same full-width selection rows, selected
+  state, typography, hover/focus treatment, and adaptive phone-sheet or desktop
+  dialog presentation. Task-agent AI setup keeps profile, provider, and model
+  choices inside one navigable sheet, while pausing AI uses an inline
+  confirmation instead of opening another modal.
 - **Daily OS now lets you choose its AI route explicitly.** A discoverable
   Daily OS settings page owns the default inference profile and preferred name,
   while the planner instance can override its full profile or only its thinking

@@ -145,15 +145,22 @@ identity line. Different routes render separate `Current setup` and `This
 report` lines. Agent Internals opens the same `AgentModelSheet`; it does not own
 a second profile mutation path.
 
-`AgentModelSheet` uses the shared AI selection surfaces. Profile choices render
-through `InferenceProfilePickerList`; direct model choices render through
-`InferenceProviderModelPickerModal`, which separates the current task override
-from the base profile's default model. Both are terminal choices: the controller
-persists the new `AgentInferenceSetup` first, then closes the setup sheet and
-shows the localized confirmation through the `ScaffoldMessenger` captured from
-the task-details column. A failed write leaves the sheet open and reports the
-error there. Capturing the messenger before opening the root-navigator modal is
-what keeps successful feedback constrained to the task column.
+`AgentModelSheet` is one adaptive multi-page Wolt route. Its overview branches
+to embedded profile, provider, and model pages by changing the route's page
+index; it never opens a second picker modal over the setup sheet. A single
+provider skips the provider page, while multiple providers drill down and use
+the Wolt back affordance to return within the same route. Every branch uses
+`DesignSystemSelectionRow`, matching the standalone AI pickers without coupling
+the setup flow to their modal wrappers.
+
+Profile and model rows are terminal choices: the shared flow controller
+persists the new `AgentInferenceSetup` first, then closes the whole setup route
+and shows the localized confirmation through the `ScaffoldMessenger` captured
+from the task-details column. A failed write leaves the route open and reports
+the error there. “No AI setup” is deliberately not another page: tapping it
+reveals a compact inline explanation and Cancel / confirm actions directly
+under the originating row, preserving context and avoiding unnecessary back
+navigation.
 
 Daily OS uses the same resolution and picker primitives without depending on
 the task-agent service. The planner's Stats tab detects `AgentKinds.dayAgent`
@@ -173,7 +180,9 @@ sequenceDiagram
   participant Controller as AgentInstanceController
   participant TaskUI as Task-column ScaffoldMessenger
 
-  User->>Sheet: choose profile or model
+  User->>Sheet: open profile / provider / model page
+  Sheet->>Sheet: change page index in same Wolt route
+  User->>Sheet: choose terminal profile or model
   Sheet->>Controller: persist inference setup
   alt write succeeds
     Controller-->>Sheet: true

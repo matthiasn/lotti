@@ -786,14 +786,11 @@ void main() {
           // the currently selected status.
           expect(find.byIcon(Icons.check_rounded), findsOneWidget);
 
-          // Tap the already-selected 'Open' status. Because the status chip
-          // text 'Open' also appears in the underlying page, use the ListTile
-          // that contains the check icon to tap the correct one.
-          final openTile = find.ancestor(
-            of: find.byIcon(Icons.check_rounded),
-            matching: find.byType(ListTile),
+          // Tap the deterministic row key so the underlying page's Open label
+          // cannot be mistaken for the selected modal option.
+          await tester.tap(
+            find.byKey(const ValueKey('project-status-open')),
           );
-          await tester.tap(openTile);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 

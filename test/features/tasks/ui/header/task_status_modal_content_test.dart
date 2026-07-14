@@ -216,16 +216,16 @@ void main() {
       }
     });
 
-    testWidgets('selected label renders with bold weight', (tester) async {
+    testWidgets('selection does not change label typography', (tester) async {
       await _pump(tester, currentStatus: 'GROOMED');
-      final text = tester.widget<Text>(find.text('GROOMED'));
-      expect(text.style?.fontWeight, FontWeight.w600);
-    });
+      final selectedText = tester.widget<Text>(find.text('GROOMED'));
+      final unselectedText = tester.widget<Text>(find.text('OPEN'));
 
-    testWidgets('unselected label renders with normal weight', (tester) async {
-      await _pump(tester, currentStatus: 'GROOMED');
-      final text = tester.widget<Text>(find.text('OPEN'));
-      expect(text.style?.fontWeight, FontWeight.normal);
+      expect(selectedText.style?.fontWeight, FontWeight.w600);
+      expect(
+        unselectedText.style?.fontWeight,
+        selectedText.style?.fontWeight,
+      );
     });
 
     // ── Icon colors ───────────────────────────────────────────────────────────

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -69,11 +68,10 @@ class InferenceProfilePickerList extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final (index, profile) in profiles.indexed)
+          for (final profile in profiles)
             _InferenceProfileRow(
               profile: profile,
               selected: profile.id == selectedProfileId,
-              showDivider: index < profiles.length - 1,
               onTap: () => onSelected(profile.id),
             ),
         ],
@@ -86,13 +84,11 @@ class _InferenceProfileRow extends StatelessWidget {
   const _InferenceProfileRow({
     required this.profile,
     required this.selected,
-    required this.showDivider,
     required this.onTap,
   });
 
   final AiConfigInferenceProfile profile;
   final bool selected;
-  final bool showDivider;
   final VoidCallback onTap;
 
   @override
@@ -105,28 +101,21 @@ class _InferenceProfileRow extends StatelessWidget {
       profile.name,
       if (description != null && description.isNotEmpty) description,
       if (profile.desktopOnly) desktopOnlyLabel,
-      if (selected) selectedLabel,
     ];
 
-    return DesignSystemListItem(
+    return DesignSystemSelectionRow(
       key: ValueKey(profile.id),
-      size: DesignSystemListItemSize.small,
       title: profile.name,
       subtitle: description == null || description.isEmpty ? null : description,
-      subtitleMaxLines: 2,
-      leading: SizedBox(
-        width: tokens.spacing.step8,
-        child: Center(
-          child: Icon(
-            Icons.account_tree_outlined,
-            color: selected
-                ? tokens.colors.interactive.enabled
-                : tokens.colors.text.mediumEmphasis,
-            size: tokens.spacing.step6,
-          ),
-        ),
+      type: DesignSystemSelectionRowType.singleSelect,
+      selected: selected,
+      selectedLabel: selectedLabel,
+      leading: Icon(
+        Icons.account_tree_outlined,
+        color: tokens.colors.text.mediumEmphasis,
+        size: tokens.spacing.step6,
       ),
-      trailingExtra: profile.desktopOnly
+      trailing: profile.desktopOnly
           ? Tooltip(
               message: desktopOnlyLabel,
               child: Icon(
@@ -136,33 +125,7 @@ class _InferenceProfileRow extends StatelessWidget {
               ),
             )
           : null,
-      trailing: selected
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  selectedLabel,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.interactive.enabled,
-                    fontWeight: tokens.typography.weight.semiBold,
-                  ),
-                ),
-                SizedBox(width: tokens.spacing.step2),
-                Icon(
-                  Icons.check_rounded,
-                  color: tokens.colors.interactive.enabled,
-                  size: tokens.spacing.step6,
-                ),
-              ],
-            )
-          : null,
-      showDivider: showDivider,
-      activated: selected,
-      selected: selected,
-      activatedBackgroundColor: selected
-          ? DesignSystemListPalette.activatedFillStrong(tokens)
-          : null,
-      semanticsLabel: semanticsParts.join(', '),
+      semanticLabel: semanticsParts.join(', '),
       onTap: onTap,
     );
   }

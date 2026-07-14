@@ -523,14 +523,11 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Every enum variant is rendered in the picker via its short "P{n}"
-        // code. The header's own badge now spells the priority out ("Medium"
-        // for the default p2Medium task), so the short codes appear only in
-        // the picker rows.
-        expect(find.text('P0'), findsOneWidget);
-        expect(find.text('P1'), findsOneWidget);
-        expect(find.text('P2'), findsOneWidget);
-        expect(find.text('P3'), findsOneWidget);
+        // Every enum variant is rendered with its short code and description.
+        expect(find.textContaining('P0 ·'), findsOneWidget);
+        expect(find.textContaining('P1 ·'), findsOneWidget);
+        expect(find.textContaining('P2 ·'), findsOneWidget);
+        expect(find.textContaining('P3 ·'), findsOneWidget);
         // The header badge spells out the default priority instead of "P2".
         expect(find.text('Medium'), findsOneWidget);
       },
@@ -751,7 +748,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Pick the P0 row in the picker.
-        await tester.tap(find.text('P0'));
+        await tester.tap(find.byKey(const ValueKey('task-priority-P0')));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

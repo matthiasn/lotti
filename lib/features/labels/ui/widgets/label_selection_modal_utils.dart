@@ -42,6 +42,7 @@ class LabelSelectionModalUtils {
       await ModalUtils.showSinglePageModal<void>(
         context: context,
         title: context.messages.settingsLabelsTitle,
+        padding: EdgeInsets.zero,
         stickyActionBarBuilder: (_) =>
             _LabelApplyFooter(staged: staged, entryId: entryId),
         builder: (_) => _LabelPickerBody(
@@ -81,7 +82,7 @@ class _LabelPickerBody extends ConsumerWidget {
         .whereType<LabelDefinition>()
         .toList();
 
-    List<PickerEntry> entriesBuilder(String query) {
+    List<PickerItem> entriesBuilder(String query) {
       final result = buildSelectorLabelList(
         available: available,
         assignedDefs: assignedDefs,

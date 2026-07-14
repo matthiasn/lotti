@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
@@ -17,7 +18,7 @@ import 'package:lotti/utils/file_utils.dart';
   final messages = context.messages;
   final brightness = Theme.of(context).brightness;
   final isLight = brightness == Brightness.light;
-  final colorScheme = Theme.of(context).colorScheme;
+  final tokens = context.designTokens;
 
   return switch (status) {
     ProjectOpen() => (
@@ -32,7 +33,7 @@ import 'package:lotti/utils/file_utils.dart';
     ),
     ProjectMonitoring() => (
       messages.projectStatusMonitoring,
-      isLight ? colorScheme.tertiary : colorScheme.tertiaryFixedDim,
+      tokens.colors.interactive.enabled,
       Icons.visibility_outlined,
     ),
     ProjectOnHold() => (
@@ -47,7 +48,7 @@ import 'package:lotti/utils/file_utils.dart';
     ),
     ProjectArchived() => (
       messages.projectStatusArchived,
-      isLight ? colorScheme.outline : colorScheme.outlineVariant,
+      tokens.colors.text.highEmphasis,
       Icons.archive_outlined,
     ),
   };
