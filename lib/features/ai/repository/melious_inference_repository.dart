@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
@@ -12,9 +13,9 @@ import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai/util/audio_converter_channel.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -25,7 +26,10 @@ typedef MeliousChatCompletionStreamFactory =
       required CreateChatCompletionRequest request,
     });
 
-typedef MeliousM4aToWavConverter = Future<Uint8List> Function(Uint8List bytes);
+typedef MeliousAudioToTemporaryMp3Encoder =
+    Future<File> Function(Uint8List bytes);
+typedef MeliousTemporaryFileReader = Future<Uint8List> Function(File file);
+typedef MeliousTemporaryFileDeleter = void Function(File file);
 
 /// Melious.ai inference repository.
 ///
@@ -39,18 +43,28 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     super.httpClient,
     CloudInferenceRequestHelpers? helpers,
     MeliousChatCompletionStreamFactory? chatCompletionStreamFactory,
-    MeliousM4aToWavConverter? m4aToWavConverter,
+    MeliousAudioToTemporaryMp3Encoder? audioToTemporaryMp3Encoder,
+    MeliousTemporaryFileReader? temporaryFileReader,
+    MeliousTemporaryFileDeleter? temporaryFileDeleter,
     Clock? clockSource,
   }) : _helpers = helpers ?? const CloudInferenceRequestHelpers(),
        _chatCompletionStreamFactory =
            chatCompletionStreamFactory ?? _createChatCompletionStream,
-       _m4aToWavConverter = m4aToWavConverter ?? convertM4aBytesToTemporaryWav,
+       _audioToTemporaryMp3Encoder =
+           audioToTemporaryMp3Encoder ?? encodeAudioBytesToTemporaryMp3,
+       _temporaryFileReader =
+           temporaryFileReader ?? ((file) => file.readAsBytes()),
+       _temporaryFileDeleter =
+           temporaryFileDeleter ?? ((file) => file.deleteSync()),
        _clock = clockSource ?? clock;
 
   static const _providerName = 'MeliousInferenceRepository';
   static const _modelListTimeout = Duration(seconds: 15);
   static const _imageGenerationTimeout = Duration(seconds: 180);
-  static const _chatAudioTimeout = Duration(seconds: 60);
+  // Voxtral can process recordings up to 30 minutes, and local preparation is
+  // included in this deadline. Match the native Voxtral route's long-audio
+  // allowance instead of applying the general short-request timeout.
+  static const _chatAudioTimeout = Duration(minutes: 15);
   // Generous because the non-streaming impact path buffers the entire
   // response: nothing is emitted (and no onProgress fires) until the full
   // body arrives or this timeout trips.
@@ -65,7 +79,9 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
   final CloudInferenceRequestHelpers _helpers;
   final MeliousChatCompletionStreamFactory _chatCompletionStreamFactory;
-  final MeliousM4aToWavConverter _m4aToWavConverter;
+  final MeliousAudioToTemporaryMp3Encoder _audioToTemporaryMp3Encoder;
+  final MeliousTemporaryFileReader _temporaryFileReader;
+  final MeliousTemporaryFileDeleter _temporaryFileDeleter;
   final Clock _clock;
 
   /// Fetches the live Melious model catalog and maps `_meta` capability data
@@ -645,14 +661,15 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     );
   }
 
-  /// Transcribes with Voxtral using temporary WAV audio plus task and
+  /// Transcribes with Voxtral using temporary MP3 audio plus task and
   /// speech-dictionary context in one buffered chat request.
   ///
   /// Melious' chat adapter currently stalls when Lotti's M4A recording bytes
   /// are sent as an audio content block. Lotti therefore preserves M4A as its
-  /// compact archive format and converts only a temporary copy to PCM WAV.
-  /// Conversion is platform-native and failures are surfaced rather than
-  /// falling back to a request that cannot apply context during recognition.
+  /// compact archive format, decodes only a temporary copy to PCM, and encodes
+  /// a much smaller temporary MP3 for transmission. Conversion failures are
+  /// surfaced rather than falling back to a request that cannot apply context
+  /// during recognition. The MP3 is deleted after every request outcome.
   Stream<CreateChatCompletionStreamResponse> transcribeChatAudio({
     required String model,
     required String audioBase64,
@@ -680,6 +697,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
     final requestId = 'melious-audio-${const Uuid().v4()}';
 
+    File? temporaryMp3File;
+    var timeoutStage = 'preparing the temporary MP3';
     try {
       final deadline = _clock.now().add(timeout);
       Duration remainingTimeoutOrThrow() {
@@ -691,21 +710,25 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       }
 
       final sourceBytes = base64Decode(audioBase64);
-      late final Uint8List wavBytes;
-      if (_isWavAudio(sourceBytes)) {
-        wavBytes = sourceBytes;
-      } else {
-        final conversionTimeout = remainingTimeoutOrThrow();
-        wavBytes = await _m4aToWavConverter(
-          sourceBytes,
-        ).timeout(conversionTimeout);
+      final conversionTimeout = remainingTimeoutOrThrow();
+      temporaryMp3File = await _audioToTemporaryMp3Encoder(
+        sourceBytes,
+      ).timeout(conversionTimeout);
+      timeoutStage = 'reading the temporary MP3';
+      final mp3Bytes = await _temporaryFileReader(temporaryMp3File).timeout(
+        remainingTimeoutOrThrow(),
+      );
+      if (mp3Bytes.isEmpty) {
+        throw const TemporaryMp3EncodingException(
+          'Temporary MP3 encoder produced an empty file',
+        );
       }
       final messageContent = [
         {
           'type': 'input_audio',
           'input_audio': {
-            'data': base64Encode(wavBytes),
-            'format': 'wav',
+            'data': base64Encode(mp3Bytes),
+            'format': 'mp3',
           },
         },
         {'type': 'text', 'text': prompt},
@@ -725,6 +748,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         'temperature': 0.0,
         'max_tokens': ?maxCompletionTokens,
       };
+      timeoutStage = 'waiting for the Voxtral response';
       final requestTimeout = remainingTimeoutOrThrow();
       final response = await httpClient
           .post(
@@ -806,7 +830,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       );
     } on TimeoutException catch (error) {
       throw TranscriptionException(
-        'Melious chat-audio request timed out after '
+        'Melious chat-audio request timed out while $timeoutStage after '
         '${timeout.inSeconds} seconds (request $requestId)',
         provider: _providerName,
         statusCode: httpStatusRequestTimeout,
@@ -825,19 +849,21 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         provider: _providerName,
         originalError: error,
       );
+    } finally {
+      final file = temporaryMp3File;
+      if (file != null) {
+        try {
+          if (file.existsSync()) _temporaryFileDeleter(file);
+        } on FileSystemException catch (error, stackTrace) {
+          developer.log(
+            'Failed to delete temporary Voxtral MP3 file',
+            name: _providerName,
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+      }
     }
-  }
-
-  static bool _isWavAudio(Uint8List bytes) {
-    return bytes.length >= 12 &&
-        bytes[0] == 0x52 &&
-        bytes[1] == 0x49 &&
-        bytes[2] == 0x46 &&
-        bytes[3] == 0x46 &&
-        bytes[8] == 0x57 &&
-        bytes[9] == 0x41 &&
-        bytes[10] == 0x56 &&
-        bytes[11] == 0x45;
   }
 
   /// Generates an image through Melious' `/images/generations` endpoint.

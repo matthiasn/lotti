@@ -287,11 +287,12 @@ is treated as a failure rather than a successful empty dictation.
 - prefers Mistral offline transcription models first, so their `context_bias`
   parameter can receive the category speech dictionary terms
 - then any configured Mistral audio model
-- then Melious Voxtral models: a temporary WAV copy goes to contextual
-  `/chat/completions` while the M4A master remains untouched; native conversion
-  covers Android, iOS, Linux, macOS, and Windows without bundled FFmpeg, and a
-  decoder failure is surfaced because fallback transcription would lose task
-  context during recognition
+- then Melious Voxtral models: the M4A master remains untouched while a native
+  decoder produces temporary PCM and bundled LAME emits a 64 kbps temporary MP3
+  for contextual `/chat/completions`; decoder scratch files and the MP3 are
+  cleaned up independently on every outcome, and decoder/encoder failures are
+  surfaced because fallback transcription would lose task context during
+  recognition
 - then Melious Whisper/STT models through `/audio/transcriptions`
 - then local MLX Qwen3-ASR models, which receive the same speech dictionary as
   prompt context
@@ -308,6 +309,8 @@ sequenceDiagram
   participant Batch as "AudioTranscriptionService"
   participant Cloud as "CloudInferenceRepository"
   participant MLX as "MlxAudioChannel"
+  participant LAME as "Temporary MP3 encoder"
+  participant Melious as "Melious Voxtral"
 
   UI->>File: record m4a in temp dir
   UI->>Batch: transcribeStream(filePath)
@@ -315,6 +318,14 @@ sequenceDiagram
   alt MLX Audio provider
     Batch->>MLX: transcribeFile(filePath, modelId)
     MLX-->>Batch: final transcript
+  else Melious Voxtral
+    Batch->>Cloud: generateWithAudio(m4a bytes, prompt context)
+    Cloud->>LAME: decode PCM and encode 64 kbps MP3
+    LAME-->>Cloud: temporary .mp3 path
+    Cloud->>Melious: input_audio format=mp3
+    Melious-->>Cloud: contextual transcript or provider error
+    Cloud->>Cloud: delete temporary .mp3 in finally
+    Cloud-->>Batch: transcript chunk or detailed error
   else HTTP provider
     Batch->>Cloud: generateWithAudio(...)
     Cloud-->>Batch: text chunks or detailed provider error

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
@@ -74,6 +75,19 @@ http.Response _voxtralChatResponse({
   }),
   200,
 );
+
+var _temporaryMp3Sequence = 0;
+
+File _temporaryMp3File([List<int> bytes = const [0x49, 0x44, 0x33]]) {
+  final file = File(
+    '${Directory.systemTemp.path}/lotti_melious_test_${pid}_'
+    '${_temporaryMp3Sequence++}.mp3',
+  )..writeAsBytesSync(bytes);
+  addTearDown(() {
+    if (file.existsSync()) file.deleteSync();
+  });
+  return file;
+}
 
 void main() {
   group('MeliousInferenceRepository', () {
@@ -923,10 +937,11 @@ void main() {
     );
 
     test(
-      'transcribeChatAudio sends temporary WAV directly with context',
+      'transcribeChatAudio sends temporary MP3 and deletes it after success',
       () async {
         http.Request? captured;
-        final wavBytes = base64Decode('UklGRgAAAABXQVZF');
+        const mp3Bytes = [0x49, 0x44, 0x33, 0x04];
+        late File temporaryMp3;
         final repository = MeliousInferenceRepository(
           httpClient: MockClient((request) async {
             captured = request;
@@ -936,7 +951,10 @@ void main() {
               created: 'not-an-integer',
             );
           }),
-          m4aToWavConverter: (_) async => wavBytes,
+          audioToTemporaryMp3Encoder: (sourceBytes) async {
+            expect(sourceBytes, [1, 2, 3]);
+            return temporaryMp3 = _temporaryMp3File(mp3Bytes);
+          },
         );
         addTearDown(repository.close);
 
@@ -955,7 +973,9 @@ void main() {
         expect(chunks.single.created, 0);
         expect(chunks.single.model, 'voxtral-small-24b-2507');
         expect(captured?.url.toString(), '$baseUrl/chat/completions');
+        expect(captured?.headers['Accept'], 'application/json');
         final body = jsonDecode(captured!.body) as Map<String, dynamic>;
+        expect(body['stream'], isFalse);
         final messages = body['messages']! as List<dynamic>;
         final content =
             (messages.single as Map<String, dynamic>)['content']!
@@ -963,8 +983,8 @@ void main() {
         expect(content.first, {
           'type': 'input_audio',
           'input_audio': {
-            'data': base64Encode(wavBytes),
-            'format': 'wav',
+            'data': base64Encode(mp3Bytes),
+            'format': 'mp3',
           },
         });
         expect(content.last, {
@@ -972,34 +992,38 @@ void main() {
           'text': 'Transcribe exactly. Required spelling: Lotti.',
         });
         expect(body['max_tokens'], 321);
+        expect(temporaryMp3.existsSync(), isFalse);
       },
     );
 
-    test('transcribeChatAudio reuses WAV input without conversion', () async {
-      final wavBytes = base64Decode('UklGRgAAAABXQVZF');
-      var conversionCalled = false;
-      final repository = MeliousInferenceRepository(
-        httpClient: MockClient((_) async => _voxtralChatResponse()),
-        m4aToWavConverter: (_) async {
-          conversionCalled = true;
-          throw StateError('WAV input must bypass conversion');
-        },
-      );
-      addTearDown(repository.close);
+    test(
+      'transcribeChatAudio passes source audio to the MP3 encoder',
+      () async {
+        final wavBytes = base64Decode('UklGRgAAAABXQVZF');
+        Uint8List? encodedSource;
+        final repository = MeliousInferenceRepository(
+          httpClient: MockClient((_) async => _voxtralChatResponse()),
+          audioToTemporaryMp3Encoder: (bytes) async {
+            encodedSource = bytes;
+            return _temporaryMp3File();
+          },
+        );
+        addTearDown(repository.close);
 
-      final chunks = await repository
-          .transcribeChatAudio(
-            model: 'voxtral-small-24b-2507',
-            audioBase64: base64Encode(wavBytes),
-            baseUrl: baseUrl,
-            apiKey: apiKey,
-            prompt: 'Transcribe.',
-          )
-          .toList();
+        final chunks = await repository
+            .transcribeChatAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode(wavBytes),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              prompt: 'Transcribe.',
+            )
+            .toList();
 
-      expect(chunks.single.id, 'chatcmpl-voxtral');
-      expect(conversionCalled, isFalse);
-    });
+        expect(chunks.single.id, 'chatcmpl-voxtral');
+        expect(encodedSource, wavBytes);
+      },
+    );
 
     test('transcribeChatAudio surfaces native conversion failures', () async {
       var requestSent = false;
@@ -1008,7 +1032,7 @@ void main() {
           requestSent = true;
           return _voxtralChatResponse();
         }),
-        m4aToWavConverter: (_) async =>
+        audioToTemporaryMp3Encoder: (_) async =>
             throw Exception('GStreamer AAC decoder unavailable'),
       );
       addTearDown(repository.close);
@@ -1037,10 +1061,47 @@ void main() {
       expect(requestSent, isFalse);
     });
 
+    test('transcribeChatAudio rejects and removes an empty MP3', () async {
+      var requestSent = false;
+      late File temporaryMp3;
+      final repository = MeliousInferenceRepository(
+        httpClient: MockClient((_) async {
+          requestSent = true;
+          return _voxtralChatResponse();
+        }),
+        audioToTemporaryMp3Encoder: (_) async {
+          return temporaryMp3 = _temporaryMp3File([]);
+        },
+      );
+      addTearDown(repository.close);
+
+      await expectLater(
+        repository
+            .transcribeChatAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              prompt: 'Transcribe.',
+            )
+            .toList(),
+        throwsA(
+          isA<TranscriptionException>().having(
+            (error) => error.message,
+            'message',
+            contains('Temporary MP3 encoder produced an empty file'),
+          ),
+        ),
+      );
+
+      expect(requestSent, isFalse);
+      expect(temporaryMp3.existsSync(), isFalse);
+    });
+
     test(
       'transcribeChatAudio preserves structured provider error detail',
       () async {
-        final wavBytes = base64Decode('UklGRgAAAABXQVZF');
+        late File temporaryMp3;
         final repository = MeliousInferenceRepository(
           httpClient: MockClient(
             (_) async => http.Response(
@@ -1053,7 +1114,9 @@ void main() {
               503,
             ),
           ),
-          m4aToWavConverter: (_) async => wavBytes,
+          audioToTemporaryMp3Encoder: (_) async {
+            return temporaryMp3 = _temporaryMp3File();
+          },
         );
         addTearDown(repository.close);
 
@@ -1082,14 +1145,14 @@ void main() {
                 ),
           ),
         );
+        expect(temporaryMp3.existsSync(), isFalse);
       },
     );
 
     test('transcribeChatAudio times out with a request id', () async {
-      final wavBytes = base64Decode('UklGRgAAAABXQVZF');
       final repository = MeliousInferenceRepository(
         httpClient: MockClient((_) => Completer<http.Response>().future),
-        m4aToWavConverter: (_) async => wavBytes,
+        audioToTemporaryMp3Encoder: (_) async => _temporaryMp3File(),
       );
       addTearDown(repository.close);
 
@@ -1108,15 +1171,19 @@ void main() {
           isA<TranscriptionException>().having(
             (error) => error.message,
             'message',
-            allOf(contains('timed out'), contains('request melious-audio-')),
+            allOf(
+              contains('timed out'),
+              contains('preparing the temporary MP3'),
+              contains('request melious-audio-'),
+            ),
           ),
         ),
       );
     });
 
-    test('transcribeChatAudio bounds native conversion time', () async {
+    test('transcribeChatAudio bounds MP3 encoding time', () async {
       final repository = MeliousInferenceRepository(
-        m4aToWavConverter: (_) => Completer<Uint8List>().future,
+        audioToTemporaryMp3Encoder: (_) => Completer<File>().future,
       );
       addTearDown(repository.close);
 
@@ -1141,17 +1208,58 @@ void main() {
       );
     });
 
-    test('transcribeChatAudio shares its timeout across both stages', () {
+    test(
+      'transcribeChatAudio default permits preparation longer than 60 seconds',
+      () async {
+        final startedAt = DateTime(2024, 3, 15, 12);
+        var currentTime = startedAt;
+        var requestSent = false;
+        late File temporaryMp3;
+        final repository = MeliousInferenceRepository(
+          clockSource: Clock(() => currentTime),
+          httpClient: MockClient((_) async {
+            requestSent = true;
+            return _voxtralChatResponse();
+          }),
+          audioToTemporaryMp3Encoder: (_) async {
+            currentTime = startedAt.add(const Duration(seconds: 61));
+            return temporaryMp3 = _temporaryMp3File();
+          },
+        );
+        addTearDown(repository.close);
+
+        final responses = await repository
+            .transcribeChatAudio(
+              model: 'voxtral-small-24b-2507',
+              audioBase64: base64Encode([1, 2, 3]),
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              prompt: 'Transcribe.',
+            )
+            .toList();
+
+        expect(requestSent, isTrue);
+        expect(
+          responses.single.choices?.single.delta?.content,
+          'Lotti uses Voxtral.',
+        );
+        expect(temporaryMp3.existsSync(), isFalse);
+      },
+    );
+
+    test('transcribeChatAudio shares an explicit timeout across stages', () {
       fakeAsync((async) {
         final startedAt = DateTime(2024, 3, 15, 12);
         var currentTime = startedAt;
+        late File temporaryMp3;
         final repository = MeliousInferenceRepository(
           clockSource: Clock(() => currentTime),
           httpClient: MockClient((_) => Completer<http.Response>().future),
-          m4aToWavConverter: (_) async {
+          audioToTemporaryMp3Encoder: (_) async {
             currentTime = startedAt.add(const Duration(seconds: 40));
-            return base64Decode('UklGRgAAAABXQVZF');
+            return temporaryMp3 = _temporaryMp3File();
           },
+          temporaryFileReader: (file) async => file.readAsBytesSync(),
         );
         Object? failure;
         var completed = false;
@@ -1163,6 +1271,7 @@ void main() {
               baseUrl: baseUrl,
               apiKey: apiKey,
               prompt: 'Transcribe.',
+              timeout: const Duration(seconds: 60),
             )
             .toList()
             .then<void>(
@@ -1186,29 +1295,35 @@ void main() {
           isA<TranscriptionException>().having(
             (error) => error.message,
             'message',
-            allOf(contains('timed out'), contains('request melious-audio-')),
+            allOf(
+              contains('timed out'),
+              contains('waiting for the Voxtral response'),
+              contains('request melious-audio-'),
+            ),
           ),
         );
+        expect(temporaryMp3.existsSync(), isFalse);
         repository.close();
       });
     });
 
     test(
-      'transcribeChatAudio skips HTTP after conversion exhausts timeout',
+      'transcribeChatAudio skips HTTP after MP3 encoding exhausts timeout',
       () {
         fakeAsync((async) {
           final startedAt = DateTime(2024, 3, 15, 12);
           var currentTime = startedAt;
           var requestSent = false;
+          late File temporaryMp3;
           final repository = MeliousInferenceRepository(
             clockSource: Clock(() => currentTime),
             httpClient: MockClient((_) async {
               requestSent = true;
               return _voxtralChatResponse();
             }),
-            m4aToWavConverter: (_) async {
+            audioToTemporaryMp3Encoder: (_) async {
               currentTime = startedAt.add(const Duration(seconds: 60));
-              return base64Decode('UklGRgAAAABXQVZF');
+              return temporaryMp3 = _temporaryMp3File();
             },
           );
           Object? failure;
@@ -1220,6 +1335,7 @@ void main() {
                 baseUrl: baseUrl,
                 apiKey: apiKey,
                 prompt: 'Transcribe.',
+                timeout: const Duration(seconds: 60),
               )
               .toList()
               .then<void>(
@@ -1239,6 +1355,7 @@ void main() {
               allOf(contains('timed out'), contains('request melious-audio-')),
             ),
           );
+          expect(temporaryMp3.existsSync(), isFalse);
           repository.close();
         });
       },
@@ -1246,7 +1363,7 @@ void main() {
 
     test('transcribeChatAudio prefixes conversion status detail', () {
       final repository = MeliousInferenceRepository(
-        m4aToWavConverter: (_) async => throw TranscriptionException(
+        audioToTemporaryMp3Encoder: (_) async => throw TranscriptionException(
           'Native audio decoder rejected the recording',
           provider: 'audio_decoder',
           statusCode: 422,
@@ -1299,7 +1416,7 @@ void main() {
       test('transcribeChatAudio ${testCase.description}', () {
         final repository = MeliousInferenceRepository(
           httpClient: MockClient((_) async => testCase.response),
-          m4aToWavConverter: (_) async => base64Decode('UklGRgAAAABXQVZF'),
+          audioToTemporaryMp3Encoder: (_) async => _temporaryMp3File(),
         );
         addTearDown(repository.close);
 
@@ -1327,7 +1444,7 @@ void main() {
     test('transcribeChatAudio wraps transport failures', () {
       final repository = MeliousInferenceRepository(
         httpClient: MockClient((_) async => throw Exception('network down')),
-        m4aToWavConverter: (_) async => base64Decode('UklGRgAAAABXQVZF'),
+        audioToTemporaryMp3Encoder: (_) async => _temporaryMp3File(),
       );
       addTearDown(repository.close);
 

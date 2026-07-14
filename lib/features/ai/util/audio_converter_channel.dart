@@ -52,14 +52,35 @@ class AudioConverterChannel {
 
   /// Converts an M4A file at [inputPath] to PCM WAV at [outputPath].
   ///
-  /// Uses the platform's native decoder and rethrows conversion or platform
-  /// failures after logging them. The caller owns both paths and their cleanup.
+  /// Uses Lotti's fail-fast GStreamer pipeline on Linux and `audio_decoder` on
+  /// other platforms. Conversion failures are normalized and logged. The
+  /// caller owns both paths and their cleanup.
   static Future<void> convertM4aToWav({
     required String inputPath,
     required String outputPath,
   }) async {
     try {
-      await AudioDecoder.convertToWav(inputPath, outputPath);
+      if (Platform.isLinux) {
+        await _channel.invokeMethod<bool>('convertM4aToWav', {
+          'inputPath': inputPath,
+          'outputPath': outputPath,
+        });
+      } else {
+        await AudioDecoder.convertToWav(inputPath, outputPath);
+      }
+    } on PlatformException catch (error, stackTrace) {
+      final conversionError = AudioConversionException(
+        error.message ?? error.code,
+        details: error.details?.toString(),
+      );
+      getIt<DomainLogger>().error(
+        LogDomain.speech,
+        conversionError,
+        stackTrace: stackTrace,
+        subDomain: 'convertM4aToWav',
+        message: 'Native M4A-to-WAV conversion failed',
+      );
+      throw conversionError;
     } catch (error, stackTrace) {
       getIt<DomainLogger>().error(
         LogDomain.speech,

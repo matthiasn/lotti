@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   set for Daily OS syncs to your other devices, with the most recent edit
   winning, so each device greets you the same way.
 ### Fixed
+- **Long Voxtral recordings transcribe without oversized WAV uploads.** Melious
+  Voxtral requests now encode a temporary MP3 from the compact M4A recording,
+  keeping the archived audio unchanged while avoiding the request-size failures
+  that affected recordings longer than roughly one or two minutes. Temporary
+  decoder and MP3 files are removed after both successful and failed requests.
 - **AI coding prompts now show up under their task.** A generated coding prompt
   is linked to both its parent task and the audio or text note it came from, and
   appears in each of their linked-entries lists (under the Code activity

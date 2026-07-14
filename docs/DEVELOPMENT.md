@@ -31,7 +31,21 @@ After installation, run `make coverage` and open `coverage/index.html`.
 
 ## Running the App
 - macOS: `fvm flutter run -d macos`
-- Other platforms: `flutter run -d <device>`
+- Other platforms: `fvm flutter run -d <device>`
+
+### Linux audio codecs
+
+Linux development and unpackaged release builds use GStreamer to decode Lotti's
+archived AAC/M4A recordings before temporary Voxtral MP3 encoding. Install the
+libav plugin that provides the AAC decoder:
+
+- Ubuntu/Debian: `sudo apt install gstreamer1.0-libav`
+- Fedora: `sudo dnf install gstreamer1-plugin-libav`
+- Arch: `sudo pacman -S gst-libav`
+
+The Flatpak 25.08 runtime already includes this decoder. A missing decoder does
+not prevent compilation, but Voxtral transcription fails immediately with an
+installation hint instead of waiting for the request timeout.
 
 ## Localization
 - ARB files live under `lib/l10n/`

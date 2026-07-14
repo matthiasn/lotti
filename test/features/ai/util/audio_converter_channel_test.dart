@@ -46,6 +46,14 @@ void main() {
   const decoderChannel = MethodChannel('audio_decoder');
   late _FakeDomainLogger fakeLogging;
 
+  void setMockM4aDecoderHandler(
+    Future<Object?> Function(MethodCall call) handler,
+  ) {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      ..setMockMethodCallHandler(channel, handler)
+      ..setMockMethodCallHandler(decoderChannel, handler);
+  }
+
   group('AudioConverterChannel', () {
     setUp(() async {
       fakeLogging = _FakeDomainLogger();
@@ -83,15 +91,14 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('converts M4A to WAV through the cross-platform decoder', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(decoderChannel, (call) async {
-            expect(call.method, 'convertToWav');
-            final args = call.arguments as Map<dynamic, dynamic>;
-            expect(args['inputPath'], '/tmp/input.m4a');
-            expect(args['outputPath'], '/tmp/output.wav');
-            return '/tmp/output.wav';
-          });
+    test('converts M4A to WAV through the platform decoder', () async {
+      setMockM4aDecoderHandler((call) async {
+        expect(call.method, anyOf('convertM4aToWav', 'convertToWav'));
+        final args = call.arguments as Map<dynamic, dynamic>;
+        expect(args['inputPath'], '/tmp/input.m4a');
+        expect(args['outputPath'], '/tmp/output.wav');
+        return call.method == 'convertM4aToWav' ? true : '/tmp/output.wav';
+      });
 
       await AudioConverterChannel.convertM4aToWav(
         inputPath: '/tmp/input.m4a',
@@ -99,15 +106,13 @@ void main() {
       );
     });
 
-    test('logs and rethrows cross-platform decoder failures', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            decoderChannel,
-            (_) async => throw PlatformException(
-              code: 'CONVERSION_ERROR',
-              message: 'AAC decoder unavailable',
-            ),
-          );
+    test('logs and normalizes platform decoder failures', () async {
+      setMockM4aDecoderHandler(
+        (_) async => throw PlatformException(
+          code: 'CONVERSION_ERROR',
+          message: 'AAC decoder unavailable',
+        ),
+      );
 
       await expectLater(
         AudioConverterChannel.convertM4aToWav(
@@ -150,17 +155,14 @@ void main() {
     test('temporary conversion uses native defaults and cleans up', () async {
       late String inputPath;
       late String outputPath;
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(decoderChannel, (call) async {
-            inputPath =
-                (call.arguments as Map<dynamic, dynamic>)['inputPath']
-                    as String;
-            outputPath =
-                (call.arguments as Map<dynamic, dynamic>)['outputPath']
-                    as String;
-            await File(outputPath).writeAsBytes([82, 73, 70, 70]);
-            return outputPath;
-          });
+      setMockM4aDecoderHandler((call) async {
+        inputPath =
+            (call.arguments as Map<dynamic, dynamic>)['inputPath'] as String;
+        outputPath =
+            (call.arguments as Map<dynamic, dynamic>)['outputPath'] as String;
+        await File(outputPath).writeAsBytes([82, 73, 70, 70]);
+        return call.method == 'convertM4aToWav' ? true : outputPath;
+      });
 
       final wavBytes = await convertM4aBytesToTemporaryWav(
         Uint8List.fromList([1, 2, 3]),

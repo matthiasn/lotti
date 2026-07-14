@@ -7,6 +7,7 @@
 
 #include <glib/gstdio.h>
 
+#include "audio_converter.h"
 #include "flutter/generated_plugin_registrant.h"
 
 struct _MyApplication {
@@ -154,6 +155,10 @@ static void my_application_activate(GApplication* application) {
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
+  FlPluginRegistrar* audio_converter_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(
+          FL_PLUGIN_REGISTRY(view), "LottiAudioConverter");
+  audio_converter_register_with_registrar(audio_converter_registrar);
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
