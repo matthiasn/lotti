@@ -238,11 +238,17 @@ void main() {
     await tester.pump();
     expect(changed, DateTime(2024, 6, 15, 15, 30));
 
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyRepeatEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pump();
+    expect(changed, DateTime(2024, 6, 15, 17, 30));
+
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pump();
-    expect(changed, DateTime(2024, 6, 15, 15, 29));
+    expect(changed, DateTime(2024, 6, 15, 17, 29));
   });
 
   testWidgets('settled selection does not rebuild the wheel delegate', (
