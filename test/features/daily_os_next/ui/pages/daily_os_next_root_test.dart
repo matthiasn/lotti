@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
@@ -34,6 +35,12 @@ Widget _wrap(
         (ref, _) async => actualBlocks,
       ),
       firstDayOfWeekIndexProvider.overrideWith((ref) async => 1),
+      dailyOsSetupStatusProvider.overrideWith(
+        (ref) async => const DailyOsSetupStatus(
+          hasInferenceRoute: true,
+          hasPreferredName: true,
+        ),
+      ),
       ...overrides,
     ],
     child: makeTestableWidget2(

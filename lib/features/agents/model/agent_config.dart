@@ -18,7 +18,7 @@ abstract class AgentConfig with _$AgentConfig {
     /// Inference profile ID — takes precedence over [modelId] when set.
     String? profileId,
 
-    /// Typed persistent inference setup for task agents.
+    /// Typed persistent inference setup for agent instances.
     ///
     /// Null preserves the legacy profile/template/model resolution chain.
     /// Once present, this setup is authoritative: configured setups resolve
@@ -53,7 +53,7 @@ extension AgentConfigAutomation on AgentConfig {
   bool get automaticUpdatesEnabledEffective => automaticUpdatesEnabled ?? true;
 }
 
-/// Persistent inference routing owned by one task-agent instance.
+/// Persistent inference routing owned by one agent instance.
 @freezed
 abstract class AgentInferenceSetup with _$AgentInferenceSetup {
   const factory AgentInferenceSetup({
@@ -66,7 +66,7 @@ abstract class AgentInferenceSetup with _$AgentInferenceSetup {
     /// direct thinking-model override is selected.
     String? baseProfileId,
 
-    /// Config-row ID (`AiConfigModel.id`) for the task agent's thinking model.
+    /// Config-row ID (`AiConfigModel.id`) for the agent's thinking model.
     /// This is deliberately not a provider-native `providerModelId`.
     String? thinkingModelOverrideId,
 

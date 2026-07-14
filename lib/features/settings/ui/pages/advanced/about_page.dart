@@ -1,9 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -32,18 +29,16 @@ class AboutPage extends StatelessWidget {
 /// Content body for the About page: gradient header with the app
 /// name + tagline, version info, and entry/task counts. Extracted
 /// from [AboutPage] so the V2 detail pane can host it.
-class AboutBody extends ConsumerStatefulWidget {
+class AboutBody extends StatefulWidget {
   const AboutBody({super.key});
 
   @override
-  ConsumerState<AboutBody> createState() => _AboutBodyState();
+  State<AboutBody> createState() => _AboutBodyState();
 }
 
-class _AboutBodyState extends ConsumerState<AboutBody> {
+class _AboutBodyState extends State<AboutBody> {
   String version = '';
   String buildNumber = '';
-  late final TextEditingController _nameController;
-  late final FocusNode _nameFocusNode;
 
   Future<void> getVersions() async {
     if (!(isWindows && isTestEnv)) {
@@ -58,18 +53,7 @@ class _AboutBodyState extends ConsumerState<AboutBody> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(
-      text: ref.read(dailyOsPreferencesControllerProvider).userName,
-    );
-    _nameFocusNode = FocusNode();
     getVersions();
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _nameFocusNode.dispose();
-    super.dispose();
   }
 
   @override
@@ -83,16 +67,6 @@ class _AboutBodyState extends ConsumerState<AboutBody> {
     Widget buildCard({required Widget child}) {
       return ModernBaseCard(child: child);
     }
-
-    final tokens = context.designTokens;
-    ref.listen<String>(
-      dailyOsPreferencesControllerProvider.select((prefs) => prefs.userName),
-      (previous, next) {
-        if (!_nameFocusNode.hasFocus && _nameController.text != next) {
-          _nameController.text = next;
-        }
-      },
-    );
 
     return FutureBuilder<int>(
       future: getIt<JournalDb>().getJournalCount(),
@@ -162,10 +136,6 @@ class _AboutBodyState extends ConsumerState<AboutBody> {
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(height: halfVerticalSpacer),
-                buildCard(
-                  child: _buildDailyOsPersonalizationCard(context, tokens),
                 ),
                 const SizedBox(height: halfVerticalSpacer),
                 // Version Info Card
@@ -263,57 +233,6 @@ class _AboutBodyState extends ConsumerState<AboutBody> {
           },
         );
       },
-    );
-  }
-
-  Widget _buildDailyOsPersonalizationCard(
-    BuildContext context,
-    DsTokens tokens,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.person_outline_rounded,
-              color: tokens.colors.interactive.enabled,
-              size: tokens.spacing.step6,
-            ),
-            SizedBox(width: tokens.spacing.step3),
-            Expanded(
-              child: Text(
-                context.messages.settingsAboutDailyOsPersonalizationTitle,
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        TextField(
-          key: const Key('daily_os_user_name_field'),
-          controller: _nameController,
-          focusNode: _nameFocusNode,
-          textInputAction: TextInputAction.done,
-          decoration: InputDecoration(
-            labelText: context.messages.settingsAboutDailyOsUserNameLabel,
-            helperText: context.messages.settingsAboutDailyOsUserNameHelper,
-            filled: true,
-            fillColor: tokens.colors.background.level02,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(tokens.radii.m),
-            ),
-          ),
-          style: tokens.typography.styles.body.bodyMedium.copyWith(
-            color: tokens.colors.text.highEmphasis,
-          ),
-          onChanged: ref
-              .read(dailyOsPreferencesControllerProvider.notifier)
-              .setUserName,
-        ),
-      ],
     );
   }
 

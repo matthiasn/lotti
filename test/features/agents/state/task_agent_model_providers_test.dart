@@ -95,11 +95,19 @@ void main() {
   );
 
   test(
-    'setup options filters models to task-agent thinking capabilities',
+    'setup options filters model capabilities without excluding providers',
     () async {
       final repository = MockAiConfigRepository();
       final capable = model();
       final incapable = model(tools: false);
+      final google = AiConfigInferenceProvider(
+        id: 'google',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'key',
+        name: 'Google Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
       when(
         () => repository.getConfigsByType(AiConfigType.inferenceProfile),
       ).thenAnswer((_) async => const []);
@@ -108,7 +116,7 @@ void main() {
       ).thenAnswer((_) async => [capable, incapable]);
       when(
         () => repository.getConfigsByType(AiConfigType.inferenceProvider),
-      ).thenAnswer((_) async => const []);
+      ).thenAnswer((_) async => [google]);
       final container = ProviderContainer(
         overrides: [aiConfigRepositoryProvider.overrideWithValue(repository)],
       );
@@ -119,7 +127,7 @@ void main() {
       );
       expect(options.models, [capable]);
       expect(options.profiles, isEmpty);
-      expect(options.providers, isEmpty);
+      expect(options.providers, [google]);
     },
   );
 

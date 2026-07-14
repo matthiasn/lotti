@@ -16,6 +16,10 @@ taskAgentResolvedSetupProvider = FutureProvider.autoDispose
       name: 'taskAgentResolvedSetupProvider',
     );
 
+/// Agent-kind-neutral alias used by Daily OS and other agent surfaces.
+final FutureProviderFamily<ResolvedAgentSetup?, String>
+agentResolvedSetupProvider = taskAgentResolvedSetupProvider;
+
 Future<ResolvedAgentSetup?> taskAgentResolvedSetup(
   Ref ref,
   String agentId,
@@ -65,6 +69,10 @@ final FutureProvider<TaskAgentSetupOptions> taskAgentSetupOptionsProvider =
       name: 'taskAgentSetupOptionsProvider',
     );
 
+/// Shared catalog for agentic inference pickers.
+final FutureProvider<TaskAgentSetupOptions> agentSetupOptionsProvider =
+    taskAgentSetupOptionsProvider;
+
 Future<TaskAgentSetupOptions> taskAgentSetupOptions(Ref ref) async {
   final repository = ref.watch(aiConfigRepositoryProvider);
   final values = await Future.wait([
@@ -76,14 +84,18 @@ Future<TaskAgentSetupOptions> taskAgentSetupOptions(Ref ref) async {
     profiles: values[0].whereType<AiConfigInferenceProfile>().toList(),
     models: values[1]
         .whereType<AiConfigModel>()
-        .where(isTaskAgentThinkingModel)
+        .where(isAgenticThinkingModel)
         .toList(),
     providers: values[2].whereType<AiConfigInferenceProvider>().toList(),
   );
 }
 
-bool isTaskAgentThinkingModel(AiConfigModel model) {
+bool isAgenticThinkingModel(AiConfigModel model) {
   return model.supportsFunctionCalling &&
       model.inputModalities.contains(Modality.text) &&
       model.outputModalities.contains(Modality.text);
 }
+
+/// Backward-compatible name for existing task-agent callers.
+bool isTaskAgentThinkingModel(AiConfigModel model) =>
+    isAgenticThinkingModel(model);

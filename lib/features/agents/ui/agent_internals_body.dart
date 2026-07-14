@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_token_usage_section.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup_sheet.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -304,7 +306,12 @@ class _ProfileSection extends ConsumerWidget {
         .watch(agentStateProvider(agentId))
         .value
         ?.mapOrNull(agentState: (value) => value);
-    final setup = ref.watch(taskAgentResolvedSetupProvider(agentId)).value;
+    final identity = ref
+        .watch(agentIdentityProvider(agentId))
+        .value
+        ?.mapOrNull(agent: (value) => value);
+    final isDailyOs = identity?.kind == AgentKinds.dayAgent;
+    final setup = ref.watch(agentResolvedSetupProvider(agentId)).value;
     final route = setup?.profile == null
         ? null
         : formatInferenceRouteIdentity(
@@ -329,7 +336,9 @@ class _ProfileSection extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.messages.taskAgentSetupTitle,
+            isDailyOs
+                ? context.messages.dailyOsSettingsInstanceOverrideTitle
+                : context.messages.taskAgentSetupTitle,
             style: tokens.typography.styles.subtitle.subtitle2,
           ),
           SizedBox(height: tokens.spacing.step3),
@@ -337,6 +346,8 @@ class _ProfileSection extends ConsumerWidget {
             title: route ?? setupTitle,
             subtitle: route == null
                 ? setupSubtitle
+                : isDailyOs
+                ? context.messages.dailyOsSettingsInstanceCurrentSetup
                 : context.messages.taskAgentCurrentSetupLabel,
             subtitleMaxLines: null,
             leading: Icon(
@@ -345,7 +356,9 @@ class _ProfileSection extends ConsumerWidget {
                   : Icons.psychology_outlined,
             ),
             trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: taskId == null
+            onTap: isDailyOs
+                ? () => DailyOsInferenceSetupSheet.show(context)
+                : taskId == null
                 ? null
                 : () => AgentModelSheet.show(
                     context: context,

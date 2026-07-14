@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
@@ -111,6 +112,10 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
       // detail pane empty.
       'ai': SettingsPanelSpec(build: _aiPanel),
       'agents': SettingsPanelSpec(build: _agentsPanel),
+      'daily-os': SettingsPanelSpec(
+        build: _dailyOsPanel,
+        scrollable: true,
+      ),
 
       // Top-level entry point back to the FTUE welcome flow (plan §12).
       'onboarding': SettingsPanelSpec(
@@ -219,6 +224,7 @@ SettingsPanelSpec? panelSpecFor(String? panelId) {
 const Duration kSettingsPanelSwapDuration = Duration(milliseconds: 180);
 
 Widget _onboardingPanel(BuildContext context) => const OnboardingSettingsBody();
+Widget _dailyOsPanel(BuildContext context) => const DailyOsSettingsBody();
 
 // --- Step 7 builders --------------------------------------------------------
 Widget _flagsPanel(BuildContext context) => const FlagsBody();

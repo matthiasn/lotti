@@ -1537,6 +1537,7 @@
   "dailyOsNextDayLockInCta": "Uzamknout",
   "dailyOsNextDayMenuDeletePlan": "Smazat plán",
   "dailyOsNextDayMenuInspectAgent": "Prozkoumat agenta",
+  "dailyOsNextDayMenuSettings": "Nastavení Daily OS",
   "dailyOsNextDayMoreTooltip": "Více",
   "dailyOsNextDayRefineCta": "Upravit",
   "dailyOsNextDayRefineFooterHint": "Mluv a přetvoř plán — každou změnu uvidíš, než se cokoli uloží.",
@@ -1756,6 +1757,59 @@
   "dailyOsOnboardingSpotlightDismiss": "Teď ne",
   "dailyOsOnboardingSpotlightMessage": "Klepni sem a řekni, co ti leží v hlavě – proměním to v úkol a poskládám kolem toho tvůj den.",
   "dailyOsOnboardingSpotlightTitle": "Proměň řeč v plán",
+  "dailyOsSettingsChooseModelDescription": "Přepiš pouze model uvažování plánovače.",
+  "dailyOsSettingsChooseModelTitle": "Vybrat přepsání modelu",
+  "dailyOsSettingsChooseProfileDescription": "Přepiš celý inferenční profil pro tento plánovač.",
+  "dailyOsSettingsChooseProfileTitle": "Vybrat profil Daily OS",
+  "dailyOsSettingsDataDisclosure": "Daily OS odesílá relevantní úkoly, záznamy, plány, naučené preference a další sestavený kontext plánování vybranému poskytovateli ke zpracování.",
+  "dailyOsSettingsDefaultProfileDescription": "Daily OS ho použije, pokud instance plánovače nemá vlastní nastavení.",
+  "dailyOsSettingsDefaultProfileMissing": "Vyber profil",
+  "dailyOsSettingsDefaultRestored": "Výchozí nastavení Daily OS obnoveno",
+  "dailyOsSettingsDirectOverrideActive": "Přímé přepsání modelu je aktivní.",
+  "dailyOsSettingsInferenceTitle": "Výchozí inferenční profil",
+  "dailyOsSettingsInstanceCurrentSetup": "Aktuální nastavení plánovače",
+  "dailyOsSettingsInstanceOverrideDescription": "Použij výchozí profil Daily OS, vyber přepsání profilu nebo přepiš jen model uvažování tohoto plánovače.",
+  "dailyOsSettingsInstanceOverrideTitle": "Inference Daily OS",
+  "dailyOsSettingsLocalDisclosure": "Vybraný koncový bod je na tomto zařízení.",
+  "dailyOsSettingsModelChanged": "Daily OS nyní používá {model}",
+  "@dailyOsSettingsModelChanged": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsNameNudgeAction": "Přidat jméno",
+  "dailyOsSettingsNameNudgeBody": "Preferované jméno udělá check-iny osobnější. Plánovat můžeš i bez něj.",
+  "dailyOsSettingsNameNudgeTitle": "Jak tě má Daily OS oslovovat?",
+  "dailyOsSettingsProfileChanged": "Daily OS nyní používá {profile}",
+  "@dailyOsSettingsProfileChanged": {
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsProfileOverrideActive": "Přepsání profilu je aktivní",
+  "dailyOsSettingsRemoteDisclosure": "Daily OS odesílá sestavený kontext plánování poskytovateli {provider} na {host} ke vzdálenému zpracování.",
+  "@dailyOsSettingsRemoteDisclosure": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsSetupAction": "Nastavit Daily OS",
+  "dailyOsSettingsSetupRequiredBody": "Daily OS potřebuje tvou volbu poskytovatele, než může zpracovat kontext plánování.",
+  "dailyOsSettingsSetupRequiredTitle": "Vyber inferenční profil",
+  "dailyOsSettingsSubtitle": "Zvol, jak tě má Daily OS oslovovat a který inferenční profil má plánovat tvé dny.",
+  "dailyOsSettingsTitle": "Daily OS",
+  "dailyOsSettingsTreeSubtitle": "Plánování, přizpůsobení a poskytovatel AI",
+  "dailyOsSettingsUseDefault": "Použít výchozí nastavení Daily OS",
+  "dailyOsSettingsUseDefaultDescription": "Použije profil vybraný v nastavení Daily OS.",
   "dailyOsTodayButton": "Dnes",
   "dashboardActiveLabel": "Aktivní",
   "dashboardActiveSwitchDescription": "Zobrazuje se v seznamu panelů",

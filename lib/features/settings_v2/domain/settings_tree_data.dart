@@ -144,6 +144,11 @@ List<SettingsNode> buildSettingsTree({
         ),
       ],
     ),
+    leaf(
+      'daily-os',
+      Icons.today_outlined,
+      panel: 'daily-os',
+    ),
     // Sync sits directly below Agents — both are runtime / system
     // concerns and read better as a pair than separated by the
     // taxonomy leaves (habits / categories / labels). The entire Sync

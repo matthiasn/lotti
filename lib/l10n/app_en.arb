@@ -2063,6 +2063,7 @@
   "dailyOsNextDayLockInCta": "Lock in",
   "dailyOsNextDayMenuDeletePlan": "Delete plan",
   "dailyOsNextDayMenuInspectAgent": "Inspect agent",
+  "dailyOsNextDayMenuSettings": "Daily OS settings",
   "dailyOsNextDayMoreTooltip": "More",
   "dailyOsNextDayRefineCta": "Refine",
   "dailyOsNextDayRefineFooterHint": "Talk to reshape the plan — you'll see every change before anything is saved.",
@@ -2317,6 +2318,59 @@
   "dailyOsOnboardingSpotlightDismiss": "Not now",
   "dailyOsOnboardingSpotlightMessage": "Tap here and say what's on your mind — I'll turn it into a task and build your day around it.",
   "dailyOsOnboardingSpotlightTitle": "Turn talk into a plan",
+  "dailyOsSettingsChooseModelDescription": "Override only the planner's thinking model.",
+  "dailyOsSettingsChooseModelTitle": "Choose model override",
+  "dailyOsSettingsChooseProfileDescription": "Override the full inference profile for this planner.",
+  "dailyOsSettingsChooseProfileTitle": "Choose Daily OS profile",
+  "dailyOsSettingsDataDisclosure": "Daily OS sends relevant tasks, captures, plans, learned preferences, and other assembled planning context to the selected provider for processing.",
+  "dailyOsSettingsDefaultProfileDescription": "Used by Daily OS unless the planner instance has an override.",
+  "dailyOsSettingsDefaultProfileMissing": "Choose a profile",
+  "dailyOsSettingsDefaultRestored": "Daily OS default restored",
+  "dailyOsSettingsDirectOverrideActive": "Direct model override is active.",
+  "dailyOsSettingsInferenceTitle": "Default inference profile",
+  "dailyOsSettingsInstanceCurrentSetup": "Current planner setup",
+  "dailyOsSettingsInstanceOverrideDescription": "Use the Daily OS default profile, choose a profile override, or override only this planner's thinking model.",
+  "dailyOsSettingsInstanceOverrideTitle": "Daily OS inference",
+  "dailyOsSettingsLocalDisclosure": "The selected endpoint is on this device.",
+  "dailyOsSettingsModelChanged": "Daily OS now uses {model}",
+  "@dailyOsSettingsModelChanged": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsNameNudgeAction": "Add name",
+  "dailyOsSettingsNameNudgeBody": "Adding a preferred name makes check-ins more personal. You can keep planning without it.",
+  "dailyOsSettingsNameNudgeTitle": "How should Daily OS address you?",
+  "dailyOsSettingsProfileChanged": "Daily OS now uses {profile}",
+  "@dailyOsSettingsProfileChanged": {
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsProfileOverrideActive": "Profile override active",
+  "dailyOsSettingsRemoteDisclosure": "Daily OS sends the assembled planning context to {provider} at {host} for remote processing.",
+  "@dailyOsSettingsRemoteDisclosure": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsSetupAction": "Set up Daily OS",
+  "dailyOsSettingsSetupRequiredBody": "Daily OS needs your provider choice before it can process your planning context.",
+  "dailyOsSettingsSetupRequiredTitle": "Choose an inference profile",
+  "dailyOsSettingsSubtitle": "Choose how Daily OS addresses you and which inference profile plans your days.",
+  "dailyOsSettingsTitle": "Daily OS",
+  "dailyOsSettingsTreeSubtitle": "Planning, personalization, and AI provider",
+  "dailyOsSettingsUseDefault": "Use Daily OS default",
+  "dailyOsSettingsUseDefaultDescription": "Follow the profile selected in Daily OS settings.",
   "dailyOsTodayButton": "Today",
   "dashboardActiveLabel": "Active",
   "dashboardActiveSwitchDescription": "Shown in the dashboards list",

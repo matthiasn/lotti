@@ -36,6 +36,7 @@ void main() {
   AgentIdentityEntity identity({
     String id = agentId,
     String kind = AgentKinds.dayAgent,
+    AgentConfig config = const AgentConfig(),
     DateTime? createdAt,
   }) {
     return makeTestIdentity(
@@ -44,6 +45,7 @@ void main() {
       kind: kind,
       displayName: 'Shepherd',
       currentStateId: 'state-$id',
+      config: config,
       createdAt: createdAt ?? now,
       updatedAt: createdAt ?? now,
     );
@@ -873,12 +875,23 @@ void main() {
             agentId: captureAny(named: 'agentId'),
             kind: captureAny(named: 'kind'),
             displayName: any(named: 'displayName'),
-            config: any(named: 'config'),
+            config: captureAny(named: 'config'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         ).captured;
         expect(createCall[0], AgentKinds.dayAgent);
-        expect(createCall[1], dailyOsPlannerAgentId);
+        final createdConfig = createCall[1] as AgentConfig;
+        expect(createCall[2], dailyOsPlannerAgentId);
+        expect(createdConfig.profileId, 'profile-day');
+        expect(
+          createdConfig.inferenceSetup,
+          const AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.templateSnapshot,
+            baseProfileId: 'profile-day',
+            originEntityId: dayAgentTemplateId,
+          ),
+        );
 
         // The planner gets a template assignment but NO AgentDayLink: a day
         // is a workspace carried by wake tokens, not part of identity.
@@ -1228,6 +1241,190 @@ void main() {
         // The planner is still returned even though migration threw.
         expect(result.agentId, dailyOsPlannerAgentId);
       });
+    });
+  });
+
+  group('Daily OS inference selection', () {
+    final plannerTemplate = makeTestTemplate(
+      id: dayAgentTemplateId,
+      agentId: dayAgentTemplateId,
+      kind: AgentTemplateKind.dayAgent,
+      modelId: 'models/day',
+      profileId: 'profile-old',
+    );
+
+    test('default profile updates a planner following the template', () async {
+      final planner = identity(
+        id: dailyOsPlannerAgentId,
+        config: const AgentConfig(
+          profileId: 'profile-old',
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.templateSnapshot,
+            baseProfileId: 'profile-old',
+            originEntityId: dayAgentTemplateId,
+          ),
+        ),
+      );
+      when(
+        () => templateService.updateTemplate(
+          templateId: dayAgentTemplateId,
+          profileId: 'profile-new',
+        ),
+      ).thenAnswer(
+        (_) async => plannerTemplate.copyWith(profileId: 'profile-new'),
+      );
+      when(
+        () => agentService.getAgent(dailyOsPlannerAgentId),
+      ).thenAnswer((_) async => planner);
+
+      await withClock(
+        Clock.fixed(now),
+        () => service.updateDefaultInferenceProfile('profile-new'),
+      );
+
+      final updated =
+          verify(
+                () => syncService.upsertEntity(captureAny()),
+              ).captured.single
+              as AgentIdentityEntity;
+      expect(updated.config.profileId, 'profile-new');
+      expect(updated.config.inferenceSetup?.baseProfileId, 'profile-new');
+      expect(
+        updated.config.inferenceSetup?.origin,
+        AgentInferenceSetupOrigin.templateSnapshot,
+      );
+      expect(changedTokens, [dailyOsPlannerAgentId]);
+    });
+
+    test('default profile preserves a user-owned planner override', () async {
+      final planner = identity(
+        id: dailyOsPlannerAgentId,
+        config: const AgentConfig(
+          profileId: 'profile-old',
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.user,
+            baseProfileId: 'profile-old',
+            thinkingModelOverrideId: 'model-user',
+          ),
+        ),
+      );
+      when(
+        () => templateService.updateTemplate(
+          templateId: dayAgentTemplateId,
+          profileId: 'profile-new',
+        ),
+      ).thenAnswer(
+        (_) async => plannerTemplate.copyWith(profileId: 'profile-new'),
+      );
+      when(
+        () => agentService.getAgent(dailyOsPlannerAgentId),
+      ).thenAnswer((_) async => planner);
+
+      await service.updateDefaultInferenceProfile('profile-new');
+
+      verifyNever(() => syncService.upsertEntity(any()));
+      expect(changedTokens, isEmpty);
+    });
+
+    test('profile override is user-owned and clears a direct model', () async {
+      final planner = identity(
+        id: dailyOsPlannerAgentId,
+        config: const AgentConfig(
+          profileId: 'profile-old',
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.user,
+            baseProfileId: 'profile-old',
+            thinkingModelOverrideId: 'model-old',
+          ),
+        ),
+      );
+      when(
+        () => agentService.getAgent(dailyOsPlannerAgentId),
+      ).thenAnswer((_) async => planner);
+
+      await service.updatePlannerProfileOverride('profile-instance');
+
+      final updated =
+          verify(
+                () => syncService.upsertEntity(captureAny()),
+              ).captured.single
+              as AgentIdentityEntity;
+      expect(updated.config.profileId, 'profile-instance');
+      expect(updated.config.inferenceSetup?.baseProfileId, 'profile-instance');
+      expect(updated.config.inferenceSetup?.thinkingModelOverrideId, isNull);
+      expect(
+        updated.config.inferenceSetup?.origin,
+        AgentInferenceSetupOrigin.user,
+      );
+    });
+
+    test(
+      'model override keeps the planner profile override as its base',
+      () async {
+        final planner = identity(
+          id: dailyOsPlannerAgentId,
+          config: const AgentConfig(
+            profileId: 'profile-instance',
+            inferenceSetup: AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.configured,
+              origin: AgentInferenceSetupOrigin.user,
+              baseProfileId: 'profile-instance',
+            ),
+          ),
+        );
+        when(
+          () => agentService.getAgent(dailyOsPlannerAgentId),
+        ).thenAnswer((_) async => planner);
+        when(
+          () => templateService.getTemplate(dayAgentTemplateId),
+        ).thenAnswer((_) async => plannerTemplate);
+
+        await service.updatePlannerThinkingModelOverride('model-user');
+
+        final updated =
+            verify(
+                  () => syncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(
+          updated.config.inferenceSetup?.baseProfileId,
+          'profile-instance',
+        );
+        expect(
+          updated.config.inferenceSetup?.thinkingModelOverrideId,
+          'model-user',
+        );
+        expect(
+          updated.config.inferenceSetup?.origin,
+          AgentInferenceSetupOrigin.user,
+        );
+      },
+    );
+
+    test('reset restores the template snapshot', () async {
+      final planner = identity(id: dailyOsPlannerAgentId);
+      when(
+        () => agentService.getAgent(dailyOsPlannerAgentId),
+      ).thenAnswer((_) async => planner);
+      when(
+        () => templateService.getTemplate(dayAgentTemplateId),
+      ).thenAnswer((_) async => plannerTemplate);
+
+      await service.resetPlannerInferenceToDefault();
+
+      final updated =
+          verify(
+                () => syncService.upsertEntity(captureAny()),
+              ).captured.single
+              as AgentIdentityEntity;
+      expect(updated.config.inferenceSetup?.thinkingModelOverrideId, isNull);
+      expect(
+        updated.config.inferenceSetup?.origin,
+        AgentInferenceSetupOrigin.templateSnapshot,
+      );
     });
   });
 }

@@ -1728,6 +1728,7 @@
   "dailyOsNextDayLockInCta": "Confirmar",
   "dailyOsNextDayMenuDeletePlan": "Eliminar plan",
   "dailyOsNextDayMenuInspectAgent": "Inspeccionar agente",
+  "dailyOsNextDayMenuSettings": "Ajustes de Daily OS",
   "dailyOsNextDayMoreTooltip": "Más",
   "dailyOsNextDayRefineCta": "Ajustar",
   "dailyOsNextDayRefineFooterHint": "Habla para reorganizar el plan — verás cada cambio antes de que se guarde nada.",
@@ -1947,6 +1948,59 @@
   "dailyOsOnboardingSpotlightDismiss": "Ahora no",
   "dailyOsOnboardingSpotlightMessage": "Toca aquí y di lo que te ronda la cabeza: lo convierto en una tarea y organizo tu día en torno a ella.",
   "dailyOsOnboardingSpotlightTitle": "Convierte lo que dices en un plan",
+  "dailyOsSettingsChooseModelDescription": "Anula solo el modelo de razonamiento del planificador.",
+  "dailyOsSettingsChooseModelTitle": "Elegir anulación de modelo",
+  "dailyOsSettingsChooseProfileDescription": "Anula el perfil de inferencia completo para este planificador.",
+  "dailyOsSettingsChooseProfileTitle": "Elegir perfil de Daily OS",
+  "dailyOsSettingsDataDisclosure": "Daily OS envía las tareas, capturas, planes, preferencias aprendidas y demás contexto de planificación recopilado al proveedor seleccionado para procesarlo.",
+  "dailyOsSettingsDefaultProfileDescription": "Daily OS lo usa salvo que la instancia del planificador tenga una anulación.",
+  "dailyOsSettingsDefaultProfileMissing": "Elige un perfil",
+  "dailyOsSettingsDefaultRestored": "Valor predeterminado de Daily OS restaurado",
+  "dailyOsSettingsDirectOverrideActive": "La anulación directa del modelo está activa.",
+  "dailyOsSettingsInferenceTitle": "Perfil de inferencia predeterminado",
+  "dailyOsSettingsInstanceCurrentSetup": "Configuración actual del planificador",
+  "dailyOsSettingsInstanceOverrideDescription": "Usa el perfil predeterminado de Daily OS, elige una anulación de perfil o anula solo el modelo de razonamiento de este planificador.",
+  "dailyOsSettingsInstanceOverrideTitle": "Inferencia de Daily OS",
+  "dailyOsSettingsLocalDisclosure": "El punto de conexión seleccionado está en este dispositivo.",
+  "dailyOsSettingsModelChanged": "Daily OS ahora usa {model}",
+  "@dailyOsSettingsModelChanged": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsNameNudgeAction": "Añadir nombre",
+  "dailyOsSettingsNameNudgeBody": "Añadir un nombre preferido hace los check-ins más personales. Puedes seguir planificando sin él.",
+  "dailyOsSettingsNameNudgeTitle": "¿Cómo quieres que te llame Daily OS?",
+  "dailyOsSettingsProfileChanged": "Daily OS ahora usa {profile}",
+  "@dailyOsSettingsProfileChanged": {
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsProfileOverrideActive": "Anulación de perfil activa",
+  "dailyOsSettingsRemoteDisclosure": "Daily OS envía el contexto de planificación recopilado a {provider} en {host} para su procesamiento remoto.",
+  "@dailyOsSettingsRemoteDisclosure": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsSettingsSetupAction": "Configurar Daily OS",
+  "dailyOsSettingsSetupRequiredBody": "Daily OS necesita que elijas un proveedor antes de procesar tu contexto de planificación.",
+  "dailyOsSettingsSetupRequiredTitle": "Elige un perfil de inferencia",
+  "dailyOsSettingsSubtitle": "Elige cómo te llama Daily OS y qué perfil de inferencia planifica tus días.",
+  "dailyOsSettingsTitle": "Daily OS",
+  "dailyOsSettingsTreeSubtitle": "Planificación, personalización y proveedor de IA",
+  "dailyOsSettingsUseDefault": "Usar valor predeterminado de Daily OS",
+  "dailyOsSettingsUseDefaultDescription": "Sigue el perfil elegido en los ajustes de Daily OS.",
   "dailyOsTodayButton": "Hoy",
   "dashboardActiveLabel": "Activo",
   "dashboardActiveSwitchDescription": "Se muestra en la lista de paneles",

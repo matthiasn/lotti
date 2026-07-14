@@ -3755,6 +3755,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextDayMenuInspectAgent => 'Inspecter l\'agent';
 
   @override
+  String get dailyOsNextDayMenuSettings => 'Réglages Daily OS';
+
+  @override
   String get dailyOsNextDayMoreTooltip => 'Plus';
 
   @override
@@ -4304,6 +4307,118 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsOnboardingSpotlightTitle => 'Transforme tes mots en plan';
+
+  @override
+  String get dailyOsSettingsChooseModelDescription =>
+      'Remplace uniquement le modèle de réflexion du planificateur.';
+
+  @override
+  String get dailyOsSettingsChooseModelTitle =>
+      'Choisir une dérogation de modèle';
+
+  @override
+  String get dailyOsSettingsChooseProfileDescription =>
+      'Remplace le profil d\'inférence complet pour ce planificateur.';
+
+  @override
+  String get dailyOsSettingsChooseProfileTitle => 'Choisir le profil Daily OS';
+
+  @override
+  String get dailyOsSettingsDataDisclosure =>
+      'Daily OS envoie les tâches, captures, plans, préférences apprises et autres éléments de contexte de planification assemblés au fournisseur sélectionné pour traitement.';
+
+  @override
+  String get dailyOsSettingsDefaultProfileDescription =>
+      'Utilisé par Daily OS sauf si l’instance du planificateur a une dérogation.';
+
+  @override
+  String get dailyOsSettingsDefaultProfileMissing => 'Choisis un profil';
+
+  @override
+  String get dailyOsSettingsDefaultRestored =>
+      'Réglage Daily OS par défaut rétabli';
+
+  @override
+  String get dailyOsSettingsDirectOverrideActive =>
+      'La dérogation directe du modèle est active.';
+
+  @override
+  String get dailyOsSettingsInferenceTitle => 'Profil d’inférence par défaut';
+
+  @override
+  String get dailyOsSettingsInstanceCurrentSetup =>
+      'Configuration actuelle du planificateur';
+
+  @override
+  String get dailyOsSettingsInstanceOverrideDescription =>
+      'Utilise le profil Daily OS par défaut, choisis une dérogation de profil ou remplace uniquement le modèle de réflexion de ce planificateur.';
+
+  @override
+  String get dailyOsSettingsInstanceOverrideTitle => 'Inférence Daily OS';
+
+  @override
+  String get dailyOsSettingsLocalDisclosure =>
+      'Le point de terminaison sélectionné se trouve sur cet appareil.';
+
+  @override
+  String dailyOsSettingsModelChanged(String model) {
+    return 'Daily OS utilise maintenant $model';
+  }
+
+  @override
+  String get dailyOsSettingsNameNudgeAction => 'Ajouter un prénom';
+
+  @override
+  String get dailyOsSettingsNameNudgeBody =>
+      'Ajouter un prénom préféré rend les check-ins plus personnels. Tu peux continuer sans le faire.';
+
+  @override
+  String get dailyOsSettingsNameNudgeTitle =>
+      'Comment Daily OS doit-il t’appeler ?';
+
+  @override
+  String dailyOsSettingsProfileChanged(String profile) {
+    return 'Daily OS utilise maintenant $profile';
+  }
+
+  @override
+  String get dailyOsSettingsProfileOverrideActive =>
+      'Dérogation de profil active';
+
+  @override
+  String dailyOsSettingsRemoteDisclosure(String provider, String host) {
+    return 'Daily OS envoie le contexte de planification assemblé à $provider sur $host pour un traitement à distance.';
+  }
+
+  @override
+  String get dailyOsSettingsSetupAction => 'Configurer Daily OS';
+
+  @override
+  String get dailyOsSettingsSetupRequiredBody =>
+      'Daily OS a besoin de ton choix de fournisseur avant de pouvoir traiter ton contexte de planification.';
+
+  @override
+  String get dailyOsSettingsSetupRequiredTitle =>
+      'Choisis un profil d’inférence';
+
+  @override
+  String get dailyOsSettingsSubtitle =>
+      'Choisis comment Daily OS s’adresse à toi et quel profil d’inférence planifie tes journées.';
+
+  @override
+  String get dailyOsSettingsTitle => 'Daily OS';
+
+  @override
+  String get dailyOsSettingsTreeSubtitle =>
+      'Planification, personnalisation et fournisseur d’IA';
+
+  @override
+  String get dailyOsSettingsUseDefault =>
+      'Utiliser le réglage Daily OS par défaut';
+
+  @override
+  String get dailyOsSettingsUseDefaultDescription =>
+      'Suis le profil choisi dans les réglages Daily OS.';
 
   @override
   String get dailyOsTodayButton => 'Aujourd\'hui';

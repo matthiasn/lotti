@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
@@ -158,6 +159,7 @@ void main() {
         '/settings/agents/souls/:soulId',
         '/settings/agents/souls/:soulId/review',
         '/settings/agents/instances/:agentId',
+        '/settings/daily-os',
         '/settings/flags',
         '/settings/recording-style',
         '/settings/theming',
@@ -830,6 +832,21 @@ void main() {
       expect(pages.length, 2);
       expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<AgentSettingsPage>());
+    });
+
+    test('buildPages builds DailyOsSettingsPage', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/daily-os'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<DailyOsSettingsPage>());
     });
 
     test('buildPages builds AgentTemplateDetailPage for create', () {

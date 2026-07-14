@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
     as agent_providers;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
@@ -222,6 +223,7 @@ class _DayPageState extends ConsumerState<DayPage> {
         .watch(dailyOsActualTimeBlocksProvider(widget.draft.dayDate))
         .value;
     final prefs = ref.watch(dailyOsPreferencesControllerProvider);
+    final setupStatus = ref.watch(dailyOsSetupStatusProvider).value;
     // Inline rename is only offered when a real plan backs the surface.
     final onRenameItem = widget.hasPlan
         ? (AgendaItem item, String title) => unawaited(_renameItem(item, title))
@@ -244,8 +246,15 @@ class _DayPageState extends ConsumerState<DayPage> {
               onViewChanged: (next) => setState(() => _view = next),
               onBack: () => Navigator.of(context).maybePop(),
               onInspectAgent: () => unawaited(_openAgentInternals()),
+              onSettings: () => nav_service.beamToNamed('/settings/daily-os'),
               onDeletePlan: () => unawaited(_confirmDeletePlan()),
             ),
+            if (setupStatus?.needsAttention ?? false)
+              _DailyOsSetupNudge(
+                status: setupStatus!,
+                onOpenSettings: () =>
+                    nav_service.beamToNamed('/settings/daily-os'),
+              ),
             CapturesPanel(date: widget.draft.dayDate),
             // Proposed learnings surface here on both views and both
             // form factors; renders nothing when there is nothing to
@@ -297,7 +306,10 @@ class _DayPageState extends ConsumerState<DayPage> {
               )
             else
               _NoPlanFooter(
-                onCheckIn: widget.onCheckIn,
+                onCheckIn: setupStatus?.hasInferenceRoute == false
+                    ? () => nav_service.beamToNamed('/settings/daily-os')
+                    : widget.onCheckIn,
+                needsInferenceSetup: setupStatus?.hasInferenceRoute == false,
                 ctaKey: _checkInCtaKey,
               ),
           ],
@@ -749,9 +761,14 @@ class _DayFooterActions extends StatelessWidget {
 /// routes to Capture so the assistant can draft a day around the
 /// already-tracked time (handoff v2 item 2).
 class _NoPlanFooter extends StatelessWidget {
-  const _NoPlanFooter({required this.onCheckIn, this.ctaKey});
+  const _NoPlanFooter({
+    required this.onCheckIn,
+    required this.needsInferenceSetup,
+    this.ctaKey,
+  });
 
   final VoidCallback? onCheckIn;
+  final bool needsInferenceSetup;
 
   /// Measurement key for the onboarding spotlight to anchor to. The stable
   /// [Key] used as a test finder stays on the button regardless.
@@ -763,9 +780,14 @@ class _NoPlanFooter extends StatelessWidget {
     final button = FilledButton.icon(
       key: const Key('daily_os_day_check_in_cta'),
       onPressed: onCheckIn,
-      icon: const Icon(Icons.mic_rounded, size: 14),
+      icon: Icon(
+        needsInferenceSetup ? Icons.settings_outlined : Icons.mic_rounded,
+        size: 14,
+      ),
       label: Text(
-        context.messages.dailyOsNextDayCheckInCta,
+        needsInferenceSetup
+            ? context.messages.dailyOsSettingsSetupAction
+            : context.messages.dailyOsNextDayCheckInCta,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -797,6 +819,81 @@ class _NoPlanFooter extends StatelessWidget {
             else
               button,
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DailyOsSetupNudge extends StatelessWidget {
+  const _DailyOsSetupNudge({
+    required this.status,
+    required this.onOpenSettings,
+  });
+
+  final DailyOsSetupStatus status;
+  final VoidCallback onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final inferenceMissing = !status.hasInferenceRoute;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: tokens.colors.background.level02,
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+          border: Border.all(color: tokens.colors.decorative.level01),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(tokens.spacing.cardPadding),
+          child: Row(
+            children: [
+              Icon(
+                inferenceMissing
+                    ? Icons.warning_amber_rounded
+                    : Icons.person_add_alt_1_outlined,
+                color: tokens.colors.interactive.enabled,
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      inferenceMissing
+                          ? context.messages.dailyOsSettingsSetupRequiredTitle
+                          : context.messages.dailyOsSettingsNameNudgeTitle,
+                      style: tokens.typography.styles.subtitle.subtitle2,
+                    ),
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      inferenceMissing
+                          ? [
+                              context.messages.dailyOsSettingsSetupRequiredBody,
+                              if (!status.hasPreferredName)
+                                context.messages.dailyOsSettingsNameNudgeBody,
+                            ].join(' ')
+                          : context.messages.dailyOsSettingsNameNudgeBody,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              TextButton(
+                onPressed: onOpenSettings,
+                child: Text(
+                  inferenceMissing
+                      ? context.messages.dailyOsSettingsSetupAction
+                      : context.messages.dailyOsSettingsNameNudgeAction,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

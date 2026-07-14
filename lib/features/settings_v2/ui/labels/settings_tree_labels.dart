@@ -71,6 +71,11 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.agentPendingWakesTitle,
           desc: m.settingsAgentsPendingWakesSubtitle,
         );
+      case 'daily-os':
+        return (
+          title: m.dailyOsSettingsTitle,
+          desc: m.dailyOsSettingsTreeSubtitle,
+        );
       case 'definitions':
         return (
           title: m.settingsDefinitionsTitle,

@@ -57,6 +57,7 @@ void main() {
       // landing panel — its provisioned-sync entry is a leaf below.
       'ai',
       'agents',
+      'daily-os',
       // Top-level entry point back to the FTUE welcome flow.
       'onboarding',
       // Step 7 — simple leaves.

@@ -44,6 +44,7 @@ class InferenceProviderModelPickerModal {
     required String title,
     required String defaultBadgeLabel,
     String? selectedModelId,
+    bool autoSelectSingleCandidate = true,
   }) async {
     final providersById = <String, AiConfigInferenceProvider>{
       for (final provider in providers) provider.id: provider,
@@ -60,7 +61,9 @@ class InferenceProviderModelPickerModal {
         .toList();
     final validModels = withProvider.isEmpty ? models : withProvider;
     if (validModels.isEmpty) return null;
-    if (validModels.length == 1) return validModels.first.id;
+    if (validModels.length == 1 && autoSelectSingleCandidate) {
+      return validModels.first.id;
+    }
     final effectiveSelectedModelId = selectedModelId ?? defaultModelId;
 
     // Group models under their provider, preserving first-seen order so the
