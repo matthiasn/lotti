@@ -7,6 +7,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_r
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 
 /// The duration and endpoint readout shown after the time controls.
 ///
@@ -32,25 +33,27 @@ class EntryDateTimeStatusBar extends StatelessWidget {
         child: Semantics(
           liveRegion: true,
           label: context.messages.journalDateInvalid,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.warning_rounded,
-                size: tokens.spacing.step6,
-                color: context.colorScheme.error,
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Text(
-                  context.messages.journalDateInvalid,
-                  style: tokens.typography.styles.body.bodyMedium.copyWith(
-                    color: context.colorScheme.error,
-                    fontWeight: tokens.typography.weight.semiBold,
+          child: ExcludeSemantics(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.warning_rounded,
+                  size: tokens.spacing.step6,
+                  color: context.colorScheme.error,
+                ),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Text(
+                    context.messages.journalDateInvalid,
+                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      color: context.colorScheme.error,
+                      fontWeight: tokens.typography.weight.semiBold,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
@@ -157,11 +160,9 @@ String _formatRangeLabel(
   final start =
       '${dateFormat.format(range.dateFrom)} · '
       '${formatTime(range.dateFrom)}';
-  final end = range.startDate == _dateOnly(range.dateTo)
+  final end = range.startDate.isSameCalendarDay(range.dateTo)
       ? formatTime(range.dateTo)
       : '${dateFormat.format(range.dateTo)} · '
             '${formatTime(range.dateTo)}';
   return '$start → $end';
 }
-
-DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);

@@ -149,7 +149,7 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
       lastDate: lastDate,
       allowClear: currentDate != null,
     );
-    if (result == null) return;
+    if (!mounted || result == null) return;
     controller.updateTargetDate(result.cleared ? null : result.date);
   }
 

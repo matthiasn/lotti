@@ -54,15 +54,23 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
     final hour = widget.use24hFormat
         ? _hourIndex
         : ((_hourIndex + 1) % 12) + _periodIndex * 12;
-    widget.onDateTimeChanged(
-      DateTime(
-        widget.initialDateTime.year,
-        widget.initialDateTime.month,
-        widget.initialDateTime.day,
-        hour,
-        _minuteIndex,
-      ),
-    );
+    final initial = widget.initialDateTime;
+    final changed = initial.isUtc
+        ? DateTime.utc(
+            initial.year,
+            initial.month,
+            initial.day,
+            hour,
+            _minuteIndex,
+          )
+        : DateTime(
+            initial.year,
+            initial.month,
+            initial.day,
+            hour,
+            _minuteIndex,
+          );
+    widget.onDateTimeChanged(changed);
   }
 
   @override

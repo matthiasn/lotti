@@ -109,6 +109,34 @@ void main() {
     expect(changed, DateTime(2024, 6, 15, 2, 30));
   });
 
+  testWidgets('time changes preserve a UTC initial value', (tester) async {
+    final semanticsHandle = tester.ensureSemantics();
+    DateTime? changed;
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        DesignSystemTimeWheel(
+          initialDateTime: DateTime.utc(2024, 6, 15, 14, 30),
+          use24hFormat: true,
+          onDateTimeChanged: (value) => changed = value,
+        ),
+      ),
+    );
+
+    final hour = tester.getSemantics(find.bySemanticsLabel('Hour'));
+    tester.binding.performSemanticsAction(
+      SemanticsActionEvent(
+        type: SemanticsAction.increase,
+        nodeId: hour.id,
+        viewId: tester.view.viewId,
+      ),
+    );
+    await tester.pump();
+
+    expect(changed, DateTime.utc(2024, 6, 15, 15, 30));
+    expect(changed!.isUtc, isTrue);
+    semanticsHandle.dispose();
+  });
+
   testWidgets('looping hour wheel can move backwards from midnight', (
     tester,
   ) async {

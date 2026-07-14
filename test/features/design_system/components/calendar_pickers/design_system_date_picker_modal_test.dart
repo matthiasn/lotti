@@ -28,6 +28,7 @@ void main() {
     expect(find.text('Sunday, June 15, 2025'), findsOneWidget);
     expect(find.text('June 2025'), findsOneWidget);
     expect(find.byType(CalendarDatePicker), findsOneWidget);
+    expect(find.byType(DesignSystemPickerSection), findsOneWidget);
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Done'), findsOneWidget);
     expect(find.text('Clear'), findsNothing);
@@ -85,6 +86,70 @@ void main() {
       find.widgetWithText(DesignSystemButton, 'Today'),
     );
     expect(todayButton.onPressed, isNull);
+  });
+
+  for (final scenario in [
+    (
+      name: 'before first date',
+      initial: DateTime(2010, 6, 15),
+      expected: DateTime(2020),
+      label: 'Wednesday, January 1, 2020',
+    ),
+    (
+      name: 'after last date in UTC',
+      initial: DateTime.utc(2040, 6, 15),
+      expected: DateTime.utc(2030),
+      label: 'Tuesday, January 1, 2030',
+    ),
+  ]) {
+    testWidgets('clamps an initial date ${scenario.name}', (tester) async {
+      DesignSystemDatePickerResult? result;
+      await _pumpLauncher(
+        tester,
+        onPressed: (context) async {
+          result = await showDesignSystemDatePicker(
+            context: context,
+            title: 'Due date',
+            initialDate: scenario.initial,
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2030),
+          );
+        },
+      );
+
+      expect(find.text(scenario.label), findsOneWidget);
+      await tester.tap(find.text('Done'));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(result?.date, scenario.expected);
+      expect(result?.date?.isUtc, scenario.expected.isUtc);
+    });
+  }
+
+  testWidgets('calendar selection preserves a UTC initial value', (
+    tester,
+  ) async {
+    DesignSystemDatePickerResult? result;
+    await _pumpLauncher(
+      tester,
+      onPressed: (context) async {
+        result = await showDesignSystemDatePicker(
+          context: context,
+          title: 'Due date',
+          initialDate: DateTime.utc(2025, 6, 15),
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2030),
+        );
+      },
+    );
+
+    await tester.tap(find.text('16'));
+    await tester.pump();
+    await tester.tap(find.text('Done'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(result?.date, DateTime.utc(2025, 6, 16));
+    expect(result?.date?.isUtc, isTrue);
   });
 }
 

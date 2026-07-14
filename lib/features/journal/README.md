@@ -222,7 +222,7 @@ A few detail-level behaviors are worth calling out because they are easy to miss
 2. activating either date transitions to an in-sheet calendar page with Back,
    Close, Today, and Done controls.
 
-The editable model is the pure, testable [`EntryDateTimeRange`](ui/widgets/entry_details/entry_datetime_range.dart) — a `startDate` (day only) + `startTime` + `endTime` + an optional `endDateOverride` — from which `dateFrom`/`dateTo` are *derived* (they can never desync). The glass Save footer remains fixed while the regular Wolt page owns overflow scrolling. Its content padding reserves the footer's occupied height, and the status reserves the next-day chip row in both states, so neither crossing midnight nor exposing the chip moves the sheet. Save stays disabled until the range both changed and is valid.
+The editable model is the pure, testable [`EntryDateTimeRange`](ui/widgets/entry_details/entry_datetime_range.dart) — a `startDate` (day only) + `startTime` + `endTime` + an optional `endDateOverride` — from which `dateFrom`/`dateTo` are *derived* (they can never desync). Date decomposition and recomposition retain the entry's UTC/local timezone kind. **Now** and **Today** read the injectable clock and normalize it to that same timezone before changing an endpoint, so shortcuts are deterministic in tests and cannot mix UTC and local bounds. The glass Save footer remains fixed while the regular Wolt page owns overflow scrolling. Its content padding reserves the footer's occupied height, and the status reserves the next-day chip row in both states, so neither crossing midnight nor exposing the chip moves the sheet. Save stays disabled until the range both changed and is valid.
 
 ```mermaid
 stateDiagram-v2

@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -57,6 +58,16 @@ final JournalEntry _multiDay = _entry(
   id: 'e-multi',
   from: DateTime(2024, 6, 14, 9),
   to: DateTime(2024, 6, 16, 11),
+);
+final JournalEntry _utcSameDay = _entry(
+  id: 'e-utc-same',
+  from: DateTime.utc(2024, 6, 15, 14, 30),
+  to: DateTime.utc(2024, 6, 15, 15, 15),
+);
+final JournalEntry _utcMultiDay = _entry(
+  id: 'e-utc-multi',
+  from: DateTime.utc(2024, 6, 14, 9),
+  to: DateTime.utc(2024, 6, 16, 11),
 );
 
 class _Launcher extends StatelessWidget {
@@ -346,22 +357,28 @@ void main() {
 
     testWidgets('Save is disabled until the range changes, then persists and '
         'pops', (tester) async {
-      final tracker = await openModal(tester, _sameDay);
+      await withClock(Clock.fixed(DateTime.utc(2024, 6, 20, 8)), () async {
+        final tracker = await openModal(tester, _utcSameDay);
 
-      // Unchanged on open.
-      expect(saveButton(tester).onPressed, isNull);
+        // Unchanged on open.
+        expect(saveButton(tester).onPressed, isNull);
 
-      // Tapping Today moves the (2024) date to today — a real change.
-      await tester.tap(find.text('Today'));
-      await tester.pumpAndSettle();
-      expect(saveButton(tester).onPressed, isNotNull);
+        await tester.tap(find.text('Today'));
+        await tester.pumpAndSettle();
+        expect(saveButton(tester).onPressed, isNotNull);
 
-      await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
+        await tester.pumpAndSettle();
 
-      expect(tracker.updateFromToCalls, hasLength(1));
-      // The modal popped.
-      expect(find.text('Date & Time'), findsNothing);
+        expect(tracker.updateFromToCalls, hasLength(1));
+        expect(
+          tracker.updateFromToCalls.single['dateFrom'],
+          DateTime.utc(2024, 6, 20, 14, 30),
+        );
+        expect(tracker.updateFromToCalls.single['dateFrom']!.isUtc, isTrue);
+        // The modal popped.
+        expect(find.text('Date & Time'), findsNothing);
+      });
     });
 
     testWidgets('a failing save logs and keeps the modal open', (tester) async {
@@ -387,33 +404,30 @@ void main() {
       (
         tester,
       ) async {
-        final tracker = await openModal(tester, _sameDay);
+        await withClock(
+          Clock.fixed(DateTime.utc(2024, 6, 15, 16, 45)),
+          () async {
+            final tracker = await openModal(tester, _utcSameDay);
 
-        await tester.tap(quickAction('Set end date and time to now'));
-        await tester.pumpAndSettle();
+            await tester.tap(quickAction('Set end date and time to now'));
+            await tester.pumpAndSettle();
 
-        expect(
-          tester
-              .widget<DesignSystemToggle>(find.byType(DesignSystemToggle))
-              .value,
-          isTrue,
-        );
-        expect(find.text('End date'), findsOneWidget);
-        expect(saveButton(tester).onPressed, isNotNull);
+            expect(saveButton(tester).onPressed, isNotNull);
 
-        await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
-        await tester.pumpAndSettle();
+            await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
+            await tester.pumpAndSettle();
 
-        expect(tracker.updateFromToCalls, hasLength(1));
-        expect(
-          tracker.updateFromToCalls.single['dateFrom'],
-          _sameDay.meta.dateFrom,
-        );
-        expect(
-          tracker.updateFromToCalls.single['dateTo']!.isAfter(
-            _sameDay.meta.dateTo,
-          ),
-          isTrue,
+            expect(tracker.updateFromToCalls, hasLength(1));
+            expect(
+              tracker.updateFromToCalls.single['dateFrom'],
+              _utcSameDay.meta.dateFrom,
+            );
+            expect(
+              tracker.updateFromToCalls.single['dateTo'],
+              DateTime.utc(2024, 6, 15, 16, 45),
+            );
+            expect(tracker.updateFromToCalls.single['dateTo']!.isUtc, isTrue);
+          },
         );
       },
     );
@@ -421,22 +435,41 @@ void main() {
     testWidgets('Start Now changes the complete start endpoint', (
       tester,
     ) async {
-      await openModal(tester, _futureEntry);
+      await withClock(Clock.fixed(DateTime(2026, 7, 14, 12, 34)), () async {
+        final tracker = await openModal(tester, _futureEntry);
 
-      await tester.tap(quickAction('Set start date and time to now'));
-      await tester.pump();
+        await tester.tap(quickAction('Set start date and time to now'));
+        await tester.pump();
 
-      expect(saveButton(tester).onPressed, isNotNull);
+        expect(saveButton(tester).onPressed, isNotNull);
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
+        await tester.pumpAndSettle();
+
+        expect(
+          tracker.updateFromToCalls.single['dateFrom'],
+          DateTime(2026, 7, 14, 12, 34),
+        );
+      });
     });
 
     testWidgets('Today can update an explicit end date', (tester) async {
-      await openModal(tester, _multiDay);
+      await withClock(Clock.fixed(DateTime.utc(2024, 6, 20, 8)), () async {
+        final tracker = await openModal(tester, _utcMultiDay);
 
-      final endToday = quickAction('End date, Today');
-      await tester.tap(endToday);
-      await tester.pump();
+        final endToday = quickAction('End date, Today');
+        await tester.tap(endToday);
+        await tester.pump();
 
-      expect(saveButton(tester).onPressed, isNotNull);
+        expect(saveButton(tester).onPressed, isNotNull);
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
+        await tester.pumpAndSettle();
+
+        expect(
+          tracker.updateFromToCalls.single['dateTo'],
+          DateTime.utc(2024, 6, 20, 11),
+        );
+        expect(tracker.updateFromToCalls.single['dateTo']!.isUtc, isTrue);
+      });
     });
 
     testWidgets('end time wheel callback updates the range', (tester) async {

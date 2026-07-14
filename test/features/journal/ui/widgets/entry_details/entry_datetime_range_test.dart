@@ -74,6 +74,21 @@ void main() {
         expect(r.valid, isTrue);
       },
     );
+
+    test('UTC bounds round-trip without changing timezone kind', () {
+      final from = DateTime.utc(2024, 6, 15, 23, 30);
+      final to = DateTime.utc(2024, 6, 16, 0, 30);
+
+      final range = EntryDateTimeRange.fromBounds(from, to);
+
+      expect(range.startDate, DateTime.utc(2024, 6, 15));
+      expect(range.startDate.isUtc, isTrue);
+      expect(range.dateFrom, from);
+      expect(range.dateTo, to);
+      expect(range.dateFrom.isUtc, isTrue);
+      expect(range.dateTo.isUtc, isTrue);
+      expect(range.duration, const Duration(hours: 1));
+    });
   });
 
   group('derivation', () {

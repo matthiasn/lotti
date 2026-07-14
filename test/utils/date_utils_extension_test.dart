@@ -83,6 +83,37 @@ void main() {
       expect(testDate.dayAtMidnight, expected);
     });
 
+    test('dateOnly preserves local and UTC timezone kinds', () {
+      final utc = DateTime.utc(2024, 7, 27, 18, 30);
+
+      expect(testDate.dateOnly, DateTime(2024, 7, 27));
+      expect(testDate.dateOnly.isUtc, isFalse);
+      expect(utc.dateOnly, DateTime.utc(2024, 7, 27));
+      expect(utc.dateOnly.isUtc, isTrue);
+    });
+
+    test('dateOnlyInZoneOf copies the day into the reference zone', () {
+      expect(
+        testDate.dateOnlyInZoneOf(DateTime.utc(2000)),
+        DateTime.utc(2024, 7, 27),
+      );
+      expect(
+        DateTime.utc(2024, 7, 27, 18).dateOnlyInZoneOf(DateTime(2000)),
+        DateTime(2024, 7, 27),
+      );
+    });
+
+    test('calendar comparison ignores timezone kind and time', () {
+      final sameDayUtc = DateTime.utc(2024, 7, 27, 23, 59);
+      final nextDayUtc = DateTime.utc(2024, 7, 28);
+
+      expect(testDate.isSameCalendarDay(sameDayUtc), isTrue);
+      expect(testDate.isSameCalendarDay(nextDayUtc), isFalse);
+      expect(testDate.compareCalendarDay(sameDayUtc), 0);
+      expect(testDate.compareCalendarDay(nextDayUtc), isNegative);
+      expect(nextDayUtc.compareCalendarDay(testDate), isPositive);
+    });
+
     test('ymd returns date in YYYY-MM-DD format', () {
       expect(testDate.ymd, '2024-07-27');
     });

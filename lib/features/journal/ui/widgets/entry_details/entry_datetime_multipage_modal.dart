@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_r
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_status_bar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -29,68 +31,74 @@ class EntryDateTimeMultiPageModal {
     final pageIndexNotifier = ValueNotifier(0);
     final activeDateEndpoint = ValueNotifier(_DateEndpoint.start);
 
-    await ModalUtils.showMultiPageModal<void>(
-      context: context,
-      pageIndexNotifier: pageIndexNotifier,
-      modalTypeBuilderOverride: _modalTypeBuilder,
-      pageListBuilder: (modalContext) => [
-        ModalUtils.modalSheetPage(
-          context: modalContext,
-          titleWidget: _modalTitle(modalContext),
-          showCloseButton: true,
-          padding: EdgeInsets.fromLTRB(
-            tokens.spacing.step5,
-            tokens.spacing.step3,
-            tokens.spacing.step5,
-            DesignSystemGlassActionFooter.reservedHeight,
-          ),
-          stickyActionBar: _SaveActionBar(
-            entry: entry,
-            stateNotifier: stateNotifier,
-          ),
-          child: _EntryDateTimeEditor(
-            stateNotifier,
-            onPickStartDate: () {
-              activeDateEndpoint.value = _DateEndpoint.start;
-              pageIndexNotifier.value = 1;
-            },
-            onPickEndDate: () {
-              activeDateEndpoint.value = _DateEndpoint.end;
-              pageIndexNotifier.value = 1;
-            },
-          ),
-        ),
-        ModalUtils.modalSheetPage(
-          context: modalContext,
-          titleWidget: ValueListenableBuilder<_DateEndpoint>(
-            valueListenable: activeDateEndpoint,
-            builder: (context, endpoint, _) => Text(
-              switch (endpoint) {
-                _DateEndpoint.start => context.messages.journalStartDateLabel,
-                _DateEndpoint.end => context.messages.journalEndDateLabel,
+    try {
+      await ModalUtils.showMultiPageModal<void>(
+        context: context,
+        pageIndexNotifier: pageIndexNotifier,
+        modalTypeBuilderOverride: _modalTypeBuilder,
+        pageListBuilder: (modalContext) => [
+          ModalUtils.modalSheetPage(
+            context: modalContext,
+            titleWidget: _modalTitle(modalContext),
+            showCloseButton: true,
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step5,
+              tokens.spacing.step3,
+              tokens.spacing.step5,
+              DesignSystemGlassActionFooter.reservedHeight,
+            ),
+            stickyActionBar: _SaveActionBar(
+              entry: entry,
+              stateNotifier: stateNotifier,
+            ),
+            child: _EntryDateTimeEditor(
+              stateNotifier,
+              onPickStartDate: () {
+                activeDateEndpoint.value = _DateEndpoint.start;
+                pageIndexNotifier.value = 1;
               },
-              style: ModalUtils.modalTitleStyle(context),
+              onPickEndDate: () {
+                activeDateEndpoint.value = _DateEndpoint.end;
+                pageIndexNotifier.value = 1;
+              },
             ),
           ),
-          showCloseButton: true,
-          onTapBack: () => pageIndexNotifier.value = 0,
-          padding: EdgeInsets.fromLTRB(
-            tokens.spacing.step5,
-            tokens.spacing.step5,
-            tokens.spacing.step5,
-            tokens.spacing.step11 + tokens.spacing.step6,
+          ModalUtils.modalSheetPage(
+            context: modalContext,
+            titleWidget: ValueListenableBuilder<_DateEndpoint>(
+              valueListenable: activeDateEndpoint,
+              builder: (context, endpoint, _) => Text(
+                switch (endpoint) {
+                  _DateEndpoint.start => context.messages.journalStartDateLabel,
+                  _DateEndpoint.end => context.messages.journalEndDateLabel,
+                },
+                style: ModalUtils.modalTitleStyle(context),
+              ),
+            ),
+            showCloseButton: true,
+            onTapBack: () => pageIndexNotifier.value = 0,
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step5,
+              tokens.spacing.step5,
+              tokens.spacing.step5,
+              tokens.spacing.step11 + tokens.spacing.step6,
+            ),
+            stickyActionBar: DesignSystemDatePickerActionBar(
+              onClear: null,
+              onDone: () => pageIndexNotifier.value = 0,
+            ),
+            child: _EntryDateCalendarPage(
+              stateNotifier: stateNotifier,
+              activeEndpoint: activeDateEndpoint,
+            ),
           ),
-          stickyActionBar: DesignSystemDatePickerActionBar(
-            onClear: null,
-            onDone: () => pageIndexNotifier.value = 0,
-          ),
-          child: _EntryDateCalendarPage(
-            stateNotifier: stateNotifier,
-            activeEndpoint: activeDateEndpoint,
-          ),
-        ),
-      ],
-    );
+        ],
+      );
+    } finally {
+      stateNotifier.dispose();
+      pageIndexNotifier.dispose();
+      activeDateEndpoint.dispose();
+    }
   }
 
   static Widget _modalTitle(BuildContext context) {
@@ -193,22 +201,23 @@ class _EntryDateTimeEditorState extends State<_EntryDateTimeEditor> {
 
   void _setStartNow() {
     _startTimeSeed += 1;
-    _state = _state.withStart(DateTime.now());
+    _state = _state.withStart(_nowInZoneOf(_state.dateFrom));
   }
 
   void _setEndNow() {
     _endTimeSeed += 1;
-    _state = _state.withEnd(DateTime.now());
+    _state = _state.withEnd(_nowInZoneOf(_state.dateTo));
   }
 
   void _setStartDateToday() {
-    final now = DateTime.now();
-    _state = _state.copyWith(startDate: _dateOnly(now));
+    final today = _nowInZoneOf(_state.startDate).dateOnly;
+    _state = _state.copyWith(startDate: today);
   }
 
   void _setEndDateToday() {
-    final now = DateTime.now();
-    _state = _state.copyWith(endDateOverride: _dateOnly(now));
+    final reference = _state.endDateOverride ?? _state.startDate;
+    final today = _nowInZoneOf(reference).dateOnly;
+    _state = _state.copyWith(endDateOverride: today);
   }
 
   @override
@@ -241,7 +250,7 @@ class _EntryDateTimeEditorState extends State<_EntryDateTimeEditor> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _EditorSection(
+        DesignSystemPickerSection(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -298,7 +307,7 @@ class _EntryDateTimeEditorState extends State<_EntryDateTimeEditor> {
           ),
         ),
         SizedBox(height: tokens.spacing.step6),
-        _EditorSection(
+        DesignSystemPickerSection(
           child: stackTimes
               ? Column(
                   mainAxisSize: MainAxisSize.min,
@@ -323,30 +332,6 @@ class _EntryDateTimeEditorState extends State<_EntryDateTimeEditor> {
           child: EntryDateTimeStatusBar(range: state),
         ),
       ],
-    );
-  }
-}
-
-DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-
-/// Token-spaced grouping shared by the date and time sections.
-class _EditorSection extends StatelessWidget {
-  const _EditorSection({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
-        border: Border.all(color: tokens.colors.decorative.level01),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(tokens.spacing.cardPadding),
-        child: child,
-      ),
     );
   }
 }
@@ -518,10 +503,12 @@ class _TimeColumn extends StatelessWidget {
   }
 }
 
-bool _isToday(DateTime date) => _isSameDate(date, DateTime.now());
+DateTime _nowInZoneOf(DateTime reference) {
+  final now = clock.now();
+  return reference.isUtc ? now.toUtc() : now.toLocal();
+}
 
-bool _isSameDate(DateTime a, DateTime b) =>
-    a.year == b.year && a.month == b.month && a.day == b.day;
+bool _isToday(DateTime date) => date.isSameCalendarDay(_nowInZoneOf(date));
 
 class _SaveActionBar extends ConsumerWidget {
   const _SaveActionBar({required this.entry, required this.stateNotifier});

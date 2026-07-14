@@ -90,6 +90,7 @@ void main() {
   testWidgets('an invalid range shows the warning instead of a duration', (
     tester,
   ) async {
+    final semanticsHandle = tester.ensureSemantics();
     await pump(
       tester,
       EntryDateTimeRange(
@@ -102,8 +103,31 @@ void main() {
     );
 
     expect(find.text('Invalid Date Range'), findsOneWidget);
+    expect(find.bySemanticsLabel('Invalid Date Range'), findsOneWidget);
     expect(find.text('Duration'), findsNothing);
     expect(find.byType(DsPill), findsNothing);
+    semanticsHandle.dispose();
+  });
+
+  testWidgets('UTC same-day range does not repeat the end date', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      EntryDateTimeRange(
+        startDate: DateTime.utc(2024, 6, 15),
+        startTime: const TimeOfDay(hour: 14, minute: 30),
+        endTime: const TimeOfDay(hour: 15, minute: 15),
+        differentDates: false,
+      ),
+    );
+
+    final rangeLabel = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((text) => text.data)
+        .whereType<String>()
+        .singleWhere((text) => text.contains('→'));
+    expect('Jun 15'.allMatches(rangeLabel), hasLength(1));
   });
 
   testWidgets('narrow layouts omit the repeated year from the range label', (

@@ -157,7 +157,8 @@ shows weekday headers, renders the selected date with its full weekday, and
 offers Today without introducing a project-specific picker model. Confirmation
 updates the create-form draft or calls the relevant detail controller;
 dismissal leaves the target date unchanged, and the surrounding project field
-owns clearing where that action is available.
+owns clearing where that action is available. A result arriving after the
+detail page is disposed is ignored.
 
 ```mermaid
 flowchart LR

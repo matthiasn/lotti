@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' show TimeOfDay, immutable;
+import 'package:lotti/utils/date_utils_extension.dart';
 
 /// The editable model behind the start/end date-time editor.
 ///
@@ -28,14 +29,18 @@ class EntryDateTimeRange {
   /// same-clock next-day entry, or a multi-day span) opens in different-dates
   /// mode.
   factory EntryDateTimeRange.fromBounds(DateTime dateFrom, DateTime dateTo) {
-    final startDate = _dateOnly(dateFrom);
+    final startDate = dateFrom.dateOnly;
     final startTime = TimeOfDay(hour: dateFrom.hour, minute: dateFrom.minute);
     final endTime = TimeOfDay(hour: dateTo.hour, minute: dateTo.minute);
-    final endDate = _dateOnly(dateTo);
+    final endDate = dateTo.dateOnly;
     final endBeforeStart = _minutes(endTime) < _minutes(startTime);
     final pureOvernight =
-        endDate == startDate.add(const Duration(days: 1)) && endBeforeStart;
-    final differentDates = endDate != startDate && !pureOvernight;
+        endDate.isSameCalendarDay(
+          startDate.add(const Duration(days: 1)),
+        ) &&
+        endBeforeStart;
+    final differentDates =
+        !endDate.isSameCalendarDay(startDate) && !pureOvernight;
     return EntryDateTimeRange(
       startDate: startDate,
       startTime: startTime,
@@ -51,9 +56,23 @@ class EntryDateTimeRange {
   final bool differentDates;
   final DateTime? endDateOverride;
 
-  static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-
   static int _minutes(TimeOfDay t) => t.hour * 60 + t.minute;
+
+  static DateTime _dateAndTime(DateTime date, TimeOfDay time) => date.isUtc
+      ? DateTime.utc(
+          date.year,
+          date.month,
+          date.day,
+          time.hour,
+          time.minute,
+        )
+      : DateTime(
+          date.year,
+          date.month,
+          date.day,
+          time.hour,
+          time.minute,
+        );
 
   /// In shared-date mode, whether the end clock falls before the start clock so
   /// the end is auto-rolled to the next day.
@@ -68,21 +87,9 @@ class EntryDateTimeRange {
     return overnightAuto ? startDate.add(const Duration(days: 1)) : startDate;
   }
 
-  DateTime get dateFrom => DateTime(
-    startDate.year,
-    startDate.month,
-    startDate.day,
-    startTime.hour,
-    startTime.minute,
-  );
+  DateTime get dateFrom => _dateAndTime(startDate, startTime);
 
-  DateTime get dateTo => DateTime(
-    _effectiveEndDate.year,
-    _effectiveEndDate.month,
-    _effectiveEndDate.day,
-    endTime.hour,
-    endTime.minute,
-  );
+  DateTime get dateTo => _dateAndTime(_effectiveEndDate, endTime);
 
   Duration get duration => dateTo.difference(dateFrom);
 
