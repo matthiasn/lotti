@@ -14,6 +14,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/utils/device_region.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -28,6 +29,7 @@ Widget _wrap(
   Widget child, {
   List<TimeBlock> actualBlocks = const [],
   List<Override> overrides = const [],
+  DailyOsSetupStatus Function()? setupStatus,
 }) {
   return ProviderScope(
     overrides: [
@@ -36,10 +38,12 @@ Widget _wrap(
       ),
       firstDayOfWeekIndexProvider.overrideWith((ref) async => 1),
       dailyOsSetupStatusProvider.overrideWith(
-        (ref) async => const DailyOsSetupStatus(
-          hasInferenceRoute: true,
-          hasPreferredName: true,
-        ),
+        (ref) async =>
+            setupStatus?.call() ??
+            const DailyOsSetupStatus(
+              hasInferenceRoute: true,
+              hasPreferredName: true,
+            ),
       ),
       ...overrides,
     ],
@@ -75,6 +79,8 @@ DraftPlan _draftPlan() {
 }
 
 void main() {
+  tearDown(() => nav_service.beamToNamedOverride = null);
+
   group('DailyOsNextRoot', () {
     testWidgets('keeps the date strip visible on the capture path', (
       tester,
@@ -179,6 +185,52 @@ void main() {
         });
       },
     );
+
+    testWidgets('a route lost before check-in opens Daily OS settings', (
+      tester,
+    ) async {
+      var hasInferenceRoute = true;
+      String? route;
+      nav_service.beamToNamedOverride = (path) => route = path;
+      final actualBlock = TimeBlock(
+        id: 'actual:entry-setup',
+        title: 'Setup transition',
+        start: DateTime(2026, 5, 26, 9),
+        end: DateTime(2026, 5, 26, 10),
+        type: TimeBlockType.manual,
+        state: TimeBlockState.completed,
+        category: _category,
+      );
+
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+        await tester.pumpWidget(
+          _wrap(
+            const DailyOsNextRoot(),
+            actualBlocks: [actualBlock],
+            setupStatus: () => DailyOsSetupStatus(
+              hasInferenceRoute: hasInferenceRoute,
+              hasPreferredName: true,
+            ),
+            overrides: [
+              currentDraftPlanProvider.overrideWith((ref, _) async => null),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final rootContext = tester.element(find.byType(DailyOsNextRoot));
+        hasInferenceRoute = false;
+        ProviderScope.containerOf(rootContext).invalidate(
+          dailyOsSetupStatusProvider,
+        );
+        await tester.tap(find.byKey(const Key('daily_os_day_check_in_cta')));
+        await tester.pump();
+
+        expect(route, '/settings/daily-os');
+        expect(find.byType(CaptureModalContent), findsNothing);
+      });
+    });
 
     testWidgets('AsyncLoading shows the loading shell', (tester) async {
       final realtimeService = MockRealtimeTranscriptionService();

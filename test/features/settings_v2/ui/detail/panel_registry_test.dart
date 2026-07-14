@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.d
 import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
@@ -222,6 +223,7 @@ void main() {
         Widget build(String id) => kSettingsPanels[id]!.build(capturedContext);
 
         expect(build('onboarding'), isA<OnboardingSettingsBody>());
+        expect(build('daily-os'), isA<DailyOsSettingsBody>());
 
         // Step 7 — simple leaves.
         expect(build('flags'), isA<FlagsBody>());

@@ -1,6 +1,19 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/state/template_query_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
+
+import '../../agents/test_utils.dart';
+
+class _PreferencesController extends DailyOsPreferencesController {
+  @override
+  DailyOsPreferences build() => DailyOsPreferences(userName: 'Alex');
+}
 
 AiConfigInferenceProvider _provider({
   required String baseUrl,
@@ -87,4 +100,34 @@ void main() {
     expect(status.hasInferenceRoute, isTrue);
     expect(status.hasPreferredName, isFalse);
   });
+
+  test(
+    'setup provider combines the template route and preferred name',
+    () async {
+      final template = makeTestTemplate(
+        id: dayAgentTemplateId,
+        agentId: dayAgentTemplateId,
+        kind: AgentTemplateKind.dayAgent,
+        profileId: 'profile',
+      );
+      final container = ProviderContainer(
+        overrides: [
+          dailyOsOnboardingProviderReadyProvider.overrideWith(
+            (ref) async => true,
+          ),
+          agentTemplateProvider.overrideWith((ref, id) async => template),
+          dailyOsPreferencesControllerProvider.overrideWith(
+            _PreferencesController.new,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final status = await container.read(dailyOsSetupStatusProvider.future);
+
+      expect(status.hasInferenceRoute, isTrue);
+      expect(status.hasPreferredName, isTrue);
+      expect(status.needsAttention, isFalse);
+    },
+  );
 }

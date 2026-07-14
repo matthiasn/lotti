@@ -164,6 +164,7 @@ class _DailyOsSettingsBodyState extends ConsumerState<DailyOsSettingsBody> {
                 leading: const SettingsIcon(icon: Icons.account_tree_outlined),
                 trailing: _savingProfile
                     ? SizedBox.square(
+                        key: const Key('daily_os_default_profile_progress'),
                         dimension: tokens.spacing.step5,
                         child: const CircularProgressIndicator(strokeWidth: 2),
                       )

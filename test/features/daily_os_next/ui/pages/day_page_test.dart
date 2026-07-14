@@ -294,6 +294,8 @@ void main() {
       'missing inference replaces check-in with a discoverable setup action',
       (tester) async {
         _setSurface(tester);
+        final routes = <String>[];
+        nav_service.beamToNamedOverride = routes.add;
         await tester.pumpWidget(
           _wrap(
             DayPage(
@@ -324,6 +326,23 @@ void main() {
           findsNWidgets(2),
         );
         expect(find.text(messages.dailyOsNextDayCheckInCta), findsNothing);
+
+        await tester.tap(find.byIcon(Icons.more_vert_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.tap(find.text(messages.dailyOsNextDayMenuSettings));
+        await tester.pump();
+        final setupActions = find.text(messages.dailyOsSettingsSetupAction);
+        await tester.tap(setupActions.at(0));
+        await tester.pump();
+        await tester.tap(setupActions.at(1));
+        await tester.pump();
+
+        expect(routes, [
+          '/settings/daily-os',
+          '/settings/daily-os',
+          '/settings/daily-os',
+        ]);
       },
     );
 

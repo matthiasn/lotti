@@ -22,9 +22,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Instance-level inference controls for the single Daily OS planner.
-class DailyOsInferenceSetupSheet {
-  const DailyOsInferenceSetupSheet._();
-
+abstract final class DailyOsInferenceSetupSheet {
   static Future<void> show(BuildContext context) {
     final messenger = ScaffoldMessenger.of(context);
     return ModalUtils.showSinglePageModal<void>(
