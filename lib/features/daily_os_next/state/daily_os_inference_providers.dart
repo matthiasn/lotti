@@ -21,7 +21,9 @@ DailyOsInferenceEndpointKind dailyOsInferenceEndpointKind(
     return DailyOsInferenceEndpointKind.onDevice;
   }
 
-  final uri = Uri.tryParse(provider.baseUrl.trim());
+  final baseUrl = provider.baseUrl.trim();
+  final normalizedUrl = baseUrl.contains('://') ? baseUrl : 'http://$baseUrl';
+  final uri = Uri.tryParse(normalizedUrl);
   final host = uri?.host.toLowerCase();
   if (host == 'localhost' || host == '::1' || _isIpv4Loopback(host)) {
     return DailyOsInferenceEndpointKind.onDevice;

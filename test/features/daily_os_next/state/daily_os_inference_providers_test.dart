@@ -20,7 +20,9 @@ void main() {
   group('dailyOsInferenceEndpointKind', () {
     for (final baseUrl in [
       'http://localhost:11434',
+      'localhost:11434',
       'http://127.0.0.1:11434',
+      '127.0.0.1:11434',
       'http://127.12.4.8:8080',
       'http://[::1]:8080',
     ]) {
