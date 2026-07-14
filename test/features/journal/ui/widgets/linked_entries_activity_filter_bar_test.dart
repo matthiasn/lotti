@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_activity_filter_bar.dart';
@@ -91,18 +92,13 @@ void main() {
     final element = tester.element(find.byType(LinkedEntriesActivityFilterBar));
     final container = ProviderScope.containerOf(element);
 
-    // The audio pill's Semantics node reflects its active state via `toggled`.
-    // Find the explicit toggle Semantics (the only one with `toggled` set and
-    // the audio label) wrapping the pill.
     final audioLabel = messages.journalLinkedEntriesActivityFilterAudio;
-    final audioPillSemantics = find.byWidgetPredicate(
-      (widget) =>
-          widget is Semantics &&
-          widget.properties.toggled != null &&
-          widget.properties.label == audioLabel,
+    final audioPill = find.ancestor(
+      of: find.text(audioLabel),
+      matching: find.byType(DesignSystemFilterChoicePill),
     );
-    bool? audioPillToggled() =>
-        tester.widget<Semantics>(audioPillSemantics).properties.toggled;
+    bool audioPillSelected() =>
+        tester.widget<DesignSystemFilterChoicePill>(audioPill).selected;
 
     // Audio starts active, both in the controller and in the rendered pill.
     expect(
@@ -111,7 +107,7 @@ void main() {
       ),
       contains(LinkedEntryActivityFilter.audio),
     );
-    expect(audioPillToggled(), isTrue);
+    expect(audioPillSelected(), isTrue);
 
     await tester.tap(
       find.text(messages.journalLinkedEntriesActivityFilterAudio),
@@ -125,7 +121,7 @@ void main() {
       ),
       isNot(contains(LinkedEntryActivityFilter.audio)),
     );
-    expect(audioPillToggled(), isFalse);
+    expect(audioPillSelected(), isFalse);
   });
 
   testWidgets('tapping the sort trigger opens the filter modal', (
