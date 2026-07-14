@@ -3831,7 +3831,7 @@
   "settingsAboutAppTagline": "Your Personal Journal",
   "settingsAboutBuildType": "Build Type",
   "settingsAboutDailyOsPersonalizationTitle": "Daily OS personalization",
-  "settingsAboutDailyOsUserNameHelper": "Used only for the Daily OS greeting on this device.",
+  "settingsAboutDailyOsUserNameHelper": "Used for the Daily OS greeting and synced across your devices.",
   "settingsAboutDailyOsUserNameLabel": "Your name",
   "settingsAboutJournalEntries": "Journal Entries",
   "settingsAboutPlatform": "Platform",

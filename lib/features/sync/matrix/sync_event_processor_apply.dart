@@ -199,6 +199,12 @@ extension SyncEventProcessorApply on SyncEventProcessor {
             dailyOsUserNameUpdatedAtSettingsKey,
             updatedAt.toString(),
           );
+          // A name received from another device is already published; mark it
+          // synced so this device does not bootstrap-republish it.
+          await _settingsDb.saveSettingsItem(
+            dailyOsUserNameSyncedAtSettingsKey,
+            updatedAt.toString(),
+          );
 
           _updateNotifications.notify(
             {settingsNotification},

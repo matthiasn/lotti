@@ -7579,7 +7579,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsAboutDailyOsUserNameHelper =>
-      'Used only for the Daily OS greeting on this device.';
+      'Used for the Daily OS greeting and synced across your devices.';
 
   @override
   String get settingsAboutDailyOsUserNameLabel => 'Your name';

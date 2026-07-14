@@ -320,7 +320,11 @@ stateDiagram-v2
   page (Settings > Daily OS) and read by the Capture greeting. It syncs across
   the user's devices: an edit stamps a last-write timestamp and enqueues a
   debounced `SyncMessage.dailyOsUserName`, and an inbound synced change reloads
-  the name here under last-write-wins (mirroring theming). Category exclusions
+  the name here under last-write-wins (mirroring theming). A name that exists
+  locally but was never published — a pre-sync name, or one edited while the
+  outbox was unavailable — is bootstrapped once on load (stamped as the
+  oldest-possible write, so an explicit edit elsewhere always wins) so it still
+  reaches other devices without a re-edit. Category exclusions
   are edited from the processing filter button and stay device-local;
   `ReconcileController` applies the same preference to parsed capture items and
   pending decisions before the user sees them.

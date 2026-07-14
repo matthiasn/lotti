@@ -1284,6 +1284,13 @@ void main() {
           '$timestamp',
         ),
       ).called(1);
+      // A received name is marked synced so this device won't re-publish it.
+      verify(
+        () => settingsDb.saveSettingsItem(
+          'DAILY_OS_USER_NAME_SYNCED_AT',
+          '$timestamp',
+        ),
+      ).called(1);
       verify(
         () => updateNotifications.notify(any(), fromSync: true),
       ).called(1);

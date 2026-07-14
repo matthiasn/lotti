@@ -74,8 +74,11 @@ class DailyOsPreferences {
 /// The greeting name additionally syncs across a user's devices: [setUserName]
 /// stamps a last-write timestamp and enqueues a debounced
 /// `SyncMessage.dailyOsUserName`, and an inbound synced change (surfaced as a
-/// `settingsNotification`) reloads the name here under last-write-wins. The
-/// excluded-category set and coachmark flags remain device-local.
+/// `settingsNotification`) reloads the name here under last-write-wins. On load,
+/// a name that exists locally but was never published — a pre-sync name, or one
+/// edited while the outbox was unavailable — is bootstrapped once so it still
+/// reaches other devices without a re-edit. The excluded-category set and
+/// coachmark flags remain device-local.
 class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
   bool _userNameEdited = false;
   bool _categoriesEdited = false;
@@ -102,6 +105,8 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
     final values = await getIt<SettingsDb>().itemsByKeys(
       const [
         dailyOsUserNameSettingsKey,
+        dailyOsUserNameUpdatedAtSettingsKey,
+        dailyOsUserNameSyncedAtSettingsKey,
         dailyOsExcludedCategoryIdsSettingsKey,
         dailyOsTimelineGesturesLearnedSettingsKey,
         dailyOsDayFooterHintRetiredSettingsKey,
@@ -133,6 +138,39 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
           values[dailyOsDayFooterHintRetiredSettingsKey] == 'true',
     );
     state = next;
+
+    _bootstrapUserNameSyncIfNeeded(
+      name: values[dailyOsUserNameSettingsKey]?.trim() ?? '',
+      storedUpdatedAt: values[dailyOsUserNameUpdatedAtSettingsKey],
+      storedSyncedAt: values[dailyOsUserNameSyncedAtSettingsKey],
+    );
+  }
+
+  /// Oldest-possible last-write stamp for a name that predates sync. Any real
+  /// edit on any device carries a much larger epoch-millis stamp and so wins
+  /// last-write-wins, meaning bootstrapping never clobbers an explicit choice.
+  static const _bootstrapUpdatedAt = 1;
+
+  /// Publishes a locally stored name this device has never synced — an existing
+  /// pre-sync name, or one edited while the outbox was unavailable — exactly
+  /// once, so it reaches the user's other devices without a re-edit.
+  ///
+  /// [dailyOsUserNameSyncedAtSettingsKey] records the timestamp last actually
+  /// enqueued (written on enqueue success and by inbound apply), so a name is
+  /// bootstrapped only until it has been published, and a name received from
+  /// another device is never re-published.
+  void _bootstrapUserNameSyncIfNeeded({
+    required String name,
+    required String? storedUpdatedAt,
+    required String? storedSyncedAt,
+  }) {
+    // A live edit this session already enqueued through setUserName.
+    if (_userNameEdited || name.isEmpty) return;
+    if (!getIt.isRegistered<OutboxService>()) return;
+    final updatedAt =
+        int.tryParse(storedUpdatedAt ?? '') ?? _bootstrapUpdatedAt;
+    if (int.tryParse(storedSyncedAt ?? '') == updatedAt) return;
+    _enqueueUserNameSync(name, updatedAt);
   }
 
   /// Permanently retires the timeline's gesture hint — called the first
@@ -184,6 +222,8 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
               status: SyncEntryStatus.update,
             ),
           );
+          // Record what we published so this name is not bootstrapped again.
+          _save(dailyOsUserNameSyncedAtSettingsKey, updatedAt.toString());
         } catch (e, st) {
           if (getIt.isRegistered<DomainLogger>()) {
             getIt<DomainLogger>().error(

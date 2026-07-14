@@ -453,5 +453,85 @@ void main() {
         ).called(1);
       });
     });
+
+    void stubStored(Map<String, String> stored) {
+      when(
+        () => mocks.settingsDb.itemsByKeys(any()),
+      ).thenAnswer((_) async => stored);
+    }
+
+    SyncDailyOsUserName buildAndDrainBootstrap(FakeAsync async) {
+      container.read(dailyOsPreferencesControllerProvider);
+      async
+        ..elapse(const Duration(milliseconds: 400))
+        ..flushMicrotasks();
+      final captured = verify(
+        () => outboxService.enqueueMessage(captureAny()),
+      ).captured;
+      expect(captured, hasLength(1));
+      return captured.single as SyncDailyOsUserName;
+    }
+
+    test('bootstraps a pre-sync name with the oldest-possible stamp', () {
+      // Existing name, never published (no updatedAt / syncedAt).
+      stubStored(const {dailyOsUserNameSettingsKey: 'Alice'});
+
+      fakeAsync((async) {
+        final message = buildAndDrainBootstrap(async);
+        expect(message.userName, 'Alice');
+        expect(message.updatedAt, 1);
+        verify(
+          () => mocks.settingsDb.saveSettingsItem(
+            dailyOsUserNameSyncedAtSettingsKey,
+            '1',
+          ),
+        ).called(1);
+      });
+    });
+
+    test('bootstraps a name edited while the outbox was unavailable', () {
+      // Has a real timestamp but was never published (no syncedAt).
+      stubStored(const {
+        dailyOsUserNameSettingsKey: 'Bob',
+        dailyOsUserNameUpdatedAtSettingsKey: '500',
+      });
+
+      fakeAsync((async) {
+        final message = buildAndDrainBootstrap(async);
+        expect(message.userName, 'Bob');
+        expect(message.updatedAt, 500);
+      });
+    });
+
+    test('does not bootstrap a name already published from this device', () {
+      stubStored(const {
+        dailyOsUserNameSettingsKey: 'Sam',
+        dailyOsUserNameUpdatedAtSettingsKey: '500',
+        dailyOsUserNameSyncedAtSettingsKey: '500',
+      });
+
+      fakeAsync((async) {
+        container.read(dailyOsPreferencesControllerProvider);
+        async
+          ..elapse(const Duration(milliseconds: 400))
+          ..flushMicrotasks();
+
+        verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+      });
+    });
+
+    test('does not bootstrap before sync is configured', () {
+      GetIt.I.unregister<OutboxService>();
+      stubStored(const {dailyOsUserNameSettingsKey: 'Alice'});
+
+      fakeAsync((async) {
+        container.read(dailyOsPreferencesControllerProvider);
+        async
+          ..elapse(const Duration(milliseconds: 400))
+          ..flushMicrotasks();
+
+        verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+      });
+    });
   });
 }

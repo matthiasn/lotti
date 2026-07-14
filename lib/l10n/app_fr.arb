@@ -3209,7 +3209,7 @@
   "settingsAboutAppTagline": "Ton journal personnel",
   "settingsAboutBuildType": "Type de build",
   "settingsAboutDailyOsPersonalizationTitle": "Personnalisation Daily OS",
-  "settingsAboutDailyOsUserNameHelper": "Utilisé seulement pour la salutation Daily OS sur cet appareil.",
+  "settingsAboutDailyOsUserNameHelper": "Utilisé pour la salutation Daily OS et synchronisé sur tes appareils.",
   "settingsAboutDailyOsUserNameLabel": "Ton nom",
   "settingsAboutJournalEntries": "Entrées de journal",
   "settingsAboutPlatform": "Plateforme",

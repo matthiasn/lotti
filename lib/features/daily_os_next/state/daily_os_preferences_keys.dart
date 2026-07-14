@@ -12,6 +12,12 @@ const dailyOsUserNameSettingsKey = 'DAILY_OS_USER_NAME';
 /// greeting name is synced across devices.
 const dailyOsUserNameUpdatedAtSettingsKey = 'DAILY_OS_USER_NAME_UPDATED_AT';
 
+/// Key for the timestamp of the greeting name this device has actually
+/// published to sync. When it lags [dailyOsUserNameUpdatedAtSettingsKey] (or is
+/// absent for a pre-sync name), the controller bootstraps a one-time enqueue so
+/// an existing or offline-set name reaches other devices without a re-edit.
+const dailyOsUserNameSyncedAtSettingsKey = 'DAILY_OS_USER_NAME_SYNCED_AT';
+
 /// Key for the JSON-encoded set of category ids excluded from the day flow.
 const dailyOsExcludedCategoryIdsSettingsKey = 'DAILY_OS_EXCLUDED_CATEGORY_IDS';
 

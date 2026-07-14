@@ -7727,7 +7727,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsAboutDailyOsUserNameHelper =>
-      'Používá se jen pro pozdrav Daily OS na tomto zařízení.';
+      'Používá se pro pozdrav Daily OS a synchronizuje se mezi tvými zařízeními.';
 
   @override
   String get settingsAboutDailyOsUserNameLabel => 'Tvoje jméno';

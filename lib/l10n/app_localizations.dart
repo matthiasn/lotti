@@ -13039,7 +13039,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsAboutDailyOsUserNameHelper.
   ///
   /// In en, this message translates to:
-  /// **'Used only for the Daily OS greeting on this device.'**
+  /// **'Used for the Daily OS greeting and synced across your devices.'**
   String get settingsAboutDailyOsUserNameHelper;
 
   /// No description provided for @settingsAboutDailyOsUserNameLabel.

@@ -3209,7 +3209,7 @@
   "settingsAboutAppTagline": "Tu diario personal",
   "settingsAboutBuildType": "Tipo de compilación",
   "settingsAboutDailyOsPersonalizationTitle": "Personalización de Daily OS",
-  "settingsAboutDailyOsUserNameHelper": "Se usa solo para el saludo de Daily OS en este dispositivo.",
+  "settingsAboutDailyOsUserNameHelper": "Se usa para el saludo de Daily OS y se sincroniza con tus dispositivos.",
   "settingsAboutDailyOsUserNameLabel": "Tu nombre",
   "settingsAboutJournalEntries": "Entradas del diario",
   "settingsAboutPlatform": "Plataforma",

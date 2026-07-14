@@ -7772,7 +7772,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsAboutDailyOsUserNameHelper =>
-      'Utilisé seulement pour la salutation Daily OS sur cet appareil.';
+      'Utilisé pour la salutation Daily OS et synchronisé sur tes appareils.';
 
   @override
   String get settingsAboutDailyOsUserNameLabel => 'Ton nom';

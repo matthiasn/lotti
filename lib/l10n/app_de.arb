@@ -3209,7 +3209,7 @@
   "settingsAboutAppTagline": "Dein persönliches Tagebuch",
   "settingsAboutBuildType": "Build-Typ",
   "settingsAboutDailyOsPersonalizationTitle": "Daily-OS-Personalisierung",
-  "settingsAboutDailyOsUserNameHelper": "Wird nur für die Daily-OS-Begrüßung auf diesem Gerät verwendet.",
+  "settingsAboutDailyOsUserNameHelper": "Wird für die Daily-OS-Begrüßung verwendet und mit deinen Geräten synchronisiert.",
   "settingsAboutDailyOsUserNameLabel": "Dein Name",
   "settingsAboutJournalEntries": "Tagebucheinträge",
   "settingsAboutPlatform": "Plattform",
