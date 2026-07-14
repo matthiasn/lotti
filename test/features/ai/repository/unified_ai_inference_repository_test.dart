@@ -1585,6 +1585,172 @@ void main() {
             ).called(1);
           },
         );
+
+        // Beyond the primary task link, the prompt is additionally linked back
+        // to the source entry so it shows in both linked-entries lists. These
+        // tests need a non-null response entry (the shared helper stubs null),
+        // so they set the create/link stubs directly.
+        group('dual link to source entry', () {
+          AiResponseEntry responseEntry() => AiResponseEntry(
+            meta: _createMetadata(id: 'resp-1'),
+            data: const AiResponseData(
+              model: 'gpt-4',
+              systemMessage: '',
+              prompt: 'p',
+              thoughts: '',
+              response: 'r',
+              type: AiResponseType.promptGeneration,
+            ),
+          );
+
+          Future<void> runReturningEntry({
+            required JournalEntity entity,
+            Object linkOutcome = true,
+          }) async {
+            _stubInferenceContext(
+              mockAiInputRepo: mockAiInputRepo,
+              mockAiConfigRepo: mockAiConfigRepo,
+              entity: entity,
+              model: model,
+              provider: provider,
+            );
+            _stubGenerate(
+              mockCloudInferenceRepo,
+              stream: _createMockTextStream(['Generated prompt']),
+            );
+            when(
+              () => mockAiInputRepo.createAiResponseEntry(
+                data: any(named: 'data'),
+                start: any(named: 'start'),
+                linkedId: any(named: 'linkedId'),
+                categoryId: any(named: 'categoryId'),
+              ),
+            ).thenAnswer((_) async => responseEntry());
+            final linkStub = when(
+              () => mockAiInputRepo.createLink(
+                fromId: any(named: 'fromId'),
+                toId: any(named: 'toId'),
+              ),
+            );
+            if (linkOutcome is bool) {
+              linkStub.thenAnswer((_) async => linkOutcome);
+            } else {
+              linkStub.thenThrow(linkOutcome);
+            }
+            when(
+              () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+            ).thenAnswer((_) async => true);
+
+            await repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: codingPrompt(),
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+            );
+          }
+
+          test(
+            'links prompt to the parent task and back to the source entry',
+            () async {
+              when(
+                () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+              ).thenAnswer((_) async => [parentTask()]);
+
+              await runReturningEntry(entity: audioEntity());
+
+              verify(
+                () => mockAiInputRepo.createAiResponseEntry(
+                  data: any(named: 'data'),
+                  start: any(named: 'start'),
+                  linkedId: 'task-id',
+                  categoryId: any(named: 'categoryId'),
+                ),
+              ).called(1);
+              verify(
+                () => mockAiInputRepo.createLink(
+                  fromId: 'test-id',
+                  toId: 'resp-1',
+                ),
+              ).called(1);
+            },
+          );
+
+          test(
+            'does not add a second link when no parent task resolves',
+            () async {
+              when(
+                () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+              ).thenAnswer((_) async => <JournalEntity>[]);
+
+              await runReturningEntry(entity: audioEntity());
+
+              verifyNever(
+                () => mockAiInputRepo.createLink(
+                  fromId: any(named: 'fromId'),
+                  toId: any(named: 'toId'),
+                ),
+              );
+            },
+          );
+
+          test(
+            'a false link result is tolerated and the run still completes',
+            () async {
+              when(
+                () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+              ).thenAnswer((_) async => [parentTask()]);
+
+              await runReturningEntry(
+                entity: audioEntity(),
+                linkOutcome: false,
+              );
+
+              // Primary write still happened; the false back-link is swallowed.
+              verify(
+                () => mockAiInputRepo.createAiResponseEntry(
+                  data: any(named: 'data'),
+                  start: any(named: 'start'),
+                  linkedId: 'task-id',
+                  categoryId: any(named: 'categoryId'),
+                ),
+              ).called(1);
+              verify(
+                () => mockAiInputRepo.createLink(
+                  fromId: 'test-id',
+                  toId: 'resp-1',
+                ),
+              ).called(1);
+            },
+          );
+
+          test(
+            'a thrown link failure is isolated and does not fail the run',
+            () async {
+              when(
+                () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+              ).thenAnswer((_) async => [parentTask()]);
+
+              // The secondary link throws, but the primary prompt is already
+              // persisted, so runInference must complete without rethrowing.
+              await expectLater(
+                runReturningEntry(
+                  entity: audioEntity(),
+                  linkOutcome: Exception('db down'),
+                ),
+                completes,
+              );
+
+              verify(
+                () => mockAiInputRepo.createAiResponseEntry(
+                  data: any(named: 'data'),
+                  start: any(named: 'start'),
+                  linkedId: 'task-id',
+                  categoryId: any(named: 'categoryId'),
+                ),
+              ).called(1);
+            },
+          );
+        });
       });
 
       test(

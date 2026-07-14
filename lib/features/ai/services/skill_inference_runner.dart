@@ -560,24 +560,60 @@ class SkillInferenceRunner {
           type: skill.skillType.toResponseType,
         );
 
-        // Coding prompts attach to the parent task (like cover art) rather
-        // than the triggering audio/text entry, so each generated prompt
-        // becomes part of the task context and later prompts can build on
-        // earlier ones. Scoped to `SkillType.promptGeneration` (coding /
-        // design / research); image-prompt generation keeps its entry link.
-        // Falls back to the source entry when there is no parent task.
+        // Coding prompts attach to the parent task (like cover art) so each
+        // generated prompt becomes part of the task context and later prompts
+        // can build on earlier ones. Scoped to `SkillType.promptGeneration`
+        // (coding / design / research); image-prompt generation keeps its
+        // entry link. Falls back to the source entry when there is no parent
+        // task.
         final linkedId =
             skill.skillType == SkillType.promptGeneration &&
                 linkedTaskId != null
             ? linkedTaskId
             : entryId;
 
-        await _aiInputRepository.createAiResponseEntry(
+        final aiResponse = await _aiInputRepository.createAiResponseEntry(
           data: data,
           start: start,
           linkedId: linkedId,
           categoryId: entity.meta.categoryId,
         );
+
+        // Additionally link the coding prompt back to the source entry so it
+        // shows in both the task's and the originating audio/text entry's
+        // linked-entries lists. Skipped when the primary link already IS the
+        // source entry (no parent task, or image-prompt generation), which
+        // would otherwise create a duplicate self-link.
+        //
+        // Isolated in its own try/catch: the prompt is already persisted and
+        // linked to the task, so a failed back-link must not propagate to
+        // `_withStatusTracking` and mark the whole run as `error` — that would
+        // risk a user-triggered retry creating a duplicate prompt. Log and
+        // move on instead.
+        if (aiResponse != null && linkedId != entryId) {
+          try {
+            final linked = await _aiInputRepository.createLink(
+              fromId: entryId,
+              toId: aiResponse.id,
+            );
+            if (!linked) {
+              _loggingService.log(
+                LogDomain.ai,
+                'Secondary link from $entryId to ${aiResponse.id} not created',
+                subDomain: 'runPromptGeneration',
+              );
+            }
+          } catch (error, stackTrace) {
+            _loggingService.error(
+              LogDomain.ai,
+              error,
+              stackTrace: stackTrace,
+              subDomain: 'runPromptGeneration',
+              message:
+                  'Secondary link from $entryId to ${aiResponse.id} failed',
+            );
+          }
+        }
 
         _loggingService.log(
           LogDomain.ai,

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
@@ -82,9 +83,19 @@ class EntryDetailsWidget extends ConsumerWidget {
     final entryState = ref.watch(provider).value;
 
     final item = entryState?.entry;
+
+    // Coding prompts are first-class task activities gated by the "Code"
+    // activity-filter pill, not by the generic `showAiEntry` flag (which
+    // hides transcripts, image analyses, and image prompts in linked lists).
+    // Exempt them here so a prompt linked to its task actually renders; other
+    // AiResponseEntry kinds stay gated by `showAiEntry` as before.
+    final isCodingPrompt =
+        item is AiResponseEntry &&
+        item.data.type == AiResponseType.promptGeneration;
+
     if (item == null ||
         item.meta.deletedAt != null ||
-        (item is AiResponseEntry && !showAiEntry)) {
+        (item is AiResponseEntry && !showAiEntry && !isCodingPrompt)) {
       return const SizedBox.shrink();
     }
 

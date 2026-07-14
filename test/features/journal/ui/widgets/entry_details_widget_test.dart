@@ -793,6 +793,114 @@ void main() {
       },
     );
 
+    // Coding prompts (AiResponseType.promptGeneration) are exempt from the
+    // `showAiEntry` gate so they render in a task's linked-entries list, which
+    // always passes `showAiEntry: false`. Every other AiResponseEntry kind
+    // stays gated.
+    group('coding-prompt visibility gate', () {
+      Future<void> pumpAiResponse(
+        WidgetTester tester, {
+        required AiResponseType? type,
+        required bool showAiEntry,
+      }) async {
+        final aiEntry = JournalEntity.aiResponse(
+          meta: Metadata(
+            id: 'ai-gate-id',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: AiResponseData(
+            model: 'test-model',
+            systemMessage: '',
+            prompt: 'test prompt',
+            thoughts: '',
+            response: '## Prompt\nDo the work',
+            type: type,
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider('ai-gate-id').overrideWith(
+                  () => _FakeEntryController(aiEntry),
+                ),
+              ],
+              child: EntryDetailsWidget(
+                itemId: 'ai-gate-id',
+                showAiEntry: showAiEntry,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      testWidgets(
+        'coding prompt renders even when showAiEntry=false',
+        (tester) async {
+          await pumpAiResponse(
+            tester,
+            type: AiResponseType.promptGeneration,
+            showAiEntry: false,
+          );
+          expect(find.byType(EntryDetailsContent), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'coding prompt renders when showAiEntry=true',
+        (tester) async {
+          await pumpAiResponse(
+            tester,
+            type: AiResponseType.promptGeneration,
+            showAiEntry: true,
+          );
+          expect(find.byType(EntryDetailsContent), findsOneWidget);
+        },
+      );
+
+      // Non-coding AiResponse kinds must stay behind the `showAiEntry` gate:
+      // hidden when off, visible when on. imagePromptGeneration is included to
+      // prove only `promptGeneration` (not the sibling image variant) is
+      // exempt.
+      final gatedTypes = <AiResponseType>[
+        AiResponseType.audioTranscription,
+        AiResponseType.imageAnalysis,
+        AiResponseType.imagePromptGeneration,
+      ];
+
+      for (final type in gatedTypes) {
+        testWidgets(
+          '$type stays hidden when showAiEntry=false',
+          (tester) async {
+            await pumpAiResponse(tester, type: type, showAiEntry: false);
+            expect(find.byType(EntryDetailsContent), findsNothing);
+          },
+        );
+
+        testWidgets(
+          '$type renders when showAiEntry=true',
+          (tester) async {
+            await pumpAiResponse(tester, type: type, showAiEntry: true);
+            expect(find.byType(EntryDetailsContent), findsOneWidget);
+          },
+        );
+      }
+
+      // A null type (legacy/unset) is not a coding prompt, so it stays gated.
+      testWidgets(
+        'null-type AiResponse stays hidden when showAiEntry=false',
+        (tester) async {
+          await pumpAiResponse(tester, type: null, showAiEntry: false);
+          expect(find.byType(EntryDetailsContent), findsNothing);
+        },
+      );
+    });
+
     group('JournalEvent', () {
       JournalEvent buildEvent() {
         final now = DateTime(2026, 5, 12);
