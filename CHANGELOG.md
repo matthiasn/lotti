@@ -4,18 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1044]
+### Changed
+- **Daily OS now lets you choose its AI route explicitly.** A discoverable
+  Daily OS settings page owns the default inference profile and preferred name,
+  while the planner instance can override its full profile or only its thinking
+  model. The app states that assembled planning context is sent to the selected
+  provider, identifies local versus remote endpoints, and guides you to setup
+  before the first check-in when no usable profile is configured.
+
 ## [0.9.1043]
 ### Changed
 - **Daily OS is now available to everyone.** The Daily OS day-planning surface
   no longer sits behind a Settings → Advanced → Flags toggle — its calendar tab
   appears in the main navigation for all users.
-- **Daily OS now lets you choose its AI route explicitly.** A discoverable
-  Daily OS settings page owns the default inference profile and preferred name,
-  while the planner instance can override its full profile or only its thinking
-  model. The app
-  states that assembled planning context is sent to the selected provider,
-  identifies local versus remote endpoints, and guides you to setup before the
-  first check-in when no usable profile is configured.
 
 ## [0.9.1042]
 ### Added

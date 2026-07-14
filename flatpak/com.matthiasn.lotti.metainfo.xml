@@ -32,10 +32,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1044" date="2026-07-14">
+      <description>
+          <p>Daily OS now has a discoverable settings page for choosing its default inference profile and preferred name, plus per-planner profile and thinking-model overrides. Setup explains that assembled planning context is sent to the selected provider and identifies whether its configured endpoint is local or remote.</p>
+      </description>
+    </release>
     <release version="0.9.1043" date="2026-07-14">
       <description>
           <p>Daily OS is now available to everyone. The Daily OS day-planning surface no longer sits behind a feature flag and appears in the main navigation for all users.</p>
-          <p>Daily OS now has a discoverable settings page for choosing its default inference profile and preferred name, plus per-planner profile and thinking-model overrides. Setup explains that assembled planning context is sent to the selected provider and identifies whether its configured endpoint is local or remote.</p>
       </description>
     </release>
     <release version="0.9.1042" date="2026-07-13">
