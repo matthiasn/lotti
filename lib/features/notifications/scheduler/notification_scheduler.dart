@@ -1,10 +1,8 @@
 import 'dart:convert';
 
 import 'package:lotti/classes/notification_entity.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/utils/consts.dart';
 
 class NotificationScheduler {
   /// [_notificationServiceProvider] is invoked the first time the scheduler
@@ -15,12 +13,10 @@ class NotificationScheduler {
   NotificationScheduler({
     required this._notificationsDb,
     required this._notificationServiceProvider,
-    required this._journalDb,
   });
 
   final NotificationsDb _notificationsDb;
   final NotificationService Function() _notificationServiceProvider;
-  final JournalDb _journalDb;
 
   NotificationService get _notificationService =>
       _notificationServiceProvider();
@@ -40,9 +36,7 @@ class NotificationScheduler {
 
   Future<void> schedule(NotificationEntity entity, {DateTime? now}) async {
     final notificationId = notificationIdFor(entity.id);
-    final enabled = await _journalDb.getConfigFlag(enableSyncedAlertsFlag);
-    if (!enabled ||
-        entity.meta.deletedAt != null ||
+    if (entity.meta.deletedAt != null ||
         entity.meta.seenAt != null ||
         entity.meta.actedOnAt != null) {
       // Match the dueNow/upcoming queries: rows acted on (regardless of seen
@@ -80,19 +74,9 @@ class NotificationScheduler {
   }
 
   Future<void> reconcile({DateTime? now}) async {
-    final enabled = await _journalDb.getConfigFlag(enableSyncedAlertsFlag);
     final effectiveNow = now ?? DateTime.now();
     final due = await _notificationsDb.dueNow(effectiveNow);
     final upcoming = await _notificationsDb.upcoming(effectiveNow);
-
-    if (!enabled) {
-      // Flag was turned off after rows were scheduled at the OS level.
-      // Cancel them so stale alerts cannot still fire.
-      for (final entity in [...due, ...upcoming]) {
-        await cancel(entity.id);
-      }
-      return;
-    }
 
     for (final entity in due) {
       await schedule(entity, now: effectiveNow);

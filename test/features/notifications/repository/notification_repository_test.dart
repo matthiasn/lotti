@@ -6,7 +6,6 @@ import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -20,7 +19,6 @@ void main() {
   });
 
   late NotificationsDb notificationsDb;
-  late MockJournalDb journalDb;
   late MockVectorClockService vectorClockService;
   late MockOutboxService outboxService;
   late MockUpdateNotifications updateNotifications;
@@ -34,15 +32,11 @@ void main() {
       inMemoryDatabase: true,
       background: false,
     );
-    journalDb = MockJournalDb();
     vectorClockService = MockVectorClockService();
     outboxService = MockOutboxService();
     updateNotifications = MockUpdateNotifications();
     scheduler = MockNotificationScheduler();
 
-    when(
-      () => journalDb.getConfigFlag(enableSyncedAlertsFlag),
-    ).thenAnswer((_) async => true);
     when(() => vectorClockService.getHost()).thenAnswer((_) async => 'host-a');
     when(
       () => vectorClockService.getNextVectorClock(
@@ -74,7 +68,6 @@ void main() {
 
     repository = NotificationRepository(
       notificationsDb: notificationsDb,
-      journalDb: journalDb,
       vectorClockService: vectorClockService,
       outboxService: outboxService,
       updateNotifications: updateNotifications,
@@ -380,38 +373,6 @@ void main() {
         verify(() => scheduler.schedule(overdue, now: fixedNow)).called(1);
       },
     );
-
-    test('returns null and skips side effects when flag is disabled', () async {
-      when(
-        () => journalDb.getConfigFlag(enableSyncedAlertsFlag),
-      ).thenAnswer((_) async => false);
-
-      final saved = await repository.createTaskSuggestion(
-        linkedTaskId: 'task-disabled',
-        suggestionCount: 1,
-        title: 't',
-        body: 'b',
-      );
-
-      expect(saved, isNull);
-      expect(await notificationsDb.countAllNotifications(), 0);
-      verifyNever(() => vectorClockService.getHost());
-      verifyNever(
-        () => outboxService.enqueueNotification(any<NotificationEntity>()),
-      );
-      verifyNever(
-        () => scheduler.schedule(
-          any<NotificationEntity>(),
-          now: any(named: 'now'),
-        ),
-      );
-      verifyNever(
-        () => updateNotifications.notify(
-          any<Set<String>>(),
-          fromSync: any(named: 'fromSync'),
-        ),
-      );
-    });
 
     test('returns null when vector clock service has no host yet', () async {
       when(() => vectorClockService.getHost()).thenAnswer((_) async => null);
@@ -726,45 +687,6 @@ void main() {
             id: any(named: 'id'),
             vectorClock: any(named: 'vectorClock'),
             originatingHostId: any(named: 'originatingHostId'),
-          ),
-        );
-      },
-    );
-
-    test(
-      'state mutation skips outbox when flag is disabled but still notifies',
-      () async {
-        await seed();
-        when(
-          () => journalDb.getConfigFlag(enableSyncedAlertsFlag),
-        ).thenAnswer((_) async => false);
-        when(
-          () => vectorClockService.getNextVectorClock(
-            previous: any(named: 'previous'),
-          ),
-        ).thenAnswer((_) async => const VectorClock({'host-a': 3}));
-
-        final updated = await repository.markSeen('state-test');
-
-        expect(updated, isNotNull);
-        expect(updated!.meta.seenAt, fixedNow);
-        verifyNever(
-          () => outboxService.enqueueNotificationStateUpdate(
-            id: any(named: 'id'),
-            vectorClock: any(named: 'vectorClock'),
-            originatingHostId: any(named: 'originatingHostId'),
-          ),
-        );
-        verify(() => scheduler.schedule(updated)).called(1);
-        verify(
-          () => updateNotifications.notifyUiOnly(
-            {'state-test', 'task-state', inboxNotification},
-          ),
-        ).called(1);
-        verifyNever(
-          () => updateNotifications.notify(
-            any<Set<String>>(),
-            fromSync: any(named: 'fromSync'),
           ),
         );
       },

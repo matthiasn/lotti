@@ -20,93 +20,70 @@ abstract final class TaskAgentPromptBuilder {
   static String buildSystemPrompt({
     required AgentTemplateVersionEntity version,
     required SoulDocumentVersionEntity? soulVersion,
-    bool evidenceSynthesis = false,
-    String? evidenceSynthesisModelId,
+    String? modelId,
   }) {
     final trimmedGeneralDirective = version.generalDirective.trim();
     final trimmedReportDirective = effectiveReportDirective(
       version: version,
-      evidenceSynthesis: evidenceSynthesis,
-      evidenceSynthesisModelId: evidenceSynthesisModelId,
+      modelId: modelId,
     );
     final trimmedLegacyDirective = version.directives.trim();
-    final hasNewDirectives =
-        evidenceSynthesis ||
-        trimmedGeneralDirective.isNotEmpty ||
-        trimmedReportDirective.isNotEmpty;
 
-    if (evidenceSynthesis &&
-        TaskAgentEvidenceSynthesis.usesCompactScaffold(
-          evidenceSynthesisModelId,
-        )) {
+    if (TaskAgentEvidenceSynthesis.usesCompactScaffold(modelId)) {
       return _buildCompactEvidencePrompt(
         generalDirective: trimmedGeneralDirective,
         legacyDirective: trimmedLegacyDirective,
         reportDirective: trimmedReportDirective,
         soulVersion: soulVersion,
-        modelId: evidenceSynthesisModelId,
+        modelId: modelId,
       );
     }
 
-    if (hasNewDirectives) {
-      final buf = StringBuffer()..write(taskAgentScaffoldCore);
+    final buf = StringBuffer()..write(taskAgentScaffoldCore);
 
-      if (trimmedReportDirective.isNotEmpty) {
+    if (trimmedReportDirective.isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln()
+        ..writeln('## Report Directive')
+        ..writeln()
+        ..write(trimmedReportDirective);
+    } else {
+      buf.write(taskAgentScaffoldReport);
+    }
+
+    buf
+      ..write(taskAgentScaffoldProjectContext)
+      ..write(taskAgentScaffoldTrailing);
+
+    if (soulVersion != null) {
+      // Soul assigned: separate personality from operational directives.
+      _appendSoulPersonality(buf, soulVersion);
+      if (trimmedGeneralDirective.isNotEmpty) {
         buf
           ..writeln()
           ..writeln()
-          ..writeln('## Report Directive')
+          ..writeln('## Your Operational Directives')
           ..writeln()
-          ..write(trimmedReportDirective);
-      } else {
-        buf.write(taskAgentScaffoldReport);
+          ..write(trimmedGeneralDirective);
       }
-
-      buf
-        ..write(taskAgentScaffoldProjectContext)
-        ..write(taskAgentScaffoldTrailing);
-
-      if (soulVersion != null) {
-        // Soul assigned: separate personality from operational directives.
-        _appendSoulPersonality(buf, soulVersion);
-        if (trimmedGeneralDirective.isNotEmpty) {
-          buf
-            ..writeln()
-            ..writeln()
-            ..writeln('## Your Operational Directives')
-            ..writeln()
-            ..write(trimmedGeneralDirective);
-        }
-      } else {
-        // No soul: legacy combined heading.
-        final effectiveGeneralDirective = trimmedGeneralDirective.isNotEmpty
-            ? trimmedGeneralDirective
-            : trimmedLegacyDirective;
-        if (effectiveGeneralDirective.isNotEmpty) {
-          buf
-            ..writeln()
-            ..writeln()
-            ..writeln('## Your Personality & Directives')
-            ..writeln()
-            ..write(effectiveGeneralDirective);
-        }
+    } else {
+      // No soul: legacy combined heading.
+      final effectiveGeneralDirective = trimmedGeneralDirective.isNotEmpty
+          ? trimmedGeneralDirective
+          : trimmedLegacyDirective;
+      if (effectiveGeneralDirective.isNotEmpty) {
+        buf
+          ..writeln()
+          ..writeln()
+          ..writeln('## Your Personality & Directives')
+          ..writeln()
+          ..write(effectiveGeneralDirective);
       }
-
-      return _withEvidenceSynthesis(
-        buf.toString(),
-        enabled: evidenceSynthesis,
-        modelId: evidenceSynthesisModelId,
-      );
     }
 
-    // Legacy fallback: single directives field.
-    return _withEvidenceSynthesis(
-      '$taskAgentScaffold\n\n'
-      '## Your Personality & Directives\n\n'
-      '${version.directives}',
-      enabled: evidenceSynthesis,
-      modelId: evidenceSynthesisModelId,
-    );
+    buf.write(TaskAgentEvidenceSynthesis.systemDirectiveForModel(modelId));
+    return buf.toString();
   }
 
   /// Whether [version] uses Lotti's built-in task-report contract.
@@ -127,25 +104,16 @@ abstract final class TaskAgentPromptBuilder {
   /// same presentation requirements.
   static String effectiveReportDirective({
     required AgentTemplateVersionEntity version,
-    required bool evidenceSynthesis,
-    String? evidenceSynthesisModelId,
+    String? modelId,
   }) {
     final configuredReportDirective = version.reportDirective.trim();
-    if (evidenceSynthesis && usesBuiltInReportContract(version)) {
+    if (usesBuiltInReportContract(version)) {
       return TaskAgentEvidenceSynthesis.reportDirectiveForModel(
-        evidenceSynthesisModelId,
+        modelId,
       ).trim();
     }
     return configuredReportDirective;
   }
-
-  static String _withEvidenceSynthesis(
-    String prompt, {
-    required bool enabled,
-    String? modelId,
-  }) => enabled
-      ? '$prompt${TaskAgentEvidenceSynthesis.systemDirectiveForModel(modelId)}'
-      : prompt;
 
   static String _buildCompactEvidencePrompt({
     required String generalDirective,

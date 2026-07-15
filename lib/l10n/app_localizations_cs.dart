@@ -3012,13 +3012,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazit stránku Návyky v hlavní navigaci. Zde sledujte a spravujte své denní návyky.';
 
   @override
-  String get configFlagEnableKnowledgeGraph => 'Znalostní graf';
-
-  @override
-  String get configFlagEnableKnowledgeGraphDescription =>
-      'Zobrazit experimentální průzkumník znalostního grafu u úkolů — vizuální mapu propojení mezi úkoly, záznamy a projekty.';
-
-  @override
   String get configFlagEnableLogging => 'Povolit protokolování';
 
   @override
@@ -3059,21 +3052,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagEnableSessionRatingsDescription =>
       'Po zastavení časovače zobrazit rychlé hodnocení relace.';
-
-  @override
-  String get configFlagEnableSyncedAlerts => 'Synchronizovaná upozornění';
-
-  @override
-  String get configFlagEnableSyncedAlertsDescription =>
-      'Synchronizuj upozornění od AI a úkolů mezi zařízeními a dovol jim plánovat místní systémová oznámení.';
-
-  @override
-  String get configFlagEnableTaskAgentEvidenceSynthesis =>
-      'Úkolový agent založený na důkazech';
-
-  @override
-  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
-      'Používá pro úsporné modely Melious zadání úkolových agentů založené na důkazech. Výchozí profil Melious používá Qwen 3.5 přímo; při volbě Mistral Small 4 se pro report přidá izolovaný průchod Qwen, který mírně zvýší latenci a spotřebu.';
 
   @override
   String get configFlagEnableTooltip => 'Povolit nápovědy';
@@ -6318,16 +6296,161 @@ class AppLocalizationsCs extends AppLocalizations {
   String get keyboardShortcutsTitle => 'Klávesové zkratky';
 
   @override
+  String knowledgeGraphAgeDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'před $count dny',
+      few: 'před $count dny',
+      one: 'před 1 dnem',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String knowledgeGraphAgeMonthsAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'před $count měsíci',
+      few: 'před $count měsíci',
+      one: 'před 1 měsícem',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get knowledgeGraphAgeToday => 'Dnes';
+
+  @override
+  String knowledgeGraphAgeWeeksAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'před $count týdny',
+      few: 'před $count týdny',
+      one: 'před 1 týdnem',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get knowledgeGraphAgeYesterday => 'Včera';
+
+  @override
+  String get knowledgeGraphBack => 'Zpět';
+
+  @override
+  String get knowledgeGraphCloseDetails => 'Zavřít podrobnosti';
+
+  @override
   String get knowledgeGraphEmpty => 'Zatím žádné odkazy k prozkoumání';
 
   @override
+  String get knowledgeGraphEntryLoadError =>
+      'Tento záznam se nepodařilo načíst';
+
+  @override
+  String get knowledgeGraphEntryNotFound => 'Záznam nebyl nalezen';
+
+  @override
   String get knowledgeGraphError => 'Znalostní graf se nepodařilo načíst';
+
+  @override
+  String knowledgeGraphLinkedSection(int count) {
+    return 'PROPOJENO · $count';
+  }
+
+  @override
+  String get knowledgeGraphMoreLinks => 'Další propojení';
+
+  @override
+  String knowledgeGraphNodeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count uzlů',
+      few: '$count uzly',
+      one: '1 uzel',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get knowledgeGraphNodeTypeAiSummary => 'Souhrn AI';
+
+  @override
+  String get knowledgeGraphNodeTypeAudioNote => 'Zvuková poznámka';
+
+  @override
+  String get knowledgeGraphNodeTypeChecklist => 'Kontrolní seznam';
+
+  @override
+  String get knowledgeGraphNodeTypeChecklistItem =>
+      'Položka kontrolního seznamu';
+
+  @override
+  String get knowledgeGraphNodeTypeNote => 'Poznámka';
+
+  @override
+  String get knowledgeGraphNodeTypePhoto => 'Fotka';
+
+  @override
+  String get knowledgeGraphNodeTypeProject => 'Projekt';
+
+  @override
+  String get knowledgeGraphNodeTypeRating => 'Hodnocení';
+
+  @override
+  String get knowledgeGraphNodeTypeTask => 'Úkol';
+
+  @override
+  String get knowledgeGraphOpenDetails => 'Otevřít podrobnosti';
+
+  @override
+  String get knowledgeGraphRecenter => 'Znovu vystředit';
+
+  @override
+  String get knowledgeGraphRecentToOlder => 'Novější → starší';
+
+  @override
+  String get knowledgeGraphRelationAiSource => 'Zdroj AI';
+
+  @override
+  String get knowledgeGraphRelationChecklist => 'Kontrolní seznam';
+
+  @override
+  String get knowledgeGraphRelationInProject => 'V projektu';
+
+  @override
+  String get knowledgeGraphRelationLinkedTask => 'Propojený úkol';
+
+  @override
+  String get knowledgeGraphRelationNoteLog => 'Poznámka / záznam';
+
+  @override
+  String get knowledgeGraphRelationRating => 'Hodnocení';
+
+  @override
+  String get knowledgeGraphSummarySection => 'SOUHRN';
 
   @override
   String get knowledgeGraphTitle => 'Graf znalostí';
 
   @override
   String get knowledgeGraphTooltip => 'Prozkoumat odkazy';
+
+  @override
+  String knowledgeGraphWalkHint(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count uzlů',
+      few: '$count uzly',
+      one: '1 uzel',
+    );
+    return 'Klepni na uzel a přejdi dál · $_temp0';
+  }
 
   @override
   String get linkedFromCaption => 'z';

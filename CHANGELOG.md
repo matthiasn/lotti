@@ -15,6 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   split panes and confirm Daily OS commits without pointer-only gestures.
 
 ### Changed
+- **Task agents now use evidence-first processing for everyone.** The
+  previously optional behavior is now standard and its Advanced Settings
+  toggle has been removed. If you already had it enabled, nothing changes.
+- **Synced alerts are now available to everyone.** Alerts stay consistent
+  across devices whenever Matrix sync is active, and the former Advanced
+  Settings toggle has been removed.
+- **The Knowledge Graph is now available from every task.** The graph button is
+  always present in normal task headers, while embedded task details suppress
+  the recursive entry point. Graph controls, node and relation labels, relative
+  ages, summaries, and error states are localized in all supported languages.
 - **Maintenance settings dividers fade on hover.** Hovering a row on the
   Advanced Settings → Maintenance page now fades the hairline dividers above
   and below it, so the hovered row is never bisected — matching the existing

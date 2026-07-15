@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
@@ -26,7 +25,6 @@ import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -175,9 +173,6 @@ void main() {
           projectRepositoryProvider.overrideWithValue(
             MockProjectRepository(),
           ),
-          configFlagProvider(
-            enableTaskAgentEvidenceSynthesisFlag,
-          ).overrideWith((ref) => Stream.value(true)),
         ],
       );
       addTearDown(container.dispose);
@@ -185,7 +180,7 @@ void main() {
 
     tearDown(tearDownTestGetIt);
 
-    test('taskAgentWorkflowProvider wires resolved dependencies', () async {
+    test('taskAgentWorkflowProvider wires resolved dependencies', () {
       final subscription = container.listen(
         taskAgentWorkflowProvider,
         (_, _) {},
@@ -193,16 +188,12 @@ void main() {
       );
       addTearDown(subscription.close);
 
-      await container.read(
-        configFlagProvider(enableTaskAgentEvidenceSynthesisFlag).future,
-      );
       final workflow = subscription.read();
 
       expect(workflow, isA<TaskAgentWorkflow>());
       expect(workflow.agentRepository, same(repository));
       expect(workflow.syncService, same(syncService));
       expect(workflow.templateService, same(templateService));
-      expect(workflow.evidenceSynthesisEnabled, isTrue);
     });
 
     test(

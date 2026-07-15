@@ -2,20 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:lotti/classes/notification_entity.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:uuid/uuid.dart';
 
 class NotificationRepository {
   NotificationRepository({
     required this._notificationsDb,
-    required this._journalDb,
     required this._vectorClockService,
     required this._outboxService,
     required this._updateNotifications,
@@ -24,7 +21,6 @@ class NotificationRepository {
   }) : _now = now ?? DateTime.now;
 
   final NotificationsDb _notificationsDb;
-  final JournalDb _journalDb;
   final VectorClockService _vectorClockService;
   final OutboxService _outboxService;
   final UpdateNotifications _updateNotifications;
@@ -109,9 +105,6 @@ class NotificationRepository {
   }
 
   Future<NotificationEntity?> _create(NotificationEntity entity) async {
-    final enabled = await _journalDb.getConfigFlag(enableSyncedAlertsFlag);
-    if (!enabled) return null;
-
     return _vectorClockService.withVcScope<NotificationEntity?>(() async {
       final host = await _vectorClockService.getHost();
       if (host == null) return null;
@@ -251,17 +244,14 @@ class NotificationRepository {
       final updated = result.entity;
       if (updated == null || !result.changed) return null;
 
-      final enabled = await _journalDb.getConfigFlag(enableSyncedAlertsFlag);
-      if (enabled) {
-        await _outboxService.enqueueNotificationStateUpdate(
-          id: id,
-          seenAt: seenAt,
-          actedOnAt: actedOnAt,
-          deletedAt: deletedAt,
-          vectorClock: vectorClock,
-          originatingHostId: host,
-        );
-      }
+      await _outboxService.enqueueNotificationStateUpdate(
+        id: id,
+        seenAt: seenAt,
+        actedOnAt: actedOnAt,
+        deletedAt: deletedAt,
+        vectorClock: vectorClock,
+        originatingHostId: host,
+      );
       await _scheduler.schedule(updated);
       _notifyStateChange(updated);
       return updated;

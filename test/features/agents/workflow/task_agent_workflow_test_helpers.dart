@@ -230,7 +230,6 @@ TaskAgentWorkflow createTestWorkflow({
   AgentInputCaptureService? inputCaptureService,
   AgentLogLlmSummarizer? logSummarizer,
   DomainLogger? domainLogger,
-  bool evidenceSynthesisEnabled = false,
   int compactionTailBudgetTokens = 50000,
   int compactionTailRetainTokens = 20000,
 }) {
@@ -250,7 +249,6 @@ TaskAgentWorkflow createTestWorkflow({
     inputCaptureService: inputCaptureService,
     logSummarizer: logSummarizer,
     domainLogger: domainLogger,
-    evidenceSynthesisEnabled: evidenceSynthesisEnabled,
     compactionTailBudgetTokens: compactionTailBudgetTokens,
     compactionTailRetainTokens: compactionTailRetainTokens,
   );

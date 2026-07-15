@@ -110,7 +110,6 @@ class TaskAgentWorkflow {
     this.changeSetNotificationService,
     this.inputCaptureService,
     this.logSummarizer,
-    this.evidenceSynthesisEnabled = false,
     this.compactionTailBudgetTokens = 50000,
     this.compactionTailRetainTokens = 20000,
   });
@@ -130,13 +129,6 @@ class TaskAgentWorkflow {
   final LabelsRepository labelsRepository;
   final AgentTemplateService templateService;
   final SoulDocumentService? soulDocumentService;
-
-  /// Whether to use the experimentally validated low-variance task-agent path.
-  ///
-  /// This enables the compact prompt/tool contract for efficient models and,
-  /// for the exact supported Melious Mistral route, the isolated validated
-  /// Qwen report editor under the active template report directive.
-  final bool evidenceSynthesisEnabled;
 
   /// Optional domain logger for structured, PII-safe logging.
   final DomainLogger? domainLogger;
@@ -407,8 +399,7 @@ class TaskAgentWorkflow {
       TaskAgentPromptBuilder.buildSystemPrompt(
         version: ctx.version,
         soulVersion: ctx.soulVersion,
-        evidenceSynthesis: evidenceSynthesisEnabled,
-        evidenceSynthesisModelId: modelId,
+        modelId: modelId,
       );
 
   Future<({String text, int? logStart, int? logEnd})> _buildUserMessage({
@@ -442,9 +433,7 @@ class TaskAgentWorkflow {
   );
 
   List<ChatCompletionTool> _buildToolDefinitions() =>
-      _contextBuilder.buildToolDefinitions(
-        evidenceSynthesis: evidenceSynthesisEnabled,
-      );
+      _contextBuilder.buildToolDefinitions();
 
   String? _extractFinalAssistantContent(ConversationManager? manager) =>
       _contextBuilder.extractFinalAssistantContent(manager);

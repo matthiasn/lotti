@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_scenarios.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 /// Material glyph for each node type (ADR 0029 Decision 4 — existing
 /// iconography reads better than 16 abstract shapes).
@@ -39,26 +40,26 @@ IconData glyphForType(GraphNodeType type) {
 }
 
 /// Human-readable node-type label for the inspector.
-String typeLabel(GraphNodeType type) {
+String typeLabel(AppLocalizations messages, GraphNodeType type) {
   switch (type) {
     case GraphNodeType.task:
-      return 'Task';
+      return messages.knowledgeGraphNodeTypeTask;
     case GraphNodeType.project:
-      return 'Project';
+      return messages.knowledgeGraphNodeTypeProject;
     case GraphNodeType.textEntry:
-      return 'Note';
+      return messages.knowledgeGraphNodeTypeNote;
     case GraphNodeType.audioEntry:
-      return 'Audio note';
+      return messages.knowledgeGraphNodeTypeAudioNote;
     case GraphNodeType.imageEntry:
-      return 'Photo';
+      return messages.knowledgeGraphNodeTypePhoto;
     case GraphNodeType.aiResponse:
-      return 'AI summary';
+      return messages.knowledgeGraphNodeTypeAiSummary;
     case GraphNodeType.checklist:
-      return 'Checklist';
+      return messages.knowledgeGraphNodeTypeChecklist;
     case GraphNodeType.checklistItem:
-      return 'Checklist item';
+      return messages.knowledgeGraphNodeTypeChecklistItem;
     case GraphNodeType.rating:
-      return 'Rating';
+      return messages.knowledgeGraphNodeTypeRating;
   }
 }
 
@@ -93,20 +94,20 @@ RelStyle relStyleFor(GraphEdgeKind kind, GraphNodeType targetType) {
   }
 }
 
-String relStyleLabel(RelStyle style) {
+String relStyleLabel(AppLocalizations messages, RelStyle style) {
   switch (style) {
     case RelStyle.containment:
-      return 'in project';
+      return messages.knowledgeGraphRelationInProject;
     case RelStyle.linkedTask:
-      return 'linked task';
+      return messages.knowledgeGraphRelationLinkedTask;
     case RelStyle.note:
-      return 'note / log';
+      return messages.knowledgeGraphRelationNoteLog;
     case RelStyle.checklist:
-      return 'checklist';
+      return messages.knowledgeGraphRelationChecklist;
     case RelStyle.provenance:
-      return 'AI source';
+      return messages.knowledgeGraphRelationAiSource;
     case RelStyle.evaluation:
-      return 'rating';
+      return messages.knowledgeGraphRelationRating;
   }
 }
 

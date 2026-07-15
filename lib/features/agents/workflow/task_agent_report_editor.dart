@@ -166,12 +166,10 @@ class TaskAgentReportEditor {
 
   /// Whether the validated editor path applies to this executor/provider pair.
   static bool supports({
-    required bool enabled,
     required String executorModelId,
     required InferenceProviderType providerType,
   }) {
-    return enabled &&
-        providerType == InferenceProviderType.melious &&
+    return providerType == InferenceProviderType.melious &&
         executorModelId.toLowerCase() ==
             meliousMistralSmall4119BInstructModelId;
   }

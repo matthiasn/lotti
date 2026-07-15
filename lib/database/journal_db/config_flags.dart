@@ -43,13 +43,6 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: enableTaskAgentEvidenceSynthesisFlag,
-      description: 'Enable evidence-first task-agent inference?',
-      status: true,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: recordLocationFlag,
       description: 'Record geolocation?',
       status: false,
@@ -122,14 +115,6 @@ Future<void> initConfigFlags(
     ),
   );
 
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: enableKnowledgeGraphFlag,
-      description: 'Enable Knowledge Graph?',
-      status: false,
-    ),
-  );
-
   // One toggle per logging domain. Flag names for sync / agentRuntime /
   // agentWorkflow deliberately match the historical log_sync /
   // log_agent_runtime / log_agent_workflow flags so existing preferences
@@ -164,14 +149,6 @@ Future<void> initConfigFlags(
     const ConfigFlag(
       name: enableVectorSearchFlag,
       description: 'Enable vector search UI?',
-      status: false,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: enableSyncedAlertsFlag,
-      description: 'Enable synced alerts?',
       status: false,
     ),
   );

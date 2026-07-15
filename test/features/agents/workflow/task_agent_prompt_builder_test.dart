@@ -35,8 +35,7 @@ Use the task language and omit empty sections.
       expect(
         TaskAgentPromptBuilder.effectiveReportDirective(
           version: version,
-          evidenceSynthesis: true,
-          evidenceSynthesisModelId: 'mistral-small-4-119b-instruct',
+          modelId: 'mistral-small-4-119b-instruct',
         ),
         evolvedDirective.trim(),
       );
@@ -45,8 +44,7 @@ Use the task language and omit empty sections.
           version: makeTestTemplateVersion(
             reportDirective: taskAgentReportDirective,
           ),
-          evidenceSynthesis: true,
-          evidenceSynthesisModelId: 'mistral-small-4-119b-instruct',
+          modelId: 'mistral-small-4-119b-instruct',
         ),
         contains('## Progress'),
       );
@@ -62,13 +60,11 @@ Use the task language and omit empty sections.
         soulVersion: null,
       );
 
-      // Falls into the legacy branch: full scaffold + single directives field.
-      expect(prompt, contains(TaskAgentPromptBuilder.taskAgentScaffold));
+      expect(prompt, contains(TaskAgentPromptBuilder.taskAgentScaffoldCore));
+      expect(prompt, contains('## Report Directive'));
+      expect(prompt, contains('## Evidence-First Synthesis Protocol'));
       expect(prompt, contains('## Your Personality & Directives'));
       expect(prompt, contains('You are precise and concise.'));
-      // Legacy branch never emits the default report section twice or a
-      // standalone Report Directive heading.
-      expect(prompt, isNot(contains('## Report Directive')));
     });
 
     test('new-style reportDirective replaces the default report scaffold', () {
@@ -96,7 +92,7 @@ Use the task language and omit empty sections.
     });
 
     test(
-      'keeps the default report scaffold when only generalDirective set',
+      'uses evidence-first report guidance when only generalDirective is set',
       () {
         final version = makeTestTemplateVersion(
           generalDirective: 'Stay terse.',
@@ -107,11 +103,9 @@ Use the task language and omit empty sections.
           soulVersion: null,
         );
 
-        expect(
-          prompt,
-          contains(TaskAgentPromptBuilder.taskAgentScaffoldReport),
-        );
-        expect(prompt, isNot(contains('## Report Directive')));
+        expect(prompt, contains('## Report Directive'));
+        expect(prompt, contains('Write free-form Markdown'));
+        expect(prompt, isNot(contains('Include 1-2 relevant emojis')));
         expect(prompt, contains('Stay terse.'));
       },
     );
@@ -170,7 +164,6 @@ Use the task language and omit empty sections.
       final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
         version: version,
         soulVersion: null,
-        evidenceSynthesis: true,
       );
 
       expect(prompt, contains('Choose the Markdown structure that fits'));
@@ -192,7 +185,6 @@ Use the task language and omit empty sections.
         final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
           version: version,
           soulVersion: null,
-          evidenceSynthesis: true,
         );
 
         expect(prompt, contains('Write free-form Markdown'));
@@ -206,7 +198,6 @@ Use the task language and omit empty sections.
       final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
         version: makeTestTemplateVersion(directives: 'Legacy directive.'),
         soulVersion: null,
-        evidenceSynthesis: true,
       );
 
       expect(prompt, contains('Legacy directive.'));
@@ -224,14 +215,12 @@ Use the task language and omit empty sections.
       final mistralPrompt = TaskAgentPromptBuilder.buildSystemPrompt(
         version: version,
         soulVersion: null,
-        evidenceSynthesis: true,
-        evidenceSynthesisModelId: 'mistral-small-4-119b-instruct',
+        modelId: 'mistral-small-4-119b-instruct',
       );
       final qwenPrompt = TaskAgentPromptBuilder.buildSystemPrompt(
         version: version,
         soulVersion: null,
-        evidenceSynthesis: true,
-        evidenceSynthesisModelId: 'qwen3.5-122b-a10b',
+        modelId: 'qwen3.5-122b-a10b',
       );
 
       expect(
@@ -277,8 +266,7 @@ Use the task language and omit empty sections.
           voiceDirective: 'Calm, direct, and specific.',
           toneBounds: 'Never invent progress.',
         ),
-        evidenceSynthesis: true,
-        evidenceSynthesisModelId: 'qwen3.5-122b-a10b',
+        modelId: 'qwen3.5-122b-a10b',
       );
 
       expect(prompt, contains('## Your Personality'));

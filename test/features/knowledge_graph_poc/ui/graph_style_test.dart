@@ -4,12 +4,14 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_scenarios.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
+import 'package:lotti/l10n/app_localizations_en.dart';
 
 void main() {
   // `DsTokens` is a plain immutable value object exported by the design system,
   // so we can read the canonical dark-mode token set directly instead of
   // pumping a widget to fetch `context.designTokens`.
   const tokens = dsTokensDark;
+  final messages = AppLocalizationsEn();
 
   group('glyphForType', () {
     const expected = <GraphNodeType, IconData>{
@@ -52,7 +54,11 @@ void main() {
         GraphNodeType.rating: 'Rating',
       };
       for (final type in GraphNodeType.values) {
-        expect(typeLabel(type), expected[type], reason: 'label for $type');
+        expect(
+          typeLabel(messages, type),
+          expected[type],
+          reason: 'label for $type',
+        );
       }
       expect(expected.keys.toSet(), GraphNodeType.values.toSet());
     });
@@ -69,7 +75,11 @@ void main() {
         RelStyle.evaluation: 'rating',
       };
       for (final style in RelStyle.values) {
-        expect(relStyleLabel(style), expected[style], reason: 'label $style');
+        expect(
+          relStyleLabel(messages, style),
+          expected[style],
+          reason: 'label $style',
+        );
       }
       expect(expected.keys.toSet(), RelStyle.values.toSet());
     });

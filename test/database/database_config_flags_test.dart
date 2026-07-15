@@ -16,7 +16,6 @@ final Set<String> expectedActiveFlagNames = {
   privateFlag,
   enableTooltipFlag,
   enableAiStreamingFlag,
-  enableTaskAgentEvidenceSynthesisFlag,
   for (final domain in LogDomain.values)
     if (domain.defaultEnabled) domain.flagName,
 };
@@ -52,11 +51,6 @@ final expectedFlags = <ConfigFlag>{
     name: enableAiSummaryTtsFlag,
     description: 'Enable local AI summary playback?',
     status: false,
-  ),
-  const ConfigFlag(
-    name: enableTaskAgentEvidenceSynthesisFlag,
-    description: 'Enable evidence-first task-agent inference?',
-    status: true,
   ),
   const ConfigFlag(
     name: resendAttachments,
@@ -125,11 +119,6 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: enableSyncedAlertsFlag,
-    description: 'Enable synced alerts?',
-    status: false,
-  ),
-  const ConfigFlag(
     name: enableWhatsNewFlag,
     description: "Enable What's New feature?",
     status: false,
@@ -157,11 +146,6 @@ final expectedFlags = <ConfigFlag>{
   const ConfigFlag(
     name: enableForkHealingFlag,
     description: 'Enable agent fork healing?',
-    status: false,
-  ),
-  const ConfigFlag(
-    name: enableKnowledgeGraphFlag,
-    description: 'Enable Knowledge Graph?',
     status: false,
   ),
 };

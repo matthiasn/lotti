@@ -481,10 +481,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
 
       // 7. Invoke the LLM and execute tool calls via AgentToolExecutor.
       final inferenceTemperature =
-          evidenceSynthesisEnabled &&
-              TaskAgentEvidenceSynthesis.usesCompactScaffold(modelId)
-          ? 0.0
-          : 0.3;
+          TaskAgentEvidenceSynthesis.usesCompactScaffold(modelId) ? 0.0 : 0.3;
       var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
@@ -537,7 +534,6 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       });
       InferenceUsage? reportEditorUsage;
       final mistralReportEditorEligible = TaskAgentReportEditor.supports(
-        enabled: evidenceSynthesisEnabled,
         executorModelId: modelId,
         providerType: provider.inferenceProviderType,
       );
@@ -546,8 +542,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           provider.inferenceProviderType == InferenceProviderType.melious;
       final isDirectQwenModel =
           normalizedExecutorModelId == meliousQwen35122BA10BModelId;
-      final isDirectQwenExecutor =
-          evidenceSynthesisEnabled && isMeliousProvider && isDirectQwenModel;
+      final isDirectQwenExecutor = isMeliousProvider && isDirectQwenModel;
       final isMistralEditorCandidate =
           normalizedExecutorModelId == meliousMistralSmall4119BInstructModelId;
       final isReportEditorCandidate =
@@ -595,9 +590,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       }
       final shouldRunReportEditor =
           mistralReportEditorEligible || directQwenIssues.isNotEmpty;
-      if (evidenceSynthesisEnabled &&
-          !reportEditorRouteEligible &&
-          isReportEditorCandidate) {
+      if (!reportEditorRouteEligible && isReportEditorCandidate) {
         _log(
           'report editor route not eligible: '
           'providerType=${provider.inferenceProviderType.name};'
@@ -633,8 +626,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
                 reportDirective:
                     TaskAgentPromptBuilder.effectiveReportDirective(
                       version: templateCtx.version,
-                      evidenceSynthesis: evidenceSynthesisEnabled,
-                      evidenceSynthesisModelId: modelId,
+                      modelId: modelId,
                     ),
                 consumptionAgentId: recordConsumption ? agentId : null,
                 consumptionTaskId: recordConsumption ? taskId : null,

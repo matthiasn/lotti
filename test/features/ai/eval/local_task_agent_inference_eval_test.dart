@@ -423,6 +423,14 @@ void main() {
       LocalTaskAgentEvalPromptVariant.values.toSet(),
     );
     expect(
+      scenarios.every(
+        (scenario) => scenario.systemPrompt.contains(
+          '## Evidence-First Synthesis Protocol',
+        ),
+      ),
+      isTrue,
+    );
+    expect(
       scenarios.map((scenario) => scenario.id),
       containsAll([
         'metadata_explicit_production',
@@ -455,7 +463,7 @@ void main() {
           LocalTaskAgentEvalPromptVariant.compactModel,
     );
     expect(compact.systemPrompt, contains('Compact-Model Execution Protocol'));
-    expect(compact.systemPrompt, contains('MANDATORY FINAL TOOL CALL'));
+    expect(compact.systemPrompt, contains('## Final report'));
     final qualityFocused = scenarios.firstWhere(
       (scenario) =>
           scenario.promptVariant ==
