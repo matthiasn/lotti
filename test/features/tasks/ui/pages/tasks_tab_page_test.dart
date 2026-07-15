@@ -112,6 +112,9 @@ void main() {
       () => getItMocks.journalDb.getProjectsForCategory(any()),
     ).thenAnswer((_) async => <ProjectEntry>[]);
     when(
+      () => getItMocks.journalDb.getVisibleProjects(),
+    ).thenAnswer((_) async => <ProjectEntry>[]);
+    when(
       () => getItMocks.journalDb.getTaskEstimatesByIds(any()),
     ).thenAnswer((invocation) async {
       final ids = invocation.positionalArguments.first as Set<String>;
@@ -201,53 +204,87 @@ void main() {
     );
   }
 
-  testWidgets(
-    'FAB invokes onCreateTaskPressed with the single selected category',
-    (tester) async {
-      String? receivedCategoryId;
-      var calls = 0;
-      await tester.pumpWidget(
-        buildSubject(
-          state: state(),
-          onCreateTaskPressed: (ref, categoryId) async {
-            calls++;
-            receivedCategoryId = categoryId;
-          },
+  testWidgets('FAB inherits every unambiguous active task filter', (
+    tester,
+  ) async {
+    TaskCreationFilterContext? receivedContext;
+    var calls = 0;
+    await tester.pumpWidget(
+      buildSubject(
+        state: state(
+          selectedCategoryIds: const {'cat-1'},
+          selectedProjectIds: const {'project-1'},
+          selectedLabelIds: const {'label-1', 'label-2'},
+          selectedTaskStatuses: const {'IN PROGRESS'},
+          enableProjects: true,
         ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        onCreateTaskPressed: (ref, filterContext) async {
+          calls++;
+          receivedContext = filterContext;
+        },
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byType(DesignSystemFloatingActionButton));
-      await tester.pump();
+    await tester.tap(find.byType(DesignSystemFloatingActionButton));
+    await tester.pump();
 
-      expect(calls, 1);
-      // Exactly one selected category — it threads through to the callback.
-      expect(receivedCategoryId, 'cat-1');
-    },
-  );
+    expect(calls, 1);
+    expect(receivedContext?.categoryId, 'cat-1');
+    expect(receivedContext?.projectId, 'project-1');
+    expect(receivedContext?.labelIds, {'label-1', 'label-2'});
+    expect(receivedContext?.status, 'IN PROGRESS');
+  });
 
-  testWidgets(
-    'FAB passes a null category when several categories are selected',
-    (tester) async {
-      String? receivedCategoryId = 'sentinel';
-      await tester.pumpWidget(
-        buildSubject(
-          state: state(selectedCategoryIds: const {'cat-1', 'cat-2'}),
-          onCreateTaskPressed: (ref, categoryId) async {
-            receivedCategoryId = categoryId;
-          },
+  testWidgets('FAB leaves ambiguous single-value filters at their defaults', (
+    tester,
+  ) async {
+    TaskCreationFilterContext? receivedContext;
+    await tester.pumpWidget(
+      buildSubject(
+        state: state(
+          selectedCategoryIds: const {'cat-1', 'cat-2'},
+          selectedProjectIds: const {'project-1', 'project-2'},
+          selectedLabelIds: const <String>{},
+          selectedTaskStatuses: const {'OPEN', 'IN PROGRESS'},
+          enableProjects: true,
         ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        onCreateTaskPressed: (ref, filterContext) async {
+          receivedContext = filterContext;
+        },
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byType(DesignSystemFloatingActionButton));
-      await tester.pump();
+    await tester.tap(find.byType(DesignSystemFloatingActionButton));
+    await tester.pump();
 
-      expect(receivedCategoryId, isNull);
-    },
-  );
+    expect(receivedContext?.categoryId, isNull);
+    expect(receivedContext?.projectId, isNull);
+    expect(receivedContext?.labelIds, isEmpty);
+    expect(receivedContext?.status, isNull);
+  });
+
+  test('filter inheritance ignores empty and Unassigned selections', () {
+    for (final pageState in [
+      const JournalPageState(),
+      const JournalPageState(
+        selectedCategoryIds: {''},
+        selectedProjectIds: {''},
+        selectedLabelIds: {''},
+        selectedTaskStatuses: {''},
+      ),
+    ]) {
+      final filterContext = TaskCreationFilterContext.fromPageState(pageState);
+
+      expect(filterContext.categoryId, isNull);
+      expect(filterContext.projectId, isNull);
+      expect(filterContext.labelIds, isEmpty);
+      expect(filterContext.status, isNull);
+    }
+  });
 
   testWidgets('search updates, filter modal opens, and row taps navigate', (
     tester,
@@ -328,8 +365,8 @@ void main() {
             enableVectorSearch: true,
             enableProjects: true,
           ),
-          onCreateTaskPressed: (ref, categoryId) async {
-            createdCategoryId = categoryId;
+          onCreateTaskPressed: (ref, filterContext) async {
+            createdCategoryId = filterContext.categoryId;
           },
         ),
       );

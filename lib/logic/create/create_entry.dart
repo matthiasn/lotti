@@ -57,21 +57,53 @@ Future<JournalEntity?> createChecklist({
   return result.checklist;
 }
 
+/// Creates a blank task and applies any unambiguous creation context.
+///
+/// Category, labels, and status are part of the initial entity write. An
+/// explicit [projectId] is linked before this future completes; if no
+/// [categoryId] is supplied, the project's category is used to satisfy the
+/// same-category project invariant. Without these optional values, the
+/// existing open, uncategorized, unlabeled, project-free defaults are kept.
 Future<Task?> createTask({
   String? linkedId,
   String? categoryId,
+  String? projectId,
+  List<String>? labelIds,
+  String? status,
   DateTime? due,
 }) async {
   final now = DateTime.now();
+  final projectRepository = projectId != null
+      ? _createProjectRepository()
+      : null;
+  var effectiveCategoryId = categoryId;
+  final nonEmptyLabelIds = labelIds
+      ?.where((id) => id.isNotEmpty)
+      .toList(growable: false);
+
+  // Project links require tasks and projects to share a category. A project
+  // filter on its own therefore supplies the project's category implicitly.
+  if (projectId != null && effectiveCategoryId == null) {
+    try {
+      effectiveCategoryId = (await projectRepository!.getProjectById(
+        projectId,
+      ))?.meta.categoryId;
+    } catch (error) {
+      developer.log(
+        'Failed to resolve category for project $projectId: $error',
+        name: 'createTask',
+      );
+    }
+  }
 
   // Look up category defaults for profile inheritance.
-  final category = categoryId != null
-      ? getIt<EntitiesCacheService>().getCategoryById(categoryId)
+  final category = effectiveCategoryId != null
+      ? getIt<EntitiesCacheService>().getCategoryById(effectiveCategoryId)
       : null;
 
   final task = await getIt<PersistenceLogic>().createTaskEntry(
     data: TaskData(
-      status: taskStatusFromString(''),
+      status: taskStatusFromString(status ?? ''),
       title: '',
       statusHistory: [],
       dateTo: now,
@@ -82,12 +114,26 @@ Future<Task?> createTask({
     ),
     entryText: const EntryText(plainText: ''),
     linkedId: linkedId,
-    categoryId: categoryId,
+    categoryId: effectiveCategoryId,
+    labelIds: nonEmptyLabelIds == null || nonEmptyLabelIds.isEmpty
+        ? null
+        : nonEmptyLabelIds,
   );
 
-  // Inherit project from the linked parent task.
-  if (task != null && linkedId != null) {
-    await _inheritProjectFromLinkedTask(linkedId, task.meta.id);
+  if (task != null && projectId != null) {
+    await _assignProjectToTask(
+      projectRepository: projectRepository!,
+      projectId: projectId,
+      taskId: task.meta.id,
+    );
+  } else if (task != null && linkedId != null) {
+    // Inherit project from the linked parent task when no explicit project was
+    // requested by the creation context.
+    await _inheritProjectFromLinkedTask(
+      projectRepository: _createProjectRepository(),
+      linkedId: linkedId,
+      newTaskId: task.meta.id,
+    );
   }
 
   return task;
@@ -96,19 +142,13 @@ Future<Task?> createTask({
 /// Copies the project assignment from [linkedId] to [newTaskId] via
 /// [ProjectRepository.inheritProjectFromTask]. Best-effort: failures are
 /// caught so they never prevent task creation from succeeding.
-Future<void> _inheritProjectFromLinkedTask(
-  String linkedId,
-  String newTaskId,
-) async {
+Future<void> _inheritProjectFromLinkedTask({
+  required ProjectRepository projectRepository,
+  required String linkedId,
+  required String newTaskId,
+}) async {
   try {
-    final repo = ProjectRepository(
-      journalDb: getIt<JournalDb>(),
-      entitiesCacheService: getIt<EntitiesCacheService>(),
-      persistenceLogic: getIt<PersistenceLogic>(),
-      updateNotifications: getIt<UpdateNotifications>(),
-      vectorClockService: getIt<VectorClockService>(),
-    );
-    final inherited = await repo.inheritProjectFromTask(
+    final inherited = await projectRepository.inheritProjectFromTask(
       sourceTaskId: linkedId,
       newTaskId: newTaskId,
     );
@@ -125,6 +165,42 @@ Future<void> _inheritProjectFromLinkedTask(
     );
   }
 }
+
+/// Assigns the explicitly inherited project to a newly created task.
+///
+/// Best-effort like linked-parent project inheritance: project persistence
+/// failures are logged without discarding the task itself.
+Future<void> _assignProjectToTask({
+  required ProjectRepository projectRepository,
+  required String projectId,
+  required String taskId,
+}) async {
+  try {
+    final assigned = await projectRepository.linkTaskToProject(
+      projectId: projectId,
+      taskId: taskId,
+    );
+    if (!assigned) {
+      developer.log(
+        'Could not assign project $projectId to task $taskId',
+        name: 'createTask',
+      );
+    }
+  } catch (error) {
+    developer.log(
+      'Failed to assign project $projectId to task $taskId: $error',
+      name: 'createTask',
+    );
+  }
+}
+
+ProjectRepository _createProjectRepository() => ProjectRepository(
+  journalDb: getIt<JournalDb>(),
+  entitiesCacheService: getIt<EntitiesCacheService>(),
+  persistenceLogic: getIt<PersistenceLogic>(),
+  updateNotifications: getIt<UpdateNotifications>(),
+  vectorClockService: getIt<VectorClockService>(),
+);
 
 /// Auto-creates an agent for [task] if the task's category has a
 /// `defaultTemplateId` set. The agent is created in content-awaiting mode

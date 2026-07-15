@@ -182,6 +182,8 @@ void main() {
       expect(task, isA<Task>());
       expect(task?.data.title, '');
       expect(task?.data.status, isA<TaskOpen>());
+      expect(task?.meta.categoryId, isNull);
+      expect(task?.meta.labelIds, isNull);
 
       // Verify task is in database
       final retrieved = await getIt<JournalDb>().journalEntityById(
@@ -189,6 +191,54 @@ void main() {
       );
       expect(retrieved, isNotNull);
       expect(retrieved, isA<Task>());
+    });
+
+    test('createTask persists inherited task filters', () async {
+      const categoryId = 'filtered-category';
+      const projectId = 'filtered-project';
+      const labelIds = ['label-1', 'label-2'];
+      final testDate = DateTime(2024, 6, 15);
+      final project = ProjectEntry(
+        meta: Metadata(
+          id: projectId,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          categoryId: categoryId,
+        ),
+        data: ProjectData(
+          title: 'Filtered Project',
+          status: ProjectStatus.active(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+      );
+      await getIt<PersistenceLogic>().createDbEntity(project);
+
+      final task = await createTask(
+        projectId: projectId,
+        labelIds: labelIds,
+        status: 'IN PROGRESS',
+      );
+
+      expect(task, isNotNull);
+      expect(task!.meta.categoryId, categoryId);
+      expect(task.meta.labelIds, labelIds);
+      expect(task.data.status, isA<TaskInProgress>());
+      expect(
+        (await journalDb.getProjectForTask(task.meta.id))?.meta.id,
+        projectId,
+      );
+
+      final persisted = await journalDb.journalEntityById(task.meta.id);
+      expect(persisted, isA<Task>());
+      expect(persisted!.meta.labelIds, labelIds);
+      expect((persisted as Task).data.status, isA<TaskInProgress>());
     });
 
     test('createTask with linkedId and categoryId', () async {

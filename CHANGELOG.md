@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   responsive actions, keyboard focus restoration, and clearer activity and
   sort controls. Task filters open immediately while project data refreshes in
   place, and active filters remain visible as compact chips on the task page.
+- **New tasks now stay in the filtered list where you create them.** A task
+  created from a view with one category, project, or status selected inherits
+  that selection, along with every selected label. Ambiguous multi-selections
+  keep the existing defaults.
 
 ### Fixed
 - **Bulk checklist suggestion acceptance no longer flickers.** Confirm all now

@@ -122,6 +122,32 @@ At runtime the browse page does three specific things:
 2. it derives section headers from the active sort mode
 3. it reuses the same grouped-card interaction model as the projects tab so hover and selection backgrounds can suppress adjacent dividers cleanly
 
+The create-task FAB also treats the current filter as creation context. At tap
+time, `TasksTabPage` snapshots the live `JournalPageState` into a
+`TaskCreationFilterContext`:
+
+- exactly one selected category is inherited;
+- exactly one selected project is inherited;
+- every selected label is inherited;
+- exactly one selected task status is inherited;
+- empty selections, multi-selected single-value facets, and the empty-string
+  `Unassigned` sentinel leave the corresponding creation default unchanged.
+
+Category, labels, and status are written with the initial task entity, so the
+task never exists in an intermediate state that misses those filters. Project
+membership uses `ProjectRepository.linkTaskToProject` before navigation. If a
+project is selected without a category filter, its category supplies the task
+category because project membership enforces a same-category invariant.
+
+```mermaid
+flowchart LR
+  Filter["JournalPageState filters"] --> Snapshot["TaskCreationFilterContext"]
+  Snapshot -->|"single category · all labels · single status"| Create["createTask / initial task write"]
+  Snapshot -->|"single project"| Project["ProjectRepository.linkTaskToProject"]
+  Project --> Navigate["open new task"]
+  Create --> Project
+```
+
 ```mermaid
 flowchart TD
   Page["TasksTabPage"] --> PageCtl["JournalPageController(showTasks=true)"]

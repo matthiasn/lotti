@@ -55,7 +55,7 @@ No pure-logic functions in the pages subdirectory. All files are UI widgets with
 
 ## Coverage / missing-behavior gaps
 
-- [x] **[HIGH]** `tasks_tab_page_test.dart` — no test exercises the `onCreateTaskPressed` callback (the FAB tap that creates a new task). The FAB (`DesignSystemFloatingActionButton`) is present in the widget but not tapped in any test. `lib/features/tasks/ui/pages/tasks_tab_page.dart`. **RESOLVED:** two new tests tap the FAB — one asserts the callback receives the single selected category, the other asserts a null category when several are selected.
+- [x] **[HIGH]** `tasks_tab_page_test.dart` — no test exercises the `onCreateTaskPressed` callback (the FAB tap that creates a new task). The FAB (`DesignSystemFloatingActionButton`) is present in the widget but not tapped in any test. `lib/features/tasks/ui/pages/tasks_tab_page.dart`. **RESOLVED:** focused FAB tests assert that category, project, labels, and status are inherited only under their documented unambiguous-selection rules, including empty and `Unassigned` defaults.
 
 - [x] **[MED]** `task_details_page_test.dart` — the drag-and-drop attachment path (`DropTarget.onDragDone`) is tested via `_FakeDropItem`, but only for image files. No test covers the "non-image file" drop path or the error case where the dropped file cannot be read.
   **RESOLVED:** done — the non-image (.txt) drop path was already covered; the missing unreadable-file case is added: an image-extension drop pointing at a nonexistent path is driven through `handleDroppedMedia` under `tester.runAsync` (the import loop does real file I/O that never completes in the fake-async zone) and must log via `DomainLogger.error(subDomain: 'importDroppedImages')` without escaping.
