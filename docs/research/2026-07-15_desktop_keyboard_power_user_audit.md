@@ -1,7 +1,7 @@
 # Desktop Keyboard Power-User Audit
 
-**Date:** 2026-07-15  
-**Scope:** desktop keyboard command system delivered by PR #3468  
+**Date:** 2026-07-15
+**Scope:** desktop keyboard command system delivered by PR #3468
 **Method:** implementation-backed review through four expert lenses
 
 This is a structured Codex self-review of the implemented behavior, source,
@@ -78,4 +78,3 @@ head:
    with the separate Glados lane and required integration checks.
 4. Codecov reports exactly 100% patch coverage for executable changed lines.
 5. Every actionable review thread is addressed and no unresolved thread remains.
-
