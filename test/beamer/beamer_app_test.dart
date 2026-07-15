@@ -31,6 +31,8 @@ import 'package:lotti/features/design_system/components/navigation/desktop_navig
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
@@ -496,6 +498,65 @@ Future<void> _registerAppScreenGetIt(
         ..registerSingleton<TimeService>(mockTimeService);
     },
   );
+}
+
+Future<void> _pumpReadyMyBeamerApp(
+  WidgetTester tester, {
+  required MyBeamerApp app,
+}) async {
+  final mockMatrix = MockMatrixService();
+  when(
+    mockMatrix.getIncomingKeyVerificationStream,
+  ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+  when(
+    () => mockMatrix.incomingKeyVerificationRunnerStream,
+  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+
+  final mockOutboxService = MockOutboxService();
+  when(
+    () => mockOutboxService.notLoggedInGateStream,
+  ).thenAnswer((_) => const Stream<void>.empty());
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        themingControllerProvider.overrideWith(ReadyThemingController.new),
+        enableTooltipsProvider.overrideWith((ref) => Stream.value(true)),
+        zoomControllerProvider.overrideWith(TestZoomController.new),
+        agentInitializationProvider.overrideWith((ref) async {}),
+        matrixServiceProvider.overrideWithValue(mockMatrix),
+        loginStateStreamProvider.overrideWith(
+          (ref) => Stream.value(LoginState.loggedIn),
+        ),
+        outboxServiceProvider.overrideWithValue(mockOutboxService),
+        aiSetupPromptServiceProvider.overrideWith(
+          MockAiSetupPromptService.new,
+        ),
+        audioRecorderControllerProvider.overrideWith(
+          () => StubAudioRecorderController(
+            AudioRecorderState(
+              status: AudioRecorderStatus.stopped,
+              progress: Duration.zero,
+              vu: -20,
+              dBFS: -160,
+              showIndicator: false,
+              modalVisible: false,
+            ),
+          ),
+        ),
+        shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
+        shouldAutoShowOnboardingProvider.overrideWith((ref) async => false),
+        savedTaskFiltersControllerProvider.overrideWith(
+          () => _StubSavedTaskFiltersController(const []),
+        ),
+        currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
+        tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+      ],
+      child: app,
+    ),
+  );
+  await tester.pump();
+  await tester.pump();
 }
 
 Stream<JournalEntity?> _emptyTimeStream(Invocation _) =>
@@ -3302,66 +3363,13 @@ void main() {
         final spyActivity = _SpyUserActivityService();
         addTearDown(spyActivity.dispose);
 
-        final mockMatrix = MockMatrixService();
-        when(
-          mockMatrix.getIncomingKeyVerificationStream,
-        ).thenAnswer((_) => const Stream<KeyVerification>.empty());
-        when(
-          () => mockMatrix.incomingKeyVerificationRunnerStream,
-        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
-
-        final mockOutboxService = MockOutboxService();
-        when(
-          () => mockOutboxService.notLoggedInGateStream,
-        ).thenAnswer((_) => const Stream<void>.empty());
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              themingControllerProvider.overrideWith(
-                ReadyThemingController.new,
-              ),
-              enableTooltipsProvider.overrideWith((ref) => Stream.value(true)),
-              zoomControllerProvider.overrideWith(TestZoomController.new),
-              agentInitializationProvider.overrideWith((ref) async {}),
-              matrixServiceProvider.overrideWithValue(mockMatrix),
-              loginStateStreamProvider.overrideWith(
-                (ref) => Stream.value(LoginState.loggedIn),
-              ),
-              outboxServiceProvider.overrideWithValue(mockOutboxService),
-              aiSetupPromptServiceProvider.overrideWith(
-                MockAiSetupPromptService.new,
-              ),
-              audioRecorderControllerProvider.overrideWith(
-                () => StubAudioRecorderController(
-                  AudioRecorderState(
-                    status: AudioRecorderStatus.stopped,
-                    progress: Duration.zero,
-                    vu: -20,
-                    dBFS: -160,
-                    showIndicator: false,
-                    modalVisible: false,
-                  ),
-                ),
-              ),
-              shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
-              shouldAutoShowOnboardingProvider.overrideWith(
-                (ref) async => false,
-              ),
-              savedTaskFiltersControllerProvider.overrideWith(
-                () => _StubSavedTaskFiltersController(const []),
-              ),
-              currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
-              tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
-            ],
-            child: MyBeamerApp(
-              navService: mockNavService,
-              userActivityService: spyActivity,
-            ),
+        await _pumpReadyMyBeamerApp(
+          tester,
+          app: MyBeamerApp(
+            navService: mockNavService,
+            userActivityService: spyActivity,
           ),
         );
-        await tester.pump();
-        await tester.pump();
 
         // The full app tree is up (not the loading shell).
         expect(find.byType(ZoomWrapper), findsOneWidget);
@@ -3418,6 +3426,147 @@ void main() {
         await tester.pump();
       },
     );
+
+    testWidgets('global commands dispatch creation, navigation, and zoom', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService();
+      await _stubNavService(
+        mockNavService,
+        indexStream: const Stream<int>.empty(),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+        isEventsEnabled: () => true,
+      );
+      const navIndexes = <AppCommandId, int>{
+        AppCommandId.navigateTasks: 0,
+        AppCommandId.navigateDailyOs: 1,
+        AppCommandId.navigateProjects: 2,
+        AppCommandId.navigateHabits: 3,
+        AppCommandId.navigateDashboards: 4,
+        AppCommandId.navigateJournal: 5,
+        AppCommandId.navigateEvents: 6,
+        AppCommandId.navigateSettings: 7,
+      };
+      when(() => mockNavService.tasksIndex).thenReturn(0);
+      when(() => mockNavService.calendarIndex).thenReturn(1);
+      when(() => mockNavService.projectsIndex).thenReturn(2);
+      when(() => mockNavService.habitsIndex).thenReturn(3);
+      when(() => mockNavService.dashboardsIndex).thenReturn(4);
+      when(() => mockNavService.journalIndex).thenReturn(5);
+      when(() => mockNavService.eventsIndex).thenReturn(6);
+      when(() => mockNavService.settingsIndex).thenReturn(7);
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      final resolvedLinkedIds = <String?>[];
+      var shouldFailScreenshot = false;
+      Future<Object?> recordCreation({String? linkedId}) async {
+        resolvedLinkedIds.add(linkedId);
+        return null;
+      }
+
+      Future<Object?> captureScreenshot({String? linkedId}) async {
+        if (shouldFailScreenshot) throw StateError('capture failed');
+        resolvedLinkedIds.add(linkedId);
+        return null;
+      }
+
+      final userActivityService = _SpyUserActivityService();
+      addTearDown(userActivityService.dispose);
+
+      await _pumpReadyMyBeamerApp(
+        tester,
+        app: MyBeamerApp(
+          navService: mockNavService,
+          userActivityService: userActivityService,
+          linkedIdResolver: () async => 'linked-entry',
+          createTextEntryAction: recordCreation,
+          createTaskAction: recordCreation,
+          captureScreenshotAction: captureScreenshot,
+        ),
+      );
+
+      final commandContext = tester.element(find.byType(ZoomWrapper));
+      final commandController = AppCommandControllerProvider.of(
+        commandContext,
+      );
+      final messages = AppLocalizations.of(commandContext)!;
+
+      Future<void> openAndClose(AppCommandId id, String title) async {
+        expect(commandController.isAvailable(commandContext, id), isTrue);
+        final invocation = commandController.invoke(commandContext, id);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text(title), findsWidgets);
+        Navigator.of(tester.element(find.text(title).first)).pop();
+        await tester.pump();
+        expect(await invocation, isTrue);
+      }
+
+      await openAndClose(
+        AppCommandId.openCommandPalette,
+        messages.commandPaletteTitle,
+      );
+      await openAndClose(
+        AppCommandId.openShortcutHelp,
+        messages.keyboardShortcutsTitle,
+      );
+
+      for (final id in const [
+        AppCommandId.createTextEntry,
+        AppCommandId.createTask,
+        AppCommandId.captureScreenshot,
+      ]) {
+        expect(await commandController.invoke(commandContext, id), isTrue);
+      }
+      expect(resolvedLinkedIds, const [
+        'linked-entry',
+        'linked-entry',
+        'linked-entry',
+      ]);
+
+      for (final entry in navIndexes.entries) {
+        expect(
+          await commandController.invoke(commandContext, entry.key),
+          isTrue,
+        );
+        verify(() => mockNavService.tapIndex(entry.value)).called(1);
+      }
+
+      final container = ProviderScope.containerOf(commandContext);
+      expect(container.read(zoomControllerProvider), defaultZoomScale);
+      expect(
+        await commandController.invoke(commandContext, AppCommandId.zoomIn),
+        isTrue,
+      );
+      expect(container.read(zoomControllerProvider), 1.1);
+      expect(
+        await commandController.invoke(commandContext, AppCommandId.zoomOut),
+        isTrue,
+      );
+      expect(container.read(zoomControllerProvider), defaultZoomScale);
+      container.read(zoomControllerProvider.notifier).zoomIn();
+      expect(
+        await commandController.invoke(commandContext, AppCommandId.resetZoom),
+        isTrue,
+      );
+      expect(container.read(zoomControllerProvider), defaultZoomScale);
+
+      shouldFailScreenshot = true;
+      expect(
+        await commandController.invoke(
+          commandContext,
+          AppCommandId.captureScreenshot,
+        ),
+        isFalse,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
   });
 }
 

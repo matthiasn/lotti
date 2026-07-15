@@ -1275,15 +1275,29 @@ List<_AppNavigationDestinationKind> _enabledDestinationKinds({
   ];
 }
 
+typedef GlobalCommandLinkedIdResolver = Future<String?> Function();
+typedef GlobalCommandCreationAction =
+    Future<Object?> Function({String? linkedId});
+
 class MyBeamerApp extends ConsumerStatefulWidget {
   const MyBeamerApp({
     super.key,
     this.navService,
     this.userActivityService,
+    this.linkedIdResolver = getIdFromSavedRoute,
+    this.createTextEntryAction = createTextEntry,
+    this.createTaskAction = createTask,
+    this.captureScreenshotAction = createScreenshot,
   });
 
   final NavService? navService;
   final UserActivityService? userActivityService;
+
+  /// Testable boundary around route lookup and side-effectful creation.
+  final GlobalCommandLinkedIdResolver linkedIdResolver;
+  final GlobalCommandCreationAction createTextEntryAction;
+  final GlobalCommandCreationAction createTaskAction;
+  final GlobalCommandCreationAction captureScreenshotAction;
 
   @override
   ConsumerState<MyBeamerApp> createState() => _MyBeamerAppState();
@@ -1416,31 +1430,35 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
     final zoomController = ref.read(zoomControllerProvider.notifier);
     final handlers = <AppCommandId, AppCommandHandler>{
       AppCommandId.openCommandPalette: AppCommandHandler(
-        invoke: (invocation) => showAppCommandPalette(
-          invocation.context,
-          invocation.snapshot,
-        ),
+        invoke: (invocation) {
+          final modalContext =
+              routerDelegate.navigatorKey.currentContext ?? invocation.context;
+          return showAppCommandPalette(modalContext, invocation.snapshot);
+        },
       ),
       AppCommandId.openShortcutHelp: AppCommandHandler(
-        invoke: (invocation) =>
-            showKeyboardShortcutsOverlay(invocation.context),
+        invoke: (invocation) {
+          final modalContext =
+              routerDelegate.navigatorKey.currentContext ?? invocation.context;
+          return showKeyboardShortcutsOverlay(modalContext);
+        },
       ),
       AppCommandId.createTextEntry: AppCommandHandler(
         invoke: (_) async {
-          final linkedId = await getIdFromSavedRoute();
-          await createTextEntry(linkedId: linkedId);
+          final linkedId = await widget.linkedIdResolver();
+          await widget.createTextEntryAction(linkedId: linkedId);
         },
       ),
       AppCommandId.createTask: AppCommandHandler(
         invoke: (_) async {
-          final linkedId = await getIdFromSavedRoute();
-          await createTask(linkedId: linkedId);
+          final linkedId = await widget.linkedIdResolver();
+          await widget.createTaskAction(linkedId: linkedId);
         },
       ),
       AppCommandId.captureScreenshot: AppCommandHandler(
         invoke: (_) async {
-          final linkedId = await getIdFromSavedRoute();
-          await createScreenshot(linkedId: linkedId);
+          final linkedId = await widget.linkedIdResolver();
+          await widget.captureScreenshotAction(linkedId: linkedId);
         },
       ),
       AppCommandId.navigateTasks: AppCommandHandler(
