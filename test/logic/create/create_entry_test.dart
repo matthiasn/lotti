@@ -197,7 +197,7 @@ void main() {
       const categoryId = 'filtered-category';
       const projectId = 'filtered-project';
       const labelIds = ['label-1', 'label-2'];
-      final testDate = DateTime(2024, 6, 15);
+      final testDate = DateTime.utc(2024, 6, 15);
       final project = ProjectEntry(
         meta: Metadata(
           id: projectId,
