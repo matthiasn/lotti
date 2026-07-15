@@ -13,6 +13,7 @@ import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
@@ -134,6 +135,9 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
         scrollable: true,
       ),
       'theming': SettingsPanelSpec(build: _themingPanel, scrollable: true),
+      'keyboard-shortcuts': SettingsPanelSpec(
+        build: _keyboardShortcutsPanel,
+      ),
       'speech': SettingsPanelSpec(build: _speechPanel, scrollable: true),
       'advanced-about': SettingsPanelSpec(
         build: _advancedAboutPanel,
@@ -231,6 +235,8 @@ Widget _flagsPanel(BuildContext context) => const FlagsBody();
 Widget _recordingStylePanel(BuildContext context) =>
     const RecordingStyleSettingsBody();
 Widget _themingPanel(BuildContext context) => const ThemingBody();
+Widget _keyboardShortcutsPanel(BuildContext context) =>
+    const KeyboardShortcutsBody();
 Widget _speechPanel(BuildContext context) => const SpeechSettingsBody();
 Widget _advancedAboutPanel(BuildContext context) => const AboutBody();
 Widget _advancedMaintenancePanel(BuildContext context) =>

@@ -16,6 +16,9 @@ import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
@@ -51,6 +54,12 @@ Finder colorFieldFinder() => find.descendant(
   of: find.byType(CategoryColorPicker),
   matching: find.byType(InkWell),
 );
+
+Future<void> sendCtrlS(WidgetTester tester) async {
+  await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+  await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+  await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+}
 
 void main() {
   setUpAll(() {
@@ -98,9 +107,13 @@ void main() {
             categoryRepositoryProvider.overrideWithValue(mockRepository),
             ...extraOverrides,
           ],
-          child: createMode
-              ? const CategoryDetailsPage()
-              : CategoryDetailsPage(categoryId: testCategoryId),
+          child: AppCommandHost(
+            handlers: const <AppCommandId, AppCommandHandler>{},
+            platform: TargetPlatform.windows,
+            child: createMode
+                ? const CategoryDetailsPage()
+                : CategoryDetailsPage(categoryId: testCategoryId),
+          ),
         ),
       );
       if (settle) {
@@ -948,9 +961,7 @@ void main() {
         await tester.enterText(nameFieldFinder(), 'Updated');
         await tester.pump();
 
-        await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
-        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
-        await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+        await sendCtrlS(tester);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -983,9 +994,7 @@ void main() {
         await tester.tap(nameFieldFinder());
         await tester.pump();
 
-        await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
-        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
-        await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+        await sendCtrlS(tester);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -993,6 +1002,54 @@ void main() {
         expect(beamedTo, isNull);
 
         await streamController.close();
+      });
+
+      testWidgets('Ctrl+S in create mode follows live name validity', (
+        tester,
+      ) async {
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+
+        when(
+          () => mockRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        ).thenAnswer(
+          (_) async => CategoryTestUtils.createTestCategory(id: 'cat-new'),
+        );
+
+        await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
+
+        await tester.tap(nameFieldFinder());
+        await tester.pump();
+        await sendCtrlS(tester);
+        await tester.pump();
+
+        verifyNever(
+          () => mockRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        );
+        expect(beamedTo, isNull);
+
+        await tester.enterText(nameFieldFinder(), 'New Category');
+        await tester.pump();
+        await sendCtrlS(tester);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        verify(
+          () => mockRepository.createCategory(
+            name: 'New Category',
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        ).called(1);
+        expect(beamedTo, '/settings/categories/cat-new');
       });
     });
 

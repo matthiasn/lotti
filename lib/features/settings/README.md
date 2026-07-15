@@ -381,9 +381,10 @@ capped column on wide desktop windows.
 All detail editors render through the shared settings-detail kit
 ([`lib/widgets/settings/settings_detail_scaffold.dart`](../../widgets/settings/settings_detail_scaffold.dart)):
 a `SettingsDetailScaffold` provides the header (back beams to the list
-route), the Cmd/Ctrl+S save shortcut (with a tooltip on desktop), a sticky
-glass `SettingsFormActionBar` with the primary save pill (gated on the
-page's dirty state; disabled renders as quiet translucent glass) and
+route), a catalog-driven Primary+S save handler in the nearest
+`AppCommandScope`, and a sticky glass `SettingsFormActionBar` with the primary
+save pill (gated on the page's dirty state; the command uses the same enabled
+predicate, and disabled renders as quiet translucent glass) and
 cancel, and — in edit mode — a full-width `SettingsDeleteRow` at the end of
 the form that reuses each page's confirm flow. Tap-to-pick fields render as
 `SettingsPickerField`s.

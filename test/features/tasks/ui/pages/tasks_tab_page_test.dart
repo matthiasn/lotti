@@ -13,6 +13,9 @@ import 'package:lotti/features/design_system/components/headers/tab_section_head
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
@@ -192,8 +195,12 @@ void main() {
     fakeController = FakeJournalPageController(state);
 
     return makeTestableWidgetNoScroll(
-      TasksTabPage(
-        onCreateTaskPressed: onCreateTaskPressed,
+      AppCommandHost(
+        handlers: const {},
+        platform: TargetPlatform.windows,
+        child: TasksTabPage(
+          onCreateTaskPressed: onCreateTaskPressed,
+        ),
       ),
       mediaQueryData: mediaQueryData,
       overrides: [
@@ -265,6 +272,49 @@ void main() {
     expect(receivedContext?.projectId, isNull);
     expect(receivedContext?.labelIds, isEmpty);
     expect(receivedContext?.status, isNull);
+  });
+
+  testWidgets('commands refresh, create, and focus task search', (
+    tester,
+  ) async {
+    TaskCreationFilterContext? createdFilterContext;
+    await tester.pumpWidget(
+      buildSubject(
+        state: state(),
+        onCreateTaskPressed: (ref, filterContext) async {
+          createdFilterContext = filterContext;
+        },
+      ),
+    );
+    await tester.pump();
+
+    final commandContext = tester.element(find.byType(Scaffold).first);
+    final commandController = AppCommandControllerProvider.of(commandContext);
+    expect(
+      await commandController.invoke(commandContext, AppCommandId.refresh),
+      isTrue,
+    );
+    expect(fakeController.refreshQueryPreserveFlags, contains(true));
+
+    expect(
+      await commandController.invoke(
+        commandContext,
+        AppCommandId.createInContext,
+      ),
+      isTrue,
+    );
+    expect(createdFilterContext?.categoryId, 'cat-1');
+    expect(createdFilterContext?.status, 'OPEN');
+
+    expect(
+      await commandController.invoke(commandContext, AppCommandId.focusSearch),
+      isTrue,
+    );
+    await tester.pump();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus,
+      isTrue,
+    );
   });
 
   test('filter inheritance ignores empty and Unassigned selections', () {

@@ -2368,42 +2368,6 @@ void main() {
     });
   });
 
-  group('taskTitleFocusNodeListener method', () {
-    setUp(() {
-      // Ensure mocks are set up for this group
-      when(
-        () => mockJournalDb.journalEntityById(testTask.meta.id),
-      ).thenAnswer((_) async => testTask);
-    });
-
-    test('taskTitleFocusNodeListener executes without errors', () async {
-      final container = makeProviderContainer();
-      final entryId = testTask.meta.id;
-      final testEntryProvider = entryControllerProvider(entryId);
-      final notifier = container.read(testEntryProvider.notifier);
-
-      final stateBefore = await container.read(testEntryProvider.future);
-
-      // Call listener multiple times to exercise all code paths
-      // This executes:
-      // - if (isDesktop) check
-      // - if (taskTitleFocusNode.hasFocus) check and else branch
-      // - hotKeyManager.register(...) and unregister(...) calls on desktop
-      notifier
-        ..taskTitleFocusNodeListener()
-        ..taskTitleFocusNodeListener()
-        ..taskTitleFocusNodeListener();
-
-      // Verify that the state hasn't changed (taskTitleFocusNodeListener
-      // doesn't modify EntryState, it only manages hotkeys)
-      final stateAfter = await container.read(testEntryProvider.future);
-      expect(stateAfter, stateBefore);
-
-      // Verify that the entry is still accessible and valid
-      expect(stateAfter?.entry, isA<Task>());
-    });
-  });
-
   group('save method - JournalEvent', () {
     setUp(() {
       reset(mockPersistenceLogic);
@@ -3439,64 +3403,6 @@ void main() {
         expect(stateAfterBlur?.isFocused, isFalse);
         // Toolbar visibility is retained after blur (not cleared by the listener).
         expect(stateAfterBlur?.shouldShowEditorToolBar, isTrue);
-
-        // Dispose and drain the cacheFor timer (just past the cache duration).
-        container.dispose();
-        await tester.pump(entryCacheDuration + const Duration(milliseconds: 1));
-      },
-    );
-  });
-
-  group('taskTitleFocusNodeListener – widget-focus branch (lines 71-74)', () {
-    setUp(() {
-      when(
-        () => mockJournalDb.journalEntityById(testTask.meta.id),
-      ).thenAnswer((_) async => testTask);
-    });
-
-    testWidgets(
-      'registers hotkey when taskTitleFocusNode gains focus on desktop',
-      (tester) async {
-        final container = ProviderContainer(
-          overrides: [agentInitializationProvider.overrideWith((ref) async {})],
-        );
-        final entryId = testTask.meta.id;
-        final provider = entryControllerProvider(entryId);
-        final notifier = container.read(provider.notifier);
-
-        await container.read(provider.future);
-
-        // Attach taskTitleFocusNode to a real widget tree.
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              home: Focus(
-                focusNode: notifier.taskTitleFocusNode,
-                child: const SizedBox(),
-              ),
-            ),
-          ),
-        );
-
-        // Request focus → hasFocus becomes true → listener covers
-        // the register branch (lines 71-74).
-        notifier.taskTitleFocusNode.requestFocus();
-        await tester.pump();
-
-        // Calling the listener manually exercises lines 70-74.
-        // No exception should be thrown.
-        notifier.taskTitleFocusNodeListener();
-
-        // Lose focus → covers the unregister else branch (line 78).
-        notifier.taskTitleFocusNode.unfocus();
-        await tester.pump();
-
-        // Called again with hasFocus=false; should not throw.
-        notifier.taskTitleFocusNodeListener();
-
-        // State is not modified by taskTitleFocusNodeListener.
-        expect(container.read(provider).value?.entry, isA<Task>());
 
         // Dispose and drain the cacheFor timer (just past the cache duration).
         container.dispose();

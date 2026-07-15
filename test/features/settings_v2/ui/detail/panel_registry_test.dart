@@ -15,6 +15,7 @@ import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
+import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
@@ -65,6 +66,7 @@ void main() {
       'flags',
       'recording-style',
       'theming',
+      'keyboard-shortcuts',
       'speech',
       'advanced-about',
       'advanced-maintenance',
@@ -232,6 +234,7 @@ void main() {
           isA<RecordingStyleSettingsBody>(),
         );
         expect(build('theming'), isA<ThemingBody>());
+        expect(build('keyboard-shortcuts'), isA<KeyboardShortcutsBody>());
         expect(build('advanced-about'), isA<AboutBody>());
         expect(build('advanced-maintenance'), isA<MaintenanceBody>());
         expect(

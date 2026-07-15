@@ -2944,6 +2944,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get colorLabel => 'Culoare';
 
   @override
+  String get commandPaletteNoResults =>
+      'Nicio comandă disponibilă nu corespunde căutării dvs.';
+
+  @override
+  String get commandPaletteSearchHint => 'Căutați comenzi…';
+
+  @override
+  String get commandPaletteTitle => 'Paletă de comenzi';
+
+  @override
   String get commonError => 'Eroare';
 
   @override
@@ -5399,6 +5409,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Creează imagine din descrierea vocală';
 
   @override
+  String get goMenuTitle => 'Navigare';
+
+  @override
   String get habitActiveFromLabel => 'Data de început';
 
   @override
@@ -5618,6 +5631,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get habitsVsPreviousWeek => 'față de săptămâna trecută';
+
+  @override
+  String get helpMenuCommandPalette => 'Paletă de comenzi…';
+
+  @override
+  String get helpMenuKeyboardShortcuts => 'Comenzi rapide de la tastatură…';
+
+  @override
+  String get helpMenuTitle => 'Ajutor';
 
   @override
   String get imageGenerationError => 'Generarea imaginii a eșuat';
@@ -6198,6 +6220,151 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get journalUnlinkQuestion =>
       'Sigur doriți să despărțiți această intrare?';
+
+  @override
+  String get keyboardCommandActivate => 'Activați elementul focalizat';
+
+  @override
+  String get keyboardCommandCategoryCreation => 'Creare';
+
+  @override
+  String get keyboardCommandCategoryEditing => 'Editare';
+
+  @override
+  String get keyboardCommandCategoryGeneral => 'General';
+
+  @override
+  String get keyboardCommandCategoryListsAndControls => 'Liste și controale';
+
+  @override
+  String get keyboardCommandCategoryNavigation => 'Navigare';
+
+  @override
+  String get keyboardCommandCategoryView => 'Vizualizare';
+
+  @override
+  String get keyboardCommandCreateInContext => 'Creați în vizualizarea curentă';
+
+  @override
+  String get keyboardCommandFocusSearch => 'Focalizați căutarea';
+
+  @override
+  String get keyboardCommandMoveDown => 'Mutați în jos elementul focalizat';
+
+  @override
+  String get keyboardCommandMoveUp => 'Mutați în sus elementul focalizat';
+
+  @override
+  String keyboardCommandNavigate(String destination) {
+    return 'Navigați la $destination';
+  }
+
+  @override
+  String get keyboardCommandNextRegion => 'Focalizați panoul următor';
+
+  @override
+  String get keyboardCommandOpenPalette => 'Deschideți paleta de comenzi';
+
+  @override
+  String get keyboardCommandPageDown => 'Deplasați cu o pagină în jos';
+
+  @override
+  String get keyboardCommandPageUp => 'Deplasați cu o pagină în sus';
+
+  @override
+  String get keyboardCommandPreviousRegion => 'Focalizați panoul anterior';
+
+  @override
+  String get keyboardCommandRefresh => 'Reîmprospătați vizualizarea curentă';
+
+  @override
+  String get keyboardCommandRename => 'Redenumiți elementul focalizat';
+
+  @override
+  String get keyboardCommandSelectFirst => 'Selectați primul element';
+
+  @override
+  String get keyboardCommandSelectLast => 'Selectați ultimul element';
+
+  @override
+  String get keyboardCommandSelectNext => 'Selectați elementul următor';
+
+  @override
+  String get keyboardCommandSelectPrevious => 'Selectați elementul anterior';
+
+  @override
+  String get keyboardCommandToggle => 'Comutați elementul focalizat';
+
+  @override
+  String get keyboardKeyAlt => 'Alt';
+
+  @override
+  String get keyboardKeyArrowDown => 'Săgeată în jos';
+
+  @override
+  String get keyboardKeyArrowLeft => 'Săgeată la stânga';
+
+  @override
+  String get keyboardKeyArrowRight => 'Săgeată la dreapta';
+
+  @override
+  String get keyboardKeyArrowUp => 'Săgeată în sus';
+
+  @override
+  String get keyboardKeyControl => 'Ctrl';
+
+  @override
+  String get keyboardKeyDelete => 'Ștergere';
+
+  @override
+  String get keyboardKeyEnd => 'Sfârșit';
+
+  @override
+  String get keyboardKeyEnter => 'Enter';
+
+  @override
+  String get keyboardKeyEscape => 'Esc';
+
+  @override
+  String get keyboardKeyHome => 'Început';
+
+  @override
+  String get keyboardKeyMinus => 'Minus';
+
+  @override
+  String get keyboardKeyOr => 'sau';
+
+  @override
+  String get keyboardKeyPageDown => 'Pagina următoare';
+
+  @override
+  String get keyboardKeyPageUp => 'Pagina anterioară';
+
+  @override
+  String get keyboardKeyPlus => 'Plus';
+
+  @override
+  String get keyboardKeyShift => 'Shift';
+
+  @override
+  String get keyboardKeySpace => 'Spațiu';
+
+  @override
+  String get keyboardResizeDividerLabel => 'Redimensionați panourile';
+
+  @override
+  String get keyboardShortcutsNoResults =>
+      'Nicio comandă rapidă nu corespunde căutării dvs.';
+
+  @override
+  String get keyboardShortcutsSearchHint => 'Căutați comenzi rapide…';
+
+  @override
+  String get keyboardShortcutsSubtitle =>
+      'Toate comenzile pentru desktop și combinațiile lor actuale de taste.';
+
+  @override
+  String get keyboardShortcutsTitle => 'Comenzi rapide de la tastatură';
 
   @override
   String get knowledgeGraphEmpty => 'Încă nu există legături de explorat';
@@ -8347,6 +8514,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsHealthImportWorkout => 'Importați datele de antrenament';
+
+  @override
+  String get settingsKeyboardShortcutsSubtitle =>
+      'Aflați combinațiile de taste pentru navigare și editare mai rapide pe desktop';
+
+  @override
+  String get settingsKeyboardShortcutsTitle => 'Comenzi rapide de la tastatură';
 
   @override
   String get settingsLabelsCategoriesAdd => 'Adaugă categorie';

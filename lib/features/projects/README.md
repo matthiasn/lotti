@@ -493,3 +493,20 @@ That requires:
 - project health built from agent reports, freshness state, and recommendations
 
 Without those pieces, the feature would collapse into a nice-looking list of vague nouns. With them, it becomes an actual project layer.
+
+## Desktop Keyboard Commands
+
+The overview page wraps its active list/detail surface in a project command
+scope. Primary+F focuses the overview search field, and Primary+Shift+N opens
+the same responsive create-project modal as the floating action button.
+
+```mermaid
+flowchart LR
+  Key[Desktop command] --> Scope[Projects AppCommandScope]
+  Scope -->|Primary+F| Search[Project search FocusNode]
+  Scope -->|Primary+Shift+N| Modal[showProjectCreateModal]
+```
+
+Primary+3 navigation is global. The split-pane divider is keyboard focusable:
+Left/Right resize it, Shift uses the larger design-system step, and assistive
+technology receives slider increase/decrease actions.

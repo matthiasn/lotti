@@ -1,10 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -21,7 +19,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/platform.dart';
 
 part 'journal_page_controller_filters.dart';
 
@@ -172,9 +169,6 @@ class JournalPageController extends Notifier<JournalPageState>
     _loadPersistedFilters();
     _loadPersistedEntryTypes();
 
-    // Register hotkeys (desktop only)
-    _registerHotkeys();
-
     // Clean up on dispose
     ref.onDispose(() {
       _subscriptions.dispose();
@@ -314,19 +308,6 @@ class JournalPageController extends Notifier<JournalPageState>
       }
     } else {
       _needsRefreshOnVisible = true;
-    }
-  }
-
-  void _registerHotkeys() {
-    if (isDesktop) {
-      hotKeyManager.register(
-        HotKey(
-          key: LogicalKeyboardKey.keyR,
-          modifiers: [HotKeyModifier.meta],
-          scope: HotKeyScope.inapp,
-        ),
-        keyDownHandler: (hotKey) => refreshQuery(preserveVisibleItems: true),
-      );
     }
   }
 

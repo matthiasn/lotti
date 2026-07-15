@@ -14,6 +14,9 @@ import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart'
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/journal_app_bar.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
@@ -123,75 +126,83 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
       return const EmptyScaffoldWithTitle('');
     }
 
-    return MediaDropTarget(
-      onFiles: (files) => handleDroppedMediaFiles(
-        files,
-        linkedId: item.meta.id,
-        categoryId: item.meta.categoryId,
-        analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
-      ),
-      child: Scaffold(
-        floatingActionButton: FloatingAddActionButton(
-          linkedFromId: item.meta.id,
-          categoryId: item.meta.categoryId,
+    return AppCommandScope(
+      debugLabel: 'entry-details',
+      handlers: {
+        AppCommandId.save: AppCommandHandler(
+          invoke: (_) => ref.read(provider.notifier).save(),
         ),
-        body: Stack(
-          children: [
-            CustomScrollView(
-              scrollCacheExtent: const ScrollCacheExtent.pixels(4000),
-              controller: _scrollController,
-              slivers: [
-                JournalSliverAppBar(entryId: widget.itemId),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: 8,
-                      bottom: 200,
-                      left: 5,
-                      right: 5,
-                    ),
-                    child:
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: <Widget>[
-                            EntryDetailsWidget(
-                              itemId: widget.itemId,
-                              showTaskDetails: true,
-                              showAiEntry: true,
+      },
+      child: MediaDropTarget(
+        onFiles: (files) => handleDroppedMediaFiles(
+          files,
+          linkedId: item.meta.id,
+          categoryId: item.meta.categoryId,
+          analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
+        ),
+        child: Scaffold(
+          floatingActionButton: FloatingAddActionButton(
+            linkedFromId: item.meta.id,
+            categoryId: item.meta.categoryId,
+          ),
+          body: Stack(
+            children: [
+              CustomScrollView(
+                scrollCacheExtent: const ScrollCacheExtent.pixels(4000),
+                controller: _scrollController,
+                slivers: [
+                  JournalSliverAppBar(entryId: widget.itemId),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        top: 8,
+                        bottom: 200,
+                        left: 5,
+                        right: 5,
+                      ),
+                      child:
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: <Widget>[
+                              EntryDetailsWidget(
+                                itemId: widget.itemId,
+                                showTaskDetails: true,
+                                showAiEntry: true,
+                              ),
+                              LinkedEntriesWithTimer(
+                                item: item,
+                                entryKeyBuilder: _getEntryKey,
+                                highlightedEntryId: highlightedEntryId,
+                              ),
+                              LinkedFromEntriesWidget(item),
+                              if (item is ChecklistItem)
+                                LinkedFromChecklistWidget(item),
+                              if (item is Checklist) LinkedFromTaskWidget(item),
+                            ],
+                          ).animate().fadeIn(
+                            duration: const Duration(
+                              milliseconds: 100,
                             ),
-                            LinkedEntriesWithTimer(
-                              item: item,
-                              entryKeyBuilder: _getEntryKey,
-                              highlightedEntryId: highlightedEntryId,
-                            ),
-                            LinkedFromEntriesWidget(item),
-                            if (item is ChecklistItem)
-                              LinkedFromChecklistWidget(item),
-                            if (item is Checklist) LinkedFromTaskWidget(item),
-                          ],
-                        ).animate().fadeIn(
-                          duration: const Duration(
-                            milliseconds: 100,
                           ),
-                        ),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: AiRunningAnimationWrapperCard(
-                entryId: widget.itemId,
-                height: 50,
-                isInteractive: true,
-                responseTypes: const {
-                  AiResponseType.imageAnalysis,
-                  AiResponseType.audioTranscription,
-                  AiResponseType.promptGeneration,
-                },
+                ],
               ),
-            ),
-          ],
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: AiRunningAnimationWrapperCard(
+                  entryId: widget.itemId,
+                  height: 50,
+                  isInteractive: true,
+                  responseTypes: const {
+                    AiResponseType.imageAnalysis,
+                    AiResponseType.audioTranscription,
+                    AiResponseType.promptGeneration,
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -457,7 +457,7 @@ flowchart TD
 
 `HabitDialog` hosts `_CompletionForm`, the actual write surface for success, skip, and fail. The form shows the habit name, optional description, the date being recorded (`DateTimeField`), an optional comment, an **outcome segmented picker**, and a single primary **Record** button (`habitsRecordButton`).
 
-- The outcome picker is a `DsSegmentedToggle<HabitCompletionType>` with **Success | Skip | Missed** in positive-first reading order, defaulting to `success` (the overwhelmingly common case), so the happy path is a single tap. The selected outcome drives both the Record button and the desktop Cmd+S shortcut.
+- The outcome picker is a `DsSegmentedToggle<HabitCompletionType>` with **Success | Skip | Missed** in positive-first reading order, defaulting to `success` (the overwhelmingly common case), so the happy path is a single tap. The selected outcome drives both the Record button and the dialog's lifecycle-bound desktop Primary+S command (Command on macOS, Control on Windows/Linux).
 - Backfilled completions are supported because the date field lets the user choose the effective date; picking a non-today date sets `_started` to the end of that day.
 - If the habit has a `dashboardId` **and** the card was not opened from within that same dashboard, the dialog scrolls the linked dashboard **above** the form (the form is no longer floated over a transparent embed). When the card is rendered inside that dashboard (via `DashboardHabitsChart`, which passes `showLinkedDashboard: false`), the embed is suppressed — re-opening the dashboard the user is already viewing would be redundant — and the form aligns to the bottom on a transparent background. The flag is threaded `DashboardHabitsChart → HabitCompletionCard.showLinkedDashboard → HabitDialog.showLinkedDashboard`, and both the card's sheet background and the dialog's embed gate apply the same "only when it will actually show" rule.
 
@@ -548,3 +548,25 @@ So the architecture leans into that:
 - a shared design-system elevation language so the calm card-on-canvas surfaces stay consistent with Time Analysis
 
 That keeps the UI declarative, keeps time-sensitive logic out of widget trees, and avoids forcing every habit interaction through one giant monolithic state object.
+
+## Desktop Keyboard Commands
+
+The Habits tab contributes Primary+F from its page scope. If inline search is
+hidden, the command toggles `showSearch`, waits for the field to mount, and then
+moves focus into it. The completion dialog contributes Primary+S and invokes
+the same `_save` path as the Record button.
+
+```mermaid
+sequenceDiagram
+  participant Key as Primary+F
+  participant Page as HabitsTabPage
+  participant State as HabitsController
+  participant Field as HabitsSearchWidget
+  Key->>Page: focusSearch command
+  Page->>State: toggleShowSearch when hidden
+  State-->>Page: rebuild with search field
+  Page->>Field: requestFocus next frame
+```
+
+Primary+4 navigation remains global. Command handlers are widget-scoped and
+replace the previous dialog-level hotkey-manager registration.

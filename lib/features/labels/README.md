@@ -252,7 +252,7 @@ The details page is the route-backed editor for create and edit flows. It suppor
 - a privacy toggle in its own Options section card (shared title/subtitle copy with the other definition editors)
 - soft delete in edit mode
 
-The action bar's Save pill is dirty-gated on the controller's `hasChanges` flag: a pristine editor renders the quiet disabled pill, like every sibling definitions editor. In create mode a non-empty name already counts as dirty.
+The action bar's Save pill is dirty-gated on the controller's `hasChanges` flag: a pristine editor renders the quiet disabled pill, like every sibling definitions editor. The shared settings-detail `AppCommandScope` exposes Primary+S with that same enabled predicate, so keyboard dispatch and the visible action cannot drift. In create mode a non-empty name already counts as dirty.
 
 ## Assignment UI
 

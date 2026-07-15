@@ -38,6 +38,10 @@ import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -261,10 +265,14 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: InferenceProviderEditPage(
-          configId: configId,
-          preselectedType: preselectedType,
-          focusApiKey: focusApiKey,
+        home: AppCommandHost(
+          handlers: const <AppCommandId, AppCommandHandler>{},
+          platform: TargetPlatform.windows,
+          child: InferenceProviderEditPage(
+            configId: configId,
+            preselectedType: preselectedType,
+            focusApiKey: focusApiKey,
+          ),
         ),
       ),
     );
@@ -673,27 +681,33 @@ void main() {
       verify(() => mockRepository.saveConfig(any())).called(1);
     });
 
-    testWidgets('handles keyboard shortcuts', (WidgetTester tester) async {
-      await _setTestSurface(tester);
+    testWidgets(
+      'incomplete form keeps the shared save command unavailable',
+      (WidgetTester tester) async {
+        await _setTestSurface(tester);
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      // Fill form to make it valid (genericOpenAi default doesn't require API key)
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Enter a friendly name'),
-        'Test Provider',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'https://api.example.com'),
-        'https://test.com',
-      );
-      await tester.pump();
+        // Partial input is not enough to enable the guarded save command.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter a friendly name'),
+          'Test Provider',
+        );
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'https://api.example.com'),
+          'https://test.com',
+        );
+        await tester.pump();
 
-      // Verify CallbackShortcuts widget exists
-      expect(find.byType(CallbackShortcuts), findsWidgets);
-    });
+        final pageContext = tester.element(
+          find.byType(InferenceProviderEditPage),
+        );
+        final controller = AppCommandControllerProvider.of(pageContext);
+        expect(controller.isAvailable(pageContext, AppCommandId.save), isFalse);
+      },
+    );
   });
 
   group('API Key Field Visibility for Different Providers', () {
@@ -3849,9 +3863,8 @@ void main() {
     );
 
     testWidgets(
-      'pressing Cmd+S on the keyboard triggers the save handler when the '
-      'form is valid — covers the CallbackShortcuts binding registered '
-      'in the build path',
+      'pressing Primary+S invokes the shared save command when the form is '
+      'valid',
       (tester) async {
         await _setTestSurface(tester, height: 1200);
 
@@ -3872,9 +3885,15 @@ void main() {
         );
         await tester.pump();
 
-        await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
+        final fieldContext = tester.element(
+          find.widgetWithText(TextFormField, 'Renamed Provider'),
+        );
+        final controller = AppCommandControllerProvider.of(fieldContext);
+        expect(controller.isAvailable(fieldContext, AppCommandId.save), isTrue);
+
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
         await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
-        await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
         await tester.pump();
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -9,6 +11,9 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/get_it.dart';
@@ -145,20 +150,24 @@ void main() {
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        Navigator(
-          onGenerateRoute: (_) => MaterialPageRoute<void>(
-            builder: (_) => Scaffold(
-              body: Builder(
-                builder: (context) => Center(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => Scaffold(
-                          body: ProjectCreateForm(categoryId: categoryId),
+        AppCommandHost(
+          handlers: const {},
+          platform: TargetPlatform.windows,
+          child: Navigator(
+            onGenerateRoute: (_) => MaterialPageRoute<void>(
+              builder: (_) => Scaffold(
+                body: Builder(
+                  builder: (context) => Center(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => Scaffold(
+                            body: ProjectCreateForm(categoryId: categoryId),
+                          ),
                         ),
                       ),
+                      child: const Text('open'),
                     ),
-                    child: const Text('open'),
                   ),
                 ),
               ),
@@ -493,7 +502,9 @@ void main() {
       expect(find.byIcon(Icons.clear), findsNothing);
     });
 
-    testWidgets('Ctrl+S triggers create', (tester) async {
+    testWidgets('Primary+S dispatches save and creates the project', (
+      tester,
+    ) async {
       stubCreateMetadata();
       stubCreateProject();
 
@@ -508,6 +519,43 @@ void main() {
       await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
       await tester.pumpAndSettle();
 
+      verify(
+        () => mockProjectRepo.createProject(project: any(named: 'project')),
+      ).called(1);
+    });
+
+    testWidgets('save command is unavailable while creation is in flight', (
+      tester,
+    ) async {
+      final metadata = Completer<Metadata>();
+      when(
+        () => mockPersistenceLogic.createMetadata(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) => metadata.future);
+      stubCreateProject();
+
+      await pumpForm(tester);
+      await tester.enterText(find.byType(LottiTextField), 'Pending Project');
+      await tester.pump();
+      final commandContext = tester.element(find.byType(LottiTextField));
+      final commandController = AppCommandControllerProvider.of(commandContext);
+
+      final invocation = commandController.invoke(
+        commandContext,
+        AppCommandId.save,
+      );
+      await tester.pump();
+
+      expect(
+        commandController.isAvailable(commandContext, AppCommandId.save),
+        isFalse,
+      );
+      metadata.complete(makeMetadata());
+      expect(await invocation, isTrue);
+      await tester.pumpAndSettle();
       verify(
         () => mockProjectRepo.createProject(project: any(named: 'project')),
       ).called(1);

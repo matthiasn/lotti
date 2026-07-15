@@ -9,6 +9,9 @@ import 'package:lotti/features/design_system/components/navigation/resizable_div
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
@@ -47,6 +50,7 @@ class ProjectsTabPage extends ConsumerStatefulWidget {
 
 class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
   final _scrollController = ScrollController();
+  final _searchFocusNode = FocusNode(debugLabel: 'projects-search');
 
   @override
   void initState() {
@@ -61,6 +65,7 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
     _scrollController
       ..removeListener(listener)
       ..dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -68,9 +73,10 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
   Widget build(BuildContext context) {
     final isDesktop = isDesktopLayout(context);
 
+    final Widget child;
     if (isDesktop) {
       final paneWidths = ref.watch(paneWidthControllerProvider);
-      return DecoratedBox(
+      child = DecoratedBox(
         decoration: BoxDecoration(
           color: ShowcasePalette.page(context),
         ),
@@ -80,6 +86,7 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
               width: paneWidths.listPaneWidth,
               child: _ProjectsListScaffold(
                 scrollController: _scrollController,
+                searchFocusNode: _searchFocusNode,
               ),
             ),
             ResizableDivider(
@@ -106,10 +113,25 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
           ],
         ),
       );
+    } else {
+      child = _ProjectsListScaffold(
+        scrollController: _scrollController,
+        searchFocusNode: _searchFocusNode,
+      );
     }
 
-    return _ProjectsListScaffold(
-      scrollController: _scrollController,
+    return AppCommandScope(
+      debugLabel: 'projects-list',
+      handlers: {
+        AppCommandId.focusSearch: AppCommandHandler(
+          invoke: (_) => _searchFocusNode.requestFocus(),
+        ),
+        AppCommandId.createInContext: AppCommandHandler(
+          invoke: (invocation) =>
+              showProjectCreateModal(context: invocation.context),
+        ),
+      },
+      child: child,
     );
   }
 }
@@ -119,9 +141,11 @@ final _noProjectSelectionNotifier = ValueNotifier<String?>(null);
 class _ProjectsListScaffold extends ConsumerWidget {
   const _ProjectsListScaffold({
     required this.scrollController,
+    required this.searchFocusNode,
   });
 
   final ScrollController scrollController;
+  final FocusNode searchFocusNode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -158,6 +182,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
             builder: (context, activeProjectId, _) => Column(
               children: [
                 TabSectionHeader(
+                  searchFocusNode: searchFocusNode,
                   title: context.messages.navTabTitleProjects,
                   query: filter.textQuery,
                   searchHint: context.messages.projectShowcaseSearchHint,

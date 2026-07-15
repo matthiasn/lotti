@@ -13,6 +13,9 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
@@ -144,9 +147,13 @@ void main() {
 
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        ProjectDetailPage(
-          projectId: 'test-project-id',
-          categoryId: categoryId,
+        AppCommandHost(
+          handlers: const {},
+          platform: TargetPlatform.windows,
+          child: ProjectDetailPage(
+            projectId: 'test-project-id',
+            categoryId: categoryId,
+          ),
         ),
         overrides: [
           projectDetailControllerProvider('test-project-id').overrideWith(
@@ -600,6 +607,13 @@ void main() {
           isNull,
           reason: 'Save button should be disabled when isSaving',
         );
+        final context = tester.element(saveButton);
+        expect(
+          AppCommandControllerProvider.of(
+            context,
+          ).isAvailable(context, AppCommandId.save),
+          isFalse,
+        );
       });
 
       testWidgets('save button is disabled when no changes', (tester) async {
@@ -615,12 +629,19 @@ void main() {
           isNull,
           reason: 'Save button should be disabled when no changes',
         );
+        final context = tester.element(saveButton);
+        expect(
+          AppCommandControllerProvider.of(
+            context,
+          ).isAvailable(context, AppCommandId.save),
+          isFalse,
+        );
       });
 
       testWidgets('save button is enabled when hasChanges and not saving', (
         tester,
       ) async {
-        await pumpPage(
+        final controller = await pumpPage(
           tester,
           controllerState: ProjectDetailState(
             project: testProject,
@@ -640,6 +661,17 @@ void main() {
               'Save button should be enabled when hasChanges and not '
               'saving',
         );
+        final context = tester.element(saveButton);
+        final commandController = AppCommandControllerProvider.of(context);
+        expect(
+          commandController.isAvailable(context, AppCommandId.save),
+          isTrue,
+        );
+        expect(
+          await commandController.invoke(context, AppCommandId.save),
+          isTrue,
+        );
+        expect(controller.saveChangesCalls, 1);
       });
 
       testWidgets(
@@ -881,10 +913,10 @@ void main() {
         // The save button should be disabled (null onPressed), but let's
         // also try invoking _handleSave via keyboard shortcut to cover the
         // guard logic.
-        await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
         await tester.sendKeyDownEvent(LogicalKeyboardKey.keyS);
         await tester.sendKeyUpEvent(LogicalKeyboardKey.keyS);
-        await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
         await tester.pump();
 
         expect(
@@ -908,10 +940,10 @@ void main() {
           ),
         );
 
-        await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
         await tester.sendKeyDownEvent(LogicalKeyboardKey.keyS);
         await tester.sendKeyUpEvent(LogicalKeyboardKey.keyS);
-        await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
         await tester.pump();
 
         expect(

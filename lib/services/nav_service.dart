@@ -271,6 +271,7 @@ class NavService {
   int get dashboardsIndex => beamerDelegates.indexOf(dashboardsDelegate);
   int get projectsIndex => beamerDelegates.indexOf(projectsDelegate);
   int get journalIndex => beamerDelegates.indexOf(journalDelegate);
+  int get eventsIndex => beamerDelegates.indexOf(eventsDelegate);
   int get settingsIndex => beamerDelegates.indexOf(settingsDelegate);
 
   void setTabRoot(int newIndex) {

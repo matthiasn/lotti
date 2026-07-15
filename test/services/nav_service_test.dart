@@ -612,6 +612,21 @@ void main() {
         },
       );
 
+      test('events index resolves to the enabled Events delegate', () async {
+        final bench = _NavFlagBench();
+        bench.projects.add(false);
+        bench.habits.add(false);
+        bench.dashboards.add(false);
+        bench.events.add(true);
+        await pumpEventQueue();
+
+        expect(bench.navService.isEventsPageEnabled, isTrue);
+        expect(
+          bench.navService.delegateByIndex(bench.navService.eventsIndex),
+          same(bench.navService.eventsDelegate),
+        );
+      });
+
       test(
         'reports false for all optional flags when none are enabled',
         () async {

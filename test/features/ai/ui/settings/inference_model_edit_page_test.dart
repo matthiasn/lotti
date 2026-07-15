@@ -11,6 +11,10 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -97,7 +101,11 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: InferenceModelEditPage(configId: configId),
+        home: AppCommandHost(
+          handlers: const <AppCommandId, AppCommandHandler>{},
+          platform: TargetPlatform.windows,
+          child: InferenceModelEditPage(configId: configId),
+        ),
       ),
     );
   }
@@ -306,14 +314,14 @@ void main() {
       expect(find.text('Go Back'), findsNothing);
     });
 
-    testWidgets('keyboard-shortcut wrapper is preserved across the redesign', (
+    testWidgets('invalid form keeps the shared save command unavailable', (
       tester,
     ) async {
       await tester.pumpWidget(buildTestWidget());
       await pumpAndIdle(tester);
-      // The Cmd+S shortcut is still wired — guard the visible wrapper so a
-      // future refactor that removes it gets caught.
-      expect(find.byType(CallbackShortcuts), findsWidgets);
+      final pageContext = tester.element(find.byType(InferenceModelEditPage));
+      final controller = AppCommandControllerProvider.of(pageContext);
+      expect(controller.isAvailable(pageContext, AppCommandId.save), isFalse);
     });
 
     testWidgets('description field renders with its sentence-case label', (
@@ -515,7 +523,7 @@ void main() {
     );
 
     testWidgets(
-      'Cmd+S keyboard shortcut triggers save when form is valid',
+      'Primary+S invokes the shared save command when the form is valid',
       (tester) async {
         await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
         await pumpAndIdle(tester);
@@ -525,11 +533,13 @@ void main() {
         await tester.enterText(nameField, 'Name Via Shortcut');
         await tester.pump();
 
-        // Send the Cmd+S shortcut.
-        await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
-        await tester.sendKeyDownEvent(LogicalKeyboardKey.keyS);
-        await tester.sendKeyUpEvent(LogicalKeyboardKey.keyS);
-        await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
+        final pageContext = tester.element(find.byType(InferenceModelEditPage));
+        final controller = AppCommandControllerProvider.of(pageContext);
+        expect(controller.isAvailable(pageContext, AppCommandId.save), isTrue);
+
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
         await pumpAndIdle(tester);
 
         verify(() => mockRepository.saveConfig(any())).called(1);

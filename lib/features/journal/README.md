@@ -148,7 +148,8 @@ It:
 - listens to unsaved-draft state from `EditorStateService`
 - listens to `UpdateNotifications` for external DB changes touching the same entry
 - keeps focus and editor-toolbar visibility in sync with the active editor
-- registers desktop `Cmd+S` hotkeys while the relevant focus nodes are active
+- contributes lifecycle-bound `Primary+S` save handlers from the entry detail
+  widget; `Primary` resolves to Command on macOS and Control on Windows/Linux
 - routes save operations to the correct persistence path
 - exposes focused mutations such as task status/priority, event stars, checklist ordering, cover art, privacy, starring, flagging, copying, and deletion
 
@@ -512,3 +513,22 @@ That is normal for this feature. It is the app's entry hub. Quiet side effects w
 - `sync` propagates entry and link mutations across devices
 
 If you want to understand where an entry is created, loaded, edited, searched, linked, or deleted, start here first. Even when another feature owns the headline behavior, there is a good chance the journal feature is still holding the floorboards together.
+
+## Desktop Keyboard Commands
+
+The infinite journal page owns contextual refresh, search focus, and creation
+handlers. The entry detail page owns save. Neither controller registers a
+process-global hotkey; the handlers exist only with their widget scope.
+
+```mermaid
+flowchart LR
+  Scope[Focused journal AppCommandScope] --> Search[Primary+F to search field]
+  Scope --> Refresh[Primary+R to preserve-visible-items refresh]
+  Scope --> Create[Primary+Shift+N to text entry in selected category]
+  Detail[Focused entry detail scope] --> Save[Primary+S to EntryController save]
+```
+
+Global Primary+6 navigation and Primary+N text-entry creation are provided by
+the app shell. This separation keeps page context—such as the currently
+selected category—inside the journal feature while global creation remains
+available from every destination.

@@ -13,11 +13,14 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// to the end. Seeds the field with the current search string on init so the
 /// query survives toggling the bar closed and open.
 class HabitsSearchWidget extends ConsumerStatefulWidget {
-  const HabitsSearchWidget({this.padding, super.key});
+  const HabitsSearchWidget({this.padding, this.focusNode, super.key});
 
   /// Outer padding. Defaults to a comfortable inset when the bar stands on its
   /// own; pass [EdgeInsets.zero] to drop it inline into the header row.
   final EdgeInsetsGeometry? padding;
+
+  /// Optional focus target used by desktop keyboard commands.
+  final FocusNode? focusNode;
 
   @override
   ConsumerState<HabitsSearchWidget> createState() => _HabitsSearchWidgetState();
@@ -64,6 +67,7 @@ class _HabitsSearchWidgetState extends ConsumerState<HabitsSearchWidget> {
           const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: DesignSystemSearch(
         controller: _controller,
+        focusNode: widget.focusNode,
         hintText: context.messages.searchHint,
         onChanged: habitsController.setSearchString,
         onClear: () {

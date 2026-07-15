@@ -21,8 +21,11 @@ import 'package:lotti/widgets/search/entry_type_filter.dart';
 
 class JournalSliverAppBar extends ConsumerStatefulWidget {
   const JournalSliverAppBar({
+    this.searchFocusNode,
     super.key,
   });
+
+  final FocusNode? searchFocusNode;
 
   @override
   ConsumerState<JournalSliverAppBar> createState() =>
@@ -74,6 +77,7 @@ class _JournalSliverAppBarState extends ConsumerState<JournalSliverAppBar> {
                   ),
                   child: DesignSystemSearch(
                     controller: _searchController,
+                    focusNode: widget.searchFocusNode,
                     hintText: context.messages.searchHint,
                     onChanged: controller.setSearchString,
                     onClear: () => controller.setSearchString(''),

@@ -2883,6 +2883,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get colorLabel => 'Color';
 
   @override
+  String get commandPaletteNoResults =>
+      'No available commands match your search';
+
+  @override
+  String get commandPaletteSearchHint => 'Search commands…';
+
+  @override
+  String get commandPaletteTitle => 'Command palette';
+
+  @override
   String get commonError => 'Error';
 
   @override
@@ -5290,6 +5300,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generateCoverArtSubtitle => 'Create image from voice description';
 
   @override
+  String get goMenuTitle => 'Go';
+
+  @override
   String get habitActiveFromLabel => 'Start date';
 
   @override
@@ -5492,6 +5505,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get habitsVsPreviousWeek => 'vs previous week';
+
+  @override
+  String get helpMenuCommandPalette => 'Command Palette…';
+
+  @override
+  String get helpMenuKeyboardShortcuts => 'Keyboard Shortcuts…';
+
+  @override
+  String get helpMenuTitle => 'Help';
 
   @override
   String get imageGenerationError => 'Failed to generate image';
@@ -6060,6 +6082,150 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get journalUnlinkQuestion =>
       'Are you sure you want to unlink this entry?';
+
+  @override
+  String get keyboardCommandActivate => 'Activate focused item';
+
+  @override
+  String get keyboardCommandCategoryCreation => 'Creation';
+
+  @override
+  String get keyboardCommandCategoryEditing => 'Editing';
+
+  @override
+  String get keyboardCommandCategoryGeneral => 'General';
+
+  @override
+  String get keyboardCommandCategoryListsAndControls => 'Lists and controls';
+
+  @override
+  String get keyboardCommandCategoryNavigation => 'Navigation';
+
+  @override
+  String get keyboardCommandCategoryView => 'View';
+
+  @override
+  String get keyboardCommandCreateInContext => 'Create in current view';
+
+  @override
+  String get keyboardCommandFocusSearch => 'Focus search';
+
+  @override
+  String get keyboardCommandMoveDown => 'Move focused item down';
+
+  @override
+  String get keyboardCommandMoveUp => 'Move focused item up';
+
+  @override
+  String keyboardCommandNavigate(String destination) {
+    return 'Go to $destination';
+  }
+
+  @override
+  String get keyboardCommandNextRegion => 'Focus next pane';
+
+  @override
+  String get keyboardCommandOpenPalette => 'Open command palette';
+
+  @override
+  String get keyboardCommandPageDown => 'Move down one page';
+
+  @override
+  String get keyboardCommandPageUp => 'Move up one page';
+
+  @override
+  String get keyboardCommandPreviousRegion => 'Focus previous pane';
+
+  @override
+  String get keyboardCommandRefresh => 'Refresh current view';
+
+  @override
+  String get keyboardCommandRename => 'Rename focused item';
+
+  @override
+  String get keyboardCommandSelectFirst => 'Select first item';
+
+  @override
+  String get keyboardCommandSelectLast => 'Select last item';
+
+  @override
+  String get keyboardCommandSelectNext => 'Select next item';
+
+  @override
+  String get keyboardCommandSelectPrevious => 'Select previous item';
+
+  @override
+  String get keyboardCommandToggle => 'Toggle focused item';
+
+  @override
+  String get keyboardKeyAlt => 'Alt';
+
+  @override
+  String get keyboardKeyArrowDown => 'Down Arrow';
+
+  @override
+  String get keyboardKeyArrowLeft => 'Left Arrow';
+
+  @override
+  String get keyboardKeyArrowRight => 'Right Arrow';
+
+  @override
+  String get keyboardKeyArrowUp => 'Up Arrow';
+
+  @override
+  String get keyboardKeyControl => 'Ctrl';
+
+  @override
+  String get keyboardKeyDelete => 'Delete';
+
+  @override
+  String get keyboardKeyEnd => 'End';
+
+  @override
+  String get keyboardKeyEnter => 'Enter';
+
+  @override
+  String get keyboardKeyEscape => 'Escape';
+
+  @override
+  String get keyboardKeyHome => 'Home';
+
+  @override
+  String get keyboardKeyMinus => 'Minus';
+
+  @override
+  String get keyboardKeyOr => 'or';
+
+  @override
+  String get keyboardKeyPageDown => 'Page Down';
+
+  @override
+  String get keyboardKeyPageUp => 'Page Up';
+
+  @override
+  String get keyboardKeyPlus => 'Plus';
+
+  @override
+  String get keyboardKeyShift => 'Shift';
+
+  @override
+  String get keyboardKeySpace => 'Space';
+
+  @override
+  String get keyboardResizeDividerLabel => 'Resize panes';
+
+  @override
+  String get keyboardShortcutsNoResults => 'No shortcuts match your search';
+
+  @override
+  String get keyboardShortcutsSearchHint => 'Search shortcuts…';
+
+  @override
+  String get keyboardShortcutsSubtitle =>
+      'Every desktop command and its current keyboard combination.';
+
+  @override
+  String get keyboardShortcutsTitle => 'Keyboard shortcuts';
 
   @override
   String get knowledgeGraphEmpty => 'No links to explore yet';
@@ -8141,6 +8307,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsHealthImportWorkout => 'Import Workout Data';
+
+  @override
+  String get settingsKeyboardShortcutsSubtitle =>
+      'Learn the keyboard combinations for faster desktop navigation and editing';
+
+  @override
+  String get settingsKeyboardShortcutsTitle => 'Keyboard shortcuts';
 
   @override
   String get settingsLabelsCategoriesAdd => 'Add category';

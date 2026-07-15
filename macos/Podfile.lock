@@ -31,10 +31,6 @@ PODS:
   - gal (1.0.0):
     - Flutter
     - FlutterMacOS
-  - HotKey (0.2.1)
-  - hotkey_manager_macos (0.0.1):
-    - FlutterMacOS
-    - HotKey
   - irondash_engine_context (0.0.1):
     - FlutterMacOS
   - just_audio (0.0.1):
@@ -132,7 +128,6 @@ DEPENDENCIES:
   - flutter_vodozemac (from `Flutter/ephemeral/.symlinks/plugins/flutter_vodozemac/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - gal (from `Flutter/ephemeral/.symlinks/plugins/gal/darwin`)
-  - hotkey_manager_macos (from `Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos`)
   - irondash_engine_context (from `Flutter/ephemeral/.symlinks/plugins/irondash_engine_context/macos`)
   - just_audio (from `Flutter/ephemeral/.symlinks/plugins/just_audio/darwin`)
   - just_waveform (from `Flutter/ephemeral/.symlinks/plugins/just_waveform/darwin`)
@@ -158,7 +153,6 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
-    - HotKey
     - ObjectBox
     - onnxruntime-c
     - onnxruntime-objc
@@ -194,8 +188,6 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral
   gal:
     :path: Flutter/ephemeral/.symlinks/plugins/gal/darwin
-  hotkey_manager_macos:
-    :path: Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos
   irondash_engine_context:
     :path: Flutter/ephemeral/.symlinks/plugins/irondash_engine_context/macos
   just_audio:
@@ -254,8 +246,6 @@ SPEC CHECKSUMS:
   flutter_vodozemac: fd2ea9cb3e2a37beaac883a369811fbfe042fc53
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   gal: baecd024ebfd13c441269ca7404792a7152fde89
-  HotKey: 400beb7caa29054ea8d864c96f5ba7e5b4852277
-  hotkey_manager_macos: a4317849af96d2430fa89944d3c58977ca089fbe
   irondash_engine_context: 893c7d96d20ce361d7e996f39d360c4c2f9869ba
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
   just_waveform: be2cb6dec86096cb972bf8b73c893fe16bf1cff4

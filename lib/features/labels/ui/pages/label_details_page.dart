@@ -213,6 +213,7 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
       onSaveShortcut: () {
         if (saveEnabled) handleSave();
       },
+      saveShortcutEnabled: () => saveEnabled,
       actionBar: SettingsFormActionBar(
         primaryLabel: widget.isCreateMode
             ? messages.createButton

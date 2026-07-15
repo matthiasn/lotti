@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -56,12 +57,6 @@ class _HabitDialogState extends State<HabitDialog> {
   /// overwhelmingly common case — so the happy path is a single tap.
   HabitCompletionType _outcome = HabitCompletionType.success;
 
-  final hotkeyCmdS = HotKey(
-    key: LogicalKeyboardKey.keyS,
-    modifiers: [HotKeyModifier.meta],
-    scope: HotKeyScope.inapp,
-  );
-
   Future<void> saveHabit(HabitCompletionType completionType) async {
     _formKey.currentState!.save();
     Navigator.pop(context);
@@ -100,21 +95,6 @@ class _HabitDialogState extends State<HabitDialog> {
         widget.dateString is String && DateTime.now().ymd != widget.dateString
         ? endOfDay()
         : DateTime.now();
-
-    if (isDesktop) {
-      hotKeyManager.register(
-        hotkeyCmdS,
-        keyDownHandler: (hotKey) => saveHabit(_outcome),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    if (isDesktop) {
-      hotKeyManager.unregister(hotkeyCmdS);
-    }
   }
 
   bool validate() {
@@ -165,42 +145,50 @@ class _HabitDialogState extends State<HabitDialog> {
       onRecord: () => saveHabit(_outcome),
     );
 
-    return Theme(
-      data: widget.themeData,
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
+    return AppCommandScope(
+      debugLabel: 'habit-completion',
+      handlers: {
+        AppCommandId.save: AppCommandHandler(
+          invoke: (_) => saveHabit(_outcome),
         ),
-        child: showLinkedDashboard
-            ? SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DashboardWidget(
-                      rangeStart: rangeStart,
-                      rangeEnd: rangeEnd,
-                      dashboardId: habitDefinition.dashboardId!,
+      },
+      child: Theme(
+        data: widget.themeData,
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: showLinkedDashboard
+              ? SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DashboardWidget(
+                        rangeStart: rangeStart,
+                        rangeEnd: rangeEnd,
+                        dashboardId: habitDefinition.dashboardId!,
+                      ),
+                      form,
+                    ],
+                  ),
+                )
+              : GestureDetector(
+                  // The form floats on a transparent sheet; make a tap on the
+                  // empty space around it close the dialog (the scrim above the
+                  // sheet isn't reachable here), as is conventional in the app.
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.of(context).maybePop(),
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    // Swallow taps on the form itself so they don't bubble up and
+                    // dismiss it.
+                    child: GestureDetector(
+                      onTap: () {},
+                      child: form,
                     ),
-                    form,
-                  ],
-                ),
-              )
-            : GestureDetector(
-                // The form floats on a transparent sheet; make a tap on the
-                // empty space around it close the dialog (the scrim above the
-                // sheet isn't reachable here), as is conventional in the app.
-                behavior: HitTestBehavior.opaque,
-                onTap: () => Navigator.of(context).maybePop(),
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  // Swallow taps on the form itself so they don't bubble up and
-                  // dismiss it.
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: form,
                   ),
                 ),
-              ),
+        ),
       ),
     );
   }

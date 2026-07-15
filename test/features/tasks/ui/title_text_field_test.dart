@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 
 import '../../../test_helper.dart';
@@ -145,41 +149,116 @@ void main() {
   });
 
   group('TitleTextField - Keyboard Shortcuts', () {
-    testWidgets('saves on Ctrl+S and keeps focus', (tester) async {
-      final focusNode = FocusNode();
-      final saved = <String?>[];
+    for (final (platform, primaryKey) in [
+      (TargetPlatform.windows, LogicalKeyboardKey.control),
+      (TargetPlatform.macOS, LogicalKeyboardKey.meta),
+    ]) {
+      testWidgets('scoped save works on ${platform.name} and keeps focus', (
+        tester,
+      ) async {
+        final focusNode = FocusNode();
+        addTearDown(focusNode.dispose);
+        final saved = <String?>[];
 
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: AppCommandHost(
+              handlers: const <AppCommandId, AppCommandHandler>{},
+              platform: platform,
+              child: Center(
+                child: TitleTextField(
+                  focusNode: focusNode,
+                  keepFocusOnSave: true,
+                  clearOnSave: true,
+                  onSave: saved.add,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.byType(TextField));
+        await tester.pump();
+        expect(focusNode.hasFocus, isTrue);
+        await tester.enterText(find.byType(TextField), 'foo');
+        await tester.pump();
+
+        final fieldContext = tester.element(find.byType(TextField));
+        final commandController = AppCommandControllerProvider.of(
+          fieldContext,
+        );
+        expect(
+          commandController.isAvailable(fieldContext, AppCommandId.save),
+          isTrue,
+        );
+
+        await tester.sendKeyDownEvent(primaryKey);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(primaryKey);
+        await tester.pump();
+
+        expect(saved, ['foo']);
+        expect(
+          focusNode.hasFocus,
+          isTrue,
+          reason: 'Focus should be retained after save',
+        );
+      });
+    }
+
+    testWidgets('Enter submits through the local text-entry intent', (
+      tester,
+    ) async {
+      final saved = <String?>[];
       await tester.pumpWidget(
         WidgetTestBench(
-          child: Center(
+          child: AppCommandHost(
+            handlers: const <AppCommandId, AppCommandHandler>{},
+            platform: TargetPlatform.windows,
+            child: TitleTextField(onSave: saved.add),
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), 'submitted title');
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(saved, ['submitted title']);
+    });
+
+    testWidgets('Escape invokes the scoped cancel command', (tester) async {
+      var cancelCount = 0;
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: AppCommandHost(
+            handlers: const <AppCommandId, AppCommandHandler>{},
+            platform: TargetPlatform.windows,
             child: TitleTextField(
-              focusNode: focusNode,
-              keepFocusOnSave: true,
-              clearOnSave: true,
-              onSave: saved.add,
+              initialValue: 'Original title',
+              resetToInitialValue: true,
+              onSave: (_) {},
+              onCancel: () => cancelCount++,
             ),
           ),
         ),
       );
 
-      // Focus the field and enter text
-      await tester.tap(find.byType(TextField));
-      await tester.pumpAndSettle();
-      expect(focusNode.hasFocus, isTrue);
-      await tester.enterText(find.byType(TextField), 'foo');
-
-      // Send Ctrl+S (platform-agnostic path)
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
-      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
-      await tester.pumpAndSettle();
-
-      expect(saved.length, 1);
+      await tester.enterText(find.byType(TextField), 'Changed title');
+      await tester.pump();
+      final fieldContext = tester.element(find.byType(TextField));
+      final commandController = AppCommandControllerProvider.of(fieldContext);
       expect(
-        focusNode.hasFocus,
+        commandController.isAvailable(fieldContext, AppCommandId.cancel),
         isTrue,
-        reason: 'Focus should be retained after save',
       );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.controller!.text, 'Original title');
+      expect(cancelCount, 1);
     });
   });
 

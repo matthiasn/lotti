@@ -19,7 +19,10 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// row beneath the title so the four segments never overflow. The header never
 /// flashes or reflows when a tool is toggled (constant widths throughout).
 class HabitsHeader extends ConsumerWidget {
-  const HabitsHeader({super.key});
+  const HabitsHeader({this.searchFocusNode, super.key});
+
+  /// Focus target for the inline search field when keyboard search is invoked.
+  final FocusNode? searchFocusNode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,7 +46,10 @@ class HabitsHeader extends ConsumerWidget {
     // (it fills the space between the title and the controls) instead of
     // revealing a separate bar below the header.
     final leading = state.showSearch
-        ? const HabitsSearchWidget(padding: EdgeInsets.zero)
+        ? HabitsSearchWidget(
+            padding: EdgeInsets.zero,
+            focusNode: searchFocusNode,
+          )
         : Text(
             messages.settingsHabitsTitle,
             style: calmPageTitleStyle(tokens),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
@@ -16,18 +19,43 @@ typedef _RowSelection = ({bool onActivePath, bool isExpanded});
 /// children subtree. Reads the shared [settingsTreePathProvider] with a
 /// `.select` narrowed to this node's slot so siblings do not rebuild
 /// when selection moves elsewhere in the tree.
-class SettingsTreeNodeWidget extends ConsumerWidget {
+class SettingsTreeNodeWidget extends ConsumerStatefulWidget {
   const SettingsTreeNodeWidget({
     required this.node,
     required this.depth,
+    this.parentFocusNode,
     super.key,
   });
 
   final SettingsNode node;
   final int depth;
+  final FocusNode? parentFocusNode;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsTreeNodeWidget> createState() =>
+      _SettingsTreeNodeWidgetState();
+}
+
+class _SettingsTreeNodeWidgetState
+    extends ConsumerState<SettingsTreeNodeWidget> {
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode(debugLabel: 'settings-tree:${widget.node.id}');
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final node = widget.node;
+    final depth = widget.depth;
     final tokens = context.designTokens;
     final selection = ref.watch(
       settingsTreePathProvider.select<_RowSelection>((path) {
@@ -53,16 +81,51 @@ class SettingsTreeNodeWidget extends ConsumerWidget {
           );
     }
 
+    void moveFocus(TraversalDirection direction) {
+      FocusManager.instance.primaryFocus?.focusInDirection(direction);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SettingsTreeRow(
-          node: node,
-          depth: depth,
-          onActivePath: onActivePath,
-          isExpanded: isExpanded,
-          trailing: settingsNodeIndicatorFor(node.id),
-          onTap: handleTap,
+        AppCommandScope(
+          debugLabel: 'settings-tree:${node.id}',
+          handlers: {
+            AppCommandId.selectPrevious: AppCommandHandler(
+              invoke: (_) => moveFocus(TraversalDirection.up),
+            ),
+            AppCommandId.selectNext: AppCommandHandler(
+              invoke: (_) => moveFocus(TraversalDirection.down),
+            ),
+            AppCommandId.expand: AppCommandHandler(
+              invoke: (_) {
+                if (!node.hasChildren) return;
+                if (!isExpanded) {
+                  handleTap();
+                  return;
+                }
+                moveFocus(TraversalDirection.down);
+              },
+            ),
+            AppCommandId.collapse: AppCommandHandler(
+              invoke: (_) {
+                if (node.hasChildren && isExpanded) {
+                  handleTap();
+                  return;
+                }
+                widget.parentFocusNode?.requestFocus();
+              },
+            ),
+          },
+          child: SettingsTreeRow(
+            node: node,
+            depth: depth,
+            focusNode: _focusNode,
+            onActivePath: onActivePath,
+            isExpanded: isExpanded,
+            trailing: settingsNodeIndicatorFor(node.id),
+            onTap: handleTap,
+          ),
         ),
         if (node.hasChildren)
           // Keep children mounted during the collapse so
@@ -82,10 +145,14 @@ class SettingsTreeNodeWidget extends ConsumerWidget {
                 child: AnimatedOpacity(
                   duration: SettingsV2Constants.branchOpacityAnimation,
                   opacity: isExpanded ? 1 : 0,
-                  child: _ChildrenContainer(
-                    children: node.children!,
-                    depth: depth + 1,
-                    tokens: tokens,
+                  child: ExcludeFocus(
+                    excluding: !isExpanded,
+                    child: _ChildrenContainer(
+                      children: node.children!,
+                      depth: depth + 1,
+                      tokens: tokens,
+                      parentFocusNode: _focusNode,
+                    ),
                   ),
                 ),
               ),
@@ -101,11 +168,13 @@ class _ChildrenContainer extends StatelessWidget {
     required this.children,
     required this.depth,
     required this.tokens,
+    required this.parentFocusNode,
   });
 
   final List<SettingsNode> children;
   final int depth;
   final DsTokens tokens;
+  final FocusNode parentFocusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -136,6 +205,7 @@ class _ChildrenContainer extends StatelessWidget {
                   key: ValueKey(child.id),
                   node: child,
                   depth: depth,
+                  parentFocusNode: parentFocusNode,
                 ),
             ],
           ),

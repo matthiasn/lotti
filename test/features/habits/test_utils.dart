@@ -33,6 +33,7 @@ class FakeHabitsController extends HabitsController {
   @override
   void toggleShowSearch() {
     toggleShowSearchCalls++;
+    state = state.copyWith(showSearch: !state.showSearch);
   }
 
   @override

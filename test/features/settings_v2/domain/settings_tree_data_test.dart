@@ -91,6 +91,7 @@ void main() {
         'definitions',
         'recording-style',
         'theming',
+        'keyboard-shortcuts',
         'advanced',
       ]);
     });
@@ -120,7 +121,8 @@ void main() {
       // Entity definitions (habits / categories / labels / dashboards
       // / measurables) collapse into the single `definitions` branch;
       // config flags reparent under `advanced`. Root reads as
-      // AI · Agents · Daily OS · Sync · Definitions · Theming · Advanced.
+      // AI · Agents · Daily OS · Sync · Definitions · Theming · Keyboard
+      // shortcuts · Advanced.
       final rootIds = _tree().map((n) => n.id).toList();
       expect(rootIds, [
         'whats-new',
@@ -131,6 +133,7 @@ void main() {
         'definitions',
         'recording-style',
         'theming',
+        'keyboard-shortcuts',
         'advanced',
       ]);
     });
@@ -421,6 +424,7 @@ void main() {
         'definitions/measurables': 'measurables',
         'recording-style': 'recording-style',
         'theming': 'theming',
+        'keyboard-shortcuts': 'keyboard-shortcuts',
         'advanced/flags': 'flags',
         'advanced/animations': 'advanced-animations',
         'advanced/logging': 'advanced-logging',
@@ -528,6 +532,7 @@ void main() {
         'definitions',
         'recording-style',
         'theming',
+        'keyboard-shortcuts',
         'advanced',
       ]);
     });

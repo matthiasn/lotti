@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -8,18 +11,18 @@ import 'package:lotti/themes/theme.dart';
 /// [TitleTextField] for its save handler.
 typedef StringCallback = void Function(String?);
 
-/// [Intent] bound to the keyboard save shortcuts (Cmd/Ctrl+S and Enter) in
-/// [TitleTextField]; invoking it triggers the field's save action.
-class SaveIntent extends Intent {
-  const SaveIntent();
+/// Local submit intent for Enter; Primary+S is supplied by [AppCommandScope].
+class _SubmitIntent extends Intent {
+  const _SubmitIntent();
 }
 
 /// Single/multi-line text field for editing a title (e.g. a task or checklist
 /// item), with inline save/cancel affordances and keyboard shortcuts.
 ///
-/// Calls [onSave] with the current text on tapping the save icon or pressing
-/// Cmd/Ctrl+S or Enter (see [SaveIntent]); a save/discard icon appears once
-/// the text differs from [initialValue]. Optional behaviours include
+/// Calls [onSave] with the current text on tapping the save icon, invoking the
+/// shared save command, or pressing Enter. When [onCancel] is present, the
+/// shared cancel command resets the field as well. A save/discard icon appears
+/// once the text differs from [initialValue]. Optional behaviours include
 /// [clearOnSave], [resetToInitialValue] on cancel, and [keepFocusOnSave]
 /// which re-asserts focus and re-shows the keyboard so the user can keep
 /// typing. Picks up external [initialValue] changes via `didUpdateWidget`.
@@ -175,10 +178,10 @@ class _TitleTextFieldState extends State<TitleTextField> {
                   opacity: _dirty ? 1.0 : 0.0,
                   duration: checklistActionIconFadeDuration,
                   child: IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.check_circle,
                       size: 30,
-                      semanticLabel: 'save item',
+                      semanticLabel: context.messages.saveButtonLabel,
                     ),
                     onPressed: () => onSave(_controller.text),
                   ),
@@ -193,7 +196,7 @@ class _TitleTextFieldState extends State<TitleTextField> {
                         Icons.cancel_outlined,
                         color: context.colorScheme.outline,
                         size: 30,
-                        semanticLabel: 'discard changes',
+                        semanticLabel: context.messages.editorDiscardChanges,
                       ),
                       onPressed: onCancel,
                     ),
@@ -208,29 +211,33 @@ class _TitleTextFieldState extends State<TitleTextField> {
       textInputAction: TextInputAction.none,
     );
 
-    // Add Cmd/Ctrl+S shortcut for save.
-    return Shortcuts(
-      shortcuts: <LogicalKeySet, Intent>{
-        // macOS: Cmd+S
-        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyS):
-            const SaveIntent(),
-        // Windows/Linux: Ctrl+S
-        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyS):
-            const SaveIntent(),
-        // Enter submits without IME unfocus
-        LogicalKeySet(LogicalKeyboardKey.enter): const SaveIntent(),
-        LogicalKeySet(LogicalKeyboardKey.numpadEnter): const SaveIntent(),
+    return AppCommandScope(
+      debugLabel: 'title-text-field',
+      handlers: {
+        AppCommandId.save: AppCommandHandler(
+          invoke: (_) => onSave(_controller.text),
+        ),
+        if (widget.onCancel != null)
+          AppCommandId.cancel: AppCommandHandler(invoke: (_) => onCancel()),
       },
-      child: Actions(
-        actions: <Type, Action<Intent>>{
-          SaveIntent: CallbackAction<SaveIntent>(
-            onInvoke: (intent) {
-              onSave(_controller.text);
-              return null;
-            },
-          ),
+      child: Shortcuts(
+        shortcuts: const <ShortcutActivator, Intent>{
+          // Enter submits without IME unfocus. Primary+S comes from the
+          // catalog-driven AppCommandScope above.
+          SingleActivator(LogicalKeyboardKey.enter): _SubmitIntent(),
+          SingleActivator(LogicalKeyboardKey.numpadEnter): _SubmitIntent(),
         },
-        child: textField,
+        child: Actions(
+          actions: <Type, Action<Intent>>{
+            _SubmitIntent: CallbackAction<_SubmitIntent>(
+              onInvoke: (intent) {
+                onSave(_controller.text);
+                return null;
+              },
+            ),
+          },
+          child: textField,
+        ),
       ),
     );
   }

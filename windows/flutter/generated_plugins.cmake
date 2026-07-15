@@ -10,7 +10,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_onnxruntime
   flutter_secure_storage_windows
   gal
-  hotkey_manager_windows
   irondash_engine_context
   location
   media_kit_libs_windows_audio

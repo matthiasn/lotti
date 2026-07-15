@@ -386,6 +386,48 @@ class AgentDatabase extends _$AgentDatabase {
 
   static const _taskIdJsonExpression = r"json_extract(serialized, '$.taskId')";
 
+  /// Returns pending scheduled-wake records due at or before [nowIso].
+  ///
+  /// SQLite versions disagree on whether to choose the partial expression
+  /// index over the broader active-type index. Pinning the index keeps this
+  /// hot-path range query deterministic across desktop platforms.
+  Selectable<AgentEntity> getDueScheduledWakeRecords(String nowIso) {
+    return customSelect(
+      r'''
+        SELECT *
+        FROM agent_entities
+          INDEXED BY idx_agent_entities_pending_scheduled_wake_at
+        WHERE type = 'scheduledWake'
+          AND deleted_at IS NULL
+          AND json_extract(serialized, '$.status') = 'pending'
+          AND json_extract(serialized, '$.scheduledAt') IS NOT NULL
+          AND json_extract(serialized, '$.scheduledAt') <= ?1
+      ''',
+      variables: [Variable<String>(nowIso)],
+      readsFrom: {agentEntities},
+    ).asyncMap(agentEntities.mapFromRow);
+  }
+
+  /// Returns every pending scheduled-wake record ordered by schedule time.
+  ///
+  /// The explicit index also lets SQLite stream the requested order without a
+  /// platform-dependent temporary B-tree.
+  Selectable<AgentEntity> getPendingScheduledWakeRecords() {
+    return customSelect(
+      r'''
+        SELECT *
+        FROM agent_entities
+          INDEXED BY idx_agent_entities_pending_scheduled_wake_at
+        WHERE type = 'scheduledWake'
+          AND deleted_at IS NULL
+          AND json_extract(serialized, '$.status') = 'pending'
+          AND json_extract(serialized, '$.scheduledAt') IS NOT NULL
+        ORDER BY json_extract(serialized, '$.scheduledAt') ASC
+      ''',
+      readsFrom: {agentEntities},
+    ).asyncMap(agentEntities.mapFromRow);
+  }
+
   Selectable<AgentEntity> getChangeSetsForAgentAndTask(
     String agentId,
     String taskId,

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_page_layout.dart';
+
+bool _saveShortcutEnabledByDefault() => true;
 
 /// Unified shell for settings definition detail pages (category, label,
 /// habit, measurable, dashboard editors).
@@ -31,6 +35,7 @@ class SettingsDetailScaffold extends StatelessWidget {
     this.slivers,
     this.actionBar,
     this.onSaveShortcut,
+    this.saveShortcutEnabled = _saveShortcutEnabledByDefault,
     this.headerActions,
     this.deleteLabel,
     this.onDelete,
@@ -65,9 +70,15 @@ class SettingsDetailScaffold extends StatelessWidget {
   /// The sticky glass action bar, typically a [SettingsFormActionBar].
   final SettingsFormActionBar? actionBar;
 
-  /// Bound to Cmd+S / Ctrl+S. Usually the same handler as the action
-  /// bar's primary action.
+  /// Invoked by the catalog-driven save command. Usually the same handler as
+  /// the action bar's primary action.
   final VoidCallback? onSaveShortcut;
+
+  /// Resolves save-command availability when the command is queried.
+  ///
+  /// A predicate keeps the command state aligned with live form state without
+  /// requiring the command scope itself to be replaced.
+  final ValueGetter<bool> saveShortcutEnabled;
 
   /// Optional trailing header widgets.
   final List<Widget>? headerActions;
@@ -142,12 +153,13 @@ class SettingsDetailScaffold extends StatelessWidget {
     );
 
     if (onSaveShortcut == null) return scaffold;
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyS, meta: true):
-            onSaveShortcut!,
-        const SingleActivator(LogicalKeyboardKey.keyS, control: true):
-            onSaveShortcut!,
+    return AppCommandScope(
+      debugLabel: 'settings-detail',
+      handlers: {
+        AppCommandId.save: AppCommandHandler(
+          isEnabled: saveShortcutEnabled,
+          invoke: (_) => onSaveShortcut!(),
+        ),
       },
       child: scaffold,
     );

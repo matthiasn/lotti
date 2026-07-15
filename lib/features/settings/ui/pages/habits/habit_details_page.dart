@@ -93,6 +93,7 @@ class HabitDetailsPage extends ConsumerWidget {
       onSaveShortcut: () {
         if (saveEnabled) handleSave();
       },
+      saveShortcutEnabled: () => saveEnabled,
       actionBar: SettingsFormActionBar(
         primaryLabel: isCreateMode
             ? messages.createButton

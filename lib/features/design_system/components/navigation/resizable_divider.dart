@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// A draggable vertical divider that allows resizing adjacent panes.
 ///
@@ -33,6 +35,7 @@ class ResizableDivider extends StatefulWidget {
 class _ResizableDividerState extends State<ResizableDivider> {
   bool _isDragging = false;
   bool _isHovering = false;
+  bool _isFocused = false;
 
   @override
   void didUpdateWidget(ResizableDivider oldWidget) {
@@ -54,7 +57,8 @@ class _ResizableDividerState extends State<ResizableDivider> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final isActive = widget.enabled && (_isDragging || _isHovering);
+    final isActive =
+        widget.enabled && (_isDragging || _isHovering || _isFocused);
     final lineColor = isActive
         ? tokens.colors.interactive.enabled
         : tokens.colors.decorative.level01;
@@ -82,17 +86,45 @@ class _ResizableDividerState extends State<ResizableDivider> {
       return visual;
     }
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.resizeColumn,
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragStart: (_) => setState(() => _isDragging = true),
-        onHorizontalDragUpdate: (details) => widget.onDrag(details.delta.dx),
-        onHorizontalDragCancel: () => setState(() => _isDragging = false),
-        onHorizontalDragEnd: (_) => setState(() => _isDragging = false),
-        child: visual,
+    double keyboardStep() => HardwareKeyboard.instance.isShiftPressed
+        ? tokens.spacing.step8
+        : tokens.spacing.step4;
+
+    return Semantics(
+      label: context.messages.keyboardResizeDividerLabel,
+      slider: true,
+      onIncrease: () => widget.onDrag(keyboardStep()),
+      onDecrease: () => widget.onDrag(-keyboardStep()),
+      child: Focus(
+        onFocusChange: (focused) => setState(() => _isFocused = focused),
+        onKeyEvent: (_, event) {
+          if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+            return KeyEventResult.ignored;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+            widget.onDrag(-keyboardStep());
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+            widget.onDrag(keyboardStep());
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: MouseRegion(
+          cursor: SystemMouseCursors.resizeColumn,
+          onEnter: (_) => setState(() => _isHovering = true),
+          onExit: (_) => setState(() => _isHovering = false),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragStart: (_) => setState(() => _isDragging = true),
+            onHorizontalDragUpdate: (details) =>
+                widget.onDrag(details.delta.dx),
+            onHorizontalDragCancel: () => setState(() => _isDragging = false),
+            onHorizontalDragEnd: (_) => setState(() => _isDragging = false),
+            child: visual,
+          ),
+        ),
       ),
     );
   }

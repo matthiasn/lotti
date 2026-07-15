@@ -24,6 +24,7 @@ class TabSectionHeader extends StatelessWidget {
     required this.filterTooltip,
     this.titleTrailing,
     this.titleSuffix,
+    this.searchFocusNode,
     super.key,
   });
 
@@ -36,6 +37,7 @@ class TabSectionHeader extends StatelessWidget {
   final VoidCallback onFilterPressed;
   final String filterTooltip;
   final Widget? titleTrailing;
+  final FocusNode? searchFocusNode;
 
   /// Optional inline suffix rendered after [title] — used by Tasks to show
   /// "Tasks · {savedFilterName}" when a saved filter is active.
@@ -90,6 +92,7 @@ class TabSectionHeader extends StatelessWidget {
               children: [
                 Expanded(
                   child: DesignSystemSearch(
+                    focusNode: searchFocusNode,
                     hintText: searchHint,
                     size: DesignSystemSearchSize.small,
                     initialText: query,

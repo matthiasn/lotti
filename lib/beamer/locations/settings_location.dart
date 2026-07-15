@@ -17,6 +17,7 @@ import 'package:lotti/features/categories/ui/pages/category_details_page.dart'
     as new_category_details;
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
+import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
@@ -120,6 +121,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/flags',
     '/settings/recording-style',
     '/settings/theming',
+    '/settings/keyboard-shortcuts',
     '/settings/speech',
     '/settings/definitions',
     '/settings/advanced',
@@ -604,6 +606,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-theming'),
           child: ThemingPage(),
+        ),
+
+      if (pathContains('keyboard-shortcuts'))
+        const BeamPage(
+          key: ValueKey('settings-keyboard-shortcuts'),
+          child: KeyboardShortcutsPage(),
         ),
 
       // Speech (text-to-speech) — top-level leaf, opens directly.

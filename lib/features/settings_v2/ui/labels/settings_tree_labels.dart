@@ -145,6 +145,11 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.settingsThemingTitle,
           desc: m.settingsThemingSubtitle,
         );
+      case 'keyboard-shortcuts':
+        return (
+          title: m.settingsKeyboardShortcutsTitle,
+          desc: m.settingsKeyboardShortcutsSubtitle,
+        );
       case 'speech':
         return (
           title: m.settingsSpeechTitle,

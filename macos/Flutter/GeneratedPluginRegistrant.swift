@@ -16,7 +16,6 @@ import flutter_local_notifications
 import flutter_onnxruntime
 import flutter_secure_storage_darwin
 import gal
-import hotkey_manager_macos
 import irondash_engine_context
 import just_audio
 import just_waveform
@@ -51,7 +50,6 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FlutterOnnxruntimePlugin.register(with: registry.registrar(forPlugin: "FlutterOnnxruntimePlugin"))
   FlutterSecureStorageDarwinPlugin.register(with: registry.registrar(forPlugin: "FlutterSecureStorageDarwinPlugin"))
   GalPlugin.register(with: registry.registrar(forPlugin: "GalPlugin"))
-  HotkeyManagerMacosPlugin.register(with: registry.registrar(forPlugin: "HotkeyManagerMacosPlugin"))
   IrondashEngineContextPlugin.register(with: registry.registrar(forPlugin: "IrondashEngineContextPlugin"))
   JustAudioPlugin.register(with: registry.registrar(forPlugin: "JustAudioPlugin"))
   JustWaveformPlugin.register(with: registry.registrar(forPlugin: "JustWaveformPlugin"))
