@@ -522,7 +522,7 @@ void main() {
     testWidgets('fetches projects for all categories on open', (
       tester,
     ) async {
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithProjects(enableProjects: true));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
@@ -535,6 +535,26 @@ void main() {
       verify(
         () => mockJournalDb.getProjectsForCategory('cat-2'),
       ).called(1);
+    });
+
+    testWidgets('skips project refresh when projects are disabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWithProjects(enableProjects: false));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => mockJournalDb.getProjectsForCategory(any()));
+      verifyNever(
+        () => mockDomainLogger.error(
+          LogDomain.tasks,
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'loadFilterProjects',
+        ),
+      );
     });
 
     testWidgets('reopens from cache before a warm project refresh completes', (

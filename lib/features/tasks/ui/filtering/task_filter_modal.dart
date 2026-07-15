@@ -84,41 +84,43 @@ Future<void> showTaskFilterModal(
   await showDesignSystemFilterModal(
     context: context,
     initialState: initialState,
-    refreshInitialState: (current) async {
-      try {
-        allProjectsWithCategories = await _refreshProjectsForFilter(
-          allCategories: categories,
-        );
-        if (!context.mounted) return current;
-        final refreshedField = buildTasksFilterSheetState(
-          context,
-          controllerState: controllerState,
-          categories: categories,
-          labels: labels,
-          projectsWithCategories: allProjectsWithCategories,
-        ).projectField!;
-        final currentSelection =
-            current.projectField?.selectedIds ?? const <String>{};
-        return _pruneProjectsForSelectedCategories(
-          current.copyWith(
-            projectField: refreshedField.copyWith(
-              selectedIds: currentSelection,
-            ),
-          ),
-          allProjectsWithCategories,
-        );
-      } catch (error, stackTrace) {
-        if (getIt.isRegistered<DomainLogger>()) {
-          getIt<DomainLogger>().error(
-            LogDomain.tasks,
-            error,
-            stackTrace: stackTrace,
-            subDomain: 'loadFilterProjects',
-          );
-        }
-        return current;
-      }
-    },
+    refreshInitialState: !controllerState.enableProjects
+        ? null
+        : (current) async {
+            try {
+              allProjectsWithCategories = await _refreshProjectsForFilter(
+                allCategories: categories,
+              );
+              if (!context.mounted) return current;
+              final refreshedField = buildTasksFilterSheetState(
+                context,
+                controllerState: controllerState,
+                categories: categories,
+                labels: labels,
+                projectsWithCategories: allProjectsWithCategories,
+              ).projectField!;
+              final currentSelection =
+                  current.projectField?.selectedIds ?? const <String>{};
+              return _pruneProjectsForSelectedCategories(
+                current.copyWith(
+                  projectField: refreshedField.copyWith(
+                    selectedIds: currentSelection,
+                  ),
+                ),
+                allProjectsWithCategories,
+              );
+            } catch (error, stackTrace) {
+              if (getIt.isRegistered<DomainLogger>()) {
+                getIt<DomainLogger>().error(
+                  LogDomain.tasks,
+                  error,
+                  stackTrace: stackTrace,
+                  subDomain: 'loadFilterProjects',
+                );
+              }
+              return current;
+            }
+          },
     canSave: showTasks && canSave,
     initialSaveName: initialSavedName,
     onSavePressed: !showTasks
