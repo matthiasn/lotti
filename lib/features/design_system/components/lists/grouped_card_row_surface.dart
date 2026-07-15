@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 ///
 /// Paints a [selectedColor]/[hoverColor] fill behind [child], reports taps via
 /// [onTap] and hover via [onHoverChanged], and exposes the row as `selected` to
-/// semantics. The background can bleed past the content using [topOverlap]/
+/// semantics. Keyboard focus uses the exact same fill and clipping geometry as
+/// pointer hover. The background can bleed past the content using [topOverlap]/
 /// [bottomOverlap] (to hide seams between connected cards) and be inset/rounded
 /// via [backgroundTopInset]/[backgroundBottomInset]/[backgroundBorderRadius];
 /// [rowKey]/[backgroundKey] expose the row and its background for testing.
@@ -49,12 +50,13 @@ class GroupedCardRowSurface extends StatefulWidget {
 
 class _GroupedCardRowSurfaceState extends State<GroupedCardRowSurface> {
   bool _hovered = false;
+  bool _focused = false;
 
   @override
   Widget build(BuildContext context) {
     final backgroundColor = widget.selected
         ? widget.selectedColor
-        : (_hovered ? widget.hoverColor : null);
+        : (_hovered || _focused ? widget.hoverColor : null);
 
     return Semantics(
       selected: widget.selected,
@@ -63,6 +65,7 @@ class _GroupedCardRowSurfaceState extends State<GroupedCardRowSurface> {
         child: InkWell(
           key: widget.rowKey,
           onTap: widget.onTap,
+          focusColor: Colors.transparent,
           hoverColor: Colors.transparent,
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
@@ -72,6 +75,13 @@ class _GroupedCardRowSurfaceState extends State<GroupedCardRowSurface> {
                 _hovered = value;
               });
               widget.onHoverChanged?.call(value);
+            }
+          },
+          onFocusChange: (value) {
+            if (_focused != value) {
+              setState(() {
+                _focused = value;
+              });
             }
           },
           child: Stack(

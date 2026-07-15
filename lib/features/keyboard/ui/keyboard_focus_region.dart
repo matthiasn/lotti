@@ -30,6 +30,16 @@ class KeyboardFocusRegionController extends ChangeNotifier {
     }
     return false;
   }
+
+  /// Focuses the enabled region identified by [regionId].
+  bool focusRegion(Object regionId) {
+    for (final region in _regions) {
+      if (region.enabled && region.regionId == regionId) {
+        return region.requestFocus(retainWhenEmpty: true);
+      }
+    }
+    return false;
+  }
 }
 
 class KeyboardFocusRegionRegistry
@@ -52,6 +62,7 @@ class KeyboardFocusRegion extends StatefulWidget {
     required this.debugLabel,
     required this.child,
     this.preferredFocusNode,
+    this.regionId,
     this.enabled = true,
     super.key,
   });
@@ -59,6 +70,7 @@ class KeyboardFocusRegion extends StatefulWidget {
   final String debugLabel;
   final Widget child;
   final FocusNode? preferredFocusNode;
+  final Object? regionId;
   final bool enabled;
 
   @override
@@ -72,6 +84,7 @@ class _KeyboardFocusRegionState extends State<KeyboardFocusRegion> {
   late final _KeyboardFocusRegionNode _node = _KeyboardFocusRegionNode(
     scopeNode: _scopeNode,
     preferredFocusNode: widget.preferredFocusNode,
+    regionId: widget.regionId,
     enabled: widget.enabled,
   );
   KeyboardFocusRegionController? _controller;
@@ -92,7 +105,8 @@ class _KeyboardFocusRegionState extends State<KeyboardFocusRegion> {
     super.didUpdateWidget(oldWidget);
     _node
       ..enabled = widget.enabled
-      ..preferredFocusNode = widget.preferredFocusNode;
+      ..preferredFocusNode = widget.preferredFocusNode
+      ..regionId = widget.regionId;
   }
 
   @override
@@ -117,11 +131,13 @@ class _KeyboardFocusRegionNode {
   _KeyboardFocusRegionNode({
     required this.scopeNode,
     required this.preferredFocusNode,
+    required this.regionId,
     required this.enabled,
   });
 
   final FocusScopeNode scopeNode;
   FocusNode? preferredFocusNode;
+  Object? regionId;
   bool enabled;
 
   bool get containsFocus {
@@ -130,7 +146,7 @@ class _KeyboardFocusRegionNode {
         (primary?.ancestors.contains(scopeNode) ?? false);
   }
 
-  bool requestFocus() {
+  bool requestFocus({bool retainWhenEmpty = false}) {
     final preferred = preferredFocusNode;
     if (preferred != null && preferred.canRequestFocus) {
       preferred.requestFocus();
@@ -146,6 +162,10 @@ class _KeyboardFocusRegionNode {
         descendant.requestFocus();
         return true;
       }
+    }
+    if (retainWhenEmpty && scopeNode.canRequestFocus) {
+      scopeNode.requestFocus();
+      return true;
     }
     return false;
   }

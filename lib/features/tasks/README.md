@@ -82,7 +82,12 @@ The redesigned tasks tab is an in-place browse-page migration, not a new query s
 In desktop split-pane mode, `TasksRootPage` keeps the list pane mounted while
 the detail pane is keyed by the selected task ID. That gives each task detail
 surface its own state lifetime instead of reusing the previous task's
-stateful page internals across selection changes.
+stateful page internals across selection changes. The list and detail panes
+also share a `ListDetailFocusTraversal`: Right Arrow on a focused task selects
+the row and moves focus to a real detail control after the detail frame
+renders, skipping the independently keyboard-resizable divider. During the
+detail crossfade, outgoing pages are wrapped in `ExcludeFocus`, so the bridge
+cannot restore focus into a task that is only still present for animation.
 
 ### Desktop task detail stack
 
@@ -849,7 +854,9 @@ The task-list page contributes commands only while its pane owns focus:
 - Primary+F focuses the task search field;
 - Primary+R refreshes the paged query while keeping visible items rendered;
 - Primary+Shift+N creates a task with the single selected category, when one
-  can be inferred.
+  can be inferred;
+- Right Arrow on a focused task row opens the task in the adjacent detail pane
+  and transfers focus there without landing on the divider.
 
 ```mermaid
 flowchart LR
@@ -857,9 +864,11 @@ flowchart LR
   Scope --> Search[Primary+F]
   Scope --> Refresh[Primary+R]
   Scope --> Create[Primary+Shift+N]
+  Scope --> Expand[Right Arrow on focused row]
   Search --> Header[TabSectionHeader search FocusNode]
   Refresh --> Controller[journalPageControllerProvider true]
   Create --> Callback[TasksTabCreateTaskCallback]
+  Expand --> Detail[ListDetailFocusTraversal detail region]
 ```
 
 Global Primary+1 navigation and Primary+T task creation are owned by the app

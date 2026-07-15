@@ -44,6 +44,7 @@ lib/features/design_system/
 │   ├── celebration/      # completion glow + spark burst + orchestrator
 │   ├── chips/
 │   ├── dropdowns/
+│   ├── lists/            # grouped row geometry + shared list primitives
 │   ├── motion/           # staggered entrance, strikethrough wipe
 │   ├── navigation/
 │   ├── selection/        # shared single/multi/navigation/action picker rows
@@ -178,6 +179,11 @@ Representative primitive-ish components:
 - text inputs and textareas
 - chips, badges, avatars, dividers, tooltips
 - dropdowns, lists, spinners, progress bars, scrollbars
+- grouped-card row surfaces
+  (`components/lists/grouped_card_row_surface.dart`) — selection, pointer
+  hover, and keyboard focus paint through one background layer. Focus reuses
+  the exact hover fill, overlap, inset, and border-radius geometry instead of
+  relying on the smaller default `InkWell` focus overlay
 - selection rows (`components/selection/design_system_selection_row.dart`) —
   one full-width row anatomy for terminal single choice, staged multi-choice,
   in-flow navigation, and actions. The component fixes the leading rail,

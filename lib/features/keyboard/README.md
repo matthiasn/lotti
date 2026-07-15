@@ -115,12 +115,36 @@ dispatcher. They do not own duplicate callbacks or shortcut definitions.
 
 `KeyboardFocusRegion` registers desktop panes for F6 traversal, remembers the
 last focused descendant, and falls back to the first traversable descendant.
-The desktop shell registers navigation and active content regions and excludes
-inactive `IndexedStack` destinations from focus.
+When a region is temporarily empty, its scope owns focus until content renders;
+normal traversal can then enter the new descendants without falling back to the
+previous pane. The desktop shell registers navigation and active content
+regions and excludes inactive `IndexedStack` destinations from focus.
+
+`ListDetailFocusTraversal` gives desktop list/detail layouts a private pair of
+focus regions around their resize divider. A focused row can invoke the typed
+`expand` command, update the selected route, and then focus the first real
+available control in the detail pane after that frame. If the detail is still
+loading, the detail scope retains focus until its controls render. The divider
+stays independently focusable for deliberate resizing, but it is not an
+intermediate stop in this row-to-detail transition.
+
+```mermaid
+flowchart LR
+  Right[Right Arrow] --> Expand[Focused row expand handler]
+  Expand --> Select[Select or open row]
+  Select --> Frame[Render detail pane]
+  Frame --> Available{Focusable control available?}
+  Available -->|yes| Detail[Focus a detail control]
+  Available -->|no| Scope[Detail scope retains focus]
+  Scope --> Detail
+  Divider[Resizable divider] -. skipped .-> Detail
+```
 
 Reusable interactions extended by this feature include:
 
 - keyboard-resizable `ResizableDivider` instances with slider semantics;
+- Task and Project list rows whose Right Arrow transition enters the detail
+  region without giving the divider accidental ownership;
 - Settings tree rows with Up/Down traversal and Left/Right collapse/expand;
 - `HoldToConfirm`, where pointer users retain hold confirmation while
   Enter/Space and accessibility activation follow normal button semantics.

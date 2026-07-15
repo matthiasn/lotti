@@ -146,6 +146,95 @@ void main() {
     await tester.pump();
     expect(remembered.hasFocus, isTrue);
   });
+
+  testWidgets('focusRegion targets an enabled region by identity', (
+    tester,
+  ) async {
+    final controller = KeyboardFocusRegionController();
+    final first = FocusNode();
+    final second = FocusNode();
+    final secondRegionId = Object();
+    addTearDown(controller.dispose);
+    addTearDown(first.dispose);
+    addTearDown(second.dispose);
+
+    await tester.pumpWidget(
+      _testApp(
+        KeyboardFocusRegionRegistry(
+          controller: controller,
+          child: Column(
+            children: [
+              KeyboardFocusRegion(
+                debugLabel: 'first',
+                preferredFocusNode: first,
+                child: TextButton(
+                  focusNode: first,
+                  onPressed: () {},
+                  child: const Text('First'),
+                ),
+              ),
+              KeyboardFocusRegion(
+                debugLabel: 'second',
+                regionId: secondRegionId,
+                preferredFocusNode: second,
+                child: TextButton(
+                  focusNode: second,
+                  onPressed: () {},
+                  child: const Text('Second'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(controller.focusRegion(Object()), isFalse);
+    expect(controller.focusRegion(secondRegionId), isTrue);
+    await tester.pump();
+    expect(second.hasFocus, isTrue);
+  });
+
+  testWidgets('focusRegion uses an updated region identity', (tester) async {
+    final controller = KeyboardFocusRegionController();
+    final target = FocusNode();
+    final firstRegionId = Object();
+    final secondRegionId = Object();
+    final activeRegionId = ValueNotifier<Object>(firstRegionId);
+    addTearDown(controller.dispose);
+    addTearDown(target.dispose);
+    addTearDown(activeRegionId.dispose);
+
+    await tester.pumpWidget(
+      _testApp(
+        KeyboardFocusRegionRegistry(
+          controller: controller,
+          child: ValueListenableBuilder<Object>(
+            valueListenable: activeRegionId,
+            builder: (context, regionId, child) => KeyboardFocusRegion(
+              debugLabel: 'updated-region',
+              regionId: regionId,
+              preferredFocusNode: target,
+              child: child!,
+            ),
+            child: TextButton(
+              focusNode: target,
+              onPressed: () {},
+              child: const Text('Target'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    activeRegionId.value = secondRegionId;
+    await tester.pump();
+
+    expect(controller.focusRegion(firstRegionId), isFalse);
+    expect(controller.focusRegion(secondRegionId), isTrue);
+    await tester.pump();
+    expect(target.hasFocus, isTrue);
+  });
 }
 
 class _TwoFocusRegions extends StatelessWidget {
