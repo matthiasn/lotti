@@ -259,6 +259,13 @@ log. It shows only wake records that can still fire later:
   long-lived planner has several outstanding day wakes at once). Their subject
   is the day id, derived from the record's `day:<dayId>` `workspaceKey`.
 
+Due and pending scheduled-wake reads pin
+`idx_agent_entities_pending_scheduled_wake_at`. The partial expression index
+provides both the due-time range scan and the pending-list order; pinning it in
+the hand-written database methods avoids platform-specific SQLite planner
+choices that otherwise fall back to the broader active-type index and a
+temporary sort.
+
 All three scheduling fields (`nextWakeAt`, `sleepUntil`, `scheduledWakeAt`) are
 **device-local** (PR 4 B4): each device schedules its own wakes, so the sync
 apply path preserves the local row's scheduling rather than letting a peer's

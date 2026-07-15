@@ -1736,6 +1736,7 @@ void main() {
           EXPLAIN QUERY PLAN
           SELECT *
           FROM agent_entities
+            INDEXED BY idx_agent_entities_pending_scheduled_wake_at
           WHERE type = 'scheduledWake'
             AND deleted_at IS NULL
             AND json_extract(serialized, '$.status') = 'pending'
@@ -2100,7 +2101,8 @@ void main() {
           .customSelect(
             r'''
               EXPLAIN QUERY PLAN
-              SELECT * FROM agent_entities
+              SELECT *
+              FROM agent_entities
                 INDEXED BY idx_agent_entities_active_agent_type_task_created_id
               WHERE agent_id = ?1
                 AND type = 'changeSet'
@@ -2184,7 +2186,9 @@ void main() {
             .customSelect(
               r'''
               EXPLAIN QUERY PLAN
-              SELECT * FROM agent_entities
+              SELECT *
+              FROM agent_entities
+                INDEXED BY idx_agent_entities_pending_scheduled_wake_at
               WHERE type = 'scheduledWake'
                 AND deleted_at IS NULL
                 AND json_extract(serialized, '$.status') = 'pending'
@@ -2211,7 +2215,9 @@ void main() {
         // ignore: use_raw_strings
         final pendingPlan = await db.customSelect('''
         EXPLAIN QUERY PLAN
-        SELECT * FROM agent_entities
+        SELECT *
+        FROM agent_entities
+          INDEXED BY idx_agent_entities_pending_scheduled_wake_at
         WHERE type = 'scheduledWake'
           AND deleted_at IS NULL
           AND json_extract(serialized, '\$.status') = 'pending'
