@@ -430,12 +430,13 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
+        labelIds: any(named: 'labelIds'),
       ),
     ).thenAnswer((_) async => createdTask);
 
     await tester.pumpWidget(
       buildSubject(
-        state: state(),
+        state: state(selectedLabelIds: const {'label-1'}),
         // Do NOT provide onCreateTaskPressed — exercises default path
       ),
     );
@@ -449,6 +450,15 @@ void main() {
     verify(
       () => mockNavService.beamToNamed('/tasks/new-task', data: null),
     ).called(1);
+    final capturedLabelIds = verify(
+      () => mockPersistenceLogic.createTaskEntry(
+        data: any(named: 'data'),
+        entryText: any(named: 'entryText'),
+        categoryId: any(named: 'categoryId'),
+        labelIds: captureAny(named: 'labelIds'),
+      ),
+    ).captured.single;
+    expect(capturedLabelIds, ['label-1']);
   });
 
   testWidgets('uses the design-system FAB with bottom-nav padding', (

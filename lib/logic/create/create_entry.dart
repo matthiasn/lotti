@@ -192,13 +192,19 @@ Future<void> _assignProjectToTask({
   }
 }
 
-ProjectRepository _createProjectRepository() => ProjectRepository(
-  journalDb: getIt<JournalDb>(),
-  entitiesCacheService: getIt<EntitiesCacheService>(),
-  persistenceLogic: getIt<PersistenceLogic>(),
-  updateNotifications: getIt<UpdateNotifications>(),
-  vectorClockService: getIt<VectorClockService>(),
-);
+ProjectRepository _createProjectRepository() {
+  if (getIt.isRegistered<ProjectRepository>()) {
+    return getIt<ProjectRepository>();
+  }
+
+  return ProjectRepository(
+    journalDb: getIt<JournalDb>(),
+    entitiesCacheService: getIt<EntitiesCacheService>(),
+    persistenceLogic: getIt<PersistenceLogic>(),
+    updateNotifications: getIt<UpdateNotifications>(),
+    vectorClockService: getIt<VectorClockService>(),
+  );
+}
 
 /// Auto-creates an agent for [task] if the task's category has a
 /// `defaultTemplateId` set. The agent is created in content-awaiting mode

@@ -241,6 +241,72 @@ void main() {
       expect((persisted as Task).data.status, isA<TaskInProgress>());
     });
 
+    test(
+      'createTask keeps the task when project lookup and assignment throw',
+      () async {
+        const projectId = 'unavailable-project';
+        final projectRepository = MockProjectRepository();
+        getIt.registerSingleton<ProjectRepository>(projectRepository);
+        when(
+          () => projectRepository.getProjectById(projectId),
+        ).thenThrow(StateError('project lookup failed'));
+        when(
+          () => projectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenThrow(StateError('project assignment failed'));
+
+        final task = await createTask(projectId: projectId);
+
+        expect(task, isNotNull);
+        expect(task!.meta.categoryId, isNull);
+        expect(await journalDb.getProjectForTask(task.meta.id), isNull);
+        verify(
+          () => projectRepository.getProjectById(projectId),
+        ).called(1);
+        verify(
+          () => projectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: task.meta.id,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'createTask keeps a cross-category task when project assignment is '
+      'rejected',
+      () async {
+        const projectId = 'different-category-project';
+        const categoryId = 'task-category';
+        final projectRepository = MockProjectRepository();
+        getIt.registerSingleton<ProjectRepository>(projectRepository);
+        when(
+          () => projectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        final task = await createTask(
+          projectId: projectId,
+          categoryId: categoryId,
+        );
+
+        expect(task, isNotNull);
+        expect(task!.meta.categoryId, categoryId);
+        expect(await journalDb.getProjectForTask(task.meta.id), isNull);
+        verifyNever(() => projectRepository.getProjectById(projectId));
+        verify(
+          () => projectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: task.meta.id,
+          ),
+        ).called(1);
+      },
+    );
+
     test('createTask with linkedId and categoryId', () async {
       const testCategoryId = 'task-category-456';
       final parent = await createTextEntry();
