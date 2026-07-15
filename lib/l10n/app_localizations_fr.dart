@@ -6337,12 +6337,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String knowledgeGraphAgeDaysAgo(int count) {
-    return 'il y a $count jours';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'il y a $count jours',
+      one: 'il y a 1 jour',
+    );
+    return '$_temp0';
   }
 
   @override
   String knowledgeGraphAgeMonthsAgo(int count) {
-    return 'il y a $count mois';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'il y a $count mois',
+      one: 'il y a 1 mois',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -6350,14 +6362,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String knowledgeGraphAgeWeeksAgo(int count) {
-    return 'il y a $count semaines';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'il y a $count semaines',
+      one: 'il y a 1 semaine',
+    );
+    return '$_temp0';
   }
 
   @override
   String get knowledgeGraphAgeYesterday => 'Hier';
 
   @override
-  String get knowledgeGraphBack => 'Retour';
+  String get knowledgeGraphBack => 'Revenir';
 
   @override
   String get knowledgeGraphCloseDetails => 'Fermer les détails';
@@ -6386,7 +6404,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String knowledgeGraphNodeCount(int count) {
-    return 'Nœuds : $count';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nœuds',
+      one: '1 nœud',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -6454,7 +6478,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String knowledgeGraphWalkHint(int count) {
-    return 'Touche un nœud pour avancer · nœuds : $count';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nœuds',
+      one: '1 nœud',
+    );
+    return 'Touche un nœud pour avancer · $_temp0';
   }
 
   @override

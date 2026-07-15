@@ -15,14 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   split panes and confirm Daily OS commits without pointer-only gestures.
 
 ### Changed
-- **Task agents now use the evidence-first workflow unconditionally.** The
-  evaluated prompt, tool contract, low-variance efficient-model routes, and
-  supported Mistral-to-Qwen report pass are now the only production path, so
-  the former Advanced Settings flag has been removed.
-- **Synced alerts are now rolled out to everyone.** Alerts are always stored,
-  scheduled, and added to the sync outbox; when Matrix sync is active, their
-  payloads and seen, acted-on, or retracted state follow the existing encrypted
-  device-sync path.
+- **Task agents now use evidence-first processing for everyone.** The
+  previously optional behavior is now standard and its Advanced Settings
+  toggle has been removed. If you already had it enabled, nothing changes.
+- **Synced alerts are now available to everyone.** Alerts stay consistent
+  across devices whenever Matrix sync is active, and the former Advanced
+  Settings toggle has been removed.
 - **The Knowledge Graph is now available from every task.** The graph button is
   always present in normal task headers, while embedded task details suppress
   the recursive entry point. Graph controls, node and relation labels, relative

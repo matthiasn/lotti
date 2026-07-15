@@ -3176,7 +3176,7 @@
   "keyboardShortcutsSearchHint": "Search shortcuts…",
   "keyboardShortcutsSubtitle": "Every desktop command and its current keyboard combination.",
   "keyboardShortcutsTitle": "Keyboard shortcuts",
-  "knowledgeGraphAgeDaysAgo": "{count} days ago",
+  "knowledgeGraphAgeDaysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
   "@knowledgeGraphAgeDaysAgo": {
     "placeholders": {
       "count": {
@@ -3184,7 +3184,7 @@
       }
     }
   },
-  "knowledgeGraphAgeMonthsAgo": "{count} months ago",
+  "knowledgeGraphAgeMonthsAgo": "{count, plural, =1{1 month ago} other{{count} months ago}}",
   "@knowledgeGraphAgeMonthsAgo": {
     "placeholders": {
       "count": {
@@ -3193,7 +3193,7 @@
     }
   },
   "knowledgeGraphAgeToday": "today",
-  "knowledgeGraphAgeWeeksAgo": "{count} weeks ago",
+  "knowledgeGraphAgeWeeksAgo": "{count, plural, =1{1 week ago} other{{count} weeks ago}}",
   "@knowledgeGraphAgeWeeksAgo": {
     "placeholders": {
       "count": {

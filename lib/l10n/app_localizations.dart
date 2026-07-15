@@ -10875,13 +10875,13 @@ abstract class AppLocalizations {
   /// No description provided for @knowledgeGraphAgeDaysAgo.
   ///
   /// In en, this message translates to:
-  /// **'{count} days ago'**
+  /// **'{count, plural, =1{1 day ago} other{{count} days ago}}'**
   String knowledgeGraphAgeDaysAgo(int count);
 
   /// No description provided for @knowledgeGraphAgeMonthsAgo.
   ///
   /// In en, this message translates to:
-  /// **'{count} months ago'**
+  /// **'{count, plural, =1{1 month ago} other{{count} months ago}}'**
   String knowledgeGraphAgeMonthsAgo(int count);
 
   /// No description provided for @knowledgeGraphAgeToday.
@@ -10893,7 +10893,7 @@ abstract class AppLocalizations {
   /// No description provided for @knowledgeGraphAgeWeeksAgo.
   ///
   /// In en, this message translates to:
-  /// **'{count} weeks ago'**
+  /// **'{count, plural, =1{1 week ago} other{{count} weeks ago}}'**
   String knowledgeGraphAgeWeeksAgo(int count);
 
   /// No description provided for @knowledgeGraphAgeYesterday.

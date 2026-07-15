@@ -6330,12 +6330,24 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String knowledgeGraphAgeDaysAgo(int count) {
-    return 'hace $count días';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'hace $count días',
+      one: 'hace 1 día',
+    );
+    return '$_temp0';
   }
 
   @override
   String knowledgeGraphAgeMonthsAgo(int count) {
-    return 'hace $count meses';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'hace $count meses',
+      one: 'hace 1 mes',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -6343,7 +6355,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String knowledgeGraphAgeWeeksAgo(int count) {
-    return 'hace $count semanas';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'hace $count semanas',
+      one: 'hace 1 semana',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -6388,7 +6406,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get knowledgeGraphNodeTypeAudioNote => 'Nota de audio';
 
   @override
-  String get knowledgeGraphNodeTypeChecklist => 'Lista de comprobación';
+  String get knowledgeGraphNodeTypeChecklist => 'Lista de verificación';
 
   @override
   String get knowledgeGraphNodeTypeChecklistItem => 'Elemento de la lista';

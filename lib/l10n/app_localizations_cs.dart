@@ -6297,12 +6297,26 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String knowledgeGraphAgeDaysAgo(int count) {
-    return 'před $count dny';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'před $count dny',
+      few: 'před $count dny',
+      one: 'před 1 dnem',
+    );
+    return '$_temp0';
   }
 
   @override
   String knowledgeGraphAgeMonthsAgo(int count) {
-    return 'před $count měsíci';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'před $count měsíci',
+      few: 'před $count měsíci',
+      one: 'před 1 měsícem',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -6310,7 +6324,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String knowledgeGraphAgeWeeksAgo(int count) {
-    return 'před $count týdny';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'před $count týdny',
+      few: 'před $count týdny',
+      one: 'před 1 týdnem',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -6345,7 +6366,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String knowledgeGraphNodeCount(int count) {
-    return 'Uzly: $count';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count uzlů',
+      few: '$count uzly',
+      one: '1 uzel',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -6414,7 +6442,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String knowledgeGraphWalkHint(int count) {
-    return 'Klepni na uzel a přejdi dál · uzly: $count';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count uzlů',
+      few: '$count uzly',
+      one: '1 uzel',
+    );
+    return 'Klepni na uzel a přejdi dál · $_temp0';
   }
 
   @override

@@ -34,8 +34,8 @@
   <releases>
     <release version="0.9.1047" date="2026-07-15">
       <description>
-          <p>Task agents now use the evidence-first workflow unconditionally. The evaluated prompt and tool contract, low-variance efficient-model routes, and supported Mistral-to-Qwen report pass are now the only production path, so the former Advanced Settings flag has been removed.</p>
-          <p>Synced alerts are now rolled out to everyone. Alerts are always stored, scheduled, and added to the sync outbox; when Matrix sync is active, their payloads and seen, acted-on, or retracted state follow the existing encrypted device-sync path.</p>
+          <p>Task agents now use evidence-first processing for everyone. The previously optional behavior is now standard and its Advanced Settings toggle has been removed. If you already had it enabled, nothing changes.</p>
+          <p>Synced alerts are now available to everyone. Alerts stay consistent across devices whenever Matrix sync is active, and the former Advanced Settings toggle has been removed.</p>
           <p>The Knowledge Graph is now available from every task. The graph button is always present in normal task headers, embedded task details suppress the recursive entry point, and the graph surface is localized in all supported languages.</p>
           <p>Hovering a row on the Advanced Settings Maintenance page now fades the dividers above and below it, so the hovered row is never bisected by a hairline — matching the existing Config Flags behaviour. The row layout stays fixed while only the divider colour changes.</p>
           <p>On mobile, the bottom navigation bar now slides out of the way on Settings detail pages — the AI and Agents sections, every Sync page (backfill, stats, outbox, …), and Advanced pages like Config Flags, Logging, Maintenance, and About — so the page owns the full height, and it slides back when you tap back. Menu hubs (Advanced, Sync, Definitions) and the browse lists (Categories, Labels, Habits, …) keep the bar, since you navigate onward from them.</p>

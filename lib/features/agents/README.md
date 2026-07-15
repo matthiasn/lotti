@@ -1093,11 +1093,14 @@ flowchart TD
   Profile["Inference profile: Qwen or Mistral"] --> Workflow
   Workflow --> Prompt["Active directive + evidence protocol"]
   Workflow --> Tools["Evidence-aware update_report description"]
-  Workflow --> Sampling["Temperature 0.0"]
+  Workflow --> Sampling{"Exact evaluated Qwen or Mistral?"}
+  Sampling -->|yes| Zero["Temperature 0.0"]
+  Sampling -->|no| Default["Temperature 0.3"]
   Custom["Custom report directive"] -->|preserved| Prompt
   Prompt --> Executor["Primary conversation"]
   Tools --> Executor
-  Sampling --> Executor
+  Zero --> Executor
+  Default --> Executor
   Executor --> Route{"Executor route"}
   Route -->|other model| Persist["Persist executor report"]
   Route -->|Mistral| Facts["ID-free current anchors + successful mutations"]

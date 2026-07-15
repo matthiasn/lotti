@@ -6346,12 +6346,26 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String knowledgeGraphAgeDaysAgo(int count) {
-    return 'acum $count zile';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'acum $count de zile',
+      few: 'acum $count zile',
+      one: 'acum 1 zi',
+    );
+    return '$_temp0';
   }
 
   @override
   String knowledgeGraphAgeMonthsAgo(int count) {
-    return 'acum $count luni';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'acum $count de luni',
+      few: 'acum $count luni',
+      one: 'acum 1 lună',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -6359,7 +6373,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String knowledgeGraphAgeWeeksAgo(int count) {
-    return 'acum $count săptămâni';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'acum $count de săptămâni',
+      few: 'acum $count săptămâni',
+      one: 'acum 1 săptămână',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -6395,7 +6416,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String knowledgeGraphNodeCount(int count) {
-    return 'Noduri: $count';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de noduri',
+      few: '$count noduri',
+      one: '1 nod',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -6463,7 +6491,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String knowledgeGraphWalkHint(int count) {
-    return 'Atingeți un nod pentru a continua · noduri: $count';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de noduri',
+      few: '$count noduri',
+      one: '1 nod',
+    );
+    return 'Atingeți un nod pentru a continua · $_temp0';
   }
 
   @override

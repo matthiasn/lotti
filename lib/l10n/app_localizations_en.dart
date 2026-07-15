@@ -6207,12 +6207,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String knowledgeGraphAgeDaysAgo(int count) {
-    return '$count days ago';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days ago',
+      one: '1 day ago',
+    );
+    return '$_temp0';
   }
 
   @override
   String knowledgeGraphAgeMonthsAgo(int count) {
-    return '$count months ago';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count months ago',
+      one: '1 month ago',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -6220,7 +6232,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String knowledgeGraphAgeWeeksAgo(int count) {
-    return '$count weeks ago';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count weeks ago',
+      one: '1 week ago',
+    );
+    return '$_temp0';
   }
 
   @override

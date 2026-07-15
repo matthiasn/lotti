@@ -4,7 +4,13 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/node_inspector_panel.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_cs.dart';
+import 'package:lotti/l10n/app_localizations_de.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/l10n/app_localizations_es.dart';
+import 'package:lotti/l10n/app_localizations_fr.dart';
+import 'package:lotti/l10n/app_localizations_ro.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -72,6 +78,108 @@ void main() {
           reason: 'age for ${entry.key}',
         );
       }
+    });
+
+    test('localizes singular age units in every supported locale', () {
+      final cases =
+          <
+            ({
+              String locale,
+              AppLocalizations messages,
+              String day,
+              String week,
+              String month,
+            })
+          >[
+            (
+              locale: 'en',
+              messages: AppLocalizationsEn(),
+              day: '1 day ago',
+              week: '1 week ago',
+              month: '1 month ago',
+            ),
+            (
+              locale: 'cs',
+              messages: AppLocalizationsCs(),
+              day: 'před 1 dnem',
+              week: 'před 1 týdnem',
+              month: 'před 1 měsícem',
+            ),
+            (
+              locale: 'de',
+              messages: AppLocalizationsDe(),
+              day: 'vor 1 Tag',
+              week: 'vor 1 Woche',
+              month: 'vor 1 Monat',
+            ),
+            (
+              locale: 'es',
+              messages: AppLocalizationsEs(),
+              day: 'hace 1 día',
+              week: 'hace 1 semana',
+              month: 'hace 1 mes',
+            ),
+            (
+              locale: 'fr',
+              messages: AppLocalizationsFr(),
+              day: 'il y a 1 jour',
+              week: 'il y a 1 semaine',
+              month: 'il y a 1 mois',
+            ),
+            (
+              locale: 'ro',
+              messages: AppLocalizationsRo(),
+              day: 'acum 1 zi',
+              week: 'acum 1 săptămână',
+              month: 'acum 1 lună',
+            ),
+          ];
+
+      for (final entry in cases) {
+        expect(
+          entry.messages.knowledgeGraphAgeDaysAgo(1),
+          entry.day,
+          reason: '${entry.locale} day',
+        );
+        expect(
+          entry.messages.knowledgeGraphAgeWeeksAgo(1),
+          entry.week,
+          reason: '${entry.locale} week',
+        );
+        expect(
+          entry.messages.knowledgeGraphAgeMonthsAgo(1),
+          entry.month,
+          reason: '${entry.locale} month',
+        );
+      }
+    });
+
+    test('uses Czech and Romanian plural categories for graph counts', () {
+      final cs = AppLocalizationsCs();
+      expect(cs.knowledgeGraphAgeDaysAgo(2), 'před 2 dny');
+      expect(cs.knowledgeGraphAgeDaysAgo(5), 'před 5 dny');
+      expect(cs.knowledgeGraphNodeCount(1), '1 uzel');
+      expect(cs.knowledgeGraphNodeCount(2), '2 uzly');
+      expect(cs.knowledgeGraphNodeCount(5), '5 uzlů');
+
+      final ro = AppLocalizationsRo();
+      expect(ro.knowledgeGraphAgeDaysAgo(2), 'acum 2 zile');
+      expect(ro.knowledgeGraphAgeDaysAgo(20), 'acum 20 de zile');
+      expect(ro.knowledgeGraphNodeCount(1), '1 nod');
+      expect(ro.knowledgeGraphNodeCount(2), '2 noduri');
+      expect(ro.knowledgeGraphNodeCount(20), '20 de noduri');
+    });
+
+    test('uses reviewed French and Spanish graph terminology', () {
+      final fr = AppLocalizationsFr();
+      expect(fr.knowledgeGraphBack, 'Revenir');
+      expect(fr.knowledgeGraphNodeCount(1), '1 nœud');
+      expect(fr.knowledgeGraphNodeCount(2), '2 nœuds');
+
+      expect(
+        AppLocalizationsEs().knowledgeGraphNodeTypeChecklist,
+        'Lista de verificación',
+      );
     });
   });
 
