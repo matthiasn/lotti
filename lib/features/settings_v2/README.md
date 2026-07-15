@@ -251,14 +251,17 @@ focus, the tree and resize handle own their local interaction grammar. The
 Keyboard shortcuts leaf embeds `KeyboardShortcutsPage` from the keyboard
 feature at `/settings/keyboard-shortcuts`; its labels, categories, contexts,
 and active-platform key notation all come from the same catalog used for
-execution and the command palette.
+execution and the command palette. The tree is a contained directional focus
+scope: collapsed descendants are excluded from traversal, and reaching its
+first or last visible row does not move focus onto the adjacent resize handle.
 
 ```mermaid
 flowchart LR
   Global[Primary+8] --> Settings[Settings desktop surface]
   Settings --> Tree[Focused tree row]
   Tree -->|Up / Down| Sibling[Previous / next visible row]
-  Tree -->|Right / Left| Branch[Expand / collapse branch]
+  Tree -->|Right| Child[Expand or enter first child]
+  Tree -->|Left| Parent[Collapse or return to parent]
   Settings --> Handle[Focused resize handle]
   Handle -->|Left / Right| Width[Persisted tree width]
   Settings --> Help[Keyboard shortcuts leaf]

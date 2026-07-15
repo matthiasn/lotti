@@ -45,6 +45,7 @@ Future<void> _pumpRow(
   int descMaxLines = 1,
   bool accentIcon = false,
   Widget? trailing,
+  FocusNode? focusNode,
   VoidCallback? onTap,
 }) async {
   await tester.pumpWidget(
@@ -61,6 +62,7 @@ Future<void> _pumpRow(
             descMaxLines: descMaxLines,
             accentIcon: accentIcon,
             trailing: trailing,
+            focusNode: focusNode,
             onTap: onTap ?? () {},
           ),
         ),
@@ -260,6 +262,26 @@ void main() {
       await tester.tap(find.byType(SettingsTreeRow));
       await tester.pump();
       expect(taps, 1);
+    });
+
+    testWidgets('uses design-system hover and keyboard-focus fills', (
+      tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await _pumpRow(tester, node: _leaf(), focusNode: focusNode);
+
+      final context = tester.element(find.byType(SettingsTreeRow));
+      final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+      expect(inkWell.hoverColor, context.designTokens.colors.surface.hover);
+      expect(
+        inkWell.focusColor,
+        context.designTokens.colors.surface.focusPressed,
+      );
+
+      focusNode.requestFocus();
+      await tester.pump();
+      expect(focusNode.hasFocus, isTrue);
     });
   });
 

@@ -19,18 +19,43 @@ typedef _RowSelection = ({bool onActivePath, bool isExpanded});
 /// children subtree. Reads the shared [settingsTreePathProvider] with a
 /// `.select` narrowed to this node's slot so siblings do not rebuild
 /// when selection moves elsewhere in the tree.
-class SettingsTreeNodeWidget extends ConsumerWidget {
+class SettingsTreeNodeWidget extends ConsumerStatefulWidget {
   const SettingsTreeNodeWidget({
     required this.node,
     required this.depth,
+    this.parentFocusNode,
     super.key,
   });
 
   final SettingsNode node;
   final int depth;
+  final FocusNode? parentFocusNode;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsTreeNodeWidget> createState() =>
+      _SettingsTreeNodeWidgetState();
+}
+
+class _SettingsTreeNodeWidgetState
+    extends ConsumerState<SettingsTreeNodeWidget> {
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode(debugLabel: 'settings-tree:${widget.node.id}');
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final node = widget.node;
+    final depth = widget.depth;
     final tokens = context.designTokens;
     final selection = ref.watch(
       settingsTreePathProvider.select<_RowSelection>((path) {
@@ -56,6 +81,10 @@ class SettingsTreeNodeWidget extends ConsumerWidget {
           );
     }
 
+    void moveFocus(TraversalDirection direction) {
+      FocusManager.instance.primaryFocus?.focusInDirection(direction);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -63,27 +92,35 @@ class SettingsTreeNodeWidget extends ConsumerWidget {
           debugLabel: 'settings-tree:${node.id}',
           handlers: {
             AppCommandId.selectPrevious: AppCommandHandler(
-              invoke: (_) => FocusManager.instance.primaryFocus
-                  ?.focusInDirection(TraversalDirection.up),
+              invoke: (_) => moveFocus(TraversalDirection.up),
             ),
             AppCommandId.selectNext: AppCommandHandler(
-              invoke: (_) => FocusManager.instance.primaryFocus
-                  ?.focusInDirection(TraversalDirection.down),
+              invoke: (_) => moveFocus(TraversalDirection.down),
             ),
-            if (node.hasChildren)
-              AppCommandId.expand: AppCommandHandler(
-                isEnabled: () => !isExpanded,
-                invoke: (_) => handleTap(),
-              ),
-            if (node.hasChildren)
-              AppCommandId.collapse: AppCommandHandler(
-                isEnabled: () => isExpanded,
-                invoke: (_) => handleTap(),
-              ),
+            AppCommandId.expand: AppCommandHandler(
+              invoke: (_) {
+                if (!node.hasChildren) return;
+                if (!isExpanded) {
+                  handleTap();
+                  return;
+                }
+                moveFocus(TraversalDirection.down);
+              },
+            ),
+            AppCommandId.collapse: AppCommandHandler(
+              invoke: (_) {
+                if (node.hasChildren && isExpanded) {
+                  handleTap();
+                  return;
+                }
+                widget.parentFocusNode?.requestFocus();
+              },
+            ),
           },
           child: SettingsTreeRow(
             node: node,
             depth: depth,
+            focusNode: _focusNode,
             onActivePath: onActivePath,
             isExpanded: isExpanded,
             trailing: settingsNodeIndicatorFor(node.id),
@@ -108,10 +145,14 @@ class SettingsTreeNodeWidget extends ConsumerWidget {
                 child: AnimatedOpacity(
                   duration: SettingsV2Constants.branchOpacityAnimation,
                   opacity: isExpanded ? 1 : 0,
-                  child: _ChildrenContainer(
-                    children: node.children!,
-                    depth: depth + 1,
-                    tokens: tokens,
+                  child: ExcludeFocus(
+                    excluding: !isExpanded,
+                    child: _ChildrenContainer(
+                      children: node.children!,
+                      depth: depth + 1,
+                      tokens: tokens,
+                      parentFocusNode: _focusNode,
+                    ),
                   ),
                 ),
               ),
@@ -127,11 +168,13 @@ class _ChildrenContainer extends StatelessWidget {
     required this.children,
     required this.depth,
     required this.tokens,
+    required this.parentFocusNode,
   });
 
   final List<SettingsNode> children;
   final int depth;
   final DsTokens tokens;
+  final FocusNode parentFocusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -162,6 +205,7 @@ class _ChildrenContainer extends StatelessWidget {
                   key: ValueKey(child.id),
                   node: child,
                   depth: depth,
+                  parentFocusNode: parentFocusNode,
                 ),
             ],
           ),

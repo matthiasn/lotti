@@ -35,6 +35,36 @@ SettingsNode _flagsLeaf() => const SettingsNode(
   panel: 'flags',
 );
 
+SettingsNode _branchWithHiddenChildren() => const SettingsNode(
+  id: 'sync',
+  icon: Icons.sync_rounded,
+  title: 'Sync',
+  desc: 'Configure sync',
+  children: [
+    SettingsNode(
+      id: 'sync/backfill',
+      icon: Icons.cloud_download_outlined,
+      title: 'Backfill',
+      desc: 'Recover sync gaps',
+      panel: 'sync-backfill',
+    ),
+    SettingsNode(
+      id: 'sync/conflicts',
+      icon: Icons.warning_amber_rounded,
+      title: 'Conflicts',
+      desc: 'Resolve conflicts',
+      panel: 'sync-conflicts',
+    ),
+    SettingsNode(
+      id: 'sync/stats',
+      icon: Icons.query_stats_rounded,
+      title: 'Stats',
+      desc: 'Inspect sync statistics',
+      panel: 'sync-stats',
+    ),
+  ],
+);
+
 Future<void> _pumpNode(
   WidgetTester tester, {
   required SettingsNode node,
@@ -47,7 +77,10 @@ Future<void> _pumpNode(
           width: 400,
           child: AppCommandHost(
             handlers: const {},
-            child: SettingsTreeNodeWidget(node: node, depth: depth),
+            child: FocusScope(
+              debugLabel: 'settings-tree-test',
+              child: SettingsTreeNodeWidget(node: node, depth: depth),
+            ),
           ),
         ),
       ),
@@ -133,29 +166,50 @@ void main() {
   });
 
   group('SettingsTreeNodeWidget — keyboard tree navigation', () {
-    testWidgets('Right expands a focused branch and Left collapses it', (
-      tester,
-    ) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
-      try {
-        await _pumpNode(tester, node: _syncBranch());
-        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-        await tester.pump();
+    testWidgets(
+      'Right expands and enters a branch; Left returns and collapses it',
+      (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+        try {
+          await _pumpNode(tester, node: _syncBranch());
+          await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+          await tester.pump();
 
-        await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-        await tester.pump();
-        expect(
-          _containerOf(tester).read(settingsTreePathProvider),
-          ['sync'],
-        );
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+          await tester.pump();
+          expect(
+            _containerOf(tester).read(settingsTreePathProvider),
+            ['sync'],
+          );
 
-        await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
-        await tester.pump();
-        expect(_containerOf(tester).read(settingsTreePathProvider), isEmpty);
-      } finally {
-        debugDefaultTargetPlatformOverride = null;
-      }
-    });
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+          await tester.pump();
+          expect(
+            FocusManager.instance.primaryFocus?.context
+                ?.findAncestorWidgetOfExactType<SettingsTreeRow>()
+                ?.node
+                .id,
+            'sync/backfill',
+          );
+
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+          await tester.pump();
+          expect(
+            FocusManager.instance.primaryFocus?.context
+                ?.findAncestorWidgetOfExactType<SettingsTreeRow>()
+                ?.node
+                .id,
+            'sync',
+          );
+
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+          await tester.pump();
+          expect(_containerOf(tester).read(settingsTreePathProvider), isEmpty);
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      },
+    );
 
     testWidgets('Down and Up move focus between tree rows', (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.windows;
@@ -202,6 +256,76 @@ void main() {
         debugDefaultTargetPlatformOverride = null;
       }
     });
+
+    testWidgets(
+      'Down skips collapsed children and tree boundaries keep focus away '
+      'from the resize handle',
+      (tester) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+        final resizeHandleFocus = FocusNode(debugLabel: 'resize-handle');
+        addTearDown(resizeHandleFocus.dispose);
+        try {
+          await tester.pumpWidget(
+            makeTestableWidgetNoScroll(
+              Material(
+                child: AppCommandHost(
+                  handlers: const {},
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: FocusScope(
+                          debugLabel: 'settings-tree-test',
+                          child: Column(
+                            children: [
+                              SettingsTreeNodeWidget(
+                                node: _branchWithHiddenChildren(),
+                                depth: 0,
+                              ),
+                              SettingsTreeNodeWidget(
+                                node: _flagsLeaf(),
+                                depth: 0,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Focus(
+                        focusNode: resizeHandleFocus,
+                        child: const SizedBox(width: 1),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+          await tester.pump();
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+          await tester.pump();
+
+          final focusedRow = FocusManager.instance.primaryFocus?.context
+              ?.findAncestorWidgetOfExactType<SettingsTreeRow>();
+          expect(focusedRow?.node.id, 'flags');
+
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+          await tester.pump();
+
+          expect(resizeHandleFocus.hasFocus, isFalse);
+          expect(
+            FocusManager.instance.primaryFocus?.context
+                ?.findAncestorWidgetOfExactType<SettingsTreeRow>()
+                ?.node
+                .id,
+            'flags',
+          );
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      },
+    );
   });
 
   group('SettingsTreeNodeWidget — recursion', () {
