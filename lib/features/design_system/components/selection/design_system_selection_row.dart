@@ -40,6 +40,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
     this.selected = false,
     this.selectedLabel,
     this.semanticLabel,
+    this.focusNode,
     this.onHoverChanged,
     this.onFocusChanged,
     super.key,
@@ -66,6 +67,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
   /// enabled state are exposed as semantics flags and should not be repeated in
   /// this label.
   final String? semanticLabel;
+  final FocusNode? focusNode;
   final VoidCallback? onTap;
   final ValueChanged<bool>? onHoverChanged;
   final ValueChanged<bool>? onFocusChanged;
@@ -106,6 +108,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
           activated: (isSingle || isMulti) && selected,
           activatedBackgroundColor: tokens.colors.surface.selected,
           onTap: onTap,
+          focusNode: focusNode,
           onHoverChanged: onHoverChanged,
           onFocusChanged: onFocusChanged,
           excludeFromSemantics: true,

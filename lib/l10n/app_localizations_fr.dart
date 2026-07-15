@@ -9712,13 +9712,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksPriorityPickerTitle => 'Sélectionner la priorité';
 
   @override
-  String get tasksQuickFilterClear => 'Effacer';
-
-  @override
-  String get tasksQuickFilterLabelsActiveTitle =>
-      'Filtres d\'étiquettes actifs';
-
-  @override
   String get tasksQuickFilterUnassignedLabel => 'Non attribué';
 
   @override

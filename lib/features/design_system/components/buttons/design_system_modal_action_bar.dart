@@ -73,7 +73,8 @@ class DesignSystemModalActionBar extends StatelessWidget {
             : tokens.spacing.step13 * 2;
         final stacked =
             constraints.maxWidth < narrowBreakpoint || textScale > 1.3;
-        if (layout == DesignSystemModalActionBarLayout.compactPrimary) {
+        if (layout == DesignSystemModalActionBarLayout.compactPrimary &&
+            !stacked) {
           return _CompactActionLayout(
             primary: primary,
             secondary: secondary,

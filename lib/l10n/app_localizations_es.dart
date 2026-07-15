@@ -9691,13 +9691,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksPriorityPickerTitle => 'Seleccionar prioridad';
 
   @override
-  String get tasksQuickFilterClear => 'Borrar';
-
-  @override
-  String get tasksQuickFilterLabelsActiveTitle =>
-      'Filtros de etiquetas activos';
-
-  @override
   String get tasksQuickFilterUnassignedLabel => 'Sin asignar';
 
   @override

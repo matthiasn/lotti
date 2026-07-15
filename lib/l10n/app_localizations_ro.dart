@@ -9701,12 +9701,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksPriorityPickerTitle => 'Selectează prioritatea';
 
   @override
-  String get tasksQuickFilterClear => 'Șterge';
-
-  @override
-  String get tasksQuickFilterLabelsActiveTitle => 'Filtre de etichete active';
-
-  @override
   String get tasksQuickFilterUnassignedLabel => 'Neatribuit';
 
   @override

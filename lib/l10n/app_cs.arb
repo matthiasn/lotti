@@ -3737,8 +3737,6 @@
   "tasksPriorityP3": "Nízká",
   "tasksPriorityP3Description": "Nízká (kdykoliv)",
   "tasksPriorityPickerTitle": "Vyberte prioritu",
-  "tasksQuickFilterClear": "Vymazat",
-  "tasksQuickFilterLabelsActiveTitle": "Aktivní filtry štítků",
   "tasksQuickFilterUnassignedLabel": "Nepřiřazeno",
   "tasksSavedFilterDeleteConfirmTooltip": "Klepni znovu pro smazání",
   "tasksSavedFilterDeleteTooltip": "Smazat uložený filtr",

@@ -15,6 +15,8 @@ Future<void> showLinkedEntriesFilterModal({
   return ModalUtils.showSinglePageModal<void>(
     context: context,
     title: context.messages.journalLinkedEntriesFilterModalTitle,
+    closeButtonIcon: Icons.check_rounded,
+    closeButtonTooltip: context.messages.doneButton,
     padding: EdgeInsets.fromLTRB(
       spacing.step5,
       spacing.step2,

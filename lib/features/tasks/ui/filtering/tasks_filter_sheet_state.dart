@@ -321,14 +321,12 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
 /// Each option label is prefixed with its category name for clarity
 /// when multiple categories are selected. Options are ordered by
 /// category, then by project title within each category.
-DesignSystemTaskFilterFieldState? _buildProjectField(
+DesignSystemTaskFilterFieldState _buildProjectField(
   BuildContext context, {
   required List<ProjectWithCategory> projectsWithCategories,
   required List<CategoryDefinition> categories,
   required Set<String> selectedProjectIds,
 }) {
-  if (projectsWithCategories.isEmpty) return null;
-
   final categoryById = {
     for (final cat in categories) cat.id: cat,
   };

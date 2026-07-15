@@ -32,6 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1046" date="2026-07-15">
+      <description>
+          <p>Task and project filters now share one coherent, accessible flow. Status, category, label, and project choices stay inside the same smoothly resizing sheet or desktop dialog, with consistent full-width selection states, responsive actions, keyboard focus restoration, and clearer activity and sort controls. Task filters open immediately while project data refreshes in place, and active filters remain visible as compact chips on the task page.</p>
+      </description>
+    </release>
     <release version="0.9.1045" date="2026-07-15">
       <description>
           <p>Date and time pickers are now clearer and steadier across the app. Entry ranges show weekdays, include Start and End Now actions, and transition to a calendar page within the same sheet. Due dates and project target dates share the same weekday calendar, while tighter wheel controls and stable status spacing keep the layout compact without jumping in light or dark mode.</p>

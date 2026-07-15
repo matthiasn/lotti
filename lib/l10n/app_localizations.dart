@@ -16387,18 +16387,6 @@ abstract class AppLocalizations {
   /// **'Select priority'**
   String get tasksPriorityPickerTitle;
 
-  /// No description provided for @tasksQuickFilterClear.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear'**
-  String get tasksQuickFilterClear;
-
-  /// No description provided for @tasksQuickFilterLabelsActiveTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Active label filters'**
-  String get tasksQuickFilterLabelsActiveTitle;
-
   /// No description provided for @tasksQuickFilterUnassignedLabel.
   ///
   /// In en, this message translates to:

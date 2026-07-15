@@ -40,29 +40,33 @@ class DesignSystemFilterToggleRow extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(tokens.radii.s),
           onTap: () => onChanged(!value),
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    label,
-                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                      color: tokens.colors.text.highEmphasis,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: tokens.spacing.step9),
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(
+                            color: tokens.colors.text.highEmphasis,
+                          ),
                     ),
                   ),
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                ExcludeFocus(
-                  child: IgnorePointer(
-                    child: DesignSystemToggle(
-                      value: value,
-                      semanticsLabel: label,
-                      onChanged: onChanged,
+                  SizedBox(width: tokens.spacing.step3),
+                  ExcludeFocus(
+                    child: IgnorePointer(
+                      child: DesignSystemToggle(
+                        value: value,
+                        semanticsLabel: label,
+                        onChanged: onChanged,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

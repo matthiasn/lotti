@@ -479,7 +479,9 @@ void main() {
       expect(result.projectField!.selectedIds, {'proj-1'});
     });
 
-    testWidgets('returns null project field when no projects', (tester) async {
+    testWidgets('keeps an empty project field while its catalog loads', (
+      tester,
+    ) async {
       late DesignSystemTaskFilterState result;
 
       await tester.pumpWidget(
@@ -488,7 +490,9 @@ void main() {
             builder: (context) {
               result = buildTasksFilterSheetState(
                 context,
-                controllerState: controllerState,
+                controllerState: controllerState.copyWith(
+                  enableProjects: true,
+                ),
                 categories: categories,
                 labels: labels,
                 projectsWithCategories: const [],
@@ -499,7 +503,8 @@ void main() {
         ),
       );
 
-      expect(result.hasProjectField, isFalse);
+      expect(result.hasProjectField, isTrue);
+      expect(result.projectField!.options, isEmpty);
     });
 
     testWidgets('returns null project field when enableProjects is false', (

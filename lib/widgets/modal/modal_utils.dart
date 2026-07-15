@@ -54,6 +54,8 @@ class ModalUtils {
     Widget? titleWidget,
     bool isTopBarLayerAlwaysVisible = true,
     bool showCloseButton = false,
+    IconData closeButtonIcon = Icons.close_rounded,
+    String? closeButtonTooltip,
     void Function()? onTapBack,
     EdgeInsets padding = defaultPadding,
     double? navBarHeight,
@@ -107,7 +109,9 @@ class ModalUtils {
           : leadingNavBarWidget,
       trailingNavBarWidget: showCloseButton
           ? IconButton(
-              tooltip: materialLocalizations.closeButtonTooltip,
+              tooltip:
+                  closeButtonTooltip ??
+                  materialLocalizations.closeButtonTooltip,
               padding: const EdgeInsets.all(12),
               icon: Container(
                 padding: const EdgeInsets.all(8),
@@ -118,7 +122,7 @@ class ModalUtils {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  Icons.close_rounded,
+                  closeButtonIcon,
                   color: colorScheme.onSurfaceVariant,
                   size: 20,
                 ),
@@ -177,6 +181,8 @@ class ModalUtils {
     bool hasTopBarLayer = true,
     Widget Function(Widget)? modalDecorator,
     bool showCloseButton = true,
+    IconData closeButtonIcon = Icons.close_rounded,
+    String? closeButtonTooltip,
     bool? useRootNavigator,
   }) async {
     final theme = Theme.of(context);
@@ -198,6 +204,8 @@ class ModalUtils {
             hasTopBarLayer: hasTopBarLayer,
             navBarHeight: navBarHeight,
             showCloseButton: showCloseButton,
+            closeButtonIcon: closeButtonIcon,
+            closeButtonTooltip: closeButtonTooltip,
             padding: padding,
             child: builder(modalSheetContext),
             context: modalSheetContext,

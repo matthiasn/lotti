@@ -18,12 +18,14 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
     required this.state,
     required this.onChanged,
     this.onFieldPressed,
+    this.fieldFocusNodes = const {},
     super.key,
   });
 
   final DesignSystemTaskFilterState state;
   final ValueChanged<DesignSystemTaskFilterState> onChanged;
   final ValueChanged<DesignSystemTaskFilterSection>? onFieldPressed;
+  final Map<DesignSystemTaskFilterSection, FocusNode> fieldFocusNodes;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +39,7 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
               'design-system-task-filter-field-${section.name}',
             ),
             field: field,
+            focusNode: fieldFocusNodes[section],
             onTap: onFieldPressed == null
                 ? null
                 : () => onFieldPressed!(section),

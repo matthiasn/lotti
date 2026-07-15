@@ -3952,8 +3952,6 @@
   "tasksPriorityP3": "Baja",
   "tasksPriorityP3Description": "Baja (Cuando sea posible)",
   "tasksPriorityPickerTitle": "Seleccionar prioridad",
-  "tasksQuickFilterClear": "Borrar",
-  "tasksQuickFilterLabelsActiveTitle": "Filtros de etiquetas activos",
   "tasksQuickFilterUnassignedLabel": "Sin asignar",
   "tasksSavedFilterDeleteConfirmTooltip": "Toca otra vez para eliminar",
   "tasksSavedFilterDeleteTooltip": "Eliminar filtro guardado",

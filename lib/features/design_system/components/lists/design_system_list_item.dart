@@ -47,6 +47,7 @@ class DesignSystemListItem extends StatefulWidget {
     this.hoverBackgroundColor,
     this.pressedBackgroundColor,
     this.onTap,
+    this.focusNode,
     this.onHoverChanged,
     this.onFocusChanged,
     this.semanticsLabel,
@@ -92,6 +93,7 @@ class DesignSystemListItem extends StatefulWidget {
   final Color? hoverBackgroundColor;
   final Color? pressedBackgroundColor;
   final VoidCallback? onTap;
+  final FocusNode? focusNode;
 
   /// Fires whenever the pointer enters or leaves the item. Lets parent
   /// lists coordinate cross-row state — for example, hiding the divider
@@ -181,6 +183,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
               ),
             ),
             child: InkWell(
+              focusNode: widget.focusNode,
               onTap: widget.onTap,
               excludeFromSemantics: widget.excludeFromSemantics,
               overlayColor: WidgetStateProperty.all(Colors.transparent),

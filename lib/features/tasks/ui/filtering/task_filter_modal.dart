@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
@@ -18,6 +19,10 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+
+final _projectCatalogCache = Expando<Map<String, List<ProjectEntry>>>(
+  'task-filter-projects',
+);
 
 /// Shows the task filter modal using the design system filter sheet.
 ///
@@ -39,14 +44,13 @@ Future<void> showTaskFilterModal(
   final categories = cache.sortedCategories;
   final labels = cache.sortedLabels;
 
-  // Prefetch projects for ALL categories so that draft category changes
-  // inside the sheet can show the right projects without another fetch.
-  final allProjectsWithCategories = await _fetchProjectsForFilter(
-    selectedCategoryIds: const {}, // empty = all categories
+  // Open from the last catalog snapshot immediately. A refresh starts with the
+  // route and updates the shared draft in place, so a cold database never
+  // makes the filter trigger appear unresponsive and later openings remain
+  // stale-while-revalidate.
+  var allProjectsWithCategories = _cachedProjectsForFilter(
     allCategories: categories,
   );
-
-  if (!context.mounted) return;
 
   final initialState = _pruneProjectsForSelectedCategories(
     buildTasksFilterSheetState(
@@ -83,6 +87,41 @@ Future<void> showTaskFilterModal(
   await showDesignSystemFilterModal(
     context: context,
     initialState: initialState,
+    refreshInitialState: (current) async {
+      try {
+        allProjectsWithCategories = await _refreshProjectsForFilter(
+          allCategories: categories,
+        );
+        if (!context.mounted) return current;
+        final refreshedField = buildTasksFilterSheetState(
+          context,
+          controllerState: controllerState,
+          categories: categories,
+          labels: labels,
+          projectsWithCategories: allProjectsWithCategories,
+        ).projectField!;
+        final currentSelection =
+            current.projectField?.selectedIds ?? const <String>{};
+        return _pruneProjectsForSelectedCategories(
+          current.copyWith(
+            projectField: refreshedField.copyWith(
+              selectedIds: currentSelection,
+            ),
+          ),
+          allProjectsWithCategories,
+        );
+      } catch (error, stackTrace) {
+        if (getIt.isRegistered<DomainLogger>()) {
+          getIt<DomainLogger>().error(
+            LogDomain.tasks,
+            error,
+            stackTrace: stackTrace,
+            subDomain: 'loadFilterProjects',
+          );
+        }
+        return current;
+      }
+    },
     canSave: showTasks && canSave,
     initialSaveName: initialSavedName,
     onSavePressed: !showTasks
@@ -214,33 +253,46 @@ DesignSystemTaskFilterState _pruneProjectsForSelectedCategories(
   );
 }
 
-/// Fetches projects for the selected categories (or all categories if none).
-Future<List<ProjectWithCategory>> _fetchProjectsForFilter({
-  required Set<String> selectedCategoryIds,
+List<ProjectWithCategory> _cachedProjectsForFilter({
+  required List<CategoryDefinition> allCategories,
+}) {
+  final db = getIt<JournalDb>();
+  final cachedByCategory = _projectCatalogCache[db];
+  if (cachedByCategory == null) return const [];
+  return [
+    for (final category in allCategories)
+      for (final project
+          in cachedByCategory[category.id] ?? const <ProjectEntry>[])
+        ProjectWithCategory(project: project, categoryId: category.id),
+  ];
+}
+
+/// Refreshes every category while keeping the previous snapshot available to
+/// the already-open modal until the complete replacement is ready.
+Future<List<ProjectWithCategory>> _refreshProjectsForFilter({
   required List<CategoryDefinition> allCategories,
 }) async {
   final db = getIt<JournalDb>();
-  final categoryIds =
-      (selectedCategoryIds.isEmpty
-              ? allCategories.map((c) => c.id).toSet()
-              : selectedCategoryIds)
-          .where((id) => id.isNotEmpty); // Skip "unassigned" category
+  final categoryIds = allCategories
+      .map((category) => category.id)
+      .where((id) => id.isNotEmpty);
 
   final groups = await Future.wait(
     categoryIds.map(
       (categoryId) async {
         final projects = await db.getProjectsForCategory(categoryId);
-        return projects.map(
-          (project) => ProjectWithCategory(
-            project: project,
-            categoryId: categoryId,
-          ),
-        );
+        return (categoryId: categoryId, projects: projects);
       },
     ),
   );
-
-  return groups.expand((g) => g).toList();
+  _projectCatalogCache[db] = {
+    for (final group in groups) group.categoryId: group.projects,
+  };
+  return [
+    for (final group in groups)
+      for (final project in group.projects)
+        ProjectWithCategory(project: project, categoryId: group.categoryId),
+  ];
 }
 
 /// Applies the filter sheet state back to the controller in a single batch.

@@ -4,11 +4,13 @@ class _TaskFilterNavigationField extends StatelessWidget {
   const _TaskFilterNavigationField({
     required this.field,
     required this.onTap,
+    this.focusNode,
     super.key,
   });
 
   final DesignSystemTaskFilterFieldState field;
   final VoidCallback? onTap;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +29,7 @@ class _TaskFilterNavigationField extends StatelessWidget {
       size: DesignSystemListItemSize.small,
       type: DesignSystemSelectionRowType.navigation,
       semanticLabel: '${field.label}, $summary',
+      focusNode: focusNode,
       onTap: onTap,
     );
   }

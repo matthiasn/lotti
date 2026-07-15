@@ -25,9 +25,15 @@ void main() {
     WidgetTester tester,
     DesignSystemModalActionBar bar, {
     double width = 600,
+    double textScale = 1,
   }) {
     return tester.pumpWidget(
-      makeTestableWidgetWithScaffold(SizedBox(width: width, child: bar)),
+      makeTestableWidgetWithScaffold(
+        SizedBox(width: width, child: bar),
+        mediaQueryData: MediaQueryData(
+          textScaler: TextScaler.linear(textScale),
+        ),
+      ),
     );
   }
 
@@ -215,7 +221,7 @@ void main() {
   );
 
   testWidgets(
-    'compact layout lets the secondary group wrap without widening primary',
+    'compact layout stacks a full-width primary when width is narrow',
     (tester) async {
       await pumpBar(
         tester,
@@ -241,12 +247,51 @@ void main() {
       final saveCenter = tester.getCenter(
         find.widgetWithText(DesignSystemButton, 'Long save action'),
       );
+      final applyCenter = tester.getCenter(
+        find.widgetWithText(DesignSystemButton, 'Apply'),
+      );
       final applyWidth = tester
           .getSize(find.widgetWithText(DesignSystemButton, 'Apply'))
           .width;
 
-      expect(saveCenter.dy, greaterThan(clearCenter.dy));
-      expect(applyWidth, lessThan(200));
+      expect(applyCenter.dy, greaterThan(clearCenter.dy));
+      expect(applyCenter.dy, greaterThan(saveCenter.dy));
+      expect(applyWidth, 320);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact layout stacks at 200% text scale without clipping long actions',
+    (tester) async {
+      await pumpBar(
+        tester,
+        DesignSystemModalActionBar(
+          layout: DesignSystemModalActionBarLayout.compactPrimary,
+          secondary: [
+            secondaryBtn('Șterge filtrele'),
+            secondaryBtn('Salvează filtrul'),
+          ],
+          primary: DesignSystemButton(
+            label: 'Aplică filtrele',
+            size: DesignSystemButtonSize.large,
+            onPressed: () {},
+          ),
+        ),
+        width: 320,
+        textScale: 2,
+      );
+      await tester.pump();
+
+      final clearCenter = tester.getCenter(
+        find.widgetWithText(DesignSystemButton, 'Șterge filtrele'),
+      );
+      final applyFinder = find.widgetWithText(
+        DesignSystemButton,
+        'Aplică filtrele',
+      );
+      expect(tester.getCenter(applyFinder).dy, greaterThan(clearCenter.dy));
+      expect(tester.getSize(applyFinder).width, 320);
       expect(tester.takeException(), isNull);
     },
   );

@@ -422,6 +422,23 @@ The DS is already used beyond Widgetbook. Production files in tasks and projects
 - task filter modals and sheets
 - navigation components
 
+The filter family is built around `showDesignSystemFilterModal`,
+`DesignSystemTaskFilterSheet`, and `DesignSystemSelectionRow`. One route owns
+the overview draft and all selection pages; child navigation therefore does not
+stack sheets. The shared modal action bar switches from a compact single row to
+stacked full-width actions when width or text scale would make the row cramped.
+Selection rows provide full-width hover, focus, and selected surfaces, while
+filter navigation restores focus to its originating overview row.
+
+```mermaid
+flowchart LR
+  Feature["Task or project filter adapter"] --> Route["One adaptive Wolt route"]
+  Route --> Overview["Filter overview + shared draft"]
+  Overview --> Selection["Status / category / label / project page"]
+  Selection -->|"Back, Done, Escape, system back"| Overview
+  Overview -->|"Apply or Save"| Feature
+```
+
 So this feature is not only a showcase library. It is already part of the live rendering path for parts of the app.
 
 ## Boundaries With The Rest Of The App

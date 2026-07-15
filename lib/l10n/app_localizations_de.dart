@@ -9588,12 +9588,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksPriorityPickerTitle => 'Priorität auswählen';
 
   @override
-  String get tasksQuickFilterClear => 'Zurücksetzen';
-
-  @override
-  String get tasksQuickFilterLabelsActiveTitle => 'Aktive Label-Filter';
-
-  @override
   String get tasksQuickFilterUnassignedLabel => 'Nicht zugewiesen';
 
   @override

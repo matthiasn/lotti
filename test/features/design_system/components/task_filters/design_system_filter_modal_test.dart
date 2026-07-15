@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
@@ -145,7 +146,40 @@ void main() {
       tester.widget<DesignSystemSelectionRow>(statusRow()).subtitle,
       'Open',
     );
+    expect(
+      tester.widget<DesignSystemSelectionRow>(statusRow()).focusNode!.hasFocus,
+      isTrue,
+    );
   });
+
+  for (final navigation in ['Escape', 'system back']) {
+    testWidgets(
+      '$navigation returns to the overview and restores field focus',
+      (tester) async {
+        await openModal(tester, onApplied: (_) {});
+        final barrierCount = find.byType(ModalBarrier).evaluate().length;
+        tester.widget<DesignSystemSelectionRow>(statusRow()).onTap!();
+        await tester.pump(const Duration(milliseconds: 900));
+
+        if (navigation == 'Escape') {
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        } else {
+          await tester.binding.handlePopRoute();
+        }
+        await tester.pump(const Duration(milliseconds: 900));
+
+        expect(find.byType(ModalBarrier), findsNWidgets(barrierCount));
+        expect(find.byType(DesignSystemTaskFilterSheet), findsOneWidget);
+        expect(
+          tester
+              .widget<DesignSystemSelectionRow>(statusRow())
+              .focusNode!
+              .hasFocus,
+          isTrue,
+        );
+      },
+    );
+  }
 
   testWidgets('Clear resets the draft and disables itself', (tester) async {
     await openModal(tester, onApplied: (_) {});

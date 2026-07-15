@@ -15,6 +15,14 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 typedef DesignSystemFilterSaveHandler =
     FutureOr<void> Function(String name, DesignSystemTaskFilterState state);
 
+/// Loads fresher option data after the modal has opened from its synchronous
+/// snapshot. The current draft is supplied so refreshed catalogs can preserve
+/// edits already made while the load was in flight.
+typedef DesignSystemFilterStateRefresh =
+    Future<DesignSystemTaskFilterState> Function(
+      DesignSystemTaskFilterState current,
+    );
+
 /// Shows an adaptive, multi-page filter flow in one Wolt route.
 ///
 /// Every available status/category/label/project field becomes a prebuilt
@@ -32,9 +40,11 @@ Future<void> showDesignSystemFilterModal({
   DesignSystemFilterSaveHandler? onSavePressed,
   bool canSave = false,
   String? initialSaveName,
+  DesignSystemFilterStateRefresh? refreshInitialState,
 }) async {
   final stateNotifier = ValueNotifier(initialState);
   final pageIndexNotifier = ValueNotifier(0);
+  var acceptsRefresh = true;
   final sections = [
     for (final section in DesignSystemTaskFilterSection.values)
       if (initialState.fieldFor(section) != null) section,
@@ -42,17 +52,53 @@ Future<void> showDesignSystemFilterModal({
   final pageIndexForSection = {
     for (final (index, section) in sections.indexed) section: index + 1,
   };
+  final fieldFocusNodes = {
+    for (final section in sections)
+      section: FocusNode(debugLabel: 'filter-${section.name}'),
+  };
+
+  void returnToOverview([DesignSystemTaskFilterSection? section]) {
+    final previousPage = pageIndexNotifier.value;
+    final sectionToRestore =
+        section ??
+        (previousPage > 0 && previousPage <= sections.length
+            ? sections[previousPage - 1]
+            : null);
+    pageIndexNotifier.value = 0;
+    if (sectionToRestore == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final focusNode = fieldFocusNodes[sectionToRestore];
+      if (focusNode?.canRequestFocus ?? false) {
+        focusNode!.requestFocus();
+      }
+    });
+  }
 
   Widget decorateFlow(Widget child) {
     final backAware = _FilterFlowBackHandler(
       pageIndexNotifier: pageIndexNotifier,
+      onReturnToRoot: returnToOverview,
       child: child,
     );
     return _FilterFlowLifetime(
       stateNotifier: stateNotifier,
       pageIndexNotifier: pageIndexNotifier,
+      fieldFocusNodes: fieldFocusNodes.values.toList(growable: false),
       child: modalDecorator?.call(backAware) ?? backAware,
     );
+  }
+
+  if (refreshInitialState != null) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!acceptsRefresh) return;
+      unawaited(
+        refreshInitialState(stateNotifier.value).then((refreshedState) {
+          if (acceptsRefresh) {
+            stateNotifier.value = refreshedState;
+          }
+        }),
+      );
+    });
   }
 
   await ModalUtils.showMultiPageModal<void>(
@@ -117,6 +163,7 @@ Future<void> showDesignSystemFilterModal({
                 children: [
                   DesignSystemTaskFilterSheet(
                     state: state,
+                    fieldFocusNodes: fieldFocusNodes,
                     onChanged: (next) => stateNotifier.value = next,
                     onFieldPressed: (section) {
                       final nextPage = pageIndexForSection[section];
@@ -136,10 +183,10 @@ Future<void> showDesignSystemFilterModal({
             context: modalContext,
             title: initialState.fieldFor(section)!.label,
             showCloseButton: true,
-            onTapBack: () => pageIndexNotifier.value = 0,
+            onTapBack: () => returnToOverview(section),
             padding: selectionPagePadding,
             stickyActionBar: _SelectionPageActionBar(
-              onDone: () => pageIndexNotifier.value = 0,
+              onDone: () => returnToOverview(section),
             ),
             child: DesignSystemFilterSelectionPage(
               stateNotifier: stateNotifier,
@@ -152,6 +199,7 @@ Future<void> showDesignSystemFilterModal({
       ];
     },
   );
+  acceptsRefresh = false;
 }
 
 /// Owns the route-scoped notifiers until Wolt's exit animation has actually
@@ -162,11 +210,13 @@ class _FilterFlowLifetime extends StatefulWidget {
   const _FilterFlowLifetime({
     required this.stateNotifier,
     required this.pageIndexNotifier,
+    required this.fieldFocusNodes,
     required this.child,
   });
 
   final ValueNotifier<DesignSystemTaskFilterState> stateNotifier;
   final ValueNotifier<int> pageIndexNotifier;
+  final List<FocusNode> fieldFocusNodes;
   final Widget child;
 
   @override
@@ -178,6 +228,9 @@ class _FilterFlowLifetimeState extends State<_FilterFlowLifetime> {
   void dispose() {
     widget.stateNotifier.dispose();
     widget.pageIndexNotifier.dispose();
+    for (final focusNode in widget.fieldFocusNodes) {
+      focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -211,10 +264,12 @@ class _SelectionPageActionBar extends StatelessWidget {
 class _FilterFlowBackHandler extends StatelessWidget {
   const _FilterFlowBackHandler({
     required this.pageIndexNotifier,
+    required this.onReturnToRoot,
     required this.child,
   });
 
   final ValueNotifier<int> pageIndexNotifier;
+  final VoidCallback onReturnToRoot;
   final Widget child;
 
   @override
@@ -227,7 +282,7 @@ class _FilterFlowBackHandler extends StatelessWidget {
           canPop: pageIndex == 0,
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop && pageIndexNotifier.value != 0) {
-              pageIndexNotifier.value = 0;
+              onReturnToRoot();
             }
           },
           child: child!,
@@ -235,9 +290,7 @@ class _FilterFlowBackHandler extends StatelessWidget {
         if (pageIndex == 0) return body;
         return CallbackShortcuts(
           bindings: {
-            const SingleActivator(LogicalKeyboardKey.escape): () {
-              pageIndexNotifier.value = 0;
-            },
+            const SingleActivator(LogicalKeyboardKey.escape): onReturnToRoot,
           },
           child: Focus(autofocus: true, child: body),
         );

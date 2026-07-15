@@ -211,12 +211,10 @@ ThemeData withOverrides(ThemeData themeData) {
             mainContentIncomingOpacityCurve: Interval(
               0.30,
               1,
-              curve: Curves.linear,
             ),
             mainContentOutgoingOpacityCurve: Interval(
               0,
               0.35,
-              curve: Curves.linear,
             ),
             incomingMainContentSlideBeginOffset: Offset.zero,
             outgoingMainContentSlideEndOffset: Offset.zero,

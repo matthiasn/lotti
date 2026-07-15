@@ -406,6 +406,8 @@ The important runtime details are:
 - hidden links can be included or excluded without changing the rest of the page
 - the Filter & Sort modal can narrow the outgoing list to flagged entries only (`meta.flag == EntryFlag.import`); the check runs per row in `LinkedEntriesWidget` against the watched entry, so flagging or unflagging an entry updates the filtered list reactively
 - outgoing links are ordered by the linked entity's editable `dateFrom`, not by link creation time, with a user-selectable direction (newest-first / oldest-first) via `LinkedEntriesSortController`, exposed as sort pills in the linked-entries Filter & Sort modal (links whose target has not yet resolved fall back to `link.createdAt`)
+- the activity and sort pills share compact visual sizing inside 48 dp semantic tap targets; activity pills use text emphasis for legibility and reserve accent color for active state. The Code pill only exists when at least one linked entry contains a coding prompt
+- linked-entry filters apply immediately, so the modal uses a Done affordance rather than implying that closing will discard the current selection
 - `LinkedEntriesWithTimer` only reacts to active timer entry ID changes, not every timer tick
 - `HighlightScrollMixin` retries scroll-to-entry until the target widget is actually mounted, then applies a temporary highlight pulse
 

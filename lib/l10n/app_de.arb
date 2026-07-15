@@ -3952,8 +3952,6 @@
   "tasksPriorityP3": "Niedrig",
   "tasksPriorityP3Description": "Niedrig (Irgendwann)",
   "tasksPriorityPickerTitle": "Priorität auswählen",
-  "tasksQuickFilterClear": "Zurücksetzen",
-  "tasksQuickFilterLabelsActiveTitle": "Aktive Label-Filter",
   "tasksQuickFilterUnassignedLabel": "Nicht zugewiesen",
   "tasksSavedFilterDeleteConfirmTooltip": "Zum Löschen erneut tippen",
   "tasksSavedFilterDeleteTooltip": "Gespeicherten Filter löschen",

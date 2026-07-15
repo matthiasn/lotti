@@ -9632,12 +9632,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksPriorityPickerTitle => 'Vyberte prioritu';
 
   @override
-  String get tasksQuickFilterClear => 'Vymazat';
-
-  @override
-  String get tasksQuickFilterLabelsActiveTitle => 'Aktivní filtry štítků';
-
-  @override
   String get tasksQuickFilterUnassignedLabel => 'Nepřiřazeno';
 
   @override

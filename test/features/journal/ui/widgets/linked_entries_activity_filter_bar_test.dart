@@ -1,4 +1,4 @@
-import 'dart:ui' show Tristate;
+import 'dart:ui' show SemanticsAction, Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_activity_filter_bar.dart';
@@ -96,16 +97,23 @@ void main() {
       findsOneWidget,
     );
 
-    final timerChip = find.ancestor(
-      of: find.text(messages.journalLinkedEntriesActivityFilterTimer),
-      matching: find.byType(AnimatedContainer),
+    final timerChip = find.byKey(
+      const ValueKey('linked-entries-activity-timer-visual'),
     );
-    final sortChip = find.ancestor(
-      of: find.text(messages.journalLinkedEntriesSortNewestFirst),
-      matching: find.byType(Ink),
+    final sortChip = find.byKey(
+      const ValueKey('linked-entries-sort-trigger-visual'),
     );
     expect(tester.getSize(sortChip).height, tester.getSize(timerChip).height);
     expect(tester.getTopLeft(sortChip).dy, tester.getTopLeft(timerChip).dy);
+
+    final timerTarget = find.byKey(
+      const ValueKey('linked-entries-activity-timer'),
+    );
+    final sortTarget = find.byKey(
+      const ValueKey('linked-entries-sort-trigger'),
+    );
+    expect(tester.getSize(timerTarget).height, greaterThanOrEqualTo(48));
+    expect(tester.getSize(sortTarget).height, greaterThanOrEqualTo(48));
   });
 
   testWidgets('tapping a pill toggles its active kind in the controller', (
@@ -135,6 +143,17 @@ void main() {
       contains(LinkedEntryActivityFilter.audio),
     );
     expect(audioPillSelected(), isTrue);
+    expect(
+      tester
+          .getSemantics(audioPill)
+          .getSemanticsData()
+          .hasAction(SemanticsAction.tap),
+      isTrue,
+    );
+    expect(
+      tester.widget<Text>(find.text(audioLabel)).style!.color,
+      dsTokensLight.colors.text.highEmphasis,
+    );
 
     await tester.tap(
       find.text(messages.journalLinkedEntriesActivityFilterAudio),

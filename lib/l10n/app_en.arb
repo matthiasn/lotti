@@ -4630,8 +4630,6 @@
   "tasksPriorityP3": "Low",
   "tasksPriorityP3Description": "Low (Whenever)",
   "tasksPriorityPickerTitle": "Select priority",
-  "tasksQuickFilterClear": "Clear",
-  "tasksQuickFilterLabelsActiveTitle": "Active label filters",
   "tasksQuickFilterUnassignedLabel": "Unassigned",
   "tasksSavedFilterDeleteConfirmTooltip": "Tap again to delete",
   "tasksSavedFilterDeleteTooltip": "Delete saved filter",

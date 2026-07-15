@@ -61,6 +61,13 @@ void main() {
       find.text(messages.journalLinkedEntriesShowFlaggedOnly),
       findsOneWidget,
     );
+    final dismissButton = tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byIcon(Icons.check_rounded),
+        matching: find.byType(IconButton),
+      ),
+    );
+    expect(dismissButton.tooltip, messages.doneButton);
   });
 
   testWidgets('tapping "Oldest first" updates the sort controller', (

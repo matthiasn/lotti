@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -223,7 +225,7 @@ void main() {
       expect(find.text('Sort by'), findsOneWidget);
 
       // Action bar
-      expect(find.text('Clear all'), findsOneWidget);
+      expect(find.text('Clear'), findsOneWidget);
       expect(find.text('Apply'), findsOneWidget);
     });
 
@@ -535,6 +537,27 @@ void main() {
       ).called(1);
     });
 
+    testWidgets('opens from cache before a cold project refresh completes', (
+      tester,
+    ) async {
+      final projectLoad = Completer<List<ProjectEntry>>();
+      when(
+        () => mockJournalDb.getProjectsForCategory(any()),
+      ).thenAnswer((_) => projectLoad.future);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 900));
+
+      expect(find.text('Filter tasks'), findsOneWidget);
+      expect(projectLoad.isCompleted, isFalse);
+
+      projectLoad.complete(const []);
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('toggle rows appear and interact correctly', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
@@ -648,7 +671,7 @@ void main() {
     );
 
     testWidgets(
-      'project field tapped — empty projects list returns no update',
+      'project field opens a searchable empty state when no projects exist',
       (tester) async {
         // Default mock already returns [] for getProjectsForCategory.
         // Rebuild with enableProjects so the project field appears.
@@ -658,17 +681,30 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
         await tester.pumpAndSettle();
 
-        // With no projects the project field is absent (hasProjectField is
-        // false), so the sheet has no project field to tap — the coverage
-        // for the empty-filteredProjects early-return (line 197) is exercised
-        // via _fetchProjectsForFilter returning an empty list and
-        // _handleProjectFieldPressed guard.
-        expect(
-          find.byKey(
-            const ValueKey('design-system-task-filter-field-project'),
-          ),
-          findsNothing,
+        final projectField = find.byKey(
+          const ValueKey('design-system-task-filter-field-project'),
         );
+        expect(projectField, findsOneWidget);
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.descendant(
+                of: projectField,
+                matching: find.byType(DesignSystemSelectionRow),
+              ),
+            )
+            .onTap!();
+        await tester.pumpAndSettle();
+
+        expect(find.text('No matches'), findsOneWidget);
+
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(
+                const ValueKey('design-system-filter-selection-apply'),
+              ),
+            )
+            .onPressed!();
+        await tester.pumpAndSettle();
 
         // Apply should still work.
         final applyBtn = find.byKey(

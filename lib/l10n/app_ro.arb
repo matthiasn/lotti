@@ -3952,8 +3952,6 @@
   "tasksPriorityP3": "Scăzută",
   "tasksPriorityP3Description": "Scăzută (Când se poate)",
   "tasksPriorityPickerTitle": "Selectează prioritatea",
-  "tasksQuickFilterClear": "Șterge",
-  "tasksQuickFilterLabelsActiveTitle": "Filtre de etichete active",
   "tasksQuickFilterUnassignedLabel": "Neatribuit",
   "tasksSavedFilterDeleteConfirmTooltip": "Apăsați din nou pentru a șterge",
   "tasksSavedFilterDeleteTooltip": "Ștergeți filtrul salvat",

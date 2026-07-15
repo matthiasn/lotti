@@ -61,6 +61,10 @@ void main() {
           ),
         );
         expect(ignoredToggleLayers.any((layer) => layer.ignoring), isTrue);
+        expect(
+          tester.getSize(find.byType(DesignSystemFilterToggleRow)).height,
+          greaterThanOrEqualTo(dsTokensLight.spacing.step9),
+        );
 
         await tester.tap(find.text('Show due date'));
         expect(changedValue, isTrue);

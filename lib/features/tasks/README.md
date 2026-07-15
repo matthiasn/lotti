@@ -599,7 +599,7 @@ flowchart TD
   Redesign --> PageCtl["JournalPageController(showTasks: true)"]
   PageCtl --> Paging["PagingController + PagedSliverList"]
   PageCtl --> Filters["Task filter model + persistence"]
-  PageCtl --> Search["Search / sort / vector mode / quick labels"]
+  PageCtl --> Search["Search / sort / vector mode"]
 ```
 
 `TasksTabPage` intentionally does not own pagination, query execution, or filter semantics. It reads the already-loaded task slice from the shared paging state and only transforms that visible slice into section presentation metadata.
@@ -610,7 +610,20 @@ Current grouping behavior is sort-dependent:
 - priority sort: priority buckets (`P0` .. `P3`)
 - creation-date sort: creation-day buckets
 
-The filter button opens the task filter modal. Filter semantics, persistence keys, and controller methods are shared with the journal tab via `JournalPageController`.
+The filter button opens one adaptive `showDesignSystemFilterModal` route: a
+bottom sheet on compact layouts and a dialog on wide layouts. The overview and
+its status, category, label, and project pages share one mutable draft, so
+navigating deeper never stacks another modal. Child pages return with Back or
+Done; Apply and Save remain overview actions. The transition coordinates the
+content fade with the Wolt page-size animation, and returning restores keyboard
+focus to the field that opened the child page.
+
+Project choices use a stale-while-revalidate catalog. The route opens from the
+last snapshot immediately, refreshes after its first frame, and updates the
+existing draft without replacing established content with a loading shell.
+Category grouping and the project search field remain available when the first
+snapshot is empty. Filter semantics, persistence keys, and controller methods
+are shared with the journal tab via `JournalPageController`.
 
 Task-specific persisted filter concerns include:
 
@@ -631,7 +644,12 @@ Persistence uses:
 
 - `TASKS_CATEGORY_FILTERS` for the tasks tab
 
-which keeps tasks-tab filter state separate from the journal tab. The visible project filter controls live in this feature: `task_filter_modal.dart`'s `_handleProjectFieldPressed` opens the grouped project-selection modal `showProjectSelectionModal` (`lib/features/tasks/ui/filtering/task_project_selection_modal.dart`), and the resulting project IDs are persisted in the same controller state as the other filter clauses.
+which keeps tasks-tab filter state separate from the journal tab. The visible
+project controls are built into the shared modal's project page; their selected
+IDs are persisted in the same controller state as every other filter clause.
+On the task page, active status, category, label, and project clauses are shown
+only by the removable filter-chip row. Empty category or label IDs render as
+the localized **Unassigned** chip instead of disappearing.
 
 ### Saved Filters
 
@@ -695,7 +713,6 @@ The redesigned browse page also preserves the existing non-filter runtime behavi
 
 - pull-to-refresh
 - full-text vs vector search toggle
-- quick-label strip
 - create-task FAB and auto-assign flow
 - `/tasks/:taskId` navigation on row selection
 
