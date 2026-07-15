@@ -38,42 +38,44 @@ void main() {
     expect(first.hasFocus, isTrue);
   });
 
-  testWidgets('skips empty regions and focuses a traversable descendant', (
-    tester,
-  ) async {
-    final controller = KeyboardFocusRegionController();
-    final target = FocusNode();
-    addTearDown(controller.dispose);
-    addTearDown(target.dispose);
-
-    await tester.pumpWidget(
-      _testApp(
-        KeyboardFocusRegionRegistry(
-          controller: controller,
-          child: Column(
-            children: [
-              const KeyboardFocusRegion(
-                debugLabel: 'empty',
-                child: SizedBox.shrink(),
-              ),
-              KeyboardFocusRegion(
-                debugLabel: 'focusable',
-                child: TextButton(
-                  focusNode: target,
-                  onPressed: () {},
-                  child: const Text('Target'),
-                ),
-              ),
-            ],
+  for (final reverse in [false, true]) {
+    testWidgets(
+      '${reverse ? 'reverse' : 'forward'} traversal skips empty regions',
+      (tester) async {
+        final controller = KeyboardFocusRegionController();
+        final target = FocusNode();
+        addTearDown(controller.dispose);
+        addTearDown(target.dispose);
+        final focusable = KeyboardFocusRegion(
+          debugLabel: 'focusable',
+          child: TextButton(
+            focusNode: target,
+            onPressed: () {},
+            child: const Text('Target'),
           ),
-        ),
-      ),
-    );
+        );
+        const empty = KeyboardFocusRegion(
+          debugLabel: 'empty',
+          child: SizedBox.shrink(),
+        );
 
-    expect(controller.focusNext(), isTrue);
-    await tester.pump();
-    expect(target.hasFocus, isTrue);
-  });
+        await tester.pumpWidget(
+          _testApp(
+            KeyboardFocusRegionRegistry(
+              controller: controller,
+              child: Column(
+                children: reverse ? [focusable, empty] : [empty, focusable],
+              ),
+            ),
+          ),
+        );
+
+        expect(controller.focusNext(reverse: reverse), isTrue);
+        await tester.pump();
+        expect(target.hasFocus, isTrue);
+      },
+    );
+  }
 
   testWidgets('reverse traversal starts at the last region without focus', (
     tester,

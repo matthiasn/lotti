@@ -32,17 +32,21 @@ class _AppCommandScopeState extends State<AppCommandScope> {
   );
   AppCommandController? _controller;
 
+  void _syncController() {
+    final controller = AppCommandControllerProvider.maybeRead(context);
+    if (_controller == controller) return;
+    final previousController = _controller;
+    _node.detach();
+    _controller = controller;
+    previousController?.scopeChanged();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final controller = AppCommandControllerProvider.maybeRead(context);
+    _syncController();
     final parent = AppCommandScopeMarker.maybeOf(context);
-    if (_controller != controller) {
-      final previousController = _controller;
-      _node.detach();
-      _controller = controller;
-      previousController?.scopeChanged();
-    }
+    final controller = _controller;
     if (controller == null) return;
     _node.update(
       parent: parent,
@@ -55,6 +59,7 @@ class _AppCommandScopeState extends State<AppCommandScope> {
   @override
   void didUpdateWidget(covariant AppCommandScope oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _syncController();
     if (_controller == null) return;
     _node.update(
       parent: _node.parent,

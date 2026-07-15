@@ -103,8 +103,10 @@ void main() {
     addTearDown(first.dispose);
     addTearDown(second.dispose);
     var firstNotifications = 0;
+    var secondNotifications = 0;
     var saves = 0;
     first.addListener(() => firstNotifications++);
+    second.addListener(() => secondNotifications++);
     var useSecond = false;
     late StateSetter updateProvider;
     late BuildContext scopedContext;
@@ -140,6 +142,7 @@ void main() {
     await tester.pump();
 
     expect(firstNotifications, greaterThan(firstBeforeMove));
+    expect(secondNotifications, greaterThan(0));
     expect(
       second.capture(scopedContext).isAvailable(AppCommandId.save),
       isTrue,
