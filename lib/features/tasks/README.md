@@ -220,12 +220,19 @@ subtle frame in light and dark themes.
   `ChangeSetConfirmationService` applies its items sequentially, so checklist
   additions may reach Riverpod as several refresh waves rather than one atomic
   rebuild. Each wave is corrected independently without an intermediate jump.
+  The AI card also retains every Confirm-all row synchronously, before its
+  staggered exit timers or the first write can run. Fast checklist check-offs
+  can therefore resolve provider state immediately without unmounting later
+  rows mid-sweep; the rows remain keyed and visible until their own collapse
+  completes.
 
   ```mermaid
   flowchart LR
     Tap[Confirm / Confirm all] --> Arm[arm viewport hold]
+    Tap --> Retain[retain all batch proposal rows]
     Tap --> Apply[confirm pending items]
     Apply -->|sequential writes| Refresh[checklist refresh waves]
+    Refresh -. provider may resolve before stagger .-> Retain
     Refresh --> Enter[SizeFadeEntrance per new row/card]
     Enter --> Report[ViewportStableSizeReporter measures delta]
     Report --> Layout[correctForNewDimensions adjusts offset]
