@@ -159,7 +159,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
       onSaveShortcut: () {
         if (dirty) onSavePressed();
       },
-      saveShortcutEnabled: dirty,
+      saveShortcutEnabled: () => dirty,
       actionBar: SettingsFormActionBar(
         primaryLabel: widget.isCreateMode
             ? messages.createButton

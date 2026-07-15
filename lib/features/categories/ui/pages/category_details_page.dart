@@ -114,7 +114,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       // still pops the detail page off the Beamer stack.
       onBack: () => beamToNamed('/settings/categories'),
       onSaveShortcut: _handleCreate,
-      saveShortcutEnabled: _nameController.text.trim().isNotEmpty,
+      saveShortcutEnabled: () => _nameController.text.trim().isNotEmpty,
       actionBar: SettingsFormActionBar(
         primaryLabel: context.messages.createButton,
         onPrimary: _handleCreate,
@@ -246,7 +246,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       onSaveShortcut: () {
         if (saveEnabled) _handleSave();
       },
-      saveShortcutEnabled: saveEnabled,
+      saveShortcutEnabled: () => saveEnabled,
       actionBar: SettingsFormActionBar(
         primaryLabel: context.messages.saveButton,
         onPrimary: _handleSave,

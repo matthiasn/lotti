@@ -363,7 +363,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                       onSaveShortcut: () {
                         if (dirty) saveDashboardPress();
                       },
-                      saveShortcutEnabled: dirty,
+                      saveShortcutEnabled: () => dirty,
                       actionBar: SettingsFormActionBar(
                         primaryLabel: widget.isCreateMode
                             ? messages.createButton

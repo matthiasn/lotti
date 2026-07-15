@@ -8,6 +8,8 @@ import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_page_layout.dart';
 
+bool _saveShortcutEnabledByDefault() => true;
+
 /// Unified shell for settings definition detail pages (category, label,
 /// habit, measurable, dashboard editors).
 ///
@@ -33,7 +35,7 @@ class SettingsDetailScaffold extends StatelessWidget {
     this.slivers,
     this.actionBar,
     this.onSaveShortcut,
-    this.saveShortcutEnabled = true,
+    this.saveShortcutEnabled = _saveShortcutEnabledByDefault,
     this.headerActions,
     this.deleteLabel,
     this.onDelete,
@@ -72,8 +74,11 @@ class SettingsDetailScaffold extends StatelessWidget {
   /// the action bar's primary action.
   final VoidCallback? onSaveShortcut;
 
-  /// Keeps save-command availability aligned with the primary action.
-  final bool saveShortcutEnabled;
+  /// Resolves save-command availability when the command is queried.
+  ///
+  /// A predicate keeps the command state aligned with live form state without
+  /// requiring the command scope itself to be replaced.
+  final ValueGetter<bool> saveShortcutEnabled;
 
   /// Optional trailing header widgets.
   final List<Widget>? headerActions;
@@ -152,7 +157,7 @@ class SettingsDetailScaffold extends StatelessWidget {
       debugLabel: 'settings-detail',
       handlers: {
         AppCommandId.save: AppCommandHandler(
-          isEnabled: () => saveShortcutEnabled,
+          isEnabled: saveShortcutEnabled,
           invoke: (_) => onSaveShortcut!(),
         ),
       },

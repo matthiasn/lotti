@@ -108,17 +108,18 @@ void main() {
     });
   }
 
-  testWidgets('disabled save is unavailable and ignores Primary+S', (
+  testWidgets('live save availability controls Primary+S', (
     tester,
   ) async {
     var saves = 0;
+    var saveEnabled = false;
     await pumpScaffold(
       tester,
       scaffold: SettingsDetailScaffold(
         title: 'Edit label',
         onBack: () {},
         onSaveShortcut: () => saves++,
-        saveShortcutEnabled: false,
+        saveShortcutEnabled: () => saveEnabled,
         children: const [
           Focus(autofocus: true, child: SizedBox.shrink()),
         ],
@@ -134,6 +135,14 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
     expect(saves, 0);
+
+    saveEnabled = true;
+    expect(controller.isAvailable(focusedContext, AppCommandId.save), isTrue);
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+    expect(saves, 1);
   });
 
   testWidgets('renders custom slivers when provided', (tester) async {
