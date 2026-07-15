@@ -109,7 +109,7 @@ void main() {
 
   group('MeasurablesChartInfoWidget', () {
     setUp(() async {
-      await setUpTestGetIt(
+      final mocks = await setUpTestGetIt(
         additionalSetup: () {
           final mockPersistenceLogic = MockPersistenceLogic();
           final mockEntitiesCache = MockEntitiesCacheService();
@@ -121,6 +121,13 @@ void main() {
             ..registerSingleton<EntitiesCacheService>(mockEntitiesCache);
         },
       );
+      when(
+        () => mocks.journalDb.getMeasurementsByType(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => []);
     });
 
     tearDown(tearDownTestGetIt);
@@ -306,11 +313,8 @@ void main() {
     );
 
     testWidgets(
-      'tapping add button invokes captureData and builds modal title',
+      'add callback opens capture route with the measurable title',
       (tester) async {
-        // The modal title widget (_buildModalTitle) is constructed as part of
-        // calling captureData. This test covers lines 23-25,27-31,33,50-51,53-56.
-        // Use a narrow viewport so the trailing IconButton stays within bounds.
         tester.view
           ..physicalSize = const Size(800, 600)
           ..devicePixelRatio = 1.0;
@@ -331,23 +335,22 @@ void main() {
           mediaQueryData: const MediaQueryData(size: Size(800, 600)),
         );
 
-        await tester.ensureVisible(find.byIcon(Icons.add_rounded));
-        await tester.tap(find.byIcon(Icons.add_rounded));
+        tester
+            .widget<DashboardChartAddButton>(
+              find.byType(DashboardChartAddButton),
+            )
+            .onPressed();
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
 
-        // The modal title should display the displayName of the measurable.
-        // ModalUtils shows a bottom sheet / dialog with the titleWidget.
         expect(find.text('Mood'), findsWidgets);
+        expect(find.byTooltip('Close'), findsOneWidget);
       },
     );
 
     testWidgets(
       'tapping add button with description shows description in modal title',
       (tester) async {
-        // The card header now surfaces the description directly as its subtitle
-        // (one Text node). _buildModalTitle renders the same description as its
-        // own Text, so opening the modal adds a second occurrence.
-        // Use a narrow viewport so the trailing IconButton stays within bounds.
         tester.view
           ..physicalSize = const Size(800, 600)
           ..devicePixelRatio = 1.0;
@@ -369,18 +372,16 @@ void main() {
           mediaQueryData: const MediaQueryData(size: Size(800, 600)),
         );
 
-        // With no unit, the card header shows the description as its subtitle:
-        // exactly one Text node before the modal opens.
         expect(find.text('Daily energy level'), findsOneWidget);
 
-        await tester.ensureVisible(find.byIcon(Icons.add_rounded));
-        await tester.tap(find.byIcon(Icons.add_rounded));
-        // Let the modal route's open animation run to completion.
+        tester
+            .widget<DashboardChartAddButton>(
+              find.byType(DashboardChartAddButton),
+            )
+            .onPressed();
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        // The modal title widget renders the description as a second Text node,
-        // so it now appears twice (card subtitle + modal title).
         expect(find.text('Daily energy level'), findsNWidgets(2));
       },
     );
