@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
@@ -80,37 +81,34 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
         decoration: BoxDecoration(
           color: ShowcasePalette.page(context),
         ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: paneWidths.listPaneWidth,
-              child: _ProjectsListScaffold(
-                scrollController: _scrollController,
-                searchFocusNode: _searchFocusNode,
-              ),
+        child: ListDetailFocusTraversal(
+          debugLabel: 'projects-split',
+          listPane: SizedBox(
+            width: paneWidths.listPaneWidth,
+            child: _ProjectsListScaffold(
+              scrollController: _scrollController,
+              searchFocusNode: _searchFocusNode,
             ),
-            ResizableDivider(
-              onDrag: (delta) => ref
-                  .read(paneWidthControllerProvider.notifier)
-                  .updateListPaneWidth(delta),
-            ),
-            Expanded(
-              child: ValueListenableBuilder<String?>(
-                valueListenable: getIt<NavService>().desktopSelectedProjectId,
-                builder: (context, selectedProjectId, _) {
-                  if (selectedProjectId != null) {
-                    return ProjectDetailsPage(
-                      key: ValueKey(selectedProjectId),
-                      projectId: selectedProjectId,
-                    );
-                  }
-                  return DesktopDetailEmptyState(
-                    message: context.messages.desktopEmptyStateSelectProject,
-                  );
-                },
-              ),
-            ),
-          ],
+          ),
+          divider: ResizableDivider(
+            onDrag: (delta) => ref
+                .read(paneWidthControllerProvider.notifier)
+                .updateListPaneWidth(delta),
+          ),
+          detailPane: ValueListenableBuilder<String?>(
+            valueListenable: getIt<NavService>().desktopSelectedProjectId,
+            builder: (context, selectedProjectId, _) {
+              if (selectedProjectId != null) {
+                return ProjectDetailsPage(
+                  key: ValueKey(selectedProjectId),
+                  projectId: selectedProjectId,
+                );
+              }
+              return DesktopDetailEmptyState(
+                message: context.messages.desktopEmptyStateSelectProject,
+              );
+            },
+          ),
         ),
       );
     } else {

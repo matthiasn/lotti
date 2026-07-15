@@ -8,6 +8,7 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
@@ -108,6 +109,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(TasksTabPage), findsOneWidget);
+    expect(find.byType(ListDetailFocusTraversal), findsOneWidget);
     expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
     // Content, not just the type: the empty pane shows the localized
     // "select a task" prompt and its touch glyph.
@@ -201,6 +203,19 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.byType(TaskDetailsPage), findsNWidgets(2));
+      final outgoingTask = find.byWidgetPredicate(
+        (widget) => widget is TaskDetailsPage && widget.taskId == 'task-a',
+      );
+      final outgoingFocusGuard = find.ancestor(
+        of: outgoingTask,
+        matching: find.byType(ExcludeFocus),
+      );
+      expect(
+        tester
+            .widgetList<ExcludeFocus>(outgoingFocusGuard)
+            .where((guard) => guard.excluding),
+        hasLength(1),
+      );
 
       // After the 480ms fade, only the new task remains.
       await tester.pump(const Duration(milliseconds: 360));

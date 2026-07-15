@@ -5,6 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
@@ -54,7 +58,7 @@ class ProjectRow extends ConsumerWidget {
     final projectId = item.project.meta.id;
     final oneLiner = ref.watch(projectOneLinerProvider(projectId)).value;
 
-    return GroupedCardRowSurface(
+    final row = GroupedCardRowSurface(
       key: key ?? ValueKey('project-row-surface-$projectId'),
       rowKey: ValueKey('project-overview-row-$projectId'),
       backgroundKey: ValueKey('project-row-background-$projectId'),
@@ -120,6 +124,21 @@ class ProjectRow extends ConsumerWidget {
           ProjectStatusLabel(status: item.status),
         ],
       ),
+    );
+    final detailFocusController = ListDetailFocusTraversal.maybeOf(context);
+    if (detailFocusController == null) return row;
+
+    return AppCommandScope(
+      debugLabel: 'project-row:$projectId',
+      handlers: {
+        AppCommandId.expand: AppCommandHandler(
+          invoke: (_) {
+            onTap();
+            detailFocusController.focusDetails();
+          },
+        ),
+      },
+      child: row,
     );
   }
 }

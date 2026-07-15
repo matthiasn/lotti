@@ -1,11 +1,16 @@
 // ignore_for_file: avoid_redundant_argument_values
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 
 import '../../../../helpers/entity_factories.dart';
@@ -15,6 +20,113 @@ import 'task_browse_list_item_test_helpers.dart';
 void main() {
   setUp(setUpTaskBrowse);
   tearDown(tearDownTestGetIt);
+
+  testWidgets('Right opens the focused task and enters the detail pane', (
+    tester,
+  ) async {
+    final task = TestTaskFactory.create(
+      id: 'task-keyboard-details',
+      title: 'Keyboard details',
+      dateFrom: DateTime(2026, 4, 8),
+    );
+    final dividerFocusNode = FocusNode(debugLabel: 'test-divider');
+    final detailFocusNode = FocusNode(debugLabel: 'test-task-detail');
+    addTearDown(dividerFocusNode.dispose);
+    addTearDown(detailFocusNode.dispose);
+    var taps = 0;
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        AppCommandHost(
+          handlers: const {},
+          platform: TargetPlatform.windows,
+          child: ListDetailFocusTraversal(
+            debugLabel: 'tasks-test',
+            listPane: SizedBox(
+              width: 400,
+              child: TaskBrowseListItem(
+                entry: TaskBrowseEntry(
+                  task: task,
+                  sectionKey: const TaskBrowseSectionKey.dueToday(),
+                  showSectionHeader: false,
+                  isFirstInSection: true,
+                  isLastInSection: true,
+                ),
+                sortOption: TaskSortOption.byPriority,
+                showCreationDate: false,
+                showDueDate: false,
+                showCoverArt: false,
+                trackedDurationLabelOverride: '0h 0m',
+                onTap: () => taps++,
+              ),
+            ),
+            divider: Focus(
+              focusNode: dividerFocusNode,
+              child: const SizedBox(width: 3),
+            ),
+            detailPane: Align(
+              alignment: Alignment.topLeft,
+              child: TextButton(
+                focusNode: detailFocusNode,
+                onPressed: () {},
+                child: const Text('Task detail action'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pump();
+
+    expect(taps, 1);
+    expect(detailFocusNode.hasFocus, isTrue);
+    expect(dividerFocusNode.hasFocus, isFalse);
+  });
+
+  testWidgets('keyboard focus uses the hover fill and section clipping', (
+    tester,
+  ) async {
+    final task = TestTaskFactory.create(
+      id: 'task-keyboard-focus',
+      title: 'Keyboard focus',
+      dateFrom: DateTime(2026, 4, 8),
+    );
+
+    await pumpTaskBrowseItem(
+      tester,
+      task,
+      sectionKey: const TaskBrowseSectionKey.dueToday(),
+      showSectionHeader: false,
+      isFirstInSection: true,
+      isLastInSection: false,
+      nextTaskIdInSection: 'next-task',
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+
+    final backgroundFinder = find.byKey(
+      const ValueKey('task-browse-row-background-task-keyboard-focus'),
+    );
+    final decoration =
+        tester.widget<DecoratedBox>(backgroundFinder).decoration
+            as BoxDecoration;
+    final context = tester.element(backgroundFinder);
+    final tokens = context.designTokens;
+
+    expect(decoration.color, TaskShowcasePalette.hoverFill(context));
+    expect(
+      decoration.borderRadius,
+      BorderRadius.vertical(
+        top: Radius.circular(tokens.radii.sectionCards),
+      ),
+    );
+  });
 
   group('Section headers', () {
     testWidgets('renders priority section header with glyph and title', (

@@ -6,6 +6,10 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
@@ -64,7 +68,7 @@ class TaskBrowseRowShell extends StatelessWidget {
     );
     final selected = entry.task.meta.id == selectedTaskId;
 
-    return DecoratedBox(
+    final row = DecoratedBox(
       decoration: decoration,
       child: GroupedCardRowSurface(
         rowKey: ValueKey('task-browse-row-${entry.task.meta.id}'),
@@ -113,6 +117,21 @@ class TaskBrowseRowShell extends StatelessWidget {
           ],
         ),
       ),
+    );
+    final detailFocusController = ListDetailFocusTraversal.maybeOf(context);
+    if (detailFocusController == null) return row;
+
+    return AppCommandScope(
+      debugLabel: 'task-row:${entry.task.meta.id}',
+      handlers: {
+        AppCommandId.expand: AppCommandHandler(
+          invoke: (_) {
+            onTap();
+            detailFocusController.focusDetails();
+          },
+        ),
+      },
+      child: row,
     );
   }
 }

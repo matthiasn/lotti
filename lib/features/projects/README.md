@@ -321,6 +321,8 @@ Each category group is rendered as one rounded grouped-card surface with:
 - a shared grouped-card background color
 - a 1 px border using `ShowcasePalette.border(context)`
 - internal row dividers that disappear under the selected or hovered row fill
+- one shared hover/focus background, so keyboard focus uses the same
+  full-width color and clipping as pointer hover
 
 It is responsible for:
 
@@ -509,4 +511,7 @@ flowchart LR
 
 Primary+3 navigation is global. The split-pane divider is keyboard focusable:
 Left/Right resize it, Shift uses the larger design-system step, and assistive
-technology receives slider increase/decrease actions.
+technology receives slider increase/decrease actions. When a project row owns
+focus, Right Arrow selects that project and transfers focus into its detail
+pane through `ListDetailFocusTraversal`; the divider is skipped for this
+transition and only resizes when it is intentionally focused.

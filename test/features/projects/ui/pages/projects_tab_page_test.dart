@@ -14,6 +14,7 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
@@ -649,6 +650,7 @@ void main() {
         );
 
         expect(find.byType(ResizableDivider), findsOneWidget);
+        expect(find.byType(ListDetailFocusTraversal), findsOneWidget);
         // And the detail pane is present (empty-state placeholder when no
         // project is selected).
         expect(find.byType(DesktopDetailEmptyState), findsOneWidget);

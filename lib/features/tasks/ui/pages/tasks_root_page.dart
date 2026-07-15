@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/components/navigation/desktop_detai
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
@@ -34,53 +35,52 @@ class TasksRootPage extends ConsumerWidget {
       decoration: BoxDecoration(
         color: TaskShowcasePalette.page(context),
       ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: paneWidths.listPaneWidth,
-            child: const TasksTabPage(),
-          ),
-          ResizableDivider(
-            onDrag: (delta) => ref
-                .read(paneWidthControllerProvider.notifier)
-                .updateListPaneWidth(delta),
-          ),
-          Expanded(
-            child: ValueListenableBuilder<List<String>>(
-              valueListenable: getIt<NavService>().desktopTaskDetailStack,
-              builder: (context, stack, _) {
-                final selectedTaskId = stack.isEmpty ? null : stack.last;
-                final child = selectedTaskId != null
-                    ? TaskDetailsPage(
-                        key: ValueKey(selectedTaskId),
-                        taskId: selectedTaskId,
-                      )
-                    : DesktopDetailEmptyState(
-                        key: const ValueKey<String>(
-                          'tasks-root-empty-detail',
-                        ),
-                        message: context.messages.desktopEmptyStateSelectTask,
-                      );
+      child: ListDetailFocusTraversal(
+        debugLabel: 'tasks-split',
+        listPane: SizedBox(
+          width: paneWidths.listPaneWidth,
+          child: const TasksTabPage(),
+        ),
+        divider: ResizableDivider(
+          onDrag: (delta) => ref
+              .read(paneWidthControllerProvider.notifier)
+              .updateListPaneWidth(delta),
+        ),
+        detailPane: ValueListenableBuilder<List<String>>(
+          valueListenable: getIt<NavService>().desktopTaskDetailStack,
+          builder: (context, stack, _) {
+            final selectedTaskId = stack.isEmpty ? null : stack.last;
+            final child = selectedTaskId != null
+                ? TaskDetailsPage(
+                    key: ValueKey(selectedTaskId),
+                    taskId: selectedTaskId,
+                  )
+                : DesktopDetailEmptyState(
+                    key: const ValueKey<String>(
+                      'tasks-root-empty-detail',
+                    ),
+                    message: context.messages.desktopEmptyStateSelectTask,
+                  );
 
-                return AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 480),
-                  switchInCurve: Curves.easeInOutCubic,
-                  switchOutCurve: Curves.easeInOutCubic,
-                  layoutBuilder: (currentChild, previousChildren) {
-                    return Stack(
-                      fit: StackFit.expand,
-                      children: <Widget>[
-                        ...previousChildren,
-                        ?currentChild,
-                      ],
-                    );
-                  },
-                  child: child,
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 480),
+              switchInCurve: Curves.easeInOutCubic,
+              switchOutCurve: Curves.easeInOutCubic,
+              layoutBuilder: (currentChild, previousChildren) {
+                return Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    ...previousChildren.map(
+                      (child) => ExcludeFocus(child: child),
+                    ),
+                    ?currentChild,
+                  ],
                 );
               },
-            ),
-          ),
-        ],
+              child: child,
+            );
+          },
+        ),
       ),
     );
   }

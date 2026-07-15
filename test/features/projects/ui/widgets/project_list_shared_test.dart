@@ -1,9 +1,12 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
@@ -233,6 +236,44 @@ void main() {
     );
 
     testWidgets(
+      'keyboard focus uses the full-width hover background',
+      (tester) async {
+        final group = makeGroupedProjectsSection();
+
+        await tester.pumpWidget(
+          wrap(
+            ProjectGroupSection(
+              group: group,
+              selectedProjectId: null,
+              onProjectSelected: (_) {},
+            ),
+            overrides: noOneLinerOverrides(['p1', 'p2']),
+          ),
+        );
+        await tester.pump();
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+
+        final cardFinder = find.byType(ClipRRect);
+        final backgroundFinder = find.byKey(
+          const ValueKey('project-row-background-p1'),
+        );
+        final cardRect = tester.getRect(cardFinder);
+        final backgroundRect = tester.getRect(backgroundFinder);
+        final decoration =
+            tester.widget<DecoratedBox>(backgroundFinder).decoration
+                as BoxDecoration;
+        final context = tester.element(backgroundFinder);
+
+        expect(decoration.color, ShowcasePalette.hoverFill(context));
+        expect(backgroundRect.left, cardRect.left);
+        expect(backgroundRect.right, cardRect.right);
+        expect(backgroundRect.top, cardRect.top);
+      },
+    );
+
+    testWidgets(
       'hides the divider for hovered rows without changing section height',
       (tester) async {
         final group = makeGroupedProjectsSection();
@@ -311,6 +352,63 @@ void main() {
   });
 
   group('ProjectRow', () {
+    testWidgets('Right opens the focused project and enters the detail pane', (
+      tester,
+    ) async {
+      final item = makeTestProjectListItemData();
+      final dividerFocusNode = FocusNode(debugLabel: 'test-divider');
+      final detailFocusNode = FocusNode(debugLabel: 'test-project-detail');
+      addTearDown(dividerFocusNode.dispose);
+      addTearDown(detailFocusNode.dispose);
+      var taps = 0;
+
+      await tester.pumpWidget(
+        wrap(
+          AppCommandHost(
+            handlers: const {},
+            platform: TargetPlatform.windows,
+            child: ListDetailFocusTraversal(
+              debugLabel: 'projects-test',
+              listPane: SizedBox(
+                width: 360,
+                child: ProjectRow(
+                  item: item,
+                  selected: false,
+                  topOverlap: 0,
+                  bottomOverlap: 0,
+                  onHoverChanged: (_) {},
+                  onTap: () => taps++,
+                ),
+              ),
+              divider: Focus(
+                focusNode: dividerFocusNode,
+                child: const SizedBox(width: 3),
+              ),
+              detailPane: Align(
+                alignment: Alignment.topLeft,
+                child: TextButton(
+                  focusNode: detailFocusNode,
+                  onPressed: () {},
+                  child: const Text('Project detail action'),
+                ),
+              ),
+            ),
+          ),
+          overrides: noOneLinerOverrides([item.project.meta.id]),
+        ),
+      );
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+
+      expect(taps, 1);
+      expect(detailFocusNode.hasFocus, isTrue);
+      expect(dividerFocusNode.hasFocus, isFalse);
+    });
+
     testWidgets('renders title, task progress, and status tag', (tester) async {
       final item = makeTestProjectListItemData();
 

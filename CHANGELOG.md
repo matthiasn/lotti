@@ -44,6 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keep the existing defaults.
 
 ### Fixed
+- **Keyboard navigation now enters task and project details directly.** Right
+  Arrow on a focused row opens the adjacent detail pane instead of resizing
+  the divider, and keyboard row focus now uses the same full-width color and
+  rounded clipping as pointer hover.
 - **Bulk checklist suggestion acceptance no longer flickers.** Confirm all now
   keeps every proposal row mounted through its staggered exit, even when fast
   checklist check-offs resolve the underlying suggestions before later rows

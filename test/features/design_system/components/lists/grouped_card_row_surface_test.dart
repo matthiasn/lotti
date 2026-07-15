@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 
@@ -102,6 +103,21 @@ void main() {
       await tester.pump();
 
       expect(backgroundColor(tester), selectedColor);
+    });
+
+    testWidgets('keyboard focus uses the exact hover background color', (
+      tester,
+    ) async {
+      await pumpSurface(tester);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+
+      expect(backgroundColor(tester), hoverColor);
+      expect(
+        tester.widget<InkWell>(find.byType(InkWell)).focusColor,
+        Colors.transparent,
+      );
     });
 
     testWidgets('overlaps extend the background beyond the row bounds', (
