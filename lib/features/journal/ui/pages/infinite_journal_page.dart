@@ -26,8 +26,16 @@ import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 /// controller into `infinite_scroll_pagination`, rendering each page item
 /// through [CardWrapperWidget] (optionally with a vector-search distance
 /// badge), and exposes pull-to-refresh via `refreshQuery`.
+typedef InfiniteJournalCreateEntryCallback =
+    Future<JournalEntity?> Function({String? categoryId});
+
 class InfiniteJournalPage extends ConsumerWidget {
-  const InfiniteJournalPage({super.key});
+  const InfiniteJournalPage({
+    this.onCreateEntry = createTextEntry,
+    super.key,
+  });
+
+  final InfiniteJournalCreateEntryCallback onCreateEntry;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,7 +58,7 @@ class InfiniteJournalPage extends ConsumerWidget {
                 .refreshQuery(preserveVisibleItems: true),
           ),
           AppCommandId.createInContext: AppCommandHandler(
-            invoke: (_) => createTextEntry(categoryId: categoryId),
+            invoke: (_) => onCreateEntry(categoryId: categoryId),
           ),
         },
         child: Scaffold(

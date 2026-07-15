@@ -15,6 +15,9 @@ import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -60,6 +63,7 @@ void main() {
     setUpAll(() {
       setFakeDocumentsPath();
       registerFallbackValue(FakeMeasurementData());
+      registerFallbackValue(FakeQuillController());
       registerAllFallbackValues();
     });
 
@@ -186,6 +190,63 @@ void main() {
       // Stack (source lines 171-183); a regression in its placement would
       // remove it from the tree.
       expect(find.byType(AiRunningAnimationWrapperCard), findsOneWidget);
+    });
+
+    testWidgets('save command persists the current text entry', (tester) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockPersistenceLogic.updateJournalEntityText(
+          any(),
+          any(),
+          any(),
+        ),
+      ).thenAnswer((_) async => true);
+      final editorStateService = getIt<EditorStateService>();
+      when(
+        () => editorStateService.entryWasSaved(
+          id: any(named: 'id'),
+          lastSaved: any(named: 'lastSaved'),
+          controller: any(named: 'controller'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          AppCommandHost(
+            handlers: const {},
+            platform: TargetPlatform.windows,
+            child: EntryDetailsPage(itemId: testTextEntry.meta.id),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final commandContext = tester.element(
+        find.descendant(
+          of: find.byType(EntryDetailsPage),
+          matching: find.byType(Scaffold),
+        ),
+      );
+      final commandController = AppCommandControllerProvider.of(
+        commandContext,
+      );
+      expect(
+        commandController.isAvailable(commandContext, AppCommandId.save),
+        isTrue,
+      );
+      unawaited(commandController.invoke(commandContext, AppCommandId.save));
+      await tester.pump();
+      verify(
+        () => mockPersistenceLogic.updateJournalEntityText(
+          testTextEntry.meta.id,
+          any(),
+          testTextEntry.meta.dateTo,
+        ),
+      ).called(1);
+      await tester.pumpWidget(const SizedBox.shrink());
     });
 
     testWidgets('Weight Entry is rendered properly', (tester) async {

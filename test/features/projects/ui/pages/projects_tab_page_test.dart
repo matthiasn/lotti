@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -9,6 +11,9 @@ import 'package:lotti/features/design_system/components/chips/active_filter_chip
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
@@ -144,7 +149,11 @@ void main() {
 
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        const ProjectsTabPage(),
+        const AppCommandHost(
+          handlers: {},
+          platform: TargetPlatform.windows,
+          child: ProjectsTabPage(),
+        ),
         mediaQueryData: mediaQueryData,
         theme: theme ?? withOverrides(ThemeData.dark(useMaterial3: true)),
         overrides: overrides,
@@ -305,6 +314,37 @@ void main() {
     expect(find.byType(ProjectCreateForm), findsOneWidget);
     expect(find.text(messages.cancelButton), findsOneWidget);
     expect(find.text(messages.createButton), findsOneWidget);
+  });
+
+  testWidgets('commands focus search and open the create modal', (
+    tester,
+  ) async {
+    await pumpPage(tester, groups: [buildWorkGroup()]);
+    final commandContext = tester.element(find.byType(Scaffold).first);
+    final commandController = AppCommandControllerProvider.of(commandContext);
+
+    expect(
+      await commandController.invoke(commandContext, AppCommandId.focusSearch),
+      isTrue,
+    );
+    await tester.pump();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus,
+      isTrue,
+    );
+
+    final createInvocation = commandController.invoke(
+      commandContext,
+      AppCommandId.createInContext,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(ProjectCreateForm), findsOneWidget);
+
+    final messages = tester.element(find.byType(ProjectCreateForm)).messages;
+    await tester.tap(find.text(messages.cancelButton));
+    await tester.pump();
+    expect(await createInvocation, isTrue);
   });
 
   testWidgets('opens the shared filter modal from the header icon', (

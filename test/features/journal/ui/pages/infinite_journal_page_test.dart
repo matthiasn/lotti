@@ -19,6 +19,9 @@ import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_but
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -506,7 +509,13 @@ void main() {
     setUp(() async {
       await setUpTestGetIt(
         additionalSetup: () {
-          getIt.registerSingleton<UserActivityService>(UserActivityService());
+          final entitiesCacheService = MockEntitiesCacheService();
+          when(
+            () => entitiesCacheService.getCategoryById(any()),
+          ).thenReturn(null);
+          getIt
+            ..registerSingleton<UserActivityService>(UserActivityService())
+            ..registerSingleton<EntitiesCacheService>(entitiesCacheService);
         },
       );
     });
@@ -692,6 +701,118 @@ void main() {
         expect(fab.categoryId, isNull);
       },
     );
+
+    testWidgets('commands refresh, create, and focus journal search', (
+      tester,
+    ) async {
+      const state = JournalPageState(
+        showTasks: false,
+        selectedCategoryIds: {'journal-category'},
+      );
+      final fakeController = _FakeJournalPageController(state);
+      String? createdCategoryId;
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          AppCommandHost(
+            handlers: const {},
+            platform: TargetPlatform.windows,
+            child: InfiniteJournalPage(
+              onCreateEntry: ({categoryId}) async {
+                createdCategoryId = categoryId;
+                return null;
+              },
+            ),
+          ),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+      await tester.pump();
+      fakeController.refreshPreserveFlags.clear();
+
+      final commandContext = tester.element(find.byType(TextField));
+      final commandController = AppCommandControllerProvider.of(
+        commandContext,
+      );
+      expect(
+        await commandController.invoke(commandContext, AppCommandId.refresh),
+        isTrue,
+      );
+      expect(fakeController.refreshPreserveFlags, [true]);
+
+      expect(
+        await commandController.invoke(
+          commandContext,
+          AppCommandId.createInContext,
+        ),
+        isTrue,
+      );
+      expect(createdCategoryId, 'journal-category');
+
+      expect(
+        await commandController.invoke(
+          commandContext,
+          AppCommandId.focusSearch,
+        ),
+        isTrue,
+      );
+      await tester.pump();
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus,
+        isTrue,
+      );
+    });
+
+    testWidgets('forwards vector-search distance to journal cards', (
+      tester,
+    ) async {
+      final pagingController =
+          PagingController<int, JournalEntity>(
+              getNextPageKey: (_) => null,
+              fetchPage: (_) async => const <JournalEntity>[],
+            )
+            ..value = PagingState<int, JournalEntity>(
+              pages: [
+                [testTextEntry],
+              ],
+              keys: const [0],
+              hasNextPage: false,
+            );
+      addTearDown(pagingController.dispose);
+      final fakeController = _FakeJournalPageController(
+        JournalPageState(
+          showTasks: false,
+          pagingController: pagingController,
+          showDistances: true,
+          vectorSearchDistances: {testTextEntry.meta.id: 0.125},
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const InfiniteJournalPage(),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<CardWrapperWidget>(find.byType(CardWrapperWidget))
+            .vectorDistance,
+        0.125,
+      );
+    });
   });
 }
 
@@ -699,6 +820,7 @@ class _FakeJournalPageController extends JournalPageController {
   _FakeJournalPageController(this._testState);
 
   final JournalPageState _testState;
+  final List<bool> refreshPreserveFlags = [];
 
   @override
   JournalPageState build() => _testState;
@@ -707,5 +829,7 @@ class _FakeJournalPageController extends JournalPageController {
   JournalPageState get state => _testState;
 
   @override
-  Future<void> refreshQuery({bool preserveVisibleItems = false}) async {}
+  Future<void> refreshQuery({bool preserveVisibleItems = false}) async {
+    refreshPreserveFlags.add(preserveVisibleItems);
+  }
 }
