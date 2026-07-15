@@ -340,6 +340,34 @@ void main() {
     );
   });
 
+  testWidgets('sub-pixel offset noise does not release the hold', (
+    tester,
+  ) async {
+    final key = GlobalKey<_ReportedSizeHarnessState>();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(_ReportedSizeHarness(key: key)),
+    );
+    await tester.pump();
+
+    final state = key.currentState!..controller.jumpTo(300);
+    await tester.pump();
+    state.hold();
+    state.controller.jumpTo(300.75);
+    await tester.pump();
+    final markerTopBeforeResize = tester
+        .getTopLeft(find.byKey(_reportedMarkerKey))
+        .dy;
+
+    state.resize(150);
+    await tester.pump();
+
+    expect(state.controller.offset, closeTo(400.75, 0.1));
+    expect(
+      tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+      closeTo(markerTopBeforeResize, 0.1),
+    );
+  });
+
   testWidgets('reported size changes stop anchoring when the hold expires', (
     tester,
   ) async {

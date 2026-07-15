@@ -29,7 +29,7 @@ class ViewportStableScrollController extends ScrollController {
   Timer? _explicitReleaseTimer;
   Timer? _animatedSizeReleaseTimer;
 
-  static const _tolerance = 0.5;
+  static const _tolerance = 1.0;
 
   bool get _isHolding => _isExplicitlyHolding || _isAnimatedSizeHolding;
 
