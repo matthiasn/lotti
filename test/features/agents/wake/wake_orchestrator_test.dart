@@ -2674,6 +2674,84 @@ void main() {
         },
       );
 
+      test('continues drain when an unexpected execution error escapes', () {
+        fakeAsync((async) {
+          final logger = MockDomainLogger();
+          var executionLogCount = 0;
+          when(
+            () => logger.log(
+              any(),
+              any(),
+              subDomain: any(named: 'subDomain'),
+              level: any(named: 'level'),
+            ),
+          ).thenAnswer((invocation) {
+            final message = invocation.positionalArguments[1] as String;
+            if (message.startsWith('executing runKey=')) {
+              executionLogCount++;
+              if (executionLogCount == 1) {
+                throw StateError('unexpected logger failure');
+              }
+            }
+          });
+          when(
+            () => logger.error(
+              any(),
+              any(),
+              message: any(named: 'message'),
+              subDomain: any(named: 'subDomain'),
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).thenReturn(null);
+
+          final localQueue = WakeQueue();
+          final localRunner = WakeRunner();
+          final executedAgentIds = <String>[];
+          final localOrchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: localQueue,
+            runner: localRunner,
+            domainLogger: logger,
+            wakeExecutor: (agentId, runKey, triggers, threadId) async {
+              executedAgentIds.add(agentId);
+              return null;
+            },
+          );
+
+          localQueue
+            ..enqueue(makeJob())
+            ..enqueue(
+              makeJob(
+                runKey: 'rk-2',
+                agentId: 'agent-2',
+                triggerTokens: {'tok-b'},
+              ),
+            );
+
+          localOrchestrator.processNext();
+          async.flushMicrotasks();
+
+          expect(executedAgentIds, ['agent-2']);
+          expect(localRunner.activeAgentIds, isEmpty);
+          expect(localQueue, hasLength(0));
+          verify(
+            () => logger.error(
+              LogDomain.agentRuntime,
+              any(that: isA<StateError>()),
+              message: any(
+                named: 'message',
+                that: contains('unexpected wake execution failure'),
+              ),
+              subDomain: any(named: 'subDomain'),
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).called(1);
+
+          localOrchestrator.stop();
+          localRunner.dispose();
+        });
+      });
+
       test('continues drain when updateWakeRunStatus throws on completion', () {
         fakeAsync((async) {
           var executorCallCount = 0;

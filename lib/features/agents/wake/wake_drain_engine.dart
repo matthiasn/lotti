@@ -184,9 +184,23 @@ extension WakeDrainEngine on WakeOrchestrator {
             continue;
           }
 
-          activeExecutions[job.runKey] = _executeJob(
-            job,
-          ).then((_) => job.runKey);
+          activeExecutions[job.runKey] = _executeJob(job).then(
+            (_) => job.runKey,
+            onError: (Object error, StackTrace stackTrace) {
+              // `_executeJob` owns its normal error boundary and lock release,
+              // but keep the scheduler resilient if an unexpected failure
+              // escapes that boundary (for example, a logging implementation
+              // throwing before `_executeJob` enters its outer try/finally).
+              runner.release(job.agentId);
+              _logError(
+                'unexpected wake execution failure for '
+                '${DomainLogger.sanitizeId(job.runKey)}',
+                error: error,
+                stackTrace: stackTrace,
+              );
+              return job.runKey;
+            },
+          );
         }
 
         // Requeue skipped busy/throttled jobs before waiting. Active wakes use
