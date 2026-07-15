@@ -78,6 +78,7 @@ void main() {
         'definitions',
         'recording-style',
         'theming',
+        'keyboard-shortcuts',
         'advanced',
       ],
     );

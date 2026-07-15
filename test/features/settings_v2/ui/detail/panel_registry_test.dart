@@ -65,6 +65,7 @@ void main() {
       'flags',
       'recording-style',
       'theming',
+      'keyboard-shortcuts',
       'speech',
       'advanced-about',
       'advanced-maintenance',

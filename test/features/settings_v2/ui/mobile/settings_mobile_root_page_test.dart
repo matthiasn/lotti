@@ -52,6 +52,11 @@ void main() {
     expect(find.text('Sync Settings'), findsOneWidget);
     expect(find.text('Definitions'), findsOneWidget);
     expect(find.text('Theming'), findsOneWidget);
+    expect(find.text('Keyboard shortcuts'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Advanced Settings'),
+      200,
+    );
     expect(find.text('Advanced Settings'), findsOneWidget);
   });
 
