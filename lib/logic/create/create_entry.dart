@@ -130,7 +130,6 @@ Future<Task?> createTask({
     // Inherit project from the linked parent task when no explicit project was
     // requested by the creation context.
     await _inheritProjectFromLinkedTask(
-      projectRepository: _createProjectRepository(),
       linkedId: linkedId,
       newTaskId: task.meta.id,
     );
@@ -143,12 +142,11 @@ Future<Task?> createTask({
 /// [ProjectRepository.inheritProjectFromTask]. Best-effort: failures are
 /// caught so they never prevent task creation from succeeding.
 Future<void> _inheritProjectFromLinkedTask({
-  required ProjectRepository projectRepository,
   required String linkedId,
   required String newTaskId,
 }) async {
   try {
-    final inherited = await projectRepository.inheritProjectFromTask(
+    final inherited = await _createProjectRepository().inheritProjectFromTask(
       sourceTaskId: linkedId,
       newTaskId: newTaskId,
     );
