@@ -3969,7 +3969,7 @@
   "tasksSavedFiltersGroupSemantics": "Filtre salvate",
   "tasksSavedFiltersRailButton": "Salvate",
   "tasksSavedFiltersRenameNamed": "Redenumește {name}",
-  "tasksSavedFiltersSaveButtonLabel": "Salvați",
+  "tasksSavedFiltersSaveButtonLabel": "Salvați filtrul",
   "tasksSavedFiltersSaveCurrentAs": "Salvați filtrul curent ca…",
   "tasksSavedFiltersSavePopupCancel": "Anulați",
   "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtru activ. Salvat în bara laterală, sub Sarcini.} few{{count} filtre active. Salvate în bara laterală, sub Sarcini.} other{{count} de filtre active. Salvate în bara laterală, sub Sarcini.}}",

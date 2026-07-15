@@ -119,6 +119,15 @@ Future<void> showDesignSystemFilterModal({
         0,
         spacing.step5,
       );
+      final isBottomSheet = ModalUtils.shouldUseRootNavigatorForBottomSheet(
+        modalContext,
+      );
+      final hasLargeText = MediaQuery.textScalerOf(modalContext).scale(1) > 1.3;
+      final overviewFooterClearance = isBottomSheet
+          ? hasLargeText
+                ? spacing.step13 + spacing.step12
+                : spacing.step13
+          : spacing.step12;
 
       return [
         ModalUtils.modalSheetPage(
@@ -172,7 +181,7 @@ Future<void> showDesignSystemFilterModal({
                       }
                     },
                   ),
-                  SizedBox(height: spacing.step12),
+                  SizedBox(height: overviewFooterClearance),
                 ],
               );
             },

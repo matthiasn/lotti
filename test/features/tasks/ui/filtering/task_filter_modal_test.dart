@@ -826,7 +826,7 @@ void main() {
             matching: find.byType(DesignSystemSelectionRow),
           ),
         );
-        expect(projectSummary.subtitle, 'Work / My Project');
+        expect(projectSummary.subtitle, 'My Project');
       },
     );
 

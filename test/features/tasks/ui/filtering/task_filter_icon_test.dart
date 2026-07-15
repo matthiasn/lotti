@@ -161,7 +161,7 @@ void main() {
 
       expect(find.byType(DesignSystemTaskFilterSheet), findsOneWidget);
       expect(find.text('Filter tasks'), findsOneWidget);
-      expect(find.text('Clear all'), findsOneWidget);
+      expect(find.text('Clear'), findsOneWidget);
       expect(find.text('Apply'), findsOneWidget);
     });
 

@@ -93,7 +93,7 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
   }
 }
 
-class _FilterTrigger extends StatelessWidget {
+class _FilterTrigger extends StatefulWidget {
   const _FilterTrigger({
     required this.entryId,
     required this.sortOrder,
@@ -107,18 +107,25 @@ class _FilterTrigger extends StatelessWidget {
   final bool showFlaggedOnly;
 
   @override
+  State<_FilterTrigger> createState() => _FilterTriggerState();
+}
+
+class _FilterTriggerState extends State<_FilterTrigger> {
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final label = switch (sortOrder) {
+    final label = switch (widget.sortOrder) {
       LinkedEntriesSortOrder.newestFirst =>
         messages.journalLinkedEntriesSortNewestFirst,
       LinkedEntriesSortOrder.oldestFirst =>
         messages.journalLinkedEntriesSortOldestFirst,
     };
     final activeLabels = [
-      if (includeHidden) messages.journalLinkedEntriesShowHidden,
-      if (showFlaggedOnly) messages.journalLinkedEntriesShowFlaggedOnly,
+      if (widget.includeHidden) messages.journalLinkedEntriesShowHidden,
+      if (widget.showFlaggedOnly) messages.journalLinkedEntriesShowFlaggedOnly,
     ];
     final semanticsLabel = [
       messages.journalLinkedEntriesFilterModalTitle,
@@ -134,7 +141,7 @@ class _FilterTrigger extends StatelessWidget {
       label: semanticsLabel,
       onTap: () => showLinkedEntriesFilterModal(
         context: context,
-        entryId: entryId,
+        entryId: widget.entryId,
       ),
       excludeSemantics: true,
       child: SizedBox(
@@ -143,13 +150,15 @@ class _FilterTrigger extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: radius,
-            focusColor: tokens.colors.surface.focusPressed,
             hoverColor: tokens.colors.surface.hover,
+            focusColor: Colors.transparent,
+            onFocusChange: (value) => setState(() => _focused = value),
             onTap: () => showLinkedEntriesFilterModal(
               context: context,
-              entryId: entryId,
+              entryId: widget.entryId,
             ),
             child: Center(
+              widthFactor: 1,
               child: Ink(
                 key: const ValueKey('linked-entries-sort-trigger-visual'),
                 decoration: BoxDecoration(
@@ -157,9 +166,17 @@ class _FilterTrigger extends StatelessWidget {
                   borderRadius: radius,
                   border: Border.all(
                     color: selected
-                        ? tokens.colors.interactive.enabled
+                        ? tokens.colors.text.highEmphasis
                         : tokens.colors.decorative.level02,
                   ),
+                  boxShadow: _focused
+                      ? [
+                          BoxShadow(
+                            color: tokens.colors.interactive.enabled,
+                            spreadRadius: tokens.spacing.step1,
+                          ),
+                        ]
+                      : null,
                 ),
                 padding: EdgeInsets.symmetric(
                   horizontal: tokens.spacing.step3,
@@ -182,6 +199,34 @@ class _FilterTrigger extends StatelessWidget {
                         height: 1,
                       ),
                     ),
+                    if (activeLabels.isNotEmpty) ...[
+                      SizedBox(width: tokens.spacing.step2),
+                      Container(
+                        key: const ValueKey(
+                          'linked-entries-sort-trigger-active-count',
+                        ),
+                        constraints: BoxConstraints(
+                          minWidth: tokens.spacing.step5,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: tokens.spacing.step2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: tokens.colors.surface.active,
+                          borderRadius: radius,
+                        ),
+                        child: Text(
+                          '${activeLabels.length}',
+                          textAlign: TextAlign.center,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                                fontWeight: tokens.typography.weight.semiBold,
+                                height: 1,
+                              ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -193,7 +238,7 @@ class _FilterTrigger extends StatelessWidget {
   }
 }
 
-class _ActivityPill extends StatelessWidget {
+class _ActivityPill extends StatefulWidget {
   const _ActivityPill({
     required this.kind,
     required this.active,
@@ -206,20 +251,28 @@ class _ActivityPill extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_ActivityPill> createState() => _ActivityPillState();
+}
+
+class _ActivityPillState extends State<_ActivityPill> {
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final spec = _ActivityPillSpec.of(context, kind);
+    final spec = _ActivityPillSpec.of(context, widget.kind);
     final radius = BorderRadius.circular(tokens.radii.badgesPills);
-    final selectedFill = spec.accent.withValues(alpha: 0.15);
-    final selectedOutline = spec.accent.withValues(alpha: spec.borderAlpha);
+    final selectedFill = tokens.colors.surface.selected;
     final labelColor = tokens.colors.text.highEmphasis;
-    final iconColor = active ? spec.accent : tokens.colors.text.lowEmphasis;
+    final iconColor = widget.active
+        ? spec.accent
+        : tokens.colors.text.lowEmphasis;
 
     return Semantics(
       button: true,
-      toggled: active,
+      toggled: widget.active,
       label: spec.label,
-      onTap: onTap,
+      onTap: widget.onTap,
       excludeSemantics: true,
       child: SizedBox(
         height: tokens.spacing.step9,
@@ -227,23 +280,33 @@ class _ActivityPill extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: radius,
-            focusColor: tokens.colors.surface.focusPressed,
+            focusColor: Colors.transparent,
             hoverColor: tokens.colors.surface.hover,
-            onTap: onTap,
+            onFocusChange: (value) => setState(() => _focused = value),
+            onTap: widget.onTap,
             child: Center(
+              widthFactor: 1,
               child: AnimatedContainer(
                 key: ValueKey(
-                  'linked-entries-activity-${kind.name}-visual',
+                  'linked-entries-activity-${widget.kind.name}-visual',
                 ),
                 duration: DesignSystemFilterChoicePill.animationDuration,
                 decoration: BoxDecoration(
-                  color: active ? selectedFill : Colors.transparent,
+                  color: widget.active ? selectedFill : Colors.transparent,
                   borderRadius: radius,
                   border: Border.all(
-                    color: active
-                        ? selectedOutline
+                    color: widget.active
+                        ? tokens.colors.text.highEmphasis
                         : tokens.colors.decorative.level01,
                   ),
+                  boxShadow: _focused
+                      ? [
+                          BoxShadow(
+                            color: tokens.colors.interactive.enabled,
+                            spreadRadius: tokens.spacing.step1,
+                          ),
+                        ]
+                      : null,
                 ),
                 padding: EdgeInsets.symmetric(
                   horizontal: tokens.spacing.step3,
@@ -282,7 +345,6 @@ class _ActivityPillSpec {
     required this.label,
     required this.icon,
     required this.accent,
-    required this.borderAlpha,
   });
 
   factory _ActivityPillSpec.of(
@@ -296,25 +358,21 @@ class _ActivityPillSpec {
         label: messages.journalLinkedEntriesActivityFilterTimer,
         icon: Icons.timer_outlined,
         accent: tokens.colors.alert.warning.defaultColor,
-        borderAlpha: 1,
       ),
       LinkedEntryActivityFilter.audio => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterAudio,
         icon: Icons.mic_none_outlined,
         accent: const Color(0xFF9966E5),
-        borderAlpha: 0.7,
       ),
       LinkedEntryActivityFilter.images => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterImages,
         icon: Icons.photo_outlined,
         accent: const Color(0xFF619EFF),
-        borderAlpha: 0.7,
       ),
       LinkedEntryActivityFilter.code => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterCode,
         icon: Icons.code,
         accent: const Color(0xFF34C759),
-        borderAlpha: 0.7,
       ),
     };
   }
@@ -322,5 +380,4 @@ class _ActivityPillSpec {
   final String label;
   final IconData icon;
   final Color accent;
-  final double borderAlpha;
 }

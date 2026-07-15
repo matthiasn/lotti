@@ -296,8 +296,10 @@ void main() {
       expect(result.hasCategoryField, isTrue);
       expect(result.categoryField!.selectedIds, {'cat-1'});
       expect(result.categoryField!.options, hasLength(3));
+      expect(result.categoryField!.options.first.label, 'Unassigned');
       expect(result.hasLabelField, isTrue);
       expect(result.labelField!.selectedIds, {'label-1'});
+      expect(result.labelField!.options.first.label, 'Unassigned');
       expect(result.hasAgentFilter, isTrue);
       expect(result.selectedAgentFilterId, 'hasAgent');
       expect(result.hasSearchMode, isFalse);
@@ -430,7 +432,9 @@ void main() {
       );
     });
 
-    testWidgets('builds project field with category prefix', (tester) async {
+    testWidgets('groups projects without repeating category in row labels', (
+      tester,
+    ) async {
       late DesignSystemTaskFilterState result;
 
       final projectsWithCategories = [
@@ -474,8 +478,8 @@ void main() {
 
       expect(result.hasProjectField, isTrue);
       expect(result.projectField!.options, hasLength(2));
-      expect(result.projectField!.options[0].label, 'Work / Alpha');
-      expect(result.projectField!.options[1].label, 'Personal / Beta');
+      expect(result.projectField!.options[0].label, 'Alpha');
+      expect(result.projectField!.options[1].label, 'Beta');
       expect(result.projectField!.selectedIds, {'proj-1'});
     });
 

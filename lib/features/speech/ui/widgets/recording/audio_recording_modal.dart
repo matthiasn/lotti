@@ -48,7 +48,9 @@ class AudioRecordingModal {
         useRootNavigator: useRootNavigator,
         hasTopBarLayer: false,
         showCloseButton: false,
-        padding: ModalUtils.defaultPadding.copyWith(bottom: 20),
+        padding: ModalUtils.defaultPadding(
+          context,
+        ).copyWith(bottom: context.designTokens.spacing.step5),
         builder: (BuildContext _) {
           return AudioRecordingModalContent(
             linkedId: linkedId,

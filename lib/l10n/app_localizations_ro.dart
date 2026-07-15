@@ -9761,7 +9761,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Salvați';
+  String get tasksSavedFiltersSaveButtonLabel => 'Salvați filtrul';
 
   @override
   String get tasksSavedFiltersSaveCurrentAs => 'Salvați filtrul curent ca…';

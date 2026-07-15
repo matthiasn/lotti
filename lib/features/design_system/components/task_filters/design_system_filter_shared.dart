@@ -219,6 +219,14 @@ class _DesignSystemFilterChoicePillState
                   color: fill,
                   borderRadius: radius,
                   border: Border.all(color: outline),
+                  boxShadow: _focused
+                      ? [
+                          BoxShadow(
+                            color: tokens.colors.text.highEmphasis,
+                            spreadRadius: spacing.step1,
+                          ),
+                        ]
+                      : null,
                 ),
                 child: InkWell(
                   excludeFromSemantics: true,
@@ -252,8 +260,11 @@ class _DesignSystemFilterChoicePillState
                   Flexible(
                     child: Text(
                       widget.label,
-                      maxLines: 1,
+                      maxLines: MediaQuery.textScalerOf(context).scale(1) > 1.3
+                          ? 2
+                          : 1,
                       overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                       style: tokens.typography.styles.subtitle.subtitle2
                           .copyWith(color: tokens.colors.text.highEmphasis),
                     ),

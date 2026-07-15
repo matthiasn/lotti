@@ -4675,7 +4675,7 @@
       }
     }
   },
-  "tasksSavedFiltersSaveButtonLabel": "Save",
+  "tasksSavedFiltersSaveButtonLabel": "Save filter",
   "tasksSavedFiltersSaveCurrentAs": "Save current filter as…",
   "tasksSavedFiltersSavePopupCancel": "Cancel",
   "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filter active. Saved to sidebar under Tasks.} other{{count} filters active. Saved to sidebar under Tasks.}}",

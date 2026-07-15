@@ -194,7 +194,7 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
   final categoryOptions = [
     DesignSystemTaskFilterOption(
       id: '',
-      label: messages.taskCategoryUnassignedLabel,
+      label: messages.tasksQuickFilterUnassignedLabel,
     ),
     for (final category in categories)
       DesignSystemTaskFilterOption(
@@ -224,7 +224,6 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
       ? _buildProjectField(
           context,
           projectsWithCategories: projectsWithCategories,
-          categories: categories,
           selectedProjectIds: controllerState.selectedProjectIds,
         )
       : null;
@@ -318,28 +317,21 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
 
 /// Builds the project field with options grouped by category.
 ///
-/// Each option label is prefixed with its category name for clarity
-/// when multiple categories are selected. Options are ordered by
-/// category, then by project title within each category.
+/// Options are ordered by category, then by project title. The selection page
+/// already renders category headings, so labels contain only the project title
+/// instead of repeating the group name in every row.
 DesignSystemTaskFilterFieldState _buildProjectField(
   BuildContext context, {
   required List<ProjectWithCategory> projectsWithCategories,
-  required List<CategoryDefinition> categories,
   required Set<String> selectedProjectIds,
 }) {
-  final categoryById = {
-    for (final cat in categories) cat.id: cat,
-  };
-
   // Build options preserving the order provided (already grouped by category).
   final options = <DesignSystemTaskFilterOption>[];
   for (final pwc in projectsWithCategories) {
-    final category = categoryById[pwc.categoryId];
-    final prefix = category != null ? '${category.name} / ' : '';
     options.add(
       DesignSystemTaskFilterOption(
         id: pwc.project.meta.id,
-        label: '$prefix${pwc.project.data.title}',
+        label: pwc.project.data.title,
       ),
     );
   }

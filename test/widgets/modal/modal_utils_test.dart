@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -212,7 +213,7 @@ void main() {
 
         expect(page, isA<WoltModalSheetPage>());
         expect(page.hasSabGradient, false);
-        expect(page.navBarHeight, 65);
+        expect(page.navBarHeight, dsTokensLight.spacing.step10);
         expect(page.hasTopBarLayer, true);
         expect(page.isTopBarLayerAlwaysVisible, true);
       });
@@ -228,7 +229,7 @@ void main() {
         );
 
         expect(page.topBarTitle, isNotNull);
-        expect(page.topBarTitle, isA<Container>());
+        expect(page.topBarTitle, isA<Padding>());
       });
 
       testWidgets('creates page with back button that fires onTapBack', (
@@ -255,7 +256,24 @@ void main() {
         );
 
         expect(leading, isA<IconButton>());
-        expect((leading! as IconButton).tooltip, 'Back');
+        final button = leading! as IconButton;
+        expect(button.tooltip, 'Back');
+        expect(button.padding, EdgeInsets.all(dsTokensLight.spacing.step4));
+        final icon = tester.widget<Icon>(find.byIcon(Icons.arrow_back_rounded));
+        expect(icon.size, dsTokensLight.spacing.step6);
+        expect(icon.color, dsTokensLight.colors.text.mediumEmphasis);
+        final container = tester.widget<Container>(
+          find.ancestor(
+            of: find.byIcon(Icons.arrow_back_rounded),
+            matching: find.byType(Container),
+          ),
+        );
+        final decoration = container.decoration! as BoxDecoration;
+        expect(decoration.color, dsTokensLight.colors.surface.enabled);
+        expect(
+          decoration.borderRadius,
+          BorderRadius.circular(dsTokensLight.radii.m),
+        );
 
         // The back button must actually invoke the supplied callback.
         await tester.tap(find.byType(IconButton));
@@ -436,6 +454,41 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Action Bar'), findsOneWidget);
+      });
+
+      testWidgets('runs the close callback before dismissing the modal', (
+        tester,
+      ) async {
+        var closeCalls = 0;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    ModalUtils.showSinglePageModal<void>(
+                      context: context,
+                      title: 'Commit modal',
+                      closeButtonIcon: Icons.check_rounded,
+                      closeButtonTooltip: 'Commit changes',
+                      onClosePressed: () => closeCalls++,
+                      builder: (context) => const Text('Draft content'),
+                    );
+                  },
+                  child: const Text('Show Modal'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show Modal'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Commit changes'));
+        await tester.pumpAndSettle();
+
+        expect(closeCalls, 1);
+        expect(find.text('Draft content'), findsNothing);
       });
 
       testWidgets('dismisses modal on barrier tap', (tester) async {
@@ -688,7 +741,7 @@ void main() {
         expect(page.hasSabGradient, false);
         expect(page.useSafeArea, true);
         expect(page.resizeToAvoidBottomInset, true);
-        expect(page.navBarHeight, 65);
+        expect(page.navBarHeight, dsTokensLight.spacing.step10);
       });
 
       testWidgets('creates sliver page with title', (tester) async {
@@ -981,11 +1034,16 @@ void main() {
     });
 
     group('defaultPadding', () {
-      test('has correct default padding values', () {
-        expect(ModalUtils.defaultPadding.left, 20);
-        expect(ModalUtils.defaultPadding.top, 20);
-        expect(ModalUtils.defaultPadding.right, 20);
-        expect(ModalUtils.defaultPadding.bottom, 40);
+      testWidgets('maps the standard inset to spacing tokens', (tester) async {
+        final padding = await _buildInContext(
+          tester,
+          ModalUtils.defaultPadding,
+        );
+
+        expect(padding.left, dsTokensLight.spacing.step5);
+        expect(padding.top, dsTokensLight.spacing.step5);
+        expect(padding.right, dsTokensLight.spacing.step5);
+        expect(padding.bottom, dsTokensLight.spacing.step8);
       });
     });
   });

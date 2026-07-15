@@ -3969,7 +3969,7 @@
   "tasksSavedFiltersGroupSemantics": "Filtros guardados",
   "tasksSavedFiltersRailButton": "Guardados",
   "tasksSavedFiltersRenameNamed": "Renombrar {name}",
-  "tasksSavedFiltersSaveButtonLabel": "Guardar",
+  "tasksSavedFiltersSaveButtonLabel": "Guardar filtro",
   "tasksSavedFiltersSaveCurrentAs": "Guardar el filtro actual como…",
   "tasksSavedFiltersSavePopupCancel": "Cancelar",
   "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtro activo. Guardado en la barra lateral, bajo Tareas.} other{{count} filtros activos. Guardados en la barra lateral, bajo Tareas.}}",

@@ -31,6 +31,23 @@ void main() {
       );
     });
 
+    testWidgets('title line cap can be removed for accessible wrapping', (
+      tester,
+    ) async {
+      const title = 'A deliberately long title that should wrap freely';
+      await _pumpListItem(
+        tester,
+        const DesignSystemListItem(
+          title: title,
+          titleMaxLines: null,
+        ),
+      );
+
+      final text = tester.widget<Text>(find.text(title));
+      expect(text.maxLines, isNull);
+      expect(text.overflow, TextOverflow.clip);
+    });
+
     testWidgets('renders title and subtitle for two-line variant', (
       tester,
     ) async {

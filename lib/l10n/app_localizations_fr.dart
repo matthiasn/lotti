@@ -9773,7 +9773,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Enregistrer';
+  String get tasksSavedFiltersSaveButtonLabel => 'Enregistrer le filtre';
 
   @override
   String get tasksSavedFiltersSaveCurrentAs =>

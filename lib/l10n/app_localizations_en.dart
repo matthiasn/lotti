@@ -9521,7 +9521,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Save';
+  String get tasksSavedFiltersSaveButtonLabel => 'Save filter';
 
   @override
   String get tasksSavedFiltersSaveCurrentAs => 'Save current filter as…';

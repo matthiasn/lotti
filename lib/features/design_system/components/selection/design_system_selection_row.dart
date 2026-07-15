@@ -94,6 +94,9 @@ class DesignSystemSelectionRow extends StatelessWidget {
         constraints: BoxConstraints(minHeight: tokens.spacing.step9),
         child: DesignSystemListItem(
           title: title,
+          titleMaxLines: MediaQuery.textScalerOf(context).scale(1) > 1.3
+              ? null
+              : 1,
           subtitle: subtitle,
           subtitleMaxLines: subtitleMaxLines,
           size: size,

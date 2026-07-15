@@ -16492,7 +16492,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFiltersSaveButtonLabel.
   ///
   /// In en, this message translates to:
-  /// **'Save'**
+  /// **'Save filter'**
   String get tasksSavedFiltersSaveButtonLabel;
 
   /// No description provided for @tasksSavedFiltersSaveCurrentAs.

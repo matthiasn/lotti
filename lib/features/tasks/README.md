@@ -622,8 +622,12 @@ Project choices use a stale-while-revalidate catalog. The route opens from the
 last snapshot immediately, refreshes after its first frame, and updates the
 existing draft without replacing established content with a loading shell.
 Category grouping and the project search field remain available when the first
-snapshot is empty. Filter semantics, persistence keys, and controller methods
-are shared with the journal tab via `JournalPageController`.
+snapshot is empty. Each project row contains only its project title because the
+category heading already supplies that context. At compact breakpoints the
+overview reserves token-backed scroll clearance for its sticky action bar,
+including a larger allowance at 200% text, so the final display toggle can move
+fully above the footer. Filter semantics, persistence keys, and controller
+methods are shared with the journal tab via `JournalPageController`.
 
 Task-specific persisted filter concerns include:
 
@@ -671,8 +675,8 @@ Sidebar counts: `savedTaskFilterCountsProvider` computes `{savedFilterId → mat
 
 Surfaces:
 
-1. Sidebar treeview (`TasksSavedFiltersTree` → `SavedTaskFiltersSection` + `SavedTaskFilterRow`) — rendered via `DesktopSidebarDestination.expandedChildBuilder` only when the Tasks destination is active and the sidebar is expanded. The desktop section has its own caption header and count, shows the first four saved filters by default, and adds a token-backed More/Less row when the list is longer; tapping More reveals every saved filter and swaps the control to Show fewer. While collapsed, if the active saved filter is outside the first four, it replaces the last visible row so the current view never disappears behind the fold. Hover-trash with two-tap confirm delete, double-click rename, drag-to-reorder via `ReorderableListView.builder`. When there are no saved filters the section is hidden entirely (`SizedBox.shrink`) — there is no add affordance in the sidebar; new filters are saved only through the Save button in the Tasks Filter modal.
-2. Filter modal Save flow — `DesignSystemTaskFilterActionBar` gained an optional Save button next to Apply. Tapping it opens an inline name popup (`MenuAnchor`-anchored) with autofocus, Enter-to-commit, Escape-to-cancel, click-outside dismiss. The name is passed to `showTaskFilterModal`'s `onSavePressed` handler, which calls `create()` for new saves and `updateFilter()` when the user edits and re-saves the currently active filter under the same name.
+1. Sidebar treeview (`TasksSavedFiltersTree` → `SavedTaskFiltersSection` + `SavedTaskFilterRow`) — rendered via `DesktopSidebarDestination.expandedChildBuilder` only when the Tasks destination is active and the sidebar is expanded. The desktop section has its own caption header and count, shows the first four saved filters by default, and adds a token-backed More/Less row when the list is longer; tapping More reveals every saved filter and swaps the control to Show fewer. While collapsed, if the active saved filter is outside the first four, it replaces the last visible row so the current view never disappears behind the fold. Hover-trash with two-tap confirm delete, double-click rename, drag-to-reorder via `ReorderableListView.builder`. When there are no saved filters the section is hidden entirely (`SizedBox.shrink`) — there is no add affordance in the sidebar; new filters are saved only through the Save filter action in the Tasks Filter modal.
+2. Filter modal save flow — `DesignSystemTaskFilterActionBar` exposes the localized **Save filter** action next to Apply. Tapping it opens an inline name popup (`MenuAnchor`-anchored) with autofocus, Enter-to-commit, Escape-to-cancel, click-outside dismiss. The name is passed to `showTaskFilterModal`'s `onSavePressed` handler, which calls `create()` for new saves and `updateFilter()` when the user edits and re-saves the currently active filter under the same name.
 3. Mobile saved-filter rail + sheet (`lib/features/tasks/ui/saved_filters/mobile/`) — see "Mobile saved-filter rail" below. The mobile rail replaces the old header `· {savedFilterName}` suffix (the now-removed `_SavedFilterTitleSuffix`); the desktop layout still surfaces the active filter through the sidebar treeview.
 4. Save / update / delete confirmation toasts via the design-system toast (`context.showToast`, in `saved_task_filter_toast.dart`).
 

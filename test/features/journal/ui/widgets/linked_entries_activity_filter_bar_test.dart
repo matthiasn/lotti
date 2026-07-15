@@ -1,6 +1,7 @@
 import 'dart:ui' show SemanticsAction, Tristate;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,11 +22,13 @@ void main() {
   Future<void> pumpBar(
     WidgetTester tester, {
     List<Override> overrides = const [],
+    MediaQueryData? mediaQueryData,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const LinkedEntriesActivityFilterBar(entryId: entryId),
         overrides: overrides,
+        mediaQueryData: mediaQueryData,
       ),
     );
     await tester.pumpAndSettle();
@@ -114,6 +117,115 @@ void main() {
     );
     expect(tester.getSize(timerTarget).height, greaterThanOrEqualTo(48));
     expect(tester.getSize(sortTarget).height, greaterThanOrEqualTo(48));
+  });
+
+  testWidgets('activity pills stay compact and share the first row on phone', (
+    tester,
+  ) async {
+    await pumpBar(
+      tester,
+      mediaQueryData: const MediaQueryData(size: Size(402, 800)),
+    );
+
+    final timer = find.byKey(
+      const ValueKey('linked-entries-activity-timer-visual'),
+    );
+    final audio = find.byKey(
+      const ValueKey('linked-entries-activity-audio-visual'),
+    );
+    final images = find.byKey(
+      const ValueKey('linked-entries-activity-images-visual'),
+    );
+    final sort = find.byKey(
+      const ValueKey('linked-entries-sort-trigger-visual'),
+    );
+
+    final timerTop = tester.getTopLeft(timer).dy;
+    expect(tester.getTopLeft(audio).dy, timerTop);
+    expect(tester.getTopLeft(images).dy, timerTop);
+    expect(tester.getTopLeft(sort).dy, timerTop);
+    expect(
+      tester.getTopRight(timer).dx,
+      lessThan(tester.getTopLeft(audio).dx),
+    );
+    expect(
+      tester.getTopRight(audio).dx,
+      lessThan(tester.getTopLeft(images).dx),
+    );
+    expect(tester.getSize(timer).width, lessThan(120));
+  });
+
+  testWidgets('active pill and keyboard focus remain independently visible', (
+    tester,
+  ) async {
+    await pumpBar(tester);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+
+    final visual = tester.widget<AnimatedContainer>(
+      find.byKey(const ValueKey('linked-entries-activity-timer-visual')),
+    );
+    final decoration = visual.decoration! as BoxDecoration;
+    expect(decoration.color, dsTokensLight.colors.surface.selected);
+    expect(
+      decoration.border!.top.color,
+      dsTokensLight.colors.text.highEmphasis,
+    );
+    expect(
+      decoration.boxShadow!.single.color,
+      dsTokensLight.colors.interactive.enabled,
+    );
+    expect(
+      decoration.boxShadow!.single.spreadRadius,
+      dsTokensLight.spacing.step1,
+    );
+  });
+
+  testWidgets('sort trigger exposes active filters and a visible count', (
+    tester,
+  ) async {
+    await pumpBar(tester);
+
+    final element = tester.element(find.byType(LinkedEntriesActivityFilterBar));
+    final container = ProviderScope.containerOf(element);
+    container
+            .read(includeHiddenControllerProvider(entryId).notifier)
+            .includeHidden =
+        true;
+    container
+            .read(showFlaggedOnlyControllerProvider(entryId).notifier)
+            .showFlaggedOnly =
+        true;
+    await tester.pump();
+
+    final messages = await AppLocalizations.delegate.load(const Locale('en'));
+    final count = find.byKey(
+      const ValueKey('linked-entries-sort-trigger-active-count'),
+    );
+    expect(
+      find.descendant(of: count, matching: find.text('2')),
+      findsOneWidget,
+    );
+
+    final semantics = tester.getSemantics(
+      find.byKey(const ValueKey('linked-entries-sort-trigger')),
+    );
+    expect(semantics.label, contains(messages.journalLinkedEntriesShowHidden));
+    expect(
+      semantics.label,
+      contains(messages.journalLinkedEntriesShowFlaggedOnly),
+    );
+
+    final visual = tester.widget<Ink>(
+      find.byKey(const ValueKey('linked-entries-sort-trigger-visual')),
+    );
+    final decoration = visual.decoration! as BoxDecoration;
+    expect(decoration.color, dsTokensLight.colors.surface.selected);
+    expect(
+      decoration.border!.top.color,
+      dsTokensLight.colors.text.highEmphasis,
+    );
   });
 
   testWidgets('tapping a pill toggles its active kind in the controller', (

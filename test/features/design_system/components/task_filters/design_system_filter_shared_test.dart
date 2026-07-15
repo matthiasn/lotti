@@ -1,6 +1,7 @@
 import 'dart:ui' show CheckedState, Tristate;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
@@ -81,19 +82,26 @@ void main() {
       VoidCallback? onTap,
       Widget? leading,
       String? semanticsLabel,
+      String label = 'Priority',
+      MediaQueryData? mediaQueryData,
+      double? width,
     }) {
       return tester.pumpWidget(
         makeTestableWidget(
           Center(
-            child: DesignSystemFilterChoicePill(
-              label: 'Priority',
-              selected: selected,
-              role: role,
-              semanticsLabel: semanticsLabel,
-              leading: leading,
-              onTap: onTap,
+            child: SizedBox(
+              width: width,
+              child: DesignSystemFilterChoicePill(
+                label: label,
+                selected: selected,
+                role: role,
+                semanticsLabel: semanticsLabel,
+                leading: leading,
+                onTap: onTap,
+              ),
             ),
           ),
+          mediaQueryData: mediaQueryData,
         ),
       );
     }
@@ -209,6 +217,53 @@ void main() {
       expect(node.flagsCollection.isEnabled, Tristate.isFalse);
       expect(tester.widget<InkWell>(find.byType(InkWell)).onTap, isNull);
       await tester.tap(find.byType(DesignSystemFilterChoicePill));
+    });
+
+    testWidgets('keyboard focus adds a ring without hiding selection', (
+      tester,
+    ) async {
+      await pumpPill(tester, selected: true, onTap: () {});
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+
+      expect(decoration(tester).color, dsTokensLight.colors.surface.selected);
+      expect(
+        decoration(tester).border!.top.color,
+        dsTokensLight.colors.interactive.enabled,
+      );
+      expect(
+        decoration(tester).boxShadow!.single.color,
+        dsTokensLight.colors.text.highEmphasis,
+      );
+      expect(
+        decoration(tester).boxShadow!.single.spreadRadius,
+        dsTokensLight.spacing.step1,
+      );
+    });
+
+    testWidgets('large text can wrap to two lines and grow the target', (
+      tester,
+    ) async {
+      const label = 'A longer filter choice';
+      await pumpPill(
+        tester,
+        selected: false,
+        onTap: () {},
+        label: label,
+        width: dsTokensLight.spacing.step13,
+        mediaQueryData: const MediaQueryData(
+          size: Size(320, 800),
+          textScaler: TextScaler.linear(2),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.text(label));
+      expect(text.maxLines, 2);
+      expect(
+        tester.getSize(find.byType(DesignSystemFilterChoicePill)).height,
+        greaterThan(dsTokensLight.spacing.step9),
+      );
     });
   });
 }

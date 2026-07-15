@@ -3969,7 +3969,7 @@
   "tasksSavedFiltersGroupSemantics": "Filtres enregistrés",
   "tasksSavedFiltersRailButton": "Enregistrés",
   "tasksSavedFiltersRenameNamed": "Renommer {name}",
-  "tasksSavedFiltersSaveButtonLabel": "Enregistrer",
+  "tasksSavedFiltersSaveButtonLabel": "Enregistrer le filtre",
   "tasksSavedFiltersSaveCurrentAs": "Enregistrer le filtre actuel sous…",
   "tasksSavedFiltersSavePopupCancel": "Annuler",
   "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtre actif. Enregistré dans la barre latérale, sous Tâches.} other{{count} filtres actifs. Enregistrés dans la barre latérale, sous Tâches.}}",

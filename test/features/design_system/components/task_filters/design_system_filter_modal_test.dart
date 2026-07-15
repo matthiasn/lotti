@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -28,19 +29,33 @@ void main() {
         ],
         selectedIds: {'open'},
       ),
+      toggles: const [
+        DesignSystemTaskFilterToggle(
+          id: 'show-creation-date',
+          label: 'Show creation date',
+          value: false,
+        ),
+        DesignSystemTaskFilterToggle(
+          id: 'show-flagged',
+          label: 'Show flagged items',
+          value: true,
+        ),
+      ],
     );
   }
 
   Future<void> openModal(
     WidgetTester tester, {
     required ValueChanged<DesignSystemTaskFilterState> onApplied,
+    Size size = const Size(900, 900),
+    TextScaler textScaler = TextScaler.noScaling,
   }) async {
-    await tester.binding.setSurfaceSize(const Size(900, 900));
+    await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
       makeTestableWidget(
         SizedBox(
-          height: 900,
+          height: size.height,
           child: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -61,7 +76,7 @@ void main() {
             ),
           ),
         ),
-        mediaQueryData: const MediaQueryData(size: Size(900, 900)),
+        mediaQueryData: MediaQueryData(size: size, textScaler: textScaler),
       ),
     );
     await tester.tap(find.byKey(const ValueKey('trigger')));
@@ -208,4 +223,32 @@ void main() {
     expect(applyCalls, 0);
     expect(find.byType(DesignSystemTaskFilterSheet), findsNothing);
   });
+
+  for (final textScale in [1.0, 2.0]) {
+    testWidgets(
+      'mobile footer leaves the final toggle unobscured at ${textScale}x text',
+      (tester) async {
+        await openModal(
+          tester,
+          onApplied: (_) {},
+          size: const Size(390, 844),
+          textScaler: TextScaler.linear(textScale),
+        );
+
+        final finalToggle = find.ancestor(
+          of: find.text('Show flagged items'),
+          matching: find.byType(DesignSystemFilterToggleRow),
+        );
+        await tester.ensureVisible(finalToggle);
+        await tester.pump(const Duration(milliseconds: 500));
+
+        final actionBar = find.byType(DesignSystemTaskFilterActionBar);
+        expect(
+          tester.getBottomLeft(finalToggle).dy,
+          lessThanOrEqualTo(tester.getTopLeft(actionBar).dy),
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 }

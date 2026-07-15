@@ -9650,7 +9650,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Speichern';
+  String get tasksSavedFiltersSaveButtonLabel => 'Filter speichern';
 
   @override
   String get tasksSavedFiltersSaveCurrentAs =>

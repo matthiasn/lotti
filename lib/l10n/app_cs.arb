@@ -3754,7 +3754,7 @@
   "tasksSavedFiltersGroupSemantics": "Uložené filtry",
   "tasksSavedFiltersRailButton": "Uložené",
   "tasksSavedFiltersRenameNamed": "Přejmenovat {name}",
-  "tasksSavedFiltersSaveButtonLabel": "Uložit",
+  "tasksSavedFiltersSaveButtonLabel": "Uložit filtr",
   "tasksSavedFiltersSaveCurrentAs": "Uložit aktuální filtr jako…",
   "tasksSavedFiltersSavePopupCancel": "Zrušit",
   "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{Aktivní 1 filtr. Uloženo na boční panel pod Úkoly.} few{Aktivní {count} filtry. Uloženo na boční panel pod Úkoly.} other{Aktivních {count} filtrů. Uloženo na boční panel pod Úkoly.}}",

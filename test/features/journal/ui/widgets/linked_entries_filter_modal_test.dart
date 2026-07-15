@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,14 +18,26 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         Builder(
-          builder: (context) => Center(
-            child: ElevatedButton(
-              onPressed: () => showLinkedEntriesFilterModal(
-                context: context,
-                entryId: entryId,
+          builder: (context) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Consumer(
+                builder: (context, ref, _) {
+                  ref
+                    ..watch(linkedEntriesSortControllerProvider(entryId))
+                    ..watch(includeHiddenControllerProvider(entryId))
+                    ..watch(showFlaggedOnlyControllerProvider(entryId));
+                  return const SizedBox.shrink();
+                },
               ),
-              child: const Text('open'),
-            ),
+              ElevatedButton(
+                onPressed: () => showLinkedEntriesFilterModal(
+                  context: context,
+                  entryId: entryId,
+                ),
+                child: const Text('open'),
+              ),
+            ],
           ),
         ),
       ),
@@ -70,7 +84,7 @@ void main() {
     expect(dismissButton.tooltip, messages.doneButton);
   });
 
-  testWidgets('tapping "Oldest first" updates the sort controller', (
+  testWidgets('stages all choices until Done commits them together', (
     tester,
   ) async {
     final (_, container, messages) = await pumpAndOpenModal(tester);
@@ -83,63 +97,108 @@ void main() {
     await tester.tap(
       find.text(messages.journalLinkedEntriesSortOldestFirst),
     );
+    await tester.tap(find.text(messages.journalLinkedEntriesShowHidden));
+    await tester.tap(
+      find.text(messages.journalLinkedEntriesShowFlaggedOnly),
+    );
     await tester.pumpAndSettle();
 
+    // The modal reflects the draft, while the live list remains unchanged.
+    expect(
+      tester
+          .getSemantics(
+            find.byKey(
+              const ValueKey('linked-entries-sort-oldestFirst'),
+            ),
+          )
+          .flagsCollection
+          .isSelected,
+      Tristate.isTrue,
+    );
+    expect(
+      tester
+          .getSemantics(
+            find.bySemanticsLabel(messages.journalLinkedEntriesShowHidden),
+          )
+          .flagsCollection
+          .isToggled,
+      Tristate.isTrue,
+    );
     expect(
       container.read(linkedEntriesSortControllerProvider(entryId)),
-      LinkedEntriesSortOrder.oldestFirst,
+      LinkedEntriesSortOrder.newestFirst,
     );
-  });
-
-  testWidgets('tapping the show-hidden row flips the include-hidden state', (
-    tester,
-  ) async {
-    final (_, container, messages) = await pumpAndOpenModal(tester);
-
     expect(
       container.read(includeHiddenControllerProvider(entryId)),
       isFalse,
     );
+    expect(
+      container.read(showFlaggedOnlyControllerProvider(entryId)),
+      isFalse,
+    );
 
-    await tester.tap(find.text(messages.journalLinkedEntriesShowHidden));
+    await tester.tap(find.byTooltip(messages.doneButton));
     await tester.pumpAndSettle();
 
     expect(
-      container.read(includeHiddenControllerProvider(entryId)),
+      find.text(messages.journalLinkedEntriesFilterModalTitle),
+      findsNothing,
+    );
+    expect(
+      container.read(linkedEntriesSortControllerProvider(entryId)),
+      LinkedEntriesSortOrder.oldestFirst,
+    );
+    expect(container.read(includeHiddenControllerProvider(entryId)), isTrue);
+    expect(
+      container.read(showFlaggedOnlyControllerProvider(entryId)),
       isTrue,
     );
   });
 
-  testWidgets(
-    'tapping the flagged-only row flips the show-flagged-only state',
-    (tester) async {
-      final (_, container, messages) = await pumpAndOpenModal(tester);
+  testWidgets('toggling a draft choice twice restores its initial state', (
+    tester,
+  ) async {
+    final (_, container, messages) = await pumpAndOpenModal(tester);
 
-      expect(
-        container.read(showFlaggedOnlyControllerProvider(entryId)),
-        isFalse,
-      );
+    final flaggedLabel = messages.journalLinkedEntriesShowFlaggedOnly;
+    await tester.tap(find.text(flaggedLabel));
+    await tester.pump();
+    await tester.tap(find.text(flaggedLabel));
+    await tester.pumpAndSettle();
 
-      await tester.tap(
-        find.text(messages.journalLinkedEntriesShowFlaggedOnly),
-      );
-      await tester.pumpAndSettle();
+    expect(
+      tester
+          .getSemantics(find.bySemanticsLabel(flaggedLabel))
+          .flagsCollection
+          .isToggled,
+      Tristate.isFalse,
+    );
+    expect(
+      container.read(showFlaggedOnlyControllerProvider(entryId)),
+      isFalse,
+    );
+  });
 
-      expect(
-        container.read(showFlaggedOnlyControllerProvider(entryId)),
-        isTrue,
-      );
+  testWidgets('barrier dismissal discards the staged draft', (tester) async {
+    final (_, container, messages) = await pumpAndOpenModal(tester);
 
-      // Toggling again restores the default.
-      await tester.tap(
-        find.text(messages.journalLinkedEntriesShowFlaggedOnly),
-      );
-      await tester.pumpAndSettle();
+    await tester.tap(
+      find.text(messages.journalLinkedEntriesSortOldestFirst),
+    );
+    await tester.tap(find.text(messages.journalLinkedEntriesShowHidden));
+    await tester.pumpAndSettle();
 
-      expect(
-        container.read(showFlaggedOnlyControllerProvider(entryId)),
-        isFalse,
-      );
-    },
-  );
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(messages.journalLinkedEntriesFilterModalTitle),
+      findsNothing,
+    );
+    expect(
+      container.read(linkedEntriesSortControllerProvider(entryId)),
+      LinkedEntriesSortOrder.newestFirst,
+    );
+    expect(container.read(includeHiddenControllerProvider(entryId)), isFalse);
+  });
 }

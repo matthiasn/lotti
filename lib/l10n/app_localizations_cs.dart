@@ -9691,7 +9691,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Uložit';
+  String get tasksSavedFiltersSaveButtonLabel => 'Uložit filtr';
 
   @override
   String get tasksSavedFiltersSaveCurrentAs => 'Uložit aktuální filtr jako…';

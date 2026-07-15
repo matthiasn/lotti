@@ -176,6 +176,31 @@ void main() {
     expect(border.top.color, dsTokensLight.colors.interactive.enabled);
     expect(border.top.width, dsTokensLight.spacing.step1);
   });
+
+  testWidgets('large text removes the title line cap', (tester) async {
+    const title = 'A long project label that must remain fully readable';
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const SizedBox(
+          width: 220,
+          child: DesignSystemSelectionRow(
+            title: title,
+            type: DesignSystemSelectionRowType.singleSelect,
+            onTap: null,
+          ),
+        ),
+        theme: DesignSystemTheme.light(),
+        mediaQueryData: const MediaQueryData(
+          size: Size(320, 800),
+          textScaler: TextScaler.linear(2),
+        ),
+      ),
+    );
+
+    final text = tester.widget<Text>(find.text(title));
+    expect(text.maxLines, isNull);
+    expect(text.overflow, TextOverflow.clip);
+  });
 }
 
 Future<void> _pump(WidgetTester tester, Widget child) async {
