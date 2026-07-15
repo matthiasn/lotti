@@ -335,11 +335,7 @@ void main() {
           mediaQueryData: const MediaQueryData(size: Size(800, 600)),
         );
 
-        tester
-            .widget<DashboardChartAddButton>(
-              find.byType(DashboardChartAddButton),
-            )
-            .onPressed();
+        await tester.tap(find.byType(DashboardChartAddButton));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
@@ -374,11 +370,7 @@ void main() {
 
         expect(find.text('Daily energy level'), findsOneWidget);
 
-        tester
-            .widget<DashboardChartAddButton>(
-              find.byType(DashboardChartAddButton),
-            )
-            .onPressed();
+        await tester.tap(find.byType(DashboardChartAddButton));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
