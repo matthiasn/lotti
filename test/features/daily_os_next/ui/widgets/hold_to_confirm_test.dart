@@ -109,6 +109,54 @@ void main() {
       expect(fires, 1);
     });
 
+    testWidgets('losing focus cancels an unfinished hold', (tester) async {
+      var fires = 0;
+      final otherFocusNode = FocusNode();
+      addTearDown(otherFocusNode.dispose);
+      await tester.pumpWidget(
+        _wrap(
+          Material(
+            child: Column(
+              children: [
+                HoldToConfirm(
+                  onConfirmed: () => fires++,
+                  holdDuration: const Duration(milliseconds: 400),
+                ),
+                Focus(
+                  focusNode: otherFocusNode,
+                  child: const SizedBox.shrink(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final holdFocus = tester.widget<Focus>(
+        find.byKey(const Key('hold-to-confirm-focus')),
+      );
+      holdFocus.focusNode!.requestFocus();
+      await tester.pump();
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(HoldToConfirm)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      final messages = tester.element(find.byType(HoldToConfirm)).messages;
+      expect(
+        find.text(messages.dailyOsNextCommitHoldWordHolding),
+        findsOneWidget,
+      );
+
+      otherFocusNode.requestFocus();
+      await tester.pump();
+      await gesture.cancel();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text(messages.dailyOsNextCommitHoldWordIdle), findsOneWidget);
+      expect(fires, 0);
+    });
+
     testWidgets(
       'circle word walks Hold → Keep holding → Committed, helper line '
       'clears once committed',

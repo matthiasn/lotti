@@ -156,6 +156,52 @@ void main() {
         debugDefaultTargetPlatformOverride = null;
       }
     });
+
+    testWidgets('Down and Up move focus between tree rows', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      try {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Material(
+              child: AppCommandHost(
+                handlers: const {},
+                child: Column(
+                  children: [
+                    SettingsTreeNodeWidget(node: _flagsLeaf(), depth: 0),
+                    const SettingsTreeNodeWidget(
+                      node: SettingsNode(
+                        id: 'about',
+                        icon: Icons.info_outline,
+                        title: 'About',
+                        desc: 'About Lotti',
+                        panel: 'about',
+                      ),
+                      depth: 0,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        final firstFocus = FocusManager.instance.primaryFocus;
+        expect(firstFocus, isNotNull);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pump();
+        final secondFocus = FocusManager.instance.primaryFocus;
+        expect(secondFocus, isNot(firstFocus));
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+        await tester.pump();
+        expect(FocusManager.instance.primaryFocus, firstFocus);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
   });
 
   group('SettingsTreeNodeWidget — recursion', () {

@@ -196,6 +196,39 @@ void main() {
       expect(deltas[1], greaterThan(deltas.first));
       expect(deltas.last, lessThan(0));
     });
+
+    testWidgets('semantics actions resize in both directions', (tester) async {
+      final semanticsHandle = tester.ensureSemantics();
+      final deltas = <double>[];
+      await tester.pumpWidget(buildTestWidget(onDrag: deltas.add));
+
+      final semanticsNode = tester.getSemantics(
+        find
+            .descendant(
+              of: find.byType(ResizableDivider),
+              matching: find.byType(Semantics),
+            )
+            .first,
+      );
+      for (final action in [
+        SemanticsAction.increase,
+        SemanticsAction.decrease,
+      ]) {
+        tester.binding.performSemanticsAction(
+          SemanticsActionEvent(
+            type: action,
+            nodeId: semanticsNode.id,
+            viewId: tester.view.viewId,
+          ),
+        );
+        await tester.pump();
+      }
+
+      expect(deltas, hasLength(2));
+      expect(deltas.first, greaterThan(0));
+      expect(deltas.last, -deltas.first);
+      semanticsHandle.dispose();
+    });
   });
 
   group('ResizableDivider hover interaction', () {
@@ -259,8 +292,13 @@ void main() {
       await gesture.moveBy(const Offset(10, 0));
       await tester.pump();
 
-      // Cancel the drag
-      await gesture.cancel();
+      final dragTarget = tester.widget<GestureDetector>(
+        find.descendant(
+          of: find.byType(ResizableDivider),
+          matching: find.byType(GestureDetector),
+        ),
+      );
+      dragTarget.onHorizontalDragCancel!();
       await tester.pump();
 
       final animatedContainer = tester.widget<AnimatedContainer>(
@@ -271,6 +309,7 @@ void main() {
       );
       expect(animatedContainer.constraints, isNotNull);
       expect(animatedContainer.constraints!.maxWidth, 1);
+      await gesture.up();
     });
   });
 
