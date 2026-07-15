@@ -256,6 +256,208 @@ void main() {
     state.controller.position.isScrollingNotifier.value = false;
   });
 
+  testWidgets(
+    'pins later content before paint across successive reported size changes',
+    (tester) async {
+      final paintedMarkerTops = <double>[];
+      final key = GlobalKey<_ReportedSizeHarnessState>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          _ReportedSizeHarness(
+            key: key,
+            onMarkerPaint: paintedMarkerTops.add,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final state = key.currentState!..controller.jumpTo(300);
+      await tester.pump();
+      final markerTop = tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy;
+      paintedMarkerTops.clear();
+
+      state
+        ..hold()
+        ..resize(150);
+      await tester.pump();
+
+      expect(state.controller.offset, closeTo(400, 0.1));
+      expect(
+        tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+        closeTo(markerTop, 0.1),
+      );
+      expect(paintedMarkerTops.last, closeTo(markerTop, 0.1));
+
+      state.resize(300);
+      await tester.pump();
+
+      expect(state.controller.offset, closeTo(550, 0.1));
+      expect(
+        tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+        closeTo(markerTop, 0.1),
+      );
+      expect(
+        paintedMarkerTops.every((top) => (top - markerTop).abs() <= 0.1),
+        isTrue,
+      );
+
+      state.resize(200);
+      await tester.pump();
+
+      expect(state.controller.offset, closeTo(450, 0.1));
+      expect(
+        tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+        closeTo(markerTop, 0.1),
+      );
+    },
+  );
+
+  testWidgets('reported size changes stop anchoring after a user scroll', (
+    tester,
+  ) async {
+    final key = GlobalKey<_ReportedSizeHarnessState>();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(_ReportedSizeHarness(key: key)),
+    );
+    await tester.pump();
+
+    final state = key.currentState!..controller.jumpTo(300);
+    await tester.pump();
+    state.hold();
+    state.controller.jumpTo(340);
+    await tester.pump();
+    final markerTopAfterScroll = tester
+        .getTopLeft(find.byKey(_reportedMarkerKey))
+        .dy;
+
+    state.resize(150);
+    await tester.pump();
+
+    expect(state.controller.offset, 340);
+    expect(
+      tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+      closeTo(markerTopAfterScroll + 100, 0.1),
+    );
+  });
+
+  testWidgets('sub-pixel offset noise does not release the hold', (
+    tester,
+  ) async {
+    final key = GlobalKey<_ReportedSizeHarnessState>();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(_ReportedSizeHarness(key: key)),
+    );
+    await tester.pump();
+
+    final state = key.currentState!..controller.jumpTo(300);
+    await tester.pump();
+    state.hold();
+    state.controller.jumpTo(300.75);
+    await tester.pump();
+    final markerTopBeforeResize = tester
+        .getTopLeft(find.byKey(_reportedMarkerKey))
+        .dy;
+
+    state.resize(150);
+    await tester.pump();
+
+    expect(state.controller.offset, closeTo(400.75, 0.1));
+    expect(
+      tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+      closeTo(markerTopBeforeResize, 0.1),
+    );
+  });
+
+  testWidgets('reported size changes stop anchoring when the hold expires', (
+    tester,
+  ) async {
+    final key = GlobalKey<_ReportedSizeHarnessState>();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(_ReportedSizeHarness(key: key)),
+    );
+    await tester.pump();
+
+    final state = key.currentState!..controller.jumpTo(300);
+    await tester.pump();
+    state.controller.hold(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 101));
+    final markerTopBeforeResize = tester
+        .getTopLeft(find.byKey(_reportedMarkerKey))
+        .dy;
+
+    state.resize(150);
+    await tester.pump();
+
+    expect(state.controller.offset, 300);
+    expect(
+      tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+      closeTo(markerTopBeforeResize + 100, 0.1),
+    );
+  });
+
+  testWidgets(
+    'an animated-size completion does not release an explicit region hold',
+    (tester) async {
+      final key = GlobalKey<_ReportedSizeHarnessState>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(_ReportedSizeHarness(key: key)),
+      );
+      await tester.pump();
+
+      final state = key.currentState!..controller.jumpTo(400);
+      await tester.pump();
+      final markerTop = tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy;
+
+      state
+        ..hold()
+        ..resizeAnimatedRegion(150);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(state.controller.offset, closeTo(500, 1));
+      expect(
+        tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+        closeTo(markerTop, 1),
+      );
+
+      state.resize(150);
+      await tester.pump();
+
+      expect(state.controller.offset, closeTo(600, 1));
+      expect(
+        tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+        closeTo(markerTop, 1),
+      );
+    },
+  );
+
+  testWidgets(
+    'an automatic animated hold ignores a visible reported-region change',
+    (tester) async {
+      final key = GlobalKey<_ReportedSizeHarnessState>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(_ReportedSizeHarness(key: key)),
+      );
+      await tester.pump();
+
+      final state = key.currentState!..controller.jumpTo(400);
+      await tester.pump();
+      final markerTop = tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy;
+
+      state
+        ..resizeAnimatedRegion(150)
+        ..resize(150);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(state.controller.offset, closeTo(500, 1));
+      expect(
+        tester.getTopLeft(find.byKey(_reportedMarkerKey)).dy,
+        closeTo(markerTop + 100, 1),
+      );
+    },
+  );
+
   testWidgets('holds visible content while growing at the bottom extent', (
     tester,
   ) async {
@@ -296,6 +498,7 @@ void main() {
 
 const _animatedSizeKey = Key('stable-animated-size');
 const _markerKey = Key('stable-marker');
+const _reportedMarkerKey = Key('reported-stable-marker');
 
 class _StableSizeHarness extends StatefulWidget {
   const _StableSizeHarness({
@@ -380,6 +583,75 @@ class _StableSizeHarnessState extends State<_StableSizeHarness> {
                   valueListenable: tailHeight,
                   builder: (context, value, child) => SizedBox(height: value),
                 ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReportedSizeHarness extends StatefulWidget {
+  const _ReportedSizeHarness({this.onMarkerPaint, super.key});
+
+  final ValueChanged<double>? onMarkerPaint;
+
+  @override
+  State<_ReportedSizeHarness> createState() => _ReportedSizeHarnessState();
+}
+
+class _ReportedSizeHarnessState extends State<_ReportedSizeHarness> {
+  final controller = ViewportStableScrollController();
+  final height = ValueNotifier<double>(50);
+  final animatedRegionHeight = ValueNotifier<double>(50);
+
+  void hold() => controller.hold(const Duration(seconds: 2));
+
+  // ignore: use_setters_to_change_properties
+  void resize(double value) => height.value = value;
+
+  // ignore: use_setters_to_change_properties
+  void resizeAnimatedRegion(double value) => animatedRegionHeight.value = value;
+
+  @override
+  void dispose() {
+    height.dispose();
+    animatedRegionHeight.dispose();
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SizedBox(
+        height: 600,
+        child: TaskScrollStabilityScope(
+          controller: controller,
+          child: SingleChildScrollView(
+            controller: controller,
+            child: Column(
+              children: [
+                const SizedBox(height: 300),
+                ViewportStableAnimatedSize(
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: animatedRegionHeight,
+                    builder: (context, value, child) => SizedBox(height: value),
+                  ),
+                ),
+                const SizedBox(height: 50),
+                ViewportStableSizeReporter(
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: height,
+                    builder: (context, value, child) => SizedBox(height: value),
+                  ),
+                ),
+                PaintPositionRecorder(
+                  onPaint: widget.onMarkerPaint,
+                  child: const SizedBox(key: _reportedMarkerKey, height: 40),
+                ),
+                const SizedBox(height: 1600),
               ],
             ),
           ),

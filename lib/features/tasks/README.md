@@ -210,34 +210,47 @@ subtle frame in light and dark themes.
   Because the AI card sits *below* the work, confirming a proposal can change
   the checklist height above it and shove the proposals the user just tapped —
   either *up* (a checked-off item's row collapses) or *down* (a new to-do is
-  added). `TaskDetailsPage` guards against both with a `ScrollAnchor`
-  (`util/scroll_anchor.dart`). `AiSummaryCard` signals the page synchronously
-  when a resolve gesture starts, before checklist persistence can relayout the
-  page; the `unifiedSuggestionListProvider` count listener remains a fallback
-  for externally resolved proposals. The anchor pins the proposals' on-screen
-  viewport position for a `holdDuration` so the page stays put across the
-  relayout instead of jumping. Source-entry transcripts and image analysis use
-  a separate pre-paint path: `ViewportStableAnimatedSize` arms the page's
-  `ViewportStableScrollController` when an off-screen animated region is about
-  to relayout. Its custom scroll position consumes the resulting content-extent
-  delta in `correctForNewDimensions`, causing Flutter to repeat viewport layout
-  with the corrected offset before anything paints. The scroll position
-  consumes the animated region's measured height delta—not the whole page's
-  extent delta—so the inference indicator collapsing below the viewport in the
-  same frame cannot leave a fixed residual nudge. A render-level layout
-  invalidation hook also covers analysis consumers that rebuild below the
-  wrapper without invoking its `didUpdateWidget`. Newly
-  created checklist rows and checklist cards reveal through `SizeFadeEntrance`,
-  so the compensated layout change is a progressive expansion rather than a
-  one-frame insertion. The window spans
-  the checked item's *delayed* row collapse
-  (`checklistCompletionAnimationDuration` +
-  `checklistCompletionFadeDuration` + buffer), which lands ~a second after the
-  tap — long after a short frame burst would have ended. Because the window is
-  long, the hold releases the moment the user scrolls (an offset change the
-  anchor did not itself make) so it never fights a deliberate scroll; the
-  deadline is measured from frame timestamps, so it is frame-rate independent
-  and deterministic under `pump`.
+  added). `AiSummaryCard` therefore signals `TaskDetailsPage` synchronously when
+  a resolve gesture begins, before checklist persistence can relayout the page.
+  The page arms its `ViewportStableScrollController`, while
+  `ViewportStableSizeReporter` wraps the checklist band and reports every
+  measured height delta. The custom scroll position consumes those deltas in
+  `correctForNewDimensions`, causing Flutter to repeat viewport layout at the
+  corrected offset before anything paints. This matters for Confirm all:
+  `ChangeSetConfirmationService` applies its items sequentially, so checklist
+  additions may reach Riverpod as several refresh waves rather than one atomic
+  rebuild. Each wave is corrected independently without an intermediate jump.
+
+  ```mermaid
+  flowchart LR
+    Tap[Confirm / Confirm all] --> Arm[arm viewport hold]
+    Tap --> Apply[confirm pending items]
+    Apply -->|sequential writes| Refresh[checklist refresh waves]
+    Refresh --> Enter[SizeFadeEntrance per new row/card]
+    Enter --> Report[ViewportStableSizeReporter measures delta]
+    Report --> Layout[correctForNewDimensions adjusts offset]
+    Layout --> Paint[paint anchored suggestion area]
+    Arm -. residual fallback .-> Anchor[ScrollAnchor]
+  ```
+
+  The existing `ScrollAnchor` remains a fallback for proposal-driven changes in
+  other task regions above the AI card, and the
+  `unifiedSuggestionListProvider` count listener arms both paths for externally
+  resolved proposals. Newly created checklist rows and cards still reveal
+  through `SizeFadeEntrance`; the stabilizer preserves geometry rather than
+  suppressing useful motion. The hold spans the checked item's delayed row
+  collapse (`checklistCompletionAnimationDuration` +
+  `checklistCompletionFadeDuration` + buffer), and repeated resolve starts
+  refresh it for bulk actions. Both stabilization paths release immediately on
+  a user scroll so they never fight deliberate navigation.
+
+  Source-entry transcripts and image analysis use the same pre-paint controller
+  through `ViewportStableAnimatedSize`. That wrapper arms itself only when its
+  changing region is fully above the viewport, animates the region's height,
+  and reports the exact region delta. A render-level invalidation hook covers
+  analysis consumers that rebuild below the wrapper without invoking its
+  `didUpdateWidget`; unrelated content changes in the same frame therefore
+  cannot leave a residual nudge.
 - linked entries with timer-aware highlighting (card padding evened onto tokens)
 - reverse linked-from entries
 - `TaskActionBar` — a sticky frosted-glass bar hosted in the page's
@@ -738,18 +751,20 @@ Examples:
 
 That separation is deliberate. The task feature owns the task experience; it should not become a secret duplicate of the AI feature.
 
-`TaskDetailsPage` wraps its scroll view in `TaskScrollStabilityScope`. Both
-nested AI response cards and the source-entry editors that receive audio
-transcripts or image-analysis markdown opt into `ViewportStableAnimatedSize`
-only inside that scope. If the changing region is visible, its top and the page
-scroll offset stay fixed while it unfolds downward. If the region is fully
-above the viewport, `ViewportStableScrollController` compensates each measured
-region-height delta from the viewport's own layout cycle—even when only the
-editor consumer rebuilt and unrelated content elsewhere changes in the same
-frame—so the content currently being read never paints at an intermediate
-displaced position. User scrolling cancels the hold
-immediately, and the standalone journal-entry detail page remains outside the
-scope.
+`TaskDetailsPage` wraps its scroll view in `TaskScrollStabilityScope`. The scope
+has two region adapters backed by the same `ViewportStableScrollController`:
+
+- `ViewportStableAnimatedSize` animates generated entry text and nested AI
+  response height, automatically arming only when the region is fully above the
+  viewport.
+- `ViewportStableSizeReporter` adds no motion; the checklist band uses it while
+  a suggestion-resolution hold is armed because its rows already own their
+  entrance/completion animations.
+
+Both adapters feed exact region-height deltas into the viewport's own layout
+cycle, so the content currently being read never paints at an intermediate
+displaced position. User scrolling cancels the hold immediately, and the
+standalone journal-entry detail page remains outside the scope.
 
 ## Current Constraints
 

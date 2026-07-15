@@ -67,10 +67,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   final GlobalKey _belowCardKey = GlobalKey(debugLabel: 'task_below_card');
   Timer? _suggestionsRetryTimer;
 
-  /// Holds the AI proposals' on-screen position when a proposal is confirmed:
-  /// confirming a suggestion can add a checklist item *above* the AI card,
-  /// which would otherwise shove the card (and the proposal the user just
-  /// tapped) downward. The anchor keeps the spot stable across that relayout.
+  /// Fallback anchor for above-card changes that do not report their own size
+  /// delta to [_scrollController]. Checklist changes use the controller's
+  /// pre-paint correction path; this anchor still covers other proposal-driven
+  /// task mutations.
   late final ScrollAnchor _suggestionsAnchor;
 
   /// Holds the content below the AI card fixed while the card grows off-screen
@@ -82,6 +82,14 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   /// a buffer, so the below-card pin holds for the whole growth animation.
   static final Duration _belowCardGrowthHold =
       MotionDurations.medium2 + const Duration(milliseconds: 200);
+
+  /// Covers delayed checklist completion collapse plus a small persistence and
+  /// notification buffer. Repeated resolve starts refresh this window, which
+  /// keeps a sequential confirm-all batch armed until its final mutation.
+  static final Duration _suggestionResolveHold =
+      checklistCompletionAnimationDuration +
+      checklistCompletionFadeDuration +
+      const Duration(milliseconds: 200);
   int? _lastOpenSuggestionCount;
 
   /// The task the [_lastOpenSuggestionCount] belongs to. If this page's state is
@@ -110,10 +118,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       // it (hold + cross-fade) ~a second later. That shrink lands above the AI
       // card; without spanning it the card slides up out from under the user's
       // next tap. The hold bows out early if the user scrolls in the meantime.
-      holdDuration:
-          checklistCompletionAnimationDuration +
-          checklistCompletionFadeDuration +
-          const Duration(milliseconds: 200),
+      holdDuration: _suggestionResolveHold,
     );
 
     _belowCardAnchor = ScrollAnchor(
@@ -145,6 +150,17 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     return renderObject.localToGlobal(Offset.zero).dy;
   }
 
+  /// Arms both stabilization layers before proposal persistence begins.
+  ///
+  /// Checklist rows report their height deltas to [_scrollController], which
+  /// corrects during viewport layout so no displaced frame is painted. The
+  /// post-frame [_suggestionsAnchor] remains a fallback for mutations in other
+  /// task regions above the proposals.
+  void _holdSuggestionsStable() {
+    _scrollController.hold(_suggestionResolveHold);
+    _suggestionsAnchor.hold();
+  }
+
   /// When the open-proposal count drops (a proposal was confirmed/dismissed),
   /// pin the proposals' position so the relayout above them doesn't yank the
   /// page down under the user's eyes.
@@ -164,7 +180,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     if (nextOpen != null) _lastOpenSuggestionCount = nextOpen;
     if (nextOpen == null) return;
     if (previousOpen != null && nextOpen < previousOpen) {
-      _suggestionsAnchor.hold();
+      _holdSuggestionsStable();
     } else if (nextOpen > (previousOpen ?? 0)) {
       // A new proposal grew the card. If it has scrolled fully above the
       // viewport (the user can't see it), pin the content below the card so the
@@ -326,7 +342,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                       child: TaskForm(
                         taskId: widget.taskId,
                         suggestionsFocusKey: _suggestionsKey,
-                        onSuggestionResolveStart: _suggestionsAnchor.hold,
+                        onSuggestionResolveStart: _holdSuggestionsStable,
                       ),
                     ),
                   ),

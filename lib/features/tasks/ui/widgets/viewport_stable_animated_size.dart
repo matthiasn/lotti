@@ -18,36 +18,106 @@ class ViewportStableScrollController extends ScrollController {
     super.initialScrollOffset,
     super.keepScrollOffset,
     super.debugLabel,
-  });
-
-  bool _isHolding = false;
-  double _pendingExtentDelta = 0;
-  Timer? _releaseTimer;
-
-  /// Preserves the current viewport content until [duration] elapses.
-  void hold(Duration duration) {
-    if (duration <= Duration.zero) return;
-    _isHolding = true;
-    _releaseTimer?.cancel();
-    _releaseTimer = Timer(duration, _releaseAnchor);
+  }) {
+    addListener(_releaseOnUnexpectedOffsetChange);
   }
 
-  void _releaseAnchor() {
-    _releaseTimer?.cancel();
-    _releaseTimer = null;
-    _isHolding = false;
+  bool _isExplicitlyHolding = false;
+  bool _isAnimatedSizeHolding = false;
+  double _pendingExtentDelta = 0;
+  double? _expectedOffset;
+  Timer? _explicitReleaseTimer;
+  Timer? _animatedSizeReleaseTimer;
+
+  static const _tolerance = 1.0;
+
+  bool get _isHolding => _isExplicitlyHolding || _isAnimatedSizeHolding;
+
+  /// Explicitly preserves reported-region content until [duration] elapses.
+  ///
+  /// This hold is independent of the shorter automatic holds owned by
+  /// [ViewportStableAnimatedSize], so an unrelated animation ending cannot
+  /// release a checklist suggestion batch early.
+  void hold(Duration duration) {
+    if (duration <= Duration.zero) return;
+    _beginHold();
+    _isExplicitlyHolding = true;
+    _explicitReleaseTimer?.cancel();
+    _explicitReleaseTimer = Timer(duration, _releaseExplicitHold);
+  }
+
+  void _holdAnimatedSize(Duration duration) {
+    if (duration <= Duration.zero) return;
+    _beginHold();
+    _isAnimatedSizeHolding = true;
+    _animatedSizeReleaseTimer?.cancel();
+    _animatedSizeReleaseTimer = Timer(duration, _releaseAnimatedSizeHold);
+  }
+
+  void _beginHold() {
+    _expectedOffset = positions.length == 1 ? offset : null;
+  }
+
+  void _releaseOnUnexpectedOffsetChange() {
+    if (!_isHolding || positions.length != 1) return;
+    final expectedOffset = _expectedOffset;
+    if (expectedOffset == null) return;
+    if ((offset - expectedOffset).abs() > _tolerance) {
+      _releaseAllHolds();
+    }
+  }
+
+  void _releaseExplicitHold() {
+    _explicitReleaseTimer?.cancel();
+    _explicitReleaseTimer = null;
+    _isExplicitlyHolding = false;
+    _resetIfIdle();
+  }
+
+  void _releaseAnimatedSizeHold() {
+    _animatedSizeReleaseTimer?.cancel();
+    _animatedSizeReleaseTimer = null;
+    _isAnimatedSizeHolding = false;
+    _resetIfIdle();
+  }
+
+  void _releaseAllHolds() {
+    _explicitReleaseTimer?.cancel();
+    _explicitReleaseTimer = null;
+    _animatedSizeReleaseTimer?.cancel();
+    _animatedSizeReleaseTimer = null;
+    _isExplicitlyHolding = false;
+    _isAnimatedSizeHolding = false;
+    _resetIfIdle();
+  }
+
+  void _resetIfIdle() {
+    if (_isHolding) return;
     _pendingExtentDelta = 0;
+    _expectedOffset = null;
   }
 
   void _releaseAfterFrame() {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _releaseAnchor());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _releaseAnimatedSizeHold();
+    });
   }
 
   void _reportExtentDelta(double delta) {
-    if (!_isHolding ||
-        delta.abs() <= _ViewportStableScrollPosition._tolerance) {
+    if (!_isHolding || delta.abs() <= _tolerance) {
       return;
     }
+    _queueExtentDelta(delta);
+  }
+
+  void _reportExplicitExtentDelta(double delta) {
+    if (!_isExplicitlyHolding || delta.abs() <= _tolerance) {
+      return;
+    }
+    _queueExtentDelta(delta);
+  }
+
+  void _queueExtentDelta(double delta) {
     _pendingExtentDelta += delta;
     // The total scroll extent can remain unchanged when unrelated content
     // below shrinks in the same frame. Flag the position so
@@ -81,7 +151,8 @@ class ViewportStableScrollController extends ScrollController {
 
   @override
   void dispose() {
-    _releaseAnchor();
+    removeListener(_releaseOnUnexpectedOffsetChange);
+    _releaseAllHolds();
     super.dispose();
   }
 }
@@ -98,7 +169,6 @@ class _ViewportStableScrollPosition extends ScrollPositionWithSingleContext {
   });
 
   final ViewportStableScrollController controller;
-  static const _tolerance = 0.5;
 
   @override
   bool correctForNewDimensions(
@@ -107,18 +177,21 @@ class _ViewportStableScrollPosition extends ScrollPositionWithSingleContext {
   ) {
     if (!super.correctForNewDimensions(oldPosition, newPosition)) return false;
     if (isScrollingNotifier.value) {
-      controller._releaseAnchor();
+      controller._releaseAllHolds();
       return true;
     }
 
     if (!controller._isHolding) return true;
     final delta = controller._takePendingExtentDelta();
-    if (delta.abs() <= _tolerance) return true;
+    if (delta.abs() <= ViewportStableScrollController._tolerance) return true;
     final target = (pixels + delta).clamp(
       newPosition.minScrollExtent,
       newPosition.maxScrollExtent,
     );
-    if ((target - pixels).abs() <= _tolerance) return true;
+    if ((target - pixels).abs() <= ViewportStableScrollController._tolerance) {
+      return true;
+    }
+    controller._expectedOffset = target;
     correctPixels(target);
     return false;
   }
@@ -145,6 +218,37 @@ class TaskScrollStabilityScope extends InheritedWidget {
   bool updateShouldNotify(TaskScrollStabilityScope oldWidget) {
     return controller != oldWidget.controller;
   }
+}
+
+/// Reports this region's height changes to the task-details scroll controller.
+///
+/// The reporter adds no animation of its own. While the controller is
+/// explicitly held, every measured height delta is consumed from the
+/// viewport's layout cycle before paint. This is intended for regions such as
+/// checklists that already animate their inserted rows but can receive several
+/// asynchronous mutations from one user action.
+///
+/// Outside [TaskScrollStabilityScope] this is a direct pass-through.
+class ViewportStableSizeReporter extends StatelessWidget {
+  const ViewportStableSizeReporter({
+    required this.child,
+    super.key,
+  });
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = TaskScrollStabilityScope.maybeControllerOf(context);
+    if (controller is! ViewportStableScrollController) return child;
+    return _LayoutInvalidationReporter(
+      onWillLayout: _noop,
+      onHeightDelta: controller._reportExplicitExtentDelta,
+      child: child,
+    );
+  }
+
+  static void _noop() {}
 }
 
 /// Smoothly follows child height changes while keeping later visible content
@@ -214,7 +318,7 @@ class _ViewportStableAnimatedSizeState
     final controller = _controller;
     if (bottom <= viewportTop && controller is ViewportStableScrollController) {
       _shouldReportHeightDelta = true;
-      controller.hold(widget.duration + MotionDurations.short2);
+      controller._holdAnimatedSize(widget.duration + MotionDurations.short2);
     }
   }
 

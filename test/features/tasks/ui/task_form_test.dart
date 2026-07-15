@@ -12,6 +12,7 @@ import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
+import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -145,6 +146,13 @@ void main() {
       expect(find.byType(AiSummaryCard), findsOneWidget);
       expect(find.byType(LinkedTasksWidget), findsOneWidget);
       expect(find.byType(ChecklistsWidget), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.byType(ChecklistsWidget),
+          matching: find.byType(ViewportStableSizeReporter),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('agent report shows content when agent has report', (

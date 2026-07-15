@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and speech-dictionary terms are applied during recognition. The archived M4A
   remains unchanged and temporary files are removed after every request.
 
+### Fixed
+- **Accepting checklist suggestions no longer makes the task page jitter.**
+  Single and bulk accepts now keep the suggestion area anchored before each
+  checklist layout change is painted, even when several to-dos arrive across
+  successive refreshes.
+
 ## [0.9.1044]
 ### Changed
 - **Daily OS now lets you choose its AI route explicitly.** A discoverable
