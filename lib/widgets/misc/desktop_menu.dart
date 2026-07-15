@@ -1,16 +1,11 @@
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_quill/flutter_quill.dart';
-import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_catalog.dart';
 import 'package:lotti/features/keyboard/domain/app_command_text.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -42,28 +37,11 @@ class DesktopMenuWrapper extends StatelessWidget {
       return child;
     }
 
-    // Use Localizations instead of MaterialApp to avoid creating an extra
-    // root Navigator. An outer MaterialApp would shadow the themed
-    // MaterialApp.router below and cause modals opened with
-    // useRootNavigator:true to lose the app's dark/light theme.
-    final locale =
-        Localizations.maybeLocaleOf(context) ??
-        ui.PlatformDispatcher.instance.locale;
-
-    return Localizations(
-      locale: locale,
-      delegates: const [
-        AppLocalizations.delegate,
-        FormBuilderLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        // DesktopMenuWrapper now lives inside MaterialApp.builder on macOS.
-        // Its nested Localizations scope therefore has to mirror every app
-        // delegate; omitting Quill replaces the formatting toolbar with a grey
-        // release-mode ErrorWidget as soon as an editor gains focus.
-        FlutterQuillLocalizations.delegate,
-      ],
+    // Preserve the app-level delegates while introducing the localization
+    // scope required by PlatformMenuBar. Inheriting them avoids shadowing
+    // editor localizations and automatically includes delegates added later.
+    return Localizations.override(
+      context: context,
       child: Builder(
         builder: (context) {
           final commandController = AppCommandControllerProvider.maybeOf(

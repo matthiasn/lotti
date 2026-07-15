@@ -9,6 +9,8 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 
+import '../../widget_test_utils.dart';
+
 void main() {
   group('DesktopMenuWrapper', () {
     // The zoom callbacks the wrapper holds are the closures that get wired
@@ -53,12 +55,11 @@ void main() {
           debugDefaultTargetPlatformOverride = TargetPlatform.android;
           try {
             await tester.pumpWidget(
-              const Directionality(
-                textDirection: TextDirection.ltr,
-                child: DesktopMenuWrapper(child: Text('Direct Child')),
+              makeTestableWidget(
+                const DesktopMenuWrapper(child: Text('Direct Child')),
               ),
             );
-            await tester.pumpAndSettle();
+            await tester.pump();
 
             expect(find.text('Direct Child'), findsOneWidget);
             expect(find.byType(PlatformMenuBar), findsNothing);
@@ -74,12 +75,11 @@ void main() {
           debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
           try {
             await tester.pumpWidget(
-              const Directionality(
-                textDirection: TextDirection.ltr,
-                child: DesktopMenuWrapper(child: Text('Menu Child')),
+              makeTestableWidget(
+                const DesktopMenuWrapper(child: Text('Menu Child')),
               ),
             );
-            await tester.pumpAndSettle();
+            await tester.pump();
 
             expect(find.byType(PlatformMenuBar), findsOneWidget);
             expect(find.text('Menu Child'), findsOneWidget);
@@ -131,9 +131,8 @@ void main() {
         debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
         try {
           await tester.pumpWidget(
-            Directionality(
-              textDirection: TextDirection.ltr,
-              child: AppCommandHost(
+            makeTestableWidget(
+              AppCommandHost(
                 handlers: {
                   AppCommandId.navigateTasks: AppCommandHandler(
                     invoke: (_) => taskNavigations++,
@@ -171,9 +170,8 @@ void main() {
         debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
         try {
           await tester.pumpWidget(
-            Directionality(
-              textDirection: TextDirection.ltr,
-              child: AppCommandHost(
+            makeTestableWidget(
+              AppCommandHost(
                 handlers: {
                   AppCommandId.zoomIn: AppCommandHandler(
                     isEnabled: () => false,
