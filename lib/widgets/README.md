@@ -260,14 +260,21 @@ visible when the shell hides the bar.
 Visibility is owned by the same shell as a pure function of router state:
 on task detail routes (`/tasks/<uuid>`) the bar is unmounted so the
 page-owned `TaskActionBar` can dock flush against the home indicator, and
-inside settings detail/editor routes (the categories / habits / labels /
-dashboards / measurables detail and create pages, per-project editors, the
-agent template / soul editors, and the sync conflict resolver — not the
-list pages, see `settingsRouteHidesBottomNav`) it slides below the screen
-edge with an animated, pointer- and semantics-inert transition instead of
-popping out, and slides back in on leaving. While the bar is slid away the
-recording indicators animate down to the bottom safe-area edge in the same
-motion.
+inside settings **detail** routes it slides below the screen edge with an
+animated, pointer- and semantics-inert transition instead of popping out,
+and slides back in on leaving. A settings route counts as a detail page —
+a terminal destination you navigate *to* rather than a menu you navigate
+*from* — when it is: the whole AI or Agents section; any Sync leaf
+(backfill, stats, outbox, node-profile, provisioned, matrix maintenance);
+any Advanced leaf (flags, logging, maintenance, about, animations,
+onboarding metrics, health import) plus the conflict *detail*; a top-level
+leaf (theming, recording style, daily-os, speech, onboarding); or an
+entity editor (`.../<id>` or `.../create`). The menu hubs (`/settings`,
+Advanced, Sync, Definitions) and the browse **list** pages (categories,
+labels, habits, dashboards, measurables lists, and the conflicts list)
+keep the bar — see `settingsRouteHidesBottomNav`. While the bar is slid
+away the recording indicators animate down to the bottom safe-area edge in
+the same motion.
 
 Editor surfaces that are *pushed* on top of another settings route rather
 than being routes of their own (the AI provider connect form, the agent

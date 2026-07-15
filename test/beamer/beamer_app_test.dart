@@ -1723,98 +1723,201 @@ void main() {
     SettingsLocation settingsLocationFor(String path) =>
         SettingsLocation(RouteInformation(uri: Uri.parse(path)));
 
-    test('returns false for null and non-settings locations', () {
-      expect(settingsRouteHidesBottomNav(null), isFalse);
-      expect(
-        settingsRouteHidesBottomNav(
-          _ArbitraryLocation(
-            RouteInformation(uri: Uri.parse('/settings/categories/abc')),
+    /// Asserts every path in [paths] resolves to [hides], with the path as
+    /// the failure reason so a regression names the offending route.
+    void expectHides(Iterable<String> paths, {required bool hides}) {
+      for (final path in paths) {
+        expect(
+          settingsRouteHidesBottomNav(settingsLocationFor(path)),
+          hides,
+          reason: path,
+        );
+      }
+    }
+
+    group('guards', () {
+      test('a null location keeps the bar', () {
+        expect(settingsRouteHidesBottomNav(null), isFalse);
+      });
+
+      test('a non-settings location keeps the bar even at a settings-like '
+          'path', () {
+        expect(
+          settingsRouteHidesBottomNav(
+            _ArbitraryLocation(
+              RouteInformation(uri: Uri.parse('/settings/categories/abc')),
+            ),
           ),
-        ),
-        isFalse,
+          isFalse,
+        );
+      });
+
+      test('the bare /settings root menu keeps the bar', () {
+        expectHides(['/settings'], hides: false);
+      });
+
+      test('a SettingsLocation whose path is not under /settings keeps the '
+          'bar', () {
+        // Exercises the `segments.first != 'settings'` guard: a
+        // SettingsLocation can be constructed for any URI.
+        expectHides(['/elsewhere/deep/path'], hides: false);
+      });
+    });
+
+    group('menu hubs keep the bar', () {
+      test('the branch hubs with no page of their own', () {
+        expectHides([
+          '/settings/advanced',
+          '/settings/sync',
+          '/settings/definitions',
+        ], hides: false);
+      });
+    });
+
+    group('AI and Agents sections hide the bar entirely', () {
+      test('AI landing, per-tab lists, and editors all hide', () {
+        expectHides([
+          '/settings/ai',
+          '/settings/ai/profiles',
+          '/settings/ai/provider/some-provider-id',
+          '/settings/ai/model/some-model-id',
+          '/settings/ai/profile/some-profile-id',
+        ], hides: true);
+      });
+
+      test('Agents landing, per-tab lists, editors, and review history all '
+          'hide', () {
+        expectHides([
+          '/settings/agents',
+          '/settings/agents/stats',
+          '/settings/agents/templates',
+          '/settings/agents/instances',
+          '/settings/agents/souls',
+          '/settings/agents/pending-wakes',
+          '/settings/agents/templates/some-template-id',
+          '/settings/agents/templates/create',
+          '/settings/agents/souls/some-soul-id',
+          '/settings/agents/souls/create',
+          '/settings/agents/instances/some-agent-id',
+          '/settings/agents/templates/some-template-id/review',
+          '/settings/agents/souls/some-soul-id/review',
+        ], hides: true);
+      });
+    });
+
+    group('Sync leaves hide, the hub keeps', () {
+      test('every sync detail leaf hides the bar', () {
+        expectHides([
+          '/settings/sync/provisioned',
+          '/settings/sync/node-profile',
+          '/settings/sync/backfill',
+          '/settings/sync/stats',
+          '/settings/sync/outbox',
+          '/settings/sync/matrix/maintenance',
+        ], hides: true);
+      });
+
+      test('the sync hub keeps the bar', () {
+        expectHides(['/settings/sync'], hides: false);
+      });
+    });
+
+    group('Advanced leaves', () {
+      test('non-conflict advanced leaves hide the bar', () {
+        expectHides([
+          '/settings/advanced/animations',
+          '/settings/advanced/logging_domains',
+          '/settings/advanced/maintenance',
+          '/settings/advanced/onboarding_metrics',
+          '/settings/advanced/about',
+        ], hides: true);
+      });
+
+      test('the conflicts list keeps the bar but conflict detail hides it', () {
+        expectHides(['/settings/advanced/conflicts'], hides: false);
+        expectHides([
+          '/settings/advanced/conflicts/some-conflict-id',
+        ], hides: true);
+      });
+
+      test('the manual-merge entry editor keeps the bar (owns its inset)', () {
+        expectHides([
+          '/settings/advanced/conflicts/some-conflict-id/edit',
+        ], hides: false);
+      });
+    });
+
+    group('top-level leaf pages hide the bar', () {
+      test(
+        'terminal single-segment leaves and the legacy maintenance alias',
+        () {
+          expectHides([
+            '/settings/flags',
+            '/settings/theming',
+            '/settings/recording-style',
+            '/settings/daily-os',
+            '/settings/speech',
+            '/settings/onboarding',
+            '/settings/health_import',
+            '/settings/maintenance',
+          ], hides: true);
+        },
       );
     });
 
-    test('returns true on detail/editor pages that dock a bottom bar', () {
-      for (final path in <String>[
-        '/settings/categories/some-category-id',
-        '/settings/categories/create',
-        '/settings/labels/some-label-id',
-        '/settings/labels/create',
-        '/settings/dashboards/some-dashboard-id',
-        '/settings/dashboards/create',
-        '/settings/measurables/some-measurable-id',
-        '/settings/measurables/create',
-        '/settings/habits/by_id/some-habit-id',
-        '/settings/habits/create',
-        '/settings/projects/some-project-id',
-        // Agent template & soul editors dock a FormBottomBar.
-        '/settings/agents/templates/some-template-id',
-        '/settings/agents/templates/create',
-        '/settings/agents/souls/some-soul-id',
-        '/settings/agents/souls/create',
-        // Sync conflict resolver detail docks a ConflictFooter.
-        '/settings/advanced/conflicts/some-conflict-id',
-      ]) {
-        expect(
-          settingsRouteHidesBottomNav(settingsLocationFor(path)),
-          isTrue,
-          reason: path,
-        );
-      }
+    group('entity definitions: lists keep, editors hide', () {
+      test('list pages keep the bar', () {
+        expectHides([
+          '/settings/categories',
+          '/settings/labels',
+          '/settings/dashboards',
+          '/settings/measurables',
+          '/settings/habits',
+        ], hides: false);
+      });
+
+      test('detail and create editors hide the bar', () {
+        expectHides([
+          '/settings/categories/some-category-id',
+          '/settings/categories/create',
+          '/settings/labels/some-label-id',
+          '/settings/labels/create',
+          '/settings/dashboards/some-dashboard-id',
+          '/settings/dashboards/create',
+          '/settings/measurables/some-measurable-id',
+          '/settings/measurables/create',
+        ], hides: true);
+      });
     });
 
-    test('returns false for list pages, the root, and non-editor '
-        'settings pages', () {
-      for (final path in <String>[
-        '/settings',
-        '/settings/definitions',
-        '/settings/flags',
-        '/settings/theming',
-        '/settings/advanced/maintenance',
-        '/settings/sync',
-        // AI provider/model/profile surfaces keep the bar: the detail pages
-        // save via the app bar and the connect form escapes the nav by
-        // pushing onto the root navigator instead.
-        '/settings/ai/provider/some-provider-id',
-        '/settings/ai/model/some-model-id',
-        '/settings/ai/profile/some-profile-id',
-        // Agents landing + per-tab list landings are browse surfaces.
-        '/settings/agents',
-        '/settings/agents/templates',
-        '/settings/agents/souls',
-        '/settings/agents/instances/some-agent-id',
-        // Evolution review history is a browse surface — the chat pushed
-        // from it escapes the nav via the root navigator, not by route.
-        '/settings/agents/templates/some-template-id/review',
-        '/settings/agents/souls/some-soul-id/review',
-        // Conflicts list keeps the bar; the manual-merge entry editor
-        // (`/edit`) manages its own bottom inset.
-        '/settings/advanced/conflicts',
-        '/settings/advanced/conflicts/some-conflict-id/edit',
-        // List pages are browse surfaces — the bar stays; only the
-        // detail/create editors slide it away.
-        '/settings/categories',
-        '/settings/labels',
-        '/settings/dashboards',
-        '/settings/measurables',
-        '/settings/habits',
-        // Habits search is the list page with a filter applied.
-        '/settings/habits/search/morning',
-        // Bare `by_id` without an id renders the list page — it must not
-        // count as an editor.
-        '/settings/habits/by_id',
-        // SettingsLocation deliberately renders no editor for the reserved
-        // `create` slug under projects (creation lives at /projects/create),
-        // so a stale deep link must not hide the bar over the settings root.
-        '/settings/projects/create',
-      ]) {
-        expect(
-          settingsRouteHidesBottomNav(settingsLocationFor(path)),
-          isFalse,
-          reason: path,
-        );
-      }
+    group('habits list variants keep, editors hide', () {
+      test('create and a real by_id/<id> editor hide the bar', () {
+        expectHides([
+          '/settings/habits/create',
+          '/settings/habits/by_id/some-habit-id',
+        ], hides: true);
+      });
+
+      test('the filtered search list and a bare by_id keep the bar', () {
+        expectHides([
+          // Search is the list page with a filter applied.
+          '/settings/habits/search/morning',
+          // Bare `by_id` without an id renders the list page.
+          '/settings/habits/by_id',
+        ], hides: false);
+      });
+    });
+
+    group('projects: editors hide, the reserved create slug keeps', () {
+      test('a project editor hides the bar', () {
+        expectHides(['/settings/projects/some-project-id'], hides: true);
+      });
+
+      test('the unrouted create slug keeps the bar over the settings root', () {
+        // Creation lives at /projects/create (a modal), so a stale deep link
+        // must not hide the bar.
+        expectHides(['/settings/projects/create'], hides: false);
+      });
     });
   });
 

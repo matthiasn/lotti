@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and below it, so the hovered row is never bisected — matching the existing
   Config Flags behaviour. The row layout stays fixed; only the divider colour
   changes.
+- **The bottom navigation bar now gets out of the way on Settings detail
+  pages (mobile).** Opening a terminal Settings destination — AI, Agents, any
+  Sync page (backfill, stats, outbox, …), and Advanced pages like Config
+  Flags, Logging, Maintenance, and About — slides the bottom bar off-screen so
+  the page owns the full height, and it slides back when you tap back. Menu
+  hubs (Advanced, Sync, Definitions) and the browse lists (Categories, Labels,
+  Habits, …) keep the bar since you navigate onward from them.
 - **AI agents respond sooner when several are active.** Up to three different
   agent wake cycles now run at once by default instead of waiting in one global
   line, while each individual agent remains single-flight. AI Settings lets
