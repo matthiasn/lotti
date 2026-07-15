@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/get_it.dart';
@@ -145,20 +146,24 @@ void main() {
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        Navigator(
-          onGenerateRoute: (_) => MaterialPageRoute<void>(
-            builder: (_) => Scaffold(
-              body: Builder(
-                builder: (context) => Center(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => Scaffold(
-                          body: ProjectCreateForm(categoryId: categoryId),
+        AppCommandHost(
+          handlers: const {},
+          platform: TargetPlatform.windows,
+          child: Navigator(
+            onGenerateRoute: (_) => MaterialPageRoute<void>(
+              builder: (_) => Scaffold(
+                body: Builder(
+                  builder: (context) => Center(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => Scaffold(
+                            body: ProjectCreateForm(categoryId: categoryId),
+                          ),
                         ),
                       ),
+                      child: const Text('open'),
                     ),
-                    child: const Text('open'),
                   ),
                 ),
               ),
@@ -493,7 +498,9 @@ void main() {
       expect(find.byIcon(Icons.clear), findsNothing);
     });
 
-    testWidgets('Ctrl+S triggers create', (tester) async {
+    testWidgets('Primary+S dispatches save and creates the project', (
+      tester,
+    ) async {
       stubCreateMetadata();
       stubCreateProject();
 

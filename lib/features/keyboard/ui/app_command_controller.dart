@@ -124,9 +124,13 @@ class AppCommandControllerProvider
     extends InheritedNotifier<AppCommandController> {
   const AppCommandControllerProvider({
     required AppCommandController controller,
+    required this.platform,
     required super.child,
     super.key,
   }) : super(notifier: controller);
+
+  /// Desktop platform used to resolve Primary and platform-specific bindings.
+  final TargetPlatform platform;
 
   static AppCommandController of(BuildContext context) => context
       .dependOnInheritedWidgetOfExactType<AppCommandControllerProvider>()!
@@ -142,4 +146,13 @@ class AppCommandControllerProvider
   static AppCommandController? maybeRead(BuildContext context) => context
       .getInheritedWidgetOfExactType<AppCommandControllerProvider>()
       ?.notifier;
+
+  /// Reads the host platform without subscribing to command availability.
+  static TargetPlatform? maybeReadPlatform(BuildContext context) => context
+      .getInheritedWidgetOfExactType<AppCommandControllerProvider>()
+      ?.platform;
+
+  @override
+  bool updateShouldNotify(AppCommandControllerProvider oldWidget) =>
+      platform != oldWidget.platform || super.updateShouldNotify(oldWidget);
 }

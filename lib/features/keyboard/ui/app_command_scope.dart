@@ -75,7 +75,9 @@ class _AppCommandScopeState extends State<AppCommandScope> {
   @override
   Widget build(BuildContext context) {
     if (_controller == null) return widget.child;
-    final platform = defaultTargetPlatform;
+    final platform =
+        AppCommandControllerProvider.maybeReadPlatform(context) ??
+        defaultTargetPlatform;
     final shortcuts = <ShortcutActivator, Intent>{};
     if (widget.registerShortcuts) {
       final bindings = AppCommandCatalog.bindingsFor(

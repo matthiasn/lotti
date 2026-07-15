@@ -105,6 +105,7 @@ class _AppCommandHostState extends State<AppCommandHost> {
 
     return AppCommandControllerProvider(
       controller: _commandController,
+      platform: platform,
       child: KeyboardFocusRegionRegistry(
         controller: _focusRegionController,
         child: Actions(
