@@ -845,20 +845,6 @@ void main() {
 
         const desktopMediaQuery = MediaQueryData(size: Size(1200, 900));
 
-        // Dialog mode triggers a 4.5 px overflow in the action-bar Row at the
-        // test dialog width (476 px). Suppress it so the meaningful assertion
-        // (searchModeCalls) is the only thing we check in this test.
-        final errors = <FlutterErrorDetails>[];
-        final originalHandler = FlutterError.onError;
-        FlutterError.onError = (details) {
-          if (!details.exceptionAsString().contains('RenderFlex')) {
-            originalHandler?.call(details);
-          } else {
-            errors.add(details);
-          }
-        };
-        addTearDown(() => FlutterError.onError = originalHandler);
-
         await tester.pumpWidget(
           WidgetTestBench(
             mediaQueryData: desktopMediaQuery,
@@ -908,6 +894,7 @@ void main() {
         // applyBatchFilterUpdate was called with a searchMode (not null).
         expect(fakeController.applyBatchFilterUpdateCalled, 1);
         expect(fakeController.searchModeCalls, isNotEmpty);
+        expect(tester.takeException(), isNull);
       },
     );
 

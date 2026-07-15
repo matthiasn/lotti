@@ -14,7 +14,7 @@ String stripTrailingColon(String value) {
 /// The entire row is one hover, focus, tap, and semantics target. The trailing
 /// toggle is visual-only, avoiding the cramped inset-card treatment and a
 /// duplicate focus stop.
-class DesignSystemFilterToggleRow extends StatelessWidget {
+class DesignSystemFilterToggleRow extends StatefulWidget {
   const DesignSystemFilterToggleRow({
     required this.label,
     required this.value,
@@ -27,45 +27,69 @@ class DesignSystemFilterToggleRow extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   @override
+  State<DesignSystemFilterToggleRow> createState() =>
+      _DesignSystemFilterToggleRowState();
+}
+
+class _DesignSystemFilterToggleRowState
+    extends State<DesignSystemFilterToggleRow> {
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final radius = BorderRadius.circular(tokens.radii.s);
     return Semantics(
       button: true,
-      toggled: value,
-      label: label,
-      onTap: () => onChanged(!value),
+      toggled: widget.value,
+      label: widget.label,
+      onTap: () => widget.onChanged(!widget.value),
       excludeSemantics: true,
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(tokens.radii.s),
-          onTap: () => onChanged(!value),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: tokens.spacing.step9),
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: tokens.typography.styles.subtitle.subtitle2
-                          .copyWith(
-                            color: tokens.colors.text.highEmphasis,
-                          ),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            boxShadow: _focused
+                ? [
+                    BoxShadow(
+                      color: tokens.colors.text.highEmphasis,
+                      spreadRadius: tokens.spacing.step1,
                     ),
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  ExcludeFocus(
-                    child: IgnorePointer(
-                      child: DesignSystemToggle(
-                        value: value,
-                        semanticsLabel: label,
-                        onChanged: onChanged,
+                  ]
+                : null,
+          ),
+          child: InkWell(
+            borderRadius: radius,
+            onTap: () => widget.onChanged(!widget.value),
+            onFocusChange: (value) => setState(() => _focused = value),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: tokens.spacing.step9),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.label,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                            ),
                       ),
                     ),
-                  ),
-                ],
+                    SizedBox(width: tokens.spacing.step3),
+                    ExcludeFocus(
+                      child: IgnorePointer(
+                        child: DesignSystemToggle(
+                          value: widget.value,
+                          semanticsLabel: widget.label,
+                          onChanged: widget.onChanged,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -261,9 +285,11 @@ class _DesignSystemFilterChoicePillState
                     child: Text(
                       widget.label,
                       maxLines: MediaQuery.textScalerOf(context).scale(1) > 1.3
-                          ? 2
+                          ? null
                           : 1,
-                      overflow: TextOverflow.ellipsis,
+                      overflow: MediaQuery.textScalerOf(context).scale(1) > 1.3
+                          ? TextOverflow.clip
+                          : TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: tokens.typography.styles.subtitle.subtitle2
                           .copyWith(color: tokens.colors.text.highEmphasis),

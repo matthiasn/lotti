@@ -1,4 +1,4 @@
-import 'dart:ui' show CheckedState, Tristate;
+import 'dart:ui' show CheckedState, SemanticsAction, Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -71,6 +71,61 @@ void main() {
         expect(changedValue, isTrue);
       },
     );
+
+    testWidgets('semantics activation toggles the whole row', (tester) async {
+      bool? changedValue;
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        makeTestableWidget(
+          DesignSystemFilterToggleRow(
+            label: 'Show due date',
+            value: true,
+            onChanged: (value) => changedValue = value,
+          ),
+        ),
+      );
+
+      final node = tester.getSemantics(
+        find.byType(DesignSystemFilterToggleRow),
+      );
+      // ignore: deprecated_member_use
+      tester.binding.pipelineOwner.semanticsOwner!.performAction(
+        node.id,
+        SemanticsAction.tap,
+      );
+      await tester.pump();
+
+      expect(changedValue, isFalse);
+      handle.dispose();
+    });
+
+    testWidgets('keyboard focus adds a token-backed high-contrast ring', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          DesignSystemFilterToggleRow(
+            label: 'Show due date',
+            value: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+
+      final decoration =
+          tester.widget<Ink>(find.byType(Ink)).decoration! as BoxDecoration;
+      expect(
+        decoration.boxShadow!.single.color,
+        dsTokensLight.colors.text.highEmphasis,
+      );
+      expect(
+        decoration.boxShadow!.single.spreadRadius,
+        dsTokensLight.spacing.step1,
+      );
+    });
   });
 
   group('DesignSystemFilterChoicePill', () {
@@ -242,7 +297,7 @@ void main() {
       );
     });
 
-    testWidgets('large text can wrap to two lines and grow the target', (
+    testWidgets('large text wraps without truncation and grows the target', (
       tester,
     ) async {
       const label = 'A longer filter choice';
@@ -259,7 +314,8 @@ void main() {
       );
 
       final text = tester.widget<Text>(find.text(label));
-      expect(text.maxLines, 2);
+      expect(text.maxLines, isNull);
+      expect(text.overflow, TextOverflow.clip);
       expect(
         tester.getSize(find.byType(DesignSystemFilterChoicePill)).height,
         greaterThan(dsTokensLight.spacing.step9),
