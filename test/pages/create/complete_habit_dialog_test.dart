@@ -1,17 +1,18 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/date_time/datetime_bottom_sheet.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
@@ -80,16 +81,19 @@ void main() {
         makeTestableWidget(
           BeamerProvider(
             routerDelegate: delegate,
-            child: Material(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxHeight: 800,
-                  maxWidth: 800,
-                ),
-                child: HabitDialog(
-                  habitId: habitFlossing.id,
-                  themeData: resolveTestTheme(),
-                  showLinkedDashboard: showLinkedDashboard,
+            child: AppCommandHost(
+              handlers: const {},
+              child: Material(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxHeight: 800,
+                    maxWidth: 800,
+                  ),
+                  child: HabitDialog(
+                    habitId: habitFlossing.id,
+                    themeData: resolveTestTheme(),
+                    showLinkedDashboard: showLinkedDashboard,
+                  ),
                 ),
               ),
             ),
@@ -293,38 +297,39 @@ void main() {
     );
 
     testWidgets(
-      'desktop registers the Cmd+S hotkey on init and unregisters on '
-      'dispose',
+      'Primary+S records the selected completion through the command scope',
       (tester) async {
-        // Platform globals are mutable for tests; restore afterwards.
-        final wasDesktop = isDesktop;
-        isDesktop = true;
-        addTearDown(() => isDesktop = wasDesktop);
+        debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+        try {
+          when(
+            () => mockPersistenceLogic.createHabitCompletionEntry(
+              data: any(named: 'data'),
+              comment: any(named: 'comment'),
+              habitDefinition: habitFlossing,
+            ),
+          ).thenAnswer((_) async => null);
 
-        when(
-          () => mockPersistenceLogic.createHabitCompletionEntry(
-            data: any(named: 'data'),
-            comment: any(named: 'comment'),
-            habitDefinition: habitFlossing,
-          ),
-        ).thenAnswer((_) async => null);
+          await pumpHabitDialog(tester);
+          await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+          await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+          await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+          await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+          await tester.pump(const Duration(milliseconds: 300));
 
-        // hotKeyManager is a process-global singleton shared across the
-        // whole `very_good test` run; assert on this dialog's NET
-        // contribution rather than absolute emptiness, so a hotkey leaked
-        // by an earlier test in the same shard cannot break this one.
-        final baseline = hotKeyManager.registeredHotKeyList.length;
-
-        await pumpHabitDialog(tester);
-
-        // In-app scoped hotkeys register into the manager's in-memory list
-        // (no platform channel involved for HotKeyScope.inapp).
-        expect(hotKeyManager.registeredHotKeyList, hasLength(baseline + 1));
-
-        // Tear the dialog down — dispose must unregister the hotkey.
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-        expect(hotKeyManager.registeredHotKeyList, hasLength(baseline));
+          final captured = verify(
+            () => mockPersistenceLogic.createHabitCompletionEntry(
+              data: captureAny(named: 'data'),
+              comment: any(named: 'comment'),
+              habitDefinition: habitFlossing,
+            ),
+          ).captured;
+          expect(
+            (captured.single as HabitCompletionData).completionType,
+            HabitCompletionType.success,
+          );
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
       },
     );
 

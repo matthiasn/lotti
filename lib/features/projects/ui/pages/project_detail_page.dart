@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_report_card.dart';
@@ -189,14 +191,10 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
           _handleBackNavigation();
         }
       },
-      child: CallbackShortcuts(
-        bindings: {
-          const SingleActivator(
-            LogicalKeyboardKey.keyS,
-            meta: true,
-          ): _handleSave,
-          const SingleActivator(LogicalKeyboardKey.keyS, control: true):
-              _handleSave,
+      child: AppCommandScope(
+        debugLabel: 'project-detail',
+        handlers: {
+          AppCommandId.save: AppCommandHandler(invoke: (_) => _handleSave()),
         },
         child: Scaffold(
           backgroundColor: context.colorScheme.surface,

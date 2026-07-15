@@ -8,7 +8,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   file_selector_linux
   flutter_onnxruntime
   flutter_secure_storage_linux
-  hotkey_manager_linux
   irondash_engine_context
   location
   media_kit_libs_linux

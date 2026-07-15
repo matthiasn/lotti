@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
@@ -56,13 +59,36 @@ class SettingsTreeNodeWidget extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SettingsTreeRow(
-          node: node,
-          depth: depth,
-          onActivePath: onActivePath,
-          isExpanded: isExpanded,
-          trailing: settingsNodeIndicatorFor(node.id),
-          onTap: handleTap,
+        AppCommandScope(
+          debugLabel: 'settings-tree:${node.id}',
+          handlers: {
+            AppCommandId.selectPrevious: AppCommandHandler(
+              invoke: (_) => FocusManager.instance.primaryFocus
+                  ?.focusInDirection(TraversalDirection.up),
+            ),
+            AppCommandId.selectNext: AppCommandHandler(
+              invoke: (_) => FocusManager.instance.primaryFocus
+                  ?.focusInDirection(TraversalDirection.down),
+            ),
+            if (node.hasChildren)
+              AppCommandId.expand: AppCommandHandler(
+                isEnabled: () => !isExpanded,
+                invoke: (_) => handleTap(),
+              ),
+            if (node.hasChildren)
+              AppCommandId.collapse: AppCommandHandler(
+                isEnabled: () => isExpanded,
+                invoke: (_) => handleTap(),
+              ),
+          },
+          child: SettingsTreeRow(
+            node: node,
+            depth: depth,
+            onActivePath: onActivePath,
+            isExpanded: isExpanded,
+            trailing: settingsNodeIndicatorFor(node.id),
+            onTap: handleTap,
+          ),
         ),
         if (node.hasChildren)
           // Keep children mounted during the collapse so

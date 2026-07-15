@@ -1,7 +1,6 @@
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -17,6 +16,9 @@ import 'package:lotti/features/design_system/components/calendar_pickers/design_
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/ui/widgets/project_target_date_field.dart';
 import 'package:lotti/get_it.dart';
@@ -269,12 +271,10 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
     final messages = context.messages;
     final tokens = context.designTokens;
 
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyS, meta: true):
-            _handleCreate,
-        const SingleActivator(LogicalKeyboardKey.keyS, control: true):
-            _handleCreate,
+    return AppCommandScope(
+      debugLabel: 'project-create',
+      handlers: {
+        AppCommandId.save: AppCommandHandler(invoke: (_) => _handleCreate()),
       },
       child: ConstrainedBox(
         constraints: BoxConstraints(

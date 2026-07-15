@@ -15,6 +15,9 @@ import 'package:lotti/features/habits/ui/widgets/habits_search.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_section_header.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_summary_card.dart';
 import 'package:lotti/features/habits/ui/widgets/heatmap/habit_heatmap_card.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -42,6 +45,7 @@ class HabitsTabPage extends ConsumerStatefulWidget {
 
 class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
   final _scrollController = ScrollController();
+  final _searchFocusNode = FocusNode(debugLabel: 'habits-search');
 
   /// The whole dashboard (header, summary, list, heatmap, chart) is capped at
   /// this width and centred, so on a wide window it reads as one comfortable
@@ -114,7 +118,20 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
       timer.cancel();
     }
     _scrollController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _focusSearch() {
+    final controller = ref.read(habitsControllerProvider.notifier);
+    if (!ref.read(habitsControllerProvider).showSearch) {
+      controller.toggleShowSearch();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _searchFocusNode.requestFocus();
+      }
+    });
   }
 
   /// Returns the open-section habits in stable order, keeping any lingering
@@ -236,77 +253,85 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: dsPageSurface(context),
-      body: SafeArea(
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: <Widget>[
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                pagePadding,
-                tokens.spacing.step5,
-                pagePadding,
-                0,
+    return AppCommandScope(
+      debugLabel: 'habits',
+      handlers: {
+        AppCommandId.focusSearch: AppCommandHandler(
+          invoke: (_) => _focusSearch(),
+        ),
+      },
+      child: Scaffold(
+        backgroundColor: dsPageSurface(context),
+        body: SafeArea(
+          child: CustomScrollView(
+            controller: _scrollController,
+            slivers: <Widget>[
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  pagePadding,
+                  tokens.spacing.step5,
+                  pagePadding,
+                  0,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    HabitsHeader(searchFocusNode: _searchFocusNode),
+                    SizedBox(height: tokens.spacing.sectionGap),
+                    const HabitsSummaryCard(),
+                    if (showOpenNow) ...[
+                      if (showAll)
+                        HabitsSectionHeader(
+                          label: messages.habitsOpenHeader,
+                          count: openNow.length,
+                        )
+                      else
+                        SizedBox(height: tokens.spacing.step5),
+                      ...openNow.map(buildOpenRow),
+                    ],
+                    if (showPendingLater) ...[
+                      if (showAll)
+                        HabitsSectionHeader(
+                          label: messages.habitsPendingLaterHeader,
+                          count: pendingLater.length,
+                        )
+                      else
+                        SizedBox(height: tokens.spacing.step5),
+                      ...pendingLater.map(buildRow),
+                    ],
+                    if (showCompleted) ...[
+                      if (showAll)
+                        HabitsSectionHeader(
+                          label: messages.habitsCompletedHeader,
+                          count: completed.length,
+                        )
+                      else
+                        SizedBox(height: tokens.spacing.step5),
+                      ...completed.map(buildRow),
+                    ],
+                  ]),
+                ),
               ),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  const HabitsHeader(),
-                  SizedBox(height: tokens.spacing.sectionGap),
-                  const HabitsSummaryCard(),
-                  if (showOpenNow) ...[
-                    if (showAll)
-                      HabitsSectionHeader(
-                        label: messages.habitsOpenHeader,
-                        count: openNow.length,
-                      )
-                    else
-                      SizedBox(height: tokens.spacing.step5),
-                    ...openNow.map(buildOpenRow),
-                  ],
-                  if (showPendingLater) ...[
-                    if (showAll)
-                      HabitsSectionHeader(
-                        label: messages.habitsPendingLaterHeader,
-                        count: pendingLater.length,
-                      )
-                    else
-                      SizedBox(height: tokens.spacing.step5),
-                    ...pendingLater.map(buildRow),
-                  ],
-                  if (showCompleted) ...[
-                    if (showAll)
-                      HabitsSectionHeader(
-                        label: messages.habitsCompletedHeader,
-                        count: completed.length,
-                      )
-                    else
-                      SizedBox(height: tokens.spacing.step5),
-                    ...completed.map(buildRow),
-                  ],
-                ]),
+              // The heatmap is the width-using centrepiece: a full-width band so a
+              // wide window shows more history, while the reading content stays a
+              // comfortable column.
+              SliverPadding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: pagePadding,
+                  vertical: tokens.spacing.sectionGap,
+                ),
+                sliver: const SliverToBoxAdapter(child: HabitHeatmapCard()),
               ),
-            ),
-            // The heatmap is the width-using centrepiece: a full-width band so a
-            // wide window shows more history, while the reading content stays a
-            // comfortable column.
-            SliverPadding(
-              padding: EdgeInsets.symmetric(
-                horizontal: pagePadding,
-                vertical: tokens.spacing.sectionGap,
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  pagePadding,
+                  0,
+                  pagePadding,
+                  tokens.spacing.step6,
+                ),
+                sliver: const SliverToBoxAdapter(child: HabitsChartCard()),
               ),
-              sliver: const SliverToBoxAdapter(child: HabitHeatmapCard()),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                pagePadding,
-                0,
-                pagePadding,
-                tokens.spacing.step6,
-              ),
-              sliver: const SliverToBoxAdapter(child: HabitsChartCard()),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

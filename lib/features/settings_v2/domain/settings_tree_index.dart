@@ -62,6 +62,7 @@ const Map<String, String> settingsNodeUrls = {
   'definitions/measurables': '/settings/measurables',
   'recording-style': '/settings/recording-style',
   'theming': '/settings/theming',
+  'keyboard-shortcuts': '/settings/keyboard-shortcuts',
   'speech': '/settings/speech',
   // `flags` moved under the `advanced` branch in the V2 tree; its URL
   // stays `/settings/flags` for deep-link compatibility.

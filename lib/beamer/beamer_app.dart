@@ -32,6 +32,12 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/keyboard/ui/command_palette.dart';
+import 'package:lotti/features/keyboard/ui/keyboard_focus_region.dart';
+import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
@@ -52,6 +58,7 @@ import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -733,46 +740,49 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       backgroundColor: context.designTokens.colors.background.level01,
       body: Row(
         children: [
-          DesktopNavigationSidebar(
-            destinations: [
-              for (final dest in mainDestinations)
-                dest.toDesktopSidebarDestination(),
-            ],
-            activeIndex: mainActiveIndex,
-            onDestinationSelected: (mainIdx) {
-              // Map main destination index back to the full index
-              var fullIdx = 0;
-              var count = 0;
-              for (var i = 0; i < destinations.length; i++) {
-                if (destinations[i].kind ==
-                    _AppNavigationDestinationKind.settings) {
-                  continue;
+          KeyboardFocusRegion(
+            debugLabel: 'app-navigation',
+            child: DesktopNavigationSidebar(
+              destinations: [
+                for (final dest in mainDestinations)
+                  dest.toDesktopSidebarDestination(),
+              ],
+              activeIndex: mainActiveIndex,
+              onDestinationSelected: (mainIdx) {
+                // Map main destination index back to the full index
+                var fullIdx = 0;
+                var count = 0;
+                for (var i = 0; i < destinations.length; i++) {
+                  if (destinations[i].kind ==
+                      _AppNavigationDestinationKind.settings) {
+                    continue;
+                  }
+                  if (count == mainIdx) {
+                    fullIdx = i;
+                    break;
+                  }
+                  count++;
                 }
-                if (count == mainIdx) {
-                  fullIdx = i;
-                  break;
-                }
-                count++;
-              }
-              navService.tapIndex(fullIdx);
-            },
-            settingsDestination: settingsDestination
-                ?.toDesktopSidebarDestination(),
-            onSettingsSelected: settingsIndex >= 0
-                ? () => navService.tapIndex(settingsIndex)
-                : null,
-            isSettingsActive: isSettingsActive,
-            width: paneWidths.sidebarWidth,
-            collapsed: isCollapsed,
-            onToggleCollapsed: () => ref
-                .read(paneWidthControllerProvider.notifier)
-                .toggleSidebarCollapsed(),
-            aboveSettings: _DesktopSidebarAboveSettings(
-              showWakeQueue: showSidebarWakeQueue,
+                navService.tapIndex(fullIdx);
+              },
+              settingsDestination: settingsDestination
+                  ?.toDesktopSidebarDestination(),
+              onSettingsSelected: settingsIndex >= 0
+                  ? () => navService.tapIndex(settingsIndex)
+                  : null,
+              isSettingsActive: isSettingsActive,
+              width: paneWidths.sidebarWidth,
+              collapsed: isCollapsed,
+              onToggleCollapsed: () => ref
+                  .read(paneWidthControllerProvider.notifier)
+                  .toggleSidebarCollapsed(),
+              aboveSettings: _DesktopSidebarAboveSettings(
+                showWakeQueue: showSidebarWakeQueue,
+              ),
+              belowSettings: showSyncIndicator
+                  ? const SyncActivityIndicator()
+                  : SizedBox(height: context.designTokens.spacing.step3),
             ),
-            belowSettings: showSyncIndicator
-                ? const SyncActivityIndicator()
-                : SizedBox(height: context.designTokens.spacing.step3),
           ),
           ResizableDivider(
             enabled: !isCollapsed,
@@ -781,20 +791,26 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 .updateSidebarWidth(delta),
           ),
           Expanded(
-            child: Stack(
-              children: [
-                const IncomingVerificationWrapper(),
-                IndexedStack(
-                  index: index,
-                  children: [
-                    for (var i = 0; i < beamerChildren.length; i++)
-                      TickerMode(
-                        enabled: i == index,
-                        child: beamerChildren[i],
-                      ),
-                  ],
-                ),
-              ],
+            child: KeyboardFocusRegion(
+              debugLabel: 'app-content',
+              child: Stack(
+                children: [
+                  const IncomingVerificationWrapper(),
+                  IndexedStack(
+                    index: index,
+                    children: [
+                      for (var i = 0; i < beamerChildren.length; i++)
+                        TickerMode(
+                          enabled: i == index,
+                          child: ExcludeFocus(
+                            excluding: i != index,
+                            child: beamerChildren[i],
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -1344,37 +1360,128 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
         onPointerPanZoomUpdate: (event) => updateActivity(),
         child: TooltipVisibility(
           visible: enableTooltips,
-          child: DesktopMenuWrapper(
-            onZoomIn: ref.watch(zoomControllerProvider.notifier).zoomIn,
-            onZoomOut: ref.watch(zoomControllerProvider.notifier).zoomOut,
-            onZoomReset: ref.watch(zoomControllerProvider.notifier).resetZoom,
-            child: ZoomWrapper(
-              scale: ref.watch(zoomControllerProvider),
-              child: MaterialApp.router(
-                supportedLocales: AppLocalizations.supportedLocales,
-                theme: themingState.lightTheme,
-                darkTheme: themingState.darkTheme,
-                themeMode: themingState.themeMode,
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  FormBuilderLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                  FlutterQuillLocalizations.delegate,
-                ],
-                debugShowCheckedModeBanner: false,
-                routerDelegate: routerDelegate,
-                routeInformationParser: BeamerParser(),
-                backButtonDispatcher: BeamerBackButtonDispatcher(
-                  delegate: routerDelegate,
-                ),
-              ),
+          child: MaterialApp.router(
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: themingState.lightTheme,
+            darkTheme: themingState.darkTheme,
+            themeMode: themingState.themeMode,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              FormBuilderLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              FlutterQuillLocalizations.delegate,
+            ],
+            debugShowCheckedModeBanner: false,
+            routerDelegate: routerDelegate,
+            routeInformationParser: BeamerParser(),
+            backButtonDispatcher: BeamerBackButtonDispatcher(
+              delegate: routerDelegate,
             ),
+            builder: (context, child) {
+              final zoomController = ref.watch(
+                zoomControllerProvider.notifier,
+              );
+              return AppCommandHost(
+                handlers: _globalCommandHandlers(),
+                onActivity: updateActivity,
+                onError: (id, error, stackTrace) {
+                  getIt<DomainLogger>().error(
+                    LogDomain.general,
+                    error,
+                    stackTrace: stackTrace,
+                    subDomain: 'keyboardCommand:${id.name}',
+                  );
+                },
+                child: DesktopMenuWrapper(
+                  onZoomIn: zoomController.zoomIn,
+                  onZoomOut: zoomController.zoomOut,
+                  onZoomReset: zoomController.resetZoom,
+                  child: ZoomWrapper(
+                    scale: ref.watch(zoomControllerProvider),
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
     );
+  }
+
+  Map<AppCommandId, AppCommandHandler> _globalCommandHandlers() {
+    final navService = getIt<NavService>();
+    final zoomController = ref.read(zoomControllerProvider.notifier);
+    final handlers = <AppCommandId, AppCommandHandler>{
+      AppCommandId.openCommandPalette: AppCommandHandler(
+        invoke: (invocation) => showAppCommandPalette(
+          invocation.context,
+          invocation.snapshot,
+        ),
+      ),
+      AppCommandId.openShortcutHelp: AppCommandHandler(
+        invoke: (invocation) =>
+            showKeyboardShortcutsOverlay(invocation.context),
+      ),
+      AppCommandId.createTextEntry: AppCommandHandler(
+        invoke: (_) async {
+          final linkedId = await getIdFromSavedRoute();
+          await createTextEntry(linkedId: linkedId);
+        },
+      ),
+      AppCommandId.createTask: AppCommandHandler(
+        invoke: (_) async {
+          final linkedId = await getIdFromSavedRoute();
+          await createTask(linkedId: linkedId);
+        },
+      ),
+      AppCommandId.captureScreenshot: AppCommandHandler(
+        invoke: (_) async {
+          final linkedId = await getIdFromSavedRoute();
+          await createScreenshot(linkedId: linkedId);
+        },
+      ),
+      AppCommandId.navigateTasks: AppCommandHandler(
+        invoke: (_) => navService.tapIndex(navService.tasksIndex),
+      ),
+      AppCommandId.navigateDailyOs: AppCommandHandler(
+        invoke: (_) => navService.tapIndex(navService.calendarIndex),
+      ),
+      if (navService.isProjectsPageEnabled)
+        AppCommandId.navigateProjects: AppCommandHandler(
+          invoke: (_) => navService.tapIndex(navService.projectsIndex),
+        ),
+      if (navService.isHabitsPageEnabled)
+        AppCommandId.navigateHabits: AppCommandHandler(
+          invoke: (_) => navService.tapIndex(navService.habitsIndex),
+        ),
+      if (navService.isDashboardsPageEnabled)
+        AppCommandId.navigateDashboards: AppCommandHandler(
+          invoke: (_) => navService.tapIndex(navService.dashboardsIndex),
+        ),
+      AppCommandId.navigateJournal: AppCommandHandler(
+        invoke: (_) => navService.tapIndex(navService.journalIndex),
+      ),
+      if (navService.isEventsPageEnabled)
+        AppCommandId.navigateEvents: AppCommandHandler(
+          invoke: (_) => navService.tapIndex(navService.eventsIndex),
+        ),
+      AppCommandId.navigateSettings: AppCommandHandler(
+        invoke: (_) => navService.tapIndex(navService.settingsIndex),
+      ),
+      AppCommandId.zoomIn: AppCommandHandler(
+        invoke: (_) => zoomController.zoomIn(),
+      ),
+      AppCommandId.zoomOut: AppCommandHandler(
+        invoke: (_) => zoomController.zoomOut(),
+      ),
+      AppCommandId.resetZoom: AppCommandHandler(
+        invoke: (_) => zoomController.resetZoom(),
+      ),
+    };
+    return handlers;
   }
 }
 

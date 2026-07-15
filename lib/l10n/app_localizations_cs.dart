@@ -2927,6 +2927,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get colorLabel => 'Barva';
 
   @override
+  String get commandPaletteNoResults =>
+      'Vašemu hledání neodpovídají žádné dostupné příkazy';
+
+  @override
+  String get commandPaletteSearchHint => 'Hledat příkazy…';
+
+  @override
+  String get commandPaletteTitle => 'Paleta příkazů';
+
+  @override
   String get commonError => 'Chyba';
 
   @override
@@ -5365,6 +5375,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get generateCoverArtSubtitle => 'Vytvořit obrázek z hlasového popisu';
 
   @override
+  String get goMenuTitle => 'Přejít';
+
+  @override
   String get habitActiveFromLabel => 'Datum začátku';
 
   @override
@@ -5576,6 +5589,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get habitsVsPreviousWeek => 'vs. minulý týden';
+
+  @override
+  String get helpMenuCommandPalette => 'Paleta příkazů…';
+
+  @override
+  String get helpMenuKeyboardShortcuts => 'Klávesové zkratky…';
+
+  @override
+  String get helpMenuTitle => 'Nápověda';
 
   @override
   String get imageGenerationError => 'Nepodařilo se vygenerovat obrázek';
@@ -6148,6 +6170,152 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get journalUnlinkQuestion => 'Opravdu chcete tento záznam odepnout?';
+
+  @override
+  String get keyboardCommandActivate => 'Aktivovat zaměřenou položku';
+
+  @override
+  String get keyboardCommandCategoryCreation => 'Vytváření';
+
+  @override
+  String get keyboardCommandCategoryEditing => 'Úpravy';
+
+  @override
+  String get keyboardCommandCategoryGeneral => 'Obecné';
+
+  @override
+  String get keyboardCommandCategoryListsAndControls =>
+      'Seznamy a ovládací prvky';
+
+  @override
+  String get keyboardCommandCategoryNavigation => 'Navigace';
+
+  @override
+  String get keyboardCommandCategoryView => 'Zobrazení';
+
+  @override
+  String get keyboardCommandCreateInContext => 'Vytvořit v aktuálním zobrazení';
+
+  @override
+  String get keyboardCommandFocusSearch => 'Zaměřit hledání';
+
+  @override
+  String get keyboardCommandMoveDown => 'Přesunout zaměřenou položku dolů';
+
+  @override
+  String get keyboardCommandMoveUp => 'Přesunout zaměřenou položku nahoru';
+
+  @override
+  String keyboardCommandNavigate(String destination) {
+    return 'Přejít na $destination';
+  }
+
+  @override
+  String get keyboardCommandNextRegion => 'Zaměřit další panel';
+
+  @override
+  String get keyboardCommandOpenPalette => 'Otevřít paletu příkazů';
+
+  @override
+  String get keyboardCommandPageDown => 'Posunout o stránku dolů';
+
+  @override
+  String get keyboardCommandPageUp => 'Posunout o stránku nahoru';
+
+  @override
+  String get keyboardCommandPreviousRegion => 'Zaměřit předchozí panel';
+
+  @override
+  String get keyboardCommandRefresh => 'Obnovit aktuální zobrazení';
+
+  @override
+  String get keyboardCommandRename => 'Přejmenovat zaměřenou položku';
+
+  @override
+  String get keyboardCommandSelectFirst => 'Vybrat první položku';
+
+  @override
+  String get keyboardCommandSelectLast => 'Vybrat poslední položku';
+
+  @override
+  String get keyboardCommandSelectNext => 'Vybrat další položku';
+
+  @override
+  String get keyboardCommandSelectPrevious => 'Vybrat předchozí položku';
+
+  @override
+  String get keyboardCommandToggle => 'Přepnout zaměřenou položku';
+
+  @override
+  String get keyboardKeyAlt => 'Alt';
+
+  @override
+  String get keyboardKeyArrowDown => 'Šipka dolů';
+
+  @override
+  String get keyboardKeyArrowLeft => 'Šipka doleva';
+
+  @override
+  String get keyboardKeyArrowRight => 'Šipka doprava';
+
+  @override
+  String get keyboardKeyArrowUp => 'Šipka nahoru';
+
+  @override
+  String get keyboardKeyControl => 'Ctrl';
+
+  @override
+  String get keyboardKeyDelete => 'Delete';
+
+  @override
+  String get keyboardKeyEnd => 'End';
+
+  @override
+  String get keyboardKeyEnter => 'Enter';
+
+  @override
+  String get keyboardKeyEscape => 'Esc';
+
+  @override
+  String get keyboardKeyHome => 'Home';
+
+  @override
+  String get keyboardKeyMinus => 'Mínus';
+
+  @override
+  String get keyboardKeyOr => 'nebo';
+
+  @override
+  String get keyboardKeyPageDown => 'Page Down';
+
+  @override
+  String get keyboardKeyPageUp => 'Page Up';
+
+  @override
+  String get keyboardKeyPlus => 'Plus';
+
+  @override
+  String get keyboardKeyShift => 'Shift';
+
+  @override
+  String get keyboardKeySpace => 'Mezerník';
+
+  @override
+  String get keyboardResizeDividerLabel => 'Změnit velikost panelů';
+
+  @override
+  String get keyboardShortcutsNoResults =>
+      'Vašemu hledání neodpovídají žádné zkratky';
+
+  @override
+  String get keyboardShortcutsSearchHint => 'Hledat zkratky…';
+
+  @override
+  String get keyboardShortcutsSubtitle =>
+      'Všechny příkazy pro počítač a jejich aktuální klávesové kombinace.';
+
+  @override
+  String get keyboardShortcutsTitle => 'Klávesové zkratky';
 
   @override
   String get knowledgeGraphEmpty => 'Zatím žádné odkazy k prozkoumání';
@@ -8292,6 +8460,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsHealthImportWorkout => 'Importovat data tréninků';
+
+  @override
+  String get settingsKeyboardShortcutsSubtitle =>
+      'Naučte se klávesové kombinace pro rychlejší navigaci a úpravy na počítači';
+
+  @override
+  String get settingsKeyboardShortcutsTitle => 'Klávesové zkratky';
 
   @override
   String get settingsLabelsCategoriesAdd => 'Přidat kategorii';

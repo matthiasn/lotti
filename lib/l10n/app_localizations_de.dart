@@ -2922,6 +2922,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get colorLabel => 'Farbe';
 
   @override
+  String get commandPaletteNoResults =>
+      'Keine verfügbaren Befehle passen zu deiner Suche';
+
+  @override
+  String get commandPaletteSearchHint => 'Befehle suchen…';
+
+  @override
+  String get commandPaletteTitle => 'Befehlspalette';
+
+  @override
   String get commonError => 'Fehler';
 
   @override
@@ -5354,6 +5364,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bild aus Sprachbeschreibung erstellen';
 
   @override
+  String get goMenuTitle => 'Gehe zu';
+
+  @override
   String get habitActiveFromLabel => 'Startdatum';
 
   @override
@@ -5558,6 +5571,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get habitsVsPreviousWeek => 'ggü. Vorwoche';
+
+  @override
+  String get helpMenuCommandPalette => 'Befehlspalette…';
+
+  @override
+  String get helpMenuKeyboardShortcuts => 'Tastaturkurzbefehle…';
+
+  @override
+  String get helpMenuTitle => 'Hilfe';
 
   @override
   String get imageGenerationError => 'Bildgenerierung fehlgeschlagen';
@@ -6134,6 +6156,155 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get journalUnlinkQuestion =>
       'Möchtest du diesen Eintrag wirklich trennen?';
+
+  @override
+  String get keyboardCommandActivate => 'Fokussiertes Element aktivieren';
+
+  @override
+  String get keyboardCommandCategoryCreation => 'Erstellen';
+
+  @override
+  String get keyboardCommandCategoryEditing => 'Bearbeiten';
+
+  @override
+  String get keyboardCommandCategoryGeneral => 'Allgemein';
+
+  @override
+  String get keyboardCommandCategoryListsAndControls =>
+      'Listen und Bedienelemente';
+
+  @override
+  String get keyboardCommandCategoryNavigation => 'Navigation';
+
+  @override
+  String get keyboardCommandCategoryView => 'Ansicht';
+
+  @override
+  String get keyboardCommandCreateInContext =>
+      'In der aktuellen Ansicht erstellen';
+
+  @override
+  String get keyboardCommandFocusSearch => 'Suche fokussieren';
+
+  @override
+  String get keyboardCommandMoveDown =>
+      'Fokussiertes Element nach unten verschieben';
+
+  @override
+  String get keyboardCommandMoveUp =>
+      'Fokussiertes Element nach oben verschieben';
+
+  @override
+  String keyboardCommandNavigate(String destination) {
+    return 'Zu $destination wechseln';
+  }
+
+  @override
+  String get keyboardCommandNextRegion => 'Nächsten Bereich fokussieren';
+
+  @override
+  String get keyboardCommandOpenPalette => 'Befehlspalette öffnen';
+
+  @override
+  String get keyboardCommandPageDown => 'Eine Seite nach unten';
+
+  @override
+  String get keyboardCommandPageUp => 'Eine Seite nach oben';
+
+  @override
+  String get keyboardCommandPreviousRegion => 'Vorherigen Bereich fokussieren';
+
+  @override
+  String get keyboardCommandRefresh => 'Aktuelle Ansicht aktualisieren';
+
+  @override
+  String get keyboardCommandRename => 'Fokussiertes Element umbenennen';
+
+  @override
+  String get keyboardCommandSelectFirst => 'Erstes Element auswählen';
+
+  @override
+  String get keyboardCommandSelectLast => 'Letztes Element auswählen';
+
+  @override
+  String get keyboardCommandSelectNext => 'Nächstes Element auswählen';
+
+  @override
+  String get keyboardCommandSelectPrevious => 'Vorheriges Element auswählen';
+
+  @override
+  String get keyboardCommandToggle => 'Fokussiertes Element umschalten';
+
+  @override
+  String get keyboardKeyAlt => 'Alt';
+
+  @override
+  String get keyboardKeyArrowDown => 'Pfeil nach unten';
+
+  @override
+  String get keyboardKeyArrowLeft => 'Pfeil nach links';
+
+  @override
+  String get keyboardKeyArrowRight => 'Pfeil nach rechts';
+
+  @override
+  String get keyboardKeyArrowUp => 'Pfeil nach oben';
+
+  @override
+  String get keyboardKeyControl => 'Strg';
+
+  @override
+  String get keyboardKeyDelete => 'Entf';
+
+  @override
+  String get keyboardKeyEnd => 'Ende';
+
+  @override
+  String get keyboardKeyEnter => 'Eingabe';
+
+  @override
+  String get keyboardKeyEscape => 'Esc';
+
+  @override
+  String get keyboardKeyHome => 'Pos 1';
+
+  @override
+  String get keyboardKeyMinus => 'Minus';
+
+  @override
+  String get keyboardKeyOr => 'oder';
+
+  @override
+  String get keyboardKeyPageDown => 'Bild ab';
+
+  @override
+  String get keyboardKeyPageUp => 'Bild auf';
+
+  @override
+  String get keyboardKeyPlus => 'Plus';
+
+  @override
+  String get keyboardKeyShift => 'Umschalt';
+
+  @override
+  String get keyboardKeySpace => 'Leertaste';
+
+  @override
+  String get keyboardResizeDividerLabel => 'Bereiche anpassen';
+
+  @override
+  String get keyboardShortcutsNoResults =>
+      'Keine Kurzbefehle passen zu deiner Suche';
+
+  @override
+  String get keyboardShortcutsSearchHint => 'Kurzbefehle suchen…';
+
+  @override
+  String get keyboardShortcutsSubtitle =>
+      'Alle Desktop-Befehle und ihre aktuellen Tastenkombinationen.';
+
+  @override
+  String get keyboardShortcutsTitle => 'Tastaturkurzbefehle';
 
   @override
   String get knowledgeGraphEmpty => 'Noch keine Verknüpfungen zum Erkunden';
@@ -8246,6 +8417,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsHealthImportWorkout => 'Trainingsdaten importieren';
+
+  @override
+  String get settingsKeyboardShortcutsSubtitle =>
+      'Lerne die Tastenkombinationen für schnellere Navigation und Bearbeitung am Desktop kennen';
+
+  @override
+  String get settingsKeyboardShortcutsTitle => 'Tastaturkurzbefehle';
 
   @override
   String get settingsLabelsCategoriesAdd => 'Kategorie hinzufügen';

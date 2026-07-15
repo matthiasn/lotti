@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
@@ -8,6 +10,7 @@ import 'package:lotti/features/habits/state/heatmap/habit_heatmap_data.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_section_header.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -99,7 +102,10 @@ void main() {
       final controller = FakeHabitsController(state);
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const HabitsTabPage(),
+          const AppCommandHost(
+            handlers: {},
+            child: HabitsTabPage(),
+          ),
           mediaQueryData: mediaQueryData,
           overrides: [
             habitsControllerProvider.overrideWith(() => controller),
@@ -144,6 +150,36 @@ void main() {
 
       await tester.tap(habitCategoryFilterFinder);
       await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('Primary+F reveals the search field and moves focus into it', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      try {
+        final controller = await pump(
+          tester,
+          HabitsState.initial().copyWith(
+            habitDefinitions: [habitFlossing],
+            openNow: [habitFlossing],
+            displayFilter: HabitDisplayFilter.all,
+          ),
+        );
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+        await tester.pump();
+
+        expect(controller.toggleShowSearchCalls, 1);
+        final editable = tester.widget<EditableText>(
+          find.byType(EditableText),
+        );
+        expect(editable.focusNode.hasFocus, isTrue);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
 
     testWidgets('a wide window centres the content with side padding', (

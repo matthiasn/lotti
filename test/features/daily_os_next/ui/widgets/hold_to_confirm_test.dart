@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/hold_to_confirm.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -79,6 +80,33 @@ void main() {
       // Let the reverse animation drain.
       await tester.pump(const Duration(milliseconds: 500));
       expect(fires, 0);
+    });
+
+    testWidgets('keyboard activation confirms without requiring a hold', (
+      tester,
+    ) async {
+      var fires = 0;
+      await tester.pumpWidget(
+        _wrap(
+          Material(
+            child: Center(
+              child: HoldToConfirm(
+                onConfirmed: () => fires++,
+                holdDuration: const Duration(milliseconds: 200),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final focus = tester.widget<Focus>(
+        find.byKey(const Key('hold-to-confirm-focus')),
+      );
+      focus.focusNode!.requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pump();
+      expect(fires, 1);
     });
 
     testWidgets(

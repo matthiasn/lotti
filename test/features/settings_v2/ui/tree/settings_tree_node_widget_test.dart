@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_node_widget.dart';
@@ -42,7 +45,10 @@ Future<void> _pumpNode(
       Material(
         child: SizedBox(
           width: 400,
-          child: SettingsTreeNodeWidget(node: node, depth: depth),
+          child: AppCommandHost(
+            handlers: const {},
+            child: SettingsTreeNodeWidget(node: node, depth: depth),
+          ),
         ),
       ),
     ),
@@ -123,6 +129,32 @@ void main() {
       await tester.pump();
       final path = _containerOf(tester).read(settingsTreePathProvider);
       expect(path, isEmpty);
+    });
+  });
+
+  group('SettingsTreeNodeWidget — keyboard tree navigation', () {
+    testWidgets('Right expands a focused branch and Left collapses it', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      try {
+        await _pumpNode(tester, node: _syncBranch());
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+        await tester.pump();
+        expect(
+          _containerOf(tester).read(settingsTreePathProvider),
+          ['sync'],
+        );
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+        await tester.pump();
+        expect(_containerOf(tester).read(settingsTreePathProvider), isEmpty);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
   });
 

@@ -17,6 +17,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
@@ -88,7 +91,7 @@ String? _singleRealSelection(Set<String> selections) {
 /// pull-to-refresh swaps the page atomically. The FAB calls
 /// [onCreateTaskPressed] (or a default that creates a task and navigates to
 /// it) with every unambiguous inheritable filter value.
-class TasksTabPage extends ConsumerWidget {
+class TasksTabPage extends ConsumerStatefulWidget {
   const TasksTabPage({
     super.key,
     this.onCreateTaskPressed,
@@ -97,14 +100,27 @@ class TasksTabPage extends ConsumerWidget {
   final TasksTabCreateTaskCallback? onCreateTaskPressed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TasksTabPage> createState() => _TasksTabPageState();
+}
+
+class _TasksTabPageState extends ConsumerState<TasksTabPage> {
+  final _searchFocusNode = FocusNode(debugLabel: 'tasks-search');
+
+  @override
+  void dispose() {
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(journalPageControllerProvider(true));
     final filterContext = TaskCreationFilterContext.fromPageState(state);
     final floatingActionButton = DesignSystemFloatingActionButton(
       semanticLabel: context.messages.addActionAddTask,
       onPressed: () {
         unawaited(
-          (onCreateTaskPressed ?? _defaultCreateTaskPressed)(
+          (widget.onCreateTaskPressed ?? _defaultCreateTaskPressed)(
             ref,
             filterContext,
           ),
@@ -116,23 +132,45 @@ class TasksTabPage extends ConsumerWidget {
       overrides: [
         journalPageScopeProvider.overrideWithValue(true),
       ],
-      child: Scaffold(
-        // Task list pane uses the darker `background.level01` (#181818)
-        // surface — Figma pairs it against the lighter sidebar (level02,
-        // #222222) for contrast.
-        backgroundColor: context.designTokens.colors.background.level01,
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        floatingActionButton: DesignSystemBottomNavigationFabPadding(
-          child: floatingActionButton,
+      child: AppCommandScope(
+        debugLabel: 'tasks-list',
+        handlers: {
+          AppCommandId.refresh: AppCommandHandler(
+            invoke: (_) => ref
+                .read(journalPageControllerProvider(true).notifier)
+                .refreshQuery(preserveVisibleItems: true),
+          ),
+          AppCommandId.createInContext: AppCommandHandler(
+            invoke: (_) =>
+                (widget.onCreateTaskPressed ?? _defaultCreateTaskPressed)(
+                  ref,
+                  filterContext,
+                ),
+          ),
+          AppCommandId.focusSearch: AppCommandHandler(
+            invoke: (_) => _searchFocusNode.requestFocus(),
+          ),
+        },
+        child: Scaffold(
+          // Task list pane uses the darker `background.level01` (#181818)
+          // surface — Figma pairs it against the lighter sidebar (level02,
+          // #222222) for contrast.
+          backgroundColor: context.designTokens.colors.background.level01,
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          floatingActionButton: DesignSystemBottomNavigationFabPadding(
+            child: floatingActionButton,
+          ),
+          body: _TasksTabPageBody(searchFocusNode: _searchFocusNode),
         ),
-        body: const _TasksTabPageBody(),
       ),
     );
   }
 }
 
 class _TasksTabPageBody extends ConsumerStatefulWidget {
-  const _TasksTabPageBody();
+  const _TasksTabPageBody({required this.searchFocusNode});
+
+  final FocusNode searchFocusNode;
 
   @override
   ConsumerState<_TasksTabPageBody> createState() => _TasksTabPageBodyState();
@@ -177,6 +215,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
         builder: (context, activeTaskId, _) => Column(
           children: [
             TabSectionHeader(
+              searchFocusNode: widget.searchFocusNode,
               title: context.messages.navTabTitleTasks,
               query: state.match,
               searchHint: context.messages.searchTasksHint,

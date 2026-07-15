@@ -4993,6 +4993,24 @@ abstract class AppLocalizations {
   /// **'Color'**
   String get colorLabel;
 
+  /// No description provided for @commandPaletteNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No available commands match your search'**
+  String get commandPaletteNoResults;
+
+  /// No description provided for @commandPaletteSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search commands…'**
+  String get commandPaletteSearchHint;
+
+  /// No description provided for @commandPaletteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Command palette'**
+  String get commandPaletteTitle;
+
   /// No description provided for @commonError.
   ///
   /// In en, this message translates to:
@@ -9198,6 +9216,12 @@ abstract class AppLocalizations {
   /// **'Create image from voice description'**
   String get generateCoverArtSubtitle;
 
+  /// No description provided for @goMenuTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Go'**
+  String get goMenuTitle;
+
   /// No description provided for @habitActiveFromLabel.
   ///
   /// In en, this message translates to:
@@ -9527,6 +9551,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'vs previous week'**
   String get habitsVsPreviousWeek;
+
+  /// No description provided for @helpMenuCommandPalette.
+  ///
+  /// In en, this message translates to:
+  /// **'Command Palette…'**
+  String get helpMenuCommandPalette;
+
+  /// No description provided for @helpMenuKeyboardShortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard Shortcuts…'**
+  String get helpMenuKeyboardShortcuts;
+
+  /// No description provided for @helpMenuTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get helpMenuTitle;
 
   /// No description provided for @imageGenerationError.
   ///
@@ -10583,6 +10625,288 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to unlink this entry?'**
   String get journalUnlinkQuestion;
+
+  /// No description provided for @keyboardCommandActivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate focused item'**
+  String get keyboardCommandActivate;
+
+  /// No description provided for @keyboardCommandCategoryCreation.
+  ///
+  /// In en, this message translates to:
+  /// **'Creation'**
+  String get keyboardCommandCategoryCreation;
+
+  /// No description provided for @keyboardCommandCategoryEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Editing'**
+  String get keyboardCommandCategoryEditing;
+
+  /// No description provided for @keyboardCommandCategoryGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get keyboardCommandCategoryGeneral;
+
+  /// No description provided for @keyboardCommandCategoryListsAndControls.
+  ///
+  /// In en, this message translates to:
+  /// **'Lists and controls'**
+  String get keyboardCommandCategoryListsAndControls;
+
+  /// No description provided for @keyboardCommandCategoryNavigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation'**
+  String get keyboardCommandCategoryNavigation;
+
+  /// No description provided for @keyboardCommandCategoryView.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get keyboardCommandCategoryView;
+
+  /// No description provided for @keyboardCommandCreateInContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Create in current view'**
+  String get keyboardCommandCreateInContext;
+
+  /// No description provided for @keyboardCommandFocusSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus search'**
+  String get keyboardCommandFocusSearch;
+
+  /// No description provided for @keyboardCommandMoveDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move focused item down'**
+  String get keyboardCommandMoveDown;
+
+  /// No description provided for @keyboardCommandMoveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move focused item up'**
+  String get keyboardCommandMoveUp;
+
+  /// No description provided for @keyboardCommandNavigate.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to {destination}'**
+  String keyboardCommandNavigate(String destination);
+
+  /// No description provided for @keyboardCommandNextRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus next pane'**
+  String get keyboardCommandNextRegion;
+
+  /// No description provided for @keyboardCommandOpenPalette.
+  ///
+  /// In en, this message translates to:
+  /// **'Open command palette'**
+  String get keyboardCommandOpenPalette;
+
+  /// No description provided for @keyboardCommandPageDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move down one page'**
+  String get keyboardCommandPageDown;
+
+  /// No description provided for @keyboardCommandPageUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up one page'**
+  String get keyboardCommandPageUp;
+
+  /// No description provided for @keyboardCommandPreviousRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus previous pane'**
+  String get keyboardCommandPreviousRegion;
+
+  /// No description provided for @keyboardCommandRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh current view'**
+  String get keyboardCommandRefresh;
+
+  /// No description provided for @keyboardCommandRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename focused item'**
+  String get keyboardCommandRename;
+
+  /// No description provided for @keyboardCommandSelectFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Select first item'**
+  String get keyboardCommandSelectFirst;
+
+  /// No description provided for @keyboardCommandSelectLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Select last item'**
+  String get keyboardCommandSelectLast;
+
+  /// No description provided for @keyboardCommandSelectNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Select next item'**
+  String get keyboardCommandSelectNext;
+
+  /// No description provided for @keyboardCommandSelectPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Select previous item'**
+  String get keyboardCommandSelectPrevious;
+
+  /// No description provided for @keyboardCommandToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle focused item'**
+  String get keyboardCommandToggle;
+
+  /// No description provided for @keyboardKeyAlt.
+  ///
+  /// In en, this message translates to:
+  /// **'Alt'**
+  String get keyboardKeyAlt;
+
+  /// No description provided for @keyboardKeyArrowDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Down Arrow'**
+  String get keyboardKeyArrowDown;
+
+  /// No description provided for @keyboardKeyArrowLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Left Arrow'**
+  String get keyboardKeyArrowLeft;
+
+  /// No description provided for @keyboardKeyArrowRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Right Arrow'**
+  String get keyboardKeyArrowRight;
+
+  /// No description provided for @keyboardKeyArrowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Up Arrow'**
+  String get keyboardKeyArrowUp;
+
+  /// No description provided for @keyboardKeyControl.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl'**
+  String get keyboardKeyControl;
+
+  /// No description provided for @keyboardKeyDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get keyboardKeyDelete;
+
+  /// No description provided for @keyboardKeyEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get keyboardKeyEnd;
+
+  /// No description provided for @keyboardKeyEnter.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter'**
+  String get keyboardKeyEnter;
+
+  /// No description provided for @keyboardKeyEscape.
+  ///
+  /// In en, this message translates to:
+  /// **'Escape'**
+  String get keyboardKeyEscape;
+
+  /// No description provided for @keyboardKeyHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get keyboardKeyHome;
+
+  /// No description provided for @keyboardKeyMinus.
+  ///
+  /// In en, this message translates to:
+  /// **'Minus'**
+  String get keyboardKeyMinus;
+
+  /// No description provided for @keyboardKeyOr.
+  ///
+  /// In en, this message translates to:
+  /// **'or'**
+  String get keyboardKeyOr;
+
+  /// No description provided for @keyboardKeyPageDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Page Down'**
+  String get keyboardKeyPageDown;
+
+  /// No description provided for @keyboardKeyPageUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Page Up'**
+  String get keyboardKeyPageUp;
+
+  /// No description provided for @keyboardKeyPlus.
+  ///
+  /// In en, this message translates to:
+  /// **'Plus'**
+  String get keyboardKeyPlus;
+
+  /// No description provided for @keyboardKeyShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift'**
+  String get keyboardKeyShift;
+
+  /// No description provided for @keyboardKeySpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Space'**
+  String get keyboardKeySpace;
+
+  /// No description provided for @keyboardResizeDividerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Resize panes'**
+  String get keyboardResizeDividerLabel;
+
+  /// No description provided for @keyboardShortcutsNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No shortcuts match your search'**
+  String get keyboardShortcutsNoResults;
+
+  /// No description provided for @keyboardShortcutsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search shortcuts…'**
+  String get keyboardShortcutsSearchHint;
+
+  /// No description provided for @keyboardShortcutsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Every desktop command and its current keyboard combination.'**
+  String get keyboardShortcutsSubtitle;
+
+  /// No description provided for @keyboardShortcutsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get keyboardShortcutsTitle;
 
   /// No description provided for @knowledgeGraphEmpty.
   ///
@@ -14079,6 +14403,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Import Workout Data'**
   String get settingsHealthImportWorkout;
+
+  /// No description provided for @settingsKeyboardShortcutsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn the keyboard combinations for faster desktop navigation and editing'**
+  String get settingsKeyboardShortcutsSubtitle;
+
+  /// No description provided for @settingsKeyboardShortcutsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get settingsKeyboardShortcutsTitle;
 
   /// No description provided for @settingsLabelsCategoriesAdd.
   ///

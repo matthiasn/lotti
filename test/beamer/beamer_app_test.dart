@@ -1631,7 +1631,10 @@ void main() {
       for (var i = 0; i < stack.children.length; i++) {
         final child = stack.children[i];
         expect(child, isA<TickerMode>());
-        expect((child as TickerMode).enabled, i == 2);
+        final tickerMode = child as TickerMode;
+        expect(tickerMode.enabled, i == 2);
+        expect(tickerMode.child, isA<ExcludeFocus>());
+        expect((tickerMode.child as ExcludeFocus).excluding, i != 2);
       }
 
       await tester.pumpWidget(const SizedBox.shrink());

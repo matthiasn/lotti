@@ -9,7 +9,6 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide ChangeSource;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -33,7 +32,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
 /// Delay before stopping the time service after save.
@@ -71,34 +69,6 @@ class EntryController extends AsyncNotifier<EntryState?> {
       _shouldShowEditorToolBar = true;
     }
     emitState();
-
-    if (isDesktop) {
-      if (focusNode.hasFocus) {
-        unawaited(
-          hotKeyManager.register(
-            saveHotKey,
-            keyDownHandler: (hotKey) => save(),
-          ),
-        );
-      } else {
-        unawaited(hotKeyManager.unregister(saveHotKey));
-      }
-    }
-  }
-
-  void taskTitleFocusNodeListener() {
-    if (isDesktop) {
-      if (taskTitleFocusNode.hasFocus) {
-        unawaited(
-          hotKeyManager.register(
-            saveHotKey,
-            keyDownHandler: (hotKey) => save(),
-          ),
-        );
-      } else {
-        unawaited(hotKeyManager.unregister(saveHotKey));
-      }
-    }
   }
 
   QuillController controller = QuillController.basic();
@@ -119,15 +89,8 @@ class EntryController extends AsyncNotifier<EntryState?> {
   final JournalDb _journalDb = getIt<JournalDb>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
-  final saveHotKey = HotKey(
-    key: LogicalKeyboardKey.keyS,
-    modifiers: [HotKeyModifier.meta],
-    scope: HotKeyScope.inapp,
-  );
-
   void listen() {
     focusNode.addListener(focusNodeListener);
-    taskTitleFocusNode.addListener(taskTitleFocusNodeListener);
 
     _updateSubscription = _updateNotifications.updateStream.listen((
       affectedIds,
@@ -158,9 +121,6 @@ class EntryController extends AsyncNotifier<EntryState?> {
       })
       ..onDispose(() {
         focusNode.removeListener(focusNodeListener);
-      })
-      ..onDispose(() {
-        taskTitleFocusNode.removeListener(taskTitleFocusNodeListener);
       })
       ..cacheFor(entryCacheDuration);
 

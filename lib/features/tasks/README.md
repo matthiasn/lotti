@@ -841,3 +841,26 @@ standalone journal-entry detail page remains outside the scope.
 - `ai` and `agents` provide reports, change sets, prompts, and automation around task content
 
 If you want to understand why tasks feel like the app's operational center rather than just another entry type, this feature is the answer.
+
+## Desktop Keyboard Commands
+
+The task-list page contributes commands only while its pane owns focus:
+
+- Primary+F focuses the task search field;
+- Primary+R refreshes the paged query while keeping visible items rendered;
+- Primary+Shift+N creates a task with the single selected category, when one
+  can be inferred.
+
+```mermaid
+flowchart LR
+  Focus[Task list focus] --> Scope[Tasks AppCommandScope]
+  Scope --> Search[Primary+F]
+  Scope --> Refresh[Primary+R]
+  Scope --> Create[Primary+Shift+N]
+  Search --> Header[TabSectionHeader search FocusNode]
+  Refresh --> Controller[journalPageControllerProvider true]
+  Create --> Callback[TasksTabCreateTaskCallback]
+```
+
+Global Primary+1 navigation and Primary+T task creation are owned by the app
+shell. Entry-detail save remains owned by the journal entry detail scope.

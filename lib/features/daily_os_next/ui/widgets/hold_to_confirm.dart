@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -6,6 +7,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// 168 px teal circle that fills its rim over [holdDuration] while
 /// pressed. Releasing before completion bleeds the progress back off
 /// over ~400 ms. Reaching full fires [onConfirmed] once.
+/// Keyboard Enter/Space and accessibility activation confirm immediately,
+/// matching the standard button contract without requiring a timed key hold.
 ///
 /// Inside the circle: just the lock icon and a single word —
 /// `Hold` → `Keep holding` → `Committed` — no stacked sub-labels
@@ -31,8 +34,10 @@ class HoldToConfirm extends StatefulWidget {
 class _HoldToConfirmState extends State<HoldToConfirm>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  late final FocusNode _focusNode;
   bool _done = false;
   bool _holding = false;
+  bool _focused = false;
 
   @override
   void initState() {
@@ -43,6 +48,7 @@ class _HoldToConfirmState extends State<HoldToConfirm>
       // Releasing early bleeds the ring off — soft decay, no snap-back.
       reverseDuration: const Duration(milliseconds: 400),
     )..addStatusListener(_onStatusChanged);
+    _focusNode = FocusNode(debugLabel: 'hold-to-confirm');
   }
 
   void _onStatusChanged(AnimationStatus status) {
@@ -57,6 +63,7 @@ class _HoldToConfirmState extends State<HoldToConfirm>
     _controller
       ..removeStatusListener(_onStatusChanged)
       ..dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -72,6 +79,22 @@ class _HoldToConfirmState extends State<HoldToConfirm>
     if (_controller.value < 1.0) {
       _controller.reverse();
     }
+  }
+
+  void _confirmFromAccessibleActivation() {
+    if (_done) return;
+    _controller.value = 1;
+  }
+
+  KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
+    final isActivationKey =
+        event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.space;
+    if (!isActivationKey) return KeyEventResult.ignored;
+    if (event is KeyDownEvent) {
+      _confirmFromAccessibleActivation();
+    }
+    return KeyEventResult.handled;
   }
 
   @override
@@ -90,70 +113,101 @@ class _HoldToConfirmState extends State<HoldToConfirm>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        GestureDetector(
-          onTapDown: (_) => _onPressDown(),
-          onTapUp: (_) => _onPressUp(),
-          onTapCancel: _onPressUp,
-          child: SizedBox(
-            width: widget.size,
-            height: widget.size,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: widget.size,
-                  height: widget.size,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [teal, tealDeep],
-                      stops: const [0.2, 1.0],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: teal.withValues(alpha: 0.35),
-                        blurRadius: 48,
-                        spreadRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _done
-                            ? Icons.check_rounded
-                            : Icons.lock_outline_rounded,
-                        size: widget.size * 0.18,
-                        color: onTeal,
-                      ),
-                      SizedBox(height: tokens.spacing.step2),
-                      Text(
-                        word,
-                        style: tokens.typography.styles.subtitle.subtitle2
-                            .copyWith(color: onTeal),
-                      ),
-                    ],
-                  ),
-                ),
-                // 6 px progress rim over a faint full track ring.
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: AnimatedBuilder(
-                      animation: _controller,
-                      builder: (context, _) {
-                        return CustomPaint(
-                          painter: _ProgressRingPainter(
-                            progress: _controller.value,
-                            color: Colors.white,
-                            trackColor: Colors.white.withValues(alpha: 0.18),
+        Semantics(
+          button: true,
+          enabled: !_done,
+          label: messages.dailyOsNextCommitHoldHelper,
+          onTap: _done ? null : _confirmFromAccessibleActivation,
+          child: Focus(
+            key: const Key('hold-to-confirm-focus'),
+            focusNode: _focusNode,
+            onFocusChange: (focused) {
+              if (!focused) _onPressUp();
+              setState(() => _focused = focused);
+            },
+            onKeyEvent: _onKeyEvent,
+            child: GestureDetector(
+              onTapDown: (_) => _onPressDown(),
+              onTapUp: (_) => _onPressUp(),
+              onTapCancel: _onPressUp,
+              child: SizedBox(
+                width: widget.size,
+                height: widget.size,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: widget.size,
+                      height: widget.size,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [teal, tealDeep],
+                          stops: const [0.2, 1.0],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: teal.withValues(alpha: 0.35),
+                            blurRadius: 48,
+                            spreadRadius: 4,
                           ),
-                        );
-                      },
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _done
+                                ? Icons.check_rounded
+                                : Icons.lock_outline_rounded,
+                            size: widget.size * 0.18,
+                            color: onTeal,
+                          ),
+                          SizedBox(height: tokens.spacing.step2),
+                          Text(
+                            word,
+                            style: tokens.typography.styles.subtitle.subtitle2
+                                .copyWith(color: onTeal),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    // 6 px progress rim over a faint full track ring.
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: AnimatedBuilder(
+                          animation: _controller,
+                          builder: (context, _) {
+                            return CustomPaint(
+                              painter: _ProgressRingPainter(
+                                progress: _controller.value,
+                                color: Colors.white,
+                                trackColor: Colors.white.withValues(
+                                  alpha: 0.18,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    if (_focused)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: tokens.colors.text.highEmphasis,
+                                width: tokens.spacing.step1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

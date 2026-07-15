@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 
 void main() {
@@ -82,6 +85,46 @@ void main() {
           }
         },
       );
+
+      testWidgets('Go menu dispatches through the shared command handler', (
+        tester,
+      ) async {
+        var taskNavigations = 0;
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        try {
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: AppCommandHost(
+                handlers: {
+                  AppCommandId.navigateTasks: AppCommandHandler(
+                    invoke: (_) => taskNavigations++,
+                  ),
+                },
+                child: const DesktopMenuWrapper(child: Text('Menu Child')),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final menuBar = tester.widget<PlatformMenuBar>(
+            find.byType(PlatformMenuBar),
+          );
+          final goMenu = menuBar.menus.whereType<PlatformMenu>().singleWhere(
+            (menu) => menu.label == 'Go',
+          );
+          final tasksItem = goMenu.menus
+              .whereType<PlatformMenuItem>()
+              .singleWhere((item) => item.label == 'Go to Tasks');
+
+          expect(tasksItem.onSelected, isNotNull);
+          tasksItem.onSelected!();
+          await tester.pump();
+          expect(taskNavigations, 1);
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
     });
   });
 }

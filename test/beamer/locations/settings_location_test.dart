@@ -18,6 +18,7 @@ import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
+import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
@@ -165,6 +166,7 @@ void main() {
         '/settings/flags',
         '/settings/recording-style',
         '/settings/theming',
+        '/settings/keyboard-shortcuts',
         '/settings/speech',
         '/settings/definitions',
         '/settings/advanced',
@@ -994,6 +996,19 @@ void main() {
       expect(pages.length, 2);
       expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<ThemingPage>());
+    });
+
+    test('buildPages builds KeyboardShortcutsPage', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/keyboard-shortcuts'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(mockBuildContext, beamState);
+
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<KeyboardShortcutsPage>());
     });
 
     test('buildPages builds SpeechSettingsPage', () {

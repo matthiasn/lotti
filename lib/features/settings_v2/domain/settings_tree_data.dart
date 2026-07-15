@@ -251,6 +251,11 @@ List<SettingsNode> buildSettingsTree({
       panel: 'recording-style',
     ),
     leaf('theming', Icons.palette_outlined, panel: 'theming'),
+    leaf(
+      'keyboard-shortcuts',
+      Icons.keyboard_outlined,
+      panel: 'keyboard-shortcuts',
+    ),
     if (enableSpeechTts)
       leaf('speech', Icons.record_voice_over_outlined, panel: 'speech'),
     branch(

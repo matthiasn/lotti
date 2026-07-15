@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 
@@ -173,6 +174,27 @@ void main() {
       // Vertical drags produce zero horizontal deltas
       final totalDelta = deltas.fold<double>(0, (sum, d) => sum + d);
       expect(totalDelta, 0);
+    });
+  });
+
+  group('ResizableDivider keyboard interaction', () {
+    testWidgets('arrow keys resize and Shift uses a larger step', (
+      tester,
+    ) async {
+      final deltas = <double>[];
+      await tester.pumpWidget(buildTestWidget(onDrag: deltas.add));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+
+      expect(deltas, hasLength(3));
+      expect(deltas.first, greaterThan(0));
+      expect(deltas[1], greaterThan(deltas.first));
+      expect(deltas.last, lessThan(0));
     });
   });
 

@@ -5,7 +5,6 @@ import 'dart:ui' show AppExitResponse;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
@@ -153,7 +152,6 @@ Future<void> main() async {
 
       if (isDesktop) {
         await windowManager.ensureInitialized();
-        await hotKeyManager.unregisterAll();
 
         // Configure window options for flatpak compatibility
         const windowOptions = WindowOptions(
