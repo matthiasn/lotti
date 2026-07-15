@@ -217,7 +217,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      expect(find.text('Tasks Filter'), findsOneWidget);
+      expect(find.text('Filter tasks'), findsOneWidget);
     });
 
     testWidgets(
@@ -243,7 +243,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        expect(find.text('Tasks Filter'), findsOneWidget);
+        expect(find.text('Filter tasks'), findsOneWidget);
       },
     );
 

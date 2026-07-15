@@ -2,6 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// Controls how the confirming action uses the available footer width.
+enum DesignSystemModalActionBarLayout {
+  /// The primary action fills the remaining width and stacks on narrow or
+  /// large-text layouts.
+  dominantPrimary,
+
+  /// Secondary actions stay grouped at the leading edge while the primary
+  /// keeps its intrinsic width at the trailing edge. The secondary group may
+  /// wrap internally when translations or text scaling need more room.
+  compactPrimary,
+}
+
 /// The app's standard modal/sheet action bar.
 ///
 /// Layout rule (selected by the design panel as the "dominant primary" / V3
@@ -27,6 +39,7 @@ class DesignSystemModalActionBar extends StatelessWidget {
     this.secondary = const [],
     this.padding,
     this.glass = false,
+    this.layout = DesignSystemModalActionBarLayout.dominantPrimary,
     super.key,
   });
 
@@ -46,6 +59,9 @@ class DesignSystemModalActionBar extends StatelessWidget {
   /// date/time picker sheets).
   final bool glass;
 
+  /// Width treatment for the primary action.
+  final DesignSystemModalActionBarLayout layout;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -57,6 +73,12 @@ class DesignSystemModalActionBar extends StatelessWidget {
             : tokens.spacing.step13 * 2;
         final stacked =
             constraints.maxWidth < narrowBreakpoint || textScale > 1.3;
+        if (layout == DesignSystemModalActionBarLayout.compactPrimary) {
+          return _CompactActionLayout(
+            primary: primary,
+            secondary: secondary,
+          );
+        }
         return stacked
             ? _StackedActionLayout(primary: primary, secondary: secondary)
             : _WideActionLayout(primary: primary, secondary: secondary);
@@ -66,6 +88,33 @@ class DesignSystemModalActionBar extends StatelessWidget {
         ? content
         : Padding(padding: padding!, child: content);
     return glass ? DesignSystemGlassStrip(child: padded) : padded;
+  }
+}
+
+class _CompactActionLayout extends StatelessWidget {
+  const _CompactActionLayout({required this.primary, required this.secondary});
+
+  final Widget primary;
+  final List<Widget> secondary;
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (secondary.isNotEmpty)
+          Expanded(
+            child: Wrap(
+              spacing: spacing.step3,
+              runSpacing: spacing.step3,
+              children: secondary,
+            ),
+          ),
+        if (secondary.isNotEmpty) SizedBox(width: spacing.step3),
+        primary,
+      ],
+    );
   }
 }
 

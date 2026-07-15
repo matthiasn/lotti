@@ -24,6 +24,7 @@ class _TaskFilterNavigationField extends StatelessWidget {
     return DesignSystemSelectionRow(
       title: field.label,
       subtitle: summary,
+      size: DesignSystemListItemSize.small,
       type: DesignSystemSelectionRowType.navigation,
       semanticLabel: '${field.label}, $summary',
       onTap: onTap,
@@ -130,25 +131,18 @@ class _TaskFilterToggleGroup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _TaskFilterSectionLabel(text: label),
-        SizedBox(height: spacing.step3),
-        DesignSystemGroupedList(
-          padding: EdgeInsets.zero,
-          filled: false,
-          children: [
-            for (final toggle in toggles)
-              Padding(
-                key: ValueKey(
-                  'design-system-task-filter-toggle-${toggle.id}',
-                ),
-                padding: EdgeInsets.symmetric(horizontal: spacing.step5),
-                child: SettingsSwitchRow(
-                  title: toggle.label,
-                  value: toggle.value,
-                  onChanged: (_) => onChanged(toggle.id),
-                ),
-              ),
-          ],
-        ),
+        SizedBox(height: spacing.step4),
+        for (var index = 0; index < toggles.length; index++) ...[
+          DesignSystemFilterToggleRow(
+            key: ValueKey(
+              'design-system-task-filter-toggle-${toggles[index].id}',
+            ),
+            label: toggles[index].label,
+            value: toggles[index].value,
+            onChanged: (_) => onChanged(toggles[index].id),
+          ),
+          if (index != toggles.length - 1) SizedBox(height: spacing.step1),
+        ],
       ],
     );
   }

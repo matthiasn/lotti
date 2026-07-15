@@ -34,6 +34,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
     required this.onTap,
     this.subtitle,
     this.subtitleMaxLines = 2,
+    this.size = DesignSystemListItemSize.medium,
     this.leading,
     this.trailing,
     this.selected = false,
@@ -47,6 +48,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
   final String title;
   final String? subtitle;
   final int? subtitleMaxLines;
+  final DesignSystemListItemSize size;
   final Widget? leading;
 
   /// Optional feature metadata placed before the standard trailing affordance.
@@ -92,6 +94,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
           title: title,
           subtitle: subtitle,
           subtitleMaxLines: subtitleMaxLines,
+          size: size,
           leading: leading == null
               ? null
               : SizedBox(

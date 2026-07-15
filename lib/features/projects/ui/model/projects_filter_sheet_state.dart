@@ -57,7 +57,7 @@ DesignSystemTaskFilterState buildProjectsFilterSheetState(
 
   return DesignSystemTaskFilterState(
     title: context.messages.projectsFilterTooltip,
-    clearAllLabel: context.messages.tasksFilterClearAll,
+    clearAllLabel: context.messages.clearButton,
     applyLabel: context.messages.tasksLabelsSheetApply,
     statusField: DesignSystemTaskFilterFieldState(
       label: stripTrailingColon(context.messages.projectsFilterStatusLabel),

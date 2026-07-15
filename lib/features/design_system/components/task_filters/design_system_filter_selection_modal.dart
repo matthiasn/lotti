@@ -120,11 +120,14 @@ class _DesignSystemFilterSelectionPageState
             ...?(searchHintText == null
                 ? null
                 : [
-                    DesignSystemSearch(
-                      hintText: searchHintText,
-                      semanticsLabel: searchHintText,
-                      onChanged: (value) => setState(() => _query = value),
-                      onClear: () => setState(() => _query = ''),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: spacing.step5),
+                      child: DesignSystemSearch(
+                        hintText: searchHintText,
+                        semanticsLabel: searchHintText,
+                        onChanged: (value) => setState(() => _query = value),
+                        onClear: () => setState(() => _query = ''),
+                      ),
                     ),
                     SizedBox(height: spacing.step5),
                   ]),
@@ -223,10 +226,13 @@ class _GroupedOptionList extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var index = 0; index < visibleGroups.length; index++) ...[
-          Text(
-            visibleGroups[index].group.label,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: spacing.step5),
+            child: Text(
+              visibleGroups[index].group.label,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
             ),
           ),
           SizedBox(height: spacing.step2),

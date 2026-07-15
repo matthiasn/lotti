@@ -276,7 +276,7 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
 
   return DesignSystemTaskFilterState(
     title: messages.tasksFilterTitle,
-    clearAllLabel: messages.tasksFilterClearAll,
+    clearAllLabel: messages.clearButton,
     applyLabel: messages.tasksLabelsSheetApply,
     sortLabel: messages.tasksSortByLabel,
     sortOptions: sortOptions,

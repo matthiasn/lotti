@@ -325,7 +325,15 @@ void main() {
       expect(clear.size, DesignSystemButtonSize.large);
       expect(clear.variant, DesignSystemButtonVariant.secondary);
       expect(apply.size, DesignSystemButtonSize.large);
-      expect(apply.fullWidth, isTrue);
+      expect(apply.fullWidth, isFalse);
+      final clearCenter = tester.getCenter(
+        find.byKey(const ValueKey('design-system-task-filter-clear')),
+      );
+      final applyCenter = tester.getCenter(
+        find.byKey(const ValueKey('design-system-task-filter-apply')),
+      );
+      expect(applyCenter.dy, clearCenter.dy);
+      expect(applyCenter.dx, greaterThan(clearCenter.dx));
     },
   );
 }

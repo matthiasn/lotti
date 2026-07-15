@@ -63,6 +63,7 @@ class _DesignSystemTaskFilterActionBarState
 
     return DesignSystemModalActionBar(
       glass: true,
+      layout: DesignSystemModalActionBarLayout.compactPrimary,
       padding: EdgeInsets.fromLTRB(
         spacing.step5,
         spacing.step4,
@@ -122,7 +123,6 @@ class _DesignSystemTaskFilterActionBarState
         label: widget.state.applyLabel,
         leadingIcon: Icons.check_rounded,
         size: DesignSystemButtonSize.large,
-        fullWidth: true,
         onPressed: widget.onApplyPressed == null
             ? null
             : () => widget.onApplyPressed!(widget.state),

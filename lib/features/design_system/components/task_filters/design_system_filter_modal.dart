@@ -67,6 +67,12 @@ Future<void> showDesignSystemFilterModal({
         spacing.step5,
         spacing.step5,
       );
+      final selectionPagePadding = EdgeInsets.fromLTRB(
+        0,
+        spacing.step2,
+        0,
+        spacing.step5,
+      );
 
       return [
         ModalUtils.modalSheetPage(
@@ -131,7 +137,7 @@ Future<void> showDesignSystemFilterModal({
             title: initialState.fieldFor(section)!.label,
             showCloseButton: true,
             onTapBack: () => pageIndexNotifier.value = 0,
-            padding: pagePadding,
+            padding: selectionPagePadding,
             stickyActionBar: _SelectionPageActionBar(
               onDone: () => pageIndexNotifier.value = 0,
             ),

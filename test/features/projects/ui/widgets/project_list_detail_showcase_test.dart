@@ -159,7 +159,7 @@ void main() {
         // showProjectsFilterModal renders the shared filter sheet, whose title
         // and the category list seeded from state.data.categories prove the
         // initialFilter/categories arguments were forwarded.
-        expect(find.text('Tasks Filter'), findsOneWidget);
+        expect(find.text('Filter projects'), findsOneWidget);
         expect(find.text('Status'), findsOneWidget);
         expect(find.text('Category'), findsOneWidget);
       },

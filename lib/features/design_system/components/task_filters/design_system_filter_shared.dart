@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Strips a trailing colon and any whitespace before it from a label string.
@@ -6,6 +7,71 @@ String stripTrailingColon(String value) {
   return value.endsWith(':')
       ? value.substring(0, value.length - 1).trimRight()
       : value;
+}
+
+/// Full-width boolean filter row used by compact filter and sort sheets.
+///
+/// The entire row is one hover, focus, tap, and semantics target. The trailing
+/// toggle is visual-only, avoiding the cramped inset-card treatment and a
+/// duplicate focus stop.
+class DesignSystemFilterToggleRow extends StatelessWidget {
+  const DesignSystemFilterToggleRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    super.key,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Semantics(
+      button: true,
+      toggled: value,
+      label: label,
+      onTap: () => onChanged(!value),
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          onTap: () => onChanged(!value),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step4,
+              vertical: tokens.spacing.step3,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step3),
+                ExcludeFocus(
+                  child: IgnorePointer(
+                    child: DesignSystemToggle(
+                      value: value,
+                      semanticsLabel: label,
+                      onChanged: onChanged,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Accessibility role for a compact filter choice.

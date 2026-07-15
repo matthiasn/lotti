@@ -144,7 +144,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      expect(find.text('Tasks Filter'), findsOneWidget);
+      expect(find.text('Filter tasks'), findsOneWidget);
 
       await tester.tap(
         find.byKey(const ValueKey('design-system-task-filter-priority-p1')),

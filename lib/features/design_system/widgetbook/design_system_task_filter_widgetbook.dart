@@ -138,7 +138,7 @@ class _TaskFilterStatePanelTitle extends StatelessWidget {
 DesignSystemTaskFilterState _buildSampleState(AppLocalizations messages) {
   return DesignSystemTaskFilterState(
     title: messages.tasksFilterApplyTitle,
-    clearAllLabel: messages.tasksFilterClearAll,
+    clearAllLabel: messages.clearButton,
     applyLabel: messages.tasksLabelsSheetApply,
     sortLabel: messages.tasksSortByLabel,
     sortOptions: [

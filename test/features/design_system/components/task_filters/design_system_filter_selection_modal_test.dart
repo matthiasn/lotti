@@ -151,6 +151,25 @@ void main() {
     );
   });
 
+  testWidgets('search is inset while selection bands use the full page width', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      config: const DesignSystemFilterFieldPageConfig(
+        searchHintText: 'Search status',
+      ),
+    );
+
+    final searchLeft = tester.getTopLeft(find.byType(DesignSystemSearch)).dx;
+    final rowLeft = tester.getTopLeft(option('open')).dx;
+    final searchWidth = tester.getSize(find.byType(DesignSystemSearch)).width;
+    final rowWidth = tester.getSize(option('open')).width;
+
+    expect(rowLeft, lessThan(searchLeft));
+    expect(rowWidth, greaterThan(searchWidth));
+  });
+
   testWidgets('groups visible options and omits empty groups after search', (
     tester,
   ) async {

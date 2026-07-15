@@ -31,6 +31,15 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
     final notifier = ref.read(
       linkedEntriesActivityFilterControllerProvider(entryId).notifier,
     );
+    final hasCodingPrompt = ref.watch(
+      resolvedOutgoingLinkedEntriesProvider(entryId).select(
+        (entities) => entities.any(
+          (entity) =>
+              LinkedEntryActivityFilter.fromEntity(entity) ==
+              LinkedEntryActivityFilter.code,
+        ),
+      ),
+    );
 
     final sortOrder = ref.watch(
       linkedEntriesSortControllerProvider(entryId),
@@ -47,6 +56,7 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
         bottom: tokens.spacing.step4,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Wrap(
@@ -54,6 +64,11 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
               runSpacing: tokens.spacing.step2,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: LinkedEntryActivityFilter.values
+                  .where(
+                    (kind) =>
+                        kind != LinkedEntryActivityFilter.code ||
+                        hasCodingPrompt,
+                  )
                   .map(
                     (kind) => _ActivityPill(
                       kind: kind,
@@ -110,19 +125,59 @@ class _FilterTrigger extends StatelessWidget {
       ...activeLabels,
     ].join(', ');
 
-    return DesignSystemFilterChoicePill(
-      label: label,
-      semanticsLabel: semanticsLabel,
-      selected: activeLabels.isNotEmpty,
-      role: DesignSystemFilterChoiceRole.action,
-      leading: Icon(
-        Icons.filter_list_rounded,
-        size: tokens.spacing.step5,
-        color: tokens.colors.interactive.enabled,
-      ),
+    final selected = activeLabels.isNotEmpty;
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
       onTap: () => showLinkedEntriesFilterModal(
         context: context,
         entryId: entryId,
+      ),
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: () => showLinkedEntriesFilterModal(
+            context: context,
+            entryId: entryId,
+          ),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: selected ? tokens.colors.surface.selected : null,
+              borderRadius: radius,
+              border: Border.all(
+                color: selected
+                    ? tokens.colors.interactive.enabled
+                    : tokens.colors.decorative.level01,
+              ),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step3,
+              vertical: tokens.spacing.step2,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.filter_list_rounded,
+                  size: tokens.spacing.step4,
+                  color: tokens.colors.interactive.enabled,
+                ),
+                SizedBox(width: tokens.spacing.step2),
+                Text(
+                  label,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                    fontWeight: tokens.typography.weight.semiBold,
+                    height: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -143,16 +198,54 @@ class _ActivityPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spec = _ActivityPillSpec.of(context, kind);
-    return DesignSystemFilterChoicePill(
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    final selectedFill = spec.accent.withValues(alpha: 0.15);
+    final selectedOutline = spec.accent.withValues(alpha: spec.borderAlpha);
+    final labelColor = active ? spec.accent : tokens.colors.text.lowEmphasis;
+
+    return Semantics(
+      button: true,
+      toggled: active,
       label: spec.label,
-      selected: active,
-      role: DesignSystemFilterChoiceRole.multiSelect,
-      leading: Icon(
-        spec.icon,
-        size: tokens.spacing.step5,
-        color: tokens.colors.interactive.enabled,
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: DesignSystemFilterChoicePill.animationDuration,
+            decoration: BoxDecoration(
+              color: active ? selectedFill : Colors.transparent,
+              borderRadius: radius,
+              border: Border.all(
+                color: active
+                    ? selectedOutline
+                    : tokens.colors.decorative.level01,
+              ),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step3,
+              vertical: tokens.spacing.step2,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(spec.icon, size: tokens.spacing.step4, color: labelColor),
+                SizedBox(width: tokens.spacing.step2),
+                Text(
+                  spec.label,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: labelColor,
+                    fontWeight: tokens.typography.weight.semiBold,
+                    height: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-      onTap: onTap,
     );
   }
 }
@@ -161,33 +254,46 @@ class _ActivityPillSpec {
   const _ActivityPillSpec({
     required this.label,
     required this.icon,
+    required this.accent,
+    required this.borderAlpha,
   });
 
   factory _ActivityPillSpec.of(
     BuildContext context,
     LinkedEntryActivityFilter kind,
   ) {
+    final tokens = context.designTokens;
     final messages = context.messages;
     return switch (kind) {
       LinkedEntryActivityFilter.timer => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterTimer,
         icon: Icons.timer_outlined,
+        accent: tokens.colors.alert.warning.defaultColor,
+        borderAlpha: 1,
       ),
       LinkedEntryActivityFilter.audio => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterAudio,
         icon: Icons.mic_none_outlined,
+        accent: const Color(0xFF9966E5),
+        borderAlpha: 0.7,
       ),
       LinkedEntryActivityFilter.images => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterImages,
         icon: Icons.photo_outlined,
+        accent: const Color(0xFF619EFF),
+        borderAlpha: 0.7,
       ),
       LinkedEntryActivityFilter.code => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterCode,
         icon: Icons.code,
+        accent: const Color(0xFF34C759),
+        borderAlpha: 0.7,
       ),
     };
   }
 
   final String label;
   final IconData icon;
+  final Color accent;
+  final double borderAlpha;
 }

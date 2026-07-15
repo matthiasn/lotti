@@ -174,6 +174,83 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'compact layout keeps an intrinsic primary on the same footer row',
+    (tester) async {
+      await pumpBar(
+        tester,
+        DesignSystemModalActionBar(
+          layout: DesignSystemModalActionBarLayout.compactPrimary,
+          secondary: [secondaryBtn('Clear'), secondaryBtn('Save')],
+          primary: DesignSystemButton(
+            label: 'Apply',
+            size: DesignSystemButtonSize.large,
+            onPressed: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final clearCenter = tester.getCenter(
+        find.widgetWithText(DesignSystemButton, 'Clear'),
+      );
+      final applyCenter = tester.getCenter(
+        find.widgetWithText(DesignSystemButton, 'Apply'),
+      );
+      final applyWidth = tester
+          .getSize(find.widgetWithText(DesignSystemButton, 'Apply'))
+          .width;
+
+      expect(applyCenter.dy, clearCenter.dy);
+      expect(applyCenter.dx, greaterThan(clearCenter.dx));
+      expect(applyWidth, lessThan(200));
+      expect(
+        find.ancestor(
+          of: find.widgetWithText(DesignSystemButton, 'Apply'),
+          matching: find.byType(Expanded),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'compact layout lets the secondary group wrap without widening primary',
+    (tester) async {
+      await pumpBar(
+        tester,
+        DesignSystemModalActionBar(
+          layout: DesignSystemModalActionBarLayout.compactPrimary,
+          secondary: [
+            secondaryBtn('Long clear action'),
+            secondaryBtn('Long save action'),
+          ],
+          primary: DesignSystemButton(
+            label: 'Apply',
+            size: DesignSystemButtonSize.large,
+            onPressed: () {},
+          ),
+        ),
+        width: 320,
+      );
+      await tester.pump();
+
+      final clearCenter = tester.getCenter(
+        find.widgetWithText(DesignSystemButton, 'Long clear action'),
+      );
+      final saveCenter = tester.getCenter(
+        find.widgetWithText(DesignSystemButton, 'Long save action'),
+      );
+      final applyWidth = tester
+          .getSize(find.widgetWithText(DesignSystemButton, 'Apply'))
+          .width;
+
+      expect(saveCenter.dy, greaterThan(clearCenter.dy));
+      expect(applyWidth, lessThan(200));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('glass: true renders the bar on a DesignSystemGlassStrip', (
     tester,
   ) async {

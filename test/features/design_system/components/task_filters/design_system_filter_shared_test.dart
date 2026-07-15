@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -27,6 +28,44 @@ void main() {
         expect(stripTrailingColon(once), once);
       }
     }, tags: 'glados');
+  });
+
+  group('DesignSystemFilterToggleRow', () {
+    testWidgets(
+      'exposes one full-row toggle target and reports the next value',
+      (
+        tester,
+      ) async {
+        bool? changedValue;
+        await tester.pumpWidget(
+          makeTestableWidget(
+            DesignSystemFilterToggleRow(
+              label: 'Show due date',
+              value: false,
+              onChanged: (value) => changedValue = value,
+            ),
+          ),
+        );
+
+        final semantics = tester.getSemantics(
+          find.byType(DesignSystemFilterToggleRow),
+        );
+        expect(semantics.label, 'Show due date');
+        expect(semantics.flagsCollection.isButton, isTrue);
+        expect(semantics.flagsCollection.isToggled, Tristate.isFalse);
+        expect(find.byType(DesignSystemToggle), findsOneWidget);
+        final ignoredToggleLayers = tester.widgetList<IgnorePointer>(
+          find.ancestor(
+            of: find.byType(DesignSystemToggle),
+            matching: find.byType(IgnorePointer),
+          ),
+        );
+        expect(ignoredToggleLayers.any((layer) => layer.ignoring), isTrue);
+
+        await tester.tap(find.text('Show due date'));
+        expect(changedValue, isTrue);
+      },
+    );
   });
 
   group('DesignSystemFilterChoicePill', () {

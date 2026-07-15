@@ -397,8 +397,8 @@ TaskListData buildTaskListDetailMockData() {
 
 DesignSystemTaskFilterState buildTaskShowcaseFilterState() {
   return DesignSystemTaskFilterState(
-    title: 'Apply filter',
-    clearAllLabel: 'Clear all',
+    title: 'Filter tasks',
+    clearAllLabel: 'Clear',
     applyLabel: 'Apply',
     sortLabel: 'Sort by',
     sortOptions: const [

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
 /// Compact single-page filter for linked-entry sort and visibility settings.
 Future<void> showLinkedEntriesFilterModal({
@@ -81,33 +79,23 @@ class _LinkedEntriesFilterModalBody extends ConsumerWidget {
         ),
         SizedBox(height: spacing.step6),
         _SectionLabel(text: messages.journalFilterShowTitle),
-        SizedBox(height: spacing.step3),
-        DesignSystemGroupedList(
-          padding: EdgeInsets.zero,
-          filled: false,
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: spacing.step5),
-              child: SettingsSwitchRow(
-                title: messages.journalLinkedEntriesShowHidden,
-                value: includeHidden,
-                onChanged: (value) {
-                  includeHiddenNotifier.includeHidden = value;
-                },
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: spacing.step5),
-              child: SettingsSwitchRow(
-                title: messages.journalLinkedEntriesShowFlaggedOnly,
-                value: showFlaggedOnly,
-                onChanged: (value) {
-                  showFlaggedOnlyNotifier.showFlaggedOnly = value;
-                },
-              ),
-            ),
-          ],
+        SizedBox(height: spacing.step4),
+        DesignSystemFilterToggleRow(
+          label: messages.journalLinkedEntriesShowHidden,
+          value: includeHidden,
+          onChanged: (value) {
+            includeHiddenNotifier.includeHidden = value;
+          },
         ),
+        SizedBox(height: spacing.step1),
+        DesignSystemFilterToggleRow(
+          label: messages.journalLinkedEntriesShowFlaggedOnly,
+          value: showFlaggedOnly,
+          onChanged: (value) {
+            showFlaggedOnlyNotifier.showFlaggedOnly = value;
+          },
+        ),
+        SizedBox(height: spacing.step4),
       ],
     );
   }

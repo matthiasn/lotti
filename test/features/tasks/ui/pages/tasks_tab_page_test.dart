@@ -263,7 +263,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.filter_list_rounded));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Tasks Filter'), findsOneWidget);
+    expect(find.text('Filter tasks'), findsOneWidget);
 
     final rowTapTarget = find.ancestor(
       of: find.text('Write migration'),
