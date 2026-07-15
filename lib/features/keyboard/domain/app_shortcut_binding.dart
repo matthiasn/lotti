@@ -47,6 +47,21 @@ class AppShortcutBinding {
   final bool alt;
   final bool includeRepeats;
 
+  /// A structural key used to compare bindings after platform resolution.
+  ///
+  /// Flutter shortcut activators intentionally use identity equality, so they
+  /// cannot be map keys when checking the catalog for duplicate chords.
+  Object equivalenceKey(TargetPlatform platform) => (
+    _kind,
+    key,
+    character,
+    usesPrimaryModifier && platform == TargetPlatform.macOS,
+    usesPrimaryModifier && platform != TargetPlatform.macOS,
+    shift,
+    alt,
+    includeRepeats,
+  );
+
   ShortcutActivator? resolve(TargetPlatform platform) {
     final desktop = switch (platform) {
       TargetPlatform.macOS ||

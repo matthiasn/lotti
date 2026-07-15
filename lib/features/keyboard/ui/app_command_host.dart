@@ -56,8 +56,7 @@ class _AppCommandHostState extends State<AppCommandHost> {
   void didUpdateWidget(covariant AppCommandHost oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.onError != widget.onError) {
-      _commandController.dispose();
-      _commandController = AppCommandController(onError: widget.onError);
+      _commandController.onError = widget.onError;
     }
     if (oldWidget.focusRegionController != widget.focusRegionController) {
       if (_ownsFocusRegionController) _focusRegionController.dispose();

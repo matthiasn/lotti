@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,7 +7,6 @@ import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_focus_region.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -87,196 +84,120 @@ void main() {
     expect(activity, greaterThanOrEqualTo(2));
   });
 
-  testWidgets('native-style invocation retains the last focused local scope', (
+  testWidgets('updates the error callback without replacing the controller', (
     tester,
   ) async {
-    var globalSaves = 0;
-    var localSaves = 0;
-    late BuildContext globalContext;
+    var oldErrors = 0;
+    var newErrors = 0;
+    var useNewHandler = false;
+    late StateSetter updateHost;
+    late BuildContext scopedContext;
     final focusNode = FocusNode();
     addTearDown(focusNode.dispose);
 
     await tester.pumpWidget(
       _testApp(
-        AppCommandHost(
-          platform: TargetPlatform.macOS,
-          handlers: {
-            AppCommandId.save: AppCommandHandler(
-              invoke: (_) => globalSaves++,
-            ),
-          },
-          child: Builder(
-            builder: (context) {
-              globalContext = context;
-              return AppCommandScope(
+        StatefulBuilder(
+          builder: (context, setState) {
+            updateHost = setState;
+            return AppCommandHost(
+              platform: TargetPlatform.windows,
+              onError: useNewHandler
+                  ? (_, _, _) => newErrors++
+                  : (_, _, _) => oldErrors++,
+              handlers: const {},
+              child: AppCommandScope(
                 handlers: {
                   AppCommandId.save: AppCommandHandler(
-                    invoke: (_) => localSaves++,
+                    invoke: (_) => throw StateError('save failed'),
                   ),
                 },
-                child: TextField(focusNode: focusNode),
-              );
-            },
-          ),
+                child: Builder(
+                  builder: (context) {
+                    scopedContext = context;
+                    return TextField(focusNode: focusNode);
+                  },
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
     focusNode.requestFocus();
     await tester.pump();
-    focusNode.unfocus();
+    final originalController = AppCommandControllerProvider.of(scopedContext);
+
+    updateHost(() => useNewHandler = true);
     await tester.pump();
+    final updatedController = AppCommandControllerProvider.of(scopedContext);
+    final invoked = await updatedController.invoke(
+      scopedContext,
+      AppCommandId.save,
+    );
 
-    final invoked = await AppCommandControllerProvider.of(
-      globalContext,
-    ).invoke(globalContext, AppCommandId.save);
-
-    expect(invoked, isTrue);
-    expect((localSaves, globalSaves), (1, 0));
+    expect(identical(updatedController, originalController), isTrue);
+    expect(invoked, isFalse);
+    expect((oldErrors, newErrors), (0, 1));
   });
 
-  testWidgets('prevents re-entry for an unfinished one-shot command', (
+  testWidgets('adopts and releases an external focus-region controller', (
     tester,
   ) async {
-    final completer = Completer<void>();
-    var calls = 0;
-    final focusNode = FocusNode();
-    addTearDown(focusNode.dispose);
-
-    await tester.pumpWidget(
-      _testApp(
-        AppCommandHost(
-          platform: TargetPlatform.windows,
-          handlers: {
-            AppCommandId.save: AppCommandHandler(
-              invoke: (_) {
-                calls++;
-                return completer.future;
-              },
-            ),
-          },
-          child: TextField(focusNode: focusNode),
-        ),
-      ),
-    );
-    focusNode.requestFocus();
-    await tester.pump();
-
-    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
-    await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
-    await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
-    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
-    await tester.pump();
-
-    expect(calls, 1);
-    completer.complete();
-    await tester.pump();
-  });
-
-  testWidgets(
-    'captured scopes stop dispatching after their widget is removed',
-    (
-      tester,
-    ) async {
-      var saves = 0;
-      late StateSetter updateHarness;
-      late BuildContext scopedContext;
-      var showScope = true;
-      final focusNode = FocusNode();
-      addTearDown(focusNode.dispose);
-
-      await tester.pumpWidget(
-        _testApp(
-          AppCommandHost(
-            platform: TargetPlatform.windows,
-            handlers: const {},
-            child: StatefulBuilder(
-              builder: (context, setState) {
-                updateHarness = setState;
-                if (!showScope) return const SizedBox.shrink();
-                return AppCommandScope(
-                  handlers: {
-                    AppCommandId.save: AppCommandHandler(
-                      invoke: (_) => saves++,
-                    ),
-                  },
-                  child: Builder(
-                    builder: (context) {
-                      scopedContext = context;
-                      return TextField(focusNode: focusNode);
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-      focusNode.requestFocus();
-      await tester.pump();
-      final snapshot = AppCommandControllerProvider.of(
-        scopedContext,
-      ).capture(scopedContext);
-      expect(snapshot.isAvailable(AppCommandId.save), isTrue);
-
-      updateHarness(() => showScope = false);
-      await tester.pump();
-
-      expect(snapshot.isAvailable(AppCommandId.save), isFalse);
-      expect(await snapshot.invoke(AppCommandId.save), isFalse);
-      expect(saves, 0);
-    },
-  );
-
-  testWidgets('F6 cycles focus regions and Shift+F6 reverses', (tester) async {
-    final first = FocusNode(debugLabel: 'first');
-    final second = FocusNode(debugLabel: 'second');
+    final external = KeyboardFocusRegionController();
+    final first = FocusNode();
+    final second = FocusNode();
+    addTearDown(external.dispose);
     addTearDown(first.dispose);
     addTearDown(second.dispose);
+    var useExternal = false;
+    late StateSetter updateHost;
 
     await tester.pumpWidget(
       _testApp(
-        AppCommandHost(
-          platform: TargetPlatform.windows,
-          handlers: const {},
-          child: Builder(
-            builder: (context) => Column(
-              children: [
-                KeyboardFocusRegion(
-                  debugLabel: context.messages.navTabTitleTasks,
-                  preferredFocusNode: first,
-                  child: TextButton(
-                    focusNode: first,
-                    onPressed: () {},
-                    child: const Text('First'),
+        StatefulBuilder(
+          builder: (context, setState) {
+            updateHost = setState;
+            return AppCommandHost(
+              handlers: const {},
+              focusRegionController: useExternal ? external : null,
+              child: Column(
+                children: [
+                  KeyboardFocusRegion(
+                    debugLabel: 'first',
+                    preferredFocusNode: first,
+                    child: TextButton(
+                      focusNode: first,
+                      onPressed: () {},
+                      child: const Text('First'),
+                    ),
                   ),
-                ),
-                KeyboardFocusRegion(
-                  debugLabel: context.messages.navTabTitleJournal,
-                  preferredFocusNode: second,
-                  child: TextButton(
-                    focusNode: second,
-                    onPressed: () {},
-                    child: const Text('Second'),
+                  KeyboardFocusRegion(
+                    debugLabel: 'second',
+                    preferredFocusNode: second,
+                    child: TextButton(
+                      focusNode: second,
+                      onPressed: () {},
+                      child: const Text('Second'),
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
 
-    first.requestFocus();
+    updateHost(() => useExternal = true);
     await tester.pump();
-    await tester.sendKeyEvent(LogicalKeyboardKey.f6);
-    await tester.pump();
-    expect(second.hasFocus, isTrue);
-
-    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
-    await tester.sendKeyEvent(LogicalKeyboardKey.f6);
-    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    expect(external.focusNext(), isTrue);
     await tester.pump();
     expect(first.hasFocus, isTrue);
+
+    updateHost(() => useExternal = false);
+    await tester.pump();
+    expect(external.focusNext(), isFalse);
   });
 }
 

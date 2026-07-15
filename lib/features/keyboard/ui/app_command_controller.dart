@@ -19,10 +19,17 @@ typedef AppCommandErrorHandler =
 class AppCommandController extends ChangeNotifier {
   AppCommandController({this.onError});
 
-  final AppCommandErrorHandler? onError;
+  AppCommandErrorHandler? onError;
   final Set<AppCommandId> _inFlight = {};
   AppCommandScopeNode? _lastActiveScope;
   bool _notificationScheduled = false;
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 
   void rememberActiveScope(AppCommandScopeNode node) {
     if (!node.mounted || identical(_lastActiveScope, node)) return;
@@ -38,6 +45,7 @@ class AppCommandController extends ChangeNotifier {
   }
 
   void _notifySafely() {
+    if (_disposed) return;
     final phase = SchedulerBinding.instance.schedulerPhase;
     if (phase == SchedulerPhase.idle ||
         phase == SchedulerPhase.postFrameCallbacks) {
@@ -48,7 +56,7 @@ class AppCommandController extends ChangeNotifier {
     _notificationScheduled = true;
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _notificationScheduled = false;
-      if (hasListeners) notifyListeners();
+      if (!_disposed && hasListeners) notifyListeners();
     });
   }
 

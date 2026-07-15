@@ -369,16 +369,19 @@ abstract final class AppCommandCatalog {
   static List<AppCommandBindingConflict> conflictsFor({
     required TargetPlatform platform,
     required Iterable<AppCommandId> commandIds,
+    Map<AppCommandId, AppCommandDefinition> definitionOverrides = const {},
   }) {
     final seen = <Object, AppCommandId>{};
     final conflicts = <AppCommandBindingConflict>[];
     for (final id in commandIds) {
-      for (final binding in definition(id).bindings) {
+      final commandDefinition = definitionOverrides[id] ?? definition(id);
+      for (final binding in commandDefinition.bindings) {
         final activator = binding.resolve(platform);
         if (activator == null) continue;
-        final existing = seen[activator];
+        final equivalenceKey = binding.equivalenceKey(platform);
+        final existing = seen[equivalenceKey];
         if (existing == null) {
-          seen[activator] = id;
+          seen[equivalenceKey] = id;
         } else if (existing != id) {
           conflicts.add(
             AppCommandBindingConflict(

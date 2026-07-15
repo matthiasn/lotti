@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
@@ -52,4 +53,21 @@ void main() {
       '⌘? or F1',
     );
   });
+
+  test(
+    'falls back to the activator description for custom activators',
+    () async {
+      final messages = await AppLocalizations.delegate.load(const Locale('en'));
+      final activator = LogicalKeySet(LogicalKeyboardKey.keyA);
+
+      expect(
+        ShortcutLabelFormatter.activatorLabel(
+          messages,
+          activator,
+          TargetPlatform.windows,
+        ),
+        activator.toString(),
+      );
+    },
+  );
 }

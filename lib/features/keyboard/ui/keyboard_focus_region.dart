@@ -17,12 +17,18 @@ class KeyboardFocusRegionController extends ChangeNotifier {
     final active = _regions.where((region) => region.enabled).toList();
     if (active.isEmpty) return false;
     final currentIndex = active.indexWhere((region) => region.containsFocus);
-    final nextIndex = currentIndex == -1
+    var nextIndex = currentIndex == -1
         ? (reverse ? active.length - 1 : 0)
         : reverse
         ? (currentIndex - 1 + active.length) % active.length
         : (currentIndex + 1) % active.length;
-    return active[nextIndex].requestFocus();
+    for (var i = 0; i < active.length; i++) {
+      if (active[nextIndex].requestFocus()) return true;
+      nextIndex = reverse
+          ? (nextIndex - 1 + active.length) % active.length
+          : (nextIndex + 1) % active.length;
+    }
+    return false;
   }
 }
 

@@ -49,6 +49,25 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
     }
   }
 
+  void _clampIndex() {
+    final definitions = _definitions(context);
+    if (_selectedIndex >= definitions.length) {
+      _selectedIndex = 0;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _clampIndex();
+  }
+
+  @override
+  void didUpdateWidget(covariant CommandCatalogView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _clampIndex();
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -133,7 +152,6 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final definitions = _definitions(context);
-    if (_selectedIndex >= definitions.length) _selectedIndex = 0;
     final messages = context.messages;
 
     return Focus(
