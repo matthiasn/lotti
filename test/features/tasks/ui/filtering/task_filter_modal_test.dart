@@ -537,26 +537,183 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('opens from cache before a cold project refresh completes', (
+    testWidgets('reopens from cache before a warm project refresh completes', (
       tester,
     ) async {
+      final cachedProject = _makeTestProject(
+        'cached-project',
+        'cat-1',
+        'Cached Project',
+      );
+      when(
+        () => mockJournalDb.getProjectsForCategory('cat-1'),
+      ).thenAnswer((_) async => [cachedProject]);
+
+      await tester.pumpWidget(buildWithProjects(enableProjects: true));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      final newCategory = CategoryDefinition(
+        id: 'cat-3',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        name: 'Later',
+        vectorClock: null,
+        private: false,
+        active: true,
+        color: '#0000FF',
+      );
+      when(
+        () => mockEntitiesCacheService.sortedCategories,
+      ).thenReturn([...testCategories, newCategory]);
       final projectLoad = Completer<List<ProjectEntry>>();
       when(
         () => mockJournalDb.getProjectsForCategory(any()),
       ).thenAnswer((_) => projectLoad.future);
 
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 900));
 
       expect(find.text('Filter tasks'), findsOneWidget);
       expect(projectLoad.isCompleted, isFalse);
+      final projectField = find.byKey(
+        const ValueKey('design-system-task-filter-field-project'),
+      );
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.descendant(
+              of: projectField,
+              matching: find.byType(DesignSystemSelectionRow),
+            ),
+          )
+          .onTap!();
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(
+          const ValueKey(
+            'design-system-filter-selection-option-cached-project',
+          ),
+        ),
+        findsOneWidget,
+      );
 
       projectLoad.complete(const []);
       await tester.pumpAndSettle();
     });
+
+    testWidgets(
+      'category changes prune incompatible projects and project groups',
+      (tester) async {
+        final workProject = _makeTestProject(
+          'work-project',
+          'cat-1',
+          'Work Project',
+        );
+        final personalProject = _makeTestProject(
+          'personal-project',
+          'cat-2',
+          'Personal Project',
+        );
+        when(
+          () => mockJournalDb.getProjectsForCategory('cat-1'),
+        ).thenAnswer((_) async => [workProject]);
+        when(
+          () => mockJournalDb.getProjectsForCategory('cat-2'),
+        ).thenAnswer((_) async => [personalProject]);
+        mockState = mockState.copyWith(
+          enableProjects: true,
+          selectedCategoryIds: {'cat-1', 'cat-2'},
+          selectedProjectIds: {'work-project', 'personal-project'},
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+        await tester.pumpAndSettle();
+
+        final categoryField = find.byKey(
+          const ValueKey('design-system-task-filter-field-category'),
+        );
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.descendant(
+                of: categoryField,
+                matching: find.byType(DesignSystemSelectionRow),
+              ),
+            )
+            .onTap!();
+        await tester.pumpAndSettle();
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(
+                const ValueKey(
+                  'design-system-filter-selection-option-cat-2',
+                ),
+              ),
+            )
+            .onTap!();
+        await tester.pump();
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(
+                const ValueKey('design-system-filter-selection-apply'),
+              ),
+            )
+            .onPressed!();
+        await tester.pumpAndSettle();
+
+        final projectField = find.byKey(
+          const ValueKey('design-system-task-filter-field-project'),
+        );
+        expect(
+          tester
+              .widget<DesignSystemSelectionRow>(
+                find.descendant(
+                  of: projectField,
+                  matching: find.byType(DesignSystemSelectionRow),
+                ),
+              )
+              .subtitle,
+          'Work Project',
+        );
+
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.descendant(
+                of: projectField,
+                matching: find.byType(DesignSystemSelectionRow),
+              ),
+            )
+            .onTap!();
+        await tester.pumpAndSettle();
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('Personal'), findsNothing);
+        expect(
+          find.byKey(
+            const ValueKey(
+              'design-system-filter-selection-option-work-project',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(
+            const ValueKey(
+              'design-system-filter-selection-option-personal-project',
+            ),
+          ),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets('toggle rows appear and interact correctly', (tester) async {
       await tester.pumpWidget(buildSubject());

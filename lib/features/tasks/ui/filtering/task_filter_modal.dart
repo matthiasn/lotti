@@ -52,15 +52,12 @@ Future<void> showTaskFilterModal(
     allCategories: categories,
   );
 
-  final initialState = _pruneProjectsForSelectedCategories(
-    buildTasksFilterSheetState(
-      context,
-      controllerState: controllerState,
-      categories: categories,
-      labels: labels,
-      projectsWithCategories: allProjectsWithCategories,
-    ),
-    allProjectsWithCategories,
+  final initialState = buildTasksFilterSheetState(
+    context,
+    controllerState: controllerState,
+    categories: categories,
+    labels: labels,
+    projectsWithCategories: allProjectsWithCategories,
   );
 
   // Snapshot the saved-filter state for the Save flow.
@@ -214,8 +211,7 @@ List<DesignSystemFilterSelectionGroup> _projectGroups(
   required List<ProjectWithCategory> allProjectsWithCategories,
   required List<CategoryDefinition> categories,
 }) {
-  final selectedCategoryIds =
-      state.categoryField?.selectedIds ?? const <String>{};
+  final selectedCategoryIds = state.categoryField!.selectedIds;
   return [
     for (final category in categories)
       if (selectedCategoryIds.isEmpty ||
@@ -236,8 +232,7 @@ DesignSystemTaskFilterState _pruneProjectsForSelectedCategories(
 ) {
   final projectField = state.projectField;
   if (projectField == null) return state;
-  final selectedCategoryIds =
-      state.categoryField?.selectedIds ?? const <String>{};
+  final selectedCategoryIds = state.categoryField!.selectedIds;
   final allowedProjectIds = {
     for (final project in allProjectsWithCategories)
       if (selectedCategoryIds.isEmpty ||
