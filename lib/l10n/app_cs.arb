@@ -2561,7 +2561,35 @@
   "measurableDeleteQuestion": "Chcete tento měřitelný datový typ smazat?",
   "measurableNotFound": "Měřitelný typ nenalezen",
   "measurementCommentHint": "Přidat poznámku (volitelné)",
-  "measurementQuickAddLabel": "Rychlé přidání",
+  "measurementCommentSemantic": "Poznámka, volitelná",
+  "measurementObservedAtChangeSemantic": "Naměřeno {dateTime}. Změnit datum a čas.",
+  "@measurementObservedAtChangeSemantic": {
+    "placeholders": {
+      "dateTime": {
+        "type": "String"
+      }
+    }
+  },
+  "measurementQuickAddLabel": "Rychlé zapsání",
+  "measurementQuickLogSemantic": "Okamžitě zapsat {value}",
+  "@measurementQuickLogSemantic": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "measurementSaveError": "Měření se nepodařilo uložit. Zkus to znovu.",
+  "measurementSetObservedAtNowSemantic": "Nastavit datum a čas měření na teď",
+  "measurementTimeLabel": "Čas",
+  "measurementValueSemantic": "Hodnota pro {measurable}",
+  "@measurementValueSemantic": {
+    "placeholders": {
+      "measurable": {
+        "type": "String"
+      }
+    }
+  },
   "mediaShowInFileExplorerAction": "Zobrazit v Průzkumníku souborů",
   "mediaShowInFilesAction": "Zobrazit v Souborech",
   "mediaShowInFinderAction": "Zobrazit ve Finderu",

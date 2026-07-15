@@ -1,178 +1,653 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/widgets/create/suggest_measurement.dart';
-import 'package:lotti/widgets/date_time/datetime_field.dart';
+import 'package:lotti/widgets/modal/full_height_wolt_dialog_type.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
-/// Bottom-sheet body for logging a measurement value.
+/// Presents the complete measurement capture as one adaptive Wolt route.
 ///
-/// Organised around a single hero — the value — which is a label-less,
-/// centered big-digit well (the modal title already names the measurable) with
-/// the unit rendered as an adjacent inline suffix so the number and unit read
-/// as one measurement ("750 ml"). Directly beneath it sit persistent one-tap
-/// quick-value chips (the fast path for a returning logger). The observed-at
-/// row (defaulting to now) and an optional comment follow in quieter chrome,
-/// and the bottom holds a fixed, always-visible Save button that is disabled
-/// until the entered value is a valid number.
-class MeasurementDialog extends StatefulWidget {
-  const MeasurementDialog({
-    required this.measurableId,
-    super.key,
-  });
+/// The editor and observed-at picker are sibling pages in the same sheet. All
+/// draft-bearing objects live for the route lifetime because Wolt disposes an
+/// inactive page after pagination; returning from the picker therefore keeps
+/// the entered value and comment without reopening the keyboard.
+abstract final class MeasurementCaptureModal {
+  static Future<void> show({
+    required BuildContext context,
+    required MeasurableDataType measurableDataType,
+  }) async {
+    final draft = _MeasurementCaptureDraft(
+      dataType: measurableDataType,
+      initialDateTime: clock.now(),
+      routeClock: clock,
+    );
+    var attachedToRoute = false;
 
-  final String measurableId;
+    Widget decorateFlow(Widget child) {
+      attachedToRoute = true;
+      return _MeasurementCaptureLifetime(
+        draft: draft,
+        child: _MeasurementCaptureBackHandler(
+          draft: draft,
+          child: child,
+        ),
+      );
+    }
 
-  @override
-  State<MeasurementDialog> createState() => _MeasurementDialogState();
+    try {
+      await ModalUtils.showMultiPageModal<void>(
+        context: context,
+        pageIndexNotifier: draft.pageIndexNotifier,
+        modalDecorator: decorateFlow,
+        modalTypeBuilderOverride: _measurementModalTypeBuilder,
+        pageListBuilder: (modalContext) {
+          final spacing = modalContext.designTokens.spacing;
+          return [
+            ModalUtils.modalSheetPage(
+              context: modalContext,
+              titleWidget: _MeasurementModalTitle(
+                dataType: measurableDataType,
+              ),
+              showCloseButton: true,
+              padding: EdgeInsets.fromLTRB(
+                spacing.step5,
+                spacing.step3,
+                spacing.step5,
+                DesignSystemGlassActionFooter.reservedHeightFor(modalContext),
+              ),
+              stickyActionBar: _MeasurementSaveFooter(
+                draft: draft,
+              ),
+              child: _MeasurementEditorPage(draft: draft),
+            ),
+            ModalUtils.modalSheetPage(
+              context: modalContext,
+              title: modalContext.messages.addMeasurementDateLabel,
+              showCloseButton: true,
+              onTapBack: draft.discardPickerChanges,
+              padding: EdgeInsets.fromLTRB(
+                spacing.step5,
+                spacing.step5,
+                spacing.step5,
+                DesignSystemGlassActionFooter.reservedHeightFor(modalContext),
+              ),
+              stickyActionBar: DesignSystemGlassActionFooter(
+                child: DesignSystemButton(
+                  key: const ValueKey('measurement-date-time-done'),
+                  label: modalContext.messages.doneButton,
+                  leadingIcon: Icons.check_rounded,
+                  size: DesignSystemButtonSize.large,
+                  fullWidth: true,
+                  onPressed: draft.commitPickerChanges,
+                ),
+              ),
+              child: _MeasurementDateTimeEditor(draft: draft),
+            ),
+          ];
+        },
+      );
+    } finally {
+      // Wolt normally transfers ownership to [_MeasurementCaptureLifetime].
+      // Dispose here only if route construction failed before the decorator
+      // was attached.
+      if (!attachedToRoute) draft.dispose();
+    }
+  }
 }
 
-class _MeasurementDialogState extends State<MeasurementDialog> {
-  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-  final TextEditingController _valueController = TextEditingController();
-  final TextEditingController _commentController = TextEditingController();
-  final FocusNode _valueFocus = FocusNode();
-  final FocusNode _commentFocus = FocusNode();
+WoltModalType _measurementModalTypeBuilder(BuildContext context) {
+  if (ModalUtils.shouldUseRootNavigatorForBottomSheet(context)) {
+    return WoltModalType.bottomSheet();
+  }
+  return const FullHeightWoltDialogType();
+}
 
-  DateTime measurementTime = DateTime.now();
+typedef _MeasurementSaveState = ({bool isSaving, String? error});
 
-  @override
-  void initState() {
-    super.initState();
-    // Rebuild as the value changes so the Save button's enabled state tracks
-    // validity live.
-    _valueController.addListener(_onValueChanged);
+class _MeasurementCaptureDraft {
+  _MeasurementCaptureDraft({
+    required this.dataType,
+    required DateTime initialDateTime,
+    required this.routeClock,
+  }) : measurementDateTime = ValueNotifier(initialDateTime),
+       pickerDateTime = ValueNotifier(initialDateTime);
+
+  final MeasurableDataType dataType;
+  final Clock routeClock;
+  final TextEditingController valueController = TextEditingController();
+  final TextEditingController commentController = TextEditingController();
+  final FocusNode valueFocusNode = FocusNode(
+    debugLabel: 'measurement-value',
+  );
+  final FocusNode commentFocusNode = FocusNode(
+    debugLabel: 'measurement-comment',
+  );
+  final FocusNode observedAtFocusNode = FocusNode(
+    debugLabel: 'measurement-observed-at',
+  );
+  final ValueNotifier<DateTime> measurementDateTime;
+  final ValueNotifier<DateTime> pickerDateTime;
+  final ValueNotifier<int> pageIndexNotifier = ValueNotifier(0);
+  final ValueNotifier<_MeasurementSaveState> saveState = ValueNotifier(
+    (isSaving: false, error: null),
+  );
+
+  bool _autofocusValue = true;
+  bool _restoreObservedAtFocus = false;
+  bool _disposed = false;
+
+  bool takeValueAutofocus() {
+    final autofocus = _autofocusValue;
+    _autofocusValue = false;
+    return autofocus;
   }
 
-  @override
-  void dispose() {
-    _valueController
-      ..removeListener(_onValueChanged)
-      ..dispose();
-    _commentController.dispose();
-    _valueFocus.dispose();
-    _commentFocus.dispose();
-    super.dispose();
+  bool takeObservedAtFocusRestore() {
+    final restore = _restoreObservedAtFocus;
+    _restoreObservedAtFocus = false;
+    return restore;
   }
 
-  void _onValueChanged() => setState(() {});
-
-  num? _parse(String raw) {
-    final normalized = raw.trim().replaceAll(',', '.');
+  num? parseValue([String? raw]) {
+    final normalized = (raw ?? valueController.text).trim().replaceAll(
+      ',',
+      '.',
+    );
     if (normalized.isEmpty) return null;
     return num.tryParse(normalized);
   }
 
-  bool get _isValid => _parse(_valueController.text) != null;
+  bool get canSave =>
+      parseValue() != null && !saveState.value.isSaving && !_disposed;
 
-  Future<void> _save(MeasurableDataType dataType, {num? value}) async {
-    final resolved = value ?? _parse(_valueController.text);
-    if (resolved == null) return;
+  DateTime now() => routeClock.now();
 
-    final measurement = MeasurementData(
-      dataTypeId: dataType.id,
-      dateTo: measurementTime,
-      dateFrom: measurementTime,
-      value: resolved,
-    );
-    Navigator.pop(context, 'Saved');
-
-    await persistenceLogic.createMeasurementEntry(
-      data: measurement,
-      comment: _commentController.text,
-      private: dataType.private ?? false,
-    );
+  void beginPickerChanges() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    pickerDateTime.value = measurementDateTime.value;
+    pageIndexNotifier.value = 1;
   }
 
-  Future<void> _pickDateTime() {
-    return showDateTimePickerModal(
-      context,
-      dateTime: measurementTime,
-      labelText: context.messages.addMeasurementDateLabel,
-      setDateTime: (picked) => setState(() => measurementTime = picked),
+  void commitPickerChanges() {
+    measurementDateTime.value = pickerDateTime.value;
+    _returnToEditor();
+  }
+
+  void discardPickerChanges() {
+    pickerDateTime.value = measurementDateTime.value;
+    _returnToEditor();
+  }
+
+  void _returnToEditor() {
+    _restoreObservedAtFocus = true;
+    pageIndexNotifier.value = 0;
+  }
+
+  Future<void> save(BuildContext modalContext, {num? value}) async {
+    final resolved = value ?? parseValue();
+    if (resolved == null || saveState.value.isSaving || _disposed) return;
+
+    final errorMessage = modalContext.messages.measurementSaveError;
+    saveState.value = (isSaving: true, error: null);
+    final observedAt = measurementDateTime.value;
+    try {
+      await getIt<PersistenceLogic>().createMeasurementEntry(
+        data: MeasurementData(
+          dataTypeId: dataType.id,
+          dateTo: observedAt,
+          dateFrom: observedAt,
+          value: resolved,
+        ),
+        comment: commentController.text,
+        private: dataType.private ?? false,
+      );
+      if (modalContext.mounted) {
+        Navigator.of(modalContext).pop('Saved');
+      }
+    } catch (error, stackTrace) {
+      DevLogger.error(
+        name: 'MeasurementCaptureModal',
+        message: 'Failed to save measurement',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!_disposed) {
+        saveState.value = (isSaving: false, error: errorMessage);
+      }
+    }
+  }
+
+  void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    valueController.dispose();
+    commentController.dispose();
+    valueFocusNode.dispose();
+    commentFocusNode.dispose();
+    observedAtFocusNode.dispose();
+    measurementDateTime.dispose();
+    pickerDateTime.dispose();
+    pageIndexNotifier.dispose();
+    saveState.dispose();
+  }
+}
+
+class _MeasurementCaptureLifetime extends StatefulWidget {
+  const _MeasurementCaptureLifetime({
+    required this.draft,
+    required this.child,
+  });
+
+  final _MeasurementCaptureDraft draft;
+  final Widget child;
+
+  @override
+  State<_MeasurementCaptureLifetime> createState() =>
+      _MeasurementCaptureLifetimeState();
+}
+
+class _MeasurementCaptureLifetimeState
+    extends State<_MeasurementCaptureLifetime> {
+  @override
+  void dispose() {
+    widget.draft.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+class _MeasurementCaptureBackHandler extends StatelessWidget {
+  const _MeasurementCaptureBackHandler({
+    required this.draft,
+    required this.child,
+  });
+
+  final _MeasurementCaptureDraft draft;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: draft.pageIndexNotifier,
+      child: child,
+      builder: (context, pageIndex, child) {
+        final popAware = PopScope<void>(
+          canPop: pageIndex == 0,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && draft.pageIndexNotifier.value != 0) {
+              draft.discardPickerChanges();
+            }
+          },
+          child: child!,
+        );
+        if (pageIndex == 0) return popAware;
+        return CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.escape):
+                draft.discardPickerChanges,
+          },
+          child: Focus(autofocus: true, child: popAware),
+        );
+      },
     );
+  }
+}
+
+class _MeasurementModalTitle extends StatelessWidget {
+  const _MeasurementModalTitle({required this.dataType});
+
+  final MeasurableDataType dataType;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final hasLargeText = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+    return Semantics(
+      header: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            dataType.displayName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          if (dataType.description.isNotEmpty && !hasLargeText)
+            Text(
+              dataType.description,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MeasurementEditorPage extends StatefulWidget {
+  const _MeasurementEditorPage({required this.draft});
+
+  final _MeasurementCaptureDraft draft;
+
+  @override
+  State<_MeasurementEditorPage> createState() => _MeasurementEditorPageState();
+}
+
+class _MeasurementEditorPageState extends State<_MeasurementEditorPage> {
+  late final bool _autofocusValue = widget.draft.takeValueAutofocus();
+  late final bool _autofocusObservedAt = widget.draft
+      .takeObservedAtFocusRestore();
+  late final Listenable _editorState = Listenable.merge([
+    widget.draft.valueController,
+    widget.draft.measurementDateTime,
+    widget.draft.saveState,
+  ]);
+
+  @override
+  void initState() {
+    super.initState();
+    if (_autofocusObservedAt) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final focusNode = widget.draft.observedAtFocusNode;
+          if (mounted && focusNode.canRequestFocus) {
+            FocusScope.of(context).requestFocus(focusNode);
+          }
+        });
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final dataType = getIt<EntitiesCacheService>().getDataTypeById(
-      widget.measurableId,
-    );
+    return ListenableBuilder(
+      listenable: _editorState,
+      builder: (context, _) {
+        final tokens = context.designTokens;
+        final draft = widget.draft;
+        final dataType = draft.dataType;
+        final unit = dataType.unitName;
+        final measurableLabel = unit.isEmpty
+            ? dataType.displayName
+            : '${dataType.displayName}, $unit';
+        final saveState = draft.saveState.value;
 
-    if (dataType == null) {
-      return const SizedBox.shrink();
-    }
-
-    final tokens = context.designTokens;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _ValueHeroField(
-          controller: _valueController,
-          focusNode: _valueFocus,
-          unit: dataType.unitName,
-          onSubmitted: () => _save(dataType),
-        ),
-        MeasurementSuggestions(
-          measurableDataType: dataType,
-          onSelect: (value) => _save(dataType, value: value),
-        ),
-        SizedBox(height: tokens.spacing.sectionGap),
-        _LabeledField(
-          label: context.messages.addMeasurementDateLabel,
-          child: _ObservedAtField(
-            key: const Key('measurement_observed_at'),
-            dateTime: measurementTime,
-            onTap: _pickDateTime,
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        _LabeledField(
-          label: context.messages.addMeasurementCommentLabel,
-          child: _FieldShell(
-            focusNode: _commentFocus,
-            child: TextField(
-              key: const Key('measurement_comment_field'),
-              controller: _commentController,
-              focusNode: _commentFocus,
-              minLines: 1,
-              maxLines: 3,
-              cursorColor: tokens.colors.interactive.enabled,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.highEmphasis,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _ValueHeroField(
+              controller: draft.valueController,
+              focusNode: draft.valueFocusNode,
+              unit: unit,
+              autofocus: _autofocusValue,
+              semanticsLabel: context.messages.measurementValueSemantic(
+                measurableLabel,
               ),
-              decoration: _bareInputDecoration(
-                hintText: context.messages.measurementCommentHint,
-                hintStyle: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
+              onSubmitted: () => unawaited(draft.save(context)),
+            ),
+            MeasurementSuggestions(
+              measurableDataType: dataType,
+              enabled: !saveState.isSaving,
+              onSelect: (value) => draft.save(context, value: value),
+            ),
+            SizedBox(height: tokens.spacing.sectionGap),
+            _LabeledField(
+              label: context.messages.addMeasurementDateLabel,
+              child: _ObservedAtField(
+                key: const Key('measurement_observed_at'),
+                dateTime: draft.measurementDateTime.value,
+                focusNode: draft.observedAtFocusNode,
+                autofocus: _autofocusObservedAt,
+                onTap: draft.beginPickerChanges,
+              ),
+            ),
+            SizedBox(height: tokens.spacing.step5),
+            _LabeledField(
+              label: context.messages.addMeasurementCommentLabel,
+              child: _FieldShell(
+                focusNode: draft.commentFocusNode,
+                child: Semantics(
+                  label: context.messages.measurementCommentSemantic,
+                  child: TextField(
+                    key: const Key('measurement_comment_field'),
+                    controller: draft.commentController,
+                    focusNode: draft.commentFocusNode,
+                    minLines: 1,
+                    maxLines: 3,
+                    cursorColor: tokens.colors.interactive.enabled,
+                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                    decoration: _bareInputDecoration(
+                      hintText: context.messages.measurementCommentHint,
+                      hintStyle: tokens.typography.styles.body.bodyMedium
+                          .copyWith(color: tokens.colors.text.lowEmphasis),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        SizedBox(height: tokens.spacing.sectionGap),
-        Align(
+            if (saveState.error != null) ...[
+              SizedBox(height: tokens.spacing.step4),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  saveState.error!,
+                  key: const ValueKey('measurement-save-error'),
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.alert.error.defaultColor,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MeasurementSaveFooter extends StatelessWidget {
+  const _MeasurementSaveFooter({
+    required this.draft,
+  });
+
+  final _MeasurementCaptureDraft draft;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([draft.valueController, draft.saveState]),
+      builder: (context, _) {
+        final state = draft.saveState.value;
+        return DesignSystemGlassActionFooter(
           child: DesignSystemButton(
             key: const Key('measurement_save'),
             label: context.messages.addMeasurementSaveButton,
             size: DesignSystemButtonSize.large,
             leadingIcon: Icons.check_rounded,
-            onPressed: _isValid ? () => unawaited(_save(dataType)) : null,
+            fullWidth: true,
+            isLoading: state.isSaving,
+            onPressed: draft.canSave
+                ? () => unawaited(draft.save(context))
+                : null,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MeasurementDateTimeEditor extends StatefulWidget {
+  const _MeasurementDateTimeEditor({required this.draft});
+
+  final _MeasurementCaptureDraft draft;
+
+  @override
+  State<_MeasurementDateTimeEditor> createState() =>
+      _MeasurementDateTimeEditorState();
+}
+
+class _MeasurementDateTimeEditorState
+    extends State<_MeasurementDateTimeEditor> {
+  var _timeWheelSeed = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.draft.pickerDateTime.addListener(_onDateTimeChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.draft.pickerDateTime.removeListener(_onDateTimeChanged);
+    super.dispose();
+  }
+
+  void _onDateTimeChanged() => setState(() {});
+
+  void _setNow() {
+    setState(() => _timeWheelSeed += 1);
+    widget.draft.pickerDateTime.value = widget.draft.now();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final selected = widget.draft.pickerDateTime.value;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DesignSystemCalendarPicker(
+          selectedDate: selected,
+          firstDate: DateTime(1900),
+          lastDate: DateTime(2100),
+          onDateChanged: (date) {
+            widget.draft.pickerDateTime.value = _replaceCalendarDate(
+              selected,
+              date,
+            );
+          },
+        ),
+        SizedBox(height: tokens.spacing.sectionGap),
+        DesignSystemPickerSection(
+          key: const ValueKey('measurement-time-section'),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      context.messages.measurementTimeLabel,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(color: tokens.colors.text.highEmphasis),
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  DesignSystemButton(
+                    key: const ValueKey('measurement-observed-at-now'),
+                    label: context.messages.journalDateNowButton,
+                    semanticsLabel:
+                        context.messages.measurementSetObservedAtNowSemantic,
+                    variant: DesignSystemButtonVariant.tertiary,
+                    size: DesignSystemButtonSize.medium,
+                    onPressed: _setNow,
+                  ),
+                ],
+              ),
+              SizedBox(height: tokens.spacing.step2),
+              DesignSystemTimeWheel(
+                key: ValueKey('measurement-time-wheel-$_timeWheelSeed'),
+                initialDateTime: selected,
+                use24hFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+                semanticsLabel: context.messages.measurementTimeLabel,
+                onDateTimeChanged: (dateTime) {
+                  widget.draft.pickerDateTime.value = _replaceTime(
+                    widget.draft.pickerDateTime.value,
+                    dateTime,
+                  );
+                },
+              ),
+            ],
           ),
         ),
       ],
     );
   }
+}
+
+DateTime _replaceCalendarDate(DateTime current, DateTime date) {
+  return current.isUtc
+      ? DateTime.utc(
+          date.year,
+          date.month,
+          date.day,
+          current.hour,
+          current.minute,
+          current.second,
+          current.millisecond,
+          current.microsecond,
+        )
+      : DateTime(
+          date.year,
+          date.month,
+          date.day,
+          current.hour,
+          current.minute,
+          current.second,
+          current.millisecond,
+          current.microsecond,
+        );
+}
+
+DateTime _replaceTime(DateTime current, DateTime time) {
+  return current.isUtc
+      ? DateTime.utc(
+          current.year,
+          current.month,
+          current.day,
+          time.hour,
+          time.minute,
+          current.second,
+          current.millisecond,
+          current.microsecond,
+        )
+      : DateTime(
+          current.year,
+          current.month,
+          current.day,
+          time.hour,
+          time.minute,
+          current.second,
+          current.millisecond,
+          current.microsecond,
+        );
 }
 
 /// An [InputDecoration] with every border state nulled so the field draws no
@@ -287,7 +762,7 @@ class _FieldShellState extends State<_FieldShell> {
     } else if (_hovered) {
       borderColor = tokens.colors.text.mediumEmphasis;
     } else {
-      borderColor = tokens.colors.text.highEmphasis.withValues(alpha: 0.12);
+      borderColor = tokens.colors.decorative.level01;
     }
 
     return MouseRegion(
@@ -320,12 +795,16 @@ class _ValueHeroField extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.unit,
+    required this.autofocus,
+    required this.semanticsLabel,
     required this.onSubmitted,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final String unit;
+  final bool autofocus;
+  final String semanticsLabel;
   final VoidCallback onSubmitted;
 
   @override
@@ -350,22 +829,25 @@ class _ValueHeroField extends StatelessWidget {
             child: IntrinsicWidth(
               child: ConstrainedBox(
                 constraints: BoxConstraints(minWidth: tokens.spacing.step8),
-                child: TextField(
-                  key: const Key('measurement_value_field'),
-                  controller: controller,
-                  focusNode: focusNode,
-                  autofocus: true,
-                  textAlign: TextAlign.center,
-                  style: valueStyle,
-                  cursorColor: tokens.colors.interactive.enabled,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                    signed: true,
+                child: Semantics(
+                  label: semanticsLabel,
+                  child: TextField(
+                    key: const Key('measurement_value_field'),
+                    controller: controller,
+                    focusNode: focusNode,
+                    autofocus: autofocus,
+                    textAlign: TextAlign.center,
+                    style: valueStyle,
+                    cursorColor: tokens.colors.interactive.enabled,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => onSubmitted(),
+                    inputFormatters: const [_DecimalTextInputFormatter()],
+                    decoration: _bareInputDecoration(),
                   ),
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => onSubmitted(),
-                  inputFormatters: const [_DecimalTextInputFormatter()],
-                  decoration: _bareInputDecoration(),
                 ),
               ),
             ),
@@ -391,55 +873,76 @@ class _ValueHeroField extends StatelessWidget {
 class _ObservedAtField extends StatelessWidget {
   const _ObservedAtField({
     required this.dateTime,
+    required this.focusNode,
+    required this.autofocus,
     required this.onTap,
     super.key,
   });
 
   final DateTime dateTime;
+  final FocusNode focusNode;
+  final bool autofocus;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final radius = BorderRadius.circular(tokens.radii.m);
+    final formatted = _formatDateTime(context, dateTime);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: radius,
-        onTap: onTap,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            border: Border.all(
-              color: tokens.colors.text.highEmphasis.withValues(alpha: 0.12),
+    return Semantics(
+      button: true,
+      container: true,
+      excludeSemantics: true,
+      label: context.messages.measurementObservedAtChangeSemantic(formatted),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          focusNode: focusNode,
+          autofocus: autofocus,
+          borderRadius: radius,
+          onTap: onTap,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              border: Border.all(color: tokens.colors.decorative.level01),
             ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step4,
-              vertical: tokens.spacing.step4,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    dfShorter.format(dateTime),
-                    style: tokens.typography.styles.body.bodyMedium.copyWith(
-                      color: tokens.colors.text.highEmphasis,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+                vertical: tokens.spacing.step4,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      formatted,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
                     ),
                   ),
-                ),
-                Icon(
-                  Icons.edit_calendar_outlined,
-                  size: tokens.spacing.step6,
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-              ],
+                  Icon(
+                    Icons.edit_calendar_outlined,
+                    size: tokens.spacing.step6,
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+String _formatDateTime(BuildContext context, DateTime dateTime) {
+  final localizations = MaterialLocalizations.of(context);
+  final date = localizations.formatFullDate(dateTime);
+  final time = localizations.formatTimeOfDay(
+    TimeOfDay.fromDateTime(dateTime),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return '$date, $time';
 }

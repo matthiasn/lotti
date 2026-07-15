@@ -136,16 +136,18 @@ class ModalUtils {
             )
           : leadingNavBarWidget,
       trailingNavBarWidget: showCloseButton
-          ? _navigationButton(
-              context: context,
-              tooltip:
-                  closeButtonTooltip ??
-                  materialLocalizations.closeButtonTooltip,
-              icon: closeButtonIcon,
-              onPressed: () {
-                onClosePressed?.call();
-                Navigator.of(context).pop();
-              },
+          ? Builder(
+              builder: (navigationContext) => _navigationButton(
+                context: navigationContext,
+                tooltip:
+                    closeButtonTooltip ??
+                    materialLocalizations.closeButtonTooltip,
+                icon: closeButtonIcon,
+                onPressed: () {
+                  onClosePressed?.call();
+                  Navigator.of(navigationContext).pop();
+                },
+              ),
             )
           : null,
       child: Padding(
@@ -310,11 +312,13 @@ class ModalUtils {
             )
           : null,
       trailingNavBarWidget: showCloseButton
-          ? _navigationButton(
-              context: context,
-              tooltip: materialLocalizations.closeButtonTooltip,
-              icon: Icons.close_rounded,
-              onPressed: Navigator.of(context).pop,
+          ? Builder(
+              builder: (navigationContext) => _navigationButton(
+                context: navigationContext,
+                tooltip: materialLocalizations.closeButtonTooltip,
+                icon: Icons.close_rounded,
+                onPressed: Navigator.of(navigationContext).pop,
+              ),
             )
           : null,
       mainContentSliversBuilder: (BuildContext context) {

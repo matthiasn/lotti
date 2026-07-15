@@ -16,6 +16,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_s
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:lotti/widgets/modal/full_height_wolt_dialog_type.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -45,7 +46,7 @@ class EntryDateTimeMultiPageModal {
               tokens.spacing.step5,
               tokens.spacing.step3,
               tokens.spacing.step5,
-              DesignSystemGlassActionFooter.reservedHeight,
+              DesignSystemGlassActionFooter.reservedHeightFor(modalContext),
             ),
             stickyActionBar: _SaveActionBar(
               entry: entry,
@@ -127,23 +128,7 @@ WoltModalType _modalTypeBuilder(BuildContext context) {
   if (ModalUtils.shouldUseRootNavigatorForBottomSheet(context)) {
     return WoltModalType.bottomSheet();
   }
-  return const _EntryDateTimeDialogType();
-}
-
-/// Uses the screen space available to this dense editor instead of the
-/// standard Wolt dialog's 80% height cap.
-class _EntryDateTimeDialogType extends WoltDialogType {
-  const _EntryDateTimeDialogType();
-
-  @override
-  BoxConstraints layoutModal(Size availableSize) {
-    final base = super.layoutModal(availableSize);
-    final maxHeight = (availableSize.height - WoltDialogType.minPadding).clamp(
-      base.minHeight,
-      availableSize.height,
-    );
-    return base.copyWith(maxHeight: maxHeight);
-  }
+  return const FullHeightWoltDialogType();
 }
 
 class _EntryDateTimeEditor extends StatefulWidget {

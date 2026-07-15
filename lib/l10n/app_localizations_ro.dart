@@ -6666,7 +6666,36 @@ class AppLocalizationsRo extends AppLocalizations {
   String get measurementCommentHint => 'Adăugați o notă (opțional)';
 
   @override
-  String get measurementQuickAddLabel => 'Adăugare rapidă';
+  String get measurementCommentSemantic => 'Comentariu, opțional';
+
+  @override
+  String measurementObservedAtChangeSemantic(String dateTime) {
+    return 'Înregistrat la $dateTime. Modificați data și ora.';
+  }
+
+  @override
+  String get measurementQuickAddLabel => 'Înregistrare rapidă';
+
+  @override
+  String measurementQuickLogSemantic(String value) {
+    return 'Înregistrați imediat $value';
+  }
+
+  @override
+  String get measurementSaveError =>
+      'Măsurătoarea nu a putut fi salvată. Încercați din nou.';
+
+  @override
+  String get measurementSetObservedAtNowSemantic =>
+      'Setați data și ora observate la momentul actual';
+
+  @override
+  String get measurementTimeLabel => 'Ora';
+
+  @override
+  String measurementValueSemantic(String measurable) {
+    return 'Valoare pentru $measurable';
+  }
 
   @override
   String get mediaShowInFileExplorerAction => 'Afișați în Explorer';

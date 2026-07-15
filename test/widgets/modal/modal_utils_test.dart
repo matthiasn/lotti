@@ -291,8 +291,7 @@ void main() {
         );
 
         expect(page.trailingNavBarWidget, isNotNull);
-        expect(page.trailingNavBarWidget, isA<IconButton>());
-        expect((page.trailingNavBarWidget! as IconButton).tooltip, 'Close');
+        expect(page.trailingNavBarWidget, isA<Builder>());
       });
 
       testWidgets('creates page with sticky action bar', (tester) async {
@@ -721,6 +720,61 @@ void main() {
 
         expect(find.text('Non-dismissible'), findsOneWidget);
       });
+
+      testWidgets('close uses the active page context after pagination', (
+        tester,
+      ) async {
+        final pageIndexNotifier = ValueNotifier<int>(0);
+        addTearDown(pageIndexNotifier.dispose);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    ModalUtils.showMultiPageModal<void>(
+                      context: context,
+                      pageIndexNotifier: pageIndexNotifier,
+                      pageListBuilder: (modalContext) => [
+                        ModalUtils.modalSheetPage(
+                          context: modalContext,
+                          showCloseButton: true,
+                          child: ElevatedButton(
+                            onPressed: () => pageIndexNotifier.value = 1,
+                            child: const Text('Next page'),
+                          ),
+                        ),
+                        ModalUtils.modalSheetPage(
+                          context: modalContext,
+                          showCloseButton: true,
+                          child: const Text('Second page'),
+                        ),
+                      ],
+                    );
+                  },
+                  child: const Text('Show paginated modal'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show paginated modal'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 450));
+        await tester.tap(find.text('Next page'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 450));
+        expect(find.text('Second page'), findsOneWidget);
+
+        await tester.tap(find.byTooltip('Close'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 450));
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Second page'), findsNothing);
+      });
     });
 
     group('sliverModalSheetPage', () {
@@ -805,8 +859,7 @@ void main() {
         );
 
         expect(page.trailingNavBarWidget, isNotNull);
-        expect(page.trailingNavBarWidget, isA<IconButton>());
-        expect((page.trailingNavBarWidget! as IconButton).tooltip, 'Close');
+        expect(page.trailingNavBarWidget, isA<Builder>());
       });
 
       testWidgets('creates sliver page without close button', (tester) async {
@@ -878,6 +931,48 @@ void main() {
     });
 
     group('showSingleSliverPageModal', () {
+      testWidgets('shared sliver close button dismisses its route', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    ModalUtils.showSingleSliverPageModal<void>(
+                      context: context,
+                      builder: (modalContext) =>
+                          ModalUtils.sliverModalSheetPage(
+                            context: modalContext,
+                            slivers: const [
+                              SliverToBoxAdapter(
+                                child: Text('Closable sliver content'),
+                              ),
+                            ],
+                          ),
+                    );
+                  },
+                  child: const Text('Show closable sliver'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show closable sliver'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 450));
+        expect(find.text('Closable sliver content'), findsOneWidget);
+
+        await tester.tap(find.byTooltip('Close'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 450));
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Closable sliver content'), findsNothing);
+      });
+
       testWidgets('shows sliver modal with basic configuration', (
         tester,
       ) async {

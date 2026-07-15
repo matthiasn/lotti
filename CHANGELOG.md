@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   split panes and confirm Daily OS commits without pointer-only gestures.
 
 ### Changed
+- **Logging a measurable now stays in one clear, accessible sheet.** Changing
+  the observed date and time moves to a calendar page in the same capture flow
+  instead of stacking another modal over the editor. Values and comments stay
+  intact when navigating back, the complete time picker scrolls above the
+  sticky action, and Save waits for persistence with visible progress and
+  retry feedback.
 - **Maintenance settings dividers fade on hover.** Hovering a row on the
   Advanced Settings → Maintenance page now fades the hairline dividers above
   and below it, so the hovered row is never bisected — matching the existing

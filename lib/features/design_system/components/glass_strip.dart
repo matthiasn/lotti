@@ -94,9 +94,9 @@ class DesignSystemGlassStrip extends StatelessWidget {
 /// behind blurred glass.
 ///
 /// Callers that overlay this footer on top of a scrolling region must
-/// reserve [reservedHeight] of bottom inset (or matching bottom padding
-/// inside the scrollable) so the last row of content remains tappable
-/// after scrolling under the glass.
+/// reserve [reservedHeightFor] of bottom inset (or matching bottom padding
+/// inside the scrollable) so the last row of content remains tappable after
+/// scrolling under the glass, including when text scaling grows the button.
 class DesignSystemGlassActionFooter extends StatelessWidget {
   const DesignSystemGlassActionFooter({
     required this.child,
@@ -114,6 +114,23 @@ class DesignSystemGlassActionFooter extends StatelessWidget {
   /// add a second row inside the footer, update this constant and audit
   /// every caller that uses it as a bottom inset.
   static const double reservedHeight = 88;
+
+  /// Returns the minimum scroll inset for a single large button footer.
+  ///
+  /// [reservedHeight] includes the standard button, divider, and surrounding
+  /// sheet allowance. A scaled large-button label can increase the footer's
+  /// intrinsic height, so reserve that typography delta as well.
+  static double reservedHeightFor(BuildContext context) {
+    final tokens = context.designTokens;
+    final baseLineHeight = tokens.typography.lineHeight.subtitle1;
+    final scaledLineHeight = MediaQuery.textScalerOf(
+      context,
+    ).scale(baseLineHeight);
+    final additionalHeight = scaledLineHeight > baseLineHeight
+        ? scaledLineHeight - baseLineHeight
+        : 0;
+    return reservedHeight + additionalHeight;
+  }
 
   @override
   Widget build(BuildContext context) {

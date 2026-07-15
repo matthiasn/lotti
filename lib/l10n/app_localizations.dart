@@ -11404,11 +11404,53 @@ abstract class AppLocalizations {
   /// **'Add a note (optional)'**
   String get measurementCommentHint;
 
+  /// No description provided for @measurementCommentSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment, optional'**
+  String get measurementCommentSemantic;
+
+  /// No description provided for @measurementObservedAtChangeSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Observed at {dateTime}. Change date and time.'**
+  String measurementObservedAtChangeSemantic(String dateTime);
+
   /// No description provided for @measurementQuickAddLabel.
   ///
   /// In en, this message translates to:
-  /// **'Quick add'**
+  /// **'Quick log'**
   String get measurementQuickAddLabel;
+
+  /// No description provided for @measurementQuickLogSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Log {value} immediately'**
+  String measurementQuickLogSemantic(String value);
+
+  /// No description provided for @measurementSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t save this measurement. Try again.'**
+  String get measurementSaveError;
+
+  /// No description provided for @measurementSetObservedAtNowSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Set observed date and time to now'**
+  String get measurementSetObservedAtNowSemantic;
+
+  /// No description provided for @measurementTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get measurementTimeLabel;
+
+  /// No description provided for @measurementValueSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Value for {measurable}'**
+  String measurementValueSemantic(String measurable);
 
   /// Context menu action that reveals a media file in Windows File Explorer.
   ///

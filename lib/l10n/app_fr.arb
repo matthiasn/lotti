@@ -2768,7 +2768,35 @@
   "measurableDeleteQuestion": "Veux-tu supprimer ce type de données mesurables ?",
   "measurableNotFound": "Élément mesurable introuvable",
   "measurementCommentHint": "Ajoute une note (facultatif)",
-  "measurementQuickAddLabel": "Ajout rapide",
+  "measurementCommentSemantic": "Commentaire, facultatif",
+  "measurementObservedAtChangeSemantic": "Mesuré le {dateTime}. Modifier la date et l’heure.",
+  "@measurementObservedAtChangeSemantic": {
+    "placeholders": {
+      "dateTime": {
+        "type": "String"
+      }
+    }
+  },
+  "measurementQuickAddLabel": "Saisie rapide",
+  "measurementQuickLogSemantic": "Enregistrer {value} immédiatement",
+  "@measurementQuickLogSemantic": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "measurementSaveError": "Impossible d’enregistrer cette mesure. Réessaie.",
+  "measurementSetObservedAtNowSemantic": "Définir la date et l’heure observées sur maintenant",
+  "measurementTimeLabel": "Heure",
+  "measurementValueSemantic": "Valeur pour {measurable}",
+  "@measurementValueSemantic": {
+    "placeholders": {
+      "measurable": {
+        "type": "String"
+      }
+    }
+  },
   "mediaShowInFileExplorerAction": "Afficher dans l'Explorateur de fichiers",
   "mediaShowInFilesAction": "Afficher dans Fichiers",
   "mediaShowInFinderAction": "Afficher dans le Finder",
