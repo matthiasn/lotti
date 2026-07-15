@@ -125,6 +125,46 @@ void main() {
           debugDefaultTargetPlatformOverride = null;
         }
       });
+
+      testWidgets('unavailable shared commands do not use direct fallbacks', (
+        tester,
+      ) async {
+        var fallbackZooms = 0;
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        try {
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: AppCommandHost(
+                handlers: {
+                  AppCommandId.zoomIn: AppCommandHandler(
+                    isEnabled: () => false,
+                    invoke: (_) => fail('disabled command invoked'),
+                  ),
+                },
+                child: DesktopMenuWrapper(
+                  onZoomIn: () => fallbackZooms++,
+                  child: const Text('Menu Child'),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final menuBar = tester.widget<PlatformMenuBar>(
+            find.byType(PlatformMenuBar),
+          );
+          final viewMenu = menuBar.menus.whereType<PlatformMenu>().singleWhere(
+            (menu) => menu.label == 'View',
+          );
+          final zoomInItem = viewMenu.menus.whereType<PlatformMenuItem>().first;
+
+          expect(zoomInItem.onSelected, isNull);
+          expect(fallbackZooms, 0);
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
     });
   });
 }

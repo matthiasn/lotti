@@ -194,7 +194,10 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
       child: AppCommandScope(
         debugLabel: 'project-detail',
         handlers: {
-          AppCommandId.save: AppCommandHandler(invoke: (_) => _handleSave()),
+          AppCommandId.save: AppCommandHandler(
+            isEnabled: () => state.hasChanges && !state.isSaving,
+            invoke: (_) => _handleSave(),
+          ),
         },
         child: Scaffold(
           backgroundColor: context.colorScheme.surface,

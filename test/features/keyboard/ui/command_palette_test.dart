@@ -45,8 +45,10 @@ void main() {
   testWidgets('restores focus before dispatching a selected command', (
     tester,
   ) async {
-    final snapshot = _Snapshot();
     final focusNode = FocusNode();
+    final snapshot = _Snapshot(
+      onInvoke: () => expect(focusNode.hasFocus, isTrue),
+    );
     addTearDown(focusNode.dispose);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -74,6 +76,9 @@ void main() {
 }
 
 class _Snapshot implements AppCommandContextSnapshot {
+  _Snapshot({this.onInvoke});
+
+  final VoidCallback? onInvoke;
   final List<AppCommandId> invoked = [];
 
   @override
@@ -81,6 +86,7 @@ class _Snapshot implements AppCommandContextSnapshot {
 
   @override
   Future<bool> invoke(AppCommandId id) async {
+    onInvoke?.call();
     invoked.add(id);
     return true;
   }

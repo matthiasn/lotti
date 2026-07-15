@@ -476,6 +476,7 @@ Future<void> _pumpAppScreenCustomProviders(
 Future<void> _registerAppScreenGetIt(
   MockNavService navService, {
   JournalEntity? runningTimer,
+  NavService? registeredNavService,
 }) async {
   final mockTimeService = MockTimeService();
   if (runningTimer != null) {
@@ -493,7 +494,7 @@ Future<void> _registerAppScreenGetIt(
   await setUpTestGetIt(
     additionalSetup: () {
       getIt
-        ..registerSingleton<NavService>(navService)
+        ..registerSingleton<NavService>(registeredNavService ?? navService)
         ..registerSingleton<SyncDatabase>(mockSyncDatabaseWithCount(0))
         ..registerSingleton<TimeService>(mockTimeService);
     },
@@ -3431,8 +3432,22 @@ void main() {
       tester,
     ) async {
       final mockNavService = MockNavService();
+      final registeredNavService = MockNavService();
+      var projectsEnabled = false;
+      var habitsEnabled = false;
+      var dashboardsEnabled = false;
+      var eventsEnabled = false;
       await _stubNavService(
         mockNavService,
+        indexStream: const Stream<int>.empty(),
+        isProjectsEnabled: () => projectsEnabled,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => habitsEnabled,
+        isDashboardsEnabled: () => dashboardsEnabled,
+        isEventsEnabled: () => eventsEnabled,
+      );
+      await _stubNavService(
+        registeredNavService,
         indexStream: const Stream<int>.empty(),
         isProjectsEnabled: () => true,
         isDailyOsEnabled: () => true,
@@ -3458,7 +3473,10 @@ void main() {
       when(() => mockNavService.journalIndex).thenReturn(5);
       when(() => mockNavService.eventsIndex).thenReturn(6);
       when(() => mockNavService.settingsIndex).thenReturn(7);
-      await _registerAppScreenGetIt(mockNavService);
+      await _registerAppScreenGetIt(
+        mockNavService,
+        registeredNavService: registeredNavService,
+      );
       addTearDown(tearDownTestGetIt);
 
       final resolvedLinkedIds = <String?>[];
@@ -3494,6 +3512,19 @@ void main() {
         commandContext,
       );
       final messages = AppLocalizations.of(commandContext)!;
+
+      for (final id in const [
+        AppCommandId.navigateProjects,
+        AppCommandId.navigateHabits,
+        AppCommandId.navigateDashboards,
+        AppCommandId.navigateEvents,
+      ]) {
+        expect(commandController.isAvailable(commandContext, id), isFalse);
+      }
+      projectsEnabled = true;
+      habitsEnabled = true;
+      dashboardsEnabled = true;
+      eventsEnabled = true;
 
       Future<void> openAndClose(AppCommandId id, String title) async {
         expect(commandController.isAvailable(commandContext, id), isTrue);
@@ -3535,6 +3566,7 @@ void main() {
         );
         verify(() => mockNavService.tapIndex(entry.value)).called(1);
       }
+      verifyNever(() => registeredNavService.tapIndex(any()));
 
       final container = ProviderScope.containerOf(commandContext);
       expect(container.read(zoomControllerProvider), defaultZoomScale);

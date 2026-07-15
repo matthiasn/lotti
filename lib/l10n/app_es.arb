@@ -2624,11 +2624,11 @@
       }
     }
   },
-  "keyboardCommandNextRegion": "Enfocar el panel siguiente",
+  "keyboardCommandNextRegion": "Enfocar la siguiente región",
   "keyboardCommandOpenPalette": "Abrir la paleta de comandos",
   "keyboardCommandPageDown": "Bajar una página",
   "keyboardCommandPageUp": "Subir una página",
-  "keyboardCommandPreviousRegion": "Enfocar el panel anterior",
+  "keyboardCommandPreviousRegion": "Enfocar la región anterior",
   "keyboardCommandRefresh": "Actualizar la vista actual",
   "keyboardCommandRename": "Renombrar el elemento enfocado",
   "keyboardCommandSelectFirst": "Seleccionar el primer elemento",

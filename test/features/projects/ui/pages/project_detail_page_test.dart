@@ -13,6 +13,8 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
@@ -605,6 +607,13 @@ void main() {
           isNull,
           reason: 'Save button should be disabled when isSaving',
         );
+        final context = tester.element(saveButton);
+        expect(
+          AppCommandControllerProvider.of(
+            context,
+          ).isAvailable(context, AppCommandId.save),
+          isFalse,
+        );
       });
 
       testWidgets('save button is disabled when no changes', (tester) async {
@@ -620,12 +629,19 @@ void main() {
           isNull,
           reason: 'Save button should be disabled when no changes',
         );
+        final context = tester.element(saveButton);
+        expect(
+          AppCommandControllerProvider.of(
+            context,
+          ).isAvailable(context, AppCommandId.save),
+          isFalse,
+        );
       });
 
       testWidgets('save button is enabled when hasChanges and not saving', (
         tester,
       ) async {
-        await pumpPage(
+        final controller = await pumpPage(
           tester,
           controllerState: ProjectDetailState(
             project: testProject,
@@ -645,6 +661,17 @@ void main() {
               'Save button should be enabled when hasChanges and not '
               'saving',
         );
+        final context = tester.element(saveButton);
+        final commandController = AppCommandControllerProvider.of(context);
+        expect(
+          commandController.isAvailable(context, AppCommandId.save),
+          isTrue,
+        );
+        expect(
+          await commandController.invoke(context, AppCommandId.save),
+          isTrue,
+        );
+        expect(controller.saveChangesCalls, 1);
       });
 
       testWidgets(

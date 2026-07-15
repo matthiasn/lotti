@@ -139,18 +139,16 @@ class AppCommandScopeNode {
     _handlers = Map<AppCommandId, AppCommandHandler>.unmodifiable(handlers);
   }
 
-  AppCommandHandler? handlerFor(AppCommandId id) {
+  /// Resolves the enabled handler and its owning scope in one traversal.
+  ({AppCommandScopeNode owner, AppCommandHandler handler})? resolve(
+    AppCommandId id,
+  ) {
     if (!mounted) return null;
     final handler = _handlers[id];
-    if (handler != null && handler.enabled) return handler;
-    return parent?.handlerFor(id);
-  }
-
-  AppCommandScopeNode? ownerFor(AppCommandId id) {
-    if (!mounted) return null;
-    final handler = _handlers[id];
-    if (handler != null && handler.enabled) return this;
-    return parent?.ownerFor(id);
+    if (handler != null && handler.enabled) {
+      return (owner: this, handler: handler);
+    }
+    return parent?.resolve(id);
   }
 
   void dispose() {

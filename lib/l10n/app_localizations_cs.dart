@@ -2928,7 +2928,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get commandPaletteNoResults =>
-      'Vašemu hledání neodpovídají žádné dostupné příkazy';
+      'Tvému hledání neodpovídají žádné dostupné příkazy';
 
   @override
   String get commandPaletteSearchHint => 'Hledat příkazy…';
@@ -6305,7 +6305,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get keyboardShortcutsNoResults =>
-      'Vašemu hledání neodpovídají žádné zkratky';
+      'Tvému hledání neodpovídají žádné zkratky';
 
   @override
   String get keyboardShortcutsSearchHint => 'Hledat zkratky…';
@@ -8463,7 +8463,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsKeyboardShortcutsSubtitle =>
-      'Naučte se klávesové kombinace pro rychlejší navigaci a úpravy na počítači';
+      'Nauč se klávesové kombinace pro rychlejší navigaci a úpravy na počítači';
 
   @override
   String get settingsKeyboardShortcutsTitle => 'Klávesové zkratky';

@@ -68,10 +68,12 @@ class DesktopMenuWrapper extends StatelessWidget {
                 definition.bindings.first.resolve(TargetPlatform.macOS)
                     as MenuSerializableShortcut?;
             VoidCallback? onSelected;
-            if (commandController?.isAvailable(context, id) ?? false) {
-              onSelected = () => unawaited(
-                commandController!.invoke(context, id),
-              );
+            if (commandController != null) {
+              if (commandController.isAvailable(context, id)) {
+                onSelected = () => unawaited(
+                  commandController.invoke(context, id),
+                );
+              }
             } else {
               onSelected = switch (id) {
                 AppCommandId.zoomIn => onZoomIn,

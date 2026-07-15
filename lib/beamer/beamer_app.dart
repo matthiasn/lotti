@@ -1426,7 +1426,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
   }
 
   Map<AppCommandId, AppCommandHandler> _globalCommandHandlers() {
-    final navService = getIt<NavService>();
+    final navService = effectiveNavService;
     final zoomController = ref.read(zoomControllerProvider.notifier);
     final handlers = <AppCommandId, AppCommandHandler>{
       AppCommandId.openCommandPalette: AppCommandHandler(
@@ -1467,25 +1467,25 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
       AppCommandId.navigateDailyOs: AppCommandHandler(
         invoke: (_) => navService.tapIndex(navService.calendarIndex),
       ),
-      if (navService.isProjectsPageEnabled)
-        AppCommandId.navigateProjects: AppCommandHandler(
-          invoke: (_) => navService.tapIndex(navService.projectsIndex),
-        ),
-      if (navService.isHabitsPageEnabled)
-        AppCommandId.navigateHabits: AppCommandHandler(
-          invoke: (_) => navService.tapIndex(navService.habitsIndex),
-        ),
-      if (navService.isDashboardsPageEnabled)
-        AppCommandId.navigateDashboards: AppCommandHandler(
-          invoke: (_) => navService.tapIndex(navService.dashboardsIndex),
-        ),
+      AppCommandId.navigateProjects: AppCommandHandler(
+        isEnabled: () => navService.isProjectsPageEnabled,
+        invoke: (_) => navService.tapIndex(navService.projectsIndex),
+      ),
+      AppCommandId.navigateHabits: AppCommandHandler(
+        isEnabled: () => navService.isHabitsPageEnabled,
+        invoke: (_) => navService.tapIndex(navService.habitsIndex),
+      ),
+      AppCommandId.navigateDashboards: AppCommandHandler(
+        isEnabled: () => navService.isDashboardsPageEnabled,
+        invoke: (_) => navService.tapIndex(navService.dashboardsIndex),
+      ),
       AppCommandId.navigateJournal: AppCommandHandler(
         invoke: (_) => navService.tapIndex(navService.journalIndex),
       ),
-      if (navService.isEventsPageEnabled)
-        AppCommandId.navigateEvents: AppCommandHandler(
-          invoke: (_) => navService.tapIndex(navService.eventsIndex),
-        ),
+      AppCommandId.navigateEvents: AppCommandHandler(
+        isEnabled: () => navService.isEventsPageEnabled,
+        invoke: (_) => navService.tapIndex(navService.eventsIndex),
+      ),
       AppCommandId.navigateSettings: AppCommandHandler(
         invoke: (_) => navService.tapIndex(navService.settingsIndex),
       ),

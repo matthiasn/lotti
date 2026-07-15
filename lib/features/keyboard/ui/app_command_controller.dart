@@ -85,9 +85,9 @@ class AppCommandController extends ChangeNotifier {
     AppCommandScopeNode? node,
     AppCommandId id,
   ) async {
-    final owner = node?.ownerFor(id);
-    final handler = owner?.handlerFor(id);
-    final ownerContext = owner?.ownerContext;
+    final resolution = node?.resolve(id);
+    final handler = resolution?.handler;
+    final ownerContext = resolution?.owner.ownerContext;
     if (handler == null || ownerContext == null) return false;
 
     final definitionAllowsRepeat = AppCommandCatalog.definition(id).allowRepeat;
@@ -121,7 +121,7 @@ class _AppCommandContextSnapshot implements AppCommandContextSnapshot {
   final AppCommandScopeNode? _node;
 
   @override
-  bool isAvailable(AppCommandId id) => _node?.handlerFor(id) != null;
+  bool isAvailable(AppCommandId id) => _node?.resolve(id) != null;
 
   @override
   Future<bool> invoke(AppCommandId id) =>

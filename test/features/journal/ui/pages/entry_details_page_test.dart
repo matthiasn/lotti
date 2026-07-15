@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
@@ -193,6 +194,15 @@ void main() {
     });
 
     testWidgets('save command persists the current text entry', (tester) async {
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            ..setMockMethodCallHandler(
+              SystemChannels.platform,
+              (_) async => null,
+            );
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+      );
       when(
         () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
       ).thenAnswer((_) async => testTextEntry);
@@ -237,7 +247,10 @@ void main() {
         commandController.isAvailable(commandContext, AppCommandId.save),
         isTrue,
       );
-      unawaited(commandController.invoke(commandContext, AppCommandId.save));
+      final invocation = commandController.invoke(
+        commandContext,
+        AppCommandId.save,
+      );
       await tester.pump();
       verify(
         () => mockPersistenceLogic.updateJournalEntityText(
@@ -246,6 +259,7 @@ void main() {
           testTextEntry.meta.dateTo,
         ),
       ).called(1);
+      expect(await invocation, isTrue);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 

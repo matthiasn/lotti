@@ -274,7 +274,10 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
     return AppCommandScope(
       debugLabel: 'project-create',
       handlers: {
-        AppCommandId.save: AppCommandHandler(invoke: (_) => _handleCreate()),
+        AppCommandId.save: AppCommandHandler(
+          isEnabled: () => !_isSaving,
+          invoke: (_) => _handleCreate(),
+        ),
       },
       child: ConstrainedBox(
         constraints: BoxConstraints(

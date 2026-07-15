@@ -6290,7 +6290,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get keyboardKeyAlt => 'Alt';
 
   @override
-  String get keyboardKeyArrowDown => 'Flèche bas';
+  String get keyboardKeyArrowDown => 'Flèche vers le bas';
 
   @override
   String get keyboardKeyArrowLeft => 'Flèche gauche';
@@ -6299,7 +6299,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get keyboardKeyArrowRight => 'Flèche droite';
 
   @override
-  String get keyboardKeyArrowUp => 'Flèche haut';
+  String get keyboardKeyArrowUp => 'Flèche vers le haut';
 
   @override
   String get keyboardKeyControl => 'Ctrl';

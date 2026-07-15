@@ -96,6 +96,64 @@ void main() {
     expect(await first, isTrue);
   });
 
+  testWidgets('resolves a handler and its owner context atomically', (
+    tester,
+  ) async {
+    final parentKey = GlobalKey();
+    final childKey = GlobalKey();
+    var enabledChecks = 0;
+    var parentCalls = 0;
+    var childCalls = 0;
+    BuildContext? invocationContext;
+    late BuildContext commandContext;
+
+    await tester.pumpWidget(
+      _testApp(
+        AppCommandHost(
+          handlers: const {},
+          child: AppCommandScope(
+            key: parentKey,
+            handlers: {
+              AppCommandId.save: AppCommandHandler(
+                invoke: (invocation) {
+                  parentCalls++;
+                  invocationContext = invocation.context;
+                },
+              ),
+            },
+            child: AppCommandScope(
+              key: childKey,
+              handlers: {
+                AppCommandId.save: AppCommandHandler(
+                  isEnabled: () => enabledChecks++ == 0,
+                  invoke: (invocation) {
+                    childCalls++;
+                    invocationContext = invocation.context;
+                  },
+                ),
+              },
+              child: Builder(
+                builder: (context) {
+                  commandContext = context;
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final invoked = await AppCommandControllerProvider.of(
+      commandContext,
+    ).invoke(commandContext, AppCommandId.save);
+
+    expect(invoked, isTrue);
+    expect(enabledChecks, 1);
+    expect((parentCalls, childCalls), (0, 1));
+    expect(invocationContext, same(childKey.currentContext));
+  });
+
   testWidgets('reports handler failures and returns false', (tester) async {
     Object? reportedError;
     late BuildContext commandContext;

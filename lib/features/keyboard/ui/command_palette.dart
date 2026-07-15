@@ -18,6 +18,7 @@ Future<void> showAppCommandPalette(
   );
   if (invokingFocus?.context?.mounted ?? false) {
     invokingFocus?.requestFocus();
+    await Future<void>.value();
   }
   if (selectedCommand != null) {
     await snapshot.invoke(selectedCommand);

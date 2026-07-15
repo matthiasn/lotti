@@ -6243,7 +6243,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get keyboardCommandNextRegion => 'Enfocar el panel siguiente';
+  String get keyboardCommandNextRegion => 'Enfocar la siguiente región';
 
   @override
   String get keyboardCommandOpenPalette => 'Abrir la paleta de comandos';
@@ -6255,7 +6255,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get keyboardCommandPageUp => 'Subir una página';
 
   @override
-  String get keyboardCommandPreviousRegion => 'Enfocar el panel anterior';
+  String get keyboardCommandPreviousRegion => 'Enfocar la región anterior';
 
   @override
   String get keyboardCommandRefresh => 'Actualizar la vista actual';
