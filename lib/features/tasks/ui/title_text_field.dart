@@ -221,11 +221,11 @@ class _TitleTextFieldState extends State<TitleTextField> {
           AppCommandId.cancel: AppCommandHandler(invoke: (_) => onCancel()),
       },
       child: Shortcuts(
-        shortcuts: <LogicalKeySet, Intent>{
+        shortcuts: const <ShortcutActivator, Intent>{
           // Enter submits without IME unfocus. Primary+S comes from the
           // catalog-driven AppCommandScope above.
-          LogicalKeySet(LogicalKeyboardKey.enter): const _SubmitIntent(),
-          LogicalKeySet(LogicalKeyboardKey.numpadEnter): const _SubmitIntent(),
+          SingleActivator(LogicalKeyboardKey.enter): _SubmitIntent(),
+          SingleActivator(LogicalKeyboardKey.numpadEnter): _SubmitIntent(),
         },
         child: Actions(
           actions: <Type, Action<Intent>>{

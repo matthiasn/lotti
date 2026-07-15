@@ -538,8 +538,7 @@ void main() {
         expect(controller.isAvailable(pageContext, AppCommandId.save), isTrue);
 
         await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
-        await tester.sendKeyDownEvent(LogicalKeyboardKey.keyS);
-        await tester.sendKeyUpEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
         await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
         await pumpAndIdle(tester);
 
