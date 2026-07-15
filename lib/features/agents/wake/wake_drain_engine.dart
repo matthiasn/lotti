@@ -225,12 +225,6 @@ extension WakeDrainEngine on WakeOrchestrator {
           Future.any(activeExecutions.values),
           wakeSignal.future.then((_) => wakeSentinel),
         ]);
-        if (identical(_drainWakeSignal, wakeSignal)) {
-          _drainWakeSignal = null;
-        }
-        if (identical(ownedWakeSignal, wakeSignal)) {
-          ownedWakeSignal = null;
-        }
         if (identical(completedRunKey, wakeSentinel)) {
           _drainRequested = false;
           continue;
