@@ -298,7 +298,11 @@ class _ChecklistCardState extends ConsumerState<ChecklistCard> {
                   });
                 },
               ),
-              secondChild: const SizedBox.shrink(),
+              // Keep both cross-fade endpoints at the card's full width. A
+              // zero-width target makes AnimatedCrossFade squeeze the outgoing
+              // body horizontally as well as vertically, which relays out text
+              // into stacked fragments during collapse.
+              secondChild: const SizedBox(width: double.infinity),
             ),
           ],
         ),

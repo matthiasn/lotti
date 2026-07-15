@@ -1,10 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
+
+import '../../widget_test_utils.dart';
 
 void main() {
   group('DesktopMenuWrapper', () {
@@ -50,12 +55,11 @@ void main() {
           debugDefaultTargetPlatformOverride = TargetPlatform.android;
           try {
             await tester.pumpWidget(
-              const Directionality(
-                textDirection: TextDirection.ltr,
-                child: DesktopMenuWrapper(child: Text('Direct Child')),
+              makeTestableWidget(
+                const DesktopMenuWrapper(child: Text('Direct Child')),
               ),
             );
-            await tester.pumpAndSettle();
+            await tester.pump();
 
             expect(find.text('Direct Child'), findsOneWidget);
             expect(find.byType(PlatformMenuBar), findsNothing);
@@ -71,15 +75,49 @@ void main() {
           debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
           try {
             await tester.pumpWidget(
-              const Directionality(
-                textDirection: TextDirection.ltr,
-                child: DesktopMenuWrapper(child: Text('Menu Child')),
+              makeTestableWidget(
+                const DesktopMenuWrapper(child: Text('Menu Child')),
               ),
             );
-            await tester.pumpAndSettle();
+            await tester.pump();
 
             expect(find.byType(PlatformMenuBar), findsOneWidget);
             expect(find.text('Menu Child'), findsOneWidget);
+          } finally {
+            debugDefaultTargetPlatformOverride = null;
+          }
+        },
+      );
+
+      testWidgets(
+        'preserves Flutter Quill localization from the app scope on macOS',
+        (tester) async {
+          debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+          try {
+            const childKey = ValueKey('localized-menu-child');
+            await tester.pumpWidget(
+              const MaterialApp(
+                localizationsDelegates: [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                  FlutterQuillLocalizations.delegate,
+                ],
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: DesktopMenuWrapper(
+                  child: SizedBox(key: childKey),
+                ),
+              ),
+            );
+            await tester.pump();
+
+            final childContext = tester.element(find.byKey(childKey));
+            expect(
+              FlutterQuillLocalizations.of(childContext),
+              isNotNull,
+              reason: 'The desktop menu must not shadow app-level delegates',
+            );
           } finally {
             debugDefaultTargetPlatformOverride = null;
           }
@@ -93,9 +131,8 @@ void main() {
         debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
         try {
           await tester.pumpWidget(
-            Directionality(
-              textDirection: TextDirection.ltr,
-              child: AppCommandHost(
+            makeTestableWidget(
+              AppCommandHost(
                 handlers: {
                   AppCommandId.navigateTasks: AppCommandHandler(
                     invoke: (_) => taskNavigations++,
@@ -133,9 +170,8 @@ void main() {
         debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
         try {
           await tester.pumpWidget(
-            Directionality(
-              textDirection: TextDirection.ltr,
-              child: AppCommandHost(
+            makeTestableWidget(
+              AppCommandHost(
                 handlers: {
                   AppCommandId.zoomIn: AppCommandHandler(
                     isEnabled: () => false,

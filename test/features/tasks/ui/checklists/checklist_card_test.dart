@@ -734,6 +734,100 @@ void main() {
       expect(find.text('All items completed!'), findsOneWidget);
     });
 
+    testWidgets(
+      'collapse keeps the all-done summary at full width and on one line',
+      (tester) async {
+        await _pump(
+          tester,
+          initiallyExpanded: true,
+          itemIds: const ['x'],
+          completionRate: 1,
+          completedCount: 1,
+          totalCount: 1,
+        );
+        await tester.pump();
+
+        final summaryFinder = find.text('All items completed!');
+        final expandedWidth = tester.getSize(summaryFinder).width;
+        final expandedText = tester.widget<Text>(summaryFinder);
+
+        expect(expandedText.maxLines, 1);
+        expect(expandedText.overflow, TextOverflow.ellipsis);
+
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump(checklistCardCollapseAnimationDuration ~/ 2);
+
+        // The outgoing body must collapse vertically only. If the cross-fade
+        // also targets zero width, Flutter relays out this text in a narrowing
+        // column and briefly stacks its letters during the transition.
+        expect(tester.getSize(summaryFinder).width, expandedWidth);
+        expect(tester.widget<Text>(summaryFinder).maxLines, 1);
+      },
+    );
+
+    testWidgets(
+      'collapse preserves horizontal constraints for complete, partial, and '
+      'empty checklists',
+      (tester) async {
+        final cases =
+            <
+              ({
+                String name,
+                List<String> itemIds,
+                double completionRate,
+                int completedCount,
+                int totalCount,
+              })
+            >[
+              (
+                name: 'complete',
+                itemIds: const ['x'],
+                completionRate: 1,
+                completedCount: 1,
+                totalCount: 1,
+              ),
+              (
+                name: 'partial',
+                itemIds: const [],
+                completionRate: 0.5,
+                completedCount: 1,
+                totalCount: 2,
+              ),
+              (
+                name: 'empty',
+                itemIds: const [],
+                completionRate: 0,
+                completedCount: 0,
+                totalCount: 0,
+              ),
+            ];
+
+        for (final testCase in cases) {
+          await _pump(
+            tester,
+            title: 'Checklist ${testCase.name}',
+            initiallyExpanded: true,
+            itemIds: testCase.itemIds,
+            completionRate: testCase.completionRate,
+            completedCount: testCase.completedCount,
+            totalCount: testCase.totalCount,
+          );
+          await tester.pump();
+
+          final cardWidth = tester.getSize(find.byType(ChecklistCard)).width;
+          await tester.tap(find.byIcon(Icons.expand_more));
+          await tester.pump(checklistCardCollapseAnimationDuration ~/ 2);
+
+          expect(
+            tester.getSize(find.byType(ChecklistCard)).width,
+            cardWidth,
+            reason: '${testCase.name} checklist narrowed while collapsing',
+          );
+          expect(tester.takeException(), isNull, reason: testCase.name);
+        }
+      },
+    );
+
     // ── Sorting header with reorderIndex=null ───────────────────────────────
 
     testWidgets('sorting header without reorderIndex shows plain drag handle', (

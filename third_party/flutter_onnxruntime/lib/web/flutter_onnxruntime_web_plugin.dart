@@ -88,7 +88,10 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
   }
 
   @override
-  Future<Map<String, dynamic>> createSession(String modelPath, {Map<String, dynamic>? sessionOptions}) async {
+  Future<Map<String, dynamic>> createSession(
+    String modelPath, {
+    Map<String, dynamic>? sessionOptions,
+  }) async {
     try {
       // Initialize session options for onnxruntime-web
       final jsSessionOptions = createJsSessionOptions(sessionOptions);
@@ -107,9 +110,17 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
       _sessions[sessionId] = session;
 
       // Return the required information
-      return {'sessionId': sessionId, 'inputNames': inputNames, 'outputNames': outputNames};
+      return {
+        'sessionId': sessionId,
+        'inputNames': inputNames,
+        'outputNames': outputNames,
+      };
     } catch (e) {
-      throw PlatformException(code: 'PLUGIN_ERROR', message: 'Failed to create ONNX session: $e', details: null);
+      throw PlatformException(
+        code: 'PLUGIN_ERROR',
+        message: 'Failed to create ONNX session: $e',
+        details: null,
+      );
     }
   }
 
@@ -145,21 +156,33 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
             }).toList();
 
         // Set executionProviders property
-        jsOptions.setProperty('executionProviders'.toJS, jsArrayFrom(jsProviders));
+        jsOptions.setProperty(
+          'executionProviders'.toJS,
+          jsArrayFrom(jsProviders),
+        );
       }
 
       // Set other options like intraOpNumThreads, interOpNumThreads if needed
       if (options.containsKey('intraOpNumThreads')) {
-        jsOptions.setProperty('intraOpNumThreads'.toJS, options['intraOpNumThreads']);
+        jsOptions.setProperty(
+          'intraOpNumThreads'.toJS,
+          options['intraOpNumThreads'],
+        );
       }
 
       if (options.containsKey('interOpNumThreads')) {
-        jsOptions.setProperty('interOpNumThreads'.toJS, options['interOpNumThreads']);
+        jsOptions.setProperty(
+          'interOpNumThreads'.toJS,
+          options['interOpNumThreads'],
+        );
       }
 
       // Handle graph optimization level
       if (options.containsKey('graphOptimizationLevel')) {
-        jsOptions.setProperty('graphOptimizationLevel'.toJS, options['graphOptimizationLevel']);
+        jsOptions.setProperty(
+          'graphOptimizationLevel'.toJS,
+          options['graphOptimizationLevel'],
+        );
       }
 
       // Add more options as needed
@@ -169,15 +192,22 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
   }
 
   /// Creates an inference session using onnxruntime-web
-  Future<JSObject> createInferenceSession(String modelPath, JSObject options) async {
+  Future<JSObject> createInferenceSession(
+    String modelPath,
+    JSObject options,
+  ) async {
     final completer = Completer<JSObject>();
 
     try {
       // Get the InferenceSession class from onnxruntime-web
-      final inferenceSession = _ort.getProperty('InferenceSession'.toJS) as JSObject;
+      final inferenceSession =
+          _ort.getProperty('InferenceSession'.toJS) as JSObject;
 
       // Use the create method to create a session - async operation
-      final createPromise = callMethod(inferenceSession, 'create', [modelPath, options]);
+      final createPromise = callMethod(inferenceSession, 'create', [
+        modelPath,
+        options,
+      ]);
 
       // Convert Promise to Future
       final session = await promiseToFuture<JSObject>(createPromise);
@@ -273,7 +303,8 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
     }
     // Check for WebGL support
     final canvas = HTMLCanvasElement();
-    final webgl = canvas.getContext('webgl') ?? canvas.getContext('experimental-webgl');
+    final webgl =
+        canvas.getContext('webgl') ?? canvas.getContext('experimental-webgl');
     if (webgl != null) {
       providers.add('WEB_GL');
     }
@@ -297,7 +328,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
     try {
       // Check if the session exists
       if (!_sessions.containsKey(sessionId)) {
-        throw PlatformException(code: "INVALID_SESSION", message: "Session not found", details: null);
+        throw PlatformException(
+          code: "INVALID_SESSION",
+          message: "Session not found",
+          details: null,
+        );
       }
 
       final session = _sessions[sessionId]!;
@@ -314,7 +349,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
         final valueId = ortValue.id;
         final tensor = _ortValues[valueId];
         if (tensor == null) {
-          throw PlatformException(code: "INVALID_VALUE", message: "OrtValue with ID $valueId not found", details: null);
+          throw PlatformException(
+            code: "INVALID_VALUE",
+            message: "OrtValue with ID $valueId not found",
+            details: null,
+          );
         }
 
         // Add to inputs object
@@ -328,11 +367,17 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
 
         // Set run options if needed
         if (runOptions.containsKey('logSeverityLevel')) {
-          jsRunOptions.setProperty('logSeverityLevel'.toJS, runOptions['logSeverityLevel']);
+          jsRunOptions.setProperty(
+            'logSeverityLevel'.toJS,
+            runOptions['logSeverityLevel'],
+          );
         }
 
         if (runOptions.containsKey('logVerbosityLevel')) {
-          jsRunOptions.setProperty('logVerbosityLevel'.toJS, runOptions['logVerbosityLevel']);
+          jsRunOptions.setProperty(
+            'logVerbosityLevel'.toJS,
+            runOptions['logVerbosityLevel'],
+          );
         }
 
         if (runOptions.containsKey('terminate')) {
@@ -358,7 +403,8 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           final tensor = jsOutputs.getProperty(name.toJS) as JSObject;
 
           // Create a new OrtValue and store it
-          final valueId = '${DateTime.now().millisecondsSinceEpoch}_${math.Random().nextInt(10000)}';
+          final valueId =
+              '${DateTime.now().millisecondsSinceEpoch}_${math.Random().nextInt(10000)}';
 
           _ortValues[valueId] = tensor;
 
@@ -367,7 +413,8 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
 
           // Get tensor shape
           final jsShape = tensor.getProperty('dims'.toJS) as JSObject;
-          final shapeLength = (jsShape.getProperty('length'.toJS) as JSNumber).toDartInt;
+          final shapeLength =
+              (jsShape.getProperty('length'.toJS) as JSNumber).toDartInt;
           final shape = <int>[];
 
           for (var i = 0; i < shapeLength; i++) {
@@ -385,7 +432,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
       if (e is PlatformException) {
         rethrow;
       }
-      throw PlatformException(code: "INFERENCE_ERROR", message: "Failed to run inference: $e", details: null);
+      throw PlatformException(
+        code: "INFERENCE_ERROR",
+        message: "Failed to run inference: $e",
+        details: null,
+      );
     }
   }
 
@@ -442,7 +493,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
     try {
       // Check if the session exists
       if (!_sessions.containsKey(sessionId)) {
-        throw PlatformException(code: "INVALID_SESSION", message: "Session not found", details: null);
+        throw PlatformException(
+          code: "INVALID_SESSION",
+          message: "Session not found",
+          details: null,
+        );
       }
 
       final session = _sessions[sessionId]!;
@@ -463,33 +518,40 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
 
         // Extract metadata properties if they exist
         if (metadata.has('producerName')) {
-          metadataMap['producerName'] = metadata.getProperty('producerName'.toJS).toString();
+          metadataMap['producerName'] =
+              metadata.getProperty('producerName'.toJS).toString();
         }
 
         if (metadata.has('graphName')) {
-          metadataMap['graphName'] = metadata.getProperty('graphName'.toJS).toString();
+          metadataMap['graphName'] =
+              metadata.getProperty('graphName'.toJS).toString();
         }
 
         if (metadata.has('domain')) {
-          metadataMap['domain'] = metadata.getProperty('domain'.toJS).toString();
+          metadataMap['domain'] =
+              metadata.getProperty('domain'.toJS).toString();
         }
 
         if (metadata.has('description')) {
-          metadataMap['description'] = metadata.getProperty('description'.toJS).toString();
+          metadataMap['description'] =
+              metadata.getProperty('description'.toJS).toString();
         }
 
         if (metadata.has('version')) {
-          metadataMap['version'] = metadata.getProperty('version'.toJS).toString();
+          metadataMap['version'] =
+              metadata.getProperty('version'.toJS).toString();
         }
 
         if (metadata.has('customMetadataMap')) {
-          final customMap = metadata.getProperty('customMetadataMap'.toJS) as JSObject;
+          final customMap =
+              metadata.getProperty('customMetadataMap'.toJS) as JSObject;
           final customMetadataMap = <String, String>{};
 
           // Convert JavaScript object to Dart map
           // Use Object.keys() from JavaScript to get the keys of the object
           final keysObj = callMethod(objectGlobal, 'keys', [customMap]);
-          final length = (keysObj.getProperty('length'.toJS) as JSNumber).toDartInt;
+          final length =
+              (keysObj.getProperty('length'.toJS) as JSNumber).toDartInt;
 
           for (var i = 0; i < length; i++) {
             final key = keysObj.getProperty(i.toString().toJS).toString();
@@ -506,7 +568,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
       if (e is PlatformException) {
         rethrow;
       }
-      throw PlatformException(code: "PLUGIN_ERROR", message: "Failed to get metadata: $e", details: null);
+      throw PlatformException(
+        code: "PLUGIN_ERROR",
+        message: "Failed to get metadata: $e",
+        details: null,
+      );
     }
   }
 
@@ -515,7 +581,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
     try {
       // Check if the session exists
       if (!_sessions.containsKey(sessionId)) {
-        throw PlatformException(code: "INVALID_SESSION", message: "Session not found", details: null);
+        throw PlatformException(
+          code: "INVALID_SESSION",
+          message: "Session not found",
+          details: null,
+        );
       }
 
       final session = _sessions[sessionId]!;
@@ -523,8 +593,10 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
 
       // Get input metadata from session if available
       if (session.has('inputMetadata')) {
-        final inputMetadata = session.getProperty('inputMetadata'.toJS) as JSObject;
-        final length = (inputMetadata.getProperty('length'.toJS) as JSNumber).toDartInt;
+        final inputMetadata =
+            session.getProperty('inputMetadata'.toJS) as JSObject;
+        final length =
+            (inputMetadata.getProperty('length'.toJS) as JSNumber).toDartInt;
 
         for (var i = 0; i < length; i++) {
           final info = inputMetadata.getProperty(i.toJS) as JSObject;
@@ -541,7 +613,8 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
             // Add shape if available
             if (info.has('shape')) {
               final shape = info.getProperty('shape'.toJS) as JSObject;
-              final shapeLength = (shape.getProperty('length'.toJS) as JSNumber).toDartInt;
+              final shapeLength =
+                  (shape.getProperty('length'.toJS) as JSNumber).toDartInt;
               final shapeList = <int>[];
 
               for (var j = 0; j < shapeLength; j++) {
@@ -584,7 +657,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
         // Fallback: use input names to create basic info entries
         final inputNames = getInputNames(session);
         for (final name in inputNames) {
-          inputInfoList.add({'name': name, 'shape': <int>[], 'type': 'unknown'});
+          inputInfoList.add({
+            'name': name,
+            'shape': <int>[],
+            'type': 'unknown',
+          });
         }
       }
 
@@ -593,7 +670,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
       if (e is PlatformException) {
         rethrow;
       }
-      throw PlatformException(code: "PLUGIN_ERROR", message: "Failed to get input info: $e", details: null);
+      throw PlatformException(
+        code: "PLUGIN_ERROR",
+        message: "Failed to get input info: $e",
+        details: null,
+      );
     }
   }
 
@@ -602,7 +683,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
     try {
       // Check if the session exists
       if (!_sessions.containsKey(sessionId)) {
-        throw PlatformException(code: "INVALID_SESSION", message: "Session not found", details: null);
+        throw PlatformException(
+          code: "INVALID_SESSION",
+          message: "Session not found",
+          details: null,
+        );
       }
 
       final session = _sessions[sessionId]!;
@@ -610,11 +695,14 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
 
       // Get output metadata from session if available
       if (session.has('outputMetadata')) {
-        final outputMetadata = session.getProperty('outputMetadata'.toJS) as JSObject;
-        final length = (outputMetadata.getProperty('length'.toJS) as JSNumber).toDartInt;
+        final outputMetadata =
+            session.getProperty('outputMetadata'.toJS) as JSObject;
+        final length =
+            (outputMetadata.getProperty('length'.toJS) as JSNumber).toDartInt;
 
         for (var i = 0; i < length; i++) {
-          final info = outputMetadata.getProperty(i.toString().toJS) as JSObject;
+          final info =
+              outputMetadata.getProperty(i.toString().toJS) as JSObject;
           final infoMap = <String, dynamic>{};
 
           // Add name
@@ -628,7 +716,8 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
             // Add shape if available
             if (info.has('shape')) {
               final shape = info.getProperty('shape'.toJS) as JSObject;
-              final shapeLength = (shape.getProperty('length'.toJS) as JSNumber).toDartInt;
+              final shapeLength =
+                  (shape.getProperty('length'.toJS) as JSNumber).toDartInt;
               final shapeList = <int>[];
 
               for (var j = 0; j < shapeLength; j++) {
@@ -671,7 +760,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
         // Fallback: use output names to create basic info entries
         final outputNames = getOutputNames(session);
         for (final name in outputNames) {
-          outputInfoList.add({'name': name, 'shape': <int>[], 'type': 'unknown'});
+          outputInfoList.add({
+            'name': name,
+            'shape': <int>[],
+            'type': 'unknown',
+          });
         }
       }
 
@@ -680,7 +773,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
       if (e is PlatformException) {
         rethrow;
       }
-      throw PlatformException(code: "PLUGIN_ERROR", message: "Failed to get output info: $e", details: null);
+      throw PlatformException(
+        code: "PLUGIN_ERROR",
+        message: "Failed to get output info: $e",
+        details: null,
+      );
     }
   }
 
@@ -688,7 +785,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
   final Map<String, JSObject> _ortValues = {};
 
   @override
-  Future<Map<String, dynamic>> createOrtValue(String sourceType, dynamic data, List<int> shape) async {
+  Future<Map<String, dynamic>> createOrtValue(
+    String sourceType,
+    dynamic data,
+    List<int> shape,
+  ) async {
     try {
       // Convert shape to JavaScript array
       final jsShape = jsArrayFrom(shape);
@@ -703,26 +804,42 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
         case 'float32':
           // Convert data to Float32Array
           final jsData = _convertToTypedArray(data, 'Float32Array');
-          tensor = tensorConstructor.callAsConstructorVarArgs([dataType.toJS, jsData, jsShape]);
+          tensor = tensorConstructor.callAsConstructorVarArgs([
+            dataType.toJS,
+            jsData,
+            jsShape,
+          ]);
           break;
 
         case 'int32':
           // Convert data to Int32Array
           final jsData = _convertToTypedArray(data, 'Int32Array');
-          tensor = tensorConstructor.callAsConstructorVarArgs([dataType.toJS, jsData, jsShape]);
+          tensor = tensorConstructor.callAsConstructorVarArgs([
+            dataType.toJS,
+            jsData,
+            jsShape,
+          ]);
           break;
 
         case 'int64':
           // Note: JavaScript doesn't have Int64Array, so using BigInt64Array
           // This might require special handling depending on browser support
           final jsData = _convertToTypedArray(data, 'BigInt64Array');
-          tensor = tensorConstructor.callAsConstructorVarArgs([dataType.toJS, jsData, jsShape]);
+          tensor = tensorConstructor.callAsConstructorVarArgs([
+            dataType.toJS,
+            jsData,
+            jsShape,
+          ]);
           break;
 
         case 'uint8':
           // Convert data to Uint8Array
           final jsData = _convertToTypedArray(data, 'Uint8Array');
-          tensor = tensorConstructor.callAsConstructorVarArgs([dataType.toJS, jsData, jsShape]);
+          tensor = tensorConstructor.callAsConstructorVarArgs([
+            dataType.toJS,
+            jsData,
+            jsShape,
+          ]);
           break;
 
         case 'bool':
@@ -739,14 +856,22 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
                 }
               }).toList();
           final jsData = _convertToTypedArray(boolArray, 'Uint8Array');
-          tensor = tensorConstructor.callAsConstructorVarArgs([dataType.toJS, jsData, jsShape]);
+          tensor = tensorConstructor.callAsConstructorVarArgs([
+            dataType.toJS,
+            jsData,
+            jsShape,
+          ]);
           break;
 
         case 'string':
           // For string tensors, we use the standard JavaScript Array
           // ONNX Runtime JS API accepts string arrays for string tensors
           final stringArray = jsArrayFrom((data as List<String>).toList());
-          tensor = tensorConstructor.callAsConstructorVarArgs([dataType.toJS, stringArray, jsShape]);
+          tensor = tensorConstructor.callAsConstructorVarArgs([
+            dataType.toJS,
+            stringArray,
+            jsShape,
+          ]);
           break;
 
         default:
@@ -758,7 +883,8 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
       }
 
       // Generate a unique ID for this tensor
-      final valueId = '${DateTime.now().millisecondsSinceEpoch}_${math.Random().nextInt(10000)}';
+      final valueId =
+          '${DateTime.now().millisecondsSinceEpoch}_${math.Random().nextInt(10000)}';
 
       // Store the tensor
       _ortValues[valueId] = tensor;
@@ -769,7 +895,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
       if (e is PlatformException) {
         rethrow;
       }
-      throw PlatformException(code: "TENSOR_CREATION_ERROR", message: "Failed to create OrtValue: $e", details: null);
+      throw PlatformException(
+        code: "TENSOR_CREATION_ERROR",
+        message: "Failed to create OrtValue: $e",
+        details: null,
+      );
     }
   }
 
@@ -816,7 +946,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
       case 'string':
         return 'string';
       default:
-        throw PlatformException(code: "UNSUPPORTED_TYPE", message: "Unsupported data type: $sourceType", details: null);
+        throw PlatformException(
+          code: "UNSUPPORTED_TYPE",
+          message: "Unsupported data type: $sourceType",
+          details: null,
+        );
     }
   }
 
@@ -825,7 +959,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
     try {
       // Check if the tensor exists
       if (!_ortValues.containsKey(valueId)) {
-        throw PlatformException(code: "INVALID_VALUE", message: "OrtValue not found with ID: $valueId", details: null);
+        throw PlatformException(
+          code: "INVALID_VALUE",
+          message: "OrtValue not found with ID: $valueId",
+          details: null,
+        );
       }
 
       final tensor = _ortValues[valueId]!;
@@ -835,7 +973,8 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
 
       // Get tensor shape
       final jsShape = tensor.getProperty('dims'.toJS) as JSObject;
-      final shapeLength = (jsShape.getProperty('length'.toJS) as JSNumber).toDartInt;
+      final shapeLength =
+          (jsShape.getProperty('length'.toJS) as JSNumber).toDartInt;
       final shape = <int>[];
 
       // Convert shape to Dart list
@@ -846,7 +985,8 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
 
       // Get tensor data
       final jsData = tensor.getProperty('data'.toJS) as JSObject;
-      final dataLength = (jsData.getProperty('length'.toJS) as JSNumber).toDartInt;
+      final dataLength =
+          (jsData.getProperty('length'.toJS) as JSNumber).toDartInt;
 
       // Convert data to Dart TypedData based on type
       final dynamic data;
@@ -931,7 +1071,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
       if (e is PlatformException) {
         rethrow;
       }
-      throw PlatformException(code: "DATA_EXTRACTION_ERROR", message: "Failed to get OrtValue data: $e", details: null);
+      throw PlatformException(
+        code: "DATA_EXTRACTION_ERROR",
+        message: "Failed to get OrtValue data: $e",
+        details: null,
+      );
     }
   }
 
@@ -961,11 +1105,18 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
   }
 
   @override
-  Future<Map<String, dynamic>> convertOrtValue(String valueId, String targetType) async {
+  Future<Map<String, dynamic>> convertOrtValue(
+    String valueId,
+    String targetType,
+  ) async {
     try {
       // Check if the tensor exists
       if (!_ortValues.containsKey(valueId)) {
-        throw PlatformException(code: "INVALID_VALUE", message: "OrtValue with ID $valueId not found", details: null);
+        throw PlatformException(
+          code: "INVALID_VALUE",
+          message: "OrtValue with ID $valueId not found",
+          details: null,
+        );
       }
 
       final tensor = _ortValues[valueId]!;
@@ -973,7 +1124,8 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
       // Get tensor type and shape
       final sourceType = tensor.getProperty('type'.toJS).toString();
       final jsShape = tensor.getProperty('dims'.toJS) as JSObject;
-      final shapeLength = (jsShape.getProperty('length'.toJS) as JSNumber).toDartInt;
+      final shapeLength =
+          (jsShape.getProperty('length'.toJS) as JSNumber).toDartInt;
       final shape = <int>[];
 
       for (var i = 0; i < shapeLength; i++) {
@@ -983,7 +1135,8 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
 
       // Get the data from the tensor
       final jsData = tensor.getProperty('data'.toJS) as JSObject;
-      final dataLength = (jsData.getProperty('length'.toJS) as JSNumber).toDartInt;
+      final dataLength =
+          (jsData.getProperty('length'.toJS) as JSNumber).toDartInt;
 
       // Create a new tensor based on the conversion type
       JSObject newTensor;
@@ -999,7 +1152,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           }
 
           final jsIntArray = _convertToTypedArray(intArray, 'Int32Array');
-          newTensor = tensorConstructor.callAsConstructorVarArgs(['int32'.toJS, jsIntArray, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            'int32'.toJS,
+            jsIntArray,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         // Float32 to Int64 (BigInt64Array)
@@ -1009,7 +1166,8 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           // Throw a more user-friendly error
           throw PlatformException(
             code: "CONVERSION_ERROR",
-            message: "Int64 conversions are not fully supported in the web implementation yet",
+            message:
+                "Int64 conversions are not fully supported in the web implementation yet",
             details: null,
           );
 
@@ -1022,7 +1180,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           }
 
           final jsFloatArray = _convertToTypedArray(floatArray, 'Float32Array');
-          newTensor = tensorConstructor.callAsConstructorVarArgs(['float32'.toJS, jsFloatArray, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            'float32'.toJS,
+            jsFloatArray,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         // Int64 to Float32
@@ -1042,7 +1204,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           }
 
           final jsFloatArray = _convertToTypedArray(floatArray, 'Float32Array');
-          newTensor = tensorConstructor.callAsConstructorVarArgs(['float32'.toJS, jsFloatArray, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            'float32'.toJS,
+            jsFloatArray,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         // Int32 to Int64
@@ -1052,7 +1218,8 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           // Throw a more user-friendly error
           throw PlatformException(
             code: "CONVERSION_ERROR",
-            message: "Int64 conversions are not fully supported in the web implementation yet",
+            message:
+                "Int64 conversions are not fully supported in the web implementation yet",
             details: null,
           );
 
@@ -1073,7 +1240,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           }
 
           final jsIntArray = _convertToTypedArray(intArray, 'Int32Array');
-          newTensor = tensorConstructor.callAsConstructorVarArgs(['int32'.toJS, jsIntArray, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            'int32'.toJS,
+            jsIntArray,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         // Uint8 to Float32
@@ -1085,7 +1256,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           }
 
           final jsFloatArray = _convertToTypedArray(floatArray, 'Float32Array');
-          newTensor = tensorConstructor.callAsConstructorVarArgs(['float32'.toJS, jsFloatArray, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            'float32'.toJS,
+            jsFloatArray,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         // Uint8 to Int32
@@ -1097,14 +1272,19 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           }
 
           final jsIntArray = _convertToTypedArray(intArray, 'Int32Array');
-          newTensor = tensorConstructor.callAsConstructorVarArgs(['int32'.toJS, jsIntArray, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            'int32'.toJS,
+            jsIntArray,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         // Uint8 to Int64
         case 'uint8-int64':
           throw PlatformException(
             code: "CONVERSION_ERROR",
-            message: "Int64 conversions are not fully supported in the web implementation yet",
+            message:
+                "Int64 conversions are not fully supported in the web implementation yet",
             details: null,
           );
 
@@ -1118,7 +1298,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           }
 
           final jsUint8Array = _convertToTypedArray(byteArray, 'Uint8Array');
-          newTensor = tensorConstructor.callAsConstructorVarArgs(['uint8'.toJS, jsUint8Array, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            'uint8'.toJS,
+            jsUint8Array,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         // Int32 to Uint8
@@ -1130,7 +1314,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           }
 
           final jsUint8Array = _convertToTypedArray(byteArray, 'Uint8Array');
-          newTensor = tensorConstructor.callAsConstructorVarArgs(['uint8'.toJS, jsUint8Array, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            'uint8'.toJS,
+            jsUint8Array,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         // Int64 to Uint8
@@ -1148,7 +1336,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           }
 
           final jsUint8Array = _convertToTypedArray(byteArray, 'Uint8Array');
-          newTensor = tensorConstructor.callAsConstructorVarArgs(['uint8'.toJS, jsUint8Array, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            'uint8'.toJS,
+            jsUint8Array,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         // Boolean to Float32
@@ -1160,7 +1352,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           }
 
           final jsFloatArray = _convertToTypedArray(floatArray, 'Float32Array');
-          newTensor = tensorConstructor.callAsConstructorVarArgs(['float32'.toJS, jsFloatArray, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            'float32'.toJS,
+            jsFloatArray,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         // Boolean to Int32
@@ -1172,14 +1368,19 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           }
 
           final jsIntArray = _convertToTypedArray(intArray, 'Int32Array');
-          newTensor = tensorConstructor.callAsConstructorVarArgs(['int32'.toJS, jsIntArray, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            'int32'.toJS,
+            jsIntArray,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         // Boolean to Int64
         case 'bool-int64':
           throw PlatformException(
             code: "CONVERSION_ERROR",
-            message: "Int64 conversions are not fully supported in the web implementation yet",
+            message:
+                "Int64 conversions are not fully supported in the web implementation yet",
             details: null,
           );
 
@@ -1195,7 +1396,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           }
 
           final jsByteArray = _convertToTypedArray(byteArray, 'Uint8Array');
-          newTensor = tensorConstructor.callAsConstructorVarArgs(['uint8'.toJS, jsByteArray, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            'uint8'.toJS,
+            jsByteArray,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         // Int8/Uint8 to Boolean
@@ -1209,7 +1414,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
           }
 
           final jsBoolArray = _convertToTypedArray(boolArray, 'Uint8Array');
-          newTensor = tensorConstructor.callAsConstructorVarArgs(['bool'.toJS, jsBoolArray, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            'bool'.toJS,
+            jsBoolArray,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         // Same type conversion (no-op)
@@ -1222,19 +1431,25 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
         case 'string-string':
           // Clone the original tensor with the same data
           final newData = tensor.getProperty('data'.toJS);
-          newTensor = tensorConstructor.callAsConstructorVarArgs([sourceType.toJS, newData, jsArrayFrom(shape)]);
+          newTensor = tensorConstructor.callAsConstructorVarArgs([
+            sourceType.toJS,
+            newData,
+            jsArrayFrom(shape),
+          ]);
           break;
 
         default:
           throw PlatformException(
             code: "CONVERSION_ERROR",
-            message: "Conversion from $sourceType to $targetType is not supported",
+            message:
+                "Conversion from $sourceType to $targetType is not supported",
             details: null,
           );
       }
 
       // Generate a unique ID for this tensor
-      final newValueId = '${DateTime.now().millisecondsSinceEpoch}_${math.Random().nextInt(10000)}';
+      final newValueId =
+          '${DateTime.now().millisecondsSinceEpoch}_${math.Random().nextInt(10000)}';
 
       // Store the tensor
       _ortValues[newValueId] = newTensor;
@@ -1245,7 +1460,11 @@ class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
       if (e is PlatformException) {
         rethrow;
       }
-      throw PlatformException(code: "CONVERSION_ERROR", message: "Failed to convert OrtValue: $e", details: null);
+      throw PlatformException(
+        code: "CONVERSION_ERROR",
+        message: "Failed to convert OrtValue: $e",
+        details: null,
+      );
     }
   }
 }

@@ -15,7 +15,11 @@ class OrtSession {
   final List<String> outputNames;
 
   // Private constructor
-  OrtSession._({required this.id, required this.inputNames, required this.outputNames});
+  OrtSession._({
+    required this.id,
+    required this.inputNames,
+    required this.outputNames,
+  });
 
   // Public factory constructor to create from map
   factory OrtSession.fromMap(Map<String, dynamic> map) {
@@ -44,7 +48,10 @@ class OrtSession {
   /// };
   /// final outputs = await session.run(inputs);
   /// ```
-  Future<Map<String, OrtValue>> run(Map<String, OrtValue> inputs, {OrtRunOptions? options}) async {
+  Future<Map<String, OrtValue>> run(
+    Map<String, OrtValue> inputs, {
+    OrtRunOptions? options,
+  }) async {
     final result = await FlutterOnnxruntimePlatform.instance.runInference(
       id,
       inputs,
@@ -52,7 +59,11 @@ class OrtSession {
     );
     final outputs = <String, OrtValue>{};
     for (final entry in result.entries) {
-      final tensorMap = {'valueId': entry.value[0], 'dataType': entry.value[1], 'shape': entry.value[2]};
+      final tensorMap = {
+        'valueId': entry.value[0],
+        'dataType': entry.value[1],
+        'shape': entry.value[2],
+      };
       outputs[entry.key] = OrtValue.fromMap(tensorMap);
     }
     return outputs;
@@ -67,7 +78,9 @@ class OrtSession {
   /// Returns information about the model such as producer name, graph name,
   /// domain, description, version, and custom metadata.
   Future<OrtModelMetadata> getMetadata() async {
-    final metadataMap = await FlutterOnnxruntimePlatform.instance.getMetadata(id);
+    final metadataMap = await FlutterOnnxruntimePlatform.instance.getMetadata(
+      id,
+    );
     return OrtModelMetadata.fromMap(metadataMap);
   }
 
@@ -75,7 +88,9 @@ class OrtSession {
   ///
   /// Returns information about the model's inputs such as name, type, and shape.
   Future<List<Map<String, dynamic>>> getInputInfo() async {
-    final inputInfoMap = await FlutterOnnxruntimePlatform.instance.getInputInfo(id);
+    final inputInfoMap = await FlutterOnnxruntimePlatform.instance.getInputInfo(
+      id,
+    );
     return inputInfoMap.map((info) => Map<String, dynamic>.from(info)).toList();
   }
 
@@ -83,8 +98,11 @@ class OrtSession {
   ///
   /// Returns information about the model's outputs such as name, type, and shape.
   Future<List<Map<String, dynamic>>> getOutputInfo() async {
-    final outputInfoMap = await FlutterOnnxruntimePlatform.instance.getOutputInfo(id);
-    return outputInfoMap.map((info) => Map<String, dynamic>.from(info)).toList();
+    final outputInfoMap = await FlutterOnnxruntimePlatform.instance
+        .getOutputInfo(id);
+    return outputInfoMap
+        .map((info) => Map<String, dynamic>.from(info))
+        .toList();
   }
 }
 
@@ -101,13 +119,20 @@ class OrtSessionOptions {
   // set the device id for the session, default is 0
   final int? deviceId;
 
-  OrtSessionOptions({this.intraOpNumThreads, this.interOpNumThreads, this.providers, this.useArena, this.deviceId});
+  OrtSessionOptions({
+    this.intraOpNumThreads,
+    this.interOpNumThreads,
+    this.providers,
+    this.useArena,
+    this.deviceId,
+  });
 
   Map<String, dynamic> toMap() {
     return {
       if (intraOpNumThreads != null) 'intraOpNumThreads': intraOpNumThreads,
       if (interOpNumThreads != null) 'interOpNumThreads': interOpNumThreads,
-      if (providers != null && providers!.isNotEmpty) 'providers': providers!.map((p) => p.name).toList(),
+      if (providers != null && providers!.isNotEmpty)
+        'providers': providers!.map((p) => p.name).toList(),
       if (useArena != null) 'useArena': useArena,
       if (deviceId != null) 'deviceId': deviceId,
     };
@@ -126,7 +151,11 @@ class OrtRunOptions {
   // terminate all incomplete inference using this instance as soon as possible
   final bool? terminate;
 
-  OrtRunOptions({this.logSeverityLevel, this.logVerbosityLevel, this.terminate});
+  OrtRunOptions({
+    this.logSeverityLevel,
+    this.logVerbosityLevel,
+    this.terminate,
+  });
 
   Map<String, dynamic> toMap() {
     return {

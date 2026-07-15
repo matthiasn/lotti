@@ -28,7 +28,9 @@ class OrtModelMetadata {
       domain: map['domain'] as String? ?? '',
       description: map['description'] as String? ?? '',
       version: map['version'] as int? ?? 0,
-      customMetadataMap: Map<String, String>.from(map['customMetadataMap'] ?? {}),
+      customMetadataMap: Map<String, String>.from(
+        map['customMetadataMap'] ?? {},
+      ),
     );
   }
 

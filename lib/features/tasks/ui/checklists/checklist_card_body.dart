@@ -65,6 +65,8 @@ class Body extends StatelessWidget {
                 allDone
                     ? context.messages.checklistAllDone
                     : context.messages.checklistNoneDone,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: tokens.typography.styles.body.bodySmall.copyWith(
                   color: tokens.colors.text.lowEmphasis,
                 ),

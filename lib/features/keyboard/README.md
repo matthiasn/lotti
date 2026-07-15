@@ -109,7 +109,11 @@ and Arrow/Page/Home/End keys scroll the reference while its search field owns
 focus.
 
 On macOS, File, View, Go, and Help menus are adapters over the catalog and
-dispatcher. They do not own duplicate callbacks or shortcut definitions.
+dispatcher. They do not own duplicate callbacks or shortcut definitions. The
+menu wrapper uses `Localizations.override` to inherit the app-level delegates,
+including Form Builder and Flutter Quill. This keeps the nested scope from
+shadowing editor localizations below it and automatically carries future
+delegates added to `MaterialApp.router`.
 
 ## Focus regions and interaction primitives
 
