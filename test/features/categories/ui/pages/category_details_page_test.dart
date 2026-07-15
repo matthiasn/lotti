@@ -55,6 +55,12 @@ Finder colorFieldFinder() => find.descendant(
   matching: find.byType(InkWell),
 );
 
+Future<void> sendCtrlS(WidgetTester tester) async {
+  await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+  await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+  await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeCategoryDefinition());
@@ -955,9 +961,7 @@ void main() {
         await tester.enterText(nameFieldFinder(), 'Updated');
         await tester.pump();
 
-        await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
-        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
-        await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+        await sendCtrlS(tester);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -990,9 +994,7 @@ void main() {
         await tester.tap(nameFieldFinder());
         await tester.pump();
 
-        await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
-        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
-        await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+        await sendCtrlS(tester);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -1000,6 +1002,54 @@ void main() {
         expect(beamedTo, isNull);
 
         await streamController.close();
+      });
+
+      testWidgets('Ctrl+S in create mode follows live name validity', (
+        tester,
+      ) async {
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+
+        when(
+          () => mockRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        ).thenAnswer(
+          (_) async => CategoryTestUtils.createTestCategory(id: 'cat-new'),
+        );
+
+        await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
+
+        await tester.tap(nameFieldFinder());
+        await tester.pump();
+        await sendCtrlS(tester);
+        await tester.pump();
+
+        verifyNever(
+          () => mockRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        );
+        expect(beamedTo, isNull);
+
+        await tester.enterText(nameFieldFinder(), 'New Category');
+        await tester.pump();
+        await sendCtrlS(tester);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        verify(
+          () => mockRepository.createCategory(
+            name: 'New Category',
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        ).called(1);
+        expect(beamedTo, '/settings/categories/cat-new');
       });
     });
 
