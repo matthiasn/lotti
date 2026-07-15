@@ -301,6 +301,52 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('sort trigger semantics action opens the filter modal', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await pumpBar(tester);
+    final messages = await AppLocalizations.delegate.load(const Locale('en'));
+    final node = tester.getSemantics(
+      find.byKey(const ValueKey('linked-entries-sort-trigger')),
+    );
+
+    // ignore: deprecated_member_use
+    tester.binding.pipelineOwner.semanticsOwner!.performAction(
+      node.id,
+      SemanticsAction.tap,
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(messages.journalLinkedEntriesFilterModalTitle),
+      findsOneWidget,
+    );
+    handle.dispose();
+  });
+
+  testWidgets('keyboard focus adds a ring to the sort trigger', (tester) async {
+    await pumpBar(tester);
+
+    for (var index = 0; index < 4; index++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+    }
+
+    final visual = tester.widget<Ink>(
+      find.byKey(const ValueKey('linked-entries-sort-trigger-visual')),
+    );
+    final decoration = visual.decoration! as BoxDecoration;
+    expect(
+      decoration.boxShadow!.single.color,
+      dsTokensLight.colors.interactive.enabled,
+    );
+    expect(
+      decoration.boxShadow!.single.spreadRadius,
+      dsTokensLight.spacing.step1,
+    );
+  });
 }
 
 AiResponseEntry _codingPrompt() {

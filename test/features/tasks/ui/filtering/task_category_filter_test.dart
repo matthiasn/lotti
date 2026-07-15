@@ -159,6 +159,28 @@ void main() {
     );
   });
 
+  testWidgets('clearing search restores special and category rows', (
+    tester,
+  ) async {
+    await tester.pumpWidget(subject(const TaskCategoryFilter()));
+    await tester.pump();
+    final messages = tester.element(find.byType(TaskCategoryFilter)).messages;
+
+    await tester.enterText(find.byType(TextField), 'personal');
+    await tester.pump();
+    expect(row('Personal'), findsOneWidget);
+    expect(row(messages.taskCategoryAllLabel), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.cancel_rounded));
+    await tester.pump();
+
+    expect(row(messages.taskCategoryAllLabel), findsOneWidget);
+    expect(row(messages.taskCategoryUnassignedLabel), findsOneWidget);
+    expect(row('Work'), findsOneWidget);
+    expect(row('Personal'), findsOneWidget);
+    expect(row('Health'), findsOneWidget);
+  });
+
   testWidgets('empty catalogs still expose All and Unassigned', (tester) async {
     when(() => cache.sortedCategories).thenReturn([]);
     await tester.pumpWidget(subject(const TaskCategoryFilter()));

@@ -1,9 +1,11 @@
 // ignore_for_file: avoid_redundant_argument_values
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
@@ -323,6 +325,18 @@ void main() {
       child: const Scaffold(body: JournalFilterIcon()),
     );
 
+    Future<int> openCategoryPage(WidgetTester tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(MdiIcons.filterVariant));
+      await tester.pumpAndSettle();
+      final barrierCount = find.byType(ModalBarrier).evaluate().length;
+      await tester.tap(find.byType(TaskCategoryFilterOverviewRow));
+      await tester.pumpAndSettle();
+      expect(find.byType(TaskCategoryFilter), findsOneWidget);
+      return barrierCount;
+    }
+
     testWidgets('renders filter icon', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
@@ -352,6 +366,42 @@ void main() {
       expect(find.byType(TaskCategoryFilter), findsOneWidget);
       expect(find.byType(ModalBarrier), findsNWidgets(barrierCount));
     });
+
+    for (final navigation in ['Back button', 'Done']) {
+      testWidgets('$navigation returns to the filter overview', (tester) async {
+        final barrierCount = await openCategoryPage(tester);
+
+        final target = navigation == 'Done'
+            ? find.widgetWithText(DesignSystemButton, 'Done')
+            : find.ancestor(
+                of: find.byIcon(Icons.arrow_back_rounded),
+                matching: find.byType(IconButton),
+              );
+        await tester.tap(target);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskCategoryFilter), findsNothing);
+        expect(find.byType(JournalFilter), findsOneWidget);
+        expect(find.byType(ModalBarrier), findsNWidgets(barrierCount));
+      });
+    }
+
+    for (final navigation in ['Escape', 'system back']) {
+      testWidgets('$navigation returns to the filter overview', (tester) async {
+        final barrierCount = await openCategoryPage(tester);
+
+        if (navigation == 'Escape') {
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        } else {
+          await tester.binding.handlePopRoute();
+        }
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskCategoryFilter), findsNothing);
+        expect(find.byType(JournalFilter), findsOneWidget);
+        expect(find.byType(ModalBarrier), findsNWidgets(barrierCount));
+      });
+    }
 
     testWidgets('modal can be closed by tapping outside', (tester) async {
       await tester.pumpWidget(buildSubject());

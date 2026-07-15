@@ -66,35 +66,36 @@ class _TaskFilterChoiceSection extends StatelessWidget {
 }
 
 class _TaskFilterPriorityGlyph extends StatelessWidget {
-  const _TaskFilterPriorityGlyph({required this.glyph});
+  const _TaskFilterPriorityGlyph({required this.glyph})
+    : assert(
+        glyph != DesignSystemTaskFilterGlyph.none,
+        'Priority glyph widgets require a visible glyph.',
+      );
 
   final DesignSystemTaskFilterGlyph glyph;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final (icon, color) = switch (glyph) {
-      DesignSystemTaskFilterGlyph.priorityP0 => (
+    final glyphAppearance = {
+      DesignSystemTaskFilterGlyph.priorityP0: (
         Icons.new_releases_rounded,
         tokens.colors.alert.error.defaultColor,
       ),
-      DesignSystemTaskFilterGlyph.priorityP1 => (
+      DesignSystemTaskFilterGlyph.priorityP1: (
         Icons.signal_cellular_alt_rounded,
         tokens.colors.alert.warning.defaultColor,
       ),
-      DesignSystemTaskFilterGlyph.priorityP2 => (
+      DesignSystemTaskFilterGlyph.priorityP2: (
         Icons.signal_cellular_alt_2_bar_rounded,
         tokens.colors.alert.info.defaultColor,
       ),
-      DesignSystemTaskFilterGlyph.priorityP3 => (
+      DesignSystemTaskFilterGlyph.priorityP3: (
         Icons.signal_cellular_alt_1_bar_rounded,
         tokens.colors.alert.success.defaultColor,
       ),
-      DesignSystemTaskFilterGlyph.none => (
-        Icons.remove_rounded,
-        tokens.colors.text.mediumEmphasis,
-      ),
     };
+    final (icon, color) = glyphAppearance[glyph]!;
     return Icon(icon, color: color, size: tokens.spacing.step5);
   }
 }

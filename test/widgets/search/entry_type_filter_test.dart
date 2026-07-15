@@ -1,12 +1,17 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
+import '../../test_utils/fake_journal_page_controller.dart';
 import 'entry_type_filter_test_helpers.dart';
 
 void main() {
@@ -22,6 +27,30 @@ void main() {
   });
 
   group('EntryTypeFilter Tests', () {
+    testWidgets('selected entry type uses the interactive icon token', (
+      tester,
+    ) async {
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([{}]),
+      );
+      await hPumpFilter(
+        tester,
+        mockDb,
+        controllerFactory: () => FakeJournalPageController(
+          const JournalPageState(selectedEntryTypes: ['Task']),
+        ),
+      );
+
+      final taskPill = find.ancestor(
+        of: find.text('Task'),
+        matching: find.byType(DesignSystemFilterChoicePill),
+      );
+      final leadingIcon = tester.widget<Icon>(
+        find.descendant(of: taskPill, matching: find.byType(Icon)),
+      );
+      expect(leadingIcon.color, dsTokensLight.colors.interactive.enabled);
+    });
+
     testWidgets('filters out JournalEvent chip when enableEventsFlag is OFF', (
       tester,
     ) async {

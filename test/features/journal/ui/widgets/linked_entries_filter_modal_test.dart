@@ -1,6 +1,7 @@
 import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -201,4 +202,38 @@ void main() {
     );
     expect(container.read(includeHiddenControllerProvider(entryId)), isFalse);
   });
+
+  for (final navigation in ['Escape', 'system back']) {
+    testWidgets('$navigation closes the modal and discards its draft', (
+      tester,
+    ) async {
+      final (_, container, messages) = await pumpAndOpenModal(tester);
+
+      await tester.tap(
+        find.text(messages.journalLinkedEntriesSortOldestFirst),
+      );
+      await tester.tap(find.text(messages.journalLinkedEntriesShowHidden));
+      await tester.pump();
+
+      if (navigation == 'Escape') {
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      } else {
+        await tester.binding.handlePopRoute();
+      }
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(messages.journalLinkedEntriesFilterModalTitle),
+        findsNothing,
+      );
+      expect(
+        container.read(linkedEntriesSortControllerProvider(entryId)),
+        LinkedEntriesSortOrder.newestFirst,
+      );
+      expect(
+        container.read(includeHiddenControllerProvider(entryId)),
+        isFalse,
+      );
+    });
+  }
 }

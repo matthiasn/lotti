@@ -1,4 +1,5 @@
-import 'dart:ui' show CheckedState, SemanticsAction, Tristate;
+import 'dart:ui'
+    show CheckedState, PointerDeviceKind, SemanticsAction, Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -295,6 +296,25 @@ void main() {
         decoration(tester).boxShadow!.single.spreadRadius,
         dsTokensLight.spacing.step1,
       );
+    });
+
+    testWidgets('hover uses its token surface and clears when disabled', (
+      tester,
+    ) async {
+      await pumpPill(tester, selected: false, onTap: () {});
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+
+      await mouse.moveTo(
+        tester.getCenter(find.byType(DesignSystemFilterChoicePill)),
+      );
+      await tester.pump();
+      expect(decoration(tester).color, dsTokensLight.colors.surface.hover);
+
+      await pumpPill(tester, selected: false);
+      await tester.pump();
+      expect(decoration(tester).color, Colors.transparent);
     });
 
     testWidgets('large text wraps without truncation and grows the target', (

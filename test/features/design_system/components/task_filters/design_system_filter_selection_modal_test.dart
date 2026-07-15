@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/components/search/design_system_sea
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -151,6 +152,33 @@ void main() {
     );
   });
 
+  testWidgets('clearing search restores the complete option list', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      config: const DesignSystemFilterFieldPageConfig(
+        searchHintText: 'Search status',
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField), 'active');
+    await tester.pump();
+    expect(option('active'), findsOneWidget);
+    expect(option('open'), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.cancel_rounded));
+    await tester.pump();
+
+    expect(option('open'), findsOneWidget);
+    expect(option('active'), findsOneWidget);
+    expect(option('blocked'), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      '',
+    );
+  });
+
   testWidgets('search is inset while selection bands use the full page width', (
     tester,
   ) async {
@@ -197,6 +225,53 @@ void main() {
     expect(find.text('Current'), findsNothing);
     expect(find.text('Later'), findsOneWidget);
     expect(option('blocked'), findsOneWidget);
+  });
+
+  testWidgets('announces no matches when groups reference no visible option', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      config: DesignSystemFilterFieldPageConfig(
+        groupsBuilder: (_) => const [
+          DesignSystemFilterSelectionGroup(
+            label: 'Unavailable',
+            optionIds: {'missing'},
+          ),
+        ],
+      ),
+    );
+
+    final emptyLabel = tester
+        .element(find.byType(DesignSystemFilterSelectionPage))
+        .messages
+        .filterSelectionNoMatches;
+    expect(find.text(emptyLabel), findsOneWidget);
+    expect(
+      tester.getSemantics(find.text(emptyLabel)).flagsCollection.isLiveRegion,
+      isTrue,
+    );
+    expect(find.byType(DesignSystemSelectionRow), findsNothing);
+  });
+
+  testWidgets('icon without a color uses the semantic text token', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      config: DesignSystemFilterFieldPageConfig(
+        appearanceResolver: (id) => id == 'open'
+            ? const DesignSystemFilterSelectionOptionAppearance(
+                icon: Icons.lock_open_rounded,
+              )
+            : null,
+      ),
+    );
+
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.lock_open_rounded)).color,
+      dsTokensLight.colors.text.mediumEmphasis,
+    );
   });
 
   testWidgets('normalizer runs after every selection change', (tester) async {
