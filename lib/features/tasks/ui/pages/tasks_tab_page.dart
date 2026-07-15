@@ -379,10 +379,13 @@ class _TasksTabActiveFilters extends ConsumerWidget {
 
     for (final id in categoryIds) {
       final category = cache.getCategoryById(id);
-      if (category == null) continue;
+      final label = id.isEmpty
+          ? context.messages.tasksQuickFilterUnassignedLabel
+          : category?.name;
+      if (label == null) continue;
       chips.add(
         ActiveFilterChip(
-          label: category.name,
+          label: label,
           accentColor: accent,
           onRemove: () => unawaited(
             controller.applyBatchFilterUpdate(
@@ -396,10 +399,13 @@ class _TasksTabActiveFilters extends ConsumerWidget {
 
     for (final id in labelIds) {
       final label = cache.getLabelById(id);
-      if (label == null) continue;
+      final chipLabel = id.isEmpty
+          ? context.messages.tasksQuickFilterUnassignedLabel
+          : label?.name;
+      if (chipLabel == null) continue;
       chips.add(
         ActiveFilterChip(
-          label: label.name,
+          label: chipLabel,
           accentColor: accent,
           onRemove: () => unawaited(
             controller.applyBatchFilterUpdate(

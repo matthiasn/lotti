@@ -697,6 +697,55 @@ void main() {
       },
     );
 
+    for (final selection in [
+      (
+        name: 'category',
+        categoryIds: const <String>{''},
+        labelIds: const <String>{},
+      ),
+      (
+        name: 'label',
+        categoryIds: const <String>{},
+        labelIds: const <String>{''},
+      ),
+    ]) {
+      testWidgets(
+        'renders and removes the Unassigned ${selection.name} chip',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: state(
+                selectedTaskStatuses: const <String>{},
+                selectedCategoryIds: selection.categoryIds,
+                selectedLabelIds: selection.labelIds,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(find.byType(ActiveFilterChip), findsOneWidget);
+          expect(
+            tester
+                .widget<ActiveFilterChip>(find.byType(ActiveFilterChip))
+                .label,
+            'Unassigned',
+          );
+
+          await tester.tap(find.byType(ActiveFilterChip));
+          await tester.pump();
+
+          expect(fakeController.applyBatchFilterUpdateCalled, 1);
+          if (selection.name == 'category') {
+            expect(fakeController.setSelectedCategoryIdsCalls.last, isEmpty);
+            expect(fakeController.setSelectedProjectIdsCalls.last, isEmpty);
+          } else {
+            expect(fakeController.setSelectedLabelIdsCalls.last, isEmpty);
+          }
+        },
+      );
+    }
+
     testWidgets(
       'renders one chip per active filter when several are selected at once',
       (tester) async {
