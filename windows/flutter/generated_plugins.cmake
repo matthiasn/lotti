@@ -12,6 +12,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   gal
   hotkey_manager_windows
   irondash_engine_context
+  location
   media_kit_libs_windows_audio
   objectbox_flutter_libs
   permission_handler_windows

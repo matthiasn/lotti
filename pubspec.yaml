@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.1047+4210
+version: 0.9.1047+4211
 
 msix_config:
   display_name: LottiApp
@@ -35,7 +35,7 @@ dependencies:
     git:
       url: https://github.com/matthiasn/delta_markdown.git
       ref: 131dbc1
-  device_info_plus: ^11.0.0
+  device_info_plus: ^12.1.0
   drift: ^2.21.0
   easy_debounce: ^2.0.2+1
   enum_to_string: ^2.0.1
@@ -67,7 +67,7 @@ dependencies:
   flutter_riverpod: ^3.1.0
   flutter_secure_storage: ^10.0.0
   flutter_svg: ^2.2.4
-  flutter_vodozemac: ^0.5.0
+  flutter_vodozemac: ^0.6.0
   form_builder_validators: ^11.0.0
   formz: ^0.8.0
   freezed_annotation: ^3.1.0
@@ -78,19 +78,19 @@ dependencies:
   google_fonts: ^8.1.0
   gpt_markdown: ^1.0.20
   graphic: ^2.3.0
-  health: ^13.1.0
+  health: ^13.3.1
   hotkey_manager: ^0.2.0
   http: ^1.2.0
   infinite_scroll_pagination: ^5.0.0
   intersperse: ^2.0.0
-  intl: ^0.20.2
+  intl: ^0.20.3
   ionicons: ^0.2.2
-  json_annotation: ^4.9.0
+  json_annotation: ^4.12.0
   json_schema_builder: ^0.1.3
   just_waveform: ^0.0.7
-  latlong2: ^0.9.0
-  location: ^8.0.0
-  matrix: ^7.0.0
+  latlong2: ^0.10.1
+  location: ^9.0.0
+  matrix: ^8.1.0
   media_kit: ^1.0.2
   media_kit_libs_audio: ^1.0.7
   meta: ^1.12.0
@@ -134,13 +134,18 @@ dependencies:
   wolt_modal_sheet: ^0.11.0
 
 dependency_overrides:
-  analyzer_plugin: ^0.13.1
+  # json_serializable >=6.13.2 requires analyzer >=10, while
+  # objectbox_generator 5.x currently caps analyzer below 11.
+  analyzer_plugin: '>=0.14.0 <0.14.5'
+  # health >=13.2.0 requires device_info_plus ^12.1.0, while
+  # super_native_extensions 0.9.1 still caps it below 12.0.0.
+  device_info_plus: ^12.1.0
   # Local fork: runs ONNX inference off the main thread on macOS, which Flutter
   # can't do via platform-channel task queues (flutter/flutter#162613).
   # See third_party/flutter_onnxruntime/LOTTI_PATCHES.md.
   flutter_onnxruntime:
     path: third_party/flutter_onnxruntime
-  intl: ^0.20.2
+  intl: ^0.20.3
   # Downgrade to avoid objective_c.framework malformed bundle issue (ITMS-90291)
   # See: https://github.com/flutter/flutter/issues/178915
   path_provider_foundation: 2.5.1

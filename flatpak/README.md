@@ -154,17 +154,17 @@ This file tells flatpak-flutter about plugins not in its built-in database.
 {
     "flutter_vodozemac": {
         "cargo_locks": [
-            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.5.0/rust"
+            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.6.0/rust"
         ],
         "extra_pubspecs": [
-            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.5.0/cargokit/build_tool"
+            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.6.0/cargokit/build_tool"
         ],
         "manifest": {
             "sources": [
                 {
                     "type": "patch",
                     "path": "cargokit/run_build_tool.sh.patch",
-                    "dest": ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.5.0/cargokit"
+                    "dest": ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.6.0/cargokit"
                 }
             ]
         }
@@ -174,7 +174,7 @@ This file tells flatpak-flutter about plugins not in its built-in database.
 
 **When to update:**
 - When `flutter_vodozemac` version changes in `pubspec.lock`
-- Update all paths from `flutter_vodozemac-0.5.0` to the new version
+- Update all `flutter_vodozemac-<version>` paths to the new locked version
 
 **How to check current version:**
 ```bash
@@ -266,7 +266,7 @@ The ideal fix is adding `flutter_vodozemac` to flatpak-flutter's built-in `forei
 
 ```json
 "flutter_vodozemac": {
-    "0.5.0": {
+    "0.6.0": {
         "cargo_locks": ["$PUB_DEV/rust"],
         "extra_pubspecs": ["$PUB_DEV/cargokit/build_tool"],
         "manifest": {
