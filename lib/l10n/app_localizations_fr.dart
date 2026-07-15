@@ -2086,6 +2086,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Ajouter un fournisseur';
 
   @override
+  String get aiSettingsAgentWakeConcurrencyDescription =>
+      'Choisis combien d’agents différents peuvent lancer une inférence en même temps. Une valeur élevée accélère les réponses, mais utilise plus de capacité chez le fournisseur et sur ton appareil.';
+
+  @override
+  String get aiSettingsAgentWakeConcurrencyLabel =>
+      'Réveils d’agents simultanés';
+
+  @override
   String get aiSettingsClearAllFiltersTooltip => 'Effacer tous les filtres';
 
   @override

@@ -862,7 +862,9 @@ stateDiagram-v2
   in the manual run-key hash (`RunKeyFactory.forManual`), so two day-scoped
   manual wakes enqueued in the same tick get distinct run keys instead of the
   second being deduped away.
-- enforces single-flight execution per agent through `WakeRunner`
+- dispatches up to the device-local AI concurrency limit (three by default)
+- enforces single-flight execution per agent through `WakeRunner`, so two
+  wakes for the same agent never overlap even when global capacity is free
 - persists wake-run entries before execution
 - suppresses self-notifications using vector clocks
 - persists and restores deferred subscription wake deadlines through
@@ -900,14 +902,34 @@ flowchart TD
   Suppress -->|no| Merge{"Queued job for same agent + workspace?"}
   Merge -->|yes| Coalesce["Merge trigger tokens"]
   Merge -->|no| Queue["WakeQueue.enqueue(runKey)"]
-  Queue --> Drain["WakeOrchestrator.processNext()"]
-  Drain --> Busy{"WakeRunner lock available?"}
-  Busy -->|no| Requeue["Requeue job"]
-  Busy -->|yes| Content{"awaitingContent gate?"}
+  Queue --> Drain["Single bounded queue scheduler"]
+  Drain --> Capacity{"Active wakes below AI setting?"}
+  Capacity -->|no| WaitSlot["Wait for a wake to finish or new drain signal"]
+  WaitSlot --> Capacity
+  Capacity -->|yes| Busy{"Agent already running?"}
+  Busy -->|yes| KeepQueued["Keep same-agent follow-up visible in FIFO queue"]
+  KeepQueued --> Capacity
+  Busy -->|no| Content{"awaitingContent gate?"}
   Content -->|skip| Wait["Leave agent dormant until content exists"]
   Content -->|run| Persist["Persist wake_run_log row"]
-  Persist --> Exec["Dispatch workflow by agent kind"]
+  Persist --> Exec["Dispatch workflow by agent kind in a capacity slot"]
+  Exec --> Capacity
 ```
+
+The concurrency setting is device-local, lives in AI Settings, accepts values
+from 1 through 8, and defaults to 3 when no stored value exists. The scheduler
+reads it whenever capacity is available, so tuning it affects subsequent
+dispatches without an app restart. Setting it to 1 retains the former global
+sequential behavior.
+
+Only the scheduler mutates `WakeQueue`, suppression state, throttle state, and
+run-key history. Concurrent work begins after a job has acquired its
+`WakeRunner` agent lock. Workflows and conversation managers are created per
+wake/conversation; agent sync transaction buffers are zone-local; and Drift
+serializes database work on its connection. The bounded upper limit also keeps
+provider/API and database pressure finite. Downstream provider rate-limit or
+connection failures continue through the existing per-wake failure path and do
+not cancel other active wakes.
 
 ### Why the wake design is this defensive
 
@@ -921,7 +943,8 @@ modes:
 Current mitigations are:
 
 - `WakeQueue` deduplicates by run key and merges trigger tokens
-- `WakeRunner` enforces single-flight execution per agent
+- the bounded scheduler caps total active wakes while `WakeRunner` enforces
+  single-flight execution per agent
 - `WakeOrchestrator` persists deferred wake deadlines through `nextWakeAt` and
   reconstructs the in-memory wake job during startup restoration
 - suppression is pre-registered before execution starts, then replaced with the

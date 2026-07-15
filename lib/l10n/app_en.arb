@@ -1195,6 +1195,8 @@
   "aiSettingsAddModelTooltip": "Add this model to your provider",
   "aiSettingsAddProfileButton": "Add Profile",
   "aiSettingsAddProviderButton": "Add provider",
+  "aiSettingsAgentWakeConcurrencyDescription": "Choose how many different agents can run inference at once. Higher values respond faster but use more provider and device capacity.",
+  "aiSettingsAgentWakeConcurrencyLabel": "Concurrent agent wakes",
   "aiSettingsClearAllFiltersTooltip": "Clear all filters",
   "aiSettingsClearFiltersButton": "Clear",
   "aiSettingsCounterModels": "Models",

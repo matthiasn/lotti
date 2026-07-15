@@ -750,6 +750,8 @@
   "aiSettingsAddModelTooltip": "Přidat tento model ke svému poskytovateli",
   "aiSettingsAddProfileButton": "Přidat profil",
   "aiSettingsAddProviderButton": "Přidat poskytovatele",
+  "aiSettingsAgentWakeConcurrencyDescription": "Zvol, kolik různých agentů může současně spouštět inferenci. Vyšší hodnoty zrychlí odpovědi, ale více zatíží poskytovatele i zařízení.",
+  "aiSettingsAgentWakeConcurrencyLabel": "Souběžná probuzení agentů",
   "aiSettingsClearAllFiltersTooltip": "Vymazat všechny filtry",
   "aiSettingsClearFiltersButton": "Vymazat",
   "aiSettingsCounterModels": "Modely",

@@ -910,6 +910,8 @@
   "aiSettingsAddModelTooltip": "Ajouter ce modèle à ton fournisseur",
   "aiSettingsAddProfileButton": "Ajouter un profil",
   "aiSettingsAddProviderButton": "Ajouter un fournisseur",
+  "aiSettingsAgentWakeConcurrencyDescription": "Choisis combien d’agents différents peuvent lancer une inférence en même temps. Une valeur élevée accélère les réponses, mais utilise plus de capacité chez le fournisseur et sur ton appareil.",
+  "aiSettingsAgentWakeConcurrencyLabel": "Réveils d’agents simultanés",
   "aiSettingsClearAllFiltersTooltip": "Effacer tous les filtres",
   "aiSettingsClearFiltersButton": "Effacer",
   "aiSettingsCounterModels": "Modèles",

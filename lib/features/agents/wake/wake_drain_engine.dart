@@ -35,10 +35,18 @@ extension WakeDrainEngine on WakeOrchestrator {
         );
         // Increment generation so the old drain's loop bails out.
         _drainGeneration++;
+        final wakeSignal = _drainWakeSignal;
+        if (wakeSignal != null && !wakeSignal.isCompleted) {
+          wakeSignal.complete();
+        }
         _isDraining = false;
         _drainStartedAt = null;
       } else {
         _drainRequested = true;
+        final wakeSignal = _drainWakeSignal;
+        if (wakeSignal != null && !wakeSignal.isCompleted) {
+          wakeSignal.complete();
+        }
         return;
       }
     }
@@ -70,85 +78,177 @@ extension WakeDrainEngine on WakeOrchestrator {
     }
   }
 
-  /// Single pass: dequeue and execute all ready jobs.
+  /// Bounded dispatch pass: execute ready jobs up to the configured limit.
   ///
   /// [generation] is the drain generation at the time this pass was started.
   /// If a newer generation supersedes us (via stale-lock recovery), the loop
   /// bails out early to avoid overlapping mutations.
   Future<void> _drain(int generation) async {
     final deferred = <WakeJob>[];
+    final activeExecutions = <String, Future<String>>{};
+    Completer<void>? ownedWakeSignal;
 
     try {
       while (true) {
         // Bail out if a newer drain superseded us.
         if (_drainGeneration != generation) return;
 
-        final job = queue.dequeue();
-        if (job == null) break;
+        final concurrency = AiRuntimeSettings.normalizeAgentWakeConcurrency(
+          maxConcurrentWakes(),
+        );
+        final jobsToInspect = queue.length;
+        var inspectedJobs = 0;
 
-        if (!await _wakeAllowedByCurrentPolicy(job)) {
-          _log(
-            'drain policy dropped automatic/disabled wake for '
-            '${DomainLogger.sanitizeId(job.agentId)}',
-            subDomain: 'drain',
+        while (inspectedJobs < jobsToInspect &&
+            runner.activeAgentIds.length < concurrency) {
+          if (_drainGeneration != generation) return;
+
+          final job = queue.dequeueFirstWhere(
+            (candidate) {
+              if (runner.isRunning(candidate.agentId)) return false;
+              if (candidate.reason != WakeReason.subscription.name) {
+                return true;
+              }
+              final suppressed = _isSuppressed(
+                candidate.agentId,
+                candidate.triggerTokens,
+              );
+              final preRegistered = _isPreRegisteredSuppressed(
+                candidate.agentId,
+                candidate.triggerTokens,
+              );
+              return suppressed ||
+                  preRegistered ||
+                  !_isThrottled(candidate.agentId);
+            },
           );
-          continue;
-        }
+          if (job == null) break;
+          inspectedJobs++;
 
-        final acquired = await runner.tryAcquire(job.agentId);
-        if (!acquired) {
-          // Agent is already running; defer for re-enqueue after loop.
-          deferred.add(job);
-          continue;
-        }
-
-        // Re-check suppression and throttle for subscription jobs that were
-        // enqueued during an agent's execution — before the throttle deadline
-        // or recordMutatedEntities was set.
-        if (job.reason == WakeReason.subscription.name) {
-          // Self-notification: drop the job entirely.
-          final suppressed = _isSuppressed(job.agentId, job.triggerTokens);
-          final preRegSuppressed = _isPreRegisteredSuppressed(
-            job.agentId,
-            job.triggerTokens,
-          );
-          if (suppressed || preRegSuppressed) {
+          if (!await _wakeAllowedByCurrentPolicy(job)) {
             _log(
-              'drain re-check: dropped '
-              '(suppressed=$suppressed, preReg=$preRegSuppressed) '
-              'for ${DomainLogger.sanitizeId(job.agentId)}',
+              'drain policy dropped automatic/disabled wake for '
+              '${DomainLogger.sanitizeId(job.agentId)}',
               subDomain: 'drain',
             );
-            runner.release(job.agentId);
             continue;
           }
 
-          // Throttled: defer the job so the deferred drain timer can pick
-          // it up after the throttle window expires.
-          if (_isThrottled(job.agentId)) {
-            _log(
-              'drain re-check: throttled=true '
-              'for ${DomainLogger.sanitizeId(job.agentId)}',
-              subDomain: 'drain',
-            );
-            runner.release(job.agentId);
+          final acquired = await runner.tryAcquire(job.agentId);
+          if (!acquired) {
+            // Keep same-agent work queued while its active wake executes. The
+            // active wake uses queue visibility to decide whether to arm its
+            // existing follow-up throttle deadline.
             deferred.add(job);
             continue;
           }
+
+          // Re-check suppression and throttle for subscription jobs that were
+          // enqueued during an agent's execution — before the throttle
+          // deadline or recordMutatedEntities was set.
+          if (job.reason == WakeReason.subscription.name) {
+            // Self-notification: drop the job entirely.
+            final suppressed = _isSuppressed(job.agentId, job.triggerTokens);
+            final preRegSuppressed = _isPreRegisteredSuppressed(
+              job.agentId,
+              job.triggerTokens,
+            );
+            if (suppressed || preRegSuppressed) {
+              _log(
+                'drain re-check: dropped '
+                '(suppressed=$suppressed, preReg=$preRegSuppressed) '
+                'for ${DomainLogger.sanitizeId(job.agentId)}',
+                subDomain: 'drain',
+              );
+              runner.release(job.agentId);
+              continue;
+            }
+
+            // Throttled: defer the job so the deferred drain timer can pick
+            // it up after the throttle window expires.
+            if (_isThrottled(job.agentId)) {
+              _log(
+                'drain re-check: throttled=true '
+                'for ${DomainLogger.sanitizeId(job.agentId)}',
+                subDomain: 'drain',
+              );
+              runner.release(job.agentId);
+              deferred.add(job);
+              continue;
+            }
+          }
+
+          // Content-gating: agents auto-assigned from category defaults wait
+          // for the task to have meaningful content before their first run.
+          if (await _shouldSkipForAwaitingContent(job)) {
+            runner.release(job.agentId);
+            continue;
+          }
+
+          activeExecutions[job.runKey] = _executeJob(job).then(
+            (_) => job.runKey,
+            onError: (Object error, StackTrace stackTrace) {
+              // `_executeJob` owns its normal error boundary and lock release,
+              // but keep the scheduler resilient if an unexpected failure
+              // escapes that boundary (for example, a logging implementation
+              // throwing before `_executeJob` enters its outer try/finally).
+              runner.release(job.agentId);
+              _logError(
+                'unexpected wake execution failure for '
+                '${DomainLogger.sanitizeId(job.runKey)}',
+                error: error,
+                stackTrace: stackTrace,
+              );
+              return job.runKey;
+            },
+          );
         }
 
-        // Content-gating: agents auto-assigned from category defaults wait
-        // for the task to have meaningful content before their first run.
-        if (await _shouldSkipForAwaitingContent(job)) {
-          runner.release(job.agentId);
+        // Requeue skipped busy/throttled jobs before waiting. Active wakes use
+        // these queued follow-ups to preserve existing throttle semantics.
+        deferred
+          ..forEach(queue.requeue)
+          ..clear();
+
+        if (activeExecutions.isEmpty) break;
+
+        if (_drainRequested) {
+          _drainRequested = false;
           continue;
         }
 
-        await _executeJob(job);
+        final wakeSignal = Completer<void>();
+        ownedWakeSignal = wakeSignal;
+        _drainWakeSignal = wakeSignal;
+        final wakeSentinel = Object();
+        final completedRunKey = await Future.any<Object>([
+          Future.any(activeExecutions.values),
+          wakeSignal.future.then((_) => wakeSentinel),
+        ]);
+        if (identical(completedRunKey, wakeSentinel)) {
+          _drainRequested = false;
+          continue;
+        }
+        final completedExecution = activeExecutions.remove(
+          completedRunKey as String,
+        );
+        if (completedExecution != null) await completedExecution;
       }
     } finally {
-      // Re-enqueue deferred jobs (busy agents) without dedup checks.
+      final wakeSignal = ownedWakeSignal;
+      if (wakeSignal != null && identical(_drainWakeSignal, wakeSignal)) {
+        _drainWakeSignal = null;
+      }
+
+      // Re-enqueue deferred jobs without dedup checks.
       deferred.forEach(queue.requeue);
+
+      // A stale generation can supersede this scheduler while several wakes
+      // are still active. Keep awaiting those futures so this drain never
+      // leaks errors or loses their lock-release finalizers.
+      if (activeExecutions.isNotEmpty) {
+        await Future.wait(activeExecutions.values);
+      }
 
       // Clear run-key history only when the queue is fully drained (no
       // deferred jobs left). This prevents stale keys from blocking future

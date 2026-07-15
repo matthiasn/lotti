@@ -99,6 +99,17 @@ class WakeQueue {
     return _queue.removeAt(0);
   }
 
+  /// Remove and return the first queued job accepted by [predicate].
+  ///
+  /// Jobs skipped by [predicate] keep their relative FIFO order. The bounded
+  /// wake dispatcher uses this to leave same-agent follow-ups visible in the
+  /// queue while that agent is active, preserving post-run throttle decisions.
+  WakeJob? dequeueFirstWhere(bool Function(WakeJob job) predicate) {
+    final index = _queue.indexWhere(predicate);
+    if (index < 0) return null;
+    return _queue.removeAt(index);
+  }
+
   /// Merge [tokens] into the `triggerTokens` of the first queued job that
   /// matches [agentId] **and** [workspaceKey].
   ///

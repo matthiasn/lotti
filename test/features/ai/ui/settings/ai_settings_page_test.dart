@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show CascadeDeletionResult, aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
@@ -22,6 +23,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dar
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -267,6 +269,45 @@ void main() {
         await settleTimers(tester);
       },
     );
+  });
+
+  group('AiSettingsPage — runtime settings', () {
+    testWidgets('persists a selected agent wake concurrency', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(900, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final mockSettingsDb = getIt<SettingsDb>() as MockSettingsDb;
+
+      await pumpWith(
+        tester: tester,
+        providers: [
+          buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+        ],
+        models: const <AiConfig>[],
+        profiles: const <AiConfig>[],
+      );
+
+      final dropdown = find.byType(DesignSystemDropdown);
+      await tester.tap(
+        find.descendant(of: dropdown, matching: find.byType(InkWell)).first,
+      );
+      await tester.pump();
+      await tester.tap(
+        find.descendant(of: dropdown, matching: find.text('4')),
+      );
+      await tester.pump();
+
+      expect(
+        tester.widget<DesignSystemDropdown>(dropdown).inputLabel,
+        '4',
+      );
+      verify(
+        () => mockSettingsDb.saveSettingsItem(
+          agentWakeConcurrencySettingsKey,
+          '4',
+        ),
+      ).called(1);
+      await settleTimers(tester);
+    });
   });
 
   group('AiSettingsPage — populated', () {

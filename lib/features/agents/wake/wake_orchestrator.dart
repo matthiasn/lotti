@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/wake/wake_suppression_tracker.dart';
 import 'package:lotti/features/agents/wake/wake_throttle_coordinator.dart';
+import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -91,6 +92,11 @@ typedef WakeExecutor =
       String threadId,
     );
 
+/// Returns the current global limit for simultaneously executing wake cycles.
+typedef MaxConcurrentWakes = int Function();
+
+int _defaultMaxConcurrentWakes() => defaultAgentWakeConcurrency;
+
 /// Notification-driven wake orchestrator.
 ///
 /// Responsibilities:
@@ -116,6 +122,7 @@ class WakeOrchestrator {
     this.eventContentChecker,
     this.syncEntityWriter,
     this.onWakeStart,
+    this.maxConcurrentWakes = _defaultMaxConcurrentWakes,
   }) {
     _throttle = WakeThrottleCoordinator(
       repository: repository,
@@ -129,6 +136,11 @@ class WakeOrchestrator {
   final AgentRepository repository;
   final WakeQueue queue;
   final WakeRunner runner;
+
+  /// Reads the current global concurrency limit whenever the dispatcher has
+  /// capacity. This makes a persisted settings change effective without
+  /// rebuilding the orchestrator or restarting the app.
+  final MaxConcurrentWakes maxConcurrentWakes;
 
   /// Optional domain logger for structured, PII-safe logging.
   final DomainLogger? domainLogger;
@@ -218,16 +230,20 @@ class WakeOrchestrator {
   /// lifecycle.
   final _wakeCounters = <String, int>{};
 
-  /// Single-flight guard for [processNext].
+  /// Single-scheduler guard for [processNext].
   ///
-  /// Prevents overlapping drain loops that could clear queue history while
-  /// another drain still holds deferred jobs in its local list.  When a drain
-  /// is already in progress, new [_onBatch] / [enqueueManualWake] callers
-  /// set [_drainRequested] so the active drain re-checks after finishing.
+  /// The scheduler itself may dispatch several wake cycles concurrently, but
+  /// only one scheduler may mutate [queue] and clear its run-key history. New
+  /// drain requests wake that scheduler so it can fill any free slot.
   bool _isDraining = false;
 
   /// Set when a drain is requested while one is already in progress.
   bool _drainRequested = false;
+
+  /// Completes when new work arrives while the scheduler is waiting for an
+  /// active wake to finish. This lets newly queued work use idle capacity
+  /// immediately instead of waiting behind an unrelated long inference.
+  Completer<void>? _drainWakeSignal;
 
   /// Timestamp when the current drain started, for stale-drain detection.
   DateTime? _drainStartedAt;

@@ -2073,6 +2073,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Přidat poskytovatele';
 
   @override
+  String get aiSettingsAgentWakeConcurrencyDescription =>
+      'Zvol, kolik různých agentů může současně spouštět inferenci. Vyšší hodnoty zrychlí odpovědi, ale více zatíží poskytovatele i zařízení.';
+
+  @override
+  String get aiSettingsAgentWakeConcurrencyLabel => 'Souběžná probuzení agentů';
+
+  @override
   String get aiSettingsClearAllFiltersTooltip => 'Vymazat všechny filtry';
 
   @override

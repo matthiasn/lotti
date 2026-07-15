@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_service.dart';
@@ -84,8 +85,8 @@ class AiSettingsBody extends StatelessWidget {
 /// `/Desktop/ai-settings-images`. Layered top-to-bottom:
 ///
 /// 1. SettingsPageHeader — "AI Settings" title strip with back nav.
-/// 2. AiSettingsHeaderBar — subtitle paragraph + search field + green
-///    "+ Add provider" CTA. Replaces the v1 floating action button.
+/// 2. AiSettingsHeaderBar — search field plus the device-local agent-wake
+///    concurrency control.
 /// 3. AiSettingsFtueBanner — visible only when zero providers exist.
 /// 4. AiSettingsTabBar — Providers / Models / Profiles with counters
 ///    baked into each label.
@@ -96,9 +97,8 @@ class AiSettingsBody extends StatelessWidget {
 ///    - Models tab: single-column list of AiModelCard.
 ///    - Profiles tab: 2-column responsive grid of AiProfileCard.
 ///
-/// State management (tab controller, search debounce, filter state,
-/// navigation service) is preserved verbatim from the v1 page; only
-/// the rendering layer is new.
+/// State management combines the tab controller, search debounce, filter
+/// state, navigation service, and persisted AI runtime settings.
 class AiSettingsPage extends ConsumerStatefulWidget {
   const AiSettingsPage({
     this.initialTab,
@@ -360,6 +360,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final aiRuntimeSettings = ref.watch(aiRuntimeSettingsControllerProvider);
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
       floatingActionButton: AiSettingsFloatingActionButton(
@@ -389,6 +390,10 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
               child: AiSettingsHeaderBar(
                 searchController: _searchController,
                 onSearchClear: _handleSearchClear,
+                agentWakeConcurrency: aiRuntimeSettings.agentWakeConcurrency,
+                onAgentWakeConcurrencyChanged: (value) => ref
+                    .read(aiRuntimeSettingsControllerProvider.notifier)
+                    .setAgentWakeConcurrency(value),
               ),
             ),
           ),

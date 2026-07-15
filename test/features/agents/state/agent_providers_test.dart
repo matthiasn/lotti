@@ -30,6 +30,7 @@ import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -1682,6 +1683,10 @@ void main() {
       expect(orchestrator.repository, same(mockRepo));
       expect(orchestrator.queue, same(queue));
       expect(orchestrator.runner, same(runner));
+      expect(
+        orchestrator.maxConcurrentWakes(),
+        defaultAgentWakeConcurrency,
+      );
     });
 
     test(
