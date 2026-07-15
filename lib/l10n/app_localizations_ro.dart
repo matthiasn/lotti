@@ -6087,6 +6087,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalFilterStarred => 'Favorite';
 
   @override
+  String get journalFilterTitle => 'Filtrați jurnalul';
+
+  @override
   String get journalHideLinkHint => 'Ascunde linkul';
 
   @override
@@ -9579,7 +9582,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksFilterClearAll => 'Șterge tot';
 
   @override
-  String get tasksFilterTitle => 'Filtru sarcini';
+  String get tasksFilterTitle => 'Filtrați sarcinile';
 
   @override
   String get taskShowcaseAudio => 'Audio';
@@ -9698,12 +9701,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksPriorityPickerTitle => 'Selectează prioritatea';
 
   @override
-  String get tasksQuickFilterClear => 'Șterge';
-
-  @override
-  String get tasksQuickFilterLabelsActiveTitle => 'Filtre de etichete active';
-
-  @override
   String get tasksQuickFilterUnassignedLabel => 'Neatribuit';
 
   @override
@@ -9764,7 +9761,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Salvați';
+  String get tasksSavedFiltersSaveButtonLabel => 'Salvați filtrul';
 
   @override
   String get tasksSavedFiltersSaveCurrentAs => 'Salvați filtrul curent ca…';

@@ -1,33 +1,12 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet_state.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Footer-bar button slot widths from the Figma "Apply filter" footer
-/// frame. Treated as minimums so long localized labels can grow past
-/// the spec — the visual match holds for English / German / French.
-/// Slot height is shared with the button itself via
-/// `DesignSystemFilterMetrics.actionMinHeight` so the painted pill,
-/// hit area, and slot all agree.
-const double _kClearButtonMinWidth = 115;
-const double _kSaveButtonMinWidth = 115;
-const double _kApplyButtonMinWidth = 159;
-const double _kFooterButtonMinHeight =
-    DesignSystemFilterMetrics.actionMinHeight;
-
-/// Backdrop blur strength for the glass footer. Sits at the top of the
-/// codebase's existing glass-surface range (10–20) since this surface is
-/// wider and farther from the content than card-sized blurs.
-const double _kFooterBlurSigma = 20;
-
-/// Sticky action bar for the filter sheet — Clear All + Apply buttons.
-///
-/// Designed to be used as the `stickyActionBar` in a Wolt modal page.
+/// Standard modal action bar for a filter overview.
 class DesignSystemTaskFilterActionBar extends StatefulWidget {
   const DesignSystemTaskFilterActionBar({
     required this.state,
@@ -44,38 +23,25 @@ class DesignSystemTaskFilterActionBar extends StatefulWidget {
   final ValueChanged<DesignSystemTaskFilterState> onChanged;
   final ValueChanged<DesignSystemTaskFilterState>? onApplyPressed;
   final ValueChanged<DesignSystemTaskFilterState>? onClearAllPressed;
-
-  /// When supplied, a Save affordance is rendered between Clear All and
-  /// Apply. Tapping it opens an inline name popup; the trimmed name is
-  /// passed to this callback when the user commits.
   final ValueChanged<String>? onSavePressed;
-
-  /// Whether the Save affordance is currently enabled.
   final bool canSave;
-
-  /// Optional initial value for the Save name popup — typically the name
-  /// of the currently active saved filter, when the user is editing it.
   final String? initialSaveName;
 
-  /// Stable test key for the Save action button.
   @visibleForTesting
   static const Key saveButtonKey = ValueKey(
     'design-system-task-filter-save',
   );
 
-  /// Stable test key for the Save name popup card.
   @visibleForTesting
   static const Key saveNamePopupKey = ValueKey(
     'design-system-task-filter-save-popup',
   );
 
-  /// Stable test key for the Save name popup text field.
   @visibleForTesting
   static const Key saveNamePopupFieldKey = ValueKey(
     'design-system-task-filter-save-popup-field',
   );
 
-  /// Stable test key for the popup commit button.
   @visibleForTesting
   static const Key saveNamePopupCommitKey = ValueKey(
     'design-system-task-filter-save-popup-commit',
@@ -90,62 +56,42 @@ class _DesignSystemTaskFilterActionBarState
     extends State<DesignSystemTaskFilterActionBar> {
   final MenuController _saveMenu = MenuController();
 
-  void _openSavePopup() {
-    if (!widget.canSave) return;
-    if (_saveMenu.isOpen) {
-      _saveMenu.close();
-    } else {
-      _saveMenu.open();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final palette = DesignSystemFilterPalette.fromTokens(tokens);
-    final spacing = tokens.spacing;
-    final messages = context.messages;
-    final showSaveButton = widget.onSavePressed != null;
+    final spacing = context.designTokens.spacing;
+    final hasFilters = widget.state.appliedCount > 0;
 
-    // Figma "Apply filter" footer (node 3341:53641): hairline divider,
-    // backdrop blur, top→bottom white gradient overlay; right-aligned
-    // buttons with minimum slot widths from the frame (Clear all 115×56,
-    // Save 115×56, Apply filter 159×56) but allowed to grow for long
-    // localized labels. Padding/spacing come from spacing tokens.
-
-    // Slot widths (Figma min) used when the row has room. On narrow
-    // viewports — modal width < demand — the LayoutBuilder below drops
-    // these to 0 so buttons shrink to their natural size instead of
-    // overflowing.
-    final slots = <({double minWidth, Widget child})>[
-      (
-        minWidth: _kClearButtonMinWidth,
-        child: DesignSystemFilterActionButton(
+    return DesignSystemModalActionBar(
+      glass: true,
+      layout: DesignSystemModalActionBarLayout.compactPrimary,
+      padding: EdgeInsets.fromLTRB(
+        spacing.step5,
+        spacing.step4,
+        spacing.step5,
+        spacing.step5,
+      ),
+      secondary: [
+        DesignSystemButton(
           key: const ValueKey('design-system-task-filter-clear'),
           label: widget.state.clearAllLabel,
-          palette: palette,
-          highlighted: false,
-          textStyle: tokens.typography.styles.subtitle.subtitle1,
-          onTap: () {
-            final clearedState = widget.state.clearAll();
-            widget.onChanged(clearedState);
-            widget.onClearAllPressed?.call(clearedState);
-          },
+          variant: DesignSystemButtonVariant.secondary,
+          size: DesignSystemButtonSize.large,
+          onPressed: hasFilters
+              ? () {
+                  final cleared = widget.state.clearAll();
+                  widget.onChanged(cleared);
+                  widget.onClearAllPressed?.call(cleared);
+                }
+              : null,
         ),
-      ),
-      if (showSaveButton)
-        (
-          minWidth: _kSaveButtonMinWidth,
-          child: MenuAnchor(
+        if (widget.onSavePressed != null)
+          MenuAnchor(
             controller: _saveMenu,
-            alignmentOffset: const Offset(0, -8),
             menuChildren: [
               _SaveNamePopup(
                 key: DesignSystemTaskFilterActionBar.saveNamePopupKey,
                 initialValue: widget.initialSaveName ?? '',
                 activeFilterCount: widget.state.appliedCount,
-                tokens: tokens,
-                messages: messages,
                 onCancel: _saveMenu.close,
                 onCommit: (name) {
                   _saveMenu.close();
@@ -153,122 +99,34 @@ class _DesignSystemTaskFilterActionBarState
                 },
               ),
             ],
-            builder: (ctx, controller, child) {
-              return DesignSystemFilterActionButton(
+            builder: (context, controller, child) {
+              return DesignSystemButton(
                 key: DesignSystemTaskFilterActionBar.saveButtonKey,
-                label: messages.tasksSavedFiltersSaveButtonLabel,
-                palette: palette,
-                highlighted: false,
-                textStyle: tokens.typography.styles.subtitle.subtitle1,
-                onTap: _openSavePopup,
+                label: context.messages.tasksSavedFiltersSaveButtonLabel,
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.large,
+                onPressed: widget.canSave
+                    ? () {
+                        if (controller.isOpen) {
+                          controller.close();
+                        } else {
+                          controller.open();
+                        }
+                      }
+                    : null,
               );
             },
           ),
-        ),
-      (
-        minWidth: _kApplyButtonMinWidth,
-        child: DesignSystemFilterActionButton(
-          key: const ValueKey('design-system-task-filter-apply'),
-          label: widget.state.applyLabel,
-          palette: palette,
-          highlighted: true,
-          counter: widget.state.appliedCount,
-          textStyle: tokens.typography.styles.subtitle.subtitle1,
-          onTap: () => widget.onApplyPressed?.call(widget.state),
-        ),
-      ),
-    ];
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Top-edge hairline divider (decorative/01 @ 12% alpha).
-        Container(
-          height: 1,
-          color: tokens.colors.decorative.level01.withValues(alpha: 0.12),
-        ),
-        ClipRect(
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(
-              sigmaX: _kFooterBlurSigma,
-              sigmaY: _kFooterBlurSigma,
-            ),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    palette.glassFooterOverlayStart,
-                    palette.glassFooterOverlayEnd,
-                  ],
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  spacing.step6, // 24
-                  spacing.step5, // 16
-                  spacing.step6, // 24
-                  spacing.step6, // 24
-                ),
-                // LayoutBuilder so the slot minimums (Figma's 115/115/159)
-                // are honored when the row has room, but dropped to 0
-                // when the modal is narrower than the demand. Keeps the
-                // footer at one row on every viewport without overflow.
-                child: LayoutBuilder(
-                  builder: (ctx, constraints) {
-                    final demand =
-                        slots.fold<double>(
-                          0,
-                          (sum, s) => sum + s.minWidth,
-                        ) +
-                        spacing.step4 * (slots.length - 1);
-                    final fits = constraints.maxWidth >= demand;
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        for (var i = 0; i < slots.length; i++) ...[
-                          if (i > 0) SizedBox(width: spacing.step4), // 12
-                          _FooterButtonSlot(
-                            minWidth: fits ? slots[i].minWidth : 0,
-                            child: slots[i].child,
-                          ),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-        ),
       ],
-    );
-  }
-}
-
-/// Wraps a footer-bar button in the slot's minimum width / height so the
-/// row of buttons matches the Figma frame. The button itself can grow if
-/// its label is wider than the minimum — keeps long localized labels
-/// from clipping.
-class _FooterButtonSlot extends StatelessWidget {
-  const _FooterButtonSlot({
-    required this.minWidth,
-    required this.child,
-  });
-
-  final double minWidth;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        minWidth: minWidth,
-        minHeight: _kFooterButtonMinHeight,
+      primary: DesignSystemButton(
+        key: const ValueKey('design-system-task-filter-apply'),
+        label: widget.state.applyLabel,
+        leadingIcon: Icons.check_rounded,
+        size: DesignSystemButtonSize.large,
+        onPressed: widget.onApplyPressed == null
+            ? null
+            : () => widget.onApplyPressed!(widget.state),
       ),
-      child: child,
     );
   }
 }
@@ -277,8 +135,6 @@ class _SaveNamePopup extends StatefulWidget {
   const _SaveNamePopup({
     required this.initialValue,
     required this.activeFilterCount,
-    required this.tokens,
-    required this.messages,
     required this.onCancel,
     required this.onCommit,
     super.key,
@@ -286,8 +142,6 @@ class _SaveNamePopup extends StatefulWidget {
 
   final String initialValue;
   final int activeFilterCount;
-  final DsTokens tokens;
-  final AppLocalizations messages;
   final VoidCallback onCancel;
   final ValueChanged<String> onCommit;
 
@@ -326,125 +180,108 @@ class _SaveNamePopupState extends State<_SaveNamePopup> {
   }
 
   void _handleTextChanged() {
-    final next = _controller.text.trim().isNotEmpty;
-    if (next != _canCommit) {
-      setState(() => _canCommit = next);
-    }
+    final canCommit = _controller.text.trim().isNotEmpty;
+    if (canCommit != _canCommit) setState(() => _canCommit = canCommit);
   }
 
   void _commit() {
-    if (!_canCommit) return;
-    widget.onCommit(_controller.text.trim());
+    if (_canCommit) widget.onCommit(_controller.text.trim());
   }
 
   @override
   Widget build(BuildContext context) {
-    final tokens = widget.tokens;
-    final messages = widget.messages;
-    return Container(
-      width: 270,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: tokens.colors.decorative.level01),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            messages.tasksSavedFiltersSavePopupTitle,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Focus(
-            onKeyEvent: (node, event) {
-              if (event is KeyDownEvent &&
-                  event.logicalKey == LogicalKeyboardKey.escape) {
-                widget.onCancel();
-                return KeyEventResult.handled;
-              }
-              return KeyEventResult.ignored;
-            },
-            child: TextField(
-              key: DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
-              controller: _controller,
-              focusNode: _focusNode,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _commit(),
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    final messages = context.messages;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: spacing.step13 * 2),
+      child: Padding(
+        padding: EdgeInsets.all(spacing.step4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              messages.tasksSavedFiltersSavePopupTitle,
+              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
                 color: tokens.colors.text.highEmphasis,
               ),
-              decoration: InputDecoration(
-                isDense: true,
-                hintText: messages.tasksSavedFiltersSavePopupHint,
-                hintStyle: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
+            ),
+            SizedBox(height: spacing.step3),
+            Focus(
+              onKeyEvent: (node, event) {
+                if (event is KeyDownEvent &&
+                    event.logicalKey == LogicalKeyboardKey.escape) {
+                  widget.onCancel();
+                  return KeyEventResult.handled;
+                }
+                return KeyEventResult.ignored;
+              },
+              child: TextField(
+                key: DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
+                controller: _controller,
+                focusNode: _focusNode,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _commit(),
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.highEmphasis,
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: tokens.colors.interactive.enabled,
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: messages.tasksSavedFiltersSavePopupHint,
+                  hintStyle: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
                   ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: tokens.colors.interactive.enabled,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: spacing.step3,
+                    vertical: spacing.step2,
                   ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            messages.tasksSavedFiltersSavePopupHelper(
-              widget.activeFilterCount,
-            ),
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: widget.onCancel,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: tokens.colors.text.mediumEmphasis,
-                    side: BorderSide(
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(tokens.radii.s),
+                    borderSide: BorderSide(
                       color: tokens.colors.decorative.level01,
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
-                  child: Text(messages.tasksSavedFiltersSavePopupCancel),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(tokens.radii.s),
+                    borderSide: BorderSide(
+                      color: tokens.colors.interactive.enabled,
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: FilledButton(
-                  key: DesignSystemTaskFilterActionBar.saveNamePopupCommitKey,
-                  onPressed: _canCommit ? _commit : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: tokens.colors.interactive.enabled,
-                    foregroundColor: tokens.colors.text.onInteractiveAlert,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                  ),
-                  child: Text(messages.tasksSavedFiltersSavePopupSave),
-                ),
+            ),
+            SizedBox(height: spacing.step2),
+            Text(
+              messages.tasksSavedFiltersSavePopupHelper(
+                widget.activeFilterCount,
               ),
-            ],
-          ),
-        ],
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+            SizedBox(height: spacing.step4),
+            Row(
+              children: [
+                DesignSystemButton(
+                  label: messages.tasksSavedFiltersSavePopupCancel,
+                  variant: DesignSystemButtonVariant.secondary,
+                  onPressed: widget.onCancel,
+                ),
+                SizedBox(width: spacing.step3),
+                Expanded(
+                  child: DesignSystemButton(
+                    key: DesignSystemTaskFilterActionBar.saveNamePopupCommitKey,
+                    label: messages.tasksSavedFiltersSavePopupSave,
+                    fullWidth: true,
+                    onPressed: _canCommit ? _commit : null,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

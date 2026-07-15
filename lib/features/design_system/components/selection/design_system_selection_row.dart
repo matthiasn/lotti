@@ -34,11 +34,13 @@ class DesignSystemSelectionRow extends StatelessWidget {
     required this.onTap,
     this.subtitle,
     this.subtitleMaxLines = 2,
+    this.size = DesignSystemListItemSize.medium,
     this.leading,
     this.trailing,
     this.selected = false,
     this.selectedLabel,
     this.semanticLabel,
+    this.focusNode,
     this.onHoverChanged,
     this.onFocusChanged,
     super.key,
@@ -47,6 +49,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
   final String title;
   final String? subtitle;
   final int? subtitleMaxLines;
+  final DesignSystemListItemSize size;
   final Widget? leading;
 
   /// Optional feature metadata placed before the standard trailing affordance.
@@ -64,6 +67,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
   /// enabled state are exposed as semantics flags and should not be repeated in
   /// this label.
   final String? semanticLabel;
+  final FocusNode? focusNode;
   final VoidCallback? onTap;
   final ValueChanged<bool>? onHoverChanged;
   final ValueChanged<bool>? onFocusChanged;
@@ -90,8 +94,12 @@ class DesignSystemSelectionRow extends StatelessWidget {
         constraints: BoxConstraints(minHeight: tokens.spacing.step9),
         child: DesignSystemListItem(
           title: title,
+          titleMaxLines: MediaQuery.textScalerOf(context).scale(1) > 1.3
+              ? null
+              : 1,
           subtitle: subtitle,
           subtitleMaxLines: subtitleMaxLines,
+          size: size,
           leading: leading == null
               ? null
               : SizedBox(
@@ -103,6 +111,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
           activated: (isSingle || isMulti) && selected,
           activatedBackgroundColor: tokens.colors.surface.selected,
           onTap: onTap,
+          focusNode: focusNode,
           onHoverChanged: onHoverChanged,
           onFocusChanged: onFocusChanged,
           excludeFromSemantics: true,

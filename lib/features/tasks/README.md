@@ -599,7 +599,7 @@ flowchart TD
   Redesign --> PageCtl["JournalPageController(showTasks: true)"]
   PageCtl --> Paging["PagingController + PagedSliverList"]
   PageCtl --> Filters["Task filter model + persistence"]
-  PageCtl --> Search["Search / sort / vector mode / quick labels"]
+  PageCtl --> Search["Search / sort / vector mode"]
 ```
 
 `TasksTabPage` intentionally does not own pagination, query execution, or filter semantics. It reads the already-loaded task slice from the shared paging state and only transforms that visible slice into section presentation metadata.
@@ -610,7 +610,24 @@ Current grouping behavior is sort-dependent:
 - priority sort: priority buckets (`P0` .. `P3`)
 - creation-date sort: creation-day buckets
 
-The filter button opens the task filter modal. Filter semantics, persistence keys, and controller methods are shared with the journal tab via `JournalPageController`.
+The filter button opens one adaptive `showDesignSystemFilterModal` route: a
+bottom sheet on compact layouts and a dialog on wide layouts. The overview and
+its status, category, label, and project pages share one mutable draft, so
+navigating deeper never stacks another modal. Child pages return with Back or
+Done; Apply and Save remain overview actions. The transition coordinates the
+content fade with the Wolt page-size animation, and returning restores keyboard
+focus to the field that opened the child page.
+
+Project choices use a stale-while-revalidate catalog. The route opens from the
+last snapshot immediately, refreshes after its first frame, and updates the
+existing draft without replacing established content with a loading shell.
+Category grouping and the project search field remain available when the first
+snapshot is empty. Each project row contains only its project title because the
+category heading already supplies that context. At compact breakpoints the
+overview reserves token-backed scroll clearance for its sticky action bar,
+including a larger allowance at 200% text, so the final display toggle can move
+fully above the footer. Filter semantics, persistence keys, and controller
+methods are shared with the journal tab via `JournalPageController`.
 
 Task-specific persisted filter concerns include:
 
@@ -631,7 +648,12 @@ Persistence uses:
 
 - `TASKS_CATEGORY_FILTERS` for the tasks tab
 
-which keeps tasks-tab filter state separate from the journal tab. The visible project filter controls live in this feature: `task_filter_modal.dart`'s `_handleProjectFieldPressed` opens the grouped project-selection modal `showProjectSelectionModal` (`lib/features/tasks/ui/filtering/task_project_selection_modal.dart`), and the resulting project IDs are persisted in the same controller state as the other filter clauses.
+which keeps tasks-tab filter state separate from the journal tab. The visible
+project controls are built into the shared modal's project page; their selected
+IDs are persisted in the same controller state as every other filter clause.
+On the task page, active status, category, label, and project clauses are shown
+only by the removable filter-chip row. Empty category or label IDs render as
+the localized **Unassigned** chip instead of disappearing.
 
 ### Saved Filters
 
@@ -653,8 +675,8 @@ Sidebar counts: `savedTaskFilterCountsProvider` computes `{savedFilterId → mat
 
 Surfaces:
 
-1. Sidebar treeview (`TasksSavedFiltersTree` → `SavedTaskFiltersSection` + `SavedTaskFilterRow`) — rendered via `DesktopSidebarDestination.expandedChildBuilder` only when the Tasks destination is active and the sidebar is expanded. The desktop section has its own caption header and count, shows the first four saved filters by default, and adds a token-backed More/Less row when the list is longer; tapping More reveals every saved filter and swaps the control to Show fewer. While collapsed, if the active saved filter is outside the first four, it replaces the last visible row so the current view never disappears behind the fold. Hover-trash with two-tap confirm delete, double-click rename, drag-to-reorder via `ReorderableListView.builder`. When there are no saved filters the section is hidden entirely (`SizedBox.shrink`) — there is no add affordance in the sidebar; new filters are saved only through the Save button in the Tasks Filter modal.
-2. Filter modal Save flow — `DesignSystemTaskFilterActionBar` gained an optional Save button next to Apply. Tapping it opens an inline name popup (`MenuAnchor`-anchored) with autofocus, Enter-to-commit, Escape-to-cancel, click-outside dismiss. The name is passed to `showTaskFilterModal`'s `onSavePressed` handler, which calls `create()` for new saves and `updateFilter()` when the user edits and re-saves the currently active filter under the same name.
+1. Sidebar treeview (`TasksSavedFiltersTree` → `SavedTaskFiltersSection` + `SavedTaskFilterRow`) — rendered via `DesktopSidebarDestination.expandedChildBuilder` only when the Tasks destination is active and the sidebar is expanded. The desktop section has its own caption header and count, shows the first four saved filters by default, and adds a token-backed More/Less row when the list is longer; tapping More reveals every saved filter and swaps the control to Show fewer. While collapsed, if the active saved filter is outside the first four, it replaces the last visible row so the current view never disappears behind the fold. Hover-trash with two-tap confirm delete, double-click rename, drag-to-reorder via `ReorderableListView.builder`. When there are no saved filters the section is hidden entirely (`SizedBox.shrink`) — there is no add affordance in the sidebar; new filters are saved only through the Save filter action in the Tasks Filter modal.
+2. Filter modal save flow — `DesignSystemTaskFilterActionBar` exposes the localized **Save filter** action next to Apply. Tapping it opens an inline name popup (`MenuAnchor`-anchored) with autofocus, Enter-to-commit, Escape-to-cancel, click-outside dismiss. The name is passed to `showTaskFilterModal`'s `onSavePressed` handler, which calls `create()` for new saves and `updateFilter()` when the user edits and re-saves the currently active filter under the same name.
 3. Mobile saved-filter rail + sheet (`lib/features/tasks/ui/saved_filters/mobile/`) — see "Mobile saved-filter rail" below. The mobile rail replaces the old header `· {savedFilterName}` suffix (the now-removed `_SavedFilterTitleSuffix`); the desktop layout still surfaces the active filter through the sidebar treeview.
 4. Save / update / delete confirmation toasts via the design-system toast (`context.showToast`, in `saved_task_filter_toast.dart`).
 
@@ -695,7 +717,6 @@ The redesigned browse page also preserves the existing non-filter runtime behavi
 
 - pull-to-refresh
 - full-text vs vector search toggle
-- quick-label strip
 - create-task FAB and auto-assign flow
 - `/tasks/:taskId` navigation on row selection
 

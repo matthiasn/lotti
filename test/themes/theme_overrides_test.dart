@@ -239,8 +239,12 @@ void main() {
         pagination.modalSheetHeightTransitionCurve,
         MotionCurves.emphasizedDecelerate,
       );
-      expect(pagination.mainContentIncomingOpacityCurve.transform(0.25), 0);
-      expect(pagination.mainContentOutgoingOpacityCurve.transform(0.5), 1);
+      expect(pagination.mainContentIncomingOpacityCurve.transform(0.30), 0);
+      expect(
+        pagination.mainContentIncomingOpacityCurve.transform(0.65),
+        closeTo(0.5, 0.001),
+      );
+      expect(pagination.mainContentOutgoingOpacityCurve.transform(0.35), 1);
       expect(pagination.incomingMainContentSlideBeginOffset, Offset.zero);
       expect(pagination.outgoingMainContentSlideEndOffset, Offset.zero);
     });

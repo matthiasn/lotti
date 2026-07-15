@@ -18,8 +18,8 @@ enum DesignSystemListItemVisualState {
 /// The design-system's list row — a token-styled, tappable item with leading/
 /// trailing slots and an optional divider.
 ///
-/// Renders a [title] (or custom [titleContent]) over a [subtitle] (or rich
-/// [subtitleSpans], capped by [subtitleMaxLines]), at one of
+/// Renders a [title] (or custom [titleContent], capped by [titleMaxLines]) over
+/// a [subtitle] (or rich [subtitleSpans], capped by [subtitleMaxLines]), at one of
 /// [DesignSystemListItemSize]. Slots [leading]/[leadingExtra] and [trailing]/
 /// [trailingExtra] flank the content. Tracks hover/pressed/[activated]/
 /// [selected] backgrounds (overridable per state) and reports interaction via
@@ -31,6 +31,7 @@ class DesignSystemListItem extends StatefulWidget {
     this.title,
     this.subtitle,
     this.titleContent,
+    this.titleMaxLines = 1,
     this.subtitleSpans,
     this.subtitleMaxLines = 1,
     this.size = DesignSystemListItemSize.medium,
@@ -47,6 +48,7 @@ class DesignSystemListItem extends StatefulWidget {
     this.hoverBackgroundColor,
     this.pressedBackgroundColor,
     this.onTap,
+    this.focusNode,
     this.onHoverChanged,
     this.onFocusChanged,
     this.semanticsLabel,
@@ -65,6 +67,10 @@ class DesignSystemListItem extends StatefulWidget {
   final String? title;
   final String? subtitle;
   final Widget? titleContent;
+
+  /// Caps the plain-text title at this many lines. Pass `null` to let it wrap
+  /// freely. This does not affect custom [titleContent].
+  final int? titleMaxLines;
   final List<InlineSpan>? subtitleSpans;
 
   /// Caps the rendered subtitle at this many lines. Defaults to `1` so
@@ -92,6 +98,7 @@ class DesignSystemListItem extends StatefulWidget {
   final Color? hoverBackgroundColor;
   final Color? pressedBackgroundColor;
   final VoidCallback? onTap;
+  final FocusNode? focusNode;
 
   /// Fires whenever the pointer enters or leaves the item. Lets parent
   /// lists coordinate cross-row state — for example, hiding the divider
@@ -181,6 +188,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
               ),
             ),
             child: InkWell(
+              focusNode: widget.focusNode,
               onTap: widget.onTap,
               excludeFromSemantics: widget.excludeFromSemantics,
               overlayColor: WidgetStateProperty.all(Colors.transparent),
@@ -233,6 +241,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
                           title: widget.title,
                           subtitle: widget.subtitle,
                           titleContent: widget.titleContent,
+                          titleMaxLines: widget.titleMaxLines,
                           subtitleSpans: widget.subtitleSpans,
                           subtitleMaxLines: widget.subtitleMaxLines,
                           spec: spec,
@@ -277,6 +286,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
 class _TitleContent extends StatelessWidget {
   const _TitleContent({
     required this.spec,
+    required this.titleMaxLines,
     required this.subtitleMaxLines,
     this.title,
     this.subtitle,
@@ -287,6 +297,7 @@ class _TitleContent extends StatelessWidget {
   final String? title;
   final String? subtitle;
   final Widget? titleContent;
+  final int? titleMaxLines;
   final List<InlineSpan>? subtitleSpans;
   final int? subtitleMaxLines;
   final _ListItemSpec spec;
@@ -301,8 +312,10 @@ class _TitleContent extends StatelessWidget {
             Text(
               title!,
               style: spec.titleStyle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              maxLines: titleMaxLines,
+              overflow: titleMaxLines == null
+                  ? TextOverflow.clip
+                  : TextOverflow.ellipsis,
             ),
         if (subtitle != null || subtitleSpans != null) ...[
           SizedBox(height: spec.textGap),

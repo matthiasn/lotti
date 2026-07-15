@@ -252,6 +252,13 @@ Local text search runs over the already-loaded grouped snapshot. That is the
 current tradeoff: cheap, deterministic, and good enough until vector search is
 actually worth adding here.
 
+The filter button adapts this model to the shared design-system filter route.
+Status and category selection are child pages of the same Wolt sheet or desktop
+dialog as the overview, not separate overlays. All pages edit one draft;
+returning by Back, Done, Escape, or system back preserves it and restores focus
+to the originating overview row. Only Apply commits the draft to
+`ProjectsFilterController`.
+
 ## Detail State
 
 The two detail routes do different jobs:

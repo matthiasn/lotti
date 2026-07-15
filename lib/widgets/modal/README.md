@@ -30,10 +30,14 @@ app's styling and responsive behavior. Key static members:
   `WoltModalConfig.pageBreakpoint` and a `dialog` at or above it.
 - `shouldUseRootNavigatorForBottomSheet(context)` — true below the breakpoint.
 - `getModalBarrierColor({isDark, context})` / `getModalBackgroundColor(context)`
-  — theme-derived barrier and background colors.
+  — theme-derived barrier and token-backed `background/02` sheet color.
+- `defaultPadding(context)` / `modalTitleStyle(context)` — token-backed shared
+  content insets and title typography.
 - `modalSheetPage({...})` / `sliverModalSheetPage({...})` — build styled
   `WoltModalSheetPage` / `SliverWoltModalSheetPage` instances with optional
-  title, back button (`onTapBack`), and close button (`showCloseButton`).
+  title, back button (`onTapBack`), and close button (`showCloseButton`). Their
+  header height, padding, icon geometry, radius, colors, and typography all use
+  design-system tokens through one shared navigation-button implementation.
 - `showSinglePageModal<T>({...})` — show a single styled page.
 - `showSingleSliverPageModal<T>({...})` — show a single sliver-based page.
 - `showMultiPageModal<T>({...})` — show a multi-page modal with an optional

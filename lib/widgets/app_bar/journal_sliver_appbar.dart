@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/ai_chat_icon.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -176,9 +179,6 @@ class JournalFilter extends ConsumerWidget {
     );
 
     final tokens = context.designTokens;
-    final palette = DesignSystemFilterPalette.fromTokens(tokens);
-    final textStyle = tokens.typography.styles.body.bodyMedium;
-
     Widget pill({
       required DisplayFilter filter,
       required IconData icon,
@@ -188,12 +188,13 @@ class JournalFilter extends ConsumerWidget {
       return DesignSystemFilterChoicePill(
         label: label,
         selected: active,
-        palette: palette,
-        textStyle: textStyle,
+        role: DesignSystemFilterChoiceRole.multiSelect,
         leading: Icon(
           icon,
-          size: 16,
-          color: active ? palette.accent : palette.secondaryText,
+          size: tokens.spacing.step5,
+          color: active
+              ? tokens.colors.interactive.enabled
+              : tokens.colors.text.mediumEmphasis,
         ),
         onTap: () {
           final next = {...state.filters};
@@ -235,7 +236,9 @@ class JournalFilter extends ConsumerWidget {
 /// the display toggles, entry types, and categories. Mirrors the sectioned
 /// structure of the tasks filter sheet so the two filters read as one system.
 class LogbookFilterSheet extends StatelessWidget {
-  const LogbookFilterSheet({super.key});
+  const LogbookFilterSheet({required this.onCategoryPressed, super.key});
+
+  final VoidCallback onCategoryPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -253,8 +256,8 @@ class LogbookFilterSheet extends StatelessWidget {
           label: context.messages.journalFilterEntryTypesTitle,
           child: const EntryTypeFilter(),
         ),
-        SizedBox(height: tokens.spacing.step4),
-        const TaskCategoryFilter(),
+        SizedBox(height: tokens.spacing.step5),
+        TaskCategoryFilterOverviewRow(onPressed: onCategoryPressed),
       ],
     );
   }
@@ -297,10 +300,12 @@ class JournalFilterIcon extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(right: AppTheme.spacingSmall),
       child: IconButton(
+        tooltip: context.messages.journalFilterTitle,
         onPressed: () {
-          ModalUtils.showSinglePageModal<void>(
+          final pageIndex = ValueNotifier(0);
+          ModalUtils.showMultiPageModal<void>(
             context: context,
-            title: context.messages.journalSearchHint,
+            pageIndexNotifier: pageIndex,
             modalDecorator: (child) {
               // Use UncontrolledProviderScope to share the parent container
               // with overrides for the modal-specific scope value
@@ -310,15 +315,109 @@ class JournalFilterIcon extends ConsumerWidget {
                   overrides: [
                     journalPageScopeProvider.overrideWithValue(showTasks),
                   ],
-                  child: child,
+                  child: _JournalFilterBackHandler(
+                    pageIndex: pageIndex,
+                    child: child,
+                  ),
                 ),
               );
             },
-            builder: (_) => const LogbookFilterSheet(),
-          );
+            pageListBuilder: (modalContext) {
+              final spacing = modalContext.designTokens.spacing;
+              final padding = EdgeInsets.fromLTRB(
+                spacing.step5,
+                spacing.step2,
+                spacing.step5,
+                spacing.step5,
+              );
+              return [
+                ModalUtils.modalSheetPage(
+                  context: modalContext,
+                  title: modalContext.messages.journalFilterTitle,
+                  showCloseButton: true,
+                  padding: padding,
+                  child: LogbookFilterSheet(
+                    onCategoryPressed: () => pageIndex.value = 1,
+                  ),
+                ),
+                ModalUtils.modalSheetPage(
+                  context: modalContext,
+                  title: stripTrailingColon(
+                    modalContext.messages.taskCategoryLabel,
+                  ),
+                  showCloseButton: true,
+                  onTapBack: () => pageIndex.value = 0,
+                  padding: padding,
+                  stickyActionBar: _JournalCategoryActionBar(
+                    onDone: () => pageIndex.value = 0,
+                  ),
+                  child: const TaskCategoryFilter(),
+                ),
+              ];
+            },
+          ).whenComplete(pageIndex.dispose);
         },
         icon: const Icon(MdiIcons.filterVariant),
       ),
+    );
+  }
+}
+
+class _JournalCategoryActionBar extends StatelessWidget {
+  const _JournalCategoryActionBar({required this.onDone});
+
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    return DesignSystemModalActionBar(
+      glass: true,
+      padding: EdgeInsets.all(context.designTokens.spacing.step5),
+      primary: DesignSystemButton(
+        label: context.messages.doneButton,
+        leadingIcon: Icons.check_rounded,
+        size: DesignSystemButtonSize.large,
+        fullWidth: true,
+        onPressed: onDone,
+      ),
+    );
+  }
+}
+
+class _JournalFilterBackHandler extends StatelessWidget {
+  const _JournalFilterBackHandler({
+    required this.pageIndex,
+    required this.child,
+  });
+
+  final ValueNotifier<int> pageIndex;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: pageIndex,
+      child: child,
+      builder: (context, index, child) {
+        final routeContent = PopScope<void>(
+          canPop: index == 0,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && pageIndex.value != 0) {
+              pageIndex.value = 0;
+            }
+          },
+          child: child!,
+        );
+        if (index == 0) return routeContent;
+        return CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.escape): () {
+              pageIndex.value = 0;
+            },
+          },
+          child: Focus(autofocus: true, child: routeContent),
+        );
+      },
     );
   }
 }

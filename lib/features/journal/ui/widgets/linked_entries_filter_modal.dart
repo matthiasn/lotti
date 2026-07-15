@@ -6,55 +6,107 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// Single-page modal that lets the user pick the sort order for linked
-/// entries, toggle visibility of hidden entries, and narrow the list to
-/// flagged entries only. Reuses the same exclusive-choice pill
-/// (`DesignSystemFilterChoicePill`) and palette as the task list filter
-/// modal.
+/// Compact single-page filter for linked-entry sort and visibility settings.
 Future<void> showLinkedEntriesFilterModal({
   required BuildContext context,
   required String entryId,
-}) {
-  return ModalUtils.showSinglePageModal<void>(
+}) async {
+  final container = ProviderScope.containerOf(context);
+  final draft = ValueNotifier(
+    _LinkedEntriesFilterDraft(
+      sortOrder: container.read(linkedEntriesSortControllerProvider(entryId)),
+      includeHidden: container.read(includeHiddenControllerProvider(entryId)),
+      showFlaggedOnly: container.read(
+        showFlaggedOnlyControllerProvider(entryId),
+      ),
+    ),
+  );
+  final spacing = context.designTokens.spacing;
+  await ModalUtils.showSinglePageModal<void>(
     context: context,
     title: context.messages.journalLinkedEntriesFilterModalTitle,
-    padding: const EdgeInsets.only(left: 20, top: 8, right: 20, bottom: 20),
-    builder: (modalContext) => _LinkedEntriesFilterModalBody(entryId: entryId),
+    closeButtonIcon: Icons.check_rounded,
+    closeButtonTooltip: context.messages.doneButton,
+    onClosePressed: () {
+      final value = draft.value;
+      container
+              .read(linkedEntriesSortControllerProvider(entryId).notifier)
+              .order =
+          value.sortOrder;
+      container
+              .read(includeHiddenControllerProvider(entryId).notifier)
+              .includeHidden =
+          value.includeHidden;
+      container
+              .read(showFlaggedOnlyControllerProvider(entryId).notifier)
+              .showFlaggedOnly =
+          value.showFlaggedOnly;
+    },
+    modalDecorator: (child) => _DraftLifetime(draft: draft, child: child),
+    padding: EdgeInsets.fromLTRB(
+      spacing.step5,
+      spacing.step2,
+      spacing.step5,
+      spacing.step6,
+    ),
+    builder: (modalContext) => _LinkedEntriesFilterModalBody(draft: draft),
   );
 }
 
-class _LinkedEntriesFilterModalBody extends ConsumerWidget {
-  const _LinkedEntriesFilterModalBody({required this.entryId});
+class _DraftLifetime extends StatefulWidget {
+  const _DraftLifetime({required this.draft, required this.child});
 
-  final String entryId;
+  final ValueNotifier<_LinkedEntriesFilterDraft> draft;
+  final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  State<_DraftLifetime> createState() => _DraftLifetimeState();
+}
+
+class _DraftLifetimeState extends State<_DraftLifetime> {
+  @override
+  void dispose() {
+    widget.draft.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+@immutable
+class _LinkedEntriesFilterDraft {
+  const _LinkedEntriesFilterDraft({
+    required this.sortOrder,
+    required this.includeHidden,
+    required this.showFlaggedOnly,
+  });
+
+  final LinkedEntriesSortOrder sortOrder;
+  final bool includeHidden;
+  final bool showFlaggedOnly;
+
+  _LinkedEntriesFilterDraft copyWith({
+    LinkedEntriesSortOrder? sortOrder,
+    bool? includeHidden,
+    bool? showFlaggedOnly,
+  }) => _LinkedEntriesFilterDraft(
+    sortOrder: sortOrder ?? this.sortOrder,
+    includeHidden: includeHidden ?? this.includeHidden,
+    showFlaggedOnly: showFlaggedOnly ?? this.showFlaggedOnly,
+  );
+}
+
+class _LinkedEntriesFilterModalBody extends StatelessWidget {
+  const _LinkedEntriesFilterModalBody({required this.draft});
+
+  final ValueNotifier<_LinkedEntriesFilterDraft> draft;
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final palette = DesignSystemFilterPalette.fromTokens(tokens);
     final messages = context.messages;
     final spacing = tokens.spacing;
-
-    final sortOrder = ref.watch(
-      linkedEntriesSortControllerProvider(entryId),
-    );
-    final sortNotifier = ref.read(
-      linkedEntriesSortControllerProvider(entryId).notifier,
-    );
-
-    final includeHidden = ref.watch(
-      includeHiddenControllerProvider(entryId),
-    );
-    final includeHiddenNotifier = ref.read(
-      includeHiddenControllerProvider(entryId).notifier,
-    );
-
-    final showFlaggedOnly = ref.watch(
-      showFlaggedOnlyControllerProvider(entryId),
-    );
-    final showFlaggedOnlyNotifier = ref.read(
-      showFlaggedOnlyControllerProvider(entryId).notifier,
-    );
 
     String sortLabel(LinkedEntriesSortOrder option) => switch (option) {
       LinkedEntriesSortOrder.newestFirst =>
@@ -63,131 +115,67 @@ class _LinkedEntriesFilterModalBody extends ConsumerWidget {
         messages.journalLinkedEntriesSortOldestFirst,
     };
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _SectionLabel(
-          text: messages.journalLinkedEntriesSortLabel,
-          palette: palette,
-          tokens: tokens,
-        ),
-        SizedBox(height: spacing.step4),
-        Wrap(
-          spacing: spacing.step3,
-          runSpacing: spacing.step3,
-          children: [
-            for (final option in LinkedEntriesSortOrder.values)
-              DesignSystemFilterChoicePill(
-                key: ValueKey('linked-entries-sort-${option.name}'),
-                label: sortLabel(option),
-                selected: sortOrder == option,
-                palette: palette,
-                textStyle: tokens.typography.styles.subtitle.subtitle2,
-                onTap: () => sortNotifier.order = option,
-              ),
-          ],
-        ),
-        SizedBox(height: spacing.step6),
-        _ToggleRow(
-          label: messages.journalLinkedEntriesShowHidden,
-          value: includeHidden,
-          palette: palette,
-          tokens: tokens,
-          onChanged: () => includeHiddenNotifier.includeHidden = !includeHidden,
-        ),
-        _ToggleRow(
-          label: messages.journalLinkedEntriesShowFlaggedOnly,
-          value: showFlaggedOnly,
-          palette: palette,
-          tokens: tokens,
-          onChanged: () =>
-              showFlaggedOnlyNotifier.showFlaggedOnly = !showFlaggedOnly,
-        ),
-        SizedBox(height: spacing.step8),
-      ],
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({
-    required this.text,
-    required this.palette,
-    required this.tokens,
-  });
-
-  final String text;
-  final DesignSystemFilterPalette palette;
-  final DsTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: palette.secondaryText,
+    return ValueListenableBuilder<_LinkedEntriesFilterDraft>(
+      valueListenable: draft,
+      builder: (context, value, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _SectionLabel(text: messages.journalLinkedEntriesSortLabel),
+          SizedBox(height: spacing.step3),
+          Wrap(
+            spacing: spacing.step3,
+            runSpacing: spacing.step2,
+            children: [
+              for (final option in LinkedEntriesSortOrder.values)
+                DesignSystemFilterChoicePill(
+                  key: ValueKey('linked-entries-sort-${option.name}'),
+                  label: sortLabel(option),
+                  selected: value.sortOrder == option,
+                  role: DesignSystemFilterChoiceRole.singleSelect,
+                  onTap: () => draft.value = draft.value.copyWith(
+                    sortOrder: option,
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: spacing.step6),
+          _SectionLabel(text: messages.journalFilterShowTitle),
+          SizedBox(height: spacing.step4),
+          DesignSystemFilterToggleRow(
+            label: messages.journalLinkedEntriesShowHidden,
+            value: value.includeHidden,
+            onChanged: (next) => draft.value = draft.value.copyWith(
+              includeHidden: next,
+            ),
+          ),
+          SizedBox(height: spacing.step1),
+          DesignSystemFilterToggleRow(
+            label: messages.journalLinkedEntriesShowFlaggedOnly,
+            value: value.showFlaggedOnly,
+            onChanged: (next) => draft.value = draft.value.copyWith(
+              showFlaggedOnly: next,
+            ),
+          ),
+          SizedBox(height: spacing.step4),
+        ],
       ),
     );
   }
 }
 
-class _ToggleRow extends StatelessWidget {
-  const _ToggleRow({
-    required this.label,
-    required this.value,
-    required this.palette,
-    required this.tokens,
-    required this.onChanged,
-  });
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.text});
 
-  final String label;
-  final bool value;
-  final DesignSystemFilterPalette palette;
-  final DsTokens tokens;
-  final VoidCallback onChanged;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      toggled: value,
-      label: label,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          onTap: onChanged,
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    label,
-                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                      color: palette.primaryText,
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: tokens.spacing.step6,
-                  width: tokens.spacing.step8,
-                  child: FittedBox(
-                    child: ExcludeSemantics(
-                      child: IgnorePointer(
-                        child: Switch.adaptive(
-                          value: value,
-                          activeTrackColor: palette.accent,
-                          onChanged: (_) {},
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+    final tokens = context.designTokens;
+    return Text(
+      text,
+      style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+        color: tokens.colors.text.mediumEmphasis,
       ),
     );
   }

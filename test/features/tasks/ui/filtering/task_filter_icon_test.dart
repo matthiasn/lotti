@@ -148,7 +148,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // The new design system filter sheet is shown
-      expect(find.text('Tasks Filter'), findsOneWidget);
+      expect(find.text('Filter tasks'), findsOneWidget);
       expect(find.text('Sort by'), findsOneWidget);
     });
 
@@ -160,8 +160,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DesignSystemTaskFilterSheet), findsOneWidget);
-      expect(find.text('Tasks Filter'), findsOneWidget);
-      expect(find.text('Clear all'), findsOneWidget);
+      expect(find.text('Filter tasks'), findsOneWidget);
+      expect(find.text('Clear'), findsOneWidget);
       expect(find.text('Apply'), findsOneWidget);
     });
 
@@ -172,13 +172,13 @@ void main() {
       await tester.tap(find.byIcon(MdiIcons.filterVariant));
       await tester.pumpAndSettle();
 
-      expect(find.text('Tasks Filter'), findsOneWidget);
+      expect(find.text('Filter tasks'), findsOneWidget);
 
       // Tap barrier to dismiss
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
 
-      expect(find.text('Tasks Filter'), findsNothing);
+      expect(find.text('Filter tasks'), findsNothing);
     });
   });
 }

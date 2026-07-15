@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -210,7 +211,7 @@ void main() {
       // Type a name → enabled.
       await tester.enterText(field, 'Filter');
       await tester.pump();
-      var commit = tester.widget<FilledButton>(
+      var commit = tester.widget<DesignSystemButton>(
         find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
       );
       expect(commit.onPressed, isNotNull);
@@ -218,7 +219,7 @@ void main() {
       // Clear the field → listener flips _canCommit back to false.
       await tester.enterText(field, '');
       await tester.pump();
-      commit = tester.widget<FilledButton>(
+      commit = tester.widget<DesignSystemButton>(
         find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
       );
       expect(commit.onPressed, isNull);
@@ -307,9 +308,7 @@ void main() {
         reason: 'bottom stop must be more opaque than the top stop',
       );
 
-      // Right-aligned single-row layout, per Figma. A LayoutBuilder
-      // around the Row drops slot minimums on viewports too narrow to
-      // fit them, so the footer never overflows or wraps.
+      // The shared responsive action bar owns the wide/stacked layout.
       expect(
         find.descendant(
           of: find.byType(BackdropFilter),
@@ -317,37 +316,24 @@ void main() {
         ),
         findsOneWidget,
       );
-      final row = tester.widget<Row>(
-        find
-            .descendant(
-              of: find.byType(BackdropFilter),
-              matching: find.byType(Row),
-            )
-            .first,
+      final clear = tester.widget<DesignSystemButton>(
+        find.byKey(const ValueKey('design-system-task-filter-clear')),
       );
-      expect(row.mainAxisAlignment, MainAxisAlignment.end);
-
-      // Button slots match the Figma frame minimums (Clear all / Apply
-      // filter; Save is omitted in this case because canSave is false).
-      final slots = tester
-          .widgetList<ConstrainedBox>(
-            find.descendant(
-              of: find.byType(BackdropFilter),
-              matching: find.byType(ConstrainedBox),
-            ),
-          )
-          .where(
-            (c) =>
-                c.constraints.minHeight == 56 &&
-                (c.constraints.minWidth == 115 ||
-                    c.constraints.minWidth == 159),
-          )
-          .toList();
-      expect(
-        slots.map((c) => c.constraints.minWidth).toSet(),
-        {115.0, 159.0},
-        reason: 'expected Clear (115) and Apply (159) slots at min height 56',
+      final apply = tester.widget<DesignSystemButton>(
+        find.byKey(const ValueKey('design-system-task-filter-apply')),
       );
+      expect(clear.size, DesignSystemButtonSize.large);
+      expect(clear.variant, DesignSystemButtonVariant.secondary);
+      expect(apply.size, DesignSystemButtonSize.large);
+      expect(apply.fullWidth, isFalse);
+      final clearCenter = tester.getCenter(
+        find.byKey(const ValueKey('design-system-task-filter-clear')),
+      );
+      final applyCenter = tester.getCenter(
+        find.byKey(const ValueKey('design-system-task-filter-apply')),
+      );
+      expect(applyCenter.dy, clearCenter.dy);
+      expect(applyCenter.dx, greaterThan(clearCenter.dx));
     },
   );
 }

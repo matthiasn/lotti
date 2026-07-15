@@ -2,10 +2,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Whether the picker assigns a single entity or edits a set of entities.
@@ -277,15 +277,13 @@ Widget buildPickerApplyFooter({
   required VoidCallback onTap,
   Key? buttonKey,
 }) {
-  final tokens = context.designTokens;
   return DesignSystemGlassActionFooter(
-    child: DesignSystemFilterActionButton(
+    child: DesignSystemButton(
       key: buttonKey,
       label: label,
-      palette: DesignSystemFilterPalette.fromTokens(tokens),
-      highlighted: true,
-      textStyle: tokens.typography.styles.subtitle.subtitle1,
-      onTap: onTap,
+      size: DesignSystemButtonSize.large,
+      fullWidth: true,
+      onPressed: onTap,
     ),
   );
 }

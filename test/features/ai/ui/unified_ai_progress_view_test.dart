@@ -806,7 +806,6 @@ void main() {
 
               // Top-bar title carries the prompt name.
               final titlePadding = page.topBarTitle! as Padding;
-              expect((titlePadding.child! as Text).data, 'Test Prompt Title');
 
               // Sticky action bar hosts the running animation keyed to this
               // entity and the prompt's response type.
@@ -828,7 +827,12 @@ void main() {
               expect(content.shouldTriggerOnInit, isTrue);
               expect(content.showExisting, isFalse);
 
-              return const Center(child: Text('Test'));
+              return Column(
+                children: [
+                  titlePadding,
+                  const Text('Test'),
+                ],
+              );
             },
           ),
         ),
@@ -836,6 +840,14 @@ void main() {
 
       // Verify the builder ran successfully
       expect(find.text('Test'), findsOneWidget);
+      expect(find.text('Test Prompt Title'), findsOneWidget);
+      expect(
+        tester
+            .getSemantics(find.text('Test Prompt Title'))
+            .flagsCollection
+            .isHeader,
+        isTrue,
+      );
     });
   });
 

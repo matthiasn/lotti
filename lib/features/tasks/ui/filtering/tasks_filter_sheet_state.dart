@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_project_selection_modal.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
+
+/// A project paired with its owning category for grouped filter presentation.
+@immutable
+class ProjectWithCategory {
+  const ProjectWithCategory({
+    required this.project,
+    required this.categoryId,
+  });
+
+  final ProjectEntry project;
+  final String categoryId;
+}
 
 /// Toggle IDs used by the tasks filter sheet.
 abstract final class TasksFilterToggleIds {
@@ -180,6 +192,10 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
 
   // Category options — include category icon and color
   final categoryOptions = [
+    DesignSystemTaskFilterOption(
+      id: '',
+      label: messages.tasksQuickFilterUnassignedLabel,
+    ),
     for (final category in categories)
       DesignSystemTaskFilterOption(
         id: category.id,
@@ -191,6 +207,10 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
 
   // Label options — include label color as dot indicator
   final labelOptions = [
+    DesignSystemTaskFilterOption(
+      id: '',
+      label: messages.tasksQuickFilterUnassignedLabel,
+    ),
     for (final label in labels)
       DesignSystemTaskFilterOption(
         id: label.id,
@@ -204,7 +224,6 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
       ? _buildProjectField(
           context,
           projectsWithCategories: projectsWithCategories,
-          categories: categories,
           selectedProjectIds: controllerState.selectedProjectIds,
         )
       : null;
@@ -255,8 +274,8 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
   ];
 
   return DesignSystemTaskFilterState(
-    title: messages.tasksFilterApplyTitle,
-    clearAllLabel: messages.tasksFilterClearAll,
+    title: messages.tasksFilterTitle,
+    clearAllLabel: messages.clearButton,
     applyLabel: messages.tasksLabelsSheetApply,
     sortLabel: messages.tasksSortByLabel,
     sortOptions: sortOptions,
@@ -298,30 +317,21 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
 
 /// Builds the project field with options grouped by category.
 ///
-/// Each option label is prefixed with its category name for clarity
-/// when multiple categories are selected. Options are ordered by
-/// category, then by project title within each category.
-DesignSystemTaskFilterFieldState? _buildProjectField(
+/// Options are ordered by category, then by project title. The selection page
+/// already renders category headings, so labels contain only the project title
+/// instead of repeating the group name in every row.
+DesignSystemTaskFilterFieldState _buildProjectField(
   BuildContext context, {
   required List<ProjectWithCategory> projectsWithCategories,
-  required List<CategoryDefinition> categories,
   required Set<String> selectedProjectIds,
 }) {
-  if (projectsWithCategories.isEmpty) return null;
-
-  final categoryById = {
-    for (final cat in categories) cat.id: cat,
-  };
-
   // Build options preserving the order provided (already grouped by category).
   final options = <DesignSystemTaskFilterOption>[];
   for (final pwc in projectsWithCategories) {
-    final category = categoryById[pwc.categoryId];
-    final prefix = category != null ? '${category.name} / ' : '';
     options.add(
       DesignSystemTaskFilterOption(
         id: pwc.project.meta.id,
-        label: '$prefix${pwc.project.data.title}',
+        label: pwc.project.data.title,
       ),
     );
   }

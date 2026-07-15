@@ -103,12 +103,14 @@ woken). The controller also has `pause()` and `resume()`, but that branch is
 not surfaced by the current modal UI.
 
 `AudioRecordingModal.show()` hosts the Wolt sheet on the root navigator by
-default; callers can explicitly opt into their local navigator. Finishing a
-recording returns the created entry ID through that modal route. The content
-pops the route exactly once, and an unlinked recording navigates to its new
-journal entry only after the Wolt route has completed. Keeping navigation out
-of the sheet's teardown prevents nested task navigators from trying to
-reactivate an element that has already been removed.
+default; callers can explicitly opt into their local navigator. Its content
+inset comes from the shared modal design-system spacing, with the bottom inset
+reduced for the recording controls. Finishing a recording returns the created
+entry ID through that modal route. The content pops the route exactly once, and
+an unlinked recording navigates to its new journal entry only after the Wolt
+route has completed. Keeping navigation out of the sheet's teardown prevents
+nested task navigators from trying to reactivate an element that has already
+been removed.
 
 ### Recorder state
 

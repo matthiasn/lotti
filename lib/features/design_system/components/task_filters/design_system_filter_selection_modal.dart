@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
-import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 
 typedef DesignSystemFilterOptionAppearanceResolver =
     DesignSystemFilterSelectionOptionAppearance? Function(String optionId);
 
-/// Per-option visual overrides supplied to a filter selection modal.
+typedef DesignSystemFilterSelectionGroupsBuilder =
+    List<DesignSystemFilterSelectionGroup> Function(
+      DesignSystemTaskFilterState state,
+    );
+
+typedef DesignSystemFilterStateNormalizer =
+    DesignSystemTaskFilterState Function(DesignSystemTaskFilterState state);
+
+/// Per-option visual overrides for a filter selection page.
 ///
-/// Lets the caller decorate an individual option by its id (resolved via a
-/// [DesignSystemFilterOptionAppearanceResolver]) with a leading [icon], a
-/// [foregroundColor], and an [enabled] flag that greys out and disables the row.
+/// Color is intentionally applied only to the leading icon. Row labels retain
+/// the design system's high-emphasis text color so status colors never become
+/// low-contrast body text.
 @immutable
 class DesignSystemFilterSelectionOptionAppearance {
   const DesignSystemFilterSelectionOptionAppearance({
@@ -29,327 +34,292 @@ class DesignSystemFilterSelectionOptionAppearance {
   final bool enabled;
 }
 
-/// Shows a multi-select field selection modal for a task filter section.
-///
-/// Uses Wolt modal sheet — adapts between bottom sheet (mobile) and dialog
-/// (desktop) automatically via [ModalUtils.modalTypeBuilder].
-Future<DesignSystemTaskFilterState?>
-showDesignSystemTaskFilterFieldSelectionModal({
-  required BuildContext context,
-  required DesignSystemTaskFilterState draftState,
-  required DesignSystemTaskFilterSection section,
-  DesignSystemFilterOptionAppearanceResolver? appearanceResolver,
-}) async {
-  final field = switch (section) {
-    DesignSystemTaskFilterSection.status => draftState.statusField,
-    DesignSystemTaskFilterSection.category => draftState.categoryField,
-    DesignSystemTaskFilterSection.label => draftState.labelField,
-    DesignSystemTaskFilterSection.project => draftState.projectField,
-  };
-
-  if (field == null) {
-    return null;
-  }
-
-  // Only the Category section gets a search field — its option list is the
-  // user's full category catalog and matches the Settings → Categories
-  // Definition page. Status/label/project keep the simpler list layout.
-  final searchHintText = section == DesignSystemTaskFilterSection.category
-      ? context.messages.categorySearchPlaceholder
-      : null;
-
-  final selectedIds = await showDesignSystemFilterSelectionModal(
-    context: context,
-    title: field.label,
-    options: field.options,
-    initialSelectedIds: field.selectedIds,
-    appearanceResolver: appearanceResolver,
-    searchHintText: searchHintText,
-  );
-
-  if (selectedIds == null) {
-    return null;
-  }
-
-  final updatedField = field.copyWith(selectedIds: selectedIds);
-  return switch (section) {
-    DesignSystemTaskFilterSection.status => draftState.copyWith(
-      statusField: updatedField,
-    ),
-    DesignSystemTaskFilterSection.category => draftState.copyWith(
-      categoryField: updatedField,
-    ),
-    DesignSystemTaskFilterSection.label => draftState.copyWith(
-      labelField: updatedField,
-    ),
-    DesignSystemTaskFilterSection.project => draftState.copyWith(
-      projectField: updatedField,
-    ),
-  };
-}
-
-/// Shows a generic multi-select filter selection modal.
-///
-/// Uses Wolt modal sheet — adapts between bottom sheet (mobile) and dialog
-/// (desktop) automatically. The Done button is rendered as a sticky action bar
-/// wrapped in [DesignSystemGlassStrip] so list rows scroll behind it.
-///
-/// Passing [searchHintText] adds a top-of-page search field that filters
-/// options by case-insensitive substring match on the option label. When
-/// omitted, the modal renders without a search bar (status-style layout).
-Future<Set<String>?> showDesignSystemFilterSelectionModal({
-  required BuildContext context,
-  required String title,
-  required List<DesignSystemTaskFilterOption> options,
-  required Set<String> initialSelectedIds,
-  DesignSystemFilterOptionAppearanceResolver? appearanceResolver,
-  String? applyLabel,
-  String? searchHintText,
-}) async {
-  final selectedIdsNotifier = ValueNotifier({...initialSelectedIds});
-  final resolvedLabel = applyLabel ?? context.messages.doneButton;
-
-  try {
-    return await ModalUtils.showSinglePageModal<Set<String>>(
-      context: context,
-      title: title,
-      padding: const EdgeInsets.only(left: 20, top: 8, right: 20, bottom: 20),
-      stickyActionBarBuilder: (_) {
-        return Builder(
-          builder: (ctx) {
-            final tokens = ctx.designTokens;
-            final palette = DesignSystemFilterPalette.fromTokens(tokens);
-            return DesignSystemGlassActionFooter(
-              child: DesignSystemFilterActionButton(
-                key: const ValueKey(
-                  'design-system-filter-selection-apply',
-                ),
-                label: resolvedLabel,
-                palette: palette,
-                highlighted: true,
-                textStyle: tokens.typography.styles.subtitle.subtitle1,
-                onTap: () => Navigator.of(ctx).pop(
-                  selectedIdsNotifier.value,
-                ),
-              ),
-            );
-          },
-        );
-      },
-      builder: (modalContext) {
-        return _DesignSystemFilterSelectionBody(
-          options: options,
-          selectedIdsNotifier: selectedIdsNotifier,
-          appearanceResolver: appearanceResolver,
-          searchHintText: searchHintText,
-        );
-      },
-    );
-  } finally {
-    selectedIdsNotifier.dispose();
-  }
-}
-
-class _DesignSystemFilterSelectionBody extends StatefulWidget {
-  const _DesignSystemFilterSelectionBody({
-    required this.options,
-    required this.selectedIdsNotifier,
-    required this.searchHintText,
-    this.appearanceResolver,
+/// A labelled subset of options on a filter selection page.
+@immutable
+class DesignSystemFilterSelectionGroup {
+  const DesignSystemFilterSelectionGroup({
+    required this.label,
+    required this.optionIds,
   });
 
-  final List<DesignSystemTaskFilterOption> options;
-  final ValueNotifier<Set<String>> selectedIdsNotifier;
-  final DesignSystemFilterOptionAppearanceResolver? appearanceResolver;
-  final String? searchHintText;
-
-  @override
-  State<_DesignSystemFilterSelectionBody> createState() =>
-      _DesignSystemFilterSelectionBodyState();
+  final String label;
+  final Set<String> optionIds;
 }
 
-class _DesignSystemFilterSelectionBodyState
-    extends State<_DesignSystemFilterSelectionBody> {
+/// Feature-specific behavior for one embedded filter selection page.
+@immutable
+class DesignSystemFilterFieldPageConfig {
+  const DesignSystemFilterFieldPageConfig({
+    this.appearanceResolver,
+    this.searchHintText,
+    this.groupsBuilder,
+    this.normalizeState,
+  });
+
+  final DesignSystemFilterOptionAppearanceResolver? appearanceResolver;
+  final String? searchHintText;
+  final DesignSystemFilterSelectionGroupsBuilder? groupsBuilder;
+
+  /// Runs after the field selection changes. Tasks use this to prune project
+  /// selections that no longer belong to the selected categories.
+  final DesignSystemFilterStateNormalizer? normalizeState;
+}
+
+/// A divider-free multi-select page embedded in the parent filter Wolt route.
+///
+/// It edits the same route-scoped draft as the overview, so forward/back
+/// navigation is immediate and cannot lose or hide a child modal's temporary
+/// selection state.
+class DesignSystemFilterSelectionPage extends StatefulWidget {
+  const DesignSystemFilterSelectionPage({
+    required this.stateNotifier,
+    required this.section,
+    this.config = const DesignSystemFilterFieldPageConfig(),
+    super.key,
+  });
+
+  final ValueNotifier<DesignSystemTaskFilterState> stateNotifier;
+  final DesignSystemTaskFilterSection section;
+  final DesignSystemFilterFieldPageConfig config;
+
+  @override
+  State<DesignSystemFilterSelectionPage> createState() =>
+      _DesignSystemFilterSelectionPageState();
+}
+
+class _DesignSystemFilterSelectionPageState
+    extends State<DesignSystemFilterSelectionPage> {
   String _query = '';
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
-    final palette = DesignSystemFilterPalette.fromTokens(tokens);
 
-    final queryLower = _query.trim().toLowerCase();
-    final filteredOptions = queryLower.isEmpty
-        ? widget.options
-        : widget.options
-              .where((o) => o.label.toLowerCase().contains(queryLower))
-              .toList();
+    return ValueListenableBuilder<DesignSystemTaskFilterState>(
+      valueListenable: widget.stateNotifier,
+      builder: (context, state, _) {
+        final field = state.fieldFor(widget.section);
+        if (field == null) return const SizedBox.shrink();
 
-    final searchHintText = widget.searchHintText;
+        final query = _query.trim().toLowerCase();
+        final searchHintText = widget.config.searchHintText;
+        final filtered = query.isEmpty
+            ? field.options
+            : field.options
+                  .where(
+                    (option) => option.label.toLowerCase().contains(query),
+                  )
+                  .toList(growable: false);
+        final groups = widget.config.groupsBuilder?.call(state);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (searchHintText != null) ...[
-          DesignSystemSearch(
-            hintText: searchHintText,
-            onChanged: (value) => setState(() => _query = value),
-            onClear: () => setState(() => _query = ''),
-          ),
-          SizedBox(height: spacing.step5),
-        ],
-        if (filteredOptions.isEmpty)
-          _DesignSystemFilterSelectionEmpty(palette: palette)
-        else
-          _DesignSystemFilterSelectionList(
-            options: filteredOptions,
-            selectedIdsNotifier: widget.selectedIdsNotifier,
-            appearanceResolver: widget.appearanceResolver,
-            palette: palette,
-          ),
-        const SizedBox(height: DesignSystemGlassActionFooter.reservedHeight),
-      ],
-    );
-  }
-}
-
-/// Renders just the option rows. The [ValueListenableBuilder] on
-/// `selectedIdsNotifier` is scoped to this subtree so a checkbox tap
-/// rebuilds only the rows — not the search field in the parent
-/// [_DesignSystemFilterSelectionBody]. Search keystrokes still rebuild
-/// the full body (they have to, to recompute `filteredOptions`).
-class _DesignSystemFilterSelectionList extends StatelessWidget {
-  const _DesignSystemFilterSelectionList({
-    required this.options,
-    required this.selectedIdsNotifier,
-    required this.appearanceResolver,
-    required this.palette,
-  });
-
-  final List<DesignSystemTaskFilterOption> options;
-  final ValueNotifier<Set<String>> selectedIdsNotifier;
-  final DesignSystemFilterOptionAppearanceResolver? appearanceResolver;
-  final DesignSystemFilterPalette palette;
-
-  @override
-  Widget build(BuildContext context) {
-    final spacing = context.designTokens.spacing;
-    return ValueListenableBuilder<Set<String>>(
-      valueListenable: selectedIdsNotifier,
-      builder: (ctx, selectedIds, _) {
         return Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            for (var index = 0; index < options.length; index++) ...[
-              _DesignSystemFilterSelectionRow(
-                option: options[index],
-                selected: selectedIds.contains(options[index].id),
-                palette: palette,
-                appearance: appearanceResolver?.call(options[index].id),
-                onTap: () {
-                  final next = {...selectedIds};
-                  if (!next.add(options[index].id)) {
-                    next.remove(options[index].id);
-                  }
-                  selectedIdsNotifier.value = next;
-                },
-              ),
-              if (index != options.length - 1)
-                Divider(
-                  height: spacing.step6,
-                  color: palette.dividerColor,
+            ...?(searchHintText == null
+                ? null
+                : [
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: spacing.step5),
+                      child: DesignSystemSearch(
+                        hintText: searchHintText,
+                        semanticsLabel: searchHintText,
+                        onChanged: (value) => setState(() => _query = value),
+                        onClear: () => setState(() => _query = ''),
+                      ),
+                    ),
+                    SizedBox(height: spacing.step5),
+                  ]),
+            if (filtered.isEmpty)
+              Semantics(
+                liveRegion: true,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: spacing.step4),
+                  child: Text(
+                    context.messages.filterSelectionNoMatches,
+                    textAlign: TextAlign.center,
+                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
                 ),
-            ],
+              )
+            else if (groups == null)
+              _OptionList(
+                options: filtered,
+                selectedIds: field.selectedIds,
+                appearanceResolver: widget.config.appearanceResolver,
+                onToggle: _toggle,
+              )
+            else
+              _GroupedOptionList(
+                groups: groups,
+                options: filtered,
+                selectedIds: field.selectedIds,
+                appearanceResolver: widget.config.appearanceResolver,
+                onToggle: _toggle,
+              ),
+            SizedBox(height: spacing.step12),
           ],
         );
       },
     );
   }
+
+  void _toggle(String optionId) {
+    final state = widget.stateNotifier.value;
+    final selectedIds = state.fieldFor(widget.section)?.selectedIds;
+    if (selectedIds == null) return;
+    final nextIds = {...selectedIds};
+    if (!nextIds.add(optionId)) nextIds.remove(optionId);
+    final nextState = state.replaceFieldSelection(widget.section, nextIds);
+    widget.stateNotifier.value =
+        widget.config.normalizeState?.call(nextState) ?? nextState;
+  }
 }
 
-/// Empty placeholder shown when the search query filters out every option.
-class _DesignSystemFilterSelectionEmpty extends StatelessWidget {
-  const _DesignSystemFilterSelectionEmpty({required this.palette});
+class _GroupedOptionList extends StatelessWidget {
+  const _GroupedOptionList({
+    required this.groups,
+    required this.options,
+    required this.selectedIds,
+    required this.appearanceResolver,
+    required this.onToggle,
+  });
 
-  final DesignSystemFilterPalette palette;
+  final List<DesignSystemFilterSelectionGroup> groups;
+  final List<DesignSystemTaskFilterOption> options;
+  final Set<String> selectedIds;
+  final DesignSystemFilterOptionAppearanceResolver? appearanceResolver;
+  final ValueChanged<String> onToggle;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
-      child: Text(
-        context.messages.filterSelectionNoMatches,
-        style: tokens.typography.styles.body.bodyMedium.copyWith(
-          color: palette.secondaryText,
+    final spacing = tokens.spacing;
+    final optionById = {for (final option in options) option.id: option};
+    final visibleGroups = [
+      for (final group in groups)
+        (
+          group: group,
+          options: [
+            for (final id in group.optionIds) ?optionById[id],
+          ],
         ),
-      ),
+    ].where((entry) => entry.options.isNotEmpty).toList(growable: false);
+
+    if (visibleGroups.isEmpty) {
+      return Semantics(
+        liveRegion: true,
+        child: Text(
+          context.messages.filterSelectionNoMatches,
+          textAlign: TextAlign.center,
+          style: tokens.typography.styles.body.bodyMedium.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < visibleGroups.length; index++) ...[
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: spacing.step5),
+            child: Text(
+              visibleGroups[index].group.label,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ),
+          SizedBox(height: spacing.step2),
+          _OptionList(
+            options: visibleGroups[index].options,
+            selectedIds: selectedIds,
+            appearanceResolver: appearanceResolver,
+            onToggle: onToggle,
+          ),
+          if (index != visibleGroups.length - 1)
+            SizedBox(height: spacing.step6),
+        ],
+      ],
     );
   }
 }
 
-class _DesignSystemFilterSelectionRow extends StatelessWidget {
-  const _DesignSystemFilterSelectionRow({
+class _OptionList extends StatelessWidget {
+  const _OptionList({
+    required this.options,
+    required this.selectedIds,
+    required this.appearanceResolver,
+    required this.onToggle,
+  });
+
+  final List<DesignSystemTaskFilterOption> options;
+  final Set<String> selectedIds;
+  final DesignSystemFilterOptionAppearanceResolver? appearanceResolver;
+  final ValueChanged<String> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final option in options)
+          _FilterSelectionRow(
+            option: option,
+            selected: selectedIds.contains(option.id),
+            appearance: appearanceResolver?.call(option.id),
+            onTap: () => onToggle(option.id),
+          ),
+      ],
+    );
+  }
+}
+
+class _FilterSelectionRow extends StatelessWidget {
+  const _FilterSelectionRow({
     required this.option,
     required this.selected,
-    required this.palette,
     required this.onTap,
     this.appearance,
   });
 
   final DesignSystemTaskFilterOption option;
   final bool selected;
-  final DesignSystemFilterPalette palette;
   final VoidCallback onTap;
   final DesignSystemFilterSelectionOptionAppearance? appearance;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final spacing = tokens.spacing;
     final enabled = appearance?.enabled ?? true;
-    final foregroundColor = enabled
-        ? appearance?.foregroundColor ?? palette.primaryText
-        : palette.secondaryText.withValues(alpha: 0.5);
+    final icon = appearance?.icon ?? option.icon;
+    final color = appearance?.foregroundColor ?? option.iconColor;
+    final leading = icon != null
+        ? Icon(
+            icon,
+            color: color ?? tokens.colors.text.mediumEmphasis,
+            size: tokens.spacing.step6,
+          )
+        : color != null
+        ? Container(
+            width: tokens.spacing.step4,
+            height: tokens.spacing.step4,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          )
+        : null;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        key: ValueKey('design-system-filter-selection-option-${option.id}'),
-        borderRadius: BorderRadius.circular(16),
-        onTap: enabled ? onTap : null,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: spacing.step1,
-            vertical: spacing.step4,
-          ),
-          child: Row(
-            children: [
-              if (appearance?.icon case final icon?) ...[
-                Icon(
-                  icon,
-                  color: foregroundColor,
-                  size: 28,
-                ),
-                SizedBox(width: spacing.step4),
-              ],
-              Expanded(
-                child: Text(
-                  option.label,
-                  style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                    color: foregroundColor,
-                  ),
-                ),
-              ),
-              DesignSystemCheckbox(
-                value: selected,
-                onChanged: enabled ? (_) => onTap() : null,
-                semanticsLabel: option.label,
-              ),
-            ],
-          ),
-        ),
-      ),
+    return DesignSystemSelectionRow(
+      key: ValueKey('design-system-filter-selection-option-${option.id}'),
+      title: option.label,
+      type: DesignSystemSelectionRowType.multiSelect,
+      selected: selected,
+      leading: leading,
+      onTap: enabled ? onTap : null,
     );
   }
 }

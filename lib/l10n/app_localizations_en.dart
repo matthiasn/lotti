@@ -5952,6 +5952,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalFilterStarred => 'Starred';
 
   @override
+  String get journalFilterTitle => 'Filter journal';
+
+  @override
   String get journalHideLinkHint => 'Hide link';
 
   @override
@@ -9343,7 +9346,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksFilterClearAll => 'Clear all';
 
   @override
-  String get tasksFilterTitle => 'Tasks Filter';
+  String get tasksFilterTitle => 'Filter tasks';
 
   @override
   String get taskShowcaseAudio => 'Audio';
@@ -9459,12 +9462,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksPriorityPickerTitle => 'Select priority';
 
   @override
-  String get tasksQuickFilterClear => 'Clear';
-
-  @override
-  String get tasksQuickFilterLabelsActiveTitle => 'Active label filters';
-
-  @override
   String get tasksQuickFilterUnassignedLabel => 'Unassigned';
 
   @override
@@ -9524,7 +9521,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Save';
+  String get tasksSavedFiltersSaveButtonLabel => 'Save filter';
 
   @override
   String get tasksSavedFiltersSaveCurrentAs => 'Save current filter as…';

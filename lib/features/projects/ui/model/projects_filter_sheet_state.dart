@@ -56,8 +56,8 @@ DesignSystemTaskFilterState buildProjectsFilterSheetState(
   final categoryOptionIds = categoryOptions.map((o) => o.id).toSet();
 
   return DesignSystemTaskFilterState(
-    title: context.messages.tasksFilterApplyTitle,
-    clearAllLabel: context.messages.tasksFilterClearAll,
+    title: context.messages.projectsFilterTooltip,
+    clearAllLabel: context.messages.clearButton,
     applyLabel: context.messages.tasksLabelsSheetApply,
     statusField: DesignSystemTaskFilterFieldState(
       label: stripTrailingColon(context.messages.projectsFilterStatusLabel),

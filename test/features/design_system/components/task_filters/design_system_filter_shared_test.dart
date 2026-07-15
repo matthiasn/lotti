@@ -1,237 +1,207 @@
+import 'dart:ui'
+    show CheckedState, PointerDeviceKind, SemanticsAction, Tristate;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
 void main() {
   group('stripTrailingColon', () {
-    test('strips a trailing colon and the whitespace before it', () {
+    test('removes only a trailing colon and preceding whitespace', () {
       expect(stripTrailingColon('Status:'), 'Status');
       expect(stripTrailingColon('Statut :'), 'Statut');
       expect(stripTrailingColon('Label\t:'), 'Label');
-    });
-
-    test('leaves strings without a trailing colon unchanged', () {
-      expect(stripTrailingColon('Status'), 'Status');
-      expect(stripTrailingColon(''), '');
       expect(stripTrailingColon(':middle: colon'), ':middle: colon');
+      expect(stripTrailingColon(''), '');
     });
 
     glados.Glados<String>(
       glados.any.letterOrDigits,
       glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'is idempotent and never reintroduces a trailing colon',
-      (value) {
-        for (final candidate in [value, '$value:', '$value :']) {
-          final once = stripTrailingColon(candidate);
-          expect(stripTrailingColon(once), once, reason: '"$candidate"');
-          expect(once.endsWith(':'), isFalse, reason: '"$candidate"');
-        }
-        // Strings that don't end in ':' pass through verbatim.
-        expect(stripTrailingColon(value), value);
-      },
-      tags: 'glados',
-    );
+    ).test('is idempotent', (value) {
+      for (final candidate in [value, '$value:', '$value :']) {
+        final once = stripTrailingColon(candidate);
+        expect(stripTrailingColon(once), once);
+      }
+    }, tags: 'glados');
   });
 
-  group('DesignSystemFilterPalette.fromTokens', () {
-    test('dark tokens produce the dark surfaces and accent', () {
-      final palette = DesignSystemFilterPalette.fromTokens(dsTokensDark);
-
-      expect(palette.sheetBackground, const Color(0xFF1C1C1C));
-      expect(palette.accent, const Color(0xFF5AD5BE));
-      expect(palette.primaryText, dsTokensDark.colors.text.highEmphasis);
-      expect(palette.secondaryText, dsTokensDark.colors.text.mediumEmphasis);
-      // Glass overlay derives from the level02 surface, bottom stop denser.
-      expect(
-        palette.glassFooterOverlayStart.a,
-        lessThan(palette.glassFooterOverlayEnd.a),
-      );
-    });
-
-    test('light tokens produce the light surfaces and accent', () {
-      final palette = DesignSystemFilterPalette.fromTokens(dsTokensLight);
-
-      expect(palette.sheetBackground, const Color(0xFFFFFCF8));
-      expect(palette.accent, const Color(0xFF2CA990));
-      expect(palette.primaryText, dsTokensLight.colors.text.highEmphasis);
-      expect(
-        palette.glassFooterOverlayStart.a,
-        lessThan(palette.glassFooterOverlayEnd.a),
-      );
-    });
-  });
-
-  group('DesignSystemFilterActionButton', () {
-    final palette = DesignSystemFilterPalette.fromTokens(dsTokensDark);
-
-    Future<void> pumpButton(
-      WidgetTester tester, {
-      required bool highlighted,
-      int? counter,
-      VoidCallback? onTap,
-    }) {
-      return tester.pumpWidget(
-        makeTestableWidget2(
-          Theme(
-            data: DesignSystemTheme.dark(),
-            child: Scaffold(
-              body: Center(
-                child: DesignSystemFilterActionButton(
-                  label: 'Apply filter',
-                  palette: palette,
-                  highlighted: highlighted,
-                  textStyle: const TextStyle(fontSize: 16),
-                  onTap: onTap ?? () {},
-                  counter: counter,
-                ),
-              ),
+  group('DesignSystemFilterToggleRow', () {
+    testWidgets(
+      'exposes one full-row toggle target and reports the next value',
+      (
+        tester,
+      ) async {
+        bool? changedValue;
+        await tester.pumpWidget(
+          makeTestableWidget(
+            DesignSystemFilterToggleRow(
+              label: 'Show due date',
+              value: false,
+              onChanged: (value) => changedValue = value,
             ),
+          ),
+        );
+
+        final semantics = tester.getSemantics(
+          find.byType(DesignSystemFilterToggleRow),
+        );
+        expect(semantics.label, 'Show due date');
+        expect(semantics.flagsCollection.isButton, isTrue);
+        expect(semantics.flagsCollection.isToggled, Tristate.isFalse);
+        expect(find.byType(DesignSystemToggle), findsOneWidget);
+        final ignoredToggleLayers = tester.widgetList<IgnorePointer>(
+          find.ancestor(
+            of: find.byType(DesignSystemToggle),
+            matching: find.byType(IgnorePointer),
+          ),
+        );
+        expect(ignoredToggleLayers.any((layer) => layer.ignoring), isTrue);
+        expect(
+          tester.getSize(find.byType(DesignSystemFilterToggleRow)).height,
+          greaterThanOrEqualTo(dsTokensLight.spacing.step9),
+        );
+
+        await tester.tap(find.text('Show due date'));
+        expect(changedValue, isTrue);
+      },
+    );
+
+    testWidgets('semantics activation toggles the whole row', (tester) async {
+      bool? changedValue;
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        makeTestableWidget(
+          DesignSystemFilterToggleRow(
+            label: 'Show due date',
+            value: true,
+            onChanged: (value) => changedValue = value,
           ),
         ),
       );
-    }
 
-    BoxDecoration inkDecoration(WidgetTester tester) {
-      final ink = tester.widget<Ink>(
-        find.descendant(
-          of: find.byType(DesignSystemFilterActionButton),
-          matching: find.byType(Ink),
+      final node = tester.getSemantics(
+        find.byType(DesignSystemFilterToggleRow),
+      );
+      // ignore: deprecated_member_use
+      tester.binding.pipelineOwner.semanticsOwner!.performAction(
+        node.id,
+        SemanticsAction.tap,
+      );
+      await tester.pump();
+
+      expect(changedValue, isFalse);
+      handle.dispose();
+    });
+
+    testWidgets('keyboard focus adds a token-backed high-contrast ring', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          DesignSystemFilterToggleRow(
+            label: 'Show due date',
+            value: false,
+            onChanged: (_) {},
+          ),
         ),
       );
-      return ink.decoration! as BoxDecoration;
-    }
 
-    testWidgets('highlighted pill paints accent fill with no border', (
-      tester,
-    ) async {
-      await pumpButton(tester, highlighted: true);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
 
-      final decoration = inkDecoration(tester);
-      expect(decoration.color, palette.accent);
-      expect(decoration.border, isNull);
-
-      final label = tester.widget<Text>(find.text('Apply filter'));
-      expect(label.style?.color, palette.accentText);
-    });
-
-    testWidgets('non-highlighted pill paints pill fill with divider border', (
-      tester,
-    ) async {
-      await pumpButton(tester, highlighted: false);
-
-      final decoration = inkDecoration(tester);
-      expect(decoration.color, palette.pillFill);
-      expect(decoration.border!.top.color, palette.dividerColor);
-
-      final label = tester.widget<Text>(find.text('Apply filter'));
-      expect(label.style?.color, palette.primaryText);
-    });
-
-    testWidgets('renders the counter badge only when a counter is given', (
-      tester,
-    ) async {
-      await pumpButton(tester, highlighted: true, counter: 3);
-
-      final badgeText = find.text('3');
-      expect(badgeText, findsOneWidget);
-      final badge = tester.widget<Container>(
-        find.ancestor(of: badgeText, matching: find.byType(Container)).first,
-      );
-      final decoration = badge.decoration! as BoxDecoration;
-      expect(decoration.color, palette.applyBadgeFill);
-      expect(decoration.shape, BoxShape.circle);
-
-      await pumpButton(tester, highlighted: true);
-      expect(find.text('3'), findsNothing);
-    });
-
-    testWidgets('meets the 56px action slot minimum and invokes onTap', (
-      tester,
-    ) async {
-      var taps = 0;
-      await pumpButton(tester, highlighted: true, onTap: () => taps++);
-
+      final decoration =
+          tester.widget<Ink>(find.byType(Ink)).decoration! as BoxDecoration;
       expect(
-        tester.getSize(find.byType(DesignSystemFilterActionButton)).height,
-        DesignSystemFilterMetrics.actionMinHeight,
+        decoration.boxShadow!.single.color,
+        dsTokensLight.colors.text.highEmphasis,
       );
-
-      await tester.tap(find.byType(DesignSystemFilterActionButton));
-      expect(taps, 1);
+      expect(
+        decoration.boxShadow!.single.spreadRadius,
+        dsTokensLight.spacing.step1,
+      );
     });
   });
 
   group('DesignSystemFilterChoicePill', () {
-    final palette = DesignSystemFilterPalette.fromTokens(dsTokensDark);
-
     Future<void> pumpPill(
       WidgetTester tester, {
       required bool selected,
+      DesignSystemFilterChoiceRole role =
+          DesignSystemFilterChoiceRole.multiSelect,
       VoidCallback? onTap,
       Widget? leading,
+      String? semanticsLabel,
+      String label = 'Priority',
+      MediaQueryData? mediaQueryData,
+      double? width,
     }) {
       return tester.pumpWidget(
-        makeTestableWidget2(
-          Theme(
-            data: DesignSystemTheme.dark(),
-            child: Scaffold(
-              body: Center(
-                child: DesignSystemFilterChoicePill(
-                  label: 'Priority',
-                  selected: selected,
-                  palette: palette,
-                  textStyle: const TextStyle(fontSize: 14),
-                  onTap: onTap ?? () {},
-                  leading: leading,
-                ),
+        makeTestableWidget(
+          Center(
+            child: SizedBox(
+              width: width,
+              child: DesignSystemFilterChoicePill(
+                label: label,
+                selected: selected,
+                role: role,
+                semanticsLabel: semanticsLabel,
+                leading: leading,
+                onTap: onTap,
               ),
             ),
           ),
+          mediaQueryData: mediaQueryData,
         ),
       );
     }
 
-    BoxDecoration pillDecoration(WidgetTester tester) {
-      final ink = tester.widget<Ink>(
-        find.descendant(
-          of: find.byType(DesignSystemFilterChoicePill),
-          matching: find.byType(Ink),
-        ),
-      );
-      return ink.decoration! as BoxDecoration;
+    BoxDecoration decoration(WidgetTester tester) {
+      return tester
+              .widget<Ink>(
+                find.descendant(
+                  of: find.byType(DesignSystemFilterChoicePill),
+                  matching: find.byType(Ink),
+                ),
+              )
+              .decoration!
+          as BoxDecoration;
     }
 
-    testWidgets('unselected pill paints the base fill with no accent border', (
+    testWidgets('uses token surfaces and animates selection for 400 ms', (
       tester,
     ) async {
-      await pumpPill(tester, selected: false);
+      await pumpPill(tester, selected: false, onTap: () {});
+      expect(decoration(tester).color, Colors.transparent);
+      expect(
+        decoration(tester).border!.top.color,
+        dsTokensLight.colors.decorative.level01,
+      );
 
-      final decoration = pillDecoration(tester);
-      expect(decoration.color, palette.pillFill);
-      // Border alpha animates with selection progress; at rest it is 0.
-      expect(decoration.border!.top.color.a, 0);
-    });
-
-    testWidgets('selecting cross-fades to the selected fill and border', (
-      tester,
-    ) async {
-      await pumpPill(tester, selected: false);
-      await pumpPill(tester, selected: true);
-      // Drive the 400ms selection animation to completion.
+      await pumpPill(tester, selected: true, onTap: () {});
       await tester.pump(DesignSystemFilterChoicePill.animationDuration);
 
-      final decoration = pillDecoration(tester);
-      expect(decoration.color, palette.selectedPillBackground);
-      expect(decoration.border!.top.color.a, closeTo(1, 0.01));
+      expect(
+        decoration(tester).color,
+        dsTokensLight.colors.surface.selected,
+      );
+      expect(
+        decoration(tester).border!.top.color,
+        dsTokensLight.colors.interactive.enabled,
+      );
+      expect(
+        DesignSystemFilterChoicePill.animationDuration,
+        const Duration(milliseconds: 400),
+      );
     });
 
-    testWidgets('renders the leading widget and forwards taps', (
+    testWidgets('keeps a 48px target and forwards taps with leading content', (
       tester,
     ) async {
       var taps = 0;
@@ -239,12 +209,137 @@ void main() {
         tester,
         selected: false,
         onTap: () => taps++,
-        leading: const Icon(Icons.sort, size: 16),
+        leading: const Icon(Icons.flag_outlined),
       );
 
-      expect(find.byIcon(Icons.sort), findsOneWidget);
+      expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(DesignSystemFilterChoicePill)).height,
+        greaterThanOrEqualTo(dsTokensLight.spacing.step9),
+      );
       await tester.tap(find.byType(DesignSystemFilterChoicePill));
       expect(taps, 1);
+    });
+
+    testWidgets('exposes the correct semantic role for every choice type', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      for (final role in DesignSystemFilterChoiceRole.values) {
+        await pumpPill(
+          tester,
+          selected: true,
+          role: role,
+          semanticsLabel: 'Filter priority',
+          onTap: () {},
+        );
+
+        final node = tester.getSemantics(
+          find.byType(DesignSystemFilterChoicePill),
+        );
+        final flags = node.flagsCollection;
+        expect(node.label, 'Filter priority');
+        expect(flags.isButton, isTrue);
+        expect(
+          flags.isSelected,
+          role == DesignSystemFilterChoiceRole.singleSelect
+              ? Tristate.isTrue
+              : Tristate.none,
+        );
+        expect(
+          flags.isChecked,
+          role == DesignSystemFilterChoiceRole.multiSelect
+              ? CheckedState.isTrue
+              : CheckedState.none,
+        );
+        expect(
+          flags.isInMutuallyExclusiveGroup,
+          role == DesignSystemFilterChoiceRole.singleSelect,
+        );
+      }
+
+      semantics.dispose();
+    });
+
+    testWidgets('disabled choices expose disabled semantics and ignore taps', (
+      tester,
+    ) async {
+      await pumpPill(tester, selected: false);
+
+      final node = tester.getSemantics(
+        find.byType(DesignSystemFilterChoicePill),
+      );
+      expect(node.flagsCollection.isEnabled, Tristate.isFalse);
+      expect(tester.widget<InkWell>(find.byType(InkWell)).onTap, isNull);
+      await tester.tap(find.byType(DesignSystemFilterChoicePill));
+    });
+
+    testWidgets('keyboard focus adds a ring without hiding selection', (
+      tester,
+    ) async {
+      await pumpPill(tester, selected: true, onTap: () {});
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+
+      expect(decoration(tester).color, dsTokensLight.colors.surface.selected);
+      expect(
+        decoration(tester).border!.top.color,
+        dsTokensLight.colors.interactive.enabled,
+      );
+      expect(
+        decoration(tester).boxShadow!.single.color,
+        dsTokensLight.colors.text.highEmphasis,
+      );
+      expect(
+        decoration(tester).boxShadow!.single.spreadRadius,
+        dsTokensLight.spacing.step1,
+      );
+    });
+
+    testWidgets('hover uses its token surface and clears when disabled', (
+      tester,
+    ) async {
+      await pumpPill(tester, selected: false, onTap: () {});
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+
+      await mouse.moveTo(
+        tester.getCenter(find.byType(DesignSystemFilterChoicePill)),
+      );
+      await tester.pump();
+      expect(decoration(tester).color, dsTokensLight.colors.surface.hover);
+
+      await pumpPill(tester, selected: false);
+      await tester.pump();
+      expect(decoration(tester).color, Colors.transparent);
+    });
+
+    testWidgets('large text wraps without truncation and grows the target', (
+      tester,
+    ) async {
+      const label = 'A longer filter choice';
+      await pumpPill(
+        tester,
+        selected: false,
+        onTap: () {},
+        label: label,
+        width: dsTokensLight.spacing.step13,
+        mediaQueryData: const MediaQueryData(
+          size: Size(320, 800),
+          textScaler: TextScaler.linear(2),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.text(label));
+      expect(text.maxLines, isNull);
+      expect(text.overflow, TextOverflow.clip);
+      expect(
+        tester.getSize(find.byType(DesignSystemFilterChoicePill)).height,
+        greaterThan(dsTokensLight.spacing.step9),
+      );
     });
   });
 }

@@ -263,7 +263,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.filter_list_rounded));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Tasks Filter'), findsOneWidget);
+    expect(find.text('Filter tasks'), findsOneWidget);
 
     final rowTapTarget = find.ancestor(
       of: find.text('Write migration'),
@@ -317,7 +317,7 @@ void main() {
   );
 
   testWidgets(
-    'shows quick labels and FAB hook with custom create callback',
+    'shows the active label chip and FAB hook with custom create callback',
     (tester) async {
       String? createdCategoryId;
 
@@ -336,10 +336,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.textContaining('Active label filters'), findsOneWidget);
-      // "Focus" label appears both in the active-filters chip row above the
-      // list and in the TaskLabelQuickFilter inside the list.
-      expect(find.text('Focus'), findsNWidgets(2));
+      expect(find.textContaining('Active label filters'), findsNothing);
+      expect(find.text('Focus'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pump();
@@ -671,8 +669,7 @@ void main() {
     );
 
     testWidgets(
-      'renders a label chip for each selected label (in addition to the '
-      'quick-label filter inside the list) and removes it on tap',
+      'renders one chip for each selected label and removes it on tap',
       (tester) async {
         await tester.pumpWidget(
           buildSubject(
@@ -686,8 +683,6 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Exactly one ActiveFilterChip for the label (the TaskLabelQuickFilter
-        // below the chip row renders its own non-ActiveFilterChip control).
         expect(find.byType(ActiveFilterChip), findsOneWidget);
         final chip = tester.widget<ActiveFilterChip>(
           find.byType(ActiveFilterChip),
@@ -701,6 +696,55 @@ void main() {
         expect(fakeController.setSelectedLabelIdsCalls.last, isEmpty);
       },
     );
+
+    for (final selection in [
+      (
+        name: 'category',
+        categoryIds: const <String>{''},
+        labelIds: const <String>{},
+      ),
+      (
+        name: 'label',
+        categoryIds: const <String>{},
+        labelIds: const <String>{''},
+      ),
+    ]) {
+      testWidgets(
+        'renders and removes the Unassigned ${selection.name} chip',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: state(
+                selectedTaskStatuses: const <String>{},
+                selectedCategoryIds: selection.categoryIds,
+                selectedLabelIds: selection.labelIds,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(find.byType(ActiveFilterChip), findsOneWidget);
+          expect(
+            tester
+                .widget<ActiveFilterChip>(find.byType(ActiveFilterChip))
+                .label,
+            'Unassigned',
+          );
+
+          await tester.tap(find.byType(ActiveFilterChip));
+          await tester.pump();
+
+          expect(fakeController.applyBatchFilterUpdateCalled, 1);
+          if (selection.name == 'category') {
+            expect(fakeController.setSelectedCategoryIdsCalls.last, isEmpty);
+            expect(fakeController.setSelectedProjectIdsCalls.last, isEmpty);
+          } else {
+            expect(fakeController.setSelectedLabelIdsCalls.last, isEmpty);
+          }
+        },
+      );
+    }
 
     testWidgets(
       'renders one chip per active filter when several are selected at once',

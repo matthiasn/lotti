@@ -40,7 +40,7 @@ void main() {
           categories: categories,
         );
 
-        expect(state.title, 'Apply filter');
+        expect(state.title, 'Filter projects');
         expect(state.statusField, isNotNull);
         expect(state.categoryField, isNotNull);
         expect(state.labelField, isNull);

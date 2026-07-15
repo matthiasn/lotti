@@ -3077,6 +3077,7 @@
   "journalFilterPrivate": "Private",
   "journalFilterShowTitle": "Show",
   "journalFilterStarred": "Starred",
+  "journalFilterTitle": "Filter journal",
   "journalHideLinkHint": "Hide link",
   "journalHideMapHint": "Hide map",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
@@ -4411,7 +4412,6 @@
   },
   "taskAgentSetupBroken": "Selected AI setup is unavailable",
   "taskAgentSetupChangedToast": "Using {model} for every future agent update until you change it.",
-  "taskAgentSetupChoiceHelp": "Choose a profile for its defaults, or override only the thinking model.",
   "@taskAgentSetupChangedToast": {
     "placeholders": {
       "model": {
@@ -4419,6 +4419,7 @@
       }
     }
   },
+  "taskAgentSetupChoiceHelp": "Choose a profile for its defaults, or override only the thinking model.",
   "taskAgentSetupOriginCategory": "Copied from the category default when this agent was created",
   "taskAgentSetupOriginDisabled": "Disabled",
   "taskAgentSetupOriginLegacy": "Legacy setup",
@@ -4566,7 +4567,7 @@
   "tasksAgentFilterTitle": "Agent",
   "tasksFilterApplyTitle": "Apply filter",
   "tasksFilterClearAll": "Clear all",
-  "tasksFilterTitle": "Tasks Filter",
+  "tasksFilterTitle": "Filter tasks",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} done",
   "@taskShowcaseCompletedCount": {
@@ -4629,8 +4630,6 @@
   "tasksPriorityP3": "Low",
   "tasksPriorityP3Description": "Low (Whenever)",
   "tasksPriorityPickerTitle": "Select priority",
-  "tasksQuickFilterClear": "Clear",
-  "tasksQuickFilterLabelsActiveTitle": "Active label filters",
   "tasksQuickFilterUnassignedLabel": "Unassigned",
   "tasksSavedFilterDeleteConfirmTooltip": "Tap again to delete",
   "tasksSavedFilterDeleteTooltip": "Delete saved filter",
@@ -4676,7 +4675,7 @@
       }
     }
   },
-  "tasksSavedFiltersSaveButtonLabel": "Save",
+  "tasksSavedFiltersSaveButtonLabel": "Save filter",
   "tasksSavedFiltersSaveCurrentAs": "Save current filter as…",
   "tasksSavedFiltersSavePopupCancel": "Cancel",
   "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filter active. Saved to sidebar under Tasks.} other{{count} filters active. Saved to sidebar under Tasks.}}",

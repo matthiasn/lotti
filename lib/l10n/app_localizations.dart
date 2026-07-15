@@ -10374,6 +10374,12 @@ abstract class AppLocalizations {
   /// **'Starred'**
   String get journalFilterStarred;
 
+  /// No description provided for @journalFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter journal'**
+  String get journalFilterTitle;
+
   /// No description provided for @journalHideLinkHint.
   ///
   /// In en, this message translates to:
@@ -16192,7 +16198,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksFilterTitle.
   ///
   /// In en, this message translates to:
-  /// **'Tasks Filter'**
+  /// **'Filter tasks'**
   String get tasksFilterTitle;
 
   /// No description provided for @taskShowcaseAudio.
@@ -16381,18 +16387,6 @@ abstract class AppLocalizations {
   /// **'Select priority'**
   String get tasksPriorityPickerTitle;
 
-  /// No description provided for @tasksQuickFilterClear.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear'**
-  String get tasksQuickFilterClear;
-
-  /// No description provided for @tasksQuickFilterLabelsActiveTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Active label filters'**
-  String get tasksQuickFilterLabelsActiveTitle;
-
   /// No description provided for @tasksQuickFilterUnassignedLabel.
   ///
   /// In en, this message translates to:
@@ -16498,7 +16492,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFiltersSaveButtonLabel.
   ///
   /// In en, this message translates to:
-  /// **'Save'**
+  /// **'Save filter'**
   String get tasksSavedFiltersSaveButtonLabel;
 
   /// No description provided for @tasksSavedFiltersSaveCurrentAs.

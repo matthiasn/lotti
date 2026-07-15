@@ -6077,6 +6077,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalFilterStarred => 'Favoris';
 
   @override
+  String get journalFilterTitle => 'Filtrer le journal';
+
+  @override
   String get journalHideLinkHint => 'Masquer le lien';
 
   @override
@@ -9585,7 +9588,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksFilterClearAll => 'Tout effacer';
 
   @override
-  String get tasksFilterTitle => 'Filtre des tâches';
+  String get tasksFilterTitle => 'Filtrer les tâches';
 
   @override
   String get taskShowcaseAudio => 'Audio';
@@ -9709,13 +9712,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksPriorityPickerTitle => 'Sélectionner la priorité';
 
   @override
-  String get tasksQuickFilterClear => 'Effacer';
-
-  @override
-  String get tasksQuickFilterLabelsActiveTitle =>
-      'Filtres d\'étiquettes actifs';
-
-  @override
   String get tasksQuickFilterUnassignedLabel => 'Non attribué';
 
   @override
@@ -9777,7 +9773,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Enregistrer';
+  String get tasksSavedFiltersSaveButtonLabel => 'Enregistrer le filtre';
 
   @override
   String get tasksSavedFiltersSaveCurrentAs =>

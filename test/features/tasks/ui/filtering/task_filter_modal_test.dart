@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
@@ -213,14 +218,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Filter modal is displayed
-      expect(find.text('Tasks Filter'), findsOneWidget);
+      expect(find.text('Filter tasks'), findsOneWidget);
       expect(find.byType(DesignSystemTaskFilterSheet), findsOneWidget);
 
       // Sort section
       expect(find.text('Sort by'), findsOneWidget);
 
       // Action bar
-      expect(find.text('Clear all'), findsOneWidget);
+      expect(find.text('Clear'), findsOneWidget);
       expect(find.text('Apply'), findsOneWidget);
     });
 
@@ -270,11 +275,17 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap status field to open selection modal
-      await tester.tap(
-        find.byKey(
-          const ValueKey('design-system-task-filter-field-status'),
-        ),
+      final statusField = find.byKey(
+        const ValueKey('design-system-task-filter-field-status'),
       );
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.descendant(
+              of: statusField,
+              matching: find.byType(DesignSystemSelectionRow),
+            ),
+          )
+          .onTap!();
       await tester.pumpAndSettle();
 
       // Status selection modal shows task statuses (use key-based finders
@@ -293,28 +304,39 @@ void main() {
       );
 
       // Toggle 'Blocked' on
-      await tester.tap(
-        find.byKey(
-          const ValueKey('design-system-filter-selection-option-BLOCKED'),
-        ),
-      );
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.byKey(
+              const ValueKey('design-system-filter-selection-option-BLOCKED'),
+            ),
+          )
+          .onTap!();
       await tester.pump();
 
       // Apply selection
-      await tester.tap(
-        find.byKey(
-          const ValueKey('design-system-filter-selection-apply'),
-        ),
-      );
+      tester
+          .widget<DesignSystemButton>(
+            find.byKey(
+              const ValueKey('design-system-filter-selection-apply'),
+            ),
+          )
+          .onPressed!();
       await tester.pumpAndSettle();
 
-      // Status field should now show the updated selection in the draft
-      // (the chip for BLOCKED should appear)
-      expect(
-        find.byKey(
-          const ValueKey('design-system-task-filter-remove-status-BLOCKED'),
+      final statusRow = tester.widget<DesignSystemSelectionRow>(
+        find.descendant(
+          of: statusField,
+          matching: find.byType(DesignSystemSelectionRow),
         ),
-        findsOneWidget,
+      );
+      expect(statusRow.subtitle, 'Open, In Progress +1');
+
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      expect(
+        fakeController.setSelectedTaskStatusesCalls.single,
+        contains('BLOCKED'),
       );
     });
 
@@ -333,7 +355,14 @@ void main() {
       );
       await tester.ensureVisible(categoryField);
       await tester.pumpAndSettle();
-      await tester.tap(categoryField);
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.descendant(
+              of: categoryField,
+              matching: find.byType(DesignSystemSelectionRow),
+            ),
+          )
+          .onTap!();
       await tester.pumpAndSettle();
 
       // Category selection shows our test categories
@@ -356,32 +385,43 @@ void main() {
       );
       await tester.ensureVisible(labelField);
       await tester.pumpAndSettle();
-      await tester.tap(labelField);
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.descendant(
+              of: labelField,
+              matching: find.byType(DesignSystemSelectionRow),
+            ),
+          )
+          .onTap!();
       await tester.pumpAndSettle();
 
       // Toggle the cached label on inside the selection modal.
-      await tester.tap(
-        find.byKey(
-          const ValueKey('design-system-filter-selection-option-label-1'),
-        ),
-      );
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.byKey(
+              const ValueKey('design-system-filter-selection-option-label-1'),
+            ),
+          )
+          .onTap!();
       await tester.pump();
 
       // Apply the field selection.
-      await tester.tap(
-        find.byKey(
-          const ValueKey('design-system-filter-selection-apply'),
-        ),
-      );
+      tester
+          .widget<DesignSystemButton>(
+            find.byKey(
+              const ValueKey('design-system-filter-selection-apply'),
+            ),
+          )
+          .onPressed!();
       await tester.pumpAndSettle();
 
-      // The draft now shows the selected label as a removable chip.
-      expect(
-        find.byKey(
-          const ValueKey('design-system-task-filter-remove-label-label-1'),
+      final labelRow = tester.widget<DesignSystemSelectionRow>(
+        find.descendant(
+          of: labelField,
+          matching: find.byType(DesignSystemSelectionRow),
         ),
-        findsOneWidget,
       );
+      expect(labelRow.subtitle, 'Urgent');
 
       // Apply the whole sheet: the batch update must carry the label id
       // through to the controller.
@@ -405,19 +445,23 @@ void main() {
       await tester.pumpAndSettle();
 
       // Change sort to "by creation date"
-      await tester.tap(
-        find.byKey(
-          const ValueKey('design-system-task-filter-sort-byDate'),
-        ),
-      );
+      tester
+          .widget<DesignSystemFilterChoicePill>(
+            find.byKey(
+              const ValueKey('design-system-task-filter-sort-byDate'),
+            ),
+          )
+          .onTap!();
       await tester.pump();
 
       // Select priority P1
-      await tester.tap(
-        find.byKey(
-          const ValueKey('design-system-task-filter-priority-p1'),
-        ),
-      );
+      tester
+          .widget<DesignSystemFilterChoicePill>(
+            find.byKey(
+              const ValueKey('design-system-task-filter-priority-p1'),
+            ),
+          )
+          .onTap!();
       await tester.pump();
 
       // Apply — use pump() sequence instead of pumpAndSettle to avoid
@@ -459,14 +503,26 @@ void main() {
       await tester.tap(clearButton);
       await tester.pump();
 
-      // Applied count should be 0
-      expect(find.text('0'), findsOneWidget);
+      final statusField = find.byKey(
+        const ValueKey('design-system-task-filter-field-status'),
+      );
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.descendant(
+                of: statusField,
+                matching: find.byType(DesignSystemSelectionRow),
+              ),
+            )
+            .subtitle,
+        'All',
+      );
     });
 
     testWidgets('fetches projects for all categories on open', (
       tester,
     ) async {
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithProjects(enableProjects: true));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
@@ -480,6 +536,204 @@ void main() {
         () => mockJournalDb.getProjectsForCategory('cat-2'),
       ).called(1);
     });
+
+    testWidgets('skips project refresh when projects are disabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWithProjects(enableProjects: false));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => mockJournalDb.getProjectsForCategory(any()));
+      verifyNever(
+        () => mockDomainLogger.error(
+          LogDomain.tasks,
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'loadFilterProjects',
+        ),
+      );
+    });
+
+    testWidgets('reopens from cache before a warm project refresh completes', (
+      tester,
+    ) async {
+      final cachedProject = _makeTestProject(
+        'cached-project',
+        'cat-1',
+        'Cached Project',
+      );
+      when(
+        () => mockJournalDb.getProjectsForCategory('cat-1'),
+      ).thenAnswer((_) async => [cachedProject]);
+
+      await tester.pumpWidget(buildWithProjects(enableProjects: true));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      final newCategory = CategoryDefinition(
+        id: 'cat-3',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        name: 'Later',
+        vectorClock: null,
+        private: false,
+        active: true,
+        color: '#0000FF',
+      );
+      when(
+        () => mockEntitiesCacheService.sortedCategories,
+      ).thenReturn([...testCategories, newCategory]);
+      final projectLoad = Completer<List<ProjectEntry>>();
+      when(
+        () => mockJournalDb.getProjectsForCategory(any()),
+      ).thenAnswer((_) => projectLoad.future);
+
+      await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 900));
+
+      expect(find.text('Filter tasks'), findsOneWidget);
+      expect(projectLoad.isCompleted, isFalse);
+      final projectField = find.byKey(
+        const ValueKey('design-system-task-filter-field-project'),
+      );
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.descendant(
+              of: projectField,
+              matching: find.byType(DesignSystemSelectionRow),
+            ),
+          )
+          .onTap!();
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(
+          const ValueKey(
+            'design-system-filter-selection-option-cached-project',
+          ),
+        ),
+        findsOneWidget,
+      );
+
+      projectLoad.complete(const []);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+      'category changes prune incompatible projects and project groups',
+      (tester) async {
+        final workProject = _makeTestProject(
+          'work-project',
+          'cat-1',
+          'Work Project',
+        );
+        final personalProject = _makeTestProject(
+          'personal-project',
+          'cat-2',
+          'Personal Project',
+        );
+        when(
+          () => mockJournalDb.getProjectsForCategory('cat-1'),
+        ).thenAnswer((_) async => [workProject]);
+        when(
+          () => mockJournalDb.getProjectsForCategory('cat-2'),
+        ).thenAnswer((_) async => [personalProject]);
+        mockState = mockState.copyWith(
+          enableProjects: true,
+          selectedCategoryIds: {'cat-1', 'cat-2'},
+          selectedProjectIds: {'work-project', 'personal-project'},
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+        await tester.pumpAndSettle();
+
+        final categoryField = find.byKey(
+          const ValueKey('design-system-task-filter-field-category'),
+        );
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.descendant(
+                of: categoryField,
+                matching: find.byType(DesignSystemSelectionRow),
+              ),
+            )
+            .onTap!();
+        await tester.pumpAndSettle();
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(
+                const ValueKey(
+                  'design-system-filter-selection-option-cat-2',
+                ),
+              ),
+            )
+            .onTap!();
+        await tester.pump();
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(
+                const ValueKey('design-system-filter-selection-apply'),
+              ),
+            )
+            .onPressed!();
+        await tester.pumpAndSettle();
+
+        final projectField = find.byKey(
+          const ValueKey('design-system-task-filter-field-project'),
+        );
+        expect(
+          tester
+              .widget<DesignSystemSelectionRow>(
+                find.descendant(
+                  of: projectField,
+                  matching: find.byType(DesignSystemSelectionRow),
+                ),
+              )
+              .subtitle,
+          'Work Project',
+        );
+
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.descendant(
+                of: projectField,
+                matching: find.byType(DesignSystemSelectionRow),
+              ),
+            )
+            .onTap!();
+        await tester.pumpAndSettle();
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('Personal'), findsNothing);
+        expect(
+          find.byKey(
+            const ValueKey(
+              'design-system-filter-selection-option-work-project',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(
+            const ValueKey(
+              'design-system-filter-selection-option-personal-project',
+            ),
+          ),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets('toggle rows appear and interact correctly', (tester) async {
       await tester.pumpWidget(buildSubject());
@@ -538,7 +792,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Modal should have closed (apply + save + dismiss).
-      expect(find.text('Tasks Filter'), findsNothing);
+      expect(find.text('Filter tasks'), findsNothing);
     });
 
     testWidgets(
@@ -594,7 +848,7 @@ void main() {
     );
 
     testWidgets(
-      'project field tapped — empty projects list returns no update',
+      'project field opens a searchable empty state when no projects exist',
       (tester) async {
         // Default mock already returns [] for getProjectsForCategory.
         // Rebuild with enableProjects so the project field appears.
@@ -604,17 +858,30 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
         await tester.pumpAndSettle();
 
-        // With no projects the project field is absent (hasProjectField is
-        // false), so the sheet has no project field to tap — the coverage
-        // for the empty-filteredProjects early-return (line 197) is exercised
-        // via _fetchProjectsForFilter returning an empty list and
-        // _handleProjectFieldPressed guard.
-        expect(
-          find.byKey(
-            const ValueKey('design-system-task-filter-field-project'),
-          ),
-          findsNothing,
+        final projectField = find.byKey(
+          const ValueKey('design-system-task-filter-field-project'),
         );
+        expect(projectField, findsOneWidget);
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.descendant(
+                of: projectField,
+                matching: find.byType(DesignSystemSelectionRow),
+              ),
+            )
+            .onTap!();
+        await tester.pumpAndSettle();
+
+        expect(find.text('No matches'), findsOneWidget);
+
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(
+                const ValueKey('design-system-filter-selection-apply'),
+              ),
+            )
+            .onPressed!();
+        await tester.pumpAndSettle();
 
         // Apply should still work.
         final applyBtn = find.byKey(
@@ -657,18 +924,26 @@ void main() {
           warnIfMissed: false,
         );
         await tester.pump();
-        await tester.tap(projectField);
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.descendant(
+                of: projectField,
+                matching: find.byType(DesignSystemSelectionRow),
+              ),
+            )
+            .onTap!();
         await tester.pumpAndSettle();
 
-        // Project selection modal is open — dismiss without selecting by
-        // tapping the Back button (pop) rather than Done, so selectedIds==null.
-        // Use the last Navigator in the tree (the modal's own navigator).
-        tester.state<NavigatorState>(find.byType(Navigator).last).pop();
+        final backButton = find.ancestor(
+          of: find.byIcon(Icons.arrow_back_rounded),
+          matching: find.byType(IconButton),
+        );
+        tester.widget<IconButton>(backButton).onPressed!();
         await tester.pumpAndSettle();
 
         // No project selection was committed, so draft state is unchanged.
         // The modal is still open.
-        expect(find.text('Tasks Filter'), findsOneWidget);
+        expect(find.text('Filter tasks'), findsOneWidget);
       },
     );
 
@@ -698,34 +973,37 @@ void main() {
           warnIfMissed: false,
         );
         await tester.pump();
-        await tester.tap(projectField);
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.descendant(
+                of: projectField,
+                matching: find.byType(DesignSystemSelectionRow),
+              ),
+            )
+            .onTap!();
         await tester.pumpAndSettle();
 
         // Select the project row in the project selection modal.
         final projectRow = find.byKey(
-          const ValueKey('design-system-project-selection-option-proj-1'),
+          const ValueKey('design-system-filter-selection-option-proj-1'),
         );
-        await tester.ensureVisible(projectRow);
-        await tester.tap(projectRow);
+        tester.widget<DesignSystemSelectionRow>(projectRow).onTap!();
         await tester.pump();
 
         // Tap Done to commit the selection.
         final doneBtn = find.byKey(
-          const ValueKey('design-system-project-selection-apply'),
+          const ValueKey('design-system-filter-selection-apply'),
         );
-        await tester.ensureVisible(doneBtn);
-        await tester.tap(doneBtn);
+        tester.widget<DesignSystemButton>(doneBtn).onPressed!();
         await tester.pumpAndSettle();
 
-        // Back in the filter modal, a remove chip for proj-1 should appear.
-        expect(
-          find.byKey(
-            const ValueKey(
-              'design-system-task-filter-remove-project-proj-1',
-            ),
+        final projectSummary = tester.widget<DesignSystemSelectionRow>(
+          find.descendant(
+            of: projectField,
+            matching: find.byType(DesignSystemSelectionRow),
           ),
-          findsOneWidget,
         );
+        expect(projectSummary.subtitle, 'My Project');
       },
     );
 
@@ -743,20 +1021,6 @@ void main() {
         fakeController = FakeJournalPageController(mockState);
 
         const desktopMediaQuery = MediaQueryData(size: Size(1200, 900));
-
-        // Dialog mode triggers a 4.5 px overflow in the action-bar Row at the
-        // test dialog width (476 px). Suppress it so the meaningful assertion
-        // (searchModeCalls) is the only thing we check in this test.
-        final errors = <FlutterErrorDetails>[];
-        final originalHandler = FlutterError.onError;
-        FlutterError.onError = (details) {
-          if (!details.exceptionAsString().contains('RenderFlex')) {
-            originalHandler?.call(details);
-          } else {
-            errors.add(details);
-          }
-        };
-        addTearDown(() => FlutterError.onError = originalHandler);
 
         await tester.pumpWidget(
           WidgetTestBench(
@@ -807,6 +1071,7 @@ void main() {
         // applyBatchFilterUpdate was called with a searchMode (not null).
         expect(fakeController.applyBatchFilterUpdateCalled, 1);
         expect(fakeController.searchModeCalls, isNotEmpty);
+        expect(tester.takeException(), isNull);
       },
     );
 

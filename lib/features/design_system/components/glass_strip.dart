@@ -1,7 +1,6 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Edge-to-edge "glass" strip used by sticky bottom bars (e.g. the task
@@ -13,11 +12,10 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 ///    `Scaffold.extendBody: true`), and
 /// 3. a top→bottom theme-aware scrim gradient.
 ///
-/// Glass overlay colors and the blur sigma currently live on
-/// [DesignSystemFilterPalette] — until the design-system token export
-/// surfaces dedicated `glass.*` tokens, this widget is the shared
-/// surface for new sticky bars and keeps the values out of caller
-/// widgets.
+/// Glass overlay colors and the blur sigma live here until the design-system
+/// token export surfaces dedicated `glass.*` tokens. Keeping the complete
+/// treatment in this component prevents individual sticky bars from inventing
+/// their own scrims.
 class DesignSystemGlassStrip extends StatelessWidget {
   const DesignSystemGlassStrip({
     required this.child,
@@ -31,10 +29,31 @@ class DesignSystemGlassStrip extends StatelessWidget {
   /// from the content than card-sized blurs.
   static const double blurSigma = 20;
 
+  /// Resolves the established theme-aware scrim stops for tests and other
+  /// design-system components that need to inspect the glass treatment.
+  static List<Color> overlayColors(DsTokens tokens) {
+    final isDark = tokens.colors.background.level01.computeLuminance() < 0.5;
+    final surface = tokens.colors.background.level02;
+    return isDark
+        ? [
+            surface.withValues(alpha: _darkOverlayStartAlpha),
+            surface.withValues(alpha: _darkOverlayEndAlpha),
+          ]
+        : [
+            surface.withValues(alpha: _lightOverlayStartAlpha),
+            surface.withValues(alpha: _lightOverlayEndAlpha),
+          ];
+  }
+
+  static const _darkOverlayStartAlpha = 0.72;
+  static const _darkOverlayEndAlpha = 0.9;
+  static const _lightOverlayStartAlpha = 0.78;
+  static const _lightOverlayEndAlpha = 0.94;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final palette = DesignSystemFilterPalette.fromTokens(tokens);
+    final scrimColors = overlayColors(tokens);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -55,10 +74,7 @@ class DesignSystemGlassStrip extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    palette.glassFooterOverlayStart,
-                    palette.glassFooterOverlayEnd,
-                  ],
+                  colors: scrimColors,
                 ),
               ),
               child: child,

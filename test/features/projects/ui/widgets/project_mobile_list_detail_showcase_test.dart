@@ -230,8 +230,7 @@ void main() {
         await tester.tap(filterIcon);
         await tester.pumpAndSettle();
 
-        // The shared filter modal uses tasksFilterTitle ("Tasks Filter").
-        expect(find.text('Tasks Filter'), findsOneWidget);
+        expect(find.text('Filter projects'), findsOneWidget);
       },
     );
 
@@ -297,7 +296,7 @@ void main() {
         await tester.tap(filterIcon);
         await tester.pumpAndSettle();
 
-        expect(find.text('Tasks Filter'), findsOneWidget);
+        expect(find.text('Filter projects'), findsOneWidget);
       },
     );
 

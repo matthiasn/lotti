@@ -318,7 +318,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.filter_list_rounded));
     await tester.pumpAndSettle();
 
-    expect(find.text('Tasks Filter'), findsOneWidget);
+    expect(find.text('Filter projects'), findsOneWidget);
     expect(find.text('Status'), findsOneWidget);
     expect(find.text('Category'), findsOneWidget);
   });
@@ -507,7 +507,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.filter_list_rounded));
       await tester.pumpAndSettle();
 
-      expect(find.text('Tasks Filter'), findsOneWidget);
+      expect(find.text('Filter projects'), findsOneWidget);
 
       // Tap the apply button
       final applyButton = find.byKey(
@@ -519,7 +519,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the filter modal has closed
-      expect(find.text('Tasks Filter'), findsNothing);
+      expect(find.text('Filter projects'), findsNothing);
     },
   );
 

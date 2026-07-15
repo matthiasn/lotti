@@ -406,8 +406,21 @@ The important runtime details are:
 - hidden links can be included or excluded without changing the rest of the page
 - the Filter & Sort modal can narrow the outgoing list to flagged entries only (`meta.flag == EntryFlag.import`); the check runs per row in `LinkedEntriesWidget` against the watched entry, so flagging or unflagging an entry updates the filtered list reactively
 - outgoing links are ordered by the linked entity's editable `dateFrom`, not by link creation time, with a user-selectable direction (newest-first / oldest-first) via `LinkedEntriesSortController`, exposed as sort pills in the linked-entries Filter & Sort modal (links whose target has not yet resolved fall back to `link.createdAt`)
+- the activity and sort pills share compact visual sizing inside 48 dp semantic tap targets; activity pills use text emphasis for legibility and reserve accent color for active state. The Code pill only exists when at least one linked entry contains a coding prompt. Pills wrap as compact units rather than expanding into full-width rows
+- the sort trigger includes a visible count when Hidden or Flagged-only is active, while its semantics name enumerates those active filters
+- the Filter & Sort modal snapshots sort, hidden, and flagged state into one route-local draft. Done commits all three controller values together; barrier/back dismissal discards the draft. The notifier lives until Wolt removes the route subtree, so its exit fade cannot observe disposed state
 - `LinkedEntriesWithTimer` only reacts to active timer entry ID changes, not every timer tick
 - `HighlightScrollMixin` retries scroll-to-entry until the target widget is actually mounted, then applies a temporary highlight pulse
+
+```mermaid
+stateDiagram-v2
+  [*] --> Closed
+  Closed --> Drafting: open Filter & Sort\nsnapshot controller values
+  Drafting --> Drafting: change sort / hidden / flagged
+  Drafting --> Applied: Done\ncommit all values
+  Drafting --> Closed: barrier or back\ndiscard draft
+  Applied --> Closed: route exit completes
+```
 
 This is one of those features that feels trivial until it breaks. Then it immediately becomes obvious why it exists.
 

@@ -204,6 +204,18 @@ ThemeData withOverrides(ThemeData themeData) {
             modalSheetHeightTransitionCurve: MotionCurves.emphasizedDecelerate,
             mainContentIncomingSlidePositionCurve: MotionCurves.standard,
             mainContentOutgoingSlidePositionCurve: MotionCurves.standard,
+            // Clear the outgoing page before the replacement becomes legible,
+            // then give the incoming content most of the height transition to
+            // fade in. This avoids both a blank-page flash and overlapping
+            // lines of old/new copy during multipage modal navigation.
+            mainContentIncomingOpacityCurve: Interval(
+              0.30,
+              1,
+            ),
+            mainContentOutgoingOpacityCurve: Interval(
+              0,
+              0.35,
+            ),
             incomingMainContentSlideBeginOffset: Offset.zero,
             outgoingMainContentSlideEndOffset: Offset.zero,
           ),

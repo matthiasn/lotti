@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -85,6 +86,28 @@ void main() {
     expect(opened, isTrue);
   });
 
+  testWidgets('forwards the compact row size to the shared list item', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      DesignSystemSelectionRow(
+        title: 'Status',
+        subtitle: 'All',
+        size: DesignSystemListItemSize.small,
+        type: DesignSystemSelectionRowType.navigation,
+        onTap: () {},
+      ),
+    );
+
+    expect(
+      tester
+          .widget<DesignSystemListItem>(find.byType(DesignSystemListItem))
+          .size,
+      DesignSystemListItemSize.small,
+    );
+  });
+
   testWidgets('disabled row exposes its reason and cannot activate', (
     tester,
   ) async {
@@ -152,6 +175,31 @@ void main() {
     final border = decoration.border! as Border;
     expect(border.top.color, dsTokensLight.colors.interactive.enabled);
     expect(border.top.width, dsTokensLight.spacing.step1);
+  });
+
+  testWidgets('large text removes the title line cap', (tester) async {
+    const title = 'A long project label that must remain fully readable';
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const SizedBox(
+          width: 220,
+          child: DesignSystemSelectionRow(
+            title: title,
+            type: DesignSystemSelectionRowType.singleSelect,
+            onTap: null,
+          ),
+        ),
+        theme: DesignSystemTheme.light(),
+        mediaQueryData: const MediaQueryData(
+          size: Size(320, 800),
+          textScaler: TextScaler.linear(2),
+        ),
+      ),
+    );
+
+    final text = tester.widget<Text>(find.text(title));
+    expect(text.maxLines, isNull);
+    expect(text.overflow, TextOverflow.clip);
   });
 }
 

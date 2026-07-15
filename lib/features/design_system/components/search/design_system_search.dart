@@ -151,7 +151,9 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
                 size: spec,
                 enabled: widget.enabled,
                 semanticsLabel: widget.semanticsLabel ?? widget.hintText,
-                onPressed: widget.enabled ? _handleSearchPressed : null,
+                onPressed: widget.enabled && widget.onSearchPressed != null
+                    ? _handleSearchPressed
+                    : null,
               ),
               SizedBox(width: spec.gap),
               Expanded(
@@ -271,9 +273,10 @@ class _SearchActionButton extends StatelessWidget {
     final tokens = context.designTokens;
 
     return Semantics(
-      button: true,
-      enabled: enabled,
-      label: semanticsLabel,
+      button: onPressed == null ? null : true,
+      enabled: onPressed == null ? null : enabled,
+      label: onPressed == null ? null : semanticsLabel,
+      excludeSemantics: onPressed == null,
       child: Material(
         color: Colors.transparent,
         child: InkResponse(

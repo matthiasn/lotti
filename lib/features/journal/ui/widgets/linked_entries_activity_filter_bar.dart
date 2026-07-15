@@ -31,9 +31,22 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
     final notifier = ref.read(
       linkedEntriesActivityFilterControllerProvider(entryId).notifier,
     );
+    final hasCodingPrompt = ref.watch(
+      resolvedOutgoingLinkedEntriesProvider(entryId).select(
+        (entities) => entities.any(
+          (entity) =>
+              LinkedEntryActivityFilter.fromEntity(entity) ==
+              LinkedEntryActivityFilter.code,
+        ),
+      ),
+    );
 
     final sortOrder = ref.watch(
       linkedEntriesSortControllerProvider(entryId),
+    );
+    final includeHidden = ref.watch(includeHiddenControllerProvider(entryId));
+    final showFlaggedOnly = ref.watch(
+      showFlaggedOnlyControllerProvider(entryId),
     );
 
     return Padding(
@@ -43,6 +56,7 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
         bottom: tokens.spacing.step4,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Wrap(
@@ -50,8 +64,14 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
               runSpacing: tokens.spacing.step2,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: LinkedEntryActivityFilter.values
+                  .where(
+                    (kind) =>
+                        kind != LinkedEntryActivityFilter.code ||
+                        hasCodingPrompt,
+                  )
                   .map(
                     (kind) => _ActivityPill(
+                      key: ValueKey('linked-entries-activity-${kind.name}'),
                       kind: kind,
                       active: activeKinds.contains(kind),
                       onTap: () => notifier.toggle(kind),
@@ -64,6 +84,8 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
           _FilterTrigger(
             entryId: entryId,
             sortOrder: sortOrder,
+            includeHidden: includeHidden,
+            showFlaggedOnly: showFlaggedOnly,
           ),
         ],
       ),
@@ -71,54 +93,144 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
   }
 }
 
-class _FilterTrigger extends StatelessWidget {
-  const _FilterTrigger({required this.entryId, required this.sortOrder});
+class _FilterTrigger extends StatefulWidget {
+  const _FilterTrigger({
+    required this.entryId,
+    required this.sortOrder,
+    required this.includeHidden,
+    required this.showFlaggedOnly,
+  });
 
   final String entryId;
   final LinkedEntriesSortOrder sortOrder;
+  final bool includeHidden;
+  final bool showFlaggedOnly;
+
+  @override
+  State<_FilterTrigger> createState() => _FilterTriggerState();
+}
+
+class _FilterTriggerState extends State<_FilterTrigger> {
+  bool _focused = false;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final label = switch (sortOrder) {
+    final label = switch (widget.sortOrder) {
       LinkedEntriesSortOrder.newestFirst =>
         messages.journalLinkedEntriesSortNewestFirst,
       LinkedEntriesSortOrder.oldestFirst =>
         messages.journalLinkedEntriesSortOldestFirst,
     };
-    final color = tokens.colors.text.lowEmphasis;
+    final activeLabels = [
+      if (widget.includeHidden) messages.journalLinkedEntriesShowHidden,
+      if (widget.showFlaggedOnly) messages.journalLinkedEntriesShowFlaggedOnly,
+    ];
+    final semanticsLabel = [
+      messages.journalLinkedEntriesFilterModalTitle,
+      label,
+      ...activeLabels,
+    ].join(', ');
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => showLinkedEntriesFilterModal(
-          context: context,
-          entryId: entryId,
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step3,
-            vertical: tokens.spacing.step2,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.sort,
-                size: 16,
-                color: tokens.colors.interactive.enabled,
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                label,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: color,
-                  height: 1,
+    final selected = activeLabels.isNotEmpty;
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    return Semantics(
+      key: const ValueKey('linked-entries-sort-trigger'),
+      button: true,
+      label: semanticsLabel,
+      onTap: () => showLinkedEntriesFilterModal(
+        context: context,
+        entryId: widget.entryId,
+      ),
+      excludeSemantics: true,
+      child: SizedBox(
+        height: tokens.spacing.step9,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: radius,
+            hoverColor: tokens.colors.surface.hover,
+            focusColor: Colors.transparent,
+            onFocusChange: (value) => setState(() => _focused = value),
+            onTap: () => showLinkedEntriesFilterModal(
+              context: context,
+              entryId: widget.entryId,
+            ),
+            child: Center(
+              widthFactor: 1,
+              child: Ink(
+                key: const ValueKey('linked-entries-sort-trigger-visual'),
+                decoration: BoxDecoration(
+                  color: selected ? tokens.colors.surface.selected : null,
+                  borderRadius: radius,
+                  border: Border.all(
+                    color: selected
+                        ? tokens.colors.text.highEmphasis
+                        : tokens.colors.decorative.level02,
+                  ),
+                  boxShadow: _focused
+                      ? [
+                          BoxShadow(
+                            color: tokens.colors.interactive.enabled,
+                            spreadRadius: tokens.spacing.step1,
+                          ),
+                        ]
+                      : null,
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step3,
+                  vertical: tokens.spacing.step2,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.filter_list_rounded,
+                      size: tokens.spacing.step4,
+                      color: tokens.colors.interactive.enabled,
+                    ),
+                    SizedBox(width: tokens.spacing.step2),
+                    Text(
+                      label,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                        fontWeight: tokens.typography.weight.semiBold,
+                        height: 1,
+                      ),
+                    ),
+                    if (activeLabels.isNotEmpty) ...[
+                      SizedBox(width: tokens.spacing.step2),
+                      Container(
+                        key: const ValueKey(
+                          'linked-entries-sort-trigger-active-count',
+                        ),
+                        constraints: BoxConstraints(
+                          minWidth: tokens.spacing.step5,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: tokens.spacing.step2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: tokens.colors.surface.active,
+                          borderRadius: radius,
+                        ),
+                        child: Text(
+                          '${activeLabels.length}',
+                          textAlign: TextAlign.center,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                                fontWeight: tokens.typography.weight.semiBold,
+                                height: 1,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -126,11 +238,12 @@ class _FilterTrigger extends StatelessWidget {
   }
 }
 
-class _ActivityPill extends StatelessWidget {
+class _ActivityPill extends StatefulWidget {
   const _ActivityPill({
     required this.kind,
     required this.active,
     required this.onTap,
+    super.key,
   });
 
   final LinkedEntryActivityFilter kind;
@@ -138,56 +251,87 @@ class _ActivityPill extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_ActivityPill> createState() => _ActivityPillState();
+}
+
+class _ActivityPillState extends State<_ActivityPill> {
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final spec = _ActivityPillSpec.of(context, kind);
-    final radius = BorderRadius.circular(20);
-    final accent = spec.accent;
-    final activeBg = accent.withValues(alpha: 0.15);
-    final activeBorder = accent.withValues(alpha: spec.borderAlpha);
-
-    final inactiveLabelColor = tokens.colors.text.lowEmphasis;
-    final inactiveBorderColor = tokens.colors.decorative.level01;
-
-    final bgColor = active ? activeBg : Colors.transparent;
-    final borderColor = active ? activeBorder : inactiveBorderColor;
-    final labelColor = active ? accent : inactiveLabelColor;
+    final spec = _ActivityPillSpec.of(context, widget.kind);
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    final selectedFill = tokens.colors.surface.selected;
+    final labelColor = tokens.colors.text.highEmphasis;
+    final iconColor = widget.active
+        ? spec.accent
+        : tokens.colors.text.lowEmphasis;
 
     return Semantics(
       button: true,
-      toggled: active,
+      toggled: widget.active,
       label: spec.label,
+      onTap: widget.onTap,
       excludeSemantics: true,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: radius,
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: DesignSystemFilterChoicePill.animationDuration,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: radius,
-              border: Border.all(color: borderColor),
-            ),
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step3,
-              vertical: tokens.spacing.step2,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(spec.icon, size: 16, color: labelColor),
-                SizedBox(width: tokens.spacing.step2),
-                Text(
-                  spec.label,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: labelColor,
-                    fontWeight: FontWeight.w500,
-                    height: 1,
-                  ),
+      child: SizedBox(
+        height: tokens.spacing.step9,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: radius,
+            focusColor: Colors.transparent,
+            hoverColor: tokens.colors.surface.hover,
+            onFocusChange: (value) => setState(() => _focused = value),
+            onTap: widget.onTap,
+            child: Center(
+              widthFactor: 1,
+              child: AnimatedContainer(
+                key: ValueKey(
+                  'linked-entries-activity-${widget.kind.name}-visual',
                 ),
-              ],
+                duration: DesignSystemFilterChoicePill.animationDuration,
+                decoration: BoxDecoration(
+                  color: widget.active ? selectedFill : Colors.transparent,
+                  borderRadius: radius,
+                  border: Border.all(
+                    color: widget.active
+                        ? tokens.colors.text.highEmphasis
+                        : tokens.colors.decorative.level01,
+                  ),
+                  boxShadow: _focused
+                      ? [
+                          BoxShadow(
+                            color: tokens.colors.interactive.enabled,
+                            spreadRadius: tokens.spacing.step1,
+                          ),
+                        ]
+                      : null,
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step3,
+                  vertical: tokens.spacing.step2,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      spec.icon,
+                      size: tokens.spacing.step4,
+                      color: iconColor,
+                    ),
+                    SizedBox(width: tokens.spacing.step2),
+                    Text(
+                      spec.label,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: labelColor,
+                        fontWeight: tokens.typography.weight.semiBold,
+                        height: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -201,7 +345,6 @@ class _ActivityPillSpec {
     required this.label,
     required this.icon,
     required this.accent,
-    required this.borderAlpha,
   });
 
   factory _ActivityPillSpec.of(
@@ -215,29 +358,21 @@ class _ActivityPillSpec {
         label: messages.journalLinkedEntriesActivityFilterTimer,
         icon: Icons.timer_outlined,
         accent: tokens.colors.alert.warning.defaultColor,
-        borderAlpha: 1,
       ),
-      // Audio / Images use Figma-spec hex values that aren't in the token
-      // set yet. Border alpha is 0.7 per the Figma activity-filter pills.
       LinkedEntryActivityFilter.audio => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterAudio,
         icon: Icons.mic_none_outlined,
         accent: const Color(0xFF9966E5),
-        borderAlpha: 0.7,
       ),
       LinkedEntryActivityFilter.images => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterImages,
         icon: Icons.photo_outlined,
         accent: const Color(0xFF619EFF),
-        borderAlpha: 0.7,
       ),
-      // Code (coding prompts) uses a Figma-spec green that isn't in the
-      // token set yet. Border alpha matches the Audio/Images pills.
       LinkedEntryActivityFilter.code => _ActivityPillSpec(
         label: messages.journalLinkedEntriesActivityFilterCode,
         icon: Icons.code,
         accent: const Color(0xFF34C759),
-        borderAlpha: 0.7,
       ),
     };
   }
@@ -245,5 +380,4 @@ class _ActivityPillSpec {
   final String label;
   final IconData icon;
   final Color accent;
-  final double borderAlpha;
 }

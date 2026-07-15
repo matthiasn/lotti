@@ -6,7 +6,6 @@ import 'package:glados/glados.dart' show AnyUtils, Glados, ListAnys, any;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_project_selection_modal.dart';
 import 'package:lotti/features/tasks/ui/filtering/tasks_filter_sheet_state.dart';
 
 import '../../../../helpers/entity_factories.dart';
@@ -296,9 +295,11 @@ void main() {
       expect(result.selectedPriorityId, 'p1');
       expect(result.hasCategoryField, isTrue);
       expect(result.categoryField!.selectedIds, {'cat-1'});
-      expect(result.categoryField!.options, hasLength(2));
+      expect(result.categoryField!.options, hasLength(3));
+      expect(result.categoryField!.options.first.label, 'Unassigned');
       expect(result.hasLabelField, isTrue);
       expect(result.labelField!.selectedIds, {'label-1'});
+      expect(result.labelField!.options.first.label, 'Unassigned');
       expect(result.hasAgentFilter, isTrue);
       expect(result.selectedAgentFilterId, 'hasAgent');
       expect(result.hasSearchMode, isFalse);
@@ -431,7 +432,9 @@ void main() {
       );
     });
 
-    testWidgets('builds project field with category prefix', (tester) async {
+    testWidgets('groups projects without repeating category in row labels', (
+      tester,
+    ) async {
       late DesignSystemTaskFilterState result;
 
       final projectsWithCategories = [
@@ -475,12 +478,14 @@ void main() {
 
       expect(result.hasProjectField, isTrue);
       expect(result.projectField!.options, hasLength(2));
-      expect(result.projectField!.options[0].label, 'Work / Alpha');
-      expect(result.projectField!.options[1].label, 'Personal / Beta');
+      expect(result.projectField!.options[0].label, 'Alpha');
+      expect(result.projectField!.options[1].label, 'Beta');
       expect(result.projectField!.selectedIds, {'proj-1'});
     });
 
-    testWidgets('returns null project field when no projects', (tester) async {
+    testWidgets('keeps an empty project field while its catalog loads', (
+      tester,
+    ) async {
       late DesignSystemTaskFilterState result;
 
       await tester.pumpWidget(
@@ -489,7 +494,9 @@ void main() {
             builder: (context) {
               result = buildTasksFilterSheetState(
                 context,
-                controllerState: controllerState,
+                controllerState: controllerState.copyWith(
+                  enableProjects: true,
+                ),
                 categories: categories,
                 labels: labels,
                 projectsWithCategories: const [],
@@ -500,7 +507,8 @@ void main() {
         ),
       );
 
-      expect(result.hasProjectField, isFalse);
+      expect(result.hasProjectField, isTrue);
+      expect(result.projectField!.options, isEmpty);
     });
 
     testWidgets('returns null project field when enableProjects is false', (

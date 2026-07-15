@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -28,22 +29,61 @@ class ModalUtils {
         : context.colorScheme.outline.withAlpha(128);
   }
 
-  static const defaultPadding = EdgeInsets.only(
-    left: 20,
-    top: 20,
-    right: 20,
-    bottom: 40,
-  );
+  /// Standard sheet content inset, derived entirely from design-system
+  /// spacing tokens.
+  static EdgeInsets defaultPadding(BuildContext context) {
+    final spacing = _tokens(context).spacing;
+    return EdgeInsets.fromLTRB(
+      spacing.step5,
+      spacing.step5,
+      spacing.step5,
+      spacing.step8,
+    );
+  }
 
   /// Shared text style for a modal's top-bar title, so plain-string titles and
   /// bespoke `titleWidget`s (e.g. a branded provider header) render identically
   /// and can't drift apart one tap into a multi-page flow.
-  static TextStyle? modalTitleStyle(BuildContext context) =>
-      context.textTheme.titleMedium?.copyWith(
-        color: context.colorScheme.onSurface,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.2,
-      );
+  static TextStyle modalTitleStyle(BuildContext context) {
+    final tokens = _tokens(context);
+    return tokens.typography.styles.heading.heading3.copyWith(
+      color: tokens.colors.text.highEmphasis,
+      fontWeight: tokens.typography.weight.semiBold,
+    );
+  }
+
+  static DsTokens _tokens(BuildContext context) {
+    return Theme.of(context).extension<DsTokens>() ??
+        (Theme.of(context).brightness == Brightness.dark
+            ? dsTokensDark
+            : dsTokensLight);
+  }
+
+  static Widget _navigationButton({
+    required BuildContext context,
+    required String tooltip,
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    final tokens = _tokens(context);
+    return IconButton(
+      tooltip: tooltip,
+      padding: EdgeInsets.all(tokens.spacing.step4),
+      icon: Container(
+        padding: EdgeInsets.all(tokens.spacing.step3),
+        decoration: BoxDecoration(
+          color: tokens.colors.surface.enabled,
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+        ),
+        child: Icon(
+          icon,
+          color: tokens.colors.text.mediumEmphasis,
+          size: tokens.spacing.step6,
+        ),
+      ),
+      onPressed: onPressed,
+    );
+  }
 
   /// Creates a modern styled modal sheet page with enhanced visual effects
   static WoltModalSheetPage modalSheetPage({
@@ -54,77 +94,62 @@ class ModalUtils {
     Widget? titleWidget,
     bool isTopBarLayerAlwaysVisible = true,
     bool showCloseButton = false,
+    IconData closeButtonIcon = Icons.close_rounded,
+    String? closeButtonTooltip,
+    VoidCallback? onClosePressed,
     void Function()? onTapBack,
-    EdgeInsets padding = defaultPadding,
+    EdgeInsets? padding,
     double? navBarHeight,
     bool hasTopBarLayer = true,
     Widget? leadingNavBarWidget,
   }) {
-    final colorScheme = context.colorScheme;
     final materialLocalizations = MaterialLocalizations.of(context);
+    final tokens = _tokens(context);
 
     return WoltModalSheetPage(
       stickyActionBar: stickyActionBar,
       backgroundColor: getModalBackgroundColor(context),
       hasSabGradient: false,
-      navBarHeight: navBarHeight ?? 65,
+      navBarHeight: navBarHeight ?? tokens.spacing.step10,
       hasTopBarLayer: hasTopBarLayer,
       topBarTitle:
           titleWidget ??
           (title != null
-              ? Container(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    title,
-                    style: modalTitleStyle(context),
+              ? Padding(
+                  padding: EdgeInsets.only(top: tokens.spacing.step2),
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      title,
+                      style: modalTitleStyle(context),
+                    ),
                   ),
                 )
               : null),
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
       leadingNavBarWidget: onTapBack != null
-          ? IconButton(
+          ? _navigationButton(
+              context: context,
               tooltip: materialLocalizations.backButtonTooltip,
-              padding: const EdgeInsets.all(12),
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh.withValues(
-                    alpha: 0.5,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.arrow_back_rounded,
-                  color: colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-              ),
+              icon: Icons.arrow_back_rounded,
               onPressed: onTapBack,
             )
           : leadingNavBarWidget,
       trailingNavBarWidget: showCloseButton
-          ? IconButton(
-              tooltip: materialLocalizations.closeButtonTooltip,
-              padding: const EdgeInsets.all(12),
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh.withValues(
-                    alpha: 0.5,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.close_rounded,
-                  color: colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-              ),
-              onPressed: Navigator.of(context).pop,
+          ? _navigationButton(
+              context: context,
+              tooltip:
+                  closeButtonTooltip ??
+                  materialLocalizations.closeButtonTooltip,
+              icon: closeButtonIcon,
+              onPressed: () {
+                onClosePressed?.call();
+                Navigator.of(context).pop();
+              },
             )
           : null,
       child: Padding(
-        padding: padding,
+        padding: padding ?? defaultPadding(context),
         child: child,
       ),
     );
@@ -169,11 +194,14 @@ class ModalUtils {
     Widget? titleWidget,
     Widget? stickyActionBar,
     Widget Function(BuildContext)? stickyActionBarBuilder,
-    EdgeInsets padding = defaultPadding,
+    EdgeInsets? padding,
     double? navBarHeight,
     bool hasTopBarLayer = true,
     Widget Function(Widget)? modalDecorator,
     bool showCloseButton = true,
+    IconData closeButtonIcon = Icons.close_rounded,
+    String? closeButtonTooltip,
+    VoidCallback? onClosePressed,
     bool? useRootNavigator,
   }) async {
     final theme = Theme.of(context);
@@ -195,6 +223,9 @@ class ModalUtils {
             hasTopBarLayer: hasTopBarLayer,
             navBarHeight: navBarHeight,
             showCloseButton: showCloseButton,
+            closeButtonIcon: closeButtonIcon,
+            closeButtonTooltip: closeButtonTooltip,
+            onClosePressed: onClosePressed,
             padding: padding,
             child: builder(modalSheetContext),
             context: modalSheetContext,
@@ -244,8 +275,8 @@ class ModalUtils {
     void Function()? onTapBack,
     double? navBarHeight,
   }) {
-    final colorScheme = context.colorScheme;
     final materialLocalizations = MaterialLocalizations.of(context);
+    final tokens = _tokens(context);
 
     return SliverWoltModalSheetPage(
       scrollController: scrollController,
@@ -254,58 +285,35 @@ class ModalUtils {
       hasSabGradient: false,
       useSafeArea: true,
       resizeToAvoidBottomInset: true,
-      navBarHeight: navBarHeight ?? 65,
+      navBarHeight: navBarHeight ?? tokens.spacing.step10,
       topBarTitle:
           titleWidget ??
           (title != null
               ? Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    title,
-                    style: modalTitleStyle(context),
+                  padding: EdgeInsets.only(top: tokens.spacing.step2),
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      title,
+                      style: modalTitleStyle(context),
+                    ),
                   ),
                 )
               : null),
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
       leadingNavBarWidget: onTapBack != null
-          ? IconButton(
+          ? _navigationButton(
+              context: context,
               tooltip: materialLocalizations.backButtonTooltip,
-              padding: const EdgeInsets.all(12),
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh.withValues(
-                    alpha: 0.5,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.arrow_back_rounded,
-                  color: colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-              ),
+              icon: Icons.arrow_back_rounded,
               onPressed: onTapBack,
             )
           : null,
       trailingNavBarWidget: showCloseButton
-          ? IconButton(
+          ? _navigationButton(
+              context: context,
               tooltip: materialLocalizations.closeButtonTooltip,
-              padding: const EdgeInsets.all(12),
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh.withValues(
-                    alpha: 0.5,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.close_rounded,
-                  color: colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-              ),
+              icon: Icons.close_rounded,
               onPressed: Navigator.of(context).pop,
             )
           : null,
@@ -335,8 +343,6 @@ class ModalUtils {
     );
   }
 
-  static Color? getModalBackgroundColor(BuildContext context) {
-    final theme = Theme.of(context);
-    return theme.colorScheme.surfaceContainerHigh;
-  }
+  static Color getModalBackgroundColor(BuildContext context) =>
+      _tokens(context).colors.background.level02;
 }
