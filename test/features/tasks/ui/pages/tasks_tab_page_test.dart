@@ -317,7 +317,7 @@ void main() {
   );
 
   testWidgets(
-    'shows quick labels and FAB hook with custom create callback',
+    'shows the active label chip and FAB hook with custom create callback',
     (tester) async {
       String? createdCategoryId;
 
@@ -336,10 +336,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.textContaining('Active label filters'), findsOneWidget);
-      // "Focus" label appears both in the active-filters chip row above the
-      // list and in the TaskLabelQuickFilter inside the list.
-      expect(find.text('Focus'), findsNWidgets(2));
+      expect(find.textContaining('Active label filters'), findsNothing);
+      expect(find.text('Focus'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pump();
@@ -671,8 +669,7 @@ void main() {
     );
 
     testWidgets(
-      'renders a label chip for each selected label (in addition to the '
-      'quick-label filter inside the list) and removes it on tap',
+      'renders one chip for each selected label and removes it on tap',
       (tester) async {
         await tester.pumpWidget(
           buildSubject(
@@ -686,8 +683,6 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Exactly one ActiveFilterChip for the label (the TaskLabelQuickFilter
-        // below the chip row renders its own non-ActiveFilterChip control).
         expect(find.byType(ActiveFilterChip), findsOneWidget);
         final chip = tester.widget<ActiveFilterChip>(
           find.byType(ActiveFilterChip),

@@ -18,7 +18,6 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_label_quick_filter.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
@@ -173,16 +172,6 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   controller: _scrollController,
                   slivers: [
-                    if (state.selectedLabelIds.isNotEmpty)
-                      const SliverToBoxAdapter(
-                        key: ValueKey('tasks-tab-label-quick-filter'),
-                        child: ProjectsOverviewContentWidth(
-                          child: Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: _QuickLabelFilterContainer(),
-                          ),
-                        ),
-                      ),
                     if (state.pagingController case final pagingController?)
                       PagingListener<int, JournalEntity>(
                         key: const ValueKey('tasks-tab-paged-list'),
@@ -453,26 +442,6 @@ class _TasksTabActiveFilters extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _QuickLabelFilterContainer extends StatelessWidget {
-  const _QuickLabelFilterContainer();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.colors.surface.enabled,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step4,
-        vertical: tokens.spacing.step2,
-      ),
-      child: const TaskLabelQuickFilter(),
     );
   }
 }

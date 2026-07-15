@@ -150,7 +150,7 @@ class _FilterTrigger extends StatelessWidget {
               border: Border.all(
                 color: selected
                     ? tokens.colors.interactive.enabled
-                    : tokens.colors.decorative.level01,
+                    : tokens.colors.decorative.level02,
               ),
             ),
             padding: EdgeInsets.symmetric(
@@ -169,7 +169,7 @@ class _FilterTrigger extends StatelessWidget {
                 Text(
                   label,
                   style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.highEmphasis,
+                    color: tokens.colors.text.mediumEmphasis,
                     fontWeight: tokens.typography.weight.semiBold,
                     height: 1,
                   ),
