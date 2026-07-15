@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sort controls. Task filters open immediately while project data refreshes in
   place, and active filters remain visible as compact chips on the task page.
 
+### Fixed
+- **Bulk checklist suggestion acceptance no longer flickers.** Confirm all now
+  keeps every proposal row mounted through its staggered exit, even when fast
+  checklist check-offs resolve the underlying suggestions before later rows
+  begin animating. The task page remains anchored throughout the batch.
+
 ## [0.9.1045]
 ### Changed
 - **Date and time pickers are clearer and steadier across the app.** Entry

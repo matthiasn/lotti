@@ -1151,6 +1151,90 @@ void main() {
         expect(find.text('Beta proposal'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'confirm-all retains later rows when the provider resolves before their '
+      'stagger starts',
+      (tester) async {
+        final csA = makeTestChangeSet(
+          id: 'retain-all-a',
+          items: const [
+            ChangeItem(
+              toolName: 'update_checklist_item',
+              args: {'id': 'item-a', 'isChecked': true},
+              humanSummary: 'Check Alpha',
+            ),
+          ],
+        );
+        final csB = makeTestChangeSet(
+          id: 'retain-all-b',
+          items: const [
+            ChangeItem(
+              toolName: 'update_checklist_item',
+              args: {'id': 'item-b', 'isChecked': true},
+              humanSummary: 'Check Beta',
+            ),
+          ],
+        );
+        final sugA = PendingSuggestion(
+          changeSet: csA,
+          itemIndex: 0,
+          item: csA.items.first,
+          fingerprint: 'fp-retain-all-a',
+        );
+        final sugB = PendingSuggestion(
+          changeSet: csB,
+          itemIndex: 0,
+          item: csB.items.first,
+          fingerprint: 'fp-retain-all-b',
+        );
+        var current = UnifiedSuggestionList(
+          open: [sugA, sugB],
+          activity: const [],
+        );
+
+        final completer = Completer<List<ToolExecutionResult>>();
+        final service = MockChangeSetConfirmationService();
+        when(
+          () => service.confirmAll(any()),
+        ).thenAnswer((_) => completer.future);
+        final bench = AgentTestBench(
+          confirmationService: service,
+          updateNotifications: MockUpdateNotifications(),
+          suggestionListOverride: (ref, taskId) => current,
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Confirm all'));
+        await tester.pump();
+
+        // Checklist check-off writes can resolve quickly enough for the
+        // provider to drop the whole batch before Beta's stagger timer fires.
+        current = const UnifiedSuggestionList.empty();
+        ProviderScope.containerOf(
+          tester.element(find.byType(AiSummaryCard)),
+        ).invalidate(unifiedSuggestionListProvider(AgentTestBench.taskId));
+        await tester.pump();
+        await tester.pump();
+
+        // Every committed row must remain mounted until its own collapse
+        // completes; otherwise later rows blink out instead of joining the
+        // confirm-all sweep.
+        expect(find.text('Check Alpha'), findsOneWidget);
+        expect(find.text('Check Beta'), findsOneWidget);
+
+        completer.complete(const []);
+        await tester.pump();
+        await tester.pump(ProposalMotion.total);
+        await tester.pump(ProposalMotion.collapse);
+        await tester.pump(ProposalMotion.staggerStep * 8);
+        await tester.pump();
+        expect(find.byType(ProposalRow), findsNothing);
+      },
+    );
   });
 
   group('AiSummaryCard – tap-guard during collapse', () {

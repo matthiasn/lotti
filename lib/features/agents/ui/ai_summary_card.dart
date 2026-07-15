@@ -290,11 +290,19 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     );
   }
 
+  /// Confirms every visible suggestion while retaining the whole batch until
+  /// each proposal row finishes its staggered exit animation.
   Future<void> _confirmAll(List<PendingSuggestion> pending) async {
     if (_confirmAllBusy || pending.isEmpty) return;
     // Start viewport stabilization before the first persistence call can grow
     // or shrink checklist content above this card.
     widget.onSuggestionResolveStart?.call();
+    // Protect the entire batch synchronously, before either the staggered row
+    // timers or the first persistence call can run. Checklist check-off writes
+    // are fast enough for the provider to resolve every suggestion before a
+    // later row's stagger starts; without this eager retention those rows are
+    // unmounted abruptly instead of completing the confirm-all sweep. Insert
+    // writes are slower, which previously hid this race in that code path.
     // One light haptic for the whole gesture (the rows no longer tick
     // individually — that machine-gunned on a big batch). Bump the pulse so
     // the rows run their resolve → collapse exit as one staggered downward
@@ -311,6 +319,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       ),
     );
     setState(() {
+      _exitingFingerprints.addAll(pending.map((s) => s.fingerprint));
       _confirmAllBusy = true;
       _confirmAllPulse++;
     });

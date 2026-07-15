@@ -1296,8 +1296,15 @@ destructive reject is never flush against accept — a near-miss between adjacen
 zones is the failure users with reduced motor precision fear, and the gap
 removes it. "Confirm all" is an accent pill; pressing it cascades a
 top-to-bottom pop across the rows (per-row 45 ms stagger + a throttled selection
-haptic) so a batch confirm reads as a satisfying sweep. All of this honours the
-system reduce-motion setting.
+haptic) so a batch confirm reads as a satisfying sweep. At gesture time the
+shell synchronously adds every batch fingerprint to `_exitingFingerprints`
+before either persistence or the per-row stagger timers begin. Provider
+re-queries may then resolve those proposals immediately, but
+`_retainExitingSuggestions` keeps each keyed row mounted until its own collapse
+finishes. This matters most for `update_checklist_item`: checking an existing
+item is fast enough to beat a later row's stagger, whereas the slower checklist
+insert path used to hide that race. All of this honours the system reduce-motion
+setting.
 
 ```mermaid
 sequenceDiagram
@@ -1305,6 +1312,7 @@ sequenceDiagram
   participant Builder as ChangeSetBuilder
   participant Store as agent.sqlite
   participant User as User
+  participant Card as AiSummaryCard
   participant Confirm as ChangeSetConfirmationService
   participant Dispatch as TaskToolDispatcher
   participant Journal as Journal DB
@@ -1312,7 +1320,11 @@ sequenceDiagram
 
   Agent->>Builder: queue deferred tool proposals
   Builder->>Store: persist ChangeSetEntity(pending)
-  User->>Confirm: confirm or reject one item
+  User->>Card: confirm, reject, or Confirm all
+  opt Confirm all
+    Card->>Card: retain every batch fingerprint before stagger
+  end
+  Card->>Confirm: confirm or reject pending item(s)
   Confirm->>Store: reload persisted change set
   Confirm->>Store: persist ChangeDecisionEntity first
   Confirm->>Dispatch: dispatch confirmed tool
