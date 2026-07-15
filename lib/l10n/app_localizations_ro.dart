@@ -2086,6 +2086,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Adaugă furnizor';
 
   @override
+  String get aiSettingsAgentWakeConcurrencyDescription =>
+      'Alegeți câți agenți diferiți pot rula inferențe simultan. Valorile mai mari oferă răspunsuri mai rapide, dar folosesc mai multă capacitate a furnizorului și a dispozitivului dvs.';
+
+  @override
+  String get aiSettingsAgentWakeConcurrencyLabel =>
+      'Activări simultane ale agenților';
+
+  @override
   String get aiSettingsClearAllFiltersTooltip => 'Șterge toate filtrele';
 
   @override

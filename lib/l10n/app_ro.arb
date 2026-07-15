@@ -910,6 +910,8 @@
   "aiSettingsAddModelTooltip": "Adaugă acest model la furnizorul tău",
   "aiSettingsAddProfileButton": "Adaugă profil",
   "aiSettingsAddProviderButton": "Adaugă furnizor",
+  "aiSettingsAgentWakeConcurrencyDescription": "Alegeți câți agenți diferiți pot rula inferențe simultan. Valorile mai mari oferă răspunsuri mai rapide, dar folosesc mai multă capacitate a furnizorului și a dispozitivului dvs.",
+  "aiSettingsAgentWakeConcurrencyLabel": "Activări simultane ale agenților",
   "aiSettingsClearAllFiltersTooltip": "Șterge toate filtrele",
   "aiSettingsClearFiltersButton": "Șterge",
   "aiSettingsCounterModels": "Modele",

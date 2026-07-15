@@ -133,6 +133,33 @@ void main() {
       });
     });
 
+    group('dequeueFirstWhere', () {
+      test('takes the first matching job and preserves skipped FIFO order', () {
+        queue
+          ..enqueue(makeJob(runKey: 'rk-1', agentId: 'busy'))
+          ..enqueue(makeJob(runKey: 'rk-2', agentId: 'ready'))
+          ..enqueue(makeJob(runKey: 'rk-3', agentId: 'busy'));
+
+        final ready = queue.dequeueFirstWhere(
+          (job) => job.agentId == 'ready',
+        );
+
+        expect(ready?.runKey, 'rk-2');
+        expect(queue.dequeue()?.runKey, 'rk-1');
+        expect(queue.dequeue()?.runKey, 'rk-3');
+      });
+
+      test('returns null without changing the queue when no job matches', () {
+        queue.enqueue(makeJob(runKey: 'rk-1', agentId: 'busy'));
+
+        expect(
+          queue.dequeueFirstWhere((job) => job.agentId == 'ready'),
+          isNull,
+        );
+        expect(queue.dequeue()?.runKey, 'rk-1');
+      });
+    });
+
     group('mergeTokens', () {
       test('merges tokens into first matching job and returns true', () {
         final job = makeJob(

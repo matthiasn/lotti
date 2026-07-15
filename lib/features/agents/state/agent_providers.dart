@@ -25,6 +25,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -244,6 +245,8 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     queue: ref.watch(wakeQueueProvider),
     runner: ref.watch(wakeRunnerProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    maxConcurrentWakes: () =>
+        ref.read(aiRuntimeSettingsControllerProvider).agentWakeConcurrency,
     onPersistedStateChanged: onPersistedStateChanged,
     syncEntityWriter: (entity) =>
         ref.read(agentSyncServiceProvider).upsertEntity(entity),

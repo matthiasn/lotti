@@ -3607,6 +3607,18 @@ abstract class AppLocalizations {
   /// **'Add provider'**
   String get aiSettingsAddProviderButton;
 
+  /// No description provided for @aiSettingsAgentWakeConcurrencyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how many different agents can run inference at once. Higher values respond faster but use more provider and device capacity.'**
+  String get aiSettingsAgentWakeConcurrencyDescription;
+
+  /// No description provided for @aiSettingsAgentWakeConcurrencyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Concurrent agent wakes'**
+  String get aiSettingsAgentWakeConcurrencyLabel;
+
   /// No description provided for @aiSettingsClearAllFiltersTooltip.
   ///
   /// In en, this message translates to:

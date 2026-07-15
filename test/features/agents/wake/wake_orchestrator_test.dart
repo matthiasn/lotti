@@ -1827,7 +1827,7 @@ void main() {
             final expected = scenario.expectedModel();
             expect(
               entries.map((entry) => entry.runKey).toList(),
-              expected.insertRunKeys,
+              unorderedEquals(expected.insertRunKeys),
               reason: '$scenario',
             );
             for (final entry in entries) {
@@ -1846,7 +1846,7 @@ void main() {
 
             expect(
               executions.map((execution) => execution.runKey).toList(),
-              expected.executedRunKeys,
+              unorderedEquals(expected.executedRunKeys),
               reason: '$scenario',
             );
             for (final execution in executions) {
@@ -1862,9 +1862,12 @@ void main() {
             }
 
             expect(statusUpdates, hasLength(expected.statusUpdates.length));
-            for (var index = 0; index < statusUpdates.length; index += 1) {
-              final actual = statusUpdates[index];
-              final expectedUpdate = expected.statusUpdates[index];
+            final expectedStatusByRunKey = {
+              for (final update in expected.statusUpdates)
+                update.runKey: update,
+            };
+            for (final actual in statusUpdates) {
+              final expectedUpdate = expectedStatusByRunKey[actual.runKey]!;
               expect(actual.runKey, expectedUpdate.runKey, reason: '$scenario');
               expect(actual.status, expectedUpdate.status, reason: '$scenario');
               if (expectedUpdate.status == WakeRunStatus.failed.name) {
@@ -2061,6 +2064,240 @@ void main() {
             captured.map((e) => e.agentId).toSet(),
             containsAll(['agent-1', 'agent-2']),
           );
+        });
+      });
+
+      test('runs three agents concurrently by default and queues a fourth', () {
+        fakeAsync((async) {
+          final gates = <String, Completer<Map<String, VectorClock>?>>{
+            for (var index = 1; index <= 4; index++)
+              'agent-$index': Completer<Map<String, VectorClock>?>(),
+          };
+          final started = <String>[];
+          orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) {
+            started.add(agentId);
+            return gates[agentId]!.future;
+          };
+          for (var index = 1; index <= 4; index++) {
+            queue.enqueue(
+              makeJob(
+                runKey: 'rk-$index',
+                agentId: 'agent-$index',
+                reason: 'test',
+              ),
+            );
+          }
+
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+
+          expect(started, ['agent-1', 'agent-2', 'agent-3']);
+          expect(runner.activeAgentIds, hasLength(3));
+          expect(queue.length, 1);
+
+          gates['agent-1']!.complete(null);
+          async.flushMicrotasks();
+
+          expect(started, ['agent-1', 'agent-2', 'agent-3', 'agent-4']);
+          expect(runner.activeAgentIds, hasLength(3));
+
+          for (final agentId in ['agent-2', 'agent-3', 'agent-4']) {
+            gates[agentId]!.complete(null);
+          }
+          async.flushMicrotasks();
+          expect(runner.activeAgentIds, isEmpty);
+        });
+      });
+
+      test('configured concurrency one preserves sequential execution', () {
+        fakeAsync((async) {
+          final firstGate = Completer<Map<String, VectorClock>?>();
+          final started = <String>[];
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 1,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              started.add(agentId);
+              return agentId == 'agent-1' ? firstGate.future : Future.value();
+            },
+          );
+          queue
+            ..enqueue(makeJob(reason: 'test'))
+            ..enqueue(
+              makeJob(
+                runKey: 'rk-2',
+                agentId: 'agent-2',
+                reason: 'test',
+              ),
+            );
+
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+
+          expect(started, ['agent-1']);
+          expect(queue.length, 1);
+
+          firstGate.complete(null);
+          async.flushMicrotasks();
+
+          expect(started, ['agent-1', 'agent-2']);
+          expect(queue.isEmpty, isTrue);
+        });
+      });
+
+      test('configured higher concurrency starts four agents together', () {
+        fakeAsync((async) {
+          final gates = <String, Completer<Map<String, VectorClock>?>>{
+            for (var index = 1; index <= 4; index++)
+              'agent-$index': Completer<Map<String, VectorClock>?>(),
+          };
+          final started = <String>[];
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 4,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              started.add(agentId);
+              return gates[agentId]!.future;
+            },
+          );
+          for (var index = 1; index <= 4; index++) {
+            queue.enqueue(
+              makeJob(
+                runKey: 'rk-$index',
+                agentId: 'agent-$index',
+                reason: 'test',
+              ),
+            );
+          }
+
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+
+          expect(started, ['agent-1', 'agent-2', 'agent-3', 'agent-4']);
+          expect(runner.activeAgentIds, hasLength(4));
+          expect(queue.isEmpty, isTrue);
+
+          for (final gate in gates.values) {
+            gate.complete(null);
+          }
+          async.flushMicrotasks();
+          expect(runner.activeAgentIds, isEmpty);
+        });
+      });
+
+      test('global concurrency keeps each agent single-flight', () {
+        fakeAsync((async) {
+          final firstAgentGate = Completer<Map<String, VectorClock>?>();
+          final otherAgentGate = Completer<Map<String, VectorClock>?>();
+          final startedRunKeys = <String>[];
+          orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) {
+            startedRunKeys.add(runKey);
+            return switch (runKey) {
+              'rk-1' => firstAgentGate.future,
+              'rk-2' => Future.value(),
+              _ => otherAgentGate.future,
+            };
+          };
+          queue
+            ..enqueue(makeJob(reason: 'test'))
+            ..enqueue(
+              makeJob(
+                runKey: 'rk-2',
+                reason: 'test',
+              ),
+            )
+            ..enqueue(
+              makeJob(
+                runKey: 'rk-3',
+                agentId: 'agent-2',
+                reason: 'test',
+              ),
+            );
+
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+
+          expect(startedRunKeys, ['rk-1', 'rk-3']);
+          expect(queue.length, 1);
+
+          firstAgentGate.complete(null);
+          async.flushMicrotasks();
+
+          expect(startedRunKeys, ['rk-1', 'rk-3', 'rk-2']);
+          otherAgentGate.complete(null);
+          async.flushMicrotasks();
+          expect(runner.activeAgentIds, isEmpty);
+        });
+      });
+
+      test('requeues a job when its agent starts during policy lookup', () {
+        fakeAsync((async) {
+          final policyLookup = Completer<AgentDomainEntity?>();
+          when(
+            () => mockRepository.getEntity('agent-1'),
+          ).thenAnswer((_) => policyLookup.future);
+          var executions = 0;
+          orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) {
+            executions++;
+            return Future.value();
+          };
+          queue.enqueue(makeJob(reason: 'test'));
+
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+          expect(queue.isEmpty, isTrue);
+
+          var acquired = false;
+          unawaited(
+            runner.tryAcquire('agent-1').then((value) => acquired = value),
+          );
+          async.flushMicrotasks();
+          expect(acquired, isTrue);
+
+          policyLookup.complete(null);
+          async.flushMicrotasks();
+
+          expect(executions, 0);
+          expect(queue.length, 1);
+          expect(queue.dequeue()!.agentId, 'agent-1');
+          runner.release('agent-1');
+        });
+      });
+
+      test('defers a subscription throttled during policy lookup', () {
+        fakeAsync((async) {
+          final policyLookup = Completer<AgentDomainEntity?>();
+          when(
+            () => mockRepository.getEntity('agent-1'),
+          ).thenAnswer((_) => policyLookup.future);
+          var executions = 0;
+          orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) {
+            executions++;
+            return Future.value();
+          };
+          queue.enqueue(
+            makeJob(reason: WakeReason.subscription.name),
+          );
+
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+          expect(queue.isEmpty, isTrue);
+
+          orchestrator.setThrottleDeadline(
+            'agent-1',
+            clock.now().add(WakeOrchestrator.throttleWindow),
+          );
+          policyLookup.complete(null);
+          async.flushMicrotasks();
+
+          expect(executions, 0);
+          expect(runner.isRunning('agent-1'), isFalse);
+          expect(queue.length, 1);
+          expect(queue.dequeue()!.agentId, 'agent-1');
         });
       });
 
@@ -2527,7 +2764,7 @@ void main() {
         });
       });
 
-      test('single-flight guard processes jobs enqueued during drain', () {
+      test('active drain fills available concurrency with newly queued work', () {
         fakeAsync((async) {
           // Use a completer to pause the first job mid-execution so we can
           // enqueue a second job while the drain is in-flight.
@@ -2558,8 +2795,9 @@ void main() {
           orchestrator.processNext();
           async.flushMicrotasks();
 
-          // Only the first job should have started so far.
-          expect(executionCount, 1);
+          // The second agent can start immediately because the default global
+          // concurrency is three, while the per-agent lock remains independent.
+          expect(executionCount, 2);
 
           // Complete the first job — the drain should pick up the second.
           gate.complete(null);

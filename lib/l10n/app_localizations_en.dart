@@ -2048,6 +2048,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Add provider';
 
   @override
+  String get aiSettingsAgentWakeConcurrencyDescription =>
+      'Choose how many different agents can run inference at once. Higher values respond faster but use more provider and device capacity.';
+
+  @override
+  String get aiSettingsAgentWakeConcurrencyLabel => 'Concurrent agent wakes';
+
+  @override
   String get aiSettingsClearAllFiltersTooltip => 'Clear all filters';
 
   @override

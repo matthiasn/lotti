@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1047]
 ### Changed
+- **AI agents respond sooner when several are active.** Up to three different
+  agent wake cycles now run at once by default instead of waiting in one global
+  line, while each individual agent remains single-flight. AI Settings lets
+  you tune the device-local limit from one through eight for local hardware or
+  provider capacity.
 - **Task and project filters now share one coherent, accessible flow.** Status,
   category, label, and project choices stay inside the same smoothly resizing
   sheet or desktop dialog, with consistent full-width selection states,

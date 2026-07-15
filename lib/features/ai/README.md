@@ -29,7 +29,11 @@ flowchart TD
 
 ## Configuration Model
 
-`AiConfigRepository` persists all AI configuration objects in `AiConfigDb` and syncs changes through the outbox layer. The runtime is built from five config variants plus one resolved runtime object:
+`AiConfigRepository` persists provider-facing AI configuration objects in
+`AiConfigDb` and syncs changes through the outbox layer. Device-local runtime
+controls use `AiRuntimeSettingsController` and `SettingsDb` instead. The
+runtime is built from five config variants, one resolved runtime object, and
+the local dispatch settings:
 
 | Object | Stored as | Used by |
 | --- | --- | --- |
@@ -39,6 +43,7 @@ flowchart TD
 | Profile | `AiConfig.inferenceProfile` | Capability slots for thinking, transcription, vision, and image generation |
 | Skill | `AiConfig.skill` (defined in code) | Capability contract plus `ContextPolicy`. Built-ins live in `skills/built_in_skills.dart`; not persisted in the DB |
 | Resolved profile | `ResolvedProfile` | Runtime profile with providers hydrated from configured model IDs |
+| Runtime settings | `SettingsDb` (device-local) | Bounded agent-wake concurrency; defaults to 3 and supports 1 through 8 |
 
 The key split is between skills and profiles:
 
@@ -46,6 +51,22 @@ The key split is between skills and profiles:
 - a profile defines which configured model/provider slot executes that skill
 
 That split is what lets the app move the same skill between providers without rewriting the prompt contract.
+
+The agent-wake concurrency setting is intentionally local because device and
+provider capacity differ. `WakeOrchestrator` reads the controller through a
+callback at dispatch time, so changing AI Settings affects new wake cycles
+without rebuilding the provider graph. A missing or malformed stored value
+uses the default of 3, while out-of-range values are clamped to the supported
+range.
+
+```mermaid
+flowchart LR
+  UI["AI Settings concurrency dropdown"] --> Controller["AiRuntimeSettingsController"]
+  Controller --> SettingsDb["SettingsDb<br/>device-local value"]
+  Controller --> Orchestrator["WakeOrchestrator capacity callback"]
+  Orchestrator --> Pool["1-8 concurrent agent wakes<br/>default 3"]
+  Pool --> Runner["WakeRunner<br/>single-flight per agent"]
+```
 
 ## Configuration Selection UI
 

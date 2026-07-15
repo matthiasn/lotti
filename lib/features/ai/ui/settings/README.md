@@ -79,7 +79,7 @@ lib/features/ai/ui/settings/
 │   │   ├── ai_provider_setup_preview_models.dart
 │   │   └── ai_provider_setup_result_modal.dart # Step 3: result
 │   └── v2/                                 # Live card chrome
-│       ├── ai_settings_header_bar.dart     # Search row
+│       ├── ai_settings_header_bar.dart     # Search + agent concurrency
 │       ├── ai_settings_tab_bar.dart        # Providers/Models/Profiles tabs
 │       ├── ai_settings_cards.dart          # Card barrel: AiProviderIconTile + re-exports
 │       ├── ai_provider_card.dart           # Providers-tab card (standalone)
@@ -95,7 +95,7 @@ lib/features/ai/ui/settings/
 ### Sliver-Based Layout
 
 The AI Settings page renders as a single `CustomScrollView`. None of the
-slivers are pinned/sticky — the title strip, search row, and tab bar all
+slivers are pinned/sticky — the title strip, header controls, and tab bar all
 scroll with the content.
 
 **Key Benefits:**
@@ -107,7 +107,7 @@ scroll with the content.
 CustomScrollView(
   slivers: [
     SettingsPageHeader(...),            // Shared settings title strip
-    SliverToBoxAdapter(                 // Search row (not pinned)
+    SliverToBoxAdapter(                 // Search + concurrency (not pinned)
       child: AiSettingsHeaderBar(...),
     ),
     // _buildBodySlivers():
@@ -290,13 +290,32 @@ Deletion is wired through the per-card `⋯` overflow menu's `Delete` action
 
 #### `AiSettingsHeaderBar` + `AiSettingsTabBar` (v2)
 
-Search and tab navigation are two separate, non-pinned slivers:
+Search/runtime controls and tab navigation are two separate, non-pinned
+slivers:
 
 - `AiSettingsHeaderBar` (`widgets/v2/ai_settings_header_bar.dart`) — the
-  search row only. The "Add" affordance moved to the per-tab
-  `AiSettingsFloatingActionButton`.
+  search row plus a design-system dropdown for the device-local maximum number
+  of concurrent agent wake cycles. It offers 1 through 8, defaults to 3 when
+  no setting exists, persists through `AiRuntimeSettingsController`, and takes
+  effect for newly dispatched wakes without a restart. The "Add" affordance
+  lives in the per-tab `AiSettingsFloatingActionButton`.
 - `AiSettingsTabBar` (`widgets/v2/ai_settings_tab_bar.dart`) — the
   Providers / Models / Profiles tab strip, with per-tab counts.
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant Header as AiSettingsHeaderBar
+  participant State as AiRuntimeSettingsController
+  participant DB as SettingsDb
+  participant Wake as WakeOrchestrator
+
+  User->>Header: choose concurrency 1-8
+  Header->>State: setAgentWakeConcurrency(value)
+  State->>DB: persist device-local value
+  Wake->>State: read capacity before dispatch
+  State-->>Wake: current value
+```
 
 > Note: `AiSettingsConfigSliver` (`widgets/ai_settings_config_sliver.dart`,
 > with its `ConfigEmptyState` / `DismissibleConfigCard` / swipe-to-delete
