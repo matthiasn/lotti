@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/ui/settings/embedding_backfill_modal.dart';
 import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -47,11 +48,17 @@ class MaintenancePage extends StatelessWidget {
 /// Owns its own vertical padding so both hosts (sliver page and V2
 /// detail pane) get the same chrome-independent spacing — matching
 /// the `LoggingSettingsBody` pattern.
-class MaintenanceBody extends ConsumerWidget {
+class MaintenanceBody extends ConsumerStatefulWidget {
   const MaintenanceBody({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MaintenanceBody> createState() => _MaintenanceBodyState();
+}
+
+class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
+    with HoverDividerIndex<MaintenanceBody> {
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final maintenance = getIt<Maintenance>();
 
@@ -175,24 +182,37 @@ class MaintenanceBody extends ConsumerWidget {
             ),
         ];
 
+    // The repaint-rainbow diagnostic tile is the final row; index it
+    // right after the action rows so hovering it fades the divider
+    // above it in the same fashion as the dividers between action rows.
+    final rainbowIndex = items.length;
+
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
       child: DesignSystemGroupedList(
         children: [
-          for (final item in items)
+          for (final (index, item) in items.indexed)
             DesignSystemListItem(
               title: item.title,
               subtitle: item.subtitle,
               leading: SettingsIcon(icon: item.icon),
               trailing: SettingsIcon.trailingChevron(tokens),
-              // Always draw a divider; the diagnostic
-              // [_RepaintRainbowTile] below is the new last item and
-              // owns the bottom-of-list (no-divider) slot.
+              // Keep `showDivider` stable so hover never shifts layout
+              // by 1 px; the divider is suppressed by fading it to
+              // transparent instead. The diagnostic [_RepaintRainbowTile]
+              // below owns the bottom-of-list (no-divider) slot, so every
+              // action row always draws a divider beneath it.
               showDivider: true,
+              dividerColor: hoverDividerColorFor(index),
               dividerIndent: SettingsIcon.dividerIndent(tokens),
+              onHoverChanged: (hovered) =>
+                  onRowHoverChanged(index, hovered: hovered),
               onTap: item.onTap,
             ),
-          const _RepaintRainbowTile(),
+          _RepaintRainbowTile(
+            onHoverChanged: (hovered) =>
+                onRowHoverChanged(rainbowIndex, hovered: hovered),
+          ),
         ],
       ),
     );
@@ -209,7 +229,12 @@ class MaintenanceBody extends ConsumerWidget {
 /// the change is visible immediately. Resets to off on every relaunch
 /// — the flag is never persisted.
 class _RepaintRainbowTile extends StatelessWidget {
-  const _RepaintRainbowTile();
+  const _RepaintRainbowTile({this.onHoverChanged});
+
+  /// Reports pointer enter/leave to the parent list so the divider
+  /// above this tile fades on hover in the same fashion as the dividers
+  /// between the action rows.
+  final ValueChanged<bool>? onHoverChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -228,6 +253,7 @@ class _RepaintRainbowTile extends StatelessWidget {
             onChanged: (value) => repaintRainbowEnabled.value = value,
           ),
           dividerIndent: SettingsIcon.dividerIndent(tokens),
+          onHoverChanged: onHoverChanged,
           onTap: () => repaintRainbowEnabled.value = !enabled,
         );
       },

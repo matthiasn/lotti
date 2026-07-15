@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -409,12 +410,8 @@ class _FlagsList extends StatefulWidget {
   State<_FlagsList> createState() => _FlagsListState();
 }
 
-class _FlagsListState extends State<_FlagsList> {
-  /// Index of the currently-hovered flag row, or `null` when no row is
-  /// hovered. Used to fade the divider between the hovered row and the
-  /// row below it so the hovered row is never bisected by a hairline.
-  int? _hoveredIndex;
-
+class _FlagsListState extends State<_FlagsList>
+    with HoverDividerIndex<_FlagsList> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -454,24 +451,14 @@ class _FlagsListState extends State<_FlagsList> {
                     flag.copyWith(status: !flag.status),
                   );
                 },
-                onHoverChanged: (hovered) {
-                  setState(() {
-                    if (hovered) {
-                      _hoveredIndex = index;
-                    } else if (_hoveredIndex == index) {
-                      _hoveredIndex = null;
-                    }
-                  });
-                },
+                onHoverChanged: (hovered) =>
+                    onRowHoverChanged(index, hovered: hovered),
                 // Keep `showDivider` stable so layout doesn't shift by
                 // 1 px on hover; fade the divider to transparent when
                 // either this row or the row below it is hovered, so
                 // the hovered row is never bisected by a hairline.
                 showDivider: index < flags.length - 1,
-                dividerColor:
-                    (_hoveredIndex == index || _hoveredIndex == index + 1)
-                    ? Colors.transparent
-                    : null,
+                dividerColor: hoverDividerColorFor(index),
                 dividerIndent: SettingsIcon.dividerIndent(tokens),
               ),
           ],

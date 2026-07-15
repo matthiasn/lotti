@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
@@ -12,9 +11,7 @@ import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indic
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_orb.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' show Amplitude;
@@ -54,33 +51,28 @@ class MockEntryController extends EntryController {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockJournalDb mockJournalDb;
   late MockNavService mockNavService;
   late MockAudioRecorderRepository mockRecorderRepository;
-  late MockLoggingService mockLoggingService;
   late MockEditorStateService mockEditorStateService;
   late MockPersistenceLogic mockPersistenceLogic;
-  late MockUpdateNotifications mockUpdateNotifications;
 
-  setUp(() {
-    mockJournalDb = MockJournalDb();
+  setUp(() async {
     mockNavService = MockNavService();
     mockRecorderRepository = MockAudioRecorderRepository();
-    mockLoggingService = MockLoggingService();
     mockEditorStateService = MockEditorStateService();
     mockPersistenceLogic = MockPersistenceLogic();
-    mockUpdateNotifications = MockUpdateNotifications();
 
-    getIt
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<NavService>(mockNavService)
-      ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<EditorStateService>(mockEditorStateService)
-      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+    final getItMocks = await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<NavService>(mockNavService)
+          ..registerSingleton<EditorStateService>(mockEditorStateService)
+          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      },
+    );
 
     when(
-      () => mockJournalDb.getConfigFlag(any()),
+      () => getItMocks.journalDb.getConfigFlag(any()),
     ).thenAnswer((_) async => false);
     when(() => mockNavService.beamBack()).thenReturn(null);
     when(
@@ -89,7 +81,7 @@ void main() {
     when(() => mockRecorderRepository.dispose()).thenAnswer((_) async {});
   });
 
-  tearDown(getIt.reset);
+  tearDown(tearDownTestGetIt);
 
   Widget makeTestableWidget(
     AudioRecorderState state, {
