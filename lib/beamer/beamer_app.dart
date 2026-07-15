@@ -96,55 +96,95 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
   return isUuid(location.state.pathParameters['taskId']);
 }
 
-/// True when the settings beamer location points at a detail/editor surface
-/// that docks its own action bar against the bottom edge — so the mobile
-/// shell slides the bottom nav out of the way and the page owns the whole
-/// bottom edge. Covers the entity-definition editors (categories, habits,
-/// labels, dashboards, measurables, per-project), the agent template/soul
-/// editors, and the sync conflict resolver. The list/browse pages keep the
-/// bar: they are ordinary browse surfaces. Pure function of router state.
+/// True when the settings beamer location points at a *detail* surface — a
+/// terminal page you navigate to, rather than a menu you navigate from — so
+/// the mobile shell slides the bottom nav out of the way and the page owns
+/// the whole bottom edge. Pure function of router state.
+///
+/// The split follows the settings tree: the pure navigation menus keep the
+/// bar, everything terminal hides it.
+///
+/// Keeps the bar (menus + browse lists that drill into their own editors):
+///   * the settings root `/settings`
+///   * the menu hubs `/settings/advanced`, `/settings/sync`,
+///     `/settings/definitions` — branch nodes with no page of their own
+///   * the entity **list** pages `/settings/{categories,labels,dashboards,
+///     measurables,habits}` (incl. the habits `search`/bare-`by_id` list
+///     variants)
+///   * the sync **conflicts list** `/settings/advanced/conflicts`, and the
+///     manual-merge entry editor `/edit` (the journal editor manages its own
+///     bottom inset)
+///
+/// Hides the bar (terminal destinations):
+///   * the whole **AI** and **Agents** sections — they are real settings
+///     pages (their tree nodes carry a `panel`), and on mobile their tabs
+///     swap in place without changing the URL, so the bar hides across the
+///     entire section instead of flickering per tab
+///   * every **Sync** leaf (`provisioned`, `node-profile`, `backfill`,
+///     `stats`, `outbox`, `matrix/maintenance`)
+///   * every **Advanced** leaf (`flags` via its own top-level route,
+///     `animations`, `logging_domains`, `maintenance`, `onboarding_metrics`,
+///     `about`, `health_import`) and the conflict **detail**
+///     `/settings/advanced/conflicts/<id>`
+///   * the top-level leaves `theming`, `recording-style`, `daily-os`,
+///     `speech`, `onboarding`
+///   * the entity **editors** (`.../<id>` or `.../create`) for categories,
+///     labels, dashboards, measurables, habits, and projects
 ///
 /// Editor surfaces that are *pushed* on top of another settings route rather
-/// than being routes themselves (the AI provider connect form, the agent
-/// template editor opened from an instance's internals, the evolution chat)
-/// keep the URL of the page they were pushed from, so they can't be matched
-/// here — they escape the nav by pushing onto the root navigator via
+/// than being routes themselves (the AI provider connect form, the evolution
+/// chat) keep the URL of the page they were pushed from, so they can't be
+/// matched here — they escape the nav by pushing onto the root navigator via
 /// `bottomNavSafeNavigatorOf` instead.
 bool settingsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
   if (location is! SettingsLocation) return false;
   final segments = location.state.uri.pathSegments;
-  if (segments.length < 3 || segments.first != 'settings') return false;
+  // The bare `/settings` root is the top-level menu — keep the bar.
+  if (segments.length < 2 || segments.first != 'settings') return false;
   return switch (segments[1]) {
-    'categories' || 'labels' || 'dashboards' || 'measurables' => true,
-    // `/settings/habits/search/<term>` is the habits list with a filter
-    // applied, not an editor — the bar stays. `by_id` only counts as an
-    // editor with an actual id: the bare `/settings/habits/by_id` (e.g. a
-    // truncated deep link) renders the list page.
-    'habits' =>
-      segments[2] == 'create' ||
-          (segments[2] == 'by_id' && segments.length >= 4),
-    // Projects has no list page under settings — only `/settings/projects/
-    // <projectId>` editors. The reserved `create` slug is deliberately not
-    // rendered by [SettingsLocation] (creation runs in a modal launched from
-    // the Projects tab, with no route of its own), so a stale deep link to it
-    // must not hide the bar over the bare settings root.
-    'projects' => segments[2] != 'create',
-    // Agent template/soul editors (`create` + per-id edit) dock a
-    // `FormBottomBar`. The `/review` history surfaces and the read-only
-    // instance detail keep the bar — they are browse surfaces; the evolution
-    // chat pushed from a review page escapes the nav via the root navigator.
-    'agents' =>
-      (segments[2] == 'templates' || segments[2] == 'souls') &&
-          segments.length >= 4 &&
-          segments.last != 'review',
-    // Sync conflict resolver detail (`/advanced/conflicts/<id>`) docks a
-    // `ConflictFooter`. The conflicts list keeps the bar, and the entry
-    // editor opened for a manual merge (`/edit`) is the journal editor — it
-    // manages its own bottom inset, so it stays out.
+    // AI and Agents are full settings pages, not menus: hide the bar across
+    // the entire section (landing, per-tab lists, and editors alike).
+    'ai' || 'agents' => true,
+    // Sync is a menu hub (`/settings/sync`, kept); every child is a terminal
+    // detail page (backfill, stats, outbox, node-profile, provisioned,
+    // matrix/maintenance) that hides the bar.
+    'sync' => segments.length >= 3,
+    // Advanced is a menu hub (kept). Its leaves hide, except the conflicts
+    // *list* — only the conflict *detail* hides, and the manual-merge entry
+    // editor (`/edit`) keeps the bar (it manages its own bottom inset).
     'advanced' =>
-      segments[2] == 'conflicts' &&
-          segments.length >= 4 &&
-          segments.last != 'edit',
+      segments.length >= 3 &&
+          (segments[2] != 'conflicts' ||
+              (segments.length >= 4 && segments.last != 'edit')),
+    // Entity-definition **list** pages are browse surfaces (kept); only the
+    // per-entity editor / `create` route hides.
+    'categories' ||
+    'labels' ||
+    'dashboards' ||
+    'measurables' => segments.length >= 3,
+    // `/settings/habits/search/<term>` is the list with a filter applied, and
+    // bare `/settings/habits/by_id` (a truncated deep link) renders the list
+    // — both keep the bar. Only `create` and a real `by_id/<id>` are editors.
+    'habits' =>
+      segments.length >= 3 &&
+          (segments[2] == 'create' ||
+              (segments[2] == 'by_id' && segments.length >= 4)),
+    // Projects has no list under settings — only `/settings/projects/<id>`
+    // editors. The reserved `create` slug is not routed (creation runs in a
+    // modal from the Projects tab), so it must not hide over the settings root.
+    'projects' => segments.length >= 3 && segments[2] != 'create',
+    // Top-level leaf pages — terminal destinations reached from a menu.
+    // `maintenance` is the legacy `/settings/maintenance` alias.
+    'flags' ||
+    'theming' ||
+    'recording-style' ||
+    'daily-os' ||
+    'speech' ||
+    'onboarding' ||
+    'health_import' ||
+    'maintenance' => true,
+    // Everything else — notably the `/settings/definitions` menu hub — keeps
+    // the bar.
     _ => false,
   };
 }
@@ -777,12 +817,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // every route change.
     final showBottomNav = !_isTaskDetailRoute(index);
 
-    // Settings detail/editor routes (category/habit/label/dashboard/
-    // measurable/project editors, agent template & soul editors, the sync
-    // conflict resolver — not the list pages) slide the bar away instead of
-    // removing it: nothing replaces the bar there, so an instant unmount
-    // would read as a jumpy glitch rather than a handoff to a page-owned
-    // surface.
+    // Settings *detail* routes — terminal pages you navigate to rather than
+    // menus you navigate from (the whole AI & Agents sections, every Sync and
+    // Advanced leaf, the top-level leaves like flags/theming, and the entity
+    // editors — but not the menu hubs or browse lists) — slide the bar away
+    // instead of removing it: nothing replaces the bar there, so an instant
+    // unmount would read as a jumpy glitch rather than a handoff to a
+    // page-owned surface. See [settingsRouteHidesBottomNav].
     final slideNavAway =
         destinations[index].kind == _AppNavigationDestinationKind.settings &&
         settingsRouteHidesBottomNav(
