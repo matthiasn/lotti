@@ -765,6 +765,30 @@ month's deterministic `day_agent_plan:<dayId>` ids), and tapping a day selects
 it via `dailyOsNextSelectedDateProvider`, which the already visible Daily OS
 surface reacts to directly.
 
+## Keyboard and Accessible Commit Confirmation
+
+`CommitPage` uses `HoldToConfirm` as its final user-owned transition. Pointer
+input retains the timed hold and reverse-on-early-release behavior. Once the
+control has focus, Enter or Space confirms immediately; the semantic button
+activation does the same. Keyboard and assistive-technology users are never
+required to simulate a long pointer press, and every path shares the same
+exactly-once `_done` guard and `onConfirmed` callback.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Holding: pointer down
+  Holding --> Idle: release before duration / reverse progress
+  Holding --> Confirmed: hold duration completes
+  Idle --> Confirmed: Enter or Space key down
+  Idle --> Confirmed: semantic button activation
+  Confirmed --> [*]
+```
+
+The focus ring uses the existing design-system text and spacing tokens; the
+pointer progress animation and localized Hold/Keep holding/Committed copy are
+unchanged.
+
 ## Onboarding walkthrough — substrate & contracts
 
 A first-time Daily OS user lands on a real but unexplained empty `DayPage`

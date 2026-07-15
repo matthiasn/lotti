@@ -36,7 +36,10 @@ policy. `AppCommandText` resolves localized labels, while
 
 `AppCommandHost` lives inside the localized `MaterialApp.router` builder. It
 owns the dispatcher and focus-region registry, installs global shortcuts, and
-reports key-down/key-repeat activity without consuming the event.
+reports key-down/key-repeat activity without consuming the event. The host's
+resolved desktop platform is inherited by every nested scope, so global and
+contextual bindings cannot disagree about whether Primary means Command or
+Control.
 
 ## Scope lifecycle and resolution
 

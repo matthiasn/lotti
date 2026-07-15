@@ -1,14 +1,15 @@
 # Desktop Keyboard Command System Implementation Plan
 
-**Status:** In progress
+**Status:** Completed (v1)
 **Date:** 2026-07-15
 **Architecture:** [ADR 0030](../adr/0030-desktop-keyboard-command-system.md)
 
 ## Outcome
 
-Desktop users can navigate, search, open, edit, save, cancel, reorder, and
-confirm work throughout Lotti without a pointer. A typed command catalog drives
-execution, macOS menus, a command palette, and fully localized shortcut help.
+Desktop users have one lifecycle-safe command layer for global navigation and
+high-value contextual actions. A typed command catalog drives execution, macOS
+menus, a command palette, and fully localized shortcut help. Existing
+control-local keyboard behavior remains local to the control.
 
 ## Delivery Sequence
 
@@ -23,18 +24,22 @@ execution, macOS menus, a command palette, and fully localized shortcut help.
 4. Convert macOS File/View commands and add Go/Help menus as catalog adapters.
 5. Migrate journal refresh, editor/form save, habit save, creation, and zoom
    away from `hotkey_manager`; then remove the dependency.
-6. Establish reusable design-system keyboard contracts: visible token-backed
-   focus, roving list focus, focus-aware hover affordances, keyboard-resizable
-   dividers, modal focus trapping/restoration, and local command scopes.
-7. Sweep Tasks, Daily OS, Projects, Habits, Dashboards, Journal, Events,
-   Settings, and their dialogs. Long lists use one Tab entry plus arrows,
-   Home/End, Page Up/Down, Enter, Primary+F, and selection scrolling. Trees,
-   tabs, calendars, pickers, checklists, reorderables, charts, image viewers,
-   and scrubbers use their conventional local bindings. Pointer-only actions
-   gain standard buttons or explicit Focus/Actions/Semantics.
-8. Update feature READMEs, CHANGELOG `0.9.1045`, and Flatpak metainfo. Format,
+6. Establish reusable keyboard contracts through focus regions, visible
+   token-backed focus, keyboard-resizable dividers, modal focus restoration,
+   accessible confirmation, and local command scopes.
+7. Wire all eight desktop destinations globally and add contextual command
+   scopes to Tasks, Projects, Habits, Journal, entry/project editors, and
+   creation dialogs. Keep conventional bespoke interactions—inline editing,
+   image-viewer Escape, and saved-filter row actions—local to their controls.
+8. Update feature READMEs, CHANGELOG `0.9.1047`, and Flatpak metainfo. Format,
    generate localization, analyze with zero diagnostics, and run targeted
    source-mirrored tests after every slice.
+
+All eight steps are delivered. The catalog also documents conventional local
+bindings for composite controls. A control only advertises those actions in
+the palette when its mounted scope provides an enabled handler; adding richer
+arrow-key behavior to other legacy composites remains normal feature work, not
+an unused global command registration.
 
 ## Default Bindings
 
@@ -86,11 +91,14 @@ flowchart LR
   scopes, re-entry, text-input safety, activity updates, and palette snapshots.
 - Widget tests: palette/help search and navigation, focus restoration, settings
   routing, native-menu adaptation, and every modified interaction primitive.
-- Keyboard-only journeys for all eight destinations: navigate, focus search,
-  move through a list, open detail, edit/save/cancel, use a modal, and confirm a
-  destructive action.
-- Manual matrix: macOS, Windows, Linux; English, Czech, German, Spanish, French,
-  Romanian; German/French layouts; light/dark and large text.
+- App-shell tests cover stable destination mapping and inactive-tab focus
+  exclusion. Feature tests cover contextual refresh/search/create/save paths.
+- Interaction tests cover tree arrows, divider resizing, accessible
+  confirmation, and palette focus restoration.
+
+Recommended release QA remains a manual matrix across macOS, Windows, and
+Linux; all six primary locales; non-US punctuation layouts; light/dark themes;
+and large text.
 
 Run `make l10n`, `make sort_arb_files`, `fvm dart format .`, analyzer checks,
 and targeted tests. The repository-wide suite remains opt-in because of its

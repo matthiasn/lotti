@@ -209,7 +209,11 @@ Representative composite or feature-shaped components:
 - desktop navigation sidebar with a collapsible icon-only state and a
   resizable divider that disables drag input while the sidebar is
   collapsed, preserving the previous expanded width so re-expanding
-  restores the exact prior divider position
+  restores the exact prior divider position. Enabled `ResizableDivider`
+  instances are focusable: Left/Right resize by the token spacing step,
+  Shift uses the larger step, and adjustable slider semantics expose the same
+  operation to accessibility actions. Focus joins hover and drag as an active,
+  token-colored visual state
 - reusable mobile detail back control and header chrome
 - celebration primitives (`components/celebration/`) — `CompletionGlow` (a soft
   accent halo that blooms then fades, with a static opacity-only variant for
