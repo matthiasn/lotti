@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1047]
 ### Changed
+- **Maintenance settings dividers fade on hover.** Hovering a row on the
+  Advanced Settings → Maintenance page now fades the hairline dividers above
+  and below it, so the hovered row is never bisected — matching the existing
+  Config Flags behaviour. The row layout stays fixed; only the divider colour
+  changes.
 - **AI agents respond sooner when several are active.** Up to three different
   agent wake cycles now run at once by default instead of waiting in one global
   line, while each individual agent remains single-flight. AI Settings lets

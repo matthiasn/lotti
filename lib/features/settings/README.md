@@ -478,6 +478,18 @@ Each visible flag has:
 
 The Flags entry is reached through Advanced; the `/settings/flags` URL itself is unchanged so existing deep links keep resolving.
 
+The flag rows share a hover-divider treatment with the Maintenance list
+([`ui/pages/advanced/maintenance_page.dart`](ui/pages/advanced/maintenance_page.dart)).
+Both states mix in `HoverDividerIndex`
+([`design_system/components/lists/hover_divider_index.dart`](../../design_system/components/lists/hover_divider_index.dart)),
+which tracks the hovered row index and exposes `onRowHoverChanged` /
+`hoverDividerColorFor`. Rather than toggling `DesignSystemListItem.showDivider`
+(which would shift layout by 1&nbsp;px), each list keeps `showDivider` stable
+and fades the divider to `Colors.transparent` for the hovered row and the row
+above it, so the hovered row is never bisected by a hairline. Maintenance folds
+its final diagnostic repaint-rainbow tile into the same index model so the
+divider between the last action row and the tile fades from either side.
+
 ### Advanced
 
 Advanced is also no longer a Settings-owned page. On mobile it is rendered by

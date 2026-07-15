@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart' as drift;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -548,6 +549,182 @@ void main() {
         // Final reset before the binding's invariant check.
         repaintRainbowEnabled.value = false;
         debugRepaintRainbowEnabled = false;
+      },
+    );
+  });
+
+  group('MaintenancePage - hover divider fade', () {
+    setUp(() {
+      final mockJournalDb = MockJournalDb();
+      when(mockJournalDb.watchConfigFlags).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([]),
+      );
+
+      final mockMaintenance = MockMaintenance();
+      when(mockMaintenance.deleteEditorDb).thenAnswer((_) async {});
+      when(mockMaintenance.deleteAgentDb).thenAnswer((_) async {});
+
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<Maintenance>(mockMaintenance)
+        ..registerSingleton<NotificationService>(MockNotificationService());
+      ensureThemingServicesRegistered();
+    });
+
+    tearDown(getIt.reset);
+
+    /// Pumps the desktop body inside a viewport tall enough that every
+    /// row — including the bottom repaint-rainbow tile — is on-screen and
+    /// therefore hit-testable by a synthetic mouse pointer.
+    Future<List<DesignSystemListItem>> pumpBody(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1000, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(makeTestableWidget(const MaintenanceBody()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      return tester
+          .widgetList<DesignSystemListItem>(find.byType(DesignSystemListItem))
+          .toList();
+    }
+
+    List<DesignSystemListItem> rows(WidgetTester tester) => tester
+        .widgetList<DesignSystemListItem>(find.byType(DesignSystemListItem))
+        .toList();
+
+    bool isFaded(DesignSystemListItem item) =>
+        item.dividerColor == Colors.transparent;
+
+    /// Drives a synthetic mouse hover onto the row at [index] and returns
+    /// the live row list after the resulting rebuild. Hover events require
+    /// pointer kind `mouse` — `tester.tap` won't fire the InkWell's
+    /// `onHover`.
+    Future<TestGesture> hoverRow(WidgetTester tester, int index) async {
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(gesture.removePointer);
+      await gesture.addPointer();
+      await gesture.moveTo(
+        tester.getCenter(find.byType(DesignSystemListItem).at(index)),
+      );
+      await tester.pump();
+      return gesture;
+    }
+
+    /// Asserts the set of rows whose divider is currently faded equals
+    /// [expected], and that `showDivider` is stable — true for every row
+    /// except the final (rainbow) row, regardless of hover state.
+    void expectFadedRows(
+      List<DesignSystemListItem> items,
+      Set<int> expected,
+    ) {
+      for (final (index, row) in items.indexed) {
+        expect(
+          row.showDivider,
+          index < items.length - 1,
+          reason: 'showDivider must stay stable across hover (row $index)',
+        );
+        expect(
+          isFaded(row),
+          expected.contains(index),
+          reason: 'row $index faded expectation',
+        );
+      }
+    }
+
+    testWidgets('idle: no divider is faded and showDivider is stable', (
+      tester,
+    ) async {
+      final items = await pumpBody(tester);
+      expect(
+        items.length,
+        greaterThanOrEqualTo(3),
+        reason: 'test relies on at least 3 rows',
+      );
+      expectFadedRows(items, const <int>{});
+    });
+
+    testWidgets(
+      'hovering a middle row fades the dividers above AND below it',
+      (tester) async {
+        await pumpBody(tester);
+        await hoverRow(tester, 2);
+
+        // Row 2 fades its own bottom divider (below) and row 1 fades its
+        // bottom divider (above row 2) — the hovered row is bracketed by
+        // invisible hairlines. Nothing else changes.
+        expectFadedRows(rows(tester), const {1, 2});
+      },
+    );
+
+    testWidgets(
+      'hovering the first row fades only its own divider (no row above)',
+      (tester) async {
+        await pumpBody(tester);
+        await hoverRow(tester, 0);
+
+        // No index -1 exists, so only row 0's own divider fades.
+        expectFadedRows(rows(tester), const {0});
+      },
+    );
+
+    testWidgets(
+      'hovering the last action row fades the divider shared with the '
+      'repaint-rainbow tile',
+      (tester) async {
+        final items = await pumpBody(tester);
+        // The last action row sits directly above the rainbow tile (the
+        // final row). Hovering it must fade the boundary divider between
+        // the two, exactly as between any other pair.
+        final lastAction = items.length - 2;
+        await hoverRow(tester, lastAction);
+
+        expectFadedRows(rows(tester), {lastAction - 1, lastAction});
+      },
+    );
+
+    testWidgets(
+      'hovering the repaint-rainbow tile fades the divider above it',
+      (tester) async {
+        final items = await pumpBody(tester);
+        // The rainbow tile is the final, dividerless row; hovering it
+        // must still fade the last action row's divider so the tile is
+        // not visually separated on hover.
+        final rainbowIndex = items.length - 1;
+        await hoverRow(tester, rainbowIndex);
+
+        expectFadedRows(rows(tester), {rainbowIndex - 1});
+      },
+    );
+
+    testWidgets('moving the pointer off the row clears every fade', (
+      tester,
+    ) async {
+      await pumpBody(tester);
+      final gesture = await hoverRow(tester, 2);
+      expect(rows(tester).where(isFaded), isNotEmpty);
+
+      await gesture.moveTo(Offset.zero);
+      await tester.pump();
+      expectFadedRows(rows(tester), const <int>{});
+    });
+
+    testWidgets(
+      'moving between rows re-targets the fade to the newly hovered row',
+      (tester) async {
+        await pumpBody(tester);
+        final gesture = await hoverRow(tester, 1);
+        expectFadedRows(rows(tester), const {0, 1});
+
+        // Move to a non-adjacent row: the exit from row 1 and the enter
+        // onto row 3 leave exactly row 3's pair faded, proving the
+        // hovered index is retargeted rather than accumulated.
+        await gesture.moveTo(
+          tester.getCenter(find.byType(DesignSystemListItem).at(3)),
+        );
+        await tester.pump();
+        expectFadedRows(rows(tester), const {2, 3});
       },
     );
   });
