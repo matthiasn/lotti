@@ -28,6 +28,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../helpers/entity_factories.dart';
 import '../../helpers/fallbacks.dart';
 import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
@@ -182,6 +183,8 @@ void main() {
       expect(task, isA<Task>());
       expect(task?.data.title, '');
       expect(task?.data.status, isA<TaskOpen>());
+      expect(task?.meta.categoryId, isNull);
+      expect(task?.meta.labelIds, isNull);
 
       // Verify task is in database
       final retrieved = await getIt<JournalDb>().journalEntityById(
@@ -190,6 +193,152 @@ void main() {
       expect(retrieved, isNotNull);
       expect(retrieved, isA<Task>());
     });
+
+    test('createTask persists inherited task filters', () async {
+      const categoryId = 'filtered-category';
+      const projectId = 'filtered-project';
+      const labelIds = ['label-1', 'label-2'];
+      final project = TestProjectFactory.create(
+        id: projectId,
+        title: 'Filtered Project',
+        categoryId: categoryId,
+        createdAt: DateTime.utc(2024, 6, 15),
+      );
+      await getIt<PersistenceLogic>().createDbEntity(project);
+
+      final task = await createTask(
+        projectId: projectId,
+        labelIds: labelIds,
+        status: 'IN PROGRESS',
+      );
+
+      expect(task, isNotNull);
+      expect(task!.meta.categoryId, categoryId);
+      expect(task.meta.labelIds, labelIds);
+      expect(task.data.status, isA<TaskInProgress>());
+      expect(
+        (await journalDb.getProjectForTask(task.meta.id))?.meta.id,
+        projectId,
+      );
+
+      final persisted = await journalDb.journalEntityById(task.meta.id);
+      expect(persisted, isA<Task>());
+      expect(persisted!.meta.labelIds, labelIds);
+      expect((persisted as Task).data.status, isA<TaskInProgress>());
+    });
+
+    test(
+      'createTask rejects unresolved explicit projects before writing',
+      () async {
+        final projectRepository = MockProjectRepository();
+        getIt.registerSingleton<ProjectRepository>(projectRepository);
+        const missingProjectId = 'missing-project';
+        const failingProjectId = 'failing-project';
+        when(
+          () => projectRepository.getProjectById(missingProjectId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => projectRepository.getProjectById(failingProjectId),
+        ).thenThrow(StateError('project lookup failed'));
+
+        for (final projectId in [missingProjectId, failingProjectId]) {
+          expect(
+            await createTask(projectId: projectId),
+            isNull,
+            reason: '$projectId must abort task creation',
+          );
+          verify(
+            () => projectRepository.getProjectById(projectId),
+          ).called(1);
+        }
+        verifyNever(
+          () => projectRepository.linkTaskToProject(
+            projectId: any(named: 'projectId'),
+            taskId: any(named: 'taskId'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'createTask uses the explicit project category as authoritative',
+      () async {
+        const projectId = 'project-with-category';
+        const projectCategoryId = 'project-category';
+        final projectRepository = MockProjectRepository();
+        final project = TestProjectFactory.create(
+          id: projectId,
+          categoryId: projectCategoryId,
+        );
+        getIt.registerSingleton<ProjectRepository>(projectRepository);
+        when(
+          () => projectRepository.getProjectById(projectId),
+        ).thenAnswer((_) async => project);
+        when(
+          () => projectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final task = await createTask(
+          projectId: projectId,
+          categoryId: 'conflicting-filter-category',
+        );
+
+        expect(task, isNotNull);
+        expect(task!.meta.categoryId, projectCategoryId);
+        verify(
+          () => projectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: task.meta.id,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'createTask surfaces rejected and throwing explicit project links',
+      () async {
+        final projectRepository = MockProjectRepository();
+        getIt.registerSingleton<ProjectRepository>(projectRepository);
+        final scenarios = <({String projectId, bool throws})>[
+          (projectId: 'rejected-project', throws: false),
+          (projectId: 'throwing-project', throws: true),
+        ];
+
+        for (final scenario in scenarios) {
+          final project = TestProjectFactory.create(
+            id: scenario.projectId,
+            categoryId: 'project-category',
+          );
+          when(
+            () => projectRepository.getProjectById(scenario.projectId),
+          ).thenAnswer((_) async => project);
+          Future<bool> linkCall() => projectRepository.linkTaskToProject(
+            projectId: scenario.projectId,
+            taskId: any(named: 'taskId'),
+          );
+          if (scenario.throws) {
+            when(linkCall).thenThrow(StateError('project assignment failed'));
+          } else {
+            when(linkCall).thenAnswer((_) async => false);
+          }
+
+          expect(
+            await createTask(projectId: scenario.projectId),
+            isNull,
+            reason: '${scenario.projectId} must surface its link failure',
+          );
+          verify(
+            () => projectRepository.linkTaskToProject(
+              projectId: scenario.projectId,
+              taskId: any(named: 'taskId'),
+            ),
+          ).called(1);
+        }
+      },
+    );
 
     test('createTask with linkedId and categoryId', () async {
       const testCategoryId = 'task-category-456';

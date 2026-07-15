@@ -89,6 +89,7 @@ abstract class PersistenceLogicContract {
     required EntryText entryText,
     String? linkedId,
     String? categoryId,
+    List<String>? labelIds,
   });
 
   Future<AiResponseEntry?> createAiResponseEntryImpl({

@@ -16,6 +16,7 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
@@ -33,10 +34,50 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
-/// Signature for the create-task action invoked by the [TasksTabPage] FAB,
-/// receiving the current `WidgetRef` and the optionally-selected category id.
+/// Signature for the create-task action invoked by the [TasksTabPage] FAB.
 typedef TasksTabCreateTaskCallback =
-    Future<void> Function(WidgetRef ref, String? categoryId);
+    Future<void> Function(
+      WidgetRef ref,
+      TaskCreationFilterContext filterContext,
+    );
+
+/// Unambiguous active-filter values inherited by a task created from the task
+/// list.
+///
+/// Category, project, and status are populated only for a single real
+/// selection. Every selected real label is retained. Empty IDs are UI
+/// sentinels for "Unassigned" and are therefore never persisted on a task.
+@immutable
+class TaskCreationFilterContext {
+  const TaskCreationFilterContext({
+    this.categoryId,
+    this.projectId,
+    this.labelIds = const <String>{},
+    this.status,
+  });
+
+  factory TaskCreationFilterContext.fromPageState(JournalPageState state) {
+    return TaskCreationFilterContext(
+      categoryId: _singleRealSelection(state.selectedCategoryIds),
+      projectId: _singleRealSelection(state.selectedProjectIds),
+      labelIds: Set<String>.unmodifiable(
+        state.selectedLabelIds.where((id) => id.isNotEmpty),
+      ),
+      status: _singleRealSelection(state.selectedTaskStatuses),
+    );
+  }
+
+  final String? categoryId;
+  final String? projectId;
+  final Set<String> labelIds;
+  final String? status;
+}
+
+String? _singleRealSelection(Set<String> selections) {
+  if (selections.length != 1) return null;
+  final selection = selections.single;
+  return selection.isEmpty ? null : selection;
+}
 
 /// Tasks list tab: a paginated, infinite-scroll list of tasks with a
 /// search/filter header and a create-task floating action button.
@@ -46,7 +87,7 @@ typedef TasksTabCreateTaskCallback =
 /// [TaskBrowseListItem]s; active filters are surfaced as removable chips and
 /// pull-to-refresh swaps the page atomically. The FAB calls
 /// [onCreateTaskPressed] (or a default that creates a task and navigates to
-/// it) with the single selected category id, if any.
+/// it) with every unambiguous inheritable filter value.
 class TasksTabPage extends ConsumerWidget {
   const TasksTabPage({
     super.key,
@@ -58,17 +99,14 @@ class TasksTabPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(journalPageControllerProvider(true));
-    final selectedCategoryIds = state.selectedCategoryIds;
-    final categoryId = selectedCategoryIds.length == 1
-        ? selectedCategoryIds.first
-        : null;
+    final filterContext = TaskCreationFilterContext.fromPageState(state);
     final floatingActionButton = DesignSystemFloatingActionButton(
       semanticLabel: context.messages.addActionAddTask,
       onPressed: () {
         unawaited(
           (onCreateTaskPressed ?? _defaultCreateTaskPressed)(
             ref,
-            categoryId,
+            filterContext,
           ),
         );
       },
@@ -476,11 +514,18 @@ Color? _priorityAccent(String id, {required Brightness brightness}) {
 
 Future<void> _defaultCreateTaskPressed(
   WidgetRef ref,
-  String? categoryId,
+  TaskCreationFilterContext filterContext,
 ) async {
   // Capture the service before the await to avoid using ref after disposal.
   final agentService = ref.read(taskAgentServiceProvider);
-  final task = await createTask(categoryId: categoryId);
+  final task = await createTask(
+    categoryId: filterContext.categoryId,
+    projectId: filterContext.projectId,
+    labelIds: filterContext.labelIds.isEmpty
+        ? null
+        : filterContext.labelIds.toList(growable: false),
+    status: filterContext.status,
+  );
   if (task != null) {
     unawaited(autoAssignCategoryAgentWith(agentService, task));
     getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');

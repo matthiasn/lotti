@@ -130,11 +130,13 @@ class PersistenceLogic implements PersistenceLogicContract {
     required EntryText entryText,
     String? linkedId,
     String? categoryId,
+    List<String>? labelIds,
   }) => _entries.createTaskEntry(
     data: data,
     entryText: entryText,
     linkedId: linkedId,
     categoryId: categoryId,
+    labelIds: labelIds,
   );
 
   Future<AiResponseEntry?> createAiResponseEntry({
@@ -228,11 +230,13 @@ class PersistenceLogic implements PersistenceLogicContract {
     required EntryText entryText,
     String? linkedId,
     String? categoryId,
+    List<String>? labelIds,
   }) => _create.createTaskEntryImpl(
     data: data,
     entryText: entryText,
     linkedId: linkedId,
     categoryId: categoryId,
+    labelIds: labelIds,
   );
 
   @override

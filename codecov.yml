@@ -2,8 +2,9 @@ codecov:
   notify:
     # Sharded coverage uploads arrive independently, so do not let Codecov
     # publish transient project statuses from a partial report set.
-    # The GitHub workflow sends a single notification once all coverage
-    # upload jobs have completed successfully.
+    # Ten standard shards plus the Glados shard must be processed before the
+    # GitHub workflow sends its single notification.
+    after_n_builds: 11
     manual_trigger: true
     wait_for_ci: true
 

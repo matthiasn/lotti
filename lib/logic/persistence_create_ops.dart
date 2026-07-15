@@ -212,6 +212,7 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
     required EntryText entryText,
     String? linkedId,
     String? categoryId,
+    List<String>? labelIds,
   }) async {
     try {
       final task = Task(
@@ -222,6 +223,7 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
           dateTo: data.dateTo,
           uuidV5Input: json.encode(data),
           categoryId: categoryId,
+          labelIds: labelIds,
           starred: false,
         ),
       );
