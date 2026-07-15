@@ -697,7 +697,6 @@ void main() {
           labelsRepository: mockLabelsRepository,
           syncService: mockSyncService,
           templateService: mockTemplateService,
-          evidenceSynthesisEnabled: true,
         );
 
         final result = await safetyWorkflow.execute(
@@ -765,7 +764,6 @@ void main() {
           labelsRepository: mockLabelsRepository,
           syncService: mockSyncService,
           templateService: mockTemplateService,
-          evidenceSynthesisEnabled: true,
         );
 
         final result = await noDraftWorkflow.execute(
@@ -1332,7 +1330,6 @@ void main() {
             labelsRepository: mockLabelsRepository,
             syncService: mockSyncService,
             templateService: mockTemplateService,
-            evidenceSynthesisEnabled: true,
           );
 
           final result = await optimizedWorkflow.execute(
@@ -1349,7 +1346,6 @@ void main() {
               reportTool.function.parameters!['properties']!
                   as Map<String, dynamic>;
           expect(result.success, isTrue);
-          expect(optimizedWorkflow.evidenceSynthesisEnabled, isTrue);
           expect(capturedTemperature, 0.3);
           expect(
             systemMessage,
@@ -1435,7 +1431,6 @@ void main() {
             labelsRepository: mockLabelsRepository,
             syncService: mockSyncService,
             templateService: mockTemplateService,
-            evidenceSynthesisEnabled: true,
           );
 
           final result = await qwenWorkflow.execute(
@@ -1535,7 +1530,6 @@ void main() {
               labelsRepository: mockLabelsRepository,
               syncService: mockSyncService,
               templateService: mockTemplateService,
-              evidenceSynthesisEnabled: true,
             );
 
             final result = await workflow.execute(
@@ -1674,7 +1668,6 @@ void main() {
             syncService: mockSyncService,
             templateService: mockTemplateService,
             domainLogger: domainLogger,
-            evidenceSynthesisEnabled: true,
           );
 
           final result = await qwenWorkflow.execute(
@@ -1830,7 +1823,6 @@ void main() {
             labelsRepository: mockLabelsRepository,
             syncService: mockSyncService,
             templateService: mockTemplateService,
-            evidenceSynthesisEnabled: true,
           );
 
           final result = await optimizedWorkflow.execute(
@@ -2358,9 +2350,10 @@ not describe task configuration or tool activity as progress.
             capturedSystemMessage,
             contains('Your Personality & Directives'),
           );
-          // Default report scaffold used when reportDirective is empty.
-          expect(capturedSystemMessage, contains('## Report'));
-          expect(capturedSystemMessage, isNot(contains('## Report Directive')));
+          // The permanent evidence-first path supplies the evaluated report
+          // directive when the saved directive is empty.
+          expect(capturedSystemMessage, contains('## Report Directive'));
+          expect(capturedSystemMessage, contains('## Final report'));
         },
       );
 
@@ -3102,7 +3095,6 @@ not describe task configuration or tool activity as progress.
             labelsRepository: mockLabelsRepository,
             syncService: mockSyncService,
             templateService: mockTemplateService,
-            evidenceSynthesisEnabled: true,
           );
           final result = await evidenceWorkflow.execute(
             agentIdentity: testAgentIdentity,
@@ -3219,7 +3211,6 @@ not describe task configuration or tool activity as progress.
             labelsRepository: mockLabelsRepository,
             syncService: mockSyncService,
             templateService: mockTemplateService,
-            evidenceSynthesisEnabled: true,
           );
 
           final result = await evidenceWorkflow.execute(
@@ -3293,7 +3284,6 @@ not describe task configuration or tool activity as progress.
             labelsRepository: mockLabelsRepository,
             syncService: mockSyncService,
             templateService: mockTemplateService,
-            evidenceSynthesisEnabled: true,
           );
 
           final result = await evidenceWorkflow.execute(

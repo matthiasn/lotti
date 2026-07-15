@@ -3028,13 +3028,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher la page Habitudes dans la navigation principale. Suis et gère tes habitudes quotidiennes ici.';
 
   @override
-  String get configFlagEnableKnowledgeGraph => 'Graphe de connaissances';
-
-  @override
-  String get configFlagEnableKnowledgeGraphDescription =>
-      'Affiche l\'explorateur expérimental de graphe de connaissances sur les tâches — une carte visuelle des liens entre tâches, entrées et projets.';
-
-  @override
   String get configFlagEnableLogging => 'Activer la journalisation';
 
   @override
@@ -3076,21 +3069,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get configFlagEnableSessionRatingsDescription =>
       'Proposer une évaluation rapide de session à l\'arrêt d\'un minuteur.';
-
-  @override
-  String get configFlagEnableSyncedAlerts => 'Alertes synchronisées';
-
-  @override
-  String get configFlagEnableSyncedAlertsDescription =>
-      'Synchronise les alertes d\'IA et de tâches entre tes appareils et autorise-les à programmer des notifications système locales.';
-
-  @override
-  String get configFlagEnableTaskAgentEvidenceSynthesis =>
-      'Agent de tâches fondé sur les faits';
-
-  @override
-  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
-      'Utilise des consignes fondées sur les faits pour les agents de tâches avec les modèles Melious efficaces. Le profil Melious par défaut utilise directement Qwen 3.5 ; si tu choisis Mistral Small 4, un passage Qwen isolé est ajouté pour le rapport, avec un léger supplément de latence et d’utilisation.';
 
   @override
   String get configFlagEnableTooltip => 'Activer les info-bulles';
@@ -6358,17 +6336,126 @@ class AppLocalizationsFr extends AppLocalizations {
   String get keyboardShortcutsTitle => 'Raccourcis clavier';
 
   @override
+  String knowledgeGraphAgeDaysAgo(int count) {
+    return 'il y a $count jours';
+  }
+
+  @override
+  String knowledgeGraphAgeMonthsAgo(int count) {
+    return 'il y a $count mois';
+  }
+
+  @override
+  String get knowledgeGraphAgeToday => 'Aujourd’hui';
+
+  @override
+  String knowledgeGraphAgeWeeksAgo(int count) {
+    return 'il y a $count semaines';
+  }
+
+  @override
+  String get knowledgeGraphAgeYesterday => 'Hier';
+
+  @override
+  String get knowledgeGraphBack => 'Retour';
+
+  @override
+  String get knowledgeGraphCloseDetails => 'Fermer les détails';
+
+  @override
   String get knowledgeGraphEmpty => 'Aucun lien à explorer pour le moment';
+
+  @override
+  String get knowledgeGraphEntryLoadError =>
+      'Impossible de charger cette entrée';
+
+  @override
+  String get knowledgeGraphEntryNotFound => 'Entrée introuvable';
 
   @override
   String get knowledgeGraphError =>
       'Impossible de charger le graphe de connaissances';
 
   @override
+  String knowledgeGraphLinkedSection(int count) {
+    return 'LIÉS · $count';
+  }
+
+  @override
+  String get knowledgeGraphMoreLinks => 'Plus de liens';
+
+  @override
+  String knowledgeGraphNodeCount(int count) {
+    return 'Nœuds : $count';
+  }
+
+  @override
+  String get knowledgeGraphNodeTypeAiSummary => 'Résumé IA';
+
+  @override
+  String get knowledgeGraphNodeTypeAudioNote => 'Note audio';
+
+  @override
+  String get knowledgeGraphNodeTypeChecklist => 'Liste de contrôle';
+
+  @override
+  String get knowledgeGraphNodeTypeChecklistItem => 'Élément de liste';
+
+  @override
+  String get knowledgeGraphNodeTypeNote => 'Note';
+
+  @override
+  String get knowledgeGraphNodeTypePhoto => 'Photo';
+
+  @override
+  String get knowledgeGraphNodeTypeProject => 'Projet';
+
+  @override
+  String get knowledgeGraphNodeTypeRating => 'Évaluation';
+
+  @override
+  String get knowledgeGraphNodeTypeTask => 'Tâche';
+
+  @override
+  String get knowledgeGraphOpenDetails => 'Ouvrir les détails';
+
+  @override
+  String get knowledgeGraphRecenter => 'Recentrer';
+
+  @override
+  String get knowledgeGraphRecentToOlder => 'Récent → ancien';
+
+  @override
+  String get knowledgeGraphRelationAiSource => 'Source IA';
+
+  @override
+  String get knowledgeGraphRelationChecklist => 'Liste de contrôle';
+
+  @override
+  String get knowledgeGraphRelationInProject => 'Dans le projet';
+
+  @override
+  String get knowledgeGraphRelationLinkedTask => 'Tâche liée';
+
+  @override
+  String get knowledgeGraphRelationNoteLog => 'Note / journal';
+
+  @override
+  String get knowledgeGraphRelationRating => 'Évaluation';
+
+  @override
+  String get knowledgeGraphSummarySection => 'RÉSUMÉ';
+
+  @override
   String get knowledgeGraphTitle => 'Graphe de connaissances';
 
   @override
   String get knowledgeGraphTooltip => 'Explorer les liens';
+
+  @override
+  String knowledgeGraphWalkHint(int count) {
+    return 'Touche un nœud pour avancer · nœuds : $count';
+  }
 
   @override
   String get linkedFromCaption => 'depuis';

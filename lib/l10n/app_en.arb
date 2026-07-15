@@ -1656,8 +1656,6 @@
   "configFlagEnableForkHealingDescription": "Heal divergent agent histories from multi-device use by merging them at the next wake.",
   "configFlagEnableHabitsPage": "Enable Habits page",
   "configFlagEnableHabitsPageDescription": "Show the Habits page in the main navigation. Track and manage your daily habits here.",
-  "configFlagEnableKnowledgeGraph": "Knowledge Graph",
-  "configFlagEnableKnowledgeGraphDescription": "Show the experimental knowledge graph explorer on tasks — a visual map of links between tasks, entries, and projects.",
   "configFlagEnableLogging": "Enable logging",
   "configFlagEnableLoggingDescription": "Enable detailed logging for debugging purposes. This may impact performance.",
   "configFlagEnableMatrix": "Enable Matrix sync",
@@ -1670,10 +1668,6 @@
   "configFlagEnableProjectsDescription": "Show project management features for organizing tasks into projects.",
   "configFlagEnableSessionRatings": "Enable Session Ratings",
   "configFlagEnableSessionRatingsDescription": "Prompt for a quick session rating when you stop a timer.",
-  "configFlagEnableSyncedAlerts": "Synced alerts",
-  "configFlagEnableSyncedAlertsDescription": "Sync AI and task alerts across devices and allow them to schedule local OS notifications.",
-  "configFlagEnableTaskAgentEvidenceSynthesis": "Evidence-first task agent",
-  "configFlagEnableTaskAgentEvidenceSynthesisDescription": "Use evidence-grounded task-agent prompting for efficient Melious models. The default Melious profile uses Qwen 3.5 directly; choosing Mistral Small 4 adds an isolated Qwen report pass and a small amount of latency and usage.",
   "configFlagEnableTooltip": "Enable tooltips",
   "configFlagEnableTooltipDescription": "Show helpful tooltips throughout the app to guide you through features.",
   "configFlagEnableVectorSearch": "Vector Search",
@@ -3182,10 +3176,84 @@
   "keyboardShortcutsSearchHint": "Search shortcuts…",
   "keyboardShortcutsSubtitle": "Every desktop command and its current keyboard combination.",
   "keyboardShortcutsTitle": "Keyboard shortcuts",
+  "knowledgeGraphAgeDaysAgo": "{count} days ago",
+  "@knowledgeGraphAgeDaysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgeGraphAgeMonthsAgo": "{count} months ago",
+  "@knowledgeGraphAgeMonthsAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgeGraphAgeToday": "today",
+  "knowledgeGraphAgeWeeksAgo": "{count} weeks ago",
+  "@knowledgeGraphAgeWeeksAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgeGraphAgeYesterday": "yesterday",
+  "knowledgeGraphBack": "Back",
+  "knowledgeGraphCloseDetails": "Close details",
   "knowledgeGraphEmpty": "No links to explore yet",
+  "knowledgeGraphEntryLoadError": "Couldn't load this entry",
+  "knowledgeGraphEntryNotFound": "Entry not found",
   "knowledgeGraphError": "Couldn't load the knowledge graph",
+  "knowledgeGraphLinkedSection": "LINKED · {count}",
+  "@knowledgeGraphLinkedSection": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgeGraphMoreLinks": "more links",
+  "knowledgeGraphNodeCount": "{count, plural, =1{1 node} other{{count} nodes}}",
+  "@knowledgeGraphNodeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "knowledgeGraphNodeTypeAiSummary": "AI summary",
+  "knowledgeGraphNodeTypeAudioNote": "Audio note",
+  "knowledgeGraphNodeTypeChecklist": "Checklist",
+  "knowledgeGraphNodeTypeChecklistItem": "Checklist item",
+  "knowledgeGraphNodeTypeNote": "Note",
+  "knowledgeGraphNodeTypePhoto": "Photo",
+  "knowledgeGraphNodeTypeProject": "Project",
+  "knowledgeGraphNodeTypeRating": "Rating",
+  "knowledgeGraphNodeTypeTask": "Task",
+  "knowledgeGraphOpenDetails": "Open details",
+  "knowledgeGraphRecenter": "Recenter",
+  "knowledgeGraphRecentToOlder": "recent → older",
+  "knowledgeGraphRelationAiSource": "AI source",
+  "knowledgeGraphRelationChecklist": "checklist",
+  "knowledgeGraphRelationInProject": "in project",
+  "knowledgeGraphRelationLinkedTask": "linked task",
+  "knowledgeGraphRelationNoteLog": "note / log",
+  "knowledgeGraphRelationRating": "rating",
+  "knowledgeGraphSummarySection": "SUMMARY",
   "knowledgeGraphTitle": "Knowledge graph",
   "knowledgeGraphTooltip": "Explore links",
+  "knowledgeGraphWalkHint": "Tap a node to walk · {count, plural, =1{1 node} other{{count} nodes}}",
+  "@knowledgeGraphWalkHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "linkedFromCaption": "from",
   "linkedTaskImageBadge": "From linked task",
   "linkedTasksMenuTooltip": "Linked tasks options",

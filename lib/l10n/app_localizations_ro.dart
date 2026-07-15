@@ -3030,13 +3030,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează pagina Obiceiuri în navigarea principală. Urmăriți și gestionați-vă obiceiurile zilnice aici.';
 
   @override
-  String get configFlagEnableKnowledgeGraph => 'Graf de cunoștințe';
-
-  @override
-  String get configFlagEnableKnowledgeGraphDescription =>
-      'Afișează exploratorul experimental al grafului de cunoștințe pentru sarcini — o hartă vizuală a legăturilor dintre sarcini, intrări și proiecte.';
-
-  @override
   String get configFlagEnableLogging => 'Activează înregistrarea';
 
   @override
@@ -3079,21 +3072,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get configFlagEnableSessionRatingsDescription =>
       'Solicită o evaluare rapidă a sesiunii la oprirea unui cronometru.';
-
-  @override
-  String get configFlagEnableSyncedAlerts => 'Alerte sincronizate';
-
-  @override
-  String get configFlagEnableSyncedAlertsDescription =>
-      'Sincronizați alertele AI și de sarcini între dispozitivele dvs. și permiteți programarea notificărilor locale de sistem.';
-
-  @override
-  String get configFlagEnableTaskAgentEvidenceSynthesis =>
-      'Agent de sarcini bazat pe dovezi';
-
-  @override
-  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
-      'Utilizează instrucțiuni bazate pe dovezi pentru agenții de sarcini cu modelele Melious eficiente. Profilul Melious implicit folosește direct Qwen 3.5; dacă alegeți Mistral Small 4, se adaugă o etapă Qwen izolată pentru raport, cu o ușoară creștere a latenței și consumului.';
 
   @override
   String get configFlagEnableTooltip => 'Activează sfaturile';
@@ -6367,17 +6345,126 @@ class AppLocalizationsRo extends AppLocalizations {
   String get keyboardShortcutsTitle => 'Comenzi rapide de la tastatură';
 
   @override
+  String knowledgeGraphAgeDaysAgo(int count) {
+    return 'acum $count zile';
+  }
+
+  @override
+  String knowledgeGraphAgeMonthsAgo(int count) {
+    return 'acum $count luni';
+  }
+
+  @override
+  String get knowledgeGraphAgeToday => 'Astăzi';
+
+  @override
+  String knowledgeGraphAgeWeeksAgo(int count) {
+    return 'acum $count săptămâni';
+  }
+
+  @override
+  String get knowledgeGraphAgeYesterday => 'Ieri';
+
+  @override
+  String get knowledgeGraphBack => 'Înapoi';
+
+  @override
+  String get knowledgeGraphCloseDetails => 'Închideți detaliile';
+
+  @override
   String get knowledgeGraphEmpty => 'Încă nu există legături de explorat';
+
+  @override
+  String get knowledgeGraphEntryLoadError =>
+      'Această intrare nu a putut fi încărcată';
+
+  @override
+  String get knowledgeGraphEntryNotFound => 'Intrarea nu a fost găsită';
 
   @override
   String get knowledgeGraphError =>
       'Graful de cunoștințe nu a putut fi încărcat';
 
   @override
+  String knowledgeGraphLinkedSection(int count) {
+    return 'LEGATE · $count';
+  }
+
+  @override
+  String get knowledgeGraphMoreLinks => 'Mai multe legături';
+
+  @override
+  String knowledgeGraphNodeCount(int count) {
+    return 'Noduri: $count';
+  }
+
+  @override
+  String get knowledgeGraphNodeTypeAiSummary => 'Rezumat AI';
+
+  @override
+  String get knowledgeGraphNodeTypeAudioNote => 'Notă audio';
+
+  @override
+  String get knowledgeGraphNodeTypeChecklist => 'Listă de verificare';
+
+  @override
+  String get knowledgeGraphNodeTypeChecklistItem => 'Element din listă';
+
+  @override
+  String get knowledgeGraphNodeTypeNote => 'Notă';
+
+  @override
+  String get knowledgeGraphNodeTypePhoto => 'Fotografie';
+
+  @override
+  String get knowledgeGraphNodeTypeProject => 'Proiect';
+
+  @override
+  String get knowledgeGraphNodeTypeRating => 'Evaluare';
+
+  @override
+  String get knowledgeGraphNodeTypeTask => 'Sarcină';
+
+  @override
+  String get knowledgeGraphOpenDetails => 'Deschideți detaliile';
+
+  @override
+  String get knowledgeGraphRecenter => 'Recentrați';
+
+  @override
+  String get knowledgeGraphRecentToOlder => 'Recent → mai vechi';
+
+  @override
+  String get knowledgeGraphRelationAiSource => 'Sursă AI';
+
+  @override
+  String get knowledgeGraphRelationChecklist => 'Listă de verificare';
+
+  @override
+  String get knowledgeGraphRelationInProject => 'În proiect';
+
+  @override
+  String get knowledgeGraphRelationLinkedTask => 'Sarcină legată';
+
+  @override
+  String get knowledgeGraphRelationNoteLog => 'Notă / jurnal';
+
+  @override
+  String get knowledgeGraphRelationRating => 'Evaluare';
+
+  @override
+  String get knowledgeGraphSummarySection => 'REZUMAT';
+
+  @override
   String get knowledgeGraphTitle => 'Graf de cunoștințe';
 
   @override
   String get knowledgeGraphTooltip => 'Explorați legăturile';
+
+  @override
+  String knowledgeGraphWalkHint(int count) {
+    return 'Atingeți un nod pentru a continua · noduri: $count';
+  }
 
   @override
   String get linkedFromCaption => 'de la';

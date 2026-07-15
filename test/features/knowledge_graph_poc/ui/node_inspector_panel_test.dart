@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/node_inspector_panel.dart';
+import 'package:lotti/l10n/app_localizations_en.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -13,6 +14,7 @@ void main() {
   // widget to fetch `context.designTokens` (mirrors the sibling style tests).
   const tokens = dsTokensDark;
   final style = GraphStyle.fromTokens(tokens);
+  final messages = AppLocalizationsEn();
 
   // Deterministic "now" / created times — no `DateTime.now()` in tests.
   final created = DateTime(2026, 6, 15, 12);
@@ -65,7 +67,7 @@ void main() {
       };
       for (final entry in cases.entries) {
         expect(
-          relativeAge(entry.key),
+          relativeAge(messages, entry.key),
           entry.value,
           reason: 'age for ${entry.key}',
         );
@@ -91,8 +93,8 @@ void main() {
 
     test('turns underscores into spaces so identifiers stay readable', () {
       expect(
-        previewFromMarkdown('enable_knowledge_graph'),
-        'enable knowledge graph',
+        previewFromMarkdown('graph_preview'),
+        'graph preview',
       );
     });
 
@@ -508,11 +510,15 @@ void main() {
 
       // … and its "typeLabel · age" caption (age is deterministic).
       expect(
-        find.text('${typeLabel(GraphNodeType.textEntry)} · 2 days ago'),
+        find.text(
+          '${typeLabel(messages, GraphNodeType.textEntry)} · 2 days ago',
+        ),
         findsOneWidget,
       );
       expect(
-        find.text('${typeLabel(GraphNodeType.aiResponse)} · 2 days ago'),
+        find.text(
+          '${typeLabel(messages, GraphNodeType.aiResponse)} · 2 days ago',
+        ),
         findsOneWidget,
       );
     });

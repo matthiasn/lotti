@@ -2968,13 +2968,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show the Habits page in the main navigation. Track and manage your daily habits here.';
 
   @override
-  String get configFlagEnableKnowledgeGraph => 'Knowledge Graph';
-
-  @override
-  String get configFlagEnableKnowledgeGraphDescription =>
-      'Show the experimental knowledge graph explorer on tasks — a visual map of links between tasks, entries, and projects.';
-
-  @override
   String get configFlagEnableLogging => 'Enable logging';
 
   @override
@@ -3015,21 +3008,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get configFlagEnableSessionRatingsDescription =>
       'Prompt for a quick session rating when you stop a timer.';
-
-  @override
-  String get configFlagEnableSyncedAlerts => 'Synced alerts';
-
-  @override
-  String get configFlagEnableSyncedAlertsDescription =>
-      'Sync AI and task alerts across devices and allow them to schedule local OS notifications.';
-
-  @override
-  String get configFlagEnableTaskAgentEvidenceSynthesis =>
-      'Evidence-first task agent';
-
-  @override
-  String get configFlagEnableTaskAgentEvidenceSynthesisDescription =>
-      'Use evidence-grounded task-agent prompting for efficient Melious models. The default Melious profile uses Qwen 3.5 directly; choosing Mistral Small 4 adds an isolated Qwen report pass and a small amount of latency and usage.';
 
   @override
   String get configFlagEnableTooltip => 'Enable tooltips';
@@ -6228,16 +6206,136 @@ class AppLocalizationsEn extends AppLocalizations {
   String get keyboardShortcutsTitle => 'Keyboard shortcuts';
 
   @override
+  String knowledgeGraphAgeDaysAgo(int count) {
+    return '$count days ago';
+  }
+
+  @override
+  String knowledgeGraphAgeMonthsAgo(int count) {
+    return '$count months ago';
+  }
+
+  @override
+  String get knowledgeGraphAgeToday => 'today';
+
+  @override
+  String knowledgeGraphAgeWeeksAgo(int count) {
+    return '$count weeks ago';
+  }
+
+  @override
+  String get knowledgeGraphAgeYesterday => 'yesterday';
+
+  @override
+  String get knowledgeGraphBack => 'Back';
+
+  @override
+  String get knowledgeGraphCloseDetails => 'Close details';
+
+  @override
   String get knowledgeGraphEmpty => 'No links to explore yet';
 
   @override
+  String get knowledgeGraphEntryLoadError => 'Couldn\'t load this entry';
+
+  @override
+  String get knowledgeGraphEntryNotFound => 'Entry not found';
+
+  @override
   String get knowledgeGraphError => 'Couldn\'t load the knowledge graph';
+
+  @override
+  String knowledgeGraphLinkedSection(int count) {
+    return 'LINKED · $count';
+  }
+
+  @override
+  String get knowledgeGraphMoreLinks => 'more links';
+
+  @override
+  String knowledgeGraphNodeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nodes',
+      one: '1 node',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get knowledgeGraphNodeTypeAiSummary => 'AI summary';
+
+  @override
+  String get knowledgeGraphNodeTypeAudioNote => 'Audio note';
+
+  @override
+  String get knowledgeGraphNodeTypeChecklist => 'Checklist';
+
+  @override
+  String get knowledgeGraphNodeTypeChecklistItem => 'Checklist item';
+
+  @override
+  String get knowledgeGraphNodeTypeNote => 'Note';
+
+  @override
+  String get knowledgeGraphNodeTypePhoto => 'Photo';
+
+  @override
+  String get knowledgeGraphNodeTypeProject => 'Project';
+
+  @override
+  String get knowledgeGraphNodeTypeRating => 'Rating';
+
+  @override
+  String get knowledgeGraphNodeTypeTask => 'Task';
+
+  @override
+  String get knowledgeGraphOpenDetails => 'Open details';
+
+  @override
+  String get knowledgeGraphRecenter => 'Recenter';
+
+  @override
+  String get knowledgeGraphRecentToOlder => 'recent → older';
+
+  @override
+  String get knowledgeGraphRelationAiSource => 'AI source';
+
+  @override
+  String get knowledgeGraphRelationChecklist => 'checklist';
+
+  @override
+  String get knowledgeGraphRelationInProject => 'in project';
+
+  @override
+  String get knowledgeGraphRelationLinkedTask => 'linked task';
+
+  @override
+  String get knowledgeGraphRelationNoteLog => 'note / log';
+
+  @override
+  String get knowledgeGraphRelationRating => 'rating';
+
+  @override
+  String get knowledgeGraphSummarySection => 'SUMMARY';
 
   @override
   String get knowledgeGraphTitle => 'Knowledge graph';
 
   @override
   String get knowledgeGraphTooltip => 'Explore links';
+
+  @override
+  String knowledgeGraphWalkHint(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nodes',
+      one: '1 node',
+    );
+    return 'Tap a node to walk · $_temp0';
+  }
 
   @override
   String get linkedFromCaption => 'from';

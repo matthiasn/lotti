@@ -405,24 +405,19 @@ class TaskAgentContextBuilder {
 
   /// Converts [AgentToolRegistry.taskAgentTools] to OpenAI-compatible
   /// [ChatCompletionTool] objects.
-  List<ChatCompletionTool> buildToolDefinitions({
-    bool evidenceSynthesis = false,
-  }) {
+  List<ChatCompletionTool> buildToolDefinitions() {
     return AgentToolRegistry.taskAgentTools.where((def) => def.enabled).map((
       def,
     ) {
-      final optimizeReport =
-          evidenceSynthesis && def.name == TaskAgentToolNames.updateReport;
+      final optimizeReport = def.name == TaskAgentToolNames.updateReport;
       return ChatCompletionTool(
         type: ChatCompletionToolType.function,
         function: FunctionObject(
           name: def.name,
-          description: evidenceSynthesis
-              ? TaskAgentEvidenceSynthesis.toolDescription(
-                  def.name,
-                  def.description,
-                )
-              : def.description,
+          description: TaskAgentEvidenceSynthesis.toolDescription(
+            def.name,
+            def.description,
+          ),
           parameters: optimizeReport
               ? TaskAgentEvidenceSynthesis.updateReportParameters(
                   def.parameters,

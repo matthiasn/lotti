@@ -565,19 +565,17 @@ List<ChatCompletionTool> buildLocalTaskAgentEvalTools({
         return definition.enabled;
       })
       .map((definition) {
-        final useEvidenceContract =
-            definition.name == TaskAgentToolNames.updateReport &&
-            promptVariant == LocalTaskAgentEvalPromptVariant.evidenceSynthesis;
+        final optimizeReport =
+            definition.name == TaskAgentToolNames.updateReport;
         return ChatCompletionTool(
           type: ChatCompletionToolType.function,
           function: FunctionObject(
             name: definition.name,
-            description: useEvidenceContract
-                ? TaskAgentEvidenceSynthesis.updateReportDescription(
-                    definition.description,
-                  )
-                : definition.description,
-            parameters: useEvidenceContract
+            description: TaskAgentEvidenceSynthesis.toolDescription(
+              definition.name,
+              definition.description,
+            ),
+            parameters: optimizeReport
                 ? TaskAgentEvidenceSynthesis.updateReportParameters(
                     definition.parameters,
                   )
@@ -883,7 +881,8 @@ LocalTaskAgentEvalScenario _deferredScopeScenario(
     forbiddenReportTerms: [
       'dashboard',
       'analytics',
-      if (_usesEvidenceSynthesis(variant)) ...['underway', 'awaiting'],
+      'underway',
+      'awaiting',
     ],
     requiredToolArgumentTermGroups: const {
       TaskAgentToolNames.addMultipleChecklistItems: [
@@ -947,14 +946,12 @@ LocalTaskAgentEvalScenario _userCompletedItemScenario(
     ],
     forbiddenReportTerms: [
       'item-sync-fix',
-      if (_usesEvidenceSynthesis(variant)) ...[
-        'deployed',
-        'verified',
-        'validated',
-        'implemented',
-        'applied',
-        'underway',
-      ],
+      'deployed',
+      'verified',
+      'validated',
+      'implemented',
+      'applied',
+      'underway',
     ],
   );
 }
@@ -1039,7 +1036,7 @@ LocalTaskAgentEvalScenario _latestDeadlineWinsScenario(
 
 String _buildEvalSystemPrompt(
   LocalTaskAgentEvalPromptVariant variant, {
-  String? evidenceSynthesisModelId,
+  String? modelId,
   String? reportDirective,
 }) {
   final version =
@@ -1061,9 +1058,7 @@ String _buildEvalSystemPrompt(
   return TaskAgentPromptBuilder.buildSystemPrompt(
     version: version,
     soulVersion: _defaultTaskAgentEvalSoul,
-    evidenceSynthesis:
-        variant == LocalTaskAgentEvalPromptVariant.evidenceSynthesis,
-    evidenceSynthesisModelId: evidenceSynthesisModelId,
+    modelId: modelId,
   );
 }
 
@@ -1080,7 +1075,7 @@ String _effectiveEvalReportDirective({
       scenario.reportDirective ??
       _reportDirectiveForVariant(scenario.promptVariant);
   final isSeededContract = configured.trim() == taskAgentReportDirective.trim();
-  return _usesEvidenceSynthesis(scenario.promptVariant) && isSeededContract
+  return isSeededContract
       ? TaskAgentEvidenceSynthesis.reportDirectiveForModel(
           profile.providerModelId,
         ).trim()
@@ -1096,9 +1091,6 @@ String _evalVariantDirective(LocalTaskAgentEvalPromptVariant variant) {
     LocalTaskAgentEvalPromptVariant.evidenceSynthesis => '',
   };
 }
-
-bool _usesEvidenceSynthesis(LocalTaskAgentEvalPromptVariant variant) =>
-    variant == LocalTaskAgentEvalPromptVariant.evidenceSynthesis;
 
 const _compactModelDirective = '''
 
@@ -2078,13 +2070,11 @@ class LocalTaskAgentInferenceEvalRunner {
   ) async {
     final stopwatch = Stopwatch()..start();
     final strategy = _LocalTaskAgentEvalStrategy(scenario: scenario);
-    final systemPrompt = _usesEvidenceSynthesis(scenario.promptVariant)
-        ? _buildEvalSystemPrompt(
-            scenario.promptVariant,
-            evidenceSynthesisModelId: profile.providerModelId,
-            reportDirective: scenario.reportDirective,
-          )
-        : scenario.systemPrompt;
+    final systemPrompt = _buildEvalSystemPrompt(
+      scenario.promptVariant,
+      modelId: profile.providerModelId,
+      reportDirective: scenario.reportDirective,
+    );
     final conversationId = conversationRepository.createConversation(
       systemMessage: systemPrompt,
       maxTurns:

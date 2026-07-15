@@ -1001,13 +1001,12 @@ the write."
 
 ### Evidence-First Inference
 
-The `enable_task_agent_evidence_synthesis` config flag enables the evaluated
-execution mode for efficient task-agent models. It is enabled when first seeded
-and remains configurable under `Settings > Advanced > Flags`.
-`agentWorkflowProvider` watches the flag, so changing it rebuilds the workflow
-without changing any saved template or inference profile.
+Evidence-first inference is the task-agent workflow's permanent execution
+contract. It applies to every task-agent wake without a config lookup or a
+second legacy prompt path, while the resolved inference profile still selects
+the executor model.
 
-When enabled, the task-agent path changes four common inputs together:
+The task-agent path changes these common inputs together:
 
 - `TaskAgentPromptBuilder` replaces only the seeded/default report directive
   with the evaluated compact directive and appends the evidence-synthesis
@@ -1019,13 +1018,12 @@ When enabled, the task-agent path changes four common inputs together:
   authorize owner or task-due-date field mutations without an explicit request
 - `TaskAgentContextBuilder` adds evidence requirements to `update_report` and
   explicit authority boundaries to checklist, due-date, and status mutation
-  descriptions. With the flag off, the shared scaffold and tool descriptions
-  remain unchanged
+  descriptions
 - the exact evaluated Melious Mistral Small 4 and Qwen3.5 122B routes use
   temperature `0.0`; unevaluated providers and model families retain `0.3`
 - a required report omitted after a successful mutation receives a forced
   report call; a true no-op wake does not
-- model reasoning remains profile/provider driven; the flag does not force a
+- model reasoning remains profile/provider driven; the workflow does not force a
   separate high-effort mode
 
 The resolved inference profile remains the executor selector. Melious
@@ -1042,8 +1040,8 @@ Compact scaffolds and model-specific directives are selected only for those
 two exact provider model IDs. Other Mistral or Qwen models keep the common
 scaffold and sampling defaults until they are evaluated explicitly.
 
-For the exact Melious `mistral-small-4-119b-instruct` executor, the same flag
-also enables the report-editor path:
+For the exact Melious `mistral-small-4-119b-instruct` executor, the workflow
+also uses the report-editor path:
 
 - Mistral remains the only model allowed to inspect task context and call task
   mutation tools.
@@ -1091,8 +1089,7 @@ the isolated Qwen editor.
 
 ```mermaid
 flowchart TD
-  Flag["Evidence-synthesis flag"] --> Provider["agentWorkflowProvider"]
-  Provider --> Workflow["TaskAgentWorkflow"]
+  Provider["agentWorkflowProvider"] --> Workflow["TaskAgentWorkflow"]
   Profile["Inference profile: Qwen or Mistral"] --> Workflow
   Workflow --> Prompt["Active directive + evidence protocol"]
   Workflow --> Tools["Evidence-aware update_report description"]

@@ -4,7 +4,6 @@ import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -16,15 +15,11 @@ enum _GeneratedLifecycle { activeDue, activeUpcoming, seen, actedOn, deleted }
 extension _ReconcileAnys on glados.Any {
   glados.Generator<_GeneratedLifecycle> get lifecycle =>
       glados.AnyUtils(this).choose(_GeneratedLifecycle.values);
-
-  glados.Generator<bool> get flagState =>
-      glados.AnyUtils(this).choose([false, true]);
 }
 
 void main() {
   late NotificationsDb notificationsDb;
   late MockNotificationService notificationService;
-  late MockJournalDb journalDb;
   late NotificationScheduler scheduler;
 
   setUpAll(registerAllFallbackValues);
@@ -35,14 +30,11 @@ void main() {
       background: false,
     );
     notificationService = MockNotificationService();
-    journalDb = MockJournalDb();
     scheduler = NotificationScheduler(
       notificationsDb: notificationsDb,
       notificationServiceProvider: () => notificationService,
-      journalDb: journalDb,
     );
 
-    _stubFlag(journalDb, enabled: true);
     _stubNotificationService(notificationService);
   });
 
@@ -143,33 +135,19 @@ void main() {
     test('cancels notifications that must not be shown', () async {
       final now = DateTime.utc(2026, 5, 17, 10);
       final scenarios = [
-        (
-          enabled: false,
-          entity: _notification(id: 'disabled-id'),
-        ),
-        (
-          enabled: true,
-          entity: _notification(id: 'seen-id', seenAt: now),
-        ),
-        (
-          enabled: true,
-          entity: _notification(id: 'deleted-id', deletedAt: now),
-        ),
-        (
-          enabled: true,
-          entity: _notification(id: 'acted-id', actedOnAt: now),
-        ),
+        _notification(id: 'seen-id', seenAt: now),
+        _notification(id: 'deleted-id', deletedAt: now),
+        _notification(id: 'acted-id', actedOnAt: now),
       ];
 
-      for (final scenario in scenarios) {
+      for (final entity in scenarios) {
         clearInteractions(notificationService);
-        _stubFlag(journalDb, enabled: scenario.enabled);
 
-        await scheduler.schedule(scenario.entity, now: now);
+        await scheduler.schedule(entity, now: now);
 
         verify(
           () => notificationService.cancelNotification(
-            NotificationScheduler.notificationIdFor(scenario.entity.id),
+            NotificationScheduler.notificationIdFor(entity.id),
           ),
         ).called(1);
         verifyNever(
@@ -261,58 +239,6 @@ void main() {
       },
     );
 
-    test(
-      'reconcile cancels stale scheduled alerts when flag is off',
-      () async {
-        _stubFlag(journalDb, enabled: false);
-        final now = DateTime.utc(2026, 5, 17, 10);
-        final dueEntity = _notification(
-          id: 'reconcile-due',
-          scheduledFor: now.subtract(const Duration(minutes: 5)),
-        );
-        final upcomingEntity = _notification(
-          id: 'reconcile-upcoming',
-          scheduledFor: now.add(const Duration(hours: 1)),
-        );
-        await notificationsDb.upsertNotification(dueEntity);
-        await notificationsDb.upsertNotification(upcomingEntity);
-
-        await scheduler.reconcile(now: now);
-
-        verify(
-          () => notificationService.cancelNotification(
-            NotificationScheduler.notificationIdFor('reconcile-due'),
-          ),
-        ).called(1);
-        verify(
-          () => notificationService.cancelNotification(
-            NotificationScheduler.notificationIdFor('reconcile-upcoming'),
-          ),
-        ).called(1);
-        verifyNever(
-          () => notificationService.showNotificationNow(
-            title: any(named: 'title'),
-            body: any(named: 'body'),
-            notificationId: any(named: 'notificationId'),
-            showOnMobile: any(named: 'showOnMobile'),
-            showOnDesktop: any(named: 'showOnDesktop'),
-            deepLink: any(named: 'deepLink'),
-          ),
-        );
-        verifyNever(
-          () => notificationService.scheduleNotificationAt(
-            title: any(named: 'title'),
-            body: any(named: 'body'),
-            notifyAt: any(named: 'notifyAt'),
-            notificationId: any(named: 'notificationId'),
-            showOnMobile: any(named: 'showOnMobile'),
-            showOnDesktop: any(named: 'showOnDesktop'),
-            deepLink: any(named: 'deepLink'),
-          ),
-        );
-      },
-    );
-
     glados.Glados<String>(
       glados.any.letterOrDigits,
       glados.ExploreConfig(numRuns: 64),
@@ -329,25 +255,21 @@ void main() {
       tags: 'glados',
     );
 
-    glados.Glados2<bool, _GeneratedLifecycle>(
-      glados.any.flagState,
+    glados.Glados<_GeneratedLifecycle>(
       glados.any.lifecycle,
       glados.ExploreConfig(numRuns: 24),
     ).test(
       'reconcile is idempotent: a second run repeats exactly the same '
       'OS-level calls',
-      (enabled, lifecycle) async {
+      (lifecycle) async {
         // Fresh fixtures per iteration — the file-level setUp only runs once
         // per test, and the property records per-iteration call sequences.
         final db = NotificationsDb(inMemoryDatabase: true, background: false);
         final service = MockNotificationService();
-        final journal = MockJournalDb();
         final propScheduler = NotificationScheduler(
           notificationsDb: db,
           notificationServiceProvider: () => service,
-          journalDb: journal,
         );
-        _stubFlag(journal, enabled: enabled);
 
         // Recording stubs: every OS-level call lands in [calls].
         final calls = <String>[];
@@ -402,16 +324,15 @@ void main() {
 
           await propScheduler.reconcile(now: now);
 
-          // Reconcile derives everything from the DB and the flag, so a
+          // Reconcile derives everything from the DB, so a
           // second run with identical inputs must repeat the identical
           // OS-level effect — no extra shows, schedules, or cancels.
           expect(calls, firstRun);
 
-          // Sanity anchor: an active notification with the flag on produces
+          // Sanity anchor: an active notification produces
           // exactly one OS-level call per run.
-          if (enabled &&
-              (lifecycle == _GeneratedLifecycle.activeDue ||
-                  lifecycle == _GeneratedLifecycle.activeUpcoming)) {
+          if (lifecycle == _GeneratedLifecycle.activeDue ||
+              lifecycle == _GeneratedLifecycle.activeUpcoming) {
             expect(firstRun, hasLength(1));
           }
         } finally {
@@ -475,7 +396,7 @@ void main() {
     );
 
     test(
-      'reconcile (flag on) ignores deleted and acted-on rows entirely — '
+      'reconcile ignores deleted and acted-on rows entirely — '
       'the dueNow/upcoming queries exclude them, and their OS alerts are '
       'cancelled at mark-time via schedule(), not by reconcile',
       () async {
@@ -584,12 +505,6 @@ void main() {
       },
     );
   });
-}
-
-void _stubFlag(MockJournalDb db, {required bool enabled}) {
-  when(
-    () => db.getConfigFlag(enableSyncedAlertsFlag),
-  ).thenAnswer((_) async => enabled);
 }
 
 void _stubNotificationService(MockNotificationService service) {

@@ -258,7 +258,6 @@ Future<void> registerSingletons() async {
     notificationsDb: notificationsDb,
     // ignore: unnecessary_lambdas
     notificationServiceProvider: () => getIt<NotificationService>(),
-    journalDb: journalDb,
   );
   getIt.registerSingleton<NotificationScheduler>(notificationScheduler);
 
@@ -411,7 +410,6 @@ Future<void> registerSingletons() async {
     );
   final notificationRepository = NotificationRepository(
     notificationsDb: notificationsDb,
-    journalDb: journalDb,
     vectorClockService: vectorClockService,
     outboxService: outboxService,
     updateNotifications: getIt<UpdateNotifications>(),

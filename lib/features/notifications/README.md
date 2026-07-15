@@ -19,10 +19,11 @@ flowchart LR
 
 ## Runtime Shape
 
-- The whole feature is gated by the `enableSyncedAlertsFlag` config flag.
-  `create`, state mutations, and OS scheduling are no-ops while it is off;
-  `NotificationScheduler.reconcile` cancels any already-scheduled OS alerts when
-  the flag is turned off so stale alerts cannot still fire.
+- Synced notifications are always active. Creation and lifecycle mutations are
+  persisted locally, sent to the outbox, and reflected in OS scheduling without
+  a config-flag branch. When Matrix sync is active, the existing outbox path
+  transports those notification payloads and state updates to the user's other
+  devices; local alerts continue to work when sync is not configured.
 - Two deterministic-ID kinds exist today: `taskSuggestion` (agent proposals) and
   `taskOverdue`. Both derive their row id from the linked task
   (`uuid v5` of `["<kind>", linkedTaskId]`), so re-creating a row for the same
@@ -112,8 +113,8 @@ method because that method intentionally schedules for "today at HH:mm:ss".
 A row is only schedulable while it is `Live`: once `seenAt`, `actedOnAt`, or
 `deletedAt` is set, `schedule` cancels the OS-level alert instead of (re)posting
 it. `reconcile` re-derives the OS alert set from the database — rescheduling due
-and upcoming rows, or cancelling everything when the feature flag is off — and is
-the path that keeps OS alerts consistent with synced state across app restarts.
+and upcoming rows while cancelling rows that are no longer live — and is the
+path that keeps OS alerts consistent with synced state across app restarts.
 
 OS notification IDs are derived from the notification UUID with stable
 FNV-1a-32 masked to 31 bits, so cancellation survives app restarts.

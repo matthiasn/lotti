@@ -22,6 +22,7 @@ import 'package:lotti/features/knowledge_graph_poc/ui/graph_motion_controller.da
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_painter.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/node_inspector_panel.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 class KnowledgeGraphView extends StatefulWidget {
   const KnowledgeGraphView({
@@ -680,6 +681,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                         neighbors: _neighborsOf(_focusId),
                         now: _scenario.now,
                         createdLabel: relativeAge(
+                          context.messages,
                           _scenario.now.difference(
                             _scenario.nodeById(_focusId).createdAt,
                           ),
@@ -774,7 +776,9 @@ class _TitleCard extends StatelessWidget {
           ),
           SizedBox(height: tokens.spacing.step1),
           Text(
-            explorable ? 'Tap a node to walk · $total nodes' : '$total nodes',
+            explorable
+                ? context.messages.knowledgeGraphWalkHint(total)
+                : context.messages.knowledgeGraphNodeCount(total),
             style: tokens.typography.styles.others.caption.copyWith(
               color: tokens.colors.text.mediumEmphasis,
             ),
@@ -828,7 +832,7 @@ class _LegendBar extends StatelessWidget {
         children: [
           for (final rel in relations)
             _LegendItem(
-              label: relStyleLabel(rel),
+              label: relStyleLabel(context.messages, rel),
               tokens: tokens,
               swatch: SizedBox(
                 width: 24,
@@ -852,12 +856,12 @@ class _LegendBar extends StatelessWidget {
               ),
             ),
           _LegendItem(
-            label: 'more links',
+            label: context.messages.knowledgeGraphMoreLinks,
             tokens: tokens,
             swatch: _DotsSwatch(dots: [(7, channelColor), (13, channelColor)]),
           ),
           _LegendItem(
-            label: 'recent → older',
+            label: context.messages.knowledgeGraphRecentToOlder,
             tokens: tokens,
             swatch: _DotsSwatch(dots: [(11, style.focusRing), (11, agedDot)]),
           ),
@@ -943,6 +947,7 @@ class _Controls extends StatelessWidget {
       children: [
         _CircleButton(
           icon: Icons.arrow_back,
+          tooltip: context.messages.knowledgeGraphBack,
           enabled: canGoBack,
           onTap: onBack,
           tokens: tokens,
@@ -950,6 +955,7 @@ class _Controls extends StatelessWidget {
         SizedBox(width: tokens.spacing.step2),
         _CircleButton(
           icon: Icons.center_focus_strong,
+          tooltip: context.messages.knowledgeGraphRecenter,
           enabled: true,
           onTap: onRecenter,
           tokens: tokens,
@@ -962,32 +968,37 @@ class _Controls extends StatelessWidget {
 class _CircleButton extends StatelessWidget {
   const _CircleButton({
     required this.icon,
+    required this.tooltip,
     required this.enabled,
     required this.onTap,
     required this.tokens,
   });
 
   final IconData icon;
+  final String tooltip;
   final bool enabled;
   final VoidCallback onTap;
   final DsTokens tokens;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: tokens.colors.background.level02.withValues(alpha: 0.86),
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        child: Padding(
-          padding: EdgeInsets.all(tokens.spacing.step3),
-          child: Icon(
-            icon,
-            size: 18,
-            color: enabled
-                ? tokens.colors.text.highEmphasis
-                : tokens.colors.text.lowEmphasis,
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: tokens.colors.background.level02.withValues(alpha: 0.86),
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          child: Padding(
+            padding: EdgeInsets.all(tokens.spacing.step3),
+            child: Icon(
+              icon,
+              size: 18,
+              color: enabled
+                  ? tokens.colors.text.highEmphasis
+                  : tokens.colors.text.lowEmphasis,
+            ),
           ),
         ),
       ),
