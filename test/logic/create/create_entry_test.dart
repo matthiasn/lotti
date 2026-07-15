@@ -198,26 +198,11 @@ void main() {
       const categoryId = 'filtered-category';
       const projectId = 'filtered-project';
       const labelIds = ['label-1', 'label-2'];
-      final testDate = DateTime.utc(2024, 6, 15);
-      final project = ProjectEntry(
-        meta: Metadata(
-          id: projectId,
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-          categoryId: categoryId,
-        ),
-        data: ProjectData(
-          title: 'Filtered Project',
-          status: ProjectStatus.active(
-            id: 'status-1',
-            createdAt: testDate,
-            utcOffset: 0,
-          ),
-          dateFrom: testDate,
-          dateTo: testDate,
-        ),
+      final project = TestProjectFactory.create(
+        id: projectId,
+        title: 'Filtered Project',
+        categoryId: categoryId,
+        createdAt: DateTime.utc(2024, 6, 15),
       );
       await getIt<PersistenceLogic>().createDbEntity(project);
 
