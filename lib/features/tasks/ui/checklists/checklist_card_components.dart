@@ -148,7 +148,9 @@ class Header extends StatelessWidget {
             tokens: tokens,
             onFilterChanged: onFilterChanged,
           ),
-          secondChild: const SizedBox.shrink(),
+          // Collapse height only. Targeting SizedBox.shrink would also animate
+          // the header toward zero width and briefly squeeze its text/icons.
+          secondChild: const SizedBox(width: double.infinity),
         ),
       ],
     );

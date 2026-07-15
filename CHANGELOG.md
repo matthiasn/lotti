@@ -48,6 +48,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Arrow on a focused row opens the adjacent detail pane instead of resizing
   the divider, and keyboard row focus now uses the same full-width color and
   rounded clipping as pointer hover.
+- **Checklist cards now collapse cleanly after every item is complete.** The
+  completion message stays on one line while the card closes instead of
+  breaking into vertically stacked letters.
+- **The editor formatting toolbar renders correctly on macOS again.** Focusing
+  an editor no longer replaces its formatting controls with a grey error strip.
 - **Bulk checklist suggestion acceptance no longer flickers.** Confirm all now
   keeps every proposal row mounted through its staggered exit, even when fast
   checklist check-offs resolve the underlying suggestions before later rows

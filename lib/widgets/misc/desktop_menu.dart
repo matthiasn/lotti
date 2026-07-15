@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_catalog.dart';
 import 'package:lotti/features/keyboard/domain/app_command_text.dart';
@@ -52,9 +54,15 @@ class DesktopMenuWrapper extends StatelessWidget {
       locale: locale,
       delegates: const [
         AppLocalizations.delegate,
+        FormBuilderLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
+        // DesktopMenuWrapper now lives inside MaterialApp.builder on macOS.
+        // Its nested Localizations scope therefore has to mirror every app
+        // delegate; omitting Quill replaces the formatting toolbar with a grey
+        // release-mode ErrorWidget as soon as an editor gains focus.
+        FlutterQuillLocalizations.delegate,
       ],
       child: Builder(
         builder: (context) {

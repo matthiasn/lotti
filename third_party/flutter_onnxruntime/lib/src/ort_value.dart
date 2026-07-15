@@ -59,7 +59,8 @@ class OrtValue {
       dataType: OrtDataType.values.firstWhere(
         (dt) => dt.toString() == 'OrtDataType.${map['dataType']}',
         // throw an exception if the data type is not found
-        orElse: () => throw ArgumentError('Invalid data type: ${map['dataType']}'),
+        orElse:
+            () => throw ArgumentError('Invalid data type: ${map['dataType']}'),
       ),
       shape: List<int>.from(map['shape'] ?? []),
     );
@@ -84,7 +85,11 @@ class OrtValue {
   static Future<OrtValue> fromList(dynamic data, List<int> shape) async {
     // If data is a regular List, convert it to the appropriate TypedData
     if (data is List &&
-        !(data is Float32List || data is Int32List || data is Int64List || data is Uint8List || data is List<String>)) {
+        !(data is Float32List ||
+            data is Int32List ||
+            data is Int64List ||
+            data is Uint8List ||
+            data is List<String>)) {
       data = _convertListToTypedData(data);
     }
 
@@ -117,7 +122,11 @@ class OrtValue {
       throw ArgumentError('Unsupported data type: ${data.runtimeType}');
     }
 
-    final result = await FlutterOnnxruntimePlatform.instance.createOrtValue(sourceType, data, shape);
+    final result = await FlutterOnnxruntimePlatform.instance.createOrtValue(
+      sourceType,
+      data,
+      shape,
+    );
     return OrtValue.fromMap(result);
   }
 
@@ -125,7 +134,10 @@ class OrtValue {
   ///
   /// [targetType] is the target data type to convert to
   Future<OrtValue> to(OrtDataType targetType) async {
-    final result = await FlutterOnnxruntimePlatform.instance.convertOrtValue(id, targetType.toString().split('.').last);
+    final result = await FlutterOnnxruntimePlatform.instance.convertOrtValue(
+      id,
+      targetType.toString().split('.').last,
+    );
     return OrtValue.fromMap(result);
   }
 
@@ -145,7 +157,9 @@ class OrtValue {
     var dataList1d = (rawData is List) ? rawData : List<dynamic>.from(rawData);
     // On iOS/macOS, bool tensors are stored as uint8 internally,
     // so convert 0/1 integers back to false/true
-    if (dataType == OrtDataType.bool && dataList1d.isNotEmpty && dataList1d.first is! bool) {
+    if (dataType == OrtDataType.bool &&
+        dataList1d.isNotEmpty &&
+        dataList1d.first is! bool) {
       dataList1d = dataList1d.map((e) => e != 0).toList();
     }
     return _reshapeList(dataList1d, shape);
@@ -165,7 +179,9 @@ class OrtValue {
     final list = (rawData is List) ? rawData : List<dynamic>.from(rawData);
     // On iOS/macOS, bool tensors are stored as uint8 internally,
     // so convert 0/1 integers back to false/true
-    if (dataType == OrtDataType.bool && list.isNotEmpty && list.first is! bool) {
+    if (dataType == OrtDataType.bool &&
+        list.isNotEmpty &&
+        list.first is! bool) {
       return list.map((e) => e != 0).toList();
     }
     return list;
@@ -205,19 +221,26 @@ class OrtValue {
     // Handle numeric lists
     if (firstElement is num) {
       // Check if it should be Float32List (contains any doubles or decimal values)
-      if (firstElement is double || data.any((e) => e is double || (e is num && e % 1 != 0))) {
-        return Float32List.fromList(data.map((e) => (e as num).toDouble()).toList());
+      if (firstElement is double ||
+          data.any((e) => e is double || (e is num && e % 1 != 0))) {
+        return Float32List.fromList(
+          data.map((e) => (e as num).toDouble()).toList(),
+        );
       }
 
       // Check if Int64List is needed (any value outside Int32 range)
-      bool needsInt64 = data.any((e) => (e as num).toInt() > 2147483647 || (e).toInt() < -2147483648);
+      bool needsInt64 = data.any(
+        (e) => (e as num).toInt() > 2147483647 || (e).toInt() < -2147483648,
+      );
 
       return needsInt64
           ? Int64List.fromList(data.map((e) => (e as num).toInt()).toList())
           : Int32List.fromList(data.map((e) => (e as num).toInt()).toList());
     }
 
-    throw ArgumentError('Unsupported element type: ${firstElement.runtimeType} in list');
+    throw ArgumentError(
+      'Unsupported element type: ${firstElement.runtimeType} in list',
+    );
   }
 
   // Helper method to recursively flatten nested lists
@@ -251,10 +274,16 @@ class OrtValue {
 
   /// Get the number of elements in the data
   static int _getElementCount(dynamic data) {
-    if (data is Float32List || data is Int32List || data is Int64List || data is Uint8List || data is List) {
+    if (data is Float32List ||
+        data is Int32List ||
+        data is Int64List ||
+        data is Uint8List ||
+        data is List) {
       return data.length;
     }
-    throw ArgumentError('Cannot determine element count for type: ${data.runtimeType}');
+    throw ArgumentError(
+      'Cannot determine element count for type: ${data.runtimeType}',
+    );
   }
 
   /// Reshapes a flattened list of data according to the provided shape.
@@ -286,7 +315,11 @@ class OrtValue {
   }
 
   // Recursive function to build nested structure
-  static List _buildNestedList(List<dynamic> flatData, List<int> dimensions, int offset) {
+  static List _buildNestedList(
+    List<dynamic> flatData,
+    List<int> dimensions,
+    int offset,
+  ) {
     // Base case: if we're at the innermost dimension
     if (dimensions.length == 1) {
       return flatData.sublist(offset, offset + dimensions[0]);

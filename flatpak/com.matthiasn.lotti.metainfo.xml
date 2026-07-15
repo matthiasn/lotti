@@ -41,6 +41,8 @@
           <p>Keyboard navigation now enters task and project details directly. Right Arrow on a focused row opens the adjacent detail pane instead of resizing the divider, and keyboard row focus uses the same full-width color and rounded clipping as pointer hover.</p>
           <p>Task and project filters now share one coherent, accessible flow. Status, category, label, and project choices stay inside the same smoothly resizing sheet or desktop dialog, with consistent full-width selection states, responsive actions, keyboard focus restoration, and clearer activity and sort controls. Task filters open immediately while project data refreshes in place, and active filters remain visible as compact chips on the task page.</p>
           <p>New tasks now stay in the filtered list where they are created. A task inherits a single selected category, project, or status together with every selected label, while ambiguous multi-selections keep the existing defaults.</p>
+          <p>Checklist cards now collapse cleanly after every item is complete: the completion message stays on one line instead of stacking its letters.</p>
+          <p>The editor formatting toolbar renders correctly on macOS again instead of becoming a grey error strip when an editor gains focus.</p>
           <p>Bulk checklist suggestion acceptance no longer flickers. Confirm all keeps every proposal row mounted through its staggered exit even when fast checklist check-offs resolve the underlying suggestions before later rows begin animating, while the task page stays anchored throughout the batch.</p>
       </description>
     </release>

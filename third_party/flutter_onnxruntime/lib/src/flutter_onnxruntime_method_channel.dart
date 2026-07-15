@@ -32,18 +32,23 @@ class MethodChannelFlutterOnnxruntime extends FlutterOnnxruntimePlatform {
   /// which is more memory efficient as it avoids copying the entire model
   /// through the method channel.
   @override
-  Future<Map<String, dynamic>> createSession(String modelPath, {Map<String, dynamic>? sessionOptions}) async {
-    final result = await methodChannel.invokeMethod<Map<Object?, Object?>>('createSession', {
-      'modelPath': modelPath,
-      'sessionOptions': sessionOptions ?? {},
-    });
+  Future<Map<String, dynamic>> createSession(
+    String modelPath, {
+    Map<String, dynamic>? sessionOptions,
+  }) async {
+    final result = await methodChannel.invokeMethod<Map<Object?, Object?>>(
+      'createSession',
+      {'modelPath': modelPath, 'sessionOptions': sessionOptions ?? {}},
+    );
     return _convertMapToStringDynamic(result ?? {});
   }
 
   /// Get the available providers
   @override
   Future<List<String>> getAvailableProviders() async {
-    final result = await methodChannel.invokeMethod<List<Object?>>('getAvailableProviders');
+    final result = await methodChannel.invokeMethod<List<Object?>>(
+      'getAvailableProviders',
+    );
     return result?.map((item) => item.toString()).toList() ?? [];
   }
 
@@ -66,67 +71,104 @@ class MethodChannelFlutterOnnxruntime extends FlutterOnnxruntimePlatform {
       processedInputs[entry.key] = {'valueId': entry.value.id};
     }
 
-    final result = await methodChannel.invokeMethod<Map<Object?, Object?>>('runInference', {
-      'sessionId': sessionId,
-      'inputs': processedInputs,
-      'runOptions': runOptions ?? {},
-    });
+    final result = await methodChannel.invokeMethod<Map<Object?, Object?>>(
+      'runInference',
+      {
+        'sessionId': sessionId,
+        'inputs': processedInputs,
+        'runOptions': runOptions ?? {},
+      },
+    );
     return _convertMapToStringDynamic(result ?? {});
   }
 
   @override
   Future<void> closeSession(String sessionId) async {
-    await methodChannel.invokeMethod<void>('closeSession', {'sessionId': sessionId});
+    await methodChannel.invokeMethod<void>('closeSession', {
+      'sessionId': sessionId,
+    });
   }
 
   @override
   Future<Map<String, dynamic>> getMetadata(String sessionId) async {
-    final result = await methodChannel.invokeMethod<Map<Object?, Object?>>('getMetadata', {'sessionId': sessionId});
+    final result = await methodChannel.invokeMethod<Map<Object?, Object?>>(
+      'getMetadata',
+      {'sessionId': sessionId},
+    );
     return _convertMapToStringDynamic(result ?? {});
   }
 
   @override
   Future<List<Map<String, dynamic>>> getInputInfo(String sessionId) async {
-    final result = await methodChannel.invokeMethod<List<Object?>>('getInputInfo', {'sessionId': sessionId});
-    return result?.map((item) => _convertMapToStringDynamic(item as Map<Object?, Object?>)).toList() ?? [];
+    final result = await methodChannel.invokeMethod<List<Object?>>(
+      'getInputInfo',
+      {'sessionId': sessionId},
+    );
+    return result
+            ?.map(
+              (item) =>
+                  _convertMapToStringDynamic(item as Map<Object?, Object?>),
+            )
+            .toList() ??
+        [];
   }
 
   @override
   Future<List<Map<String, dynamic>>> getOutputInfo(String sessionId) async {
-    final result = await methodChannel.invokeMethod<List<Object?>>('getOutputInfo', {'sessionId': sessionId});
-    return result?.map((item) => _convertMapToStringDynamic(item as Map<Object?, Object?>)).toList() ?? [];
+    final result = await methodChannel.invokeMethod<List<Object?>>(
+      'getOutputInfo',
+      {'sessionId': sessionId},
+    );
+    return result
+            ?.map(
+              (item) =>
+                  _convertMapToStringDynamic(item as Map<Object?, Object?>),
+            )
+            .toList() ??
+        [];
   }
 
   // OrtValue operations
 
   @override
-  Future<Map<String, dynamic>> createOrtValue(String sourceType, dynamic data, List<int> shape) async {
-    final result = await methodChannel.invokeMethod<Map<Object?, Object?>>('createOrtValue', {
-      'sourceType': sourceType,
-      'data': data,
-      'shape': shape,
-    });
+  Future<Map<String, dynamic>> createOrtValue(
+    String sourceType,
+    dynamic data,
+    List<int> shape,
+  ) async {
+    final result = await methodChannel.invokeMethod<Map<Object?, Object?>>(
+      'createOrtValue',
+      {'sourceType': sourceType, 'data': data, 'shape': shape},
+    );
     return _convertMapToStringDynamic(result ?? {});
   }
 
   @override
-  Future<Map<String, dynamic>> convertOrtValue(String valueId, String targetType) async {
-    final result = await methodChannel.invokeMethod<Map<Object?, Object?>>('convertOrtValue', {
-      'valueId': valueId,
-      'targetType': targetType,
-    });
+  Future<Map<String, dynamic>> convertOrtValue(
+    String valueId,
+    String targetType,
+  ) async {
+    final result = await methodChannel.invokeMethod<Map<Object?, Object?>>(
+      'convertOrtValue',
+      {'valueId': valueId, 'targetType': targetType},
+    );
     return _convertMapToStringDynamic(result ?? {});
   }
 
   @override
   Future<Map<String, dynamic>> getOrtValueData(String valueId) async {
-    final result = await methodChannel.invokeMethod<Map<Object?, Object?>>('getOrtValueData', {'valueId': valueId});
+    final result = await methodChannel.invokeMethod<Map<Object?, Object?>>(
+      'getOrtValueData',
+      {'valueId': valueId},
+    );
     return _convertMapToStringDynamic(result ?? {});
   }
 
   @override
   Future<void> releaseOrtValue(String valueId) async {
-    await methodChannel.invokeMethod<void>('releaseOrtValue', {'valueId': valueId});
+    await methodChannel.invokeMethod<void>('releaseOrtValue', {
+      'valueId': valueId,
+    });
   }
 
   Map<String, dynamic> _convertMapToStringDynamic(Map<Object?, Object?> map) {

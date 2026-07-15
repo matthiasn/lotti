@@ -14,7 +14,8 @@ abstract class FlutterOnnxruntimePlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static FlutterOnnxruntimePlatform _instance = MethodChannelFlutterOnnxruntime();
+  static FlutterOnnxruntimePlatform _instance =
+      MethodChannelFlutterOnnxruntime();
 
   /// The default instance of [FlutterOnnxruntimePlatform] to use.
   ///
@@ -35,13 +36,18 @@ abstract class FlutterOnnxruntimePlatform extends PlatformInterface {
   }
 
   // Core ONNX Runtime operations
-  Future<Map<String, dynamic>> createSession(String modelPath, {Map<String, dynamic>? sessionOptions}) {
+  Future<Map<String, dynamic>> createSession(
+    String modelPath, {
+    Map<String, dynamic>? sessionOptions,
+  }) {
     throw UnimplementedError('createSession() has not been implemented.');
   }
 
   /// Get the available providers
   Future<List<String>> getAvailableProviders() {
-    throw UnimplementedError('getAvailableProviders() has not been implemented.');
+    throw UnimplementedError(
+      'getAvailableProviders() has not been implemented.',
+    );
   }
 
   /// Run inference on a session
@@ -99,7 +105,11 @@ abstract class FlutterOnnxruntimePlatform extends PlatformInterface {
   /// [sourceType] is the source data type (e.g., 'float32', 'int32')
   /// [data] is the data to create the tensor from
   /// [shape] is the shape of the tensor
-  Future<Map<String, dynamic>> createOrtValue(String sourceType, dynamic data, List<int> shape) {
+  Future<Map<String, dynamic>> createOrtValue(
+    String sourceType,
+    dynamic data,
+    List<int> shape,
+  ) {
     throw UnimplementedError('createOrtValue() has not been implemented.');
   }
 
@@ -107,7 +117,10 @@ abstract class FlutterOnnxruntimePlatform extends PlatformInterface {
   ///
   /// [valueId] is the ID of the OrtValue to convert
   /// [targetType] is the target data type (e.g., 'float32', 'float16')
-  Future<Map<String, dynamic>> convertOrtValue(String valueId, String targetType) {
+  Future<Map<String, dynamic>> convertOrtValue(
+    String valueId,
+    String targetType,
+  ) {
     throw UnimplementedError('convertOrtValue() has not been implemented.');
   }
 

@@ -21,7 +21,10 @@ class OnnxRuntime {
   }
 
   /// Create an ONNX Runtime session with the given model path
-  Future<OrtSession> createSession(String modelPath, {OrtSessionOptions? options}) async {
+  Future<OrtSession> createSession(
+    String modelPath, {
+    OrtSessionOptions? options,
+  }) async {
     final result = await FlutterOnnxruntimePlatform.instance.createSession(
       modelPath,
       sessionOptions: options?.toMap() ?? {},
@@ -32,7 +35,10 @@ class OnnxRuntime {
   /// Create an ONNX Runtime session from an asset model file
   ///
   /// This will extract the asset to a temporary file and use that path
-  Future<OrtSession> createSessionFromAsset(String assetKey, {OrtSessionOptions? options}) async {
+  Future<OrtSession> createSessionFromAsset(
+    String assetKey, {
+    OrtSessionOptions? options,
+  }) async {
     if (kIsWeb) {
       // On web, we need to handle differently as path_provider is not available
       // Instead, pass the asset key directly to the web implementation
@@ -66,11 +72,14 @@ class OnnxRuntime {
   ///
   /// Returns a list of the available providers
   Future<List<OrtProvider>> getAvailableProviders() async {
-    final providers = await FlutterOnnxruntimePlatform.instance.getAvailableProviders();
+    final providers =
+        await FlutterOnnxruntimePlatform.instance.getAvailableProviders();
     return providers.map((p) {
       final provider = OrtProvider.values.firstWhere(
         (e) => e.name == p,
-        orElse: () => throw ArgumentError('Provider $p is not a valid OrtProvider.'),
+        orElse:
+            () =>
+                throw ArgumentError('Provider $p is not a valid OrtProvider.'),
       );
       return provider;
     }).toList();

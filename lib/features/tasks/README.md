@@ -498,6 +498,14 @@ flashed them). Both checklist IDs and linked-item IDs seed their existing set on
 first render; only IDs arriving later play the one-shot size/fade entrance, so
 background refreshes do not replay initial-load motion.
 
+Checklist-card expansion uses width-stable cross-fade endpoints: the hidden
+endpoint keeps the card's full horizontal constraint and collapses only its
+height. This prevents Flutter from relaying out the outgoing body at
+progressively narrower widths. Filter-empty summaries ("all done" / "none
+done") are also explicitly limited to one ellipsized line, so completion and
+collapse animations cannot stack individual letters even under narrow or
+scaled layouts.
+
 ### Checklist runtime model
 
 `ChecklistController`:
