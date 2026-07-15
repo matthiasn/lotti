@@ -13,6 +13,10 @@ import 'package:lotti/features/design_system/components/celebration/completion_b
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart';
@@ -25,6 +29,7 @@ Widget _desktopHost(
   Widget child, {
   ThemeData? theme,
   List<Override> overrides = const [],
+  TargetPlatform platform = TargetPlatform.windows,
 }) {
   return ProviderScope(
     overrides: overrides,
@@ -39,7 +44,11 @@ Widget _desktopHost(
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: Align(alignment: Alignment.topLeft, child: child),
+        body: AppCommandHost(
+          handlers: const <AppCommandId, AppCommandHandler>{},
+          platform: platform,
+          child: Align(alignment: Alignment.topLeft, child: child),
+        ),
       ),
     ),
   );
@@ -51,6 +60,7 @@ Future<void> _pumpDesktop(
   Size size = const Size(1280, 720),
   ThemeData? theme,
   List<Override> overrides = const [],
+  TargetPlatform platform = TargetPlatform.windows,
 }) async {
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -62,6 +72,7 @@ Future<void> _pumpDesktop(
       SizedBox(width: size.width, child: child),
       theme: theme,
       overrides: overrides,
+      platform: platform,
     ),
   );
   await tester.pump();
@@ -422,6 +433,7 @@ void main() {
             );
           },
         ),
+        platform: TargetPlatform.macOS,
       );
       await tester.enterText(find.byType(TextField), 'Payment flow');
       await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
@@ -451,6 +463,15 @@ void main() {
         ),
       );
       await tester.enterText(find.byType(TextField), 'Payment flow');
+      await tester.pump();
+
+      final fieldContext = tester.element(find.byType(TextField));
+      final commandController = AppCommandControllerProvider.of(fieldContext);
+      expect(
+        commandController.isAvailable(fieldContext, AppCommandId.save),
+        isTrue,
+      );
+
       await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.control);

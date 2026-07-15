@@ -34,19 +34,24 @@ class CommandCatalogView extends StatefulWidget {
 }
 
 class _CommandCatalogViewState extends State<CommandCatalogView> {
+  static final _searchSeparators = RegExp(r'[\s+]');
+
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode(debugLabel: 'command-search');
+  final ScrollController _scrollController = ScrollController();
+  final Map<AppCommandId, GlobalKey> _rowKeys = {
+    for (final id in AppCommandId.values)
+      id: GlobalKey(debugLabel: 'command-row-${id.name}'),
+  };
   var _query = '';
   var _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    if (widget.paletteMode) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _searchFocusNode.requestFocus();
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _searchFocusNode.requestFocus();
+    });
   }
 
   void _clampIndex() {
@@ -72,34 +77,52 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   List<AppCommandDefinition> _definitions(BuildContext context) {
     final messages = context.messages;
-    final normalizedQuery = _query.trim().toLowerCase();
-    return AppCommandCatalog.definitions
-        .where((definition) {
-          if (widget.paletteMode) {
-            if (definition.paletteVisibility ==
-                AppCommandPaletteVisibility.hidden) {
-              return false;
-            }
-            if (!(widget.snapshot?.isAvailable(definition.id) ?? false)) {
-              return false;
-            }
-          }
-          if (normalizedQuery.isEmpty) return true;
-          final label = AppCommandText.label(messages, definition.id);
-          final category = AppCommandText.category(
-            messages,
-            definition.category,
-          );
-          return label.toLowerCase().contains(normalizedQuery) ||
-              category.toLowerCase().contains(normalizedQuery);
-        })
-        .toList(growable: false);
+    final platform = widget.platform ?? defaultTargetPlatform;
+    final normalizedQuery = _normalizeSearchValue(_query);
+
+    bool matches(AppCommandDefinition definition) {
+      if (widget.paletteMode) {
+        if (definition.paletteVisibility ==
+            AppCommandPaletteVisibility.hidden) {
+          return false;
+        }
+        if (!(widget.snapshot?.isAvailable(definition.id) ?? false)) {
+          return false;
+        }
+      }
+      if (normalizedQuery.isEmpty) return true;
+      final label = AppCommandText.label(messages, definition.id);
+      final category = AppCommandText.category(
+        messages,
+        definition.category,
+      );
+      final shortcut = ShortcutLabelFormatter.bindings(
+        messages,
+        definition.bindings,
+        platform: platform,
+      );
+      return _normalizeSearchValue(label).contains(normalizedQuery) ||
+          _normalizeSearchValue(category).contains(normalizedQuery) ||
+          _normalizeSearchValue(shortcut).contains(normalizedQuery);
+    }
+
+    return [
+      for (final category in AppCommandCategory.values)
+        ...AppCommandCatalog.definitions.where(
+          (definition) =>
+              definition.category == category && matches(definition),
+        ),
+    ];
   }
+
+  String _normalizeSearchValue(String value) =>
+      value.trim().toLowerCase().replaceAll(_searchSeparators, '');
 
   KeyEventResult _handleKeyEvent(
     BuildContext context,
@@ -109,12 +132,25 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
     }
-    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+    if (!widget.paletteMode) {
+      final result = _handleHelpNavigation(event.logicalKey);
+      if (result == KeyEventResult.handled) return result;
+    }
+    if (widget.paletteMode &&
+        event.logicalKey == LogicalKeyboardKey.arrowDown) {
       _moveSelection(definitions, 1);
       return KeyEventResult.handled;
     }
-    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+    if (widget.paletteMode && event.logicalKey == LogicalKeyboardKey.arrowUp) {
       _moveSelection(definitions, -1);
+      return KeyEventResult.handled;
+    }
+    if (widget.paletteMode && event.logicalKey == LogicalKeyboardKey.home) {
+      _selectIndex(definitions, 0);
+      return KeyEventResult.handled;
+    }
+    if (widget.paletteMode && event.logicalKey == LogicalKeyboardKey.end) {
+      _selectIndex(definitions, definitions.length - 1);
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.enter && widget.paletteMode) {
@@ -129,11 +165,52 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
     return KeyEventResult.ignored;
   }
 
+  KeyEventResult _handleHelpNavigation(LogicalKeyboardKey key) {
+    if (!_scrollController.hasClients) return KeyEventResult.ignored;
+    final position = _scrollController.position;
+    final viewport = position.viewportDimension;
+    final target = switch (key) {
+      LogicalKeyboardKey.arrowDown => position.pixels + viewport * 0.1,
+      LogicalKeyboardKey.arrowUp => position.pixels - viewport * 0.1,
+      LogicalKeyboardKey.pageDown => position.pixels + viewport,
+      LogicalKeyboardKey.pageUp => position.pixels - viewport,
+      LogicalKeyboardKey.home => position.minScrollExtent,
+      LogicalKeyboardKey.end => position.maxScrollExtent,
+      _ => null,
+    };
+    if (target == null) return KeyEventResult.ignored;
+    _scrollController.jumpTo(
+      target.clamp(position.minScrollExtent, position.maxScrollExtent),
+    );
+    return KeyEventResult.handled;
+  }
+
   void _moveSelection(List<AppCommandDefinition> definitions, int delta) {
     if (definitions.isEmpty) return;
-    setState(() {
-      _selectedIndex = (_selectedIndex + delta) % definitions.length;
-      if (_selectedIndex < 0) _selectedIndex += definitions.length;
+    var nextIndex = (_selectedIndex + delta) % definitions.length;
+    if (nextIndex < 0) nextIndex += definitions.length;
+    _selectIndex(definitions, nextIndex);
+  }
+
+  void _selectIndex(List<AppCommandDefinition> definitions, int index) {
+    if (definitions.isEmpty) return;
+    setState(() => _selectedIndex = index);
+    _scheduleEnsureSelectedVisible();
+  }
+
+  void _scheduleEnsureSelectedVisible() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final definitions = _definitions(context);
+      final selected = definitions.elementAtOrNull(_selectedIndex);
+      final selectedContext = selected == null
+          ? null
+          : _rowKeys[selected.id]?.currentContext;
+      if (selectedContext == null) return;
+      Scrollable.ensureVisible(
+        selectedContext,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      );
     });
   }
 
@@ -169,10 +246,13 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
             semanticsLabel: widget.paletteMode
                 ? messages.commandPaletteSearchHint
                 : messages.keyboardShortcutsSearchHint,
-            onChanged: (value) => setState(() {
-              _query = value;
-              _selectedIndex = 0;
-            }),
+            onChanged: (value) {
+              setState(() {
+                _query = value;
+                _selectedIndex = 0;
+              });
+              _scheduleEnsureSelectedVisible();
+            },
           ),
           SizedBox(height: tokens.spacing.step4),
           Expanded(
@@ -188,8 +268,12 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
                       textAlign: TextAlign.center,
                     ),
                   )
-                : ListView(
-                    children: _buildGroups(context, definitions),
+                : SingleChildScrollView(
+                    controller: _scrollController,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: _buildGroups(context, definitions),
+                    ),
                   ),
           ),
         ],
@@ -261,15 +345,21 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
       definition.bindings,
       platform: platform,
     );
-    return DesignSystemListItem(
-      key: ValueKey(definition.id),
-      title: label,
-      selected: selected,
-      activated: selected,
-      showDivider: showDivider,
-      semanticsLabel: shortcut.isEmpty ? label : '$label, $shortcut',
-      onTap: widget.paletteMode ? () => _invoke(context, definition) : null,
-      trailing: shortcut.isEmpty ? null : _ShortcutBadge(label: shortcut),
+    return KeyedSubtree(
+      key: _rowKeys[definition.id],
+      child: DesignSystemListItem(
+        key: ValueKey(definition.id),
+        title: label,
+        selected: selected,
+        activated: selected,
+        showDivider: showDivider,
+        semanticsLabel: shortcut.isEmpty ? label : '$label, $shortcut',
+        onTap: widget.paletteMode ? () => _invoke(context, definition) : null,
+        forcedState: widget.paletteMode
+            ? null
+            : DesignSystemListItemVisualState.idle,
+        trailing: shortcut.isEmpty ? null : _ShortcutBadge(label: shortcut),
+      ),
     );
   }
 }

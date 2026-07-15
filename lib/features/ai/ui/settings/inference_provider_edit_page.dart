@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -33,6 +32,9 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -490,13 +492,13 @@ class _InferenceProviderEditPageState
     final isCreate = widget.configId == null;
     final providerType = formState?.inferenceProviderType;
 
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyS, meta: true): () {
-          if (isFormValid && !_isSaving) {
-            handleSave();
-          }
-        },
+    return AppCommandScope(
+      debugLabel: 'inference-provider-editor',
+      handlers: {
+        AppCommandId.save: AppCommandHandler(
+          isEnabled: () => isFormValid && !_isSaving,
+          invoke: (_) => handleSave(),
+        ),
       },
       child: Scaffold(
         // v5 alignment: route the page background through the design

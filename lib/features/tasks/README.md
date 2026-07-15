@@ -418,12 +418,12 @@ The header title has two interactive states driven by local editing state. The R
 stateDiagram-v2
   [*] --> ReadOnly
   ReadOnly --> Editing: tap title
-  Editing --> ReadOnly: check button / ⌘+Enter → onTitleSaved
+  Editing --> ReadOnly: check button / Primary+S / Primary+Enter → onTitleSaved
   Editing --> ReadOnly: close button / Esc → revert
 ```
 
 - ReadOnly: the title renders as plain `Text` in Heading 2 Bold at a 1.15 line-height (so a wrapping multi-line title reads as one cohesive block). The whole title is the edit target — there is deliberately **no trailing pencil glyph** (a persistent pencil drifted into a dead gutter beside short / wrapping titles), so the affordance is carried by the hover click-cursor, an "Edit title" `Semantics` button, and keyboard activation. The title spans the full content width and wraps freely — no control rides this line.
-- Editing: the title becomes a capsule-shaped inline `TextField` with a teal `interactive.enabled` border and external check (save) and close (cancel) buttons. Enter inserts a newline; ⌘/Ctrl+Enter or tapping the check saves.
+- Editing: the title becomes a capsule-shaped inline `TextField` with a teal `interactive.enabled` border and external check (save) and close (cancel) buttons. Its nearest `AppCommandScope` owns catalog-driven Primary+S save and Escape cancel, so the command palette sees the same actions and platform binding as the rest of Lotti. Enter inserts a newline; Primary+Enter remains a control-local commit gesture.
 
 The header body is composed top-to-bottom in `DesktopTaskHeader.build`:
 

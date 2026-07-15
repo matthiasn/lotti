@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -71,7 +74,11 @@ void main() {
 
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        child,
+        AppCommandHost(
+          handlers: const <AppCommandId, AppCommandHandler>{},
+          platform: TargetPlatform.windows,
+          child: child,
+        ),
         mediaQueryData: const MediaQueryData(size: Size(1200, 1600)),
       ),
     );

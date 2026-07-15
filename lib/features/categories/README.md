@@ -139,7 +139,7 @@ The list page behavior is:
 
 ### Category details and create mode
 
-Both modes of `CategoryDetailsPage` render inside the shared settings-detail kit (`lib/widgets/settings/`): `SettingsDetailScaffold` provides the header with a back affordance that beams to `/settings/categories`, binds Cmd/Ctrl+S to save, and mounts a sticky glass `SettingsFormActionBar` (primary save/create pill and cancel pill); in edit mode a full-width `SettingsDeleteRow` closes the form. Form sections are `SettingsFormSection` cards; the switch rows are `SettingsSwitchRow`s, the name input is the design-system `DesignSystemTextInput` (via `CategoryNameField`), the tap-to-pick fields (color, language, AI defaults) render as `SettingsPickerField`s, and the speech dictionary is a `DesignSystemTextarea`.
+Both modes of `CategoryDetailsPage` render inside the shared settings-detail kit (`lib/widgets/settings/`): `SettingsDetailScaffold` provides the header with a back affordance that beams to `/settings/categories`, registers catalog-driven Primary+S save in an `AppCommandScope` with availability tied to the same create/dirty predicate as the primary action, and mounts a sticky glass `SettingsFormActionBar` (primary save/create pill and cancel pill); in edit mode a full-width `SettingsDeleteRow` closes the form. Form sections are `SettingsFormSection` cards; the switch rows are `SettingsSwitchRow`s, the name input is the design-system `DesignSystemTextInput` (via `CategoryNameField`), the tap-to-pick fields (color, language, AI defaults) render as `SettingsPickerField`s, and the speech dictionary is a `DesignSystemTextarea`.
 
 `CategoryDetailsPage` has two distinct modes:
 

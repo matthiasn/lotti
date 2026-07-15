@@ -93,13 +93,20 @@ surfaces. A control only registers the handlers that it implements.
 ## Palette, help, and native menus
 
 The command palette captures the focused scope before its search field takes
-focus. It filters out unavailable contextual commands. Selecting a result
-closes the dialog, restores the invoking focus node, and then invokes the
-captured command.
+focus. It filters out unavailable contextual commands and searches localized
+labels, localized categories, and the exact platform notation shown in each
+row (`Ctrl+S`, `⌘S`, `F6`, and so on; spaces and `+` separators are ignored).
+Rows are traversed in the same category order in which they are rendered:
+Up/Down wrap, Home/End jump to the limits, and every keyboard selection is
+scrolled fully into view. Selecting a result closes the dialog, restores the
+invoking focus node, and then invokes the captured command.
 
 The quick help overlay and Settings > Keyboard shortcuts render from the same
 catalog. The persistent page includes commands that are hidden from the
 palette, such as local interaction grammar, so it is the complete reference.
+Its read-only rows keep normal text emphasis without pretending to be buttons,
+and Arrow/Page/Home/End keys scroll the reference while its search field owns
+focus.
 
 On macOS, File, View, Go, and Help menus are adapters over the catalog and
 dispatcher. They do not own duplicate callbacks or shortcut definitions.
@@ -117,6 +124,13 @@ Reusable interactions extended by this feature include:
 - Settings tree rows with Up/Down traversal and Left/Right collapse/expand;
 - `HoldToConfirm`, where pointer users retain hold confirmation while
   Enter/Space and accessibility activation follow normal button semantics.
+
+Editor surfaces—including journal/project forms, task and checklist titles,
+the shared settings-detail shell, and AI provider/model forms—register save
+and cancel handlers in their nearest `AppCommandScope`. Their command
+availability follows the same validity, dirty, and in-flight predicates as
+their visible actions. Control-specific text gestures such as bare Enter or
+Primary+Enter remain local because they are not app commands.
 
 ## Adding a command handler
 
@@ -138,5 +152,7 @@ duplicate key combinations in feature code or help text.
 Pure tests cover catalog completeness, conflicts, platform resolution, repeat
 policy, and localized formatting. Widget tests cover nearest-scope dispatch,
 global fallback, re-entry, scope disposal, native-menu context retention,
-keyboard activity, F6 traversal, palette filtering/focus restoration, settings
-help, tree navigation, keyboard resizing, and accessible confirmation.
+keyboard activity, F6 traversal, palette visual-order traversal, selected-row
+visibility, shortcut-string search, help scrolling, focus restoration,
+settings help, scoped editor save/cancel, tree navigation, keyboard resizing,
+and accessible confirmation.

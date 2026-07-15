@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -61,10 +64,9 @@ class TitleReadOnly extends StatelessWidget {
   }
 }
 
-/// Inline multiline title editor with commit/cancel icon buttons. Keyboard
-/// shortcuts: Escape cancels (fires [onCancel]); Cmd/Ctrl+Enter and Cmd/Ctrl+S
-/// commit (fire [onCommit]). A bare Enter inserts a newline rather than
-/// committing.
+/// Inline multiline title editor with commit/cancel icon buttons. The shared
+/// save and cancel commands provide Primary+S and Escape; Cmd/Ctrl+Enter is a
+/// local multiline-editor commit gesture. A bare Enter inserts a newline.
 class TitleEditor extends StatelessWidget {
   const TitleEditor({
     required this.controller,
@@ -81,98 +83,90 @@ class TitleEditor extends StatelessWidget {
   final VoidCallback onCommit;
   final VoidCallback onCancel;
 
-  static const _capsuleRadius = 8.0;
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        color: tokens.colors.surface.hover,
-        borderRadius: BorderRadius.circular(_capsuleRadius),
-        border: Border.all(color: tokens.colors.interactive.enabled),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Shortcuts(
-              shortcuts: const <ShortcutActivator, Intent>{
-                SingleActivator(LogicalKeyboardKey.escape): _CancelIntent(),
-                SingleActivator(
-                  LogicalKeyboardKey.enter,
-                  meta: true,
-                ): _CommitIntent(),
-                SingleActivator(
-                  LogicalKeyboardKey.enter,
-                  control: true,
-                ): _CommitIntent(),
-                SingleActivator(
-                  LogicalKeyboardKey.keyS,
-                  meta: true,
-                ): _CommitIntent(),
-                SingleActivator(
-                  LogicalKeyboardKey.keyS,
-                  control: true,
-                ): _CommitIntent(),
-              },
-              child: Actions(
-                actions: <Type, Action<Intent>>{
-                  _CommitIntent: CallbackAction<_CommitIntent>(
-                    onInvoke: (_) {
-                      onCommit();
-                      return null;
-                    },
-                  ),
-                  _CancelIntent: CallbackAction<_CancelIntent>(
-                    onInvoke: (_) {
-                      onCancel();
-                      return null;
-                    },
-                  ),
+    return AppCommandScope(
+      debugLabel: 'task-title-editor',
+      handlers: {
+        AppCommandId.save: AppCommandHandler(invoke: (_) => onCommit()),
+        AppCommandId.cancel: AppCommandHandler(invoke: (_) => onCancel()),
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step2,
+          vertical: tokens.spacing.step1,
+        ),
+        decoration: BoxDecoration(
+          color: tokens.colors.surface.hover,
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          border: Border.all(color: tokens.colors.interactive.enabled),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Shortcuts(
+                shortcuts: const <ShortcutActivator, Intent>{
+                  SingleActivator(
+                    LogicalKeyboardKey.enter,
+                    meta: true,
+                  ): _CommitIntent(),
+                  SingleActivator(
+                    LogicalKeyboardKey.enter,
+                    control: true,
+                  ): _CommitIntent(),
                 },
-                child: TextField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  style: style,
-                  cursorColor: tokens.colors.interactive.enabled,
-                  minLines: 1,
-                  maxLines: null,
-                  keyboardType: TextInputType.multiline,
-                  textInputAction: TextInputAction.newline,
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    focusedErrorBorder: InputBorder.none,
-                    isDense: true,
-                    isCollapsed: true,
-                    contentPadding: EdgeInsets.zero,
+                child: Actions(
+                  actions: <Type, Action<Intent>>{
+                    _CommitIntent: CallbackAction<_CommitIntent>(
+                      onInvoke: (_) {
+                        onCommit();
+                        return null;
+                      },
+                    ),
+                  },
+                  child: TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    style: style,
+                    cursorColor: tokens.colors.interactive.enabled,
+                    minLines: 1,
+                    maxLines: null,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
+                      isDense: true,
+                      isCollapsed: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          _IconAction(
-            icon: Icons.check_rounded,
-            color: tokens.colors.alert.success.defaultColor,
-            semanticLabel: MaterialLocalizations.of(context).okButtonLabel,
-            onTap: onCommit,
-          ),
-          SizedBox(width: tokens.spacing.step2),
-          _IconAction(
-            icon: Icons.close_rounded,
-            color: TaskShowcasePalette.mediumText(context),
-            semanticLabel: MaterialLocalizations.of(context).cancelButtonLabel,
-            onTap: onCancel,
-          ),
-        ],
+            SizedBox(width: tokens.spacing.step3),
+            _IconAction(
+              icon: Icons.check_rounded,
+              color: tokens.colors.alert.success.defaultColor,
+              semanticLabel: MaterialLocalizations.of(context).okButtonLabel,
+              onTap: onCommit,
+            ),
+            SizedBox(width: tokens.spacing.step2),
+            _IconAction(
+              icon: Icons.close_rounded,
+              color: TaskShowcasePalette.mediumText(context),
+              semanticLabel: MaterialLocalizations.of(
+                context,
+              ).cancelButtonLabel,
+              onTap: onCancel,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -180,10 +174,6 @@ class TitleEditor extends StatelessWidget {
 
 class _CommitIntent extends Intent {
   const _CommitIntent();
-}
-
-class _CancelIntent extends Intent {
-  const _CancelIntent();
 }
 
 class _IconAction extends StatelessWidget {

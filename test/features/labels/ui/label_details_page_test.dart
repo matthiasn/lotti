@@ -11,6 +11,9 @@ import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart'
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
@@ -160,13 +163,20 @@ void main() {
     WidgetTester tester, {
     List<Override> overrides = const [],
     Widget child = const LabelDetailsPage(),
+    TargetPlatform platform = TargetPlatform.windows,
   }) async {
     final container = ProviderContainer(overrides: overrides);
     addTearDown(container.dispose);
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: makeTestableWidget2(child),
+        child: makeTestableWidget2(
+          AppCommandHost(
+            handlers: const <AppCommandId, AppCommandHandler>{},
+            platform: platform,
+            child: child,
+          ),
+        ),
       ),
     );
     await tester.pump();
@@ -439,6 +449,7 @@ void main() {
 
       await pumpPage(
         tester,
+        platform: TargetPlatform.macOS,
         overrides: [
           labelEditorControllerProvider.overrideWith2((_) => fakeController),
         ],

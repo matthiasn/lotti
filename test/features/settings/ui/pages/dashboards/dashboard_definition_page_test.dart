@@ -8,6 +8,9 @@ import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.dart';
@@ -73,7 +76,15 @@ Future<void> _pumpPage(WidgetTester tester, Widget page) async {
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
-  await tester.pumpWidget(makeTestableWidgetNoScroll(page));
+  await tester.pumpWidget(
+    makeTestableWidgetNoScroll(
+      AppCommandHost(
+        handlers: const <AppCommandId, AppCommandHandler>{},
+        platform: TargetPlatform.windows,
+        child: page,
+      ),
+    ),
+  );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
 }

@@ -613,7 +613,11 @@ testWidgets('switches tabs and updates filters', (tester) async {
 ### 2. Keyboard Navigation
 - Tab order follows logical flow
 - Search field supports keyboard navigation
-- All actions accessible via keyboard
+- All actions are accessible via keyboard
+- Provider and model editors register catalog-driven Primary+S save handlers
+  in their nearest `AppCommandScope`; availability uses the same form-valid,
+  dirty, and in-flight predicates as the visible Save action, and therefore
+  works consistently on macOS, Windows, and Linux
 
 ### 3. Color Accessibility
 - High contrast color schemes

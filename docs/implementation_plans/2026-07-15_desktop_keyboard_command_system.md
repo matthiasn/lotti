@@ -76,6 +76,8 @@ flowchart LR
 
 - Tab/Shift+Tab cross controls or enter/leave a composite region.
 - Arrows navigate inside a composite; Home/End select its limits.
+- Palette traversal follows rendered category order, keeps the selected row in
+  view, and accepts Home/End. Shortcut help uses Arrow/Page/Home/End to scroll.
 - Enter activates; Space toggles where the control has selectable state.
 - Escape cancels editing or closes the top modal and restores invoking focus.
 - Destructive actions always keep their confirmation; keyboard users are never
@@ -89,10 +91,14 @@ flowchart LR
   ranking, repeat policy, and locale/platform key formatting.
 - Dispatcher tests: nearest-scope precedence, fallback, disabled/disposed
   scopes, re-entry, text-input safety, activity updates, and palette snapshots.
-- Widget tests: palette/help search and navigation, focus restoration, settings
-  routing, native-menu adaptation, and every modified interaction primitive.
+- Widget tests: palette/help label/category/shortcut search, visual-order
+  navigation, selection visibility, help scrolling, focus restoration,
+  settings routing, native-menu adaptation, and every modified interaction
+  primitive.
 - App-shell tests cover stable destination mapping and inactive-tab focus
-  exclusion. Feature tests cover contextual refresh/search/create/save paths.
+  exclusion. Feature tests cover contextual refresh/search/create/save paths,
+  including task/checklist title editors, definition settings, and AI
+  provider/model forms.
 - Interaction tests cover tree arrows, divider resizing, accessible
   confirmation, and palette focus restoration.
 

@@ -16,6 +16,9 @@ import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
@@ -98,9 +101,13 @@ void main() {
             categoryRepositoryProvider.overrideWithValue(mockRepository),
             ...extraOverrides,
           ],
-          child: createMode
-              ? const CategoryDetailsPage()
-              : CategoryDetailsPage(categoryId: testCategoryId),
+          child: AppCommandHost(
+            handlers: const <AppCommandId, AppCommandHandler>{},
+            platform: TargetPlatform.windows,
+            child: createMode
+                ? const CategoryDetailsPage()
+                : CategoryDetailsPage(categoryId: testCategoryId),
+          ),
         ),
       );
       if (settle) {
