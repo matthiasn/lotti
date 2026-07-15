@@ -204,7 +204,7 @@ class _MeasurementCaptureDraft {
     saveState.value = (isSaving: true, error: null);
     final observedAt = measurementDateTime.value;
     try {
-      await getIt<PersistenceLogic>().createMeasurementEntry(
+      final savedEntry = await getIt<PersistenceLogic>().createMeasurementEntry(
         data: MeasurementData(
           dataTypeId: dataType.id,
           dateTo: observedAt,
@@ -214,6 +214,10 @@ class _MeasurementCaptureDraft {
         comment: commentController.text,
         private: dataType.private ?? false,
       );
+      if (savedEntry == null) {
+        _showSaveError(errorMessage);
+        return;
+      }
       if (modalContext.mounted) {
         Navigator.of(modalContext).pop('Saved');
       }
@@ -224,9 +228,13 @@ class _MeasurementCaptureDraft {
         error: error,
         stackTrace: stackTrace,
       );
-      if (!_disposed) {
-        saveState.value = (isSaving: false, error: errorMessage);
-      }
+      _showSaveError(errorMessage);
+    }
+  }
+
+  void _showSaveError(String message) {
+    if (!_disposed) {
+      saveState.value = (isSaving: false, error: message);
     }
   }
 
@@ -282,14 +290,19 @@ class _MeasurementCaptureBackHandler extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<int>(
-      valueListenable: draft.pageIndexNotifier,
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        draft.pageIndexNotifier,
+        draft.saveState,
+      ]),
       child: child,
-      builder: (context, pageIndex, child) {
+      builder: (context, child) {
+        final pageIndex = draft.pageIndexNotifier.value;
+        final isSaving = draft.saveState.value.isSaving;
         final popAware = PopScope<void>(
-          canPop: pageIndex == 0,
+          canPop: pageIndex == 0 && !isSaving,
           onPopInvokedWithResult: (didPop, _) {
-            if (!didPop && draft.pageIndexNotifier.value != 0) {
+            if (!didPop && pageIndex != 0 && !isSaving) {
               draft.discardPickerChanges();
             }
           },

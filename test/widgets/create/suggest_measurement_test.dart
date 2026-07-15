@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/widgets/create/suggest_measurement.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
+import '../../pages/create/test_utils.dart';
 import '../../test_data/test_data.dart';
 import '../../widget_test_utils.dart';
 
@@ -71,7 +71,7 @@ void main() {
     tester,
   ) async {
     num? selectedValue;
-    final measurements = _suggestionFixture();
+    final measurements = measurementSuggestionFixture();
 
     await pumpSuggestions(
       tester,
@@ -104,29 +104,4 @@ void main() {
     expect(chips.every((chip) => chip.onPressed == null), isTrue);
     expect(selectedValue, 500);
   });
-}
-
-List<MeasurementEntry> _suggestionFixture() {
-  MeasurementEntry entry(String id, num value, DateTime at) => MeasurementEntry(
-    meta: Metadata(
-      id: id,
-      createdAt: at,
-      dateFrom: at,
-      dateTo: at,
-      updatedAt: at,
-      starred: false,
-      private: false,
-    ),
-    data: MeasurementData(
-      value: value,
-      dataTypeId: measurableWater.id,
-      dateTo: at,
-      dateFrom: at,
-    ),
-  );
-  return [
-    entry('suggestion-1', 500, DateTime(2024, 3, 15, 10, 30)),
-    entry('suggestion-2', 500, DateTime(2024, 3, 14, 9)),
-    entry('suggestion-3', 250, DateTime(2024, 3, 13, 8)),
-  ];
 }

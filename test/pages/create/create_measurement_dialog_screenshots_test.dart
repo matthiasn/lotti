@@ -18,8 +18,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -35,6 +33,7 @@ import '../../features/dashboards/ui/screenshot_fonts.dart';
 import '../../mocks/mocks.dart';
 import '../../test_data/test_data.dart';
 import '../../widget_test_utils.dart';
+import 'test_utils.dart';
 
 const _boundaryKey = ValueKey<String>('measurement-screenshot');
 const _openKey = ValueKey<String>('open-measurement-capture');
@@ -159,7 +158,7 @@ void main() {
         rangeEnd: any(named: 'rangeEnd'),
         type: measurableWater.id,
       ),
-    ).thenAnswer((_) async => _suggestionFixture());
+    ).thenAnswer((_) async => measurementSuggestionFixture());
   });
 
   tearDown(tearDownTestGetIt);
@@ -192,29 +191,4 @@ void main() {
       'measurement_capture_after_observed_at_scrolled_dark',
     );
   });
-}
-
-List<MeasurementEntry> _suggestionFixture() {
-  MeasurementEntry entry(String id, num value, DateTime at) => MeasurementEntry(
-    meta: Metadata(
-      id: id,
-      createdAt: at,
-      dateFrom: at,
-      dateTo: at,
-      updatedAt: at,
-      starred: false,
-      private: false,
-    ),
-    data: MeasurementData(
-      value: value,
-      dataTypeId: measurableWater.id,
-      dateTo: at,
-      dateFrom: at,
-    ),
-  );
-  return [
-    entry('suggestion-1', 500, DateTime(2024, 3, 15, 10, 30)),
-    entry('suggestion-2', 500, DateTime(2024, 3, 14, 9)),
-    entry('suggestion-3', 250, DateTime(2024, 3, 13, 8)),
-  ];
 }

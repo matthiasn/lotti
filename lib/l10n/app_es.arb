@@ -2769,7 +2769,7 @@
   "measurableNotFound": "Medible no encontrado",
   "measurementCommentHint": "Añade una nota (opcional)",
   "measurementCommentSemantic": "Comentario, opcional",
-  "measurementObservedAtChangeSemantic": "Registrado el {dateTime}. Cambiar fecha y hora.",
+  "measurementObservedAtChangeSemantic": "Observado el {dateTime}. Cambiar la fecha y la hora.",
   "@measurementObservedAtChangeSemantic": {
     "placeholders": {
       "dateTime": {

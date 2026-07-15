@@ -6656,7 +6656,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String measurementObservedAtChangeSemantic(String dateTime) {
-    return 'Registrado el $dateTime. Cambiar fecha y hora.';
+    return 'Observado el $dateTime. Cambiar la fecha y la hora.';
   }
 
   @override

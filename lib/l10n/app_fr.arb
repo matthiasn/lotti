@@ -2769,7 +2769,7 @@
   "measurableNotFound": "Élément mesurable introuvable",
   "measurementCommentHint": "Ajoute une note (facultatif)",
   "measurementCommentSemantic": "Commentaire, facultatif",
-  "measurementObservedAtChangeSemantic": "Mesuré le {dateTime}. Modifier la date et l’heure.",
+  "measurementObservedAtChangeSemantic": "Observé le {dateTime}. Modifier la date et l’heure.",
   "@measurementObservedAtChangeSemantic": {
     "placeholders": {
       "dateTime": {
@@ -2787,7 +2787,7 @@
     }
   },
   "measurementSaveError": "Impossible d’enregistrer cette mesure. Réessaie.",
-  "measurementSetObservedAtNowSemantic": "Définir la date et l’heure observées sur maintenant",
+  "measurementSetObservedAtNowSemantic": "Utiliser la date et l’heure actuelles pour l’observation",
   "measurementTimeLabel": "Heure",
   "measurementValueSemantic": "Valeur pour {measurable}",
   "@measurementValueSemantic": {

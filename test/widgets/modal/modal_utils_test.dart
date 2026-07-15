@@ -6,6 +6,8 @@ import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
+import '../../widget_test_utils.dart';
+
 class _TestNavigatorObserver extends NavigatorObserver {
   final List<Route<dynamic>> pushedRoutes = <Route<dynamic>>[];
 
@@ -728,33 +730,31 @@ void main() {
         addTearDown(pageIndexNotifier.dispose);
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => ElevatedButton(
-                  onPressed: () {
-                    ModalUtils.showMultiPageModal<void>(
-                      context: context,
-                      pageIndexNotifier: pageIndexNotifier,
-                      pageListBuilder: (modalContext) => [
-                        ModalUtils.modalSheetPage(
-                          context: modalContext,
-                          showCloseButton: true,
-                          child: ElevatedButton(
-                            onPressed: () => pageIndexNotifier.value = 1,
-                            child: const Text('Next page'),
-                          ),
+          makeTestableWidgetWithScaffold(
+            Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () {
+                  ModalUtils.showMultiPageModal<void>(
+                    context: context,
+                    pageIndexNotifier: pageIndexNotifier,
+                    pageListBuilder: (modalContext) => [
+                      ModalUtils.modalSheetPage(
+                        context: modalContext,
+                        showCloseButton: true,
+                        child: ElevatedButton(
+                          onPressed: () => pageIndexNotifier.value = 1,
+                          child: const Text('Next page'),
                         ),
-                        ModalUtils.modalSheetPage(
-                          context: modalContext,
-                          showCloseButton: true,
-                          child: const Text('Second page'),
-                        ),
-                      ],
-                    );
-                  },
-                  child: const Text('Show paginated modal'),
-                ),
+                      ),
+                      ModalUtils.modalSheetPage(
+                        context: modalContext,
+                        showCloseButton: true,
+                        child: const Text('Second page'),
+                      ),
+                    ],
+                  );
+                },
+                child: const Text('Show paginated modal'),
               ),
             ),
           ),
@@ -935,26 +935,23 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => ElevatedButton(
-                  onPressed: () {
-                    ModalUtils.showSingleSliverPageModal<void>(
-                      context: context,
-                      builder: (modalContext) =>
-                          ModalUtils.sliverModalSheetPage(
-                            context: modalContext,
-                            slivers: const [
-                              SliverToBoxAdapter(
-                                child: Text('Closable sliver content'),
-                              ),
-                            ],
-                          ),
-                    );
-                  },
-                  child: const Text('Show closable sliver'),
-                ),
+          makeTestableWidgetWithScaffold(
+            Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () {
+                  ModalUtils.showSingleSliverPageModal<void>(
+                    context: context,
+                    builder: (modalContext) => ModalUtils.sliverModalSheetPage(
+                      context: modalContext,
+                      slivers: const [
+                        SliverToBoxAdapter(
+                          child: Text('Closable sliver content'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: const Text('Show closable sliver'),
               ),
             ),
           ),

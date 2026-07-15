@@ -16,9 +16,11 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../helpers/fallbacks.dart';
 import '../../mocks/mocks.dart';
 import '../../test_data/test_data.dart';
 import '../../widget_test_utils.dart';
+import 'test_utils.dart';
 
 const _openKey = ValueKey<String>('open-measurement-capture');
 const _observedAtKey = Key('measurement_observed_at');
@@ -37,9 +39,7 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockPersistenceLogic mockPersistenceLogic;
 
-  setUpAll(() {
-    registerFallbackValue(FakeMeasurementData());
-  });
+  setUpAll(registerAllFallbackValues);
 
   setUp(() async {
     mockJournalDb = mockJournalDbWithMeasurableTypes([measurableWater]);
@@ -67,7 +67,7 @@ void main() {
         comment: any(named: 'comment'),
         private: any(named: 'private'),
       ),
-    ).thenAnswer((_) async => null);
+    ).thenAnswer((_) async => measurementSuggestionFixture().first);
   });
 
   tearDown(tearDownTestGetIt);
@@ -249,7 +249,7 @@ void main() {
             invocation.namedArguments[const Symbol('comment')] as String;
         savedPrivate =
             invocation.namedArguments[const Symbol('private')] as bool;
-        return null;
+        return measurementSuggestionFixture().first;
       });
 
       await pumpLauncher(tester);
@@ -370,7 +370,7 @@ void main() {
       ),
     ).thenAnswer((invocation) async {
       savedData = capturedData(invocation);
-      return null;
+      return measurementSuggestionFixture().first;
     });
 
     await pumpLauncher(tester);
@@ -411,7 +411,7 @@ void main() {
       ),
     ).thenAnswer((invocation) async {
       savedData = capturedData(invocation);
-      return null;
+      return measurementSuggestionFixture().first;
     });
 
     await pumpLauncher(tester, now: localNow);
@@ -437,7 +437,7 @@ void main() {
   testWidgets(
     'quick log uses the committed timestamp and comment and closes after save',
     (tester) async {
-      final measurements = _suggestionFixture();
+      final measurements = measurementSuggestionFixture();
       when(
         () => mockJournalDb.getMeasurementsByType(
           rangeStart: any(named: 'rangeStart'),
@@ -458,7 +458,7 @@ void main() {
         savedData = capturedData(invocation);
         savedComment =
             invocation.namedArguments[const Symbol('comment')] as String;
-        return null;
+        return measurementSuggestionFixture().first;
       });
 
       await pumpLauncher(tester);
@@ -527,7 +527,37 @@ void main() {
     },
   );
 
-  testWidgets('save shows loading, blocks duplicates, and announces failure', (
+  testWidgets('null persistence result keeps the editor open with an error', (
+    tester,
+  ) async {
+    when(
+      () => mockPersistenceLogic.createMeasurementEntry(
+        data: any(named: 'data'),
+        comment: any(named: 'comment'),
+        private: any(named: 'private'),
+      ),
+    ).thenAnswer((_) async => null);
+
+    await pumpLauncher(tester);
+    await openCapture(tester);
+    await tester.enterText(find.byKey(_valueKey), '42');
+    await tester.pump();
+    tester.widget<DesignSystemButton>(find.byKey(_saveKey)).onPressed!.call();
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byKey(_valueKey), findsOneWidget);
+    expect(
+      find.text('Couldn’t save this measurement. Try again.'),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<DesignSystemButton>(find.byKey(_saveKey)).isLoading,
+      isFalse,
+    );
+  });
+
+  testWidgets('save blocks duplicates and dismissal, then announces failure', (
     tester,
   ) async {
     final completer = Completer<MeasurementEntry?>();
@@ -552,8 +582,18 @@ void main() {
     expect(loadingButton.isLoading, isTrue);
     expect(find.byKey(_saveKey), findsOneWidget);
 
-    await tester.tap(find.byKey(_saveKey));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pump();
+    expect(find.byKey(_valueKey), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(find.byKey(_valueKey), findsOneWidget);
+
+    expect(
+      tester.widget<DesignSystemButton>(find.byKey(_saveKey)).onPressed,
+      isNull,
+    );
     verify(
       () => mockPersistenceLogic.createMeasurementEntry(
         data: any(named: 'data'),
@@ -661,29 +701,4 @@ void main() {
       ),
     );
   });
-}
-
-List<MeasurementEntry> _suggestionFixture() {
-  MeasurementEntry entry(String id, num value, DateTime at) => MeasurementEntry(
-    meta: Metadata(
-      id: id,
-      createdAt: at,
-      dateFrom: at,
-      dateTo: at,
-      updatedAt: at,
-      starred: false,
-      private: false,
-    ),
-    data: MeasurementData(
-      value: value,
-      dataTypeId: measurableWater.id,
-      dateTo: at,
-      dateFrom: at,
-    ),
-  );
-  return [
-    entry('suggestion-1', 500, DateTime(2024, 3, 15, 10, 30)),
-    entry('suggestion-2', 500, DateTime(2024, 3, 14, 9)),
-    entry('suggestion-3', 250, DateTime(2024, 3, 13, 8)),
-  ];
 }

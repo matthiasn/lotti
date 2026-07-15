@@ -6665,7 +6665,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String measurementObservedAtChangeSemantic(String dateTime) {
-    return 'Mesuré le $dateTime. Modifier la date et l’heure.';
+    return 'Observé le $dateTime. Modifier la date et l’heure.';
   }
 
   @override
@@ -6682,7 +6682,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get measurementSetObservedAtNowSemantic =>
-      'Définir la date et l’heure observées sur maintenant';
+      'Utiliser la date et l’heure actuelles pour l’observation';
 
   @override
   String get measurementTimeLabel => 'Heure';

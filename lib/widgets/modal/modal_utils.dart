@@ -317,7 +317,7 @@ class ModalUtils {
                 context: navigationContext,
                 tooltip: materialLocalizations.closeButtonTooltip,
                 icon: Icons.close_rounded,
-                onPressed: Navigator.of(navigationContext).pop,
+                onPressed: () => Navigator.of(navigationContext).pop(),
               ),
             )
           : null,
