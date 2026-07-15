@@ -134,18 +134,23 @@ time, `TasksTabPage` snapshots the live `JournalPageState` into a
   `Unassigned` sentinel leave the corresponding creation default unchanged.
 
 Category, labels, and status are written with the initial task entity, so the
-task never exists in an intermediate state that misses those filters. Project
-membership uses `ProjectRepository.linkTaskToProject` before navigation. If a
-project is selected without a category filter, its category supplies the task
-category because project membership enforces a same-category invariant.
+task never exists in an intermediate state that misses those filters. Before
+that write, an inherited project is resolved and its category becomes
+authoritative, including when a conflicting category filter is present. A
+missing project or lookup failure aborts creation. After the write,
+`ProjectRepository.linkTaskToProject` runs before navigation; a rejected or
+throwing explicit link is surfaced as a `null` creation result, so the UI does
+not navigate to a task that failed to join the selected project.
 
 ```mermaid
 flowchart LR
   Filter["JournalPageState filters"] --> Snapshot["TaskCreationFilterContext"]
-  Snapshot -->|"single category · all labels · single status"| Create["createTask / initial task write"]
-  Snapshot -->|"single project"| Project["ProjectRepository.linkTaskToProject"]
-  Project --> Navigate["open new task"]
-  Create --> Project
+  Snapshot --> Validate["resolve selected project"]
+  Validate -->|"missing or error"| Abort["return null"]
+  Validate -->|"project category authoritative"| Create["initial task write<br/>category · labels · status"]
+  Create --> Link["linkTaskToProject"]
+  Link -->|"success"| Navigate["open new task"]
+  Link -->|"rejected or error"| Abort
 ```
 
 ```mermaid

@@ -60,10 +60,11 @@ Future<JournalEntity?> createChecklist({
 /// Creates a blank task and applies any unambiguous creation context.
 ///
 /// Category, labels, and status are part of the initial entity write. An
-/// explicit [projectId] is linked before this future completes; if no
-/// [categoryId] is supplied, the project's category is used to satisfy the
-/// same-category project invariant. Without these optional values, the
-/// existing open, uncategorized, unlabeled, project-free defaults are kept.
+/// explicit [projectId] is validated before that write, its category is
+/// authoritative, and the project is linked before this future completes.
+/// Invalid projects or failed explicit links return `null`. Without these
+/// optional values, the existing open, uncategorized, unlabeled, project-free
+/// defaults are kept.
 Future<Task?> createTask({
   String? linkedId,
   String? categoryId,
@@ -81,19 +82,28 @@ Future<Task?> createTask({
       ?.where((id) => id.isNotEmpty)
       .toList(growable: false);
 
-  // Project links require tasks and projects to share a category. A project
-  // filter on its own therefore supplies the project's category implicitly.
-  if (projectId != null && effectiveCategoryId == null) {
+  // Project links require tasks and projects to share a category. Resolve the
+  // project before creating the task and treat its category as authoritative,
+  // including when the filter context also supplies a conflicting category.
+  if (projectId != null) {
+    ProjectEntry? project;
     try {
-      effectiveCategoryId = (await projectRepository!.getProjectById(
-        projectId,
-      ))?.meta.categoryId;
+      project = await projectRepository!.getProjectById(projectId);
     } catch (error) {
       developer.log(
         'Failed to resolve category for project $projectId: $error',
         name: 'createTask',
       );
+      return null;
     }
+    if (project == null) {
+      developer.log(
+        'Could not resolve project $projectId before task creation',
+        name: 'createTask',
+      );
+      return null;
+    }
+    effectiveCategoryId = project.meta.categoryId;
   }
 
   // Look up category defaults for profile inheritance.
@@ -121,11 +131,12 @@ Future<Task?> createTask({
   );
 
   if (task != null && projectId != null) {
-    await _assignProjectToTask(
+    final assigned = await _assignProjectToTask(
       projectRepository: projectRepository!,
       projectId: projectId,
       taskId: task.meta.id,
     );
+    if (!assigned) return null;
   } else if (task != null && linkedId != null) {
     // Inherit project from the linked parent task when no explicit project was
     // requested by the creation context.
@@ -166,9 +177,9 @@ Future<void> _inheritProjectFromLinkedTask({
 
 /// Assigns the explicitly inherited project to a newly created task.
 ///
-/// Best-effort like linked-parent project inheritance: project persistence
-/// failures are logged without discarding the task itself.
-Future<void> _assignProjectToTask({
+/// Returns whether the link succeeded so [createTask] can surface explicit
+/// assignment failures. Repository exceptions are logged and return `false`.
+Future<bool> _assignProjectToTask({
   required ProjectRepository projectRepository,
   required String projectId,
   required String taskId,
@@ -184,11 +195,13 @@ Future<void> _assignProjectToTask({
         name: 'createTask',
       );
     }
+    return assigned;
   } catch (error) {
     developer.log(
       'Failed to assign project $projectId to task $taskId: $error',
       name: 'createTask',
     );
+    return false;
   }
 }
 
