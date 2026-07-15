@@ -6352,7 +6352,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get keyboardShortcutsSubtitle =>
-      'Toutes les commandes de bureau et leurs combinaisons de touches actuelles.';
+      'Toutes les commandes de l’application de bureau et leurs combinaisons de touches actuelles.';
 
   @override
   String get keyboardShortcutsTitle => 'Raccourcis clavier';

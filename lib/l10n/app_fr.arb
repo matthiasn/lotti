@@ -2657,7 +2657,7 @@
   "keyboardResizeDividerLabel": "Redimensionner les volets",
   "keyboardShortcutsNoResults": "Aucun raccourci ne correspond à ta recherche",
   "keyboardShortcutsSearchHint": "Rechercher des raccourcis…",
-  "keyboardShortcutsSubtitle": "Toutes les commandes de bureau et leurs combinaisons de touches actuelles.",
+  "keyboardShortcutsSubtitle": "Toutes les commandes de l’application de bureau et leurs combinaisons de touches actuelles.",
   "keyboardShortcutsTitle": "Raccourcis clavier",
   "knowledgeGraphEmpty": "Aucun lien à explorer pour le moment",
   "knowledgeGraphError": "Impossible de charger le graphe de connaissances",
