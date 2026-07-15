@@ -115,12 +115,10 @@ class _TaskFilterSectionLabel extends StatelessWidget {
 
 class _TaskFilterToggleGroup extends StatelessWidget {
   const _TaskFilterToggleGroup({
-    required this.label,
     required this.toggles,
     required this.onChanged,
   });
 
-  final String label;
   final List<DesignSystemTaskFilterToggle> toggles;
   final ValueChanged<String> onChanged;
 
@@ -130,8 +128,6 @@ class _TaskFilterToggleGroup extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _TaskFilterSectionLabel(text: label),
-        SizedBox(height: spacing.step4),
         for (var index = 0; index < toggles.length; index++) ...[
           DesignSystemFilterToggleRow(
             key: ValueKey(

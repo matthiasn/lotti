@@ -122,7 +122,6 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
         ),
       if (state.toggles.isNotEmpty)
         _TaskFilterToggleGroup(
-          label: context.messages.journalFilterShowTitle,
           toggles: state.toggles,
           onChanged: (id) => onChanged(state.toggleValue(id)),
         ),

@@ -789,6 +789,11 @@ void main() {
 
       expect(find.text('Show date'), findsOneWidget);
       expect(find.text('Show due date'), findsOneWidget);
+      expect(find.text('Show'), findsNothing);
+      expect(
+        tester.getTopLeft(find.text('Show date')).dx,
+        tester.getTopLeft(find.byType(DesignSystemTaskFilterSheet)).dx,
+      );
 
       await tester.tap(find.text('Show date'));
       await tester.pump();
