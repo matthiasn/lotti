@@ -5055,6 +5055,7 @@ void main() {
             final stuckRunner = WakeRunner();
             // Completer that gates the hung aborted-status write.
             final abortedStatusGate = Completer<void>();
+            final replacementDrainGate = Completer<Map<String, VectorClock>?>();
             final executedAgentIds = <String>[];
 
             when(
@@ -5091,6 +5092,9 @@ void main() {
                     executedAgentIds.add(agentId);
                     if (agentId == 'stuck-agent') {
                       return Completer<Map<String, VectorClock>?>().future;
+                    }
+                    if (agentId == 'new-agent') {
+                      return replacementDrainGate.future;
                     }
                     return Future.value();
                   },
@@ -5163,6 +5167,17 @@ void main() {
                 level: any(named: 'level'),
               ),
             ).called(1);
+
+            // The replacement drain is still waiting on new-agent and has one
+            // free global slot. Releasing the old drain must not clear the
+            // replacement drain's wake signal, otherwise this newly queued
+            // agent would wait for new-agent despite the available capacity.
+            stuck.enqueueManualWake(agentId: 'third-agent', reason: 'manual');
+            async.flushMicrotasks();
+            expect(executedAgentIds, contains('third-agent'));
+
+            replacementDrainGate.complete(null);
+            async.flushMicrotasks();
 
             stuck.stop();
             controller.close();

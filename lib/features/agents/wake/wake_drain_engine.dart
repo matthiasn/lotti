@@ -86,6 +86,7 @@ extension WakeDrainEngine on WakeOrchestrator {
   Future<void> _drain(int generation) async {
     final deferred = <WakeJob>[];
     final activeExecutions = <String, Future<String>>{};
+    Completer<void>? ownedWakeSignal;
 
     try {
       while (true) {
@@ -217,6 +218,7 @@ extension WakeDrainEngine on WakeOrchestrator {
         }
 
         final wakeSignal = Completer<void>();
+        ownedWakeSignal = wakeSignal;
         _drainWakeSignal = wakeSignal;
         final wakeSentinel = Object();
         final completedRunKey = await Future.any<Object>([
@@ -225,6 +227,9 @@ extension WakeDrainEngine on WakeOrchestrator {
         ]);
         if (identical(_drainWakeSignal, wakeSignal)) {
           _drainWakeSignal = null;
+        }
+        if (identical(ownedWakeSignal, wakeSignal)) {
+          ownedWakeSignal = null;
         }
         if (identical(completedRunKey, wakeSentinel)) {
           _drainRequested = false;
@@ -236,7 +241,10 @@ extension WakeDrainEngine on WakeOrchestrator {
         if (completedExecution != null) await completedExecution;
       }
     } finally {
-      _drainWakeSignal = null;
+      final wakeSignal = ownedWakeSignal;
+      if (wakeSignal != null && identical(_drainWakeSignal, wakeSignal)) {
+        _drainWakeSignal = null;
+      }
 
       // Re-enqueue deferred jobs without dedup checks.
       deferred.forEach(queue.requeue);
