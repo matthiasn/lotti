@@ -65,6 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keep the existing defaults.
 
 ### Fixed
+- **Command+S saves changed rich text again.** The save command now travels
+  with the reusable editor, so it works in journal cards and task forms as well
+  as on the standalone entry page without reaching for the Save button.
 - **Keyboard navigation now enters task and project details directly.** Right
   Arrow on a focused row opens the adjacent detail pane instead of resizing
   the divider, and keyboard row focus now uses the same full-width color and

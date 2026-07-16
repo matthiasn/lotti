@@ -148,10 +148,14 @@ It:
 - listens to unsaved-draft state from `EditorStateService`
 - listens to `UpdateNotifications` for external DB changes touching the same entry
 - keeps focus and editor-toolbar visibility in sync with the active editor
-- contributes lifecycle-bound `Primary+S` save handlers from the entry detail
-  widget; `Primary` resolves to Command on macOS and Control on Windows/Linux
 - routes save operations to the correct persistence path
 - exposes focused mutations such as task status/priority, event stars, checklist ordering, cover art, privacy, starring, flagging, copying, and deletion
+
+[`EditorWidget`](ui/widgets/editor/editor_widget.dart) contributes the
+lifecycle-bound `Primary+S` handler next to the reusable rich-text editor, so
+the same command reaches `EntryController.save()` whether the editor is shown
+on the entry page, in a journal card, or inside a task form. `Primary` resolves
+to Command on macOS and Control on Windows/Linux.
 
 ### Detail State Machine
 
@@ -517,15 +521,19 @@ If you want to understand where an entry is created, loaded, edited, searched, l
 ## Desktop Keyboard Commands
 
 The infinite journal page owns contextual refresh, search focus, and creation
-handlers. The entry detail page owns save. Neither controller registers a
-process-global hotkey; the handlers exist only with their widget scope.
+handlers. The reusable rich-text editor owns the focus-local save handler on
+every surface where it is embedded; the entry detail page also keeps a
+page-level save handler for the rest of that surface. Neither controller
+registers a process-global hotkey; the handlers exist only with their widget
+scope.
 
 ```mermaid
 flowchart LR
   Scope[Focused journal AppCommandScope] --> Search[Primary+F to search field]
   Scope --> Refresh[Primary+R to preserve-visible-items refresh]
   Scope --> Create[Primary+Shift+N to text entry in selected category]
-  Detail[Focused entry detail scope] --> Save[Primary+S to EntryController save]
+  Editor[Focused EditorWidget scope] --> Save[Primary+S to EntryController save]
+  Detail[Entry detail page scope] --> Save
 ```
 
 Global Primary+6 navigation and Primary+N text-entry creation are provided by

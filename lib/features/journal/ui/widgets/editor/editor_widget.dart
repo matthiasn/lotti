@@ -10,6 +10,9 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_styles.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_toolbar.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/embed_builders.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -83,8 +86,10 @@ bool showDictionaryResultToast(
 ///
 /// The toolbar and surrounding card chrome appear only while the entry is
 /// focused/being edited (`shouldShowEditorToolBar`); otherwise it renders as
-/// flat transparent text. Adds an "Add to Dictionary" context-menu action that
-/// pushes the selected term into the entry category's speech dictionary.
+/// flat transparent text. Its local save command keeps Primary+S attached to
+/// the editor on every surface where it is embedded. Adds an "Add to
+/// Dictionary" context-menu action that pushes the selected term into the
+/// entry category's speech dictionary.
 class EditorWidget extends ConsumerStatefulWidget {
   const EditorWidget({
     required this.entryId,
@@ -163,46 +168,57 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
                 entryId: widget.entryId,
               ),
             Flexible(
-              child: QuillEditor(
-                controller: controller,
-                scrollController: _scrollController,
-                focusNode: focusNode,
-                config: QuillEditorConfig(
-                  embedBuilders: [
-                    const DividerEmbedBuilder(),
-                    ...FlutterQuillEmbeds.defaultEditorBuilders(),
-                  ],
-                  unknownEmbedBuilder: const UnknownEmbedBuilder(),
-                  textSelectionThemeData: TextSelectionThemeData(
-                    cursorColor: context.colorScheme.onSurface,
-                    selectionColor: context.colorScheme.primary.withAlpha(127),
+              child: AppCommandScope(
+                debugLabel: 'entry-editor',
+                handlers: {
+                  AppCommandId.save: AppCommandHandler(
+                    isEnabled: () => shouldShowEditorToolBar,
+                    invoke: (_) => notifier.save(),
                   ),
-                  // ignore: experimental_member_use
-                  spaceShortcutEvents: [
-                    formatHyphenToBulletList,
-                    formatOrderedNumberToList,
-                    formatHeaderToHeaderStyle,
-                    formatHeader2ToHeaderStyle,
-                    formatHeader3ToHeaderStyle,
-                  ],
-                  // When read-only/unfocused the editor hugs its content — no
-                  // reserved blank band beneath a short note (which left the
-                  // following value line floating over a void). The min tap
-                  // height only applies while it is being edited.
-                  minHeight: shouldShowEditorToolBar ? widget.minHeight : 0,
-                  placeholder: context.messages.editorPlaceholder,
-                  padding: contentPadding,
-                  keyboardAppearance: Theme.of(context).brightness,
-                  customStyles: customEditorStyles(
-                    themeData: Theme.of(context),
-                    tokens: context.designTokens,
-                  ),
-                  contextMenuBuilder: (context, rawEditorState) =>
-                      _buildContextMenu(
-                        context,
-                        rawEditorState,
-                        controller,
+                },
+                child: QuillEditor(
+                  controller: controller,
+                  scrollController: _scrollController,
+                  focusNode: focusNode,
+                  config: QuillEditorConfig(
+                    embedBuilders: [
+                      const DividerEmbedBuilder(),
+                      ...FlutterQuillEmbeds.defaultEditorBuilders(),
+                    ],
+                    unknownEmbedBuilder: const UnknownEmbedBuilder(),
+                    textSelectionThemeData: TextSelectionThemeData(
+                      cursorColor: context.colorScheme.onSurface,
+                      selectionColor: context.colorScheme.primary.withAlpha(
+                        127,
                       ),
+                    ),
+                    // ignore: experimental_member_use
+                    spaceShortcutEvents: [
+                      formatHyphenToBulletList,
+                      formatOrderedNumberToList,
+                      formatHeaderToHeaderStyle,
+                      formatHeader2ToHeaderStyle,
+                      formatHeader3ToHeaderStyle,
+                    ],
+                    // When read-only/unfocused the editor hugs its content — no
+                    // reserved blank band beneath a short note (which left the
+                    // following value line floating over a void). The min tap
+                    // height only applies while it is being edited.
+                    minHeight: shouldShowEditorToolBar ? widget.minHeight : 0,
+                    placeholder: context.messages.editorPlaceholder,
+                    padding: contentPadding,
+                    keyboardAppearance: Theme.of(context).brightness,
+                    customStyles: customEditorStyles(
+                      themeData: Theme.of(context),
+                      tokens: context.designTokens,
+                    ),
+                    contextMenuBuilder: (context, rawEditorState) =>
+                        _buildContextMenu(
+                          context,
+                          rawEditorState,
+                          controller,
+                        ),
+                  ),
                 ),
               ),
             ),

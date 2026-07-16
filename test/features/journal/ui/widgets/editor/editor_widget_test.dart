@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -23,6 +24,13 @@ import '../../../../../helpers/fallbacks.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 import 'editor_widget_test_helpers.dart';
+
+Future<void> _sendCommandS(WidgetTester tester) async {
+  await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+  await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+  await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+  await tester.pump();
+}
 
 void main() {
   // One shared heavy setup for the whole file: both widget-test groups
@@ -69,6 +77,65 @@ void main() {
   });
 
   group('EditorWidget', () {
+    testWidgets('Cmd+S saves while the rich-text editor is focused', (
+      tester,
+    ) async {
+      late QuillEditor editor;
+      String? savedText;
+
+      await tester.pumpWidget(
+        buildEditorTestWidget(
+          entryId: 'keyboard-save',
+          showToolbar: true,
+          platform: TargetPlatform.macOS,
+          onSave: () {
+            savedText = editor.controller.document.toPlainText();
+          },
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 450));
+
+      editor = tester.widget<QuillEditor>(find.byType(QuillEditor));
+      editor.controller.document.insert(0, 'changed');
+      editor.focusNode.requestFocus();
+      await tester.pump();
+      expect(editor.focusNode.hasFocus, isTrue);
+      expect(savedText, isNull);
+
+      await _sendCommandS(tester);
+
+      expect(savedText, 'changed\n');
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 1));
+    });
+
+    testWidgets('Cmd+S is ignored while the editor is read-only', (
+      tester,
+    ) async {
+      var saveCount = 0;
+
+      await tester.pumpWidget(
+        buildEditorTestWidget(
+          entryId: 'keyboard-save-read-only',
+          showToolbar: false,
+          platform: TargetPlatform.macOS,
+          onSave: () => saveCount++,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 450));
+
+      final editor = tester.widget<QuillEditor>(find.byType(QuillEditor));
+      editor.focusNode.requestFocus();
+      await tester.pump();
+      expect(editor.focusNode.hasFocus, isTrue);
+
+      await _sendCommandS(tester);
+
+      expect(saveCount, isZero);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 1));
+    });
+
     testWidgets('editor toolbar is invisible without autofocus', (
       WidgetTester tester,
     ) async {

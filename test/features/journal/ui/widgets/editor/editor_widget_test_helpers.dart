@@ -9,15 +9,19 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../../widget_test_utils.dart';
 
 class TestEntryController extends EntryController {
-  TestEntryController({required this.showToolbar});
+  TestEntryController({required this.showToolbar, this.onSave});
 
   final bool showToolbar;
+  final VoidCallback? onSave;
 
   @override
   Future<EntryState?> build() async {
@@ -31,6 +35,17 @@ class TestEntryController extends EntryController {
       formKey: formKey,
     );
   }
+
+  @override
+  Future<void> save({
+    Duration? estimate,
+    String? title,
+    DateTime? dueDate,
+    bool clearDueDate = false,
+    bool stopRecording = false,
+  }) async {
+    onSave?.call();
+  }
 }
 
 Widget buildEditorTestWidget({
@@ -38,11 +53,13 @@ Widget buildEditorTestWidget({
   required bool showToolbar,
   SpeechDictionaryService? speechDictionaryServiceOverride,
   EdgeInsets? margin,
+  VoidCallback? onSave,
+  TargetPlatform platform = TargetPlatform.windows,
 }) {
   return ProviderScope(
     overrides: [
       entryControllerProvider(entryId).overrideWith(
-        () => TestEntryController(showToolbar: showToolbar),
+        () => TestEntryController(showToolbar: showToolbar, onSave: onSave),
       ),
       if (speechDictionaryServiceOverride != null)
         speechDictionaryServiceProvider.overrideWithValue(
@@ -62,14 +79,18 @@ Widget buildEditorTestWidget({
           FlutterQuillLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 800,
-                maxWidth: 800,
+        home: AppCommandHost(
+          handlers: const <AppCommandId, AppCommandHandler>{},
+          platform: platform,
+          child: Scaffold(
+            body: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: 800,
+                  maxWidth: 800,
+                ),
+                child: EditorWidget(entryId: entryId, margin: margin),
               ),
-              child: EditorWidget(entryId: entryId, margin: margin),
             ),
           ),
         ),
