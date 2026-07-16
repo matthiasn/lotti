@@ -19,8 +19,7 @@ export 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_block.dart'
 
 part 'day_timeline_widgets.dart';
 
-/// Hour-by-hour timeline rendering of a [DraftPlan]. Read-only in
-/// this milestone.
+/// Hour-by-hour timeline rendering of a [DraftPlan].
 ///
 /// Layout:
 /// - Left rail (50 px) with hour labels over a midnight-to-midnight day.
@@ -37,6 +36,8 @@ class DayTimeline extends StatefulWidget {
     this.pxPerMinute = 1.0,
     this.actualBlocks,
     this.onRenameBlock,
+    this.onEditBlock,
+    this.onRescheduleBlock,
     this.clock,
     this.showGestureHint = true,
     this.onGesturesLearned,
@@ -66,6 +67,19 @@ class DayTimeline extends StatefulWidget {
   /// Only the plan pane offers editing; tracked blocks already
   /// happened and stay read-only.
   final void Function(TimeBlock block, String title)? onRenameBlock;
+
+  /// Opens the complete editor for an editable planned block. Imported
+  /// calendar events and recorded sessions deliberately never receive it.
+  final ValueChanged<TimeBlock>? onEditBlock;
+
+  /// Persists a direct-manipulation move or resize. Returning false asks the
+  /// timeline to roll its optimistic preview back to the prior bounds.
+  final Future<bool> Function(
+    TimeBlock block,
+    DateTime start,
+    DateTime end,
+  )?
+  onRescheduleBlock;
 
   /// Injected clock used by the now-line. Defaults to `DateTime.now`.
   /// Tests pass a fixed `DateTime` to render the line deterministically.
@@ -102,6 +116,7 @@ class _DayTimelineState extends State<DayTimeline> {
 
   /// Debounces [DayTimeline.onGesturesLearned] to one firing per lifetime.
   bool _gesturesLearnedFired = false;
+  bool _arrangeMode = false;
 
   void _markGesturesLearned() {
     if (_gesturesLearnedFired) return;
@@ -217,7 +232,12 @@ class _DayTimelineState extends State<DayTimeline> {
       dayDate: widget.draft.dayDate,
       startHour: widget.startHour,
       endHour: widget.endHour,
-      expandedRegionStarts: _expandedFoldRegionStarts,
+      expandedRegionStarts: _arrangeMode
+          ? {
+              for (var hour = widget.startHour; hour < widget.endHour; hour++)
+                hour,
+            }
+          : _expandedFoldRegionStarts,
       collapsedHourHeight: tokens.spacing.step3,
     );
     _builtFoldingState = foldingState;
@@ -252,8 +272,12 @@ class _DayTimelineState extends State<DayTimeline> {
           children: [
             _TimelineToolbar(
               mode: comparisonMode,
+              arrangeMode: _arrangeMode,
               showHint: widget.showGestureHint,
               onToggleMode: _toggleComparisonMode,
+              onToggleArrange: widget.onRescheduleBlock == null
+                  ? null
+                  : () => setState(() => _arrangeMode = !_arrangeMode),
             ),
             Expanded(
               child: Listener(
@@ -310,6 +334,10 @@ class _DayTimelineState extends State<DayTimeline> {
                                           showBands: true,
                                           tracked: false,
                                           onRenameBlock: widget.onRenameBlock,
+                                          onEditBlock: widget.onEditBlock,
+                                          arrangeMode: _arrangeMode,
+                                          onRescheduleBlock:
+                                              widget.onRescheduleBlock,
                                         ),
                                       ),
                                       SizedBox(width: tokens.spacing.step3),
@@ -332,6 +360,9 @@ class _DayTimelineState extends State<DayTimeline> {
                                           showBands: false,
                                           tracked: true,
                                           onRenameBlock: null,
+                                          onEditBlock: null,
+                                          arrangeMode: false,
+                                          onRescheduleBlock: null,
                                         ),
                                       ),
                                     ],
@@ -362,6 +393,10 @@ class _DayTimelineState extends State<DayTimeline> {
                                           showBands: true,
                                           tracked: false,
                                           onRenameBlock: widget.onRenameBlock,
+                                          onEditBlock: widget.onEditBlock,
+                                          arrangeMode: _arrangeMode,
+                                          onRescheduleBlock:
+                                              widget.onRescheduleBlock,
                                         ),
                                       ),
                                       Padding(
@@ -386,6 +421,9 @@ class _DayTimelineState extends State<DayTimeline> {
                                           showBands: false,
                                           tracked: true,
                                           onRenameBlock: null,
+                                          onEditBlock: null,
+                                          arrangeMode: false,
+                                          onRescheduleBlock: null,
                                         ),
                                       ),
                                     ],

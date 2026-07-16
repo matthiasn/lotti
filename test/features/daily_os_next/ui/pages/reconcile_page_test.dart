@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_shader.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
@@ -20,6 +21,33 @@ import 'reconcile_page_test_helpers.dart';
 
 void main() {
   group('ReconcilePage', () {
+    testWidgets('shows the planning shader from the first processing frame', (
+      tester,
+    ) async {
+      hSetWideSurface(tester);
+      final agent = InitialBlockingReconcileAgent();
+      addTearDown(agent.complete);
+      await tester.pumpWidget(
+        hWrap(
+          const ReconcilePage(captureId: CaptureId('cap_slow')),
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+        ),
+      );
+      await tester.pump();
+
+      final messages = tester.element(find.byType(ReconcilePage)).messages;
+      expect(find.byType(DayPlanningThinkingShader), findsOneWidget);
+      expect(
+        find.byKey(DayPlanningThinkingShader.indicatorKey),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.dailyOsNextReconcileProcessing),
+        findsOneWidget,
+      );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
     testWidgets('renders parsed and pending cards from the day agent', (
       tester,
     ) async {
@@ -135,7 +163,19 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('4'), findsOneWidget);
-      expect(find.text('3'), findsOneWidget);
+      expect(find.text('0/3'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          '${messages.dailyOsNextReconcileHeardOverline}, 4',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          messages.dailyOsNextReconcileDecisionProgress(0, 3),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('explains the empty heard column while parsing catches up', (
@@ -206,6 +246,13 @@ void main() {
 
         expect(
           find.text(messages.dailyOsNextTriageConfirmToday),
+          findsOneWidget,
+        );
+        expect(find.text('1/3'), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(
+            messages.dailyOsNextReconcileDecisionProgress(1, 3),
+          ),
           findsOneWidget,
         );
         // The triage row for the first card collapsed — there are

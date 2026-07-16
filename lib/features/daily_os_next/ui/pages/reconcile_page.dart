@@ -91,9 +91,39 @@ class ReconcilePage extends ConsumerWidget {
                 textAlign: TextAlign.center,
               ),
             ),
-            _ => const Center(child: CircularProgressIndicator()),
+            _ => const Center(child: ReconcileLoadingView()),
           },
         ),
+      ),
+    );
+  }
+}
+
+/// First-frame processing state shared by the standalone page and the
+/// multi-step planning modal. It deliberately uses the same GPU-backed
+/// decoder bars as every later AI wait, so the initial parse never looks
+/// frozen or falls back to unrelated spinner language.
+class ReconcileLoadingView extends StatelessWidget {
+  const ReconcileLoadingView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Padding(
+      padding: EdgeInsets.all(tokens.spacing.step8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const DayPlanningThinkingShader(isThinking: true),
+          SizedBox(height: tokens.spacing.step4),
+          Text(
+            context.messages.dailyOsNextReconcileProcessing,
+            textAlign: TextAlign.center,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -240,6 +270,9 @@ class _DecideColumn extends ConsumerWidget {
         _ColumnHeader(
           overline: context.messages.dailyOsNextReconcileDecideOverline,
           count: items.length,
+          completed: items
+              .where((item) => decided.containsKey(item.taskId))
+              .length,
         ),
         SizedBox(height: tokens.spacing.step4),
         for (final item in items) ...[
@@ -259,10 +292,15 @@ class _DecideColumn extends ConsumerWidget {
 }
 
 class _ColumnHeader extends StatelessWidget {
-  const _ColumnHeader({required this.overline, required this.count});
+  const _ColumnHeader({
+    required this.overline,
+    required this.count,
+    this.completed,
+  });
 
   final String overline;
   final int count;
+  final int? completed;
 
   @override
   Widget build(BuildContext context) {
@@ -285,10 +323,19 @@ class _ColumnHeader extends StatelessWidget {
             color: tokens.colors.surface.enabled,
             borderRadius: BorderRadius.circular(tokens.radii.s),
           ),
-          child: Text(
-            '$count',
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
+          child: Semantics(
+            label: completed == null
+                ? '$overline, $count'
+                : context.messages.dailyOsNextReconcileDecisionProgress(
+                    completed!,
+                    count,
+                  ),
+            excludeSemantics: true,
+            child: Text(
+              completed == null ? '$count' : '$completed/$count',
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
             ),
           ),
         ),

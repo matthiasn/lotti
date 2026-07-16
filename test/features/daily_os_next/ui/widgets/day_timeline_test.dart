@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -15,12 +16,14 @@ import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../categories/test_utils.dart';
 
 const _work = DayAgentCategory(
   id: 'cat_work',
@@ -1062,12 +1065,13 @@ void main() {
     );
 
     testWidgets(
-      'task-linked plan blocks show a link icon; standalone blocks are '
-      'inline-renamable when the timeline provides a rename callback',
+      'editable plan blocks expose edit icons while standalone titles keep '
+      'their inline rename shortcut',
       (tester) async {
         _setView(tester, const Size(1280, 900));
 
         final renames = <(String, String)>[];
+        final edits = <String>[];
         await tester.pumpWidget(
           _wrap(
             DayTimeline(
@@ -1096,6 +1100,7 @@ void main() {
                 ],
               ),
               onRenameBlock: (block, title) => renames.add((block.id, title)),
+              onEditBlock: (block) => edits.add(block.id),
               clock: () => DateTime(2026, 5, 25, 9, 15),
             ),
             size: const Size(1280, 900),
@@ -1105,6 +1110,13 @@ void main() {
 
         // Task-linked block carries the small info link icon.
         expect(find.byIcon(Icons.link_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.edit_rounded), findsNWidgets(2));
+
+        await tester.tap(
+          find.byKey(const Key('daily_os_edit_block_linked')),
+        );
+        await tester.pump();
+        expect(edits, ['linked']);
 
         // The standalone title is click-to-edit: tap, type, submit.
         expect(find.byType(EditableTitle), findsOneWidget);
@@ -1120,6 +1132,364 @@ void main() {
         expect(renames, [('standalone', 'Renamed block')]);
       },
     );
+
+    testWidgets('compact editable blocks retain a visible edit affordance', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 900));
+      final edits = <String>[];
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: [
+                TimeBlock(
+                  id: 'compact-editable',
+                  title: 'Emergency fish census',
+                  start: DateTime(2026, 5, 25, 9),
+                  end: DateTime(2026, 5, 25, 9, 30),
+                  type: TimeBlockType.manual,
+                  state: TimeBlockState.drafted,
+                  category: _work,
+                ),
+              ],
+            ),
+            onEditBlock: (block) => edits.add(block.id),
+            clock: () => DateTime(2026, 5, 25, 8),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+
+      final edit = find.byKey(
+        const Key('daily_os_edit_block_compact-editable'),
+      );
+      expect(edit, findsOneWidget);
+      await tester.tap(edit);
+      await tester.pump();
+      expect(edits, ['compact-editable']);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('arrange mode moves and resizes only editable plan blocks', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 900));
+      final changes = <({String id, DateTime start, DateTime end})>[];
+      final editable = TimeBlock(
+        id: 'arrange-me',
+        title: 'Coordinate lunar cheese delivery',
+        start: DateTime(2026, 5, 25, 9),
+        end: DateTime(2026, 5, 25, 11),
+        type: TimeBlockType.manual,
+        state: TimeBlockState.drafted,
+        category: _work,
+      );
+      final calendarOwned = TimeBlock(
+        id: 'calendar-owned',
+        title: 'Moon customs inspection',
+        start: DateTime(2026, 5, 25, 12),
+        end: DateTime(2026, 5, 25, 13),
+        type: TimeBlockType.cal,
+        state: TimeBlockState.committed,
+        category: _work,
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(blocks: [editable, calendarOwned]),
+            onRescheduleBlock: (block, start, end) async {
+              changes.add((id: block.id, start: start, end: end));
+              return true;
+            },
+            clock: () => DateTime(2026, 5, 25, 8),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.byKey(const Key('daily_os_move_block_arrange-me')),
+        findsNothing,
+      );
+      await tester.tap(
+        find.byKey(const Key('daily_os_timeline_arrange_toggle')),
+      );
+      await tester.pump();
+
+      expect(
+        find.byKey(const Key('daily_os_move_block_arrange-me')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('daily_os_resize_start_arrange-me')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('daily_os_resize_end_arrange-me')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('daily_os_move_block_calendar-owned')),
+        findsNothing,
+      );
+
+      await tester.drag(
+        find.byKey(const Key('daily_os_move_block_arrange-me')),
+        const Offset(0, 45),
+      );
+      await tester.pump();
+
+      expect(changes, hasLength(1));
+      expect(changes.last.start, DateTime(2026, 5, 25, 9, 30));
+      expect(changes.last.end, DateTime(2026, 5, 25, 11, 30));
+
+      await tester.drag(
+        find.byKey(const Key('daily_os_resize_end_arrange-me')),
+        const Offset(0, 30),
+      );
+      await tester.pump();
+
+      expect(changes, hasLength(2));
+      expect(changes.last.start, DateTime(2026, 5, 25, 9, 30));
+      expect(changes.last.end, DateTime(2026, 5, 25, 11, 45));
+    });
+
+    testWidgets('cancelled and rejected drags restore the prior block bounds', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 900));
+      final attempts = <({DateTime start, DateTime end})>[];
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: [
+                TimeBlock(
+                  id: 'rollback',
+                  title: 'Keep the moon cheese refrigerated',
+                  start: DateTime(2026, 5, 25, 9),
+                  end: DateTime(2026, 5, 25, 11),
+                  type: TimeBlockType.manual,
+                  state: TimeBlockState.drafted,
+                  category: _work,
+                ),
+              ],
+            ),
+            onRescheduleBlock: (block, start, end) async {
+              attempts.add((start: start, end: end));
+              return false;
+            },
+            clock: () => DateTime(2026, 5, 25, 8),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const Key('daily_os_timeline_arrange_toggle')),
+      );
+      await tester.pump();
+
+      final blockFinder = find.byKey(
+        const Key('daily_os_day_block_rollback'),
+      );
+      final moveFinder = find.byKey(
+        const Key('daily_os_move_block_rollback'),
+      );
+      final originalTop = tester.getTopLeft(blockFinder).dy;
+      final moveGesture = tester.widget<GestureDetector>(moveFinder);
+      moveGesture.onVerticalDragStart!(
+        DragStartDetails(
+          localPosition: Offset.zero,
+        ),
+      );
+      moveGesture.onVerticalDragUpdate!(
+        DragUpdateDetails(
+          globalPosition: const Offset(0, 45),
+          delta: const Offset(0, 45),
+          primaryDelta: 45,
+          localPosition: const Offset(0, 45),
+        ),
+      );
+      await tester.pump();
+      expect(tester.getTopLeft(blockFinder).dy, greaterThan(originalTop));
+      moveGesture.onVerticalDragCancel!();
+      await tester.pump();
+
+      expect(tester.getTopLeft(blockFinder).dy, originalTop);
+      expect(attempts, isEmpty);
+
+      await tester.drag(moveFinder, const Offset(0, 45));
+      await tester.pump();
+
+      expect(attempts, hasLength(1));
+      expect(attempts.single.start, DateTime(2026, 5, 25, 9, 30));
+      expect(attempts.single.end, DateTime(2026, 5, 25, 11, 30));
+      expect(tester.getTopLeft(blockFinder).dy, originalTop);
+    });
+
+    testWidgets('arrange handles snap, clamp, and ignore no-op gestures', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 900));
+      final attempts = <({DateTime start, DateTime end})>[];
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: [
+                TimeBlock(
+                  id: 'clamped',
+                  title: 'Protect the intergalactic fish reserve',
+                  start: DateTime(2026, 5, 25, 9),
+                  end: DateTime(2026, 5, 25, 11),
+                  type: TimeBlockType.manual,
+                  state: TimeBlockState.drafted,
+                  category: _work,
+                ),
+              ],
+            ),
+            onRescheduleBlock: (block, start, end) async {
+              attempts.add((start: start, end: end));
+              return false;
+            },
+            clock: () => DateTime(2026, 5, 25, 8),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const Key('daily_os_timeline_arrange_toggle')),
+      );
+      await tester.pump();
+
+      GestureDetector detector(String key) => tester.widget<GestureDetector>(
+        find.byKey(Key(key)),
+      );
+
+      Future<void> dragDetector(
+        String key,
+        double delta, {
+        bool supplyPrimaryDelta = true,
+      }) async {
+        final gesture = detector(key);
+        gesture.onVerticalDragStart!(DragStartDetails());
+        gesture.onVerticalDragUpdate!(
+          DragUpdateDetails(
+            globalPosition: Offset(0, delta),
+            delta: Offset(0, delta),
+            primaryDelta: supplyPrimaryDelta ? delta : null,
+          ),
+        );
+        gesture.onVerticalDragEnd!(DragEndDetails());
+        await tester.pump();
+      }
+
+      await dragDetector('daily_os_resize_start_clamped', -2000);
+      expect(attempts.last.start, DateTime(2026, 5, 25));
+      expect(attempts.last.end, DateTime(2026, 5, 25, 11));
+
+      await dragDetector('daily_os_resize_start_clamped', 2000);
+      expect(attempts.last.start, DateTime(2026, 5, 25, 10, 45));
+      expect(attempts.last.end, DateTime(2026, 5, 25, 11));
+
+      await dragDetector('daily_os_resize_end_clamped', -2000);
+      expect(attempts.last.start, DateTime(2026, 5, 25, 9));
+      expect(attempts.last.end, DateTime(2026, 5, 25, 9, 15));
+
+      await dragDetector('daily_os_resize_end_clamped', 2000);
+      expect(attempts.last.start, DateTime(2026, 5, 25, 9));
+      expect(attempts.last.end, DateTime(2026, 5, 26));
+
+      await dragDetector('daily_os_move_block_clamped', -2000);
+      expect(attempts.last.start, DateTime(2026, 5, 25));
+      expect(attempts.last.end, DateTime(2026, 5, 25, 2));
+
+      await dragDetector('daily_os_move_block_clamped', 2000);
+      expect(attempts.last.start, DateTime(2026, 5, 25, 22));
+      expect(attempts.last.end, DateTime(2026, 5, 26));
+
+      final attemptCount = attempts.length;
+      await dragDetector(
+        'daily_os_move_block_clamped',
+        0,
+        supplyPrimaryDelta: false,
+      );
+      expect(attempts, hasLength(attemptCount));
+
+      final unstartedMove = detector('daily_os_move_block_clamped');
+      unstartedMove.onVerticalDragUpdate!(
+        DragUpdateDetails(
+          globalPosition: const Offset(0, 30),
+          delta: const Offset(0, 30),
+          primaryDelta: 30,
+        ),
+      );
+      await tester.pump();
+      expect(attempts, hasLength(attemptCount));
+
+      await tester.tap(
+        find.byKey(const Key('daily_os_timeline_arrange_toggle')),
+      );
+      await tester.pump();
+      expect(
+        find.byKey(const Key('daily_os_move_block_clamped')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('block body opens the editor with accessible alternatives', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 900));
+      final edited = <String>[];
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: [
+                TimeBlock(
+                  id: 'standalone-editor',
+                  title: 'Teach penguins spreadsheet etiquette',
+                  start: DateTime(2026, 5, 25, 9),
+                  end: DateTime(2026, 5, 25, 11),
+                  type: TimeBlockType.manual,
+                  state: TimeBlockState.drafted,
+                  category: _work,
+                ),
+              ],
+            ),
+            onEditBlock: (block) => edited.add(block.id),
+            clock: () => DateTime(2026, 5, 25, 8),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(
+        find.byKey(const Key('daily_os_day_block_standalone-editor')),
+      );
+      await tester.pump();
+      expect(edited, ['standalone-editor']);
+
+      final semantics = tester.getSemantics(
+        find.byKey(const Key('daily_os_day_block_standalone-editor')),
+      );
+      expect(
+        semantics.getSemanticsData().hasAction(SemanticsAction.tap),
+        isTrue,
+      );
+      expect(
+        semantics.getSemanticsData().customSemanticsActionIds,
+        isNotEmpty,
+      );
+    });
 
     testWidgets('task-linked plan blocks render live task title updates', (
       tester,
@@ -1175,6 +1545,83 @@ void main() {
 
       expect(find.text('Renamed task'), findsOneWidget);
       expect(find.text('Live task name'), findsNothing);
+    });
+
+    testWidgets('task-linked plan blocks render live category edits', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 900));
+      final updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      final mocks = await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+      when(
+        () => mocks.updateNotifications.updateStream,
+      ).thenAnswer((_) => updates.stream);
+
+      final task = TestTaskFactory.create(
+        id: 'task-1',
+        title: 'Feed the penguins',
+        categoryId: 'cat-work',
+      );
+      var category = CategoryTestUtils.createTestCategory(
+        id: 'cat-work',
+        name: 'Work',
+        color: '#4F9DDE',
+      );
+      when(() => mocks.journalDb.journalEntityById('task-1')).thenAnswer(
+        (_) async => task,
+      );
+      when(() => mocks.journalDb.getCategoryById('cat-work')).thenAnswer(
+        (_) async => category,
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: [
+                TimeBlock(
+                  id: 'linked',
+                  title: 'Stale planned title',
+                  start: DateTime(2026, 5, 25, 8),
+                  end: DateTime(2026, 5, 25, 9, 30),
+                  type: TimeBlockType.ai,
+                  state: TimeBlockState.drafted,
+                  category: _work,
+                  taskId: 'task-1',
+                  reason: 'Backed by a task.',
+                ),
+              ],
+            ),
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+
+      Color dashedColor() =>
+          tester.widget<DsDashedBorder>(find.byType(DsDashedBorder)).color;
+      final workColor = dashedColor();
+
+      category = category.copyWith(
+        name: 'Penguin Logistics',
+        color: '#A855F7',
+      );
+      updates.add({categoriesNotification});
+      await tester.idle();
+      await tester.pump();
+      await tester.idle();
+      await tester.pump();
+
+      expect(dashedColor(), isNot(workColor));
+      expect(
+        dashedColor(),
+        categoryColorFromHex('A855F7').withValues(
+          alpha: kTimelinePlannedAccentAlpha,
+        ),
+      );
     });
 
     testWidgets('task-linked plan blocks show fallback when task is missing', (

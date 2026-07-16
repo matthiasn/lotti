@@ -86,6 +86,31 @@ class ThrowingReconcileAgent extends MockDayAgent {
   }
 }
 
+class InitialBlockingReconcileAgent extends MockDayAgent {
+  InitialBlockingReconcileAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  final parsed = Completer<List<ParsedItem>>();
+  final pending = Completer<List<PendingItem>>();
+
+  void complete() {
+    if (!parsed.isCompleted) parsed.complete(const []);
+    if (!pending.isCompleted) pending.complete(const []);
+  }
+
+  @override
+  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) => parsed.future;
+
+  @override
+  Future<List<PendingItem>> surfacePendingDecisions({DateTime? forDate}) =>
+      pending.future;
+}
+
 class RefreshBlockingAgent extends MockDayAgent {
   RefreshBlockingAgent()
     : super(

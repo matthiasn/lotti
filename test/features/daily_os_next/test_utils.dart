@@ -17,6 +17,7 @@ class RecordingDayAgent implements DayAgentInterface {
     this.proposeError,
     this.proposeGate,
     this.renameError,
+    this.editError,
     this.submitResult = const CaptureId('cap'),
     this.draftPlanBuilder,
     this.commitGate,
@@ -44,8 +45,23 @@ class RecordingDayAgent implements DayAgentInterface {
   /// When set, [renameBlock] throws this error.
   final Error? renameError;
 
+  /// When set, [editBlock] throws this error.
+  final Error? editError;
+
   /// `(blockId, title)` pairs received by [renameBlock].
   final List<(String, String)> renamedBlocks = [];
+
+  /// Arguments received by [editBlock].
+  final List<
+    ({
+      String blockId,
+      DateTime start,
+      DateTime end,
+      String? title,
+      DayAgentCategory? category,
+    })
+  >
+  editedBlocks = [];
 
   /// When set, [proposePlanDiff] blocks on this future before returning,
   /// keeping callers pinned in their "thinking" phase so tests can observe
@@ -163,6 +179,40 @@ class RecordingDayAgent implements DayAgentInterface {
       blocks: [
         for (final block in plan.blocks)
           if (block.id == blockId) block.copyWith(title: title) else block,
+      ],
+    );
+  }
+
+  @override
+  Future<DraftPlan> editBlock({
+    required DraftPlan plan,
+    required String blockId,
+    required DateTime start,
+    required DateTime end,
+    String? title,
+    DayAgentCategory? category,
+  }) async {
+    editedBlocks.add((
+      blockId: blockId,
+      start: start,
+      end: end,
+      title: title,
+      category: category,
+    ));
+    final error = editError;
+    if (error != null) throw error;
+    return plan.copyWith(
+      blocks: [
+        for (final block in plan.blocks)
+          if (block.id == blockId)
+            block.copyWith(
+              start: start,
+              end: end,
+              title: title,
+              category: category,
+            )
+          else
+            block,
       ],
     );
   }

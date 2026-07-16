@@ -145,6 +145,21 @@ abstract class DayAgentInterface {
     required String title,
   });
 
+  /// Edits one planned block in place from the manual calendar UI.
+  ///
+  /// [start] and [end] always carry the modal/drag draft. [title] and
+  /// [category] are optional because task-linked blocks keep those fields
+  /// owned by their backing task. Imported calendar blocks are rejected by
+  /// implementations; they must be edited in their source calendar.
+  Future<DraftPlan> editBlock({
+    required DraftPlan plan,
+    required String blockId,
+    required DateTime start,
+    required DateTime end,
+    String? title,
+    DayAgentCategory? category,
+  });
+
   /// Tool: `surface_shutdown_data`. Returns the three lists the
   /// Shutdown screen needs: what completed today, what carries
   /// forward, and the metrics card payload. Bundled because they

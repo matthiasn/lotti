@@ -440,10 +440,7 @@ class _ReconcileStepContent extends ConsumerWidget {
           ),
         ),
       ),
-      _ => Padding(
-        padding: EdgeInsets.all(tokens.spacing.step10),
-        child: const Center(child: CircularProgressIndicator()),
-      ),
+      _ => const ReconcileLoadingView(),
     };
   }
 }
@@ -489,9 +486,6 @@ class _ReconcileStepBarState extends ConsumerState<_ReconcileStepBar> {
     final canBuild = state.hasValue && !_pushing;
 
     return DayPlanningGlassActionBar(
-      topSlot: DayPlanningThinkingShader(
-        isThinking: state.isLoading && !state.hasValue,
-      ),
       actions: _layoutBarPills(context, [
         DsGlassPill(
           icon: Icons.mic_rounded,

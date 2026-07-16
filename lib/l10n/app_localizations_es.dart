@@ -3539,6 +3539,46 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockEditCategoryLabel => 'Categoría';
+
+  @override
+  String get dailyOsNextBlockEditFailed =>
+      'No se pudo actualizar el bloque — inténtalo de nuevo.';
+
+  @override
+  String get dailyOsNextBlockEditNameLabel => 'Título';
+
+  @override
+  String get dailyOsNextBlockEditOpenTask => 'Abrir tarea';
+
+  @override
+  String get dailyOsNextBlockEditSave => 'Guardar cambios';
+
+  @override
+  String get dailyOsNextBlockEditSaved => 'Horario actualizado.';
+
+  @override
+  String get dailyOsNextBlockEditTimeLabel => 'Inicio y fin';
+
+  @override
+  String get dailyOsNextBlockEditTitle => 'Editar bloque';
+
+  @override
+  String get dailyOsNextBlockEditTooltip => 'Editar bloque';
+
+  @override
+  String get dailyOsNextBlockEditWhyLabel => 'Por qué a esta hora';
+
+  @override
+  String get dailyOsNextBlockMoveTooltip => 'Mover bloque';
+
+  @override
+  String get dailyOsNextBlockResizeEndTooltip => 'Ajustar fin';
+
+  @override
+  String get dailyOsNextBlockResizeStartTooltip => 'Ajustar inicio';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Entendido.';
 
   @override
@@ -3930,6 +3970,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextReconcileDecideOverline => 'VALE LA PENA DECIDIR';
 
   @override
+  String dailyOsNextReconcileDecisionProgress(int decided, int total) {
+    return '$decided de $total revisadas';
+  }
+
+  @override
   String get dailyOsNextReconcileDefaultBehaviorHint =>
       'Revisa las tarjetas antes de construir tu día. Las acciones elegidas pasan al plan; las tarjetas sin tocar se quedan como están.';
 
@@ -3950,6 +3995,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileLowConfidence => 'confianza baja';
+
+  @override
+  String get dailyOsNextReconcileProcessing =>
+      'Vuelvo a escucharte y lo encajo en tu día…';
 
   @override
   String get dailyOsNextReconcileReRecord => 'Volver a grabar';
@@ -4173,6 +4222,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextTimelineActual => 'Real';
+
+  @override
+  String get dailyOsNextTimelineArrange => 'Organizar bloques';
 
   @override
   String get dailyOsNextTimelineBoth => 'Plan y real';

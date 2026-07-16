@@ -3527,6 +3527,46 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockEditCategoryLabel => 'Kategorie';
+
+  @override
+  String get dailyOsNextBlockEditFailed =>
+      'Blok se nepodařilo upravit — zkus to znovu.';
+
+  @override
+  String get dailyOsNextBlockEditNameLabel => 'Název';
+
+  @override
+  String get dailyOsNextBlockEditOpenTask => 'Otevřít úkol';
+
+  @override
+  String get dailyOsNextBlockEditSave => 'Uložit změny';
+
+  @override
+  String get dailyOsNextBlockEditSaved => 'Plán byl upraven.';
+
+  @override
+  String get dailyOsNextBlockEditTimeLabel => 'Začátek a konec';
+
+  @override
+  String get dailyOsNextBlockEditTitle => 'Upravit blok';
+
+  @override
+  String get dailyOsNextBlockEditTooltip => 'Upravit blok';
+
+  @override
+  String get dailyOsNextBlockEditWhyLabel => 'Proč právě teď';
+
+  @override
+  String get dailyOsNextBlockMoveTooltip => 'Přesunout blok';
+
+  @override
+  String get dailyOsNextBlockResizeEndTooltip => 'Upravit konec';
+
+  @override
+  String get dailyOsNextBlockResizeStartTooltip => 'Upravit začátek';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Rozumím.';
 
   @override
@@ -3918,6 +3958,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextReconcileDecideOverline => 'STOJÍ ZA ROZHODNUTÍ';
 
   @override
+  String dailyOsNextReconcileDecisionProgress(int decided, int total) {
+    return 'Zkontrolováno $decided z $total';
+  }
+
+  @override
   String get dailyOsNextReconcileDefaultBehaviorHint =>
       'Před sestavením dne zkontroluj karty. Vybrané akce půjdou do plánu; karty bez zásahu zůstanou, jak jsou.';
 
@@ -3938,6 +3983,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileLowConfidence => 'nízká důvěra';
+
+  @override
+  String get dailyOsNextReconcileProcessing =>
+      'Poslouchám znovu a propojuji s tvým dnem…';
 
   @override
   String get dailyOsNextReconcileReRecord => 'Znovu nahrát';
@@ -4162,6 +4211,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextTimelineActual => 'Skutečnost';
+
+  @override
+  String get dailyOsNextTimelineArrange => 'Uspořádat bloky';
 
   @override
   String get dailyOsNextTimelineBoth => 'Plán a skutečnost';

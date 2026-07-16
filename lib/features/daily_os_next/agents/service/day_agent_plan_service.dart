@@ -182,6 +182,25 @@ class DayAgentPlanService {
     title: title,
   );
 
+  /// Edits a planned block in place from the manual calendar UI.
+  Future<DayPlanEntity> editBlock({
+    required String agentId,
+    required String dayId,
+    required String blockId,
+    required DateTime start,
+    required DateTime end,
+    String? title,
+    String? categoryId,
+  }) => _editor.editBlock(
+    agentId: agentId,
+    dayId: dayId,
+    blockId: blockId,
+    start: start,
+    end: end,
+    title: title,
+    categoryId: categoryId,
+  );
+
   /// Revert a committed day plan back to draft.
   Future<DayPlanEntity> uncommitDay({
     required String agentId,

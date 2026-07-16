@@ -133,9 +133,12 @@ class _LiveAgendaCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final liveTask = watchLiveTaskMetadata(ref, item.taskId);
+    final effectiveItem = item.copyWith(
+      category: liveTask.categoryOr(item.category),
+    );
     return AgendaCard(
       index: index,
-      item: item,
+      item: effectiveItem,
       displayTitle: liveTask.missing
           ? context.messages.conflictDetailEntryNotFoundTitle
           : liveTask.title,

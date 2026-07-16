@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     as agent_providers;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -18,10 +19,13 @@ import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
@@ -29,6 +33,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
+import '../../../categories/test_utils.dart';
 import '../../test_utils.dart';
 
 const _category = DayAgentCategory(
@@ -36,6 +41,32 @@ const _category = DayAgentCategory(
   name: 'Focus',
   colorHex: '0080FF',
 );
+
+class _UndoFailingDayAgent extends RecordingDayAgent {
+  int editCalls = 0;
+
+  @override
+  Future<DraftPlan> editBlock({
+    required DraftPlan plan,
+    required String blockId,
+    required DateTime start,
+    required DateTime end,
+    String? title,
+    DayAgentCategory? category,
+  }) async {
+    editCalls += 1;
+    final edited = await super.editBlock(
+      plan: plan,
+      blockId: blockId,
+      start: start,
+      end: end,
+      title: title,
+      category: category,
+    );
+    if (editCalls == 2) throw StateError('undo persistence failed');
+    return edited;
+  }
+}
 
 DraftPlan _drafted({
   DayState state = DayState.drafted,
@@ -481,6 +512,399 @@ void main() {
         );
         await renameOnDayView(failingAgent);
         expect(find.text(messages.dailyOsNextRenameFailed), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'block editor persists one atomic edit and offers a working undo',
+      (tester) async {
+        final block = TimeBlock(
+          id: 'blk_modal',
+          title: 'Brief the emergency penguin council',
+          start: DateTime(2026, 5, 26, 9),
+          end: DateTime(2026, 5, 26, 10, 30),
+          type: TimeBlockType.manual,
+          state: TimeBlockState.drafted,
+          category: _category,
+          reason: 'They vote before the fish market opens.',
+        );
+        final draft = DraftPlan(
+          dayDate: DateTime(2026, 5, 26),
+          blocks: [block],
+          bands: const [],
+          capacityMinutes: 240,
+          scheduledMinutes: 90,
+        );
+        final agent = RecordingDayAgent();
+        await _pumpDayPage(tester, draft: draft, agent: agent);
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        await tester.tap(find.text(messages.dailyOsNextPlanViewDay).last);
+        await tester.pump();
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const Key('daily_os_edit_block_blk_modal')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(messages.dailyOsNextBlockEditTitle), findsOneWidget);
+        await tester.enterText(
+          find.byType(TextField),
+          'Move penguin diplomacy forward',
+        );
+        await tester.pump();
+        final saveButton = tester.widget<DesignSystemButton>(
+          find.widgetWithText(
+            DesignSystemButton,
+            messages.dailyOsNextBlockEditSave,
+          ),
+        );
+        expect(saveButton.onPressed, isNotNull);
+        saveButton.onPressed!();
+        await tester.pumpAndSettle();
+
+        expect(agent.editedBlocks, hasLength(1));
+        expect(agent.editedBlocks.single.blockId, block.id);
+        expect(
+          agent.editedBlocks.single.title,
+          'Move penguin diplomacy forward',
+        );
+        expect(agent.editedBlocks.single.category, _category);
+        expect(agent.editedBlocks.single.start, block.start);
+        expect(agent.editedBlocks.single.end, block.end);
+        expect(find.text(messages.dailyOsNextBlockEditSaved), findsOneWidget);
+
+        final toast = tester.widget<DesignSystemToast>(
+          find.byType(DesignSystemToast),
+        );
+        expect(toast.action?.label, messages.designSystemUndoLabel);
+        toast.action!.onPressed();
+        await tester.pump();
+        await tester.pump();
+
+        expect(agent.editedBlocks, hasLength(2));
+        expect(agent.editedBlocks.last.title, block.title);
+        expect(agent.editedBlocks.last.category, block.category);
+        expect(agent.editedBlocks.last.start, block.start);
+        expect(agent.editedBlocks.last.end, block.end);
+      },
+    );
+
+    testWidgets(
+      'block editor failure keeps the page stable and shows a toast',
+      (
+        tester,
+      ) async {
+        final block = TimeBlock(
+          id: 'blk_failure',
+          title: 'Count backup sardines',
+          start: DateTime(2026, 5, 26, 9),
+          end: DateTime(2026, 5, 26, 10, 30),
+          type: TimeBlockType.manual,
+          state: TimeBlockState.drafted,
+          category: _category,
+        );
+        final draft = DraftPlan(
+          dayDate: DateTime(2026, 5, 26),
+          blocks: [block],
+          bands: const [],
+          capacityMinutes: 240,
+          scheduledMinutes: 90,
+        );
+        final agent = RecordingDayAgent(editError: StateError('db down'));
+        await _pumpDayPage(tester, draft: draft, agent: agent);
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        await tester.tap(find.text(messages.dailyOsNextPlanViewDay).last);
+        await tester.pump();
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const Key('daily_os_edit_block_blk_failure')),
+        );
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), 'Count all sardines');
+        await tester.pump();
+        tester
+            .widget<DesignSystemButton>(
+              find.widgetWithText(
+                DesignSystemButton,
+                messages.dailyOsNextBlockEditSave,
+              ),
+            )
+            .onPressed!();
+        await tester.pumpAndSettle();
+
+        expect(agent.editedBlocks, hasLength(1));
+        expect(find.text(messages.dailyOsNextBlockEditFailed), findsOneWidget);
+        expect(find.byType(DayPage), findsOneWidget);
+      },
+    );
+
+    testWidgets('timeline rescheduling uses the same atomic persistence path', (
+      tester,
+    ) async {
+      final block = TimeBlock(
+        id: 'blk_drag',
+        title: 'Schedule orbital sardine transfer',
+        start: DateTime(2026, 5, 26, 9),
+        end: DateTime(2026, 5, 26, 10),
+        type: TimeBlockType.manual,
+        state: TimeBlockState.drafted,
+        category: _category,
+      );
+      final draft = DraftPlan(
+        dayDate: DateTime(2026, 5, 26),
+        blocks: [block],
+        bands: const [],
+        capacityMinutes: 240,
+        scheduledMinutes: 60,
+      );
+      final agent = RecordingDayAgent();
+      await _pumpDayPage(tester, draft: draft, agent: agent);
+
+      final messages = tester.element(find.byType(DayPage)).messages;
+      await tester.tap(find.text(messages.dailyOsNextPlanViewDay).last);
+      await tester.pump();
+      await tester.pump();
+      final timeline = tester.widget<DayTimeline>(find.byType(DayTimeline));
+
+      final saved = await timeline.onRescheduleBlock!(
+        block,
+        DateTime(2026, 5, 26, 10, 15),
+        DateTime(2026, 5, 26, 11, 45),
+      );
+      await tester.pump();
+
+      expect(saved, isTrue);
+      expect(agent.editedBlocks, hasLength(1));
+      expect(agent.editedBlocks.single.title, block.title);
+      expect(agent.editedBlocks.single.category, block.category);
+      expect(agent.editedBlocks.single.start, DateTime(2026, 5, 26, 10, 15));
+      expect(agent.editedBlocks.single.end, DateTime(2026, 5, 26, 11, 45));
+      expect(find.text(messages.dailyOsNextBlockEditSaved), findsOneWidget);
+    });
+
+    testWidgets(
+      'task-linked time edits never write projected task identity fields',
+      (tester) async {
+        final block = TimeBlock(
+          id: 'blk_linked_drag',
+          title: 'Persisted title snapshot',
+          start: DateTime(2026, 5, 26, 9),
+          end: DateTime(2026, 5, 26, 10),
+          type: TimeBlockType.ai,
+          state: TimeBlockState.drafted,
+          category: _category,
+          taskId: 'task-penguins',
+        );
+        const liveCategory = DayAgentCategory(
+          id: 'cat_live',
+          name: 'Live Penguin Operations',
+          colorHex: '8B5CF6',
+        );
+        final projectedBlock = block.copyWith(
+          title: 'Renamed on the linked task',
+          category: liveCategory,
+        );
+        final draft = DraftPlan(
+          dayDate: DateTime(2026, 5, 26),
+          blocks: [block],
+          bands: const [],
+          capacityMinutes: 240,
+          scheduledMinutes: 60,
+        );
+        final agent = RecordingDayAgent();
+        await _pumpDayPage(tester, draft: draft, agent: agent);
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        await tester.tap(find.text(messages.dailyOsNextPlanViewDay).last);
+        await tester.pump();
+        await tester.pump();
+        final timeline = tester.widget<DayTimeline>(find.byType(DayTimeline));
+
+        final saved = await timeline.onRescheduleBlock!(
+          projectedBlock,
+          DateTime(2026, 5, 26, 10, 15),
+          DateTime(2026, 5, 26, 11, 15),
+        );
+        await tester.pump();
+
+        expect(saved, isTrue);
+        expect(agent.editedBlocks, hasLength(1));
+        expect(agent.editedBlocks.single.title, isNull);
+        expect(agent.editedBlocks.single.category, isNull);
+        expect(agent.editedBlocks.single.start, DateTime(2026, 5, 26, 10, 15));
+        expect(agent.editedBlocks.single.end, DateTime(2026, 5, 26, 11, 15));
+
+        final toast = tester.widget<DesignSystemToast>(
+          find.byType(DesignSystemToast),
+        );
+        expect(toast.action?.label, messages.designSystemUndoLabel);
+        toast.action!.onPressed();
+        await tester.pump();
+        await tester.pump();
+
+        expect(agent.editedBlocks, hasLength(2));
+        expect(agent.editedBlocks.last.title, isNull);
+        expect(agent.editedBlocks.last.category, isNull);
+        expect(agent.editedBlocks.last.start, block.start);
+        expect(agent.editedBlocks.last.end, block.end);
+      },
+    );
+
+    testWidgets('undo failure reports the error without losing the page', (
+      tester,
+    ) async {
+      final block = TimeBlock(
+        id: 'blk_undo_failure',
+        title: 'Inventory diplomatic herring',
+        start: DateTime(2026, 5, 26, 9),
+        end: DateTime(2026, 5, 26, 10),
+        type: TimeBlockType.manual,
+        state: TimeBlockState.drafted,
+        category: _category,
+      );
+      final draft = DraftPlan(
+        dayDate: DateTime(2026, 5, 26),
+        blocks: [block],
+        bands: const [],
+        capacityMinutes: 240,
+        scheduledMinutes: 60,
+      );
+      final agent = _UndoFailingDayAgent();
+      await _pumpDayPage(tester, draft: draft, agent: agent);
+
+      final messages = tester.element(find.byType(DayPage)).messages;
+      await tester.tap(find.text(messages.dailyOsNextPlanViewDay).last);
+      await tester.pump();
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const Key('daily_os_edit_block_blk_undo_failure')),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Count every herring');
+      await tester.pump();
+      tester
+          .widget<DesignSystemButton>(
+            find.widgetWithText(
+              DesignSystemButton,
+              messages.dailyOsNextBlockEditSave,
+            ),
+          )
+          .onPressed!();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(messages.designSystemUndoLabel));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(agent.editCalls, 2);
+      expect(find.text(messages.dailyOsNextBlockEditFailed), findsOneWidget);
+      expect(find.byType(DayPage), findsOneWidget);
+    });
+
+    testWidgets('task-linked editor can leave for the task without saving', (
+      tester,
+    ) async {
+      final routes = <String>[];
+      nav_service.beamToNamedOverride = routes.add;
+      final block = TimeBlock(
+        id: 'blk_task',
+        title: 'Brief the penguin task force',
+        start: DateTime(2026, 5, 26, 9),
+        end: DateTime(2026, 5, 26, 10, 30),
+        type: TimeBlockType.ai,
+        state: TimeBlockState.drafted,
+        category: _category,
+        taskId: 'task-penguins',
+      );
+      final draft = DraftPlan(
+        dayDate: DateTime(2026, 5, 26),
+        blocks: [block],
+        bands: const [],
+        capacityMinutes: 240,
+        scheduledMinutes: 90,
+      );
+      final agent = RecordingDayAgent();
+      await _pumpDayPage(tester, draft: draft, agent: agent);
+
+      final messages = tester.element(find.byType(DayPage)).messages;
+      await tester.tap(find.text(messages.dailyOsNextPlanViewDay).last);
+      await tester.pump();
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('daily_os_edit_block_blk_task')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(messages.dailyOsNextBlockEditOpenTask));
+      await tester.pumpAndSettle();
+
+      expect(routes, ['/tasks/task-penguins']);
+      expect(agent.editedBlocks, isEmpty);
+      expect(find.text(messages.dailyOsNextBlockEditTitle), findsNothing);
+    });
+
+    testWidgets(
+      'block editor offers only categories enabled for day planning',
+      (
+        tester,
+      ) async {
+        final available = CategoryTestUtils.createTestCategory(
+          id: 'cat-available',
+          name: 'Penguin Operations',
+          isAvailableForDayPlan: true,
+        );
+        final excluded = CategoryTestUtils.createTestCategory(
+          id: 'cat-excluded',
+          name: 'Secret Walrus Committee',
+          isAvailableForDayPlan: false,
+        );
+        final cache = MockEntitiesCacheService();
+        when(
+          () => cache.sortedCategories,
+        ).thenReturn([available, excluded]);
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt.registerSingleton<EntitiesCacheService>(cache);
+          },
+        );
+        addTearDown(tearDownTestGetIt);
+
+        final block = TimeBlock(
+          id: 'blk_category_filter',
+          title: 'Schedule the penguin committee',
+          start: DateTime(2026, 5, 26, 9),
+          end: DateTime(2026, 5, 26, 10),
+          type: TimeBlockType.manual,
+          state: TimeBlockState.drafted,
+          category: _category,
+        );
+        final draft = DraftPlan(
+          dayDate: DateTime(2026, 5, 26),
+          blocks: [block],
+          bands: const [],
+          capacityMinutes: 240,
+          scheduledMinutes: 60,
+        );
+        await _pumpDayPage(
+          tester,
+          draft: draft,
+          agent: RecordingDayAgent(),
+        );
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        await tester.tap(find.text(messages.dailyOsNextPlanViewDay).last);
+        await tester.pump();
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const Key('daily_os_edit_block_blk_category_filter')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(_category.name));
+        await tester.pumpAndSettle();
+
+        final picker = tester.widget<CategoryPickerSheet>(
+          find.byType(CategoryPickerSheet),
+        );
+        expect(picker.options, [available]);
+        expect(picker.allowCreate, isFalse);
       },
     );
 

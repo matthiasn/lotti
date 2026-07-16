@@ -302,6 +302,95 @@ class MockDayAgentPlanning {
     );
   }
 
+  /// Applies the same atomic block edit contract as the real adapter.
+  Future<DraftPlan> editBlock({
+    required DraftPlan plan,
+    required String blockId,
+    required DateTime start,
+    required DateTime end,
+    String? title,
+    DayAgentCategory? category,
+  }) async {
+    await Future<void>.delayed(triageLatency);
+    final block = plan.blocks
+        .where((candidate) => candidate.id == blockId)
+        .firstOrNull;
+    if (block == null) {
+      throw StateError('No block $blockId on the plan for ${plan.dayDate}.');
+    }
+    if (block.type == TimeBlockType.cal) {
+      throw StateError('Block $blockId is calendar-owned.');
+    }
+    final dayStart = plan.dayDate.isUtc
+        ? DateTime.utc(
+            plan.dayDate.year,
+            plan.dayDate.month,
+            plan.dayDate.day,
+          )
+        : DateTime(
+            plan.dayDate.year,
+            plan.dayDate.month,
+            plan.dayDate.day,
+          );
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    if (!start.isBefore(end) ||
+        start.isBefore(dayStart) ||
+        end.isAfter(dayEnd)) {
+      throw StateError('Block range must stay inside the plan day.');
+    }
+    final trimmedTitle = title?.trim();
+    if (title != null && (trimmedTitle == null || trimmedTitle.isEmpty)) {
+      throw StateError('Block title must not be blank.');
+    }
+    final titleChanged = trimmedTitle != null && trimmedTitle != block.title;
+    final categoryChanged = category != null && category != block.category;
+    final taskLinked = block.taskId?.trim().isNotEmpty ?? false;
+    if (taskLinked && (titleChanged || categoryChanged)) {
+      throw StateError('Edit task-linked title/category on the task.');
+    }
+    if (block.type == TimeBlockType.buffer &&
+        (titleChanged || categoryChanged)) {
+      throw StateError('Only a buffer time range is editable.');
+    }
+
+    final blocks =
+        [
+          for (final candidate in plan.blocks)
+            if (candidate.id == blockId)
+              candidate.copyWith(
+                start: start,
+                end: end,
+                title: trimmedTitle ?? candidate.title,
+                category: category ?? candidate.category,
+              )
+            else
+              candidate,
+        ]..sort((a, b) {
+          final byStart = a.start.compareTo(b.start);
+          return byStart != 0 ? byStart : a.id.compareTo(b.id);
+        });
+    final edited = blocks.singleWhere((candidate) => candidate.id == blockId);
+    return plan.copyWith(
+      blocks: blocks,
+      scheduledMinutes: blocks
+          .where((candidate) => candidate.state != TimeBlockState.dropped)
+          .fold<int>(
+            0,
+            (sum, candidate) => sum + candidate.duration.inMinutes,
+          ),
+      agendaItems: [
+        for (final item in plan.agendaItems)
+          if (item.taskId == null && item.linkedBlockIds.contains(blockId))
+            item.copyWith(
+              title: edited.title,
+              category: edited.category,
+            )
+          else
+            item,
+      ],
+    );
+  }
+
   /// Tool: `surface_shutdown_data`.
   Future<
     ({

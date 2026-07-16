@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     as agent_providers;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/logic/day_plan_availability.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/captures_panel.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_block_edit_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_check_in_spotlight_host.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
@@ -26,7 +28,9 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
@@ -205,6 +209,111 @@ class _DayPageState extends ConsumerState<DayPage> {
     ref.invalidate(currentDraftPlanProvider(widget.draft.dayDate));
   }
 
+  Future<void> _openBlockEditor(TimeBlock block) async {
+    final taskId = block.taskId?.trim();
+    final categoryOptions = getIt.isRegistered<EntitiesCacheService>()
+        ? filterDayPlanCategories(
+            getIt<EntitiesCacheService>().sortedCategories,
+          )
+        : null;
+    final result = await DayBlockEditModal.show(
+      context: context,
+      block: block,
+      categoryOptions: categoryOptions,
+      onOpenTask: taskId == null || taskId.isEmpty
+          ? null
+          : () => nav_service.beamToNamed('/tasks/$taskId'),
+    );
+    if (!mounted || result == null) return;
+    await _persistBlockEdit(block: block, result: result);
+  }
+
+  Future<bool> _persistBlockEdit({
+    required TimeBlock block,
+    required DayBlockEditResult result,
+  }) async {
+    final agent = ref.read(dayAgentProvider);
+    final identityEditable = _identityEditable(block);
+    try {
+      await agent.editBlock(
+        plan: widget.draft,
+        blockId: block.id,
+        start: result.start,
+        end: result.end,
+        title: identityEditable ? result.title : null,
+        category: identityEditable ? result.category : null,
+      );
+    } catch (_) {
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.dailyOsNextBlockEditFailed,
+          replaceCurrent: true,
+        );
+      }
+      return false;
+    }
+    ref.invalidate(currentDraftPlanProvider(widget.draft.dayDate));
+    if (!mounted) return true;
+    context.showToast(
+      tone: DesignSystemToastTone.success,
+      title: context.messages.dailyOsNextBlockEditSaved,
+      action: ToastAction(
+        label: context.messages.designSystemUndoLabel,
+        onPressed: () {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          unawaited(_undoBlockEdit(block));
+        },
+      ),
+      countdown: true,
+      replaceCurrent: true,
+    );
+    return true;
+  }
+
+  Future<bool> _rescheduleBlock(
+    TimeBlock block,
+    DateTime start,
+    DateTime end,
+  ) => _persistBlockEdit(
+    block: block,
+    result: DayBlockEditResult(
+      title: block.title,
+      category: block.category,
+      start: start,
+      end: end,
+    ),
+  );
+
+  Future<void> _undoBlockEdit(TimeBlock original) async {
+    final agent = ref.read(dayAgentProvider);
+    final identityEditable = _identityEditable(original);
+    try {
+      await agent.editBlock(
+        plan: widget.draft,
+        blockId: original.id,
+        start: original.start,
+        end: original.end,
+        title: identityEditable ? original.title : null,
+        category: identityEditable ? original.category : null,
+      );
+    } catch (_) {
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.dailyOsNextBlockEditFailed,
+          replaceCurrent: true,
+        );
+      }
+      return;
+    }
+    ref.invalidate(currentDraftPlanProvider(widget.draft.dayDate));
+  }
+
+  bool _identityEditable(TimeBlock block) =>
+      !(block.taskId?.trim().isNotEmpty ?? false) &&
+      block.type != TimeBlockType.buffer;
+
   void _showRenameFailedToast() {
     if (!mounted) return;
     context.showToast(
@@ -232,6 +341,10 @@ class _DayPageState extends ConsumerState<DayPage> {
         ? (TimeBlock block, String title) =>
               unawaited(_renameBlock(block, title))
         : null;
+    final onEditBlock = widget.hasPlan
+        ? (TimeBlock block) => unawaited(_openBlockEditor(block))
+        : null;
+    final onRescheduleBlock = widget.hasPlan ? _rescheduleBlock : null;
     final body = SafeArea(
       bottom: false,
       child: Padding(
@@ -286,6 +399,8 @@ class _DayPageState extends ConsumerState<DayPage> {
                         draft: widget.draft,
                         actualBlocks: actualBlocks,
                         onRenameBlock: onRenameBlock,
+                        onEditBlock: onEditBlock,
+                        onRescheduleBlock: onRescheduleBlock,
                         showGestureHint: !prefs.timelineGesturesLearned,
                         onGesturesLearned: ref
                             .read(

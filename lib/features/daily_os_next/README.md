@@ -297,15 +297,55 @@ stateDiagram-v2
   reuses it as the empty-state body under a dashed "No plan yet" hint card.
 - Agenda items and Day blocks always show the task-linked vs standalone
   distinction (design handoff v2, item 3): task-linked rows carry a blue
-  `LinkBadge` with the live task name (resolved via `taskLiveDataProvider`)
-  that opens the task, and task-linked Day blocks prefix an info-blue link
-  icon; standalone rows carry the neutral `StandaloneTag` ("Time block").
-  Standalone titles are click-to-edit through `EditableTitle` (pencil reveals
-  on hover, Enter/blur saves, Esc cancels); the edit persists through
-  `DayAgentInterface.renameBlock` → `DayAgentPlanService.renameBlock`, which
-  rejects task-linked blocks (rename the task instead) and rewrites the
-  `DayPlanEntity` block title in place. Agenda items derive from blocks, so
-  the agenda title follows the renamed block on the next projection.
+  `LinkBadge` and task-linked Day blocks prefix an info-blue link icon;
+  standalone rows carry the neutral `StandaloneTag` ("Time block"). Both
+  projections resolve task identity through the lightweight
+  `liveTaskMetadataProvider`. It subscribes to task and category database
+  notifications, re-fetches the task plus its current category directly from
+  `JournalDb`, and overlays the live title/category name/category color on the
+  stored day-plan snapshot. A task rename, category reassignment, or category
+  name/color edit therefore reaches the visible Agenda and timeline on the
+  next frame; a missing task falls back to the persisted plan data instead of
+  blanking the block.
+- Standalone titles remain click-to-edit through `EditableTitle` (pencil
+  reveals on hover, Enter/blur saves, Esc cancels). Every editable planned
+  block also carries an explicit edit icon that opens `DayBlockEditModal`, a
+  responsive Wolt multi-page editor built from design-system form sections,
+  inputs, buttons, and the shared glass footer. Standalone blocks can change
+  title, category, and time atomically. Its picker uses the same strict
+  `filterDayPlanCategories` universe as Capture, and the persistence boundary
+  revalidates that opt-in before writing. Task-linked title/category fields are
+  read-only because the task is their source of truth, and the modal submits
+  no identity fields for those blocks; it offers `Open task`, while Start & end
+  remains editable. The time subpage reuses the public `EntryDateTimeEditor`
+  and modal sizing contract from time-recording entries.
+- The timeline toolbar's Arrange action expands folded regions and enables
+  direct manipulation on planned non-calendar blocks: drag the body to move,
+  or drag the top/bottom handles to resize. Preview motion is optimistic and
+  snaps to fifteen-minute increments within the plan day. The final range is
+  persisted through the same atomic `editBlock` contract as the modal; a
+  failed/cancelled gesture rolls back, while a successful edit refreshes the
+  plan and shows a countdown Undo toast.
+
+```mermaid
+sequenceDiagram
+  participant UI as Day block / edit modal
+  participant Page as DayPage
+  participant Agent as DayAgentInterface
+  participant Service as DayAgentPlanService
+  participant Store as DayPlanEntity
+
+  UI->>Page: title/category/range draft or snapped drag
+  Page->>Agent: editBlock(plan, blockId, all fields)
+  Agent->>Service: validate ownership, category, day bounds
+  Service->>Store: persist one sorted plan update
+  Store-->>Page: update notification
+  Page-->>UI: refresh projection + Undo toast
+  alt persistence rejects the edit
+    Service-->>Page: error
+    Page-->>UI: rollback preview + error toast
+  end
+```
 - Typography follows the calm system (design handoff v2, item 6) through the
   design-system helpers in
   `lib/features/design_system/theme/typography_helpers.dart`:
@@ -351,7 +391,10 @@ stateDiagram-v2
   "type instead" action that moves the controller directly to the editable
   transcript state without opening the microphone. When Capture is opened for a
   previous selected date, the screen renders a prompt asking whether there is
-  still time to track for that concrete day.
+  still time to track for that concrete day. The captured-state editor is a
+  grow-with-content `DesignSystemTextarea`: multiline recognition uses the
+  available middle zone instead of stopping after an arbitrary five or six
+  lines, while the surrounding template scrolls on genuinely short screens.
 - The Capture voice path asks realtime transcription to prefer Mistral cloud
   realtime before MLX local realtime, then verifies the final editable
   transcript against the saved full recording via the batch transcriber when
@@ -397,6 +440,13 @@ stateDiagram-v2
   "Re-record" + "Review". On the desktop side panel the pills render at
   intrinsic width aligned to the trailing edge instead of stretching
   edge-to-edge, and bar content is capped at the 560 px content width.
+- Reconcile's first frame is never visually idle. `ReconcileLoadingView`
+  renders the same GPU-backed decoder-bars shader used by later AI waits plus
+  localized "Listening back and matching your day…" copy immediately after
+  Review is pressed. The Build my day action stays disabled until parsed and
+  pending decisions resolve. The modal owns one indicator in the body (no
+  duplicate footer animation); the standalone Reconcile page reuses the same
+  component.
 - The Drafting wait is carried by a hero thinking moment instead of skeleton
   shimmer: the decoder-bars shader (`AiThinkingShaderPresence`) over a
   `DraftingStatusTicker` — a deterministic ~21 s rotation of localized
@@ -447,7 +497,7 @@ stateDiagram-v2
   into one compact "Adjust" menu so the sticky footer stays reachable. Committed
   plans do not show the strip because their footer shifts to wrap-up/shutdown
   behavior.
-- Agenda rows resolve live task metadata through `taskLiveDataProvider` before
+- Agenda rows resolve live task metadata through `liveTaskMetadataProvider` before
   rendering. `AgendaView` keeps draft/manual block timing as the source of truth,
   then passes the task title, status, estimate, category, `coverArtId`, and
   `coverArtCropX` into `AgendaCard`. The row uses `CoverArtThumbnail` for the
@@ -544,6 +594,9 @@ stateDiagram-v2
   pager with an Actual peek; desktop-width layouts default to side-by-side.
   Two-finger vertical pinch and trackpad pinch zoom both lanes together, while
   the toolbar/horizontal pinch toggles paged versus side-by-side comparison.
+  The scroll viewport's top/bottom dissolve is isolated inside an
+  `EdgeFade` repaint boundary and uses an alpha-only `BlendMode.dstIn` mask;
+  the mask cannot contaminate the desktop navigation/sidebar compositor layer.
   Blocks follow the **paint-by-numbers** contract: planned blocks are the
   faint sketch (5% category tint composited opaquely over the canvas, a
   45%-alpha category stripe, muted titles, and — while drafted — a
@@ -559,7 +612,8 @@ stateDiagram-v2
   on open it auto-centers the now-line at ~45% of the viewport when "now"
   falls inside the day's window. `DayBlock` opens `/tasks/<taskId>` for any
   planned or actual block whose `TimeBlock.taskId` is present; standalone
-  calendar and buffer blocks stay inert.
+  calendar and buffer block bodies stay inert, while their explicit edit
+  affordance remains available where the block type permits it.
 - `surface_pending_decisions` intentionally limits overdue carryover to the
   last seven days. Due-today tasks and in-progress work still surface, but
   weeks-old overdue rows are left out of daily proposals unless the user brings
@@ -857,3 +911,11 @@ Service and workflow tests should stay deterministic example tests with mocks,
 fixed clocks, and no real timers. They should verify transaction boundaries,
 wake scheduling, persisted state changes, and tool error paths. Glados belongs
 on pure model/validator/diff logic, not on mocked I/O orchestration.
+
+The opt-in screenshot suites under `test/features/daily_os_next/` are manual
+review harnesses, not goldens. They render the complete planning ritual and a
+busy plan-vs-actual day at phone and desktop breakpoints with deterministic
+data when `LOTTI_SCREENSHOT_DIR` is set. Shader-dependent manual assets use
+`integration_test/daily_os_manual_screenshots_test.dart` on a real Flutter
+device renderer; this is also the regression path for compositor isolation
+that software widget screenshots cannot prove.

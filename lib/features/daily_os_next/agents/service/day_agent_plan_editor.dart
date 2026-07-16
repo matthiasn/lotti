@@ -453,6 +453,132 @@ class DayAgentPlanEditor {
     return renamedPlan;
   }
 
+  /// Applies one atomic manual edit to a planned block.
+  ///
+  /// The block may move, resize, and—when it is standalone—change title or
+  /// category in the same sync write. Task-linked title/category fields remain
+  /// owned by the task, while imported calendar blocks remain owned by their
+  /// calendar source. All ranges must stay inside the plan's local day.
+  Future<DayPlanEntity> editBlock({
+    required String agentId,
+    required String dayId,
+    required String blockId,
+    required DateTime start,
+    required DateTime end,
+    String? title,
+    String? categoryId,
+  }) async {
+    await reads.requireIdentity(agentId);
+    final plan = await reads.draftPlanForDay(agentId: agentId, dayId: dayId);
+    if (plan == null) {
+      throw DayAgentCaptureException(
+        'no plan for $dayId; call draft_day_plan first',
+      );
+    }
+    final block = plan.data.plannedBlocks
+        .where((candidate) => candidate.id == blockId)
+        .firstOrNull;
+    if (block == null) {
+      throw DayAgentCaptureException(
+        'no block $blockId on the plan for $dayId',
+      );
+    }
+    if (block.type == PlannedBlockType.cal) {
+      throw DayAgentCaptureException(
+        'block $blockId is calendar-owned — edit it in the source calendar',
+      );
+    }
+
+    final planDate = plan.data.planDate;
+    final dayStart = planDate.isUtc
+        ? DateTime.utc(planDate.year, planDate.month, planDate.day)
+        : DateTime(planDate.year, planDate.month, planDate.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    if (!start.isBefore(end)) {
+      throw const DayAgentCaptureException(
+        'block start must be before block end',
+      );
+    }
+    if (start.isBefore(dayStart) || end.isAfter(dayEnd)) {
+      throw DayAgentCaptureException(
+        'block range must stay inside ${planDate.toIso8601String()}',
+      );
+    }
+
+    final trimmedTitle = title?.trim();
+    if (title != null && (trimmedTitle == null || trimmedTitle.isEmpty)) {
+      throw const DayAgentCaptureException(
+        'block title must not be blank',
+      );
+    }
+    final trimmedCategoryId = categoryId?.trim();
+    if (categoryId != null &&
+        (trimmedCategoryId == null || trimmedCategoryId.isEmpty)) {
+      throw const DayAgentCaptureException(
+        'block category must not be blank',
+      );
+    }
+    final titleChanged = trimmedTitle != null && trimmedTitle != block.title;
+    final categoryChanged =
+        trimmedCategoryId != null && trimmedCategoryId != block.categoryId;
+    final isTaskLinked = block.taskId?.trim().isNotEmpty ?? false;
+    if (isTaskLinked && (titleChanged || categoryChanged)) {
+      throw DayAgentCaptureException(
+        'block $blockId is task-linked — edit title/category on the task',
+      );
+    }
+    if (block.type == PlannedBlockType.buffer &&
+        (titleChanged || categoryChanged)) {
+      throw DayAgentCaptureException(
+        'block $blockId is a buffer — only its time range is editable',
+      );
+    }
+    if (categoryChanged) {
+      final category = await journalDb.getCategoryById(trimmedCategoryId);
+      if (category == null ||
+          category.deletedAt != null ||
+          !category.active ||
+          !(category.isAvailableForDayPlan ?? false)) {
+        throw DayAgentCaptureException(
+          'category $trimmedCategoryId is not available',
+        );
+      }
+    }
+
+    final timeChanged = start != block.startTime || end != block.endTime;
+    if (!timeChanged && !titleChanged && !categoryChanged) return plan;
+
+    final editedBlocks =
+        [
+          for (final candidate in plan.data.plannedBlocks)
+            if (candidate.id == blockId)
+              candidate.copyWith(
+                startTime: start,
+                endTime: end,
+                title: trimmedTitle ?? candidate.title,
+                categoryId: trimmedCategoryId ?? candidate.categoryId,
+              )
+            else
+              candidate,
+        ]..sort((a, b) {
+          final byStart = a.startTime.compareTo(b.startTime);
+          return byStart != 0 ? byStart : a.id.compareTo(b.id);
+        });
+    final now = clock.now();
+    final editedPlan = plan.copyWith(
+      data: plan.data.copyWith(plannedBlocks: editedBlocks),
+      scheduledMinutes: scheduledMinutesFor(editedBlocks),
+      updatedAt: now,
+    );
+
+    await syncService.upsertEntity(editedPlan);
+    onPersistedStateChanged
+      ?..call(agentId)
+      ..call(dayId)
+      ..call(editedPlan.id);
+    return editedPlan;
+  }
+
   /// Revert a committed day plan back to draft so the user can edit it again.
   ///
   /// Mirrors [commitDay] in reverse: flips `DayPlanStatus.committed` →

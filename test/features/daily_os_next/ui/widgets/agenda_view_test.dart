@@ -13,12 +13,14 @@ import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../categories/test_utils.dart';
 
 Widget _wrap(Widget child, {List<Override> overrides = const []}) =>
     makeTestableWidgetNoScroll(
@@ -233,6 +235,86 @@ void main() {
       expect(find.text('Renamed from task detail'), findsOneWidget);
       expect(find.text('Updated task title'), findsNothing);
     });
+
+    testWidgets(
+      'projects task category reassignment and category edits immediately',
+      (tester) async {
+        final updates = StreamController<Set<String>>.broadcast();
+        addTearDown(updates.close);
+        final mocks = await setUpTestGetIt();
+        addTearDown(tearDownTestGetIt);
+        when(
+          () => mocks.updateNotifications.updateStream,
+        ).thenAnswer((_) => updates.stream);
+
+        var task = TestTaskFactory.create(
+          id: 't1',
+          title: 'Move the penguins',
+          categoryId: 'cat-work',
+        );
+        var personal = CategoryTestUtils.createTestCategory(
+          id: 'cat-personal',
+          name: 'Personal',
+          color: '#34D399',
+        );
+        final work = CategoryTestUtils.createTestCategory(
+          id: 'cat-work',
+          name: 'Work',
+          color: '#4F9DDE',
+        );
+        when(() => mocks.journalDb.journalEntityById('t1')).thenAnswer(
+          (_) async => task,
+        );
+        when(() => mocks.journalDb.getCategoryById(any())).thenAnswer(
+          (invocation) async =>
+              switch (invocation.positionalArguments.single as String) {
+                'cat-work' => work,
+                'cat-personal' => personal,
+                _ => null,
+              },
+        );
+
+        await tester.pumpWidget(
+          _wrap(AgendaView(draft: _draft(taskId: 't1'))),
+        );
+        await tester.pump();
+
+        AgendaCard agendaCard() =>
+            tester.widget<AgendaCard>(find.byType(AgendaCard));
+        expect(agendaCard().item.category.id, 'cat-work');
+        expect(agendaCard().item.category.name, 'Work');
+        expect(agendaCard().item.category.colorHex, '4F9DDE');
+
+        task = TestTaskFactory.create(
+          id: 't1',
+          title: 'Move the penguins',
+          categoryId: 'cat-personal',
+        );
+        updates.add({'t1'});
+        await tester.idle();
+        await tester.pump();
+        await tester.idle();
+        await tester.pump();
+
+        expect(agendaCard().item.category.id, 'cat-personal');
+        expect(agendaCard().item.category.name, 'Personal');
+        expect(agendaCard().item.category.colorHex, '34D399');
+
+        personal = personal.copyWith(
+          name: 'Penguin Logistics',
+          color: '#A855F7',
+        );
+        updates.add({categoriesNotification});
+        await tester.idle();
+        await tester.pump();
+        await tester.idle();
+        await tester.pump();
+
+        expect(agendaCard().item.category.id, 'cat-personal');
+        expect(agendaCard().item.category.name, 'Penguin Logistics');
+        expect(agendaCard().item.category.colorHex, 'A855F7');
+      },
+    );
 
     testWidgets('passes linked task cover art through to agenda cards', (
       tester,

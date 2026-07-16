@@ -146,6 +146,23 @@ class MockDayAgent implements DayAgentInterface {
   }) => _planning.renameBlock(plan: plan, blockId: blockId, title: title);
 
   @override
+  Future<DraftPlan> editBlock({
+    required DraftPlan plan,
+    required String blockId,
+    required DateTime start,
+    required DateTime end,
+    String? title,
+    DayAgentCategory? category,
+  }) => _planning.editBlock(
+    plan: plan,
+    blockId: blockId,
+    start: start,
+    end: end,
+    title: title,
+    category: category,
+  );
+
+  @override
   Future<
     ({
       List<CompletedItem> completed,

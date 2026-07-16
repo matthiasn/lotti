@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
@@ -19,7 +20,7 @@ import 'package:lotti/utils/consts.dart';
 /// block's start/end through the [foldingState] (which collapses idle gaps) to
 /// pixel offsets, then carves a small inter-block gap out of tall enough blocks
 /// so adjacent blocks read as distinct without overlapping.
-class BlockPosition extends StatelessWidget {
+class BlockPosition extends StatefulWidget {
   const BlockPosition({
     required this.block,
     required this.windowStart,
@@ -27,6 +28,9 @@ class BlockPosition extends StatelessWidget {
     required this.pxPerMinute,
     required this.tracked,
     required this.onRename,
+    required this.onEdit,
+    required this.arrangeMode,
+    required this.onReschedule,
     super.key,
   });
 
@@ -36,19 +40,58 @@ class BlockPosition extends StatelessWidget {
   final double pxPerMinute;
   final bool tracked;
   final ValueChanged<String>? onRename;
+  final ValueChanged<TimeBlock>? onEdit;
+  final bool arrangeMode;
+  final Future<bool> Function(
+    TimeBlock block,
+    DateTime start,
+    DateTime end,
+  )?
+  onReschedule;
+
+  @override
+  State<BlockPosition> createState() => _BlockPositionState();
+}
+
+enum _BlockDragKind { move, resizeStart, resizeEnd }
+
+class _BlockPositionState extends State<BlockPosition> {
+  static const _snapInterval = Duration(minutes: 15);
+
+  TimeBlock? _preview;
+  TimeBlock? _dragOrigin;
+  _BlockDragKind? _dragKind;
+  double _dragDelta = 0;
+
+  TimeBlock get _block => _preview ?? widget.block;
+
+  @override
+  void didUpdateWidget(covariant BlockPosition oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final boundsChanged =
+        oldWidget.block.start != widget.block.start ||
+        oldWidget.block.end != widget.block.end;
+    if (boundsChanged || !widget.arrangeMode) {
+      _preview = null;
+      _dragOrigin = null;
+      _dragKind = null;
+      _dragDelta = 0;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final top = foldingState.positionForDate(
+    final block = _block;
+    final top = widget.foldingState.positionForDate(
       block.start,
-      windowStart: windowStart,
-      pxPerMinute: pxPerMinute,
+      windowStart: widget.windowStart,
+      pxPerMinute: widget.pxPerMinute,
     );
-    final end = foldingState.positionForDate(
+    final end = widget.foldingState.positionForDate(
       block.end,
-      windowStart: windowStart,
-      pxPerMinute: pxPerMinute,
+      windowStart: widget.windowStart,
+      pxPerMinute: widget.pxPerMinute,
     );
     final rawHeight = math.max(0, end - top).toDouble();
     final minimumReadableHeight =
@@ -58,16 +101,219 @@ class BlockPosition extends StatelessWidget {
         ? math.min(preferredGap, rawHeight / 3)
         : 0.0;
     final height = math.max(0, rawHeight - blockGap).toDouble();
+    final canArrange =
+        widget.arrangeMode &&
+        !widget.tracked &&
+        block.type != TimeBlockType.cal &&
+        widget.onReschedule != null;
+    final dayBlock = DayBlock(
+      key: Key('daily_os_day_block_${block.id}'),
+      block: block,
+      tracked: widget.tracked,
+      onRename: widget.onRename,
+      onEdit: widget.onEdit,
+    );
     return Positioned(
       top: top + blockGap / 2,
       left: tokens.spacing.step3,
       right: tokens.spacing.step3,
       height: height,
-      child: DayBlock(
-        key: Key('daily_os_day_block_${block.id}'),
-        block: block,
-        tracked: tracked,
-        onRename: onRename,
+      child: canArrange
+          ? Stack(
+              fit: StackFit.expand,
+              clipBehavior: Clip.none,
+              children: [
+                Tooltip(
+                  message: context.messages.dailyOsNextBlockMoveTooltip,
+                  child: GestureDetector(
+                    key: Key('daily_os_move_block_${block.id}'),
+                    behavior: HitTestBehavior.translucent,
+                    onVerticalDragStart: (_) => _startDrag(_BlockDragKind.move),
+                    onVerticalDragUpdate: _updateDrag,
+                    onVerticalDragEnd: (_) => _finishDrag(),
+                    onVerticalDragCancel: _cancelDrag,
+                    child: dayBlock,
+                  ),
+                ),
+                _ResizeHandle(
+                  handleKey: Key('daily_os_resize_start_${block.id}'),
+                  alignment: Alignment.topCenter,
+                  tooltip: context.messages.dailyOsNextBlockResizeStartTooltip,
+                  onStart: () => _startDrag(_BlockDragKind.resizeStart),
+                  onUpdate: _updateDrag,
+                  onEnd: _finishDrag,
+                  onCancel: _cancelDrag,
+                ),
+                _ResizeHandle(
+                  handleKey: Key('daily_os_resize_end_${block.id}'),
+                  alignment: Alignment.bottomCenter,
+                  tooltip: context.messages.dailyOsNextBlockResizeEndTooltip,
+                  onStart: () => _startDrag(_BlockDragKind.resizeEnd),
+                  onUpdate: _updateDrag,
+                  onEnd: _finishDrag,
+                  onCancel: _cancelDrag,
+                ),
+              ],
+            )
+          : dayBlock,
+    );
+  }
+
+  void _startDrag(_BlockDragKind kind) {
+    _dragKind = kind;
+    _dragOrigin = _block;
+    _dragDelta = 0;
+  }
+
+  void _updateDrag(DragUpdateDetails details) {
+    final origin = _dragOrigin;
+    final kind = _dragKind;
+    if (origin == null || kind == null) return;
+    _dragDelta += details.primaryDelta ?? 0;
+    const minimumDuration = _snapInterval;
+    final windowEnd = widget.windowStart.add(
+      Duration(
+        hours: widget.foldingState.endHour - widget.foldingState.startHour,
+      ),
+    );
+
+    DateTime shifted(DateTime value) {
+      final originPosition = widget.foldingState.positionForDate(
+        value,
+        windowStart: widget.windowStart,
+        pxPerMinute: widget.pxPerMinute,
+      );
+      return _snap(
+        widget.foldingState.dateForPosition(
+          originPosition + _dragDelta,
+          windowStart: widget.windowStart,
+          pxPerMinute: widget.pxPerMinute,
+        ),
+      );
+    }
+
+    final next = switch (kind) {
+      _BlockDragKind.move => () {
+        final duration = origin.duration;
+        final latestStart = windowEnd.subtract(duration);
+        final start = _clampDate(
+          shifted(origin.start),
+          widget.windowStart,
+          latestStart,
+        );
+        return origin.copyWith(start: start, end: start.add(duration));
+      }(),
+      _BlockDragKind.resizeStart => origin.copyWith(
+        start: _clampDate(
+          shifted(origin.start),
+          widget.windowStart,
+          origin.end.subtract(minimumDuration),
+        ),
+      ),
+      _BlockDragKind.resizeEnd => origin.copyWith(
+        end: _clampDate(
+          shifted(origin.end),
+          origin.start.add(minimumDuration),
+          windowEnd,
+        ),
+      ),
+    };
+    setState(() => _preview = next);
+  }
+
+  Future<void> _finishDrag() async {
+    final origin = _dragOrigin;
+    final preview = _preview;
+    _dragKind = null;
+    _dragOrigin = null;
+    _dragDelta = 0;
+    if (origin == null ||
+        preview == null ||
+        (preview.start == origin.start && preview.end == origin.end)) {
+      return;
+    }
+    final success = await widget.onReschedule!(
+      widget.block,
+      preview.start,
+      preview.end,
+    );
+    if (!success && mounted) setState(() => _preview = origin);
+  }
+
+  void _cancelDrag() {
+    final origin = _dragOrigin;
+    setState(() {
+      _preview = origin;
+      _dragKind = null;
+      _dragOrigin = null;
+      _dragDelta = 0;
+    });
+  }
+
+  DateTime _snap(DateTime value) {
+    final offset = value.difference(widget.windowStart).inMicroseconds;
+    final step = _snapInterval.inMicroseconds;
+    final snapped = (offset / step).round() * step;
+    return widget.windowStart.add(Duration(microseconds: snapped));
+  }
+
+  DateTime _clampDate(DateTime value, DateTime minimum, DateTime maximum) {
+    if (value.isBefore(minimum)) return minimum;
+    if (value.isAfter(maximum)) return maximum;
+    return value;
+  }
+}
+
+class _ResizeHandle extends StatelessWidget {
+  const _ResizeHandle({
+    required this.handleKey,
+    required this.alignment,
+    required this.tooltip,
+    required this.onStart,
+    required this.onUpdate,
+    required this.onEnd,
+    required this.onCancel,
+  });
+
+  final Alignment alignment;
+  final Key handleKey;
+  final String tooltip;
+  final VoidCallback onStart;
+  final ValueChanged<DragUpdateDetails> onUpdate;
+  final VoidCallback onEnd;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Align(
+      alignment: alignment,
+      child: Tooltip(
+        message: tooltip,
+        child: GestureDetector(
+          key: handleKey,
+          behavior: HitTestBehavior.opaque,
+          onVerticalDragStart: (_) => onStart(),
+          onVerticalDragUpdate: onUpdate,
+          onVerticalDragEnd: (_) => onEnd(),
+          onVerticalDragCancel: onCancel,
+          child: SizedBox(
+            height: tokens.spacing.step4,
+            width: double.infinity,
+            child: Center(
+              child: Container(
+                width: tokens.spacing.step8,
+                height: tokens.spacing.step1,
+                decoration: BoxDecoration(
+                  color: tokens.colors.interactive.enabled,
+                  borderRadius: BorderRadius.circular(
+                    tokens.radii.badgesPills,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -86,6 +332,7 @@ class DayBlock extends ConsumerWidget {
     required this.block,
     this.tracked = false,
     this.onRename,
+    this.onEdit,
     super.key,
   });
 
@@ -96,6 +343,10 @@ class DayBlock extends ConsumerWidget {
   /// calendar, buffer, and tracked blocks.
   final ValueChanged<String>? onRename;
 
+  /// Opens the complete block editor. The callback receives the block after
+  /// live task title/category projection so the modal never starts stale.
+  final ValueChanged<TimeBlock>? onEdit;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
@@ -104,11 +355,15 @@ class DayBlock extends ConsumerWidget {
     final effectiveTitle = liveTask.missing
         ? context.messages.conflictDetailEntryNotFoundTitle
         : liveTask.title;
-    final effectiveBlock = effectiveTitle == null
-        ? block
-        : block.copyWith(title: effectiveTitle);
+    final effectiveBlock = block.copyWith(
+      title: effectiveTitle ?? block.title,
+      category: liveTask.categoryOr(block.category),
+    );
     final category = _categoryColor(effectiveBlock);
     final isBuffer = effectiveBlock.type == TimeBlockType.buffer;
+    final canEdit =
+        !tracked && effectiveBlock.type != TimeBlockType.cal && onEdit != null;
+    final openEditor = canEdit ? () => onEdit!(effectiveBlock) : null;
     final isDrafted =
         !tracked && effectiveBlock.state == TimeBlockState.drafted;
     final onTap = taskId == null || taskId.isEmpty
@@ -179,6 +434,7 @@ class DayBlock extends ConsumerWidget {
                 block: effectiveBlock,
                 tracked: tracked,
                 onRename: onRename,
+                onEdit: openEditor,
               ),
             ),
           ),
@@ -211,7 +467,8 @@ class DayBlock extends ConsumerWidget {
         context.messages.dailyOsNextTimelinePlanned,
     ].join(', ');
 
-    if (onTap == null) {
+    final primaryTap = onTap ?? openEditor;
+    if (primaryTap == null && openEditor == null) {
       return Semantics(
         label: semanticsLabel,
         child: Material(
@@ -222,12 +479,20 @@ class DayBlock extends ConsumerWidget {
     }
 
     return Semantics(
-      button: true,
+      button: primaryTap != null,
       label: semanticsLabel,
+      customSemanticsActions: openEditor == null
+          ? null
+          : {
+              CustomSemanticsAction(
+                label: context.messages.dailyOsNextBlockEditTooltip,
+              ): openEditor,
+            },
       child: Material(
         type: MaterialType.transparency,
         child: InkWell(
-          onTap: onTap,
+          onTap: primaryTap,
+          onLongPress: onTap == null ? null : openEditor,
           borderRadius: borderRadius,
           child: outlined,
         ),
@@ -255,11 +520,13 @@ class _BlockContent extends StatelessWidget {
     required this.block,
     required this.tracked,
     required this.onRename,
+    required this.onEdit,
   });
 
   final TimeBlock block;
   final bool tracked;
   final ValueChanged<String>? onRename;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -383,6 +650,24 @@ class _BlockContent extends StatelessWidget {
                     if (reason != null && !compact) ...[
                       SizedBox(width: tokens.spacing.step1),
                       _BlockReasonIcon(reason: reason),
+                    ],
+                    if (onEdit != null) ...[
+                      SizedBox(width: tokens.spacing.step1),
+                      SizedBox.square(
+                        dimension: compact
+                            ? tokens.spacing.step5
+                            : tokens.spacing.step7,
+                        child: IconButton(
+                          key: Key('daily_os_edit_block_${block.id}'),
+                          tooltip: context.messages.dailyOsNextBlockEditTooltip,
+                          padding: EdgeInsets.zero,
+                          iconSize: compact
+                              ? tokens.spacing.step4
+                              : tokens.spacing.step5,
+                          onPressed: onEdit,
+                          icon: const Icon(Icons.edit_rounded),
+                        ),
+                      ),
                     ],
                     if (tracked && isDone) ...[
                       SizedBox(width: tokens.spacing.step1),

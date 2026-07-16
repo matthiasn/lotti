@@ -3517,6 +3517,46 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockEditCategoryLabel => 'Kategorie';
+
+  @override
+  String get dailyOsNextBlockEditFailed =>
+      'Der Block konnte nicht aktualisiert werden — versuch es nochmal.';
+
+  @override
+  String get dailyOsNextBlockEditNameLabel => 'Titel';
+
+  @override
+  String get dailyOsNextBlockEditOpenTask => 'Aufgabe öffnen';
+
+  @override
+  String get dailyOsNextBlockEditSave => 'Änderungen speichern';
+
+  @override
+  String get dailyOsNextBlockEditSaved => 'Zeitplan aktualisiert.';
+
+  @override
+  String get dailyOsNextBlockEditTimeLabel => 'Start und Ende';
+
+  @override
+  String get dailyOsNextBlockEditTitle => 'Block bearbeiten';
+
+  @override
+  String get dailyOsNextBlockEditTooltip => 'Block bearbeiten';
+
+  @override
+  String get dailyOsNextBlockEditWhyLabel => 'Warum zu dieser Zeit';
+
+  @override
+  String get dailyOsNextBlockMoveTooltip => 'Block verschieben';
+
+  @override
+  String get dailyOsNextBlockResizeEndTooltip => 'Ende anpassen';
+
+  @override
+  String get dailyOsNextBlockResizeStartTooltip => 'Start anpassen';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Hab\'s.';
 
   @override
@@ -3912,6 +3952,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextReconcileDecideOverline => 'WERT ZU ENTSCHEIDEN';
 
   @override
+  String dailyOsNextReconcileDecisionProgress(int decided, int total) {
+    return '$decided von $total geprüft';
+  }
+
+  @override
   String get dailyOsNextReconcileDefaultBehaviorHint =>
       'Prüf die Karten, bevor du deinen Tag baust. Gewählte Aktionen fließen in den Plan ein; Karten ohne Aktion bleiben, wie sie sind.';
 
@@ -3932,6 +3977,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileLowConfidence => 'geringe Sicherheit';
+
+  @override
+  String get dailyOsNextReconcileProcessing =>
+      'Ich höre noch einmal zu und gleiche deinen Tag ab …';
 
   @override
   String get dailyOsNextReconcileReRecord => 'Neu aufnehmen';
@@ -4154,6 +4203,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextTimelineActual => 'Ist';
+
+  @override
+  String get dailyOsNextTimelineArrange => 'Blöcke anordnen';
 
   @override
   String get dailyOsNextTimelineBoth => 'Plan und Ist';

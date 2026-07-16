@@ -295,8 +295,8 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
     return PickerItem(
       id: c.id,
       rowKey: ValueKey('category-picker-row-${c.id}'),
-      leading: CategoryIconCompact(
-        c.id,
+      leading: CategoryIconCompactFromDefinition(
+        c,
         size: CategoryIconConstants.iconSizeMedium,
       ),
       title: c.name,
@@ -356,8 +356,7 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
     }
     final category = _lastCreated?.id == id
         ? _lastCreated
-        : getIt<EntitiesCacheService>().getCategoryById(id) ??
-              widget.options.where((c) => c.id == id).firstOrNull;
+        : widget.options.where((c) => c.id == id).firstOrNull;
     if (category != null) {
       Navigator.of(context).pop(CategoryPicked(category));
     }

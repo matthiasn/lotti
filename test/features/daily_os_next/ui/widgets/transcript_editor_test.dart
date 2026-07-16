@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/transcript_editor.dart';
+import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 
 import '../../../../test_helper.dart';
 
@@ -19,12 +20,11 @@ void main() {
     );
 
     expect(find.text('Review this captured sentence.'), findsOneWidget);
+    expect(find.text('Review transcript'), findsOneWidget);
+    expect(find.byType(DesignSystemTextarea), findsOneWidget);
 
     final field = tester.widget<TextField>(
-      find.descendant(
-        of: find.byKey(const Key('transcript-editor-field')),
-        matching: find.byType(TextField),
-      ),
+      find.byKey(const Key('transcript-editor-field')),
     );
     expect(field.minLines, 4);
     expect(field.maxLines, isNull);
@@ -49,10 +49,7 @@ void main() {
     );
 
     final field = tester.widget<TextField>(
-      find.descendant(
-        of: find.byKey(const Key('transcript-editor-field')),
-        matching: find.byType(TextField),
-      ),
+      find.byKey(const Key('transcript-editor-field')),
     );
     expect(field.minLines, 6);
     expect(field.maxLines, isNull);

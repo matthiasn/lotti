@@ -160,7 +160,10 @@ class TimelineFoldingState {
     required DateTime windowStart,
     required double pxPerMinute,
   }) {
-    final rawHour = startHour + date.difference(windowStart).inMinutes / 60.0;
+    final rawHour =
+        startHour +
+        date.difference(windowStart).inMicroseconds /
+            Duration.microsecondsPerHour;
     return positionForHourValue(
       rawHour.clamp(startHour.toDouble(), endHour.toDouble()),
       pxPerMinute,
@@ -182,6 +185,33 @@ class TimelineFoldingState {
       position += segment.height(pxPerMinute);
     }
     return position;
+  }
+
+  /// Inverse of [positionForDate], including collapsed fold regions.
+  ///
+  /// The result is clamped to the timeline window. Using [DateTime.add]
+  /// preserves the local/UTC/time-zone identity carried by [windowStart].
+  DateTime dateForPosition(
+    double position, {
+    required DateTime windowStart,
+    required double pxPerMinute,
+  }) {
+    final clamped = position.clamp(0.0, totalHeight(pxPerMinute));
+    var consumed = 0.0;
+    var hourValue = endHour.toDouble();
+    for (final segment in segments) {
+      final segmentHeight = segment.height(pxPerMinute);
+      if (clamped <= consumed + segmentHeight) {
+        final within = clamped - consumed;
+        hourValue =
+            segment.startHour + within / segment.hourHeight(pxPerMinute);
+        break;
+      }
+      consumed += segmentHeight;
+    }
+    final microseconds =
+        ((hourValue - startHour) * Duration.microsecondsPerHour).round();
+    return windowStart.add(Duration(microseconds: microseconds));
   }
 }
 

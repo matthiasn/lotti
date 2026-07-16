@@ -46,14 +46,19 @@ import '../../screenshot_harness.dart';
 
 final DateTime _now = DateTime(2026, 6, 7, 9, 41);
 
-const String _shortUtterance = 'Tomorrow I want to start with deep work';
+const String _shortUtterance =
+    'Tomorrow starts with the orbital penguin habitat inspection';
 
 const String _longUtterance =
-    'Tomorrow I want to start with two hours of deep work on the planner '
-    'before any meetings, then a check-in with the design team about the '
-    'new layout, lunch with Anna, and in the afternoon I need to prepare '
-    'the workshop slides, review the open pull requests, and if there is '
-    'time left, go for a short run before dinner.';
+    'Tomorrow I need to inspect the orbital penguin habitat before Mission '
+    'Control wakes up, run the emperor penguin roll call, and negotiate the '
+    'sardine futures contract with Reykjavik. At eleven we have the Project '
+    'Waddle launch review. Please protect lunch because apparently coffee is '
+    'not a vegetable. In the afternoon I need ninety minutes for the '
+    'zero-gravity fish feeder, a legal review called Is a penguin a '
+    'passenger, and the board briefing. Add a buffer before the live habitat '
+    'demo, then leave thirty minutes for a walk and a debrief with Sir '
+    'Flaps-a-Lot. Nothing important should begin after five.';
 
 /// Deterministic rolling amplitude window for the live waveform.
 List<double> _amplitudes(int count) => [
@@ -81,27 +86,25 @@ final _transcribing = CaptureState(
 
 const _captured = CaptureState(
   phase: CapturePhase.captured,
-  transcript:
-      'Plan tomorrow morning: two hours of deep work on the planner, '
-      'then a check-in with the design team and a short walk.',
+  transcript: _longUtterance,
   amplitudes: [],
 );
 
 const _category = DayAgentCategory(
-  id: 'cat-client',
-  name: 'Client Work',
+  id: 'cat-mission',
+  name: 'Mission Control',
   colorHex: '4F9DDE',
 );
 
 const _deepWork = DayAgentCategory(
-  id: 'cat-deep',
-  name: 'Deep Work',
+  id: 'cat-penguin',
+  name: 'Penguin Operations',
   colorHex: '8B5CF6',
 );
 
 const _health = DayAgentCategory(
-  id: 'cat-health',
-  name: 'Health',
+  id: 'cat-human',
+  name: 'Human Maintenance',
   colorHex: '34D399',
 );
 
@@ -129,10 +132,24 @@ DraftPlan _refineDraft() {
   return DraftPlan(
     dayDate: DateTime(2026, 6, 8),
     blocks: [
-      block('blk-1', 'Planner deep work', 9, 11, _deepWork),
-      block('blk-2', 'Design team check-in', 11, 11, _category, endMinute: 45),
-      block('blk-3', 'Client follow-up', 13, 14, _category, endMinute: 30),
-      block('blk-4', 'Short run', 17, 18, _health, startMinute: 30),
+      block('blk-1', 'Orbital habitat inspection', 8, 10, _deepWork),
+      block('blk-2', 'Project Waddle launch review', 10, 11, _category),
+      block(
+        'blk-3',
+        'Zero-gravity fish feeder',
+        13,
+        14,
+        _deepWork,
+        endMinute: 30,
+      ),
+      block(
+        'blk-4',
+        'Walk without a headset',
+        17,
+        18,
+        _health,
+        startMinute: 30,
+      ),
     ],
     bands: const [],
     capacityMinutes: 480,
@@ -164,17 +181,106 @@ class _FakeCaptureController extends CaptureController {
   Future<void> toggle() async {}
 }
 
-/// Drafting agent whose draft never resolves — keeps the Drafting step on
-/// screen in its "drafting" phase for a stable capture.
-class _PendingDraftAgent extends MockDayAgent {
-  _PendingDraftAgent()
+/// Realistic, deterministic corpus for the manual's fictional Director of
+/// Interplanetary Penguin Logistics.
+class _ReviewAgent extends MockDayAgent {
+  _ReviewAgent()
     : super(
         parseLatency: Duration.zero,
         pendingLatency: Duration.zero,
         triageLatency: Duration.zero,
+        draftLatency: Duration.zero,
         summarizeLatency: Duration.zero,
+        clock: () => _now,
       );
 
+  @override
+  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => const [
+    ParsedItem(
+      id: 'p_waddle_briefing',
+      kind: ParsedItemKind.matched,
+      title: 'Send Project Waddle briefing',
+      category: _category,
+      confidence: ParsedItemConfidence.high,
+      spokenPhrase: 'the Project Waddle launch review',
+      matchedTaskId: 't_waddle_briefing',
+      matchedTaskTitle: 'Project Waddle launch briefing',
+      matchedTaskState: 'In progress · 2 sessions',
+      estimateMinutes: 60,
+    ),
+    ParsedItem(
+      id: 'p_habitat',
+      kind: ParsedItemKind.newTask,
+      title: 'Inspect orbital penguin habitat',
+      category: _deepWork,
+      confidence: ParsedItemConfidence.high,
+      estimateMinutes: 120,
+      timeAnchor: 'before Mission Control wakes up',
+    ),
+    ParsedItem(
+      id: 'p_sardines',
+      kind: ParsedItemKind.newTask,
+      title: 'Negotiate sardine futures',
+      category: _category,
+      confidence: ParsedItemConfidence.medium,
+      estimateMinutes: 90,
+    ),
+    ParsedItem(
+      id: 'p_roll_call',
+      kind: ParsedItemKind.update,
+      title: 'Emperor penguin roll call',
+      category: _deepWork,
+      confidence: ParsedItemConfidence.high,
+      spokenPhrase: 'run the emperor penguin roll call',
+      matchedTaskId: 't_roll_call',
+      matchedTaskTitle: 'Emperor penguin roll call',
+      matchedTaskState: 'Recurring · weekdays',
+      proposedUpdate: 'Mark complete after all 37 answer',
+    ),
+  ];
+
+  @override
+  Future<List<PendingItem>> surfacePendingDecisions({
+    DateTime? forDate,
+  }) async => const [
+    PendingItem(
+      taskId: 't_fish_bucket',
+      title: 'Replace the diplomatic fish bucket',
+      category: _category,
+      reason: PendingItemReason.inProgress,
+      note: 'Started Friday, dignity not included',
+      sessionCount: 1,
+    ),
+    PendingItem(
+      taskId: 't_orbital_permit',
+      title: 'Renew orbital wildlife permit',
+      category: _deepWork,
+      reason: PendingItemReason.overdue,
+      note: 'The penguins are currently technically cargo',
+      overdueByDays: 3,
+    ),
+    PendingItem(
+      taskId: 't_calm_flapping',
+      title: 'Practice calm during surprise flapping',
+      category: _health,
+      reason: PendingItemReason.missedRecurring,
+      note: 'Last skipped Thursday',
+    ),
+  ];
+}
+
+/// Parsing agent whose first AI pass never resolves — keeps the Reconcile
+/// step on its first-frame processing state for a stable capture.
+class _PendingParseAgent extends _ReviewAgent {
+  final Completer<List<ParsedItem>> _parse = Completer<List<ParsedItem>>();
+
+  @override
+  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) => _parse.future;
+}
+
+/// Drafting agent whose draft never resolves — keeps the Drafting step on
+/// screen in its "drafting" phase for a stable capture.
+class _PendingDraftAgent extends _ReviewAgent {
   final Completer<DraftPlan> _draft = Completer<DraftPlan>();
 
   @override
@@ -188,14 +294,7 @@ class _PendingDraftAgent extends MockDayAgent {
   }) => _draft.future;
 }
 
-MockDayAgent _fastAgent() => MockDayAgent(
-  parseLatency: Duration.zero,
-  pendingLatency: Duration.zero,
-  triageLatency: Duration.zero,
-  draftLatency: Duration.zero,
-  summarizeLatency: Duration.zero,
-  clock: () => _now,
-);
+MockDayAgent _fastAgent() => _ReviewAgent();
 
 Widget _app({
   required Widget home,
@@ -371,6 +470,22 @@ void main() {
       await captureScreenshot(tester, '${device.name}_05_captured_dark');
     });
 
+    testWidgets('${device.name} first processing frame — dark', (tester) async {
+      await _openModal(
+        tester,
+        intent: const DayPlanningCreate(),
+        device: device,
+        capture: _captured,
+        agent: _PendingParseAgent(),
+      );
+      await _tapPill(tester, _messages(tester).dailyOsNextCaptureReconcileCta);
+      expect(
+        find.text(_messages(tester).dailyOsNextReconcileProcessing),
+        findsOneWidget,
+      );
+      await captureScreenshot(tester, '${device.name}_06_processing_dark');
+    });
+
     testWidgets('${device.name} reconcile — dark', (tester) async {
       await _openModal(
         tester,
@@ -380,7 +495,7 @@ void main() {
         agent: _fastAgent(),
       );
       await _tapPill(tester, _messages(tester).dailyOsNextCaptureReconcileCta);
-      await captureScreenshot(tester, '${device.name}_06_reconcile_dark');
+      await captureScreenshot(tester, '${device.name}_07_reconcile_dark');
     });
 
     testWidgets('${device.name} drafting — dark', (tester) async {
@@ -393,7 +508,7 @@ void main() {
       );
       await _tapPill(tester, _messages(tester).dailyOsNextCaptureReconcileCta);
       await _tapPill(tester, _messages(tester).dailyOsNextReconcileBuildDayCta);
-      await captureScreenshot(tester, '${device.name}_07_drafting_dark');
+      await captureScreenshot(tester, '${device.name}_08_drafting_dark');
     });
 
     testWidgets('${device.name} refine — dark', (tester) async {
@@ -403,7 +518,7 @@ void main() {
         device: device,
         agent: _fastAgent(),
       );
-      await captureScreenshot(tester, '${device.name}_08_refine_dark');
+      await captureScreenshot(tester, '${device.name}_09_refine_dark');
     });
   }
 
@@ -509,7 +624,7 @@ void main() {
   testWidgets('capture with "Today so far" card — mini dark', (tester) async {
     final block = TimeBlock(
       id: 'actual:entry-1',
-      title: 'Client follow-up',
+      title: 'Retrieve penguin from ventilation duct',
       start: DateTime(2026, 6, 8, 8),
       end: DateTime(2026, 6, 8, 9, 30),
       type: TimeBlockType.manual,
@@ -538,7 +653,10 @@ void main() {
       );
       await settleFrames(tester);
     });
-    expect(find.text('Client follow-up'), findsOneWidget);
+    expect(
+      find.text('Retrieve penguin from ventilation duct'),
+      findsOneWidget,
+    );
     await captureScreenshot(tester, 'mini_14_capture_today_so_far_dark');
   });
 }

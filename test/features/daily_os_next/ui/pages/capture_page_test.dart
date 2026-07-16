@@ -819,10 +819,7 @@ void main() {
           lessThan(844),
         );
         final field = tester.widget<TextField>(
-          find.descendant(
-            of: find.byKey(const Key('daily_os_capture_transcript_editor')),
-            matching: find.byType(TextField),
-          ),
+          find.byKey(const Key('daily_os_capture_transcript_editor')),
         );
         expect(field.minLines, greaterThanOrEqualTo(3));
         expect(field.maxLines, isNull);
@@ -1059,16 +1056,20 @@ void main() {
 
         // Tapping enters _onSubmit: submitCapture runs, then
         // Navigator.push lands us on the ReconcilePage. The pushed page
-        // keeps an infinite spinner, so we drive the route transition
-        // with explicit frames instead of pumpAndSettle.
+        // keeps the animated planning shader active, so we drive the route
+        // transition with explicit frames instead of pumpAndSettle.
         await tester.tap(ctaFinder, warnIfMissed: false);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        // We navigated onto ReconcilePage (its loading spinner is on top).
+        // We navigated onto ReconcilePage with first-frame planning feedback.
         expect(agent.submitCount, 1);
         expect(find.byType(ReconcilePage), findsOneWidget);
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(ReconcileLoadingView), findsOneWidget);
+        expect(
+          find.text(messages.dailyOsNextReconcileProcessing),
+          findsOneWidget,
+        );
 
         // Popping ReconcilePage completes the awaited push, so _onSubmit
         // resumes: reset() returns capture to idle (lines 938-939) and the
