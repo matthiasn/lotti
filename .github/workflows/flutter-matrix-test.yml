@@ -34,7 +34,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-matrix-cargo-${{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-matrix-cargo-${{ hashFiles('pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-matrix-cargo-
       - uses: kuhnroyal/flutter-fvm-config-action@v2
@@ -78,7 +78,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-matrix-cargo-${{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-matrix-cargo-${{ hashFiles('pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-matrix-cargo-
       - uses: kuhnroyal/flutter-fvm-config-action@v2
@@ -119,7 +119,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-matrix-cargo-${{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-matrix-cargo-${{ hashFiles('pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-matrix-cargo-
       - uses: kuhnroyal/flutter-fvm-config-action@v2
