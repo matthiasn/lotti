@@ -459,7 +459,9 @@ class DayAgentPlanEditor {
   /// The block may move, resize, and—when it is standalone—change title or
   /// category in the same sync write. Task-linked title/category fields remain
   /// owned by the task, while imported calendar blocks remain owned by their
-  /// calendar source. All ranges must stay inside the plan's local day.
+  /// calendar source. Category changes must stay inside the agent identity's
+  /// allowed scope and use an active planning category. All ranges must stay
+  /// inside the plan's local day.
   Future<DayPlanEntity> editBlock({
     required String agentId,
     required String dayId,
@@ -469,7 +471,7 @@ class DayAgentPlanEditor {
     String? title,
     String? categoryId,
   }) async {
-    await reads.requireIdentity(agentId);
+    final identity = await reads.requireIdentity(agentId);
     final plan = await reads.draftPlanForDay(agentId: agentId, dayId: dayId);
     if (plan == null) {
       throw DayAgentCaptureException(
@@ -534,7 +536,11 @@ class DayAgentPlanEditor {
     }
     if (categoryChanged) {
       final category = await journalDb.getCategoryById(trimmedCategoryId);
-      if (category == null ||
+      if (!categoryAllowed(
+            trimmedCategoryId,
+            identity.allowedCategoryIds,
+          ) ||
+          category == null ||
           category.deletedAt != null ||
           !category.active ||
           !(category.isAvailableForDayPlan ?? false)) {

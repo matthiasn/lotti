@@ -18,6 +18,7 @@ class RecordingDayAgent implements DayAgentInterface {
     this.proposeGate,
     this.renameError,
     this.editError,
+    this.editErrorOnCall,
     this.submitResult = const CaptureId('cap'),
     this.draftPlanBuilder,
     this.commitGate,
@@ -48,6 +49,12 @@ class RecordingDayAgent implements DayAgentInterface {
   /// When set, [editBlock] throws this error.
   final Error? editError;
 
+  /// Restricts [editError] to this one-based [editBlock] call.
+  ///
+  /// When omitted, [editError] keeps its original behavior and fails every
+  /// edit call.
+  final int? editErrorOnCall;
+
   /// `(blockId, title)` pairs received by [renameBlock].
   final List<(String, String)> renamedBlocks = [];
 
@@ -62,6 +69,9 @@ class RecordingDayAgent implements DayAgentInterface {
     })
   >
   editedBlocks = [];
+
+  /// Number of calls received by [editBlock].
+  int get editCalls => editedBlocks.length;
 
   /// Most recent plan returned by [editBlock].
   DraftPlan? lastEditedPlan;
@@ -203,7 +213,10 @@ class RecordingDayAgent implements DayAgentInterface {
       category: category,
     ));
     final error = editError;
-    if (error != null) throw error;
+    if (error != null &&
+        (editErrorOnCall == null || editCalls == editErrorOnCall)) {
+      throw error;
+    }
     final blocks = [
       for (final block in plan.blocks)
         if (block.id == blockId)

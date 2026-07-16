@@ -3359,46 +3359,68 @@ void main() {
       );
 
       test(
-        'rejects missing, inactive, deleted, and non-planning categories',
+        'rejects unavailable and identity-forbidden categories',
         () async {
           seedPlanEntity();
-          final unavailable = <CategoryDefinition?>[
-            null,
-            CategoryDefinition(
+          final unavailable = <({String id, CategoryDefinition? category})>[
+            (id: 'life', category: null),
+            (
               id: 'life',
-              name: 'Life',
-              createdAt: _now,
-              updatedAt: _now,
-              vectorClock: null,
-              private: false,
-              active: false,
+              category: CategoryDefinition(
+                id: 'life',
+                name: 'Life',
+                createdAt: _now,
+                updatedAt: _now,
+                vectorClock: null,
+                private: false,
+                active: false,
+              ),
             ),
-            CategoryDefinition(
+            (
               id: 'life',
-              name: 'Life',
-              createdAt: _now,
-              updatedAt: _now,
-              deletedAt: _now,
-              vectorClock: null,
-              private: false,
-              active: true,
+              category: CategoryDefinition(
+                id: 'life',
+                name: 'Life',
+                createdAt: _now,
+                updatedAt: _now,
+                deletedAt: _now,
+                vectorClock: null,
+                private: false,
+                active: true,
+              ),
             ),
-            CategoryDefinition(
+            (
               id: 'life',
-              name: 'Life',
-              createdAt: _now,
-              updatedAt: _now,
-              vectorClock: null,
-              private: false,
-              active: true,
-              isAvailableForDayPlan: false,
+              category: CategoryDefinition(
+                id: 'life',
+                name: 'Life',
+                createdAt: _now,
+                updatedAt: _now,
+                vectorClock: null,
+                private: false,
+                active: true,
+                isAvailableForDayPlan: false,
+              ),
+            ),
+            (
+              id: 'forbidden',
+              category: CategoryDefinition(
+                id: 'forbidden',
+                name: 'Forbidden',
+                createdAt: _now,
+                updatedAt: _now,
+                vectorClock: null,
+                private: false,
+                active: true,
+                isAvailableForDayPlan: true,
+              ),
             ),
           ];
 
-          for (final category in unavailable) {
+          for (final value in unavailable) {
             when(
-              () => journalDb.getCategoryById('life'),
-            ).thenAnswer((_) async => category);
+              () => journalDb.getCategoryById(value.id),
+            ).thenAnswer((_) async => value.category);
             await expectLater(
               createService().editBlock(
                 agentId: _agentId,
@@ -3406,7 +3428,7 @@ void main() {
                 blockId: 'block-1',
                 start: DateTime(2026, 5, 25, 9),
                 end: DateTime(2026, 5, 25, 10),
-                categoryId: 'life',
+                categoryId: value.id,
               ),
               throwsA(
                 isA<DayAgentCaptureException>().having(
