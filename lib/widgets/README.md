@@ -117,7 +117,9 @@ Information label component for charts, providing context and explanations.
 Located in `/lib/widgets/create/`
 
 ### MeasurementSuggestions
-Widget that provides intelligent suggestions for measurement entries.
+Shows the most frequent recent values as localized one-tap quick-log chips.
+Each chip includes the measurable unit and announces that activating it logs
+immediately; the complete row disables while persistence is pending.
 
 ## Date/Time Widgets
 
@@ -234,8 +236,14 @@ Function presenting a single-page confirmation modal with a customizable message
 ### showModalActionSheet
 Generic function (`showModalActionSheet<T>`) presenting a bottom-sheet action list built from `ModalSheetAction<T>` entries. Returns the value of the selected action (`Future<T?>`).
 
-### SizedWoltDialogType
-Custom `WoltDialogType` that renders at a configurable target width (`preferredWidth`, shrinking to fit less the standard padding on narrower screens) with a screen-proportional max height (80% of available height, floored at 360).
+### FullHeightWoltDialogType
+Custom `WoltDialogType` that preserves Wolt's dialog padding and width while
+using the remaining height for dense, scrollable multi-page flows.
+
+### SizedWoltSideSheetType
+Custom `WoltSideSheetType` that renders a full-height, right-anchored panel at
+45% of the window width by default, clamped to 480–720px and the available
+window width.
 
 ## Navigation Bar Widgets
 

@@ -208,11 +208,57 @@ Important reality checks:
 
 | Dashboard item | Widget | Data path | Notes |
 | --- | --- | --- | --- |
-| `DashboardMeasurementItem` | `MeasurablesBarChart` | `measurableDataTypeControllerProvider` -> `aggregationTypeControllerProvider` -> `measurableChartDataControllerProvider` -> `measurableObservationsControllerProvider` | Renders a line chart for `AggregationType.none`, otherwise a bar chart. The header can open `MeasurementDialog`. |
+| `DashboardMeasurementItem` | `MeasurablesBarChart` | `measurableDataTypeControllerProvider` -> `aggregationTypeControllerProvider` -> `measurableChartDataControllerProvider` -> `measurableObservationsControllerProvider` | Renders a line chart for `AggregationType.none`, otherwise a bar chart. The header opens `MeasurementCaptureModal`. |
 | `DashboardHealthItem` | `DashboardHealthChart` | `HealthChartDataController` -> `HealthObservationsController` | `BLOOD_PRESSURE` and `BODY_MASS_INDEX` branch to special widgets. Health refresh is nudged in the background via `HealthImport.fetchHealthDataDelta(...)`. |
 | `DashboardWorkoutItem` | `DashboardWorkoutChart` | `WorkoutChartDataController` -> `WorkoutObservationsController` | Aggregates daily sums for the selected workout type/value kind. Also triggers `HealthImport.getWorkoutsHealthDataDelta()`. |
 | `DashboardSurveyItem` | `DashboardSurveyChart` | `SurveyChartDataController` + `surveyLines(...)` | Multi-line chart. The `+` button only knows how to launch CFQ11, PANAS, and GHQ12 survey flows. |
 | `DashboardHabitItem` | `DashboardHabitsChart` | delegates to `HabitCompletionCard` in the habits feature | No local dashboard-specific fetcher here; this is pragmatic reuse of habit UI. |
+
+## Measurement Capture Flow
+
+The measurement chart header passes the already-resolved
+`MeasurableDataType` to `MeasurementCaptureModal`. The capture route owns one
+draft for its whole lifetime: value and comment controllers, committed and
+picker timestamps, focus nodes, page index, and save state. This route-level
+ownership is intentional because Wolt may dispose an inactive page during a
+page transition.
+
+The editor and observed-at picker are two pages of the same Wolt route, not two
+stacked modal routes. On phones the route uses a bottom sheet and the root
+navigator. On wider layouts it uses `FullHeightWoltDialogType`, leaving Wolt's
+standard dialog padding while giving the scrollable calendar and time wheel the
+available height.
+
+```mermaid
+flowchart LR
+  Header["Measurement chart + button"] --> Modal["MeasurementCaptureModal"]
+  Modal --> Draft["Route-owned capture draft"]
+  Draft --> Editor["Editor page\nvalue + quick log + observed at + comment"]
+  Draft --> Picker["Observed-at page\ncalendar + time wheel"]
+  Editor --> Persistence["PersistenceLogic.createMeasurementEntry"]
+  Picker --> Draft
+  Persistence --> Journal["Measurement journal entry"]
+```
+
+The picker uses commit/discard semantics rather than changing the measurement
+timestamp live. `Done` commits the picker timestamp. The visible Back button,
+system Back, and Escape all discard it and restore focus to the observed-at
+field; Close dismisses the complete capture route. Saving waits for persistence
+before closing, disables both Save and quick-log actions while pending, and
+keeps the editor open with a localized live-region error if persistence fails.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Editing: open capture
+  Editing --> PickingObservedAt: tap observed at
+  PickingObservedAt --> Editing: Done / commit picker draft
+  PickingObservedAt --> Editing: Back, system Back, or Escape / discard picker draft
+  Editing --> Saving: Save or quick log
+  Saving --> Editing: persistence failure
+  Saving --> [*]: persistence success
+  Editing --> [*]: Close
+  PickingObservedAt --> [*]: Close
+```
 
 ## Refresh And Caching Model
 
@@ -309,6 +355,8 @@ None of that is mysterious. It is just the shape of the current code.
   reused here, which in turn renders `HabitCompletionCard` from
   `lib/features/habits/ui/widgets/`
 - `lib/features/surveys/tools/run_surveys.dart` backs the survey `+` actions
+- `lib/pages/create/create_measurement_dialog.dart` owns the route-level
+  measurement editor, observed-at page, and persistence lifecycle
 - `lib/services/entities_cache_service.dart` provides fast dashboard lookups for
   page routing/title rendering
 - `lib/database/database.dart` remains the real source of dashboard data

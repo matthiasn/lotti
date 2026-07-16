@@ -2794,7 +2794,35 @@
   "measurableDeleteQuestion": "Möchtest du diesen Messgrößen-Datentyp löschen?",
   "measurableNotFound": "Messgröße nicht gefunden",
   "measurementCommentHint": "Notiz hinzufügen (optional)",
-  "measurementQuickAddLabel": "Schnell hinzufügen",
+  "measurementCommentSemantic": "Kommentar, optional",
+  "measurementObservedAtChangeSemantic": "Erfasst am {dateTime}. Datum und Uhrzeit ändern.",
+  "@measurementObservedAtChangeSemantic": {
+    "placeholders": {
+      "dateTime": {
+        "type": "String"
+      }
+    }
+  },
+  "measurementQuickAddLabel": "Schnell erfassen",
+  "measurementQuickLogSemantic": "{value} sofort erfassen",
+  "@measurementQuickLogSemantic": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "measurementSaveError": "Die Messung konnte nicht gespeichert werden. Versuch es noch einmal.",
+  "measurementSetObservedAtNowSemantic": "Erfassungsdatum und -uhrzeit auf jetzt setzen",
+  "measurementTimeLabel": "Uhrzeit",
+  "measurementValueSemantic": "Wert für {measurable}",
+  "@measurementValueSemantic": {
+    "placeholders": {
+      "measurable": {
+        "type": "String"
+      }
+    }
+  },
   "mediaShowInFileExplorerAction": "Im Datei-Explorer anzeigen",
   "mediaShowInFilesAction": "In Dateien anzeigen",
   "mediaShowInFinderAction": "Im Finder anzeigen",

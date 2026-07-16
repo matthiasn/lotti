@@ -3359,7 +3359,35 @@
   "measurableDeleteQuestion": "Do you want to delete this measurable data type?",
   "measurableNotFound": "Measurable not found",
   "measurementCommentHint": "Add a note (optional)",
-  "measurementQuickAddLabel": "Quick add",
+  "measurementCommentSemantic": "Comment, optional",
+  "measurementObservedAtChangeSemantic": "Observed at {dateTime}. Change date and time.",
+  "@measurementObservedAtChangeSemantic": {
+    "placeholders": {
+      "dateTime": {
+        "type": "String"
+      }
+    }
+  },
+  "measurementQuickAddLabel": "Quick log",
+  "measurementQuickLogSemantic": "Log {value} immediately",
+  "@measurementQuickLogSemantic": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "measurementSaveError": "Couldn’t save this measurement. Try again.",
+  "measurementSetObservedAtNowSemantic": "Set observed date and time to now",
+  "measurementTimeLabel": "Time",
+  "measurementValueSemantic": "Value for {measurable}",
+  "@measurementValueSemantic": {
+    "placeholders": {
+      "measurable": {
+        "type": "String"
+      }
+    }
+  },
   "mediaShowInFileExplorerAction": "Show in File Explorer",
   "@mediaShowInFileExplorerAction": {
     "description": "Context menu action that reveals a media file in Windows File Explorer."

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -19,13 +21,17 @@ class MeasurementSuggestions extends ConsumerWidget {
   const MeasurementSuggestions({
     required this.measurableDataType,
     required this.onSelect,
+    this.enabled = true,
     super.key,
   });
 
   final MeasurableDataType measurableDataType;
 
   /// Called with the chosen value when a quick-value chip is tapped.
-  final void Function(num value) onSelect;
+  final Future<void> Function(num value) onSelect;
+
+  /// Whether quick-log actions accept taps. Disabled while a save is pending.
+  final bool enabled;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -67,8 +73,10 @@ class MeasurementSuggestions extends ConsumerWidget {
               // The bolt cues that the chip is a one-tap instant log (it saves
               // and closes), not a value that merely fills the field.
               leadingIcon: Icons.bolt_rounded,
-              semanticsLabel: label,
-              onPressed: () => onSelect(value),
+              semanticsLabel: context.messages.measurementQuickLogSemantic(
+                label,
+              ),
+              onPressed: enabled ? () => unawaited(onSelect(value)) : null,
             );
           }).toList(),
         ),

@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   split panes and confirm Daily OS commits without pointer-only gestures.
 
 ### Changed
+- **Logging a measurable now stays in one clear, accessible sheet.** Changing
+  the observed date and time moves to a calendar page in the same capture flow
+  instead of stacking another modal over the editor. Values and comments stay
+  intact when navigating back, the complete time picker scrolls above the
+  sticky action, and Save waits for persistence with visible progress and
+  retry feedback.
 - **Task agents now use evidence-first processing for everyone.** The
   previously optional behavior is now standard and its Advanced Settings
   toggle has been removed. If you already had it enabled, nothing changes.

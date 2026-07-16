@@ -6756,7 +6756,36 @@ class AppLocalizationsEs extends AppLocalizations {
   String get measurementCommentHint => 'Añade una nota (opcional)';
 
   @override
-  String get measurementQuickAddLabel => 'Añadir rápido';
+  String get measurementCommentSemantic => 'Comentario, opcional';
+
+  @override
+  String measurementObservedAtChangeSemantic(String dateTime) {
+    return 'Observado el $dateTime. Cambiar la fecha y la hora.';
+  }
+
+  @override
+  String get measurementQuickAddLabel => 'Registro rápido';
+
+  @override
+  String measurementQuickLogSemantic(String value) {
+    return 'Registrar $value inmediatamente';
+  }
+
+  @override
+  String get measurementSaveError =>
+      'No se ha podido guardar esta medición. Inténtalo de nuevo.';
+
+  @override
+  String get measurementSetObservedAtNowSemantic =>
+      'Establecer la fecha y hora observadas en este momento';
+
+  @override
+  String get measurementTimeLabel => 'Hora';
+
+  @override
+  String measurementValueSemantic(String measurable) {
+    return 'Valor de $measurable';
+  }
 
   @override
   String get mediaShowInFileExplorerAction =>

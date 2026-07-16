@@ -14,7 +14,8 @@ lib/widgets/modal/
 ├── confirmation_modal.dart          # showConfirmationModal(...)
 ├── modal_action_sheet.dart          # showModalActionSheet(...)
 ├── modal_sheet_action.dart          # ModalSheetAction<T> (action model)
-├── sized_wolt_dialog_type.dart      # SizedWoltDialogType (width-configurable dialog)
+├── full_height_wolt_dialog_type.dart # FullHeightWoltDialogType (tall dialog)
+├── sized_wolt_side_sheet_type.dart  # SizedWoltSideSheetType (responsive side sheet)
 ├── animated_modal_item.dart         # AnimatedModalItem (hover/tap animation wrapper)
 └── animated_modal_item_controller.dart # AnimatedModalItemController (ChangeNotifier)
 ```
@@ -38,6 +39,8 @@ app's styling and responsive behavior. Key static members:
   title, back button (`onTapBack`), and close button (`showCloseButton`). Their
   header height, padding, icon geometry, radius, colors, and typography all use
   design-system tokens through one shared navigation-button implementation.
+  Close buttons resolve `Navigator` from their mounted button subtree, so a
+  Wolt page transition cannot leave them holding a deactivated page context.
 - `showSinglePageModal<T>({...})` — show a single styled page.
 - `showSingleSliverPageModal<T>({...})` — show a single sliver-based page.
 - `showMultiPageModal<T>({...})` — show a multi-page modal with an optional
@@ -50,6 +53,16 @@ app's styling and responsive behavior. Key static members:
   the incoming page becomes legible, avoiding overlapping labels.
 - `showBottomSheet<T>({...})` — thin wrapper over `showModalBottomSheet` that
   applies the root-navigator heuristic.
+
+```mermaid
+flowchart LR
+  Caller["Feature flow"] --> Show["ModalUtils show helper"]
+  Show --> Route["One Wolt route"]
+  Route --> PageBuilder["Page list builder"]
+  PageBuilder --> Page["Styled page"]
+  Page --> Navigation["Back / close in mounted page subtree"]
+  Page --> Content["Token-backed content + optional sticky action"]
+```
 
 ```dart
 ModalUtils.showSinglePageModal<void>(
@@ -97,12 +110,20 @@ final choice = await showModalActionSheet<String>(
 );
 ```
 
-### SizedWoltDialogType
+### FullHeightWoltDialogType
 
-`SizedWoltDialogType` (`sized_wolt_dialog_type.dart`) subclasses Wolt's
-`WoltDialogType` to render the dialog at a configurable `preferredWidth`,
-shrinking to fit (less the standard dialog padding) on narrower screens and
-capping height at 80% of available height (minimum 360px).
+`FullHeightWoltDialogType` (`full_height_wolt_dialog_type.dart`) subclasses
+Wolt's `WoltDialogType`. It preserves Wolt's standard dialog padding and width
+behavior, but consumes the remaining height. Dense, scrollable multi-page flows
+such as entry date/time editing and measurement capture use it so their final
+controls can scroll fully above a sticky action footer.
+
+### SizedWoltSideSheetType
+
+`SizedWoltSideSheetType` (`sized_wolt_side_sheet_type.dart`) subclasses Wolt's
+`WoltSideSheetType`. It keeps full-height, right-anchored side-sheet behavior
+while sizing the panel to 45% of the window by default, clamped to 480–720px
+and never wider than the available window.
 
 ## Animation Widgets
 
@@ -244,7 +265,9 @@ Tests live in `test/widgets/modal/`:
 - `animated_modal_item_controller_test.dart` — controller state and disposal
 - `confirmation_modal_test.dart` — `showConfirmationModal`
 - `modal_action_sheet_test.dart` — `showModalActionSheet` / `ModalSheetAction`
+- `full_height_wolt_dialog_type_test.dart` — full-height dialog constraints
 - `modal_utils_test.dart` — `ModalUtils` helpers
+- `sized_wolt_side_sheet_type_test.dart` — responsive side-sheet constraints
 
 Run them with:
 

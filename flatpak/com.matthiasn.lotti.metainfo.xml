@@ -34,6 +34,7 @@
   <releases>
     <release version="0.9.1047" date="2026-07-15">
       <description>
+          <p>Logging a measurable now stays in one clear, accessible sheet. Changing the observed date and time moves to a calendar page in the same capture flow instead of stacking another modal over the editor. Values and comments stay intact when navigating back, the complete time picker scrolls above the sticky action, and Save waits for persistence with visible progress and retry feedback.</p>
           <p>Task agents now use evidence-first processing for everyone. The previously optional behavior is now standard and its Advanced Settings toggle has been removed. If you already had it enabled, nothing changes.</p>
           <p>Synced alerts are now available to everyone. Alerts stay consistent across devices whenever Matrix sync is active, and the former Advanced Settings toggle has been removed.</p>
           <p>The Knowledge Graph is now available from every task. The graph button is always present in normal task headers, embedded task details suppress the recursive entry point, and the graph surface is localized in all supported languages.</p>

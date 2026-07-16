@@ -6697,7 +6697,36 @@ class AppLocalizationsDe extends AppLocalizations {
   String get measurementCommentHint => 'Notiz hinzufügen (optional)';
 
   @override
-  String get measurementQuickAddLabel => 'Schnell hinzufügen';
+  String get measurementCommentSemantic => 'Kommentar, optional';
+
+  @override
+  String measurementObservedAtChangeSemantic(String dateTime) {
+    return 'Erfasst am $dateTime. Datum und Uhrzeit ändern.';
+  }
+
+  @override
+  String get measurementQuickAddLabel => 'Schnell erfassen';
+
+  @override
+  String measurementQuickLogSemantic(String value) {
+    return '$value sofort erfassen';
+  }
+
+  @override
+  String get measurementSaveError =>
+      'Die Messung konnte nicht gespeichert werden. Versuch es noch einmal.';
+
+  @override
+  String get measurementSetObservedAtNowSemantic =>
+      'Erfassungsdatum und -uhrzeit auf jetzt setzen';
+
+  @override
+  String get measurementTimeLabel => 'Uhrzeit';
+
+  @override
+  String measurementValueSemantic(String measurable) {
+    return 'Wert für $measurable';
+  }
 
   @override
   String get mediaShowInFileExplorerAction => 'Im Datei-Explorer anzeigen';

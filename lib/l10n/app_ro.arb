@@ -2794,7 +2794,35 @@
   "measurableDeleteQuestion": "Vrei sa stergi acest tip de masuratoare?",
   "measurableNotFound": "Masuratoarea nu a fost gasita",
   "measurementCommentHint": "Adăugați o notă (opțional)",
-  "measurementQuickAddLabel": "Adăugare rapidă",
+  "measurementCommentSemantic": "Comentariu, opțional",
+  "measurementObservedAtChangeSemantic": "Înregistrat la {dateTime}. Modificați data și ora.",
+  "@measurementObservedAtChangeSemantic": {
+    "placeholders": {
+      "dateTime": {
+        "type": "String"
+      }
+    }
+  },
+  "measurementQuickAddLabel": "Înregistrare rapidă",
+  "measurementQuickLogSemantic": "Înregistrați imediat {value}",
+  "@measurementQuickLogSemantic": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "measurementSaveError": "Măsurătoarea nu a putut fi salvată. Încercați din nou.",
+  "measurementSetObservedAtNowSemantic": "Setați data și ora observate la momentul actual",
+  "measurementTimeLabel": "Ora",
+  "measurementValueSemantic": "Valoare pentru {measurable}",
+  "@measurementValueSemantic": {
+    "placeholders": {
+      "measurable": {
+        "type": "String"
+      }
+    }
+  },
   "mediaShowInFileExplorerAction": "Afișați în Explorer",
   "mediaShowInFilesAction": "Afișați în Fișiere",
   "mediaShowInFinderAction": "Afișați în Finder",

@@ -239,7 +239,7 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
     return ListView(
       padding: EdgeInsets.only(
         bottom: (_multi && widget.reserveFooterInset)
-            ? DesignSystemGlassActionFooter.reservedHeight
+            ? DesignSystemGlassActionFooter.reservedHeightFor(context)
             : 0,
       ),
       children: [
