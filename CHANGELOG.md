@@ -22,6 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Maintenance. The row layout stays fixed; only the divider colour changes.
 
 ### Added
+- **Lotti now guides you through setup on first run.** A welcome flow walks you
+  through connecting an AI provider and capturing your first task by voice, and
+  a short walkthrough introduces the Daily OS check-in ritual once a provider is
+  ready. If you have been using Lotti since before this flow existed and never
+  set up a provider, you will see it too. Already set up? The provider welcome
+  stays out of your way — and if you have never planned a day in Daily OS, the
+  short walkthrough introduces that ritual instead. You can replay the welcome
+  any time from Settings › Onboarding.
 - **Desktop Lotti now has a keyboard-first command layer.** Open the command
   palette with Command/Ctrl+K, jump to the eight main destinations with fixed
   Command/Ctrl+1–8 shortcuts, move between desktop regions with F6, and use

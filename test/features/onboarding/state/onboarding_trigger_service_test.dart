@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
@@ -200,6 +202,10 @@ void main() {
                 ? _UnseenWhatsNewController.new
                 : _NoUnseenWhatsNewController.new,
           ),
+          // Stand in for an install the rollout has already passed through, so
+          // these cases exercise the cadence branches alone. The gate's
+          // dependency on the backfill has its own group below.
+          onboardingRolloutBackfillProvider.overrideWith((ref) async {}),
         ],
       );
       addTearDown(container.dispose);
@@ -535,6 +541,75 @@ void main() {
   });
 
   // Both cadence writes run fire-and-forget from a modal callback, so a
+  // The gate must resolve the rollout backfill before it reads the cadence
+  // keys: the backfill is what retires the welcome for installs that were
+  // already set up when the rollout arrived, so a gate that raced it would
+  // flash a provider-setup flow at a configured user on the upgrade launch.
+  group('shouldAutoShowOnboarding — rollout backfill sequencing', () {
+    late SettingsDb settingsDb;
+
+    setUp(() async {
+      settingsDb = SettingsDb(inMemoryDatabase: true);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<SettingsDb>()
+            ..registerSingleton<SettingsDb>(settingsDb);
+        },
+      );
+    });
+
+    tearDown(() async {
+      await settingsDb.close();
+      await tearDownTestGetIt();
+    });
+
+    /// Wires the *real* backfill (no override) on top of a stubbed readiness
+    /// signal, so the gate resolves exactly as it does at runtime.
+    Future<bool> readGate({required bool providerReady}) {
+      final mockJournalDb = MockJournalDb();
+      when(
+        () => mockJournalDb.getConfigFlag(enableOnboardingFtueFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
+      ).thenAnswer((_) async => false);
+
+      final container = ProviderContainer(
+        overrides: [
+          journalDbProvider.overrideWithValue(mockJournalDb),
+          whatsNewControllerProvider.overrideWith(
+            _NoUnseenWhatsNewController.new,
+          ),
+          dailyOsOnboardingProviderReadyProvider.overrideWith(
+            (ref) async => providerReady,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container.read(shouldAutoShowOnboardingProvider.future);
+    }
+
+    test(
+      'an already-configured install never sees the welcome, even on the very '
+      'first gate read after the rollout',
+      () async {
+        expect(await readGate(providerReady: true), isFalse);
+        // The gate observed the backfill's write rather than the empty
+        // pre-migration cadence.
+        expect(
+          await settingsDb.itemByKey(onboardingWelcomeCompletedKey),
+          'true',
+        );
+      },
+    );
+
+    test('an un-set-up install still gets the welcome', () async {
+      expect(await readGate(providerReady: false), isTrue);
+      expect(await settingsDb.itemByKey(onboardingWelcomeCompletedKey), isNull);
+    });
+  });
+
   // SettingsDb failure must be logged and swallowed rather than thrown (an
   // unhandled async error would otherwise abort the flow).
   group('OnboardingWelcomeCadence — SettingsDb failures are swallowed', () {

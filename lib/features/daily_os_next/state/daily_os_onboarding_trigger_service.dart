@@ -3,17 +3,10 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/profile_automation_providers.dart';
-import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
-import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
@@ -114,73 +107,6 @@ bool _isSameLocalDay(DateTime a, DateTime b) {
   return localA.year == localB.year &&
       localA.month == localB.month &&
       localA.day == localB.day;
-}
-
-/// Whether the day-planning flow has a resolvable thinking route.
-///
-/// Uses the same [ProfileResolver] chain as `DayAgentWorkflow`: an existing
-/// planner resolves through its assigned template and config; before the first
-/// capture, the seeded Shepherd template is resolved with the config that
-/// planner creation will copy. Watching provider, model, and profile config
-/// streams keeps the gate reactive as setup changes.
-final FutureProvider<bool> dailyOsOnboardingProviderReadyProvider =
-    FutureProvider<bool>((ref) async {
-      final configFutures = [
-        ref.watch(
-          aiConfigByTypeControllerProvider(
-            AiConfigType.inferenceProvider,
-          ).future,
-        ),
-        ref.watch(
-          aiConfigByTypeControllerProvider(AiConfigType.model).future,
-        ),
-        ref.watch(
-          aiConfigByTypeControllerProvider(
-            AiConfigType.inferenceProfile,
-          ).future,
-        ),
-      ];
-      final agentRepository = ref.watch(agentRepositoryProvider);
-      final templateService = ref.watch(agentTemplateServiceProvider);
-      final profileResolver = ref.watch(profileResolverProvider);
-
-      await Future.wait(configFutures);
-      return hasResolvableDailyOsPlannerThinkingRoute(
-        agentRepository: agentRepository,
-        templateService: templateService,
-        profileResolver: profileResolver,
-      );
-    }, name: 'dailyOsOnboardingProviderReadyProvider');
-
-/// Resolves the exact thinking route a Daily OS drafting wake would use.
-///
-/// Read-only: it never creates the planner. When no planner exists yet it
-/// mirrors [DayAgentService.getOrCreatePlannerAgent] by applying the seeded
-/// template's model/profile config to a transient [AgentConfig].
-Future<bool> hasResolvableDailyOsPlannerThinkingRoute({
-  required AgentRepository agentRepository,
-  required AgentTemplateService templateService,
-  required ProfileResolver profileResolver,
-}) async {
-  final plannerEntity = await agentRepository.getEntity(dailyOsPlannerAgentId);
-  final planner = plannerEntity is AgentIdentityEntity ? plannerEntity : null;
-  final template = planner == null
-      ? await templateService.getTemplate(dayAgentTemplateId)
-      : await templateService.getTemplateForAgent(planner.agentId);
-  if (template == null) return false;
-
-  final version = await templateService.getActiveVersion(template.id);
-  if (version == null) return false;
-
-  final config =
-      planner?.config ??
-      AgentConfig(modelId: template.modelId, profileId: template.profileId);
-  final resolved = await profileResolver.resolve(
-    agentConfig: config,
-    template: template,
-    version: version,
-  );
-  return resolved != null;
 }
 
 /// Candidate-eligibility check for the Daily OS onboarding walkthrough.

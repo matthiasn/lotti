@@ -5,7 +5,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
-import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 
 import '../../agents/test_utils.dart';

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -100,10 +101,18 @@ final FutureProvider<bool> shouldAutoShowOnboardingProvider =
 
 Future<bool> shouldAutoShowOnboarding(Ref ref) async {
   final db = ref.watch(journalDbProvider);
-  // Establish the dependency synchronously, before the first await, so the
+  // Establish the dependencies synchronously, before the first await, so the
   // provider stays reactive to What's New changes (watching after an async gap
-  // would not register the dependency). The future is awaited further down.
+  // would not register the dependency). The futures are awaited further down.
   final whatsNewFuture = ref.watch(whatsNewControllerProvider.future);
+  // The rollout backfill may retire the welcome for installs that were already
+  // set up before the rollout reached them (see [applyOnboardingRolloutBackfill]).
+  // Awaiting it below -- before the cadence keys are read -- is what keeps this
+  // gate from observing pre-migration state and flashing the welcome at a
+  // configured user on the upgrade launch.
+  final rolloutBackfillFuture = ref.watch(
+    onboardingRolloutBackfillProvider.future,
+  );
 
   final ftueFlagEnabled = await db.getConfigFlag(enableOnboardingFtueFlag);
   if (!ftueFlagEnabled) return false;
@@ -119,6 +128,8 @@ Future<bool> shouldAutoShowOnboarding(Ref ref) async {
   final whatsNewEnabled = await db.getConfigFlag(enableWhatsNewFlag);
   final whatsNewState = await whatsNewFuture;
   final hasUnseenWhatsNew = whatsNewEnabled && whatsNewState.hasUnseenRelease;
+
+  await rolloutBackfillFuture;
 
   final settingsDb = getIt<SettingsDb>();
   final stored = await settingsDb.itemsByKeys(const [
@@ -235,6 +246,22 @@ class OnboardingWelcomeCadence extends AsyncNotifier<void> {
 }
 
 /// Persists the onboarding welcome's "completed" flag, permanently retiring
+/// the auto-show gate. **Throws** on a `SettingsDb` failure.
+///
+/// The throwing half of [markOnboardingWelcomeCompleted]. Callers that treat a
+/// failed retire as a real failure -- one they must not record as success --
+/// use this directly; today that is the rollout backfill
+/// (`applyOnboardingRolloutBackfill`), whose one-time marker must stay
+/// unwritten if the retire never landed, so the next launch retries rather than
+/// flashing the welcome at a configured user forever. Fire-and-forget callers
+/// use the swallowing wrapper below instead.
+Future<void> writeOnboardingWelcomeCompleted({SettingsDb? settingsDb}) =>
+    (settingsDb ?? getIt<SettingsDb>()).saveSettingsItem(
+      onboardingWelcomeCompletedKey,
+      'true',
+    );
+
+/// Persists the onboarding welcome's "completed" flag, permanently retiring
 /// the auto-show gate. Shared by [OnboardingWelcomeCadence.markCompleted]
 /// (the auto-show path, via `BeamerApp`) and the Settings replay entry
 /// (`OnboardingSettingsBody`), so both retire the gate the same way when the
@@ -243,13 +270,11 @@ class OnboardingWelcomeCadence extends AsyncNotifier<void> {
 ///
 /// Like [OnboardingWelcomeCadence.recordShown], a `SettingsDb` failure is
 /// logged and swallowed: both call sites invoke this fire-and-forget from a
-/// modal completion callback, where a thrown error would be unhandled.
+/// modal completion callback, where a thrown error would be unhandled. A caller
+/// that needs the failure instead should use [writeOnboardingWelcomeCompleted].
 Future<void> markOnboardingWelcomeCompleted() async {
   try {
-    await getIt<SettingsDb>().saveSettingsItem(
-      onboardingWelcomeCompletedKey,
-      'true',
-    );
+    await writeOnboardingWelcomeCompleted();
   } catch (error, stackTrace) {
     getIt<DomainLogger>().error(
       LogDomain.onboarding,

@@ -9,19 +9,22 @@ D3/D7/D30 retention. The full design and phased build plan live in
 > connect-your-brain front door), **Phase 2** (the live voice→task aha), the
 > **auto-show trigger + re-show cadence**, and the top-level **Settings ›
 > Onboarding** replay entry described below are implemented. The **D1 return
-> loop** is forthcoming. The whole flow is gated behind the
-> `enableOnboardingFtueFlag` config flag (default **off**) while it is
-> finished — until that flag is enabled, first-run AI setup falls back to the
-> pre-FTUE `AiProviderSelectionModal`, so end users see no change yet. This
-> README documents what exists in code today and is updated as each phase
+> loop** is forthcoming. The flow is **rolled out**: `enableOnboardingFtueFlag`
+> seeds **on**, and `applyOnboardingRolloutFlags` force-enables it once on
+> installs that still carry a pre-rollout `false` row (see
+> [Rollout](#rollout)). The flag is kept — rather than deleted and hardcoded —
+> as a field kill-switch for an interruptive flow; while it is on,
+> `_showAiSetupPrompt` early-returns, so the pre-FTUE
+> `AiProviderSelectionModal` is only reachable by turning the flag back off.
+> This README documents what exists in code today and is updated as each phase
 > lands.
 
 ## End-to-end flow
 
 ```mermaid
 flowchart TD
-    L[First launch · no provider configured] -->|enableOnboardingFtueFlag ON, eligible| W[OnboardingWelcomeModal]
-    L -->|flag OFF| LEGACY[AiProviderSelectionModal · pre-FTUE]
+    L[First launch · no provider configured] -->|enableOnboardingFtueFlag ON (default), eligible| W[OnboardingWelcomeModal]
+    L -->|flag turned OFF in Settings › Advanced › Flags| LEGACY[AiProviderSelectionModal · pre-FTUE]
     W --> WL[welcome · hero + promise + CTA]
     WL -->|Choose your AI brain| CN[connect · provider tiles]
     WL -->|Look around first| SK[skip → onDismiss · no persistence, grace period preserved]
@@ -55,6 +58,8 @@ independent of the "connect your brain" front door's own step logic above.
 | `OnboardingWelcomeCadence` | `AsyncNotifier<void>` — the mutation side: `recordShown()` and `markCompleted()`, persisted to `SettingsDb` under a private `welcome_*` key prefix (deliberately **not** a `ConfigFlags` row — those are public, user-toggleable; this is per-install bookkeeping the user never edits directly). |
 
 **Eligibility** (all must hold):
+- the rollout backfill has resolved (see [Rollout](#rollout) — the gate awaits
+  it before reading any cadence key),
 - `enableOnboardingFtueFlag` is on,
 - What's New has nothing unseen left to show (sequenced behind it, exactly
   like `AiSetupPromptService`'s own gating — the two auto-shown overlays never
@@ -105,6 +110,94 @@ welcome until the shown-count/window cap ran out. A plain skip (`onDismiss`)
 persists nothing and does **not** retire the gate: the shown-count/window
 budget already implements the "show again for a while, then stop" grace
 period, and a hard block on first skip would defeat that.
+
+## Rollout
+
+`state/onboarding_rollout.dart` turns the flow on for every cohort. It exists
+because the two levers above are not enough on their own: `initConfigFlags`
+seeds through `insertFlagIfNotExists`, which **never overwrites an existing
+row**, so flipping the seed default to `true` reaches fresh installs but leaves
+any install that already ran a build carrying these flags pinned at its `false`
+row.
+
+| Piece | Role |
+|---|---|
+| `applyOnboardingRolloutFlags` | Force-enables `enableOnboardingFtueFlag` and `dailyOsOnboardingEnabledFlag` via `upsertConfigFlag` (overwrite), guarded by the `onboarding_rollout_v1_flags_applied` marker. Awaited from `registerSingletons()` after `initConfigFlags`. |
+| `applyOnboardingRolloutBackfill` | Retires the welcome (`welcome_completed`) for installs that already had a working setup when the rollout arrived, guarded by the `onboarding_rollout_v1_backfill_applied` marker. Takes its `SettingsDb`/`DomainLogger` as parameters (`onboardingRolloutBackfillProvider` resolves them), mirroring `applyOnboardingRolloutFlags`. |
+| `onboardingRolloutBackfillProvider` | Non-`autoDispose` `FutureProvider<void>` wiring the backfill to `dailyOsOnboardingProviderReadyProvider`; awaited by `shouldAutoShowOnboarding`. |
+
+**Why the two halves run in different places.** The flag flip needs only
+`JournalDb`/`SettingsDb`, so it runs in `get_it` **before `runApp`** — that
+ordering is load-bearing, because `_showAiSetupPrompt` reads
+`enableOnboardingFtueFlag` directly and would otherwise race the flip and open
+the legacy modal once on the upgrade launch. The backfill cannot run there: it
+resolves readiness through Riverpod providers, and no container exists before
+`runApp`. It is instead awaited by the welcome gate, which is what stops the
+gate from observing pre-migration state.
+
+**Why the marker, not the flag value, is the guard.** Re-forcing on every launch
+would override a user who turns the flag back off. The marker means the rollout
+touches each install exactly once; any opt-out made afterward is permanent. A
+deliberate opt-out made *before* the rollout is indistinguishable from the
+beta/dev cohort's untouched `false` row and is overridden once — an accepted
+trade-off, since these flags only ever shipped in builds whose own comments read
+"still being built". The `_v1` suffix leaves room for a future re-rollout.
+
+**Why already-configured users are skipped.** The welcome is a
+*connect-your-brain* flow. Turning the flag on would otherwise drop a long-time
+user who already has a working provider into a redundant provider-setup flow.
+The backfill reuses `dailyOsOnboardingProviderReadyProvider` — deliberately
+*stricter* than "has any provider", so a half-configured install errs toward
+showing the welcome rather than being left with no onboarding at all. Those users
+get the Daily OS walkthrough instead, which fits them: they have a provider, they
+just never planned a day. They can still replay the welcome from
+**Settings › Onboarding**.
+
+Every failure path logs and swallows (this is the startup path) and leaves its
+marker unwritten so the next launch retries — a hiccup must never suppress
+onboarding.
+
+```mermaid
+flowchart TD
+    S[registerSingletons] --> IC[initConfigFlags · insert-only seed, default true]
+    IC --> AF{onboarding_rollout_v1_flags_applied?}
+    AF -->|present| RUN[runApp]
+    AF -->|absent| UP[upsertConfigFlag status: true for any false row] --> MK[write marker] --> RUN
+    RUN --> G[shouldAutoShowOnboarding]
+    G --> AB{onboarding_rollout_v1_backfill_applied?}
+    AB -->|present| CAD[read welcome_* cadence]
+    AB -->|absent| PR{providerReady?}
+    PR -->|yes · already set up| MC[writeOnboardingWelcomeCompleted] --> MK2[write marker] --> CAD
+    PR -->|no · un-set-up cohort| MK2
+    PR -->|read failed| LOG[log · no marker · retry next launch] --> CAD
+    MC -->|write failed| LOG
+```
+
+The retire uses the **throwing** `writeOnboardingWelcomeCompleted`, not the
+swallowing `markOnboardingWelcomeCompleted` the modal call sites use: a failed
+write has to reach the backfill's own catch so the marker stays unwritten and
+the next launch retries. Recording a migration that never landed would leave a
+configured install permanently owed a welcome it does not need.
+
+Cohort outcomes (asserted end-to-end in
+`test/features/onboarding/state/onboarding_rollout_test.dart`):
+
+The flag row and readiness are independent axes: the flag row decides what the
+force-enable does, readiness alone decides whether the backfill retires the
+welcome. "Provider-ready" throughout means
+`dailyOsOnboardingProviderReadyProvider` resolves a full thinking route —
+strictly more than having a provider configured. Rows below are not-ready unless
+stated, since that is the state the flag-row cohorts describe.
+
+| Cohort | Flag row before | Provider-ready | After rollout | Welcome |
+|---|---|---|---|---|
+| Fresh install | none | no | `true` (seed) | shown |
+| Existing user, never ran an FTUE-flag build | none | no | `true` (seed) | shown |
+| Beta/dev install | `false` | no | `true` (forced) | shown |
+| Existing user, provider-ready | any | **yes** | `true` | retired — Daily OS takes the beat |
+| Existing user, half-configured (no route resolves) | any | no | `true` | shown |
+| Opt-out before the rollout | `false` | no | `true` (forced once) | shown |
+| Opt-out after the rollout | `false` | any | `false` (honored forever) | not shown |
 
 ## Phase 0 — measurement substrate
 

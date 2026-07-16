@@ -12,12 +12,17 @@ import 'package:mocktail/mocktail.dart';
 import '../mocks/mocks.dart';
 import 'test_utils.dart';
 
+/// The names of every flag [initConfigFlags] seeds **on**, derived from
+/// [expectedFlags] rather than restated.
+///
+/// Both sets describe the same seeded rows, so restating the active names by
+/// hand made a seed-default flip a two-place edit -- and missing the second
+/// place failed here rather than at the flag's own test. Deriving keeps the
+/// active-names expectation correct by construction: updating a `status:` in
+/// [expectedFlags] is now the whole edit.
 final Set<String> expectedActiveFlagNames = {
-  privateFlag,
-  enableTooltipFlag,
-  enableAiStreamingFlag,
-  for (final domain in LogDomain.values)
-    if (domain.defaultEnabled) domain.flagName,
+  for (final flag in expectedFlags)
+    if (flag.status) flag.name,
 };
 
 final expectedFlags = <ConfigFlag>{
@@ -126,12 +131,12 @@ final expectedFlags = <ConfigFlag>{
   const ConfigFlag(
     name: enableOnboardingFtueFlag,
     description: 'Enable the new onboarding (FTUE) flow?',
-    status: false,
+    status: true,
   ),
   const ConfigFlag(
     name: dailyOsOnboardingEnabledFlag,
     description: 'Enable the Daily OS onboarding walkthrough?',
-    status: false,
+    status: true,
   ),
   const ConfigFlag(
     name: showSyncActivityIndicatorFlag,

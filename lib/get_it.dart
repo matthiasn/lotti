@@ -32,6 +32,7 @@ import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -215,6 +216,17 @@ Future<void> registerSingletons() async {
       );
     }
   }());
+
+  // One-time force-enable of the onboarding master flags. Must run after
+  // `initConfigFlags` above (it needs the seeded rows to exist) and is awaited
+  // rather than fired-and-forgotten so no UI can read a stale `false` — see
+  // `applyOnboardingRolloutFlags`. It swallows its own failures, so awaiting it
+  // cannot fail startup.
+  await applyOnboardingRolloutFlags(
+    journalDb: journalDb,
+    settingsDb: settingsDb,
+    logger: domainLogger,
+  );
 
   final sentEventRegistry = SentEventRegistry();
   final matrixGateway = MatrixSdkGateway(
