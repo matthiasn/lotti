@@ -18,6 +18,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_utils/hover_divider_harness.dart';
 import '../../../widget_test_utils.dart';
 
 class _StubSyncController extends SyncMaintenanceController {
@@ -340,6 +341,120 @@ void main() {
         find.text(scaffoldContext.messages.maintenanceDeleteSyncDb),
         findsNothing,
       );
+    });
+
+    // Mirrors the Advanced -> Maintenance list this page is a twin of:
+    // hovering a row fades the hairlines bracketing it so the hovered row
+    // is never bisected. Five action rows -> dividers beneath rows 0..3;
+    // the last row draws none.
+    group('hover divider fade', () {
+      Future<List<DesignSystemListItem>> pumpBody(WidgetTester tester) async {
+        await tester.pumpWidget(buildPage());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        return listRows(tester);
+      }
+
+      /// The final row is the only one that legitimately draws no divider.
+      Set<int> dividerlessOf(List<DesignSystemListItem> rows) => {
+        rows.length - 1,
+      };
+
+      testWidgets('idle: no divider is faded', (tester) async {
+        final rows = await pumpBody(tester);
+
+        expectFadedRows(rows, const {}, dividerless: dividerlessOf(rows));
+      });
+
+      testWidgets('hovering a middle row fades the dividers above AND below', (
+        tester,
+      ) async {
+        final initial = await pumpBody(tester);
+        await hoverRowAt(tester, 2);
+
+        // Row 2 fades its own bottom divider, and row 1 fades the divider
+        // directly above row 2 — the hovered row is bracketed by
+        // invisible hairlines. Nothing else changes.
+        expectFadedRows(
+          listRows(tester),
+          const {1, 2},
+          dividerless: dividerlessOf(initial),
+        );
+      });
+
+      testWidgets('hovering the first row fades only its own divider', (
+        tester,
+      ) async {
+        final initial = await pumpBody(tester);
+        await hoverRowAt(tester, 0);
+
+        // There is no row -1, so only row 0's own divider fades.
+        expectFadedRows(
+          listRows(tester),
+          const {0},
+          dividerless: dividerlessOf(initial),
+        );
+      });
+
+      testWidgets('hovering the last row fades the divider above it', (
+        tester,
+      ) async {
+        final initial = await pumpBody(tester);
+        final last = initial.length - 1;
+        await hoverRowAt(tester, last);
+
+        // The last row draws no divider of its own; only the hairline
+        // separating it from the row above fades.
+        expectFadedRows(
+          listRows(tester),
+          {last - 1},
+          dividerless: dividerlessOf(initial),
+        );
+      });
+
+      testWidgets('moving between rows re-targets the fade', (tester) async {
+        final initial = await pumpBody(tester);
+        final gesture = await hoverRowAt(tester, 1);
+        expectFadedRows(
+          listRows(tester),
+          const {0, 1},
+          dividerless: dividerlessOf(initial),
+        );
+
+        // Move to a non-adjacent row: the exit from row 1 and the enter
+        // onto row 3 must settle on row 3's pair regardless of the order
+        // the two callbacks arrive in.
+        await gesture.moveTo(
+          tester.getCenter(find.byType(DesignSystemListItem).at(3)),
+        );
+        await tester.pump();
+
+        expectFadedRows(
+          listRows(tester),
+          const {2, 3},
+          dividerless: dividerlessOf(initial),
+        );
+      });
+
+      testWidgets('moving the pointer off the list restores every divider', (
+        tester,
+      ) async {
+        final initial = await pumpBody(tester);
+        final gesture = await hoverRowAt(tester, 2);
+        expectFadedRows(
+          listRows(tester),
+          const {1, 2},
+          dividerless: dividerlessOf(initial),
+        );
+
+        await unhoverRows(tester, gesture);
+
+        expectFadedRows(
+          listRows(tester),
+          const {},
+          dividerless: dividerlessOf(initial),
+        );
+      });
     });
   });
 }

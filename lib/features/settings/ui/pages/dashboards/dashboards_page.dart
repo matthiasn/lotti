@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/get_it.dart';
@@ -59,8 +60,8 @@ class DashboardSettingsPage extends ConsumerWidget {
       errorTitle: messages.settingsDashboardsErrorLoading,
       createLabel: messages.settingsDashboardsCreateTitle,
       onCreate: () => beamToNamed('/settings/dashboards/create'),
-      itemBuilder: (context, dashboard, {required bool showDivider}) =>
-          _DashboardListItem(dashboard: dashboard, showDivider: showDivider),
+      itemBuilder: (context, dashboard, {required ListRowDivider divider}) =>
+          _DashboardListItem(dashboard: dashboard, divider: divider),
     );
   }
 }
@@ -68,11 +69,11 @@ class DashboardSettingsPage extends ConsumerWidget {
 class _DashboardListItem extends StatelessWidget {
   const _DashboardListItem({
     required this.dashboard,
-    required this.showDivider,
+    required this.divider,
   });
 
   final DashboardDefinition dashboard;
-  final bool showDivider;
+  final ListRowDivider divider;
 
   @override
   Widget build(BuildContext context) {
@@ -107,11 +108,13 @@ class _DashboardListItem extends StatelessWidget {
           ),
         ],
       ),
-      showDivider: showDivider,
+      showDivider: divider.showDivider,
+      dividerColor: divider.color,
       dividerIndent:
           tokens.spacing.step5 +
           DefinitionIconChip.defaultSize +
           tokens.spacing.step3,
+      onHoverChanged: divider.onHoverChanged,
       onTap: () => beamToNamed('/settings/dashboards/${dashboard.id}'),
     );
   }

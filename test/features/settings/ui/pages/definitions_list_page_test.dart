@@ -4,10 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 
+import '../../../../test_utils/hover_divider_harness.dart';
 import '../../../../widget_test_utils.dart';
 
 /// Pumps the generic template directly with plain [String] items — no
@@ -28,10 +32,11 @@ Future<void> _pumpPage(
         itemsAsync: itemsAsync,
         searchHint: 'Search test items',
         displayName: (item) => item,
-        itemBuilder: (context, item, {required bool showDivider}) => ListTile(
-          key: ValueKey('row-$item-divider-$showDivider'),
-          title: Text(item),
-        ),
+        itemBuilder: (context, item, {required ListRowDivider divider}) =>
+            ListTile(
+              key: ValueKey('row-$item-divider-${divider.showDivider}'),
+              title: Text(item),
+            ),
         emptyIcon: Icons.inbox_outlined,
         emptyTitle: 'Nothing here yet',
         emptyHint: 'Tap create to add an item',
@@ -50,6 +55,52 @@ Future<void> _pumpPage(
   // flutter_animate entrance schedules a zero-duration timer that must
   // fire before the test ends, so advance the clock explicitly.
   await tester.pump(const Duration(milliseconds: 100));
+}
+
+/// Pumps the template with real [DesignSystemListItem] rows so the hover
+/// wiring is exercised end-to-end: a real pointer enters a row, the item
+/// fires `onHoverChanged`, and the shell feeds `dividerColor` back on the
+/// next build. Returns the design-system default divider colour so tests
+/// can distinguish "faded" from "untouched".
+///
+/// Rows are titled by [items]; the shell sorts them, so pass names whose
+/// alphabetical order is the intended row order.
+Future<Color> _pumpHoverRows(
+  WidgetTester tester, {
+  required List<String> items,
+}) async {
+  late Color defaultDividerColor;
+  await tester.pumpWidget(
+    makeTestableWidgetNoScroll(
+      DefinitionsListPage<String>(
+        title: 'Test Items',
+        itemsAsync: AsyncValue.data(items),
+        searchHint: 'Search test items',
+        displayName: (item) => item,
+        itemBuilder: (context, item, {required ListRowDivider divider}) {
+          defaultDividerColor = context.designTokens.colors.decorative.level01;
+          return DesignSystemListItem(
+            title: item,
+            showDivider: divider.showDivider,
+            dividerColor: divider.color,
+            onHoverChanged: divider.onHoverChanged,
+            // DesignSystemListItem only reports hover for rows that are
+            // tappable, which every real definition row is.
+            onTap: () {},
+          );
+        },
+        emptyIcon: Icons.inbox_outlined,
+        emptyTitle: 'Nothing here yet',
+        emptyHint: 'Tap create to add an item',
+        noMatchMessage: (query) => 'No items match "$query"',
+        errorTitle: 'Failed to load items',
+        createLabel: 'Create item',
+        onCreate: () {},
+      ),
+    ),
+  );
+  await tester.pump(const Duration(milliseconds: 100));
+  return defaultDividerColor;
 }
 
 /// Row titles in render order (the template builds rows pre-sorted).
@@ -438,7 +489,7 @@ void main() {
               itemsAsync: const AsyncValue.data(['Alpha']),
               searchHint: 'Search test items',
               displayName: (item) => item,
-              itemBuilder: (context, item, {required bool showDivider}) =>
+              itemBuilder: (context, item, {required ListRowDivider divider}) =>
                   ListTile(title: Text(item)),
               emptyIcon: Icons.inbox_outlined,
               emptyTitle: 'Nothing here yet',
@@ -464,4 +515,131 @@ void main() {
       expect(created, isTrue);
     },
   );
+
+  // The shell owns the hover index for every definitions list, so these
+  // cover the wiring once for all five pages: the row-index maths lives in
+  // HoverDividerIndex (tested in isolation), while these prove the shell
+  // feeds it a real pointer and paints the result back onto the rows.
+  //
+  // Three rows -> dividers beneath rows 0 and 1 only; the last row never
+  // draws one.
+  group('hover dividers', () {
+    testWidgets('idle: every divider uses the design-system default', (
+      tester,
+    ) async {
+      final defaultColor = await _pumpHoverRows(
+        tester,
+        items: ['Alpha', 'Beta', 'Gamma'],
+      );
+
+      expect(listRowDividerColors(tester), [defaultColor, defaultColor]);
+    });
+
+    testWidgets('hovering a middle row fades both hairlines bracketing it', (
+      tester,
+    ) async {
+      final defaultColor = await _pumpHoverRows(
+        tester,
+        items: ['Alpha', 'Beta', 'Gamma'],
+      );
+
+      await hoverListRow(tester, find.text('Beta'));
+
+      // Beta is row 1: the divider above it (0) and below it (1) both go.
+      expect(listRowDividerColors(tester), [
+        Colors.transparent,
+        Colors.transparent,
+      ]);
+      expect(defaultColor, isNot(Colors.transparent));
+    });
+
+    testWidgets('hovering the first row fades only its own divider', (
+      tester,
+    ) async {
+      final defaultColor = await _pumpHoverRows(
+        tester,
+        items: ['Alpha', 'Beta', 'Gamma'],
+      );
+
+      await hoverListRow(tester, find.text('Alpha'));
+
+      // No row above row 0, so the second divider is untouched.
+      expect(listRowDividerColors(tester), [Colors.transparent, defaultColor]);
+    });
+
+    testWidgets('hovering the last row fades the divider above it', (
+      tester,
+    ) async {
+      final defaultColor = await _pumpHoverRows(
+        tester,
+        items: ['Alpha', 'Beta', 'Gamma'],
+      );
+
+      await hoverListRow(tester, find.text('Gamma'));
+
+      // Gamma is the last row and draws no divider of its own; only the
+      // hairline separating it from Beta fades.
+      expect(listRowDividerColors(tester), [defaultColor, Colors.transparent]);
+    });
+
+    testWidgets('moving between rows retargets the fade', (tester) async {
+      final defaultColor = await _pumpHoverRows(
+        tester,
+        items: ['Alpha', 'Beta', 'Gamma'],
+      );
+
+      final gesture = await hoverListRow(tester, find.text('Alpha'));
+      expect(listRowDividerColors(tester), [Colors.transparent, defaultColor]);
+
+      await gesture.moveTo(tester.getCenter(find.text('Gamma')));
+      await tester.pump();
+
+      // The enter/leave pair for a row-to-row move must settle on Gamma,
+      // not leave Alpha's divider stuck faded.
+      expect(listRowDividerColors(tester), [defaultColor, Colors.transparent]);
+    });
+
+    testWidgets('moving the pointer off the list restores every divider', (
+      tester,
+    ) async {
+      final defaultColor = await _pumpHoverRows(
+        tester,
+        items: ['Alpha', 'Beta', 'Gamma'],
+      );
+
+      final gesture = await hoverListRow(tester, find.text('Beta'));
+      expect(listRowDividerColors(tester), isNot(contains(defaultColor)));
+
+      await unhoverRows(tester, gesture);
+
+      expect(listRowDividerColors(tester), [defaultColor, defaultColor]);
+    });
+
+    testWidgets('hover changes colour only — it never shifts the layout', (
+      tester,
+    ) async {
+      await _pumpHoverRows(tester, items: ['Alpha', 'Beta', 'Gamma']);
+
+      final dividersBefore = listRowDividerColors(tester).length;
+      final gammaBefore = tester.getTopLeft(find.text('Gamma'));
+
+      await hoverListRow(tester, find.text('Beta'));
+
+      // The regression this guards: fading via `showDivider` instead of
+      // `dividerColor` would remove a 1px divider and jump the rows below.
+      expect(listRowDividerColors(tester), hasLength(dividersBefore));
+      expect(tester.getTopLeft(find.text('Gamma')), gammaBefore);
+    });
+
+    testWidgets('a single-row list renders no divider to fade', (tester) async {
+      await _pumpHoverRows(tester, items: ['Alpha']);
+
+      expect(listRowDividerColors(tester), isEmpty);
+
+      // Hovering the only row must not throw despite there being no
+      // divider for the mixin's index to colour.
+      await hoverListRow(tester, find.text('Alpha'));
+      expect(listRowDividerColors(tester), isEmpty);
+    });
+  });
 }

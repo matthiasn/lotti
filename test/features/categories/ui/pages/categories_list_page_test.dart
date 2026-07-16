@@ -17,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../../test_utils/hover_divider_harness.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
@@ -827,6 +828,23 @@ void main() {
         await pumpCategoriesListPage(tester);
 
         expect(find.byType(DesignSystemGroupedList), findsOneWidget);
+      });
+    });
+
+    group('hover dividers', () {
+      testWidgets('the category row forwards its divider treatment', (
+        tester,
+      ) async {
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value([
+            CategoryTestUtils.createTestCategory(id: 'cat-a', name: 'Alpha'),
+            CategoryTestUtils.createTestCategory(id: 'cat-b', name: 'Beta'),
+          ]),
+        );
+
+        await pumpCategoriesListPage(tester);
+
+        await expectRowFadesDividerOnHover(tester, find.text('Alpha'));
       });
     });
   });

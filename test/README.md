@@ -41,6 +41,46 @@ It happens when the widget's `await for` is still attached to the controller's s
 
 For broader test conventions — centralized mocks/fallbacks (`test/mocks/mocks.dart`, `test/helpers/fallbacks.dart`), `setUpTestGetIt()` / `makeTestableWidget()`, the "every test must assert something meaningful" rule, and one-test-file-per-source-file — see the **Testing Guidelines** section of `AGENTS.md`.
 
+## Hover-divider tests: `test_utils/hover_divider_harness.dart`
+
+The settings lists that mix in `HoverDividerIndex` fade the hairlines
+bracketing the hovered row. Testing that always needs the same two moves —
+drive a real mouse pointer onto a row, then read the divider state back — so
+both live in `test/test_utils/hover_divider_harness.dart` rather than being
+restated per list.
+
+**Hover needs a real mouse pointer.** `tester.tap` will not fire the row's
+`InkWell.onHover`; use `hoverListRow(tester, finder)`, which creates a
+`PointerDeviceKind.mouse` gesture and removes it on teardown. `hoverRowAt(tester,
+index)` is the same thing addressing the row by render position, for lists whose
+rows carry no distinctive text. Both return the gesture so a test can retarget it
+onto another row or move it off the list — the enter/leave pairing of a
+row-to-row move is exactly what the mixin has to stay robust against, and a fresh
+gesture per row would not reproduce it.
+
+For a page on the `DefinitionsListPage` shell, the page's whole obligation is
+that its row forwards the `ListRowDivider` it is handed, so one call covers it:
+`expectRowFadesDividerOnHover(tester, find.text('Alpha'))`, against a two-row
+list. The fade logic itself belongs to the mixin and the shell, each covered by
+its own test — don't restate it per page.
+
+For lists that own the index directly (Flags, Maintenance, Matrix sync), assert
+against the rows: `listRows(tester)` + `expectFadedRows(rows, {1, 2},
+dividerless: {last})`. `expectFadedRows` also asserts `showDivider` never moved,
+which is the point of fading via colour: hiding the hairline with `showDivider`
+instead would jump the rows below by 1&nbsp;px on hover. `listRowDividerColors(tester)`
+is the lower-level read the shell's own tests use — the `Divider` colours inside
+the grouped-list card, in render order.
+
+Pass `dividerless` for rows that legitimately draw no hairline (normally the
+last one). The mixin still reports a colour for such a row — it is simply
+unobservable, so the harness skips asserting on it rather than pinning down
+dead state.
+
+**Only tappable rows hover at all.** `DesignSystemListItem` fires
+`onHoverChanged` only when it has an `onTap`, so a list of non-tappable rows
+(the Logging settings switches) has no hover state to test.
+
 ## Database test layout
 
 `lib/database/database.dart` and `lib/database/sync_db.dart` are shells (constructor + migration ladder) whose query surfaces live in `part` files holding private mixins (`database_task_queries.dart`, `sync_db_outbox.dart`, …). The tests mirror that layout one test file per part file:

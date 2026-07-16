@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/get_it.dart';
@@ -57,8 +58,8 @@ class MeasurablesPage extends ConsumerWidget {
       errorTitle: messages.settingsMeasurablesErrorLoading,
       createLabel: messages.settingsMeasurablesCreateTitle,
       onCreate: () => beamToNamed('/settings/measurables/create'),
-      itemBuilder: (context, dataType, {required bool showDivider}) =>
-          _MeasurableListItem(item: dataType, showDivider: showDivider),
+      itemBuilder: (context, dataType, {required ListRowDivider divider}) =>
+          _MeasurableListItem(item: dataType, divider: divider),
     );
   }
 }
@@ -66,11 +67,11 @@ class MeasurablesPage extends ConsumerWidget {
 class _MeasurableListItem extends StatelessWidget {
   const _MeasurableListItem({
     required this.item,
-    required this.showDivider,
+    required this.divider,
   });
 
   final MeasurableDataType item;
-  final bool showDivider;
+  final ListRowDivider divider;
 
   @override
   Widget build(BuildContext context) {
@@ -126,11 +127,13 @@ class _MeasurableListItem extends StatelessWidget {
           ),
         ],
       ),
-      showDivider: showDivider,
+      showDivider: divider.showDivider,
+      dividerColor: divider.color,
       dividerIndent:
           tokens.spacing.step5 +
           DefinitionIconChip.defaultSize +
           tokens.spacing.step3,
+      onHoverChanged: divider.onHoverChanged,
       onTap: () => beamToNamed('/settings/measurables/${item.id}'),
     );
   }

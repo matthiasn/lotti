@@ -19,6 +19,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_helper.dart';
+import '../../../../test_utils/hover_divider_harness.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
@@ -726,6 +727,24 @@ void main() {
         expect(find.byType(CustomScrollView), findsOneWidget);
         expect(find.byType(SettingsPageHeader), findsOneWidget);
         expect(find.byType(SliverToBoxAdapter), findsWidgets);
+      });
+    });
+
+    group('hover dividers', () {
+      testWidgets('the label row forwards its divider treatment', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _buildPage(
+            labels: [
+              testLabelDefinition1.copyWith(id: 'label-a', name: 'Alpha'),
+              testLabelDefinition2.copyWith(id: 'label-b', name: 'Beta'),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await expectRowFadesDividerOnHover(tester, find.text('Alpha'));
       });
     });
   });

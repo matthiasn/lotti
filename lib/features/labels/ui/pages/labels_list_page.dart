@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
@@ -62,11 +63,11 @@ class LabelsListPage extends ConsumerWidget {
       errorTitle: messages.settingsLabelsErrorLoading,
       createLabel: messages.settingsLabelsCreateTitle,
       onCreate: () => beamToNamed('/settings/labels/create'),
-      itemBuilder: (context, label, {required bool showDivider}) =>
+      itemBuilder: (context, label, {required ListRowDivider divider}) =>
           _LabelListItem(
             label: label,
             usageCount: usageCounts[label.id] ?? 0,
-            showDivider: showDivider,
+            divider: divider,
           ),
     );
   }
@@ -77,12 +78,12 @@ class _LabelListItem extends StatelessWidget {
   const _LabelListItem({
     required this.label,
     required this.usageCount,
-    required this.showDivider,
+    required this.divider,
   });
 
   final LabelDefinition label;
   final int usageCount;
-  final bool showDivider;
+  final ListRowDivider divider;
 
   @override
   Widget build(BuildContext context) {
@@ -120,11 +121,13 @@ class _LabelListItem extends StatelessWidget {
           ),
         ],
       ),
-      showDivider: showDivider,
+      showDivider: divider.showDivider,
+      dividerColor: divider.color,
       dividerIndent:
           tokens.spacing.step5 +
           DefinitionIconChip.defaultSize +
           tokens.spacing.step3,
+      onHoverChanged: divider.onHoverChanged,
       onTap: () => beamToNamed('/settings/labels/${label.id}'),
     );
   }

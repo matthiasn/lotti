@@ -5,6 +5,7 @@ import 'package:lotti/features/categories/state/categories_list_controller.dart'
 import 'package:lotti/features/categories/state/category_task_count_provider.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -48,10 +49,10 @@ class CategoriesListPage extends ConsumerWidget {
       errorTitle: messages.settingsCategoriesErrorLoading,
       createLabel: messages.settingsCategoriesCreateTitle,
       onCreate: () => beamToNamed('/settings/categories/create'),
-      itemBuilder: (context, category, {required bool showDivider}) =>
+      itemBuilder: (context, category, {required ListRowDivider divider}) =>
           _CategoryListItem(
             category: category,
-            showDivider: showDivider,
+            divider: divider,
             onTap: () => beamToNamed('/settings/categories/${category.id}'),
           ),
     );
@@ -62,12 +63,12 @@ class CategoriesListPage extends ConsumerWidget {
 class _CategoryListItem extends ConsumerWidget {
   const _CategoryListItem({
     required this.category,
-    required this.showDivider,
+    required this.divider,
     required this.onTap,
   });
 
   final CategoryDefinition category;
-  final bool showDivider;
+  final ListRowDivider divider;
   final VoidCallback onTap;
 
   @override
@@ -137,11 +138,13 @@ class _CategoryListItem extends ConsumerWidget {
           ),
         ],
       ),
-      showDivider: showDivider,
+      showDivider: divider.showDivider,
+      dividerColor: divider.color,
       dividerIndent:
           tokens.spacing.step5 +
           DefinitionIconChip.defaultSize +
           tokens.spacing.step3,
+      onHoverChanged: divider.onHoverChanged,
       onTap: onTap,
     );
   }

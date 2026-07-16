@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
+import '../../../../../test_utils/hover_divider_harness.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
@@ -409,6 +410,22 @@ void main() {
 
         expect(find.byType(HabitsPage), findsOneWidget);
         expect(find.text(habitFlossing.name), findsOneWidget);
+      });
+    });
+
+    group('hover dividers', () {
+      testWidgets('the habit row forwards its divider treatment', (
+        tester,
+      ) async {
+        await pumpHabitsPage(
+          tester,
+          habits: [
+            habitFlossing.copyWith(id: 'habit-a', name: 'Alpha'),
+            habitFlossing.copyWith(id: 'habit-b', name: 'Beta'),
+          ],
+        );
+
+        await expectRowFadesDividerOnHover(tester, find.text('Alpha'));
       });
     });
   });

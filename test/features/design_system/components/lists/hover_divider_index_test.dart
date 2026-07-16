@@ -126,5 +126,57 @@ void main() {
         );
       },
     );
+
+    // `dividerFor` is the entry point for shells that hand rows to a
+    // caller-supplied builder (DefinitionsListPage), so it has to bundle
+    // the same answers the à-la-carte API gives.
+    group('dividerFor', () {
+      testWidgets("carries the caller's showDivider through untouched", (
+        tester,
+      ) async {
+        final state = await pumpHost(tester);
+
+        // The mixin colours hairlines; it never decides whether one
+        // exists. Both answers must survive the round trip.
+        expect(state.dividerFor(0, showDivider: true).showDivider, isTrue);
+        expect(state.dividerFor(1, showDivider: false).showDivider, isFalse);
+      });
+
+      testWidgets('bundles the same colour hoverDividerColorFor reports', (
+        tester,
+      ) async {
+        final state = await pumpHost(tester);
+
+        state.onRowHoverChanged(2, hovered: true);
+        await tester.pump();
+
+        // Rows 1 and 2 bracket the hovered row; row 0 is untouched.
+        expect(
+          state.dividerFor(1, showDivider: true).color,
+          Colors.transparent,
+        );
+        expect(
+          state.dividerFor(2, showDivider: true).color,
+          Colors.transparent,
+        );
+        expect(state.dividerFor(0, showDivider: true).color, isNull);
+      });
+
+      testWidgets('its onHoverChanged reports hover for its own row', (
+        tester,
+      ) async {
+        final state = await pumpHost(tester);
+
+        // The bundled callback must close over the index it was built
+        // for — a row only ever says "hovered", never "hovered: 3".
+        state.dividerFor(3, showDivider: true).onHoverChanged(true);
+        await tester.pump();
+        expect(fadedRows(state, count: 6), {2, 3});
+
+        state.dividerFor(3, showDivider: true).onHoverChanged(false);
+        await tester.pump();
+        expect(fadedRows(state, count: 6), isEmpty);
+      });
+    });
   });
 }

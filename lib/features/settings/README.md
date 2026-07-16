@@ -479,9 +479,8 @@ Each visible flag has:
 
 The Flags entry is reached through Advanced; the `/settings/flags` URL itself is unchanged so existing deep links keep resolving.
 
-The flag rows share a hover-divider treatment with the Maintenance list
-([`ui/pages/advanced/maintenance_page.dart`](ui/pages/advanced/maintenance_page.dart)).
-Both states mix in `HoverDividerIndex`
+The flag rows share a hover-divider treatment with every other hoverable
+settings list. Each mixes in `HoverDividerIndex`
 ([`design_system/components/lists/hover_divider_index.dart`](../../design_system/components/lists/hover_divider_index.dart)),
 which tracks the hovered row index and exposes `onRowHoverChanged` /
 `hoverDividerColorFor`. Rather than toggling `DesignSystemListItem.showDivider`
@@ -490,6 +489,45 @@ and fades the divider to `Colors.transparent` for the hovered row and the row
 above it, so the hovered row is never bisected by a hairline. Maintenance folds
 its final diagnostic repaint-rainbow tile into the same index model so the
 divider between the last action row and the tile fades from either side.
+
+Where the mixin lives depends on who owns the row loop:
+
+| List | Mixed into |
+| --- | --- |
+| Config Flags ([`ui/pages/flags_page.dart`](ui/pages/flags_page.dart)) | `_FlagsListState` |
+| Advanced → Maintenance ([`ui/pages/advanced/maintenance_page.dart`](ui/pages/advanced/maintenance_page.dart)) | `_MaintenanceBodyState` |
+| Matrix sync maintenance ([`sync/ui/matrix_sync_maintenance_page.dart`](../sync/ui/matrix_sync_maintenance_page.dart)) | `_MatrixSyncMaintenanceBodyState` |
+| Categories, Labels, Habits, Measurables, Dashboards | `_DefinitionsListPageState` |
+
+The five definition lists do not each track hover. The shared shell
+([`ui/pages/definitions_list_page.dart`](ui/pages/definitions_list_page.dart))
+already owns the row index, so it owns the hover index too. It bundles each
+row's whole divider treatment — `showDivider`, the hover `color`, and the
+`onHoverChanged` callback — into one `ListRowDivider` via the mixin's
+`dividerFor`, and hands it to `itemBuilder`. A page's only job is to forward the
+three fields to its `DesignSystemListItem`; each page test covers that it does.
+The bundle is what keeps `itemBuilder`'s signature stable as the treatment
+grows, and keeps five pages from each declaring three parameters.
+
+```mermaid
+sequenceDiagram
+    participant P as Pointer
+    participant R as DesignSystemListItem (row i)
+    participant S as State with HoverDividerIndex
+    P->>R: enter
+    R->>S: onHoverChanged(i, hovered: true)
+    Note over S: _hoveredIndex = i
+    S->>R: rebuild — dividerColor for i and i-1 = transparent
+    P->>R: leave
+    R->>S: onHoverChanged(i, hovered: false)
+    Note over S: clears only if _hoveredIndex == i,<br/>so a row-to-row move settles on the new row
+    S->>R: rebuild — dividerColor = null (design-system default)
+```
+
+The Logging settings list ([`ui/pages/advanced/logging_settings_page.dart`](ui/pages/advanced/logging_settings_page.dart))
+is deliberately excluded. Its rows are switch-only with no `onTap`, and
+`DesignSystemListItem` reports hover only for tappable rows — so those rows have
+no hover state (and no hover background) to bracket in the first place.
 
 ### Advanced
 

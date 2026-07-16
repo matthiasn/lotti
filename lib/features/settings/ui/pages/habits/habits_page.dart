@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
@@ -54,8 +55,8 @@ class HabitsPage extends ConsumerWidget {
       errorTitle: messages.settingsHabitsErrorLoading,
       createLabel: messages.settingsHabitsCreateTitle,
       onCreate: () => beamToNamed('/settings/habits/create'),
-      itemBuilder: (context, habit, {required bool showDivider}) =>
-          _HabitListItem(habit: habit, showDivider: showDivider),
+      itemBuilder: (context, habit, {required ListRowDivider divider}) =>
+          _HabitListItem(habit: habit, divider: divider),
     );
   }
 }
@@ -63,11 +64,11 @@ class HabitsPage extends ConsumerWidget {
 class _HabitListItem extends StatelessWidget {
   const _HabitListItem({
     required this.habit,
-    required this.showDivider,
+    required this.divider,
   });
 
   final HabitDefinition habit;
-  final bool showDivider;
+  final ListRowDivider divider;
 
   @override
   Widget build(BuildContext context) {
@@ -132,11 +133,13 @@ class _HabitListItem extends StatelessWidget {
           ),
         ],
       ),
-      showDivider: showDivider,
+      showDivider: divider.showDivider,
+      dividerColor: divider.color,
       dividerIndent:
           tokens.spacing.step5 +
           DefinitionIconChip.defaultSize +
           tokens.spacing.step3,
+      onHoverChanged: divider.onHoverChanged,
       onTap: () => beamToNamed('/settings/habits/by_id/${habit.id}'),
     );
   }
