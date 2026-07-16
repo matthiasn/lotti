@@ -9,6 +9,145 @@ you can imagine. If you create a habit, you can assign any dashboard you want, a
 you want to complete a habit, look at the data and determine at a quick glance of the conditions are
 indeed met for successful completion.
 
+## Daily OS
+
+Daily OS turns a spoken or typed check-in into an editable plan for one day. It
+does not replace your tasks or time records: it proposes when work could happen,
+shows the plan beside what you actually recorded, and lets you reshape the
+schedule by voice or directly on the calendar.
+
+The screenshots below use a deliberately busy synthetic day for a fictional
+Director of Interplanetary Penguin Logistics. Your penguin situation may vary.
+
+### Before your first check-in
+
+Open `Settings > Daily OS` and choose an inference profile. The settings page
+identifies whether the configured endpoint is on this device or remote. Daily
+OS sends the assembled planning context to that selected endpoint. You can also
+set the name used in the greeting.
+
+In `Settings > Categories`, enable **Day planning** for the categories the
+planner may use. Keeping that set intentional makes the suggestions more useful
+and keeps unrelated parts of your life out of the daily ritual.
+
+### 1. Say what the day needs
+
+Open **Daily OS**, select the date, and choose **Speak a check-in**. Talk in
+normal sentences: mention fixed commitments, outcomes, rough durations,
+energy constraints, breaks, and anything that should not happen too late. Use
+**Type instead** when speaking is inconvenient.
+
+After recognition, review the complete transcript before sending it onward.
+The editor grows with longer dictations instead of hiding the rest after a few
+lines; you can correct names, numbers, or delightfully niche job titles in
+place.
+
+![Review a full Daily OS transcript](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/pro_05_captured_dark.png)
+
+Choose **Re-record** to start over or **Review** to continue. Processing feedback
+appears from the first frame, and **Build my day** remains unavailable until the
+initial matching pass has completed.
+
+![Daily OS processing indicator rendered by the app shader](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/daily_os_shader_runtime_phone_dark.png)
+
+### 2. Reconcile what the assistant heard
+
+Reconcile is the safety check between speech and action. It separates what you
+said into auditable cards:
+
+- **Matched** points to an existing task. Check that the linked task is the one
+  you meant; break the link if it is not.
+- **New** is a phrase that can become work for today.
+- **Update** proposes a change to an existing task.
+- Low-confidence and time-anchor labels explain where your attention is most
+  useful.
+
+![Reconcile a busy spoken check-in](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/pro_07_reconcile_dark.png)
+
+The second section surfaces work already in progress, overdue, due today, or
+recently missed. Decide what belongs today rather than allowing yesterday's
+entire backlog to colonize the morning.
+
+If you have already recorded time for the selected date, **Today so far** keeps
+that reality visible during the check-in.
+
+![Today so far during capture](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/mini_14_capture_today_so_far_dark.png)
+
+### 3. Let Daily OS draft, then judge the plan
+
+Choose **Build my day** after the decisions look right. The drafting screen
+shows what the planner is doing and keeps useful context visible while the plan
+is assembled.
+
+![Daily OS drafting a schedule](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/pro_08_drafting_dark.png)
+
+The first result opens on **Agenda**. The capacity card answers “does this fit?”
+before the numbered list answers “what matters?” Category totals expose where
+the day is going, completed work collapses into compact receipts, and placement
+reasons explain why the assistant chose important slots.
+
+![A busy Daily OS agenda](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/day_pro_01_agenda_dark.png)
+
+Use the quick adjustments when the shape is wrong:
+
+- **Too much** asks for a smaller plan.
+- **Move lighter** moves demanding work away from low-energy periods.
+- **Add buffer** creates breathing room.
+- **Refine** opens a free-form voice check-in for any other change.
+
+Nothing is locked in merely because the assistant proposed it. Choose
+**Looks good** when the draft is genuinely acceptable.
+
+### 4. Compare the plan with reality
+
+Switch from **Agenda** to **Day** for the calendar projection. On desktop, Plan
+and Actual share one time axis; on a phone, swipe horizontally between them.
+Idle hours fold instead of disappearing, and you can pinch vertically to
+change time density. Planned blocks use a lighter sketched treatment; recorded
+sessions are filled, so drift is visible without rewriting history.
+
+![Plan and actual time on the desktop Daily OS timeline](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/day_desktop_02_timeline_dark.png)
+
+### 5. Move, resize, and edit blocks directly
+
+Choose the four-arrow **Arrange** action above the timeline to expand folded
+regions and reveal direct-manipulation handles. Drag a block body to move it;
+drag its top or bottom handle to change the start or end. Changes snap to
+15-minute increments, stay inside the selected day, and appear immediately.
+After a successful change, use **Undo** in the confirmation toast if the old
+slot was better.
+
+![Arrange mode with move and resize handles](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/day_pro_03_timeline_arrange_dark.png)
+
+Every editable planned block also has a pencil. The overview keeps the common
+changes together: title, category, start/end, and the assistant's placement
+reason.
+
+![Edit a standalone Daily OS block](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/day_pro_04_block_edit_overview_dark.png)
+
+Choose **Start & end** for the same time wheels used by recorded-time entries.
+The overview is not saved until you return and choose **Save changes**, so the
+whole edit is applied as one operation.
+
+![Edit a block's start and end](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/day_pro_05_block_edit_time_dark.png)
+
+Task-linked blocks behave slightly differently. Their title and category
+belong to the task, so those fields are read-only here and **Open task** takes
+you to the source. Rename the task or change its category there; the linked
+Agenda row and calendar block update immediately, including the category name
+and color. The block's scheduled start and end remain editable from Daily OS.
+
+![Edit a task-linked Daily OS block](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/day_pro_06_block_edit_linked_dark.png)
+
+### A useful mental model
+
+- **Tasks describe the work.** A linked task owns its title and category.
+- **The day plan describes intent.** Blocks own placement and duration.
+- **Time records describe reality.** Actual sessions remain independent of the
+  plan and can diverge honestly.
+- **The assistant proposes; you decide.** Reconcile, manual editing, Refine,
+  Undo, and Looks good keep consequential changes user-owned.
+
 ## Categories
 Categories are different important aspects of you life. Examples (in no particular order):
 

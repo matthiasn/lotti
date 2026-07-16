@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -18,6 +19,8 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.da
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
@@ -30,7 +33,10 @@ const _runKey = 'run-key-001';
 final _now = DateTime(2026, 5, 25, 9);
 
 void main() {
-  setUpAll(registerAllFallbackValues);
+  setUpAll(() {
+    registerAllFallbackValues();
+    tz_data.initializeTimeZones();
+  });
 
   late MockAgentRepository agentRepository;
   late MockAgentSyncService syncService;
@@ -3106,6 +3112,510 @@ void main() {
           throwsA(
             isA<DayAgentCaptureException>().having(
               (e) => e.message,
+              'message',
+              contains('no plan'),
+            ),
+          ),
+        );
+      });
+    });
+
+    group('editBlock', () {
+      DayPlanEntity seedEditablePlan() => seedPlanEntity(
+        blocks: [
+          PlannedBlock(
+            id: 'block-focus',
+            categoryId: 'work',
+            startTime: DateTime(2026, 5, 25, 9),
+            endTime: DateTime(2026, 5, 25, 10),
+            title: 'Focus work',
+            reason: 'Morning focus.',
+            taskId: 'task-1',
+          ),
+          PlannedBlock(
+            id: 'block-buffer',
+            categoryId: 'buffer',
+            startTime: DateTime(2026, 5, 25, 10),
+            endTime: DateTime(2026, 5, 25, 10, 30),
+            title: 'Buffer',
+            type: PlannedBlockType.buffer,
+          ),
+          PlannedBlock(
+            id: 'block-calendar',
+            categoryId: 'work',
+            startTime: DateTime(2026, 5, 25, 14),
+            endTime: DateTime(2026, 5, 25, 15),
+            title: 'Board meeting',
+            type: PlannedBlockType.cal,
+          ),
+        ],
+      );
+
+      test(
+        'moves and resizes a block, persists, sorts, and notifies',
+        () async {
+          seedEditablePlan();
+          final later = _now.add(const Duration(hours: 1));
+
+          final updated = await withClock(Clock.fixed(later), () {
+            return createService().editBlock(
+              agentId: _agentId,
+              dayId: _dayId,
+              blockId: 'block-focus',
+              start: DateTime(2026, 5, 25, 10, 45),
+              end: DateTime(2026, 5, 25, 12, 15),
+            );
+          });
+
+          final focus = updated.data.plannedBlocks.singleWhere(
+            (block) => block.id == 'block-focus',
+          );
+          expect(focus.startTime, DateTime(2026, 5, 25, 10, 45));
+          expect(focus.endTime, DateTime(2026, 5, 25, 12, 15));
+          expect(focus.taskId, 'task-1');
+          expect(
+            updated.data.plannedBlocks.map((block) => block.id),
+            ['block-buffer', 'block-focus', 'block-calendar'],
+          );
+          expect(updated.scheduledMinutes, 180);
+          expect(updated.updatedAt, later);
+          expect(upsertedEntities.single, updated);
+          expect(notifications, containsAll([_agentId, _dayId, updated.id]));
+        },
+      );
+
+      test(
+        'returns the live plan without a write when times are unchanged',
+        () async {
+          final original = seedEditablePlan();
+
+          final unchanged = await createService().editBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'block-focus',
+            start: DateTime(2026, 5, 25, 9),
+            end: DateTime(2026, 5, 25, 10),
+          );
+
+          expect(unchanged, original);
+          expect(upsertedEntities, isEmpty);
+          expect(notifications, isEmpty);
+        },
+      );
+
+      test('atomically updates a standalone title and category', () async {
+        seedPlanEntity(
+          blocks: [
+            PlannedBlock(
+              id: 'block-standalone',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 12),
+              endTime: DateTime(2026, 5, 25, 13),
+              title: 'Draft penguin memo',
+              type: PlannedBlockType.manual,
+            ),
+          ],
+        );
+        final life = CategoryDefinition(
+          id: 'life',
+          name: 'Life',
+          createdAt: _now,
+          updatedAt: _now,
+          vectorClock: null,
+          private: false,
+          active: true,
+          isAvailableForDayPlan: true,
+        );
+        when(
+          () => journalDb.getCategoryById('life'),
+        ).thenAnswer((_) async => life);
+
+        final updated = await createService().editBlock(
+          agentId: _agentId,
+          dayId: _dayId,
+          blockId: 'block-standalone',
+          start: DateTime(2026, 5, 25, 13, 15),
+          end: DateTime(2026, 5, 25, 14, 45),
+          title: '  Negotiate the fish budget  ',
+          categoryId: ' life ',
+        );
+
+        final block = updated.data.plannedBlocks.single;
+        expect(block.title, 'Negotiate the fish budget');
+        expect(block.categoryId, 'life');
+        expect(block.startTime, DateTime(2026, 5, 25, 13, 15));
+        expect(block.endTime, DateTime(2026, 5, 25, 14, 45));
+        expect(updated.scheduledMinutes, 90);
+        expect(upsertedEntities, [updated]);
+      });
+
+      test('rejects blank identity values before writing', () async {
+        seedPlanEntity();
+
+        final cases = <({String? title, String? categoryId})>[
+          (title: '  ', categoryId: null),
+          (title: null, categoryId: '  '),
+        ];
+        for (final values in cases) {
+          await expectLater(
+            createService().editBlock(
+              agentId: _agentId,
+              dayId: _dayId,
+              blockId: 'block-1',
+              start: DateTime(2026, 5, 25, 9),
+              end: DateTime(2026, 5, 25, 10),
+              title: values.title,
+              categoryId: values.categoryId,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (error) => error.message,
+                'message',
+                contains('must not be blank'),
+              ),
+            ),
+          );
+        }
+        expect(upsertedEntities, isEmpty);
+      });
+
+      test('keeps task-linked title and category owned by the task', () async {
+        seedEditablePlan();
+
+        final cases = <({String? title, String? categoryId})>[
+          (title: 'Rename behind the task', categoryId: null),
+          (title: null, categoryId: 'life'),
+        ];
+        for (final values in cases) {
+          await expectLater(
+            createService().editBlock(
+              agentId: _agentId,
+              dayId: _dayId,
+              blockId: 'block-focus',
+              start: DateTime(2026, 5, 25, 9),
+              end: DateTime(2026, 5, 25, 10),
+              title: values.title,
+              categoryId: values.categoryId,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (error) => error.message,
+                'message',
+                contains('task-linked'),
+              ),
+            ),
+          );
+        }
+
+        final unchanged = await createService().editBlock(
+          agentId: _agentId,
+          dayId: _dayId,
+          blockId: 'block-focus',
+          start: DateTime(2026, 5, 25, 9),
+          end: DateTime(2026, 5, 25, 10),
+          title: ' Focus work ',
+          categoryId: ' work ',
+        );
+        expect(unchanged.data.plannedBlocks.first.title, 'Focus work');
+        expect(upsertedEntities, isEmpty);
+      });
+
+      test(
+        'keeps buffer identity fixed while allowing its range to move',
+        () async {
+          seedEditablePlan();
+
+          await expectLater(
+            createService().editBlock(
+              agentId: _agentId,
+              dayId: _dayId,
+              blockId: 'block-buffer',
+              start: DateTime(2026, 5, 25, 10),
+              end: DateTime(2026, 5, 25, 10, 30),
+              title: 'Fish intermission',
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (error) => error.message,
+                'message',
+                contains('buffer'),
+              ),
+            ),
+          );
+
+          final updated = await createService().editBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'block-buffer',
+            start: DateTime(2026, 5, 25, 10, 15),
+            end: DateTime(2026, 5, 25, 11),
+          );
+          final buffer = updated.data.plannedBlocks.singleWhere(
+            (block) => block.id == 'block-buffer',
+          );
+          expect(buffer.title, 'Buffer');
+          expect(buffer.duration, const Duration(minutes: 45));
+        },
+      );
+
+      test(
+        'rejects missing, inactive, deleted, and non-planning categories',
+        () async {
+          seedPlanEntity();
+          final unavailable = <CategoryDefinition?>[
+            null,
+            CategoryDefinition(
+              id: 'life',
+              name: 'Life',
+              createdAt: _now,
+              updatedAt: _now,
+              vectorClock: null,
+              private: false,
+              active: false,
+            ),
+            CategoryDefinition(
+              id: 'life',
+              name: 'Life',
+              createdAt: _now,
+              updatedAt: _now,
+              deletedAt: _now,
+              vectorClock: null,
+              private: false,
+              active: true,
+            ),
+            CategoryDefinition(
+              id: 'life',
+              name: 'Life',
+              createdAt: _now,
+              updatedAt: _now,
+              vectorClock: null,
+              private: false,
+              active: true,
+              isAvailableForDayPlan: false,
+            ),
+          ];
+
+          for (final category in unavailable) {
+            when(
+              () => journalDb.getCategoryById('life'),
+            ).thenAnswer((_) async => category);
+            await expectLater(
+              createService().editBlock(
+                agentId: _agentId,
+                dayId: _dayId,
+                blockId: 'block-1',
+                start: DateTime(2026, 5, 25, 9),
+                end: DateTime(2026, 5, 25, 10),
+                categoryId: 'life',
+              ),
+              throwsA(
+                isA<DayAgentCaptureException>().having(
+                  (error) => error.message,
+                  'message',
+                  contains('not available'),
+                ),
+              ),
+            );
+          }
+          expect(upsertedEntities, isEmpty);
+        },
+      );
+
+      test(
+        'accepts the UTC day-end boundary and sorts equal starts by id',
+        () async {
+          final day = DateTime.utc(2026, 5, 25);
+          final plan =
+              AgentDomainEntity.dayPlan(
+                    id: 'day_agent_plan:$_dayId',
+                    agentId: _agentId,
+                    dayId: _dayId,
+                    planDate: day,
+                    data: DayPlanData(
+                      planDate: day,
+                      status: const DayPlanStatus.draft(),
+                      plannedBlocks: [
+                        PlannedBlock(
+                          id: 'z-last',
+                          categoryId: 'work',
+                          startTime: DateTime.utc(2026, 5, 25, 20),
+                          endTime: DateTime.utc(2026, 5, 25, 21),
+                          title: 'Late work',
+                        ),
+                        PlannedBlock(
+                          id: 'a-first',
+                          categoryId: 'work',
+                          startTime: DateTime.utc(2026, 5, 25, 23),
+                          endTime: DateTime.utc(2026, 5, 25, 23, 30),
+                          title: 'Moonlit review',
+                        ),
+                      ],
+                    ),
+                    scheduledMinutes: 90,
+                    createdAt: _now,
+                    updatedAt: _now,
+                    vectorClock: null,
+                  )
+                  as DayPlanEntity;
+          agentEntities[plan.id] = plan;
+
+          final updated = await createService().editBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'z-last',
+            start: DateTime.utc(2026, 5, 25, 23),
+            end: DateTime.utc(2026, 5, 26),
+          );
+
+          expect(
+            updated.data.plannedBlocks.map((block) => block.id),
+            ['a-first', 'z-last'],
+          );
+          expect(updated.scheduledMinutes, 90);
+          expect(
+            updated.data.plannedBlocks.last.endTime,
+            DateTime.utc(2026, 5, 26),
+          );
+        },
+      );
+
+      test('uses the next local midnight across a DST transition', () async {
+        final berlin = tz.getLocation('Europe/Berlin');
+        final day = tz.TZDateTime(berlin, 2024, 10, 27);
+        final plan =
+            AgentDomainEntity.dayPlan(
+                  id: 'day_agent_plan:$_dayId',
+                  agentId: _agentId,
+                  dayId: _dayId,
+                  planDate: day,
+                  data: DayPlanData(
+                    planDate: day,
+                    status: const DayPlanStatus.draft(),
+                    plannedBlocks: [
+                      PlannedBlock(
+                        id: 'dst-block',
+                        categoryId: 'work',
+                        startTime: tz.TZDateTime(berlin, 2024, 10, 27, 22),
+                        endTime: tz.TZDateTime(berlin, 2024, 10, 27, 23),
+                        title: 'Inspect the winter fish reserves',
+                      ),
+                    ],
+                  ),
+                  scheduledMinutes: 60,
+                  createdAt: _now,
+                  updatedAt: _now,
+                  vectorClock: null,
+                )
+                as DayPlanEntity;
+        agentEntities[plan.id] = plan;
+
+        final updated = await createService().editBlock(
+          agentId: _agentId,
+          dayId: _dayId,
+          blockId: 'dst-block',
+          start: tz.TZDateTime(berlin, 2024, 10, 27, 23),
+          end: tz.TZDateTime(berlin, 2024, 10, 28),
+        );
+
+        expect(
+          updated.data.plannedBlocks.single.endTime,
+          tz.TZDateTime(berlin, 2024, 10, 28),
+        );
+
+        await expectLater(
+          createService().editBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'dst-block',
+            start: tz.TZDateTime(berlin, 2024, 10, 27, 23),
+            end: tz.TZDateTime(berlin, 2024, 10, 28, 0, 30),
+          ),
+          throwsA(isA<DayAgentCaptureException>()),
+        );
+      });
+
+      test('rejects invalid or out-of-day ranges', () async {
+        seedEditablePlan();
+        final cases = <({DateTime start, DateTime end})>[
+          (
+            start: DateTime(2026, 5, 25, 11),
+            end: DateTime(2026, 5, 25, 11),
+          ),
+          (
+            start: DateTime(2026, 5, 24, 23, 45),
+            end: DateTime(2026, 5, 25, 1),
+          ),
+          (
+            start: DateTime(2026, 5, 25, 23, 45),
+            end: DateTime(2026, 5, 26, 0, 15),
+          ),
+        ];
+
+        for (final range in cases) {
+          await expectLater(
+            createService().editBlock(
+              agentId: _agentId,
+              dayId: _dayId,
+              blockId: 'block-focus',
+              start: range.start,
+              end: range.end,
+            ),
+            throwsA(isA<DayAgentCaptureException>()),
+          );
+        }
+        expect(upsertedEntities, isEmpty);
+      });
+
+      test('rejects calendar-owned and unknown blocks', () async {
+        seedEditablePlan();
+
+        await expectLater(
+          createService().editBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'block-calendar',
+            start: DateTime(2026, 5, 25, 15),
+            end: DateTime(2026, 5, 25, 16),
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (error) => error.message,
+              'message',
+              contains('calendar-owned'),
+            ),
+          ),
+        );
+        await expectLater(
+          createService().editBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'missing',
+            start: DateTime(2026, 5, 25, 15),
+            end: DateTime(2026, 5, 25, 16),
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (error) => error.message,
+              'message',
+              contains('no block'),
+            ),
+          ),
+        );
+        expect(upsertedEntities, isEmpty);
+      });
+
+      test('rejects when no plan exists for the day', () async {
+        await expectLater(
+          createService().editBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'block-focus',
+            start: DateTime(2026, 5, 25, 10),
+            end: DateTime(2026, 5, 25, 11),
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (error) => error.message,
               'message',
               contains('no plan'),
             ),

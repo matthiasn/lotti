@@ -475,6 +475,33 @@ class RealDayAgent implements DayAgentInterface {
   }
 
   @override
+  Future<DraftPlan> editBlock({
+    required DraftPlan plan,
+    required String blockId,
+    required DateTime start,
+    required DateTime end,
+    String? title,
+    DayAgentCategory? category,
+  }) async {
+    final identity = await dayAgentService.getDayAgentForDate(plan.dayDate);
+    if (identity is! AgentIdentityEntity) {
+      throw DayAgentInteractionException(
+        'No day agent exists for ${dayAgentIdForDate(plan.dayDate)}.',
+      );
+    }
+    final edited = await planService.editBlock(
+      agentId: identity.agentId,
+      dayId: dayAgentIdForDate(plan.dayDate),
+      blockId: blockId,
+      start: start,
+      end: end,
+      title: title,
+      categoryId: category?.id,
+    );
+    return _projectDayPlan(edited, plan.dayDate);
+  }
+
+  @override
   Future<
     ({
       List<CompletedItem> completed,

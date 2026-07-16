@@ -5922,6 +5922,84 @@ abstract class AppLocalizations {
   /// **'Tracked · {duration} · {completedCount} done'**
   String dailyOsNextAgendaTrackedLegend(String duration, int completedCount);
 
+  /// No description provided for @dailyOsNextBlockEditCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get dailyOsNextBlockEditCategoryLabel;
+
+  /// No description provided for @dailyOsNextBlockEditFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the block — try again.'**
+  String get dailyOsNextBlockEditFailed;
+
+  /// No description provided for @dailyOsNextBlockEditNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get dailyOsNextBlockEditNameLabel;
+
+  /// No description provided for @dailyOsNextBlockEditOpenTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Open task'**
+  String get dailyOsNextBlockEditOpenTask;
+
+  /// No description provided for @dailyOsNextBlockEditSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get dailyOsNextBlockEditSave;
+
+  /// No description provided for @dailyOsNextBlockEditSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule updated.'**
+  String get dailyOsNextBlockEditSaved;
+
+  /// No description provided for @dailyOsNextBlockEditTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start & end'**
+  String get dailyOsNextBlockEditTimeLabel;
+
+  /// No description provided for @dailyOsNextBlockEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit block'**
+  String get dailyOsNextBlockEditTitle;
+
+  /// No description provided for @dailyOsNextBlockEditTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit block'**
+  String get dailyOsNextBlockEditTooltip;
+
+  /// No description provided for @dailyOsNextBlockEditWhyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Why this time'**
+  String get dailyOsNextBlockEditWhyLabel;
+
+  /// No description provided for @dailyOsNextBlockMoveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Move block'**
+  String get dailyOsNextBlockMoveTooltip;
+
+  /// No description provided for @dailyOsNextBlockResizeEndTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust end'**
+  String get dailyOsNextBlockResizeEndTooltip;
+
+  /// No description provided for @dailyOsNextBlockResizeStartTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust start'**
+  String get dailyOsNextBlockResizeStartTooltip;
+
   /// No description provided for @dailyOsNextCaptureCaptured.
   ///
   /// In en, this message translates to:
@@ -6624,6 +6702,12 @@ abstract class AppLocalizations {
   /// **'WORTH DECIDING ON'**
   String get dailyOsNextReconcileDecideOverline;
 
+  /// No description provided for @dailyOsNextReconcileDecisionProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{decided} of {total} reviewed'**
+  String dailyOsNextReconcileDecisionProgress(int decided, int total);
+
   /// No description provided for @dailyOsNextReconcileDefaultBehaviorHint.
   ///
   /// In en, this message translates to:
@@ -6659,6 +6743,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'low confidence'**
   String get dailyOsNextReconcileLowConfidence;
+
+  /// No description provided for @dailyOsNextReconcileProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening back and matching your day…'**
+  String get dailyOsNextReconcileProcessing;
 
   /// No description provided for @dailyOsNextReconcileReRecord.
   ///
@@ -7019,6 +7109,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Actual'**
   String get dailyOsNextTimelineActual;
+
+  /// No description provided for @dailyOsNextTimelineArrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrange blocks'**
+  String get dailyOsNextTimelineArrange;
 
   /// No description provided for @dailyOsNextTimelineBoth.
   ///

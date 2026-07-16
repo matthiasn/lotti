@@ -56,6 +56,17 @@ class _ThrowingReconcileAgent extends MockDayAgent {
   }
 }
 
+/// Reconcile agent whose parse step stays pending without a real timer.
+class _PendingReconcileAgent extends MockDayAgent {
+  _PendingReconcileAgent()
+    : super(parseLatency: Duration.zero, pendingLatency: Duration.zero);
+
+  final Completer<List<ParsedItem>> _items = Completer<List<ParsedItem>>();
+
+  @override
+  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) => _items.future;
+}
+
 /// Drafting agent whose draft step throws — drives the error branch.
 class _ThrowingDraftAgent extends MockDayAgent {
   _ThrowingDraftAgent()
@@ -427,6 +438,38 @@ void main() {
   });
 
   group('showDayPlanningModal — create chain', () {
+    testWidgets('first reconcile frame shows one shader and disables build', (
+      tester,
+    ) async {
+      await _openCreate(
+        tester,
+        capture: _captured,
+        agent: _PendingReconcileAgent(),
+      );
+      final messages = _l10n(tester);
+      await _tapPill(tester, messages.dailyOsNextCaptureReconcileCta);
+
+      expect(
+        find.byKey(DayPlanningThinkingShader.indicatorKey),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.dailyOsNextReconcileProcessing),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<DsGlassPill>(
+              find.widgetWithText(
+                DsGlassPill,
+                messages.dailyOsNextReconcileBuildDayCta,
+              ),
+            )
+            .enabled,
+        isFalse,
+      );
+    });
+
     testWidgets('continue advances Capture → Reconcile', (tester) async {
       await _openCreate(tester, capture: _captured, agent: _fastAgent());
       final messages = _l10n(tester);

@@ -32,10 +32,14 @@ import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.da
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
+import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -47,23 +51,23 @@ final DateTime _now = DateTime(2026, 6, 8, 15, 55);
 final DateTime _day = DateTime(2026, 6, 8);
 
 const _deepWork = DayAgentCategory(
-  id: 'cat-deep',
-  name: 'Deep Work',
+  id: 'cat-penguin',
+  name: 'Penguin Operations',
   colorHex: '8B5CF6',
 );
 const _client = DayAgentCategory(
-  id: 'cat-client',
-  name: 'Client Work',
+  id: 'cat-mission',
+  name: 'Mission Control',
   colorHex: '4F9DDE',
 );
 const _health = DayAgentCategory(
-  id: 'cat-health',
-  name: 'Health',
+  id: 'cat-human',
+  name: 'Human Maintenance',
   colorHex: '34D399',
 );
 const _admin = DayAgentCategory(
-  id: 'cat-admin',
-  name: 'Admin',
+  id: 'cat-diplomacy',
+  name: 'Fish Diplomacy',
   colorHex: 'E8A33D',
 );
 
@@ -78,6 +82,7 @@ TimeBlock _planned(
   String? reason,
   int? sessionIndex,
   int? sessionTotal,
+  String? taskId,
 }) => TimeBlock(
   id: id,
   title: title,
@@ -89,6 +94,7 @@ TimeBlock _planned(
   reason: reason,
   sessionIndex: sessionIndex,
   sessionTotal: sessionTotal,
+  taskId: taskId,
 );
 
 TimeBlock _tracked(
@@ -108,17 +114,24 @@ TimeBlock _tracked(
   category: category,
 );
 
-/// A full planned day: focus morning, client afternoon, health bookends.
+/// A full planned day for the Director of Interplanetary Penguin Logistics.
 DraftPlan _plan() {
   final blocks = [
-    _planned('blk-review', 'Morning review', _at(8, 30), _at(9), _admin),
+    _planned(
+      'blk-review',
+      'Emperor penguin roll call',
+      _at(8, 30),
+      _at(9),
+      _admin,
+    ),
     _planned(
       'blk-deep',
-      'Planner deep work',
+      'Inspect orbital penguin habitat',
       _at(9),
       _at(11),
       _deepWork,
-      reason: 'Focus peak before meetings',
+      reason: 'Best done before Mission Control and the penguins get chatty',
+      taskId: 'task-orbital-habitat',
     ),
     TimeBlock(
       id: 'blk-buffer',
@@ -131,30 +144,49 @@ DraftPlan _plan() {
     ),
     _planned(
       'blk-design',
-      'Design team check-in',
+      'Project Waddle launch review',
       _at(11, 15),
       _at(12),
       _client,
     ),
-    _planned('blk-lunch', 'Lunch + walk', _at(12), _at(13), _health),
+    _planned(
+      'blk-lunch',
+      'Lunch (coffee is not a vegetable)',
+      _at(12),
+      _at(13),
+      _health,
+    ),
     _planned(
       'blk-followup',
-      'Client follow-up + invoices',
+      'Negotiate sardine futures',
       _at(13),
       _at(14, 30),
       _client,
     ),
     _planned(
       'blk-slides',
-      'Workshop slides',
+      'Zero-gravity fish feeder',
       _at(14, 30),
       _at(16),
       _deepWork,
       sessionIndex: 1,
       sessionTotal: 2,
+      reason: 'The fish are least suspicious immediately after lunch',
     ),
-    _planned('blk-email', 'Email triage', _at(16, 15), _at(17), _admin),
-    _planned('blk-run', 'Short run', _at(17, 30), _at(18), _health),
+    _planned(
+      'blk-email',
+      'Legal: Is a penguin a passenger?',
+      _at(16, 15),
+      _at(17),
+      _admin,
+    ),
+    _planned(
+      'blk-run',
+      'Walk without a headset',
+      _at(17, 30),
+      _at(18),
+      _health,
+    ),
   ];
 
   return DraftPlan(
@@ -186,7 +218,7 @@ DraftPlan _plan() {
     agendaItems: const [
       AgendaItem(
         id: 'ag-review',
-        title: 'Morning review',
+        title: 'Emperor penguin roll call',
         category: _admin,
         linkedBlockIds: ['blk-review'],
         totalEstimateMinutes: 30,
@@ -195,17 +227,18 @@ DraftPlan _plan() {
       ),
       AgendaItem(
         id: 'ag-deep',
-        title: 'Planner deep work',
+        taskId: 'task-orbital-habitat',
+        title: 'Inspect orbital penguin habitat',
         category: _deepWork,
         linkedBlockIds: ['blk-deep'],
         totalEstimateMinutes: 120,
         progress: 1,
         state: AgendaItemState.done,
-        outcome: 'Anchored layout shipped to the branch',
+        outcome: 'Habitat seals green; tiny helmets still pending',
       ),
       AgendaItem(
         id: 'ag-design',
-        title: 'Design team check-in',
+        title: 'Project Waddle launch review',
         category: _client,
         linkedBlockIds: ['blk-design'],
         totalEstimateMinutes: 45,
@@ -214,7 +247,7 @@ DraftPlan _plan() {
       ),
       AgendaItem(
         id: 'ag-lunch',
-        title: 'Lunch + walk',
+        title: 'Lunch (coffee is not a vegetable)',
         category: _health,
         linkedBlockIds: ['blk-lunch'],
         totalEstimateMinutes: 60,
@@ -225,34 +258,34 @@ DraftPlan _plan() {
       // agenda must agree with the lane (no cross-view contradictions).
       AgendaItem(
         id: 'ag-followup',
-        title: 'Client follow-up + invoices',
+        title: 'Negotiate sardine futures',
         category: _client,
         linkedBlockIds: ['blk-followup'],
         totalEstimateMinutes: 90,
         progress: 1,
         state: AgendaItemState.done,
-        outcome: 'Invoices out, follow-up notes in the thread',
+        outcome: 'Locked Q3 sardines below the emergency fish ceiling',
       ),
       AgendaItem(
         id: 'ag-slides',
-        title: 'Workshop slides',
+        title: 'Zero-gravity fish feeder',
         category: _deepWork,
         linkedBlockIds: ['blk-slides'],
         totalEstimateMinutes: 180,
         progress: 0.4,
         state: AgendaItemState.inProgress,
-        outcome: 'Deck ready for Thursday dry run',
+        outcome: 'Prototype ready for the live habitat demo',
       ),
       AgendaItem(
         id: 'ag-email',
-        title: 'Email triage',
+        title: 'Legal: Is a penguin a passenger?',
         category: _admin,
         linkedBlockIds: ['blk-email'],
         totalEstimateMinutes: 45,
       ),
       AgendaItem(
         id: 'ag-run',
-        title: 'Short run',
+        title: 'Walk without a headset',
         category: _health,
         linkedBlockIds: ['blk-run'],
         totalEstimateMinutes: 30,
@@ -261,37 +294,49 @@ DraftPlan _plan() {
   );
 }
 
-/// Recorded reality: late starts, a production incident nobody planned,
+/// Recorded reality: late starts, an escaped penguin nobody planned,
 /// lunch without the walk, the afternoon running long, slides still in
 /// progress under the now-line, email triage never happened (yet).
 List<TimeBlock> _actuals() => [
-  _tracked('review', 'Morning review', _at(8, 42), _at(9, 5), _admin),
-  _tracked('deep', 'Planner deep work', _at(9, 5), _at(10, 38), _deepWork),
+  _tracked(
+    'review',
+    'Emperor penguin roll call',
+    _at(8, 42),
+    _at(9, 5),
+    _admin,
+  ),
+  _tracked(
+    'deep',
+    'Inspect orbital penguin habitat',
+    _at(9, 5),
+    _at(10, 38),
+    _deepWork,
+  ),
   _tracked(
     'incident',
-    'Production incident triage',
+    'Retrieve penguin from ventilation duct',
     _at(10, 40),
     _at(11, 2),
     _client,
   ),
   _tracked(
     'design',
-    'Design team check-in',
+    'Project Waddle launch review',
     _at(11, 18),
     _at(12, 5),
     _client,
   ),
-  _tracked('lunch', 'Lunch', _at(12, 10), _at(12, 50), _health),
+  _tracked('lunch', 'Lunch, technically', _at(12, 10), _at(12, 50), _health),
   _tracked(
     'followup',
-    'Client follow-up + invoices',
+    'Negotiate sardine futures',
     _at(13, 5),
     _at(14, 55),
     _client,
   ),
   _tracked(
     'slides',
-    'Workshop slides',
+    'Zero-gravity fish feeder',
     _at(15, 10),
     _at(15, 45),
     _deepWork,
@@ -327,19 +372,19 @@ PlannerKnowledgeView _knowledgeView() => PlannerKnowledgeView(
   proposed: [
     _knowledge(
       'kn-1',
-      'deep-work-before-meetings',
-      'Deep work lands before the first meeting',
-      'Deep work sessions that start before the first meeting of the day '
-          'run 30% longer before being interrupted.',
+      'habitat-before-mission-control',
+      'Habitat work lands before Mission Control wakes',
+      'Habitat inspections started before the first call run 30% longer '
+          'before a penguin or executive finds the red button.',
       status: KnowledgeStatus.proposed,
-      tags: const ['focus', 'mornings'],
+      tags: const ['penguins', 'mornings'],
     ),
     _knowledge(
       'kn-2',
-      'walks-skipped-after-incidents',
-      'Walks get skipped on incident days',
-      'On days with unplanned incident work, the planned walk is usually '
-          'dropped — consider protecting it explicitly.',
+      'walks-skipped-after-escapes',
+      'Walks get skipped after penguin escapes',
+      'When a penguin enters the ventilation system, the planned walk is '
+          'usually dropped — protect it explicitly.',
       status: KnowledgeStatus.proposed,
       tags: const ['health'],
     ),
@@ -347,9 +392,9 @@ PlannerKnowledgeView _knowledgeView() => PlannerKnowledgeView(
   confirmed: [
     _knowledge(
       'kn-3',
-      'no-meetings-before-ten',
-      'No meetings before 10:00',
-      'Keep mornings meeting-free until 10:00 — stated preference.',
+      'no-briefings-before-ten',
+      'No briefings before 10:00',
+      'Keep mornings briefing-free until 10:00 — stated preference.',
       status: KnowledgeStatus.confirmed,
       source: KnowledgeSource.userStated,
       tags: const ['mornings'],
@@ -409,6 +454,83 @@ Widget _app({
   );
 }
 
+Widget _dayShell(ScreenshotDevice device) {
+  final dayPage = DayPage(draft: _plan());
+  if (!device.isPhone) {
+    DesktopSidebarDestination destination(
+      String label,
+      IconData icon,
+      IconData activeIcon,
+    ) => DesktopSidebarDestination(
+      label: label,
+      iconBuilder: ({required active}) => Icon(active ? activeIcon : icon),
+    );
+
+    return Row(
+      children: [
+        DesktopNavigationSidebar(
+          destinations: [
+            destination(
+              'Tasks',
+              Icons.check_circle_outline_rounded,
+              Icons.check_circle_rounded,
+            ),
+            destination('Daily OS', Icons.today_outlined, Icons.today_rounded),
+            destination(
+              'Logbook',
+              Icons.menu_book_outlined,
+              Icons.menu_book_rounded,
+            ),
+          ],
+          activeIndex: 1,
+          onDestinationSelected: (_) {},
+          settingsDestination: destination(
+            'Settings',
+            Icons.settings_outlined,
+            Icons.settings_rounded,
+          ),
+          onSettingsSelected: () {},
+          onToggleCollapsed: () {},
+        ),
+        Expanded(child: dayPage),
+      ],
+    );
+  }
+
+  return Stack(
+    children: [
+      dayPage,
+      const Positioned(
+        left: 0,
+        right: 0,
+        bottom: 0,
+        child: DesignSystemBottomNavigationBar(
+          items: [
+            DesignSystemFiveSlotNavBarItem(
+              label: 'Daily OS',
+              icon: Icon(Icons.today_outlined),
+              activeIcon: Icon(Icons.today_rounded),
+              active: true,
+            ),
+            DesignSystemFiveSlotNavBarItem(
+              label: 'Tasks',
+              icon: Icon(Icons.check_circle_outline_rounded),
+            ),
+            DesignSystemFiveSlotNavBarItem(
+              label: 'Calendar',
+              icon: Icon(Icons.calendar_month_outlined),
+            ),
+            DesignSystemFiveSlotNavBarItem(
+              label: 'Settings',
+              icon: Icon(Icons.settings_outlined),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
 Future<void> _pumpDayPage(
   WidgetTester tester, {
   required ScreenshotDevice device,
@@ -432,76 +554,10 @@ Future<void> _pumpDayPage(
             (ref) async => _knowledgeView(),
           ),
         ],
-        // Stand-in bottom nav strip: DayPage reserves the app shell's nav
-        // height, so without this the captures show a hollow band.
-        home: Stack(
-          children: [
-            DayPage(draft: _plan()),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Builder(
-                builder: (context) {
-                  final scheme = Theme.of(context).colorScheme;
-                  Widget item(
-                    IconData icon,
-                    String label, {
-                    bool active = false,
-                  }) {
-                    final color = active
-                        ? scheme.primary
-                        : scheme.onSurfaceVariant;
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(icon, size: 22, color: color),
-                        const SizedBox(height: 2),
-                        Text(
-                          label,
-                          style: TextStyle(fontSize: 10, color: color),
-                        ),
-                      ],
-                    );
-                  }
-
-                  return Container(
-                    height: DesignSystemBottomNavigationBar.occupiedHeight(
-                      context,
-                    ),
-                    decoration: BoxDecoration(
-                      color: scheme.surfaceContainerHigh,
-                      border: Border(
-                        top: BorderSide(
-                          color: scheme.outlineVariant.withValues(alpha: 0.4),
-                        ),
-                      ),
-                    ),
-                    padding: const EdgeInsets.only(top: 8),
-                    alignment: Alignment.topCenter,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        for (final navItem in [
-                          item(Icons.today_rounded, 'Daily OS', active: true),
-                          item(Icons.check_circle_outline_rounded, 'Tasks'),
-                          item(Icons.calendar_month_rounded, 'Calendar'),
-                          item(Icons.settings_outlined, 'Settings'),
-                        ])
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: navItem,
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+        // DayPage lives inside the app shell in production. Reuse the real
+        // design-system mobile bar / desktop sidebar so the captures reflect
+        // each breakpoint instead of showing a hollow reserved band.
+        home: _dayShell(device),
       ),
     );
     await settleFrames(tester);
@@ -531,6 +587,23 @@ Future<void> _showRecordedLane(WidgetTester tester) async {
     pageView.controller!.jumpToPage(1);
     await settleFrames(tester);
   });
+}
+
+Future<void> _openBlockEditor(
+  WidgetTester tester, {
+  required String blockId,
+}) async {
+  await withClock(Clock.fixed(_now), () async {
+    final editButton = find.byKey(Key('daily_os_edit_block_$blockId'));
+    final iconButton = tester.widget<IconButton>(editButton);
+    expect(iconButton.onPressed, isNotNull);
+    iconButton.onPressed!();
+    await settleFrames(tester);
+  });
+  expect(
+    find.text(_messages(tester).dailyOsNextBlockEditTitle),
+    findsOneWidget,
+  );
 }
 
 void main() {
@@ -569,6 +642,62 @@ void main() {
     // Mobile timeline pages between planned and recorded lanes.
     await _showRecordedLane(tester);
     await captureScreenshot(tester, 'day_mini_03_timeline_recorded_dark');
+  });
+
+  testWidgets('pro timeline arrange mode — dark', (tester) async {
+    await _pumpDayPage(tester, device: proDevice);
+    await _switchToDayView(tester);
+    await tester.tap(find.byKey(const Key('daily_os_timeline_arrange_toggle')));
+    await settleFrames(tester);
+    expect(
+      find.byKey(const Key('daily_os_move_block_blk-review')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('daily_os_resize_end_blk-review')),
+      findsOneWidget,
+    );
+    await captureScreenshot(tester, 'day_pro_03_timeline_arrange_dark');
+  });
+
+  testWidgets('pro block editor overview — dark', (tester) async {
+    await _pumpDayPage(tester, device: proDevice);
+    await _switchToDayView(tester);
+    await _openBlockEditor(tester, blockId: 'blk-slides');
+    expect(find.text('Zero-gravity fish feeder'), findsWidgets);
+    expect(
+      find.text(_messages(tester).dailyOsNextBlockEditTimeLabel),
+      findsOneWidget,
+    );
+    await captureScreenshot(tester, 'day_pro_04_block_edit_overview_dark');
+  });
+
+  testWidgets('pro block editor start and end — dark', (tester) async {
+    await _pumpDayPage(tester, device: proDevice);
+    await _switchToDayView(tester);
+    await _openBlockEditor(tester, blockId: 'blk-slides');
+    final timeField = tester
+        .widgetList<SettingsPickerField>(find.byType(SettingsPickerField))
+        .singleWhere(
+          (field) =>
+              field.label == _messages(tester).dailyOsNextBlockEditTimeLabel,
+        );
+    timeField.onTap();
+    await settleFrames(tester);
+    expect(find.byType(DesignSystemTimeWheel), findsNWidgets(2));
+    await captureScreenshot(tester, 'day_pro_05_block_edit_time_dark');
+  });
+
+  testWidgets('pro linked-task block editor — dark', (tester) async {
+    await _pumpDayPage(tester, device: proDevice);
+    await _switchToDayView(tester);
+    await _openBlockEditor(tester, blockId: 'blk-deep');
+    expect(
+      find.text(_messages(tester).dailyOsNextBlockEditOpenTask),
+      findsOneWidget,
+    );
+    expect(find.byType(TextField), findsNothing);
+    await captureScreenshot(tester, 'day_pro_06_block_edit_linked_dark');
   });
 
   testWidgets('mini agenda — light', (tester) async {

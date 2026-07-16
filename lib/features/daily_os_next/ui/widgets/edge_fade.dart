@@ -47,21 +47,35 @@ class EdgeFade extends StatelessWidget {
 
   final Widget child;
 
+  /// Compositor isolation boundary for the alpha mask.
+  ///
+  /// Linux's Impeller renderer may otherwise apply the shader layer outside
+  /// this widget's paint bounds when a complex timeline sits beside the
+  /// desktop navigation rail.
+  @visibleForTesting
+  static const Key paintBoundaryKey = ValueKey(
+    'daily-os-edge-fade-boundary',
+  );
+
   @override
   Widget build(BuildContext context) {
-    return ShaderMask(
-      shaderCallback: (bounds) {
-        final ramp = bounds.height <= 0
-            ? minFraction
-            : (rampExtent / bounds.height).clamp(minFraction, maxFraction);
-        return LinearGradient(
-          begin: fadeTop ? Alignment.topCenter : Alignment.bottomCenter,
-          end: fadeTop ? Alignment.bottomCenter : Alignment.topCenter,
-          colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
-          stops: [0, ramp],
-        ).createShader(bounds);
-      },
-      child: child,
+    return RepaintBoundary(
+      key: paintBoundaryKey,
+      child: ShaderMask(
+        blendMode: BlendMode.dstIn,
+        shaderCallback: (bounds) {
+          final ramp = bounds.height <= 0
+              ? minFraction
+              : (rampExtent / bounds.height).clamp(minFraction, maxFraction);
+          return LinearGradient(
+            begin: fadeTop ? Alignment.topCenter : Alignment.bottomCenter,
+            end: fadeTop ? Alignment.bottomCenter : Alignment.topCenter,
+            colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
+            stops: [0, ramp],
+          ).createShader(bounds);
+        },
+        child: child,
+      ),
     );
   }
 }

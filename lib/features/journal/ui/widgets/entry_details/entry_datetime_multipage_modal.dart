@@ -36,7 +36,7 @@ class EntryDateTimeMultiPageModal {
       await ModalUtils.showMultiPageModal<void>(
         context: context,
         pageIndexNotifier: pageIndexNotifier,
-        modalTypeBuilderOverride: _modalTypeBuilder,
+        modalTypeBuilderOverride: entryDateTimeModalTypeBuilder,
         pageListBuilder: (modalContext) => [
           ModalUtils.modalSheetPage(
             context: modalContext,
@@ -52,7 +52,7 @@ class EntryDateTimeMultiPageModal {
               entry: entry,
               stateNotifier: stateNotifier,
             ),
-            child: _EntryDateTimeEditor(
+            child: EntryDateTimeEditor(
               stateNotifier,
               onPickStartDate: () {
                 activeDateEndpoint.value = _DateEndpoint.start;
@@ -124,29 +124,49 @@ class EntryDateTimeMultiPageModal {
 
 enum _DateEndpoint { start, end }
 
-WoltModalType _modalTypeBuilder(BuildContext context) {
+/// Responsive modal type shared by dense date/time editors.
+///
+/// Phones use the established bottom sheet. Larger screens use the same
+/// dialog width as the rest of the app but permit the editor to consume the
+/// available height instead of clipping the two time wheels.
+WoltModalType entryDateTimeModalTypeBuilder(BuildContext context) {
   if (ModalUtils.shouldUseRootNavigatorForBottomSheet(context)) {
     return WoltModalType.bottomSheet();
   }
   return const FullHeightWoltDialogType();
 }
 
-class _EntryDateTimeEditor extends StatefulWidget {
-  const _EntryDateTimeEditor(
+/// Reusable design-system editor for a start/end date-time range.
+///
+/// Journal entries use the complete date + time experience. Callers whose
+/// domain is fixed to one day (such as a Daily OS plan block) set
+/// [showDateControls] to false and reuse the same start/end wheels, responsive
+/// large-text layout, and duration status bar without exposing date changes.
+class EntryDateTimeEditor extends StatefulWidget {
+  const EntryDateTimeEditor(
     this.stateNotifier, {
-    required this.onPickStartDate,
-    required this.onPickEndDate,
-  });
+    this.onPickStartDate,
+    this.onPickEndDate,
+    this.showDateControls = true,
+    super.key,
+  }) : assert(
+         !showDateControls ||
+             (onPickStartDate != null && onPickEndDate != null),
+         'Date controls require both date-picker callbacks.',
+       );
 
   final ValueNotifier<EntryDateTimeRange> stateNotifier;
-  final VoidCallback onPickStartDate;
-  final VoidCallback onPickEndDate;
+  final VoidCallback? onPickStartDate;
+  final VoidCallback? onPickEndDate;
+
+  /// Whether to show date selection and the separate-end-date toggle.
+  final bool showDateControls;
 
   @override
-  State<_EntryDateTimeEditor> createState() => _EntryDateTimeEditorState();
+  State<EntryDateTimeEditor> createState() => _EntryDateTimeEditorState();
 }
 
-class _EntryDateTimeEditorState extends State<_EntryDateTimeEditor> {
+class _EntryDateTimeEditorState extends State<EntryDateTimeEditor> {
   var _startTimeSeed = 0;
   var _endTimeSeed = 0;
 
@@ -186,12 +206,18 @@ class _EntryDateTimeEditorState extends State<_EntryDateTimeEditor> {
 
   void _setStartNow() {
     _startTimeSeed += 1;
-    _state = _state.withStart(_nowInZoneOf(_state.dateFrom));
+    final now = _nowInZoneOf(_state.dateFrom);
+    _state = widget.showDateControls
+        ? _state.withStart(now)
+        : _state.copyWith(startTime: TimeOfDay.fromDateTime(now));
   }
 
   void _setEndNow() {
     _endTimeSeed += 1;
-    _state = _state.withEnd(_nowInZoneOf(_state.dateTo));
+    final now = _nowInZoneOf(_state.dateTo);
+    _state = widget.showDateControls
+        ? _state.withEnd(now)
+        : _state.copyWith(endTime: TimeOfDay.fromDateTime(now));
   }
 
   void _setStartDateToday() {
@@ -235,63 +261,65 @@ class _EntryDateTimeEditorState extends State<_EntryDateTimeEditor> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DesignSystemPickerSection(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _Caption(
-                label: compact
-                    ? context.messages.journalStartDateLabel
-                    : context.messages.journalDateLabel,
-                trailing: _QuickAction(
-                  label: context.messages.journalTodayButton,
-                  semanticsLabel:
-                      '${compact ? context.messages.journalStartDateLabel : context.messages.journalDateLabel}, '
-                      '${context.messages.journalTodayButton}',
-                  onPressed: _isToday(state.startDate)
-                      ? null
-                      : _setStartDateToday,
-                ),
-              ),
-              _DateSelectionButton(
-                date: state.startDate,
-                onPressed: widget.onPickStartDate,
-              ),
-              SizedBox(height: tokens.spacing.step3),
-              Divider(height: 1, color: tokens.colors.decorative.level01),
-              SizedBox(height: tokens.spacing.step3),
-              DesignSystemToggle(
-                value: state.differentDates,
-                label: context.messages.journalEndsAnotherDayHint,
-                onChanged: (value) => _toggleDifferentDates(value: value),
-              ),
-              if (compact) ...[
-                SizedBox(height: tokens.spacing.step6),
+        if (widget.showDateControls) ...[
+          DesignSystemPickerSection(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 _Caption(
-                  label: context.messages.journalEndDateLabel,
+                  label: compact
+                      ? context.messages.journalStartDateLabel
+                      : context.messages.journalDateLabel,
                   trailing: _QuickAction(
                     label: context.messages.journalTodayButton,
                     semanticsLabel:
-                        '${context.messages.journalEndDateLabel}, '
+                        '${compact ? context.messages.journalStartDateLabel : context.messages.journalDateLabel}, '
                         '${context.messages.journalTodayButton}',
-                    onPressed:
-                        _isToday(
-                          state.endDateOverride ?? state.startDate,
-                        )
+                    onPressed: _isToday(state.startDate)
                         ? null
-                        : _setEndDateToday,
+                        : _setStartDateToday,
                   ),
                 ),
                 _DateSelectionButton(
-                  date: state.endDateOverride ?? state.startDate,
-                  onPressed: widget.onPickEndDate,
+                  date: state.startDate,
+                  onPressed: widget.onPickStartDate!,
                 ),
+                SizedBox(height: tokens.spacing.step3),
+                Divider(height: 1, color: tokens.colors.decorative.level01),
+                SizedBox(height: tokens.spacing.step3),
+                DesignSystemToggle(
+                  value: state.differentDates,
+                  label: context.messages.journalEndsAnotherDayHint,
+                  onChanged: (value) => _toggleDifferentDates(value: value),
+                ),
+                if (compact) ...[
+                  SizedBox(height: tokens.spacing.step6),
+                  _Caption(
+                    label: context.messages.journalEndDateLabel,
+                    trailing: _QuickAction(
+                      label: context.messages.journalTodayButton,
+                      semanticsLabel:
+                          '${context.messages.journalEndDateLabel}, '
+                          '${context.messages.journalTodayButton}',
+                      onPressed:
+                          _isToday(
+                            state.endDateOverride ?? state.startDate,
+                          )
+                          ? null
+                          : _setEndDateToday,
+                    ),
+                  ),
+                  _DateSelectionButton(
+                    date: state.endDateOverride ?? state.startDate,
+                    onPressed: widget.onPickEndDate!,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-        SizedBox(height: tokens.spacing.step6),
+          SizedBox(height: tokens.spacing.step6),
+        ],
         DesignSystemPickerSection(
           child: stackTimes
               ? Column(

@@ -18,6 +18,8 @@ enum DesignSystemTextareaSize {
 class DesignSystemTextarea extends StatefulWidget {
   const DesignSystemTextarea({
     this.controller,
+    this.initialValue,
+    this.fieldKey,
     this.size = DesignSystemTextareaSize.medium,
     this.label,
     this.hintText,
@@ -28,12 +30,20 @@ class DesignSystemTextarea extends StatefulWidget {
     this.enabled = true,
     this.minLines = 3,
     this.maxLines,
+    this.growWithContent = false,
     this.onChanged,
     this.semanticsLabel,
     super.key,
-  });
+  }) : assert(
+         controller == null || initialValue == null,
+         'Provide either a controller or an initial value, not both.',
+       );
 
   final TextEditingController? controller;
+  final String? initialValue;
+
+  /// Optional key applied to the underlying [TextField].
+  final Key? fieldKey;
   final DesignSystemTextareaSize size;
   final String? label;
   final String? hintText;
@@ -44,6 +54,10 @@ class DesignSystemTextarea extends StatefulWidget {
   final bool enabled;
   final int minLines;
   final int? maxLines;
+
+  /// Lets the field use every line of content instead of introducing an
+  /// inner scroll area. Suitable when the surrounding page already scrolls.
+  final bool growWithContent;
   final ValueChanged<String>? onChanged;
   final String? semanticsLabel;
 
@@ -65,11 +79,25 @@ class _DesignSystemTextareaState extends State<DesignSystemTextarea> {
     if (widget.controller != null) {
       _controller = widget.controller!;
     } else {
-      _controller = TextEditingController();
+      _controller = TextEditingController(text: widget.initialValue);
       _ownsController = true;
     }
     if (widget.showCounter) {
       _controller.addListener(_onTextChanged);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant DesignSystemTextarea oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_ownsController &&
+        oldWidget.initialValue != widget.initialValue &&
+        _controller.text != (widget.initialValue ?? '')) {
+      final text = widget.initialValue ?? '';
+      _controller.value = TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
+      );
     }
   }
 
@@ -129,10 +157,18 @@ class _DesignSystemTextareaState extends State<DesignSystemTextarea> {
                   ),
                 ),
                 child: TextField(
+                  key: widget.fieldKey,
                   controller: _controller,
                   enabled: widget.enabled,
                   minLines: widget.minLines,
-                  maxLines: widget.maxLines ?? widget.minLines + 2,
+                  maxLines: widget.growWithContent
+                      ? null
+                      : widget.maxLines ?? widget.minLines + 2,
+                  scrollPhysics: widget.growWithContent
+                      ? const NeverScrollableScrollPhysics()
+                      : null,
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
                   maxLength: widget.maxLength,
                   onChanged: widget.onChanged,
                   style: spec.textStyle,

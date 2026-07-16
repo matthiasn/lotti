@@ -161,6 +161,31 @@ class _FakeAgent implements DayAgentInterface {
   }
 
   @override
+  Future<DraftPlan> editBlock({
+    required DraftPlan plan,
+    required String blockId,
+    required DateTime start,
+    required DateTime end,
+    String? title,
+    DayAgentCategory? category,
+  }) async {
+    return plan.copyWith(
+      blocks: [
+        for (final block in plan.blocks)
+          if (block.id == blockId)
+            block.copyWith(
+              start: start,
+              end: end,
+              title: title,
+              category: category,
+            )
+          else
+            block,
+      ],
+    );
+  }
+
+  @override
   Future<
     ({
       List<CompletedItem> completed,

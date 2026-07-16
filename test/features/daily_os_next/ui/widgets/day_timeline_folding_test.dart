@@ -190,6 +190,37 @@ void main() {
       },
       tags: 'glados',
     );
+
+    glados.Glados2<_GeneratedDaySchedule, double>(
+      glados.any.daySchedule,
+      glados.any.hourValue,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('date/position mapping round-trips through folded regions', (
+      schedule,
+      hourValue,
+    ) {
+      const pxPerMinute = 1.25;
+      final state = _stateFor(schedule.blocks);
+      final date = _dayDate.add(
+        Duration(milliseconds: (hourValue * 60 * 60 * 1000).round()),
+      );
+
+      final position = state.positionForDate(
+        date,
+        windowStart: _dayDate,
+        pxPerMinute: pxPerMinute,
+      );
+      final roundTripped = state.dateForPosition(
+        position,
+        windowStart: _dayDate,
+        pxPerMinute: pxPerMinute,
+      );
+
+      expect(
+        roundTripped.difference(date).inMilliseconds.abs(),
+        lessThanOrEqualTo(1),
+      );
+    }, tags: 'glados');
   });
 
   group('TimelineFoldingState — examples', () {
@@ -229,6 +260,30 @@ void main() {
       expect(labels, isNot(contains(13)));
       expect(labels, contains(8));
       expect(labels, contains(18));
+    });
+
+    test('dateForPosition clamps to the visible window and preserves UTC', () {
+      final windowStart = DateTime.utc(2026, 5, 25, 6);
+      final state = TimelineFoldingState(
+        startHour: 6,
+        endHour: 20,
+        segments: const [
+          TimelineVisibleRegion(startHour: 6, endHour: 20),
+        ],
+      );
+
+      expect(
+        state.dateForPosition(-20, windowStart: windowStart, pxPerMinute: 1),
+        DateTime.utc(2026, 5, 25, 6),
+      );
+      expect(
+        state.dateForPosition(
+          9999,
+          windowStart: windowStart,
+          pxPerMinute: 1,
+        ),
+        DateTime.utc(2026, 5, 25, 20),
+      );
     });
   });
 }

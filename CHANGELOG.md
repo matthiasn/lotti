@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1047]
+## [0.9.1048]
 ### Added
 - **Desktop Lotti now has a keyboard-first command layer.** Open the command
   palette with Command/Ctrl+K, jump to the eight main destinations with fixed
@@ -31,6 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   always present in normal task headers, while embedded task details suppress
   the recursive entry point. Graph controls, node and relation labels, relative
   ages, summaries, and error states are localized in all supported languages.
+- **Daily OS is now a schedule you can actively operate.** Long dictated plans
+  stay fully visible and editable, AI activity appears from the first
+  processing frame, and task-linked titles and categories update immediately.
+  Planned blocks can be moved, resized, or edited in a design-system modal
+  with the familiar Start & end controls, atomic saving, and Undo.
 - **Maintenance settings dividers fade on hover.** Hovering a row on the
   Advanced Settings → Maintenance page now fades the hairline dividers above
   and below it, so the hovered row is never bisected — matching the existing

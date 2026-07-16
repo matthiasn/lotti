@@ -25,6 +25,87 @@ void main() {
       expect(find.text('Enter text...'), findsOneWidget);
     });
 
+    testWidgets('can seed an auto-growing multiline field', (tester) async {
+      const fieldKey = Key('growing-field');
+      await _pumpTextarea(
+        tester,
+        const DesignSystemTextarea(
+          initialValue: 'A pleasantly long planning transcript.',
+          fieldKey: fieldKey,
+          minLines: 6,
+          growWithContent: true,
+        ),
+      );
+
+      expect(
+        find.text('A pleasantly long planning transcript.'),
+        findsOneWidget,
+      );
+      final field = tester.widget<TextField>(find.byKey(fieldKey));
+      expect(field.minLines, 6);
+      expect(field.maxLines, isNull);
+      expect(field.scrollPhysics, isA<NeverScrollableScrollPhysics>());
+      expect(field.keyboardType, TextInputType.multiline);
+      expect(field.textInputAction, TextInputAction.newline);
+    });
+
+    testWidgets(
+      'owned fields sync changed initial values without clobbering edits',
+      (
+        tester,
+      ) async {
+        const fieldKey = Key('syncing-field');
+        String? initialValue = 'First transcript';
+        late StateSetter rebuildHost;
+
+        await _pumpTextarea(
+          tester,
+          StatefulBuilder(
+            builder: (context, setState) {
+              rebuildHost = setState;
+              return DesignSystemTextarea(
+                initialValue: initialValue,
+                fieldKey: fieldKey,
+              );
+            },
+          ),
+        );
+
+        rebuildHost(() => initialValue = 'Replacement transcript');
+        await tester.pump();
+        var field = tester.widget<TextField>(find.byKey(fieldKey));
+        expect(field.controller?.text, 'Replacement transcript');
+        expect(
+          field.controller?.selection,
+          const TextSelection.collapsed(offset: 22),
+        );
+
+        await tester.enterText(find.byKey(fieldKey), 'User correction');
+        rebuildHost(() {});
+        await tester.pump();
+        field = tester.widget<TextField>(find.byKey(fieldKey));
+        expect(field.controller?.text, 'User correction');
+
+        rebuildHost(() => initialValue = null);
+        await tester.pump();
+        field = tester.widget<TextField>(find.byKey(fieldKey));
+        expect(field.controller?.text, isEmpty);
+      },
+    );
+
+    test('rejects simultaneous controller and initial value ownership', () {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+
+      expect(
+        () => DesignSystemTextarea(
+          controller: controller,
+          initialValue: 'Ambiguous transcript',
+        ),
+        throwsAssertionError,
+      );
+    });
+
     testWidgets('renders helper text below field', (tester) async {
       const key = Key('helper-textarea');
 

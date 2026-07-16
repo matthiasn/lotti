@@ -3545,6 +3545,46 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockEditCategoryLabel => 'Catégorie';
+
+  @override
+  String get dailyOsNextBlockEditFailed =>
+      'Impossible de mettre à jour le bloc — réessaie.';
+
+  @override
+  String get dailyOsNextBlockEditNameLabel => 'Titre';
+
+  @override
+  String get dailyOsNextBlockEditOpenTask => 'Ouvrir la tâche';
+
+  @override
+  String get dailyOsNextBlockEditSave => 'Enregistrer les modifications';
+
+  @override
+  String get dailyOsNextBlockEditSaved => 'Planning mis à jour.';
+
+  @override
+  String get dailyOsNextBlockEditTimeLabel => 'Début et fin';
+
+  @override
+  String get dailyOsNextBlockEditTitle => 'Modifier le bloc';
+
+  @override
+  String get dailyOsNextBlockEditTooltip => 'Modifier le bloc';
+
+  @override
+  String get dailyOsNextBlockEditWhyLabel => 'Pourquoi à cette heure';
+
+  @override
+  String get dailyOsNextBlockMoveTooltip => 'Déplacer le bloc';
+
+  @override
+  String get dailyOsNextBlockResizeEndTooltip => 'Ajuster la fin';
+
+  @override
+  String get dailyOsNextBlockResizeStartTooltip => 'Ajuster le début';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'C\'est noté.';
 
   @override
@@ -3938,6 +3978,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextReconcileDecideOverline => 'À DÉCIDER';
 
   @override
+  String dailyOsNextReconcileDecisionProgress(int decided, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$decided sur $total examinées',
+      one: '$decided sur $total examinée',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get dailyOsNextReconcileDefaultBehaviorHint =>
       'Vérifie les cartes avant de construire ta journée. Les actions choisies alimentent le plan ; les cartes laissées seules restent comme elles sont.';
 
@@ -3958,6 +4009,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileLowConfidence => 'confiance faible';
+
+  @override
+  String get dailyOsNextReconcileProcessing =>
+      'Je réécoute et j’aligne tout sur ta journée…';
 
   @override
   String get dailyOsNextReconcileReRecord => 'Réenregistrer';
@@ -4181,6 +4236,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextTimelineActual => 'Réel';
+
+  @override
+  String get dailyOsNextTimelineArrange => 'Organiser les blocs';
 
   @override
   String get dailyOsNextTimelineBoth => 'Plan et réel';

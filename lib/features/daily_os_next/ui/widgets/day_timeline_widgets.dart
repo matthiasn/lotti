@@ -5,11 +5,14 @@ enum _TimelineComparisonMode { paged, both }
 class _TimelineToolbar extends StatelessWidget {
   const _TimelineToolbar({
     required this.mode,
+    required this.arrangeMode,
     required this.showHint,
     required this.onToggleMode,
+    required this.onToggleArrange,
   });
 
   final _TimelineComparisonMode mode;
+  final bool arrangeMode;
 
   /// One-shot coaching line; retired by the host once the user has
   /// demonstrated the gestures. The mode-toggle icon stays — it is an
@@ -17,6 +20,7 @@ class _TimelineToolbar extends StatelessWidget {
   final bool showHint;
 
   final VoidCallback onToggleMode;
+  final VoidCallback? onToggleArrange;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +61,17 @@ class _TimelineToolbar extends StatelessWidget {
               ),
             ),
           ),
+          if (onToggleArrange != null)
+            Tooltip(
+              message: messages.dailyOsNextTimelineArrange,
+              child: IconButton(
+                key: const Key('daily_os_timeline_arrange_toggle'),
+                isSelected: arrangeMode,
+                onPressed: onToggleArrange,
+                selectedIcon: const Icon(Icons.open_with_rounded),
+                icon: const Icon(Icons.open_with_outlined),
+              ),
+            ),
         ],
       ),
     );
@@ -78,6 +93,9 @@ class _TimelinePane extends StatelessWidget {
     required this.showBands,
     required this.tracked,
     required this.onRenameBlock,
+    required this.onEditBlock,
+    required this.arrangeMode,
+    required this.onRescheduleBlock,
   });
 
   final String label;
@@ -97,6 +115,14 @@ class _TimelinePane extends StatelessWidget {
   final bool tracked;
 
   final void Function(TimeBlock block, String title)? onRenameBlock;
+  final ValueChanged<TimeBlock>? onEditBlock;
+  final bool arrangeMode;
+  final Future<bool> Function(
+    TimeBlock block,
+    DateTime start,
+    DateTime end,
+  )?
+  onRescheduleBlock;
 
   @override
   Widget build(BuildContext context) {
@@ -135,6 +161,7 @@ class _TimelinePane extends StatelessWidget {
                     ),
                 for (final block in blocks)
                   BlockPosition(
+                    key: ValueKey('daily-os-position-${block.id}'),
                     block: block,
                     windowStart: windowStart,
                     foldingState: foldingState,
@@ -143,6 +170,9 @@ class _TimelinePane extends StatelessWidget {
                     onRename: onRenameBlock == null
                         ? null
                         : (title) => onRenameBlock!(block, title),
+                    onEdit: onEditBlock,
+                    arrangeMode: arrangeMode,
+                    onReschedule: onRescheduleBlock,
                   ),
                 if (now != null)
                   NowLine(

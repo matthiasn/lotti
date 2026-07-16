@@ -1975,6 +1975,19 @@
       }
     }
   },
+  "dailyOsNextBlockEditCategoryLabel": "Category",
+  "dailyOsNextBlockEditFailed": "Couldn't update the block — try again.",
+  "dailyOsNextBlockEditNameLabel": "Title",
+  "dailyOsNextBlockEditOpenTask": "Open task",
+  "dailyOsNextBlockEditSave": "Save changes",
+  "dailyOsNextBlockEditSaved": "Schedule updated.",
+  "dailyOsNextBlockEditTimeLabel": "Start & end",
+  "dailyOsNextBlockEditTitle": "Edit block",
+  "dailyOsNextBlockEditTooltip": "Edit block",
+  "dailyOsNextBlockEditWhyLabel": "Why this time",
+  "dailyOsNextBlockMoveTooltip": "Move block",
+  "dailyOsNextBlockResizeEndTooltip": "Adjust end",
+  "dailyOsNextBlockResizeStartTooltip": "Adjust start",
   "dailyOsNextCaptureCaptured": "Got it.",
   "dailyOsNextCaptureDoneCta": "Done",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Microphone permission was denied.",
@@ -2132,6 +2145,17 @@
   "dailyOsNextReconcileBadgeUpdate": "UPDATE",
   "dailyOsNextReconcileBuildDayCta": "Build my day",
   "dailyOsNextReconcileDecideOverline": "WORTH DECIDING ON",
+  "dailyOsNextReconcileDecisionProgress": "{decided} of {total} reviewed",
+  "@dailyOsNextReconcileDecisionProgress": {
+    "placeholders": {
+      "decided": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextReconcileDefaultBehaviorHint": "Review the cards before building your day. Chosen actions feed into the plan; cards left alone stay as they are.",
   "dailyOsNextReconcileError": "Something went wrong: {detail}",
   "@dailyOsNextReconcileError": {
@@ -2146,6 +2170,7 @@
   "dailyOsNextReconcileHeardEmpty": "Capture cards will appear here once parsing finishes.",
   "dailyOsNextReconcileHeardOverline": "HEARD",
   "dailyOsNextReconcileLowConfidence": "low confidence",
+  "dailyOsNextReconcileProcessing": "Listening back and matching your day…",
   "dailyOsNextReconcileReRecord": "Re-record",
   "dailyOsNextReconcileVoiceHint": "Review decisions before building your day",
   "dailyOsNextRefineAccept": "Accept",
@@ -2256,6 +2281,7 @@
   },
   "dailyOsNextStateRecurringMissed": "Recurring · missed",
   "dailyOsNextTimelineActual": "Actual",
+  "dailyOsNextTimelineArrange": "Arrange blocks",
   "dailyOsNextTimelineBoth": "Plan and actual",
   "dailyOsNextTimelineMeridiemAm": "AM",
   "dailyOsNextTimelineMeridiemAmShort": "am",

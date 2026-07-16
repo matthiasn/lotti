@@ -843,6 +843,134 @@ void main() {
     );
   });
 
+  group('RealDayAgent.editBlock', () {
+    late _TestBench bench;
+
+    setUp(() => bench = _TestBench.create());
+
+    test('calls the plan service and projects the updated range', () async {
+      const agentId = 'day-agent-001';
+      const category = DayAgentCategory(
+        id: 'life',
+        name: 'Life',
+        colorHex: '5ED4B7',
+      );
+      final dayDate = DateTime(_asOf.year, _asOf.month, _asOf.day);
+      final start = dayDate.add(const Duration(hours: 10, minutes: 15));
+      final end = dayDate.add(const Duration(hours: 11, minutes: 45));
+      when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        (_) async => makeTestIdentity(
+          id: agentId,
+          agentId: agentId,
+          kind: AgentKinds.dayAgent,
+        ),
+      );
+      when(
+        () => bench.planService.editBlock(
+          agentId: any(named: 'agentId'),
+          dayId: any(named: 'dayId'),
+          blockId: any(named: 'blockId'),
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+          title: any(named: 'title'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            AgentDomainEntity.dayPlan(
+                  id: 'day_agent_plan:${dayAgentIdForDate(dayDate)}',
+                  agentId: agentId,
+                  dayId: dayAgentIdForDate(dayDate),
+                  planDate: dayDate,
+                  data: DayPlanData(
+                    planDate: dayDate,
+                    status: const DayPlanStatus.draft(),
+                    plannedBlocks: [
+                      PlannedBlock(
+                        id: 'block_1',
+                        categoryId: 'life',
+                        startTime: start,
+                        endTime: end,
+                        title: 'Lunch with Sarah',
+                      ),
+                    ],
+                  ),
+                  scheduledMinutes: 90,
+                  createdAt: dayDate,
+                  updatedAt: dayDate,
+                  vectorClock: null,
+                )
+                as DayPlanEntity,
+      );
+      when(
+        () => bench.journalDb.getCategoryById(any()),
+      ).thenAnswer((_) async => null);
+      final plan = DraftPlan(
+        dayDate: dayDate,
+        blocks: const [],
+        bands: const [],
+        capacityMinutes: 480,
+        scheduledMinutes: 60,
+      );
+
+      final result = await bench.adapter.editBlock(
+        plan: plan,
+        blockId: 'block_1',
+        start: start,
+        end: end,
+        title: 'Lunch with Sarah',
+        category: category,
+      );
+
+      expect(result.blocks.single.start, start);
+      expect(result.blocks.single.end, end);
+      expect(result.scheduledMinutes, 90);
+      verify(
+        () => bench.planService.editBlock(
+          agentId: agentId,
+          dayId: dayAgentIdForDate(dayDate),
+          blockId: 'block_1',
+          start: start,
+          end: end,
+          title: 'Lunch with Sarah',
+          categoryId: 'life',
+        ),
+      ).called(1);
+    });
+
+    test('throws when no day-agent exists', () async {
+      when(
+        () => bench.dayAgentService.getDayAgentForDate(any()),
+      ).thenAnswer((_) async => null);
+      final plan = DraftPlan(
+        dayDate: _asOf,
+        blocks: const [],
+        bands: const [],
+        capacityMinutes: 480,
+        scheduledMinutes: 0,
+      );
+
+      await expectLater(
+        bench.adapter.editBlock(
+          plan: plan,
+          blockId: 'block_1',
+          start: DateTime(2026, 5, 25, 10),
+          end: DateTime(2026, 5, 25, 11),
+        ),
+        throwsA(isA<DayAgentInteractionException>()),
+      );
+      verifyNever(
+        () => bench.planService.editBlock(
+          agentId: any(named: 'agentId'),
+          dayId: any(named: 'dayId'),
+          blockId: any(named: 'blockId'),
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      );
+    });
+  });
+
   group('RealDayAgent.submitCapture', () {
     late _TestBench bench;
 

@@ -45,7 +45,7 @@ void main() {
   });
 
   group('EdgeFade rendering', () {
-    testWidgets('masks its child through a ShaderMask without clipping it', (
+    testWidgets('alpha-masks its child inside an isolated paint boundary', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -64,10 +64,34 @@ void main() {
       // remains hit-testable, it just dissolves toward the chosen edge.
       final maskFinder = find.byType(ShaderMask);
       expect(maskFinder, findsOneWidget);
+      expect(tester.widget<ShaderMask>(maskFinder).blendMode, BlendMode.dstIn);
+      final boundary = find.byKey(EdgeFade.paintBoundaryKey);
+      expect(boundary, findsOneWidget);
       expect(
-        find.descendant(of: maskFinder, matching: find.text('faded content')),
+        find.descendant(of: boundary, matching: find.text('faded content')),
         findsOneWidget,
       );
+    });
+
+    testWidgets('builds a valid mask for a zero-height paint bound', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: EdgeFade(
+            rampExtent: 16,
+            minFraction: 0.08,
+            child: SizedBox.shrink(),
+          ),
+        ),
+      );
+
+      final mask = tester.widget<ShaderMask>(find.byType(ShaderMask));
+
+      // A temporarily collapsed timeline block can still reach the painter
+      // during layout. The fallback fraction must keep that frame renderable
+      // instead of dividing by zero or creating an invalid gradient.
+      expect(() => mask.shaderCallback(Rect.zero), returnsNormally);
     });
   });
 }

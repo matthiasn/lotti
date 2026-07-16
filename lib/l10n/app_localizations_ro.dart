@@ -3550,6 +3550,46 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockEditCategoryLabel => 'Categorie';
+
+  @override
+  String get dailyOsNextBlockEditFailed =>
+      'Blocul nu a putut fi actualizat — încercați din nou.';
+
+  @override
+  String get dailyOsNextBlockEditNameLabel => 'Titlu';
+
+  @override
+  String get dailyOsNextBlockEditOpenTask => 'Deschideți sarcina';
+
+  @override
+  String get dailyOsNextBlockEditSave => 'Salvați modificările';
+
+  @override
+  String get dailyOsNextBlockEditSaved => 'Programul a fost actualizat.';
+
+  @override
+  String get dailyOsNextBlockEditTimeLabel => 'Început și sfârșit';
+
+  @override
+  String get dailyOsNextBlockEditTitle => 'Editați blocul';
+
+  @override
+  String get dailyOsNextBlockEditTooltip => 'Editați blocul';
+
+  @override
+  String get dailyOsNextBlockEditWhyLabel => 'De ce la această oră';
+
+  @override
+  String get dailyOsNextBlockMoveTooltip => 'Mutați blocul';
+
+  @override
+  String get dailyOsNextBlockResizeEndTooltip => 'Ajustați sfârșitul';
+
+  @override
+  String get dailyOsNextBlockResizeStartTooltip => 'Ajustați începutul';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Am înțeles.';
 
   @override
@@ -3943,6 +3983,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextReconcileDecideOverline => 'MERITĂ DECIS';
 
   @override
+  String dailyOsNextReconcileDecisionProgress(int decided, int total) {
+    return '$decided din $total revizuite';
+  }
+
+  @override
   String get dailyOsNextReconcileDefaultBehaviorHint =>
       'Revizuiți cardurile înainte de a construi ziua. Acțiunile alese intră în plan; cardurile lăsate neatinse rămân așa cum sunt.';
 
@@ -3963,6 +4008,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileLowConfidence => 'încredere scăzută';
+
+  @override
+  String get dailyOsNextReconcileProcessing =>
+      'Reascult și potrivesc totul cu ziua dvs.…';
 
   @override
   String get dailyOsNextReconcileReRecord => 'Reînregistrare';
@@ -4185,6 +4234,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextTimelineActual => 'Real';
+
+  @override
+  String get dailyOsNextTimelineArrange => 'Aranjați blocurile';
 
   @override
   String get dailyOsNextTimelineBoth => 'Plan și real';

@@ -3474,6 +3474,46 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextBlockEditCategoryLabel => 'Category';
+
+  @override
+  String get dailyOsNextBlockEditFailed =>
+      'Couldn\'t update the block — try again.';
+
+  @override
+  String get dailyOsNextBlockEditNameLabel => 'Title';
+
+  @override
+  String get dailyOsNextBlockEditOpenTask => 'Open task';
+
+  @override
+  String get dailyOsNextBlockEditSave => 'Save changes';
+
+  @override
+  String get dailyOsNextBlockEditSaved => 'Schedule updated.';
+
+  @override
+  String get dailyOsNextBlockEditTimeLabel => 'Start & end';
+
+  @override
+  String get dailyOsNextBlockEditTitle => 'Edit block';
+
+  @override
+  String get dailyOsNextBlockEditTooltip => 'Edit block';
+
+  @override
+  String get dailyOsNextBlockEditWhyLabel => 'Why this time';
+
+  @override
+  String get dailyOsNextBlockMoveTooltip => 'Move block';
+
+  @override
+  String get dailyOsNextBlockResizeEndTooltip => 'Adjust end';
+
+  @override
+  String get dailyOsNextBlockResizeStartTooltip => 'Adjust start';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Got it.';
 
   @override
@@ -3861,6 +3901,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextReconcileDecideOverline => 'WORTH DECIDING ON';
 
   @override
+  String dailyOsNextReconcileDecisionProgress(int decided, int total) {
+    return '$decided of $total reviewed';
+  }
+
+  @override
   String get dailyOsNextReconcileDefaultBehaviorHint =>
       'Review the cards before building your day. Chosen actions feed into the plan; cards left alone stay as they are.';
 
@@ -3881,6 +3926,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileLowConfidence => 'low confidence';
+
+  @override
+  String get dailyOsNextReconcileProcessing =>
+      'Listening back and matching your day…';
 
   @override
   String get dailyOsNextReconcileReRecord => 'Re-record';
@@ -4102,6 +4151,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextTimelineActual => 'Actual';
+
+  @override
+  String get dailyOsNextTimelineArrange => 'Arrange blocks';
 
   @override
   String get dailyOsNextTimelineBoth => 'Plan and actual';
