@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 
@@ -52,15 +53,8 @@ class LiveTaskMetadata {
     if (liveId == null || liveId.isEmpty) return fallback;
 
     final liveName = categoryName?.trim();
-    final rawColor = categoryColorHex?.trim().replaceFirst('#', '');
-    final candidateColor = rawColor != null && rawColor.length >= 6
-        ? rawColor.substring(0, 6)
-        : null;
     final normalizedColor =
-        candidateColor != null &&
-            int.tryParse(candidateColor, radix: 16) != null
-        ? candidateColor.toUpperCase()
-        : fallback.colorHex;
+        normalizeCategoryColorHex(categoryColorHex) ?? fallback.colorHex;
     return DayAgentCategory(
       id: liveId,
       name: liveName == null || liveName.isEmpty

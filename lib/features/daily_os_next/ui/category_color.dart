@@ -1,17 +1,27 @@
 import 'package:flutter/material.dart';
 
+/// Normalizes a CSS-style category color to an uppercase `RRGGBB` value.
+///
+/// Three-digit `RGB` shorthand is expanded and longer values (such as
+/// `RRGGBBAA`) are truncated to their RGB channels. Malformed or incomplete
+/// values return null so each caller can retain its own semantic fallback.
+String? normalizeCategoryColorHex(String? colorHex) {
+  final raw = colorHex?.trim().replaceFirst('#', '');
+  if (raw == null) return null;
+  final rgb = raw.length == 3
+      ? raw.split('').map((channel) => '$channel$channel').join()
+      : (raw.length > 6 ? raw.substring(0, 6) : raw);
+  if (rgb.length != 6 || int.tryParse(rgb, radix: 16) == null) return null;
+  return rgb.toUpperCase();
+}
+
 /// Resolves an opaque [Color] from a category `colorHex` string.
 ///
-/// The hex string upstream is normalised to ≤6 hex characters by
-/// `RealDayAgent._projectCategory`, but we still trim to the first 6
-/// chars defensively so a future change to the boundary contract
-/// (e.g. raw `RRGGBBAA` slipping through) can't shift colour channels.
 /// Malformed input falls back to `Colors.grey` instead of crashing.
 Color categoryColorFromHex(String hex) {
-  final raw = hex.trim().replaceFirst('#', '');
-  final rgb = raw.length > 6 ? raw.substring(0, 6) : raw;
-  final value = int.tryParse(rgb, radix: 16);
-  if (value == null) return Colors.grey;
+  final rgb = normalizeCategoryColorHex(hex);
+  if (rgb == null) return Colors.grey;
+  final value = int.parse(rgb, radix: 16);
   return Color(value | 0xFF000000);
 }
 

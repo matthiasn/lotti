@@ -432,7 +432,10 @@ class _SaveActionBar extends StatelessWidget {
             (_identityEditable && title != block.title) ||
             (_identityEditable && category != block.category);
         final canSave =
-            title.isNotEmpty && end.isAfter(start) && insidePlanDay && changed;
+            (!_identityEditable || title.isNotEmpty) &&
+            end.isAfter(start) &&
+            insidePlanDay &&
+            changed;
 
         return DesignSystemGlassActionFooter(
           child: DesignSystemButton(
@@ -461,14 +464,10 @@ DayAgentCategory _projectCategory(
   CategoryDefinition definition, {
   required DayAgentCategory fallback,
 }) {
-  final raw = definition.color?.trim().replaceFirst('#', '') ?? '';
-  final normalized = raw.length > 6 ? raw.substring(0, 6) : raw;
-  final valid =
-      normalized.length == 6 && int.tryParse(normalized, radix: 16) != null;
   return DayAgentCategory(
     id: definition.id,
     name: definition.name,
-    colorHex: valid ? normalized.toUpperCase() : fallback.colorHex,
+    colorHex: normalizeCategoryColorHex(definition.color) ?? fallback.colorHex,
   );
 }
 

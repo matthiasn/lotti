@@ -17,6 +17,7 @@ const _focus = DayAgentCategory(
 );
 
 TimeBlock _block({
+  String title = 'Rehearse emergency penguin briefing',
   String? taskId,
   TimeBlockType type = TimeBlockType.ai,
   DateTime? start,
@@ -24,7 +25,7 @@ TimeBlock _block({
   String? reason = 'The penguins are most diplomatic before lunch.',
 }) => TimeBlock(
   id: 'block-1',
-  title: 'Rehearse emergency penguin briefing',
+  title: title,
   start: start ?? DateTime(2024, 3, 15, 9),
   end: end ?? DateTime(2024, 3, 15, 10, 30),
   type: type,
@@ -88,6 +89,12 @@ void main() {
     color: '#A1B2C3FF',
     isAvailableForDayPlan: true,
   );
+  final shorthandColorDefinition = CategoryTestUtils.createTestCategory(
+    id: 'shorthand-color',
+    name: 'Tiny Paint Department',
+    color: '#a5F',
+    isAvailableForDayPlan: true,
+  );
 
   void useWideView(WidgetTester tester) {
     tester.view
@@ -114,6 +121,7 @@ void main() {
             comedyDefinition,
             invalidColorDefinition,
             longColorDefinition,
+            shorthandColorDefinition,
           ],
           onOpenTask: onOpenTask,
         ),
@@ -287,9 +295,14 @@ void main() {
     tester,
   ) async {
     DayBlockEditResult? result;
+    final block = _block(
+      title: '',
+      type: TimeBlockType.buffer,
+      reason: null,
+    );
     await openModal(
       tester,
-      block: _block(type: TimeBlockType.buffer, reason: null),
+      block: block,
       onResult: (value) => result = value,
     );
 
@@ -311,7 +324,7 @@ void main() {
     await tester.tap(find.text('Save changes'));
     await tester.pumpAndSettle();
 
-    expect(result?.title, _block().title);
+    expect(result?.title, isEmpty);
     expect(result?.category, _focus);
     expect(result?.start, DateTime(2024, 3, 15, 10));
     expect(result?.end, DateTime(2024, 3, 15, 11));
@@ -390,6 +403,19 @@ void main() {
 
     expect(result?.category.id, 'long-color');
     expect(result?.category.colorHex, 'A1B2C3');
+
+    result = null;
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deep Work'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tiny Paint Department'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+
+    expect(result?.category.id, 'shorthand-color');
+    expect(result?.category.colorHex, 'AA55FF');
   });
 
   testWidgets('same-day constraint disables overnight edits', (tester) async {

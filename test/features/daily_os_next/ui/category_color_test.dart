@@ -38,4 +38,20 @@ void main() {
       expect(categoryColorFromHex(''), Colors.grey);
     });
   });
+
+  group('normalizeCategoryColorHex', () {
+    test('expands CSS shorthand before upper-casing', () {
+      expect(normalizeCategoryColorHex('#a5F'), 'AA55FF');
+    });
+
+    test(
+      'truncates alpha and falls back for incomplete or malformed values',
+      () {
+        expect(normalizeCategoryColorHex('#a1b2c3ff'), 'A1B2C3');
+        for (final value in <String?>[null, '', '#12', '#NOPE']) {
+          expect(normalizeCategoryColorHex(value), isNull);
+        }
+      },
+    );
+  });
 }

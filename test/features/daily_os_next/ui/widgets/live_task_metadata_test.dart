@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -42,11 +43,24 @@ void main() {
       );
     });
 
+    test('expands a live CSS shorthand category color', () {
+      const metadata = LiveTaskMetadata(
+        categoryId: 'cat-live',
+        categoryName: 'Penguin Logistics',
+        categoryColorHex: '#a5F',
+      );
+
+      expect(
+        metadata.categoryOr(_snapshotCategory).colorHex,
+        'AA55FF',
+      );
+    });
+
     test('uses safe snapshot fallbacks for incomplete live definitions', () {
       const changedAssignment = LiveTaskMetadata(
         categoryId: 'cat-new',
         categoryName: ' ',
-        categoryColorHex: '#BAD',
+        categoryColorHex: '#BA',
       );
       const sameAssignment = LiveTaskMetadata(
         categoryId: 'cat-snapshot',
@@ -219,6 +233,38 @@ void main() {
       final renamedCategory = await container.read(provider.future);
       expect(renamedCategory.categoryName, 'Penguin Logistics');
     });
+  });
+
+  testWidgets('watchLiveTaskMetadata projects the resolved task on rebuild', (
+    tester,
+  ) async {
+    final mocks = await setUpTestGetIt();
+    addTearDown(tearDownTestGetIt);
+    when(
+      () => mocks.updateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(() => mocks.journalDb.journalEntityById('task-watch')).thenAnswer(
+      (_) async => TestTaskFactory.create(
+        id: 'task-watch',
+        title: 'Count the penguins again',
+      ),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidget(
+        Consumer(
+          builder: (context, ref, _) {
+            final metadata = watchLiveTaskMetadata(ref, 'task-watch');
+            return Text(metadata.title ?? 'Resolving task');
+          },
+        ),
+      ),
+    );
+    expect(find.text('Resolving task'), findsOneWidget);
+
+    await tester.pump();
+
+    expect(find.text('Count the penguins again'), findsOneWidget);
   });
 
   test(
