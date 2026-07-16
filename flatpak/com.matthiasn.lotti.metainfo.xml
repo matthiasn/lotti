@@ -34,13 +34,13 @@
   <releases>
     <release version="0.9.1049" date="2026-07-16">
       <description>
+          <p>Lotti now guides you through setup on first run. A welcome flow walks you through connecting an AI provider and capturing your first task by voice, and a short walkthrough introduces the Daily OS check-in ritual once a provider is ready. Long-time users who never set up a provider see it too. Already configured installs skip the provider welcome, and those that have never planned a day in Daily OS get the short walkthrough instead; the welcome can be replayed any time from Settings then Onboarding.</p>
           <p>Task agents now update only when you ask by default. New agents keep watching their task without automatically spending inference tokens after every change. An outdated summary stays visible with a clear Wake agent action, while automatic two-minute updates remain available as an explicit top-level opt-in. The redesigned card separates report reading from automation and model setup, and places Read more after the content it expands.</p>
       </description>
     </release>
     <release version="0.9.1048" date="2026-07-16">
       <description>
           <p>The remaining settings lists now fade their dividers on hover. Hovering a row in Categories, Labels, Habits, Measurables, Dashboards, or the Matrix sync maintenance list fades the hairlines above and below it, so the hovered row is never bisected — matching Config Flags and Advanced Settings Maintenance. The row layout stays fixed while only the divider colour changes.</p>
-          <p>Lotti now guides you through setup on first run. A welcome flow walks you through connecting an AI provider and capturing your first task by voice, and a short walkthrough introduces the Daily OS check-in ritual once a provider is ready. Long-time users who never set up a provider see it too. Already configured installs skip the provider welcome, and those that have never planned a day in Daily OS get the short walkthrough instead; the welcome can be replayed any time from Settings then Onboarding.</p>
           <p>Logging a measurable now stays in one clear, accessible sheet. Changing the observed date and time moves to a calendar page in the same capture flow instead of stacking another modal over the editor. Values and comments stay intact when navigating back, the complete time picker scrolls above the sticky action, and Save waits for persistence with visible progress and retry feedback.</p>
           <p>Task agents now use evidence-first processing for everyone. The previously optional behavior is now standard and its Advanced Settings toggle has been removed. If you already had it enabled, nothing changes.</p>
           <p>Synced alerts are now available to everyone. Alerts stay consistent across devices whenever Matrix sync is active, and the former Advanced Settings toggle has been removed.</p>

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -218,7 +220,10 @@ void main() {
   });
 
   group('dailyOsOnboardingProviderReadyProvider', () {
-    Future<bool> readReady({required ResolvedProfile? profile}) {
+    Future<bool> readReady({
+      required ResolvedProfile? profile,
+      Future<void> Function()? initializeAgents,
+    }) {
       for (final type in const [
         AiConfigType.inferenceProvider,
         AiConfigType.model,
@@ -242,6 +247,9 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          agentInitializationProvider.overrideWith(
+            (ref) => initializeAgents?.call() ?? Future<void>.value(),
+          ),
           agentRepositoryProvider.overrideWithValue(agentRepository),
           agentTemplateServiceProvider.overrideWithValue(templateService),
           profileResolverProvider.overrideWithValue(profileResolver),
@@ -281,5 +289,33 @@ void main() {
       ).called(1);
       verify(() => agentRepository.getEntity(dailyOsPlannerAgentId)).called(1);
     });
+
+    test(
+      'awaits agent initialization before resolving the one-shot route',
+      () async {
+        final initializationStarted = Completer<void>();
+        final finishInitialization = Completer<void>();
+
+        final readyFuture = readReady(
+          profile: resolvedProfile(),
+          initializeAgents: () async {
+            initializationStarted.complete();
+            await finishInitialization.future;
+          },
+        );
+
+        await initializationStarted.future;
+        verifyNever(
+          () => agentRepository.getEntity(dailyOsPlannerAgentId),
+        );
+
+        finishInitialization.complete();
+
+        expect(await readyFuture, isTrue);
+        verify(
+          () => agentRepository.getEntity(dailyOsPlannerAgentId),
+        ).called(1);
+      },
+    );
   });
 }

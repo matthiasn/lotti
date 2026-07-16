@@ -151,7 +151,9 @@ The backfill reuses `dailyOsOnboardingProviderReadyProvider` — deliberately
 showing the welcome rather than being left with no onboarding at all. Those users
 get the Daily OS walkthrough instead, which fits them: they have a provider, they
 just never planned a day. They can still replay the welcome from
-**Settings › Onboarding**.
+**Settings › Onboarding**. The readiness provider waits for agent initialization
+before resolving, so the one-shot marker cannot capture a transient missing
+template/version while startup seeding is still in flight.
 
 Every failure path logs and swallows (this is the startup path) and leaves its
 marker unwritten so the next launch retries — a hiccup must never suppress

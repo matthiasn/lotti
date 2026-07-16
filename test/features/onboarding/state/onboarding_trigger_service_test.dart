@@ -540,7 +540,6 @@ void main() {
     );
   });
 
-  // Both cadence writes run fire-and-forget from a modal callback, so a
   // The gate must resolve the rollout backfill before it reads the cadence
   // keys: the backfill is what retires the welcome for installs that were
   // already set up when the rollout arrived, so a gate that raced it would

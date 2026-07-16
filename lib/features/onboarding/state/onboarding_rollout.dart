@@ -128,7 +128,10 @@ Future<void> applyOnboardingRolloutFlags({
 /// readiness the Daily OS gate computes. That is deliberately *stricter* than
 /// "has any provider": it suppresses the welcome only when a full thinking
 /// route resolves, so a half-configured install errs toward showing the welcome
-/// rather than being left with no onboarding at all.
+/// rather than being left with no onboarding at all. The readiness provider
+/// waits for agent initialization before resolving, so concurrent template
+/// seeding cannot be mistaken for a permanently incomplete setup by this
+/// one-shot migration.
 ///
 /// Unlike the flag flip this cannot run in `get_it`: readiness resolves through
 /// Riverpod providers (`agentRepositoryProvider`, `agentTemplateServiceProvider`,

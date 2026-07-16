@@ -17,10 +17,17 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.da
 /// capture, the seeded Shepherd template is resolved with the config that
 /// planner creation will copy.
 ///
-/// **Reactivity boundary.** Only the inference provider/model/profile config
-/// streams are watched, so readiness recomputes when a user connects or edits
-/// an AI provider — the path that actually flips a new user from not-ready to
-/// ready, and the one this gate exists to follow. The other inputs
+/// Route resolution waits for [agentInitializationProvider] so the default
+/// template and active version have finished seeding before an absent row is
+/// interpreted as "not ready". This is load-bearing for the rollout backfill:
+/// that migration persists its first readiness result and must not permanently
+/// misclassify an already-configured upgrader during concurrent app startup.
+///
+/// **Reactivity boundary.** The agent-initialization future is a bootstrap
+/// barrier; the inference provider/model/profile config streams are the live
+/// inputs. Readiness therefore recomputes when a user connects or edits an AI
+/// provider — the path that actually flips a new user from not-ready to ready,
+/// and the one this gate exists to follow. The other inputs
 /// [hasResolvableDailyOsPlannerThinkingRoute] reads (the planner entity, its
 /// assigned template, that template's active version, and the planner's own
 /// config) are *not* subscribed: `agentRepositoryProvider` and
@@ -45,6 +52,9 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.da
 /// libraries from importing each other in a cycle.
 final FutureProvider<bool> dailyOsOnboardingProviderReadyProvider =
     FutureProvider<bool>((ref) async {
+      final agentInitializationFuture = ref.watch(
+        agentInitializationProvider.future,
+      );
       final configFutures = [
         ref.watch(
           aiConfigByTypeControllerProvider(
@@ -62,6 +72,7 @@ final FutureProvider<bool> dailyOsOnboardingProviderReadyProvider =
       final templateService = ref.watch(agentTemplateServiceProvider);
       final profileResolver = ref.watch(profileResolverProvider);
 
+      await agentInitializationFuture;
       await Future.wait(configFutures);
       return hasResolvableDailyOsPlannerThinkingRoute(
         agentRepository: agentRepository,
