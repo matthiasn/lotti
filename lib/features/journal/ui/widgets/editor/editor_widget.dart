@@ -172,6 +172,7 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
                 debugLabel: 'entry-editor',
                 handlers: {
                   AppCommandId.save: AppCommandHandler(
+                    isEnabled: () => shouldShowEditorToolBar,
                     invoke: (_) => notifier.save(),
                   ),
                 },
