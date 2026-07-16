@@ -516,6 +516,30 @@ Charts gotcha: fl_chart animates data swaps implicitly (~150ms). Pump past
 the animation (`tester.pump(const Duration(milliseconds: 600))`) after any
 tap that changes chart data, or captures show mid-lerp frames.
 
+### Automated manual screenshot catalog
+
+Permanent manual media is a stricter use of the committed per-feature
+harnesses. The source test stays in `lotti`, but every generated image is
+written to the sibling `lotti-docs` repository. Never add generated manual
+PNGs or WebPs to this application repository.
+
+Run the current catalog from the repository root:
+
+```bash
+make manual_screenshots
+```
+
+The case contract lives in `docs-site/metadata/screenshot-cases.json`. Each
+case must name a deterministic source test and provide all four inputs:
+mobile-light, mobile-dark, desktop-light, and desktop-dark. The build converts
+those PNGs to canonical WebP paths under
+`../lotti-docs/manual/screenshots/<version>/<case-id>/` and writes a manifest
+with dimensions, byte sizes, SHA-256 checksums, source test, and Lotti commit.
+
+The Flutter source test must still make meaningful UI assertions before it
+captures. The media manifest validates the artifact contract; it does not
+replace behavior assertions or visual review.
+
 ## Migration Status
 
 This codebase is in the process of migrating all tests to fake time. See:

@@ -577,6 +577,19 @@ Future<void> _switchToDayView(WidgetTester tester) async {
   });
 }
 
+Future<void> _enableArrangeMode(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('daily_os_timeline_arrange_toggle')));
+  await settleFrames(tester);
+  expect(
+    find.byKey(const Key('daily_os_move_block_blk-review')),
+    findsOneWidget,
+  );
+  expect(
+    find.byKey(const Key('daily_os_resize_end_blk-review')),
+    findsOneWidget,
+  );
+}
+
 /// Pages the phone timeline to the recorded lane via the controller — a
 /// gesture drag is text-scale-dependent (at 2x the same offset no longer
 /// crosses the snap threshold and silently leaves the planned lane in
@@ -647,17 +660,15 @@ void main() {
   testWidgets('pro timeline arrange mode — dark', (tester) async {
     await _pumpDayPage(tester, device: proDevice);
     await _switchToDayView(tester);
-    await tester.tap(find.byKey(const Key('daily_os_timeline_arrange_toggle')));
-    await settleFrames(tester);
-    expect(
-      find.byKey(const Key('daily_os_move_block_blk-review')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const Key('daily_os_resize_end_blk-review')),
-      findsOneWidget,
-    );
+    await _enableArrangeMode(tester);
     await captureScreenshot(tester, 'day_pro_03_timeline_arrange_dark');
+  });
+
+  testWidgets('desktop timeline arrange mode — dark', (tester) async {
+    await _pumpDayPage(tester, device: desktopDevice);
+    await _switchToDayView(tester);
+    await _enableArrangeMode(tester);
+    await captureScreenshot(tester, 'day_desktop_05_timeline_arrange_dark');
   });
 
   testWidgets('pro block editor overview — dark', (tester) async {
@@ -706,7 +717,18 @@ void main() {
       device: miniDevice,
       brightness: Brightness.light,
     );
+    expect(find.byType(AgendaView), findsOneWidget);
     await captureScreenshot(tester, 'day_mini_04_agenda_light');
+  });
+
+  testWidgets('desktop agenda — light', (tester) async {
+    await _pumpDayPage(
+      tester,
+      device: desktopDevice,
+      brightness: Brightness.light,
+    );
+    expect(find.byType(AgendaView), findsOneWidget);
+    await captureScreenshot(tester, 'day_desktop_03_agenda_light');
   });
 
   testWidgets('mini timeline — light', (tester) async {
@@ -716,7 +738,41 @@ void main() {
       brightness: Brightness.light,
     );
     await _switchToDayView(tester);
+    expect(find.byType(DayTimeline), findsOneWidget);
     await captureScreenshot(tester, 'day_mini_05_timeline_light');
+  });
+
+  testWidgets('desktop timeline — light', (tester) async {
+    await _pumpDayPage(
+      tester,
+      device: desktopDevice,
+      brightness: Brightness.light,
+    );
+    await _switchToDayView(tester);
+    expect(find.byType(DayTimeline), findsOneWidget);
+    await captureScreenshot(tester, 'day_desktop_04_timeline_light');
+  });
+
+  testWidgets('pro timeline arrange mode — light', (tester) async {
+    await _pumpDayPage(
+      tester,
+      device: proDevice,
+      brightness: Brightness.light,
+    );
+    await _switchToDayView(tester);
+    await _enableArrangeMode(tester);
+    await captureScreenshot(tester, 'day_pro_07_timeline_arrange_light');
+  });
+
+  testWidgets('desktop timeline arrange mode — light', (tester) async {
+    await _pumpDayPage(
+      tester,
+      device: desktopDevice,
+      brightness: Brightness.light,
+    );
+    await _switchToDayView(tester);
+    await _enableArrangeMode(tester);
+    await captureScreenshot(tester, 'day_desktop_06_timeline_arrange_light');
   });
 
   testWidgets('mini agenda — dark, 1.3x text', (tester) async {

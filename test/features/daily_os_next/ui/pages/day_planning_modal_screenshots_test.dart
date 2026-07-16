@@ -36,6 +36,7 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -495,6 +496,7 @@ void main() {
         agent: _fastAgent(),
       );
       await _tapPill(tester, _messages(tester).dailyOsNextCaptureReconcileCta);
+      expect(find.byType(ReconcileModalContent), findsOneWidget);
       await captureScreenshot(tester, '${device.name}_07_reconcile_dark');
     });
 
@@ -542,8 +544,37 @@ void main() {
       capture: _captured,
       brightness: Brightness.light,
     );
+    expect(find.byType(DsGlassPill), findsNWidgets(2));
     await captureScreenshot(tester, 'mini_10_captured_light');
   });
+
+  testWidgets('desktop captured — light', (tester) async {
+    await _openModal(
+      tester,
+      intent: const DayPlanningCreate(),
+      device: desktopDevice,
+      capture: _captured,
+      brightness: Brightness.light,
+    );
+    expect(find.byType(DsGlassPill), findsNWidgets(2));
+    await captureScreenshot(tester, 'desktop_10_captured_light');
+  });
+
+  for (final device in [miniDevice, desktopDevice]) {
+    testWidgets('${device.name} reconcile — light', (tester) async {
+      await _openModal(
+        tester,
+        intent: const DayPlanningCreate(),
+        device: device,
+        capture: _captured,
+        agent: _fastAgent(),
+        brightness: Brightness.light,
+      );
+      await _tapPill(tester, _messages(tester).dailyOsNextCaptureReconcileCta);
+      expect(find.byType(ReconcileModalContent), findsOneWidget);
+      await captureScreenshot(tester, '${device.name}_15_reconcile_light');
+    });
+  }
 
   testWidgets('mini capture idle — dark, 1.3x text', (tester) async {
     await _openModal(

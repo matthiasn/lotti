@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "daily-os/agenda",
+      "title": "Daily OS agenda",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "day_mini_04_agenda_light.png",
+        "mobile-dark": "day_mini_01_agenda_dark.png",
+        "desktop-light": "day_desktop_03_agenda_light.png",
+        "desktop-dark": "day_desktop_01_agenda_dark.png"
+      }
+    },
+    {
+      "id": "daily-os/capture-review",
+      "title": "Daily OS transcript review",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_planning_modal_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "mini_10_captured_light.png",
+        "mobile-dark": "mini_05_captured_dark.png",
+        "desktop-light": "desktop_10_captured_light.png",
+        "desktop-dark": "desktop_05_captured_dark.png"
+      }
+    },
+    {
+      "id": "daily-os/reconcile",
+      "title": "Daily OS reconciliation",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_planning_modal_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "mini_15_reconcile_light.png",
+        "mobile-dark": "mini_07_reconcile_dark.png",
+        "desktop-light": "desktop_15_reconcile_light.png",
+        "desktop-dark": "desktop_07_reconcile_dark.png"
+      }
+    },
+    {
+      "id": "daily-os/timeline",
+      "title": "Daily OS timeline",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "day_mini_05_timeline_light.png",
+        "mobile-dark": "day_mini_02_timeline_dark.png",
+        "desktop-light": "day_desktop_04_timeline_light.png",
+        "desktop-dark": "day_desktop_02_timeline_dark.png"
+      }
+    },
+    {
+      "id": "daily-os/arrange",
+      "title": "Daily OS arrange mode",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "day_pro_07_timeline_arrange_light.png",
+        "mobile-dark": "day_pro_03_timeline_arrange_dark.png",
+        "desktop-light": "day_desktop_06_timeline_arrange_light.png",
+        "desktop-dark": "day_desktop_05_timeline_arrange_dark.png"
+      }
+    },
+    {
+      "id": "settings/home",
+      "title": "Settings home",
+      "sourceTest": "test/features/settings/ui/settings_home_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "mobile_settings_root_light.png",
+        "mobile-dark": "mobile_settings_root_dark.png",
+        "desktop-light": "desktop_settings_root_light.png",
+        "desktop-dark": "desktop_settings_root_dark.png"
+      }
+    }
+  ]
+}

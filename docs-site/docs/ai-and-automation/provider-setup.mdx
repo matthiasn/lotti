@@ -1,0 +1,48 @@
+---
+title: Connect an AI provider
+description: Choose where inference runs and let Lotti seed the models, profiles, and skills it needs.
+---
+
+# Connect an AI provider
+
+Lotti's AI features run through an inference profile. The profile selects
+models exposed by a provider, while built-in skills describe jobs such as
+transcribing audio, analyzing an image, or producing task-aware suggestions.
+
+## Choose local or remote
+
+- A cloud provider is usually the quickest setup and requires an API key.
+- A local provider can keep inference on your own machine but needs compatible
+  hardware and a running model service.
+- The provider verification step shows whether Lotti can reach the endpoint and
+  discover models before you save it.
+
+## Connect a provider
+
+1. Open **Settings → AI settings**.
+2. Choose **Add provider**.
+3. Pick a supported provider.
+4. Enter its display name, endpoint, and API key when required.
+5. Wait for the connection check, then save.
+
+For supported first-run providers, Lotti seeds useful models and one or more
+inference profiles. The result screen summarizes what was created.
+
+## Review profile routing
+
+Open the Profiles area in AI settings to see which model each skill uses.
+Categories can select a default inference profile; content without a task can
+fall back to that category setting.
+
+## Privacy boundary
+
+Before sending sensitive text, audio, or images, confirm whether the selected
+endpoint is local or remote. A local-looking profile name is not the security
+boundary—the configured endpoint is.
+
+:::warning API keys
+
+Treat provider keys as secrets. Never paste them into documentation, issues, or
+screenshots.
+
+:::
