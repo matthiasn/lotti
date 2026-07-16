@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1047]
+## [0.9.1048]
 ### Added
 - **Desktop Lotti now has a keyboard-first command layer.** Open the command
   palette with Command/Ctrl+K, jump to the eight main destinations with fixed

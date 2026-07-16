@@ -32,7 +32,7 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.1047" date="2026-07-15">
+    <release version="0.9.1048" date="2026-07-16">
       <description>
           <p>Logging a measurable now stays in one clear, accessible sheet. Changing the observed date and time moves to a calendar page in the same capture flow instead of stacking another modal over the editor. Values and comments stay intact when navigating back, the complete time picker scrolls above the sticky action, and Save waits for persistence with visible progress and retry feedback.</p>
           <p>Task agents now use evidence-first processing for everyone. The previously optional behavior is now standard and its Advanced Settings toggle has been removed. If you already had it enabled, nothing changes.</p>
