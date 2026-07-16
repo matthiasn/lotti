@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -6,6 +7,8 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_block_edit_modal.dar
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
@@ -65,6 +68,8 @@ class _Launcher extends StatelessWidget {
 }
 
 void main() {
+  setUpAll(tz_data.initializeTimeZones);
+
   final focusDefinition = CategoryTestUtils.createTestCategory(
     id: _focus.id,
     name: _focus.name,
@@ -143,6 +148,11 @@ void main() {
 
   String timeValue(WidgetTester tester) =>
       tester.widget<SettingsPickerField>(timeField()).valueText!;
+
+  Finder quickAction(String semanticsLabel) => find.byWidgetPredicate(
+    (widget) =>
+        widget is DesignSystemButton && widget.semanticsLabel == semanticsLabel,
+  );
 
   testWidgets('overview uses the design-system editor and explains placement', (
     tester,
@@ -461,6 +471,111 @@ void main() {
 
     expect(result?.start, DateTime(2024, 3, 15, 23));
     expect(result?.end, DateTime(2024, 3, 16));
+  });
+
+  testWidgets('fixed-day Now changes only the time on the plan date', (
+    tester,
+  ) async {
+    await withClock(Clock.fixed(DateTime(2026, 7, 16, 12, 34)), () async {
+      DayBlockEditResult? result;
+      await openModal(
+        tester,
+        block: _block(),
+        onResult: (value) => result = value,
+      );
+      await tester.tap(timeField());
+      await tester.pumpAndSettle();
+
+      await tester.tap(quickAction('Set end date and time to now'));
+      await tester.pump();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(timeValue(tester), contains('12:34'));
+      expect(button(tester, 'Save changes').onPressed, isNotNull);
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+
+      expect(result?.start, DateTime(2024, 3, 15, 9));
+      expect(result?.end, DateTime(2024, 3, 15, 12, 34));
+    });
+  });
+
+  testWidgets('fixed-day Start Now also preserves the plan date', (
+    tester,
+  ) async {
+    await withClock(Clock.fixed(DateTime(2026, 7, 16, 8, 34)), () async {
+      DayBlockEditResult? result;
+      await openModal(
+        tester,
+        block: _block(),
+        onResult: (value) => result = value,
+      );
+      await tester.tap(timeField());
+      await tester.pumpAndSettle();
+
+      await tester.tap(quickAction('Set start date and time to now'));
+      await tester.pump();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+
+      expect(result?.start, DateTime(2024, 3, 15, 8, 34));
+      expect(result?.end, DateTime(2024, 3, 15, 10, 30));
+    });
+  });
+
+  testWidgets('DST plan day uses the next local midnight as its boundary', (
+    tester,
+  ) async {
+    final berlin = tz.getLocation('Europe/Berlin');
+    DayBlockEditResult? result;
+    await openModal(
+      tester,
+      block: _block(
+        start: tz.TZDateTime(berlin, 2024, 10, 27, 22),
+        end: tz.TZDateTime(berlin, 2024, 10, 27, 23),
+      ),
+      onResult: (value) => result = value,
+    );
+    await tester.tap(timeField());
+    await tester.pumpAndSettle();
+
+    final wheels = tester
+        .widgetList<DesignSystemTimeWheel>(find.byType(DesignSystemTimeWheel))
+        .toList();
+    wheels.first.onDateTimeChanged(tz.TZDateTime(berlin, 2024, 10, 27, 23));
+    wheels.last.onDateTimeChanged(tz.TZDateTime(berlin, 2024, 10, 28));
+    await tester.pump();
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    expect(button(tester, 'Save changes').onPressed, isNotNull);
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+    expect(result?.end, tz.TZDateTime(berlin, 2024, 10, 28));
+
+    result = null;
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.tap(timeField());
+    await tester.pumpAndSettle();
+    final reopenedWheels = tester
+        .widgetList<DesignSystemTimeWheel>(find.byType(DesignSystemTimeWheel))
+        .toList();
+    reopenedWheels.first.onDateTimeChanged(
+      tz.TZDateTime(berlin, 2024, 10, 27, 23),
+    );
+    reopenedWheels.last.onDateTimeChanged(
+      tz.TZDateTime(berlin, 2024, 10, 28, 0, 30),
+    );
+    await tester.pump();
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    expect(button(tester, 'Save changes').onPressed, isNull);
+    expect(result, isNull);
   });
 
   testWidgets('UTC blocks retain UTC at the plan-day boundary', (tester) async {

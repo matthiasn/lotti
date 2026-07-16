@@ -277,7 +277,7 @@ class _DayTimelineState extends State<DayTimeline> {
               onToggleMode: _toggleComparisonMode,
               onToggleArrange: widget.onRescheduleBlock == null
                   ? null
-                  : () => setState(() => _arrangeMode = !_arrangeMode),
+                  : _toggleArrangeMode,
             ),
             Expanded(
               child: Listener(
@@ -475,6 +475,16 @@ class _DayTimelineState extends State<DayTimeline> {
           ? _TimelineComparisonMode.both
           : _TimelineComparisonMode.paged;
     });
+  }
+
+  void _toggleArrangeMode() {
+    final enabling = !_arrangeMode;
+    setState(() => _arrangeMode = enabling);
+    if (enabling &&
+        _effectiveComparisonMode == _TimelineComparisonMode.paged &&
+        _pageController.hasClients) {
+      _pageController.jumpToPage(0);
+    }
   }
 
   void _toggleFoldRegion(int startHour) {

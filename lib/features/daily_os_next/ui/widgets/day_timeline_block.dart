@@ -62,6 +62,7 @@ class _BlockPositionState extends State<BlockPosition> {
   TimeBlock? _dragOrigin;
   _BlockDragKind? _dragKind;
   double _dragDelta = 0;
+  bool _rescheduleInFlight = false;
 
   TimeBlock get _block => _preview ?? widget.block;
 
@@ -71,7 +72,7 @@ class _BlockPositionState extends State<BlockPosition> {
     final boundsChanged =
         oldWidget.block.start != widget.block.start ||
         oldWidget.block.end != widget.block.end;
-    if (boundsChanged || !widget.arrangeMode) {
+    if (!_rescheduleInFlight && (boundsChanged || !widget.arrangeMode)) {
       _preview = null;
       _dragOrigin = null;
       _dragKind = null;
@@ -103,6 +104,7 @@ class _BlockPositionState extends State<BlockPosition> {
     final height = math.max(0, rawHeight - blockGap).toDouble();
     final canArrange =
         widget.arrangeMode &&
+        !_rescheduleInFlight &&
         !widget.tracked &&
         block.type != TimeBlockType.cal &&
         widget.onReschedule != null;
@@ -160,12 +162,14 @@ class _BlockPositionState extends State<BlockPosition> {
   }
 
   void _startDrag(_BlockDragKind kind) {
+    if (_rescheduleInFlight) return;
     _dragKind = kind;
     _dragOrigin = _block;
     _dragDelta = 0;
   }
 
   void _updateDrag(DragUpdateDetails details) {
+    if (_rescheduleInFlight) return;
     final origin = _dragOrigin;
     final kind = _dragKind;
     if (origin == null || kind == null) return;
@@ -222,25 +226,42 @@ class _BlockPositionState extends State<BlockPosition> {
   }
 
   Future<void> _finishDrag() async {
+    if (_rescheduleInFlight) return;
     final origin = _dragOrigin;
     final preview = _preview;
+    final onReschedule = widget.onReschedule;
     _dragKind = null;
     _dragOrigin = null;
     _dragDelta = 0;
     if (origin == null ||
         preview == null ||
+        onReschedule == null ||
         (preview.start == origin.start && preview.end == origin.end)) {
       return;
     }
-    final success = await widget.onReschedule!(
-      widget.block,
-      preview.start,
-      preview.end,
-    );
-    if (!success && mounted) setState(() => _preview = origin);
+    setState(() => _rescheduleInFlight = true);
+    var success = false;
+    try {
+      success = await onReschedule(widget.block, preview.start, preview.end);
+    } finally {
+      if (mounted) {
+        setState(() {
+          final sourceChanged =
+              widget.block.start != origin.start ||
+              widget.block.end != origin.end;
+          if (sourceChanged) {
+            _preview = null;
+          } else if (!success && _preview == preview) {
+            _preview = origin;
+          }
+          _rescheduleInFlight = false;
+        });
+      }
+    }
   }
 
   void _cancelDrag() {
+    if (_rescheduleInFlight) return;
     final origin = _dragOrigin;
     setState(() {
       _preview = origin;

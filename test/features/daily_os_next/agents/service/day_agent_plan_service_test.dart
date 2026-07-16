@@ -19,6 +19,8 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.da
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
@@ -31,7 +33,10 @@ const _runKey = 'run-key-001';
 final _now = DateTime(2026, 5, 25, 9);
 
 void main() {
-  setUpAll(registerAllFallbackValues);
+  setUpAll(() {
+    registerAllFallbackValues();
+    tz_data.initializeTimeZones();
+  });
 
   late MockAgentRepository agentRepository;
   late MockAgentSyncService syncService;
@@ -3473,6 +3478,61 @@ void main() {
           );
         },
       );
+
+      test('uses the next local midnight across a DST transition', () async {
+        final berlin = tz.getLocation('Europe/Berlin');
+        final day = tz.TZDateTime(berlin, 2024, 10, 27);
+        final plan =
+            AgentDomainEntity.dayPlan(
+                  id: 'day_agent_plan:$_dayId',
+                  agentId: _agentId,
+                  dayId: _dayId,
+                  planDate: day,
+                  data: DayPlanData(
+                    planDate: day,
+                    status: const DayPlanStatus.draft(),
+                    plannedBlocks: [
+                      PlannedBlock(
+                        id: 'dst-block',
+                        categoryId: 'work',
+                        startTime: tz.TZDateTime(berlin, 2024, 10, 27, 22),
+                        endTime: tz.TZDateTime(berlin, 2024, 10, 27, 23),
+                        title: 'Inspect the winter fish reserves',
+                      ),
+                    ],
+                  ),
+                  scheduledMinutes: 60,
+                  createdAt: _now,
+                  updatedAt: _now,
+                  vectorClock: null,
+                )
+                as DayPlanEntity;
+        agentEntities[plan.id] = plan;
+
+        final updated = await createService().editBlock(
+          agentId: _agentId,
+          dayId: _dayId,
+          blockId: 'dst-block',
+          start: tz.TZDateTime(berlin, 2024, 10, 27, 23),
+          end: tz.TZDateTime(berlin, 2024, 10, 28),
+        );
+
+        expect(
+          updated.data.plannedBlocks.single.endTime,
+          tz.TZDateTime(berlin, 2024, 10, 28),
+        );
+
+        await expectLater(
+          createService().editBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'dst-block',
+            start: tz.TZDateTime(berlin, 2024, 10, 27, 23),
+            end: tz.TZDateTime(berlin, 2024, 10, 28, 0, 30),
+          ),
+          throwsA(isA<DayAgentCaptureException>()),
+        );
+      });
 
       test('rejects invalid or out-of-day ranges', () async {
         seedEditablePlan();

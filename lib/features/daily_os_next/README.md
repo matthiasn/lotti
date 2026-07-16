@@ -305,8 +305,8 @@ stateDiagram-v2
   `JournalDb`, and overlays the live title/category name/category color on the
   stored day-plan snapshot. A task rename, category reassignment, or category
   name/color edit therefore reaches the visible Agenda and timeline on the
-  next frame; a missing task falls back to the persisted plan data instead of
-  blanking the block.
+  next frame; a missing task renders the localized missing-entry title while
+  category metadata falls back to the persisted plan snapshot.
 - Standalone titles remain click-to-edit through `EditableTitle` (pencil
   reveals on hover, Enter/blur saves, Esc cancels). Every editable planned
   block also carries an explicit edit icon that opens `DayBlockEditModal`, a

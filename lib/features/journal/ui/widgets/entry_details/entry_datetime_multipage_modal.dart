@@ -206,12 +206,18 @@ class _EntryDateTimeEditorState extends State<EntryDateTimeEditor> {
 
   void _setStartNow() {
     _startTimeSeed += 1;
-    _state = _state.withStart(_nowInZoneOf(_state.dateFrom));
+    final now = _nowInZoneOf(_state.dateFrom);
+    _state = widget.showDateControls
+        ? _state.withStart(now)
+        : _state.copyWith(startTime: TimeOfDay.fromDateTime(now));
   }
 
   void _setEndNow() {
     _endTimeSeed += 1;
-    _state = _state.withEnd(_nowInZoneOf(_state.dateTo));
+    final now = _nowInZoneOf(_state.dateTo);
+    _state = widget.showDateControls
+        ? _state.withEnd(now)
+        : _state.copyWith(endTime: TimeOfDay.fromDateTime(now));
   }
 
   void _setStartDateToday() {

@@ -1803,7 +1803,7 @@
   "dailyOsNextReconcileBadgeUpdate": "MAJ",
   "dailyOsNextReconcileBuildDayCta": "Construire ma journée",
   "dailyOsNextReconcileDecideOverline": "À DÉCIDER",
-  "dailyOsNextReconcileDecisionProgress": "{decided} sur {total} examinées",
+  "dailyOsNextReconcileDecisionProgress": "{total, plural, =1{{decided} sur {total} examinée} other{{decided} sur {total} examinées}}",
   "dailyOsNextReconcileDefaultBehaviorHint": "Vérifie les cartes avant de construire ta journée. Les actions choisies alimentent le plan ; les cartes laissées seules restent comme elles sont.",
   "dailyOsNextReconcileError": "Une erreur est survenue : {detail}",
   "@dailyOsNextReconcileError": {
@@ -1818,7 +1818,7 @@
   "dailyOsNextReconcileHeardEmpty": "Les cartes de capture apparaîtront ici une fois l'analyse terminée.",
   "dailyOsNextReconcileHeardOverline": "ENTENDU",
   "dailyOsNextReconcileLowConfidence": "confiance faible",
-  "dailyOsNextReconcileProcessing": "Je réécoute et j’accorde tout avec ta journée…",
+  "dailyOsNextReconcileProcessing": "Je réécoute et j’aligne tout sur ta journée…",
   "dailyOsNextReconcileReRecord": "Réenregistrer",
   "dailyOsNextReconcileVoiceHint": "Vérifie les décisions avant de construire ta journée",
   "dailyOsNextRefineAccept": "Accepter",

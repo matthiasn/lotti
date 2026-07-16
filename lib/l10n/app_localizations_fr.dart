@@ -3979,7 +3979,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String dailyOsNextReconcileDecisionProgress(int decided, int total) {
-    return '$decided sur $total examinées';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$decided sur $total examinées',
+      one: '$decided sur $total examinée',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4006,7 +4012,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileProcessing =>
-      'Je réécoute et j’accorde tout avec ta journée…';
+      'Je réécoute et j’aligne tout sur ta journée…';
 
   @override
   String get dailyOsNextReconcileReRecord => 'Réenregistrer';

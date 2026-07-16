@@ -681,6 +681,10 @@ void main() {
       expect(agent.editedBlocks.single.category, block.category);
       expect(agent.editedBlocks.single.start, DateTime(2026, 5, 26, 10, 15));
       expect(agent.editedBlocks.single.end, DateTime(2026, 5, 26, 11, 45));
+      expect(
+        agent.lastEditedPlan?.scheduledMinutes,
+        90,
+      );
       expect(find.text(messages.dailyOsNextBlockEditSaved), findsOneWidget);
     });
 

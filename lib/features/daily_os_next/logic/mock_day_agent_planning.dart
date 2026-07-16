@@ -1,5 +1,6 @@
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent_fixtures.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 
 /// Scripted planning/refine/shutdown half of `MockDayAgent`.
 ///
@@ -321,18 +322,8 @@ class MockDayAgentPlanning {
     if (block.type == TimeBlockType.cal) {
       throw StateError('Block $blockId is calendar-owned.');
     }
-    final dayStart = plan.dayDate.isUtc
-        ? DateTime.utc(
-            plan.dayDate.year,
-            plan.dayDate.month,
-            plan.dayDate.day,
-          )
-        : DateTime(
-            plan.dayDate.year,
-            plan.dayDate.month,
-            plan.dayDate.day,
-          );
-    final dayEnd = dayStart.add(const Duration(days: 1));
+    final dayStart = plan.dayDate.dateOnly;
+    final dayEnd = dayStart.addCalendarDays(1);
     if (!start.isBefore(end) ||
         start.isBefore(dayStart) ||
         end.isAfter(dayEnd)) {

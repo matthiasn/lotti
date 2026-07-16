@@ -206,6 +206,8 @@ void main() {
       );
 
       final provider = liveTaskMetadataProvider('task-1');
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
       expect((await container.read(provider.future)).title, 'Old task title');
 
       updates.add({'unrelated'});

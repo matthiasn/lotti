@@ -2,8 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
+  setUpAll(tz_data.initializeTimeZones);
+
   group('MockDayAgent', () {
     late MockDayAgent agent;
 
@@ -457,6 +461,26 @@ void main() {
         expect(updated.blocks.single.start, DateTime(2026, 5, 25, 10, 15));
         expect(updated.blocks.single.end, DateTime(2026, 5, 25, 11, 45));
         expect(updated.scheduledMinutes, 90);
+      });
+
+      test('accepts the next local midnight across a DST transition', () async {
+        final berlin = tz.getLocation('Europe/Berlin');
+        final editable = block(
+          start: tz.TZDateTime(berlin, 2024, 10, 27, 22),
+          end: tz.TZDateTime(berlin, 2024, 10, 27, 23),
+        );
+        final updated = await agent.editBlock(
+          plan: planWith(
+            editable,
+            dayDate: tz.TZDateTime(berlin, 2024, 10, 27),
+          ),
+          blockId: editable.id,
+          start: tz.TZDateTime(berlin, 2024, 10, 27, 23),
+          end: tz.TZDateTime(berlin, 2024, 10, 28),
+        );
+
+        expect(updated.blocks.single.end, tz.TZDateTime(berlin, 2024, 10, 28));
+        expect(updated.scheduledMinutes, 60);
       });
 
       test(

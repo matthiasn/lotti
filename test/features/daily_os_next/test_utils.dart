@@ -63,6 +63,9 @@ class RecordingDayAgent implements DayAgentInterface {
   >
   editedBlocks = [];
 
+  /// Most recent plan returned by [editBlock].
+  DraftPlan? lastEditedPlan;
+
   /// When set, [proposePlanDiff] blocks on this future before returning,
   /// keeping callers pinned in their "thinking" phase so tests can observe
   /// the transient state.
@@ -201,20 +204,26 @@ class RecordingDayAgent implements DayAgentInterface {
     ));
     final error = editError;
     if (error != null) throw error;
-    return plan.copyWith(
-      blocks: [
-        for (final block in plan.blocks)
-          if (block.id == blockId)
-            block.copyWith(
-              start: start,
-              end: end,
-              title: title,
-              category: category,
-            )
-          else
-            block,
-      ],
+    final blocks = [
+      for (final block in plan.blocks)
+        if (block.id == blockId)
+          block.copyWith(
+            start: start,
+            end: end,
+            title: title,
+            category: category,
+          )
+        else
+          block,
+    ];
+    final editedPlan = plan.copyWith(
+      blocks: blocks,
+      scheduledMinutes: blocks
+          .where((block) => block.state != TimeBlockState.dropped)
+          .fold<int>(0, (sum, block) => sum + block.duration.inMinutes),
     );
+    lastEditedPlan = editedPlan;
+    return editedPlan;
   }
 
   // ---- Benign default stubs ----

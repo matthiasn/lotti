@@ -16,6 +16,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_diff.
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_reads.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_writer.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
@@ -490,10 +491,8 @@ class DayAgentPlanEditor {
     }
 
     final planDate = plan.data.planDate;
-    final dayStart = planDate.isUtc
-        ? DateTime.utc(planDate.year, planDate.month, planDate.day)
-        : DateTime(planDate.year, planDate.month, planDate.day);
-    final dayEnd = dayStart.add(const Duration(days: 1));
+    final dayStart = planDate.dateOnly;
+    final dayEnd = dayStart.addCalendarDays(1);
     if (!start.isBefore(end)) {
       throw const DayAgentCaptureException(
         'block start must be before block end',

@@ -1258,6 +1258,152 @@ void main() {
       expect(changes.last.end, DateTime(2026, 5, 25, 11, 45));
     });
 
+    testWidgets('arrange mode returns a compact timeline to the planned lane', (
+      tester,
+    ) async {
+      _setView(tester, const Size(430, 900));
+      final editable = TimeBlock(
+        id: 'compact-arrange',
+        title: 'Re-route the diplomatic herring convoy',
+        start: DateTime(2026, 5, 25, 9),
+        end: DateTime(2026, 5, 25, 10),
+        type: TimeBlockType.manual,
+        state: TimeBlockState.drafted,
+        category: _work,
+      );
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: [editable],
+              actualBlocks: [
+                editable.copyWith(
+                  id: 'compact-actual',
+                  title: 'Counted the herring twice',
+                  state: TimeBlockState.completed,
+                ),
+              ],
+            ),
+            onRescheduleBlock: (_, _, _) async => true,
+            clock: () => DateTime(2026, 5, 25, 8),
+          ),
+          size: const Size(430, 900),
+        ),
+      );
+      await tester.pump();
+
+      final controller =
+          tester.widget<PageView>(find.byType(PageView)).controller!
+            ..jumpToPage(1);
+      await tester.pump();
+      expect(controller.page, greaterThan(0.8));
+
+      await tester.tap(
+        find.byKey(const Key('daily_os_timeline_arrange_toggle')),
+      );
+      await tester.pump();
+
+      expect(controller.page, 0);
+      expect(
+        find
+            .byKey(const Key('daily_os_move_block_compact-arrange'))
+            .hitTestable(),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'an in-flight reschedule blocks overlap and ignores stale rollback',
+      (tester) async {
+        _setView(tester, const Size(1280, 900));
+        final gate = Completer<bool>();
+        final attempts = <({DateTime start, DateTime end})>[];
+        var editable = TimeBlock(
+          id: 'serialized',
+          title: 'Synchronize the penguin launch clocks',
+          start: DateTime(2026, 5, 25, 9),
+          end: DateTime(2026, 5, 25, 11),
+          type: TimeBlockType.manual,
+          state: TimeBlockState.drafted,
+          category: _work,
+        );
+
+        DayTimeline timeline() => DayTimeline(
+          draft: _draftWithBlocks(blocks: [editable]),
+          onRescheduleBlock: (_, start, end) {
+            attempts.add((start: start, end: end));
+            return gate.future;
+          },
+          clock: () => DateTime(2026, 5, 25, 8),
+        );
+
+        await tester.pumpWidget(
+          _wrap(timeline(), size: const Size(1280, 900)),
+        );
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const Key('daily_os_timeline_arrange_toggle')),
+        );
+        await tester.pump();
+
+        final move = tester.widget<GestureDetector>(
+          find.byKey(const Key('daily_os_move_block_serialized')),
+        );
+        move.onVerticalDragStart!(DragStartDetails());
+        move.onVerticalDragUpdate!(
+          DragUpdateDetails(
+            globalPosition: const Offset(0, 45),
+            delta: const Offset(0, 45),
+            primaryDelta: 45,
+          ),
+        );
+        move.onVerticalDragEnd!(DragEndDetails());
+        await tester.pump();
+
+        expect(attempts, hasLength(1));
+        expect(
+          find.byKey(const Key('daily_os_move_block_serialized')),
+          findsNothing,
+        );
+
+        move.onVerticalDragStart!(DragStartDetails());
+        move.onVerticalDragUpdate!(
+          DragUpdateDetails(
+            globalPosition: const Offset(0, 90),
+            delta: const Offset(0, 90),
+            primaryDelta: 90,
+          ),
+        );
+        move.onVerticalDragCancel!();
+        move.onVerticalDragEnd!(DragEndDetails());
+        await tester.pump();
+        expect(attempts, hasLength(1));
+
+        editable = editable.copyWith(
+          start: DateTime(2026, 5, 25, 12),
+          end: DateTime(2026, 5, 25, 14),
+        );
+        await tester.pumpWidget(
+          _wrap(timeline(), size: const Size(1280, 900)),
+        );
+        await tester.pump();
+
+        gate.complete(false);
+        await tester.pump();
+        await tester.pump();
+
+        final rendered = tester.widget<DayBlock>(
+          find.byKey(const Key('daily_os_day_block_serialized')),
+        );
+        expect(rendered.block.start, DateTime(2026, 5, 25, 12));
+        expect(rendered.block.end, DateTime(2026, 5, 25, 14));
+        expect(
+          find.byKey(const Key('daily_os_move_block_serialized')),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('cancelled and rejected drags restore the prior block bounds', (
       tester,
     ) async {

@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_range.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 
@@ -476,9 +477,7 @@ bool _rangeIsInsidePlanDay({
   required DateTime end,
   required DateTime planDate,
 }) {
-  final dayStart = planDate.isUtc
-      ? DateTime.utc(planDate.year, planDate.month, planDate.day)
-      : DateTime(planDate.year, planDate.month, planDate.day);
-  final dayEnd = dayStart.add(const Duration(days: 1));
+  final dayStart = planDate.dateOnly;
+  final dayEnd = dayStart.addCalendarDays(1);
   return !start.isBefore(dayStart) && !end.isAfter(dayEnd);
 }
