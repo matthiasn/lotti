@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -69,6 +70,41 @@ void main() {
   });
 
   group('EditorWidget', () {
+    testWidgets('Cmd+S saves while the rich-text editor is focused', (
+      tester,
+    ) async {
+      late QuillEditor editor;
+      String? savedText;
+
+      await tester.pumpWidget(
+        buildEditorTestWidget(
+          entryId: 'keyboard-save',
+          showToolbar: true,
+          platform: TargetPlatform.macOS,
+          onSave: () {
+            savedText = editor.controller.document.toPlainText();
+          },
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 450));
+
+      editor = tester.widget<QuillEditor>(find.byType(QuillEditor));
+      editor.controller.document.insert(0, 'changed');
+      editor.focusNode.requestFocus();
+      await tester.pump();
+      expect(editor.focusNode.hasFocus, isTrue);
+      expect(savedText, isNull);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await tester.pump();
+
+      expect(savedText, 'changed\n');
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 1));
+    });
+
     testWidgets('editor toolbar is invisible without autofocus', (
       WidgetTester tester,
     ) async {
