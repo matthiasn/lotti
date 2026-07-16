@@ -105,6 +105,35 @@ void main() {
       },
     );
 
+    testWidgets('bordered filled variant accepts an accent border', (
+      tester,
+    ) async {
+      const accent = Color(0xFF9966E5);
+      await pump(
+        tester,
+        const DsPill(
+          variant: DsPillVariant.filled,
+          label: 'Accent',
+          bordered: true,
+          borderColor: accent,
+        ),
+      );
+
+      final decoration =
+          tester
+                  .widgetList<DecoratedBox>(
+                    find.descendant(
+                      of: find.byType(DsPill),
+                      matching: find.byType(DecoratedBox),
+                    ),
+                  )
+                  .first
+                  .decoration
+              as BoxDecoration;
+      expect((decoration.border! as Border).top.color, accent);
+      expect(decoration.color, dsTokensDark.colors.surface.enabled);
+    });
+
     testWidgets('tinted variant uses pillColor at 18% alpha', (tester) async {
       const accent = Color(0xFFD65E5C);
       await pump(

@@ -57,8 +57,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   category, label, and project choices stay inside the same smoothly resizing
   sheet or desktop dialog, with consistent full-width selection states,
   responsive actions, keyboard focus restoration, and clearer activity and
-  sort controls. Task filters open immediately while project data refreshes in
-  place, and active filters remain visible as compact chips on the task page.
+  sort controls. Linked-entry activity and sort pills now match the compact
+  size of the task-header chips, with hover feedback confined to the pill
+  itself; active activity pills retain their individual colored outlines.
+  Task filters open immediately while project data refreshes in place, and
+  active filters remain visible as compact chips on the task page.
 - **New tasks now stay in the filtered list where you create them.** A task
   created from a view with one category, project, or status selected inherits
   that selection, along with every selected label. Ambiguous multi-selections

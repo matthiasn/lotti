@@ -1,13 +1,13 @@
-import 'dart:ui' show SemanticsAction, Tristate;
+import 'dart:ui' show PointerDeviceKind, SemanticsAction, Tristate;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -86,9 +86,20 @@ void main() {
       find.descendant(of: codePill.first, matching: find.byIcon(Icons.code)),
       findsOneWidget,
     );
+    final codeVisual = find.byKey(
+      const ValueKey('linked-entries-activity-code-visual'),
+    );
+    final codeBorder = const Color(0xFF34C759).withValues(alpha: 0.7);
+    expect(tester.widget<DsPill>(codeVisual).borderColor, codeBorder);
+    expect(
+      (_pillDecoration(tester, codeVisual).border! as Border).top.color,
+      codeBorder,
+    );
   });
 
-  testWidgets('trailing trigger shows current sort label', (tester) async {
+  testWidgets('filter-modal trigger matches activity and task-header height', (
+    tester,
+  ) async {
     await pumpBar(tester);
 
     final messages = await AppLocalizations.delegate.load(
@@ -115,8 +126,10 @@ void main() {
     final sortTarget = find.byKey(
       const ValueKey('linked-entries-sort-trigger'),
     );
-    expect(tester.getSize(timerTarget).height, greaterThanOrEqualTo(48));
-    expect(tester.getSize(sortTarget).height, greaterThanOrEqualTo(48));
+    expect(tester.getSize(timerTarget).height, DsPill.height);
+    expect(tester.getSize(sortTarget).height, DsPill.height);
+    expect(tester.getSize(timerChip).height, DsPill.height);
+    expect(tester.getSize(sortChip).height, DsPill.height);
   });
 
   testWidgets('activity pills stay compact and share the first row on phone', (
@@ -155,31 +168,66 @@ void main() {
     expect(tester.getSize(timer).width, lessThan(120));
   });
 
-  testWidgets('active pill and keyboard focus remain independently visible', (
+  testWidgets('active pills use the task-header shell with accent outlines', (
     tester,
   ) async {
     await pumpBar(tester);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    final expectedBorders = <String, Color>{
+      'timer': dsTokensLight.colors.alert.warning.defaultColor,
+      'audio': const Color(0xFF9966E5).withValues(alpha: 0.7),
+      'images': const Color(0xFF619EFF).withValues(alpha: 0.7),
+    };
+    for (final entry in expectedBorders.entries) {
+      final visual = find.byKey(
+        ValueKey('linked-entries-activity-${entry.key}-visual'),
+      );
+      expect(tester.widget<DsPill>(visual).borderColor, entry.value);
+      expect(
+        (_pillDecoration(tester, visual).border! as Border).top.color,
+        entry.value,
+      );
+    }
+
+    final visualFinder = find.byKey(
+      const ValueKey('linked-entries-activity-timer-visual'),
+    );
+    final pill = tester.widget<DsPill>(visualFinder);
+    final decoration = _pillDecoration(tester, visualFinder);
+
+    expect(pill.variant, DsPillVariant.filled);
+    expect(pill.bordered, isTrue);
+    expect(pill.labelColor, dsTokensLight.colors.text.mediumEmphasis);
+    expect(decoration.color, dsTokensLight.colors.surface.enabled);
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.timer_outlined)).color,
+      dsTokensLight.colors.alert.warning.defaultColor,
+    );
+  });
+
+  testWidgets('hover stays confined to the compact shared pill', (
+    tester,
+  ) async {
+    await pumpBar(tester);
+
+    final visual = find.byKey(
+      const ValueKey('linked-entries-activity-images-visual'),
+    );
+    final inkWell = find.descendant(
+      of: visual,
+      matching: find.byType(InkWell),
+    );
+    expect(inkWell, findsOneWidget);
+    expect(tester.getSize(inkWell).height, DsPill.height);
+    expect(tester.widget<InkWell>(inkWell).hoverColor, isNull);
+
+    final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await pointer.addPointer();
+    await pointer.moveTo(tester.getCenter(visual));
     await tester.pump();
 
-    final visual = tester.widget<AnimatedContainer>(
-      find.byKey(const ValueKey('linked-entries-activity-timer-visual')),
-    );
-    final decoration = visual.decoration! as BoxDecoration;
-    expect(decoration.color, dsTokensLight.colors.surface.selected);
-    expect(
-      decoration.border!.top.color,
-      dsTokensLight.colors.text.highEmphasis,
-    );
-    expect(
-      decoration.boxShadow!.single.color,
-      dsTokensLight.colors.interactive.enabled,
-    );
-    expect(
-      decoration.boxShadow!.single.spreadRadius,
-      dsTokensLight.spacing.step1,
-    );
+    expect(tester.getSize(inkWell).height, DsPill.height);
+    await pointer.removePointer();
   });
 
   testWidgets('sort trigger exposes active filters and a visible count', (
@@ -217,14 +265,17 @@ void main() {
       contains(messages.journalLinkedEntriesShowFlaggedOnly),
     );
 
-    final visual = tester.widget<Ink>(
-      find.byKey(const ValueKey('linked-entries-sort-trigger-visual')),
+    final visualFinder = find.byKey(
+      const ValueKey('linked-entries-sort-trigger-visual'),
     );
-    final decoration = visual.decoration! as BoxDecoration;
-    expect(decoration.color, dsTokensLight.colors.surface.selected);
+    final pill = tester.widget<DsPill>(visualFinder);
+    final decoration = _pillDecoration(tester, visualFinder);
+    expect(pill.variant, DsPillVariant.filled);
+    expect(pill.bordered, isTrue);
+    expect(decoration.color, dsTokensLight.colors.surface.enabled);
     expect(
-      decoration.border!.top.color,
-      dsTokensLight.colors.text.highEmphasis,
+      (decoration.border! as Border).top.color,
+      dsTokensLight.colors.decorative.level02,
     );
   });
 
@@ -264,7 +315,7 @@ void main() {
     );
     expect(
       tester.widget<Text>(find.text(audioLabel)).style!.color,
-      dsTokensLight.colors.text.highEmphasis,
+      dsTokensLight.colors.text.mediumEmphasis,
     );
 
     await tester.tap(
@@ -280,6 +331,17 @@ void main() {
       isNot(contains(LinkedEntryActivityFilter.audio)),
     );
     expect(audioPillSelected(), isFalse);
+    final audioVisual = find.byKey(
+      const ValueKey('linked-entries-activity-audio-visual'),
+    );
+    expect(
+      (_pillDecoration(tester, audioVisual).border! as Border).top.color,
+      dsTokensLight.colors.decorative.level02,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.mic_none_outlined)).color,
+      dsTokensLight.colors.text.lowEmphasis,
+    );
   });
 
   testWidgets('tapping the sort trigger opens the filter modal', (
@@ -325,29 +387,16 @@ void main() {
     );
     handle.dispose();
   });
-
-  testWidgets('keyboard focus adds a ring to the sort trigger', (tester) async {
-    await pumpBar(tester);
-
-    for (var index = 0; index < 4; index++) {
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.pump();
-    }
-
-    final visual = tester.widget<Ink>(
-      find.byKey(const ValueKey('linked-entries-sort-trigger-visual')),
-    );
-    final decoration = visual.decoration! as BoxDecoration;
-    expect(
-      decoration.boxShadow!.single.color,
-      dsTokensLight.colors.interactive.enabled,
-    );
-    expect(
-      decoration.boxShadow!.single.spreadRadius,
-      dsTokensLight.spacing.step1,
-    );
-  });
 }
+
+BoxDecoration _pillDecoration(WidgetTester tester, Finder pill) =>
+    tester
+            .widgetList<DecoratedBox>(
+              find.descendant(of: pill, matching: find.byType(DecoratedBox)),
+            )
+            .first
+            .decoration
+        as BoxDecoration;
 
 AiResponseEntry _codingPrompt() {
   final date = DateTime(2024, 3, 15);

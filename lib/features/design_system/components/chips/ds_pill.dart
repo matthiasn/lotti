@@ -32,6 +32,7 @@ class DsPill extends StatelessWidget {
     this.color,
     this.labelColor,
     this.bordered = false,
+    this.borderColor,
     this.selected = false,
     this.onTap,
     this.onLongPress,
@@ -74,6 +75,11 @@ class DsPill extends StatelessWidget {
   /// chip boundary against the near-same-tone surface. No-op for the other
   /// variants, which already carry their own border / tint.
   final bool bordered;
+
+  /// Optional color for the bordered [DsPillVariant.filled] shell. Defaults
+  /// to `decorative.level02`; ignored when [bordered] is false and for other
+  /// variants. Selection still takes precedence with its interactive border.
+  final Color? borderColor;
 
   /// Orthogonal selection state. Composes with [variant] (it is **not** a new
   /// variant): when true, the pill draws a 1px teal `interactive.enabled`
@@ -160,7 +166,9 @@ class DsPill extends StatelessWidget {
           border: selected
               ? selectedBorder
               : (bordered
-                    ? Border.all(color: tokens.colors.decorative.level02)
+                    ? Border.all(
+                        color: borderColor ?? tokens.colors.decorative.level02,
+                      )
                     : null),
         ),
         child: content,
