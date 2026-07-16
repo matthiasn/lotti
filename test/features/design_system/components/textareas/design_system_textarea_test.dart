@@ -55,17 +55,24 @@ void main() {
         tester,
       ) async {
         const fieldKey = Key('syncing-field');
+        String? initialValue = 'First transcript';
+        late StateSetter rebuildHost;
 
-        Future<void> pumpValue(String? value) => _pumpTextarea(
+        await _pumpTextarea(
           tester,
-          DesignSystemTextarea(
-            initialValue: value,
-            fieldKey: fieldKey,
+          StatefulBuilder(
+            builder: (context, setState) {
+              rebuildHost = setState;
+              return DesignSystemTextarea(
+                initialValue: initialValue,
+                fieldKey: fieldKey,
+              );
+            },
           ),
         );
 
-        await pumpValue('First transcript');
-        await pumpValue('Replacement transcript');
+        rebuildHost(() => initialValue = 'Replacement transcript');
+        await tester.pump();
         var field = tester.widget<TextField>(find.byKey(fieldKey));
         expect(field.controller?.text, 'Replacement transcript');
         expect(
@@ -74,11 +81,13 @@ void main() {
         );
 
         await tester.enterText(find.byKey(fieldKey), 'User correction');
-        await pumpValue('Replacement transcript');
+        rebuildHost(() {});
+        await tester.pump();
         field = tester.widget<TextField>(find.byKey(fieldKey));
         expect(field.controller?.text, 'User correction');
 
-        await pumpValue(null);
+        rebuildHost(() => initialValue = null);
+        await tester.pump();
         field = tester.widget<TextField>(find.byKey(fieldKey));
         expect(field.controller?.text, isEmpty);
       },
