@@ -517,9 +517,11 @@ void main() {
     testWidgets(
       'keeps the chip inline with the text and shows actions when wide',
       (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1400, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
         final bench = AgentTestBench(
           mediaQueryData: const MediaQueryData(
-            size: Size(900, 800),
+            size: Size(1400, 800),
             disableAnimations: true,
           ),
           suggestions: UnifiedSuggestionList(
