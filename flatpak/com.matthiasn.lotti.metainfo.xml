@@ -51,6 +51,7 @@
           <p>Checklist cards now collapse cleanly after every item is complete: the completion message stays on one line instead of stacking its letters.</p>
           <p>The editor formatting toolbar renders correctly on macOS again instead of becoming a grey error strip when an editor gains focus.</p>
           <p>Bulk checklist suggestion acceptance no longer flickers. Confirm all keeps every proposal row mounted through its staggered exit even when fast checklist check-offs resolve the underlying suggestions before later rows begin animating, while the task page stays anchored throughout the batch.</p>
+          <p>Matrix sync now reliably catches up after a device was offline. Reopening a device after another device sent a large burst always walks forward from the last applied Matrix event instead of occasionally treating a cached timeline as complete and leaving newer entries missing.</p>
       </description>
     </release>
     <release version="0.9.1045" date="2026-07-15">

@@ -75,6 +75,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keep the existing defaults.
 
 ### Fixed
+- **Matrix sync now reliably catches up after a device was offline.** Reopening
+  a device after another device sent a large burst now always walks forward
+  from the last applied Matrix event instead of occasionally treating a cached
+  timeline as complete and leaving newer entries missing.
 - **Command+S saves changed rich text again.** The save command now travels
   with the reusable editor, so it works in journal cards and task forms as well
   as on the standalone entry page without reaching for the Save button.

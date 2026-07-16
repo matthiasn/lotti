@@ -12,13 +12,17 @@ import 'package:matrix/matrix.dart';
 /// does NOT reuse the SDK's cached backward-walking timeline.
 ///
 /// How it works:
-/// - `room.getTimeline(eventContextId: anchorEventId)` asks the
+/// - `room.getTimeline(eventContextId: anchorEventId, limit: 0)` asks the
 ///   server for a fragmented timeline centred on the anchor via
 ///   `/rooms/{roomId}/context/{eventId}`. The returned chunk
 ///   carries `prev_batch` / `next_batch` tokens independent of
 ///   whatever the client has cached from prior sessions — so a
 ///   client whose cached oldest event is months below the gap
 ///   still gets a fresh server-side window here.
+///   The zero database limit is essential: Matrix SDK 7.0.0 skips
+///   the context request when the anchor is already present in its
+///   local event cache, producing a non-fragmented timeline without
+///   the forward token needed to close the reconnect gap.
 /// - `timeline.requestFuture(historyCount: pageSize)` walks
 ///   forward via `/messages?dir=f`, one page at a time, emitting
 ///   each page through the sink until the server reports no more
@@ -55,7 +59,10 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
   final start = nowFn();
   final Timeline timeline;
   try {
-    timeline = await room.getTimeline(eventContextId: anchorEventId);
+    timeline = await room.getTimeline(
+      eventContextId: anchorEventId,
+      limit: 0,
+    );
   } catch (error, stackTrace) {
     logging.error(
       LogDomain.sync,
