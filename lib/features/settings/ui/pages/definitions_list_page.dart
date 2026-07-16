@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -59,11 +60,18 @@ class DefinitionsListPage<T> extends StatefulWidget {
   /// search haystack.
   final String Function(T item) displayName;
 
-  /// Row builder. `showDivider` is false for the last row of the card.
+  /// Row builder.
+  ///
+  /// [ListRowDivider] carries the row's whole divider treatment: whether it
+  /// draws a hairline (false for the last row, and stable across hover so the
+  /// 1 px line never adds/removes vertical space), what colour that hairline
+  /// takes ([Colors.transparent] while it brackets the hovered row), and the
+  /// hover callback that drives the fade. A row forwards all three to its
+  /// `DesignSystemListItem` — see [HoverDividerIndex].
   final Widget Function(
     BuildContext context,
     T item, {
-    required bool showDivider,
+    required ListRowDivider divider,
   })
   itemBuilder;
 
@@ -103,7 +111,8 @@ class DefinitionsListPage<T> extends StatefulWidget {
   State<DefinitionsListPage<T>> createState() => _DefinitionsListPageState<T>();
 }
 
-class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
+class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
+    with HoverDividerIndex<DefinitionsListPage<T>> {
   late String _queryRaw = widget.initialSearchTerm ?? '';
 
   // Memoize the filtered+sorted list so an unrelated rebuild (a background
@@ -254,7 +263,12 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
                   widget.itemBuilder(
                     context,
                     item,
-                    showDivider: index < filtered.length - 1,
+                    // `showDivider` stays a pure function of position, so
+                    // hover only ever changes the colour, never the layout.
+                    divider: dividerFor(
+                      index,
+                      showDivider: index < filtered.length - 1,
+                    ),
                   ),
               ],
             ),

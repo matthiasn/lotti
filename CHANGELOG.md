@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1048]
+### Changed
+- **The remaining settings lists fade their dividers on hover.** Hovering a row
+  in Categories, Labels, Habits, Measurables, Dashboards, or the Matrix sync
+  maintenance list now fades the hairlines above and below it, so the hovered
+  row is never bisected — matching Config Flags and Advanced Settings →
+  Maintenance. The row layout stays fixed; only the divider colour changes.
+
 ### Added
 - **Desktop Lotti now has a keyboard-first command layer.** Open the command
   palette with Command/Ctrl+K, jump to the eight main destinations with fixed

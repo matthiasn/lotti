@@ -10,6 +10,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.da
 import 'package:lotti/services/nav_service.dart';
 
 import '../../../../../test_data/test_data.dart';
+import '../../../../../test_utils/hover_divider_harness.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
@@ -354,6 +355,22 @@ void main() {
 
         expect(find.byType(MeasurablesPage), findsOneWidget);
         expect(find.text(measurableWater.displayName), findsOneWidget);
+      });
+    });
+
+    group('hover dividers', () {
+      testWidgets('the measurable row forwards its divider treatment', (
+        tester,
+      ) async {
+        await pumpMeasurablesPage(
+          tester,
+          measurables: [
+            measurableWater.copyWith(id: 'm-a', displayName: 'Alpha'),
+            measurableWater.copyWith(id: 'm-b', displayName: 'Beta'),
+          ],
+        );
+
+        await expectRowFadesDividerOnHover(tester, find.text('Alpha'));
       });
     });
   });

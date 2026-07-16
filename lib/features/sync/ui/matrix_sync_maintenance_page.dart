@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
@@ -40,9 +41,19 @@ class MatrixSyncMaintenancePage extends StatelessWidget {
 /// definitions, force re-sync, populate sequence log. Extracted so
 /// the V2 detail pane can host the same list without the sliver
 /// chrome.
-class MatrixSyncMaintenanceBody extends StatelessWidget {
+/// Hovering a row fades the hairlines bracketing it, matching the
+/// Advanced → Maintenance list this page mirrors — see
+/// [HoverDividerIndex].
+class MatrixSyncMaintenanceBody extends StatefulWidget {
   const MatrixSyncMaintenanceBody({super.key});
 
+  @override
+  State<MatrixSyncMaintenanceBody> createState() =>
+      _MatrixSyncMaintenanceBodyState();
+}
+
+class _MatrixSyncMaintenanceBodyState extends State<MatrixSyncMaintenanceBody>
+    with HoverDividerIndex<MatrixSyncMaintenanceBody> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -116,8 +127,13 @@ class MatrixSyncMaintenanceBody extends StatelessWidget {
               size: tokens.spacing.step6,
               color: tokens.colors.text.lowEmphasis,
             ),
+            // Keep `showDivider` stable so hover never shifts layout
+            // by 1 px; only the colour changes.
             showDivider: index < items.length - 1,
+            dividerColor: hoverDividerColorFor(index),
             dividerIndent: SettingsIcon.dividerIndent(tokens),
+            onHoverChanged: (hovered) =>
+                onRowHoverChanged(index, hovered: hovered),
             onTap: item.onTap,
           ),
       ],

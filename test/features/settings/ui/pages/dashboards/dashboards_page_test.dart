@@ -14,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
+import '../../../../../test_utils/hover_divider_harness.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
@@ -380,6 +381,22 @@ void main() {
 
         expect(find.byType(DashboardSettingsPage), findsOneWidget);
         expect(find.text(testDashboardConfig.name), findsOneWidget);
+      });
+    });
+
+    group('hover dividers', () {
+      testWidgets('the dashboard row forwards its divider treatment', (
+        tester,
+      ) async {
+        await pumpDashboardsPage(
+          tester,
+          dashboards: [
+            testDashboardConfig.copyWith(id: 'dash-a', name: 'Alpha'),
+            testDashboardConfig.copyWith(id: 'dash-b', name: 'Beta'),
+          ],
+        );
+
+        await expectRowFadesDividerOnHover(tester, find.text('Alpha'));
       });
     });
   });
