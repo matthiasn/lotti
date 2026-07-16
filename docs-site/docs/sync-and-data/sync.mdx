@@ -1,0 +1,31 @@
+---
+title: Sync devices
+description: Keep Lotti data aligned across devices while preserving local ownership.
+---
+
+# Sync devices
+
+Lotti can synchronize supported data between devices through its configured
+sync service. Setup and recovery are consequential operations, so the manual
+keeps this page deliberately conservative until the V1 onboarding flow is
+captured end to end.
+
+## Before setup
+
+- Make sure each device uses the intended sync account or node identity.
+- Keep a current backup before changing an established configuration.
+- Allow an initial synchronization to finish before judging missing content.
+- Avoid performing competing recovery or reset actions on multiple devices at
+  once.
+
+Open **Settings → Sync** to inspect connection and activity state. Follow the
+in-app setup for the current platform rather than copying credentials from a
+screenshot.
+
+:::caution Draft coverage
+
+This is a safe placeholder, not the finished V1 sync guide. The release gate
+tracks sync as incomplete until setup, second-device import, progress, offline
+catch-up, and recovery are documented with deterministic cases.
+
+:::

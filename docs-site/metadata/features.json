@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "features": [
+    {
+      "id": "daily-os",
+      "title": "Daily OS",
+      "page": "plan-and-capture/daily-os",
+      "status": "migrated",
+      "screenshotCases": [
+        "daily-os/capture-review",
+        "daily-os/reconcile",
+        "daily-os/agenda",
+        "daily-os/timeline",
+        "daily-os/arrange"
+      ]
+    },
+    {
+      "id": "tasks",
+      "title": "Tasks",
+      "page": "organize-and-reflect/tasks",
+      "status": "migrated",
+      "screenshotCases": []
+    },
+    {
+      "id": "settings",
+      "title": "Settings",
+      "page": "reference/settings",
+      "status": "verified",
+      "screenshotCases": [
+        "settings/home"
+      ]
+    },
+    {
+      "id": "categories",
+      "title": "Categories",
+      "page": "organize-and-reflect/categories",
+      "status": "needs-screenshot-refresh",
+      "screenshotCases": []
+    },
+    {
+      "id": "habits-measurables",
+      "title": "Habits and measurables",
+      "page": "organize-and-reflect/habits-and-measurables",
+      "status": "needs-screenshot-refresh",
+      "screenshotCases": []
+    },
+    {
+      "id": "dashboards",
+      "title": "Dashboards",
+      "page": "organize-and-reflect/dashboards",
+      "status": "needs-screenshot-refresh",
+      "screenshotCases": []
+    },
+    {
+      "id": "ai-provider-setup",
+      "title": "AI provider setup",
+      "page": "ai-and-automation/provider-setup",
+      "status": "migrated",
+      "screenshotCases": []
+    },
+    {
+      "id": "sync",
+      "title": "Sync",
+      "page": "sync-and-data/sync",
+      "status": "draft",
+      "screenshotCases": []
+    }
+  ]
+}

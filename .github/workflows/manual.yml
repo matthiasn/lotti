@@ -1,0 +1,255 @@
+name: Manual
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual.yml'
+      - 'docs-site/**'
+      - 'docs/MANUAL.md'
+      - 'docs/implementation_plans/2026-07-17_automated_manual_system.md'
+      - 'Makefile'
+      - 'pubspec.yaml'
+      - 'test/features/settings/ui/settings_home_screenshots_test.dart'
+      - 'test/features/daily_os_next/screenshot_harness.dart'
+      - 'test/features/**/*_screenshots_test.dart'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/manual.yml'
+      - 'docs-site/**'
+      - 'docs/MANUAL.md'
+      - 'docs/implementation_plans/2026-07-17_automated_manual_system.md'
+      - 'Makefile'
+      - 'pubspec.yaml'
+      - 'test/features/settings/ui/settings_home_screenshots_test.dart'
+      - 'test/features/daily_os_next/screenshot_harness.dart'
+      - 'test/features/**/*_screenshots_test.dart'
+  schedule:
+    - cron: '23 2 * * *'
+  workflow_dispatch:
+    inputs:
+      manual_version:
+        description: 'development or an app marketing version such as 1.0.0'
+        required: true
+        default: 'development'
+        type: string
+      capture_screenshots:
+        description: 'Regenerate the registered screenshot catalog'
+        required: true
+        default: true
+        type: boolean
+      publish_media:
+        description: 'Commit generated media to lotti-docs/main'
+        required: true
+        default: false
+        type: boolean
+      deploy:
+        description: 'Deploy the static build to the configured server directory'
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: manual-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  metadata:
+    name: Resolve manual version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Validate requested version
+        id: version
+        env:
+          REQUESTED_VERSION: ${{ inputs.manual_version }}
+        run: |
+          set -euo pipefail
+          VERSION="${REQUESTED_VERSION:-development}"
+          if [[ "$VERSION" != "development" ]] && \
+             ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid manual version: $VERSION" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Validate and build
+    needs: metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Lotti
+        uses: actions/checkout@v5
+        with:
+          path: lotti
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: lotti/docs-site/package-lock.json
+
+      - name: Install locked dependencies
+        working-directory: lotti/docs-site
+        run: npm ci
+
+      - name: Reject high-severity production advisories
+        working-directory: lotti/docs-site
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Validate, test, type-check, and build
+        working-directory: lotti/docs-site
+        env:
+          MANUAL_VERSION: ${{ needs.metadata.outputs.version }}
+          MANUAL_BASE_URL: /manual/${{ needs.metadata.outputs.version }}/
+        run: npm run check
+
+      - name: Upload static manual
+        uses: actions/upload-artifact@v4
+        with:
+          name: lotti-manual-${{ needs.metadata.outputs.version }}
+          path: lotti/docs-site/build
+          if-no-files-found: error
+          retention-days: 14
+
+  screenshots:
+    name: Capture screenshot catalog
+    needs: metadata
+    if: >-
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && inputs.capture_screenshots)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Lotti
+        uses: actions/checkout@v5
+        with:
+          path: lotti
+          fetch-depth: 0
+
+      - name: Checkout media repository
+        uses: actions/checkout@v5
+        with:
+          repository: matthiasn/lotti-docs
+          ref: main
+          path: lotti-docs
+          token: ${{ secrets.LOTTI_DOCS_TOKEN }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: lotti/docs-site/package-lock.json
+
+      - name: Read the pinned Flutter version
+        uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: flutter-version
+        with:
+          path: lotti/.fvmrc
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.flutter-version.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.flutter-version.outputs.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Install FVM
+        run: dart pub global activate fvm
+
+      - name: Install Flutter dependencies
+        working-directory: lotti
+        run: fvm flutter pub get --enforce-lockfile
+
+      - name: Capture and materialize registered screenshots
+        working-directory: lotti
+        run: >-
+          make manual_screenshots
+          MANUAL_VERSION="${{ needs.metadata.outputs.version }}"
+          LOTTI_DOCS_DIR="${{ github.workspace }}/lotti-docs"
+          MANUAL_CAPTURE_DIR="${{ runner.temp }}/lotti-manual-capture/${{ needs.metadata.outputs.version }}"
+
+      - name: Upload generated media for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: lotti-manual-media-${{ needs.metadata.outputs.version }}
+          path: lotti-docs/manual/screenshots/${{ needs.metadata.outputs.version }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Commit media to lotti-docs/main
+        if: >-
+          github.event_name == 'schedule' ||
+          (github.event_name == 'workflow_dispatch' && inputs.publish_media)
+        working-directory: lotti-docs
+        env:
+          MANUAL_VERSION: ${{ needs.metadata.outputs.version }}
+          LOTTI_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git config user.name 'Lotti Manual Bot'
+          git config user.email 'manual-bot@lotti.local'
+          git add "manual/screenshots/$MANUAL_VERSION"
+          if git diff --cached --quiet; then
+            echo "Screenshot catalog is already current."
+            exit 0
+          fi
+          git commit -m "docs: refresh $MANUAL_VERSION manual screenshots for ${LOTTI_COMMIT:0:12}"
+          git push origin HEAD:main
+
+  deploy:
+    name: Deploy static manual
+    needs: [metadata, build]
+    if: >-
+      always() && needs.build.result == 'success' &&
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.deploy) ||
+        ((github.event_name == 'push' || github.event_name == 'schedule') &&
+         vars.MANUAL_DEPLOY_ENABLED == 'true')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: manual-production
+    steps:
+      - name: Download static manual
+        uses: actions/download-artifact@v4
+        with:
+          name: lotti-manual-${{ needs.metadata.outputs.version }}
+          path: site
+
+      - name: Configure SSH
+        env:
+          DEPLOY_HOST: ${{ vars.MANUAL_DEPLOY_HOST }}
+          DEPLOY_KEY: ${{ secrets.MANUAL_DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_KEY"
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/manual_deploy_key
+          chmod 600 ~/.ssh/manual_deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Publish immutable version directory
+        env:
+          DEPLOY_HOST: ${{ vars.MANUAL_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.MANUAL_DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.MANUAL_DEPLOY_PATH }}
+          MANUAL_VERSION: ${{ needs.metadata.outputs.version }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_USER"
+          test -n "$DEPLOY_PATH"
+          rsync -az --delete \
+            -e 'ssh -i ~/.ssh/manual_deploy_key' \
+            site/ \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/$MANUAL_VERSION/"

@@ -1,0 +1,67 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import {
+  canonicalVariantPath,
+  findUnmanagedScreenshotReferences,
+  requiredVariants,
+  validateCaseId,
+  validateManualVersion,
+  validateScreenshotRegistry,
+} from '../scripts/manual-lib.mjs';
+
+test('the screenshot contract requires the complete viewport and theme matrix', () => {
+  assert.deepEqual(requiredVariants, [
+    'mobile-light',
+    'mobile-dark',
+    'desktop-light',
+    'desktop-dark',
+  ]);
+  const errors = validateScreenshotRegistry({
+    schemaVersion: 1,
+    cases: [
+      {
+        id: 'settings/home',
+        variants: {
+          'mobile-light': 'mobile-light.png',
+          'mobile-dark': 'mobile-dark.png',
+          'desktop-light': 'desktop-light.png',
+        },
+      },
+    ],
+  });
+  assert.deepEqual(errors, ['settings/home is missing desktop-dark.']);
+});
+
+test('unmanaged lotti-docs images are rejected outside code examples', () => {
+  const legacyUrl =
+    'https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/old.png';
+  const source = [
+    `![Old screenshot](${legacyUrl})`,
+    `\`![Example only](${legacyUrl})\``,
+    `\`\`\`md\n![Example only](${legacyUrl})\n\`\`\``,
+  ].join('\n');
+
+  assert.deepEqual(findUnmanagedScreenshotReferences(source), [legacyUrl]);
+});
+
+test('canonical media paths are stable and nested by case', () => {
+  assert.equal(
+    canonicalVariantPath('settings/home', 'desktop-dark'),
+    'settings/home/desktop-dark.webp',
+  );
+});
+
+test('case ids reject traversal and presentation-specific names', () => {
+  assert.throws(() => validateCaseId('../settings'), /Invalid screenshot case id/);
+  assert.throws(() => validateCaseId('settings_home'), /Invalid screenshot case id/);
+  assert.doesNotThrow(() => validateCaseId('daily-os/agenda'));
+});
+
+test('manual versions accept development and marketing versions only', () => {
+  assert.doesNotThrow(() => validateManualVersion('development'));
+  assert.doesNotThrow(() => validateManualVersion('1.0.0'));
+  assert.doesNotThrow(() => validateManualVersion('1.0.0-rc.1'));
+  assert.throws(() => validateManualVersion('1.0.0+42'), /Invalid manual version/);
+  assert.throws(() => validateManualVersion('../latest'), /Invalid manual version/);
+});

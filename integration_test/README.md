@@ -98,11 +98,16 @@ entirely through actor commands (`ping`, `init`, `createRoom`, `joinRoom`, `star
 
 ### 5. Manual Screenshots (`manual_screenshots_test.dart`)
 
-A manual screenshot-capture tool rather than a CI verification suite. It runs the full app shell
+A legacy full-shell screenshot-capture tool rather than a CI verification suite. It runs the full app shell
 with an in-memory harness and a single `testWidgets` case (`captures AI provider onboarding states
 in the full app shell`) that drives the AI provider onboarding UI and writes PNG screenshots via
 `manual_screenshot_utils.dart` to the directory named by the `LOTTI_SCREENSHOT_DIR` dart-define /
-env var (defaulting to `screenshots/manual`).
+env var.
+
+The automated manual site catalog uses the faster opt-in widget harnesses
+registered in `docs-site/metadata/screenshot-cases.json`; run it with
+`make manual_screenshots`. Both paths write generated media to the sibling
+`lotti-docs` checkout. See `test/README.md` for the four-variant contract.
 
 ## Infrastructure
 

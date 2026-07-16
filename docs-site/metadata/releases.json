@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "latestPublished": null,
+  "versions": [
+    {
+      "version": "development",
+      "label": "Development",
+      "status": "development"
+    }
+  ]
+}

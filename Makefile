@@ -19,6 +19,10 @@ MACOS_ARCHIVE_PATH = ./build/macos/archive/Runner.xcarchive
 MACOS_EXPORT_PATH = ./build/macos/export
 LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 THRESH ?= 1000
+LOTTI_DOCS_DIR ?= $(abspath ../lotti-docs)
+MANUAL_VERSION ?= development
+MANUAL_CAPTURE_DIR ?= $(LOTTI_DOCS_DIR)/manual/.staging/$(MANUAL_VERSION)
+MANUAL_MEDIA_DIR ?= $(LOTTI_DOCS_DIR)/manual/screenshots
 
 .PHONY: test
 test:
@@ -129,20 +133,51 @@ fluttium_production:
 	fluttium test test_flows/habit_flow.yaml --flavor production --target lib/main.dart
 
 .PHONY: fluttium_docs
-fluttium_docs:
-	mkdir -p ~/github/lotti-docs/images/${LOTTI_VERSION}
-	cp ./screenshots/* ~/github/lotti-docs/images/${LOTTI_VERSION}/
-	cd ~/github/lotti-docs/ && git pull && git add . && git commit -m ${LOTTI_VERSION} && git push
+fluttium_docs: manual_screenshots
+	@echo "fluttium_docs is deprecated; generated manual media is ready in $(MANUAL_MEDIA_DIR)."
+
+.PHONY: manual_deps
+manual_deps:
+	npm --prefix docs-site ci
+
+.PHONY: manual_start
+manual_start:
+	npm --prefix docs-site start
+
+.PHONY: manual_build
+manual_build:
+	npm --prefix docs-site run build
+
+.PHONY: manual_serve
+manual_serve:
+	npm --prefix docs-site run serve
+
+.PHONY: manual_check
+manual_check:
+	npm --prefix docs-site run check
+
+.PHONY: manual_check_media
+manual_check_media:
+	npm --prefix docs-site run validate -- --media-root "$(MANUAL_MEDIA_DIR)" --version "$(MANUAL_VERSION)"
+
+.PHONY: manual_screenshots
+manual_screenshots: manual_deps
+	mkdir -p "$(MANUAL_CAPTURE_DIR)"
+	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/settings/ui/settings_home_screenshots_test.dart
+	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/daily_os_next/ui/pages/day_planning_modal_screenshots_test.dart --name '^(mini|desktop) (capture captured|captured|reconcile) — (dark|light)$$'
+	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart --name '^((mini|desktop) (agenda|timeline)|(pro|desktop) timeline arrange mode) — (dark|light)$$'
+	npm --prefix docs-site run manifest -- --capture-dir "$(MANUAL_CAPTURE_DIR)" --output-root "$(MANUAL_MEDIA_DIR)" --version "$(MANUAL_VERSION)"
+	$(MAKE) manual_check_media MANUAL_VERSION="$(MANUAL_VERSION)" LOTTI_DOCS_DIR="$(LOTTI_DOCS_DIR)"
 
 .PHONY: manual_screenshots_macos
 manual_screenshots_macos:
-	mkdir -p screenshots/manual/${LOTTI_VERSION}/macos
-	LOTTI_SCREENSHOT_DIR=${CURDIR}/screenshots/manual/${LOTTI_VERSION}/macos $(FLUTTER_CMD) drive -d macos --driver=test_driver/manual_screenshots_driver.dart --target=integration_test/manual_screenshots_test.dart --dart-define=LOTTI_SCREENSHOT_DIR=${CURDIR}/screenshots/manual/${LOTTI_VERSION}/macos
+	mkdir -p "$(LOTTI_DOCS_DIR)/manual/legacy/${LOTTI_VERSION}/macos"
+	LOTTI_SCREENSHOT_DIR="$(LOTTI_DOCS_DIR)/manual/legacy/${LOTTI_VERSION}/macos" fvm flutter drive -d macos --driver=test_driver/manual_screenshots_driver.dart --target=integration_test/manual_screenshots_test.dart --dart-define=LOTTI_SCREENSHOT_DIR="$(LOTTI_DOCS_DIR)/manual/legacy/${LOTTI_VERSION}/macos"
 
 .PHONY: manual_screenshots_linux
 manual_screenshots_linux:
-	mkdir -p screenshots/manual/${LOTTI_VERSION}/linux
-	LOTTI_SCREENSHOT_DIR=${CURDIR}/screenshots/manual/${LOTTI_VERSION}/linux $(FLUTTER_CMD) drive -d linux --driver=test_driver/manual_screenshots_driver.dart --target=integration_test/manual_screenshots_test.dart --dart-define=LOTTI_SCREENSHOT_DIR=${CURDIR}/screenshots/manual/${LOTTI_VERSION}/linux
+	mkdir -p "$(LOTTI_DOCS_DIR)/manual/legacy/${LOTTI_VERSION}/linux"
+	LOTTI_SCREENSHOT_DIR="$(LOTTI_DOCS_DIR)/manual/legacy/${LOTTI_VERSION}/linux" fvm flutter drive -d linux --driver=test_driver/manual_screenshots_driver.dart --target=integration_test/manual_screenshots_test.dart --dart-define=LOTTI_SCREENSHOT_DIR="$(LOTTI_DOCS_DIR)/manual/legacy/${LOTTI_VERSION}/linux"
 
 .PHONY: bundle
 bundle:

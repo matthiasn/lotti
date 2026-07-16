@@ -208,6 +208,8 @@ test/failures/
 # Node modules & Vite cache
 **/node_modules/
 **/.vite/
+docs-site/.docusaurus/
+docs-site/build/
 
 logs/
 
