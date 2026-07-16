@@ -42,32 +42,6 @@ const _category = DayAgentCategory(
   colorHex: '0080FF',
 );
 
-class _UndoFailingDayAgent extends RecordingDayAgent {
-  int editCalls = 0;
-
-  @override
-  Future<DraftPlan> editBlock({
-    required DraftPlan plan,
-    required String blockId,
-    required DateTime start,
-    required DateTime end,
-    String? title,
-    DayAgentCategory? category,
-  }) async {
-    editCalls += 1;
-    final edited = await super.editBlock(
-      plan: plan,
-      blockId: blockId,
-      start: start,
-      end: end,
-      title: title,
-      category: category,
-    );
-    if (editCalls == 2) throw StateError('undo persistence failed');
-    return edited;
-  }
-}
-
 DraftPlan _drafted({
   DayState state = DayState.drafted,
   String title = 'Deep work',
@@ -775,7 +749,10 @@ void main() {
         capacityMinutes: 240,
         scheduledMinutes: 60,
       );
-      final agent = _UndoFailingDayAgent();
+      final agent = RecordingDayAgent(
+        editError: StateError('undo persistence failed'),
+        editErrorOnCall: 2,
+      );
       await _pumpDayPage(tester, draft: draft, agent: agent);
 
       final messages = tester.element(find.byType(DayPage)).messages;
