@@ -36,6 +36,15 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --quiet --output-document=- http://localhost:8008/_matrix/client/versions >/dev/null 2>&1",
+        ]
+      interval: 1s
+      timeout: 2s
+      retries: 60
     networks:
       - internal
     restart: unless-stopped
@@ -44,7 +53,8 @@ services:
     hostname: toxiproxy
     image: ghcr.io/shopify/toxiproxy:2.11.0
     depends_on:
-      - dendrite
+      dendrite:
+        condition: service_healthy
     ports:
       - 18008:18008
       - 8474:8474

@@ -28,7 +28,7 @@ flowchart LR
   Sender --> Room["Encrypted Matrix room"]
 
   Room --> QueueCoord["QueuePipelineCoordinator"]
-  QueueCoord --> Bridge["BridgeCoordinator (catch-up via /messages on limited=true)"]
+  QueueCoord --> Bridge["BridgeCoordinator (anchored catch-up via /context + /messages)"]
   QueueCoord --> Queue["InboundQueue (Drift-backed)"]
   Bridge --> Queue
   Queue --> Worker["InboundWorker (per-room drain, one entry per batch)"]
@@ -789,9 +789,16 @@ The important runtime rules are:
 - live events are routed through `PendingDecryptionPen` so pre-decryption
   ciphertext never lands in `inbound_event_queue.raw_json`, then enqueued via
   `InboundQueue.enqueueLive`
-- on `timeline.limited == true`, `BridgeCoordinator` runs an anchored
+- on coordinator startup, an explicit room save, or `timeline.limited == true`,
+  `BridgeCoordinator` runs an anchored
   **forward** catch-up walk via `CatchUpStrategy.collectForwardForBootstrap`
   (anchored on the per-room `last_applied_event_id` marker in `queue_markers`),
+  forcing a server `/context/{eventId}` request with
+  `room.getTimeline(eventContextId: marker, limit: 0)` before walking
+  `/messages?dir=f`. The zero cache limit is required with Matrix SDK 7.0.0:
+  otherwise an anchor already present in the SDK database suppresses the
+  context request, leaves the timeline without a forward token, and can make a
+  reconnect incorrectly report completion with no bootstrap events,
   falling back to a timestamp-bounded **backward** walk
   (`collectHistoryForBootstrap`) only for fresh clients with no anchor or when
   the anchor is unresolvable, and feeds events through the same enqueue path
@@ -866,14 +873,18 @@ Components (all under `lib/features/sync/queue/`):
   `SyncSequenceLogService.runWithDeferredMissingEntries` so per-slice gap
   detections coalesce into one `onMissingEntriesDetected` emission — the
   F1 concern from the design review. Honours `UserActivityGate`.
-- **`BridgeCoordinator`** — subscribes to `Client.onSync` and, on any
-  joined room's `timeline.limited == true`, runs a catch-up walk anchored on
-  the per-room marker in `queue_markers`: an anchored **forward** walk via
+- **`BridgeCoordinator`** — subscribes to `Client.onSync`; startup, explicit
+  room-save, manual-rescan, and joined-room `timeline.limited == true` signals
+  run a catch-up walk anchored on the per-room marker in `queue_markers`: an
+  anchored **forward** walk via
   `CatchUpStrategy.collectForwardForBootstrap` when `last_applied_event_id` is
-  set (the preferred path), falling back to a timestamp-bounded **backward**
-  walk via `collectHistoryForBootstrap` for fresh clients or an unresolvable
-  anchor. Walked events are appended via `InboundQueue.appendBootstrapPage`,
-  i.e. enqueued with `producer=bootstrap`. Single-flight.
+  set (the preferred path). The forward walk deliberately passes `limit: 0`
+  to `Room.getTimeline` so Matrix SDK cannot satisfy the anchor from its local
+  cache and must return server context with a valid forward-pagination token.
+  It falls back to a timestamp-bounded **backward** walk via
+  `collectHistoryForBootstrap` for fresh clients or an unresolvable anchor.
+  Walked events are appended via `InboundQueue.appendBootstrapPage`, i.e.
+  enqueued with `producer=bootstrap`. Single-flight.
 - **`PendingDecryptionPen`** — LRU holding pen for Megolm-encrypted events
   that arrive before their session key. The worker re-resolves them via
   `room.getEventById` on every drain iteration; only fully-decrypted

@@ -2002,6 +2002,41 @@ void main() {
     );
 
     test(
+      'forces a server context lookup even when the anchor is already in the '
+      'SDK cache',
+      () async {
+        final room = MockRoom();
+        final log = MockDomainLogger();
+        final timeline = MockTimeline();
+        final anchor = buildEvent(r'$anchor', 100);
+        when(
+          () => room.getTimeline(
+            eventContextId: r'$anchor',
+            limit: 0,
+          ),
+        ).thenAnswer((_) async => timeline);
+        when(() => timeline.events).thenReturn([anchor]);
+        when(() => timeline.canRequestFuture).thenReturn(false);
+        when(timeline.cancelSubscriptions).thenAnswer((_) {});
+
+        final result = await CatchUpStrategy.collectForwardForBootstrap(
+          room: room,
+          sink: _CollectingBootstrapSink((_) {}),
+          logging: log,
+          anchorEventId: r'$anchor',
+        );
+
+        expect(result.stopReason, BootstrapStopReason.serverExhausted);
+        verify(
+          () => room.getTimeline(
+            eventContextId: r'$anchor',
+            limit: 0,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'emits events strictly newer than the anchor and stops when the '
       'server runs out of future — this is the load-bearing reconnect '
       'path that backward-walk cannot cover once the cache predates '

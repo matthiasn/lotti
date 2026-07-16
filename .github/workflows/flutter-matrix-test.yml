@@ -8,6 +8,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CARGO_HTTP_TIMEOUT: "120"
+  CARGO_NET_RETRY: "10"
+
 jobs:
   test:
     name: Matrix Test on Linux
@@ -24,6 +28,15 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-matrix-cargo-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-matrix-cargo-
       - uses: kuhnroyal/flutter-fvm-config-action@v2
         id: fvm-config-action
       - uses: subosito/flutter-action@v2
@@ -59,6 +72,15 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-matrix-cargo-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-matrix-cargo-
       - uses: kuhnroyal/flutter-fvm-config-action@v2
         id: fvm-config-action
       - uses: subosito/flutter-action@v2
@@ -91,6 +113,15 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-matrix-cargo-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-matrix-cargo-
       - uses: kuhnroyal/flutter-fvm-config-action@v2
         id: fvm-config-action
       - uses: subosito/flutter-action@v2
