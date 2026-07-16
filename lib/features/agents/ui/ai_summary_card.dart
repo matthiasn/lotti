@@ -114,7 +114,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   bool _expanded = false;
   bool _historyOpen = false;
   bool _confirmAllBusy = false;
-  bool _automaticUpdatesBusy = false;
+  final Set<String> _automaticUpdatesBusyAgentIds = {};
   int _confirmAllPulse = 0;
   bool _cancelledManually = false;
   UnifiedSuggestionList? _lastVisibleSuggestions;
@@ -293,16 +293,17 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   }
 
   Future<void> _updateAutomaticUpdates({required bool enabled}) async {
-    if (_automaticUpdatesBusy) return;
-    setState(() => _automaticUpdatesBusy = true);
+    final agentId = widget.identity.agentId;
+    if (_automaticUpdatesBusyAgentIds.contains(agentId)) return;
+    setState(() => _automaticUpdatesBusyAgentIds.add(agentId));
     try {
       await ref
           .read(taskAgentServiceProvider)
           .updateAutomaticUpdates(
-            agentId: widget.identity.agentId,
+            agentId: agentId,
             enabled: enabled,
           );
-      ref.invalidate(agentIdentityProvider(widget.identity.agentId));
+      ref.invalidate(agentIdentityProvider(agentId));
     } catch (error, stackTrace) {
       developer.log(
         'Task-agent automatic update failed',
@@ -310,7 +311,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         error: error,
         stackTrace: stackTrace,
       );
-      if (mounted) {
+      if (mounted && widget.identity.agentId == agentId) {
         context.showToast(
           tone: DesignSystemToastTone.error,
           title: context.messages.commonError,
@@ -318,7 +319,9 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         );
       }
     } finally {
-      if (mounted) setState(() => _automaticUpdatesBusy = false);
+      if (mounted && _automaticUpdatesBusyAgentIds.contains(agentId)) {
+        setState(() => _automaticUpdatesBusyAgentIds.remove(agentId));
+      }
     }
   }
 
@@ -552,7 +555,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
 
     final automationPanel = TaskAgentAutomationPanel(
       automaticUpdatesEnabled: automaticUpdatesEnabled,
-      automationBusy: _automaticUpdatesBusy,
+      automationBusy: _automaticUpdatesBusyAgentIds.contains(agentId),
       inferenceAvailable: inferenceAvailable,
       isRunning: isRunning,
       isStale: reportIsStale,

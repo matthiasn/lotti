@@ -29,7 +29,7 @@ On desktop, the report and proposals form the reading column while automation
 and setup stay in a compact control rail. **Read more** sits after the summary
 it expands, so the control and its content stay together.
 
-![Task-agent card on desktop](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/task_agents/0.9.1048/desktop_scheduled_dark.png)
+![Task-agent card on desktop](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/task_agents/0.9.1049/desktop_scheduled_dark.png)
 
 ## Choose when the agent wakes
 
@@ -43,7 +43,7 @@ it expands, so the control and its content stay together.
 - **× beside a countdown:** cancels that scheduled automatic wake without
   disabling the toggle.
 
-![Automatic updates enabled with a countdown](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/task_agents/0.9.1048/pro_scheduled_light.png)
+![Automatic updates enabled with a countdown](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/task_agents/0.9.1049/pro_scheduled_light.png)
 
 Leaving automatic updates off is useful for active tasks that change often.
 You keep freshness awareness without repeatedly sending nearly identical
@@ -56,28 +56,17 @@ stays visible and receives a focused **This summary is out of date** notice.
 No inference runs in the background. Choose **Wake agent** when the task is
 ready for a new pass.
 
-![Outdated task-agent summary with Wake agent CTA](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/task_agents/0.9.1048/pro_manual_dark.png)
+![Outdated task-agent summary with Wake agent CTA](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/task_agents/0.9.1049/pro_manual_dark.png)
 
 The freshness check is conservative: if another task edit arrives after a wake
 starts, that newer edit keeps the report stale even when the older wake finishes.
 Wake it again after the changes settle to include the newest state.
 
-![Outdated summary and controls on desktop](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/task_agents/0.9.1048/desktop_manual_light.png)
+![Outdated summary and controls on desktop](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/task_agents/0.9.1049/desktop_manual_light.png)
 
 ## Review proposed changes
 
-The summary is informational. Proposed task mutations appear separately under
-**Proposed changes** and still require your review. Expand **History** to inspect
-earlier accepted and dismissed proposals. Open **Read more**, then **Open agent
-internals**, when you need the full report or runtime detail.
-
-## Try a deliberately weird task
-
-For a memorable freshness check, create a task such as **Prepare the
-zero-gravity fish feeder for the penguin migration window** and attach a task
-agent. Keep automatic updates off, wake it once, then add checklist items for
-**hedge sardine futures** and **inspect the ventilation-duct penguin**. The old
-summary should remain readable, the card should mark it outdated, and only your
-next **Wake agent** should spend inference on the new situation.
-
-Your penguin situation may vary.
+The summary itself does not change the task. Suggested edits appear under
+**Proposed changes**, where you can accept or dismiss each one. **History** lists
+proposals you already reviewed. Use **Read more** for the full report and
+**Open agent internals** for run details.

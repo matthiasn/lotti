@@ -195,6 +195,27 @@ class WakeOrchestrator {
   /// after a newer one.
   final _pendingReportStaleAt = <String, DateTime>{};
   final _reportStaleWritesInProgress = <String>{};
+  final _freshnessWriteChains = <String, Future<void>>{};
+
+  /// Serialize stale and fresh watermark mutations per agent.
+  ///
+  /// Stale notifications can land while a wake is completing. Keeping both
+  /// mutations on one chain prevents a fresh write based on an older state
+  /// snapshot from overwriting a newer stale watermark.
+  Future<void> _serializeFreshnessWrite(
+    String agentId,
+    Future<void> Function() write,
+  ) {
+    final previous = _freshnessWriteChains[agentId] ?? Future<void>.value();
+    late final Future<void> current;
+    current = previous.then((_) => write()).whenComplete(() {
+      if (identical(_freshnessWriteChains[agentId], current)) {
+        _freshnessWriteChains.remove(agentId);
+      }
+    });
+    _freshnessWriteChains[agentId] = current;
+    return current;
+  }
 
   // ── Throttle state ──────────────────────────────────────────────────────
 

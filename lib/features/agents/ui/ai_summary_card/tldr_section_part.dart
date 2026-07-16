@@ -69,14 +69,18 @@ class TldrHeader extends StatelessWidget {
                       child: InkWell(
                         onTap: onAgentTap,
                         borderRadius: BorderRadius.circular(tokens.radii.s),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            vertical: tokens.spacing.step1,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            minWidth: kMinInteractiveDimension,
+                            minHeight: kMinInteractiveDimension,
                           ),
-                          child: Text(
-                            displayName,
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(color: ai.metaText),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              displayName,
+                              style: tokens.typography.styles.others.caption
+                                  .copyWith(color: ai.metaText),
+                            ),
                           ),
                         ),
                       ),

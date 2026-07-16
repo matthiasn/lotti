@@ -556,6 +556,17 @@ extension WakeDrainEngine on WakeOrchestrator {
   Future<void> _markReportFresh(
     String agentId, {
     required DateTime refreshStartedAt,
+  }) => _serializeFreshnessWrite(
+    agentId,
+    () => _persistReportFresh(
+      agentId,
+      refreshStartedAt: refreshStartedAt,
+    ),
+  );
+
+  Future<void> _persistReportFresh(
+    String agentId, {
+    required DateTime refreshStartedAt,
   }) async {
     try {
       final state = await repository.getAgentState(agentId);

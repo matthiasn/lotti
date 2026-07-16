@@ -85,10 +85,12 @@ Startup does this:
   not replay changes received while it was off or invent a countdown.
 - `AgentStateEntity.reportStaleAt` and `reportFreshAt` are monotonic freshness
   watermarks and merge by their latest timestamps during sync conflict
-  resolution. A report is stale when the stale watermark is later than the
-  fresh watermark. A successful wake records its start time as `reportFreshAt`,
-  so a task edit that arrives during inference remains visibly stale and is not
-  erased by the older wake finishing later.
+  resolution. Stale and fresh persistence shares one serialized write chain per
+  agent, so an older async state snapshot cannot overwrite a later watermark.
+  A report is stale when the stale watermark is later than the fresh watermark.
+  A successful wake records its start time as `reportFreshAt`, so a task edit
+  that arrives during inference remains visibly stale and is not erased by the
+  older wake finishing later.
 - Every task-agent report written by `WakeOutputWriter` receives a versioned
   inference provenance stamp captured once at wake start. It denormalizes model
   name, publisher, serving-provider name/type, route identifiers and relevant

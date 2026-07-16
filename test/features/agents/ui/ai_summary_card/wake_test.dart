@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -213,6 +214,36 @@ void main() {
           enabled: true,
         ),
       ).called(1);
+    });
+
+    testWidgets('auto-wake failure shows an error and restores the toggle', (
+      tester,
+    ) async {
+      final taskAgentService = MockTaskAgentService();
+      when(
+        () => taskAgentService.updateAutomaticUpdates(
+          agentId: any(named: 'agentId'),
+          enabled: any(named: 'enabled'),
+        ),
+      ).thenThrow(StateError('write failed'));
+      final bench = AgentTestBench(
+        identity: makeTestIdentity().copyWith(
+          config: const AgentConfig(automaticUpdatesEnabled: false),
+        ),
+        taskAgentService: taskAgentService,
+        report: makeTestReport(tldr: 'Summary.'),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+      final toggleFinder = find.byKey(
+        const Key('taskAgentAutomaticUpdatesCheckbox'),
+      );
+      await tester.tap(toggleFinder);
+      await tester.pump();
+
+      expect(find.text('Error'), findsOneWidget);
+      expect(tester.widget<DesignSystemToggle>(toggleFinder).enabled, isTrue);
     });
 
     testWidgets('no setup disables Run now and shows a visible error', (

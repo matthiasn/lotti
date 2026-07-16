@@ -3897,7 +3897,7 @@
   "taskAgentUseCategoryDefault": "Copiați configurarea implicită a categoriei",
   "taskAgentUseCategoryDefaultDescription": "Copiază configurarea curentă a categoriei. Modificările ulterioare ale categoriei nu vor afecta acest agent.",
   "taskAgentUseProfileDefault": "Folosiți modelul implicit al profilului",
-  "taskAgentWakeAgent": "Activați agentul",
+  "taskAgentWakeAgent": "Treziți agentul",
   "taskCategoryAllLabel": "toate",
   "taskCategoryLabel": "Categorie:",
   "taskCategoryUnassignedLabel": "neeatribuit",

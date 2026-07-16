@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -144,6 +146,81 @@ void main() {
         // rebuilt in place (not torn down) and re-read its identity.
         expect(find.text('Agent Beta'), findsOneWidget);
         expect(find.text('Agent Alpha'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a pending toggle for the old agent does not block the new agent',
+      (tester) async {
+        final first = makeTestIdentity(
+          id: 'agent-A',
+          agentId: 'agent-A',
+          displayName: 'Agent Alpha',
+          config: const AgentConfig(automaticUpdatesEnabled: false),
+        );
+        final second = makeTestIdentity(
+          id: 'agent-B',
+          agentId: 'agent-B',
+          displayName: 'Agent Beta',
+          config: const AgentConfig(automaticUpdatesEnabled: false),
+        );
+        final firstUpdate = Completer<void>();
+        final taskAgentService = MockTaskAgentService();
+        when(
+          () => taskAgentService.updateAutomaticUpdates(
+            agentId: 'agent-A',
+            enabled: true,
+          ),
+        ).thenAnswer((_) => firstUpdate.future);
+        when(
+          () => taskAgentService.updateAutomaticUpdates(
+            agentId: 'agent-B',
+            enabled: true,
+          ),
+        ).thenAnswer((_) async {});
+        var current = first;
+
+        await tester.pumpWidget(
+          _buildShell(
+            identity: (ref) => current,
+            taskAgentService: taskAgentService,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final toggle = find.byKey(
+          const Key('taskAgentAutomaticUpdatesCheckbox'),
+        );
+        await tester.tap(toggle);
+        await tester.pump();
+        verify(
+          () => taskAgentService.updateAutomaticUpdates(
+            agentId: 'agent-A',
+            enabled: true,
+          ),
+        ).called(1);
+
+        final element = tester.element(find.byType(AiSummaryCard));
+        final container = ProviderScope.containerOf(element);
+        current = second;
+        container.invalidate(taskAgentProvider(AgentTestBench.taskId));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Agent Beta'), findsOneWidget);
+        final secondToggle = find.byKey(
+          const Key('taskAgentAutomaticUpdatesCheckbox'),
+        );
+        await tester.tap(secondToggle);
+        await tester.pump();
+        verify(
+          () => taskAgentService.updateAutomaticUpdates(
+            agentId: 'agent-B',
+            enabled: true,
+          ),
+        ).called(1);
+
+        firstUpdate.complete();
+        await tester.pump();
       },
     );
   });

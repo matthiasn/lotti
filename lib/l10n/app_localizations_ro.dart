@@ -9714,7 +9714,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Folosiți modelul implicit al profilului';
 
   @override
-  String get taskAgentWakeAgent => 'Activați agentul';
+  String get taskAgentWakeAgent => 'Treziți agentul';
 
   @override
   String get taskCategoryAllLabel => 'toate';

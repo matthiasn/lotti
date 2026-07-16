@@ -5,11 +5,12 @@
 /// iteration, and final captures so expert-panel comparisons judge the same
 /// content, viewport, and state every time.
 ///
-/// PNGs are written outside the app repository. Run with:
+/// PNGs are written to `LOTTI_SCREENSHOT_DIR`. When only
+/// `LOTTI_CAPTURE_SCREENSHOTS=true` is set, they are written to
+/// `screenshots/task_agent_card`. Run with:
 ///
 /// ```sh
-/// LOTTI_SCREENSHOT_DIR=/home/parallels/github/lotti-docs/pr-screenshots/\
-/// task-agent-card-auto-wake/before \
+/// LOTTI_SCREENSHOT_DIR=/tmp/lotti-task-agent-card-screenshots \
 ///   fvm flutter test \
 ///   test/features/agents/ui/ai_summary_card/screenshots_test.dart
 /// ```

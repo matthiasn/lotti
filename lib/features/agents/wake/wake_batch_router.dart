@@ -283,7 +283,12 @@ extension WakeBatchRouter on WakeOrchestrator {
       _pendingReportStaleAt[agentId] = occurredAt;
     }
     if (!_reportStaleWritesInProgress.add(agentId)) return;
-    unawaited(_flushReportStaleWrites(agentId));
+    unawaited(
+      _serializeFreshnessWrite(
+        agentId,
+        () => _flushReportStaleWrites(agentId),
+      ),
+    );
   }
 
   Future<void> _flushReportStaleWrites(String agentId) async {

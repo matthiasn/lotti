@@ -95,7 +95,7 @@ class TaskAgentAutomationPanel extends StatelessWidget {
             ],
           ),
           SizedBox(height: tokens.spacing.step4),
-          if (isStale)
+          if (isStale && !automaticUpdatesEnabled)
             _StaleReportNotice(
               isRunning: isRunning,
               onRunNow: onRunNow,

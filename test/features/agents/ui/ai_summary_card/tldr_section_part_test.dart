@@ -57,6 +57,17 @@ void main() {
       expect(find.text('AI summary'), findsOneWidget);
       expect(find.text('Task Laura'), findsOneWidget);
       expect(find.byKey(const ValueKey('playback')), findsOneWidget);
+      final agentTarget = tester.getRect(
+        find.ancestor(
+          of: find.text('Task Laura'),
+          matching: find.byType(InkWell),
+        ),
+      );
+      expect(agentTarget.width, greaterThanOrEqualTo(kMinInteractiveDimension));
+      expect(
+        agentTarget.height,
+        greaterThanOrEqualTo(kMinInteractiveDimension),
+      );
       await tester.tap(find.text('Task Laura'));
       expect(agentTaps, 1);
     });

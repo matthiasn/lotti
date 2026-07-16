@@ -114,6 +114,30 @@ void main() {
     expect(cancellations, 1);
   });
 
+  testWidgets(
+    'stale automatic mode keeps its scheduled countdown and cancellation',
+    (tester) async {
+      final now = DateTime(2026, 7, 16, 9);
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            subject(
+              automaticUpdatesEnabled: true,
+              isStale: true,
+              showCountdown: true,
+              nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
+              onRunNow: () {},
+            ),
+          ),
+        );
+
+        expect(find.text('1:30'), findsOneWidget);
+        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.text('This summary is out of date'), findsNothing);
+      });
+    },
+  );
+
   testWidgets('missing setup disables inference and automation actions', (
     tester,
   ) async {
