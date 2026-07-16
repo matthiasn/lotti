@@ -210,6 +210,8 @@ void main() {
       GCounter totalSessions = const GCounter.empty(),
       int revision = 1,
       String? activeTaskId,
+      DateTime? reportStaleAt,
+      DateTime? reportFreshAt,
     }) {
       return AgentDomainEntity.agentState(
             id: 'state-1',
@@ -222,6 +224,8 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
             wakeCounter: wakeCounter,
+            reportStaleAt: reportStaleAt,
+            reportFreshAt: reportFreshAt,
           )
           as AgentStateEntity;
     }
@@ -254,6 +258,34 @@ void main() {
       // Non-counter fields: from the winner (local here).
       expect(merged.revision, 2);
       expect(merged.slots.activeTaskId, 'task-local');
+    });
+
+    test('joins report freshness watermarks by latest observed event', () {
+      final staleEarlier = DateTime(2026, 7, 16, 9);
+      final staleLater = DateTime(2026, 7, 16, 10);
+      final freshEarlier = DateTime(2026, 7, 16, 8);
+      final freshLater = DateTime(2026, 7, 16, 11);
+      final local = stateWith(
+        reportStaleAt: staleLater,
+        reportFreshAt: freshEarlier,
+        activeTaskId: 'local-winner',
+      );
+      final incoming = stateWith(
+        reportStaleAt: staleEarlier,
+        reportFreshAt: freshLater,
+        activeTaskId: 'incoming-loser',
+      );
+
+      final merged = mergeAgentStateCounters(
+        winner: local,
+        local: local,
+        incoming: incoming,
+      );
+
+      expect(merged.reportStaleAt, staleLater);
+      expect(merged.reportFreshAt, freshLater);
+      expect(merged.isReportStale, isFalse);
+      expect(merged.slots.activeTaskId, 'local-winner');
     });
 
     test('counters are winner-independent; only non-counter fields follow the '

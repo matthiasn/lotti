@@ -150,20 +150,24 @@ Future<void> captureScreenshot(
           as RenderRepaintBoundary;
   await tester.runAsync(() async {
     final image = await boundary.toImage(pixelRatio: 2);
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    final dir =
-        Platform.environment['LOTTI_SCREENSHOT_DIR'] ??
-        p.join('screenshots', subdir);
-    final file = File(p.join(dir, '$name.png'));
-    await file.parent.create(recursive: true);
-    await file.writeAsBytes(
-      byteData!.buffer.asUint8List(
-        byteData.offsetInBytes,
-        byteData.lengthInBytes,
-      ),
-      flush: true,
-    );
-    stdout.writeln('wrote screenshot: ${file.path}');
+    try {
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final dir =
+          Platform.environment['LOTTI_SCREENSHOT_DIR'] ??
+          p.join('screenshots', subdir);
+      final file = File(p.join(dir, '$name.png'));
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(
+        byteData!.buffer.asUint8List(
+          byteData.offsetInBytes,
+          byteData.lengthInBytes,
+        ),
+        flush: true,
+      );
+      stdout.writeln('wrote screenshot: ${file.path}');
+    } finally {
+      image.dispose();
+    }
   });
 }
 

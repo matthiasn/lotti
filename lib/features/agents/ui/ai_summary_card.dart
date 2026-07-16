@@ -20,6 +20,7 @@ import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/agents/ui/task_agent_automation_panel.dart';
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -113,6 +114,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   bool _expanded = false;
   bool _historyOpen = false;
   bool _confirmAllBusy = false;
+  final Set<String> _automaticUpdatesBusyAgentIds = {};
   int _confirmAllPulse = 0;
   bool _cancelledManually = false;
   UnifiedSuggestionList? _lastVisibleSuggestions;
@@ -288,6 +290,39 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         agentName: agentName ?? widget.identity.displayName,
       ),
     );
+  }
+
+  Future<void> _updateAutomaticUpdates({required bool enabled}) async {
+    final agentId = widget.identity.agentId;
+    if (_automaticUpdatesBusyAgentIds.contains(agentId)) return;
+    setState(() => _automaticUpdatesBusyAgentIds.add(agentId));
+    try {
+      await ref
+          .read(taskAgentServiceProvider)
+          .updateAutomaticUpdates(
+            agentId: agentId,
+            enabled: enabled,
+          );
+      ref.invalidate(agentIdentityProvider(agentId));
+    } catch (error, stackTrace) {
+      developer.log(
+        'Task-agent automatic update failed',
+        name: 'AiSummaryCard',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (mounted && widget.identity.agentId == agentId) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.commonError,
+          clearQueue: true,
+        );
+      }
+    } finally {
+      if (mounted && _automaticUpdatesBusyAgentIds.contains(agentId)) {
+        setState(() => _automaticUpdatesBusyAgentIds.remove(agentId));
+      }
+    }
   }
 
   /// Confirms every visible suggestion while retaining the whole batch until
@@ -474,9 +509,11 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     });
 
     final agentStateAsync = ref.watch(agentStateProvider(agentId));
-    final nextWakeAt = agentStateAsync.value?.mapOrNull(
-      agentState: (s) => s.nextWakeAt,
+    final agentState = agentStateAsync.value?.mapOrNull(
+      agentState: (state) => state,
     );
+    final nextWakeAt = agentState?.nextWakeAt;
+    final reportIsStale = agentState?.isReportStale ?? false;
     final remainingSeconds = _computeRemainingSeconds(nextWakeAt);
 
     ref.listen(agentStateProvider(agentId), (prev, next) {
@@ -507,6 +544,76 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         !isRunning &&
         remainingSeconds > 0 &&
         !_cancelledManually;
+
+    final runNow = inferenceAvailable
+        ? () => ref.read(taskAgentServiceProvider).triggerReanalysis(agentId)
+        : null;
+    void cancelTimer() {
+      ref.read(taskAgentServiceProvider).cancelScheduledWake(agentId);
+      setState(() => _cancelledManually = true);
+    }
+
+    final automationPanel = TaskAgentAutomationPanel(
+      automaticUpdatesEnabled: automaticUpdatesEnabled,
+      automationBusy: _automaticUpdatesBusyAgentIds.contains(agentId),
+      inferenceAvailable: inferenceAvailable,
+      isRunning: isRunning,
+      isStale: reportIsStale,
+      showCountdown: showCountdown,
+      nextWakeAt: nextWakeAt,
+      onAutomaticUpdatesChanged: (enabled) =>
+          unawaited(_updateAutomaticUpdates(enabled: enabled)),
+      onRunNow: runNow,
+      onCancelTimer: cancelTimer,
+      onCountdownExpired: () {
+        if (mounted) setState(() {});
+      },
+    );
+    final identityRegion = TaskAgentIdentityRegion(
+      data: identityData,
+      onSetupTap: () => AgentModelSheet.show(
+        context: context,
+        taskId: widget.taskId,
+        agentId: agentId,
+      ),
+    );
+    final hasReportContent = tldr.isNotEmpty || additionalReport != null;
+    final reportBody = TldrBody(
+      tldr: tldr,
+      expanded: _expanded,
+      additionalReport: additionalReport,
+      onToggle: () => setState(() => _expanded = !_expanded),
+      onOpenInternals: () => _openInternals(agentName: subtitle),
+    );
+    final proposalsSection = list == null
+        ? null
+        : ProposalsSection(
+            key: widget.proposalsFocusKey,
+            open: list.open,
+            newlyArrived: _newlyArrivedFingerprints,
+            // The pill counts what the user still has to act on: rows
+            // already committed (collapsing out) are excluded, so the count
+            // ticks down *with* the action rather than waiting for prune.
+            pendingCount: list.open
+                .where(
+                  (s) => !_exitingFingerprints.contains(s.fingerprint),
+                )
+                .length,
+            resolved: list.activity,
+            historyOpen: _historyOpen,
+            onToggleHistory: () => setState(() => _historyOpen = !_historyOpen),
+            confirmAllBusy: _confirmAllBusy,
+            confirmAllPulse: _confirmAllPulse,
+            onConfirmAll: list.open.length > 1
+                ? () => _confirmAll(list.open)
+                : null,
+            onResolveStart: _onRowResolveStart,
+            onResolveEnd: _onRowResolveEnd,
+            // While any row is collapsing out, the survivors are sliding
+            // up — guard them so a fast second tap can't land on a row
+            // that just moved under the pointer.
+            settling: _exitingFingerprints.isNotEmpty,
+          );
 
     final cardRadius = BorderRadius.circular(tokens.radii.l);
     return DecoratedBox(
@@ -547,80 +654,81 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
           children: [
             TldrHeader(
               agentName: subtitle,
-              hasMore: tldr.isNotEmpty || additionalReport != null,
-              expanded: _expanded,
-              onToggle: () => setState(() => _expanded = !_expanded),
               onAgentTap: () => _openInternals(agentName: subtitle),
-              identityRegion: TaskAgentIdentityRegion(
-                data: identityData,
-                automaticUpdatesEnabled: automaticUpdatesEnabled,
-                onSetupTap: () => AgentModelSheet.show(
-                  context: context,
-                  taskId: widget.taskId,
-                  agentId: agentId,
-                ),
-              ),
               playbackControl: playbackControl,
-              isRunning: isRunning,
-              showCountdown: showCountdown,
-              nextWakeAt: nextWakeAt,
-              onRunNow: inferenceAvailable
-                  ? () => ref
-                        .read(taskAgentServiceProvider)
-                        .triggerReanalysis(agentId)
-                  : null,
-              onCancelTimer: () {
-                ref.read(taskAgentServiceProvider).cancelScheduledWake(agentId);
-                setState(() => _cancelledManually = true);
-              },
-              onCountdownExpired: () {
-                if (mounted) setState(() {});
+            ),
+            // Hide proposals until their first value to avoid flashing the
+            // empty state. On wide surfaces they stay in the report column so
+            // the control rail no longer creates a large dead zone; mobile
+            // preserves the full-width, linear reading order.
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final useControlRail =
+                    constraints.maxWidth >= tokens.spacing.step13 * 5;
+                final controls = Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    automationPanel,
+                    SizedBox(height: tokens.spacing.step4),
+                    identityRegion,
+                  ],
+                );
+                final contentPadding = EdgeInsets.fromLTRB(
+                  tokens.spacing.cardPadding,
+                  0,
+                  tokens.spacing.cardPadding,
+                  tokens.spacing.cardPadding,
+                );
+
+                if (!useControlRail) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: contentPadding,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            controls,
+                            if (hasReportContent) ...[
+                              SizedBox(height: tokens.spacing.sectionGap),
+                              reportBody,
+                            ],
+                          ],
+                        ),
+                      ),
+                      ?proposalsSection,
+                    ],
+                  );
+                }
+
+                return Padding(
+                  padding: contentPadding,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (hasReportContent) reportBody,
+                            if (hasReportContent && proposalsSection != null)
+                              SizedBox(height: tokens.spacing.sectionGap),
+                            ?proposalsSection,
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: tokens.spacing.sectionGap),
+                      SizedBox(
+                        width: tokens.spacing.step13 * 2 + tokens.spacing.step8,
+                        child: controls,
+                      ),
+                    ],
+                  ),
+                );
               },
             ),
-            if (tldr.isNotEmpty)
-              TldrBody(
-                tldr: tldr,
-                expanded: _expanded,
-                additionalReport: additionalReport,
-                onOpenInternals: () => _openInternals(agentName: subtitle),
-              ),
-            // Hide the proposals section until the unified suggestion list has
-            // produced its first value (avoids briefly rendering the "No open
-            // proposals" placeholder during the initial async fetch). Inside,
-            // each *newly arrived* row eases its own height open (see
-            // [_newlyArrivedFingerprints]): a proposal from a background wake
-            // reveals smoothly while the initial batch stays instant. When the
-            // card is scrolled fully above the viewport, TaskDetailsPage pins
-            // the content below it so the growth never moves the visible area.
-            if (list != null)
-              ProposalsSection(
-                key: widget.proposalsFocusKey,
-                open: list.open,
-                newlyArrived: _newlyArrivedFingerprints,
-                // The pill counts what the user still has to act on: rows
-                // already committed (collapsing out) are excluded, so the count
-                // ticks down *with* the action rather than waiting for prune.
-                pendingCount: list.open
-                    .where(
-                      (s) => !_exitingFingerprints.contains(s.fingerprint),
-                    )
-                    .length,
-                resolved: list.activity,
-                historyOpen: _historyOpen,
-                onToggleHistory: () =>
-                    setState(() => _historyOpen = !_historyOpen),
-                confirmAllBusy: _confirmAllBusy,
-                confirmAllPulse: _confirmAllPulse,
-                onConfirmAll: list.open.length > 1
-                    ? () => _confirmAll(list.open)
-                    : null,
-                onResolveStart: _onRowResolveStart,
-                onResolveEnd: _onRowResolveEnd,
-                // While any row is collapsing out, the survivors are sliding
-                // up — guard them so a fast second tap can't land on a row
-                // that just moved under the pointer.
-                settling: _exitingFingerprints.isNotEmpty,
-              ),
           ],
         ),
       ),

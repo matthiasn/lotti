@@ -339,6 +339,9 @@ void main() {
           ),
         ).thenReturn(null);
         when(
+          () => generatedOrchestrator.disableAutomaticUpdatesRuntime(any()),
+        ).thenReturn(null);
+        when(
           () => generatedRepository.getEntity(kTestTemplateId),
         ).thenAnswer((_) async => explicitTemplate);
         when(
@@ -491,7 +494,7 @@ void main() {
         );
         final config = createCall[2] as AgentConfig;
         expect(config.profileId, scenario.profileId, reason: '$scenario');
-        expect(config.automaticUpdatesEnabled, isTrue, reason: '$scenario');
+        expect(config.automaticUpdatesEnabled, isFalse, reason: '$scenario');
         expect(
           config.inferenceSetup?.mode,
           scenario.profileId == null
@@ -602,6 +605,9 @@ void main() {
               triggerTokens: {taskId},
             ),
           ).called(1);
+          verify(
+            () => generatedOrchestrator.disableAutomaticUpdatesRuntime(agentId),
+          ).called(1);
         }
       }, tags: 'glados');
 
@@ -654,6 +660,7 @@ void main() {
 
         expect(result, isA<AgentIdentityEntity>());
         expect(result.agentId, 'agent-1');
+        expect(result.config.automaticUpdatesEnabled, isFalse);
 
         // Verify state was updated with activeTaskId
         final stateCalls = verify(
@@ -685,6 +692,9 @@ void main() {
         expect(sub.matchEntityIds, contains('task-1'));
         expect(sub.id, 'agent-1_task_task-1');
         expect(sub.deferPropagatedMatches, isFalse);
+        verify(
+          () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+        ).called(1);
 
         // Verify initial wake was enqueued
         verify(
@@ -1276,7 +1286,37 @@ void main() {
         verifyNever(
           () => mockRepository.getLinksFrom('other-1', type: 'agent_task'),
         );
+        verify(
+          () => mockOrchestrator.disableAutomaticUpdatesRuntime('ta-1'),
+        ).called(1);
       });
+
+      test(
+        'enables scheduling for an explicitly opted-in task agent',
+        () async {
+          final taskAgent = makeIdentity(
+            agentId: 'ta-auto',
+            config: const AgentConfig(automaticUpdatesEnabled: true),
+          );
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [taskAgent]);
+          when(
+            () => mockRepository.getLinksFrom('ta-auto', type: 'agent_task'),
+          ).thenAnswer((_) async => []);
+
+          await service.restoreSubscriptions();
+
+          verify(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('ta-auto'),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('ta-auto'),
+          );
+        },
+      );
 
       test('skips non-task_agent agents', () async {
         final summaryAgent = makeIdentity(

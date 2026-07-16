@@ -28,8 +28,8 @@ abstract class AgentConfig with _$AgentConfig {
 
     /// Whether task changes may schedule coalesced automatic wakes.
     ///
-    /// Null means legacy/on. New task agents and the first switch edit persist
-    /// an explicit value independently from profile/model selection.
+    /// Null means off. New task agents and the first switch edit persist an
+    /// explicit value independently from profile/model selection.
     bool? automaticUpdatesEnabled,
 
     /// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
@@ -49,8 +49,9 @@ abstract class AgentConfig with _$AgentConfig {
 }
 
 extension AgentConfigAutomation on AgentConfig {
-  /// Legacy configs omitted the field and retain the historical enabled state.
-  bool get automaticUpdatesEnabledEffective => automaticUpdatesEnabled ?? true;
+  /// Omitted preferences use the responsible default: automatic inference is
+  /// opt-in.
+  bool get automaticUpdatesEnabledEffective => automaticUpdatesEnabled ?? false;
 }
 
 /// Persistent inference routing owned by one agent instance.

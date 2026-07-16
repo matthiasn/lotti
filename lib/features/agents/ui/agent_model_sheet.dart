@@ -26,7 +26,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
 /// Adaptive task-agent setup flow presented as one multi-page Wolt route.
 class AgentModelSheet {
@@ -302,14 +301,6 @@ class _AgentSetupFlowController {
         ),
   );
 
-  Future<void> updateAutomaticUpdates({
-    required bool enabled,
-  }) => _persist(
-    () => container
-        .read(taskAgentServiceProvider)
-        .updateAutomaticUpdates(agentId: agentId, enabled: enabled),
-  );
-
   Future<void> disable() async {
     final persisted = await _persist(
       () => container
@@ -403,8 +394,6 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
               ? context.messages.taskAgentNoProfileSelected
               : context.messages.taskAgentSetupBroken)
         : '$modelRoute\n$modelSource';
-    final automaticUpdates = config?.automaticUpdatesEnabledEffective ?? false;
-
     return _AgentBusyGuard(
       controller: controller,
       child: SingleChildScrollView(
@@ -470,44 +459,6 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
                         ),
                         onTap: controller.clearOverride,
                       ),
-                  ],
-                ),
-              ),
-              SizedBox(height: tokens.spacing.sectionGap),
-              _AgentSetupSection(
-                label: context.messages.taskAgentAutomationSection,
-                child: DesignSystemGroupedList(
-                  padding: EdgeInsets.zero,
-                  filled: false,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.all(tokens.spacing.cardPadding),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: tokens.spacing.step9,
-                        ),
-                        child: SettingsSwitchRow(
-                          key: const Key('taskAgentAutomaticUpdatesCheckbox'),
-                          title:
-                              context.messages.taskAgentAutomaticUpdatesLabel,
-                          subtitle:
-                              config?.inferenceSetup?.mode ==
-                                  AgentInferenceSetupMode.disabled
-                              ? context
-                                    .messages
-                                    .taskAgentAutomaticUpdatesNeedsSetup
-                              : context
-                                    .messages
-                                    .taskAgentAutomaticUpdatesSummary,
-                          value: automaticUpdates,
-                          enabled:
-                              config?.inferenceSetup?.mode !=
-                              AgentInferenceSetupMode.disabled,
-                          onChanged: (value) =>
-                              controller.updateAutomaticUpdates(enabled: value),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),

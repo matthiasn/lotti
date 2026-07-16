@@ -9479,23 +9479,12 @@ class AppLocalizationsCs extends AppLocalizations {
       'Než zapneš automatické aktualizace, vyber nastavení AI.';
 
   @override
-  String get taskAgentAutomaticUpdatesOffBadge =>
-      'Automatické aktualizace vypnuté · Aktualizuj přes „Spustit nyní“';
-
-  @override
   String get taskAgentAutomaticUpdatesOffDescription =>
-      'Automatické aktualizace jsou vypnuté. Tuto zprávu aktualizuješ přes „Spustit nyní“.';
-
-  @override
-  String get taskAgentAutomaticUpdatesOnDescription =>
-      'Když se změní něco souvisejícího s tímto úkolem, spustí se dvouminutový odpočet. Změny během odpočtu se sloučí do jedné aktualizace.';
+      'Automatické aktualizace jsou vypnuté. Když chceš aktuální zprávu, probuď agenta.';
 
   @override
   String get taskAgentAutomaticUpdatesSummary =>
       'Změny úkolu se seskupí a aktualizace proběhne po dvou minutách.';
-
-  @override
-  String get taskAgentAutomationSection => 'Automatizace';
 
   @override
   String get taskAgentCancelTimerTooltip =>
@@ -9576,6 +9565,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Výchozí model profilu';
 
   @override
+  String get taskAgentReportOutdatedDescription =>
+      'Úkol se změnil po vytvoření tohoto souhrnu.';
+
+  @override
+  String get taskAgentReportOutdatedTitle => 'Tento souhrn je zastaralý';
+
+  @override
   String get taskAgentRouteVia => 'přes';
 
   @override
@@ -9649,6 +9645,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskAgentUseProfileDefault => 'Použít výchozí model profilu';
+
+  @override
+  String get taskAgentWakeAgent => 'Probudit agenta';
 
   @override
   String get taskCategoryAllLabel => 'vše';

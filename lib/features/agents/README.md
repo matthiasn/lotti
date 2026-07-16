@@ -74,12 +74,23 @@ Startup does this:
 - New agents snapshot where their setup came from (`user`, category, or
   template). Category assignment with no default profile creates an explicit
   disabled setup even if the selected template has a profile; the header then
-  shows `No profile selected` and Run now stays disabled until a profile or
+  shows `No profile selected` and `Wake agent` stays disabled until a profile or
   direct thinking model is chosen.
 - `automaticUpdatesEnabled` is an independent persistent task-agent setting.
-  Turning it off removes subscriptions, clears countdown state, and selectively
-  drops queued automation wakes while preserving user-origin Run now jobs. It
-  does not change the selected profile/model or hide the current report.
+  New task agents persist it as `false`; a missing legacy value also resolves to
+  `false`. Turning it off retains subscriptions, clears countdown state, and
+  selectively drops queued automation wakes while preserving user-origin
+  `Wake agent` jobs. A matching task notification then advances
+  `reportStaleAt` instead of running inference. Turning automation back on does
+  not replay changes received while it was off or invent a countdown.
+- `AgentStateEntity.reportStaleAt` and `reportFreshAt` are monotonic freshness
+  watermarks and merge by their latest timestamps during sync conflict
+  resolution. Stale and fresh persistence shares one serialized write chain per
+  agent, so an older async state snapshot cannot overwrite a later watermark.
+  A report is stale when the stale watermark is later than the fresh watermark.
+  A successful wake records its start time as `reportFreshAt`, so a task edit
+  that arrives during inference remains visibly stale and is not erased by the
+  older wake finishing later.
 - Every task-agent report written by `WakeOutputWriter` receives a versioned
   inference provenance stamp captured once at wake start. It denormalizes model
   name, publisher, serving-provider name/type, route identifiers and relevant
@@ -128,18 +139,24 @@ flowchart TD
 
 ```mermaid
 stateDiagram-v2
-  [*] --> AutomaticOn
-  AutomaticOn --> Countdown: related task change
-  Countdown --> Running: deadline or Run now
-  AutomaticOn --> AutomaticOff: checkbox off
-  Countdown --> AutomaticOff: checkbox off / cancel automation job
-  AutomaticOff --> Running: Run now (user initiator)
-  AutomaticOff --> AutomaticOn: checkbox on / restore subscriptions only
-  Running --> AutomaticOff: wake finishes while preference is off
-  Running --> AutomaticOn: wake finishes while preference is on
+  [*] --> Fresh
+  Fresh --> Stale: matching change while automation is off
+  Stale --> Refreshing: user chooses Wake agent
+  Refreshing --> Fresh: wake succeeds and no later change exists
+  Refreshing --> Stale: matching change arrives after wake start
+  Fresh --> Scheduled: matching change while automation is on
+  Scheduled --> Refreshing: countdown expires or user wakes now
 ```
 
-The AI-summary header compares the live route fingerprint with the immutable
+The AI-summary card keeps report reading and agent controls in separate
+information groups. On desktop, the report and proposals form the reading
+column while automation and setup occupy a compact utility rail. On narrow
+surfaces, automation, setup, report, disclosure, and proposals follow one
+linear order. The automatic-updates toggle is always top-level. A stale report
+uses a focused error accent and `Wake agent` CTA rather than turning the whole
+card into an error surface. `Read more` follows the report it expands.
+
+The setup region compares the live route fingerprint with the immutable
 final-author route on the visible report. Equal routes collapse to one editable
 identity line. Different routes render separate `Current setup` and `This
 report` lines. Agent Internals opens the same `AgentModelSheet`; it does not own
@@ -160,11 +177,10 @@ announcement when it appears.
 
 The overview is a settings summary, not another picker page. A grouped
 `Current setup` card exposes the active inference profile and effective
-thinking route as noun-labeled navigation rows; a second grouped card contains
-the compact automatic-updates toggle. Both groups use the outline-only variant,
-so the modal surface continues through them without a darker or lighter fill.
-The destructive `Turn off AI for this agent` action is isolated below both
-groups and expands its confirmation in place.
+thinking route as noun-labeled navigation rows. Automation is intentionally
+absent because the card owns that task-level control. The destructive
+`Turn off AI for this agent` action is isolated below the setup group and
+expands its confirmation in place.
 `taskAgentSetupOptionsProvider` retains the loaded profile/model/provider
 catalog across independently mounted Wolt pages, and consumers unwrap the last
 successful async value during refreshes, so navigation never flashes an empty

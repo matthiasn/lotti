@@ -1,102 +1,127 @@
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
-import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../../tts/test_utils.dart';
 import '../../test_data/entity_factories.dart';
 import 'test_bench.dart';
 
-/// Builds a minimal AiSummaryCard test scope with a fixed-width parent so
-/// the LayoutBuilder inside the TLDR header sees the requested width.
-/// The shared `RiverpodWidgetTestBench` enforces a 800px min-width which
-/// would force the wide-layout branch.
-///
-/// Pass [nextWakeAt] to seed an active wake countdown — when present the
-/// header should render the play / countdown / cancel cluster, which is
-/// the only group the narrow branch actually stacks below the title.
-Widget _narrowScope({required double width, DateTime? nextWakeAt}) {
-  return ProviderScope(
-    overrides: [
-      taskAgentProvider.overrideWith(
-        (ref, id) async => makeTestIdentity(),
-      ),
-      configFlagProvider.overrideWith(
-        (ref, flagName) => Stream.value(false),
-      ),
-      agentReportProvider.overrideWith(
-        (ref, agentId) async => makeTestReport(tldr: 'Tldr line.'),
-      ),
-      templateForAgentProvider.overrideWith((ref, agentId) async => null),
-      agentIsRunningProvider.overrideWith(
-        (ref, agentId) => Stream.value(false),
-      ),
-      agentStateProvider.overrideWith(
-        (ref, agentId) async =>
-            nextWakeAt == null ? null : makeTestState(nextWakeAt: nextWakeAt),
-      ),
-      unifiedSuggestionListProvider.overrideWith(
-        (ref, taskId) async => const UnifiedSuggestionList.empty(),
-      ),
-    ],
-    child: MaterialApp(
-      theme: resolveTestTheme(),
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: Center(
-          child: SizedBox(
-            width: width,
-            child: const AiSummaryCard(taskId: AgentTestBench.taskId),
-          ),
-        ),
-      ),
-    ),
-  );
+class _DisclosureHarness extends StatefulWidget {
+  const _DisclosureHarness({this.onOpenInternals});
+
+  final VoidCallback? onOpenInternals;
+
+  @override
+  State<_DisclosureHarness> createState() => _DisclosureHarnessState();
+}
+
+class _DisclosureHarnessState extends State<_DisclosureHarness> {
+  bool expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return TldrBody(
+      tldr: 'Summary first.',
+      expanded: expanded,
+      additionalReport: 'Full report details.',
+      onToggle: () => setState(() => expanded = !expanded),
+      onOpenInternals: widget.onOpenInternals ?? () {},
+    );
+  }
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('AiSummaryCard – TLDR header', () {
-    testWidgets(
-      'shows a spinner instead of the refresh affordance while the agent is running',
-      (tester) async {
-        final bench = AgentTestBench(
-          isRunning: true,
-          report: makeTestReport(tldr: 'Tldr line.'),
-        );
-
-        await tester.pumpWidget(bench.build());
-        // The spinner animates indefinitely, so pumpAndSettle would
-        // time out. Pump until the async providers (taskAgent, report)
-        // have all resolved and the header has rebuilt with isRunning.
-        for (var i = 0; i < 5; i++) {
-          await tester.pump(const Duration(milliseconds: 16));
-        }
-
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        expect(find.byIcon(Icons.refresh_rounded), findsNothing);
-      },
-    );
-
-    testWidgets('hides the playback control while the flag is off', (
+  group('TldrHeader', () {
+    testWidgets('keeps identity primary and exposes optional playback', (
       tester,
     ) async {
+      var agentTaps = 0;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(
+            agentName: 'Task Laura',
+            onAgentTap: () => agentTaps++,
+            playbackControl: const SizedBox(
+              key: ValueKey('playback'),
+              width: 48,
+              height: 48,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('AI summary'), findsOneWidget);
+      expect(find.text('Task Laura'), findsOneWidget);
+      expect(find.byKey(const ValueKey('playback')), findsOneWidget);
+      final agentTarget = tester.getRect(
+        find.ancestor(
+          of: find.text('Task Laura'),
+          matching: find.byType(InkWell),
+        ),
+      );
+      expect(agentTarget.width, greaterThanOrEqualTo(kMinInteractiveDimension));
+      expect(
+        agentTarget.height,
+        greaterThanOrEqualTo(kMinInteractiveDimension),
+      );
+      await tester.tap(find.text('Task Laura'));
+      expect(agentTaps, 1);
+    });
+  });
+
+  group('TldrBody', () {
+    testWidgets('places disclosure below its summary and expands in place', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(const _DisclosureHarness()),
+      );
+
+      final summaryBottom = tester
+          .getBottomLeft(find.text('Summary first.'))
+          .dy;
+      final disclosureTop = tester.getTopLeft(find.text('Read more')).dy;
+      expect(disclosureTop, greaterThan(summaryBottom));
+      expect(find.text('Full report details.'), findsNothing);
+
+      await tester.tap(find.text('Read more'));
+      await tester.pump();
+
+      expect(find.text('Full report details.'), findsOneWidget);
+      expect(find.text('Show less'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Show less')).dy,
+        greaterThan(
+          tester.getBottomLeft(find.text('Full report details.')).dy,
+        ),
+      );
+    });
+
+    testWidgets('expanded internals action invokes its callback', (
+      tester,
+    ) async {
+      var internalsTaps = 0;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _DisclosureHarness(onOpenInternals: () => internalsTaps++),
+        ),
+      );
+      expect(find.text('Open agent internals'), findsNothing);
+
+      await tester.tap(find.text('Read more'));
+      await tester.pump();
+      await tester.tap(find.text('Open agent internals'));
+
+      expect(internalsTaps, 1);
+    });
+  });
+
+  group('AiSummaryCard playback integration', () {
+    testWidgets('hides playback while the feature flag is off', (tester) async {
       final bench = AgentTestBench(
         report: makeTestReport(tldr: 'Tldr line.'),
       );
@@ -107,21 +132,9 @@ void main() {
       expect(find.byType(TtsPlayButton), findsNothing);
     });
 
-    testWidgets('shows the playback control when the flag is on', (
+    testWidgets('plays the visible summary through the TTS engine', (
       tester,
     ) async {
-      final bench = AgentTestBench(
-        enableSummaryTts: true,
-        report: makeTestReport(tldr: 'Tldr line.'),
-      );
-
-      await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
-
-      expect(find.byType(TtsPlayButton), findsOneWidget);
-    });
-
-    testWidgets('plays the TLDR through the Supertonic engine', (tester) async {
       final engine = FakeTtsEngine();
       final bench = AgentTestBench(
         enableSummaryTts: true,
@@ -131,10 +144,7 @@ void main() {
 
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
-
       await tester.tap(find.byType(TtsPlayButton));
-      // Drain the speak() future (ensure-model -> synthesize -> play)
-      // without pumpAndSettle, which would hang on the preparing spinner.
       for (var i = 0; i < 6; i++) {
         await tester.pump(const Duration(milliseconds: 16));
       }
@@ -143,37 +153,31 @@ void main() {
       expect(engine.calls.single.voiceId, 'F1');
     });
 
-    testWidgets(
-      'reads the full report (not just the TLDR) once the body is expanded',
-      (tester) async {
-        final engine = FakeTtsEngine();
-        final bench = AgentTestBench(
-          enableSummaryTts: true,
-          ttsEngine: engine,
-          report: makeTestReport(
-            tldr: 'Tldr line.',
-            content: '## Goal\nShip the card.\n',
-          ),
-        );
+    testWidgets('expanded playback includes the full report', (tester) async {
+      final engine = FakeTtsEngine();
+      final bench = AgentTestBench(
+        enableSummaryTts: true,
+        ttsEngine: engine,
+        report: makeTestReport(
+          tldr: 'Tldr line.',
+          content: '## Goal\nShip the card.\n',
+        ),
+      );
 
-        await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Read more'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(TtsPlayButton));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
 
-        // Expand so the body now shows the TLDR followed by the full report,
-        // then play: playback must read exactly what's on screen.
-        await tester.tap(find.text('Read more'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byType(TtsPlayButton));
-        for (var i = 0; i < 6; i++) {
-          await tester.pump(const Duration(milliseconds: 16));
-        }
-
-        expect(
-          engine.calls.single.text,
-          'Tldr line.\n\n## Goal\nShip the card.',
-        );
-      },
-    );
+      expect(
+        engine.calls.single.text,
+        'Tldr line.\n\n## Goal\nShip the card.',
+      );
+    });
 
     testWidgets('shows an error toast when synthesis fails', (tester) async {
       final engine = FakeTtsEngine(throwOnSynthesize: true);
@@ -185,7 +189,6 @@ void main() {
 
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
-
       await tester.tap(find.byType(TtsPlayButton));
       for (var i = 0; i < 8; i++) {
         await tester.pump(const Duration(milliseconds: 50));
@@ -194,107 +197,5 @@ void main() {
       expect(engine.calls, isEmpty);
       expect(find.text('Error'), findsOneWidget);
     });
-
-    testWidgets(
-      'lays the header out as a Wrap so the leading block and controls '
-      'sit in a single run with the controls right-aligned via '
-      'WrapAlignment.spaceBetween whenever there is room',
-      (tester) async {
-        await tester.pumpWidget(_narrowScope(width: 800));
-        await tester.pumpAndSettle();
-
-        // Two Wraps in the tree: the header's space-between Wrap and
-        // the proposals section's title-row Wrap.
-        expect(find.byType(Wrap), findsNWidgets(2));
-        expect(find.text('AI summary'), findsOneWidget);
-        expect(find.text('Test Agent'), findsOneWidget);
-        expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
-
-        // Single run → leading block + controls share a Y coordinate.
-        final titleY = tester.getCenter(find.text('AI summary')).dy;
-        final refreshY = tester
-            .getCenter(find.byIcon(Icons.refresh_rounded))
-            .dy;
-        expect((titleY - refreshY).abs() < 24, isTrue);
-
-        // The refresh affordance is pushed to the right edge of the
-        // card by WrapAlignment.spaceBetween rather than sitting flush
-        // against the title.
-        final titleRight = tester.getTopRight(find.text('AI summary')).dx;
-        final refreshLeft = tester
-            .getTopLeft(find.byIcon(Icons.refresh_rounded))
-            .dx;
-        expect(refreshLeft, greaterThan(titleRight + 100));
-      },
-    );
-
-    testWidgets(
-      'lets the control cluster fall to a second Wrap run only when the '
-      'row truly cannot fit, instead of stacking it pre-emptively',
-      (tester) async {
-        // Pathologically narrow card forces the leading block + controls
-        // to overflow a single run, exercising the wrap-to-second-row
-        // branch the previous threshold-based stacking always took.
-        // Wide enough that each cluster on its own still fits in its
-        // run — only the combined width spills.
-        await tester.pumpWidget(_narrowScope(width: 260));
-        await tester.pumpAndSettle();
-
-        expect(find.byType(Wrap), findsNWidgets(2));
-        expect(find.text('AI summary'), findsOneWidget);
-        expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
-
-        final titleY = tester.getCenter(find.text('AI summary')).dy;
-        final refreshY = tester
-            .getCenter(find.byIcon(Icons.refresh_rounded))
-            .dy;
-        expect(
-          refreshY,
-          greaterThan(titleY),
-          reason:
-              'controls should drop to a second run when they no longer fit',
-        );
-      },
-    );
-
-    testWidgets(
-      'countdown pill expiry collapses the wake cluster back to refresh',
-      (tester) async {
-        final start = DateTime(2026, 5, 4, 12);
-        var now = start;
-        final nextWakeAt = start.add(const Duration(seconds: 2));
-
-        await withClock(Clock(() => now), () async {
-          final bench = AgentTestBench(
-            state: makeTestState(nextWakeAt: nextWakeAt),
-            report: makeTestReport(tldr: 'Tldr line.'),
-          );
-
-          await tester.pumpWidget(bench.build());
-          // Bounded pumps to flush async providers (taskAgent /
-          // agentState / unifiedSuggestionList all resolve via Futures)
-          // without advancing into the WakeCountdownState 1s timer
-          // boundary. Stay below 1000ms total so the timer never fires.
-          for (var i = 0; i < 5; i++) {
-            await tester.pump(const Duration(milliseconds: 50));
-          }
-
-          // Initial: wake cluster — run-now (refresh) + countdown + cancel.
-          expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-          expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
-
-          // Advance wall-clock past nextWakeAt and let the periodic
-          // timer fire; the mixin should call onCountdownExpired which
-          // forwards to the parent's setState callback.
-          now = start.add(const Duration(seconds: 3));
-          await tester.pump(const Duration(seconds: 1));
-          await tester.pump();
-
-          // Wake cluster collapsed back to the lone run-now refresh.
-          expect(find.byIcon(Icons.close_rounded), findsNothing);
-          expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
-        });
-      },
-    );
   });
 }

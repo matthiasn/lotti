@@ -124,6 +124,10 @@ int compareClocksCanonically(VectorClock a, VectorClock b) {
 /// either device is lost, while every *non-counter* field stays as the
 /// deterministic LWW winner ([winner], chosen by [resolveConcurrent]).
 ///
+/// The report freshness watermarks are also merged by maximum timestamp. They
+/// represent observed events, so allowing the LWW loser to erase a newer
+/// change/refresh watermark could incorrectly present an old report as fresh.
+///
 /// The winner's vector clock is kept deliberately: a future update that causally
 /// dominates it necessarily saw — and (since every replica applies this same
 /// merge symmetrically) merged — both sides, so its counters are a superset and
@@ -136,6 +140,14 @@ AgentStateEntity mergeAgentStateCounters({
 }) {
   return winner.copyWith(
     wakeCounter: local.wakeCounter.merge(incoming.wakeCounter),
+    reportStaleAt: _latestInstant(
+      local.reportStaleAt,
+      incoming.reportStaleAt,
+    ),
+    reportFreshAt: _latestInstant(
+      local.reportFreshAt,
+      incoming.reportFreshAt,
+    ),
     slots: winner.slots.copyWith(
       totalSessionsCompleted: local.slots.totalSessionsCompleted.merge(
         incoming.slots.totalSessionsCompleted,
@@ -145,4 +157,10 @@ AgentStateEntity mergeAgentStateCounters({
       ),
     ),
   );
+}
+
+DateTime? _latestInstant(DateTime? a, DateTime? b) {
+  if (a == null) return b;
+  if (b == null) return a;
+  return a.isAfter(b) ? a : b;
 }

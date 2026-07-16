@@ -106,24 +106,32 @@ class RiverpodWidgetTestBench extends StatelessWidget {
   const RiverpodWidgetTestBench({
     required this.child,
     this.overrides = const [],
+    this.theme,
     this.mediaQueryData,
+    this.surfaceConstraints,
     super.key,
   });
 
   final Widget child;
   final List<Override> overrides;
+  final ThemeData? theme;
   final MediaQueryData? mediaQueryData;
+  final BoxConstraints? surfaceConstraints;
 
   @override
   Widget build(BuildContext context) {
     final mediaQuery = mediaQueryData ?? phoneMediaQueryData;
+    final constraints =
+        surfaceConstraints ??
+        const BoxConstraints(minHeight: 800, minWidth: 800);
 
     return ProviderScope(
       overrides: overrides,
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(
-          theme: resolveTestTheme(),
+          debugShowCheckedModeBanner: false,
+          theme: resolveTestTheme(theme),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -133,10 +141,7 @@ class RiverpodWidgetTestBench extends StatelessWidget {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: 800,
-                minWidth: 800,
-              ),
+              constraints: constraints,
               child: child,
             ),
           ),

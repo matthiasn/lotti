@@ -42,7 +42,7 @@ class _GeneratedAutomationScenario {
       return false;
     }
     if (initiator == WakeInitiator.user) return true;
-    return (preference ?? true) && lifecycle == AgentLifecycle.active;
+    return (preference ?? false) && lifecycle == AgentLifecycle.active;
   }
 
   @override

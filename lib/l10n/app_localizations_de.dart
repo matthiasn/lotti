@@ -9420,23 +9420,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wähle ein KI-Setup, bevor du automatische Updates einschaltest.';
 
   @override
-  String get taskAgentAutomaticUpdatesOffBadge =>
-      'Automatische Updates aus · Mit „Jetzt ausführen“ aktualisieren';
-
-  @override
   String get taskAgentAutomaticUpdatesOffDescription =>
-      'Automatische Updates sind aus. Verwende „Jetzt ausführen“, um diesen Bericht zu aktualisieren.';
-
-  @override
-  String get taskAgentAutomaticUpdatesOnDescription =>
-      'Wenn sich etwas an oder im Zusammenhang mit dieser Aufgabe ändert, startet ein zweiminütiger Countdown. Änderungen währenddessen werden in einem Update gebündelt.';
+      'Automatische Updates sind aus. Wecke den Agenten, wenn du einen aktuellen Bericht möchtest.';
 
   @override
   String get taskAgentAutomaticUpdatesSummary =>
       'Aufgabenänderungen werden gebündelt und nach zwei Minuten aktualisiert.';
-
-  @override
-  String get taskAgentAutomationSection => 'Automatisierung';
 
   @override
   String get taskAgentCancelTimerTooltip =>
@@ -9518,6 +9507,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Profilstandard';
 
   @override
+  String get taskAgentReportOutdatedDescription =>
+      'Die Aufgabe hat sich geändert, nachdem diese Zusammenfassung erstellt wurde.';
+
+  @override
+  String get taskAgentReportOutdatedTitle =>
+      'Diese Zusammenfassung ist veraltet';
+
+  @override
   String get taskAgentRouteVia => 'über';
 
   @override
@@ -9591,6 +9588,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskAgentUseProfileDefault => 'Profilstandard verwenden';
+
+  @override
+  String get taskAgentWakeAgent => 'Agenten aufwecken';
 
   @override
   String get taskCategoryAllLabel => 'Alle';

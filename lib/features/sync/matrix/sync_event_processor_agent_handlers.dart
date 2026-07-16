@@ -193,55 +193,48 @@ extension _AgentHandlers on SyncEventProcessor {
       if (prefetchedAgentEntitiesById?.containsKey(entityToApply.id) ?? false) {
         prefetchedAgentEntitiesById![entityToApply.id] = entityToApply;
       }
-      // Remove wake subscriptions when an agent is paused or destroyed
-      // remotely — mirrors what AgentService.pauseAgent/destroyAgent do
-      // locally.
+      // Mirror task-agent observation and automation state after a remote
+      // identity update. Active configured agents retain subscriptions even
+      // when automation is off so matching changes can mark reports stale.
+      // Inactive or inference-disabled agents stop observing entirely.
       final appliedIdentity = entityToApply is AgentIdentityEntity
           ? entityToApply
           : null;
       if (wakeOrchestrator != null &&
           appliedIdentity != null &&
-          (appliedIdentity.lifecycle != AgentLifecycle.active ||
-              !appliedIdentity.config.automaticUpdatesEnabledEffective ||
-              appliedIdentity.config.inferenceSetup?.mode ==
-                  AgentInferenceSetupMode.disabled)) {
-        wakeOrchestrator!.disableAutomaticUpdatesRuntime(
-          appliedIdentity.agentId,
-        );
-      }
-      // Restore wake subscriptions when an agent is resumed remotely —
-      // mirrors what TaskAgentService.restoreSubscriptionsForAgent does
-      // locally after AgentService.resumeAgent.
-      if (wakeOrchestrator != null &&
-          appliedIdentity != null &&
-          appliedIdentity.lifecycle == AgentLifecycle.active &&
-          appliedIdentity.config.automaticUpdatesEnabledEffective &&
-          appliedIdentity.config.inferenceSetup?.mode !=
-              AgentInferenceSetupMode.disabled) {
-        wakeOrchestrator!.enableAutomaticUpdatesRuntime(
-          appliedIdentity.agentId,
-        );
-      }
-      if (wakeOrchestrator != null &&
-          appliedIdentity != null &&
-          appliedIdentity.lifecycle == AgentLifecycle.active &&
-          appliedIdentity.kind == 'task_agent' &&
-          appliedIdentity.config.automaticUpdatesEnabledEffective &&
-          appliedIdentity.config.inferenceSetup?.mode !=
-              AgentInferenceSetupMode.disabled) {
-        final links = await agentRepository!.getLinksFrom(
-          appliedIdentity.agentId,
-          type: 'agent_task',
-        );
-        for (final link in links) {
-          wakeOrchestrator!.addSubscription(
-            AgentSubscription(
-              id: '${appliedIdentity.agentId}_task_${link.toId}',
-              agentId: appliedIdentity.agentId,
-              matchEntityIds: {link.toId},
-              deferPropagatedMatches: false,
-            ),
+          appliedIdentity.kind == 'task_agent') {
+        final activeAndConfigured =
+            appliedIdentity.lifecycle == AgentLifecycle.active &&
+            appliedIdentity.config.inferenceSetup?.mode !=
+                AgentInferenceSetupMode.disabled;
+        if (!activeAndConfigured) {
+          wakeOrchestrator!
+            ..removeSubscriptions(appliedIdentity.agentId)
+            ..disableAutomaticUpdatesRuntime(appliedIdentity.agentId);
+        } else {
+          if (appliedIdentity.config.automaticUpdatesEnabledEffective) {
+            wakeOrchestrator!.enableAutomaticUpdatesRuntime(
+              appliedIdentity.agentId,
+            );
+          } else {
+            wakeOrchestrator!.disableAutomaticUpdatesRuntime(
+              appliedIdentity.agentId,
+            );
+          }
+          final links = await agentRepository!.getLinksFrom(
+            appliedIdentity.agentId,
+            type: 'agent_task',
           );
+          for (final link in links) {
+            wakeOrchestrator!.addSubscription(
+              AgentSubscription(
+                id: '${appliedIdentity.agentId}_task_${link.toId}',
+                agentId: appliedIdentity.agentId,
+                matchEntityIds: {link.toId},
+                deferPropagatedMatches: false,
+              ),
+            );
+          }
         }
       }
       _updateNotifications.notify(
@@ -343,10 +336,14 @@ extension _AgentHandlers on SyncEventProcessor {
           final agent = await agentRepository!.getEntity(resolvedLink.fromId);
           if (agent is AgentIdentityEntity &&
               agent.lifecycle == AgentLifecycle.active &&
-              agent.config.automaticUpdatesEnabledEffective &&
               agent.config.inferenceSetup?.mode !=
                   AgentInferenceSetupMode.disabled &&
               agent.kind == 'task_agent') {
+            if (agent.config.automaticUpdatesEnabledEffective) {
+              wakeOrchestrator!.enableAutomaticUpdatesRuntime(agent.agentId);
+            } else {
+              wakeOrchestrator!.disableAutomaticUpdatesRuntime(agent.agentId);
+            }
             wakeOrchestrator!.addSubscription(
               AgentSubscription(
                 id: subscriptionId,

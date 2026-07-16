@@ -6,13 +6,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 class TaskAgentIdentityRegion extends StatelessWidget {
   const TaskAgentIdentityRegion({
     required this.data,
-    required this.automaticUpdatesEnabled,
     required this.onSetupTap,
     super.key,
   });
 
   final TaskAgentModelIdentityViewData data;
-  final bool automaticUpdatesEnabled;
   final VoidCallback onSetupTap;
 
   @override
@@ -59,9 +57,7 @@ class TaskAgentIdentityRegion extends StatelessWidget {
         )
       else if (currentIdentity != null)
         _SetupIdentityRow(
-          label: data.presentation == TaskAgentIdentityPresentation.split
-              ? messages.taskAgentCurrentSetupHeader
-              : null,
+          label: messages.taskAgentCurrentSetupHeader,
           value: currentIdentity,
           onTap: onSetupTap,
           semanticsLabel: semanticsLabel,
@@ -80,33 +76,15 @@ class TaskAgentIdentityRegion extends StatelessWidget {
                   viaLabel: messages.taskAgentRouteVia,
                 ),
         ),
-      if (!automaticUpdatesEnabled)
-        Padding(
-          padding: EdgeInsets.only(top: tokens.spacing.step2),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.update_disabled_rounded,
-                size: tokens.spacing.step4,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              Flexible(
-                child: Text(
-                  messages.taskAgentAutomaticUpdatesOffBadge,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
     ];
 
-    return Padding(
-      padding: EdgeInsets.only(top: tokens.spacing.step2),
+    final ai = tokens.colors.aiCard;
+    return Container(
+      decoration: BoxDecoration(
+        color: ai.backgroundRaised,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        border: Border.all(color: ai.subtleBorder),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: rows,
@@ -161,6 +139,7 @@ class _SetupIdentityRow extends StatelessWidget {
                     isError
                         ? Icons.error_outline_rounded
                         : Icons.psychology_outlined,
+                    size: tokens.spacing.step6,
                     color: color,
                   ),
                   SizedBox(width: tokens.spacing.step3),
@@ -186,7 +165,11 @@ class _SetupIdentityRow extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: tokens.spacing.step2),
-                  Icon(Icons.expand_more_rounded, color: color),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: tokens.spacing.step6,
+                    color: color,
+                  ),
                 ],
               ),
             ),
@@ -208,11 +191,20 @@ class _ReportIdentityRow extends StatelessWidget {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step3,
+        tokens.spacing.step2,
+        tokens.spacing.step3,
+        tokens.spacing.step3,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.description_outlined, color: ai.faintMeta),
+          Icon(
+            Icons.description_outlined,
+            size: tokens.spacing.step6,
+            color: ai.faintMeta,
+          ),
           SizedBox(width: tokens.spacing.step3),
           Expanded(
             child: Column(

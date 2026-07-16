@@ -12,7 +12,6 @@ extension WakeBatchRouter on WakeOrchestrator {
       return;
     }
     for (final sub in _subscriptions) {
-      if (_automaticUpdatesDisabledAgents.contains(sub.agentId)) continue;
       // 1. Check whether any token matches the subscription's entity IDs.
       //    A "direct" match means the agent's own entity was edited
       //    (token in tokens AND propagated::token NOT in tokens). A
@@ -62,6 +61,32 @@ extension WakeBatchRouter on WakeOrchestrator {
       // 3. Apply optional fine-grained predicate before any queueing path.
       final predicate = sub.predicate;
       if (predicate != null && !predicate(allMatched)) continue;
+
+      // Automatic inference is opt-in, but observation is not. Disabled task
+      // agents keep their subscriptions and persist a stale watermark instead
+      // of queueing a wake. While a manual wake is running, retain the existing
+      // pre-registered suppression behavior so the agent's own writes do not
+      // immediately make its freshly-produced report look stale.
+      if (_automaticUpdatesDisabledAgents.contains(sub.agentId)) {
+        final preRegisteredSelfNotification =
+            runner.isRunning(sub.agentId) &&
+            _isPreRegisteredSuppressed(sub.agentId, allMatched);
+        if (preRegisteredSelfNotification) {
+          _log(
+            'suppressed in-flight self-notification for disabled automation '
+            '${DomainLogger.sanitizeId(sub.agentId)}',
+            subDomain: 'stale',
+          );
+          continue;
+        }
+        _scheduleReportStale(sub.agentId, clock.now());
+        _log(
+          'marked report stale instead of scheduling automatic inference for '
+          '${DomainLogger.sanitizeId(sub.agentId)}',
+          subDomain: 'stale',
+        );
+        continue;
+      }
 
       // The fast-drain bit drives both the queued job's [hasDirectMatch] flag
       // and the throttle-gate escalation below. Task-agent subscriptions
@@ -250,6 +275,65 @@ extension WakeBatchRouter on WakeOrchestrator {
     Set<String> matchedTokens,
   ) {
     return _suppression.isPreRegisteredSuppressed(agentId, matchedTokens);
+  }
+
+  void _scheduleReportStale(String agentId, DateTime occurredAt) {
+    final pending = _pendingReportStaleAt[agentId];
+    if (pending == null || occurredAt.isAfter(pending)) {
+      _pendingReportStaleAt[agentId] = occurredAt;
+    }
+    if (!_reportStaleWritesInProgress.add(agentId)) return;
+    unawaited(
+      _serializeFreshnessWrite(
+        agentId,
+        () => _flushReportStaleWrites(agentId),
+      ),
+    );
+  }
+
+  Future<void> _flushReportStaleWrites(String agentId) async {
+    try {
+      while (true) {
+        final occurredAt = _pendingReportStaleAt.remove(agentId);
+        if (occurredAt == null) return;
+        await _persistReportStale(agentId, occurredAt);
+      }
+    } finally {
+      _reportStaleWritesInProgress.remove(agentId);
+      final pending = _pendingReportStaleAt[agentId];
+      if (pending != null) _scheduleReportStale(agentId, pending);
+    }
+  }
+
+  Future<void> _persistReportStale(
+    String agentId,
+    DateTime occurredAt,
+  ) async {
+    try {
+      final state = await repository.getAgentState(agentId);
+      if (state == null) return;
+      final persisted = state.reportStaleAt;
+      if (persisted != null && !occurredAt.isAfter(persisted)) return;
+
+      final updated = state.copyWith(
+        reportStaleAt: occurredAt,
+        updatedAt: clock.now(),
+      );
+      final writer = syncEntityWriter;
+      if (writer != null) {
+        await writer(updated);
+      } else {
+        await repository.upsertEntity(updated);
+      }
+      onPersistedStateChanged?.call(agentId);
+    } catch (error, stackTrace) {
+      _logError(
+        'failed to persist stale report watermark for '
+        '${DomainLogger.sanitizeId(agentId)}',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   // ── Content-gating ────────────────────────────────────────────────────────

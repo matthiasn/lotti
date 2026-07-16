@@ -2128,6 +2128,9 @@ void main() {
             'agent-dormant',
           ),
         ).called(1);
+        verify(
+          () => mockOrchestrator.removeSubscriptions('agent-dormant'),
+        ).called(1);
       });
 
       test('removes subscriptions when agent is destroyed', () async {
@@ -2160,6 +2163,9 @@ void main() {
             'agent-destroyed',
           ),
         ).called(1);
+        verify(
+          () => mockOrchestrator.removeSubscriptions('agent-destroyed'),
+        ).called(1);
       });
 
       test('restores subscriptions for active task_agent', () async {
@@ -2172,7 +2178,7 @@ void main() {
           mode: AgentInteractionMode.autonomous,
           allowedCategoryIds: const {},
           currentStateId: 'state-1',
-          config: const AgentConfig(),
+          config: const AgentConfig(automaticUpdatesEnabled: true),
           createdAt: DateTime(2024, 3, 15),
           updatedAt: DateTime(2024, 3, 15),
           vectorClock: null,
@@ -2221,6 +2227,67 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'retains observation for active task_agent with automation off',
+        () async {
+          final entity = AgentDomainEntity.agent(
+            id: 'agent-manual',
+            agentId: 'agent-manual',
+            kind: 'task_agent',
+            displayName: 'Manual Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(automaticUpdatesEnabled: false),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          final taskLink = AgentLink.basic(
+            id: 'link-manual',
+            fromId: 'agent-manual',
+            toId: 'task-manual',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          when(
+            () => mockAgentRepo.getLinksFrom(
+              'agent-manual',
+              type: 'agent_task',
+            ),
+          ).thenAnswer((_) async => [taskLink]);
+          final message = SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime(
+              'agent-manual',
+            ),
+          ).called(1);
+          verify(
+            () => mockOrchestrator.addSubscription(
+              any(
+                that: isA<AgentSubscription>().having(
+                  (subscription) => subscription.agentId,
+                  'agentId',
+                  'agent-manual',
+                ),
+              ),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.removeSubscriptions('agent-manual'),
+          );
+        },
+      );
 
       test('does NOT remove subscriptions for non-identity entities', () async {
         final entity = AgentDomainEntity.agentState(
@@ -2286,6 +2353,12 @@ void main() {
       setUp(() {
         mockOrchestrator = MockWakeOrchestrator();
         processor.wakeOrchestrator = mockOrchestrator;
+        when(
+          () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
+        ).thenReturn(null);
+        when(
+          () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+        ).thenReturn(null);
       });
 
       test(
@@ -2340,6 +2413,9 @@ void main() {
                     ),
               ),
             ),
+          ).called(1);
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
           ).called(1);
         },
       );

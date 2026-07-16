@@ -1111,9 +1111,232 @@ void main() {
             ..addSubscription(makeSub())
             ..enableAutomaticUpdatesRuntime('agent-1')
             ..addSubscription(makeSub());
-          // The first add is ignored while disabled; enabling makes the same
-          // subscription eligible again without enqueueing any wake.
+          // Subscription registration is idempotent and never enqueues a wake.
           expect(queue.isEmpty, isTrue);
+        },
+      );
+
+      test(
+        'disabled automation retains subscriptions and marks matching changes '
+        'stale without queueing inference',
+        () async {
+          final signalAt = DateTime(2026, 7, 16, 9, 30);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: DateTime(2026, 7, 16, 9),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          var refreshNotifications = 0;
+          orchestrator =
+              WakeOrchestrator(
+                  repository: mockRepository,
+                  queue: queue,
+                  runner: runner,
+                  syncEntityWriter: (entity) async {
+                    state = entity as AgentStateEntity;
+                  },
+                  onPersistedStateChanged: (_) => refreshNotifications++,
+                )
+                ..disableAutomaticUpdatesRuntime('agent-1')
+                ..addSubscription(makeSub());
+          final controller = StreamController<Set<String>>.broadcast();
+
+          await withClock(Clock.fixed(signalAt), () async {
+            await orchestrator.start(controller.stream);
+            controller.add({'entity-1'});
+            await pumpEventQueue();
+          });
+
+          expect(queue.isEmpty, isTrue);
+          expect(state.reportStaleAt, signalAt);
+          expect(state.isReportStale, isTrue);
+          expect(refreshNotifications, 1);
+          await controller.close();
+        },
+      );
+
+      test(
+        'successful manual wake acknowledges changes seen before it began',
+        () async {
+          final staleAt = DateTime(2026, 7, 16, 8, 59);
+          final refreshStartedAt = DateTime(2026, 7, 16, 9);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: staleAt,
+                    vectorClock: null,
+                    reportStaleAt: staleAt,
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            syncEntityWriter: (entity) async {
+              state = entity as AgentStateEntity;
+            },
+            wakeExecutor: noOpExecutor,
+          );
+          queue.enqueue(
+            WakeJob(
+              runKey: 'manual-refresh',
+              agentId: 'agent-1',
+              reason: WakeReason.reanalysis.name,
+              initiator: WakeInitiator.user,
+              triggerTokens: const {},
+              createdAt: refreshStartedAt,
+            ),
+          );
+
+          await withClock(
+            Clock.fixed(refreshStartedAt),
+            orchestrator.processNext,
+          );
+
+          expect(state.reportFreshAt, refreshStartedAt);
+          expect(state.isReportStale, isFalse);
+        },
+      );
+
+      test(
+        'change observed during a manual wake remains stale afterward',
+        () async {
+          final refreshStartedAt = DateTime(2026, 7, 16, 9);
+          final changeDuringWakeAt = DateTime(2026, 7, 16, 9, 1);
+          var now = refreshStartedAt;
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: refreshStartedAt,
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator =
+              WakeOrchestrator(
+                  repository: mockRepository,
+                  queue: queue,
+                  runner: runner,
+                  syncEntityWriter: (entity) async {
+                    state = entity as AgentStateEntity;
+                  },
+                  wakeExecutor: (_, _, _, _) async {
+                    now = changeDuringWakeAt;
+                    controller.add({'entity-1'});
+                    await pumpEventQueue();
+                    return null;
+                  },
+                )
+                ..disableAutomaticUpdatesRuntime('agent-1')
+                ..addSubscription(makeSub());
+          queue.enqueue(
+            WakeJob(
+              runKey: 'manual-with-concurrent-change',
+              agentId: 'agent-1',
+              reason: WakeReason.reanalysis.name,
+              initiator: WakeInitiator.user,
+              triggerTokens: const {},
+              createdAt: refreshStartedAt,
+            ),
+          );
+
+          await withClock(Clock(() => now), () async {
+            await orchestrator.start(controller.stream);
+            await orchestrator.processNext();
+          });
+
+          expect(state.reportFreshAt, refreshStartedAt);
+          expect(state.reportStaleAt, changeDuringWakeAt);
+          expect(state.isReportStale, isTrue);
+          await controller.close();
+        },
+      );
+
+      test(
+        'freshness writes serialize a delayed stale update before wake success',
+        () async {
+          final refreshStartedAt = DateTime(2026, 7, 16, 9);
+          final changeDuringWakeAt = DateTime(2026, 7, 16, 9, 1);
+          final staleWriteStarted = Completer<void>();
+          final releaseStaleWrite = Completer<void>();
+          var now = refreshStartedAt;
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: refreshStartedAt,
+                    vectorClock: null,
+                    reportStaleAt: refreshStartedAt,
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator =
+              WakeOrchestrator(
+                  repository: mockRepository,
+                  queue: queue,
+                  runner: runner,
+                  syncEntityWriter: (entity) async {
+                    final next = entity as AgentStateEntity;
+                    if (next.reportStaleAt == changeDuringWakeAt &&
+                        next.reportFreshAt == null) {
+                      staleWriteStarted.complete();
+                      await releaseStaleWrite.future;
+                    }
+                    state = next;
+                  },
+                  wakeExecutor: (_, _, _, _) async {
+                    now = changeDuringWakeAt;
+                    controller.add({'entity-1'});
+                    await pumpEventQueue();
+                    return null;
+                  },
+                )
+                ..disableAutomaticUpdatesRuntime('agent-1')
+                ..addSubscription(makeSub());
+          queue.enqueue(
+            WakeJob(
+              runKey: 'manual-with-delayed-stale-write',
+              agentId: 'agent-1',
+              reason: WakeReason.reanalysis.name,
+              initiator: WakeInitiator.user,
+              triggerTokens: const {},
+              createdAt: refreshStartedAt,
+            ),
+          );
+
+          await withClock(Clock(() => now), () async {
+            await orchestrator.start(controller.stream);
+            final wake = orchestrator.processNext();
+            await staleWriteStarted.future;
+            releaseStaleWrite.complete();
+            await wake;
+          });
+
+          expect(state.reportFreshAt, refreshStartedAt);
+          expect(state.reportStaleAt, changeDuringWakeAt);
+          expect(state.isReportStale, isTrue);
+          await controller.close();
         },
       );
 

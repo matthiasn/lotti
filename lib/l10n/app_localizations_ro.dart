@@ -9543,23 +9543,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alegeți o configurare AI înainte de a activa actualizările automate.';
 
   @override
-  String get taskAgentAutomaticUpdatesOffBadge =>
-      'Actualizări automate dezactivate · Folosiți „Rulează acum”';
-
-  @override
   String get taskAgentAutomaticUpdatesOffDescription =>
-      'Actualizările automate sunt dezactivate. Folosiți „Rulează acum” pentru a actualiza acest raport.';
-
-  @override
-  String get taskAgentAutomaticUpdatesOnDescription =>
-      'Când se modifică ceva legat de această sarcină, începe o numărătoare inversă de două minute. Modificările din acest interval sunt grupate într-o singură actualizare.';
+      'Actualizările automate sunt dezactivate. Treziți agentul când doriți un raport actualizat.';
 
   @override
   String get taskAgentAutomaticUpdatesSummary =>
       'Modificările sarcinii sunt grupate, iar actualizarea are loc după două minute.';
-
-  @override
-  String get taskAgentAutomationSection => 'Automatizare';
 
   @override
   String get taskAgentCancelTimerTooltip =>
@@ -9641,6 +9630,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Modelul implicit al profilului';
 
   @override
+  String get taskAgentReportOutdatedDescription =>
+      'Sarcina s-a modificat după generarea acestui rezumat.';
+
+  @override
+  String get taskAgentReportOutdatedTitle => 'Acest rezumat nu mai este actual';
+
+  @override
   String get taskAgentRouteVia => 'prin';
 
   @override
@@ -9716,6 +9712,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get taskAgentUseProfileDefault =>
       'Folosiți modelul implicit al profilului';
+
+  @override
+  String get taskAgentWakeAgent => 'Treziți agentul';
 
   @override
   String get taskCategoryAllLabel => 'toate';

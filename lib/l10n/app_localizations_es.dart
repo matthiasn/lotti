@@ -9513,23 +9513,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'Elige una configuración de IA antes de activar las actualizaciones automáticas.';
 
   @override
-  String get taskAgentAutomaticUpdatesOffBadge =>
-      'Actualizaciones automáticas desactivadas · Usa «Ejecutar ahora»';
-
-  @override
   String get taskAgentAutomaticUpdatesOffDescription =>
-      'Las actualizaciones automáticas están desactivadas. Usa «Ejecutar ahora» para actualizar este informe.';
-
-  @override
-  String get taskAgentAutomaticUpdatesOnDescription =>
-      'Cuando cambia algo relacionado con esta tarea, empieza una cuenta atrás de dos minutos. Los cambios durante la cuenta atrás se agrupan en una sola actualización.';
+      'Las actualizaciones automáticas están desactivadas. Despierta al agente cuando quieras un informe actualizado.';
 
   @override
   String get taskAgentAutomaticUpdatesSummary =>
       'Agrupa los cambios de la tarea y actualiza después de dos minutos.';
-
-  @override
-  String get taskAgentAutomationSection => 'Automatización';
 
   @override
   String get taskAgentCancelTimerTooltip =>
@@ -9611,6 +9600,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Predeterminado del perfil';
 
   @override
+  String get taskAgentReportOutdatedDescription =>
+      'La tarea cambió después de generar este resumen.';
+
+  @override
+  String get taskAgentReportOutdatedTitle => 'Este resumen está desactualizado';
+
+  @override
   String get taskAgentRouteVia => 'vía';
 
   @override
@@ -9686,6 +9682,9 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get taskAgentUseProfileDefault =>
       'Usar el valor predeterminado del perfil';
+
+  @override
+  String get taskAgentWakeAgent => 'Despertar al agente';
 
   @override
   String get taskCategoryAllLabel => 'todos';
