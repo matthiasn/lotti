@@ -74,7 +74,6 @@ turn task metadata or a checklist edit into an accomplishment.
   test('editor support is limited to the validated Melious route', () {
     expect(
       TaskAgentReportEditor.supports(
-        enabled: true,
         executorModelId: meliousMistralSmall4119BInstructModelId,
         providerType: InferenceProviderType.melious,
       ),
@@ -83,24 +82,16 @@ turn task metadata or a checklist edit into an accomplishment.
 
     for (final unsupported in [
       (
-        enabled: false,
-        model: meliousMistralSmall4119BInstructModelId,
-        providerType: InferenceProviderType.melious,
-      ),
-      (
-        enabled: true,
         model: meliousQwen35122BA10BModelId,
         providerType: InferenceProviderType.melious,
       ),
       (
-        enabled: true,
         model: meliousMistralSmall4119BInstructModelId,
         providerType: InferenceProviderType.genericOpenAi,
       ),
     ]) {
       expect(
         TaskAgentReportEditor.supports(
-          enabled: unsupported.enabled,
           executorModelId: unsupported.model,
           providerType: unsupported.providerType,
         ),

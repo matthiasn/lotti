@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
+import 'package:lotti/features/knowledge_graph_poc/state/task_graph_provider.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
-import 'package:lotti/utils/consts.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Right-side overlay that opens the focused graph node's FULL details by
 /// embedding the app's actual detail page — [TaskDetailsPage] for tasks,
@@ -65,14 +65,14 @@ class EntryDetailSidebar extends ConsumerWidget {
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
                     error: (_, _) => _Message(
-                      text: "Couldn't load this entry",
+                      text: context.messages.knowledgeGraphEntryLoadError,
                       tokens: tokens,
                     ),
                     data: (entryState) {
                       final item = entryState?.entry;
                       if (item == null) {
                         return _Message(
-                          text: 'Entry not found',
+                          text: context.messages.knowledgeGraphEntryNotFound,
                           tokens: tokens,
                         );
                       }
@@ -85,7 +85,11 @@ class EntryDetailSidebar extends ConsumerWidget {
                 Positioned(
                   top: tokens.spacing.step3,
                   left: tokens.spacing.step3,
-                  child: _CloseButton(onClose: onClose, tokens: tokens),
+                  child: _CloseButton(
+                    onClose: onClose,
+                    tokens: tokens,
+                    tooltip: context.messages.knowledgeGraphCloseDetails,
+                  ),
                 ),
               ],
             ),
@@ -97,25 +101,33 @@ class EntryDetailSidebar extends ConsumerWidget {
 }
 
 class _CloseButton extends StatelessWidget {
-  const _CloseButton({required this.onClose, required this.tokens});
+  const _CloseButton({
+    required this.onClose,
+    required this.tokens,
+    required this.tooltip,
+  });
 
   final VoidCallback onClose;
   final DsTokens tokens;
+  final String tooltip;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: tokens.colors.background.level02.withValues(alpha: 0.8),
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onClose,
-        child: Padding(
-          padding: EdgeInsets.all(tokens.spacing.step2),
-          child: Icon(
-            Icons.close_rounded,
-            size: 18,
-            color: tokens.colors.text.highEmphasis,
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: tokens.colors.background.level02.withValues(alpha: 0.8),
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onClose,
+          child: Padding(
+            padding: EdgeInsets.all(tokens.spacing.step2),
+            child: Icon(
+              Icons.close_rounded,
+              size: 18,
+              color: tokens.colors.text.highEmphasis,
+            ),
           ),
         ),
       ),
@@ -159,14 +171,11 @@ class _EmbeddedDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // coverage:ignore-start
-    // Force the knowledge-graph flag off for the embedded page so its task app
-    // bar hides the graph (hub) button — we're already inside the graph, and
-    // opening another from here would recurse.
+    // Hide the graph (hub) button in embedded task details because we're
+    // already inside the graph and opening another route would recurse.
     return ProviderScope(
       overrides: [
-        configFlagProvider(
-          enableKnowledgeGraphFlag,
-        ).overrideWith((ref) => Stream<bool>.value(false)),
+        knowledgeGraphEntryPointEnabledProvider.overrideWithValue(false),
       ],
       child: Navigator(
         onGenerateRoute: (_) => MaterialPageRoute<void>(

@@ -11,12 +11,12 @@ camera **walks the link** to it — it becomes the new focus, its neighbors expa
 in, and a trail + ghost ring mark where you came from. A side **inspector**
 previews the focus node (cover, type, category, age, links, TL;DR).
 
-This is a throwaway visual/interaction spike: it runs on **synthetic,
-deterministic scenarios**, not real `JournalEntity`/`EntryLink` data, so the
-explorer could be reviewed independently of the data plumbing. A four-discipline
-expert panel (information visualization, ontology/graph-DB, open-world game
-design, Flutter rendering) reviewed it across several iterations to a **9.2/10
-consensus on interaction *and* looks** (every reviewer ≥ 9.0).
+The production route adapts real `JournalEntity` and `EntryLink` data into the
+same graph model used by the deterministic development scenarios. A
+four-discipline expert panel (information visualization, ontology/graph-DB,
+open-world game design, Flutter rendering) reviewed the original visual spike
+across several iterations to a **9.2/10 consensus on interaction *and* looks**
+(every reviewer ≥ 9.0).
 
 ## Design (what the panel signed off on)
 
@@ -68,7 +68,7 @@ renders cleanly outside a `Scaffold`.
 | `ui/graph_motion_controller.dart` | Event-driven local force island: edge springs, local separation, damping, anchored offsets, graph-surface repaint ticker, and settle/stop logic. |
 | `ui/knowledge_graph_painter.dart` | The `CustomPainter`: atmosphere, biome haze, edges, walk trail, lit nodes, ghost ring, labels. |
 | `ui/knowledge_graph_view.dart` | Host: layout choice, fit/walk camera, pan/zoom/tap, history, title + controls + inspector + legend. Uses a pre-computed `layout` when given (provider path) and only relaxes the graph itself as a fallback (synthetic scenarios / tests). Reports walked-to task nodes to the page so real-data graphs can expand lazily. |
-| `state/task_graph_provider.dart` | **Real-data adapter** (Phase 1): `taskGraphProvider` loads a task's real `linked_entries` (depth-2 BFS + project + checklists), maps entities→node types and links→relation kinds, resolves real category colors, and relaxes the layout **on a background isolate** (`Isolate.run`) so opening the page never blocks the UI thread — the result rides in `TaskGraphData.layout`. The same off-thread layout entry point is reused after additive expansions. Pure helpers `graphNodeTypeFor` / `graphNodeLabelFor` / `edgeKindFor` are unit-tested. |
+| `state/task_graph_provider.dart` | **Real-data adapter** (Phase 1): `taskGraphProvider` loads a task's real `linked_entries` (depth-2 BFS + project + checklists), maps entities→node types and links→relation kinds, resolves real category colors, and relaxes the layout **on a background isolate** (`Isolate.run`) so opening the page never blocks the UI thread — the result rides in `TaskGraphData.layout`. The same off-thread layout entry point is reused after additive expansions. The context-only `knowledgeGraphEntryPointEnabledProvider` suppresses a recursive graph button inside the explorer's embedded task detail. Pure helpers `graphNodeTypeFor` / `graphNodeLabelFor` / `edgeKindFor` are unit-tested. |
 | `ui/task_knowledge_graph_page.dart` | **In-app page** (Phase 1): hosts the view full-bleed in a `Stack` with a compact, transparent top-left header (back + "Knowledge graph" title) floated over the graph — no banded app-bar row. Reserves the header's height in the view's `MediaQuery` top padding (so the view's own top-left chrome clears it) rather than a full-width bar that would swallow taps over the inspector. Loading / empty / error states; reached from a hub icon on the task app bar. When the user walks onto a task that was only present as a project sibling, the page reads that task's graph, merges its nodes/edges into the graph already on screen, and swaps in a freshly relaxed merged layout. |
 | `dev_main.dart` | Standalone dev entrypoint to explore the synthetic worlds interactively. |
 
@@ -136,22 +136,19 @@ while new links become explorable. The expert panel scored the integration
 **9/10 in full app-scaffold screenshots**
 (every reviewer ≥ 9).
 
-### Feature flag
+### Entry-point rollout
 
-The hub icon is gated behind the `enable_knowledge_graph` config flag
-(`enableKnowledgeGraphFlag` in `lib/utils/consts.dart`), seeded **off** by
-default. Both app bars watch `configFlagProvider(enableKnowledgeGraphFlag)` and
-omit the hub button while the flag is off, so there is no in-app entry point
-until it's enabled under Settings → Advanced → Flags ("Knowledge Graph"). The
-explorer is still an experimental spike, so it stays hidden for normal users.
+The hub icon is always available from the compact and expandable task app bars.
+The explorer embeds a task detail sidebar, so that nested `TaskDetailsPage`
+overrides `knowledgeGraphEntryPointEnabledProvider` to `false`; this prevents a
+second graph button from recursively opening the same route. The provider is a
+view-context guard, not a user-facing rollout flag.
 
-The flag name/description and the page chrome (title, empty, error) are
-localized in all six ARBs. The **in-graph copy** rendered by the painter/view —
-node + relation type labels, legend/title captions, relative-age text, and the
-fallback TL;DR sentences — is intentionally **English-only during the spike**.
-Localizing that surface (≈40 strings × 6 locales) is deferred until the feature
-graduates from behind the flag; it must be done before the flag is enabled by
-default.
+Page chrome, controls, relative ages, node and relation type labels, summaries,
+and fallback/error messages are localized in all six primary ARBs. Titles and
+category labels loaded from journal data remain the user's own text. The
+synthetic scenario names used only by the standalone development harness stay
+developer-facing.
 
 ## Status & next steps
 

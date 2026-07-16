@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Full-height "dossier" preview of the focused graph node, docked to the right
 /// edge of the explorer. A frosted, category-lit surface anchors it over the
@@ -147,7 +149,7 @@ class NodeInspectorPanel extends StatelessWidget {
                         if (onBack != null)
                           _NavButton(
                             icon: Icons.arrow_back_rounded,
-                            tooltip: 'Back',
+                            tooltip: context.messages.knowledgeGraphBack,
                             onTap: canGoBack ? onBack : null,
                             tokens: tokens,
                           ),
@@ -155,7 +157,7 @@ class NodeInspectorPanel extends StatelessWidget {
                           SizedBox(width: tokens.spacing.step2),
                           _NavButton(
                             icon: Icons.center_focus_strong_rounded,
-                            tooltip: 'Recenter',
+                            tooltip: context.messages.knowledgeGraphRecenter,
                             onTap: onRecenter,
                             tokens: tokens,
                           ),
@@ -170,7 +172,7 @@ class NodeInspectorPanel extends StatelessWidget {
                     right: tokens.spacing.step3,
                     child: _NavButton(
                       icon: Icons.open_in_full_rounded,
-                      tooltip: 'Open details',
+                      tooltip: context.messages.knowledgeGraphOpenDetails,
                       onTap: onOpen,
                       tokens: tokens,
                     ),
@@ -294,7 +296,11 @@ class _InspectorContent extends StatelessWidget {
                     ],
                     if (summary.body != null) ...[
                       SizedBox(height: tokens.spacing.sectionGap),
-                      _SectionLabel(label: 'SUMMARY', cat: cat, tokens: tokens),
+                      _SectionLabel(
+                        label: context.messages.knowledgeGraphSummarySection,
+                        cat: cat,
+                        tokens: tokens,
+                      ),
                       SizedBox(height: tokens.spacing.step3),
                       Text(
                         summary.body!,
@@ -307,7 +313,9 @@ class _InspectorContent extends StatelessWidget {
                     if (neighbors.isNotEmpty) ...[
                       SizedBox(height: tokens.spacing.sectionGap),
                       _SectionLabel(
-                        label: 'LINKED · ${neighbors.length}',
+                        label: context.messages.knowledgeGraphLinkedSection(
+                          neighbors.length,
+                        ),
                         cat: cat,
                         tokens: tokens,
                       ),
@@ -315,7 +323,10 @@ class _InspectorContent extends StatelessWidget {
                       for (final n in neighbors)
                         _TimelineItem(
                           node: n,
-                          ageLabel: relativeAge(now.difference(n.createdAt)),
+                          ageLabel: relativeAge(
+                            context.messages,
+                            now.difference(n.createdAt),
+                          ),
                           categoryLabel:
                               categoryNames[n.categoryId] ?? n.categoryId,
                           color: style
@@ -421,7 +432,8 @@ class _Hero extends StatelessWidget {
             bottom: tokens.spacing.cardPadding,
             child: _Kicker(
               node: node,
-              label: '${typeLabel(node.type)} · $categoryLabel',
+              label:
+                  '${typeLabel(context.messages, node.type)} · $categoryLabel',
               cat: cat,
               tokens: tokens,
             ),
@@ -562,7 +574,7 @@ class _TimelineItem extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${typeLabel(node.type)} · $ageLabel',
+                    '${typeLabel(context.messages, node.type)} · $ageLabel',
                     style: tokens.typography.styles.others.caption.copyWith(
                       color: tokens.colors.text.mediumEmphasis,
                     ),
@@ -666,13 +678,15 @@ class _Footer extends StatelessWidget {
 }
 
 /// Relative-age label for the footer/timeline (pure; unit-tested).
-String relativeAge(Duration d) {
-  if (d.inHours < 24) return 'today';
+String relativeAge(AppLocalizations messages, Duration d) {
+  if (d.inHours < 24) return messages.knowledgeGraphAgeToday;
   final days = d.inDays;
-  if (days == 1) return 'yesterday';
-  if (days < 14) return '$days days ago';
-  if (days < 60) return '${(days / 7).round()} weeks ago';
-  return '${(days / 30).round()} months ago';
+  if (days == 1) return messages.knowledgeGraphAgeYesterday;
+  if (days < 14) return messages.knowledgeGraphAgeDaysAgo(days);
+  if (days < 60) {
+    return messages.knowledgeGraphAgeWeeksAgo((days / 7).round());
+  }
+  return messages.knowledgeGraphAgeMonthsAgo((days / 30).round());
 }
 
 /// Flattens a markdown summary into a compact plain-text preview: drops heading

@@ -100,7 +100,6 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableTooltipFlag,
     enableAiStreamingFlag,
     enableAiSummaryTtsFlag,
-    enableTaskAgentEvidenceSynthesisFlag,
     enableLoggingFlag,
     enableMatrixFlag,
     resendAttachments,
@@ -109,10 +108,8 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableEventsFlag,
     enableSessionRatingsFlag,
     enableProjectsFlag,
-    enableKnowledgeGraphFlag,
     enableEmbeddingsFlag,
     enableVectorSearchFlag,
-    enableSyncedAlertsFlag,
     enableWhatsNewFlag,
     enableOnboardingFtueFlag,
     dailyOsOnboardingEnabledFlag,
@@ -152,8 +149,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.bolt_rounded;
       case enableAiSummaryTtsFlag:
         return Icons.volume_up_rounded;
-      case enableTaskAgentEvidenceSynthesisFlag:
-        return Icons.fact_check_outlined;
       case enableLoggingFlag:
         return Icons.bug_report_rounded;
       case enableMatrixFlag:
@@ -170,14 +165,10 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.star_rate_rounded;
       case enableProjectsFlag:
         return Icons.folder_outlined;
-      case enableKnowledgeGraphFlag:
-        return Icons.bubble_chart_outlined;
       case enableEmbeddingsFlag:
         return Icons.hub_outlined;
       case enableVectorSearchFlag:
         return Icons.manage_search_rounded;
-      case enableSyncedAlertsFlag:
-        return Icons.notifications_none_rounded;
       case enableWhatsNewFlag:
         return Icons.new_releases_outlined;
       case enableOnboardingFtueFlag:
@@ -209,10 +200,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableAiStreamingDescription;
       case enableAiSummaryTtsFlag:
         return context.messages.configFlagEnableAiSummaryTtsDescription;
-      case enableTaskAgentEvidenceSynthesisFlag:
-        return context
-            .messages
-            .configFlagEnableTaskAgentEvidenceSynthesisDescription;
       case enableLoggingFlag:
         return context.messages.configFlagEnableLoggingDescription;
       case enableMatrixFlag:
@@ -229,14 +216,10 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableSessionRatingsDescription;
       case enableProjectsFlag:
         return context.messages.configFlagEnableProjectsDescription;
-      case enableKnowledgeGraphFlag:
-        return context.messages.configFlagEnableKnowledgeGraphDescription;
       case enableEmbeddingsFlag:
         return context.messages.configFlagAttemptEmbeddingDescription;
       case enableVectorSearchFlag:
         return context.messages.configFlagEnableVectorSearchDescription;
-      case enableSyncedAlertsFlag:
-        return context.messages.configFlagEnableSyncedAlertsDescription;
       case enableWhatsNewFlag:
         return context.messages.configFlagEnableWhatsNewDescription;
       case enableOnboardingFtueFlag:
@@ -268,8 +251,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableAiStreaming;
       case enableAiSummaryTtsFlag:
         return context.messages.configFlagEnableAiSummaryTts;
-      case enableTaskAgentEvidenceSynthesisFlag:
-        return context.messages.configFlagEnableTaskAgentEvidenceSynthesis;
       case enableLoggingFlag:
         return context.messages.configFlagEnableLogging;
       case enableMatrixFlag:
@@ -286,14 +267,10 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableSessionRatings;
       case enableProjectsFlag:
         return context.messages.configFlagEnableProjects;
-      case enableKnowledgeGraphFlag:
-        return context.messages.configFlagEnableKnowledgeGraph;
       case enableEmbeddingsFlag:
         return context.messages.configFlagEnableEmbeddings;
       case enableVectorSearchFlag:
         return context.messages.configFlagEnableVectorSearch;
-      case enableSyncedAlertsFlag:
-        return context.messages.configFlagEnableSyncedAlerts;
       case enableWhatsNewFlag:
         return context.messages.configFlagEnableWhatsNew;
       case enableOnboardingFtueFlag:

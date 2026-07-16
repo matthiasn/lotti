@@ -5143,18 +5143,6 @@ abstract class AppLocalizations {
   /// **'Show the Habits page in the main navigation. Track and manage your daily habits here.'**
   String get configFlagEnableHabitsPageDescription;
 
-  /// No description provided for @configFlagEnableKnowledgeGraph.
-  ///
-  /// In en, this message translates to:
-  /// **'Knowledge Graph'**
-  String get configFlagEnableKnowledgeGraph;
-
-  /// No description provided for @configFlagEnableKnowledgeGraphDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Show the experimental knowledge graph explorer on tasks — a visual map of links between tasks, entries, and projects.'**
-  String get configFlagEnableKnowledgeGraphDescription;
-
   /// No description provided for @configFlagEnableLogging.
   ///
   /// In en, this message translates to:
@@ -5226,30 +5214,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Prompt for a quick session rating when you stop a timer.'**
   String get configFlagEnableSessionRatingsDescription;
-
-  /// No description provided for @configFlagEnableSyncedAlerts.
-  ///
-  /// In en, this message translates to:
-  /// **'Synced alerts'**
-  String get configFlagEnableSyncedAlerts;
-
-  /// No description provided for @configFlagEnableSyncedAlertsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Sync AI and task alerts across devices and allow them to schedule local OS notifications.'**
-  String get configFlagEnableSyncedAlertsDescription;
-
-  /// No description provided for @configFlagEnableTaskAgentEvidenceSynthesis.
-  ///
-  /// In en, this message translates to:
-  /// **'Evidence-first task agent'**
-  String get configFlagEnableTaskAgentEvidenceSynthesis;
-
-  /// No description provided for @configFlagEnableTaskAgentEvidenceSynthesisDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Use evidence-grounded task-agent prompting for efficient Melious models. The default Melious profile uses Qwen 3.5 directly; choosing Mistral Small 4 adds an isolated Qwen report pass and a small amount of latency and usage.'**
-  String get configFlagEnableTaskAgentEvidenceSynthesisDescription;
 
   /// No description provided for @configFlagEnableTooltip.
   ///
@@ -10908,17 +10872,203 @@ abstract class AppLocalizations {
   /// **'Keyboard shortcuts'**
   String get keyboardShortcutsTitle;
 
+  /// No description provided for @knowledgeGraphAgeDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day ago} other{{count} days ago}}'**
+  String knowledgeGraphAgeDaysAgo(int count);
+
+  /// No description provided for @knowledgeGraphAgeMonthsAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 month ago} other{{count} months ago}}'**
+  String knowledgeGraphAgeMonthsAgo(int count);
+
+  /// No description provided for @knowledgeGraphAgeToday.
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
+  String get knowledgeGraphAgeToday;
+
+  /// No description provided for @knowledgeGraphAgeWeeksAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 week ago} other{{count} weeks ago}}'**
+  String knowledgeGraphAgeWeeksAgo(int count);
+
+  /// No description provided for @knowledgeGraphAgeYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'yesterday'**
+  String get knowledgeGraphAgeYesterday;
+
+  /// No description provided for @knowledgeGraphBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get knowledgeGraphBack;
+
+  /// No description provided for @knowledgeGraphCloseDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Close details'**
+  String get knowledgeGraphCloseDetails;
+
   /// No description provided for @knowledgeGraphEmpty.
   ///
   /// In en, this message translates to:
   /// **'No links to explore yet'**
   String get knowledgeGraphEmpty;
 
+  /// No description provided for @knowledgeGraphEntryLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this entry'**
+  String get knowledgeGraphEntryLoadError;
+
+  /// No description provided for @knowledgeGraphEntryNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry not found'**
+  String get knowledgeGraphEntryNotFound;
+
   /// No description provided for @knowledgeGraphError.
   ///
   /// In en, this message translates to:
   /// **'Couldn\'t load the knowledge graph'**
   String get knowledgeGraphError;
+
+  /// No description provided for @knowledgeGraphLinkedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'LINKED · {count}'**
+  String knowledgeGraphLinkedSection(int count);
+
+  /// No description provided for @knowledgeGraphMoreLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'more links'**
+  String get knowledgeGraphMoreLinks;
+
+  /// No description provided for @knowledgeGraphNodeCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 node} other{{count} nodes}}'**
+  String knowledgeGraphNodeCount(int count);
+
+  /// No description provided for @knowledgeGraphNodeTypeAiSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'AI summary'**
+  String get knowledgeGraphNodeTypeAiSummary;
+
+  /// No description provided for @knowledgeGraphNodeTypeAudioNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio note'**
+  String get knowledgeGraphNodeTypeAudioNote;
+
+  /// No description provided for @knowledgeGraphNodeTypeChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist'**
+  String get knowledgeGraphNodeTypeChecklist;
+
+  /// No description provided for @knowledgeGraphNodeTypeChecklistItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist item'**
+  String get knowledgeGraphNodeTypeChecklistItem;
+
+  /// No description provided for @knowledgeGraphNodeTypeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get knowledgeGraphNodeTypeNote;
+
+  /// No description provided for @knowledgeGraphNodeTypePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get knowledgeGraphNodeTypePhoto;
+
+  /// No description provided for @knowledgeGraphNodeTypeProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get knowledgeGraphNodeTypeProject;
+
+  /// No description provided for @knowledgeGraphNodeTypeRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get knowledgeGraphNodeTypeRating;
+
+  /// No description provided for @knowledgeGraphNodeTypeTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Task'**
+  String get knowledgeGraphNodeTypeTask;
+
+  /// No description provided for @knowledgeGraphOpenDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Open details'**
+  String get knowledgeGraphOpenDetails;
+
+  /// No description provided for @knowledgeGraphRecenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Recenter'**
+  String get knowledgeGraphRecenter;
+
+  /// No description provided for @knowledgeGraphRecentToOlder.
+  ///
+  /// In en, this message translates to:
+  /// **'recent → older'**
+  String get knowledgeGraphRecentToOlder;
+
+  /// No description provided for @knowledgeGraphRelationAiSource.
+  ///
+  /// In en, this message translates to:
+  /// **'AI source'**
+  String get knowledgeGraphRelationAiSource;
+
+  /// No description provided for @knowledgeGraphRelationChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'checklist'**
+  String get knowledgeGraphRelationChecklist;
+
+  /// No description provided for @knowledgeGraphRelationInProject.
+  ///
+  /// In en, this message translates to:
+  /// **'in project'**
+  String get knowledgeGraphRelationInProject;
+
+  /// No description provided for @knowledgeGraphRelationLinkedTask.
+  ///
+  /// In en, this message translates to:
+  /// **'linked task'**
+  String get knowledgeGraphRelationLinkedTask;
+
+  /// No description provided for @knowledgeGraphRelationNoteLog.
+  ///
+  /// In en, this message translates to:
+  /// **'note / log'**
+  String get knowledgeGraphRelationNoteLog;
+
+  /// No description provided for @knowledgeGraphRelationRating.
+  ///
+  /// In en, this message translates to:
+  /// **'rating'**
+  String get knowledgeGraphRelationRating;
+
+  /// No description provided for @knowledgeGraphSummarySection.
+  ///
+  /// In en, this message translates to:
+  /// **'SUMMARY'**
+  String get knowledgeGraphSummarySection;
 
   /// No description provided for @knowledgeGraphTitle.
   ///
@@ -10931,6 +11081,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Explore links'**
   String get knowledgeGraphTooltip;
+
+  /// No description provided for @knowledgeGraphWalkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a node to walk · {count, plural, =1{1 node} other{{count} nodes}}'**
+  String knowledgeGraphWalkHint(int count);
 
   /// No description provided for @linkedFromCaption.
   ///

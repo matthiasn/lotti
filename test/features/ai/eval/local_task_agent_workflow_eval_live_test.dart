@@ -79,9 +79,6 @@ void main() {
       final providerType = _providerType(
         Platform.environment['LOCAL_TASK_AGENT_WORKFLOW_EVAL_PROVIDER_TYPE'],
       );
-      final evidenceSynthesisEnabled =
-          Platform.environment['LOCAL_TASK_AGENT_WORKFLOW_EVAL_EVIDENCE'] ==
-          '1';
       final provider =
           AiConfig.inferenceProvider(
                 id: 'task-agent-workflow-${providerType.name}',
@@ -179,7 +176,6 @@ void main() {
         labelsRepository: mocks.labelsRepository,
         syncService: mocks.syncService,
         templateService: mocks.templateService,
-        evidenceSynthesisEnabled: evidenceSynthesisEnabled,
         domainLogger: DomainLogger(loggingService: LoggingService())
           ..enabledDomains.add(LogDomain.agentWorkflow),
       );
@@ -273,8 +269,7 @@ void main() {
       expect(normalizedReport, isNot(contains('are tracked')));
       expect(normalizedReport, isNot(contains('no estimate')));
       expect(normalizedReport, isNot(contains('no due date')));
-      if (evidenceSynthesisEnabled &&
-          providerType == InferenceProviderType.melious &&
+      if (providerType == InferenceProviderType.melious &&
           model.providerModelId == meliousMistralSmall4119BInstructModelId) {
         expect(
           report.consumptionModelIds,
@@ -298,8 +293,7 @@ void main() {
           hasLength(consumptionEvents.length),
         );
       }
-      if (evidenceSynthesisEnabled &&
-          providerType == InferenceProviderType.melious &&
+      if (providerType == InferenceProviderType.melious &&
           model.providerModelId == meliousQwen35122BA10BModelId) {
         expect(
           report.editorRouteOutcomes,

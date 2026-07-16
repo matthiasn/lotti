@@ -305,84 +305,40 @@ void main() {
       expect(names, contains('update_report'));
     });
 
-    test('tightens report and mutation authority only in evidence mode', () {
-      final baseline = builder.buildToolDefinitions();
-      final optimized = builder.buildToolDefinitions(evidenceSynthesis: true);
-      final baselineByName = {
-        for (final tool in baseline) tool.function.name: tool.function,
+    test('uses evidence-first report and mutation authority descriptions', () {
+      final toolsByName = {
+        for (final tool in builder.buildToolDefinitions())
+          tool.function.name: tool.function,
       };
-      final optimizedByName = {
-        for (final tool in optimized) tool.function.name: tool.function,
-      };
-      final optimizedReport = optimizedByName['update_report']!;
+      final report = toolsByName['update_report']!;
 
       expect(
-        baselineByName[TaskAgentToolNames.addMultipleChecklistItems]!
-            .description,
-        isNot(contains('concrete multi-step plan')),
-      );
-      expect(
-        optimizedByName[TaskAgentToolNames.addMultipleChecklistItems]!
-            .description,
+        toolsByName[TaskAgentToolNames.addMultipleChecklistItems]!.description,
         contains('concrete multi-step plan'),
       );
       expect(
-        baselineByName[TaskAgentToolNames.updateTaskDueDate]!.description,
-        isNot(contains('explicitly asks')),
-      );
-      expect(
-        optimizedByName[TaskAgentToolNames.updateTaskDueDate]!.description,
+        toolsByName[TaskAgentToolNames.updateTaskDueDate]!.description,
         contains('explicitly asks'),
       );
       expect(
-        baselineByName[TaskAgentToolNames.setTaskStatus]!.description,
-        isNot(contains('explicitly requests')),
-      );
-      expect(
-        optimizedByName[TaskAgentToolNames.setTaskStatus]!.description,
+        toolsByName[TaskAgentToolNames.setTaskStatus]!.description,
         contains('explicitly requests'),
       );
 
+      expect(report.description, contains('matching successful'));
+      expect(report.description, contains('stale report claims'));
+      final parameters = report.parameters!;
+      expect(parameters['required'], ['oneLiner', 'tldr', 'content']);
+      expect(parameters['additionalProperties'], isFalse);
+      final properties = parameters['properties']! as Map<String, dynamic>;
+      expect(properties.keys, containsAll(['oneLiner', 'tldr', 'content']));
       expect(
-        optimizedReport.description,
-        contains('matching successful'),
+        (properties['content']! as Map<String, dynamic>)['type'],
+        'string',
       );
       expect(
-        optimizedReport.description,
-        contains('stale report claims'),
-      );
-      final baselineReport = baselineByName['update_report']!;
-      final optimizedParameters = optimizedReport.parameters!;
-      final baselineParameters = baselineReport.parameters!;
-      expect(
-        optimizedParameters['required'],
-        baselineParameters['required'],
-      );
-      expect(
-        optimizedParameters['additionalProperties'],
-        baselineParameters['additionalProperties'],
-      );
-      final optimizedProperties =
-          optimizedParameters['properties']! as Map<String, dynamic>;
-      final baselineProperties =
-          baselineParameters['properties']! as Map<String, dynamic>;
-      expect(optimizedProperties.keys, baselineProperties.keys);
-      expect(
-        (optimizedProperties['content']! as Map<String, dynamic>)['type'],
-        (baselineProperties['content']! as Map<String, dynamic>)['type'],
-      );
-      expect(
-        (optimizedProperties['content']!
-            as Map<String, dynamic>)['description'],
+        (properties['content']! as Map<String, dynamic>)['description'],
         contains('free-form Markdown'),
-      );
-      expect(
-        optimizedByName['set_task_title']!.description,
-        baselineByName['set_task_title']!.description,
-      );
-      expect(
-        optimizedByName['set_task_title']!.parameters,
-        equals(baselineByName['set_task_title']!.parameters),
       );
     });
   });

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/knowledge_graph_poc/state/task_graph_provider.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/task_knowledge_graph_page.dart';
@@ -13,7 +12,6 @@ import 'package:lotti/features/tasks/ui/task_compact_app_bar.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -60,13 +58,13 @@ void main() {
   Widget buildTestWidget(
     Task task, {
     List<Override> overrides = const [],
-    bool enableGraph = false,
+    bool showGraphEntryPoint = true,
   }) {
     return ProviderScope(
       overrides: [
-        configFlagProvider(
-          enableKnowledgeGraphFlag,
-        ).overrideWith((ref) => Stream<bool>.value(enableGraph)),
+        knowledgeGraphEntryPointEnabledProvider.overrideWithValue(
+          showGraphEntryPoint,
+        ),
         ...overrides,
       ],
       child: MaterialApp(
@@ -116,24 +114,26 @@ void main() {
       expect(find.byIcon(Icons.more_horiz), findsOneWidget);
     });
 
-    testWidgets('hides the knowledge-graph hub button when the flag is off', (
+    testWidgets('nested task context can hide the graph entry point', (
       tester,
     ) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task));
+      await tester.pumpWidget(
+        buildTestWidget(task, showGraphEntryPoint: false),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.hub_outlined), findsNothing);
     });
 
-    testWidgets('shows the knowledge-graph hub button when the flag is on', (
+    testWidgets('shows the knowledge-graph hub button on task surfaces', (
       tester,
     ) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, enableGraph: true));
+      await tester.pumpWidget(buildTestWidget(task));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -148,7 +148,6 @@ void main() {
         await tester.pumpWidget(
           buildTestWidget(
             task,
-            enableGraph: true,
             overrides: [
               // Null graph data renders the empty state, so the pushed page
               // builds without touching getIt<LoggingService> (only used in

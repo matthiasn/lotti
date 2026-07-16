@@ -606,13 +606,12 @@ OpenAI-compatible `high` effort left the same three failures while adding 11%
 input tokens, 6% output tokens, and 6% latency. In the final shared-contract
 screen it passed 4/6 rather than 3/6, but retained the same two core grounding
 failures and cost differences were within run noise. Production therefore
-leaves reasoning at the model or profile default. The enabled-by-default
-`enable_task_agent_evidence_synthesis` flag supplies the evaluated prompt,
-extends the tool descriptions, and selects temperature `0.0` only for the
-exact evaluated Melious Mistral Small 4 and Qwen3.5 122B model IDs. It
-replaces the report directive only when the template still uses the seeded
-default, so evolved and manually customized report structure remains
-authoritative.
+leaves reasoning at the model or profile default. The permanent evidence-first
+workflow supplies the evaluated prompt, extends the tool descriptions, and
+selects temperature `0.0` only for the exact evaluated Melious Mistral Small 4
+and Qwen3.5 122B model IDs. It replaces the report directive only when the
+template still uses the seeded default, so evolved and manually customized
+report structure remains authoritative.
 
 The final matched production-routing run on commit `8d34a3088` covered 14
 scenarios per route. Direct Qwen and Mistral plus the isolated Qwen editor each

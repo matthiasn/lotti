@@ -20,7 +20,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-const _displayedFlagCount = 15;
+const _displayedFlagCount = 13;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -71,11 +71,6 @@ void main() {
             status: false,
           ),
           const ConfigFlag(
-            name: enableTaskAgentEvidenceSynthesisFlag,
-            description: 'Enable evidence-first task-agent inference?',
-            status: false,
-          ),
-          const ConfigFlag(
             name: enableEmbeddingsFlag,
             description: 'Generate Embeddings?',
             status: false,
@@ -113,11 +108,6 @@ void main() {
           const ConfigFlag(
             name: enableForkHealingFlag,
             description: 'Enable agent fork healing?',
-            status: false,
-          ),
-          const ConfigFlag(
-            name: enableKnowledgeGraphFlag,
-            description: 'Enable Knowledge Graph?',
             status: false,
           ),
         },
@@ -345,18 +335,6 @@ void main() {
             ),
           ),
           (
-            name: 'task-agent-evidence-synthesis',
-            title: (m) => m.configFlagEnableTaskAgentEvidenceSynthesis,
-            description: (m) =>
-                m.configFlagEnableTaskAgentEvidenceSynthesisDescription,
-            icon: Icons.fact_check_outlined,
-            expectedToggle: const ConfigFlag(
-              name: enableTaskAgentEvidenceSynthesisFlag,
-              description: 'Enable evidence-first task-agent inference?',
-              status: true,
-            ),
-          ),
-          (
             name: 'sync-activity-indicator',
             title: (m) => m.configFlagShowSyncActivityIndicator,
             description: (m) =>
@@ -376,17 +354,6 @@ void main() {
             expectedToggle: const ConfigFlag(
               name: showSidebarWakeQueueFlag,
               description: 'Show the inline Wake Queue in the sidebar.',
-              status: true,
-            ),
-          ),
-          (
-            name: 'knowledge-graph',
-            title: (m) => m.configFlagEnableKnowledgeGraph,
-            description: (m) => m.configFlagEnableKnowledgeGraphDescription,
-            icon: Icons.bubble_chart_outlined,
-            expectedToggle: const ConfigFlag(
-              name: enableKnowledgeGraphFlag,
-              description: 'Enable Knowledge Graph?',
               status: true,
             ),
           ),
@@ -903,11 +870,6 @@ void main() {
               description: 'Enable Projects?',
               status: false,
             ),
-            const ConfigFlag(
-              name: enableSyncedAlertsFlag,
-              description: 'Synced alerts?',
-              status: false,
-            ),
           },
         ]),
       );
@@ -971,12 +933,6 @@ void main() {
         status: false,
         icon: Icons.folder_outlined,
       ),
-      (
-        name: enableSyncedAlertsFlag,
-        description: 'Synced alerts?',
-        status: false,
-        icon: Icons.notifications_none_rounded,
-      ),
     ];
 
     // Search-isolate each flag, verify title/subtitle/icon/switch state,
@@ -1031,10 +987,6 @@ void main() {
             enableProjectsFlag => (
               context.messages.configFlagEnableProjects,
               context.messages.configFlagEnableProjectsDescription,
-            ),
-            enableSyncedAlertsFlag => (
-              context.messages.configFlagEnableSyncedAlerts,
-              context.messages.configFlagEnableSyncedAlertsDescription,
             ),
             _ => throw StateError('unexpected flag: ${flagCase.name}'),
           };

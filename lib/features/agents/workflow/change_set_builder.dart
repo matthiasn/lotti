@@ -404,8 +404,6 @@ class ChangeSetBuilder {
   /// for the same task so the bell still exposes at most one active row per
   /// task.
   ///
-  /// The repository short-circuits when the `enable_synced_alerts` flag is
-  /// off, so this is a no-op for users who haven't opted into the surface.
   /// Test seam for the notification guard — build() structurally always
   /// passes at least one pending item (an all-deduped wake returns null
   /// first), so the zero-pending short-circuit is only reachable directly.

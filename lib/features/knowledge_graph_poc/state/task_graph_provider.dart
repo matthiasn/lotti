@@ -28,6 +28,10 @@ const String kUncategorized = 'uncategorized';
 const int _maxDepth = 2;
 const int _maxNodes = 140;
 
+/// Keeps nested task details from offering another graph route while the user
+/// is already inside the graph. Normal task surfaces leave this enabled.
+final knowledgeGraphEntryPointEnabledProvider = Provider<bool>((_) => true);
+
 /// Cap on sibling tasks pulled in per project, so a huge project can't swamp
 /// the local view.
 const int _maxSiblingsPerProject = 24;
