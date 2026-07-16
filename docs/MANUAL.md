@@ -9,6 +9,10 @@ you can imagine. If you create a habit, you can assign any dashboard you want, a
 you want to complete a habit, look at the data and determine at a quick glance of the conditions are
 indeed met for successful completion.
 
+## Focused guides
+
+- [Task agents and AI summaries](manual/task_agents.md)
+
 ## Daily OS
 
 Daily OS turns a spoken or typed check-in into an editable plan for one day. It

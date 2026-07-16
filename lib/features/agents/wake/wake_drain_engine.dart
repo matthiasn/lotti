@@ -476,6 +476,8 @@ extension WakeDrainEngine on WakeOrchestrator {
           completedAt: clock.now(),
         );
 
+        await _markReportFresh(job.agentId, refreshStartedAt: startTime);
+
         // Only arm a follow-up throttle deadline when work remains queued;
         // otherwise the persisted `nextWakeAt` surfaces in the Wake Cycles
         // sidebar as a cooldown row with nothing left to execute.
@@ -547,6 +549,37 @@ extension WakeDrainEngine on WakeOrchestrator {
         'for ${DomainLogger.sanitizeId(runKey)} to $status',
         error: e,
         stackTrace: s,
+      );
+    }
+  }
+
+  Future<void> _markReportFresh(
+    String agentId, {
+    required DateTime refreshStartedAt,
+  }) async {
+    try {
+      final state = await repository.getAgentState(agentId);
+      if (state == null || state.reportStaleAt == null) return;
+      final persisted = state.reportFreshAt;
+      if (persisted != null && !refreshStartedAt.isAfter(persisted)) return;
+
+      final updated = state.copyWith(
+        reportFreshAt: refreshStartedAt,
+        updatedAt: clock.now(),
+      );
+      final writer = syncEntityWriter;
+      if (writer != null) {
+        await writer(updated);
+      } else {
+        await repository.upsertEntity(updated);
+      }
+      onPersistedStateChanged?.call(agentId);
+    } catch (error, stackTrace) {
+      _logError(
+        'failed to persist fresh report watermark for '
+        '${DomainLogger.sanitizeId(agentId)}',
+        error: error,
+        stackTrace: stackTrace,
       );
     }
   }

@@ -222,7 +222,7 @@ void main() {
         expect(restored.automaticUpdatesEnabled, preference);
         expect(
           restored.automaticUpdatesEnabledEffective,
-          preference ?? true,
+          preference ?? false,
         );
       });
     }

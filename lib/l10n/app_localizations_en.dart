@@ -9305,23 +9305,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose an AI setup before turning on automatic updates.';
 
   @override
-  String get taskAgentAutomaticUpdatesOffBadge =>
-      'Automatic updates off · Use Run now to update';
-
-  @override
   String get taskAgentAutomaticUpdatesOffDescription =>
-      'Automatic updates are off. Use Run now to update this report.';
-
-  @override
-  String get taskAgentAutomaticUpdatesOnDescription =>
-      'When anything related to this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.';
+      'Automatic updates are off. Wake the agent when you want a fresh report.';
 
   @override
   String get taskAgentAutomaticUpdatesSummary =>
       'Bundle task changes and update after two minutes.';
-
-  @override
-  String get taskAgentAutomationSection => 'Automation';
 
   @override
   String get taskAgentCancelTimerTooltip => 'Cancel pending automatic update';
@@ -9401,6 +9390,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Profile default';
 
   @override
+  String get taskAgentReportOutdatedDescription =>
+      'The task changed after this summary was generated.';
+
+  @override
+  String get taskAgentReportOutdatedTitle => 'This summary is out of date';
+
+  @override
   String get taskAgentRouteVia => 'via';
 
   @override
@@ -9472,6 +9468,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskAgentUseProfileDefault => 'Use profile default';
+
+  @override
+  String get taskAgentWakeAgent => 'Wake agent';
 
   @override
   String get taskCategoryAllLabel => 'all';

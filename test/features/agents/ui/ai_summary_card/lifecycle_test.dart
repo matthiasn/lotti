@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
@@ -204,7 +205,9 @@ void main() {
 
           await tester.pumpWidget(
             _buildShell(
-              identity: (ref) => makeTestIdentity(),
+              identity: (ref) => makeTestIdentity().copyWith(
+                config: const AgentConfig(automaticUpdatesEnabled: true),
+              ),
               agentState: (ref) => currentState,
               taskAgentService: taskAgentService,
             ),
@@ -262,15 +265,9 @@ void main() {
         // The content surfaces directly as the TLDR line.
         expect(find.text('Bare content becomes the tldr.'), findsOneWidget);
 
-        // The Read more pill is still offered because the TLDR is
-        // non-empty, but expanding it reveals no additional report body:
-        // because tldr == content, _resolveAdditionalReport is null, so
-        // the expanded section renders neither a second markdown body nor
-        // the Open-agent-internals pill.
-        expect(find.text('Read more'), findsOneWidget);
-        await tester.tap(find.text('Read more'));
-        await tester.pumpAndSettle();
-        expect(find.text('Show less'), findsOneWidget);
+        // There is no extra body to reveal, so the disclosure control stays
+        // hidden rather than offering an empty interaction.
+        expect(find.text('Read more'), findsNothing);
         expect(find.text('Open agent internals'), findsNothing);
         // Still exactly one copy of the content — no duplicated report body.
         expect(find.text('Bare content becomes the tldr.'), findsOneWidget);

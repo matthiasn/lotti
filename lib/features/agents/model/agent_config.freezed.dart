@@ -26,8 +26,8 @@ mixin _$AgentConfig {
 /// prohibit inference instead of falling through to legacy defaults.
  AgentInferenceSetup? get inferenceSetup;/// Whether task changes may schedule coalesced automatic wakes.
 ///
-/// Null means legacy/on. New task agents and the first switch edit persist
-/// an explicit value independently from profile/model selection.
+/// Null means off. New task agents and the first switch edit persist an
+/// explicit value independently from profile/model selection.
  bool? get automaticUpdatesEnabled;/// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
 /// it is configuration set once at creation, not mutable derived state.
 /// Null falls back to the default window. Reads accept the legacy
@@ -265,8 +265,8 @@ class _AgentConfig implements AgentConfig {
 @override final  AgentInferenceSetup? inferenceSetup;
 /// Whether task changes may schedule coalesced automatic wakes.
 ///
-/// Null means legacy/on. New task agents and the first switch edit persist
-/// an explicit value independently from profile/model selection.
+/// Null means off. New task agents and the first switch edit persist an
+/// explicit value independently from profile/model selection.
 @override final  bool? automaticUpdatesEnabled;
 /// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
 /// it is configuration set once at creation, not mutable derived state.

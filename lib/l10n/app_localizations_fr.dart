@@ -9553,23 +9553,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Choisis une configuration IA avant d’activer les mises à jour automatiques.';
 
   @override
-  String get taskAgentAutomaticUpdatesOffBadge =>
-      'Mises à jour automatiques désactivées · Utilise « Exécuter maintenant »';
-
-  @override
   String get taskAgentAutomaticUpdatesOffDescription =>
-      'Les mises à jour automatiques sont désactivées. Utilise « Exécuter maintenant » pour actualiser ce rapport.';
-
-  @override
-  String get taskAgentAutomaticUpdatesOnDescription =>
-      'Quand quelque chose lié à cette tâche change, un compte à rebours de deux minutes démarre. Les changements effectués pendant ce délai sont regroupés dans une seule mise à jour.';
+      'Les mises à jour automatiques sont désactivées. Réveille l’agent quand tu veux un rapport à jour.';
 
   @override
   String get taskAgentAutomaticUpdatesSummary =>
       'Regroupe les modifications de la tâche et actualise après deux minutes.';
-
-  @override
-  String get taskAgentAutomationSection => 'Automatisation';
 
   @override
   String get taskAgentCancelTimerTooltip =>
@@ -9650,6 +9639,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Réglage du profil';
 
   @override
+  String get taskAgentReportOutdatedDescription =>
+      'La tâche a changé après la création de ce résumé.';
+
+  @override
+  String get taskAgentReportOutdatedTitle => 'Ce résumé n’est plus à jour';
+
+  @override
   String get taskAgentRouteVia => 'via';
 
   @override
@@ -9724,6 +9720,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get taskAgentUseProfileDefault => 'Utiliser le réglage du profil';
+
+  @override
+  String get taskAgentWakeAgent => 'Réveiller l’agent';
 
   @override
   String get taskCategoryAllLabel => 'tout';

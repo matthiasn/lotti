@@ -16,7 +16,6 @@ import 'package:lotti/features/design_system/components/lists/design_system_grou
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -90,12 +89,6 @@ void main() {
     service = MockTaskAgentService();
     journalDb = MockJournalDb();
     taskMessengerKey = GlobalKey<ScaffoldMessengerState>();
-    when(
-      () => service.updateAutomaticUpdates(
-        agentId: any(named: 'agentId'),
-        enabled: any(named: 'enabled'),
-      ),
-    ).thenAnswer((_) async {});
     when(
       () => service.updateAgentProfile(
         agentId: any(named: 'agentId'),
@@ -215,7 +208,7 @@ void main() {
   }
 
   testWidgets(
-    'shows current route, source, persistent actions, and automation',
+    'shows current route, source, and persistent setup actions',
     (
       tester,
     ) async {
@@ -236,33 +229,19 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Turn off AI for this agent'), findsOneWidget);
-      expect(find.byType(DesignSystemGroupedList), findsNWidgets(2));
+      expect(find.byType(DesignSystemGroupedList), findsOneWidget);
       final groupedLists = find.byType(DesignSystemGroupedList);
-      for (var index = 0; index < 2; index++) {
-        final box = tester.widget<DecoratedBox>(
-          find
-              .descendant(
-                of: groupedLists.at(index),
-                matching: find.byType(DecoratedBox),
-              )
-              .first,
-        );
-        expect((box.decoration as BoxDecoration).color, isNull);
-      }
-      expect(find.byType(Divider), findsNothing);
-      expect(find.text('Automatic updates'), findsOneWidget);
-      expect(
-        find.text('Bundle task changes and update after two minutes.'),
-        findsOneWidget,
-      );
-      expect(
-        tester
-            .getSize(
-              find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
+      final box = tester.widget<DecoratedBox>(
+        find
+            .descendant(
+              of: groupedLists,
+              matching: find.byType(DecoratedBox),
             )
-            .height,
-        greaterThanOrEqualTo(kMinInteractiveDimension),
+            .first,
       );
+      expect((box.decoration as BoxDecoration).color, isNull);
+      expect(find.byType(Divider), findsNothing);
+      expect(find.text('Automatic updates'), findsNothing);
 
       await openProfilePage(tester);
       expect(find.text('Copy category default'), findsOneWidget);
@@ -277,29 +256,6 @@ void main() {
         find.byType(DesignSystemSelectionRow),
         findsNWidgets(2),
       );
-    },
-  );
-
-  testWidgets(
-    'automation checkbox persists off',
-    (
-      tester,
-    ) async {
-      await openSheet(tester);
-
-      await tester.drag(
-        find.byType(Scrollable).last,
-        const Offset(0, -300),
-      );
-      await tester.pump();
-      await tester.tap(
-        find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
-      );
-      await tester.pump();
-      verify(
-        () =>
-            service.updateAutomaticUpdates(agentId: 'agent-1', enabled: false),
-      ).called(1);
     },
   );
 
@@ -790,7 +746,7 @@ void main() {
     );
   });
 
-  testWidgets('disabled setup blocks automation and explains remediation', (
+  testWidgets('disabled setup explains remediation in the setup flow', (
     tester,
   ) async {
     await openSheet(
@@ -813,14 +769,7 @@ void main() {
     );
 
     expect(find.text('No AI setup'), findsOneWidget);
-    expect(
-      find.text('Choose an AI setup before turning on automatic updates.'),
-      findsOneWidget,
-    );
-    final switchRow = tester.widget<SettingsSwitchRow>(
-      find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
-    );
-    expect(switchRow.enabled, isFalse);
+    expect(find.text('Automatic updates'), findsNothing);
 
     await openProfilePage(tester);
     expect(find.text('No profiles available on this device'), findsOneWidget);

@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1048]
 ### Changed
+- **Task agents now update only when you ask by default.** New agents keep
+  watching their task without automatically spending inference tokens after
+  every change. An outdated summary stays visible with a clear **Wake agent**
+  action, while automatic two-minute updates remain available as an explicit
+  top-level opt-in. The card now separates report reading from automation and
+  model setup, and places **Read more** after the content it expands.
 - **The remaining settings lists fade their dividers on hover.** Hovering a row
   in Categories, Labels, Habits, Measurables, Dashboards, or the Matrix sync
   maintenance list now fades the hairlines above and below it, so the hovered

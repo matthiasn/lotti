@@ -66,6 +66,16 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     @Default({}) Map<String, int> processedCounterByHost,
     @Default({}) Map<String, int> toolCounterByKey,
 
+    /// Most recent relevant task change observed while automatic updates were
+    /// disabled. This is a monotonic watermark rather than a boolean so a wake
+    /// cannot accidentally clear a newer change that arrived during inference.
+    DateTime? reportStaleAt,
+
+    /// Start time of the most recent successful wake that refreshed the task
+    /// report. A report is stale when `reportStaleAt` is not older than this
+    /// watermark.
+    DateTime? reportFreshAt,
+
     /// When true, the agent was auto-created from a category default and is
     /// waiting for the task to contain meaningful content before its first run.
     @Default(false) bool awaitingContent,
@@ -740,4 +750,15 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 
   factory AgentDomainEntity.fromJson(Map<String, dynamic> json) =>
       _$AgentDomainEntityFromJson(json);
+}
+
+extension AgentStateReportFreshness on AgentStateEntity {
+  /// Whether a relevant task change is not reflected in the latest successful
+  /// report wake.
+  bool get isReportStale {
+    final staleAt = reportStaleAt;
+    if (staleAt == null) return false;
+    final freshAt = reportFreshAt;
+    return freshAt == null || !staleAt.isBefore(freshAt);
+  }
 }

@@ -16099,35 +16099,17 @@ abstract class AppLocalizations {
   /// **'Choose an AI setup before turning on automatic updates.'**
   String get taskAgentAutomaticUpdatesNeedsSetup;
 
-  /// No description provided for @taskAgentAutomaticUpdatesOffBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatic updates off · Use Run now to update'**
-  String get taskAgentAutomaticUpdatesOffBadge;
-
   /// No description provided for @taskAgentAutomaticUpdatesOffDescription.
   ///
   /// In en, this message translates to:
-  /// **'Automatic updates are off. Use Run now to update this report.'**
+  /// **'Automatic updates are off. Wake the agent when you want a fresh report.'**
   String get taskAgentAutomaticUpdatesOffDescription;
-
-  /// No description provided for @taskAgentAutomaticUpdatesOnDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'When anything related to this task changes, a two-minute countdown starts. Changes during the countdown are bundled into one update.'**
-  String get taskAgentAutomaticUpdatesOnDescription;
 
   /// No description provided for @taskAgentAutomaticUpdatesSummary.
   ///
   /// In en, this message translates to:
   /// **'Bundle task changes and update after two minutes.'**
   String get taskAgentAutomaticUpdatesSummary;
-
-  /// No description provided for @taskAgentAutomationSection.
-  ///
-  /// In en, this message translates to:
-  /// **'Automation'**
-  String get taskAgentAutomationSection;
 
   /// No description provided for @taskAgentCancelTimerTooltip.
   ///
@@ -16261,6 +16243,18 @@ abstract class AppLocalizations {
   /// **'Profile default'**
   String get taskAgentProfileDefaultBadge;
 
+  /// No description provided for @taskAgentReportOutdatedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The task changed after this summary was generated.'**
+  String get taskAgentReportOutdatedDescription;
+
+  /// No description provided for @taskAgentReportOutdatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This summary is out of date'**
+  String get taskAgentReportOutdatedTitle;
+
   /// No description provided for @taskAgentRouteVia.
   ///
   /// In en, this message translates to:
@@ -16386,6 +16380,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use profile default'**
   String get taskAgentUseProfileDefault;
+
+  /// No description provided for @taskAgentWakeAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake agent'**
+  String get taskAgentWakeAgent;
 
   /// No description provided for @taskCategoryAllLabel.
   ///

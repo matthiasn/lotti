@@ -141,7 +141,7 @@ class TaskAgentService {
           modelId: templateEntity.modelId,
           profileId: baseProfileId,
           inferenceSetup: inferenceSetup,
-          automaticUpdatesEnabled: true,
+          automaticUpdatesEnabled: false,
         ),
         allowedCategoryIds: allowedCategoryIds,
       );
@@ -205,6 +205,7 @@ class TaskAgentService {
         AgentInferenceSetupMode.disabled;
     if (inferenceEnabled) {
       _registerTaskSubscription(identity.agentId, taskId);
+      orchestrator.disableAutomaticUpdatesRuntime(identity.agentId);
     }
 
     // Mirror the persisted awaitingContent flag in the orchestrator so that
@@ -301,12 +302,18 @@ class TaskAgentService {
     });
 
     if (setup.mode == AgentInferenceSetupMode.disabled) {
-      orchestrator.disableAutomaticUpdatesRuntime(agentId);
+      orchestrator
+        ..removeSubscriptions(agentId)
+        ..disableAutomaticUpdatesRuntime(agentId);
     } else if (previous.config.inferenceSetup?.mode ==
             AgentInferenceSetupMode.disabled &&
-        updated.lifecycle == AgentLifecycle.active &&
-        updated.config.automaticUpdatesEnabledEffective) {
+        updated.lifecycle == AgentLifecycle.active) {
       await restoreSubscriptionsForAgent(agentId, restoreCountdown: false);
+      if (updated.config.automaticUpdatesEnabledEffective) {
+        orchestrator.enableAutomaticUpdatesRuntime(agentId);
+      } else {
+        orchestrator.disableAutomaticUpdatesRuntime(agentId);
+      }
     }
 
     domainLogger?.log(
@@ -319,9 +326,10 @@ class TaskAgentService {
 
   /// Enable or disable subscription-triggered automatic task updates.
   ///
-  /// Turning this on restores subscriptions but never enqueues a wake or
-  /// replays changes received while it was off. Turning it off clears the
-  /// countdown and queued subscription jobs while preserving manual wakes.
+  /// Turning this on allows retained subscriptions to schedule future wakes,
+  /// but never enqueues work or replays changes received while it was off.
+  /// Turning it off clears the countdown and queued automatic jobs while the
+  /// subscriptions continue observing changes and marking the report stale.
   Future<void> updateAutomaticUpdates({
     required String agentId,
     required bool enabled,
@@ -455,8 +463,8 @@ class TaskAgentService {
 
   /// Re-register wake subscriptions for a single agent.
   ///
-  /// Call this after resuming a paused agent so that automatic
-  /// wake-on-task-change is restored for the current session.
+  /// Call this after resuming a paused agent so task changes are observed for
+  /// stale detection, whether or not automatic inference is enabled.
   Future<void> restoreSubscriptionsForAgent(
     String agentId, {
     bool restoreCountdown = true,
@@ -557,7 +565,6 @@ class TaskAgentService {
         .where(
           (agent) =>
               agent.kind == _agentKind &&
-              agent.config.automaticUpdatesEnabledEffective &&
               agent.config.inferenceSetup?.mode !=
                   AgentInferenceSetupMode.disabled,
         )
@@ -582,7 +589,17 @@ class TaskAgentService {
         final state = statesByAgentId == null
             ? await repository.getAgentState(agent.agentId)
             : statesByAgentId[agent.agentId];
-        _hydrateThrottleDeadlineFromState(agent.agentId, state);
+        if (agent.config.automaticUpdatesEnabledEffective) {
+          orchestrator.enableAutomaticUpdatesRuntime(agent.agentId);
+          _hydrateThrottleDeadlineFromState(agent.agentId, state);
+        } else {
+          orchestrator
+            ..setAwaitingContent(
+              agent.agentId,
+              awaiting: state?.awaitingContent ?? false,
+            )
+            ..disableAutomaticUpdatesRuntime(agent.agentId);
+        }
       } catch (e, s) {
         final msg =
             'failed to restore subscriptions '

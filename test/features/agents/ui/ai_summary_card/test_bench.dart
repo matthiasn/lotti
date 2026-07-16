@@ -80,6 +80,9 @@ class AgentTestBench {
     this._taskAgentService,
     this._ttsEngine,
     this._mediaQueryData = desktopMediaQueryData,
+    this.theme,
+    this.surfaceConstraints,
+    this.padding,
     this.provideAgentIdentity = false,
     this._isRunningOverride,
     this.suggestionListOverride,
@@ -114,6 +117,9 @@ class AgentTestBench {
   /// the host platform.
   final FakeTtsEngine? _ttsEngine;
   final MediaQueryData _mediaQueryData;
+  final ThemeData? theme;
+  final BoxConstraints? surfaceConstraints;
+  final EdgeInsetsGeometry? padding;
 
   /// When true, also overrides [agentIdentityProvider] (read by the
   /// internals panel) so navigation into the panel resolves without
@@ -139,8 +145,29 @@ class AgentTestBench {
 
   Widget build() {
     final identity = _identity ?? makeTestIdentity();
+    final card = width == null
+        ? SingleChildScrollView(
+            child: AiSummaryCard(
+              taskId: taskId,
+              onSuggestionResolveStart: onSuggestionResolveStart,
+            ),
+          )
+        : Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: width,
+              child: SingleChildScrollView(
+                child: AiSummaryCard(
+                  taskId: taskId,
+                  onSuggestionResolveStart: onSuggestionResolveStart,
+                ),
+              ),
+            ),
+          );
     return RiverpodWidgetTestBench(
       mediaQueryData: _mediaQueryData,
+      theme: theme,
+      surfaceConstraints: surfaceConstraints,
       overrides: [
         configFlagProvider.overrideWith(
           (ref, flagName) => Stream.value(
@@ -192,25 +219,7 @@ class AgentTestBench {
         ttsModelRepositoryProvider.overrideWithValue(FakeTtsModelRepository()),
         ..._extraOverrides,
       ],
-      child: width == null
-          ? SingleChildScrollView(
-              child: AiSummaryCard(
-                taskId: taskId,
-                onSuggestionResolveStart: onSuggestionResolveStart,
-              ),
-            )
-          : Align(
-              alignment: Alignment.topCenter,
-              child: SizedBox(
-                width: width,
-                child: SingleChildScrollView(
-                  child: AiSummaryCard(
-                    taskId: taskId,
-                    onSuggestionResolveStart: onSuggestionResolveStart,
-                  ),
-                ),
-              ),
-            ),
+      child: padding == null ? card : Padding(padding: padding!, child: card),
     );
   }
 }

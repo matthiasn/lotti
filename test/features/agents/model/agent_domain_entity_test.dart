@@ -113,6 +113,8 @@ void main() {
           wakeCounter: const GCounter({'test-host': 14}),
           processedCounterByHost: {'host-a': 5, 'host-b': 9},
           toolCounterByKey: {'day_agent_set_next_wake:2026-02-20': 3},
+          reportStaleAt: DateTime(2026, 2, 20, 9),
+          reportFreshAt: DateTime(2026, 2, 20, 8, 30),
         );
 
         final roundtripped = roundtrip(original);
@@ -189,7 +191,55 @@ void main() {
         expect(state.wakeCounter.value, equals(0));
         expect(state.processedCounterByHost, isEmpty);
         expect(state.toolCounterByKey, isEmpty);
+        expect(state.reportStaleAt, isNull);
+        expect(state.reportFreshAt, isNull);
+        expect(state.isReportStale, isFalse);
       });
+
+      test(
+        'derives freshness from monotonic change and refresh watermarks',
+        () {
+          final base =
+              AgentDomainEntity.agentState(
+                    id: 'state-freshness',
+                    agentId: 'agent-001',
+                    slots: const AgentSlots(),
+                    updatedAt: updatedAt,
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          final refresh = DateTime(2026, 2, 20, 9);
+
+          expect(
+            base.copyWith(reportStaleAt: refresh).isReportStale,
+            isTrue,
+          );
+          expect(
+            base
+                .copyWith(
+                  reportStaleAt: refresh.subtract(const Duration(seconds: 1)),
+                  reportFreshAt: refresh,
+                )
+                .isReportStale,
+            isFalse,
+          );
+          expect(
+            base
+                .copyWith(reportStaleAt: refresh, reportFreshAt: refresh)
+                .isReportStale,
+            isTrue,
+          );
+          expect(
+            base
+                .copyWith(
+                  reportStaleAt: refresh.add(const Duration(seconds: 1)),
+                  reportFreshAt: refresh,
+                )
+                .isReportStale,
+            isTrue,
+          );
+        },
+      );
 
       test('runtimeType discriminator key is "agentState"', () {
         final entity = AgentDomainEntity.agentState(

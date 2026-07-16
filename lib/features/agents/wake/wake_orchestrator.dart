@@ -190,6 +190,12 @@ class WakeOrchestrator {
   final _agentsAwaitingContent = <String>{};
   final _automaticUpdatesDisabledAgents = <String>{};
 
+  /// Latest unpersisted stale signal per agent. Writes are serialized per
+  /// agent so bursts coalesce without allowing an older async write to land
+  /// after a newer one.
+  final _pendingReportStaleAt = <String, DateTime>{};
+  final _reportStaleWritesInProgress = <String>{};
+
   // ── Throttle state ──────────────────────────────────────────────────────
 
   /// The minimum interval between subscription-triggered wakes for the
@@ -300,7 +306,6 @@ class WakeOrchestrator {
   /// is replaced, preventing duplicate wake jobs when `restoreSubscriptions`
   /// runs more than once (e.g. on hot restart).
   void addSubscription(AgentSubscription sub) {
-    if (_automaticUpdatesDisabledAgents.contains(sub.agentId)) return;
     final idx = _subscriptions.indexWhere((s) => s.id == sub.id);
     if (idx >= 0) {
       _subscriptions[idx] = sub;
@@ -318,17 +323,22 @@ class WakeOrchestrator {
     clearThrottle(agentId);
   }
 
-  /// Disable the task-change automation runtime without touching manual jobs.
+  /// Disable automatic inference while retaining change observation.
+  ///
+  /// Matching subscriptions remain registered so relevant changes can mark
+  /// the report stale. Existing automation jobs and countdowns are removed;
+  /// user-initiated wakes remain available.
   void disableAutomaticUpdatesRuntime(String agentId) {
     _automaticUpdatesDisabledAgents.add(agentId);
-    removeSubscriptions(agentId);
+    clearThrottle(agentId);
     queue.removeByAgentWhere(
       agentId,
       (job) => job.initiator == WakeInitiator.automation,
     );
   }
 
-  /// Allow future subscription registration after the preference is enabled.
+  /// Allow matching changes to schedule automatic inference again.
+  ///
   /// This does not enqueue work or restore an old countdown.
   void enableAutomaticUpdatesRuntime(String agentId) {
     _automaticUpdatesDisabledAgents.remove(agentId);

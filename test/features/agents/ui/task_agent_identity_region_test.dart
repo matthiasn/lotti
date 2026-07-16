@@ -29,7 +29,6 @@ void main() {
             currentRoute: route,
             reportRoute: route,
           ),
-          automaticUpdatesEnabled: true,
           onSetupTap: () => taps++,
         ),
       ),
@@ -62,7 +61,6 @@ void main() {
             currentRoute: route,
             reportAttributionUnavailable: true,
           ),
-          automaticUpdatesEnabled: true,
           onSetupTap: () {},
         ),
       ),
@@ -73,7 +71,7 @@ void main() {
     expect(find.text('Attribution unavailable'), findsOneWidget);
   });
 
-  testWidgets('no setup is a visible error and automation-off is explicit', (
+  testWidgets('no setup is a visible error with a concrete recovery hint', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -82,7 +80,6 @@ void main() {
           data: const TaskAgentModelIdentityViewData(
             presentation: TaskAgentIdentityPresentation.disabled,
           ),
-          automaticUpdatesEnabled: false,
           onSetupTap: () {},
         ),
       ),
@@ -93,10 +90,6 @@ void main() {
       find.text(
         'Choose a saved setup or thinking model before this agent can run.',
       ),
-      findsOneWidget,
-    );
-    expect(
-      find.text('Automatic updates off · Use Run now to update'),
       findsOneWidget,
     );
     expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
@@ -112,7 +105,6 @@ void main() {
             presentation: TaskAgentIdentityPresentation.broken,
             reportRoute: route,
           ),
-          automaticUpdatesEnabled: true,
           onSetupTap: () {},
         ),
       ),
