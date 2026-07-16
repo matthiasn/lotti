@@ -17,10 +17,6 @@ import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart'
-    as ai_repo;
-import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
@@ -115,20 +111,6 @@ int calculateClampedIndex({
   ];
   final itemCount = navItems.where((isEnabled) => isEnabled).length;
   return clampNavigationIndex(rawIndex: rawIndex, itemCount: itemCount);
-}
-
-/// An [AiSetupPromptService] that invokes [onBuild] every time its `build`
-/// runs, so tests can count rebuilds (including those caused by
-/// `ref.invalidate`, which re-runs `build`).
-class _CountingAiSetupPromptService extends AiSetupPromptService {
-  _CountingAiSetupPromptService(this.onBuild);
-  final void Function() onBuild;
-
-  @override
-  Future<bool> build() async {
-    onBuild();
-    return false;
-  }
 }
 
 class _LoadingThemingController extends ThemingController {
@@ -271,10 +253,6 @@ Future<void> _pumpAppScreen(
   _useViewport(tester, viewportSize);
 
   final effectiveJournalDb = journalDb ?? MockJournalDb();
-  // FTUE gate off → first-run AI setup uses the provider-selection modal.
-  when(
-    () => effectiveJournalDb.getConfigFlag(enableOnboardingFtueFlag),
-  ).thenAnswer((_) async => false);
   final mockMatrix = MockMatrixService();
   when(
     mockMatrix.getIncomingKeyVerificationStream,
@@ -306,9 +284,6 @@ Future<void> _pumpAppScreen(
           (ref) => Stream<LoginState>.value(LoginState.loggedIn),
         ),
         outboxServiceProvider.overrideWithValue(mockOutboxService),
-        aiSetupPromptServiceProvider.overrideWith(
-          MockAiSetupPromptService.new,
-        ),
         journalDbProvider.overrideWithValue(effectiveJournalDb),
         audioRecorderControllerProvider.overrideWith(
           () => StubAudioRecorderController(
@@ -371,10 +346,8 @@ Future<void> _pumpAppScreenCustomProviders(
   Future<bool> Function(Ref)? shouldAutoShowDailyOsOnboarding,
   OnboardingWelcomeCadence Function()? onboardingWelcomeCadenceOverride,
   DailyOsOnboardingCadence Function()? dailyOsOnboardingCadenceOverride,
-  AiSetupPromptService Function()? aiSetupPromptOverride,
   WhatsNewController Function()? whatsNewOverride,
   List<Override> extraOverrides = const [],
-  bool ftueEnabled = false,
 }) async {
   _useViewport(tester, viewportSize);
 
@@ -402,11 +375,6 @@ Future<void> _pumpAppScreenCustomProviders(
   );
 
   final mockJournalDb = MockJournalDb();
-  // FTUE gate: off → provider-selection modal; on → the FTUE welcome.
-  when(
-    () => mockJournalDb.getConfigFlag(enableOnboardingFtueFlag),
-  ).thenAnswer((_) async => ftueEnabled);
-
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -415,9 +383,6 @@ Future<void> _pumpAppScreenCustomProviders(
           (ref) => Stream<LoginState>.value(LoginState.loggedIn),
         ),
         outboxServiceProvider.overrideWithValue(mockOutboxService),
-        aiSetupPromptServiceProvider.overrideWith(
-          aiSetupPromptOverride ?? MockAiSetupPromptService.new,
-        ),
         journalDbProvider.overrideWithValue(mockJournalDb),
         audioRecorderControllerProvider.overrideWith(
           () => StubAudioRecorderController(
@@ -530,9 +495,6 @@ Future<void> _pumpReadyMyBeamerApp(
           (ref) => Stream.value(LoginState.loggedIn),
         ),
         outboxServiceProvider.overrideWithValue(mockOutboxService),
-        aiSetupPromptServiceProvider.overrideWith(
-          MockAiSetupPromptService.new,
-        ),
         audioRecorderControllerProvider.overrideWith(
           () => StubAudioRecorderController(
             AudioRecorderState(
@@ -2426,9 +2388,6 @@ void main() {
                   StackTrace.empty,
                 ),
               ),
-              aiSetupPromptServiceProvider.overrideWith(
-                MockAiSetupPromptService.new,
-              ),
               journalDbProvider.overrideWithValue(mockJournalDb),
               audioRecorderControllerProvider.overrideWith(
                 () => StubAudioRecorderController(
@@ -2541,90 +2500,6 @@ void main() {
     );
 
     testWidgets(
-      'aiSetupPromptServiceProvider error arm does not crash AppScreen',
-      (tester) async {
-        final mockNavService = MockNavService();
-        await _stubNavService(
-          mockNavService,
-          indexStream: Stream.value(0),
-          isProjectsEnabled: () => false,
-          isDailyOsEnabled: () => false,
-          isHabitsEnabled: () => false,
-          isDashboardsEnabled: () => false,
-        );
-        await _registerAppScreenGetIt(mockNavService);
-        addTearDown(tearDownTestGetIt);
-
-        await _pumpAppScreenCustomProviders(
-          tester,
-          navService: mockNavService,
-          aiSetupPromptOverride: _ErrorAiSetupPromptService.new,
-        );
-
-        // The error arm just logs; AppScreen continues rendering normally.
-        expect(find.text('Tasks'), findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
-      'whatsNewControllerProvider unseen→seen transition invalidates aiSetupPrompt',
-      (tester) async {
-        final mockNavService = MockNavService();
-        await _stubNavService(
-          mockNavService,
-          indexStream: Stream.value(0),
-          isProjectsEnabled: () => false,
-          isDailyOsEnabled: () => false,
-          isHabitsEnabled: () => false,
-          isDashboardsEnabled: () => false,
-        );
-        await _registerAppScreenGetIt(mockNavService);
-        addTearDown(tearDownTestGetIt);
-
-        // The listener in AppScreen fires when whatsNewControllerProvider
-        // transitions from prevHasUnseen=true to nextHasUnseen=false, calling
-        // ref.invalidate(aiSetupPromptServiceProvider). Track how many times
-        // the provider builds so we can confirm it was invalidated.
-        var aiSetupBuildCount = 0;
-        await _pumpAppScreenCustomProviders(
-          tester,
-          navService: mockNavService,
-          whatsNewOverride: _UnseenToSeenWhatsNewController.new,
-          aiSetupPromptOverride: () =>
-              _CountingAiSetupPromptService(() => aiSetupBuildCount++),
-        );
-
-        // Resolve the initial build: whatsNew settles on AsyncData(unseen) and
-        // aiSetupPromptServiceProvider has been built once at this point.
-        await tester.pump();
-        final buildsBeforeTransition = aiSetupBuildCount;
-
-        // Advance time so the scheduled unseen -> seen transition fires. The
-        // listener then sees prevHasUnseen=true && !nextHasUnseen and
-        // invalidates aiSetupPromptServiceProvider, forcing a rebuild.
-        await tester.pump(const Duration(milliseconds: 1));
-        await tester.pump();
-
-        // AppScreen is still alive and the provider rebuilt after the
-        // invalidation triggered by the unseen -> seen transition.
-        expect(find.text('Tasks'), findsOneWidget);
-        expect(
-          aiSetupBuildCount,
-          greaterThan(buildsBeforeTransition),
-          reason:
-              'aiSetupPromptServiceProvider should rebuild after the '
-              'unseen -> seen transition invalidates it',
-        );
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
       'whatsNewControllerProvider unseen→seen transition invalidates '
       'shouldAutoShowOnboardingProvider',
       (tester) async {
@@ -2717,89 +2592,6 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text("You're all caught up!"), findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
-      'aiSetupPrompt data(true) opens the AI provider selection modal',
-      (tester) async {
-        final mockNavService = MockNavService();
-        await _stubNavService(
-          mockNavService,
-          indexStream: Stream.value(0),
-          isProjectsEnabled: () => false,
-          isDailyOsEnabled: () => false,
-          isHabitsEnabled: () => false,
-          isDashboardsEnabled: () => false,
-        );
-        await _registerAppScreenGetIt(mockNavService);
-        addTearDown(tearDownTestGetIt);
-
-        // aiSetupPromptService resolves to true → post-frame callback runs
-        // _showAiSetupPrompt, which opens AiProviderSelectionModal.
-        await _pumpAppScreenCustomProviders(
-          tester,
-          navService: mockNavService,
-          aiSetupPromptOverride: _ShowAiSetupPromptService.new,
-          whatsNewOverride: _StableUnseenWhatsNewController.new,
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-
-        expect(find.byType(AiProviderSelectionModal), findsOneWidget);
-        expect(find.text('Set Up AI Features'), findsOneWidget);
-
-        // Dismiss the modal so the route is torn down before the widget is
-        // disposed (avoids a dangling dialog route in teardown).
-        await tester.tapAt(const Offset(5, 5));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
-      'shouldAutoShowOnboarding data(true) with the FTUE flag on opens the '
-      'FTUE welcome instead of the legacy AI setup prompt',
-      (tester) async {
-        final mockNavService = MockNavService();
-        await _stubNavService(
-          mockNavService,
-          indexStream: Stream.value(0),
-          isProjectsEnabled: () => false,
-          isDailyOsEnabled: () => false,
-          isHabitsEnabled: () => false,
-          isDashboardsEnabled: () => false,
-        );
-        await _registerAppScreenGetIt(mockNavService);
-        addTearDown(tearDownTestGetIt);
-
-        // FTUE flag on → `_showAiSetupPrompt` returns early (it no longer
-        // shows anything itself once the flag is on) and the dedicated
-        // `shouldAutoShowOnboardingProvider` listener opens the FTUE welcome
-        // instead of the legacy provider-selection modal.
-        await _pumpAppScreenCustomProviders(
-          tester,
-          navService: mockNavService,
-          aiSetupPromptOverride: _ShowAiSetupPromptService.new,
-          whatsNewOverride: _StableUnseenWhatsNewController.new,
-          shouldAutoShowOnboarding: (ref) async => true,
-          ftueEnabled: true,
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        // Let the staggered entrance settle so the CTA is present.
-        await tester.pump(const Duration(milliseconds: 800));
-
-        expect(find.byType(AiProviderSelectionModal), findsNothing);
-        expect(find.text('Choose your AI brain'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -2951,146 +2743,6 @@ void main() {
         // ...but skipping must NOT retire it: only connecting a provider marks
         // it completed, so a plain skip keeps the grace period open.
         expect(markCompletedCount, 0);
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
-      '_showAiSetupPrompt shows nothing when the FTUE flag is on, even if '
-      'onboarding is not (yet) eligible -- avoids stacking a legacy modal '
-      'under the welcome',
-      (tester) async {
-        final mockNavService = MockNavService();
-        await _stubNavService(
-          mockNavService,
-          indexStream: Stream.value(0),
-          isProjectsEnabled: () => false,
-          isDailyOsEnabled: () => false,
-          isHabitsEnabled: () => false,
-          isDashboardsEnabled: () => false,
-        );
-        await _registerAppScreenGetIt(mockNavService);
-        addTearDown(tearDownTestGetIt);
-
-        await _pumpAppScreenCustomProviders(
-          tester,
-          navService: mockNavService,
-          aiSetupPromptOverride: _ShowAiSetupPromptService.new,
-          whatsNewOverride: _StableUnseenWhatsNewController.new,
-          shouldAutoShowOnboarding: (ref) async => false,
-          ftueEnabled: true,
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        await tester.pump(const Duration(milliseconds: 800));
-
-        expect(find.byType(AiProviderSelectionModal), findsNothing);
-        expect(find.text('Choose your AI brain'), findsNothing);
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
-      'AI modal "Don\'t Show Again" runs onDismiss → dismissPrompt',
-      (tester) async {
-        final mockNavService = MockNavService();
-        await _stubNavService(
-          mockNavService,
-          indexStream: Stream.value(0),
-          isProjectsEnabled: () => false,
-          isDailyOsEnabled: () => false,
-          isHabitsEnabled: () => false,
-          isDashboardsEnabled: () => false,
-        );
-        await _registerAppScreenGetIt(mockNavService);
-        addTearDown(tearDownTestGetIt);
-
-        var dismissCount = 0;
-        await _pumpAppScreenCustomProviders(
-          tester,
-          navService: mockNavService,
-          aiSetupPromptOverride: () =>
-              _DismissCountingAiSetupPromptService(() => dismissCount++),
-          whatsNewOverride: _StableUnseenWhatsNewController.new,
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        expect(find.byType(AiProviderSelectionModal), findsOneWidget);
-
-        // Tap "Don't Show Again": the modal pops, then a post-frame callback
-        // inside AiProviderSelectionModal.show invokes the onDismiss lambda
-        // wired in _showAiSetupPrompt, which calls dismissPrompt().
-        await tester.tap(find.text("Don't Show Again"));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        await tester.pump();
-
-        expect(dismissCount, 1);
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
-      'AI modal Continue runs onProviderSelected → navigateToCreateProvider',
-      (tester) async {
-        final mockNavService = MockNavService();
-        await _stubNavService(
-          mockNavService,
-          indexStream: Stream.value(0),
-          isProjectsEnabled: () => false,
-          isDailyOsEnabled: () => false,
-          isHabitsEnabled: () => false,
-          isDashboardsEnabled: () => false,
-        );
-        await _registerAppScreenGetIt(mockNavService);
-        addTearDown(tearDownTestGetIt);
-
-        final mockAiConfigRepo = MockAiConfigRepository();
-        when(
-          () => mockAiConfigRepo.getConfigsByType(any()),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAiConfigRepo.watchConfigsByType(any()),
-        ).thenAnswer((_) => const Stream.empty());
-
-        await _pumpAppScreenCustomProviders(
-          tester,
-          navService: mockNavService,
-          aiSetupPromptOverride: _ShowAiSetupPromptService.new,
-          whatsNewOverride: _StableUnseenWhatsNewController.new,
-          extraOverrides: [
-            ai_repo.aiConfigRepositoryProvider.overrideWithValue(
-              mockAiConfigRepo,
-            ),
-          ],
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        expect(find.byType(AiProviderSelectionModal), findsOneWidget);
-
-        // Select the Gemini provider, then tap Continue. The modal pops with
-        // the chosen type and a post-frame callback invokes onProviderSelected,
-        // which routes through AiSettingsNavigationService.navigateToCreateProvider
-        // and pushes the InferenceProviderEditPage onto the navigator.
-        await tester.tap(find.text('Google Gemini'));
-        await tester.pump();
-        await tester.tap(find.text('Continue'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-
-        // The provider-create page was pushed (the FTUE "Set Up AI" entry).
-        expect(find.byType(AiProviderSelectionModal), findsNothing);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -3673,37 +3325,6 @@ class _SpyPaneWidthController extends PaneWidthController {
   void updateSidebarWidth(double delta) => onDrag?.call(delta);
 }
 
-/// An [AiSetupPromptService] whose build throws so the `error:` arm of
-/// the `aiSetupPromptServiceProvider` listener in [AppScreen] is exercised.
-class _ErrorAiSetupPromptService extends AiSetupPromptService {
-  @override
-  Future<bool> build() async => throw Exception('ai-setup-error');
-}
-
-/// An [AiSetupPromptService] that resolves to `true`, so the `data(true)`
-/// arm of the listener in [AppScreen] runs `_showAiSetupPrompt` and opens
-/// the AI provider selection modal.
-class _ShowAiSetupPromptService extends AiSetupPromptService {
-  @override
-  Future<bool> build() async => true;
-}
-
-/// Like [_ShowAiSetupPromptService] but records [dismissPrompt] invocations so
-/// tests can assert the modal's "Don't Show Again" wiring runs onDismiss.
-class _DismissCountingAiSetupPromptService extends AiSetupPromptService {
-  _DismissCountingAiSetupPromptService(this.onDismiss);
-  final void Function() onDismiss;
-
-  @override
-  Future<bool> build() async => true;
-
-  @override
-  Future<void> dismissPrompt() async {
-    onDismiss();
-    state = const AsyncData(false);
-  }
-}
-
 /// An [OnboardingWelcomeCadence] that records [recordShown] / [markCompleted]
 /// invocations instead of touching `SettingsDb`, so tests can assert
 /// `_showOnboardingWelcome`'s wiring without needing a real `SettingsDb`.
@@ -3826,13 +3447,12 @@ class _UnseenToSeenWhatsNewController extends WhatsNewController {
 }
 
 /// A [WhatsNewController] that stably reports an unseen release and never
-/// transitions to seen. The AppScreen listener invalidates
-/// `aiSetupPromptServiceProvider` only on a `prevHasUnseen && !nextHasUnseen`
-/// (unseen -> seen) transition; by never producing one, this keeps the
-/// AI-setup modal opening exactly once. Pinning it makes the AI-modal tests
-/// independent of whatsNew state leaked from earlier files in a bundled
-/// `very_good test` run, where extra unseen->seen transitions would otherwise
-/// re-invalidate the provider and stack duplicate modals.
+/// transitions to seen. The AppScreen listener invalidates the onboarding
+/// gates only on a `prevHasUnseen && !nextHasUnseen` transition; by never
+/// producing one, this keeps each onboarding side effect single-shot. Pinning
+/// it makes these tests independent of What's New state leaked from earlier
+/// files in a bundled `very_good test` run, where extra transitions would
+/// otherwise re-invalidate the providers.
 class _StableUnseenWhatsNewController extends WhatsNewController {
   @override
   Future<WhatsNewState> build() async =>

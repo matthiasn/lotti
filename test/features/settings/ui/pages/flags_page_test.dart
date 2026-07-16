@@ -20,7 +20,11 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-const _displayedFlagCount = 13;
+/// How many flags the test fixture feeds into [FlagsBody] — deliberately not
+/// derived from `FlagsBody.defaultDisplayedItems`: these tests supply their own
+/// `displayedItems`, and asserting against the production list would make this
+/// a tautology.
+const _displayedFlagCount = 12;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -83,11 +87,6 @@ void main() {
           const ConfigFlag(
             name: enableWhatsNewFlag,
             description: "Enable What's New feature?",
-            status: false,
-          ),
-          const ConfigFlag(
-            name: enableOnboardingFtueFlag,
-            description: 'Enable the new onboarding (FTUE) flow?',
             status: false,
           ),
           const ConfigFlag(
@@ -354,17 +353,6 @@ void main() {
             expectedToggle: const ConfigFlag(
               name: showSidebarWakeQueueFlag,
               description: 'Show the inline Wake Queue in the sidebar.',
-              status: true,
-            ),
-          ),
-          (
-            name: 'onboarding-ftue',
-            title: (m) => m.configFlagEnableOnboardingFtue,
-            description: (m) => m.configFlagEnableOnboardingFtueDescription,
-            icon: Icons.auto_awesome_motion_rounded,
-            expectedToggle: const ConfigFlag(
-              name: enableOnboardingFtueFlag,
-              description: 'Enable the new onboarding (FTUE) flow?',
               status: true,
             ),
           ),

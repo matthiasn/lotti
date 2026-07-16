@@ -1,12 +1,13 @@
 # Wiring onboarding to auto-show on new *and* existing installs
 
-_2026-07-15 · plan · **rollout prepared; activation deferred 2026-07-17**_
+_2026-07-15 · plan · **welcome released; Daily OS activation deferred 2026-07-17**_
 
-> **Current decision.** Keep both flags as field kill-switches and keep the B1
-> `welcome_completed` backfill prepared, but do **not** activate either during
-> production testing. Both flags seed `false`; the single
-> `onboardingRolloutEnabled` release lever also remains `false`. Testers opt in
-> through Config Flags and can clear cadence + metrics from Onboarding Metrics.
+> **Current decision.** The welcome flag and legacy provider-selection prompt
+> are retired; cadence and completion state now make the welcome the sole
+> first-run setup path. The Daily OS walkthrough remains behind its config flag,
+> which seeds `false`, and the single `onboardingRolloutEnabled` release lever
+> also remains `false`. Testers can opt in to Daily OS through Config Flags and
+> clear cadence + metrics from Onboarding Metrics.
 >
 > One deviation from the checklist below: wiring the B1 backfill as written
 > would have made `onboarding_trigger_service` and
@@ -18,30 +19,30 @@ _2026-07-15 · plan · **rollout prepared; activation deferred 2026-07-17**_
 > any state.
 >
 > Prepared code lives in `lib/features/onboarding/state/onboarding_rollout.dart`;
-> see `lib/features/onboarding/README.md#rollout-and-production-testing` for the
-> current behavior.
+> see `lib/features/onboarding/README.md#daily-os-rollout-and-production-testing`
+> for the current behavior.
 
 ## TL;DR
 
-The entire onboarding auto-show machinery is **already built, wired, and
-tested** — cadence bookkeeping, What's New sequencing, `BeamerApp` listeners,
-eligibility predicates, and a Settings replay entry. Both flows are dark for one
-reason only: their two master config flags default **off**, and *nothing* flips
-them on for any cohort.
+The onboarding auto-show machinery is built, wired, and tested — cadence
+bookkeeping, What's New sequencing, `BeamerApp` listeners, eligibility
+predicates, and a Settings replay entry. The welcome is released without a
+master flag. The Daily OS walkthrough remains dark because its config flag and
+the all-install rollout lever are both **off**.
 
-| Flag | Default | Who sees onboarding today |
+| Surface | Gate | Who sees it today |
 | --- | --- | --- |
-| `enableOnboardingFtueFlag` | `false` | nobody |
-| `dailyOsOnboardingEnabledFlag` | `false` | nobody |
+| Welcome | cadence + completion only | eligible installs |
+| Daily OS walkthrough | `dailyOsOnboardingEnabledFlag = false` | manual opt-ins |
 
-So the answer to "is a fresh install already showing this?" is **no** — and
-neither is anyone else. The work is a controlled **rollout**, not new plumbing.
+Fresh installs can therefore see the welcome, while the Daily OS walkthrough
+remains a controlled rollout rather than new plumbing.
 
-The one real trap: naively flipping the defaults to `true` covers fresh installs
-but **misses existing installs that already have a `false` flag row**, because
+The remaining trap: naively flipping the Daily OS default to `true` covers fresh
+installs but **misses existing installs that already have a `false` flag row**, because
 `initConfigFlags` uses `insertFlagIfNotExists` (insert-only, never updates an
 existing row). A one-time force-enable is needed to reach the beta/dev cohort
-that already ran a build carrying these flags.
+that already ran a build carrying the walkthrough flag.
 
 ---
 
@@ -61,22 +62,20 @@ flowchart TD
   DOS -->|eligible + providerReady| SPOT["Daily OS spotlight walkthrough"]
 ```
 
-- `beamer_app.dart:513` listens to `shouldAutoShowOnboardingProvider` and calls
+- `beamer_app.dart` listens to `shouldAutoShowOnboardingProvider` and calls
   `_showOnboardingWelcome()` (records the show in the cadence, opens
   `OnboardingWelcomeModal`).
-- `beamer_app.dart:539` listens to `shouldAutoShowDailyOsOnboardingProvider` and
+- It then listens to `shouldAutoShowDailyOsOnboardingProvider` and
   arms the Daily OS walkthrough via `_tryShowDailyOsOnboarding()`.
-- `_showAiSetupPrompt()` (`beamer_app.dart:289`) already **defers to the FTUE
-  welcome** when `enableOnboardingFtueFlag` is on: it early-returns instead of
-  opening the legacy provider-selection modal. So flipping the flag on cleanly
-  *replaces* the old prompt — the two are mutually exclusive by construction.
+- The pre-FTUE `AiSetupPromptService` and provider-selection modal are deleted;
+  there is no competing first-run prompt or fallback path.
 
 ### Eligibility predicates — pure, complete, and tested
 
 - **FTUE welcome** (`onboarding_trigger_service.dart`,
-  `isOnboardingWelcomeEligible`) gates on: flag on, no unseen What's New, not
-  `completed`, not `reachedRealAha`, `shownCount < 4`, and within a 14-day
-  window from first show.
+  `isOnboardingWelcomeEligible`) gates on: no unseen What's New, not `completed`,
+  not `reachedRealAha`, `shownCount < 4`, and within a 14-day window from first
+  show.
 - **Daily OS walkthrough** (`daily_os_onboarding_trigger_service.dart`,
   `isDailyOsOnboardingEligible`) adds: welcome not still owed, selected date is
   today, no active plan today, never had *any* plan (incl. soft-deleted),
@@ -87,7 +86,8 @@ flowchart TD
 
 - Per-install bookkeeping lives in `SettingsDb` under `welcome_*` /
   `daily_os_onboarding_*` keys (`shown_count`, `first_shown_at`, `completed`) —
-  independent of the config flag, which is only the master switch.
+  independent of the Daily OS config flag, which is only that walkthrough's
+  master switch.
 - Settings → Onboarding replay entry (`onboarding_settings_panel.dart`) lets a
   user re-run the welcome manually at any time.
 - Metrics: `recordAppFirstSeenIfAbsent()` already runs at startup
@@ -95,9 +95,9 @@ flowchart TD
   `hasExistingUserData` (`countAllJournalEntries() > 0`). That signal is
   reusable for the rollout backfill below.
 
-**Conclusion:** the only missing piece is turning the flags on for everyone who
-hasn't been through onboarding — across all cohorts — without nagging users who
-are already fully set up.
+**Conclusion:** only the Daily OS all-install activation remains deferred. Its
+one-shot flag migration and the configured-install welcome backfill are present
+behind `onboardingRolloutEnabled`.
 
 ---
 
@@ -106,22 +106,22 @@ are already fully set up.
 `initConfigFlags` (`config_flags.dart`) runs on every startup and seeds via
 `insertFlagIfNotExists`, which **never overwrites an existing row**
 (`database_config_flags.dart:99`). Consequences of a bare default flip
-`false → true`:
+`false → true` for the remaining Daily OS flag:
 
 | Cohort | Flag row today | After default flip only | After Step 2 migration |
 | --- | --- | --- | --- |
 | Fresh install | none | inserts `true` ✅ | unchanged `true` ✅ |
-| Existing user, never ran an FTUE-flag build | none | inserts `true` ✅ | unchanged `true` ✅ |
+| Existing user, never ran a walkthrough-flag build | none | inserts `true` ✅ | unchanged `true` ✅ |
 | Existing user, ran a beta/dev build (row = `false`) | `false` | stays `false` ❌ missed | force-set `true` ✅ |
 | User who deliberately toggled it off in Flags | `false` | stays `false` ✅ | force-set `true` ⚠️ overridden once |
 
 The 3rd and 4th rows are indistinguishable by flag value alone — both are just a
-`false` row — so the Step 2 migration force-enables **both**. That means a
+`false` row — so the migration force-enables the walkthrough once. That means a
 deliberate opt-out made *before* the migration is overridden exactly once (the
 ⚠️ above); we cannot tell it apart from the beta/dev cohort we're trying to
 reach.
 
-This is an accepted trade-off, not a bug, for two reasons: (1) these flags only
+This is an accepted trade-off, not a bug, for two reasons: (1) this flag only
 ever shipped in dev/beta builds whose own comments read "still being built," so
 a *deliberate* opt-out — as opposed to an untouched default `false` — is
 implausible in the wild; and (2) the run-once marker means any opt-out made
@@ -132,7 +132,12 @@ does not exist today — call that out of scope unless product asks for it.
 
 ---
 
-## Proposed plan
+## Original proposal and decision record
+
+The remainder is retained as the historical proposal that led to the current
+implementation. Its references to keeping or enabling both flags are superseded
+by the current decision above: the welcome flag was deleted, while Daily OS and
+the rollout lever remain off pending activation.
 
 ### Step 1 — Flip the defaults (covers fresh installs + never-seen cohort)
 

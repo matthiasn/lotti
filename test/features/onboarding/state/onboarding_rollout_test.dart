@@ -41,7 +41,7 @@ void main() {
     });
 
     test(
-      'armed lever force-enables both rows and records its marker',
+      'armed lever force-enables the walkthrough row and records its marker',
       () async {
         when(
           () => settingsDb.itemByKey(onboardingRolloutFlagsAppliedKey),
@@ -105,44 +105,47 @@ void main() {
       verifyNever(() => journalDb.upsertConfigFlag(any()));
     });
 
-    test('armed lever skips absent and already-enabled rows', () async {
-      when(
-        () => settingsDb.itemByKey(onboardingRolloutFlagsAppliedKey),
-      ).thenAnswer((_) async => null);
-      when(
-        () => journalDb.getConfigFlagByName(enableOnboardingFtueFlag),
-      ).thenAnswer((_) async => null);
-      when(
-        () => journalDb.getConfigFlagByName(dailyOsOnboardingEnabledFlag),
-      ).thenAnswer(
-        (_) async => const ConfigFlag(
+    for (final scenario in <(String, ConfigFlag?)>[
+      ('absent', null),
+      (
+        'already-enabled',
+        const ConfigFlag(
           name: dailyOsOnboardingEnabledFlag,
           description: 'Enable the Daily OS onboarding walkthrough?',
           status: true,
         ),
-      );
-      when(
-        () => settingsDb.saveSettingsItem(
-          onboardingRolloutFlagsAppliedKey,
-          'true',
-        ),
-      ).thenAnswer((_) async => 1);
+      ),
+    ]) {
+      test('armed lever skips an ${scenario.$1} row', () async {
+        when(
+          () => settingsDb.itemByKey(onboardingRolloutFlagsAppliedKey),
+        ).thenAnswer((_) async => null);
+        when(
+          () => journalDb.getConfigFlagByName(dailyOsOnboardingEnabledFlag),
+        ).thenAnswer((_) async => scenario.$2);
+        when(
+          () => settingsDb.saveSettingsItem(
+            onboardingRolloutFlagsAppliedKey,
+            'true',
+          ),
+        ).thenAnswer((_) async => 1);
 
-      await applyOnboardingRolloutFlags(
-        journalDb: journalDb,
-        settingsDb: settingsDb,
-        logger: logger,
-        rolloutEnabled: true,
-      );
+        await applyOnboardingRolloutFlags(
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          logger: logger,
+          rolloutEnabled: true,
+        );
 
-      verifyNever(() => journalDb.upsertConfigFlag(any()));
-      verify(
-        () => settingsDb.saveSettingsItem(
-          onboardingRolloutFlagsAppliedKey,
-          'true',
-        ),
-      ).called(1);
-    });
+        verifyNever(() => journalDb.upsertConfigFlag(any()));
+        verify(
+          () => settingsDb.saveSettingsItem(
+            onboardingRolloutFlagsAppliedKey,
+            'true',
+          ),
+        ).called(1);
+      });
+    }
 
     test('armed lever logs failures without burning the marker', () async {
       when(

@@ -193,9 +193,6 @@ void main() {
       when(
         () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
       ).thenAnswer((_) async => whatsNewUnseen);
-      when(
-        () => mockJournalDb.getConfigFlag(enableOnboardingFtueFlag),
-      ).thenAnswer((_) async => true);
 
       final mockAgentRepo = MockAgentRepository();
       when(

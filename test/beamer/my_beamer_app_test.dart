@@ -9,7 +9,6 @@ import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -376,9 +375,6 @@ void main() {
                   (ref) => Stream.value(LoginState.loggedIn),
                 ),
                 outboxServiceProvider.overrideWithValue(mockOutboxService),
-                aiSetupPromptServiceProvider.overrideWith(
-                  MockAiSetupPromptService.new,
-                ),
                 audioRecorderControllerProvider.overrideWith(
                   () => StubAudioRecorderController(
                     AudioRecorderState(

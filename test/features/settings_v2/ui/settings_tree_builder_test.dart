@@ -71,6 +71,7 @@ void main() {
     expect(
       tree.map((n) => n.id).toList(),
       [
+        'onboarding',
         'ai',
         'agents',
         'daily-os',

@@ -111,7 +111,6 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableEmbeddingsFlag,
     enableVectorSearchFlag,
     enableWhatsNewFlag,
-    enableOnboardingFtueFlag,
     dailyOsOnboardingEnabledFlag,
     showSyncActivityIndicatorFlag,
     showSidebarWakeQueueFlag,
@@ -171,8 +170,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.manage_search_rounded;
       case enableWhatsNewFlag:
         return Icons.new_releases_outlined;
-      case enableOnboardingFtueFlag:
-        return Icons.auto_awesome_motion_rounded;
       case dailyOsOnboardingEnabledFlag:
         return Icons.tips_and_updates_outlined;
       case showSyncActivityIndicatorFlag:
@@ -222,8 +219,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableVectorSearchDescription;
       case enableWhatsNewFlag:
         return context.messages.configFlagEnableWhatsNewDescription;
-      case enableOnboardingFtueFlag:
-        return context.messages.configFlagEnableOnboardingFtueDescription;
       case dailyOsOnboardingEnabledFlag:
         return context.messages.configFlagDailyOsOnboardingEnabledDescription;
       case showSyncActivityIndicatorFlag:
@@ -273,8 +268,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableVectorSearch;
       case enableWhatsNewFlag:
         return context.messages.configFlagEnableWhatsNew;
-      case enableOnboardingFtueFlag:
-        return context.messages.configFlagEnableOnboardingFtue;
       case dailyOsOnboardingEnabledFlag:
         return context.messages.configFlagDailyOsOnboardingEnabled;
       case showSyncActivityIndicatorFlag:

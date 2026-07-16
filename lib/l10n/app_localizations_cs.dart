@@ -1945,24 +1945,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
-  String get aiProviderSelectContinue => 'Pokračovat';
-
-  @override
-  String get aiProviderSelectDontShowAgain => 'Příště nezobrazovat';
-
-  @override
-  String get aiProviderSetupOptionGeminiDescription =>
-      'Multimodální modely s přepisem zvuku. Vyžaduje API klíč.';
-
-  @override
-  String get aiProviderSetupOptionMistralDescription =>
-      'Evropská AI s uvažováním (Magistral) a zvukem (Voxtral).';
-
-  @override
-  String get aiProviderSetupOptionOpenAiDescription =>
-      'GPT modely pro chat a uvažování. Vyžaduje API klíč s kreditem.';
-
-  @override
   String get aiProviderTaglineAlibaba =>
       'Modely Qwen · multimodální · dlouhý kontext';
 
@@ -3031,13 +3013,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagEnableNotificationsDescription =>
       'Přijímejte upozornění na připomínky, aktualizace a důležité události.';
-
-  @override
-  String get configFlagEnableOnboardingFtue => 'Nový onboarding (FTUE)';
-
-  @override
-  String get configFlagEnableOnboardingFtueDescription =>
-      'Použij nový onboarding pro první nastavení AI místo výběru poskytovatele.';
 
   @override
   String get configFlagEnableProjects => 'Povolit projekty';

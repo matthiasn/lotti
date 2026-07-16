@@ -16,8 +16,7 @@ import 'package:lotti/utils/consts.dart';
 /// Prefix for every private [SettingsDb] key backing the onboarding welcome's
 /// auto-show cadence. Deliberately *not* a `ConfigFlags` row -- `ConfigFlags`
 /// is for public, user-toggleable flags (Settings > Advanced > Flags); this
-/// is per-install bookkeeping the user never edits directly, mirroring the
-/// `ai_setup_prompt_dismissed` key in `AiSetupPromptService`.
+/// is per-install bookkeeping the user never edits directly.
 const _welcomeKeyPrefix = 'welcome_';
 
 /// Set once the user completes the essential setup (a provider is connected)
@@ -53,9 +52,7 @@ const onboardingWelcomeWindow = Duration(days: 14);
 /// without any async/DB/Riverpod plumbing.
 ///
 /// Eligible while:
-/// - the FTUE flag is on,
-/// - no unseen What's New content is blocking it (mirrors
-///   `AiSetupPromptService`'s own sequencing, so the welcome never races
+/// - no unseen What's New content is blocking it (so the welcome never races
 ///   the What's New modal for the screen),
 /// - the flow has not been marked complete,
 /// - the user has not yet reached the real "aha" -- a structured task
@@ -68,7 +65,6 @@ const onboardingWelcomeWindow = Duration(days: 14);
 /// - once it has shown at least once, [now] is still within
 ///   [onboardingWelcomeWindow] of the first auto-show.
 bool isOnboardingWelcomeEligible({
-  required bool ftueFlagEnabled,
   required bool hasUnseenWhatsNew,
   required bool completed,
   required bool reachedRealAha,
@@ -76,7 +72,6 @@ bool isOnboardingWelcomeEligible({
   required DateTime? firstShownAt,
   required DateTime now,
 }) {
-  if (!ftueFlagEnabled) return false;
   if (hasUnseenWhatsNew) return false;
   if (completed) return false;
   if (reachedRealAha) return false;
@@ -136,12 +131,9 @@ Future<bool> shouldAutoShowOnboarding(Ref ref) async {
     onboardingRolloutBackfillProvider(onboardingRolloutEnabled).future,
   );
 
-  final ftueFlagEnabled = await db.getConfigFlag(enableOnboardingFtueFlag);
-  if (!ftueFlagEnabled) return false;
-
   // Sequenced after What's New -- an unseen release still owns the first
-  // overlay slot, matching `AiSetupPromptService`'s own gating so the two
-  // auto-shown surfaces never race each other for the screen. Gated on
+  // overlay slot, so the two auto-shown surfaces never race each other for the
+  // screen. Gated on
   // `enableWhatsNewFlag` too: `whatsNewControllerProvider` reports unseen
   // remote content regardless of whether the What's New *feature* is turned
   // on, so without this check a disabled What's New (its default) would
@@ -163,7 +155,6 @@ Future<bool> shouldAutoShowOnboarding(Ref ref) async {
   final firstShownAtRaw = stored[onboardingWelcomeFirstShownAtKey];
 
   return isOnboardingWelcomeEligible(
-    ftueFlagEnabled: ftueFlagEnabled,
     hasUnseenWhatsNew: hasUnseenWhatsNew,
     completed: stored[onboardingWelcomeCompletedKey] == 'true',
     reachedRealAha: await _reachedRealAha(),
