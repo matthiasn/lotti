@@ -33,8 +33,9 @@ class DesktopSidebarDestination {
   ///
   /// The builder is only invoked while the destination is the active tab.
   /// Subtrees stay collapsed when the sidebar is in its narrow icon-only
-  /// layout. Product-specific secondary navigation should generally remain
-  /// inside its feature pane instead of competing with global navigation here.
+  /// layout. Product-specific secondary navigation can use this slot when it
+  /// benefits from persistent visibility without becoming a global
+  /// destination, such as Tasks' saved filters.
   final Widget Function()? expandedChildBuilder;
 }
 

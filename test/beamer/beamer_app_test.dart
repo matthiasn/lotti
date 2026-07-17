@@ -39,6 +39,7 @@ import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
@@ -305,7 +306,7 @@ Future<void> _pumpAppScreen(
         shouldAutoShowDailyOsOnboardingProvider.overrideWith(
           (ref) async => false,
         ),
-        // The task-pane saved-view rail watches saved-filter providers.
+        // Saved-filter surfaces watch these providers.
         // Override them with safe defaults so this test doesn't transitively
         // trigger the real JournalPageController build chain.
         savedTaskFiltersControllerProvider.overrideWith(
@@ -1338,6 +1339,7 @@ void main() {
       );
 
       expect(find.byType(DesktopNavigationSidebar), findsOneWidget);
+      expect(find.byType(SidebarSavedTaskFilters), findsOneWidget);
       expect(find.byType(DesignSystemBottomNavigationBar), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());

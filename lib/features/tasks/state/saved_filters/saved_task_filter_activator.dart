@@ -72,9 +72,9 @@ TasksFilter liveTasksFilterFor(JournalPageState pageState) {
   );
 }
 
-/// Treat two [TasksFilter]s as equivalent when their saved-filter-relevant
+/// Treats two [TasksFilter]s as equivalent when their saved-filter-relevant
 /// fields agree. Display-only and persistence-only fields are ignored.
-bool _matches(TasksFilter saved, TasksFilter live) {
+bool taskFiltersHaveSameSavedShape(TasksFilter saved, TasksFilter live) {
   bool eq(Iterable<String> a, Iterable<String> b) {
     final sA = a.toSet();
     final sB = b.toSet();
@@ -96,10 +96,10 @@ bool _matches(TasksFilter saved, TasksFilter live) {
 /// — non-empty selection sets, a non-default agent mode, or a non-default
 /// sort. Display toggles do not count.
 ///
-/// Sort is included because [_matches] also compares it: a saved filter that
-/// differs only by sort would otherwise leave Save disabled even though the
-/// live shape doesn't match any saved entry.
-bool _hasActiveClauses(TasksFilter live) {
+/// Sort is included because [taskFiltersHaveSameSavedShape] also compares it:
+/// a saved filter that differs only by sort would otherwise leave Save
+/// disabled even though the live shape doesn't match any saved entry.
+bool tasksFilterHasActiveClauses(TasksFilter live) {
   return live.selectedTaskStatuses.isNotEmpty ||
       live.selectedCategoryIds.isNotEmpty ||
       live.selectedProjectIds.isNotEmpty ||
@@ -124,14 +124,15 @@ String? currentSavedTaskFilterId(Ref ref) {
   if (saved.isEmpty) return null;
   final live = liveTasksFilterFor(pageState);
   for (final v in saved) {
-    if (_matches(v.filter, live)) return v.id;
+    if (taskFiltersHaveSameSavedShape(v.filter, live)) return v.id;
   }
   return null;
 }
 
 /// True when the live filter has clauses that don't match any saved filter
-/// — the task-view bars and the modal Save button use this to decide whether
-/// their Save action is enabled.
+/// — the saved-filter navigation surfaces use this to distinguish an ad-hoc
+/// filter from All tasks. The filter modal evaluates its route-scoped draft
+/// directly because edits there have not reached the live page state yet.
 final Provider<bool> tasksFilterHasUnsavedClausesProvider =
     Provider.autoDispose<bool>(
       tasksFilterHasUnsavedClauses,
@@ -140,7 +141,7 @@ final Provider<bool> tasksFilterHasUnsavedClausesProvider =
 bool tasksFilterHasUnsavedClauses(Ref ref) {
   final pageState = ref.watch(journalPageControllerProvider(true));
   final live = liveTasksFilterFor(pageState);
-  if (!_hasActiveClauses(live)) return false;
+  if (!tasksFilterHasActiveClauses(live)) return false;
   final matchedId = ref.watch(currentSavedTaskFilterIdProvider);
   return matchedId == null;
 }

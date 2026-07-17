@@ -94,6 +94,11 @@ _pumpSheet(
 }
 
 void main() {
+  Finder nameTextField() => find.descendant(
+    of: find.byKey(SaveCurrentTaskFilterKeys.nameField),
+    matching: find.byType(TextField),
+  );
+
   setUp(() async {
     await setUpTestGetIt(
       additionalSetup: () {
@@ -436,7 +441,7 @@ void main() {
   });
 
   testWidgets(
-    'Edit mode explains watchlist priority and reorders saved views',
+    'Edit mode explains sidebar order and reorders saved filters',
     (tester) async {
       final bench = await _pumpSheet(tester);
 
@@ -445,7 +450,7 @@ void main() {
 
       expect(
         find.text(
-          'Drag to choose which views stay visible above the task list.',
+          'Drag to set the order. The first five filters appear in the sidebar.',
         ),
         findsOneWidget,
       );
@@ -482,7 +487,7 @@ void main() {
     },
   );
 
-  testWidgets('Edit mode keeps long saved-view lists scrollable', (
+  testWidgets('Edit mode keeps long saved-filter lists scrollable', (
     tester,
   ) async {
     final saved = List.generate(
@@ -526,8 +531,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
+    expect(find.text('Rename In Progress'), findsOneWidget);
     await tester.enterText(
-      find.byKey(SaveCurrentTaskFilterKeys.nameField),
+      nameTextField(),
       'Doing now',
     );
     await tester.pump();
@@ -602,7 +608,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     await tester.enterText(
-      find.byKey(SaveCurrentTaskFilterKeys.nameField),
+      nameTextField(),
       'My filter',
     );
     await tester.pump();
@@ -712,7 +718,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       await tester.enterText(
-        find.byKey(SaveCurrentTaskFilterKeys.nameField),
+        nameTextField(),
         'My filter',
       );
       await tester.pump();

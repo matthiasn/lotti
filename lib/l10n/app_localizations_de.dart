@@ -9999,11 +9999,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksSavedFiltersEdit => 'Bearbeiten';
 
   @override
-  String get tasksSavedFiltersGroupSemantics =>
-      'Gespeicherte Aufgabenansichten';
+  String get tasksSavedFiltersFilterNameLabel => 'Filtername';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Ansichten';
+  String get tasksSavedFiltersGroupSemantics => 'Aufgabenfilter';
+
+  @override
+  String get tasksSavedFiltersManageTooltip => 'Aufgabenfilter verwalten';
+
+  @override
+  String get tasksSavedFiltersRailButton => 'Filter';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {
@@ -10012,28 +10017,43 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersReorderHelper =>
-      'Zieh die Ansichten nach oben, die über der Aufgabenliste sichtbar bleiben sollen.';
+      'Zieh die Filter in die gewünschte Reihenfolge. Die ersten fünf erscheinen in der Seitenleiste.';
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Filter speichern';
+  String get tasksSavedFiltersSaveAsNewButtonLabel =>
+      'Als neuen Filter speichern…';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewDescription =>
+      'Der bestehende Filter bleibt unverändert und ein separater wird erstellt.';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewTitle => 'Als neuen Filter speichern';
+
+  @override
+  String get tasksSavedFiltersSaveButtonLabel => 'Filter speichern…';
+
+  @override
+  String get tasksSavedFiltersSaveChoiceIntro =>
+      'Wähle, ob du den gespeicherten Filter aktualisieren oder einen separaten erstellen möchtest.';
+
+  @override
+  String get tasksSavedFiltersSaveChoiceTitle => 'Filter speichern';
 
   @override
   String get tasksSavedFiltersSaveCurrentAs =>
       'Aktuellen Filter speichern als…';
 
   @override
-  String get tasksSavedFiltersSavePopupCancel => 'Abbrechen';
+  String get tasksSavedFiltersSaveError =>
+      'Der Filter konnte nicht gespeichert werden. Versuch es noch einmal.';
 
   @override
-  String tasksSavedFiltersSavePopupHelper(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count Ansichten aktiv. In den Aufgabenansichten gespeichert.',
-      one: '1 Ansicht aktiv. In den Aufgabenansichten gespeichert.',
-    );
-    return '$_temp0';
-  }
+  String get tasksSavedFiltersSavePageHelper =>
+      'Gib diesem Filter einen kurzen Namen. Du kannst ihn später in den Aufgabenfiltern neu anordnen.';
+
+  @override
+  String get tasksSavedFiltersSavePopupCancel => 'Abbrechen';
 
   @override
   String get tasksSavedFiltersSavePopupHint => 'z. B. Blockiert oder pausiert';
@@ -10045,7 +10065,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksSavedFiltersSavePopupTitle => 'Diesen Filter benennen';
 
   @override
-  String get tasksSavedFiltersSheetTitle => 'Gespeicherte Ansichten';
+  String get tasksSavedFiltersSheetTitle => 'Aufgabenfilter';
 
   @override
   String get tasksSavedFiltersShowLess => 'Weniger anzeigen';
@@ -10071,6 +10091,17 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get tasksSavedFiltersUpdateButtonLabel => 'Filter aktualisieren';
+
+  @override
+  String get tasksSavedFiltersUpdateExistingDescription =>
+      'Ersetze seine gespeicherten Kriterien durch die aktuelle Filterkonfiguration.';
+
+  @override
+  String get tasksSavedFiltersUpdateExistingTitle =>
+      'Bestehenden Filter aktualisieren';
 
   @override
   String get tasksSavedFilterToastDeleted => 'Filter gelöscht';

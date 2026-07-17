@@ -35,7 +35,7 @@ String? savedFilterCategoryName(SavedTaskFilter filter) {
 ///
 /// Anatomy (left → right): an optional [categoryColor] dot, an ellipsizing
 /// [label], and a stable-width trailing count slot. There is exactly **one**
-/// disclosure chevron in the rail and it lives on the "Views" button alone —
+/// disclosure chevron in the rail and it lives on the "Filters" button alone —
 /// the pill carries no chevron of its own, so every pill reads as a single
 /// predictable tap target rather than a chip with an ambiguous caret. There is
 /// also deliberately **no in-pill selection check** — the active state is

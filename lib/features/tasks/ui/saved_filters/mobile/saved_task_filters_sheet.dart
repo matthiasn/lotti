@@ -117,7 +117,7 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
         .delete(saved.id);
     // Safe fallback: deleting the *active* filter would otherwise leave the
     // list showing an orphaned filter shape with no pill selected. Reset the
-    // live filter to the default "All" view so the selection is never
+    // live filter to the default "All" filter so the selection is never
     // undefined. clearToDefault() makes the live shape match no saved filter,
     // so `currentSavedTaskFilterIdProvider` resolves to null ("All" selected).
     if (wasActive) await _activator.clearToDefault();

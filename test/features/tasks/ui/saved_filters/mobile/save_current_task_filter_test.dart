@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -94,6 +96,11 @@ _pump(
 }
 
 void main() {
+  Finder nameTextField() => find.descendant(
+    of: find.byKey(SaveCurrentTaskFilterKeys.nameField),
+    matching: find.byType(TextField),
+  );
+
   testWidgets('persists the live filter under the entered name', (
     tester,
   ) async {
@@ -104,7 +111,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     await tester.enterText(
-      find.byKey(SaveCurrentTaskFilterKeys.nameField),
+      nameTextField(),
       'Open work',
     );
     await tester.pump();
@@ -128,7 +135,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     await tester.enterText(
-      find.byKey(SaveCurrentTaskFilterKeys.nameField),
+      nameTextField(),
       'Open work',
     );
     await tester.pump();
@@ -155,6 +162,40 @@ void main() {
     expect(bench.results.single, isNull);
   });
 
+  testWidgets(
+    'uses the design-system form and keeps Save disabled when empty',
+    (
+      tester,
+    ) async {
+      final bench = await _pump(tester);
+
+      await tester.tap(find.byKey(const Key('go')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.byType(DesignSystemTextInput), findsOneWidget);
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(SaveCurrentTaskFilterKeys.saveButton),
+            )
+            .onPressed,
+        isNull,
+      );
+      expect(
+        find.byKey(SaveCurrentTaskFilterKeys.cancelButton),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(SaveCurrentTaskFilterKeys.cancelButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(bench.saved.created, isEmpty);
+      expect(bench.results.single, isNull);
+    },
+  );
+
   testWidgets('committing the name via the keyboard action saves', (
     tester,
   ) async {
@@ -165,7 +206,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     await tester.enterText(
-      find.byKey(SaveCurrentTaskFilterKeys.nameField),
+      nameTextField(),
       'Via keyboard',
     );
     await tester.pump();
@@ -207,7 +248,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     await tester.enterText(
-      find.byKey(SaveCurrentTaskFilterKeys.nameField),
+      nameTextField(),
       'Boom',
     );
     await tester.pump();

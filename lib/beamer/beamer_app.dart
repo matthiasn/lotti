@@ -46,6 +46,7 @@ import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_activity_indicator.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
@@ -962,6 +963,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         label: context.messages.navTabTitleTasks,
         iconBuilder: ({required active}) =>
             Icon(active ? Icons.list_rounded : Icons.list_outlined),
+        expandedChildBuilder: () => const SidebarSavedTaskFilters(),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.dailyOs,

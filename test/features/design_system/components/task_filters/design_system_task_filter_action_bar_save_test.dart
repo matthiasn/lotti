@@ -22,26 +22,22 @@ DesignSystemTaskFilterState _state() {
 
 Future<void> _pumpBar(
   WidgetTester tester, {
-  ValueChanged<String>? onSavePressed,
+  VoidCallback? onSavePressed,
   bool canSave = false,
-  String? initialSaveName,
 }) async {
-  final state = _state();
   await tester.pumpWidget(
     makeTestableWidget(
       Material(
         child: DesignSystemTaskFilterActionBar(
-          state: state,
+          state: _state(),
           onChanged: (_) {},
           onApplyPressed: (_) {},
           onSavePressed: onSavePressed,
           canSave: canSave,
-          initialSaveName: initialSaveName,
         ),
       ),
     ),
   );
-  // Static bar: a plain pump renders it; nothing animates on first build.
   await tester.pump();
 }
 
@@ -52,7 +48,7 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  testWidgets('Save button is hidden when onSavePressed is not supplied', (
+  testWidgets('Save button is hidden when no save flow is supplied', (
     tester,
   ) async {
     await _pumpBar(tester);
@@ -63,226 +59,50 @@ void main() {
     );
   });
 
-  testWidgets('Save button is rendered when onSavePressed is supplied', (
+  testWidgets('Save button is disabled until the current draft can be saved', (
     tester,
   ) async {
-    await _pumpBar(
-      tester,
-      onSavePressed: (_) {},
-    );
+    await _pumpBar(tester, onSavePressed: () {});
 
-    expect(
-      find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('tapping Save when canSave=false does not open the popup', (
-    tester,
-  ) async {
-    await _pumpBar(
-      tester,
-      onSavePressed: (_) {},
-    );
-
-    await tester.tap(
+    final button = tester.widget<DesignSystemButton>(
       find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
     );
-    await tester.pump(const Duration(milliseconds: 300));
-
-    expect(
-      find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
-      findsNothing,
-    );
+    expect(button.label, 'Save filter…');
+    expect(button.onPressed, isNull);
   });
 
-  testWidgets('tapping Save when canSave=true opens the popup with the field', (
+  testWidgets('enabled Save button opens the owning modal save flow once', (
     tester,
   ) async {
+    var calls = 0;
     await _pumpBar(
       tester,
-      onSavePressed: (_) {},
+      onSavePressed: () => calls++,
       canSave: true,
     );
 
     await tester.tap(
       find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
     );
-    await tester.pump(const Duration(milliseconds: 300));
-
-    expect(
-      find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('popup commits trimmed name and invokes onSavePressed', (
-    tester,
-  ) async {
-    String? saved;
-    await _pumpBar(
-      tester,
-      onSavePressed: (name) => saved = name,
-      canSave: true,
-    );
-
-    await tester.tap(
-      find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
-    );
-    await tester.pump(const Duration(milliseconds: 300));
-
-    final field = find.byKey(
-      DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
-    );
-    await tester.enterText(field, '  My filter  ');
-    // Pump so the controller listener flips _canCommit to true and the
-    // FilledButton re-enables before we tap it.
     await tester.pump();
-    await tester.tap(
-      find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
-    );
-    await tester.pump(const Duration(milliseconds: 300));
 
-    expect(saved, 'My filter');
+    expect(calls, 1);
   });
-
-  testWidgets('popup does not invoke onSavePressed when name is empty', (
-    tester,
-  ) async {
-    var saveCount = 0;
-    await _pumpBar(
-      tester,
-      onSavePressed: (_) => saveCount++,
-      canSave: true,
-    );
-
-    await tester.tap(
-      find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
-    );
-    await tester.pump(const Duration(milliseconds: 300));
-
-    final field = find.byKey(
-      DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
-    );
-    await tester.enterText(field, '   ');
-    await tester.tap(
-      find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
-    );
-    await tester.pump(const Duration(milliseconds: 300));
-
-    expect(saveCount, 0);
-  });
-
-  testWidgets('popup pre-fills with initialSaveName when supplied', (
-    tester,
-  ) async {
-    await _pumpBar(
-      tester,
-      onSavePressed: (_) {},
-      canSave: true,
-      initialSaveName: 'In progress · P0',
-    );
-
-    await tester.tap(
-      find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
-    );
-    await tester.pump(const Duration(milliseconds: 300));
-
-    expect(find.text('In progress · P0'), findsOneWidget);
-  });
-
-  testWidgets(
-    'commit button disables when the field is cleared after typing',
-    (tester) async {
-      await _pumpBar(
-        tester,
-        onSavePressed: (_) {},
-        canSave: true,
-      );
-
-      await tester.tap(
-        find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
-      );
-      await tester.pump(const Duration(milliseconds: 300));
-
-      final field = find.byKey(
-        DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
-      );
-      // Type a name → enabled.
-      await tester.enterText(field, 'Filter');
-      await tester.pump();
-      var commit = tester.widget<DesignSystemButton>(
-        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
-      );
-      expect(commit.onPressed, isNotNull);
-
-      // Clear the field → listener flips _canCommit back to false.
-      await tester.enterText(field, '');
-      await tester.pump();
-      commit = tester.widget<DesignSystemButton>(
-        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
-      );
-      expect(commit.onPressed, isNull);
-    },
-  );
-
-  testWidgets(
-    'closing the popup disposes the inner controller / focus node cleanly',
-    (tester) async {
-      await _pumpBar(
-        tester,
-        onSavePressed: (_) {},
-        canSave: true,
-      );
-
-      await tester.tap(
-        find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
-      );
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Tap the action button again to toggle the menu closed; this routes
-      // through the popup's State.dispose which removes the controller
-      // listener and disposes the controller + focus node.
-      await tester.tap(
-        find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
-      );
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(
-        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
-        findsNothing,
-      );
-    },
-  );
 
   // Glass footer structure — Figma "Apply filter" footer (node 3341:53641):
-  // hairline divider, backdrop blur, top→bottom gradient overlay,
-  // right-aligned button row, button slot widths from the frame.
+  // hairline divider, backdrop blur, gradient overlay, and responsive actions.
   testWidgets(
     'action bar paints the glass footer treatment over a backdrop blur',
     (tester) async {
       await _pumpBar(tester);
 
-      // Blur is present and at-or-near the codebase's max glass-surface
-      // sigma (existing surfaces use 10–20). A regression to 0 must fail.
       final backdrop = tester.widget<BackdropFilter>(
         find.byType(BackdropFilter),
       );
       final blur = backdrop.filter;
       expect(blur, isA<ui.ImageFilter>());
-      // ImageFilter has no public sigma getter, but its toString embeds
-      // the values: "ImageFilter.blur(20.0, 20.0, ...)". Pin both axes.
-      final blurDescription = blur.toString();
-      expect(
-        blurDescription,
-        contains('20.0, 20.0'),
-        reason:
-            'glass footer blur must remain at sigma 20 on both axes; '
-            'got $blurDescription',
-      );
+      expect(blur.toString(), contains('20.0, 20.0'));
 
-      // Gradient is a top→bottom LinearGradient with two stops, the
-      // bottom stop more opaque than the top — that's the "lift" effect.
       final decorated = tester
           .widgetList<DecoratedBox>(
             find.descendant(
@@ -291,24 +111,15 @@ void main() {
             ),
           )
           .where((d) => (d.decoration as BoxDecoration).gradient != null);
-      expect(
-        decorated,
-        isNotEmpty,
-        reason: 'expected a gradient-bearing DecoratedBox under the blur',
-      );
+      expect(decorated, isNotEmpty);
       final gradient =
           (decorated.first.decoration as BoxDecoration).gradient!
               as LinearGradient;
       expect(gradient.begin, Alignment.topCenter);
       expect(gradient.end, Alignment.bottomCenter);
       expect(gradient.colors.length, 2);
-      expect(
-        gradient.colors.last.a,
-        greaterThan(gradient.colors.first.a),
-        reason: 'bottom stop must be more opaque than the top stop',
-      );
+      expect(gradient.colors.last.a, greaterThan(gradient.colors.first.a));
 
-      // The shared responsive action bar owns the wide/stacked layout.
       expect(
         find.descendant(
           of: find.byType(BackdropFilter),

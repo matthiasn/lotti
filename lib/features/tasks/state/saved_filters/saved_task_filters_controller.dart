@@ -6,12 +6,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repo
 import 'package:lotti/get_it.dart';
 import 'package:uuid/uuid.dart';
 
-/// Maximum number of saved task views rendered as ambient sidebar monitors.
-const int maxSidebarPinnedTaskFilters = 5;
-
-enum SavedTaskFilterPinResult { updated, unchanged, limitReached }
-
-/// Riverpod controller backing the user's pinned task-filter list.
+/// Riverpod controller backing the user's saved task-filter list.
 ///
 /// State is the ordered list of [SavedTaskFilter]s. Position in the list is
 /// the sort order. Mutations are routed through [SavedTaskFiltersRepository] so
@@ -35,7 +30,7 @@ class SavedTaskFiltersController extends AsyncNotifier<List<SavedTaskFilter>> {
   /// Appends a new saved filter built from [filter] with the given [name].
   ///
   /// Returns the newly-created [SavedTaskFilter] so callers can mark it as
-  /// the currently-active saved view in the page state.
+  /// the currently-active saved filter in the page state.
   Future<SavedTaskFilter> create({
     required String name,
     required TasksFilter filter,
@@ -74,7 +69,7 @@ class SavedTaskFiltersController extends AsyncNotifier<List<SavedTaskFilter>> {
 
   /// Replaces the filter payload of the saved filter with [id].
   ///
-  /// Used when "Update '`<name>`'" is invoked from the modal — the saved view
+  /// Used when "Update '`<name>`'" is invoked from the modal — the saved filter
   /// keeps its name and id but takes on the currently-active filter shape.
   Future<void> updateFilter(String id, TasksFilter filter) async {
     final current = await future;
@@ -86,37 +81,6 @@ class SavedTaskFiltersController extends AsyncNotifier<List<SavedTaskFilter>> {
     next[idx] = updated;
     state = AsyncData(next);
     await _repository.upsert(updated);
-  }
-
-  /// Pins or unpins a saved view in the desktop sidebar.
-  ///
-  /// At most [maxSidebarPinnedTaskFilters] views may be pinned. Membership is
-  /// synced as part of the saved-view definition; display order follows the
-  /// existing per-device saved-view order.
-  Future<SavedTaskFilterPinResult> setSidebarPinned(
-    String id, {
-    required bool pinned,
-  }) async {
-    final current = await future;
-    final idx = current.indexWhere((SavedTaskFilter f) => f.id == id);
-    if (idx < 0 || current[idx].pinnedToSidebar == pinned) {
-      return SavedTaskFilterPinResult.unchanged;
-    }
-    if (pinned &&
-        current.where((filter) => filter.pinnedToSidebar).length >=
-            maxSidebarPinnedTaskFilters) {
-      return SavedTaskFilterPinResult.limitReached;
-    }
-
-    final updated = current[idx].copyWith(
-      pinnedToSidebar: pinned,
-      updatedAt: now(),
-    );
-    final next = [...current];
-    next[idx] = updated;
-    state = AsyncData(next);
-    await _repository.upsert(updated);
-    return SavedTaskFilterPinResult.updated;
   }
 
   /// Removes the saved filter with [id]. No-op when missing.

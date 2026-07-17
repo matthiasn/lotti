@@ -65,21 +65,12 @@ Future<void> showTaskFilterModal(
       container.read(savedTaskFiltersControllerProvider).value ??
       const <SavedTaskFilter>[];
   final matchedId = container.read(currentSavedTaskFilterIdProvider);
-  final hasUnsavedClauses = container.read(
-    tasksFilterHasUnsavedClausesProvider,
-  );
-  // Resolve the active id to a name. If the id no longer points at any saved
+  // Resolve the active id to its saved filter. If the id no longer points at a
   // filter (concurrent delete/rename), degrade to the create flow rather than
   // updating a stale id.
-  final matchedName = matchedId == null
+  final matchedSavedFilter = matchedId == null
       ? null
-      : savedFilters
-            .where((f) => f.id == matchedId)
-            .map((f) => f.name)
-            .firstOrNull;
-  final initialSavedId = matchedName == null ? null : matchedId;
-  final initialSavedName = matchedName;
-  final canSave = hasUnsavedClauses || initialSavedId != null;
+      : savedFilters.where((filter) => filter.id == matchedId).firstOrNull;
 
   await showDesignSystemFilterModal(
     context: context,
@@ -121,15 +112,24 @@ Future<void> showTaskFilterModal(
               return current;
             }
           },
-    canSave: showTasks && canSave,
-    initialSaveName: initialSavedName,
-    onSavePressed: !showTasks
+    existingSavedFilterName: showTasks ? matchedSavedFilter?.name : null,
+    canCreateSavedFilter: !showTasks
+        ? null
+        : (draftState) => tasksFilterHasActiveClauses(
+            _draftStateToTasksFilter(draftState, controllerState),
+          ),
+    canUpdateSavedFilter: !showTasks || matchedSavedFilter == null
+        ? null
+        : (draftState) => !taskFiltersHaveSameSavedShape(
+            matchedSavedFilter.filter,
+            _draftStateToTasksFilter(draftState, controllerState),
+          ),
+    onCreateSavedFilter: !showTasks
         ? null
         : (name, draftState) async {
-            // Save = apply + save + close (closing is owned by the modal
-            // layer). The persisted filter is built from the draft so
-            // in-modal edits are captured even when the user taps Save
-            // before Apply.
+            // The persisted filter is built from the route-scoped draft so
+            // in-modal edits are captured even before Apply. The modal layer
+            // applies and closes only after persistence succeeds.
             final filter = _draftStateToTasksFilter(
               draftState,
               controllerState,
@@ -138,19 +138,12 @@ Future<void> showTaskFilterModal(
               savedTaskFiltersControllerProvider.notifier,
             );
             try {
-              if (initialSavedId != null && name == initialSavedName) {
-                await notifier.updateFilter(initialSavedId, filter);
-                if (context.mounted) {
-                  showSavedTaskFilterUpdatedToast(context, name: name);
-                }
-              } else {
-                final created = await notifier.create(
-                  name: name,
-                  filter: filter,
-                );
-                if (context.mounted) {
-                  showSavedTaskFilterSavedToast(context, name: created.name);
-                }
+              final created = await notifier.create(
+                name: name,
+                filter: filter,
+              );
+              if (context.mounted) {
+                showSavedTaskFilterSavedToast(context, name: created.name);
               }
             } catch (error, stackTrace) {
               if (getIt.isRegistered<DomainLogger>()) {
@@ -163,6 +156,35 @@ Future<void> showTaskFilterModal(
               }
               // Rethrow so the modal layer keeps the modal open and the
               // user can retry.
+              rethrow;
+            }
+          },
+    onUpdateSavedFilter: !showTasks || matchedSavedFilter == null
+        ? null
+        : (draftState) async {
+            final filter = _draftStateToTasksFilter(
+              draftState,
+              controllerState,
+            );
+            try {
+              await container
+                  .read(savedTaskFiltersControllerProvider.notifier)
+                  .updateFilter(matchedSavedFilter.id, filter);
+              if (context.mounted) {
+                showSavedTaskFilterUpdatedToast(
+                  context,
+                  name: matchedSavedFilter.name,
+                );
+              }
+            } catch (error, stackTrace) {
+              if (getIt.isRegistered<DomainLogger>()) {
+                getIt<DomainLogger>().error(
+                  LogDomain.tasks,
+                  error,
+                  stackTrace: stackTrace,
+                  subDomain: 'saveFilter',
+                );
+              }
               rethrow;
             }
           },

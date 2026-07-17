@@ -21,7 +21,6 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activ
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
-import 'package:lotti/features/tasks/ui/saved_filters/desktop/desktop_saved_task_view_bar.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -866,9 +865,9 @@ void main() {
     );
   });
 
-  group('Tasks saved-view controls', () {
+  group('Tasks saved-filter controls', () {
     // The header no longer carries a "· {name}" suffix; task-local controls
-    // surface the active saved view instead. These tests exercise page-level
+    // surface the active saved filter instead. These tests exercise page-level
     // responsive wiring, collapse behavior, and the active view name.
     Widget buildSubjectWithSavedFilter({
       required String? activeId,
@@ -916,7 +915,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // The mobile rail collapses to nothing — no Views button — and the old
+      // The mobile rail collapses to nothing — no Filters button — and the old
       // "· {name}" header suffix is gone for good.
       expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsNothing);
       expect(find.textContaining('· '), findsNothing);
@@ -941,14 +940,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
-      // The Views button keeps the plain "Views" label (its saved-count rides a
+      // The Filters button keeps a plain label (its saved-count rides a
       // separate slot, not a parenthetical).
-      expect(find.text('Views'), findsOneWidget);
+      expect(find.text('Filters'), findsOneWidget);
       // The active pill shows the saved filter's name.
       expect(find.text('In Progress P0'), findsOneWidget);
     });
 
-    testWidgets('keeps saved views beside the task list on desktop', (
+    testWidgets('does not duplicate saved filters in the desktop task pane', (
       tester,
     ) async {
       final selectedTaskId = ValueNotifier<String?>(null);
@@ -972,21 +971,13 @@ void main() {
       );
       await tester.pump();
 
-      expect(
-        find.byKey(DesktopSavedTaskViewBarKeys.currentView),
-        findsOneWidget,
-      );
-      expect(find.text('Desktop focus'), findsOneWidget);
-
-      final railTop = tester
-          .getTopLeft(find.byKey(DesktopSavedTaskViewBarKeys.root))
-          .dy;
-      final taskListTop = tester.getTopLeft(find.byType(RefreshIndicator)).dy;
-      expect(railTop, lessThan(taskListTop));
+      expect(find.text('Desktop focus'), findsNothing);
+      expect(find.byKey(SavedTaskFilterRailKeys.root), findsNothing);
+      expect(find.byType(RefreshIndicator), findsOneWidget);
     });
 
     testWidgets(
-      'matched saved view replaces rather than duplicates its filter chips',
+      'matched saved filter replaces rather than duplicates its filter chips',
       (tester) async {
         final selectedTaskId = ValueNotifier<String?>(null);
         addTearDown(selectedTaskId.dispose);
@@ -1017,47 +1008,50 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Urgent in progress'), findsOneWidget);
+        expect(find.text('Urgent in progress'), findsNothing);
         expect(find.byType(ActiveFilterChip), findsNothing);
       },
     );
 
-    testWidgets('custom filter keeps removable chips and the save action', (
-      tester,
-    ) async {
-      final selectedTaskId = ValueNotifier<String?>(null);
-      addTearDown(selectedTaskId.dispose);
-      when(
-        () => mockNavService.desktopSelectedTaskId,
-      ).thenReturn(selectedTaskId);
+    testWidgets(
+      'custom desktop filter keeps removable chips in the task pane',
+      (
+        tester,
+      ) async {
+        final selectedTaskId = ValueNotifier<String?>(null);
+        addTearDown(selectedTaskId.dispose);
+        when(
+          () => mockNavService.desktopSelectedTaskId,
+        ).thenReturn(selectedTaskId);
 
-      await tester.pumpWidget(
-        buildSubjectWithSavedFilter(
-          activeId: null,
-          hasUnsaved: true,
-          seed: const [
-            SavedTaskFilter(
-              id: 'sv-1',
-              name: 'Saved baseline',
-              filter: TasksFilter(),
+        await tester.pumpWidget(
+          buildSubjectWithSavedFilter(
+            activeId: null,
+            hasUnsaved: true,
+            seed: const [
+              SavedTaskFilter(
+                id: 'sv-1',
+                name: 'Saved baseline',
+                filter: TasksFilter(),
+              ),
+            ],
+            pageState: state(
+              selectedTaskStatuses: const {'OPEN'},
+              selectedCategoryIds: const {},
             ),
-          ],
-          pageState: state(
-            selectedTaskStatuses: const {'OPEN'},
-            selectedCategoryIds: const {},
+            mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
           ),
-          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      expect(find.byType(ActiveFilterChip), findsOneWidget);
-      expect(find.byKey(DesktopSavedTaskViewBarKeys.save), findsOneWidget);
-      expect(find.text('Custom'), findsOneWidget);
-    });
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+        expect(find.text('Saved baseline'), findsNothing);
+        expect(find.text('Custom'), findsNothing);
+      },
+    );
 
     testWidgets(
-      'rail collapses when activeId does not resolve to any saved view',
+      'rail collapses when activeId does not resolve to any saved filter',
       (tester) async {
         // Stale-id case: provider says sv-1 is active, but the list is empty
         // (e.g. concurrent delete). The rail must collapse rather than throw.
@@ -1104,7 +1098,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ActiveFilterChip), findsNWidgets(2));
-      expect(find.text('Custom'), findsOneWidget);
+      expect(find.text('Custom'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });

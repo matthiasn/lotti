@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -16,6 +19,7 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 @visibleForTesting
 abstract final class SaveCurrentTaskFilterKeys {
   static const Key nameField = Key('save-current-filter-name-field');
+  static const Key cancelButton = Key('save-current-filter-cancel-button');
   static const Key saveButton = Key('save-current-filter-save-button');
 }
 
@@ -72,9 +76,12 @@ Future<String?> promptTaskFilterName(
   BuildContext context, {
   String initialValue = '',
 }) {
+  final messages = context.messages;
   return ModalUtils.showSinglePageModal<String>(
     context: context,
-    title: context.messages.tasksSavedFiltersSavePopupTitle,
+    title: initialValue.trim().isEmpty
+        ? messages.tasksSavedFiltersSavePopupTitle
+        : messages.tasksSavedFiltersRenameNamed(initialValue),
     builder: (modalContext) => _SaveFilterNameForm(initialValue: initialValue),
   );
 }
@@ -89,30 +96,15 @@ class _SaveFilterNameForm extends StatefulWidget {
 }
 
 class _SaveFilterNameFormState extends State<_SaveFilterNameForm> {
-  // The form owns its controller (and focus node) so they outlive the modal's
-  // close animation — disposing them externally via the modal future would
-  // tear them down while the closing TextField still references them.
+  // The form owns its controller so it outlives the modal's close animation.
   late final TextEditingController _controller = TextEditingController(
     text: widget.initialValue,
   );
   late bool _canSave = widget.initialValue.trim().isNotEmpty;
-  final FocusNode _focus = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    // Post-frame focus instead of `autofocus: true`: the latter schedules a
-    // caret-on-screen pass during the modal's open animation, which trips an
-    // EditableText assertion under the test harness.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focus.requestFocus();
-    });
-  }
 
   @override
   void dispose() {
     _controller.dispose();
-    _focus.dispose();
     super.dispose();
   }
 
@@ -130,26 +122,39 @@ class _SaveFilterNameFormState extends State<_SaveFilterNameForm> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
+        DesignSystemTextInput(
           key: SaveCurrentTaskFilterKeys.nameField,
           controller: _controller,
-          focusNode: _focus,
-          textInputAction: TextInputAction.done,
+          label: messages.tasksSavedFiltersFilterNameLabel,
+          hintText: messages.tasksSavedFiltersSavePopupHint,
+          helperText: messages.tasksSavedFiltersSavePageHelper,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
           onChanged: (value) {
             final next = value.trim().isNotEmpty;
             if (next != _canSave) setState(() => _canSave = next);
           },
           onSubmitted: (_) => _submit(),
-          decoration: InputDecoration(
-            hintText: messages.tasksSavedFiltersSavePopupHint,
-            border: const OutlineInputBorder(),
-          ),
         ),
-        SizedBox(height: tokens.spacing.step5),
-        FilledButton(
-          key: SaveCurrentTaskFilterKeys.saveButton,
-          onPressed: _canSave ? _submit : null,
-          child: Text(messages.tasksSavedFiltersSavePopupSave),
+        SizedBox(height: tokens.spacing.sectionGap),
+        DesignSystemModalActionBar(
+          secondary: [
+            DesignSystemButton(
+              key: SaveCurrentTaskFilterKeys.cancelButton,
+              label: messages.tasksSavedFiltersSavePopupCancel,
+              variant: DesignSystemButtonVariant.secondary,
+              size: DesignSystemButtonSize.large,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+          primary: DesignSystemButton(
+            key: SaveCurrentTaskFilterKeys.saveButton,
+            label: messages.tasksSavedFiltersSavePopupSave,
+            leadingIcon: Icons.bookmark_add_rounded,
+            size: DesignSystemButtonSize.large,
+            fullWidth: true,
+            onPressed: _canSave ? _submit : null,
+          ),
         ),
       ],
     );

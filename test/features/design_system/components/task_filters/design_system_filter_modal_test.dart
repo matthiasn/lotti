@@ -47,6 +47,11 @@ void main() {
   Future<void> openModal(
     WidgetTester tester, {
     required ValueChanged<DesignSystemTaskFilterState> onApplied,
+    DesignSystemFilterCreateHandler? onCreateSavedFilter,
+    DesignSystemFilterUpdateHandler? onUpdateSavedFilter,
+    DesignSystemFilterSavePredicate? canCreateSavedFilter,
+    DesignSystemFilterSavePredicate? canUpdateSavedFilter,
+    String? existingSavedFilterName,
     Size size = const Size(900, 900),
     TextScaler textScaler = TextScaler.noScaling,
   }) async {
@@ -64,6 +69,11 @@ void main() {
                   context: context,
                   initialState: buildState(),
                   onApplied: onApplied,
+                  onCreateSavedFilter: onCreateSavedFilter,
+                  onUpdateSavedFilter: onUpdateSavedFilter,
+                  canCreateSavedFilter: canCreateSavedFilter,
+                  canUpdateSavedFilter: canUpdateSavedFilter,
+                  existingSavedFilterName: existingSavedFilterName,
                   fieldPageConfigs: const {
                     DesignSystemTaskFilterSection.status:
                         DesignSystemFilterFieldPageConfig(
@@ -222,6 +232,155 @@ void main() {
 
     expect(applyCalls, 0);
     expect(find.byType(DesignSystemTaskFilterSheet), findsNothing);
+  });
+
+  testWidgets(
+    'create stays in the modal, requires a name, then persists before Apply',
+    (tester) async {
+      final creates = <String>[];
+      DesignSystemTaskFilterState? applied;
+      await openModal(
+        tester,
+        onApplied: (state) => applied = state,
+        onCreateSavedFilter: (name, _) => creates.add(name),
+        canCreateSavedFilter: (_) => true,
+      );
+      final barrierCount = find.byType(ModalBarrier).evaluate().length;
+
+      await tester.tap(
+        find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+      );
+      await tester.pump(const Duration(milliseconds: 900));
+
+      expect(
+        find.byKey(DesignSystemFilterSavePageKeys.namePage),
+        findsOneWidget,
+      );
+      expect(find.byType(ModalBarrier), findsNWidgets(barrierCount));
+      expect(find.byType(MenuAnchor), findsNothing);
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(DesignSystemFilterSavePageKeys.commit),
+            )
+            .onPressed,
+        isNull,
+      );
+
+      final nameField = find.descendant(
+        of: find.byKey(DesignSystemFilterSavePageKeys.nameField),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(nameField, '  Blocked work  ');
+      await tester.pump();
+      final commit = find.byKey(DesignSystemFilterSavePageKeys.commit);
+      await tester.ensureVisible(commit);
+      await tester.pump();
+      tester.widget<DesignSystemButton>(commit).onPressed!();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 900));
+
+      expect(creates, ['Blocked work']);
+      expect(applied, isNotNull);
+      expect(find.byType(DesignSystemTaskFilterSheet), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'an existing filter exposes explicit update and save-as-new paths',
+    (tester) async {
+      var updateCalls = 0;
+      await openModal(
+        tester,
+        onApplied: (_) {},
+        onCreateSavedFilter: (_, _) {},
+        onUpdateSavedFilter: (_) => updateCalls++,
+        canCreateSavedFilter: (_) => true,
+        canUpdateSavedFilter: (_) => true,
+        existingSavedFilterName: 'Urgent work',
+      );
+      final barrierCount = find.byType(ModalBarrier).evaluate().length;
+
+      await tester.tap(
+        find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+      );
+      await tester.pump(const Duration(milliseconds: 900));
+
+      expect(
+        find.byKey(DesignSystemFilterSavePageKeys.choicePage),
+        findsOneWidget,
+      );
+      expect(find.text('Urgent work'), findsOneWidget);
+      expect(
+        find.byKey(DesignSystemFilterSavePageKeys.update),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(DesignSystemFilterSavePageKeys.saveAsNew),
+        findsOneWidget,
+      );
+      expect(find.byType(ModalBarrier), findsNWidgets(barrierCount));
+
+      final saveAsNew = find.byKey(
+        DesignSystemFilterSavePageKeys.saveAsNew,
+      );
+      await tester.ensureVisible(saveAsNew);
+      await tester.pump();
+      tester.widget<DesignSystemButton>(saveAsNew).onPressed!();
+      await tester.pump(const Duration(milliseconds: 900));
+      expect(
+        find.byKey(DesignSystemFilterSavePageKeys.namePage),
+        findsOneWidget,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump(const Duration(milliseconds: 900));
+      expect(
+        find.byKey(DesignSystemFilterSavePageKeys.choicePage),
+        findsOneWidget,
+      );
+
+      final update = find.byKey(DesignSystemFilterSavePageKeys.update);
+      await tester.ensureVisible(update);
+      await tester.pump();
+      tester.widget<DesignSystemButton>(update).onPressed!();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 900));
+      expect(updateCalls, 1);
+      expect(find.byType(DesignSystemTaskFilterSheet), findsNothing);
+    },
+  );
+
+  testWidgets('save availability follows the route-scoped draft', (
+    tester,
+  ) async {
+    await openModal(
+      tester,
+      onApplied: (_) {},
+      onCreateSavedFilter: (_, _) {},
+      canCreateSavedFilter: (state) =>
+          state.statusField!.selectedIds.contains('blocked'),
+    );
+    final saveButton = find.byKey(
+      DesignSystemTaskFilterActionBar.saveButtonKey,
+    );
+    expect(tester.widget<DesignSystemButton>(saveButton).onPressed, isNull);
+
+    tester.widget<DesignSystemSelectionRow>(statusRow()).onTap!();
+    await tester.pump(const Duration(milliseconds: 900));
+    tester.widget<DesignSystemSelectionRow>(option('blocked')).onTap!();
+    await tester.pump();
+    tester
+        .widget<DesignSystemButton>(
+          find.byKey(const ValueKey('design-system-filter-selection-apply')),
+        )
+        .onPressed!();
+    await tester.pump(const Duration(milliseconds: 900));
+
+    expect(
+      tester.widget<DesignSystemButton>(saveButton).onPressed,
+      isNotNull,
+    );
   });
 
   for (final textScale in [1.0, 2.0]) {

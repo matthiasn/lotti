@@ -26,7 +26,6 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activ
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
-import 'package:lotti/features/tasks/ui/saved_filters/desktop/desktop_saved_task_view_bar.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
@@ -236,14 +235,10 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
               onFilterPressed: () =>
                   showTaskFilterModal(context, showTasks: true),
             ),
-            // Saved views are task-scoped controls, so they stay beside the
-            // task list instead of displacing global desktop navigation.
-            // Desktop gets stable, count-first queue monitors; mobile keeps the
-            // compact switcher. Both collapse when no saved views exist.
-            if (isDesktopLayout(context))
-              const DesktopSavedTaskViewBar()
-            else
-              const SavedTaskFilterRail(),
+            // Desktop saved filters live under Tasks in the global sidebar.
+            // Mobile retains the compact task-pane switcher because it has no
+            // persistent navigation sidebar.
+            if (!isDesktopLayout(context)) const SavedTaskFilterRail(),
             const _TasksTabActiveFilters(),
             Expanded(
               child: RefreshIndicator(

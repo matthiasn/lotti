@@ -4,14 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1050]
+## [0.9.1051]
 ### Changed
-- **The desktop sidebar is navigation-first again.** Saved task views now live
-  beside the task list: the current view stays prominent while ordered,
-  count-first queue monitors keep important work visible at a glance, and the
-  full Saved views panel handles switching, reordering, renaming, and deleting.
-  Recording/timer/agent status collapses into one compact activity row with
-  details on demand, and healthy sync stays quiet until work needs attention.
+- **The desktop sidebar is navigation-first and keeps important task filters
+  visible.** Saved task filters now appear directly under Tasks with live
+  counts. The first five follow the order you set, More expands the complete
+  list without a limit, and the manager handles reordering, renaming, and
+  deleting. Recording, timer, and agent status share one compact expandable
+  activity row, while healthy sync stays quiet until work needs attention.
+  Saving a task filter now stays inside the filter flow, with explicit Update
+  filter and Save as new choices instead of a separate popup.
 
 ## [0.9.1049]
 ### Added

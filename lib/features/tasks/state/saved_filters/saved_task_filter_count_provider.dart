@@ -75,7 +75,7 @@ Future<Map<String, int>> savedTaskFilterCounts(Ref ref) async {
 
   final repo = ref.watch(savedTaskFilterCountRepositoryProvider);
   final counts = await Future.wait(
-    saved.map((view) => repo.count(view.filter)),
+    saved.map((filter) => repo.count(filter.filter)),
   );
 
   return {
@@ -158,7 +158,7 @@ Future<int> currentTasksFilterCount(Ref ref) async {
 
 /// Convenience family — reads a single saved filter's count from the
 /// aggregated map. Returns 0 when the id no longer resolves (concurrent
-/// delete) so task-view surfaces don't show a stale number.
+/// delete) so saved-filter surfaces don't show a stale number.
 final FutureProviderFamily<int, String> savedTaskFilterCountProvider =
     FutureProvider.autoDispose.family<int, String>(
       savedTaskFilterCount,
