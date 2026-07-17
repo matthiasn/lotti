@@ -12,8 +12,8 @@ release behavior can change in one pull request:
 - `lotti` owns the Docusaurus site, Markdown/MDX source, screenshot case
   definitions, validation, tests, and CI orchestration.
 - `lotti-docs/main` owns generated manual screenshots and their manifests.
-- the server receives static site output and synchronizes media from
-  `lotti-docs`; it never runs Flutter or recreates screenshots.
+- GitHub Actions publishes generated static output to GitHub Pages; generated
+  output is never committed, and Pages never runs Flutter or recreates media.
 - the default manual version is the latest published App Store version;
   development and older releases remain addressable through permanent URLs.
 
@@ -22,10 +22,12 @@ substantial and current enough to seed the MVP, while the Categories, Habits,
 Measurables, and Dashboards material needs validation and new screenshots. The
 empty and explicitly outdated sections must not be reproduced as if complete.
 
-The MVP is a self-hosted, static Docusaurus site with task-oriented navigation,
-local full-text search, breadcrumbs, light/dark mode, version selection, and an
-interactive screenshot component that follows the site theme and lets readers
-switch between mobile and desktop.
+The MVP is a GitHub Pages-hosted static Docusaurus site with task-oriented
+navigation, local full-text search, breadcrumbs, light/dark mode, version
+selection, and an interactive screenshot component that follows the site theme
+and lets readers switch between mobile and desktop. English coverage of every
+app page is the active completion target. Multilingual publishing is explicitly
+deferred until that English manual is complete and verified.
 
 ---
 
@@ -47,19 +49,21 @@ switch between mobile and desktop.
    screenshot case.
 9. Require every app screenshot embedded in the manual to use a registered
    four-variant case; direct links to one-off generated images are invalid.
+10. Cover and verify every app page in English before beginning translated
+    manual rollout.
 
 ## Non-goals for the MVP
 
-- Translating the manual content. The application UI remains localized, but
-  the first manual release is English.
+- Multilingual routes, translated prose, language selection, and browser
+  language detection. These follow only after full English coverage.
 - Replacing the existing `lotti-docs/whats-new` feed.
 - Running a CMS, database, search server, or JavaScript application server in
   production.
 - Capturing every platform's operating-system chrome.
 - Building a full visual-regression approval product.
 - Rewriting every legacy manual section before the site can launch.
-- Configuring Nginx. The existing server setup will serve the generated static
-  directory and synchronized media.
+- Configuring a custom domain. The repository-prefixed GitHub Pages URL is
+  acceptable for the initial publication.
 
 ---
 
@@ -97,7 +101,7 @@ Reasons:
 - first-class documentation navigation, with a small custom release dropdown;
 - Markdown for ordinary pages and MDX where an interactive screenshot is
   needed;
-- static output that can be served by the existing Nginx setup;
+- static output that GitHub Actions can deploy directly to GitHub Pages;
 - React component support for switching image theme and viewport without
   authoring four images manually on every page;
 - a healthy upstream, unlike starting a new system on Material for MkDocs after
@@ -116,7 +120,7 @@ through `package-lock.json`.
 | VitePress | Very small, fast, polished Vue-based docs | No first-class version lifecycle; custom screenshot and release navigation work is comparable to Docusaurus but with fewer docs-specific primitives | Strong runner-up |
 | Material for MkDocs | Excellent navigation and search with a huge documentation user base | Python theme ecosystem plus the project's announced maintenance trajectory make it a poor new V1 foundation in 2026 | Do not start new |
 | Antora | Excellent multi-repository, multi-component, deeply versioned documentation | Its content-component model is heavier than a single-app manual and interactive MDX-style media needs more custom work | Too heavy |
-| GitBook | Polished hosted authoring and search | Hosted product ownership conflicts with mandatory self-hosting and lockstep repository builds | Excluded |
+| GitBook | Polished hosted authoring and search | A separate hosted CMS weakens lockstep repository builds and adds platform ownership | Excluded |
 
 Docusaurus is not chosen for its source-copying version command. It is chosen
 for the reader experience and MDX component model. Lotti's release lifecycle is
@@ -133,8 +137,8 @@ flowchart LR
   DocsRepo["lotti-docs/main\nversioned media + manifests"]
   Build["Docusaurus static build"]
   Verify["Coverage, links, component tests"]
-  Site["Static site release"]
-  Server["Existing Nginx + media sync"]
+  Site["Versioned Pages snapshot"]
+  Pages["GitHub Pages"]
 
   App --> Capture
   Cases --> Capture
@@ -143,8 +147,7 @@ flowchart LR
   DocsRepo --> Build
   Build --> Verify
   Verify --> Site
-  Site --> Server
-  DocsRepo --> Server
+  Site --> Pages
 ```
 
 ### Repository boundary
@@ -153,6 +156,8 @@ Checked into `lotti`:
 
 - site configuration and dependency locks;
 - current and frozen manual source;
+- future localized manual source and locale coverage metadata, after English
+  completion;
 - navigation and screenshot UI components;
 - screenshot case definitions and deterministic fixtures;
 - coverage metadata and validation scripts;
@@ -187,6 +192,13 @@ lotti/
 │   │   ├── ai-and-automation/
 │   │   ├── sync-and-data/
 │   │   └── reference/
+│   ├── i18n/
+│   │   ├── cs/docusaurus-plugin-content-docs/current/
+│   │   ├── de/docusaurus-plugin-content-docs/current/
+│   │   ├── en-GB/docusaurus-plugin-content-docs/current/
+│   │   ├── es/docusaurus-plugin-content-docs/current/
+│   │   ├── fr/docusaurus-plugin-content-docs/current/
+│   │   └── ro/docusaurus-plugin-content-docs/current/
 │   ├── metadata/
 │   │   ├── features.json
 │   │   └── releases.json
@@ -326,10 +338,40 @@ tree.
    - Troubleshooting
    - Version history
 
-MVP content should prioritize Start here, Daily OS, Tasks, AI setup, Categories,
-Habits, Measurables, Dashboards, and Sync. Pages that have not yet been
-validated should be omitted or clearly marked as incomplete rather than filled
-with placeholder prose.
+The first public snapshot can launch with the strongest verified material
+already available. The active content phase then continues through this entire
+inventory until every reachable app page, dialog, and major workflow has
+verified English coverage. Unvalidated pages must be marked incomplete rather
+than filled with placeholder prose.
+
+### Deferred localization contract
+
+This contract is intentionally parked until every English app page is covered
+and the English accuracy audit passes.
+
+- English (`en`) is the canonical authoring locale and source of truth.
+- The manual publishes `en`, `en-GB`, `cs`, `de`, `es`, `fr`, and `ro`, matching
+  `AppLocalizations.supportedLocales`.
+- A visible language selector is available in the global navigation on desktop
+  and mobile.
+- On a reader's first visit, locale routing selects the best supported browser
+  language. An explicit reader selection wins thereafter.
+- A missing translated page resolves to the English page with a clear locale
+  fallback notice; it must never become a broken route or silently show stale
+  prose as current.
+- Site chrome and manual prose are localized separately, and CI reports both
+  coverage sets.
+- Product terms and UI labels should be sourced from the corresponding app ARB
+  where practical so the manual and application do not drift.
+- Translation review keeps one QA-notes document per locale. Each observation
+  records the ARB key, current app wording, screen/context, why it feels off,
+  and a possible direction; manual work must not change app translations unless
+  a separate localization change is explicitly authorized.
+- German, French, and Spanish translations keep Lotti's informal voice;
+  Romanian keeps the existing formal `dvs.` register.
+- Screenshot fixtures remain deterministic and use one declared UI locale per
+  case. Translated prose must not require duplicating the four-variant image
+  matrix unless localized UI text materially changes the instruction.
 
 ---
 
@@ -537,7 +579,7 @@ PR jobs:
    changed;
 7. build the manual against the resulting docs commit;
 8. deploy the static artifact;
-9. let the server synchronize media from `lotti-docs/main`.
+9. deploy the source-only Pages artifact using the repository's `GITHUB_TOKEN`.
 
 Use a non-round scheduled minute and retain `workflow_dispatch` for on-demand
 rebuilds. A concurrency group must cancel superseded development builds while
@@ -551,7 +593,7 @@ CI requires:
 - read access to `lotti`;
 - a narrowly scoped token or deploy key with write access only to
   `lotti-docs`;
-- existing server deployment credentials for the static site artifact;
+- GitHub's built-in Pages token and OIDC identity for the static site artifact;
 - App Store Connect read credentials for stable-version promotion.
 
 Secrets must not be exposed to pull requests from forks.
@@ -636,7 +678,7 @@ Exit criteria:
 - Add PR, main, nightly, release, and on-demand workflow entry points.
 - Add safe sibling-repository checkout and push behavior.
 - Add tag-based immutable builds and permanent version paths.
-- Add static build deployment using the existing server contract.
+- Add source-only static deployment through GitHub Pages Actions artifacts.
 - Add App Store stable-version resolution, initially as a scheduled job.
 
 Exit criteria:
@@ -645,16 +687,46 @@ Exit criteria:
   manual file copying;
 - a release build can create an immutable version and refuse accidental
   overwrite;
-- the server only synchronizes static output and `lotti-docs` media.
+- GitHub Pages serves the versioned static snapshot without committed build
+  output;
+- screenshot media remains independently versioned in `lotti-docs/main`.
 
 ### Phase 4 — V1 content completeness
 
+- Inventory every reachable app page, dialog, and major workflow and map each
+  one to an English manual page or an explicitly documented parent page.
 - Add task creation/checklists, sync setup/status, onboarding, journaling, time
-  tracking, projects, labels, backup/export, and troubleshooting pages.
+  tracking, projects, labels, backup/export, settings, and troubleshooting
+  pages until the inventory has no uncovered entries.
 - Add corresponding deterministic screenshot cases.
 - Run a page-by-page product review against the release candidate.
 - Remove or redirect the legacy monolithic manual after the new manual is the
   canonical destination.
+
+### Phase 5 — Multilingual manual, after English completion
+
+- Enable Docusaurus locales for every locale in
+  `AppLocalizations.supportedLocales`.
+- Add the global locale dropdown and first-visit browser-language detection.
+- Add English fallback behavior and an explicit fallback banner for untranslated
+  pages.
+- Add locale coverage metadata and CI checks for navigation, links, search, and
+  page parity in every locale.
+- Translate site chrome first, then task-critical V1 pages, then the remaining
+  reference material.
+- Document the translation contribution workflow and the app-ARB terminology
+  sync process.
+- Add and maintain locale-specific app-label QA notes without applying those
+  observations to the application's ARB files in this phase.
+
+Exit criteria:
+
+- every supported locale has a valid manual root and working language selector;
+- browser preferences resolve to the best supported locale on first visit;
+- every English page is reachable in every locale through either a reviewed
+  translation or an explicit English fallback;
+- localized search indexes, internal links, and production builds pass CI;
+- locale coverage is visible and cannot regress silently.
 
 ---
 
@@ -668,6 +740,21 @@ Exit criteria:
 4. Open a pull request.
 5. Review the generated site artifact.
 6. Merge; the development manual deploys automatically.
+
+### Translation change
+
+This workflow remains inactive until Phase 4 is complete.
+
+1. Update the English source first when behavior has changed.
+2. Update the matching locale page under `docs-site/i18n/<locale>/` or leave the
+   page on the explicit English fallback path.
+3. Reuse terminology from the matching `lib/l10n/app_<locale>.arb` strings.
+4. Record questionable app labels in that locale's QA-notes document; do not
+   edit the ARB as part of manual translation work.
+5. Run locale coverage, link, search, and production-build checks.
+6. Preview the affected locale and verify the language selector preserves the
+   equivalent page.
+7. Merge; CI publishes every locale from the same application revision.
 
 ### New or changed screenshot
 
@@ -686,7 +773,7 @@ Exit criteria:
 2. Freeze the marketing version.
 3. Capture screenshots from the exact release ref.
 4. Commit immutable media to `lotti-docs/main`.
-5. Deploy the versioned manual as preview.
+5. Deploy the versioned manual as a Pages preview artifact.
 6. Promote it to stable when App Store Connect reports public distribution.
 
 ---
@@ -732,14 +819,17 @@ and omit empty legacy sections until they are written and verified.
 
 ---
 
-## MVP definition of done
+## English manual definition of done
 
 The MVP is complete when:
 
 - the Docusaurus site and lockfile are checked into `lotti`;
 - the goal-oriented navigation, breadcrumbs, local search, theme toggle, and
   version UI work;
-- `docs/MANUAL.md` has been split into useful, navigable MVP pages without
+- every reachable app page, dialog, and major workflow appears in the English
+  coverage inventory and is documented by a verified page or documented parent
+  guide;
+- `docs/MANUAL.md` has been split into useful, navigable pages without
   pretending its empty sections are complete;
 - every app image uses `ManualScreenshot`, switches theme automatically, and
   follows one persisted global mobile/desktop choice;
@@ -749,9 +839,9 @@ The MVP is complete when:
   adding images to `lotti`;
 - production build, manual validation, and targeted site tests pass;
 - CI can build the manual and publish artifacts safely;
-- the development manual can be deployed without running Flutter on the
-  documentation server;
+- the development manual is live on GitHub Pages without committing generated
+  Docusaurus output or running Flutter in the Pages deployment job;
 - contributor and release workflows are documented.
 
-The first MVP does not need every V1 feature page, but it must make incompleteness
-visible and give the remaining pages a repeatable path to completion.
+Multilingual work begins only after these English coverage and verification
+criteria pass.
