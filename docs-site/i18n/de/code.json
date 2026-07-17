@@ -36,6 +36,24 @@
   "manual.screenshot.screenshot": {
     "message": "Screenshot"
   },
+  "manual.translationNotice.disclosure": {
+    "message": "Diese Übersetzung wurde mit GPT 5.6 Sol xHigh erstellt und noch nicht korrekturgelesen."
+  },
+  "manual.translationNotice.invitation": {
+    "message": "Korrekturen und Verbesserungen sind sehr willkommen – gern als"
+  },
+  "manual.translationNotice.issue": {
+    "message": "GitHub-Issue"
+  },
+  "manual.translationNotice.or": {
+    "message": "oder"
+  },
+  "manual.translationNotice.pullRequest": {
+    "message": "Pull Request"
+  },
+  "manual.translationNotice.title": {
+    "message": "Maschinelle Übersetzung – Korrekturen willkommen"
+  },
   "manual.version.development": {
     "message": "Entwicklung"
   },

@@ -41,6 +41,11 @@ const germanSettingsHtml = await readFile(
   resolve(buildDirectory, 'de', 'reference/settings/index.html'),
   'utf8',
 );
+assert.doesNotMatch(settingsHtml, /data-translation-notice=/);
+assert.match(germanSettingsHtml, /data-translation-notice=["']?de["']?/);
+assert.match(germanSettingsHtml, /GPT 5\.6 Sol xHigh/);
+assert.match(germanSettingsHtml, />Pull Request</);
+assert.match(germanSettingsHtml, />GitHub-Issue</);
 assert.match(germanSettingsHtml, /aria-label="Screenshot-Layout für alle Bilder"/);
 assert.match(germanSettingsHtml, />Alle Screenshots</);
 assert.match(germanSettingsHtml, />Mobil</);
@@ -91,6 +96,25 @@ for (const feature of features.features) {
   }
 }
 
+let translatedDocCount = 0;
+for (const path of buildFiles) {
+  if (!path.startsWith('de/') || !path.endsWith('/index.html')) continue;
+  const html = await readFile(resolve(buildDirectory, path), 'utf8');
+  if (!html.includes('theme-doc-markdown')) continue;
+  assert.equal(
+    html.match(/data-translation-notice=["']?de["']?/g)?.length ?? 0,
+    1,
+    `Translated document ${path} must render exactly one translation notice.`,
+  );
+  translatedDocCount += 1;
+}
+
+assert.equal(
+  translatedDocCount,
+  37,
+  'The translation notice audit must cover every German manual document.',
+);
+
 const searchIndex = await readFile(
   resolve(buildDirectory, 'search-index.json'),
   'utf8',
@@ -107,5 +131,6 @@ assert.match(germanSearchIndex, /Deine erste Aufgabe erstellen/);
 console.log(
   `Built-site smoke test passed for ${features.features.length} feature routes, ` +
     `${screenshotControlCount} English and ${germanScreenshotControlCount} German ` +
-    'global screenshot controls, the interactive screenshot shell, and both local search indexes.',
+    `global screenshot controls, ${translatedDocCount} translation notices, ` +
+    'the interactive screenshot shell, and both local search indexes.',
 );
