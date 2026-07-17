@@ -46,7 +46,14 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Reference',
-      items: ['reference/settings', 'reference/manual-maintenance'],
+      items: [
+        'reference/settings',
+        'reference/appearance',
+        'reference/recording-style',
+        'reference/keyboard-shortcuts',
+        'reference/completion-celebrations',
+        'reference/manual-maintenance',
+      ],
     },
   ],
 };

@@ -286,6 +286,94 @@
         "desktop-light": "recording_active_desktop_light.png",
         "desktop-dark": "recording_active_desktop_dark.png"
       }
+    },
+    {
+      "id": "theming/preferences",
+      "title": "Appearance preferences",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "theming_preferences_mobile_light.png",
+        "mobile-dark": "theming_preferences_mobile_dark.png",
+        "desktop-light": "theming_preferences_desktop_light.png",
+        "desktop-dark": "theming_preferences_desktop_dark.png"
+      }
+    },
+    {
+      "id": "theming/picker",
+      "title": "Theme picker",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "theming_picker_mobile_light.png",
+        "mobile-dark": "theming_picker_mobile_dark.png",
+        "desktop-light": "theming_picker_desktop_light.png",
+        "desktop-dark": "theming_picker_desktop_dark.png"
+      }
+    },
+    {
+      "id": "recording-style/preview",
+      "title": "Recording style preview",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "recording_style_preview_mobile_light.png",
+        "mobile-dark": "recording_style_preview_mobile_dark.png",
+        "desktop-light": "recording_style_preview_desktop_light.png",
+        "desktop-dark": "recording_style_preview_desktop_dark.png"
+      }
+    },
+    {
+      "id": "keyboard-shortcuts/catalog",
+      "title": "Keyboard shortcut catalog",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "keyboard_shortcuts_catalog_mobile_light.png",
+        "mobile-dark": "keyboard_shortcuts_catalog_mobile_dark.png",
+        "desktop-light": "keyboard_shortcuts_catalog_desktop_light.png",
+        "desktop-dark": "keyboard_shortcuts_catalog_desktop_dark.png"
+      }
+    },
+    {
+      "id": "keyboard-shortcuts/search",
+      "title": "Keyboard shortcut search",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "keyboard_shortcuts_search_mobile_light.png",
+        "mobile-dark": "keyboard_shortcuts_search_mobile_dark.png",
+        "desktop-light": "keyboard_shortcuts_search_desktop_light.png",
+        "desktop-dark": "keyboard_shortcuts_search_desktop_dark.png"
+      }
+    },
+    {
+      "id": "celebrations/controls",
+      "title": "Completion celebration controls",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "celebrations_controls_mobile_light.png",
+        "mobile-dark": "celebrations_controls_mobile_dark.png",
+        "desktop-light": "celebrations_controls_desktop_light.png",
+        "desktop-dark": "celebrations_controls_desktop_dark.png"
+      }
+    },
+    {
+      "id": "celebrations/styles",
+      "title": "Completion celebration styles",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "celebrations_styles_mobile_light.png",
+        "mobile-dark": "celebrations_styles_mobile_dark.png",
+        "desktop-light": "celebrations_styles_desktop_light.png",
+        "desktop-dark": "celebrations_styles_desktop_dark.png"
+      }
+    },
+    {
+      "id": "celebrations/playground",
+      "title": "Completion celebration playground",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "celebrations_playground_mobile_light.png",
+        "mobile-dark": "celebrations_playground_mobile_dark.png",
+        "desktop-light": "celebrations_playground_desktop_light.png",
+        "desktop-dark": "celebrations_playground_desktop_dark.png"
+      }
     }
   ]
 }

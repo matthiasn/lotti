@@ -99,6 +99,46 @@
       ]
     },
     {
+      "id": "appearance",
+      "title": "Appearance",
+      "page": "reference/appearance",
+      "status": "verified",
+      "screenshotCases": [
+        "theming/preferences",
+        "theming/picker"
+      ]
+    },
+    {
+      "id": "recording-style",
+      "title": "Recording style",
+      "page": "reference/recording-style",
+      "status": "verified",
+      "screenshotCases": [
+        "recording-style/preview"
+      ]
+    },
+    {
+      "id": "keyboard-shortcuts",
+      "title": "Keyboard shortcuts",
+      "page": "reference/keyboard-shortcuts",
+      "status": "verified",
+      "screenshotCases": [
+        "keyboard-shortcuts/catalog",
+        "keyboard-shortcuts/search"
+      ]
+    },
+    {
+      "id": "completion-celebrations",
+      "title": "Completion celebrations",
+      "page": "reference/completion-celebrations",
+      "status": "verified",
+      "screenshotCases": [
+        "celebrations/controls",
+        "celebrations/styles",
+        "celebrations/playground"
+      ]
+    },
+    {
       "id": "sync",
       "title": "Sync",
       "page": "sync-and-data/sync",
