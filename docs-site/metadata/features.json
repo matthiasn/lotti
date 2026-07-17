@@ -20,6 +20,25 @@
       ]
     },
     {
+      "id": "entries",
+      "title": "Entries and contextual capture",
+      "page": "plan-and-capture/entries",
+      "status": "verified",
+      "screenshotCases": [
+        "entries/create-menu"
+      ]
+    },
+    {
+      "id": "surveys",
+      "title": "Surveys",
+      "page": "plan-and-capture/surveys",
+      "status": "verified",
+      "screenshotCases": [
+        "surveys/panas-intro",
+        "surveys/panas-question"
+      ]
+    },
+    {
       "id": "tasks",
       "title": "Tasks",
       "page": "organize-and-reflect/tasks",
@@ -27,7 +46,11 @@
       "screenshotCases": [
         "tasks/workspace",
         "tasks/detail",
-        "tasks/filters"
+        "tasks/filters",
+        "entries/create-menu",
+        "tasks/cover-references",
+        "tasks/cover-generating",
+        "tasks/link-picker"
       ]
     },
     {
@@ -40,7 +63,8 @@
         "projects/detail",
         "projects/tasks",
         "projects/filters",
-        "projects/create"
+        "projects/create",
+        "projects/editor"
       ]
     },
     {
@@ -64,7 +88,10 @@
         "journal/filters",
         "journal/create",
         "journal/detail",
-        "journal/activity"
+        "journal/date-time",
+        "journal/date-picker",
+        "journal/activity",
+        "journal/linked-filter"
       ]
     },
     {
@@ -79,12 +106,22 @@
       ]
     },
     {
+      "id": "time-tracking",
+      "title": "Time tracking and session ratings",
+      "page": "organize-and-reflect/time-tracking",
+      "status": "verified",
+      "screenshotCases": [
+        "time-tracking/session-rating"
+      ]
+    },
+    {
       "id": "settings",
       "title": "Settings",
       "page": "reference/settings",
       "status": "verified",
       "screenshotCases": [
-        "settings/home"
+        "settings/home",
+        "settings/definitions"
       ]
     },
     {
@@ -120,7 +157,10 @@
         "habits/schedule",
         "habits/record",
         "measurables/settings-list",
-        "measurables/settings-detail"
+        "measurables/settings-detail",
+        "measurements/capture",
+        "measurements/date",
+        "measurements/time"
       ]
     },
     {
@@ -132,7 +172,10 @@
         "dashboards/settings-list",
         "dashboards/settings-detail",
         "dashboards/charts",
-        "dashboards/sources"
+        "dashboards/sources",
+        "dashboards/list",
+        "dashboards/view",
+        "dashboards/view-crew"
       ]
     },
     {
@@ -226,7 +269,8 @@
       "status": "verified",
       "screenshotCases": [
         "keyboard-shortcuts/catalog",
-        "keyboard-shortcuts/search"
+        "keyboard-shortcuts/search",
+        "keyboard-shortcuts/palette"
       ]
     },
     {
@@ -268,6 +312,19 @@
       ]
     },
     {
+      "id": "first-task",
+      "title": "Create your first task",
+      "page": "getting-started/first-task",
+      "status": "verified",
+      "screenshotCases": [
+        "onboarding/first-task",
+        "onboarding/task-created",
+        "tasks/workspace",
+        "entries/create-menu",
+        "tasks/detail"
+      ]
+    },
+    {
       "id": "whats-new",
       "title": "What's New",
       "page": "reference/whats-new",
@@ -305,10 +362,48 @@
     },
     {
       "id": "sync",
-      "title": "Sync",
+      "title": "Sync and recovery",
       "page": "sync-and-data/sync",
-      "status": "draft",
-      "screenshotCases": []
+      "status": "verified",
+      "screenshotCases": [
+        "sync/hub",
+        "sync/provisioned",
+        "sync/status",
+        "sync/verification",
+        "sync/node-profile",
+        "sync/backfill",
+        "sync/stats",
+        "sync/outbox"
+      ]
+    },
+    {
+      "id": "health-import",
+      "title": "Health import",
+      "page": "sync-and-data/health-import",
+      "status": "verified",
+      "screenshotCases": [
+        "health-import/overview"
+      ]
+    },
+    {
+      "id": "sync-conflicts",
+      "title": "Sync conflict resolution",
+      "page": "sync-and-data/conflicts",
+      "status": "verified",
+      "screenshotCases": [
+        "sync/conflicts",
+        "sync/conflict-detail",
+        "sync/conflict-combine"
+      ]
+    },
+    {
+      "id": "sync-maintenance",
+      "title": "Sync maintenance",
+      "page": "sync-and-data/maintenance",
+      "status": "verified",
+      "screenshotCases": [
+        "sync/maintenance"
+      ]
     }
   ]
 }

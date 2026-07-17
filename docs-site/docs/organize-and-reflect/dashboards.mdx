@@ -70,9 +70,36 @@ supported types vary by device.
 
 ## Open and interpret a dashboard
 
-Open the Dashboards area and select a dashboard. On desktop, the list and
-selected dashboard can remain side by side; on mobile, the selected dashboard
-opens as its own page. Use the time-span control to change the visible range.
+Open **Insights** to see active dashboards. The list shows each dashboard's
+category icon, name, and purpose. Use the filter in the header to focus on one
+or more categories.
+
+<ManualScreenshot
+  caseId="dashboards/list"
+  alt="Lotti Insights dashboard list with Colony operations and private Mission readiness dashboards"
+  caption="Desktop reserves the right pane for the selected dashboard; mobile opens the selected dashboard as a separate page."
+/>
+
+Select **Colony operations** to open its charts. On desktop, the list and
+selected dashboard remain side by side. On mobile, the dashboard opens as its
+own page with a back button.
+
+<ManualScreenshot
+  caseId="dashboards/view"
+  alt="Colony operations dashboard showing 90 days of habitat pressure and sardines consumed with the dashboards list beside it on desktop"
+  caption="The fixed header keeps the 30, 90, 180, and 365-day range controls visible while the charts scroll below."
+/>
+
+The selected range applies to every chart on the page. The chart cards retain
+their own units and aggregation: habitat pressure uses a daily average while
+sardine consumption and penguin headcount use daily sums. Select the **+** on a
+measurement card to record a new observation of that type.
+
+<ManualScreenshot
+  caseId="dashboards/view-crew"
+  alt="Colony operations dashboard scrolled to Sardines consumed and Penguins accounted for charts"
+  caption="A brief dip to 36 penguins is visible in the 90-day crew history; the surrounding days return to the expected 37."
+/>
 
 Treat a chart as evidence, not a verdict. Check the aggregation, units, date
 range, missing observations, and privacy state before drawing conclusions.

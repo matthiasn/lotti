@@ -548,6 +548,27 @@ The Flutter source test must still make meaningful UI assertions before it
 captures. The media manifest validates the artifact contract; it does not
 replace behavior assertions or visual review.
 
+Fragment-shader captures have two additional requirements, enforced by the
+shared `test/features/daily_os_next/screenshot_harness.dart` helper:
+
+- Runtime fragment programs must be awaited inside the active `testWidgets`
+  render context before rasterization. Capturing the first `FutureBuilder`
+  frame records the CPU fallback instead of the production voice-orb or
+  thinking-line imagery.
+- Reset `AiStateShaderProgramCache` when applying each screenshot device. A
+  `FragmentProgram` belongs to one `flutter_tester` render context; reusing its
+  memoized program in the next test case can hang `RenderRepaintBoundary.toImage`.
+
+`captureScreenshot` rejects any tree that still contains an
+`AiVoiceInputFallbackPainter` or `AiThinkingLineFallbackPainter`. Manual media
+must show the same bundled runtime effects as the app, not simplified test
+stand-ins.
+
+`loadScreenshotFonts` also registers the Linux runner's Noto Color Emoji face.
+Without that explicit registration, device-verification SAS rows render
+literal `NO GLYPH` boxes even though production devices resolve the same emoji
+through their platform font fallback.
+
 ## Migration Status
 
 This codebase is in the process of migrating all tests to fake time. See:

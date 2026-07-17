@@ -1,0 +1,78 @@
+---
+title: Complete and revisit surveys
+description: Launch the bundled questionnaires from a dashboard, submit one answer at a time, and keep the resulting scores in the Journal.
+---
+
+# Complete and revisit surveys
+
+Lotti includes three fixed questionnaires: **CFQ-11**, **GHQ-12**, and
+**PANAS**. Add the survey you use to a dashboard, then select the **+** action
+on its chart whenever you want to record another response. The dashboard is
+both the launch point and the place where completed scores become a trend.
+
+The examples below launch the real PANAS task from the **Colony operations**
+dashboard. The questionnaire and its navigation come from the same production
+survey runner used by the app.
+
+<ManualScreenshot
+  caseId="surveys/panas-intro"
+  alt="PANAS survey instructions opened over the Colony operations dashboard"
+  caption="Read the instrument's time frame and response scale before continuing. The progress indicator counts every instruction, question, and completion step."
+/>
+
+## Add a survey to a dashboard
+
+Open **Settings → Definitions → Dashboards**, edit a dashboard, and add a chart
+from **Surveys**. The available instruments are:
+
+- **CFQ-11**, the Chalder Fatigue Scale;
+- **GHQ-12**, the General Health Questionnaire; and
+- **PANAS**, the Positive and Negative Affect Schedule.
+
+Return to **Dashboards** and open the dashboard. The chart shows submitted
+results for its instrument. Select its **+** action to begin a new response.
+Each chart launches the matching questionnaire; there is no generic form that
+changes its questions based on documentation data.
+
+## Answer the current question
+
+The instruction step explains the requested time frame and the meaning of the
+answer scale. Select **NEXT** to start. PANAS then presents 20 affect words one
+at a time and asks for one choice from **Very slightly or not at all** through
+**Extremely**.
+
+<ManualScreenshot
+  caseId="surveys/panas-question"
+  alt="PANAS Interested question with five response choices from Very slightly or not at all to Extremely"
+  caption="Questions are presented sequentially. Pick one response, continue, and use the progress count to see where you are in the questionnaire."
+/>
+
+The other bundled surveys use their own fixed question and scoring definitions.
+Choose the response that matches the wording and time frame shown by the
+instrument; Lotti does not reinterpret or auto-fill answers.
+
+## Submit or cancel deliberately
+
+Continue through the completion step to submit. Lotti stores the raw task
+result and its calculated score buckets as a survey entry in the Journal. The
+dashboard reads those entries back into its chart, so another completed survey
+adds another dated observation.
+
+Closing the task asks whether to discard the current result. A cancelled survey
+is not stored, including partially answered work. If the response matters,
+finish the completion step before leaving the sheet.
+
+## Understand the saved scores
+
+The persisted entry keeps both the individual answers and the calculated
+summary used by charts:
+
+- **CFQ-11** produces its configured fatigue score;
+- **GHQ-12** produces its configured general-health score; and
+- **PANAS** produces separate **Positive Affect** and **Negative Affect**
+  totals.
+
+Open the corresponding Journal entry to inspect the saved survey summary. Use
+the dashboard for change over time and the Journal for the dated source record.
+Survey charts do not replace the questionnaire's instructions, and Lotti does
+not provide a survey authoring system for changing these bundled definitions.

@@ -32,6 +32,7 @@ import 'package:lotti/features/projects/state/project_detail_record_provider.dar
 import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
+import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
@@ -56,14 +57,16 @@ const _subdir = 'projects';
 const _projectWaddleId = 'project-waddle';
 
 class _ManualProjectDetailController extends ProjectDetailController {
-  _ManualProjectDetailController(this._project) : super(_project.meta.id);
+  _ManualProjectDetailController(this._record) : super(_record.project.meta.id);
 
-  final ProjectEntry _project;
+  final ProjectRecord _record;
 
   @override
   ProjectDetailState build() => ProjectDetailState(
-    project: _project,
-    linkedTasks: const [],
+    project: _record.project,
+    linkedTasks: _record.highlightedTaskSummaries
+        .map((summary) => summary.task)
+        .toList(growable: false),
     isLoading: false,
     isSaving: false,
     hasChanges: false,
@@ -344,7 +347,10 @@ void main() {
     ),
     for (final record in records) ...[
       projectDetailControllerProvider(record.project.meta.id).overrideWith(
-        () => _ManualProjectDetailController(record.project),
+        () => _ManualProjectDetailController(record),
+      ),
+      projectHealthMetricsProvider(record.project.meta.id).overrideWith(
+        (ref) async => record.healthMetrics,
       ),
       projectDetailRecordProvider(record.project.meta.id).overrideWith(
         (ref) async => record,
@@ -532,6 +538,28 @@ void main() {
         await captureScreenshot(
           tester,
           'projects_create_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport project settings editor — $theme', (
+        tester,
+      ) async {
+        await pumpSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          mobile: const ProjectDetailPage(projectId: _projectWaddleId),
+          desktop: const ProjectDetailPage(projectId: _projectWaddleId),
+        );
+        expect(find.text('Project Details'), findsOneWidget);
+        expect(find.text('Change status'), findsOneWidget);
+        expect(find.text('Project Waddle'), findsOneWidget);
+        expect(find.text('Target Date'), findsOneWidget);
+        expect(find.text('Project health'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'projects_editor_${viewport}_$theme',
           subdir: _subdir,
         );
       });

@@ -1,0 +1,70 @@
+---
+title: Resolve sync conflicts
+description: Compare concurrent edits field by field and keep or combine the right information.
+---
+
+# Resolve sync conflicts
+
+A conflict appears when two devices changed the same entry independently and
+neither version is clearly newer. Lotti preserves both versions instead of
+silently choosing one.
+
+Open **Settings → Sync → Conflicts**. The list separates unresolved and
+resolved items and identifies the entity type and time of each conflict.
+
+<ManualScreenshot
+  caseId="sync/conflicts"
+  alt="Lotti Sync Conflicts list with unresolved Project Waddle task and sardine manifest conflicts plus a resolved task"
+  caption="Resolve current items first. Resolved items remain visible as an audit trail of earlier decisions."
+/>
+
+## Compare both versions
+
+Open a conflict to see every differing field. Text changes include word-level
+highlights; unchanged fields are summarized so the page does not hide how much
+of the entry still agrees.
+
+<ManualScreenshot
+  caseId="sync/conflict-detail"
+  alt="Lotti conflict detail comparing local and synced Project Waddle task titles and descriptions field by field"
+  caption="This device kept the final emperor and cargo hold; the synced version cleared all 37 penguins and scheduled the sardine release. Both facts matter."
+/>
+
+The three resolution paths are:
+
+- **Use this device** keeps the complete local version.
+- **Use from sync** keeps the complete incoming version.
+- **Combine** lets you choose a starting side and then select the winner for
+  each independently mergeable field.
+
+Keeping one complete side is appropriate when the other is simply stale.
+**Combine** is the safer choice when separate fields contain valid work from
+both devices; Lotti marks it as recommended when several mergeable fields
+differ.
+
+## Combine fields without retyping
+
+Select **Combine**, choose the version to start from, then switch individual
+fields to the other side. Fields that cannot be merged independently follow
+the selected starting version.
+
+<ManualScreenshot
+  caseId="sync/conflict-combine"
+  alt="Lotti Combine conflict editor with starting-version control and separate choices for the task title and body"
+  caption="Start with one structurally complete entry, then take the better title and body from either this device or sync."
+/>
+
+Review every listed field before selecting **Apply combined**. The
+resolved entry receives a merged sync history so the same two edits do not
+immediately conflict again.
+
+:::caution A resolution changes the shared result
+
+Keeping a side or applying a combined version writes the winner locally and
+allows it to sync to the other devices. Read the complete diff before
+confirming. If one side deleted the entry while the other edited it, Lotti
+shows the safer delete-versus-edit choice instead of a normal field merge.
+
+:::
+
+Return to [Sync devices](./sync.mdx) to inspect delivery and catch-up health.

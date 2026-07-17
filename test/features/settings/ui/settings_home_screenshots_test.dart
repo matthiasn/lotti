@@ -8,7 +8,10 @@
 ///   the collapsing `SliverBoxAdapterPage` header (the UI we want to
 ///   replace).
 ///
-/// Captures dark + light for each (4 PNGs). PNGs land in
+/// It also captures the production Definitions branch: the focused shared
+/// tree branch on mobile and the complete V2 tree shell on desktop.
+///
+/// Captures dark + light for each surface and device (8 PNGs). PNGs land in
 /// `screenshots/settings_home/` (or `$LOTTI_SCREENSHOT_DIR`). Not a golden
 /// test — assertions only guard that each scenario renders.
 ///
@@ -26,6 +29,9 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
+import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
+import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
+import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -98,6 +104,14 @@ Future<void> _pumpScreen(
       overrides: overrides,
     ),
   );
+  await settleFrames(tester);
+}
+
+Future<void> _openDesktopDefinitions(WidgetTester tester) async {
+  final element = tester.element(find.byType(SettingsV2Page));
+  ProviderScope.containerOf(element, listen: false)
+      .read(settingsTreePathProvider.notifier)
+      .syncFromUrl('/settings/definitions');
   await settleFrames(tester);
 }
 
@@ -244,4 +258,61 @@ void main() {
       subdir: _subdir,
     );
   });
+
+  // -------------------------------------------------------------------------
+  // Definitions hub — the shared production settings tree on both form
+  // factors. Mobile renders the real drill-down branch; desktop renders the
+  // complete tree-nav shell focused through its production URL state.
+  // -------------------------------------------------------------------------
+
+  for (final brightness in Brightness.values) {
+    final themeName = brightness.name;
+
+    testWidgets('desktop definitions hub — $themeName', (tester) async {
+      await _pumpScreen(
+        tester,
+        device: desktopDevice,
+        brightness: brightness,
+        overrides: baseOverrides(),
+        home: const SettingsV2Page(beamToReplacementNamed: _ignoreBeam),
+      );
+      await _openDesktopDefinitions(tester);
+
+      expect(find.text('Definitions'), findsWidgets);
+      expect(find.text('Categories'), findsOneWidget);
+      expect(find.text('Labels'), findsOneWidget);
+      expect(find.text('Habits'), findsOneWidget);
+      expect(find.text('Dashboards'), findsOneWidget);
+      expect(find.text('Measurables'), findsOneWidget);
+      await captureScreenshot(
+        tester,
+        'desktop_settings_definitions_$themeName',
+        subdir: _subdir,
+      );
+    });
+
+    testWidgets('mobile definitions hub — $themeName', (tester) async {
+      await _pumpScreen(
+        tester,
+        device: miniDevice,
+        brightness: brightness,
+        overrides: baseOverrides(),
+        home: const SettingsMobileBranchPage(branchId: 'definitions'),
+      );
+
+      expect(find.text('Definitions'), findsOneWidget);
+      expect(find.text('Categories'), findsOneWidget);
+      expect(find.text('Labels'), findsOneWidget);
+      expect(find.text('Habits'), findsOneWidget);
+      expect(find.text('Dashboards'), findsOneWidget);
+      expect(find.text('Measurables'), findsOneWidget);
+      await captureScreenshot(
+        tester,
+        'mobile_settings_definitions_$themeName',
+        subdir: _subdir,
+      );
+    });
+  }
 }
+
+void _ignoreBeam(BuildContext _, String _) {}

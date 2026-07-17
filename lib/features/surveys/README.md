@@ -67,6 +67,11 @@ The architecture is deliberately simple:
 - `calculate.dart` converts an `RPTaskResult` into `SurveyData`
 - persistence stores both the raw result and the calculated aggregates
 
+`SurveyWidget` gives `RPUITask` a bounded, design-token-derived height. That
+bound is large enough for the bundled five-choice questions while keeping the
+complete task, its progress bar, and its navigation inside both the mobile
+sheet and desktop dialog.
+
 There is no surveys-specific controller, repository, or state machine in this feature today.
 
 ## Execution Flow

@@ -19,7 +19,9 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'plan-and-capture/daily-os',
+        'plan-and-capture/entries',
         'plan-and-capture/recordings',
+        'plan-and-capture/surveys',
       ],
     },
     {
@@ -31,6 +33,7 @@ const sidebars: SidebarsConfig = {
         'organize-and-reflect/projects',
         'organize-and-reflect/events',
         'organize-and-reflect/journal',
+        'organize-and-reflect/time-tracking',
         'organize-and-reflect/time-analysis',
         'organize-and-reflect/categories',
         'organize-and-reflect/labels',
@@ -53,7 +56,12 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Sync & data',
-      items: ['sync-and-data/sync'],
+      items: [
+        'sync-and-data/sync',
+        'sync-and-data/conflicts',
+        'sync-and-data/maintenance',
+        'sync-and-data/health-import',
+      ],
     },
     {
       type: 'category',

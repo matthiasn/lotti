@@ -123,6 +123,17 @@
       }
     },
     {
+      "id": "settings/definitions",
+      "title": "Settings definitions hub",
+      "sourceTest": "test/features/settings/ui/settings_home_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "mobile_settings_definitions_light.png",
+        "mobile-dark": "mobile_settings_definitions_dark.png",
+        "desktop-light": "desktop_settings_definitions_light.png",
+        "desktop-dark": "desktop_settings_definitions_dark.png"
+      }
+    },
+    {
       "id": "tasks/workspace",
       "title": "Production task workspace",
       "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
@@ -153,6 +164,50 @@
         "mobile-dark": "task_filters_mobile_dark.png",
         "desktop-light": "task_filters_desktop_light.png",
         "desktop-dark": "task_filters_desktop_dark.png"
+      }
+    },
+    {
+      "id": "entries/create-menu",
+      "title": "Contextual entry creation menu",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "create_entry_task_mobile_light.png",
+        "mobile-dark": "create_entry_task_mobile_dark.png",
+        "desktop-light": "create_entry_task_desktop_light.png",
+        "desktop-dark": "create_entry_task_desktop_dark.png"
+      }
+    },
+    {
+      "id": "tasks/cover-references",
+      "title": "Task cover-art reference selection",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "task_cover_references_mobile_light.png",
+        "mobile-dark": "task_cover_references_mobile_dark.png",
+        "desktop-light": "task_cover_references_desktop_light.png",
+        "desktop-dark": "task_cover_references_desktop_dark.png"
+      }
+    },
+    {
+      "id": "tasks/cover-generating",
+      "title": "Task cover-art generation progress",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "task_cover_generating_mobile_light.png",
+        "mobile-dark": "task_cover_generating_mobile_dark.png",
+        "desktop-light": "task_cover_generating_desktop_light.png",
+        "desktop-dark": "task_cover_generating_desktop_dark.png"
+      }
+    },
+    {
+      "id": "tasks/link-picker",
+      "title": "Task link picker",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "task_link_picker_mobile_light.png",
+        "mobile-dark": "task_link_picker_mobile_dark.png",
+        "desktop-light": "task_link_picker_desktop_light.png",
+        "desktop-dark": "task_link_picker_desktop_dark.png"
       }
     },
     {
@@ -288,6 +343,39 @@
       }
     },
     {
+      "id": "measurements/capture",
+      "title": "Measurement capture editor",
+      "sourceTest": "test/pages/create/create_measurement_dialog_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "measurement_capture_editor_mobile_light.png",
+        "mobile-dark": "measurement_capture_editor_mobile_dark.png",
+        "desktop-light": "measurement_capture_editor_desktop_light.png",
+        "desktop-dark": "measurement_capture_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "measurements/date",
+      "title": "Measurement observed date",
+      "sourceTest": "test/pages/create/create_measurement_dialog_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "measurement_capture_date_mobile_light.png",
+        "mobile-dark": "measurement_capture_date_mobile_dark.png",
+        "desktop-light": "measurement_capture_date_desktop_light.png",
+        "desktop-dark": "measurement_capture_date_desktop_dark.png"
+      }
+    },
+    {
+      "id": "measurements/time",
+      "title": "Measurement observed time",
+      "sourceTest": "test/pages/create/create_measurement_dialog_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "measurement_capture_time_mobile_light.png",
+        "mobile-dark": "measurement_capture_time_mobile_dark.png",
+        "desktop-light": "measurement_capture_time_desktop_light.png",
+        "desktop-dark": "measurement_capture_time_desktop_dark.png"
+      }
+    },
+    {
       "id": "dashboards/settings-list",
       "title": "Dashboard definitions",
       "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
@@ -329,6 +417,61 @@
         "mobile-dark": "dashboards_sources_mobile_dark.png",
         "desktop-light": "dashboards_sources_desktop_light.png",
         "desktop-dark": "dashboards_sources_desktop_dark.png"
+      }
+    },
+    {
+      "id": "dashboards/list",
+      "title": "Dashboards list",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "dashboard_list_mobile_light.png",
+        "mobile-dark": "dashboard_list_mobile_dark.png",
+        "desktop-light": "dashboard_list_desktop_light.png",
+        "desktop-dark": "dashboard_list_desktop_dark.png"
+      }
+    },
+    {
+      "id": "dashboards/view",
+      "title": "Colony operations dashboard",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "dashboard_view_mobile_light.png",
+        "mobile-dark": "dashboard_view_mobile_dark.png",
+        "desktop-light": "dashboard_view_desktop_light.png",
+        "desktop-dark": "dashboard_view_desktop_dark.png"
+      }
+    },
+    {
+      "id": "dashboards/view-crew",
+      "title": "Colony operations crew charts",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "dashboard_view_crew_mobile_light.png",
+        "mobile-dark": "dashboard_view_crew_mobile_dark.png",
+        "desktop-light": "dashboard_view_crew_desktop_light.png",
+        "desktop-dark": "dashboard_view_crew_desktop_dark.png"
+      }
+    },
+    {
+      "id": "surveys/panas-intro",
+      "title": "PANAS survey instructions",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "survey_panas_intro_mobile_light.png",
+        "mobile-dark": "survey_panas_intro_mobile_dark.png",
+        "desktop-light": "survey_panas_intro_desktop_light.png",
+        "desktop-dark": "survey_panas_intro_desktop_dark.png"
+      }
+    },
+    {
+      "id": "surveys/panas-question",
+      "title": "PANAS survey question",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "survey_panas_question_mobile_light.png",
+        "mobile-dark": "survey_panas_question_mobile_dark.png",
+        "desktop-light": "survey_panas_question_desktop_light.png",
+        "desktop-dark": "survey_panas_question_desktop_dark.png"
       }
     },
     {
@@ -442,6 +585,17 @@
       }
     },
     {
+      "id": "keyboard-shortcuts/palette",
+      "title": "Command palette",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "command_palette_mobile_light.png",
+        "mobile-dark": "command_palette_mobile_dark.png",
+        "desktop-light": "command_palette_desktop_light.png",
+        "desktop-dark": "command_palette_desktop_dark.png"
+      }
+    },
+    {
       "id": "celebrations/controls",
       "title": "Completion celebration controls",
       "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
@@ -527,6 +681,17 @@
         "mobile-dark": "projects_create_mobile_dark.png",
         "desktop-light": "projects_create_desktop_light.png",
         "desktop-dark": "projects_create_desktop_dark.png"
+      }
+    },
+    {
+      "id": "projects/editor",
+      "title": "Project settings editor",
+      "sourceTest": "test/features/projects/ui/pages/projects_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "projects_editor_mobile_light.png",
+        "mobile-dark": "projects_editor_mobile_dark.png",
+        "desktop-light": "projects_editor_desktop_light.png",
+        "desktop-dark": "projects_editor_desktop_dark.png"
       }
     },
     {
@@ -618,6 +783,50 @@
       }
     },
     {
+      "id": "journal/date-time",
+      "title": "Entry date and time editor",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_date_time_editor_mobile_light.png",
+        "mobile-dark": "journal_date_time_editor_mobile_dark.png",
+        "desktop-light": "journal_date_time_editor_desktop_light.png",
+        "desktop-dark": "journal_date_time_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "journal/date-picker",
+      "title": "Entry date picker",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_date_picker_mobile_light.png",
+        "mobile-dark": "journal_date_picker_mobile_dark.png",
+        "desktop-light": "journal_date_picker_desktop_light.png",
+        "desktop-dark": "journal_date_picker_desktop_dark.png"
+      }
+    },
+    {
+      "id": "journal/linked-filter",
+      "title": "Linked-entry filter and sort",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_linked_filter_mobile_light.png",
+        "mobile-dark": "journal_linked_filter_mobile_dark.png",
+        "desktop-light": "journal_linked_filter_desktop_light.png",
+        "desktop-dark": "journal_linked_filter_desktop_dark.png"
+      }
+    },
+    {
+      "id": "time-tracking/session-rating",
+      "title": "Recorded-session rating",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "session_rating_mobile_light.png",
+        "mobile-dark": "session_rating_mobile_dark.png",
+        "desktop-light": "session_rating_desktop_light.png",
+        "desktop-dark": "session_rating_desktop_dark.png"
+      }
+    },
+    {
       "id": "time-analysis/overview",
       "title": "Time Analysis overview",
       "sourceTest": "test/features/insights/ui/time_analysis_screenshots_test.dart",
@@ -681,6 +890,17 @@
         "mobile-dark": "advanced_settings_logging_mobile_dark.png",
         "desktop-light": "advanced_settings_logging_desktop_light.png",
         "desktop-dark": "advanced_settings_logging_desktop_dark.png"
+      }
+    },
+    {
+      "id": "health-import/overview",
+      "title": "Mobile health import",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_health_import_mobile_light.png",
+        "mobile-dark": "advanced_settings_health_import_mobile_dark.png",
+        "desktop-light": "advanced_settings_health_import_desktop_light.png",
+        "desktop-dark": "advanced_settings_health_import_desktop_dark.png"
       }
     },
     {
@@ -1033,6 +1253,138 @@
         "mobile-dark": "agents_instance_detail_mobile_dark.png",
         "desktop-light": "agents_instance_detail_desktop_light.png",
         "desktop-dark": "agents_instance_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/hub",
+      "title": "Sync settings hub",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_hub_mobile_light.png",
+        "mobile-dark": "sync_hub_mobile_dark.png",
+        "desktop-light": "sync_hub_desktop_light.png",
+        "desktop-dark": "sync_hub_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/provisioned",
+      "title": "Provisioning bundle import",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_provisioned_mobile_light.png",
+        "mobile-dark": "sync_provisioned_mobile_dark.png",
+        "desktop-light": "sync_provisioned_desktop_light.png",
+        "desktop-dark": "sync_provisioned_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/status",
+      "title": "Provisioned sync status",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_status_mobile_light.png",
+        "mobile-dark": "sync_status_mobile_dark.png",
+        "desktop-light": "sync_status_desktop_light.png",
+        "desktop-dark": "sync_status_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/verification",
+      "title": "Sync device verification",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_verification_mobile_light.png",
+        "mobile-dark": "sync_verification_mobile_dark.png",
+        "desktop-light": "sync_verification_desktop_light.png",
+        "desktop-dark": "sync_verification_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/node-profile",
+      "title": "Sync node profile",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_node_profile_mobile_light.png",
+        "mobile-dark": "sync_node_profile_mobile_dark.png",
+        "desktop-light": "sync_node_profile_desktop_light.png",
+        "desktop-dark": "sync_node_profile_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/backfill",
+      "title": "Sync backfill",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_backfill_mobile_light.png",
+        "mobile-dark": "sync_backfill_mobile_dark.png",
+        "desktop-light": "sync_backfill_desktop_light.png",
+        "desktop-dark": "sync_backfill_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/stats",
+      "title": "Matrix sync metrics",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_stats_mobile_light.png",
+        "mobile-dark": "sync_stats_mobile_dark.png",
+        "desktop-light": "sync_stats_desktop_light.png",
+        "desktop-dark": "sync_stats_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/outbox",
+      "title": "Sync outbox",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_outbox_mobile_light.png",
+        "mobile-dark": "sync_outbox_mobile_dark.png",
+        "desktop-light": "sync_outbox_desktop_light.png",
+        "desktop-dark": "sync_outbox_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/conflicts",
+      "title": "Sync conflicts",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_conflicts_mobile_light.png",
+        "mobile-dark": "sync_conflicts_mobile_dark.png",
+        "desktop-light": "sync_conflicts_desktop_light.png",
+        "desktop-dark": "sync_conflicts_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/conflict-detail",
+      "title": "Sync conflict resolution",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_conflict_detail_mobile_light.png",
+        "mobile-dark": "sync_conflict_detail_mobile_dark.png",
+        "desktop-light": "sync_conflict_detail_desktop_light.png",
+        "desktop-dark": "sync_conflict_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/conflict-combine",
+      "title": "Sync conflict field combination",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_conflict_combine_mobile_light.png",
+        "mobile-dark": "sync_conflict_combine_mobile_dark.png",
+        "desktop-light": "sync_conflict_combine_desktop_light.png",
+        "desktop-dark": "sync_conflict_combine_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/maintenance",
+      "title": "Matrix sync maintenance",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_maintenance_mobile_light.png",
+        "mobile-dark": "sync_maintenance_mobile_dark.png",
+        "desktop-light": "sync_maintenance_desktop_light.png",
+        "desktop-dark": "sync_maintenance_desktop_dark.png"
       }
     }
   ]

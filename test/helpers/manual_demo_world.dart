@@ -646,19 +646,21 @@ class ManualDemoWorld {
   }
 }
 
-/// Primes the exact production [ResizeImage] keys with the decoded cover art.
+/// Primes the production image-provider keys with decoded cover art.
 ///
 /// The headless Flutter test engine can leave resized WebP decoding pending
 /// indefinitely even though the raw file decodes successfully. Production
 /// widgets still construct and resolve their normal providers; this helper
 /// only seeds the test image cache before the first frame so screenshots paint
-/// the same bitmap deterministically.
+/// the same bitmap deterministically. Raw [FileImage] keys can also be primed
+/// for production surfaces that render unresized reference images.
 Future<void> primeManualDemoCoverArt(
   WidgetTester tester, {
   required Directory documentsDirectory,
   required ManualDemoWorld world,
   List<int> extents = const [48, 96, 144, 216, 1280, 2048, 3072],
   Set<String>? imageIds,
+  bool includeRawFileImage = false,
 }) async {
   await tester.runAsync(() async {
     final coverImages = imageIds == null
@@ -676,6 +678,23 @@ Future<void> primeManualDemoCoverArt(
       final fileImage = FileImage(file);
       final bytes = await file.readAsBytes();
       final cache = PaintingBinding.instance.imageCache;
+      if (includeRawFileImage) {
+        final codec = await ui.instantiateImageCodec(bytes);
+        final frame = await codec.getNextFrame();
+        final key = await fileImage.obtainKey(ImageConfiguration.empty);
+        cache
+          ..evict(key)
+          ..putIfAbsent(
+            key,
+            () => OneFrameImageStreamCompleter(
+              SynchronousFuture(
+                ImageInfo(image: frame.image.clone()),
+              ),
+            ),
+          );
+        frame.image.dispose();
+        codec.dispose();
+      }
       for (final extent in extents) {
         final providers = [
           ResizeImage(

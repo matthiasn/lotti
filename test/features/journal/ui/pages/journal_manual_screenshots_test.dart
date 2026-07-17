@@ -29,6 +29,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
@@ -40,11 +41,16 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/linked_entries_activity_filter_bar.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/features/ratings/repository/rating_repository.dart';
+import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list_item.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -173,6 +179,7 @@ void main() {
   late AiResponseEntry diagnosticPrompt;
   late List<EntryLink> links;
   late List<CategoryDefinition> categories;
+  late MockRatingRepository ratingRepository;
 
   Metadata metadata(
     String id,
@@ -434,6 +441,28 @@ void main() {
     final userActivity = MockUserActivityService();
     final timeService = MockTimeService();
     final navService = MockNavService();
+    ratingRepository = MockRatingRepository();
+
+    final sessionRating = RatingEntry(
+      meta: Metadata(
+        id: 'rating-emperor-roll-call-rehearsal',
+        createdAt: DateTime(2026, 7, 17, 9, 6),
+        updatedAt: DateTime(2026, 7, 17, 9, 6),
+        dateFrom: DateTime(2026, 7, 17, 9, 6),
+        dateTo: DateTime(2026, 7, 17, 9, 6),
+      ),
+      data: RatingData(
+        targetId: rehearsalTimer.id,
+        dimensions: const [
+          RatingDimension(key: 'productivity', value: 0.8),
+          RatingDimension(key: 'energy', value: 0.6),
+          RatingDimension(key: 'focus', value: 0.9),
+          RatingDimension(key: 'challenge_skill', value: 0.5),
+        ],
+        note:
+            'Mission Control briefing stayed focused despite one airborne sardine.',
+      ),
+    );
 
     when(userActivity.updateActivity).thenReturn(null);
     when(timeService.getStream).thenAnswer((_) => const Stream.empty());
@@ -451,6 +480,9 @@ void main() {
     when(
       () => navService.beamToNamed(any(), data: any(named: 'data')),
     ).thenReturn(null);
+    when(
+      () => ratingRepository.getRatingForTargetEntry(rehearsalTimer.id),
+    ).thenAnswer((_) async => sessionRating);
 
     final mocks = await setUpTestGetIt(
       additionalSetup: () {
@@ -511,6 +543,13 @@ void main() {
     linkedFromEntriesControllerProvider(audioMemo.id).overrideWith(
       () => MockLinkedFromEntriesController(const []),
     ),
+    linkedEntriesControllerProvider(rehearsalTimer.id).overrideWith(
+      () => MockLinkedEntriesController(const [], rehearsalTimer.id),
+    ),
+    linkedFromEntriesControllerProvider(rehearsalTimer.id).overrideWith(
+      () => MockLinkedFromEntriesController(const []),
+    ),
+    ratingRepositoryProvider.overrideWithValue(ratingRepository),
   ];
 
   Future<void> pumpSurface(
@@ -687,6 +726,39 @@ void main() {
         );
       });
 
+      testWidgets('$viewport journal date and time — $theme', (tester) async {
+        await pumpSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          home: const EntryDetailsPage(itemId: _briefingId),
+        );
+        final dateTimeTrigger = find.byType(EntryDatetimeWidget).first;
+        expect(dateTimeTrigger, findsOneWidget);
+        await tester.tap(dateTimeTrigger);
+        await settleFrames(tester, 8);
+
+        expect(find.byType(EntryDateTimeEditor), findsOneWidget);
+        expect(find.text('Date & Time'), findsOneWidget);
+        expect(find.text('Start time'), findsOneWidget);
+        expect(find.text('End time'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'journal_date_time_editor_${viewport}_$theme',
+          subdir: _subdir,
+        );
+
+        await tester.tap(find.text('Friday, July 17, 2026').first);
+        await settleFrames(tester, 8);
+        expect(find.text('Start date'), findsOneWidget);
+        expect(find.text('July 2026'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'journal_date_picker_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
       testWidgets('$viewport journal linked activity — $theme', (tester) async {
         await pumpSurface(
           tester,
@@ -715,6 +787,44 @@ void main() {
         await captureScreenshot(
           tester,
           'journal_activity_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport journal linked filter — $theme', (tester) async {
+        await pumpSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          home: const EntryDetailsPage(itemId: _briefingId),
+        );
+        final page = find.byType(EntryDetailsPage);
+        final scrollable = find.descendant(
+          of: page,
+          matching: find.byType(Scrollable),
+        );
+        final filterTrigger = find.byKey(
+          const ValueKey('linked-entries-sort-trigger-visual'),
+        );
+        await tester.scrollUntilVisible(
+          filterTrigger,
+          360,
+          scrollable: scrollable.first,
+        );
+        await settleFrames(tester, 4);
+        expect(find.byType(LinkedEntriesActivityFilterBar), findsOneWidget);
+        await tester.tap(filterTrigger);
+        await settleFrames(tester, 6);
+
+        expect(find.text('Filter & Sort'), findsOneWidget);
+        expect(find.text('Newest first'), findsWidgets);
+        expect(find.text('Oldest first'), findsOneWidget);
+        await tester.tap(find.text('Oldest first'));
+        await tester.tap(find.text('Show hidden entries'));
+        await settleFrames(tester, 3);
+        await captureScreenshot(
+          tester,
+          'journal_linked_filter_${viewport}_$theme',
           subdir: _subdir,
         );
       });
@@ -774,6 +884,42 @@ void main() {
         await captureScreenshot(
           tester,
           'recording_transcript_expanded_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport session rating — $theme', (tester) async {
+        await pumpSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          home: EntryDetailsPage(itemId: rehearsalTimer.id),
+        );
+
+        final pageContext = tester.element(find.byType(EntryDetailsPage));
+        unawaited(RatingModal.show(pageContext, rehearsalTimer.id));
+        await settleFrames(tester, 8);
+
+        expect(find.byType(RatingModal), findsOneWidget);
+        expect(find.text('Rate this session'), findsOneWidget);
+        expect(find.text('How productive was this session?'), findsOneWidget);
+        expect(find.text('How energized did you feel?'), findsOneWidget);
+        expect(find.text('How focused were you?'), findsOneWidget);
+        expect(find.text('Just right'), findsOneWidget);
+        expect(
+          find.text(
+            'Mission Control briefing stayed focused despite one airborne sardine.',
+          ),
+          findsOneWidget,
+        );
+        final saveButton = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, 'Save'),
+        );
+        expect(saveButton.onPressed, isNotNull);
+
+        await captureScreenshot(
+          tester,
+          'session_rating_${viewport}_$theme',
           subdir: _subdir,
         );
       });

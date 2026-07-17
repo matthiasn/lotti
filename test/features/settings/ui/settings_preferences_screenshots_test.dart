@@ -13,6 +13,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -21,6 +22,10 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/keyboard/ui/command_palette.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
@@ -93,12 +98,46 @@ Widget _app({
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          home: home,
+          home: AppCommandHost(
+            platform: TargetPlatform.linux,
+            handlers: _manualCommandHandlers(),
+            child: home,
+          ),
         ),
       ),
     ),
   );
 }
+
+Map<AppCommandId, AppCommandHandler> _manualCommandHandlers() => {
+  AppCommandId.openCommandPalette: AppCommandHandler(
+    invoke: (invocation) =>
+        showAppCommandPalette(invocation.context, invocation.snapshot),
+  ),
+  for (final id in [
+    AppCommandId.openShortcutHelp,
+    AppCommandId.createTextEntry,
+    AppCommandId.createTask,
+    AppCommandId.captureScreenshot,
+    AppCommandId.navigateTasks,
+    AppCommandId.navigateDailyOs,
+    AppCommandId.navigateProjects,
+    AppCommandId.navigateHabits,
+    AppCommandId.navigateDashboards,
+    AppCommandId.navigateJournal,
+    AppCommandId.navigateEvents,
+    AppCommandId.navigateSettings,
+    AppCommandId.zoomIn,
+    AppCommandId.zoomOut,
+    AppCommandId.resetZoom,
+    AppCommandId.refresh,
+    AppCommandId.focusSearch,
+    AppCommandId.createInContext,
+    AppCommandId.rename,
+    AppCommandId.delete,
+  ])
+    id: AppCommandHandler(invoke: (_) {}),
+};
 
 Future<void> _pumpSurface(
   WidgetTester tester, {
@@ -350,6 +389,25 @@ void main() {
             'keyboard_shortcuts_catalog_${viewport}_$theme',
             subdir: _subdir,
           );
+
+          await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+          await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+          await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+          await settleFrames(tester, 4);
+          expect(find.text('Command palette'), findsOneWidget);
+          expect(find.text('Task'), findsWidgets);
+          expect(find.text('Go to Tasks'), findsWidgets);
+          await captureScreenshot(
+            tester,
+            'command_palette_${viewport}_$theme',
+            subdir: _subdir,
+          );
+
+          Navigator.of(
+            tester.element(find.text('Command palette')),
+          ).pop();
+          await settleFrames(tester, 4);
+          expect(find.text('Command palette'), findsNothing);
 
           await tester.enterText(find.byType(TextField), 'rename');
           await settleFrames(tester, 4);
