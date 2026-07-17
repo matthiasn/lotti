@@ -109,6 +109,13 @@ value, disabled, and tap affordances. Async Riverpod consumers retain their last
 rendered values during background reloads; a provider refresh does not replace
 an established picker with a full loading shell.
 
+The standalone legacy inference-profile list still renders `ProfileCard` while
+older routes remain available. Its slot labels use the normal caption token,
+not the uppercase overline token, and model identifiers use the shared
+monospace metadata style. Both are constrained to one line so long capability
+names or provider IDs truncate predictably instead of changing the card's row
+rhythm.
+
 ```mermaid
 flowchart LR
   Profiles["Category / template / agent creation / task agent / Daily OS"] --> ProfilePicker["InferenceProfilePickerModal or list"]

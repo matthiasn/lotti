@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from Settings › Onboarding.
 
 ### Changed
+- **Inference profile model labels are readable again.** Capability names use
+  normal caption spacing instead of widely tracked overline text, so labels
+  such as Image Recognition no longer wrap character by character.
 - **Daily OS shutdown now stays usable on narrow phones.** Its actions stack
   responsively, and wrapped metric labels keep enough height instead of
   overflowing their cards.

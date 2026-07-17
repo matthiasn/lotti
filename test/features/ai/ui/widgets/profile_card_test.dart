@@ -163,5 +163,31 @@ void main() {
       expect(find.text('Thinking'), findsOneWidget);
       expect(find.text('claude-4-opus'), findsOneWidget);
     });
+
+    testWidgets('uses readable caption tracking and mono model metadata', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const ProfileSlotRow(
+            label: 'Image Recognition',
+            modelId: 'model-habitat-vision-pro',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final label = tester.widget<Text>(find.text('Image Recognition'));
+      final modelId = tester.widget<Text>(
+        find.text('model-habitat-vision-pro'),
+      );
+
+      expect(label.style?.letterSpacing, lessThan(1));
+      expect(label.maxLines, 1);
+      expect(label.softWrap, isFalse);
+      expect(modelId.style?.fontFamily, 'Inconsolata');
+      expect(modelId.style?.letterSpacing, 0);
+      expect(modelId.maxLines, 1);
+    });
   });
 }

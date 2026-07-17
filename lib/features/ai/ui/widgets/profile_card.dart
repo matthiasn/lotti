@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 
 /// A card widget displaying an inference profile's name and model slots.
 ///
@@ -23,15 +24,18 @@ class ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final radius = BorderRadius.circular(tokens.radii.m);
+
     return Card(
       elevation: 0,
-      color: context.colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: tokens.colors.background.level02,
+      shape: RoundedRectangleBorder(borderRadius: radius),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: radius,
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(tokens.spacing.cardPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -40,28 +44,32 @@ class ProfileCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       profile.name,
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(
+                            color: tokens.colors.text.highEmphasis,
+                            fontWeight: tokens.typography.weight.semiBold,
+                          ),
                     ),
                   ),
-                  if (profile.desktopOnly)
+                  if (profile.desktopOnly) ...[
+                    SizedBox(width: tokens.spacing.step2),
                     DesignSystemBadge.outlined(
                       label: context.messages.inferenceProfileDesktopOnly,
                       tone: DesignSystemBadgeTone.secondary,
                     ),
+                  ],
                   if (profile.isDefault)
                     Padding(
-                      padding: const EdgeInsets.only(left: 8),
+                      padding: EdgeInsets.only(left: tokens.spacing.step3),
                       child: Icon(
                         Icons.lock_outline,
-                        size: 16,
-                        color: context.colorScheme.onSurfaceVariant,
+                        size: tokens.spacing.step5,
+                        color: tokens.colors.text.mediumEmphasis,
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: tokens.spacing.step3),
               ProfileSlotRow(
                 label: context.messages.inferenceProfileThinking,
                 modelId: profile.thinkingModelId,
@@ -101,25 +109,36 @@ class ProfileSlotRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: tokens.spacing.step13,
             child: Text(
               label,
-              style: context.textTheme.labelSmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
               ),
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
+          SizedBox(width: tokens.spacing.step3),
           Expanded(
             child: Text(
               modelId,
-              style: context.textTheme.bodySmall?.copyWith(
-                fontFamily: 'monospace',
+              style: monoMetaStyle(
+                tokens,
+                tokens.colors,
+                base: tokens.typography.styles.body.bodySmall,
+                color: tokens.colors.text.highEmphasis,
               ),
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
