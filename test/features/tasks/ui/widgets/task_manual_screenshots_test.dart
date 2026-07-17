@@ -121,6 +121,17 @@ Führe den Automatentest aus, hänge das Telemetriebild an und fordere dann die 
 
 Lance le test du distributeur, joins l'image de télémétrie puis demande l'autorisation de lancement.
 ''',
+  pt: '''
+## Última avaliação
+
+- As vedações de pressão A–F permaneceram estáveis durante o turno da noite.
+- São carregadas 840 sardinhas; a calibração do alimentador ainda bloqueia a aprovação.
+- A autorização do Controle da Missão deve ser feita antes da chamada das 06:30.
+
+## Próxima etapa recomendada
+
+Execute o teste do alimentador, anexe a imagem de telemetria e solicite a aprovação do lançamento.
+''',
 );
 
 final AiConfigModel _manualThinkingModel = manualDemoAiModels.firstWhere(
@@ -669,7 +680,14 @@ void main() {
           find.text(messages.taskAgentReportOutdatedTitle),
           findsOneWidget,
         );
-        expect(find.text(messages.taskAgentWakeAgent), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('taskAgentWakeIconButton')),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsLabel(messages.taskAgentWakeAgent),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'task_agent_manual_${viewport}_$theme',

@@ -699,7 +699,6 @@
   "aiCapabilityChipImageRecognition": "Reconhecimento de imagem",
   "aiCapabilityChipThinking": "Pensando",
   "aiCapabilityChipTranscription": "Transcrição",
-  "aiCardEmptyProposals": "Nenhuma proposta aberta · o agente apresentará novas alterações aqui",
   "aiCardHistoryToggle": "História · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3372,6 +3371,52 @@
   "maintenanceSyncDefinitions": "Sincronize mensuráveis, painéis, hábitos, categorias, configurações de IA",
   "maintenanceSyncDefinitionsDescription": "Sincronize mensuráveis, painéis, hábitos, categorias e configurações de IA",
   "manageLinks": "Gerenciar links...",
+  "matrixStatsCatchupBatches": "Lotes de recuperação",
+  "matrixStatsCircuitOpens": "Aberturas de circuito",
+  "matrixStatsConflicts": "Conflitos",
+  "matrixStatsCopyDiagnostics": "Copiar diagnósticos",
+  "matrixStatsCopyDiagnosticsTooltip": "Copie os diagnósticos de sincronização para a área de transferência",
+  "matrixStatsDbApplied": "BD aplicado",
+  "matrixStatsDbApply": "Aplicar BD",
+  "matrixStatsDbIgnoredVectorClock": "BD ignorado (VectorClock)",
+  "matrixStatsDbMissingBase": "BD sem base",
+  "matrixStatsDroppedByType": "Descartado ({type})",
+  "@matrixStatsDroppedByType": {
+    "placeholders": {
+      "type": {}
+    }
+  },
+  "matrixStatsEntryLinkNoops": "Operações sem efeito de EntryLink",
+  "matrixStatsFailures": "Falhas",
+  "matrixStatsFlushes": "Descargas",
+  "matrixStatsForceRescan": "Forçar nova verificação",
+  "matrixStatsForceRescanTooltip": "Force uma nova verificação e atualize agora",
+  "matrixStatsLegend": "Legenda",
+  "matrixStatsLegendTooltip": "Legenda:\n• processed.<type> = mensagens de sincronização processadas por tipo de carga\n• droppedByType.<type> = descartes por tipo após novas tentativas ou ao ignorar mensagens antigas\n• dbApplied = linhas gravadas no banco de dados\n• dbIgnoredByVectorClock = dados recebidos mais antigos ou idênticos ignorados pelo banco de dados\n• conflictsCreated = vetores de relógio simultâneos registrados\n• dbMissingBase = ignorado enquanto aguarda uma dependência ou linha de base ausente\n• staleAttachmentPurges = descritores obsoletos em cache removidos antes da atualização",
+  "matrixStatsProcessed": "Processado",
+  "matrixStatsProcessedByType": "Processado ({type})",
+  "@matrixStatsProcessedByType": {
+    "placeholders": {
+      "type": {}
+    }
+  },
+  "matrixStatsRefresh": "Atualizar",
+  "matrixStatsReliability": "Confiabilidade",
+  "matrixStatsRetriesScheduled": "Novas tentativas agendadas",
+  "matrixStatsRetryNow": "Tentar novamente agora",
+  "matrixStatsRetryNowTooltip": "Tente novamente as falhas pendentes agora",
+  "matrixStatsSignalLatencyLast": "Latência do sinal (últimos ms)",
+  "matrixStatsSignalLatencyMax": "Latência do sinal (máx. ms)",
+  "matrixStatsSignalLatencyMin": "Latência do sinal (mín. ms)",
+  "matrixStatsSignals": "Sinais",
+  "matrixStatsSignalsClientStream": "Sinais (fluxo do cliente)",
+  "matrixStatsSignalsConnectivity": "Sinais (conectividade)",
+  "matrixStatsSignalsTimelineCallbacks": "Sinais (callbacks da linha do tempo)",
+  "matrixStatsSkipped": "Ignorado",
+  "matrixStatsSkippedRetryCap": "Ignorado (limite de novas tentativas)",
+  "matrixStatsStaleAttachmentPurges": "Limpezas de anexos obsoletos",
+  "matrixStatsThroughput": "Taxa de transferência",
+  "matrixStatsTopKpis": "Principais KPIs",
   "measurableDeleteConfirm": "SIM, EXCLUIR ESTE MENSURÁVEL",
   "measurableDeleteQuestion": "Deseja excluir este tipo de dados mensuráveis?",
   "measurableNotFound": "Mensurável não encontrado",
@@ -4380,6 +4425,14 @@
   },
   "settingsMatrixRoomInviteTitle": "Convite para sala",
   "settingsMatrixSentMessagesLabel": "Mensagens enviadas:",
+  "settingsMatrixSentMessageType": "Enviado ({eventType})",
+  "@settingsMatrixSentMessageType": {
+    "placeholders": {
+      "eventType": {
+        "type": "String"
+      }
+    }
+  },
   "settingsMatrixStartVerificationLabel": "Iniciar verificação",
   "settingsMatrixStatsTitle": "Estatísticas da Matriz",
   "settingsMatrixTitle": "Configurações de sincronização",
@@ -4634,8 +4687,6 @@
   "taskAgentAttributionUnavailable": "Atribuição indisponível",
   "taskAgentAutomaticUpdatesLabel": "Atualizações automáticas",
   "taskAgentAutomaticUpdatesNeedsSetup": "Escolha uma configuração de IA antes de ativar as atualizações automáticas.",
-  "taskAgentAutomaticUpdatesOffDescription": "As atualizações automáticas estão desativadas. Acorde o agente quando quiser um novo relatório.",
-  "taskAgentAutomaticUpdatesSummary": "Agrupe alterações de tarefas e atualize após dois minutos.",
   "taskAgentCancelTimerTooltip": "Cancelar atualização automática pendente",
   "taskAgentChooseModel": "Escolha um modelo de pensamento",
   "taskAgentChooseProfile": "Escolha um perfil de inferência",
@@ -4664,6 +4715,16 @@
   "taskAgentDisableConfirmTitle": "Desativar a IA para este agente?",
   "taskAgentInferenceProfileLabel": "Perfil de inferência",
   "taskAgentModelPickerTitle": "Escolha o modelo de pensamento",
+  "taskAgentNextUpdateIn": "Próxima atualização em {countdown}",
+  "@taskAgentNextUpdateIn": {
+    "description": "Indicador de contagem regressiva no rodapé do cartão do agente da tarefa; tocar nele cancela a atualização automática agendada",
+    "placeholders": {
+      "countdown": {
+        "type": "String",
+        "example": "1:30"
+      }
+    }
+  },
   "taskAgentNoAiSetup": "Sem configuração de IA",
   "taskAgentNoAiSetupDescription": "Pausa a inferência do agente até você escolher um perfil ou modelo.",
   "taskAgentNoModelsAvailable": "Nenhum modelo de pensamento compatível disponível",
@@ -4679,8 +4740,8 @@
     }
   },
   "taskAgentProfileDefaultBadge": "Perfil padrão",
-  "taskAgentReportOutdatedDescription": "A tarefa mudou depois que esse resumo foi gerado.",
   "taskAgentReportOutdatedTitle": "Este resumo está desatualizado",
+  "taskAgentReportUpToDate": "O resumo está atualizado",
   "taskAgentRouteVia": "através de",
   "taskAgentRunNowTooltip": "Corra agora",
   "taskAgentSavingSetup": "Salvando a configuração do agente",

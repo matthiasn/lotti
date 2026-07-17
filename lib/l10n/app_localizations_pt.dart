@@ -1154,10 +1154,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Transcrição';
 
   @override
-  String get aiCardEmptyProposals =>
-      'Nenhuma proposta aberta · o agente apresentará novas alterações aqui';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'História · $count';
   }
@@ -6731,6 +6727,124 @@ class AppLocalizationsPt extends AppLocalizations {
   String get manageLinks => 'Gerenciar links...';
 
   @override
+  String get matrixStatsCatchupBatches => 'Lotes de recuperação';
+
+  @override
+  String get matrixStatsCircuitOpens => 'Aberturas de circuito';
+
+  @override
+  String get matrixStatsConflicts => 'Conflitos';
+
+  @override
+  String get matrixStatsCopyDiagnostics => 'Copiar diagnósticos';
+
+  @override
+  String get matrixStatsCopyDiagnosticsTooltip =>
+      'Copie os diagnósticos de sincronização para a área de transferência';
+
+  @override
+  String get matrixStatsDbApplied => 'BD aplicado';
+
+  @override
+  String get matrixStatsDbApply => 'Aplicar BD';
+
+  @override
+  String get matrixStatsDbIgnoredVectorClock => 'BD ignorado (VectorClock)';
+
+  @override
+  String get matrixStatsDbMissingBase => 'BD sem base';
+
+  @override
+  String matrixStatsDroppedByType(Object type) {
+    return 'Descartado ($type)';
+  }
+
+  @override
+  String get matrixStatsEntryLinkNoops => 'Operações sem efeito de EntryLink';
+
+  @override
+  String get matrixStatsFailures => 'Falhas';
+
+  @override
+  String get matrixStatsFlushes => 'Descargas';
+
+  @override
+  String get matrixStatsForceRescan => 'Forçar nova verificação';
+
+  @override
+  String get matrixStatsForceRescanTooltip =>
+      'Force uma nova verificação e atualize agora';
+
+  @override
+  String get matrixStatsLegend => 'Legenda';
+
+  @override
+  String get matrixStatsLegendTooltip =>
+      'Legenda:\n• processed.<type> = mensagens de sincronização processadas por tipo de carga\n• droppedByType.<type> = descartes por tipo após novas tentativas ou ao ignorar mensagens antigas\n• dbApplied = linhas gravadas no banco de dados\n• dbIgnoredByVectorClock = dados recebidos mais antigos ou idênticos ignorados pelo banco de dados\n• conflictsCreated = vetores de relógio simultâneos registrados\n• dbMissingBase = ignorado enquanto aguarda uma dependência ou linha de base ausente\n• staleAttachmentPurges = descritores obsoletos em cache removidos antes da atualização';
+
+  @override
+  String get matrixStatsProcessed => 'Processado';
+
+  @override
+  String matrixStatsProcessedByType(Object type) {
+    return 'Processado ($type)';
+  }
+
+  @override
+  String get matrixStatsRefresh => 'Atualizar';
+
+  @override
+  String get matrixStatsReliability => 'Confiabilidade';
+
+  @override
+  String get matrixStatsRetriesScheduled => 'Novas tentativas agendadas';
+
+  @override
+  String get matrixStatsRetryNow => 'Tentar novamente agora';
+
+  @override
+  String get matrixStatsRetryNowTooltip =>
+      'Tente novamente as falhas pendentes agora';
+
+  @override
+  String get matrixStatsSignalLatencyLast => 'Latência do sinal (últimos ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMax => 'Latência do sinal (máx. ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMin => 'Latência do sinal (mín. ms)';
+
+  @override
+  String get matrixStatsSignals => 'Sinais';
+
+  @override
+  String get matrixStatsSignalsClientStream => 'Sinais (fluxo do cliente)';
+
+  @override
+  String get matrixStatsSignalsConnectivity => 'Sinais (conectividade)';
+
+  @override
+  String get matrixStatsSignalsTimelineCallbacks =>
+      'Sinais (callbacks da linha do tempo)';
+
+  @override
+  String get matrixStatsSkipped => 'Ignorado';
+
+  @override
+  String get matrixStatsSkippedRetryCap =>
+      'Ignorado (limite de novas tentativas)';
+
+  @override
+  String get matrixStatsStaleAttachmentPurges => 'Limpezas de anexos obsoletos';
+
+  @override
+  String get matrixStatsThroughput => 'Taxa de transferência';
+
+  @override
+  String get matrixStatsTopKpis => 'Principais KPIs';
+
+  @override
   String get measurableDeleteConfirm => 'SIM, EXCLUIR ESTE MENSURÁVEL';
 
   @override
@@ -8990,6 +9104,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsMatrixSentMessagesLabel => 'Mensagens enviadas:';
 
   @override
+  String settingsMatrixSentMessageType(String eventType) {
+    return 'Enviado ($eventType)';
+  }
+
+  @override
   String get settingsMatrixStartVerificationLabel => 'Iniciar verificação';
 
   @override
@@ -9672,14 +9791,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Escolha uma configuração de IA antes de ativar as atualizações automáticas.';
 
   @override
-  String get taskAgentAutomaticUpdatesOffDescription =>
-      'As atualizações automáticas estão desativadas. Acorde o agente quando quiser um novo relatório.';
-
-  @override
-  String get taskAgentAutomaticUpdatesSummary =>
-      'Agrupe alterações de tarefas e atualize após dois minutos.';
-
-  @override
   String get taskAgentCancelTimerTooltip =>
       'Cancelar atualização automática pendente';
 
@@ -9728,6 +9839,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get taskAgentModelPickerTitle => 'Escolha o modelo de pensamento';
 
   @override
+  String taskAgentNextUpdateIn(String countdown) {
+    return 'Próxima atualização em $countdown';
+  }
+
+  @override
   String get taskAgentNoAiSetup => 'Sem configuração de IA';
 
   @override
@@ -9758,11 +9874,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Perfil padrão';
 
   @override
-  String get taskAgentReportOutdatedDescription =>
-      'A tarefa mudou depois que esse resumo foi gerado.';
+  String get taskAgentReportOutdatedTitle => 'Este resumo está desatualizado';
 
   @override
-  String get taskAgentReportOutdatedTitle => 'Este resumo está desatualizado';
+  String get taskAgentReportUpToDate => 'O resumo está atualizado';
 
   @override
   String get taskAgentRouteVia => 'através de';

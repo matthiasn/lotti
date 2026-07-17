@@ -8948,12 +8948,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMatrixRoomInviteTitle => 'Room invite';
 
   @override
+  String get settingsMatrixSentMessagesLabel => 'Sent messages:';
+
+  @override
   String settingsMatrixSentMessageType(String eventType) {
     return 'Sent ($eventType)';
   }
-
-  @override
-  String get settingsMatrixSentMessagesLabel => 'Sent messages:';
 
   @override
   String get settingsMatrixStartVerificationLabel => 'Start Verification';

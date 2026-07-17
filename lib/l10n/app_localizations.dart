@@ -15504,17 +15504,17 @@ abstract class AppLocalizations {
   /// **'Room invite'**
   String get settingsMatrixRoomInviteTitle;
 
-  /// No description provided for @settingsMatrixSentMessageType.
-  ///
-  /// In en, this message translates to:
-  /// **'Sent ({eventType})'**
-  String settingsMatrixSentMessageType(String eventType);
-
   /// No description provided for @settingsMatrixSentMessagesLabel.
   ///
   /// In en, this message translates to:
   /// **'Sent messages:'**
   String get settingsMatrixSentMessagesLabel;
+
+  /// No description provided for @settingsMatrixSentMessageType.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent ({eventType})'**
+  String settingsMatrixSentMessageType(String eventType);
 
   /// No description provided for @settingsMatrixStartVerificationLabel.
   ///
