@@ -20,7 +20,7 @@ aplikace bez samostatné lokalizační změny.
 | Nahrávání zvuku | `STOP` | Popisek akce zastavení nahrávání je ve widgetu pevně anglicky, a proto se v české variantě aplikace nepřeloží. |
 | Uložené přepisy | `Vyberte jazyk`, `English`, `Lang`, `Model` | Výběr jazyka používá formální oslovení a anglické názvy voleb i popisky metadat. To neodpovídá neformální češtině zbytku aplikace. |
 | Co je nového | `NEW` | Označení nejnovější verze v hlavním banneru je pevně anglicky. |
-| Metriky Sync | `Top KPIs`, `Processed` | Oba popisky grafů jsou v metrickém widgetu pevně anglicky. |
+| Metriky Sync | `Sent`, `Legend`, `Force Rescan`, `Retry Now`, `Copy Diagnostics`, `Refresh`, `Top KPIs`, `Processed`, `Failures`, `Retries Scheduled`, `Throughput`, `Catch-up Batches`, `Flushes` | Metrický widget kombinuje české záhlaví s řadou pevně anglických akcí, názvů panelů a metrik. Příručka používá doslovné `Top KPIs`, aby snímek i návod souhlasily. |
 | Metriky průvodce | `Reached real aha` | Interní název události zůstává v českém pohledu anglicky. |
 | Počítačová navigace | `Daily OS`, případně další anglické cíle | Produktové názvy mohou být záměrné; při kontrole snímků je potřeba rozlišit záměrné názvy od chybějící lokalizace. |
 | Úvodní průvodce | `Onboarding`, `Zopakovat onboarding` | Klíče `settingsOnboardingTitle` a `settingsOnboardingReplayTitle` míchají angličtinu s češtinou, zatímco příručka používá přirozenější „Úvodní průvodce“. |
