@@ -290,9 +290,13 @@ provides the active `DsTokens` extension, and every onboarding step consumes
 that same set. `OnboardingBackdrop` also reads the Material brightness to select
 the aurora compositor: additive `BlendMode.plus` keeps blooms luminous on dark
 surfaces, while `BlendMode.srcOver` preserves their colour and contrast on a
-light surface instead of adding them into white. `NeuralConstellation` uses the
-theme's interactive colour for nodes and blends its pulse toward the theme's
-high-emphasis text colour.
+light surface instead of adding them into white. The welcome artwork sits on
+the semantic AI-card background and uses the themed Ollama purple for nodes,
+Anthropic blue for branches, and AI-card accent for travelling activations.
+Its bottom fade uses transparent stops with the panel surface's RGB values;
+this avoids the grey band produced when transparent black is interpolated into
+a light surface. Later-step `OnboardingBackdrop` instances stay on the quieter
+interactive-colour palette.
 
 ```mermaid
 flowchart LR

@@ -120,7 +120,7 @@ class _BackdropContentScrim extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.transparent,
+              tokens.colors.background.level01.withValues(alpha: 0),
               tokens.colors.background.level01.withValues(alpha: 0.42),
               tokens.colors.background.level01.withValues(alpha: 0.86),
               tokens.colors.background.level01.withValues(alpha: 0.92),
@@ -143,13 +143,9 @@ Widget buildOnboardingHeroVisual(
   switch (style) {
     case OnboardingHeroStyle.constellation:
       return NeuralConstellation(
-        nodeColor: accent,
-        lineColor: accent.withValues(alpha: 0.6),
-        pulseColor: Color.lerp(
-          accent,
-          tokens.colors.text.highEmphasis,
-          0.45,
-        )!,
+        nodeColor: tokens.colors.aiProvider.ollama.color,
+        lineColor: tokens.colors.aiProvider.anthropic.color,
+        pulseColor: tokens.colors.aiCard.accent,
         nodeCount: 62,
         // The welcome page is the only place where the organism should own the
         // opening beat. Later FTUE pages use OnboardingBackdrop's smaller,
@@ -190,14 +186,21 @@ Widget buildOnboardingHeroVisual(
 BlendMode _onboardingAuroraBlendMode(Brightness brightness) =>
     brightness == Brightness.dark ? BlendMode.plus : BlendMode.srcOver;
 
-/// Composes the hero artwork into the modal instead of letting it end as a hard
-/// strip above the copy. The overlays are panel-coloured fades, so the underlying
-/// animation topology stays unchanged while edge clipping and the title boundary
-/// are softened.
+/// Composes the hero artwork on the semantic AI-card surface, then fades it
+/// into the panel instead of ending as a hard strip above the copy.
+///
+/// Transparent stops retain [backgroundColor]'s RGB channels. Using
+/// `Colors.transparent` would interpolate transparent black into a light panel
+/// and produce a visible grey band before the stop becomes opaque.
 class _HeroArtworkFrame extends StatelessWidget {
-  const _HeroArtworkFrame({required this.backgroundColor, required this.child});
+  const _HeroArtworkFrame({
+    required this.backgroundColor,
+    required this.artworkColor,
+    required this.child,
+  });
 
   final Color backgroundColor;
+  final Color artworkColor;
   final Widget child;
 
   @override
@@ -205,23 +208,8 @@ class _HeroArtworkFrame extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        _HeroCloudWash(backgroundColor: backgroundColor),
+        ColoredBox(color: artworkColor),
         child,
-        IgnorePointer(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  backgroundColor.withValues(alpha: 0.52),
-                  Colors.transparent,
-                  Colors.transparent,
-                  backgroundColor.withValues(alpha: 0.34),
-                ],
-                stops: const [0, 0.14, 0.84, 1],
-              ),
-            ),
-          ),
-        ),
         IgnorePointer(
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -229,8 +217,8 @@ class _HeroArtworkFrame extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.transparent,
-                  Colors.transparent,
+                  backgroundColor.withValues(alpha: 0),
+                  backgroundColor.withValues(alpha: 0),
                   backgroundColor.withValues(alpha: 0.58),
                   backgroundColor,
                 ],
@@ -240,43 +228,6 @@ class _HeroArtworkFrame extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _HeroCloudWash extends StatelessWidget {
-  const _HeroCloudWash({required this.backgroundColor});
-
-  final Color backgroundColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final lifted = Color.lerp(
-      backgroundColor,
-      context.designTokens.colors.background.level02,
-      0.78,
-    )!;
-    final softLifted = Color.lerp(
-      backgroundColor,
-      context.designTokens.colors.background.level02,
-      0.38,
-    )!;
-
-    return IgnorePointer(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: const Alignment(-0.24, -0.18),
-            radius: 0.92,
-            colors: [
-              lifted.withValues(alpha: 0.74),
-              softLifted.withValues(alpha: 0.34),
-              backgroundColor.withValues(alpha: 0),
-            ],
-            stops: const [0, 0.48, 1],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -325,6 +276,7 @@ class OnboardingHeroPanel extends StatelessWidget {
                   width: double.infinity,
                   child: _HeroArtworkFrame(
                     backgroundColor: panelBg,
+                    artworkColor: tokens.colors.aiCard.background,
                     child: buildOnboardingHeroVisual(
                       heroStyle,
                       tokens: tokens,
@@ -353,10 +305,9 @@ class OnboardingHeroPanel extends StatelessWidget {
                   Text(
                     context.messages.onboardingWelcomeTitle,
                     textAlign: TextAlign.center,
-                    // heading1 (the display tier of this flow) so the promise
-                    // clearly out-ranks the step titles (heading3) — and the
-                    // larger size wraps earlier, fixing the orphaned "plan.".
-                    style: tokens.typography.styles.heading.heading1.copyWith(
+                    // Heading 2 keeps the promise dominant without letting it
+                    // overpower the visual or CTA on a phone-sized panel.
+                    style: tokens.typography.styles.heading.heading2.copyWith(
                       color: textHigh,
                     ),
                   ),
