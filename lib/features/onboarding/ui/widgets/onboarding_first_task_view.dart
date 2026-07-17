@@ -209,7 +209,7 @@ class OnboardingFirstTaskView extends StatelessWidget {
                 Text(
                   _headline,
                   textAlign: TextAlign.center,
-                  style: tokens.typography.styles.heading.heading3.copyWith(
+                  style: tokens.typography.styles.heading.heading2.copyWith(
                     color: textHigh,
                   ),
                 ),
@@ -245,7 +245,7 @@ class OnboardingFirstTaskView extends StatelessWidget {
                   Text(
                     listeningCaption,
                     textAlign: TextAlign.center,
-                    style: tokens.typography.styles.body.bodyLarge.copyWith(
+                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
                       color: textHigh,
                     ),
                   ),
@@ -277,9 +277,10 @@ class OnboardingFirstTaskView extends StatelessWidget {
                     onPressed: onRatherType,
                     child: Text(
                       ratherTypeLabel,
-                      style: tokens.typography.styles.body.bodyLarge.copyWith(
-                        color: accent,
-                      ),
+                      style: tokens.typography.styles.subtitle.subtitle1
+                          .copyWith(
+                            color: accent,
+                          ),
                     ),
                   ),
                 ],
@@ -414,7 +415,7 @@ class _SuggestionChips extends StatelessWidget {
         Text(
           label,
           textAlign: TextAlign.center,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
+          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
             color: tokens.colors.text.mediumEmphasis,
           ),
         ),
@@ -494,7 +495,7 @@ class _CategoryPicker extends StatelessWidget {
         Text(
           prompt,
           textAlign: TextAlign.center,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
+          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
             color: tokens.colors.text.mediumEmphasis,
           ),
         ),
@@ -572,7 +573,7 @@ class _PickerChip extends StatelessWidget {
               ),
               child: Text(
                 label,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
                   color: fg,
                 ),
               ),

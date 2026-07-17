@@ -227,6 +227,52 @@ void main() {
         tester.element(core).designTokens.colors.background.level02,
       );
     });
+
+    testWidgets('uses a clear headline, status, and destination hierarchy', (
+      tester,
+    ) async {
+      await pumpView(
+        tester,
+        OnboardingFirstTaskPhase.listening,
+        categories: twoCategories,
+      );
+
+      final tokens = tester
+          .element(find.text('Create your first task'))
+          .designTokens;
+      final headline = tester.widget<Text>(find.text('Create your first task'));
+      final status = tester.widget<Text>(find.text('Tap when done'));
+      final destination = tester.widget<Text>(
+        find.text('Where should this land?'),
+      );
+      final selectedCategory = tester.widget<Text>(find.text('Work'));
+      final typeInstead = tester.widget<Text>(find.text('Rather type?'));
+
+      expect(
+        headline.style?.fontSize,
+        tokens.typography.styles.heading.heading2.fontSize,
+      );
+      expect(
+        status.style?.fontSize,
+        tokens.typography.styles.subtitle.subtitle1.fontSize,
+      );
+      expect(
+        status.style?.fontWeight,
+        tokens.typography.styles.subtitle.subtitle1.fontWeight,
+      );
+      expect(
+        destination.style?.fontWeight,
+        tokens.typography.styles.subtitle.subtitle2.fontWeight,
+      );
+      expect(
+        selectedCategory.style?.fontWeight,
+        tokens.typography.styles.subtitle.subtitle2.fontWeight,
+      );
+      expect(
+        typeInstead.style?.fontSize,
+        tokens.typography.styles.subtitle.subtitle1.fontSize,
+      );
+    });
   });
 
   group('thinking frame', () {

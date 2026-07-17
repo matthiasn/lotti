@@ -177,10 +177,6 @@ void main() {
           matching: find.byType(ColoredBox),
         ),
       );
-      final welcomeConstellation = tester.widget<NeuralConstellation>(
-        find.byType(NeuralConstellation),
-      );
-
       expect(
         welcomeSurface.color,
         theme.tokens.colors.background.level01,
@@ -189,12 +185,17 @@ void main() {
         welcomeTitle.style?.color,
         theme.tokens.colors.text.highEmphasis,
       );
-      expect(
-        welcomeConstellation.nodeColor,
-        theme.name == 'light'
-            ? theme.tokens.colors.text.highEmphasis.withValues(alpha: 1)
-            : theme.tokens.colors.aiProvider.ollama.color,
-      );
+      if (theme.name == 'light') {
+        expect(find.byType(OnboardingThinkingBarsHero), findsOneWidget);
+      } else {
+        final welcomeConstellation = tester.widget<NeuralConstellation>(
+          find.byType(NeuralConstellation),
+        );
+        expect(
+          welcomeConstellation.nodeColor,
+          theme.tokens.colors.aiProvider.ollama.color,
+        );
+      }
 
       await tester.tap(find.text('Choose your AI brain'));
       await tester.pumpAndSettle();

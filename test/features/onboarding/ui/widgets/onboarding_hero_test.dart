@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -112,11 +113,11 @@ void main() {
   });
 
   group('buildOnboardingHeroVisual', () {
-    test('constellation welcome uses the entangled multi-vine variant', () {
+    test('dark constellation uses the entangled multi-vine variant', () {
       final visual = buildOnboardingHeroVisual(
         OnboardingHeroStyle.constellation,
-        tokens: dsTokensLight,
-        brightness: Brightness.light,
+        tokens: dsTokensDark,
+        brightness: Brightness.dark,
       );
 
       final constellation = visual as NeuralConstellation;
@@ -160,6 +161,66 @@ void main() {
       });
     }
 
+    test('uses decoder bars in light mode and the constellation in dark', () {
+      final lightVisual = buildOnboardingHeroVisual(
+        OnboardingHeroStyle.constellation,
+        tokens: dsTokensLight,
+        brightness: Brightness.light,
+      );
+      expect(lightVisual, isA<OnboardingThinkingBarsHero>());
+
+      final darkVisual =
+          buildOnboardingHeroVisual(
+                OnboardingHeroStyle.constellation,
+                tokens: dsTokensDark,
+                brightness: Brightness.dark,
+              )
+              as NeuralConstellation;
+      expect(darkVisual.nodeColor, dsTokensDark.colors.aiProvider.ollama.color);
+      expect(
+        darkVisual.lineColor,
+        dsTokensDark.colors.aiProvider.anthropic.color,
+      );
+      expect(
+        darkVisual.pulseColor,
+        dsTokensDark.colors.proposalKind.update.color,
+      );
+    });
+
+    testWidgets('light welcome reuses the AI decoder-bars treatment', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const SizedBox(
+            width: 390,
+            height: 276,
+            child: OnboardingThinkingBarsHero(),
+          ),
+          mediaQueryData: reducedMotionMq,
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+      await tester.pump();
+
+      final presence = tester.widget<AiThinkingShaderPresence>(
+        find.byType(AiThinkingShaderPresence),
+      );
+      expect(presence.isRunning, isTrue);
+      expect(presence.height, dsTokensLight.spacing.step10);
+      expect(presence.primaryColor, dsTokensLight.colors.interactive.enabled);
+      expect(
+        presence.secondaryColor,
+        dsTokensLight.colors.text.highEmphasis,
+      );
+      expect(
+        TickerMode.valuesOf(
+          tester.element(find.byType(AiThinkingShaderPresence)),
+        ).enabled,
+        isFalse,
+      );
+    });
+
     test('uses theme-specific visual colours and aurora blending', () {
       for (final theme in [
         (
@@ -173,34 +234,6 @@ void main() {
           blendMode: BlendMode.plus,
         ),
       ]) {
-        final constellation =
-            buildOnboardingHeroVisual(
-                  OnboardingHeroStyle.constellation,
-                  tokens: theme.tokens,
-                  brightness: theme.brightness,
-                )
-                as NeuralConstellation;
-        final expectedNodeColor = theme.brightness == Brightness.light
-            ? theme.tokens.colors.text.highEmphasis.withValues(alpha: 1)
-            : theme.tokens.colors.aiProvider.ollama.color;
-        final expectedLineColor = theme.brightness == Brightness.light
-            ? theme.tokens.colors.text.highEmphasis.withValues(alpha: 1)
-            : theme.tokens.colors.aiProvider.anthropic.color;
-        final expectedPulseColor =
-            theme.tokens.colors.proposalKind.update.color;
-        expect(
-          constellation.nodeColor,
-          expectedNodeColor,
-        );
-        expect(
-          constellation.lineColor,
-          expectedLineColor,
-        );
-        expect(
-          constellation.pulseColor,
-          expectedPulseColor,
-        );
-
         final crystallize =
             buildOnboardingHeroVisual(
                   OnboardingHeroStyle.crystallize,

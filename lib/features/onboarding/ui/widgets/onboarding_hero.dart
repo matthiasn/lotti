@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/motion/staggered_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -142,17 +143,12 @@ Widget buildOnboardingHeroVisual(
   final accent = tokens.colors.interactive.enabled;
   switch (style) {
     case OnboardingHeroStyle.constellation:
-      final monochromeLight = brightness == Brightness.light;
-      final monochrome = tokens.colors.text.highEmphasis.withValues(alpha: 1);
+      if (brightness == Brightness.light) {
+        return const OnboardingThinkingBarsHero();
+      }
       return NeuralConstellation(
-        nodeColor: monochromeLight
-            ? monochrome
-            : tokens.colors.aiProvider.ollama.color,
-        lineColor: monochromeLight
-            ? monochrome
-            : tokens.colors.aiProvider.anthropic.color,
-        // Reuse the Task Agent update signal in both themes instead of
-        // introducing a welcome-only accent.
+        nodeColor: tokens.colors.aiProvider.ollama.color,
+        lineColor: tokens.colors.aiProvider.anthropic.color,
         pulseColor: tokens.colors.proposalKind.update.color,
         nodeCount: 62,
         // The welcome page is the only place where the organism should own the
@@ -188,6 +184,40 @@ Widget buildOnboardingHeroVisual(
         waveColor: accent,
         textColor: tokens.colors.text.highEmphasis,
       );
+  }
+}
+
+/// Welcome-scale presentation of the decoder bars used while AI inference is
+/// running elsewhere in the app.
+///
+/// Light mode deliberately reuses this established activity language instead
+/// of forcing the dark constellation onto a white surface. The shared
+/// [AiThinkingShaderPresence] defaults keep its cadence and line behaviour in
+/// sync with transcription and image-generation progress. Only its footprint
+/// grows to the onboarding hero scale, using design-system spacing.
+class OnboardingThinkingBarsHero extends StatelessWidget {
+  const OnboardingThinkingBarsHero({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+    return TickerMode(
+      enabled: !reduceMotion,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step6),
+        child: Center(
+          child: AiThinkingShaderPresence(
+            isRunning: true,
+            height: tokens.spacing.step10,
+            primaryColor: tokens.colors.interactive.enabled,
+            secondaryColor: tokens.colors.text.highEmphasis,
+          ),
+        ),
+      ),
+    );
   }
 }
 

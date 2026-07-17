@@ -290,16 +290,16 @@ provides the active `DsTokens` extension, and every onboarding step consumes
 that same set. `OnboardingBackdrop` also reads the Material brightness to select
 the aurora compositor: additive `BlendMode.plus` keeps blooms luminous on dark
 surfaces, while `BlendMode.srcOver` preserves their colour and contrast on a
-light surface instead of adding them into white. The welcome constellation has
-an intentionally mode-specific treatment: light mode uses the level-01 white
-surface with fully opaque, high-emphasis monochrome nodes and branches; dark
-mode uses the semantic AI-card background with the themed Ollama purple for
-nodes and Anthropic blue for branches. Both modes use the Task Agent card's
-`proposalKind.update.color` token for travelling activations, keeping the
-signal's role consistent across themes. Its bottom fade uses transparent stops
-with the panel surface's RGB values; this avoids the grey band produced when
-transparent black is interpolated into a light surface. Later-step
-`OnboardingBackdrop` instances stay on the quieter interactive-colour palette.
+light surface instead of adding them into white. The welcome hero has an
+intentionally mode-specific treatment: light mode reuses the AI decoder-bars
+activity language from transcription and image generation, using the active
+interactive and high-emphasis text tokens; dark mode keeps the constellation on
+the semantic AI-card background, with Ollama purple nodes, Anthropic blue
+branches, and the Task Agent `proposalKind.update.color` activation. The hero's
+bottom fade uses transparent stops with the panel surface's RGB values; this
+avoids the grey band produced when transparent black is interpolated into a
+light surface. Later-step `OnboardingBackdrop` instances stay on the quieter
+interactive-colour palette.
 
 ```mermaid
 flowchart LR
