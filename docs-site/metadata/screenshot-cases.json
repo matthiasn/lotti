@@ -971,7 +971,7 @@
     },
     {
       "id": "onboarding/first-task",
-      "title": "Onboarding first-task capture",
+      "title": "Onboarding first-task voice capture",
       "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
       "variants": {
         "mobile-light": "onboarding_first_task_mobile_light.png",

@@ -25,6 +25,7 @@ import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
@@ -163,6 +164,7 @@ void main() {
   late MockAiConfigRepository aiRepository;
   late MockCategoryRepository categoryRepository;
   late MockOnboardingCaptureToTaskService captureService;
+  late FakeCaptureController captureController;
   late NavService navService;
 
   setUp(() async {
@@ -238,6 +240,37 @@ void main() {
       ),
     );
 
+    captureController = FakeCaptureController();
+    captureController.onToggle = () {
+      captureController.emit(
+        const CaptureState(
+          phase: CapturePhase.listening,
+          transcript: '',
+          amplitudes: [
+            0.08,
+            0.16,
+            0.29,
+            0.52,
+            0.74,
+            0.61,
+            0.38,
+            0.22,
+            0.43,
+            0.69,
+            0.84,
+            0.57,
+            0.31,
+            0.18,
+            0.36,
+            0.63,
+            0.77,
+            0.48,
+          ],
+          dbfs: -8,
+        ),
+      );
+    };
+
     navService = NavService();
     getIt.registerSingleton<NavService>(navService);
     beamToNamedOverride = (_) {};
@@ -253,7 +286,7 @@ void main() {
   List<Override> overrides() => [
     aiConfigRepositoryProvider.overrideWithValue(aiRepository),
     categoryRepositoryProvider.overrideWithValue(categoryRepository),
-    captureControllerProvider.overrideWith(FakeCaptureController.new),
+    captureControllerProvider.overrideWith(() => captureController),
     onboardingCaptureToTaskServiceProvider.overrideWithValue(captureService),
     connectionVerifierClientProvider.overrideWith(
       (ref) =>
@@ -297,7 +330,7 @@ void main() {
     expect(find.text('Ollama'), findsOneWidget);
   }
 
-  Future<void> driveToFirstTask(WidgetTester tester) async {
+  Future<void> driveToFirstTaskPrompt(WidgetTester tester) async {
     await driveToProviders(tester);
     await tapText(tester, 'Ollama');
 
@@ -327,8 +360,16 @@ void main() {
     expect(find.text('Mission Control'), findsOneWidget);
   }
 
+  Future<void> driveToFirstTaskListening(WidgetTester tester) async {
+    await driveToFirstTaskPrompt(tester);
+    await tester.tap(find.bySemanticsLabel('Record your thought'));
+    await settleFrames(tester, 6);
+    expect(find.text("Listening… tap when you're done"), findsOneWidget);
+    expect(find.byType(AiVoiceInputShader), findsOneWidget);
+  }
+
   Future<void> driveToCreatedTask(WidgetTester tester) async {
-    await driveToFirstTask(tester);
+    await driveToFirstTaskPrompt(tester);
     await tapText(tester, 'Rather type?', frames: 4);
     await tester.enterText(find.byType(TextField).last, _typedMission);
     await tapText(tester, 'OK', frames: 10);
@@ -386,7 +427,7 @@ void main() {
         case _OnboardingCase.providers:
           await driveToProviders(tester);
         case _OnboardingCase.firstTask:
-          await driveToFirstTask(tester);
+          await driveToFirstTaskListening(tester);
         case _OnboardingCase.taskCreated:
           await driveToCreatedTask(tester);
       }
