@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -22,6 +23,8 @@ import '../../../../../mocks/mocks.dart';
 import '../../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../../widget_test_utils.dart';
 import '../../../../categories/test_utils.dart';
+
+const _barHostKey = Key('desktop-saved-task-view-bar-host');
 
 const _inProgress = SavedTaskFilter(
   id: 'in-progress',
@@ -104,6 +107,7 @@ _pumpBar(
       body: Align(
         alignment: Alignment.topLeft,
         child: SizedBox(
+          key: _barHostKey,
           width: width,
           child: const DesktopSavedTaskViewBar(),
         ),
@@ -546,10 +550,16 @@ void main() {
       final root = find.byKey(DesktopSavedTaskViewBarKeys.root);
       final current = find.byKey(DesktopSavedTaskViewBarKeys.currentView);
       final all = find.byKey(DesktopSavedTaskViewBarKeys.allTasks);
+      final hostRect = tester.getRect(find.byKey(_barHostKey));
       final rootRect = tester.getRect(root);
       final currentRect = tester.getRect(current);
       final allRect = tester.getRect(all);
 
+      expect(
+        currentRect.left,
+        hostRect.left + dsTokensLight.spacing.step6,
+        reason: 'the named saved-view selector is anchored to the pane start',
+      );
       expect(currentRect.left, rootRect.left);
       expect(allRect.left, greaterThan(currentRect.right));
       expect(allRect.right, lessThan(rootRect.center.dx));

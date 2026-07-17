@@ -174,7 +174,6 @@ class _ActivitySurface extends StatelessWidget {
     final tokens = context.designTokens;
     final radius = BorderRadius.circular(tokens.radii.m);
     final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
-    final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.3;
 
     final label = Text(
       context.messages.sidebarActiveSectionTitle,
@@ -213,54 +212,37 @@ class _ActivitySurface extends StatelessWidget {
                     horizontal: tokens.spacing.step4,
                     vertical: tokens.spacing.step3,
                   ),
-                  child: Row(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: largeText
-                            ? Wrap(
-                                spacing: tokens.spacing.step4,
-                                runSpacing: tokens.spacing.step2,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  label,
-                                  for (final metric in metrics)
-                                    ExcludeSemantics(child: metric),
-                                ],
-                              )
-                            : Row(
-                                children: [
-                                  Expanded(child: label),
-                                  for (
-                                    var index = 0;
-                                    index < metrics.length;
-                                    index++
-                                  ) ...[
-                                    if (index > 0)
-                                      SizedBox(
-                                        height: tokens.spacing.step5,
-                                        child: VerticalDivider(
-                                          width: tokens.spacing.step4,
-                                          color:
-                                              tokens.colors.decorative.level01,
-                                        ),
-                                      ),
-                                    ExcludeSemantics(child: metrics[index]),
-                                  ],
-                                ],
+                      Row(
+                        children: [
+                          Expanded(child: label),
+                          SizedBox(width: tokens.spacing.step3),
+                          Tooltip(
+                            message: toggleTooltip,
+                            child: ExcludeSemantics(
+                              child: Icon(
+                                expanded
+                                    ? Icons.expand_more_rounded
+                                    : Icons.chevron_right_rounded,
+                                size: tokens.spacing.step5,
+                                color: tokens.colors.text.mediumEmphasis,
                               ),
-                      ),
-                      SizedBox(width: tokens.spacing.step3),
-                      Tooltip(
-                        message: toggleTooltip,
-                        child: ExcludeSemantics(
-                          child: Icon(
-                            expanded
-                                ? Icons.expand_more_rounded
-                                : Icons.chevron_right_rounded,
-                            size: tokens.spacing.step5,
-                            color: tokens.colors.text.mediumEmphasis,
+                            ),
                           ),
-                        ),
+                        ],
+                      ),
+                      SizedBox(height: tokens.spacing.step2),
+                      Wrap(
+                        spacing: tokens.spacing.step4,
+                        runSpacing: tokens.spacing.step2,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          for (final metric in metrics)
+                            ExcludeSemantics(child: metric),
+                        ],
                       ),
                     ],
                   ),

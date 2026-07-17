@@ -108,7 +108,7 @@ void main() {
     expect(find.text('Activity'), findsNothing);
   });
 
-  testWidgets('summarizes recording, timer, and agents in one row', (
+  testWidgets('puts the Activity label above the live metrics', (
     tester,
   ) async {
     when(
@@ -167,11 +167,23 @@ void main() {
       'Agents',
     );
 
+    final labelRect = tester.getRect(find.text('Activity'));
+    for (final key in [
+      SidebarActivitySummaryKeys.audio,
+      SidebarActivitySummaryKeys.timer,
+      SidebarActivitySummaryKeys.agents,
+    ]) {
+      expect(
+        tester.getRect(find.byKey(key)).top,
+        greaterThan(labelRect.bottom),
+        reason: 'metrics belong on a line below the Activity heading',
+      );
+    }
+
     final summaryHeight = tester
         .getSize(find.byKey(SidebarActivitySummaryKeys.root))
         .height;
     expect(summaryHeight, greaterThanOrEqualTo(48));
-    expect(summaryHeight, lessThan(64));
   });
 
   testWidgets('large text keeps three long-running metrics overflow-free', (
@@ -198,15 +210,20 @@ void main() {
           size: Size(320, 800),
           textScaler: TextScaler.linear(1.6),
         ),
-        width: 272,
+        width: 224,
       ),
     );
     await tester.pump();
 
     expect(tester.takeException(), isNull);
+    final labelBottom = tester.getRect(find.text('Activity')).bottom;
     expect(find.byKey(SidebarActivitySummaryKeys.audio), findsOneWidget);
     expect(find.byKey(SidebarActivitySummaryKeys.timer), findsOneWidget);
     expect(find.byKey(SidebarActivitySummaryKeys.agents), findsOneWidget);
+    expect(
+      tester.getRect(find.byKey(SidebarActivitySummaryKeys.audio)).top,
+      greaterThan(labelBottom),
+    );
   });
 
   testWidgets('counts only agent work inside the sidebar lookahead', (

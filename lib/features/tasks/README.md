@@ -370,10 +370,11 @@ This page is not just "show task fields." It is the task workspace where task me
 `SidebarActivitySummary` (desktop, `aboveSettings` slot — see
 `lib/widgets/README.md`) and `TaskActionBar`'s running pill both read the same
 live `TimeService` session. The persistent sidebar representation is one
-compact timer metric shared with recording and agent activity. Selecting the
-summary expands the detailed `SidebarTimerSection` in place, where the linked
-title, navigation target, and stop action remain available. A second selection
-collapses the details back to the compact metric row.
+compact timer metric on a wrapping line beneath the `Activity` heading, shared
+with recording and agent activity. Selecting the summary expands the detailed
+`SidebarTimerSection` in place, where the linked title, navigation target, and
+stop action remain available. A second selection collapses the details back to
+the compact metric line.
 
 Visibility is derived from the live systems:
 

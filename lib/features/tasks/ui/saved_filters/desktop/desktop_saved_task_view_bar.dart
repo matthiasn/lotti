@@ -108,50 +108,53 @@ class DesktopSavedTaskViewBar extends ConsumerWidget {
 
     final gap = SizedBox(width: tokens.spacing.step2);
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step6,
-        vertical: tokens.spacing.step2,
-      ),
-      child: Semantics(
-        container: true,
-        label: context.messages.tasksSavedFiltersGroupSemantics,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final monitorLimit = _monitorLimitForWidth(
-              tokens: tokens,
-              available: constraints.maxWidth,
-              hasUnsaved: hasUnsaved,
-            );
-            final monitors = monitorCandidates
-                .take(monitorLimit)
-                .toList(growable: false);
-            return SingleChildScrollView(
-              key: DesktopSavedTaskViewBarKeys.root,
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: tokens.spacing.step13 + tokens.spacing.step9,
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step6,
+          vertical: tokens.spacing.step2,
+        ),
+        child: Semantics(
+          container: true,
+          label: context.messages.tasksSavedFiltersGroupSemantics,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final monitorLimit = _monitorLimitForWidth(
+                tokens: tokens,
+                available: constraints.maxWidth,
+                hasUnsaved: hasUnsaved,
+              );
+              final monitors = monitorCandidates
+                  .take(monitorLimit)
+                  .toList(growable: false);
+              return SingleChildScrollView(
+                key: DesktopSavedTaskViewBarKeys.root,
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: tokens.spacing.step13 + tokens.spacing.step9,
+                      ),
+                      child: _CurrentViewButton(current: current),
                     ),
-                    child: _CurrentViewButton(current: current),
-                  ),
-                  for (final monitor in monitors) ...[
-                    gap,
-                    _MonitorButton(monitor: monitor),
+                    for (final monitor in monitors) ...[
+                      gap,
+                      _MonitorButton(monitor: monitor),
+                    ],
+                    if (hasUnsaved) ...[
+                      gap,
+                      _SaveFilterButton(
+                        onTap: () => promptSaveCurrentTaskFilter(context, ref),
+                      ),
+                    ],
                   ],
-                  if (hasUnsaved) ...[
-                    gap,
-                    _SaveFilterButton(
-                      onTap: () => promptSaveCurrentTaskFilter(context, ref),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
