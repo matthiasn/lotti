@@ -6760,6 +6760,123 @@ class AppLocalizationsCs extends AppLocalizations {
   String get manageLinks => 'Spravovat propojení...';
 
   @override
+  String get matrixStatsCatchupBatches => 'Doháněcí dávky';
+
+  @override
+  String get matrixStatsCircuitOpens => 'Otevření přerušovače';
+
+  @override
+  String get matrixStatsConflicts => 'Konflikty';
+
+  @override
+  String get matrixStatsCopyDiagnostics => 'Kopírovat diagnostiku';
+
+  @override
+  String get matrixStatsCopyDiagnosticsTooltip =>
+      'Kopírovat diagnostiku synchronizace do schránky';
+
+  @override
+  String get matrixStatsDbApplied => 'Aplikováno do databáze';
+
+  @override
+  String get matrixStatsDbApply => 'Aplikace do databáze';
+
+  @override
+  String get matrixStatsDbIgnoredVectorClock =>
+      'Ignorováno databází (VectorClock)';
+
+  @override
+  String get matrixStatsDbMissingBase => 'Chybí základ databáze';
+
+  @override
+  String matrixStatsDroppedByType(Object type) {
+    return 'Zahozeno ($type)';
+  }
+
+  @override
+  String get matrixStatsEntryLinkNoops => 'Prázdné operace EntryLink';
+
+  @override
+  String get matrixStatsFailures => 'Selhání';
+
+  @override
+  String get matrixStatsFlushes => 'Vyprázdnění';
+
+  @override
+  String get matrixStatsForceRescan => 'Vynutit nové skenování';
+
+  @override
+  String get matrixStatsForceRescanTooltip =>
+      'Vynutit nové skenování a dohnání nyní';
+
+  @override
+  String get matrixStatsLegend => 'Legenda';
+
+  @override
+  String get matrixStatsLegendTooltip =>
+      'Legenda:\n• processed.<type> = zpracované synchronizační zprávy podle typu dat\n• droppedByType.<type> = zahazování podle typu po opakováních nebo ignorování starších zpráv\n• dbApplied = zapsané řádky databáze\n• dbIgnoredByVectorClock = starší nebo stejné příchozí údaje ignorované databází\n• conflictsCreated = zaznamenané souběžné vektorové hodiny\n• dbMissingBase = přeskočeno při čekání na chybějící závislost nebo základní řádek\n• staleAttachmentPurges = zastaralé popisy v mezipaměti vyčištěné před obnovením';
+
+  @override
+  String get matrixStatsProcessed => 'Zpracováno';
+
+  @override
+  String matrixStatsProcessedByType(Object type) {
+    return 'Zpracováno ($type)';
+  }
+
+  @override
+  String get matrixStatsRefresh => 'Obnovit';
+
+  @override
+  String get matrixStatsReliability => 'Spolehlivost';
+
+  @override
+  String get matrixStatsRetriesScheduled => 'Naplánovaná opakování';
+
+  @override
+  String get matrixStatsRetryNow => 'Zkusit znovu';
+
+  @override
+  String get matrixStatsRetryNowTooltip => 'Zkusit nyní znovu čekající selhání';
+
+  @override
+  String get matrixStatsSignalLatencyLast => 'Latence signálu (poslední ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMax => 'Latence signálu (max. ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMin => 'Latence signálu (min. ms)';
+
+  @override
+  String get matrixStatsSignals => 'Signály';
+
+  @override
+  String get matrixStatsSignalsClientStream => 'Signály (tok klienta)';
+
+  @override
+  String get matrixStatsSignalsConnectivity => 'Signály (připojení)';
+
+  @override
+  String get matrixStatsSignalsTimelineCallbacks =>
+      'Signály (zpětná volání časové osy)';
+
+  @override
+  String get matrixStatsSkipped => 'Přeskočeno';
+
+  @override
+  String get matrixStatsSkippedRetryCap => 'Přeskočeno (limit opakování)';
+
+  @override
+  String get matrixStatsStaleAttachmentPurges => 'Vyčištěné zastaralé přílohy';
+
+  @override
+  String get matrixStatsThroughput => 'Propustnost';
+
+  @override
+  String get matrixStatsTopKpis => 'Hlavní ukazatele';
+
+  @override
   String get measurableDeleteConfirm => 'ANO, SMAŽ TUTO MĚŘITELNOU';
 
   @override

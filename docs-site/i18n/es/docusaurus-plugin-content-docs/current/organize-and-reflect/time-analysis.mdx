@@ -1,0 +1,95 @@
+---
+title: Comprende a dónde se fue tu tiempo
+description: Desglosa el tiempo registrado por categoría, sigue áreas de concentración y compara períodos equivalentes sin salir de Daily OS.
+---
+
+# Comprende a dónde se fue tu tiempo
+
+Análisis de tiempo convierte tus sesiones registradas en un desglose por categorías. Úsalo para responder cuánto tiempo registraste, cómo se repartió y si esa distribución cambió respecto al período anterior. El ejemplo de Project Waddle separa **Operaciones de pingüinos**, **Control de misión**, **Diplomacia de los peces**, **Investigación orbital** y **Mantenimiento humano**, sin ocultar el tiempo sin categoría que necesita atención.
+
+En el escritorio, abre **Daily OS** y selecciona **Análisis de tiempo** debajo del calendario de la barra lateral. El panel ocupa el área de contenido para que puedas consultar a la vez el gráfico y la tabla de detalle. Sus controles se reorganizan en anchos estrechos sin cambiar su función.
+
+<ManualScreenshot
+  caseId="time-analysis/overview"
+  alt="Panel Análisis de tiempo que muestra el tiempo de Project Waddle en cinco categorías operativas y trabajo sin categoría"
+  caption="La vista general combina totales destacados, un gráfico apilado de siete días y la tabla exacta por categoría. Cambia el manual a móvil o escritorio y a modo claro u oscuro para inspeccionar cada diseño de producción."
+/>
+
+## Lee las tarjetas destacadas
+
+La primera fila resume el período seleccionado:
+
+- **TOTAL** es todo el tiempo registrado. Su subtítulo nombra la categoría más grande y su proporción, así que la tarjeta responde tanto a dónde fue la mayor parte del tiempo como a cuánto se registró.
+- **CONCENTRACIÓN** suma las categorías que elegiste seguir de cerca. En el ejemplo, Operaciones de pingüinos y Control de misión forman las categorías de concentración.
+- **OTROS** es todo lo que queda fuera de ese conjunto.
+
+Antes de que existan categorías de concentración, Lotti muestra **Elegir categorías de concentración** en lugar de dos tarjetas con valor cero. Selecciónalo, elige una o más categorías activas y termina con **Listo**. Usa el botón de ajuste de la tarjeta Concentración cuando necesites cambiarlas. Esta preferencia se guarda localmente en Lotti y no altera las categorías de ninguna entrada.
+
+## Elige un período útil
+
+Selecciona el período para cambiar entre **Día**, **Semana**, **Mes**, **Trimestre** y **Año**. Usa las flechas para avanzar o retroceder un período completo cada vez. La flecha hacia delante se detiene en el período actual, por lo que el panel nunca navega hacia un intervalo futuro vacío.
+
+Selecciona la etiqueta de fecha para abrir el calendario y saltar directamente al período que contiene otro día. Los límites de semana siguen el primer día de la semana configurado por la región del dispositivo.
+
+Dos atajos cubren las preguntas más habituales:
+
+- **Este mes** muestra el mes hasta hoy; y
+- **Este año** muestra el año hasta hoy.
+
+Estos intervalos terminan hoy en lugar de añadir días futuros vacíos. La etiqueta incluye **(hasta ahora)** y los promedios usan solo los días transcurridos.
+
+## Lee juntos el gráfico y la tabla
+
+Las barras apiladas muestran cómo contribuyó cada categoría a cada hora, día o semana del intervalo. Pasa el cursor o pulsa una barra para ver los valores por categoría detrás de ese bloque.
+
+### Sigue el total acumulado
+
+Selecciona **Total acumulado** cuando la pregunta cambie de «¿qué ocurrió en este bloque?» a «¿cuánto he acumulado desde que comenzó este intervalo?». Lotti convierte cada categoría en un área acumulativa:
+
+- el grosor de una banda de color en una fecha es el tiempo registrado de esa categoría desde el inicio del intervalo seleccionado hasta esa fecha;
+- el borde superior de toda la pila es el tiempo registrado acumulado durante el mismo intervalo; y
+- las bandas solo pueden mantenerse o crecer. Una sección plana significa que no se añadió tiempo a esa categoría en esos bloques; no resta trabajo anterior.
+
+<ManualScreenshot
+  caseId="time-analysis/running-total"
+  alt="Gráfico de total acumulado de Análisis de tiempo que acumula categorías de Project Waddle a lo largo del mes seleccionado"
+  caption="El total acumulado reúne cada categoría desde el principio del intervalo. El borde superior es el tiempo total registrado hasta ese momento; cada banda muestra cuánto aportó su categoría a ese total."
+/>
+
+El intervalo seleccionado determina dónde empieza el recuento. Al pasar a otro período, el total se reinicia en el primer bloque de ese período. **Día** usa bloques por hora, los intervalos cortos de varios días usan bloques diarios y los intervalos largos usan bloques semanales, pero el significado acumulativo se mantiene. En un período actual sin terminar, Lotti detiene el área en el último bloque transcurrido en vez de dibujar una línea plana engañosa a través de fechas futuras.
+
+El total acumulado cambia solo la proyección del gráfico. **TOTAL**, **CONCENTRACIÓN**, **OTROS** y la tabla por categoría siguen describiendo todo el intervalo seleccionado. Pasa el cursor o pulsa el área para ver el valor acumulado de cada categoría en ese punto. Selecciona **Por día**, **Por semana** o **Por hora** para volver a valores individuales por bloque. Si solo ha transcurrido un bloque, Lotti mantiene las barras porque una línea acumulada de un punto no comunicaría una tendencia.
+
+La tabla es la consulta precisa. Ordena las categorías por tiempo registrado y muestra su total, proporción, promedio por día y una barra de datos relativa. Una fila gris **Sin categoría** es deliberada: hace visible la atribución que falta en lugar de ocultarla silenciosamente. Abre las entradas o tareas relacionadas y asigna una categoría cuando ese tiempo deba pertenecer a un área operativa.
+
+## Compara períodos equivalentes
+
+<ManualScreenshot
+  caseId="time-analysis/compare"
+  alt="Comparación de Análisis de tiempo para Project Waddle con tiempo actual, tiempo del período anterior y cambios porcentuales por categoría"
+  caption="Comparar usa los mismos días transcurridos en cada período. La dirección se comunica mediante una flecha, signo y color, mientras el gráfico sigue centrado en el período actual."
+/>
+
+Selecciona **Comparar** para añadir el período anterior. Para una semana, mes, trimestre o año en curso, Lotti compara la parte transcurrida con el mismo número de días inmediatamente anteriores. Por tanto, el resultado de un domingo de mes hasta hoy no se compara con un mes anterior completo.
+
+Las tarjetas destacadas ganan su cambio porcentual y valor anterior. La tabla cambia a **ACTUAL**, **ANTERIOR** y **Cambio**. En anchos estrechos se omite la columna Anterior, de menor prioridad, mientras Actual y Cambio siguen visibles. Un resultado al alza o a la baja usa flecha y signo explícito además de color; los cambios muy pequeños permanecen neutrales y un resultado sin línea base anterior se muestra como nuevo.
+
+El gráfico sigue mostrando solo el período actual. La nota **Comparación mostrada en la tabla de abajo** apunta a los valores exactos y evita que un segundo conjunto de barras oscurezca la combinación de categorías.
+
+## Qué cuenta Lotti
+
+Análisis de tiempo cuenta las entradas de diario cronometradas cuyo final es posterior a su inicio. La duración de audio no se cuenta por separado, porque una grabación hecha durante un temporizador en marcha se contaría dos veces.
+
+La atribución de categoría sigue el trabajo:
+
+1. Si la entrada de tiempo está vinculada a una tarea con categoría, gana la categoría de la tarea.
+2. En caso contrario, se usa la categoría de la propia entrada de tiempo.
+3. Si no existe ninguna de las dos, el tiempo aparece como Sin categoría.
+
+Los temporizadores superpuestos de la misma categoría se fusionan antes de calcular el total. Las superposiciones de categorías diferentes permanecen en ambas categorías, porque representan clases distintas de actividad registrada. Las entradas que abarcan la medianoche se dividen en los días de calendario locales correctos. Las entradas privadas respetan el ajuste global de visibilidad de datos privados y el panel se actualiza cuando cambian entradas, vínculos, categorías de tarea o ese ajuste de visibilidad.
+
+## Mantén la imagen fiable
+
+Usa categorías de forma consistente en las tareas que contienen trabajo registrado. Revisa periódicamente la fila Sin categoría y elige categorías de concentración que respondan a una pregunta real en lugar de intentar incluirlo todo. Para Project Waddle, vigilar Operaciones de pingüinos y Control de misión hace que la tarjeta Concentración sea una señal de preparación operativa, mientras que Diplomacia de los peces y Mantenimiento humano siguen visibles en el desglose completo.
+
+Análisis de tiempo no exporta actualmente CSV, no agrupa resultados por proyecto ni dibuja el período anterior como otra serie del gráfico. Los valores exactos de la comparación se conservan en la tabla, donde son más fáciles de leer y tienen menos probabilidades de distorsionar la imagen del período actual.

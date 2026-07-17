@@ -1,0 +1,131 @@
+---
+title: Registra hábitos y mediciones
+description: Configura comportamientos recurrentes y observaciones numéricas, y registra cada uno con honestidad.
+---
+
+# Registra hábitos y mediciones
+
+Un hábito responde **¿ocurrió este comportamiento recurrente?** Una medición responde **¿qué valor numérico observé?** Pueden apoyar el mismo objetivo sin ser intercambiables: «Pase de lista de pingüinos emperador» es un hábito, mientras que «Pingüinos contabilizados» es un valor medible.
+
+## Trabaja con hábitos
+
+La página Hábitos organiza las definiciones activas entre lo que corresponde hacer ahora, lo previsto para más tarde y lo completado. Su resumen diario, historial de constancia, rachas y gráfico de tasa de cumplimiento te ayudan a detectar patrones sin convertir un día omitido en toda la historia.
+
+<ManualScreenshot
+  caseId="habits/today"
+  alt="Panel de hábitos de Operaciones de pingüinos con controles de hábitat, pase de lista de pingüinos, inventario de sardinas, estado de finalización, rachas e historial reciente"
+/>
+
+### Crea y busca definiciones de hábitos
+
+1. Abre **Ajustes → Hábitos**.
+2. Selecciona **Crear hábito**.
+3. Pon al comportamiento un nombre concreto y repetible y una descripción útil.
+4. Elige su categoría, opciones y programación.
+5. Guarda.
+
+<ManualScreenshot
+  caseId="habits/settings-list"
+  alt="Ajustes de hábitos con Pase de lista de pingüinos emperador, Revisar el pronóstico de sardinas y Recorrer los sellos del hábitat, con estados favorito, inactivo y privado"
+  caption="Busca definiciones aquí. La estrella, el ojo oculto y el candado identifican hábitos favoritos, inactivos y privados."
+/>
+
+<ManualScreenshot
+  caseId="habits/settings-detail"
+  alt="Editor del hábito Pase de lista de pingüinos emperador con descripción de expedición, categoría Operaciones de pingüinos y opciones de favorito, privado y activo"
+/>
+
+El editor de definiciones incluye:
+
+- **Categoría** para filtrar y aportar contexto visual.
+- **Panel** cuando el hábito debe aparecer como gráfico en un panel seleccionado.
+- **Favorito** para mayor relevancia.
+- **Privado** para ocultarlo salvo cuando se muestran las entradas privadas.
+- **Activo** para controlar si aparece en la página Hábitos sin eliminar su historial.
+
+### Programa un hábito diario
+
+<ManualScreenshot
+  caseId="habits/schedule"
+  alt="Programación del Pase de lista de pingüinos emperador que empieza el 1 de julio, se muestra desde las 06:00 y tiene una alerta a las 06:30"
+/>
+
+El editor actual prioriza el uso diario. Establece una **Fecha de inicio**, opcionalmente retrasa desde cuándo se **muestra el hábito** y, de forma opcional, elige cuándo Lotti debe **mostrar una alerta**. El modelo de datos también entiende programaciones semanales y mensuales, pero el editor actual expone los controles de tiempo más completos para hábitos diarios.
+
+### Registra lo que ocurrió de verdad
+
+Abre un hábito pendiente o usa su acción rápida. El formulario detallado de finalización admite tres resultados:
+
+- **Éxito**: el comportamiento ocurrió.
+- **Omitido**: se esperaba y era posible, pero no ocurrió.
+- **Saltar**: no era razonable aplicarlo ese día.
+
+<ManualScreenshot
+  caseId="habits/record"
+  alt="Formulario de finalización de hábito para inspeccionar los sellos del hábitat de pingüinos, con resultados Éxito, Saltar y Omitido, además de fecha y notas"
+/>
+
+Usa el estado que conserve la realidad. Un historial sincero es más útil que un gráfico de aspecto perfecto. Los registros de finalización son entradas de diario, por lo que las vistas posteriores pueden reconstruir el resultado efectivo de cada hábito y día.
+
+## Trabaja con mediciones
+
+Una definición de medición describe el número antes de registrarlo: su nombre, unidad, privacidad y cómo se combinan varias observaciones en los gráficos.
+
+<ManualScreenshot
+  caseId="measurables/settings-list"
+  alt="Ajustes de mediciones con Presión del hábitat, Pingüinos contabilizados y Sardinas consumidas"
+/>
+
+### Crea un valor medible
+
+1. Abre **Ajustes → Valores medibles**.
+2. Selecciona la acción de añadir.
+3. Añade un nombre, descripción opcional y abreviatura de unidad concisa.
+4. Elige la agregación predeterminada que usarán los gráficos.
+5. Decide si debe ser favorito o privado y guarda.
+
+<ManualScreenshot
+  caseId="measurables/settings-detail"
+  alt="Editor de la medición Presión del hábitat que usa kPa y agregación Promedio diario"
+/>
+
+Elige la agregación según lo que signifiquen las lecturas repetidas:
+
+| Agregación | Úsala cuando |
+| --- | --- |
+| Sin agregación | Cada observación individual importa |
+| Total diario | Las lecturas se acumulan, como las sardinas consumidas |
+| Máximo diario | El pico del día es la señal importante |
+| Promedio diario | Las lecturas muestrean un valor cambiante, como la presión del hábitat |
+| Total por hora | La acumulación necesita bloques horarios más finos |
+
+La unidad aporta contexto de visualización; no convierte valores. Si defines la presión del hábitat como `kPa`, registra los valores en kPa de forma consistente. Crea otra medición si una unidad distinta representa una serie que realmente es diferente.
+
+### Registra una medición
+
+Abre un panel que contenga la medición y selecciona la acción de añadir de su gráfico. Introduce el valor observado; Lotti mantiene la unidad junto al número para que quede claro qué se guardará. Los valores distintos recientes aparecen como acciones de **Registro rápido** cuando resulta útil repetir uno de ellos.
+
+<ManualScreenshot
+  caseId="measurements/capture"
+  alt="Editor de medición Sardinas consumidas abierto desde su gráfico de panel con datos, con 84 sardinas, sugerencias de registro rápido, hora observada, comentario y acción Guardar"
+/>
+
+Usa **Observado a las** para la hora en la que se tomó realmente la lectura, en lugar de la hora en que la introduces. La primera página selecciona la fecha del calendario. **Hoy** vuelve directamente a la fecha actual.
+
+<ManualScreenshot
+  caseId="measurements/date"
+  alt="Calendario Observado a las que selecciona el viernes 17 de julio de 2026 para la medición de sardinas"
+/>
+
+Desplázate hasta la sección de hora para establecer la hora y los minutos. **Ahora** restaura la hora actual. Selecciona **Listo** para volver al borrador de medición, que conserva los datos, y después **Guardar** para crear la entrada de diario.
+
+<ManualScreenshot
+  caseId="measurements/time"
+  alt="Rueda de hora Observado a las ajustada a las 10:30 para la medición de sardinas"
+/>
+
+El comentario es opcional, pero resulta útil cuando un número necesita contexto operativo: por ejemplo, una entrega, un turno inusual o un método de medición modificado. Guardar una medición no altera su definición ni su regla de agregación.
+
+## Conecta ambos sin confundirlos
+
+Un pase de lista puede completarse correctamente aunque solo se cuenten 36 pingüinos: el hábito registra si ocurrió el procedimiento, mientras la medición registra el resultado. Coloca ambos en un [panel](./dashboards.mdx) cuando su relación responda una pregunta operativa recurrente.

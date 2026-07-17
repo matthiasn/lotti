@@ -1,0 +1,107 @@
+---
+title: Configura Lotti con el onboarding
+description: Conecta un proveedor de IA, elige un estilo de grabación y áreas de trabajo, y convierte tu primera idea en una tarea real.
+---
+
+# Configura Lotti con el onboarding
+
+El onboarding conecta las piezas mínimas del flujo de tareas asistido por IA de Lotti: un proveedor, un estilo de grabación, al menos una categoría y una primera tarea real. Es una configuración guiada, no un entorno de demostración aparte: los proveedores, las categorías y las tareas que creas aquí se quedan en la app normal.
+
+Abre **Ajustes → Onboarding** cuando quieras iniciar o repetir el recorrido. La página también indica si este perfil ya ha creado su primera tarea estructurada con IA.
+
+<ManualScreenshot
+  caseId="onboarding/settings"
+  alt="Ajustes de onboarding de Lotti que muestran el estado activado y la acción para repetir el onboarding"
+  caption="Este perfil de Project Waddle ya ha creado su primera tarea de IA. Puedes repetir el onboarding incluso después de activarlo."
+/>
+
+## Empieza por la bienvenida
+
+<ManualScreenshot
+  caseId="onboarding/welcome"
+  alt="Panel de bienvenida del onboarding de Lotti que invita a conectar un cerebro de IA y convertir voz en una tarea estructurada"
+  caption="El panel de bienvenida se abre sobre la app actual. Elige tu cerebro de IA para continuar o sal sin cambiar la configuración."
+/>
+
+Elige **Elige tu cerebro de IA** para empezar. **Explorar primero**, el área atenuada fuera del panel y la acción de volver del sistema cierran el onboarding sin conectar nada. Podrás volver desde Ajustes más adelante.
+
+Lotti también puede ofrecer esta bienvenida automáticamente a un perfil que cumpla los requisitos. El aviso automático tiene una frecuencia limitada de reintentos; la entrada de Ajustes no, así que siempre podrás volver.
+
+## Elige dónde se estructura cada tarea
+
+<ManualScreenshot
+  caseId="onboarding/providers"
+  alt="Selector de proveedores del onboarding de Lotti con Melious.ai, Mistral, Gemini, Qwen, OpenAI y Ollama"
+  caption="Los principales proveedores alojados aparecen primero. Despliega Más opciones para OpenAI y la opción local de Ollama."
+/>
+
+La página de proveedores identifica las opciones alojadas y locales disponibles:
+
+- **Melious.ai** es la opción predeterminada recomendada, alojada en la UE y con enrutamiento dinámico de modelos.
+- **Mistral**, **Gemini** y **Qwen** ofrecen sus regiones alojadas correspondientes.
+- **OpenAI** está disponible dentro de las opciones desplegadas.
+- **Ollama** se conecta a un endpoint local compatible y no requiere una clave de API alojada.
+
+<ManualScreenshot
+  caseId="onboarding/api-key"
+  alt="Panel de verificación del proveedor durante el onboarding de Lotti, con una conexión local de Ollama verificada"
+  caption="Lotti verifica el proveedor elegido antes de activar Conectar. Los proveedores alojados usan el mismo paso con un campo para la clave de API."
+/>
+
+Para un proveedor alojado, pega su clave de API. Lotti verifica la conexión antes de activar **Conectar**. Ollama verifica el endpoint local configurado e informa de los modelos disponibles. Una conexión correcta guarda el proveedor y prepara los modelos y el perfil de inferencia que usan los pasos restantes.
+
+<ManualScreenshot
+  caseId="onboarding/success"
+  alt="Confirmación del onboarding de Lotti de que el proveedor de IA está conectado y listo"
+  caption="La confirmación de conexión es deliberadamente tranquila; la recompensa importante queda reservada para tu primera tarea real."
+/>
+
+El texto de las tareas capturadas se envía al proveedor asignado a la categoría seleccionada para estructurarlo. Elige un proveedor cuyo despliegue y tratamiento de datos encajen con el material que vas a capturar. Si Ollama se ejecuta en un endpoint local accesible, la solicitud de estructuración permanece en la máquina que lo ejecuta.
+
+## Elige cómo grabar y en qué áreas trabajar
+
+<ManualScreenshot
+  caseId="onboarding/recording-style"
+  alt="Selector del estilo de grabación del onboarding de Lotti con las opciones orbe de energía moderno y vúmetro analógico"
+  caption="Elige la representación visual de grabación que te resulte más clara. Las dos opciones usan el mismo flujo de captura."
+/>
+
+Después de conectar, elige el estilo de grabación que usarán la captura de la primera tarea y las posteriores pantallas de captura de voz. Puedes cambiarlo de nuevo en **Ajustes → Estilo de grabación**.
+
+<ManualScreenshot
+  caseId="onboarding/categories"
+  alt="Selector de áreas de trabajo del onboarding de Lotti con Trabajo, Fitness, Familia, Amigos y la opción para añadir la tuya"
+  caption="Elige una o varias áreas para el nuevo proveedor. El texto ampliado y los diseños estrechos usan automáticamente una opción de ancho completo por fila."
+/>
+
+Después, selecciona una o varias áreas de trabajo. Los preajustes incluyen categorías habituales, como Trabajo, Fitness, Familia y Amigos; **Añadir la tuya** crea una categoría con un nombre que encaje con tu espacio de trabajo. El onboarding reutiliza una categoría existente con el mismo nombre en vez de crear un duplicado, la restaura cuando hace falta y la conecta al nuevo perfil de inferencia preparado.
+
+Los datos de demostración del manual crean dos destinos reales —**Penguin Operations** y **Mission Control**— para que el siguiente paso muestre la misma elección de categoría que verías en una cuenta en uso.
+
+## Captura tu primera tarea real
+
+<ManualScreenshot
+  caseId="onboarding/first-task"
+  alt="Panel de onboarding para la primera tarea de Lotti con captura de voz, los destinos Penguin Operations y Mission Control, sugerencias y la opción de escribir"
+  caption="Elige dónde debe quedar la tarea; después habla con naturalidad, usa una sugerencia inicial o selecciona ¿Prefieres escribir?. Aquí está seleccionada Penguin Operations."
+/>
+
+El panel de primera tarea utiliza el flujo de captura habitual de Lotti. Elige la categoría de destino y sigue uno de estos tres caminos:
+
+1. Selecciona el visual de grabación y di la tarea con una frase normal.
+2. Elige una sugerencia inicial para probar enseguida la estructuración.
+3. Elige **¿Prefieres escribir?** e introduce la idea sin usar el micrófono.
+
+Lotti muestra las palabras capturadas mientras las estructura. El resultado es una tarea real en la categoría elegida, no datos de ejemplo exclusivos del onboarding. Cuando la estructuración propone elementos para una lista de verificación, llegan a la tarea como propuestas para que puedas confirmarlas en vez de cambiar la tarea silenciosamente.
+
+<ManualScreenshot
+  caseId="onboarding/task-created"
+  alt="Panel de éxito del onboarding de Lotti que muestra la tarea creada Inspeccionar el relé de sardinas de Europa"
+  caption="La idea escrita de Project Waddle se convierte en «Inspeccionar el relé de sardinas de Europa». La tarea permanece en el panel hasta que la eliges."
+/>
+
+Elige la tarjeta de la tarea creada para cerrar el onboarding y abrir su página de tarea habitual. Desde ahí puedes revisar propuestas de lista de verificación, añadir una ilustración de portada o material de apoyo, establecer una fecha límite y prioridad, y llevar la tarea a Daily OS.
+
+Si cierras el flujo después de conectar un proveedor, Lotti conserva esa configuración y considera completada la bienvenida. Repetir el onboarding más tarde sigue siendo seguro: es una acción explícita de Ajustes, no otro aviso automático.
+
+Continúa con [crear tu primera tarea](./first-task.mdx), [gestionar categorías](../organize-and-reflect/categories.mdx) y [configurar proveedores](../ai-and-automation/provider-setup.mdx).

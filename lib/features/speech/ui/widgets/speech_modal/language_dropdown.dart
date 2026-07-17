@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -8,8 +9,9 @@ import 'package:lotti/themes/theme.dart';
 /// Dropdown for choosing the transcription language of an audio entry.
 ///
 /// Watches the entry via `entryControllerProvider`, renders nothing for
-/// non-audio entries, and offers `auto`/English/German. Selecting a value
-/// persists it through the entry controller's `setLanguage`.
+/// non-audio entries, and offers automatic detection plus every language Lotti
+/// supports. Selecting a value persists it through the entry controller's
+/// `setLanguage`.
 class LanguageDropdown extends ConsumerWidget {
   const LanguageDropdown({
     required this.entryId,
@@ -38,18 +40,16 @@ class LanguageDropdown extends ConsumerWidget {
         DropdownButton(
           value: item.data.language,
           iconEnabledColor: context.colorScheme.outline,
-          items: const [
-            DropdownMenuItem(
+          items: [
+            const DropdownMenuItem<String>(
               value: '',
               child: Text('auto'),
             ),
-            DropdownMenuItem(
-              value: 'en',
-              child: Text('English'),
-            ),
-            DropdownMenuItem(
-              value: 'de',
-              child: Text('Deutsch'),
+            ...SupportedLanguage.values.map(
+              (language) => DropdownMenuItem<String>(
+                value: language.code,
+                child: Text(language.localizedName(context)),
+              ),
             ),
           ],
           onChanged: (String? value) {

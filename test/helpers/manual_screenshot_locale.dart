@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'manual_screenshot_czech_text.dart';
 import 'manual_screenshot_french_text.dart';
 import 'manual_screenshot_romanian_text.dart';
+import 'manual_screenshot_spanish_text.dart';
 
 /// Locale requested for the current manual capture process.
 ///
@@ -16,12 +17,13 @@ Locale manualScreenshotLocaleFromEnvironment(Map<String, String> environment) {
   if (languageCode != 'en' &&
       languageCode != 'de' &&
       languageCode != 'fr' &&
+      languageCode != 'es' &&
       languageCode != 'cs' &&
       languageCode != 'ro') {
     throw ArgumentError.value(
       languageCode,
       'LOTTI_MANUAL_LOCALE',
-      'Supported manual screenshot locales are en, de, fr, cs, and ro.',
+      'Supported manual screenshot locales are en, de, fr, es, cs, and ro.',
     );
   }
   return Locale(languageCode);
@@ -35,11 +37,13 @@ String manualScreenshotText({
   required String en,
   required String de,
   String? fr,
+  String? es,
   String? cs,
   String? ro,
 }) => switch (manualScreenshotLocale.languageCode) {
   'de' => de,
   'fr' => fr ?? manualScreenshotFrenchText(en) ?? en,
+  'es' => es ?? manualScreenshotSpanishText(en) ?? en,
   'cs' => cs ?? manualScreenshotCzechText(en) ?? en,
   'ro' => ro ?? manualScreenshotRomanianText(en) ?? en,
   _ => en,

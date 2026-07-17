@@ -6626,6 +6626,121 @@ class AppLocalizationsEn extends AppLocalizations {
   String get manageLinks => 'Manage links...';
 
   @override
+  String get matrixStatsCatchupBatches => 'Catch-up Batches';
+
+  @override
+  String get matrixStatsCircuitOpens => 'Circuit Opens';
+
+  @override
+  String get matrixStatsConflicts => 'Conflicts';
+
+  @override
+  String get matrixStatsCopyDiagnostics => 'Copy Diagnostics';
+
+  @override
+  String get matrixStatsCopyDiagnosticsTooltip =>
+      'Copy sync diagnostics to the clipboard';
+
+  @override
+  String get matrixStatsDbApplied => 'DB Applied';
+
+  @override
+  String get matrixStatsDbApply => 'DB Apply';
+
+  @override
+  String get matrixStatsDbIgnoredVectorClock => 'DB Ignored (VectorClock)';
+
+  @override
+  String get matrixStatsDbMissingBase => 'DB Missing Base';
+
+  @override
+  String matrixStatsDroppedByType(Object type) {
+    return 'Dropped ($type)';
+  }
+
+  @override
+  String get matrixStatsEntryLinkNoops => 'EntryLink No-ops';
+
+  @override
+  String get matrixStatsFailures => 'Failures';
+
+  @override
+  String get matrixStatsFlushes => 'Flushes';
+
+  @override
+  String get matrixStatsForceRescan => 'Force Rescan';
+
+  @override
+  String get matrixStatsForceRescanTooltip => 'Force rescan and catch up now';
+
+  @override
+  String get matrixStatsLegend => 'Legend';
+
+  @override
+  String get matrixStatsLegendTooltip =>
+      'Legend:\n• processed.<type> = processed sync messages by payload type\n• droppedByType.<type> = per-type drops after retries or older-message ignores\n• dbApplied = database rows written\n• dbIgnoredByVectorClock = older or identical incoming data ignored by the database\n• conflictsCreated = concurrent vector clocks logged\n• dbMissingBase = skipped while awaiting a missing dependency or base row\n• staleAttachmentPurges = cached stale descriptors cleared before refresh';
+
+  @override
+  String get matrixStatsProcessed => 'Processed';
+
+  @override
+  String matrixStatsProcessedByType(Object type) {
+    return 'Processed ($type)';
+  }
+
+  @override
+  String get matrixStatsRefresh => 'Refresh';
+
+  @override
+  String get matrixStatsReliability => 'Reliability';
+
+  @override
+  String get matrixStatsRetriesScheduled => 'Retries Scheduled';
+
+  @override
+  String get matrixStatsRetryNow => 'Retry Now';
+
+  @override
+  String get matrixStatsRetryNowTooltip => 'Retry pending failures now';
+
+  @override
+  String get matrixStatsSignalLatencyLast => 'Signal Latency (last ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMax => 'Signal Latency (max ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMin => 'Signal Latency (min ms)';
+
+  @override
+  String get matrixStatsSignals => 'Signals';
+
+  @override
+  String get matrixStatsSignalsClientStream => 'Signals (client stream)';
+
+  @override
+  String get matrixStatsSignalsConnectivity => 'Signals (connectivity)';
+
+  @override
+  String get matrixStatsSignalsTimelineCallbacks =>
+      'Signals (timeline callbacks)';
+
+  @override
+  String get matrixStatsSkipped => 'Skipped';
+
+  @override
+  String get matrixStatsSkippedRetryCap => 'Skipped (Retry Cap)';
+
+  @override
+  String get matrixStatsStaleAttachmentPurges => 'Stale Attachment Purges';
+
+  @override
+  String get matrixStatsThroughput => 'Throughput';
+
+  @override
+  String get matrixStatsTopKpis => 'Top KPIs';
+
+  @override
   String get measurableDeleteConfirm => 'YES, DELETE THIS MEASURABLE';
 
   @override

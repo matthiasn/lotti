@@ -309,10 +309,7 @@ void main() {
         duration: const Duration(minutes: 7, seconds: 42),
         audioFile: 'europa-cold-chain.m4a',
         audioDirectory: '/manual_demo/',
-        // The Manual supports English, German, French, Czech, and Romanian.
-        // Keep the deterministic transcription model choice independent from
-        // the app chrome: only the German fixture uses a German model.
-        language: manualScreenshotLocale.languageCode == 'de' ? 'de' : 'en',
+        language: manualScreenshotLocale.languageCode,
         transcripts: [
           AudioTranscript(
             created: DateTime(2026, 7, 17, 8, 2),

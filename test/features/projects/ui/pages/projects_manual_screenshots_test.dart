@@ -502,8 +502,11 @@ void main() {
         expect(
           find.textContaining(
             _t(
-              'Project Waddle is on track',
-              'Project Waddle liegt',
+              'Project Waddle is on track for the orbital habitat demo. Clear '
+                  'the fish-feeder blocker before the emperor penguin roll call.',
+              'Project Waddle liegt für die Demo des Orbital-Habitats im Plan. '
+                  'Löse den Futterautomaten-Blocker vor dem Zählappell der '
+                  'Kaiserpinguine.',
             ),
           ),
           findsOneWidget,

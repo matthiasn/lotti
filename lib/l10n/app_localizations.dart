@@ -11572,6 +11572,222 @@ abstract class AppLocalizations {
   /// **'Manage links...'**
   String get manageLinks;
 
+  /// No description provided for @matrixStatsCatchupBatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Catch-up Batches'**
+  String get matrixStatsCatchupBatches;
+
+  /// No description provided for @matrixStatsCircuitOpens.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit Opens'**
+  String get matrixStatsCircuitOpens;
+
+  /// No description provided for @matrixStatsConflicts.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflicts'**
+  String get matrixStatsConflicts;
+
+  /// No description provided for @matrixStatsCopyDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Diagnostics'**
+  String get matrixStatsCopyDiagnostics;
+
+  /// No description provided for @matrixStatsCopyDiagnosticsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy sync diagnostics to the clipboard'**
+  String get matrixStatsCopyDiagnosticsTooltip;
+
+  /// No description provided for @matrixStatsDbApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'DB Applied'**
+  String get matrixStatsDbApplied;
+
+  /// No description provided for @matrixStatsDbApply.
+  ///
+  /// In en, this message translates to:
+  /// **'DB Apply'**
+  String get matrixStatsDbApply;
+
+  /// No description provided for @matrixStatsDbIgnoredVectorClock.
+  ///
+  /// In en, this message translates to:
+  /// **'DB Ignored (VectorClock)'**
+  String get matrixStatsDbIgnoredVectorClock;
+
+  /// No description provided for @matrixStatsDbMissingBase.
+  ///
+  /// In en, this message translates to:
+  /// **'DB Missing Base'**
+  String get matrixStatsDbMissingBase;
+
+  /// No description provided for @matrixStatsDroppedByType.
+  ///
+  /// In en, this message translates to:
+  /// **'Dropped ({type})'**
+  String matrixStatsDroppedByType(Object type);
+
+  /// No description provided for @matrixStatsEntryLinkNoops.
+  ///
+  /// In en, this message translates to:
+  /// **'EntryLink No-ops'**
+  String get matrixStatsEntryLinkNoops;
+
+  /// No description provided for @matrixStatsFailures.
+  ///
+  /// In en, this message translates to:
+  /// **'Failures'**
+  String get matrixStatsFailures;
+
+  /// No description provided for @matrixStatsFlushes.
+  ///
+  /// In en, this message translates to:
+  /// **'Flushes'**
+  String get matrixStatsFlushes;
+
+  /// No description provided for @matrixStatsForceRescan.
+  ///
+  /// In en, this message translates to:
+  /// **'Force Rescan'**
+  String get matrixStatsForceRescan;
+
+  /// No description provided for @matrixStatsForceRescanTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Force rescan and catch up now'**
+  String get matrixStatsForceRescanTooltip;
+
+  /// No description provided for @matrixStatsLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Legend'**
+  String get matrixStatsLegend;
+
+  /// No description provided for @matrixStatsLegendTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Legend:\n• processed.<type> = processed sync messages by payload type\n• droppedByType.<type> = per-type drops after retries or older-message ignores\n• dbApplied = database rows written\n• dbIgnoredByVectorClock = older or identical incoming data ignored by the database\n• conflictsCreated = concurrent vector clocks logged\n• dbMissingBase = skipped while awaiting a missing dependency or base row\n• staleAttachmentPurges = cached stale descriptors cleared before refresh'**
+  String get matrixStatsLegendTooltip;
+
+  /// No description provided for @matrixStatsProcessed.
+  ///
+  /// In en, this message translates to:
+  /// **'Processed'**
+  String get matrixStatsProcessed;
+
+  /// No description provided for @matrixStatsProcessedByType.
+  ///
+  /// In en, this message translates to:
+  /// **'Processed ({type})'**
+  String matrixStatsProcessedByType(Object type);
+
+  /// No description provided for @matrixStatsRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get matrixStatsRefresh;
+
+  /// No description provided for @matrixStatsReliability.
+  ///
+  /// In en, this message translates to:
+  /// **'Reliability'**
+  String get matrixStatsReliability;
+
+  /// No description provided for @matrixStatsRetriesScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Retries Scheduled'**
+  String get matrixStatsRetriesScheduled;
+
+  /// No description provided for @matrixStatsRetryNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry Now'**
+  String get matrixStatsRetryNow;
+
+  /// No description provided for @matrixStatsRetryNowTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry pending failures now'**
+  String get matrixStatsRetryNowTooltip;
+
+  /// No description provided for @matrixStatsSignalLatencyLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Signal Latency (last ms)'**
+  String get matrixStatsSignalLatencyLast;
+
+  /// No description provided for @matrixStatsSignalLatencyMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Signal Latency (max ms)'**
+  String get matrixStatsSignalLatencyMax;
+
+  /// No description provided for @matrixStatsSignalLatencyMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Signal Latency (min ms)'**
+  String get matrixStatsSignalLatencyMin;
+
+  /// No description provided for @matrixStatsSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'Signals'**
+  String get matrixStatsSignals;
+
+  /// No description provided for @matrixStatsSignalsClientStream.
+  ///
+  /// In en, this message translates to:
+  /// **'Signals (client stream)'**
+  String get matrixStatsSignalsClientStream;
+
+  /// No description provided for @matrixStatsSignalsConnectivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Signals (connectivity)'**
+  String get matrixStatsSignalsConnectivity;
+
+  /// No description provided for @matrixStatsSignalsTimelineCallbacks.
+  ///
+  /// In en, this message translates to:
+  /// **'Signals (timeline callbacks)'**
+  String get matrixStatsSignalsTimelineCallbacks;
+
+  /// No description provided for @matrixStatsSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get matrixStatsSkipped;
+
+  /// No description provided for @matrixStatsSkippedRetryCap.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped (Retry Cap)'**
+  String get matrixStatsSkippedRetryCap;
+
+  /// No description provided for @matrixStatsStaleAttachmentPurges.
+  ///
+  /// In en, this message translates to:
+  /// **'Stale Attachment Purges'**
+  String get matrixStatsStaleAttachmentPurges;
+
+  /// No description provided for @matrixStatsThroughput.
+  ///
+  /// In en, this message translates to:
+  /// **'Throughput'**
+  String get matrixStatsThroughput;
+
+  /// No description provided for @matrixStatsTopKpis.
+  ///
+  /// In en, this message translates to:
+  /// **'Top KPIs'**
+  String get matrixStatsTopKpis;
+
   /// No description provided for @measurableDeleteConfirm.
   ///
   /// In en, this message translates to:

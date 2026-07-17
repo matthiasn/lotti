@@ -747,7 +747,10 @@ void main() {
         final context = tester.element(
           find.text(messages.conflictFieldTitle),
         );
-        await tester.tap(find.text(context.messages.conflictPickerCombine));
+        final combine = find.text(context.messages.conflictPickerCombine);
+        await tester.ensureVisible(combine);
+        await tester.pump();
+        await tester.tap(combine, warnIfMissed: false);
         await settleFrames(tester, 4);
       case _SyncSurface.hub:
       case _SyncSurface.nodeProfile:

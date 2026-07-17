@@ -41,6 +41,12 @@ const _copy = <String, String>{
   'This summary is out of date': 'Este resumen no está actualizado',
   'The task changed after this summary was generated.':
       'La tarea cambió después de generar este resumen.',
+  'Pressure stable · 37 penguins accounted for':
+      'Presión estable · 37 pingüinos emperador contabilizados',
+  'The feeder still launches lunch toward Mission Control':
+      'El alimentador todavía dispara el almuerzo hacia el control de misión',
+  'Europa cold-chain manifest ready to reconcile':
+      'El manifiesto de la cadena de frío de Europa está listo para conciliarse',
   'Wake agent': 'Ejecutar agente',
   'Filter tasks': 'Filtrar tareas',
   'Filter projects': 'Filtrar proyectos',
@@ -68,6 +74,29 @@ const _copy = <String, String>{
   'Show private entries': 'Mostrar entradas privadas',
   'Habitat pressure-seal photo': 'Foto del sello de presión del hábitat',
   'Project Details': 'Detalles del proyecto',
+  'Europa sardine cold chain': 'Cadena de frío de sardinas de Europa',
+  'Penguin passenger treaty': 'Tratado sobre pasajeros pingüinos',
+  'Orbital ice-garden wellness program':
+      'Programa de bienestar del jardín de hielo orbital',
+  'Orbital launch readiness and habitat safety':
+      'Preparación del lanzamiento orbital y seguridad del hábitat',
+  'Keep every cargo pod below the emergency fish ceiling':
+      'Mantener cada cápsula de carga por debajo del límite de emergencia para peces',
+  'Settle the passenger-versus-cargo question before launch':
+      'Resolver la cuestión de pasajeros frente a carga antes del lanzamiento',
+  'One quiet lap around the orbital ice garden':
+      'Una vuelta tranquila por el jardín de hielo orbital',
+  'Project Waddle is on track for the orbital habitat demo. Clear the fish-feeder blocker before the emperor penguin roll call.':
+      'Project Waddle avanza según lo previsto para la demostración del hábitat orbital. Resuelve el bloqueo del alimentador de peces antes del recuento de pingüinos emperador.',
+  'Project Waddle mission log': 'Registro de misión de Project Waddle',
+  'Project Waddle mission log — pressure seals green, 37 emperor penguins present, and the sardine cargo is cold.':
+      'Registro de misión de Project Waddle: los sellos de presión están en verde, los 37 pingüinos emperador están presentes y la carga de sardinas está fría.',
+  '# Project Waddle mission log\n\nAll **37 emperor penguins** reported for launch rehearsal.\n\n- Pressure seals: green\n- Sardine cargo: cold\n- Fish feeder: suspiciously enthusiastic':
+      '# Registro de misión de Project Waddle\n\nLos **37 pingüinos emperador** se presentaron al ensayo de lanzamiento.\n\n- Sellos de presión: en verde\n- Carga de sardinas: fría\n- Alimentador de peces: sospechosamente entusiasta',
+  'Mission Control approves the Project Waddle launch corridor.':
+      'El control de misión aprueba el corredor de lanzamiento de Project Waddle.',
+  'Orbital Research': 'Investigación orbital',
+  'language': 'Idioma',
   'Status': 'Estado',
   'Category': 'Categoría',
   'Change status': 'Cambiar estado',

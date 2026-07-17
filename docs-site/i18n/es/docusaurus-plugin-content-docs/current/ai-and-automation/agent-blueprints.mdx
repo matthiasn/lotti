@@ -1,0 +1,123 @@
+---
+title: Diseña plantillas y almas de agentes
+description: Define responsabilidades reutilizables para agentes, separa la personalidad de las instrucciones y mejora ambas mediante revisiones individuales versionadas.
+---
+
+# Diseña plantillas y almas de agentes
+
+Una **plantilla de agente** define una responsabilidad reutilizable: el tipo de
+agente, su perfil de inferencia, directrices operativas, formato de informe y
+personalidad opcional. Un **alma** reúne la voz reutilizable, los límites de
+tono, el estilo de acompañamiento y la política contra la adulación. Mantener
+estos conceptos separados permite mejorar una personalidad de forma coherente
+en varias plantillas sin copiar instrucciones entre ellas.
+
+## Revisa el catálogo de plantillas
+
+Abre **Ajustes → Agentes → Plantillas de agentes**. El catálogo muestra el tipo
+de plantilla, la identidad del modelo, la versión activa y si una revisión
+requiere atención.
+
+<ManualScreenshot
+  caseId="agents/templates"
+  alt="Plantillas de agentes de Lotti para seguridad del hábitat orbital, planificación diaria de Project Waddle, seguimiento de suministros de sardinas y asesoría de diplomacia de peces"
+  caption="Cada plantilla de Project Waddle tiene una responsabilidad acotada y una versión visible, en vez de un único agente para todo con un prompt imposible de revisar."
+/>
+
+Los tipos integrados cubren ámbitos distintos:
+
+- **Agente de tareas** trabaja con una tarea y sus evidencias vinculadas.
+- **Agente del día** planifica y revisa un día.
+- **Agente de proyecto** sigue un proyecto a lo largo del tiempo.
+- **Agente de evento** sigue el espacio de trabajo de un evento.
+- **Mejorador de plantillas** respalda el proceso de revisión individual
+  versionado.
+
+## Edita una plantilla
+
+Selecciona una plantilla para editar su configuración actual. Elige un perfil
+de inferencia predeterminado con las herramientas y modalidades que requiere la
+responsabilidad y, si quieres, asígnale un alma.
+
+<ManualScreenshot
+  caseId="agents/template-editor"
+  alt="Editor de la plantilla Orbital Habitat Sentinel con Project Waddle Command y Admiral Pebble, además de directrices de seguridad del hábitat e informes"
+  caption="La directriz operativa del centinela describe qué inspeccionar; Admiral Pebble aporta el estilo de comunicación y de cuestionamiento."
+/>
+
+Usa deliberadamente los dos campos de directrices:
+
+- **Directriz general** define la responsabilidad, los límites y las reglas de
+  decisión.
+- **Directriz de informe** define qué debe contener un informe guardado útil.
+
+Guardar una plantilla editada crea una versión nueva. El historial existente se
+mantiene disponible para auditoría y reversión; no ocultes responsabilidades sin
+relación en una directriz larguísima solo para reducir el número de plantillas.
+
+## Ejecuta una plantilla individualmente
+
+La página **1-a-1** de una plantilla contextualiza los cambios propuestos con
+actividad real de activaciones, comentarios, rendimiento y sesiones anteriores.
+Una sesión pendiente es una propuesta, no una reescritura automática.
+
+<ManualScreenshot
+  caseId="agents/template-review"
+  alt="Revisión individual de Orbital Habitat Sentinel con una propuesta para destacar la decisión de lanzamiento y métricas de rendimiento recientes"
+  caption="La propuesta de ejemplo responde a un fallo concreto: el hallazgo de seguridad era correcto, pero la decisión de dar luz verde o no quedó enterrada bajo trivialidades sobre peces."
+/>
+
+Inicia la conversación, inspecciona las evidencias y aprueba solo los cambios
+que mejoren la responsabilidad. El resultado aprobado se convierte en otro
+registro de plantilla versionado.
+
+## Mantén la personalidad reutilizable con almas
+
+Abre **Almas** para ver las personalidades que pueden compartir las plantillas.
+Un alma no es otro prompt de tarea; controla cómo un agente comunica, acompaña y
+cuestiona.
+
+<ManualScreenshot
+  caseId="agents/souls"
+  alt="Catálogo de almas de Lotti con Admiral Pebble, Dr. Flipper y Captain Sardina"
+  caption="Project Waddle separa a un sereno director de vuelo, una científica curiosa y un coordinador práctico de carga de los trabajos que los utilizan."
+/>
+
+El editor de almas mantiene explícitas cuatro cuestiones:
+
+<ManualScreenshot
+  caseId="agents/soul-editor"
+  alt="Editor del alma Admiral Pebble con voz, límites de tono, estilo de acompañamiento y política contra la adulación"
+  caption="Admiral Pebble puede seguir siendo cercano y decidido, y al mismo tiempo cuestionar las hipótesis optimistas de lanzamiento con evidencias."
+/>
+
+- **Directriz de voz** describe la voz reconocible y las prioridades de
+  comunicación.
+- **Límites de tono** indican lo que la voz debe evitar.
+- **Estilo de acompañamiento** describe cómo ayuda a alguien a tomar una
+  decisión.
+- **Política contra la adulación** explica cuándo y cómo debe discrepar.
+
+Usa límites de comportamiento concretos. «Sé útil» es difícil de revisar;
+«cuestiona las hipótesis optimistas de lanzamiento y cita la observación que
+cambió tu conclusión» puede contrastarse con resultados reales.
+
+## Haz evolucionar con cuidado un alma compartida
+
+Una sesión **1-a-1** de un alma recoge comentarios de todas las plantillas que
+usan esa personalidad. Eso hace que el cambio sea potente: aprobarlo puede
+mejorar varios agentes, pero un mal cambio también puede afectar a todos.
+
+<ManualScreenshot
+  caseId="agents/soul-review"
+  alt="Revisión individual del alma Admiral Pebble con una propuesta, una plantilla que la comparte y el historial de sesiones completadas"
+  caption="El número de elementos que la comparten y el historial de sesiones hacen visible el alcance antes de aprobar cambios de personalidad."
+/>
+
+Lee el número de elementos que la comparten, el resumen de comentarios
+propuesto y el resumen anterior antes de iniciar una revisión de personalidad.
+Si los comentarios se aplican a una sola responsabilidad, cambia esa plantilla
+en vez de enseñar al alma compartida una regla específica de tarea.
+
+Vuelve a [Ejecutar y supervisar agentes](./agents.mdx) para inspeccionar las
+instancias y los ciclos de activación que producen estas plantillas.

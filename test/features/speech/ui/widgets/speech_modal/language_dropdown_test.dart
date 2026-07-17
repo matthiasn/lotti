@@ -57,16 +57,22 @@ JournalEntry _makeJournalEntry() {
 Future<FakeEntryController> _pump(
   WidgetTester tester, {
   JournalEntity? entry,
+  Locale? locale,
 }) async {
   final ctrl = FakeEntryController(entry);
   final entryId = entry?.id ?? 'audio-1';
 
   await tester.pumpWidget(
-    makeTestableWidgetWithScaffold(
-      LanguageDropdown(entryId: entryId),
+    makeTestableWidgetNoScroll(
+      Scaffold(
+        body: SingleChildScrollView(
+          child: LanguageDropdown(entryId: entryId),
+        ),
+      ),
       overrides: [
         entryControllerProvider(entryId).overrideWith(() => ctrl),
       ],
+      locale: locale,
     ),
   );
   await tester.pump();
@@ -142,11 +148,15 @@ void main() {
     );
 
     testWidgets(
-      'shows "Deutsch" as option when language is de',
+      'shows the selected transcription language in the app locale',
       (tester) async {
-        await _pump(tester, entry: _makeAudioEntry(language: 'de'));
+        await _pump(
+          tester,
+          entry: _makeAudioEntry(language: 'es'),
+          locale: const Locale('es'),
+        );
 
-        expect(find.text('Deutsch'), findsWidgets);
+        expect(find.text('Español'), findsWidgets);
       },
     );
 

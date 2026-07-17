@@ -3,6 +3,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/diagnostics_panel.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_actions.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_grid.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 class SyncMetricsSection extends StatelessWidget {
   const SyncMetricsSection({
@@ -42,40 +43,48 @@ class SyncMetricsSection extends StatelessWidget {
       ..sort((a, b) => a.key.compareTo(b.key));
   }
 
-  String _labelFor(String key) {
+  String _labelFor(BuildContext context, String key) {
+    final messages = context.messages;
     if (key.startsWith('processed.')) {
-      return 'Processed (${key.substring('processed.'.length)})';
+      return messages.matrixStatsProcessedByType(
+        key.substring('processed.'.length),
+      );
     }
     if (key.startsWith('droppedByType.')) {
-      return 'Dropped (${key.substring('droppedByType.'.length)})';
+      return messages.matrixStatsDroppedByType(
+        key.substring('droppedByType.'.length),
+      );
     }
-    const pretty = {
-      'processed': 'Processed',
-      'skipped': 'Skipped',
-      'failures': 'Failures',
-      'flushes': 'Flushes',
-      'catchupBatches': 'Catch-up Batches',
-      'skippedByRetryLimit': 'Skipped (Retry Cap)',
-      'retriesScheduled': 'Retries Scheduled',
-      'circuitOpens': 'Circuit Opens',
-      'dbApplied': 'DB Applied',
-      'dbIgnoredByVectorClock': 'DB Ignored (VectorClock)',
-      'conflictsCreated': 'Conflicts',
-      'dbMissingBase': 'DB Missing Base',
-      'dbEntryLinkNoop': 'EntryLink No-ops',
-      'staleAttachmentPurges': 'Stale Attachment Purges',
-      // Signals (ingestion)
-      'signalClientStream': 'Signals (client stream)',
-      'signalTimelineCallbacks': 'Signals (timeline callbacks)',
-      'signalConnectivity': 'Signals (connectivity)',
-      'signalLatencyLastMs': 'Signal Latency (last ms)',
-      'signalLatencyMinMs': 'Signal Latency (min ms)',
-      'signalLatencyMaxMs': 'Signal Latency (max ms)',
+    return switch (key) {
+      'processed' => messages.matrixStatsProcessed,
+      'skipped' => messages.matrixStatsSkipped,
+      'failures' => messages.matrixStatsFailures,
+      'flushes' => messages.matrixStatsFlushes,
+      'catchupBatches' => messages.matrixStatsCatchupBatches,
+      'skippedByRetryLimit' => messages.matrixStatsSkippedRetryCap,
+      'retriesScheduled' => messages.matrixStatsRetriesScheduled,
+      'circuitOpens' => messages.matrixStatsCircuitOpens,
+      'dbApplied' => messages.matrixStatsDbApplied,
+      'dbIgnoredByVectorClock' => messages.matrixStatsDbIgnoredVectorClock,
+      'conflictsCreated' => messages.matrixStatsConflicts,
+      'dbMissingBase' => messages.matrixStatsDbMissingBase,
+      'dbEntryLinkNoop' => messages.matrixStatsEntryLinkNoops,
+      'staleAttachmentPurges' => messages.matrixStatsStaleAttachmentPurges,
+      'signalClientStream' => messages.matrixStatsSignalsClientStream,
+      'signalTimelineCallbacks' => messages.matrixStatsSignalsTimelineCallbacks,
+      'signalConnectivity' => messages.matrixStatsSignalsConnectivity,
+      'signalLatencyLastMs' => messages.matrixStatsSignalLatencyLast,
+      'signalLatencyMinMs' => messages.matrixStatsSignalLatencyMin,
+      'signalLatencyMaxMs' => messages.matrixStatsSignalLatencyMax,
+      _ => key,
     };
-    return pretty[key] ?? key;
   }
 
-  Map<String, List<MapEntry<String, int>>> _grouped(Map<String, int> v2) {
+  Map<String, List<MapEntry<String, int>>> _grouped(
+    BuildContext context,
+    Map<String, int> v2,
+  ) {
+    final messages = context.messages;
     final throughput = _select(
       v2,
       (k) =>
@@ -115,12 +124,12 @@ class SyncMetricsSection extends StatelessWidget {
           k == 'signalLatencyMaxMs',
     ).where((e) => e.value != 0).toList();
     final sections = <String, List<MapEntry<String, int>>>{
-      'Throughput': throughput,
-      'Reliability': reliability,
-      'DB Apply': db,
+      messages.matrixStatsThroughput: throughput,
+      messages.matrixStatsReliability: reliability,
+      messages.matrixStatsDbApply: db,
     };
     if (signals.isNotEmpty) {
-      sections['Signals'] = signals;
+      sections[messages.matrixStatsSignals] = signals;
     }
     return sections;
   }
@@ -128,6 +137,7 @@ class SyncMetricsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final messages = context.messages;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,13 +183,13 @@ class SyncMetricsSection extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (kpiEntries.isNotEmpty) const Text('Top KPIs'),
+                if (kpiEntries.isNotEmpty) Text(messages.matrixStatsTopKpis),
                 if (kpiEntries.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 8, bottom: 12),
                     child: MetricsGrid(
                       entries: kpiEntries,
-                      labelFor: _labelFor,
+                      labelFor: (key) => _labelFor(context, key),
                     ),
                   ),
               ],
@@ -187,7 +197,7 @@ class SyncMetricsSection extends StatelessWidget {
           },
         ),
         // Grouped sections
-        ..._grouped(metrics).entries.expand(
+        ..._grouped(context, metrics).entries.expand(
           (section) => [
             RepaintBoundary(
               child: Padding(
@@ -201,7 +211,7 @@ class SyncMetricsSection extends StatelessWidget {
             RepaintBoundary(
               child: MetricsGrid(
                 entries: section.value,
-                labelFor: _labelFor,
+                labelFor: (key) => _labelFor(context, key),
               ),
             ),
             const SizedBox(height: 12),

@@ -45,7 +45,7 @@ const config: Config = {
   },
   i18n: {
     defaultLocale: 'en',
-    locales: ['en', 'de', 'fr', 'cs', 'ro'],
+    locales: ['en', 'de', 'fr', 'es', 'cs', 'ro'],
     localeConfigs: {
       en: {
         label: 'English',
@@ -58,6 +58,10 @@ const config: Config = {
       fr: {
         label: 'Français',
         htmlLang: 'fr-FR',
+      },
+      es: {
+        label: 'Español',
+        htmlLang: 'es-ES',
       },
       cs: {
         label: 'Čeština',
@@ -111,7 +115,7 @@ const config: Config = {
         docsRouteBasePath: '/',
         // lunr-languages has no Czech stemmer. Czech pages are still indexed
         // and searchable by exact tokens; the other locales keep stemming.
-        language: ['en', 'de', 'fr', 'ro'],
+        language: ['en', 'de', 'fr', 'es', 'ro'],
       },
     ],
   ],

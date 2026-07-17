@@ -1,0 +1,44 @@
+---
+title: Mantén Sync
+description: Usa deliberadamente acciones de reparación y limpieza de la sincronización Matrix, desde reenviar registros hasta reconstruir el historial de secuencias.
+---
+
+# Mantén Sync
+
+Abre **Ajustes → Sync → Mantenimiento** para la reparación y limpieza a nivel de
+base de datos. Estas acciones no forman parte del emparejamiento rutinario ni de
+la sincronización diaria. Antes de usarlas, deja que terminen las escrituras
+activas y conserva una copia de seguridad actual de los datos que no puedas
+recrear.
+
+<ManualScreenshot
+  caseId="sync/maintenance"
+  alt="Mantenimiento de Matrix Sync de Lotti con eliminación de base de datos de sincronización, sincronización de definiciones, resincronización de mensajes, relleno del registro de secuencias y purga de elementos enviados de la bandeja de salida"
+  caption="Mantenimiento agrupa acciones destructivas, de repetición y de limpieza en una página. El texto de confirmación define el alcance de cada operación."
+/>
+
+## Elige la reparación más limitada
+
+- **Eliminar base de datos de Sync** quita la base de datos de sincronización
+  local. Es una recuperación local destructiva, no una forma normal de
+  desconectar un dispositivo.
+- **Sincronizar definiciones** vuelve a enviar los registros de definiciones
+  actuales, como categorías y otra configuración compartida.
+- **Resincronizar mensajes** reproduce mensajes seleccionados cuando falta el
+  estado remoto o hay que repetir una entrega anterior.
+- **Rellenar registro de secuencias** reconstruye el historial de secuencias
+  local que se usa para detectar huecos y activar el relleno.
+- **Purgar elementos enviados antiguos de la bandeja de salida** elimina el
+  historial de cola de diagnóstico ya enviado después de su periodo de
+  retención. No elimina trabajo pendiente ni fallido.
+
+Empieza por la operación más pequeña que corresponda al síntoma. Un adjunto
+atascado pertenece a la [Bandeja de salida](./sync.mdx#inspecciona-la-bandeja-de-salida); los
+huecos de secuencia persistentes pertenecen a Relleno; dos ediciones simultáneas
+válidas pertenecen a [Conflictos](./conflicts.mdx). Eliminar la base de datos de
+Sync debería ser un restablecimiento local de último recurso, realizado con un
+dispositivo par de confianza y una copia de seguridad disponible.
+
+Después de una reparación, vuelve a **Estadísticas de Sync**, confirma que el
+trabajo procesado avance sin que crezca el número de fallos y comprueba que se
+estabilicen la bandeja de salida y el recuento de ausentes de Relleno.

@@ -1,0 +1,74 @@
+---
+title: Consulta las novedades
+description: Revisa la última versión de Lotti, recorre notas de versiones anteriores y controla qué actualizaciones siguen sin verse.
+---
+
+# Consulta las novedades
+
+Novedades presenta las notas de versión dentro de Lotti y las ajusta a la versión
+que estás ejecutando. Puede abrirse automáticamente después de un primer inicio
+o cambio de versión apto, y también está disponible desde la entrada
+**Novedades** de Ajustes cuando esa capacidad está activada.
+
+Las notas de versión se ordenan de más reciente a más antigua. Cada página
+combina una imagen principal específica de la versión, su versión exacta de la
+aplicación y una breve explicación de los cambios visibles para las personas
+usuarias.
+
+<ManualScreenshot
+  caseId="whats-new/latest"
+  alt="Ventana Novedades de Lotti para la versión 0.9.1049 con un banner de control de misión de Project Waddle y notas de versión"
+  caption="La última versión sin ver lleva una insignia NUEVO. Este conjunto explica las mejoras de Daily OS y el espacio de trabajo de tareas detrás del lanzamiento orbital de Project Waddle."
+/>
+
+## Lee la versión actual
+
+La insignia de versión identifica la versión cuyas notas están en pantalla.
+**NUEVO** marca la versión más reciente del conjunto actual; no significa que
+cada elemento de la página esté sin terminar o sea experimental.
+
+El cuerpo se desplaza independientemente cuando la versión es más larga que la
+altura disponible. Los enlaces usan el controlador normal de enlaces de Lotti y
+las imágenes se cargan antes de los cambios de página cuando es posible, para que
+moverse entre versiones siga siendo fluido.
+
+## Recorre el historial de versiones
+
+<ManualScreenshot
+  caseId="whats-new/past-release"
+  alt="Ventana Novedades de Lotti para la versión 0.9.1048 con ilustración de portada del mercado de sardinas de pingüinos y navegación de versiones anteriores"
+  caption="Usa los chevrones del pie o los marcadores de posición para moverte entre versiones. La nota anterior de Project Waddle cubre la comparación de tiempo y la telemetría de sardinas lista para paneles."
+/>
+
+Usa los controles del pie para navegar:
+
+- el chevrón derecho abre la siguiente versión más antigua;
+- el chevrón izquierdo vuelve a una versión más nueva;
+- los marcadores de posición muestran dónde está la página actual dentro del
+  conjunto cargado;
+- **Omitir** cierra un conjunto de varias versiones antes de la última página y
+  marca todo el conjunto cargado como visto; y
+- **Hecho** aparece en la página más antigua y también marca todo el conjunto
+  como visto.
+
+Cerrar la ventana arrastrándola o descartando la barrera circundante es más
+prudente: Lotti marca solo las versiones a las que llegaste realmente, hasta la
+página más lejana vista. Las versiones a las que no llegaste pueden aparecer por
+ello la próxima vez que se abra Novedades.
+
+## Vuelve a consultar notas que ya descartaste
+
+Cuando ya no quedan versiones sin ver, abrir Novedades muestra el estado
+**Estás al día**. Elige **Ver versiones anteriores** para borrar los marcadores
+locales de visto y explorar de nuevo el conjunto de versiones disponible. Esto
+solo cambia el historial local de notas de versión; no modifica la versión de la
+aplicación instalada ni descarga otra compilación.
+
+Novedades nunca muestra notas de una versión más reciente que la versión de
+Lotti instalada. Si no se puede cargar el contenido de una versión, la
+aplicación vuelve a un estado vacío en vez de mostrar notas de la compilación
+equivocada.
+
+Para consultar el número de compilación exacto, la plataforma, los totales de
+entradas locales y los recuentos de tareas, ve a
+[Acerca de Lotti](./advanced-settings.mdx#verifica-la-compilación-y-los-totales-locales).

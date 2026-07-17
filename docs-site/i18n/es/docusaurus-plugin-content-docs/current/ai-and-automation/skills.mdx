@@ -1,0 +1,56 @@
+---
+title: Ejecuta habilidades de IA contextuales
+description: Usa el menú Generar para ejecutar solo las acciones de IA que correspondan a la tarea, grabación, imagen o entrada actuales.
+---
+
+# Ejecuta habilidades de IA contextuales
+
+Las habilidades de IA son acciones con nombre, instrucciones y requisitos de
+entrada. Lotti filtra el menú **Generar…** según la entidad actual, de modo que
+una tarea no ofrece una acción de transcripción solo de audio y una imagen no
+ofrece una acción que requiera una grabación.
+
+<ManualScreenshot
+  caseId="ai/skills"
+  alt="Imagen del hábitat de Project Waddle con la ventana Generar que ofrece Inspeccionar foto del hábitat"
+  caption="En una imagen del hábitat vinculada a la tarea, la acción aplicable busca anomalías en los manómetros de presión y daños visibles en los sellos."
+/>
+
+## Ejecuta una habilidad
+
+1. Abre una tarea o una entrada de diario compatible.
+2. Selecciona la acción de asistente delineada en la cabecera de la entrada.
+   Esto abre **Generar…**.
+3. Lee la descripción de la habilidad y selecciona la acción que quieras.
+4. Si Lotti ofrece un selector de modelo o modo de razonamiento, confirma el
+   valor predeterminado o elige una sustitución puntual.
+5. Sigue trabajando mientras se ejecuta la inferencia; el resultado se adjunta
+   a la tarea o entrada correspondiente al completarse.
+
+El menú disponible cambia con el contexto:
+
+- las tareas pueden ofrecer acciones de texto y de contexto de tarea;
+- las entradas de audio pueden ofrecer transcripción y acciones que entienden
+  audio;
+- las imágenes pueden ofrecer análisis visual; y
+- las entradas de texto pueden ofrecer acciones de prompt o generación que
+  aceptan texto.
+
+Algunas habilidades necesitan una tarea vinculada porque leen un contexto de
+tarea más amplio o escriben su resultado de vuelta en ella. Si falta una acción,
+primero comprueba el tipo de entrada y el vínculo con la tarea y, después, que
+el perfil de inferencia activo tenga un modelo para la capacidad requerida.
+
+## Las sustituciones de modelo son temporales
+
+Cuando una habilidad ofrece un selector de modelo, esa elección se aplica a la
+invocación actual. No reescribe silenciosamente el valor predeterminado de la
+categoría ni el perfil de inferencia. Para cambiar la ruta normal, edita el
+perfil en [Modelos y perfiles de inferencia](./models-and-profiles.mdx).
+
+## Trata el resultado generado como un borrador
+
+Revisa los prompts generados, resúmenes, transcripciones, análisis de imágenes
+y ilustraciones antes de confiar en ellos. El contexto de la tarea puede estar
+incompleto, los proveedores pueden devolver resultados incorrectos y hasta un
+modelo capaz puede malinterpretar una emergencia de sardinas muy seria.

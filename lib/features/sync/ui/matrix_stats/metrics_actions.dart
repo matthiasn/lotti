@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 class MetricsActions extends StatelessWidget {
   const MetricsActions({
@@ -17,45 +18,46 @@ class MetricsActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final messages = context.messages;
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
         Tooltip(
-          message:
-              'Legend:\n• processed.<type> = processed sync messages by payload type\n• droppedByType.<type> = per‑type drops after retries/older ignores\n• dbApplied = DB rows written\n• dbIgnoredByVectorClock = incoming older/same ignored by DB\n• conflictsCreated = concurrent vector clocks logged\n• dbMissingBase = skipped while awaiting missing dependency/base row\n• staleAttachmentPurges = cached stale descriptors purged before refresh',
+          message: messages.matrixStatsLegendTooltip,
           child: DesignSystemButton(
-            label: 'Legend',
+            label: messages.matrixStatsLegend,
             leadingIcon: Icons.info_outline_rounded,
             variant: DesignSystemButtonVariant.secondary,
             onPressed: () {},
           ),
         ),
         Tooltip(
-          message: 'Force rescan and catch-up now',
+          message: messages.matrixStatsForceRescanTooltip,
           child: DesignSystemButton(
             key: const Key('matrixStats.forceRescan'),
-            label: 'Force Rescan',
+            label: messages.matrixStatsForceRescan,
             leadingIcon: Icons.sync_rounded,
             variant: DesignSystemButtonVariant.secondary,
             onPressed: onForceRescan,
           ),
         ),
         Tooltip(
-          message: 'Retry pending failures now',
+          message: messages.matrixStatsRetryNowTooltip,
           child: DesignSystemButton(
             key: const Key('matrixStats.retryNow'),
-            label: 'Retry Now',
+            label: messages.matrixStatsRetryNow,
             leadingIcon: Icons.flash_on_rounded,
             variant: DesignSystemButtonVariant.secondary,
             onPressed: onRetryNow,
           ),
         ),
         Tooltip(
-          message: 'Copy sync diagnostics to clipboard',
+          message: messages.matrixStatsCopyDiagnosticsTooltip,
           child: DesignSystemButton(
             key: const Key('matrixStats.copyDiagnostics'),
-            label: 'Copy Diagnostics',
+            label: messages.matrixStatsCopyDiagnostics,
             leadingIcon: Icons.copy_all_rounded,
             variant: DesignSystemButtonVariant.secondary,
             onPressed: onCopyDiagnostics,
@@ -63,7 +65,7 @@ class MetricsActions extends StatelessWidget {
         ),
         DesignSystemButton(
           key: const Key('matrixStats.refresh.metrics'),
-          label: 'Refresh',
+          label: messages.matrixStatsRefresh,
           leadingIcon: Icons.refresh_rounded,
           variant: DesignSystemButtonVariant.secondary,
           onPressed: onRefresh,

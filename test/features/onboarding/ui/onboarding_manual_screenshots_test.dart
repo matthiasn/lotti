@@ -348,6 +348,23 @@ void main() {
     await settleFrames(tester, frames);
   }
 
+  Future<void> tapDialogConfirm(
+    WidgetTester tester, {
+    int frames = 8,
+  }) async {
+    final dialog = find.byType(AlertDialog).last;
+    final material = MaterialLocalizations.of(tester.element(dialog));
+    final target = find.descendant(
+      of: dialog,
+      matching: find.text(material.okButtonLabel),
+    );
+    expect(target, findsOneWidget);
+    await tester.ensureVisible(target);
+    await tester.pump();
+    await tester.tap(target, warnIfMissed: false);
+    await settleFrames(tester, frames);
+  }
+
   Future<void> driveToProviders(WidgetTester tester) async {
     final messages = _messages(tester);
     await tapText(tester, messages.onboardingWelcomeConnectButton);
@@ -402,7 +419,7 @@ void main() {
       find.byType(TextField).last,
       _t('Penguin Operations', 'Pinguinbetrieb'),
     );
-    await tapText(tester, 'OK');
+    await tapDialogConfirm(tester);
     expect(
       find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
       findsOneWidget,
@@ -413,7 +430,7 @@ void main() {
       find.byType(TextField).last,
       _t('Mission Control', 'Missionskontrolle'),
     );
-    await tapText(tester, 'OK');
+    await tapDialogConfirm(tester);
     expect(
       find.text(_t('Mission Control', 'Missionskontrolle')),
       findsOneWidget,
@@ -457,7 +474,7 @@ void main() {
       frames: 4,
     );
     await tester.enterText(find.byType(TextField).last, _typedMission);
-    await tapText(tester, 'OK', frames: 10);
+    await tapDialogConfirm(tester, frames: 10);
     await settleFrames(tester, 6);
     expect(
       find.text(_messages(tester).onboardingFirstTaskCreatedTitle),

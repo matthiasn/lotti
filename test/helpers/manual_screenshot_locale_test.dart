@@ -5,6 +5,7 @@ import 'manual_screenshot_czech_text.dart';
 import 'manual_screenshot_french_text.dart';
 import 'manual_screenshot_locale.dart';
 import 'manual_screenshot_romanian_text.dart';
+import 'manual_screenshot_spanish_text.dart';
 
 void main() {
   group('manual screenshot locale', () {
@@ -37,12 +38,18 @@ void main() {
         ),
         const Locale('ro'),
       );
+      expect(
+        manualScreenshotLocaleFromEnvironment(
+          const {'LOTTI_MANUAL_LOCALE': 'es'},
+        ),
+        const Locale('es'),
+      );
     });
 
-    test('rejects locales without a complete manual media catalog', () {
+    test('rejects unsupported screenshot locales', () {
       expect(
         () => manualScreenshotLocaleFromEnvironment(
-          const {'LOTTI_MANUAL_LOCALE': 'es'},
+          const {'LOTTI_MANUAL_LOCALE': 'it'},
         ),
         throwsArgumentError,
       );
@@ -70,6 +77,14 @@ void main() {
         'Inspectați habitatul orbital al pinguinilor',
       );
       expect(manualScreenshotRomanianText('Unknown fixture'), isNull);
+    });
+
+    test('Spanish fixture catalog localizes representative demo copy', () {
+      expect(
+        manualScreenshotSpanishText('Inspect orbital penguin habitat'),
+        'Inspeccionar hábitat orbital de pingüinos',
+      );
+      expect(manualScreenshotSpanishText('Unknown fixture'), isNull);
     });
 
     test(

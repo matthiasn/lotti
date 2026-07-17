@@ -6761,6 +6761,125 @@ class AppLocalizationsEs extends AppLocalizations {
   String get manageLinks => 'Gestionar vínculos...';
 
   @override
+  String get matrixStatsCatchupBatches => 'Lotes de recuperación';
+
+  @override
+  String get matrixStatsCircuitOpens => 'Aperturas del disyuntor';
+
+  @override
+  String get matrixStatsConflicts => 'Conflictos';
+
+  @override
+  String get matrixStatsCopyDiagnostics => 'Copiar diagnósticos';
+
+  @override
+  String get matrixStatsCopyDiagnosticsTooltip =>
+      'Copiar los diagnósticos de sincronización al portapapeles';
+
+  @override
+  String get matrixStatsDbApplied => 'Aplicado a la base de datos';
+
+  @override
+  String get matrixStatsDbApply => 'Aplicación a la base de datos';
+
+  @override
+  String get matrixStatsDbIgnoredVectorClock =>
+      'Ignorado por la base de datos (VectorClock)';
+
+  @override
+  String get matrixStatsDbMissingBase => 'Falta la base de datos';
+
+  @override
+  String matrixStatsDroppedByType(Object type) {
+    return 'Descartado ($type)';
+  }
+
+  @override
+  String get matrixStatsEntryLinkNoops => 'Operaciones nulas de EntryLink';
+
+  @override
+  String get matrixStatsFailures => 'Fallos';
+
+  @override
+  String get matrixStatsFlushes => 'Vaciados';
+
+  @override
+  String get matrixStatsForceRescan => 'Forzar reescaneo';
+
+  @override
+  String get matrixStatsForceRescanTooltip =>
+      'Forzar el reescaneo y la recuperación ahora';
+
+  @override
+  String get matrixStatsLegend => 'Leyenda';
+
+  @override
+  String get matrixStatsLegendTooltip =>
+      'Leyenda:\n• processed.<type> = mensajes de sincronización procesados por tipo de carga\n• droppedByType.<type> = descartes por tipo después de reintentos o de ignorar mensajes antiguos\n• dbApplied = filas escritas en la base de datos\n• dbIgnoredByVectorClock = datos entrantes antiguos o idénticos ignorados por la base de datos\n• conflictsCreated = relojes vectoriales simultáneos registrados\n• dbMissingBase = omitido mientras se espera una dependencia o fila base ausente\n• staleAttachmentPurges = descriptores obsoletos en caché eliminados antes de actualizar';
+
+  @override
+  String get matrixStatsProcessed => 'Procesado';
+
+  @override
+  String matrixStatsProcessedByType(Object type) {
+    return 'Procesado ($type)';
+  }
+
+  @override
+  String get matrixStatsRefresh => 'Actualizar';
+
+  @override
+  String get matrixStatsReliability => 'Fiabilidad';
+
+  @override
+  String get matrixStatsRetriesScheduled => 'Reintentos programados';
+
+  @override
+  String get matrixStatsRetryNow => 'Reintentar ahora';
+
+  @override
+  String get matrixStatsRetryNowTooltip =>
+      'Reintentar ahora los fallos pendientes';
+
+  @override
+  String get matrixStatsSignalLatencyLast => 'Latencia de señal (últimos ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMax => 'Latencia de señal (máx. ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMin => 'Latencia de señal (mín. ms)';
+
+  @override
+  String get matrixStatsSignals => 'Señales';
+
+  @override
+  String get matrixStatsSignalsClientStream => 'Señales (flujo de cliente)';
+
+  @override
+  String get matrixStatsSignalsConnectivity => 'Señales (conectividad)';
+
+  @override
+  String get matrixStatsSignalsTimelineCallbacks =>
+      'Señales (devoluciones de llamada de cronología)';
+
+  @override
+  String get matrixStatsSkipped => 'Omitido';
+
+  @override
+  String get matrixStatsSkippedRetryCap => 'Omitido (límite de reintentos)';
+
+  @override
+  String get matrixStatsStaleAttachmentPurges =>
+      'Archivos adjuntos obsoletos eliminados';
+
+  @override
+  String get matrixStatsThroughput => 'Rendimiento';
+
+  @override
+  String get matrixStatsTopKpis => 'Indicadores principales';
+
+  @override
   String get measurableDeleteConfirm => 'SÍ, ELIMINAR ESTE VALOR MEDIBLE';
 
   @override

@@ -6699,6 +6699,124 @@ class AppLocalizationsDe extends AppLocalizations {
   String get manageLinks => 'Verknüpfungen verwalten...';
 
   @override
+  String get matrixStatsCatchupBatches => 'Nachhol-Batches';
+
+  @override
+  String get matrixStatsCircuitOpens => 'Circuit-Breaker-Auslösungen';
+
+  @override
+  String get matrixStatsConflicts => 'Konflikte';
+
+  @override
+  String get matrixStatsCopyDiagnostics => 'Diagnosen kopieren';
+
+  @override
+  String get matrixStatsCopyDiagnosticsTooltip =>
+      'Synchronisierungsdiagnosen in die Zwischenablage kopieren';
+
+  @override
+  String get matrixStatsDbApplied => 'Datenbank angewendet';
+
+  @override
+  String get matrixStatsDbApply => 'Datenbankanwendung';
+
+  @override
+  String get matrixStatsDbIgnoredVectorClock =>
+      'Von Datenbank ignoriert (VectorClock)';
+
+  @override
+  String get matrixStatsDbMissingBase => 'Fehlende Datenbankbasis';
+
+  @override
+  String matrixStatsDroppedByType(Object type) {
+    return 'Verworfen ($type)';
+  }
+
+  @override
+  String get matrixStatsEntryLinkNoops => 'EntryLink-Nulloperationen';
+
+  @override
+  String get matrixStatsFailures => 'Fehler';
+
+  @override
+  String get matrixStatsFlushes => 'Leervorgänge';
+
+  @override
+  String get matrixStatsForceRescan => 'Erneut scannen erzwingen';
+
+  @override
+  String get matrixStatsForceRescanTooltip =>
+      'Jetzt erneut scannen und nachholen';
+
+  @override
+  String get matrixStatsLegend => 'Legende';
+
+  @override
+  String get matrixStatsLegendTooltip =>
+      'Legende:\n• processed.<type> = verarbeitete Synchronisierungsnachrichten nach Nutzlasttyp\n• droppedByType.<type> = verworfene Nachrichten nach Wiederholungen oder Ignorieren älterer Nachrichten\n• dbApplied = geschriebene Datenbankzeilen\n• dbIgnoredByVectorClock = von der Datenbank ignorierte ältere oder identische eingehende Daten\n• conflictsCreated = protokollierte gleichzeitige Vector Clocks\n• dbMissingBase = übersprungen, während eine fehlende Abhängigkeit oder Basiszeile erwartet wird\n• staleAttachmentPurges = vor der Aktualisierung bereinigte zwischengespeicherte veraltete Beschreibungen';
+
+  @override
+  String get matrixStatsProcessed => 'Verarbeitet';
+
+  @override
+  String matrixStatsProcessedByType(Object type) {
+    return 'Verarbeitet ($type)';
+  }
+
+  @override
+  String get matrixStatsRefresh => 'Aktualisieren';
+
+  @override
+  String get matrixStatsReliability => 'Zuverlässigkeit';
+
+  @override
+  String get matrixStatsRetriesScheduled => 'Wiederholungen geplant';
+
+  @override
+  String get matrixStatsRetryNow => 'Jetzt wiederholen';
+
+  @override
+  String get matrixStatsRetryNowTooltip =>
+      'Ausstehende Fehler jetzt erneut versuchen';
+
+  @override
+  String get matrixStatsSignalLatencyLast => 'Signallatenz (letzte ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMax => 'Signallatenz (max. ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMin => 'Signallatenz (min. ms)';
+
+  @override
+  String get matrixStatsSignals => 'Signale';
+
+  @override
+  String get matrixStatsSignalsClientStream => 'Signale (Client-Stream)';
+
+  @override
+  String get matrixStatsSignalsConnectivity => 'Signale (Verbindung)';
+
+  @override
+  String get matrixStatsSignalsTimelineCallbacks =>
+      'Signale (Timeline-Callbacks)';
+
+  @override
+  String get matrixStatsSkipped => 'Übersprungen';
+
+  @override
+  String get matrixStatsSkippedRetryCap => 'Übersprungen (Wiederholungslimit)';
+
+  @override
+  String get matrixStatsStaleAttachmentPurges => 'Veraltete Anhänge bereinigt';
+
+  @override
+  String get matrixStatsThroughput => 'Durchsatz';
+
+  @override
+  String get matrixStatsTopKpis => 'Wichtigste KPIs';
+
+  @override
   String get measurableDeleteConfirm => 'JA, DIESE MESSGRÖSSE LÖSCHEN';
 
   @override

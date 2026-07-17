@@ -1,0 +1,44 @@
+{
+  "manual.screenshot.allScreenshots": {
+    "message": "Todas las capturas",
+    "description": "Label for the global screenshot viewport preference"
+  },
+  "manual.screenshot.close": {"message": "Cerrar"},
+  "manual.screenshot.desktop": {"message": "Escritorio"},
+  "manual.screenshot.desktopView": {"message": "Vista de escritorio"},
+  "manual.screenshot.expand": {"message": "Ampliar"},
+  "manual.screenshot.expandedViewer": {"message": "Visor ampliado de la captura"},
+  "manual.screenshot.fullscreen": {"message": "Pantalla completa"},
+  "manual.screenshot.layoutLabel": {"message": "Diseño de las capturas para todas las imágenes"},
+  "manual.screenshot.mobile": {"message": "Móvil"},
+  "manual.screenshot.mobileView": {"message": "Vista móvil"},
+  "manual.screenshot.openViewer": {"message": "Abrir el visor de capturas"},
+  "manual.screenshot.screenshot": {"message": "Captura de pantalla"},
+  "manual.translationNotice.disclosure": {
+    "message": "Esta traducción se creó con GPT 5.6 Sol xHigh y aún no ha sido revisada."
+  },
+  "manual.translationNotice.invitation": {
+    "message": "Las correcciones y mejoras son muy bienvenidas mediante una"
+  },
+  "manual.translationNotice.issue": {"message": "incidencia de GitHub"},
+  "manual.translationNotice.or": {"message": "o una"},
+  "manual.translationNotice.pullRequest": {"message": "solicitud de extracción"},
+  "manual.translationNotice.title": {
+    "message": "Traducción automática — agradecemos tus comentarios"
+  },
+  "manual.version.development": {"message": "Desarrollo"},
+  "theme.colorToggle.ariaLabel.mode.system": {"message": "modo del sistema"},
+  "theme.docs.sidebar.navAriaLabel": {"message": "Navegación lateral de la documentación"},
+  "theme.IconExternalLink.ariaLabel": {"message": "(se abre en una pestaña nueva)"},
+  "theme.NavBar.navAriaLabel": {"message": "Navegación principal"},
+  "theme.SearchBar.label": {"message": "Buscar"},
+  "theme.SearchBar.noResultsText": {"message": "No hay resultados"},
+  "theme.SearchBar.searchInContext": {"message": "Ver todos los resultados en «{context}»"},
+  "theme.SearchBar.seeAllOutsideContext": {"message": "Ver todos los resultados fuera de «{context}»"},
+  "theme.SearchBar.seeAll": {"message": "Ver todos los resultados"},
+  "theme.SearchPage.existingResultsTitle": {"message": "Resultados de búsqueda para «{query}»"},
+  "theme.SearchPage.emptyResultsTitle": {"message": "Buscar en la documentación"},
+  "theme.SearchPage.documentsFound.plurals": {"message": "Un documento encontrado|{count} documentos encontrados"},
+  "theme.SearchPage.noResultsText": {"message": "No se ha encontrado ningún documento"},
+  "theme.SearchPage.searchContext.everywhere": {"message": "En todas partes"}
+}

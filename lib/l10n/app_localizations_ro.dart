@@ -6792,6 +6792,124 @@ class AppLocalizationsRo extends AppLocalizations {
   String get manageLinks => 'Gestionează legăturile...';
 
   @override
+  String get matrixStatsCatchupBatches => 'Loturi de recuperare';
+
+  @override
+  String get matrixStatsCircuitOpens => 'Deschideri ale întrerupătorului';
+
+  @override
+  String get matrixStatsConflicts => 'Conflicte';
+
+  @override
+  String get matrixStatsCopyDiagnostics => 'Copiază diagnosticarea';
+
+  @override
+  String get matrixStatsCopyDiagnosticsTooltip =>
+      'Copiază diagnosticarea sincronizării în clipboard';
+
+  @override
+  String get matrixStatsDbApplied => 'Aplicat în baza de date';
+
+  @override
+  String get matrixStatsDbApply => 'Aplicare în baza de date';
+
+  @override
+  String get matrixStatsDbIgnoredVectorClock =>
+      'Ignorat de baza de date (VectorClock)';
+
+  @override
+  String get matrixStatsDbMissingBase => 'Lipsește baza de date';
+
+  @override
+  String matrixStatsDroppedByType(Object type) {
+    return 'Eliminat ($type)';
+  }
+
+  @override
+  String get matrixStatsEntryLinkNoops => 'Operațiuni fără efect EntryLink';
+
+  @override
+  String get matrixStatsFailures => 'Erori';
+
+  @override
+  String get matrixStatsFlushes => 'Goliri';
+
+  @override
+  String get matrixStatsForceRescan => 'Forțează rescanarea';
+
+  @override
+  String get matrixStatsForceRescanTooltip =>
+      'Forțează acum rescanarea și recuperarea';
+
+  @override
+  String get matrixStatsLegend => 'Legendă';
+
+  @override
+  String get matrixStatsLegendTooltip =>
+      'Legendă:\n• processed.<type> = mesaje de sincronizare procesate după tipul încărcăturii\n• droppedByType.<type> = elemente eliminate pe tip după reîncercări sau ignorarea mesajelor vechi\n• dbApplied = rânduri scrise în baza de date\n• dbIgnoredByVectorClock = date de intrare vechi sau identice ignorate de baza de date\n• conflictsCreated = ceasuri vectoriale concurente înregistrate\n• dbMissingBase = omis în așteptarea unei dependențe sau a unui rând de bază lipsă\n• staleAttachmentPurges = descriptori vechi din cache eliminați înainte de reîmprospătare';
+
+  @override
+  String get matrixStatsProcessed => 'Procesat';
+
+  @override
+  String matrixStatsProcessedByType(Object type) {
+    return 'Procesat ($type)';
+  }
+
+  @override
+  String get matrixStatsRefresh => 'Reîmprospătează';
+
+  @override
+  String get matrixStatsReliability => 'Fiabilitate';
+
+  @override
+  String get matrixStatsRetriesScheduled => 'Reîncercări programate';
+
+  @override
+  String get matrixStatsRetryNow => 'Reîncearcă acum';
+
+  @override
+  String get matrixStatsRetryNowTooltip =>
+      'Reîncearcă acum erorile în așteptare';
+
+  @override
+  String get matrixStatsSignalLatencyLast => 'Latența semnalului (ultimii ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMax => 'Latența semnalului (max. ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMin => 'Latența semnalului (min. ms)';
+
+  @override
+  String get matrixStatsSignals => 'Semnale';
+
+  @override
+  String get matrixStatsSignalsClientStream => 'Semnale (flux client)';
+
+  @override
+  String get matrixStatsSignalsConnectivity => 'Semnale (conectivitate)';
+
+  @override
+  String get matrixStatsSignalsTimelineCallbacks =>
+      'Semnale (apeluri inverse din cronologie)';
+
+  @override
+  String get matrixStatsSkipped => 'Omis';
+
+  @override
+  String get matrixStatsSkippedRetryCap => 'Omis (limită de reîncercări)';
+
+  @override
+  String get matrixStatsStaleAttachmentPurges => 'Atașamente vechi eliminate';
+
+  @override
+  String get matrixStatsThroughput => 'Debit';
+
+  @override
+  String get matrixStatsTopKpis => 'Indicatori principali';
+
+  @override
   String get measurableDeleteConfirm => 'DA, CONFIRM STERGEREA';
 
   @override

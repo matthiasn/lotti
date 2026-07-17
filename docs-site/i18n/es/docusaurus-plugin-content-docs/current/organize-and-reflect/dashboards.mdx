@@ -1,0 +1,91 @@
+---
+title: Crea paneles útiles
+description: Combina hábitos, mediciones, salud, encuestas y entrenamientos en una vista operativa reutilizable.
+---
+
+# Crea paneles útiles
+
+Un panel agrupa gráficos que responden a una pregunta recurrente. **Operaciones de la colonia** reúne la presión del hábitat, la demanda de sardinas y el recuento de la expedición; **Preparación de la misión** mantiene separada una revisión privada del lanzamiento. Construye en torno a una decisión, en vez de recopilar todos los números disponibles.
+
+<ManualScreenshot
+  caseId="dashboards/settings-list"
+  alt="Ajustes de paneles con Operaciones de la colonia y el panel privado Preparación de la misión"
+/>
+
+## Crea un panel
+
+1. Abre **Ajustes → Definiciones → Paneles**.
+2. Selecciona **Crear panel**.
+3. Añade un nombre claro y una descripción de la pregunta que debe responder.
+4. Opcionalmente, asigna una categoría y un ajuste de privacidad.
+5. Añade y ordena gráficos y, después, guarda.
+
+<ManualScreenshot
+  caseId="dashboards/settings-detail"
+  alt="Editor del panel Operaciones de la colonia asignado a Operaciones de pingüinos con opciones de privacidad y actividad"
+/>
+
+- **Categoría** hace que el panel esté disponible para filtrado basado en categorías.
+- **Privado** oculta el panel salvo cuando se muestran las entradas privadas.
+- **Activo** controla si aparece en la lista de Paneles sin eliminar la definición.
+
+## Compón y ordena gráficos
+
+<ManualScreenshot
+  caseId="dashboards/charts"
+  alt="Lista de gráficos de Operaciones de la colonia con promedio diario de Presión del hábitat, suma diaria de Sardinas consumidas y suma diaria de Pingüinos contabilizados"
+  caption="Arrastra por el tirador para reordenar. Selecciona el control de ajuste de un gráfico de medición para cambiar su agregación, o elimínalo con ×."
+/>
+
+El orden de los gráficos es el orden del panel. Pon primero la señal que enmarca el resto. En Operaciones de la colonia, la presión del hábitat va primero porque un hábitat inseguro cambia cómo se debe interpretar cualquier otro número.
+
+Los gráficos de mediciones conservan su propia agregación en el elemento del panel. Así la misma medición puede aparecer con un resumen distinto en otro panel sin cambiar las observaciones subyacentes.
+
+## Añade gráficos de fuentes compatibles
+
+<ManualScreenshot
+  caseId="dashboards/sources"
+  alt="Editor de panel que ofrece Hábitos, Mediciones, Salud, Encuestas y Entrenamientos como fuentes de gráficos, además de exportación JSON"
+/>
+
+Desde el editor puedes añadir:
+
+- **Hábitos** para el historial de finalización.
+- **Mediciones** para observaciones numéricas definidas por la persona usuaria.
+- datos de **Salud** compatibles con la plataforma y los permisos actuales.
+- **Encuestas** para resultados de cuestionarios configurados.
+- **Entrenamientos** importados de fuentes de salud compatibles.
+
+Despliega una fuente, selecciona uno o varios gráficos y añádelos. La disponibilidad depende de las definiciones existentes y de los datos de la plataforma; los permisos de salud y los tipos compatibles varían según el dispositivo.
+
+## Abre e interpreta un panel
+
+Abre **Estadísticas** para ver los paneles activos. La lista muestra el icono de categoría, nombre y propósito de cada panel. Usa el filtro del encabezado para centrarte en una o más categorías.
+
+<ManualScreenshot
+  caseId="dashboards/list"
+  alt="Lista de paneles de Estadísticas de Lotti con los paneles Operaciones de la colonia y el privado Preparación de la misión"
+  caption="El escritorio reserva el panel derecho para el panel seleccionado; el móvil abre el panel seleccionado como una página independiente."
+/>
+
+Selecciona **Operaciones de la colonia** para abrir sus gráficos. En el escritorio, la lista y el panel seleccionado permanecen uno junto a otro. En el móvil, el panel se abre como su propia página con botón de volver.
+
+<ManualScreenshot
+  caseId="dashboards/view"
+  alt="Panel Operaciones de la colonia con 90 días de presión del hábitat y sardinas consumidas, junto a la lista de paneles en el escritorio"
+  caption="El encabezado fijo mantiene visibles los controles de rango de 30, 90, 180 y 365 días mientras los gráficos se desplazan debajo."
+/>
+
+El rango seleccionado se aplica a todos los gráficos de la página. Las tarjetas de gráficos conservan sus propias unidades y agregación: la presión del hábitat usa un promedio diario, mientras el consumo de sardinas y el recuento de pingüinos usan sumas diarias. Selecciona **+** en una tarjeta de medición para registrar una observación nueva de ese tipo.
+
+<ManualScreenshot
+  caseId="dashboards/view-crew"
+  alt="Panel Operaciones de la colonia desplazado hasta los gráficos Sardinas consumidas y Pingüinos contabilizados"
+  caption="Se aprecia una caída breve a 36 pingüinos en el historial de tripulación de 90 días; los días cercanos vuelven a los 37 esperados."
+/>
+
+Trata un gráfico como evidencia, no como un veredicto. Antes de sacar conclusiones, comprueba la agregación, las unidades, el intervalo de fechas, las observaciones ausentes y el estado de privacidad.
+
+## Exporta la configuración del panel
+
+**Guardar y copiar JSON** guarda el panel y después copia su configuración y las definiciones de mediciones referenciadas. Sirve para inspeccionar o mover una configuración, pero no es un vínculo de sincronización en vivo: las ediciones posteriores no actualizan una carga que ya se haya copiado.
