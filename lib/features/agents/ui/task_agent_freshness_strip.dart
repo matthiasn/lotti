@@ -31,10 +31,12 @@ class TaskAgentFreshnessStrip extends StatelessWidget {
   final bool isRunning;
   final VoidCallback? onRunNow;
 
-  /// Below this strip width the CTA drops onto its own right-aligned line so
+  /// Below this strip width the labeled CTA gives way to a compact circular
+  /// reload button on the message line, so the strip stays a single row and
   /// the five-word message never wraps into a one-word widow beside a
-  /// full-size button. Sized for the English message + CTA with localization
-  /// headroom; a fixed layout breakpoint like the reading-measure caps.
+  /// full-size pill. Sized for the English message + labeled CTA with
+  /// localization headroom; a fixed layout breakpoint like the
+  /// reading-measure caps.
   static const double _compactWidth = 440;
 
   @override
@@ -80,6 +82,66 @@ class TaskAgentFreshnessStrip extends StatelessWidget {
       isLoading: isRunning,
       onPressed: onRunNow,
     );
+    // Compact CTA: a circular reload that mirrors the pill's weight logic —
+    // filled accent while stale (the state's one loud element), neutral wash
+    // when fresh — with the label carried by tooltip + semantics.
+    final compactCta = Semantics(
+      button: true,
+      label: isRunning
+          ? messages.aiSummaryThinkingLabel
+          : messages.taskAgentWakeAgent,
+      enabled: onRunNow != null,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: messages.taskAgentWakeAgent,
+        child: Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            key: const ValueKey('taskAgentWakeIconButton'),
+            customBorder: const CircleBorder(),
+            onTap: isRunning ? null : onRunNow,
+            child: SizedBox(
+              width: tokens.spacing.step8,
+              height: tokens.spacing.step8,
+              child: Center(
+                child: Container(
+                  width: tokens.spacing.step7,
+                  height: tokens.spacing.step7,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: onRunNow == null
+                        ? ai.subtleWash
+                        : isStale
+                        ? ai.accent
+                        : ai.subtleWashStrong,
+                    shape: BoxShape.circle,
+                  ),
+                  child: isRunning
+                      ? SizedBox(
+                          width: tokens.spacing.step4,
+                          height: tokens.spacing.step4,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: isStale ? ai.background : ai.accent,
+                          ),
+                        )
+                      : Icon(
+                          Icons.refresh_rounded,
+                          size: tokens.spacing.step5,
+                          color: onRunNow == null
+                              ? ai.faintMeta
+                              : isStale
+                              ? ai.background
+                              : ai.metaText,
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
 
     return Container(
       key: ValueKey(
@@ -96,33 +158,18 @@ class TaskAgentFreshnessStrip extends StatelessWidget {
         borderRadius: BorderRadius.circular(tokens.radii.s),
         border: Border.all(color: ai.rowBorder),
       ),
-      // Wide: message leads, CTA holds the trailing edge. Narrow: the CTA
-      // drops below, left-aligned to the message's own text grid line
-      // (glyph + gap), so message and button form one flush block instead of
-      // a diagonal with a dead corner. The message wraps rather than
-      // truncates if a translation still overflows.
+      // One row at every width: message leads, the CTA holds the trailing
+      // edge — as a labeled pill where it fits, as a compact circular reload
+      // below the breakpoint. The message wraps rather than truncates if a
+      // translation still overflows.
       child: LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth < _compactWidth) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                messageLine,
-                SizedBox(height: tokens.spacing.step2),
-                Padding(
-                  padding: EdgeInsets.only(
-                    left: tokens.spacing.step5 + tokens.spacing.step3,
-                  ),
-                  child: cta,
-                ),
-              ],
-            );
-          }
+          final compact = constraints.maxWidth < _compactWidth;
           return Row(
             children: [
               Expanded(child: messageLine),
-              SizedBox(width: tokens.spacing.step4),
-              cta,
+              SizedBox(width: tokens.spacing.step3),
+              if (compact) compactCta else cta,
             ],
           );
         },

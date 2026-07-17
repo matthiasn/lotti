@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/task_agent_freshness_strip.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -113,6 +113,69 @@ void main() {
 
     expect(wakes, 0);
   });
+
+  testWidgets(
+    'narrow strips swap the labeled pill for a circular reload button',
+    (tester) async {
+      var wakes = 0;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Center(
+            child: SizedBox(
+              width: 360,
+              child: TaskAgentFreshnessStrip(
+                isStale: true,
+                isRunning: false,
+                onRunNow: () => wakes++,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // The message keeps its single line; the label moves into tooltip +
+      // semantics on the compact icon button.
+      expect(find.text('This summary is out of date'), findsOneWidget);
+      expect(find.text('Wake agent'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('taskAgentWakeIconButton')),
+        findsOneWidget,
+      );
+      expect(find.byTooltip('Wake agent'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey('taskAgentWakeIconButton')),
+      );
+      expect(wakes, 1);
+    },
+  );
+
+  testWidgets(
+    'narrow running strip shows a spinner and does not fire',
+    (tester) async {
+      var wakes = 0;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Center(
+            child: SizedBox(
+              width: 360,
+              child: TaskAgentFreshnessStrip(
+                isStale: true,
+                isRunning: true,
+                onRunNow: () => wakes++,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      await tester.tap(
+        find.byKey(const ValueKey('taskAgentWakeIconButton')),
+      );
+      expect(wakes, 0);
+    },
+  );
 
   testWidgets('missing inference setup renders a disabled CTA', (
     tester,

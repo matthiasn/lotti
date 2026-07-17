@@ -168,7 +168,10 @@ holds a constant-geometry slot directly after the summary (and before the
 proposals): stale renders the alert-warning glyph with
 "This summary is out of date" and a primary wake CTA, fresh renders a quiet
 accent check with "Summary is up to date" and a secondary wake CTA — the
-same height in both states, so freshness flips never shift the layout. The
+same height in both states, so freshness flips never shift the layout. On
+narrow strips the labeled pill gives way to a compact circular reload
+button on the same message line (label via tooltip + semantics), keeping
+the strip a single row at phone width. The
 strip wears the same hairline chrome and reading measure as the proposal
 rows; the hue lives on the status glyph only and the message stays at
 standard foreground contrast. The footer hides its own wake button while the strip
