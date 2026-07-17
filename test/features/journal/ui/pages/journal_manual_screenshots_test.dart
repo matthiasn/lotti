@@ -40,7 +40,10 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/linked_entries_activity_filter_bar.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -687,6 +690,39 @@ void main() {
         );
       });
 
+      testWidgets('$viewport journal date and time — $theme', (tester) async {
+        await pumpSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          home: const EntryDetailsPage(itemId: _briefingId),
+        );
+        final dateTimeTrigger = find.byType(EntryDatetimeWidget).first;
+        expect(dateTimeTrigger, findsOneWidget);
+        await tester.tap(dateTimeTrigger);
+        await settleFrames(tester, 8);
+
+        expect(find.byType(EntryDateTimeEditor), findsOneWidget);
+        expect(find.text('Date & Time'), findsOneWidget);
+        expect(find.text('Start time'), findsOneWidget);
+        expect(find.text('End time'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'journal_date_time_editor_${viewport}_$theme',
+          subdir: _subdir,
+        );
+
+        await tester.tap(find.text('Friday, July 17, 2026').first);
+        await settleFrames(tester, 8);
+        expect(find.text('Start date'), findsOneWidget);
+        expect(find.text('July 2026'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'journal_date_picker_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
       testWidgets('$viewport journal linked activity — $theme', (tester) async {
         await pumpSurface(
           tester,
@@ -715,6 +751,44 @@ void main() {
         await captureScreenshot(
           tester,
           'journal_activity_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport journal linked filter — $theme', (tester) async {
+        await pumpSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          home: const EntryDetailsPage(itemId: _briefingId),
+        );
+        final page = find.byType(EntryDetailsPage);
+        final scrollable = find.descendant(
+          of: page,
+          matching: find.byType(Scrollable),
+        );
+        final filterTrigger = find.byKey(
+          const ValueKey('linked-entries-sort-trigger-visual'),
+        );
+        await tester.scrollUntilVisible(
+          filterTrigger,
+          360,
+          scrollable: scrollable.first,
+        );
+        await settleFrames(tester, 4);
+        expect(find.byType(LinkedEntriesActivityFilterBar), findsOneWidget);
+        await tester.tap(filterTrigger);
+        await settleFrames(tester, 6);
+
+        expect(find.text('Filter & Sort'), findsOneWidget);
+        expect(find.text('Newest first'), findsWidgets);
+        expect(find.text('Oldest first'), findsOneWidget);
+        await tester.tap(find.text('Oldest first'));
+        await tester.tap(find.text('Show hidden entries'));
+        await settleFrames(tester, 3);
+        await captureScreenshot(
+          tester,
+          'journal_linked_filter_${viewport}_$theme',
           subdir: _subdir,
         );
       });

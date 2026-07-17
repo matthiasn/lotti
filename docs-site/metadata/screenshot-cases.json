@@ -728,6 +728,39 @@
       }
     },
     {
+      "id": "journal/date-time",
+      "title": "Entry date and time editor",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_date_time_editor_mobile_light.png",
+        "mobile-dark": "journal_date_time_editor_mobile_dark.png",
+        "desktop-light": "journal_date_time_editor_desktop_light.png",
+        "desktop-dark": "journal_date_time_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "journal/date-picker",
+      "title": "Entry date picker",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_date_picker_mobile_light.png",
+        "mobile-dark": "journal_date_picker_mobile_dark.png",
+        "desktop-light": "journal_date_picker_desktop_light.png",
+        "desktop-dark": "journal_date_picker_desktop_dark.png"
+      }
+    },
+    {
+      "id": "journal/linked-filter",
+      "title": "Linked-entry filter and sort",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_linked_filter_mobile_light.png",
+        "mobile-dark": "journal_linked_filter_mobile_dark.png",
+        "desktop-light": "journal_linked_filter_desktop_light.png",
+        "desktop-dark": "journal_linked_filter_desktop_dark.png"
+      }
+    },
+    {
       "id": "time-analysis/overview",
       "title": "Time Analysis overview",
       "sourceTest": "test/features/insights/ui/time_analysis_screenshots_test.dart",

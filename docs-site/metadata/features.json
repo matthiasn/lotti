@@ -77,7 +77,10 @@
         "journal/filters",
         "journal/create",
         "journal/detail",
-        "journal/activity"
+        "journal/date-time",
+        "journal/date-picker",
+        "journal/activity",
+        "journal/linked-filter"
       ]
     },
     {
