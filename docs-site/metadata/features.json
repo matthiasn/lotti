@@ -20,6 +20,15 @@
       ]
     },
     {
+      "id": "entries",
+      "title": "Entries and contextual capture",
+      "page": "plan-and-capture/entries",
+      "status": "verified",
+      "screenshotCases": [
+        "entries/create-menu"
+      ]
+    },
+    {
       "id": "tasks",
       "title": "Tasks",
       "page": "organize-and-reflect/tasks",
@@ -27,7 +36,11 @@
       "screenshotCases": [
         "tasks/workspace",
         "tasks/detail",
-        "tasks/filters"
+        "tasks/filters",
+        "entries/create-menu",
+        "tasks/cover-references",
+        "tasks/cover-generating",
+        "tasks/link-picker"
       ]
     },
     {
@@ -279,6 +292,7 @@
         "onboarding/first-task",
         "onboarding/task-created",
         "tasks/workspace",
+        "entries/create-menu",
         "tasks/detail"
       ]
     },

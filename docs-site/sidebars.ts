@@ -19,6 +19,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'plan-and-capture/daily-os',
+        'plan-and-capture/entries',
         'plan-and-capture/recordings',
       ],
     },

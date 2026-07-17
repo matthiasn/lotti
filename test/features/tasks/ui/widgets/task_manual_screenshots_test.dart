@@ -4,6 +4,7 @@
 /// staging inputs for the manual media manifest and are never committed here.
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
@@ -14,17 +15,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
+import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
@@ -49,6 +57,11 @@ import '../../../../widget_test_utils.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
 import '../pages/task_details_page_test_helpers.dart';
 
+class _ManualRunningInferenceController extends InferenceStatusController {
+  @override
+  InferenceStatus build() => InferenceStatus.running;
+}
+
 void main() {
   if (!screenshotCaptureEnabled) {
     test(
@@ -65,6 +78,7 @@ void main() {
   late FakeJournalPageController pageController;
   late ValueNotifier<String?> selectedTaskId;
   late ValueNotifier<List<String>> detailStack;
+  late MockJournalRepository journalRepository;
 
   setUpAll(() async {
     registerAllFallbackValues();
@@ -86,6 +100,8 @@ void main() {
     final persistenceLogic = MockPersistenceLogic();
     final userActivityService = MockUserActivityService();
     final editorStateService = MockEditorStateService();
+    final fts5Db = MockFts5Db();
+    journalRepository = MockJournalRepository();
 
     selectedTaskId = ValueNotifier<String?>(world.orbitalHabitatTask.meta.id);
     detailStack = ValueNotifier<List<String>>(<String>[
@@ -104,6 +120,20 @@ void main() {
     when(
       () => editorStateService.getUnsavedStream(any(), any()),
     ).thenAnswer((_) => const Stream.empty());
+    when(
+      () => fts5Db.watchFullTextMatches(any()),
+    ).thenAnswer((_) => Stream.value(<String>[]));
+    when(
+      () => journalRepository.getLinkedImagesForTask(any()),
+    ).thenAnswer((_) async => world.coverImages.take(5).toList());
+    when(
+      () => journalRepository.getLinksFromId(any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => journalRepository.getLinkedToEntities(
+        linkedTo: any(named: 'linkedTo'),
+      ),
+    ).thenAnswer((_) async => []);
 
     when(() => entitiesCache.sortedCategories).thenReturn([world.category]);
     when(() => entitiesCache.sortedLabels).thenReturn(world.labels);
@@ -125,6 +155,7 @@ void main() {
           ..registerSingleton<PersistenceLogic>(persistenceLogic)
           ..registerSingleton<UserActivityService>(userActivityService)
           ..registerSingleton<EditorStateService>(editorStateService)
+          ..registerSingleton<Fts5Db>(fts5Db)
           ..registerSingleton<LinkService>(MockLinkService())
           ..registerSingleton<HealthImport>(MockHealthImport());
       },
@@ -165,6 +196,14 @@ void main() {
     when(mocks.journalDb.watchConfigFlags).thenAnswer(
       (_) => const Stream.empty(),
     );
+    when(
+      () => mocks.journalDb.getTasks(
+        starredStatuses: any(named: 'starredStatuses'),
+        taskStatuses: any(named: 'taskStatuses'),
+        categoryIds: any(named: 'categoryIds'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => world.taskBrowseTasks);
 
     pagingController =
         PagingController<int, JournalEntity>(
@@ -212,6 +251,7 @@ void main() {
           brightness: brightness,
           world: world,
           pageController: pageController,
+          journalRepository: journalRepository,
           surface: const TasksRootPage(),
         );
 
@@ -256,6 +296,7 @@ void main() {
           brightness: brightness,
           world: world,
           pageController: pageController,
+          journalRepository: journalRepository,
           surface: TaskDetailsPage(taskId: world.orbitalHabitatTask.meta.id),
         );
 
@@ -275,6 +316,7 @@ void main() {
           brightness: brightness,
           world: world,
           pageController: pageController,
+          journalRepository: journalRepository,
           surface: const TasksRootPage(),
         );
 
@@ -304,6 +346,7 @@ void main() {
           brightness: brightness,
           world: world,
           pageController: pageController,
+          journalRepository: journalRepository,
           surface: Scaffold(
             body: SingleChildScrollView(
               child: EntryDetailsWidget(
@@ -328,6 +371,144 @@ void main() {
           subdir: 'manual',
         );
       });
+
+      testWidgets('$viewport task create menu — $theme', (tester) async {
+        await _pumpTaskSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          world: world,
+          pageController: pageController,
+          journalRepository: journalRepository,
+          surface: TaskDetailsPage(
+            taskId: world.orbitalHabitatTask.meta.id,
+          ),
+        );
+
+        final context = tester.element(find.byType(TaskDetailsPage));
+        unawaited(
+          CreateEntryModal.show(
+            context: context,
+            linkedFromId: world.orbitalHabitatTask.id,
+            categoryId: manualDemoCategoryId,
+          ),
+        );
+        await settleFrames(tester, 8);
+        expect(find.text('Add'), findsOneWidget);
+        expect(find.text('Checklist'), findsOneWidget);
+        expect(find.text('Audio Recording'), findsOneWidget);
+        expect(find.text('Timer'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'create_entry_task_${viewport}_$theme',
+          subdir: 'manual',
+        );
+      });
+
+      testWidgets('$viewport task cover art — $theme', (tester) async {
+        late WidgetRef parentRef;
+        await _pumpTaskSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          world: world,
+          pageController: pageController,
+          journalRepository: journalRepository,
+          surface: Consumer(
+            builder: (context, ref, child) {
+              parentRef = ref;
+              return TaskDetailsPage(
+                taskId: world.orbitalHabitatTask.meta.id,
+              );
+            },
+          ),
+        );
+
+        final context = tester.element(find.byType(TaskDetailsPage));
+        await primeManualDemoCoverArt(
+          tester,
+          documentsDirectory: getIt<Directory>(),
+          world: world,
+          extents: const [],
+          imageIds: world.coverImages.take(5).map((image) => image.id).toSet(),
+          includeRawFileImage: true,
+        );
+        unawaited(
+          CoverArtSkillModal.show(
+            context: context,
+            entityId: world.orbitalHabitatTask.id,
+            skillId: 'skill-waddle-cover-art',
+            linkedTaskId: world.orbitalHabitatTask.id,
+            ref: parentRef,
+          ),
+        );
+        await settleFrames(tester, 10);
+        expect(find.text('Select Reference Images'), findsOneWidget);
+        final modalImages = find.descendant(
+          of: find.byType(CoverArtSkillModal),
+          matching: find.byType(Image),
+        );
+        final referenceGrid = find.descendant(
+          of: find.byType(CoverArtSkillModal),
+          matching: find.byType(GridView),
+        );
+        expect(modalImages, findsNWidgets(5));
+        expect(referenceGrid, findsOneWidget);
+        expect(tester.getSize(referenceGrid).height, greaterThan(200));
+        await captureScreenshot(
+          tester,
+          'task_cover_references_${viewport}_$theme',
+          subdir: 'manual',
+        );
+
+        await tester.tap(find.text('Continue'));
+        await settleFrames(tester, 8);
+        await tester.pump(const Duration(milliseconds: 720));
+        expect(find.text('Generating image...'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'task_cover_generating_${viewport}_$theme',
+          subdir: 'manual',
+        );
+      });
+
+      testWidgets('$viewport task link picker — $theme', (tester) async {
+        await _pumpTaskSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          world: world,
+          pageController: pageController,
+          journalRepository: journalRepository,
+          surface: TaskDetailsPage(
+            taskId: world.orbitalHabitatTask.meta.id,
+          ),
+        );
+
+        final context = tester.element(find.byType(TaskDetailsPage));
+        unawaited(
+          LinkTaskModal.show(
+            context: context,
+            currentTaskId: world.orbitalHabitatTask.id,
+            existingLinkedIds: {world.fishFeederTask.id},
+          ),
+        );
+        await settleFrames(tester, 30);
+        expect(find.text('Link existing task...'), findsOneWidget);
+        expect(
+          find.text('Confirm the interplanetary sardine cargo pods'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Ask Legal whether a penguin is a passenger'),
+          findsOneWidget,
+        );
+        await captureScreenshot(
+          tester,
+          'task_link_picker_${viewport}_$theme',
+          subdir: 'manual',
+        );
+      });
     }
   }
 }
@@ -338,6 +519,7 @@ Future<void> _pumpTaskSurface(
   required Brightness brightness,
   required ManualDemoWorld world,
   required FakeJournalPageController pageController,
+  required JournalRepository journalRepository,
   required Widget surface,
 }) async {
   applyScreenshotDevice(tester, device);
@@ -369,6 +551,7 @@ Future<void> _pumpTaskSurface(
         key: screenshotBoundaryKey,
         child: ProviderScope(
           overrides: [
+            journalRepositoryProvider.overrideWithValue(journalRepository),
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(
               true,
@@ -402,6 +585,18 @@ Future<void> _pumpTaskSurface(
               (ref, agentId) => const Stream<Set<String>>.empty(),
             ),
             taskAgentProvider.overrideWith((ref, taskId) async => null),
+            triggerSkillProvider((
+              entityId: world.orbitalHabitatTask.id,
+              skillId: 'skill-waddle-cover-art',
+              linkedTaskId: world.orbitalHabitatTask.id,
+              referenceImages: null,
+              overrideModelId: null,
+              geminiThinkingMode: null,
+            )).overrideWith((ref) async {}),
+            inferenceStatusControllerProvider((
+              id: world.orbitalHabitatTask.id,
+              aiResponseType: AiResponseType.imageGeneration,
+            )).overrideWith(_ManualRunningInferenceController.new),
             for (final coverImage in world.coverImages)
               createEntryControllerOverride(coverImage),
             for (final task in world.taskBrowseTasks)

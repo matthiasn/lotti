@@ -62,6 +62,61 @@ the manual” is a task; “verify every navigation link” is a checklist item.
 Checklists can be edited directly and may also be proposed by configured AI
 skills from task context.
 
+## Add task context
+
+Use the task's **Add** action to attach a checklist, another task, an audio
+recording, a timer, a text entry, or an image without leaving the task. The
+available actions depend on the current platform and context.
+
+<ManualScreenshot
+  caseId="entries/create-menu"
+  alt="Add menu over the orbital habitat task with task-aware capture actions"
+/>
+
+See [Add entries and context](../plan-and-capture/entries.mdx) for when to use
+each entry type.
+
+## Generate cover art from real task imagery
+
+If an image-generation skill is configured, open the task's generation menu
+and choose its cover-art action. Lotti first shows images already attached to
+the task, plus available cover images from linked tasks. Select up to five
+references to guide the result, or continue without a reference.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Generate Cover Art sheet showing five distinct Project Waddle reference images from the task context"
+  caption="The picker uses the same task imagery visible throughout the Project Waddle demo."
+/>
+
+After you continue, image generation runs in the background. The progress
+view uses Lotti's production thinking visualizer and can be closed without
+cancelling the job.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Task cover-art generation in progress with Lotti's production shader visualizer"
+/>
+
+The generated image becomes the task cover and follows the task into list,
+detail, project, and Daily OS views. A strong cover should remain recognizable
+when the wide source image is cropped into a compact task thumbnail.
+
+## Link related tasks
+
+Open the task's **Linked** section and choose to link an existing task. Search
+the picker, then select the related outcome. Lotti excludes the current task
+and tasks that are already linked in that direction.
+
+<ManualScreenshot
+  caseId="tasks/link-picker"
+  alt="Production task-link picker listing related Project Waddle tasks and their status, priority, category, and due-date context"
+/>
+
+Task links are directional: the current task points to the task you choose.
+Both sides remain reachable through their linked-entry sections, while each
+task keeps its own status, schedule, and attachments.
+
 ## Use voice without losing control
 
 Record a note inside the task when it is faster to explain the situation aloud.

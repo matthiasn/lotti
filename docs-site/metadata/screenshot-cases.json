@@ -156,6 +156,50 @@
       }
     },
     {
+      "id": "entries/create-menu",
+      "title": "Contextual entry creation menu",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "create_entry_task_mobile_light.png",
+        "mobile-dark": "create_entry_task_mobile_dark.png",
+        "desktop-light": "create_entry_task_desktop_light.png",
+        "desktop-dark": "create_entry_task_desktop_dark.png"
+      }
+    },
+    {
+      "id": "tasks/cover-references",
+      "title": "Task cover-art reference selection",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "task_cover_references_mobile_light.png",
+        "mobile-dark": "task_cover_references_mobile_dark.png",
+        "desktop-light": "task_cover_references_desktop_light.png",
+        "desktop-dark": "task_cover_references_desktop_dark.png"
+      }
+    },
+    {
+      "id": "tasks/cover-generating",
+      "title": "Task cover-art generation progress",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "task_cover_generating_mobile_light.png",
+        "mobile-dark": "task_cover_generating_mobile_dark.png",
+        "desktop-light": "task_cover_generating_desktop_light.png",
+        "desktop-dark": "task_cover_generating_desktop_dark.png"
+      }
+    },
+    {
+      "id": "tasks/link-picker",
+      "title": "Task link picker",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "task_link_picker_mobile_light.png",
+        "mobile-dark": "task_link_picker_mobile_dark.png",
+        "desktop-light": "task_link_picker_desktop_light.png",
+        "desktop-dark": "task_link_picker_desktop_dark.png"
+      }
+    },
+    {
       "id": "categories/list",
       "title": "Category definitions",
       "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
