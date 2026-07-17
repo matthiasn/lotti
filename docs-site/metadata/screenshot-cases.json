@@ -563,6 +563,17 @@
       }
     },
     {
+      "id": "keyboard-shortcuts/palette",
+      "title": "Command palette",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "command_palette_mobile_light.png",
+        "mobile-dark": "command_palette_mobile_dark.png",
+        "desktop-light": "command_palette_desktop_light.png",
+        "desktop-dark": "command_palette_desktop_dark.png"
+      }
+    },
+    {
       "id": "celebrations/controls",
       "title": "Completion celebration controls",
       "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",

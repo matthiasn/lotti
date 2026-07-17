@@ -250,7 +250,8 @@
       "status": "verified",
       "screenshotCases": [
         "keyboard-shortcuts/catalog",
-        "keyboard-shortcuts/search"
+        "keyboard-shortcuts/search",
+        "keyboard-shortcuts/palette"
       ]
     },
     {
