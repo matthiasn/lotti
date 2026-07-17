@@ -794,6 +794,17 @@
       }
     },
     {
+      "id": "time-tracking/session-rating",
+      "title": "Recorded-session rating",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "session_rating_mobile_light.png",
+        "mobile-dark": "session_rating_mobile_dark.png",
+        "desktop-light": "session_rating_desktop_light.png",
+        "desktop-dark": "session_rating_desktop_dark.png"
+      }
+    },
+    {
       "id": "time-analysis/overview",
       "title": "Time Analysis overview",
       "sourceTest": "test/features/insights/ui/time_analysis_screenshots_test.dart",

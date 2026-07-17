@@ -1,0 +1,78 @@
+---
+title: Track and rate focused work
+description: Record time on an entry, close the session cleanly, and preserve a quick judgment about productivity, energy, focus, and challenge.
+---
+
+# Track and rate focused work
+
+Lotti records focused work as timed journal entries. Start a timer from the
+entry or task that owns the work so its duration and context stay together.
+When the session ends, you can add a structured rating while the experience is
+still fresh.
+
+The Project Waddle example rates a 23-minute emperor-penguin roll-call
+rehearsal. The rating sheet shown here is the production interface over that
+real time entry, not a documentation mock-up.
+
+<ManualScreenshot
+  caseId="time-tracking/session-rating"
+  alt="Session rating sheet over a Project Waddle time entry with productivity, energy, focus, challenge, and a Mission Control note"
+  caption="The three bars are continuous scales. Challenge uses explicit choices, and Save becomes available only after every dimension has an answer."
+/>
+
+## Record time in the right context
+
+Open an entry or task and use its timer action. A timer created from a task or
+another journal entry is linked back to that source, so the surrounding work
+remains visible in linked activity. The duration updates while recording and
+the stop action closes the session on the same time entry.
+
+Use one timer for one coherent stretch of work. If the purpose changes—from
+habitat inspection to sardine diplomacy, for example—stop the current timer
+and start another under the correct task or category. This keeps both the
+entry history and [Time Analysis](./time-analysis.mdx) meaningful.
+
+## Rate a completed session
+
+After a recording of at least one minute ends, Lotti shows a star prompt beside
+the duration. It pulses briefly and then remains available until you save a
+rating or restart the recording. For a timer shown inside linked activity, the
+entry action menu also offers **Rate session** or **View rating**.
+
+The session catalog asks four questions:
+
+- **Productivity** is a continuous scale from unproductive to peak
+  productivity.
+- **Energy** runs from drained to fully energized.
+- **Focus** runs from constant distraction to uninterrupted focus.
+- **This work felt…** records **Too easy**, **Just right**, or **Too
+  challenging**. **Just right** represents the intended challenge/skill
+  balance.
+
+Drag or select anywhere on a continuous bar; values are not restricted to the
+visible tick marks. Add an optional note for context that the numbers cannot
+carry. **Save** stays disabled until all four answers are present. **Skip**
+closes the sheet without writing a rating.
+
+## Review and revise a rating
+
+A saved rating is stored as its own journal entry and linked to the time entry
+it describes. Reopen **View rating** to change the answers or note. The saved
+summary retains the question and option wording used at the time, so synced
+ratings remain understandable even if the catalog changes later.
+
+Session ratings are available when the **Session ratings** configuration flag
+is enabled. A client that receives a rating catalog it does not recognize can
+still display the stored answers, but it keeps that rating read-only rather
+than guessing how to edit unfamiliar data.
+
+## Use ratings as observations, not grades
+
+The four dimensions describe one session, not personal performance. A low
+energy score can explain why otherwise useful work felt difficult; a high
+focus score paired with **Too easy** may suggest the next session needs a more
+ambitious scope. Notes are especially useful for anomalies such as an airborne
+sardine, an interruption, or an unusually smooth Mission Control briefing.
+
+Ratings complement duration rather than changing it. The timer remains the
+source for how long the work took, while the rating records how that time felt.

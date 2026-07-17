@@ -96,6 +96,15 @@
       ]
     },
     {
+      "id": "time-tracking",
+      "title": "Time tracking and session ratings",
+      "page": "organize-and-reflect/time-tracking",
+      "status": "verified",
+      "screenshotCases": [
+        "time-tracking/session-rating"
+      ]
+    },
+    {
       "id": "settings",
       "title": "Settings",
       "page": "reference/settings",
