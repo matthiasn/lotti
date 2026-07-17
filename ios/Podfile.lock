@@ -1,4 +1,7 @@
 PODS:
+  - audio_decoder (0.7.4):
+    - Flutter
+    - FlutterMacOS
   - audio_session (0.0.1):
     - Flutter
   - audioplayers_darwin (0.0.1):
@@ -18,6 +21,8 @@ PODS:
     - SDWebImageWebPCoder
   - flutter_keyboard_visibility_temp_fork (0.0.1):
     - Flutter
+  - flutter_lame (1.0.0):
+    - Flutter
   - flutter_local_notifications (0.0.1):
     - Flutter
   - flutter_onnxruntime (0.0.1):
@@ -34,7 +39,7 @@ PODS:
   - gal (1.0.0):
     - Flutter
     - FlutterMacOS
-  - health (13.1.4):
+  - health (13.3.1):
     - Flutter
   - image_picker_ios (0.0.1):
     - Flutter
@@ -60,8 +65,9 @@ PODS:
   - libwebp/sharpyuv (1.5.0)
   - libwebp/webp (1.5.0):
     - libwebp/sharpyuv
-  - location (0.0.1):
+  - location (8.0.1):
     - Flutter
+    - FlutterMacOS
   - Mantle (2.2.0):
     - Mantle/extobjc (= 2.2.0)
   - Mantle/extobjc (2.2.0)
@@ -142,6 +148,7 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - audio_decoder (from `.symlinks/plugins/audio_decoder/darwin`)
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
   - audioplayers_darwin (from `.symlinks/plugins/audioplayers_darwin/darwin`)
   - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
@@ -150,6 +157,7 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
   - flutter_keyboard_visibility_temp_fork (from `.symlinks/plugins/flutter_keyboard_visibility_temp_fork/ios`)
+  - flutter_lame (from `.symlinks/plugins/flutter_lame/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_onnxruntime (from `.symlinks/plugins/flutter_onnxruntime/ios`)
   - flutter_openssl_crypto (from `.symlinks/plugins/flutter_openssl_crypto/ios`)
@@ -162,7 +170,7 @@ DEPENDENCIES:
   - irondash_engine_context (from `.symlinks/plugins/irondash_engine_context/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/darwin`)
   - just_waveform (from `.symlinks/plugins/just_waveform/darwin`)
-  - location (from `.symlinks/plugins/location/ios`)
+  - location (from `.symlinks/plugins/location/darwin`)
   - media_kit_libs_ios_audio (from `.symlinks/plugins/media_kit_libs_ios_audio/ios`)
   - mobile_scanner (from `.symlinks/plugins/mobile_scanner/darwin`)
   - objectbox_flutter_libs (from `.symlinks/plugins/objectbox_flutter_libs/ios`)
@@ -193,6 +201,8 @@ SPEC REPOS:
     - sqlite3
 
 EXTERNAL SOURCES:
+  audio_decoder:
+    :path: ".symlinks/plugins/audio_decoder/darwin"
   audio_session:
     :path: ".symlinks/plugins/audio_session/ios"
   audioplayers_darwin:
@@ -209,6 +219,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_image_compress_common/ios"
   flutter_keyboard_visibility_temp_fork:
     :path: ".symlinks/plugins/flutter_keyboard_visibility_temp_fork/ios"
+  flutter_lame:
+    :path: ".symlinks/plugins/flutter_lame/ios"
   flutter_local_notifications:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
   flutter_onnxruntime:
@@ -234,7 +246,7 @@ EXTERNAL SOURCES:
   just_waveform:
     :path: ".symlinks/plugins/just_waveform/darwin"
   location:
-    :path: ".symlinks/plugins/location/ios"
+    :path: ".symlinks/plugins/location/darwin"
   media_kit_libs_ios_audio:
     :path: ".symlinks/plugins/media_kit_libs_ios_audio/ios"
   mobile_scanner:
@@ -269,6 +281,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/video_player_avfoundation/darwin"
 
 SPEC CHECKSUMS:
+  audio_decoder: 9d20f77489715b63730ff64bbef05aa68190c2e0
   audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
   audioplayers_darwin: 835ced6edd4c9fc8ebb0a7cc9e294a91d99917d5
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
@@ -277,20 +290,21 @@ SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_image_compress_common: 1697a328fd72bfb335507c6bca1a65fa5ad87df1
   flutter_keyboard_visibility_temp_fork: 95b2d534bacf6ac62e7fcbe5c2a9e2c2a17ce06f
+  flutter_lame: bee3d284f5ca264d3ab4c0c898ce219ddfeba03d
   flutter_local_notifications: 643a3eda1ce1c0599413ca31672536d423dee214
   flutter_onnxruntime: 577a012771672fd168079e29be7909a9d0f9c302
   flutter_openssl_crypto: 73dcefff7611c3ac324d82726047d8335d0b6e57
   flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
   flutter_vodozemac: 46015daf07988356d46784d05ab0c7afca00ff36
   gal: baecd024ebfd13c441269ca7404792a7152fde89
-  health: 32d2fbc7f26f9a2388d1a514ce168adbfa5bda65
+  health: 4decf5d74e8f54c58a8c07a385fc72f629a831d9
   image_picker_ios: e0ece4aa2a75771a7de3fa735d26d90817041326
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   irondash_engine_context: 8e58ca8e0212ee9d1c7dc6a42121849986c88486
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
   just_waveform: be2cb6dec86096cb972bf8b73c893fe16bf1cff4
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
-  location: 155caecf9da4f280ab5fe4a55f94ceccfab838f8
+  location: 45c20040d0ccac3cb109821a9e7f2d39c468988c
   Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
   media_kit_libs_ios_audio: 905e6323b72e65c63ab9262b2e473f52c024a3a8
   mobile_scanner: 9157936403f5a0644ca3779a38ff8404c5434a93

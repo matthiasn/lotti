@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/themes/theme.dart';
 
 class SwitchIconWidget extends StatelessWidget {
   const SwitchIconWidget({
@@ -28,9 +29,9 @@ class SwitchIconWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      // 48px to match the other header controls' tap target so the favorite
-      // toggle is not the one cramped, harder-to-hit control in the cluster.
-      width: 48,
+      // Match the other header controls' tap target so the favorite toggle is
+      // not the one cramped, harder-to-hit control in the cluster.
+      width: AppTheme.headerActionWidth,
       child: IconButton(
         splashColor: Colors.transparent,
         focusColor: Colors.transparent,

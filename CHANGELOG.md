@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1051]
+### Fixed
+- **The entry date stays readable on narrow phones.** When an entry header's
+  action buttons (AI assistant, flag, star, overflow menu) would leave the
+  timestamp squeezed into an ellipsis, the gaps between the buttons now
+  compress so the date and time remain visible. Wider screens keep the
+  original comfortable spacing, and every button keeps its full-size tap
+  target.
+
 ### Added
 - **The desktop sidebar now opens the Lotti Manual directly.** A localized
   Manual link sits immediately above Settings, remains available when the

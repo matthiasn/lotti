@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_icon_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -75,7 +76,10 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     return IconButtonTheme(
       data: IconButtonThemeData(
         style: IconButton.styleFrom(
-          minimumSize: const Size(48, 40),
+          minimumSize: const Size(
+            AppTheme.headerActionWidth,
+            AppTheme.headerActionHeight,
+          ),
           padding: EdgeInsets.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
@@ -96,31 +100,88 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
         entry is! Task &&
         entry is! JournalEvent &&
         !widget.inLinkedEntries;
-    return Row(
-      children: [
-        // The date/category cluster takes the slack the old Spacer held, but as
-        // an Expanded it also *yields* it: on narrow phones the trailing action
-        // buttons (ending in the overflow `…`) keep their full width and the
-        // timestamp stacks the date over the time (see EntryDatetimeWidget)
-        // instead of the row overflowing and the `…` being clipped by the
-        // card's rounded clip.
-        Expanded(
-          child: Row(
-            children: [
-              Flexible(child: EntryDatetimeWidget(entryId: widget.entryId)),
-              if (showCategory) ...[
-                SizedBox(width: tokens.spacing.step3),
-                CategorySelectionIconButton(entry: entry),
-              ],
-            ],
-          ),
-        ),
-        ..._spacedTrailing(
-          context,
-          _trailingActions(context, entry, id, notifier, tokens),
-        ),
-      ],
+    final actions = _trailingActions(context, entry, id, notifier, tokens);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Row(
+          children: [
+            // The date/category cluster takes the slack the old Spacer held,
+            // but as an Expanded it also *yields* it: on narrow phones the
+            // trailing action buttons (ending in the overflow `…`) keep their
+            // full width and the timestamp stacks the date over the time (see
+            // EntryDatetimeWidget) instead of the row overflowing and the `…`
+            // being clipped by the card's rounded clip.
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(child: EntryDatetimeWidget(entryId: widget.entryId)),
+                  if (showCategory) ...[
+                    SizedBox(width: tokens.spacing.step3),
+                    CategorySelectionIconButton(entry: entry),
+                  ],
+                ],
+              ),
+            ),
+            ..._spacedTrailing(
+              context,
+              actions,
+              compact: _useCompactTrailingGaps(
+                maxWidth: constraints.maxWidth,
+                actionCount: actions.length,
+                spacing: tokens.spacing,
+                // The category button sits in the leading cluster, so the
+                // timestamp needs its reserve on top of that button's width.
+                leadingReserve: showCategory
+                    ? tokens.spacing.step3 + AppTheme.headerActionWidth
+                    : 0,
+              ),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  /// Whether the trailing action gaps should compress to keep the timestamp
+  /// legible.
+  ///
+  /// Compares the width the rail would take with the comfortable (step5) gaps
+  /// against what the row actually has: if the leftover for the leading
+  /// timestamp cluster falls below [AppTheme.headerTimestampMinWidth] (plus
+  /// [leadingReserve] for the category button when present), the gaps switch
+  /// to compact. An unbounded width always fits comfortably.
+  bool _useCompactTrailingGaps({
+    required double maxWidth,
+    required int actionCount,
+    required DsSpacing spacing,
+    required double leadingReserve,
+  }) {
+    if (!maxWidth.isFinite || actionCount == 0) {
+      return false;
+    }
+    final comfortableRail =
+        actionCount * AppTheme.headerActionWidth +
+        (actionCount - 1) * spacing.step5;
+    return maxWidth - comfortableRail <
+        AppTheme.headerTimestampMinWidth + leadingReserve;
+  }
+
+  /// Whether the AI slot will actually render a control for [entry].
+  ///
+  /// [UnifiedAiPopUpMenu] collapses to a zero-width placeholder while no AI
+  /// skills are available for the entry, so the header only adds the slot once
+  /// skills exist: counting the invisible slot as a full-width action would
+  /// compress the trailing gaps a whole slot too early (see
+  /// [_useCompactTrailingGaps]) and leave a doubled inter-control gap around
+  /// the empty widget.
+  bool _hasAiSkills(JournalEntity entry) {
+    final hasSkills = ref.watch(
+      hasAvailableSkillsProvider(
+        (entityId: entry.id, linkedFromId: widget.linkedFromId),
+      ),
+    );
+    // hasValue (not isLoading) so the slot survives background refreshes.
+    return hasSkills.hasValue && hasSkills.value!;
   }
 
   /// The trailing action controls shared by both header layouts.
@@ -128,9 +189,10 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
   /// The two universal controls — favorite, then overflow — are pinned as the
   /// rightmost two slots so they sit at an identical x on every card type and a
   /// user can build muscle memory for them. The type-specific affordances
-  /// ([collapseChevron], AI, flag) grow *inward* from that fixed anchor, so the
-  /// star/overflow pair never shifts and the collapse chevron is kept well clear
-  /// of the overflow `…` (the near-identical grey pair was a mis-tap hazard).
+  /// ([collapseChevron], AI when skills are available, flag) grow *inward*
+  /// from that fixed anchor, so the star/overflow pair never shifts and the
+  /// collapse chevron is kept well clear of the overflow `…` (the
+  /// near-identical grey pair was a mis-tap hazard).
   List<Widget> _trailingActions(
     BuildContext context,
     JournalEntity? entry,
@@ -146,7 +208,8 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           (entry is Task ||
               entry is JournalImage ||
               entry is JournalAudio ||
-              entry is JournalEntry))
+              entry is JournalEntry) &&
+          _hasAiSkills(entry))
         UnifiedAiPopUpMenu(
           journalEntity: entry,
           linkedFromId: widget.linkedFromId,
@@ -210,18 +273,28 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     ];
   }
 
-  /// Interleaves one wide, uniform inter-control gap (step5) between every
-  /// adjacent header control. The enlarged glyphs left less whitespace inside
-  /// each 48px tap target, so a wider visible gap (on top of the 48px hit area)
-  /// is what keeps the crowded 4-control headers from being a mis-tap hazard for
-  /// motor-impaired users and keeps the favorite toggle clear of the
-  /// (destructive-capable) overflow menu.
-  List<Widget> _spacedTrailing(BuildContext context, List<Widget> actions) {
+  /// Interleaves one uniform inter-control gap between every adjacent header
+  /// control.
+  ///
+  /// The comfortable gap (step5) sits on top of each control's 48px hit area
+  /// and keeps the crowded 4-control headers from being a mis-tap hazard for
+  /// motor-impaired users, keeping the favorite toggle clear of the
+  /// (destructive-capable) overflow menu. When [compact] (narrow phones, see
+  /// [_useCompactTrailingGaps]) the gap drops to step2: the 48px tap targets —
+  /// each with ~10px of visual whitespace around its 28px glyph — already
+  /// provide the tap separation, and the reclaimed width is what keeps the
+  /// timestamp from ellipsizing to `20…` behind the action rail.
+  List<Widget> _spacedTrailing(
+    BuildContext context,
+    List<Widget> actions, {
+    required bool compact,
+  }) {
     final spacing = context.designTokens.spacing;
+    final gap = compact ? spacing.step2 : spacing.step5;
     final out = <Widget>[];
     for (var i = 0; i < actions.length; i++) {
       if (i > 0) {
-        out.add(SizedBox(width: spacing.step5));
+        out.add(SizedBox(width: gap));
       }
       out.add(actions[i]);
     }
@@ -274,33 +347,44 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     // header — favorite + overflow pinned right, the collapse chevron folded
     // into the inward type-specific slot so the star/overflow anchor stays at
     // the same x as every other card type.
-    return Row(
-      children: [
-        // Expanded (not a fixed widget + Spacer) so the timestamp yields space
-        // to the trailing rail on narrow phones (stacking date over time)
-        // instead of the row overflowing and clipping the overflow `…`. The
-        // Align keeps the datetime widget's tap target at its intrinsic text
-        // width — without it the Expanded would stretch the underlying
-        // GestureDetector across the empty gap and make that whitespace open
-        // the date/time picker.
-        Expanded(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: EntryDatetimeWidget(entryId: widget.entryId),
-          ),
-        ),
-        ..._spacedTrailing(
-          context,
-          _trailingActions(
-            context,
-            entry,
-            id,
-            notifier,
-            tokens,
-            collapseChevron: chevron,
-          ),
-        ),
-      ],
+    final actions = _trailingActions(
+      context,
+      entry,
+      id,
+      notifier,
+      tokens,
+      collapseChevron: chevron,
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Row(
+          children: [
+            // Expanded (not a fixed widget + Spacer) so the timestamp yields
+            // space to the trailing rail on narrow phones (stacking date over
+            // time) instead of the row overflowing and clipping the overflow
+            // `…`. The Align keeps the datetime widget's tap target at its
+            // intrinsic text width — without it the Expanded would stretch the
+            // underlying GestureDetector across the empty gap and make that
+            // whitespace open the date/time picker.
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: EntryDatetimeWidget(entryId: widget.entryId),
+              ),
+            ),
+            ..._spacedTrailing(
+              context,
+              actions,
+              compact: _useCompactTrailingGaps(
+                maxWidth: constraints.maxWidth,
+                actionCount: actions.length,
+                spacing: tokens.spacing,
+                leadingReserve: 0,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
