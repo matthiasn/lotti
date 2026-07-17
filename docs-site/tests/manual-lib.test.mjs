@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   canonicalVariantPath,
+  findLegacyManualImport,
   findUnmanagedScreenshotReferences,
   requiredVariants,
   validateCaseId,
@@ -43,6 +44,27 @@ test('unmanaged lotti-docs images are rejected outside code examples', () => {
   ].join('\n');
 
   assert.deepEqual(findUnmanagedScreenshotReferences(source), [legacyUrl]);
+});
+
+test('Widgetbook and showcase imports are rejected regardless of path style', () => {
+  for (const importPath of [
+    'package:lotti/features/widgetbook/task_showcase.dart',
+    'package:widgetbook/widgetbook.dart',
+    '../../../widgetbook/task.dart',
+    'widgetbook/task.dart',
+    '../showcases/task_showcase.dart',
+  ]) {
+    assert.equal(
+      findLegacyManualImport(`import '${importPath}';`),
+      `import '${importPath}'`,
+    );
+  }
+  assert.equal(
+    findLegacyManualImport(
+      "import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';",
+    ),
+    null,
+  );
 });
 
 test('canonical media paths are stable and nested by case', () => {

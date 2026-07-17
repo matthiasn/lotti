@@ -57,7 +57,7 @@ import '../../screenshot_harness.dart';
 final DateTime _now = DateTime(2026, 6, 8, 15, 55);
 final DateTime _day = DateTime(2026, 6, 8);
 late ManualDemoWorld _manualWorld;
-late Directory _manualDocumentsDirectory;
+Directory? _manualDocumentsDirectory;
 
 const _deepWork = DayAgentCategory(
   id: 'cat-penguin',
@@ -573,13 +573,17 @@ Future<void> _pumpDayPage(
   bool showPlannerReview = true,
 }) async {
   applyScreenshotDevice(tester, device);
+  final documentsDirectory = _manualDocumentsDirectory;
+  if (documentsDirectory == null) {
+    throw StateError('Manual screenshot documents directory is unavailable.');
+  }
   await withClock(Clock.fixed(_now), () async {
     final draft = showPlannerReview
         ? _plan()
         : _plan().copyWith(state: DayState.committed);
     await primeManualDemoCoverArt(
       tester,
-      documentsDirectory: _manualDocumentsDirectory,
+      documentsDirectory: documentsDirectory,
       world: _manualWorld,
       extents: const [48, 96, 144, 216],
     );
@@ -744,14 +748,15 @@ void main() {
 
   setUp(() async {
     _manualWorld = ManualDemoWorld.penguinLogistics();
-    _manualDocumentsDirectory = Directory.systemTemp.createTempSync(
+    final documentsDirectory = Directory.systemTemp.createTempSync(
       'lotti-manual-daily-os-',
     );
-    await _manualWorld.installMedia(_manualDocumentsDirectory);
+    _manualDocumentsDirectory = documentsDirectory;
+    await _manualWorld.installMedia(documentsDirectory);
     final mocks = await setUpTestGetIt(
       additionalSetup: () {
         getIt
-          ..registerSingleton<Directory>(_manualDocumentsDirectory)
+          ..registerSingleton<Directory>(documentsDirectory)
           ..registerSingleton<EditorStateService>(MockEditorStateService());
       },
     );
@@ -768,8 +773,10 @@ void main() {
 
   tearDown(() async {
     await tearDownTestGetIt();
-    if (_manualDocumentsDirectory.existsSync()) {
-      _manualDocumentsDirectory.deleteSync(recursive: true);
+    final documentsDirectory = _manualDocumentsDirectory;
+    _manualDocumentsDirectory = null;
+    if (documentsDirectory?.existsSync() ?? false) {
+      documentsDirectory!.deleteSync(recursive: true);
     }
   });
 

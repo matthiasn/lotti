@@ -58,7 +58,7 @@ void main() {
   }
 
   late ManualDemoWorld world;
-  late Directory documentsDirectory;
+  Directory? documentsDirectory;
   late PagingController<int, JournalEntity> pagingController;
   late FakeJournalPageController pageController;
   late ValueNotifier<String?> selectedTaskId;
@@ -71,10 +71,11 @@ void main() {
 
   setUp(() async {
     world = ManualDemoWorld.penguinLogistics();
-    documentsDirectory = Directory.systemTemp.createTempSync(
+    final testDocumentsDirectory = Directory.systemTemp.createTempSync(
       'lotti-manual-tasks-',
     );
-    await world.installMedia(documentsDirectory);
+    documentsDirectory = testDocumentsDirectory;
+    await world.installMedia(testDocumentsDirectory);
 
     final entitiesCache = MockEntitiesCacheService();
     final navService = MockNavService();
@@ -114,7 +115,7 @@ void main() {
     final mocks = await setUpTestGetIt(
       additionalSetup: () {
         getIt
-          ..registerSingleton<Directory>(documentsDirectory)
+          ..registerSingleton<Directory>(testDocumentsDirectory)
           ..registerSingleton<EntitiesCacheService>(entitiesCache)
           ..registerSingleton<NavService>(navService)
           ..registerSingleton<TimeService>(timeService)
@@ -189,8 +190,10 @@ void main() {
     selectedTaskId.dispose();
     detailStack.dispose();
     await tearDownTestGetIt();
-    if (documentsDirectory.existsSync()) {
-      documentsDirectory.deleteSync(recursive: true);
+    final testDocumentsDirectory = documentsDirectory;
+    documentsDirectory = null;
+    if (testDocumentsDirectory?.existsSync() ?? false) {
+      testDocumentsDirectory!.deleteSync(recursive: true);
     }
   });
 

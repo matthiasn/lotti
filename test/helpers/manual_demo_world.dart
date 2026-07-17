@@ -393,9 +393,10 @@ Future<void> primeManualDemoCoverArt(
           );
     for (final coverImage in coverImages) {
       final file = File(
-        '${documentsDirectory.path}'
-        '${coverImage.data.imageDirectory}'
-        '${coverImage.data.imageFile}',
+        getFullImagePath(
+          coverImage,
+          documentsDirectory: documentsDirectory.path,
+        ),
       );
       final fileImage = FileImage(file);
       final bytes = await file.readAsBytes();

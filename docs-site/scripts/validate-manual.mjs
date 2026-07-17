@@ -4,6 +4,7 @@ import {access, readdir, readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 
 import {
+  findLegacyManualImport,
   findUnmanagedScreenshotReferences,
   parseNamedArguments,
   readJson,
@@ -99,9 +100,7 @@ for (const screenshotCase of screenshotRegistry.cases) {
   if (!checkedScreenshotSources.has(sourcePath)) {
     checkedScreenshotSources.add(sourcePath);
     const source = await readFile(sourcePath, 'utf8');
-    const legacyManualImport = source.match(
-      /import\s+['"]package:lotti\/[^'"]*(?:\/widgetbook\/|showcase)[^'"]*['"]/i,
-    );
+    const legacyManualImport = findLegacyManualImport(source);
     if (legacyManualImport) {
       errors.push(
         `${screenshotCase.sourceTest} imports a Widgetbook/showcase surface. ` +
