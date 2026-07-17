@@ -500,19 +500,20 @@ sequenceDiagram
 - Agenda rows resolve live task metadata through `liveTaskMetadataProvider` before
   rendering. `AgendaView` keeps draft/manual block timing as the source of truth,
   then passes the task title, status, estimate, category, `coverArtId`, and
-  `coverArtCropX` into `AgendaCard`. The row uses `CoverArtThumbnail` for the
-  square task image when one exists and falls back to a bare order number
-  when it does not, so the compact mobile list keeps a stable leading column.
+  `coverArtCropX` into `AgendaCard`. Active and completed rows both use
+  `CoverArtThumbnail` for the square task image when one exists and fall back
+  to a bare order number when it does not, so the list keeps a stable leading
+  column without hiding task identity after completion.
 - Agenda rows and Day timeline blocks use a quiet metadata grammar: a bare
   sparkle icon (that item's persisted reason in the tooltip), bare
   clock+estimate text, a neutral "In progress" caption
   (amber is reserved for overdue, the one state that earns a tinted pill),
   a green check glyph for done, and a 2 px progress bar only while
   genuinely mid-flight. Task-linked rows carry the `LinkBadge`; standalone
-  rows are the unmarked default. **Done items collapse to one-line receipt
-  rows** (number · title · check) so the first fold belongs to in-progress
-  and upcoming work mid-day. On desktop the agenda column is capped at a
-  760 px reading width.
+  rows are the unmarked default. **Done items collapse to receipt rows**
+  (task thumbnail/order · title · check) so in-progress and upcoming work
+  remain visually dominant without stripping completed tasks of their cover
+  identity. On desktop the agenda column is capped at a 760 px reading width.
 - Proposed planner knowledge surfaces on the Day page as the
   `KnowledgeNudge` chip ("N things I noticed — review", rendered only when
   proposals exist) between the captures panel and the plan view; tapping it

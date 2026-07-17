@@ -132,6 +132,7 @@ DraftPlan _plan() {
       _at(8, 30),
       _at(9),
       _admin,
+      taskId: manualRollCallTaskId,
     ),
     _planned(
       'blk-deep',
@@ -157,6 +158,7 @@ DraftPlan _plan() {
       _at(11, 15),
       _at(12),
       _client,
+      taskId: manualLaunchReviewTaskId,
     ),
     _planned(
       'blk-lunch',
@@ -164,6 +166,7 @@ DraftPlan _plan() {
       _at(12),
       _at(13),
       _health,
+      taskId: manualLunchTaskId,
     ),
     _planned(
       'blk-followup',
@@ -171,6 +174,7 @@ DraftPlan _plan() {
       _at(13),
       _at(14, 30),
       _client,
+      taskId: manualSardineFuturesTaskId,
     ),
     _planned(
       'blk-slides',
@@ -197,6 +201,7 @@ DraftPlan _plan() {
       _at(17, 30),
       _at(18),
       _health,
+      taskId: manualHeadsetWalkTaskId,
     ),
   ];
 
@@ -229,6 +234,7 @@ DraftPlan _plan() {
     agendaItems: const [
       AgendaItem(
         id: 'ag-review',
+        taskId: manualRollCallTaskId,
         title: 'Emperor penguin roll call',
         category: _admin,
         linkedBlockIds: ['blk-review'],
@@ -249,6 +255,7 @@ DraftPlan _plan() {
       ),
       AgendaItem(
         id: 'ag-design',
+        taskId: manualLaunchReviewTaskId,
         title: 'Project Waddle launch review',
         category: _client,
         linkedBlockIds: ['blk-design'],
@@ -258,6 +265,7 @@ DraftPlan _plan() {
       ),
       AgendaItem(
         id: 'ag-lunch',
+        taskId: manualLunchTaskId,
         title: 'Lunch (coffee is not a vegetable)',
         category: _health,
         linkedBlockIds: ['blk-lunch'],
@@ -269,6 +277,7 @@ DraftPlan _plan() {
       // agenda must agree with the lane (no cross-view contradictions).
       AgendaItem(
         id: 'ag-followup',
+        taskId: manualSardineFuturesTaskId,
         title: 'Negotiate sardine futures',
         category: _client,
         linkedBlockIds: ['blk-followup'],
@@ -298,6 +307,7 @@ DraftPlan _plan() {
       ),
       AgendaItem(
         id: 'ag-run',
+        taskId: manualHeadsetWalkTaskId,
         title: 'Walk without a headset',
         category: _health,
         linkedBlockIds: ['blk-run'],
@@ -571,6 +581,7 @@ Future<void> _pumpDayPage(
       tester,
       documentsDirectory: _manualDocumentsDirectory,
       world: _manualWorld,
+      extents: const [48, 96, 144, 216],
     );
     await tester.pumpWidget(
       _app(
@@ -677,16 +688,26 @@ Future<void> _openBlockEditor(
 }
 
 void _expectAgendaThumbnails(WidgetTester tester) {
-  expect(find.byType(CoverArtThumbnail), findsAtLeastNWidgets(2));
+  final agendaThumbnails = find.descendant(
+    of: find.byType(AgendaView),
+    matching: find.byType(CoverArtThumbnail),
+  );
+  expect(agendaThumbnails, findsNWidgets(8));
   final thumbnails = tester
-      .widgetList<CoverArtThumbnail>(find.byType(CoverArtThumbnail))
+      .widgetList<CoverArtThumbnail>(agendaThumbnails)
       .toList();
   expect(
     thumbnails.map((thumbnail) => thumbnail.imageId).toSet(),
-    containsAll(<String>{
+    <String>{
+      manualRollCallCoverImageId,
+      manualHabitatCoverImageId,
+      manualLaunchReviewCoverImageId,
+      manualLunchCoverImageId,
+      manualSardineFuturesCoverImageId,
       manualFishFeederCoverImageId,
       manualPenguinPassengerCoverImageId,
-    }),
+      manualHeadsetWalkCoverImageId,
+    },
   );
   final container = ProviderScope.containerOf(
     tester.element(find.byType(CoverArtThumbnail).first),
@@ -699,10 +720,10 @@ void _expectAgendaThumbnails(WidgetTester tester) {
   }
   expect(
     find.descendant(
-      of: find.byType(CoverArtThumbnail),
+      of: agendaThumbnails,
       matching: find.byType(Image),
     ),
-    findsAtLeastNWidgets(2),
+    findsNWidgets(8),
   );
 }
 

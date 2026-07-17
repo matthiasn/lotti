@@ -91,17 +91,11 @@ class AgendaCard extends StatelessWidget {
                   // Same fixed leading gutter AND gutter→title gap as the
                   // full cards, so ordinals and titles each sit on one
                   // shared vertical line down the whole agenda.
-                  SizedBox(
-                    width: tokens.spacing.step9,
-                    child: Center(
-                      child: Text(
-                        '$index',
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: category,
-                          fontWeight: tokens.typography.weight.bold,
-                        ),
-                      ),
-                    ),
+                  _AgendaLeading(
+                    index: index,
+                    color: category,
+                    coverArtId: coverArtId,
+                    coverArtCropX: coverArtCropX,
                   ),
                   SizedBox(width: tokens.spacing.step4),
                   Expanded(

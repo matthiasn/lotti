@@ -307,38 +307,41 @@ void main() {
       expect(title.overflow, TextOverflow.fade);
     });
 
-    testWidgets('renders task cover art as the leading visual', (
+    testWidgets('renders task cover art for open and completed rows', (
       tester,
     ) async {
       final image = _image();
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [createEntryControllerOverride(image)],
-          child: _wrapPhone(
-            const Material(
-              child: AgendaCard(
-                index: 3,
-                item: AgendaItem(
-                  id: 'a1',
-                  title: 'Task with cover art',
-                  category: _category,
-                  linkedBlockIds: ['b1'],
+      for (final state in [AgendaItemState.open, AgendaItemState.done]) {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [createEntryControllerOverride(image)],
+            child: _wrapPhone(
+              Material(
+                child: AgendaCard(
+                  index: 3,
+                  item: AgendaItem(
+                    id: 'a1',
+                    title: 'Task with cover art',
+                    category: _category,
+                    linkedBlockIds: const ['b1'],
+                    state: state,
+                  ),
+                  coverArtId: 'image-1',
+                  coverArtCropX: 0.25,
                 ),
-                coverArtId: 'image-1',
-                coverArtCropX: 0.25,
               ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      expect(find.byType(CoverArtThumbnail), findsOneWidget);
-      final thumbnail = tester.widget<CoverArtThumbnail>(
-        find.byType(CoverArtThumbnail),
-      );
-      expect(thumbnail.imageId, 'image-1');
-      expect(thumbnail.cropX, 0.25);
+        expect(find.byType(CoverArtThumbnail), findsOneWidget);
+        final thumbnail = tester.widget<CoverArtThumbnail>(
+          find.byType(CoverArtThumbnail),
+        );
+        expect(thumbnail.imageId, 'image-1');
+        expect(thumbnail.cropX, 0.25);
+      }
     });
 
     testWidgets(

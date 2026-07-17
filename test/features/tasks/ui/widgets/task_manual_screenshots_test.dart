@@ -168,7 +168,7 @@ void main() {
             fetchPage: (_) async => const <JournalEntity>[],
           )
           ..value = PagingState<int, JournalEntity>(
-            pages: [world.tasks],
+            pages: [world.taskBrowseTasks],
             keys: const [0],
             hasNextPage: false,
           );
@@ -300,13 +300,23 @@ Future<void> _pumpTaskSurface(
   required Widget surface,
 }) async {
   applyScreenshotDevice(tester, device);
-  final tasksById = {for (final task in world.tasks) task.meta.id: task};
+  final tasksById = {
+    for (final task in world.taskBrowseTasks) task.meta.id: task,
+  };
 
   await withClock(Clock.fixed(manualDemoNow), () async {
     await primeManualDemoCoverArt(
       tester,
       documentsDirectory: getIt<Directory>(),
       world: world,
+      extents: const [48, 96, 144, 216],
+    );
+    await primeManualDemoCoverArt(
+      tester,
+      documentsDirectory: getIt<Directory>(),
+      world: world,
+      extents: const [1280, 2048, 3072],
+      imageIds: const {manualHabitatCoverImageId},
     );
     await tester.pumpWidget(
       RepaintBoundary(
@@ -338,7 +348,8 @@ Future<void> _pumpTaskSurface(
             taskAgentProvider.overrideWith((ref, taskId) async => null),
             for (final coverImage in world.coverImages)
               createEntryControllerOverride(coverImage),
-            for (final task in world.tasks) createEntryControllerOverride(task),
+            for (final task in world.taskBrowseTasks)
+              createEntryControllerOverride(task),
             ...hTaskDetailsPageOverrides(),
           ],
           child: MaterialApp(

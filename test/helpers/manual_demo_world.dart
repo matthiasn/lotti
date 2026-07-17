@@ -19,23 +19,42 @@ const manualDemoProjectLabelId = 'manual-project-waddle';
 const manualDemoCriticalLabelId = 'manual-habitat-critical';
 
 const manualOrbitalHabitatTaskId = 'task-orbital-habitat';
+const manualRollCallTaskId = 'task-emperor-penguin-roll-call';
+const manualLaunchReviewTaskId = 'task-project-waddle-launch-review';
+const manualLunchTaskId = 'task-coffee-is-not-a-vegetable';
+const manualSardineFuturesTaskId = 'task-negotiate-sardine-futures';
 const manualFishFeederTaskId = 'task-zero-gravity-feeder';
 const manualSardineCargoTaskId = 'task-sardine-cargo';
 const manualPenguinPassengerTaskId = 'task-penguin-passenger';
+const manualHeadsetWalkTaskId = 'task-walk-without-headset';
 const manualHabitatCoverImageId = 'manual-penguin-habitat-cover';
+const manualRollCallCoverImageId = 'manual-penguin-roll-call-cover';
+const manualLaunchReviewCoverImageId = 'manual-penguin-launch-review-cover';
+const manualLunchCoverImageId = 'manual-penguin-lunch-cover';
+const manualSardineFuturesCoverImageId = 'manual-penguin-sardine-futures-cover';
 const manualFishFeederCoverImageId = 'manual-penguin-feeder-cover';
 const manualSardineCargoCoverImageId = 'manual-penguin-cargo-cover';
 const manualPenguinPassengerCoverImageId = 'manual-penguin-legal-cover';
+const manualHeadsetWalkCoverImageId = 'manual-penguin-headset-walk-cover';
 
 const manualDemoCoverAssets = <String, String>{
   manualHabitatCoverImageId:
       'assets/design_system/manual_task_cover_habitat.webp',
+  manualRollCallCoverImageId:
+      'assets/design_system/manual_task_cover_roll_call.webp',
+  manualLaunchReviewCoverImageId:
+      'assets/design_system/manual_task_cover_launch_review.webp',
+  manualLunchCoverImageId: 'assets/design_system/manual_task_cover_lunch.webp',
+  manualSardineFuturesCoverImageId:
+      'assets/design_system/manual_task_cover_sardine_futures.webp',
   manualFishFeederCoverImageId:
       'assets/design_system/manual_task_cover_feeder.webp',
   manualSardineCargoCoverImageId:
       'assets/design_system/manual_task_cover_cargo.webp',
   manualPenguinPassengerCoverImageId:
       'assets/design_system/manual_task_cover_legal.webp',
+  manualHeadsetWalkCoverImageId:
+      'assets/design_system/manual_task_cover_headset_walk.webp',
 };
 
 /// One deterministic, production-shaped data set reused across manual pages.
@@ -156,12 +175,30 @@ class ManualDemoWorld {
       createdAt: manualDemoNow.subtract(const Duration(hours: 10)),
       utcOffset: 120,
     );
+    final agendaStatus = TaskStatus.open(
+      id: 'status-agenda-open',
+      createdAt: manualDemoNow.subtract(const Duration(days: 1)),
+      utcOffset: 120,
+    );
 
     return ManualDemoWorld._(
       category: category,
       labels: labels,
       coverImages: coverImages,
       tasks: [
+        task(
+          id: manualRollCallTaskId,
+          title: 'Emperor penguin roll call',
+          description:
+              'Count every expedition penguin, check the tiny oxygen packs, '
+              'and record any suspiciously formal salutes.',
+          status: agendaStatus,
+          priority: TaskPriority.p2Medium,
+          due: DateTime(2026, 7, 17, 9),
+          coverArtId: manualRollCallCoverImageId,
+          labelIds: const [manualDemoProjectLabelId],
+          estimate: const Duration(minutes: 30),
+        ),
         task(
           id: manualOrbitalHabitatTaskId,
           title: 'Inspect orbital penguin habitat',
@@ -178,6 +215,47 @@ class ManualDemoWorld {
             manualDemoCriticalLabelId,
           ],
           estimate: const Duration(hours: 2),
+        ),
+        task(
+          id: manualLaunchReviewTaskId,
+          title: 'Project Waddle launch review',
+          description:
+              'Review the ice-pad trajectory, confirm the snack manifest, '
+              'and make sure Mission Control has removed the fish-shaped '
+              'cursor from the launch display.',
+          status: agendaStatus,
+          priority: TaskPriority.p1High,
+          due: DateTime(2026, 7, 17, 12),
+          coverArtId: manualLaunchReviewCoverImageId,
+          labelIds: const [manualDemoProjectLabelId],
+          estimate: const Duration(minutes: 45),
+        ),
+        task(
+          id: manualLunchTaskId,
+          title: 'Lunch (coffee is not a vegetable)',
+          description:
+              'Eat something recognizable as food before the robot '
+              'nutritionist files another orbital wellness incident.',
+          status: agendaStatus,
+          priority: TaskPriority.p3Low,
+          due: DateTime(2026, 7, 17, 13),
+          coverArtId: manualLunchCoverImageId,
+          labelIds: const [],
+          estimate: const Duration(hours: 1),
+        ),
+        task(
+          id: manualSardineFuturesTaskId,
+          title: 'Negotiate sardine futures',
+          description:
+              "Lock the colony's Q3 sardine price before the Europa exchange "
+              'discovers why the emergency fish ceiling is shaped like a '
+              'penguin.',
+          status: agendaStatus,
+          priority: TaskPriority.p1High,
+          due: DateTime(2026, 7, 17, 14, 30),
+          coverArtId: manualSardineFuturesCoverImageId,
+          labelIds: const [manualDemoProjectLabelId],
+          estimate: const Duration(hours: 1, minutes: 30),
         ),
         task(
           id: manualFishFeederTaskId,
@@ -218,6 +296,19 @@ class ManualDemoWorld {
           labelIds: const [manualDemoProjectLabelId],
           estimate: const Duration(minutes: 30),
         ),
+        task(
+          id: manualHeadsetWalkTaskId,
+          title: 'Walk without a headset',
+          description:
+              'Take one quiet lap around the orbital ice garden without '
+              'turning it into a briefing, podcast, or emergency call.',
+          status: agendaStatus,
+          priority: TaskPriority.p3Low,
+          due: DateTime(2026, 7, 17, 18),
+          coverArtId: manualHeadsetWalkCoverImageId,
+          labelIds: const [],
+          estimate: const Duration(minutes: 30),
+        ),
       ],
     );
   }
@@ -231,6 +322,17 @@ class ManualDemoWorld {
   Task get fishFeederTask => taskById(manualFishFeederTaskId);
   Task get sardineCargoTask => taskById(manualSardineCargoTaskId);
   Task get penguinPassengerTask => taskById(manualPenguinPassengerTaskId);
+
+  /// Curated first page used by the Tasks manual screenshots.
+  ///
+  /// The Daily OS fixture resolves the remaining task entities through
+  /// [entityById] without crowding this browse-page composition.
+  List<Task> get taskBrowseTasks => [
+    orbitalHabitatTask,
+    fishFeederTask,
+    sardineCargoTask,
+    penguinPassengerTask,
+  ];
 
   Task taskById(String id) => tasks.singleWhere((task) => task.meta.id == id);
 
@@ -280,9 +382,16 @@ Future<void> primeManualDemoCoverArt(
   WidgetTester tester, {
   required Directory documentsDirectory,
   required ManualDemoWorld world,
+  List<int> extents = const [48, 96, 144, 216, 1280, 2048, 3072],
+  Set<String>? imageIds,
 }) async {
   await tester.runAsync(() async {
-    for (final coverImage in world.coverImages) {
+    final coverImages = imageIds == null
+        ? world.coverImages
+        : world.coverImages.where(
+            (coverImage) => imageIds.contains(coverImage.meta.id),
+          );
+    for (final coverImage in coverImages) {
       final file = File(
         '${documentsDirectory.path}'
         '${coverImage.data.imageDirectory}'
@@ -291,7 +400,7 @@ Future<void> primeManualDemoCoverArt(
       final fileImage = FileImage(file);
       final bytes = await file.readAsBytes();
       final cache = PaintingBinding.instance.imageCache;
-      for (final extent in [48, 96, 144, 216, 1280, 2048, 3072]) {
+      for (final extent in extents) {
         final provider = ResizeImage(
           fileImage,
           width: extent,
