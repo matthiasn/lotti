@@ -1,0 +1,81 @@
+---
+title: Sincronizați dispozitive
+description: Asociați dispozitive, verificați-le identitatea, monitorizați livrarea și recuperați date lipsă fără presupuneri.
+---
+
+# Sincronizați dispozitive
+
+Lotti Sync menține datele acceptate aliniate între dispozitivele dvs. Fiecare dispozitiv are propria bază de date locală; Sync mută modificările prin contul de sincronizare configurat și recuperează un dispozitiv după ce a fost offline. Sincronizarea nu mută sistemul de evidență într-un cloud Lotti: serviciul Matrix configurat retransmite încărcături criptate end-to-end între dispozitivele dvs., iar fiecare dispozitiv își păstrează copia locală.
+
+Deschideți **Setări → Sincronizare** pentru a vedea paginile disponibile de configurare, stare și recuperare. Numărul de lângă **Cutia de ieșire** reprezintă munca ce nu a ajuns încă la serviciul de sincronizare.
+
+<ManualScreenshot caseId="sync/hub" alt="Setările Lotti Sync, cu Sincronizare aprovizionată, identitatea dispozitivului, recuperare, statistici, cutie de ieșire, conflicte și întreținere" caption="Centrul de sincronizare păstrează starea de zi cu zi aproape de instrumentele de diagnostic și recuperare. Project Waddle are în prezent trei elemente în cutia de ieșire de inspectat." />
+
+## Asociați alt dispozitiv
+
+Începeți de pe un dispozitiv deja conectat:
+
+1. Deschideți **Setări → Sincronizare → Sincronizare aprovizionată**.
+2. Pe desktop, afișați codul QR de transfer. Păstrați acest ecran privat: pachetul acordă acces la contul și camera dvs. de sincronizare.
+3. Pe dispozitivul nou, deschideți aceeași pagină și scanați codul QR sau lipiți pachetul complet de aprovizionare.
+4. Examinați serverul, utilizatorul și camera decodate înainte de a selecta **Importați**.
+5. Lăsați prima sincronizare să se termine înainte de a închide oricare dintre aplicații.
+
+<ManualScreenshot caseId="sync/status" alt="Starea Sincronizare aprovizionată pe mobil și codul QR securizat de transfer al dispozitivului pe desktop" caption="Desktopul poate afișa codul QR de transfer; mobilul arată contul conectat și starea verificării. Tratați codul QR ca pe o parolă." />
+
+<ManualScreenshot caseId="sync/provisioned" alt="Revizuirea importului de aprovizionare Lotti, cu serverul de sincronizare, utilizatorul și camera Project Waddle" caption="Importați numai când fiecare valoare decodată aparține contului de sincronizare la care ați intenționat să vă alăturați." />
+
+Dacă importul raportează o eroare, păstrați conectat dispozitivul original, generați un pachet de transfer nou și încercați din nou cu valoarea completă. Nu editați manual pachetul codificat.
+
+## Verificați noul dispozitiv
+
+Asocierea conectează dispozitivul; verificarea confirmă că cele două dispozitive comunică fără ca un dispozitiv necunoscut să se interpună.
+
+<ManualScreenshot caseId="sync/verification" alt="Verificarea dispozitivelor Lotti, care compară o secvență de emoji cu pinguin, pește, rachetă, gheață, Pământ, Lună, stea și telescop" caption="Comparați întreaga secvență de emoji pe ambele dispozitive. Acceptați numai când fiecare imagine și ordinea ei corespund exact." />
+
+Comparați emoji-urile în persoană sau printr-un apel de încredere. Selectați **Acceptați** pe ambele dispozitive numai când întreaga secvență corespunde. Dacă diferă chiar și un singur emoji, anulați verificarea și investigați contul și numele dispozitivelor înainte de a încerca din nou.
+
+## Denumiți dispozitivele și anunțați capabilități
+
+**Profilul nodului de sincronizare** identifică dispozitivul curent pentru restul grupului de sincronizare. Dați-i un nume care distinge mașina fizică, de exemplu „Mission Control Mac”, nu „Desktop”.
+
+<ManualScreenshot caseId="sync/node-profile" alt="Profilul nodului Lotti Sync pentru Mission Control Mac, cu capabilități locale de inferență și dispozitive Project Waddle cunoscute" caption="Numele clare de dispozitive fac verificarea, diagnosticul și inferența locală fixată pe dispozitiv mult mai ușor de auditat." />
+
+Pagina enumeră și capabilitățile pe care dispozitivul le poate oferi, precum transcriere audio locală sau inferență locală cu modele de limbaj. Dispozitivele cunoscute arată ce au anunțat ultima dată celelalte noduri. Disponibilitatea capabilităților este descriptivă; profilul AI relevant trebuie totuși configurat pentru a le folosi.
+
+## Înțelegeți recuperarea și completarea lipsurilor
+
+Sincronizarea obișnuită procesează modificările pe măsură ce sosesc. **Recuperarea** detectează goluri în secvența primită de la dispozitive cunoscute și solicită din nou înregistrările lipsă.
+
+<ManualScreenshot caseId="sync/backfill" alt="Pagina Lotti Sync Recuperare, cu stările de intrare, lipsă și omis, statistici de secvență și recuperare automată" caption="Project Waddle a primit 2.868 de înregistrări de secvență și cunoaște în prezent patru înregistrări lipsă pe două ID-uri de dispozitiv." />
+
+- **Intrare** este munca ce așteaptă acum în coada de intrare.
+- **Lipsă** este numărul golurilor de secvență cunoscute.
+- **Omisă** este munca abandonată de coada de intrare după ce nu a putut fi procesată normal.
+- **Recuperarea automată** solicită continuu golurile recuperabile și este valoarea implicită potrivită pentru utilizarea obișnuită.
+- **Recuperare avansată** conține controale manuale pentru investigație. Folosiți-le numai după ce sincronizarea obișnuită și recuperarea automată au avut timp să se stabilizeze.
+
+Un număr lipsă diferit de zero nu înseamnă automat pierdere de date: alt dispozitiv poate fi încă offline sau solicitarea poate fi deja în zbor. Investigați când numărul rămâne neschimbat, iar toate dispozitivele așteptate sunt online.
+
+## Citiți statisticile de sincronizare
+
+**Statistici de sincronizare** separă volumul mesajelor de sănătatea procesării. Este utilă când datele par vechi, dar contul raportează în continuare că este conectat.
+
+<ManualScreenshot caseId="sync/stats" alt="Statisticile Lotti Matrix Sync, cu număr de mesaje trimise, indicatori principali de procesare, tipuri de mesaje, erori, reîncercări și totaluri de entități" caption="Numerele stabilesc dacă mesajele circulă; erorile și reîncercările programate arată dacă fluxul se deplasează curat." />
+
+Cardul mesajelor trimise grupează tipurile de evenimente Matrix. **Indicatorii principali** rezumă mesajele procesate, erorile și reîncercările programate, iar totalurile entităților arată ce familii de date Lotti au contribuit la muncă. Un număr de procesate în creștere, cu erori stabile, este sănătos. Erorile repetate sau reîncercările care nu dispar cer verificarea cutiei de ieșire și a conectivității celuilalt dispozitiv.
+
+## Inspectați cutia de ieșire
+
+**Cutia de ieșire** este coada locală de modificări care așteaptă să fie trimise. Filtrați-o după stare pentru a separa munca activă de erori.
+
+<ManualScreenshot caseId="sync/outbox" alt="Cutia de ieșire Lotti Sync filtrată la o fotografie eșuată a etanșării de presiune a habitatului Project Waddle, cu acțiuni de reîncercare și eliminare" caption="Elementele eșuate își păstrează subiectul, detaliile încărcăturii, istoricul reîncercărilor și calea atașamentului local, astfel încât recuperarea să fie specifică, nu oarbă." />
+
+- Elementele **În așteptare** își așteaptă rândul.
+- Elementele **Se trimit** sunt în curs de livrare.
+- Elementele **Eșuate** au epuizat încercarea curentă și rămân disponibile pentru inspecție.
+- Elementele **Trimise** au fost livrate și sunt păstrate temporar pentru diagnostic.
+
+Folosiți **Reîncercați toate** după repararea problemei de conexiune sau cont. Eliminați un element eșuat numai când nu doriți intenționat ca modificarea să ajungă la celelalte dispozitive. Eliminarea lui din cutia de ieșire nu înlocuiește repararea intrării sau atașamentului local corespunzător.
+
+Continuați cu [Rezolvați conflicte de sincronizare](./conflicts.mdx) când două dispozitive au editat independent aceeași înregistrare sau cu [Întreținerea sincronizării](./maintenance.mdx) pentru instrumente de recuperare la nivel de bază de date.

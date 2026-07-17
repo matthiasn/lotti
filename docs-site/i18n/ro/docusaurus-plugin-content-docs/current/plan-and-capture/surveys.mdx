@@ -1,0 +1,54 @@
+---
+title: Completați și revedeți chestionare
+description: Lansați chestionarele incluse dintr-un tablou de bord, trimiteți câte un răspuns și păstrați scorurile rezultate în Jurnal.
+---
+
+# Completați și revedeți chestionare
+
+Lotti include trei chestionare fixe: **CFQ-11**, **GHQ-12** și **PANAS**. Adăugați chestionarul pe care îl folosiți într-un tablou de bord, apoi selectați acțiunea **+** de pe graficul său ori de câte ori doriți să înregistrați un nou răspuns. Tabloul de bord este atât punctul de lansare, cât și locul în care scorurile completate devin o tendință.
+
+Exemplele de mai jos lansează instrumentul PANAS real din tabloul de bord **Operațiunile coloniei**. Chestionarul și navigarea lui provin din același modul de rulare a chestionarelor din producție, folosit de aplicație.
+
+<ManualScreenshot
+  caseId="surveys/panas-intro"
+  alt="Instrucțiunile chestionarului PANAS, deschise peste tabloul de bord Operațiunile coloniei"
+  caption="Citiți intervalul de timp și scala de răspuns a instrumentului înainte de a continua. Indicatorul de progres numără fiecare pas de instrucțiuni, întrebare și finalizare."
+/>
+
+## Adăugați un chestionar într-un tablou de bord
+
+Deschideți **Setări → Definiții → Tablouri de bord**, editați un tablou de bord și adăugați un grafic din **Chestionare**. Instrumentele disponibile sunt:
+
+- **CFQ-11**, Scala de oboseală Chalder;
+- **GHQ-12**, Chestionarul general de sănătate; și
+- **PANAS**, Scala afectelor pozitive și negative.
+
+Reveniți la **Tablouri de bord** și deschideți tabloul de bord. Graficul afișează rezultatele trimise pentru instrumentul lui. Selectați acțiunea **+** pentru a începe un răspuns nou. Fiecare grafic lansează chestionarul corespunzător; nu există un formular generic care își schimbă întrebările pe baza datelor din documentație.
+
+## Răspundeți la întrebarea curentă
+
+Pasul de instrucțiuni explică intervalul de timp solicitat și sensul scalei de răspuns. Selectați **ÎNAINTE** pentru a începe. PANAS prezintă apoi 20 de cuvinte care descriu afecte, pe rând, și solicită o alegere pe scala cu cinci puncte. Instrucțiunile instrumentului, cuvintele despre afecte, textul de finalizare și etichetele scalei urmează limba aplicației; această captură în engleză arată intervalul de la **Deloc sau foarte puțin** la **Extrem de mult**.
+
+<ManualScreenshot
+  caseId="surveys/panas-question"
+  alt="Întrebarea PANAS Interesat(ă), cu cinci alegeri de răspuns de la Deloc sau foarte puțin până la Extrem de mult"
+  caption="Întrebările sunt prezentate secvențial. Alegeți un răspuns, continuați și folosiți numărul de progres ca să vedeți unde vă aflați în chestionar."
+/>
+
+Celelalte chestionare incluse au propriile definiții fixe pentru întrebări și scoruri. Alegeți răspunsul care se potrivește formulării și intervalului de timp afișate de instrument; Lotti nu reinterpretează și nu completează automat răspunsurile.
+
+## Trimiteți sau anulați în mod deliberat
+
+Continuați până la pasul de finalizare pentru a trimite. Lotti stochează rezultatul brut al instrumentului și grupele sale calculate de scor ca înregistrare de chestionar în Jurnal. Tabloul de bord citește aceste înregistrări înapoi în grafic, astfel încât fiecare chestionar completat adaugă o observație cu dată.
+
+Închiderea instrumentului întreabă dacă trebuie abandonat rezultatul curent. Un chestionar anulat nu este stocat, inclusiv munca la care s-a răspuns doar parțial. Dacă răspunsul contează, încheiați pasul de finalizare înainte de a părăsi foaia.
+
+## Înțelegeți scorurile salvate
+
+Înregistrarea păstrată reține atât răspunsurile individuale, cât și rezumatul calculat folosit de grafice:
+
+- **CFQ-11** produce scorul configurat de oboseală;
+- **GHQ-12** produce scorul configurat de sănătate generală; iar
+- **PANAS** produce totaluri separate pentru **Afect pozitiv** și **Afect negativ**.
+
+Deschideți înregistrarea corespunzătoare din Jurnal pentru a examina rezumatul chestionarului salvat. Folosiți tabloul de bord pentru schimbarea în timp și Jurnalul pentru evidența-sursă datată. Graficele de chestionare nu înlocuiesc instrucțiunile instrumentului, iar Lotti nu oferă un sistem de creare a chestionarelor care să modifice aceste definiții incluse.

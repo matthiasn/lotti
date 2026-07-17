@@ -75,7 +75,7 @@ void main() {
       final messages = context.messages;
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
-      expect(find.byType(DesignSystemRadioButton), findsNWidgets(4));
+      expect(find.byType(DesignSystemRadioButton), findsNWidgets(6));
       expect(
         find.text(messages.settingsManualLanguageFollowSystemSubtitle),
         findsOneWidget,
@@ -90,7 +90,9 @@ void main() {
       for (final title in [
         messages.settingsManualLanguageEnglishTitle,
         messages.settingsManualLanguageGermanTitle,
+        messages.settingsManualLanguageFrenchTitle,
         messages.settingsManualLanguageCzechTitle,
+        messages.settingsManualLanguageRomanianTitle,
       ]) {
         expect(rowFor(tester, title).selected, isFalse);
       }
@@ -117,17 +119,17 @@ void main() {
     },
   );
 
-  testWidgets('the trailing radio control selects English', (tester) async {
+  testWidgets('the trailing radio control selects French', (tester) async {
     await pumpPage(tester);
     final context = tester.element(find.byType(ManualLanguageSettingsBody));
-    final english = context.messages.settingsManualLanguageEnglishTitle;
+    final french = context.messages.settingsManualLanguageFrenchTitle;
 
-    await tester.tap(find.byType(DesignSystemRadioButton).at(1));
+    await tester.tap(find.byType(DesignSystemRadioButton).at(3));
     await tester.pump();
 
-    expect(rowFor(tester, english).selected, isTrue);
+    expect(rowFor(tester, french).selected, isTrue);
     verify(
-      () => mocks.settingsDb.saveSettingsItem(manualLanguageSettingsKey, 'en'),
+      () => mocks.settingsDb.saveSettingsItem(manualLanguageSettingsKey, 'fr'),
     ).called(1);
   });
 
@@ -136,7 +138,7 @@ void main() {
     final context = tester.element(find.byType(ManualLanguageSettingsBody));
     final messages = context.messages;
 
-    await tester.tap(find.text(messages.settingsManualLanguageCzechTitle));
+    await tester.tap(find.text(messages.settingsManualLanguageRomanianTitle));
     await tester.pump();
     await tester.tap(
       find.text(messages.settingsManualLanguageFollowSystemTitle),

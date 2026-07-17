@@ -1,0 +1,62 @@
+---
+title: Direcționați munca prin modele și profiluri
+description: Descrieți capabilitățile modelului o dată, apoi folosiți profiluri de inferență pentru a direcționa raționamentul, viziunea, audio și generarea imaginilor.
+---
+
+# Direcționați munca prin modele și profiluri
+
+Un furnizor îi spune lui Lotti unde să se conecteze. Un model înregistrează ID-ul unui model de furnizor și capabilitățile lui. Un profil de inferență atribuie apoi acele modele muncilor pe care le înțelege Lotti. Astfel, întrebarea „ce model se ocupă de audio?” nu mai apare în fiecare sarcină și regulă de automatizare.
+
+## Revizuiți modelele salvate
+
+Deschideți **Setări → Setări AI → Modele**. Lista grupează modelele după furnizor și oferă filtre pentru text, viziune, audio și raționament.
+
+<ManualScreenshot caseId="ai/models" alt="Lista modelelor AI Lotti, cu modele Project Waddle pentru text, raționament, viziune, transcriere și generare de imagini" caption="Spațiul Project Waddle combină modele cloud și locale, păstrând explicite capabilitățile fiecărui model." />
+
+Controlul **Activări concurente ale agenților** din partea de sus a Setărilor AI limitează câți agenți diferiți pot rula inferență simultan. O valoare mai mare poate îmbunătăți debitul, dar crește și cererile simultane către furnizor, precum și încărcarea dispozitivului local. Mențineți-o prudentă dacă furnizorul are limite stricte de rată sau serverul local de modele are memorie limitată.
+
+## Adăugați sau editați un model
+
+Selectați un card de model sau folosiți **+** pentru a adăuga unul. Definiția unui model include conexiunea furnizorului, un nume afișat și o descriere opțională, ID-ul exact al modelului la furnizor, limita maximă de tokenuri pentru completare, modalitățile de intrare și ieșire, precum și marcaje de capabilitate, de exemplu raționament sau apelare de funcții.
+
+<ManualScreenshot caseId="ai/model-editor" alt="Editorul de model Lotti pentru Waddle Command 70B, cu furnizor, ID de model, limită de completare, modalități și capabilitate de raționament" caption="Metadatele de capabilitate contează: Lotti le folosește pentru a decide ce modele sunt eligibile pentru fiecare slot de profil și selector punctual." />
+
+Folosiți identificatorul exact așteptat de furnizor. Numele afișat este doar pentru oameni; schimbarea lui nu schimbă ce rulează furnizorul. Nu declarați suport pentru imagini, audio, instrumente sau raționament decât dacă modelul și punctul final îl oferă cu adevărat.
+
+## Construiți un profil de inferență
+
+Deschideți **Setări → Setări AI → Profiluri de inferență**. Fiecare profil este o politică reutilizabilă de rutare. Prezentarea arată ce model deservește fiecare slot configurat.
+
+<ManualScreenshot caseId="ai/profiles" alt="Profilurile de inferență Lotti pentru Project Waddle Command, Habitat Local-First și Fish Diplomacy, cu modelele direcționate" caption="Profilurile pot optimiza limite diferite: un profil cloud larg, unul local numai pentru desktop sau un profil specialist de raționament." />
+
+Editați un profil pentru a atribui modele capabilităților utilizate:
+
+- **Raționament** este modelul general de text obligatoriu.
+- **Raționament (avansat)** poate gestiona munca ce solicită explicit o cale de raționament mai capabilă.
+- **Recunoaștere imagine** analizează imagini.
+- **Transcriere** convertește audio în text.
+- **Generare imagine** creează ilustrații pentru sarcini și alte imagini generate. Ruta încorporată actuală folosește un furnizor la distanță; alegeți furnizorul și referințele trimise cu aceeași grijă ca pentru orice altă inferență cloud.
+
+<ManualScreenshot caseId="ai/profile-editor" alt="Editorul profilului Project Waddle Command, care atribuie modele pentru raționament, raționament avansat, recunoaștere imagine, transcriere și generare imagine" caption="Un profil direcționează fiecare modalitate Project Waddle fără repetarea alegerilor de modele între sarcini." />
+
+**Numai desktop** ascunde un profil pe platformele mobile, util când depinde de un model accesibil doar de pe o stație de lucru. Fixarea pe dispozitiv este pentru procesarea automată a audio sincronizat: fixați numai când dispozitivul ales anunță furnizorii necesari profilului. Fără dispozitiv fixat, audio sincronizat nu este transcris automat de acel profil.
+
+## Alegeți un model fără a memora ID-uri
+
+Selectoarele de modele încep cu furnizorul și arată numai modelele salvate compatibile. Selectorul unui slot de profil, de exemplu, nu va oferi un model numai audio pentru raționament textual.
+
+<ManualScreenshot caseId="ai/model-picker" alt="Fereastra Lotti Alegeți un model, cu furnizorii OpenRouter, Ollama și Google Gemini peste editorul profilului Project Waddle" caption="Alegeți mai întâi furnizorul; Lotti restrânge apoi pagina următoare la modelele eligibile din acea conexiune." />
+
+## Stabiliți o valoare implicită pentru categorie
+
+O categorie poate alege un profil de inferență implicit în **Setări → Definiții → Categorii**. Munca nouă din acea categorie poate moșteni astfel o politică de rutare coerentă. Alegeți profilul al cărui amestec de confidențialitate și capabilități se potrivește categoriei, nu numai după viteză.
+
+<ManualScreenshot caseId="ai/profile-picker" alt="Editorul categoriei Operațiuni cu pinguini, cu o fereastră care oferă profilurile Project Waddle Command, Habitat Local-First și Fish Diplomacy" caption="Insigna numai-desktop face vizibile restricțiile de platformă înainte de selectarea unei valori implicite pentru categorie." />
+
+## Ruta veche de profil
+
+Ruta veche independentă **Profiluri de inferență** rămâne disponibilă pentru compatibilitate și editează aceleași înregistrări de profil stocate. Ea expune ID-uri interne de modele și oferă mai puțin context despre dependențe decât Setările AI, așa că preferați pagina actuală **Setări AI → Profiluri de inferență** pentru întreținerea obișnuită.
+
+<ManualScreenshot caseId="ai/legacy-profiles" alt="Pagina veche Lotti Profiluri de inferență, care arată sloturile Project Waddle ca identificatori interni de model" caption="Folosiți acest ecran de compatibilitate numai când vă aduce aici o legătură veche; cardurile curente de profil din Setările AI sunt mai ușor de auditat." />
+
+Continuați cu [Abilități AI](./skills.mdx) pentru a vedea cum profilul selectat devine o acțiune asupra unei sarcini sau înregistrări.

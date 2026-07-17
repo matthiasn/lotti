@@ -62,10 +62,24 @@ class ManualLanguageSettingsBody extends ConsumerWidget {
             showDivider: true,
           ),
           _ManualLanguageOption(
+            title: messages.settingsManualLanguageFrenchTitle,
+            selected: selectedOverride == ManualLanguage.french,
+            onTap: () =>
+                unawaited(controller.setOverride(ManualLanguage.french)),
+            showDivider: true,
+          ),
+          _ManualLanguageOption(
             title: messages.settingsManualLanguageCzechTitle,
             selected: selectedOverride == ManualLanguage.czech,
             onTap: () =>
                 unawaited(controller.setOverride(ManualLanguage.czech)),
+            showDivider: true,
+          ),
+          _ManualLanguageOption(
+            title: messages.settingsManualLanguageRomanianTitle,
+            selected: selectedOverride == ManualLanguage.romanian,
+            onTap: () =>
+                unawaited(controller.setOverride(ManualLanguage.romanian)),
           ),
         ],
       ),

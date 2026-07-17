@@ -8949,7 +8949,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsManualLanguageFollowSystemTitle => 'Seguir el sistema';
 
   @override
+  String get settingsManualLanguageFrenchTitle => 'Francés';
+
+  @override
   String get settingsManualLanguageGermanTitle => 'Alemán';
+
+  @override
+  String get settingsManualLanguageRomanianTitle => 'Rumano';
 
   @override
   String get settingsManualLanguageTitle => 'Idioma';
