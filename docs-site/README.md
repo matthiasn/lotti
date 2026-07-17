@@ -89,6 +89,17 @@ mobile/desktop and light/dark PNG inputs into an ignored staging directory,
 converts them to canonical WebP paths, and writes a checksum/dimension manifest under
 `../lotti-docs/manual/screenshots/development/`.
 
+When only a new or changed case needs publishing, pass its IDs to the manifest
+builder so the existing catalog remains untouched. For example:
+
+```bash
+npm run manifest -- --locales en,de --cases onboarding/api-key,onboarding/success
+```
+
+Use `--skip-manifest` only to prepare an incomplete locale catalog before a
+subsequent complete manifest run; it converts the selected cases but deliberately
+does not write a partial manifest.
+
 English media keeps the established
 `development/<case>/<viewport>-<theme>.webp` path. Localized media lives at
 `development/<locale>/<case>/<viewport>-<theme>.webp`. Visible deterministic

@@ -116,6 +116,31 @@ export function resolveCaptureLocales(value, registryLocales) {
   return requested;
 }
 
+/** Resolve an optional incremental screenshot-case selection. */
+export function resolveScreenshotCases(value, registryCases) {
+  if (!value) return [...registryCases];
+
+  const requestedIds = String(value).split(/[\s,]+/).filter(Boolean);
+  if (requestedIds.length === 0) {
+    throw new Error('At least one manual screenshot case must be selected.');
+  }
+  if (new Set(requestedIds).size !== requestedIds.length) {
+    throw new Error('Manual screenshot case selection contains duplicates.');
+  }
+
+  const casesById = new Map(registryCases.map((screenshotCase) => [
+    screenshotCase.id,
+    screenshotCase,
+  ]));
+  const unsupported = requestedIds.filter((id) => !casesById.has(id));
+  if (unsupported.length > 0) {
+    throw new Error(
+      `Unknown manual screenshot case(s): ${unsupported.join(', ')}.`,
+    );
+  }
+  return requestedIds.map((id) => casesById.get(id));
+}
+
 export function findUnmanagedScreenshotReferences(source) {
   const authoringMarkup = source
     .replace(/```[\s\S]*?```/g, '')

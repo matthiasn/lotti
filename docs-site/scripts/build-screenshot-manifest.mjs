@@ -13,6 +13,7 @@ import {
   repositoryDirectory,
   requiredVariants,
   resolveCaptureLocales,
+  resolveScreenshotCases,
   sha256,
   siteDirectory,
   validateManualVersion,
@@ -38,6 +39,12 @@ if (registryErrors.length > 0) {
   throw new Error(registryErrors.join('\n'));
 }
 const captureLocales = resolveCaptureLocales(options.locales, registry.locales);
+const capturedCases = new Set(
+  resolveScreenshotCases(options.cases, registry.cases).map(
+    (screenshotCase) => screenshotCase.id,
+  ),
+);
+const skipManifest = options['skip-manifest'] === true;
 
 if (version !== 'development' && options['allow-release-overwrite'] !== true) {
   try {
@@ -66,9 +73,8 @@ const generatedAt =
 const manifestCases = [];
 
 for (const screenshotCase of registry.cases) {
-  const locales = {};
-  for (const locale of registry.locales) {
-    const variants = {};
+  if (!capturedCases.has(screenshotCase.id)) continue;
+  for (const locale of captureLocales) {
     for (const variant of requiredVariants) {
       const inputPath = resolve(
         captureDirectory,
@@ -82,13 +88,35 @@ for (const screenshotCase of registry.cases) {
         registry.defaultLocale,
       );
       const outputPath = resolve(outputDirectory, relativeOutputPath);
-      if (captureLocales.includes(locale)) {
-        await mkdir(resolve(outputPath, '..'), {recursive: true});
-        const input = await readFile(inputPath);
-        await sharp(input)
-          .webp({quality: 88, effort: 5, smartSubsample: true})
-          .toFile(outputPath);
-      }
+      await mkdir(resolve(outputPath, '..'), {recursive: true});
+      const input = await readFile(inputPath);
+      await sharp(input)
+        .webp({quality: 88, effort: 5, smartSubsample: true})
+        .toFile(outputPath);
+    }
+  }
+}
+
+if (skipManifest) {
+  console.log(
+    `Converted ${capturedCases.size} screenshot case(s) to ${outputDirectory}; ` +
+      `captured locales: ${captureLocales.join(', ')}.`,
+  );
+  process.exit(0);
+}
+
+for (const screenshotCase of registry.cases) {
+  const locales = {};
+  for (const locale of registry.locales) {
+    const variants = {};
+    for (const variant of requiredVariants) {
+      const relativeOutputPath = canonicalVariantPath(
+        screenshotCase.id,
+        variant,
+        locale,
+        registry.defaultLocale,
+      );
+      const outputPath = resolve(outputDirectory, relativeOutputPath);
       const output = await readFile(outputPath);
       const metadata = await sharp(output).metadata();
 
@@ -127,5 +155,6 @@ await writeFile(
 
 console.log(
   `Wrote ${manifestCases.length} screenshot case(s) to ${outputDirectory}; ` +
-    `captured locales: ${captureLocales.join(', ')}.`,
+    `captured locales: ${captureLocales.join(', ')}; ` +
+    `captured cases: ${capturedCases.size}.`,
 );

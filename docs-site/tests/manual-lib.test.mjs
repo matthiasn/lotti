@@ -7,6 +7,7 @@ import {
   findUnmanagedScreenshotReferences,
   requiredVariants,
   resolveCaptureLocales,
+  resolveScreenshotCases,
   validateCaseId,
   validateManualVersion,
   validateScreenshotRegistry,
@@ -120,6 +121,27 @@ test('incremental captures select only registered locales', () => {
   );
   assert.throws(
     () => resolveCaptureLocales('cs cs', ['en', 'de', 'cs']),
+    /contains duplicates/,
+  );
+});
+
+test('incremental captures select only registered screenshot cases', () => {
+  const cases = [
+    {id: 'onboarding/welcome'},
+    {id: 'onboarding/api-key'},
+    {id: 'onboarding/success'},
+  ];
+  assert.deepEqual(resolveScreenshotCases(undefined, cases), cases);
+  assert.deepEqual(resolveScreenshotCases('onboarding/api-key, onboarding/success', cases), [
+    cases[1],
+    cases[2],
+  ]);
+  assert.throws(
+    () => resolveScreenshotCases('onboarding/unknown', cases),
+    /Unknown manual screenshot case/,
+  );
+  assert.throws(
+    () => resolveScreenshotCases('onboarding/welcome onboarding/welcome', cases),
     /contains duplicates/,
   );
 });

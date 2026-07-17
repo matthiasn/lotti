@@ -140,13 +140,27 @@ Widget _app({
   );
 }
 
-enum _OnboardingCase { settings, welcome, providers, firstTask, taskCreated }
+enum _OnboardingCase {
+  settings,
+  welcome,
+  providers,
+  apiKey,
+  success,
+  recordingStyle,
+  categories,
+  firstTask,
+  taskCreated,
+}
 
 extension on _OnboardingCase {
   String get fileName => switch (this) {
     _OnboardingCase.settings => 'settings',
     _OnboardingCase.welcome => 'welcome',
     _OnboardingCase.providers => 'providers',
+    _OnboardingCase.apiKey => 'api_key',
+    _OnboardingCase.success => 'success',
+    _OnboardingCase.recordingStyle => 'recording_style',
+    _OnboardingCase.categories => 'categories',
     _OnboardingCase.firstTask => 'first_task',
     _OnboardingCase.taskCreated => 'task_created',
   };
@@ -500,6 +514,14 @@ void main() {
           );
         case _OnboardingCase.providers:
           await driveToProviders(tester);
+        case _OnboardingCase.apiKey:
+          await driveToApiKey(tester);
+        case _OnboardingCase.success:
+          await driveToSuccess(tester);
+        case _OnboardingCase.recordingStyle:
+          await driveToRecordingStyle(tester);
+        case _OnboardingCase.categories:
+          await driveToCategories(tester);
         case _OnboardingCase.firstTask:
           await driveToFirstTaskListening(tester);
         case _OnboardingCase.taskCreated:
