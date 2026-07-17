@@ -231,7 +231,6 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
                   count: counts?[f.id],
                   editing: true,
                   reorderIndex: index,
-                  onTap: () => _applySaved(f),
                   onRename: () => _rename(f),
                   onDelete: () => _delete(f),
                 ),
@@ -248,8 +247,6 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
               count: counts?[f.id],
               editing: false,
               onTap: () => _applySaved(f),
-              onRename: () => _rename(f),
-              onDelete: () => _delete(f),
             ),
         Divider(
           height: tokens.spacing.step6,
@@ -441,9 +438,9 @@ class _SavedFilterRow extends StatelessWidget {
     required this.selected,
     required this.count,
     required this.editing,
-    required this.onTap,
-    required this.onRename,
-    required this.onDelete,
+    this.onTap,
+    this.onRename,
+    this.onDelete,
     this.reorderIndex,
     this.rowKey,
     super.key,
@@ -453,9 +450,9 @@ class _SavedFilterRow extends StatelessWidget {
   final bool selected;
   final int? count;
   final bool editing;
-  final VoidCallback onTap;
-  final VoidCallback onRename;
-  final VoidCallback onDelete;
+  final VoidCallback? onTap;
+  final VoidCallback? onRename;
+  final VoidCallback? onDelete;
   final int? reorderIndex;
   final Key? rowKey;
 
@@ -537,7 +534,7 @@ class _SavedFilterRow extends StatelessWidget {
                   buttonKey: SavedTaskFiltersSheetKeys.rename(filter.id),
                   icon: Icons.edit_outlined,
                   tooltip: messages.tasksSavedFiltersRenameNamed(filter.name),
-                  onTap: onRename,
+                  onTap: onRename!,
                 ),
                 // Generous gap between the two ≥48dp targets so the destructive
                 // Delete is clearly separated from Rename (mis-tap safety) and
@@ -547,7 +544,7 @@ class _SavedFilterRow extends StatelessWidget {
                   buttonKey: SavedTaskFiltersSheetKeys.delete(filter.id),
                   icon: Icons.delete_outline_rounded,
                   tooltip: messages.tasksSavedFiltersDeleteNamed(filter.name),
-                  onTap: onDelete,
+                  onTap: onDelete!,
                   destructive: true,
                 ),
                 // Breathing room between the destructive target and the row's
@@ -566,7 +563,7 @@ class _SavedFilterRow extends StatelessWidget {
       child: _SheetRowScaffold(
         selected: selected,
         semanticsLabel: semanticsLabel,
-        onTap: onTap,
+        onTap: onTap!,
         children: [
           _SelectionIndicator(selected: selected),
           SizedBox(width: tokens.spacing.step3),

@@ -461,6 +461,14 @@ void main() {
       final list = tester.widget<ReorderableListView>(
         find.byType(ReorderableListView),
       );
+      final proxy = list.proxyDecorator!(
+        const Text('Drag preview'),
+        0,
+        const AlwaysStoppedAnimation<double>(1),
+      );
+      expect(proxy, isA<Material>());
+      expect((proxy as Material).type, MaterialType.transparency);
+
       list.onReorderItem!(1, 0);
       await tester.pump();
 

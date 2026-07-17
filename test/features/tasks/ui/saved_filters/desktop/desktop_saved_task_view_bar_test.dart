@@ -12,6 +12,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_mru_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/desktop/desktop_saved_task_view_bar.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/mobile/save_current_task_filter.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -20,6 +21,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../../widget_test_utils.dart';
+import '../../../../categories/test_utils.dart';
 
 const _inProgress = SavedTaskFilter(
   id: 'in-progress',
@@ -205,6 +207,49 @@ void main() {
     },
   );
 
+  testWidgets('All is a compact primary view with the live total', (
+    tester,
+  ) async {
+    await _pumpBar(tester);
+
+    final current = find.byKey(DesktopSavedTaskViewBarKeys.currentView);
+    expect(
+      find.descendant(of: current, matching: find.text('All tasks')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: current, matching: find.text('214')),
+      findsOneWidget,
+    );
+    expect(
+      tester.getSize(current).width,
+      lessThan(
+        tester.getSize(find.byKey(DesktopSavedTaskViewBarKeys.root)).width,
+      ),
+    );
+  });
+
+  testWidgets('the primary selector supports an accessibility tap', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await _pumpBar(
+      tester,
+      pageState: const JournalPageState(
+        selectedTaskStatuses: {'IN_PROGRESS'},
+      ),
+    );
+
+    tester.semantics.tap(
+      find.semantics.byLabel('Saved views, Lotti · In progress, 5 tasks'),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
+    semantics.dispose();
+  });
+
   testWidgets(
     'watchlist is stable saved order with count first, not recent-use order',
     (tester) async {
@@ -304,6 +349,80 @@ void main() {
 
     expect(bench.page.applyBatchFilterUpdateCalled, 1);
     expect(bench.page.setSelectedTaskStatusesCalls.single, {'BLOCKED'});
+  });
+
+  testWidgets('tapping All resets the active saved view', (tester) async {
+    final bench = await _pumpBar(
+      tester,
+      pageState: const JournalPageState(
+        selectedTaskStatuses: {'IN_PROGRESS'},
+      ),
+    );
+
+    await tester.tap(find.byKey(DesktopSavedTaskViewBarKeys.allTasks));
+    await tester.pump();
+
+    expect(bench.page.applyBatchFilterUpdateCalled, 1);
+    expect(bench.page.setSelectedTaskStatusesCalls.single, <String>{});
+  });
+
+  testWidgets('a custom view exposes the save flow in place', (tester) async {
+    await _pumpBar(
+      tester,
+      pageState: const JournalPageState(selectedPriorities: {'P1'}),
+    );
+
+    await tester.tap(find.byKey(DesktopSavedTaskViewBarKeys.save));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(
+      find.byKey(SaveCurrentTaskFilterKeys.nameField),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('category context stays visible on compact monitors', (
+    tester,
+  ) async {
+    when(
+      () => getIt<EntitiesCacheService>().getCategoryById('cat-work'),
+    ).thenReturn(
+      CategoryTestUtils.createTestCategory(
+        id: 'cat-work',
+        name: 'Work',
+        color: '#00FF00',
+      ),
+    );
+    const categorized = SavedTaskFilter(
+      id: 'work',
+      name: 'Work · Urgent',
+      filter: TasksFilter(selectedCategoryIds: {'cat-work'}),
+    );
+    await _pumpBar(
+      tester,
+      pageState: const JournalPageState(
+        selectedTaskStatuses: {'IN_PROGRESS'},
+      ),
+      saved: const [_inProgress, categorized],
+      countsOverride: savedTaskFilterCountsProvider.overrideWith(
+        (ref) async => const {'in-progress': 5, 'work': 8},
+      ),
+    );
+
+    final monitor = find.byKey(DesktopSavedTaskViewBarKeys.monitor('work'));
+    final dots = tester.widgetList<Container>(
+      find.descendant(of: monitor, matching: find.byType(Container)),
+    );
+    expect(
+      dots.any(
+        (container) =>
+            container.decoration is BoxDecoration &&
+            (container.decoration! as BoxDecoration).shape == BoxShape.circle,
+      ),
+      isTrue,
+    );
+    expect(tester.getSemantics(monitor).label, contains('Work'));
   });
 
   testWidgets('custom view keeps reset and save while reducing monitor noise', (
