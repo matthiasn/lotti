@@ -262,8 +262,9 @@ class SavedFilterCountText extends StatelessWidget {
                     : tokens.typography.styles.others.caption)
                 .copyWith(
                   color: color,
-                  height: 1,
-                  fontWeight: prominent ? FontWeight.w700 : FontWeight.w600,
+                  fontWeight: prominent
+                      ? tokens.typography.weight.bold
+                      : tokens.typography.weight.semiBold,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
       ),

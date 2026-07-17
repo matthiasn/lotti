@@ -486,7 +486,14 @@ class _SaveFilterButton extends StatelessWidget {
                   child: DsPill(
                     variant: DsPillVariant.tinted,
                     color: accent,
-                    label: label,
+                    labelWidget: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: accent,
+                      ),
+                    ),
                     leading: Icon(
                       Icons.add_rounded,
                       size: tokens.spacing.step4,

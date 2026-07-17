@@ -312,9 +312,27 @@ void main() {
         lessThan(tester.getCenter(blockedStatus).dx),
         reason: 'the task count leads each compact queue monitor',
       );
+      final countStyle = tester.widget<Text>(blockedCount).style!;
+      final statusStyle = tester.widget<Text>(blockedStatus).style!;
       expect(
-        tester.widget<Text>(blockedCount).style!.fontSize,
-        greaterThan(tester.widget<Text>(blockedStatus).style!.fontSize!),
+        countStyle.fontSize,
+        dsTokensLight.typography.styles.body.bodySmall.fontSize,
+      );
+      expect(
+        countStyle.fontWeight,
+        dsTokensLight.typography.weight.bold,
+      );
+      expect(
+        countStyle.height,
+        dsTokensLight.typography.styles.body.bodySmall.height,
+      );
+      expect(
+        statusStyle.fontSize,
+        dsTokensLight.typography.styles.others.caption.fontSize,
+      );
+      expect(
+        countStyle.fontSize,
+        greaterThan(statusStyle.fontSize!),
         reason: 'queue magnitude is visually primary to the saved-view name',
       );
     },
