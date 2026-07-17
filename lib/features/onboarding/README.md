@@ -191,7 +191,7 @@ other small single-purpose DBs (`NotificationsDb`, `EditorDb`).
 | `OnboardingMetricsDb` | `lib/database/onboarding_metrics_db.dart` (+ `.drift`) | Append-only `onboarding_events` table + queries. **Source of truth.** |
 | `OnboardingEventName` / `OnboardingFunnelState` | `model/onboarding_event.dart` | Event vocabulary + derived-state model + `onboardingDayBucket` helper. |
 | `OnboardingMetricsRepository` | `repository/onboarding_metrics_repository.dart` | Records events (injected clock/id/platform) and derives funnel state. |
-| `OnboardingMetricsPage` / `OnboardingMetricsBody` | `ui/onboarding_metrics_page.dart` | Debug surface under Settings → Advanced → Onboarding Metrics; renders the funnel and exposes the confirmed cadence + metrics QA reset. |
+| `OnboardingMetricsPage` / `OnboardingMetricsBody` | `ui/onboarding_metrics_page.dart` | Debug surface under Settings → Advanced → Onboarding Metrics; renders the funnel and exposes the confirmed cadence + metrics QA reset. Every visible metric label and boolean comes from `AppLocalizations`, including these diagnostic-only controls. |
 
 ### Privacy
 

@@ -280,7 +280,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String agentEvolutionSessionTitle(int sessionNumber) {
-    return 'Evolution #$sessionNumber';
+    return 'Entwicklung #$sessionNumber';
   }
 
   @override
@@ -404,7 +404,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentInstancesGroupByType => 'Typ';
 
   @override
-  String get agentInstancesKindEvolution => 'Evolution';
+  String get agentInstancesKindEvolution => 'Entwicklung';
 
   @override
   String get agentInstancesKindTaskAgent => 'Aufgaben-Agent';
@@ -831,7 +831,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentStateNextWake => 'Nächstes Aufwachen';
 
   @override
-  String get agentStateRevision => 'Revision';
+  String get agentStateRevision => 'Überarbeitung';
 
   @override
   String get agentStateSleepingUntil => 'Schlafend bis';
@@ -3838,7 +3838,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String dailyOsNextGreetingHiName(String name) {
-    return 'Hi $name 👋';
+    return 'Hallo $name 👋';
   }
 
   @override
@@ -3910,7 +3910,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextReconcileBadgeNew => 'NEU';
 
   @override
-  String get dailyOsNextReconcileBadgeUpdate => 'UPDATE';
+  String get dailyOsNextReconcileBadgeUpdate => 'AKTUALISIEREN';
 
   @override
   String get dailyOsNextReconcileBuildDayCta => 'Tag bauen';
@@ -7165,6 +7165,30 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Erstelle deine erste Aufgabe';
 
   @override
+  String get onboardingMetricsActiveDays => 'Aktive Tage';
+
+  @override
+  String get onboardingMetricsActiveDaysInFirstSeven =>
+      'Aktive Tage in den ersten 7 Tagen';
+
+  @override
+  String get onboardingMetricsBaselineCohort => 'Baseline-Kohorte (vor FTUE)';
+
+  @override
+  String get onboardingMetricsInstallFirstSeenUtc =>
+      'Installation erstmals erfasst (UTC)';
+
+  @override
+  String get onboardingMetricsNo => 'nein';
+
+  @override
+  String get onboardingMetricsReachedRealAha =>
+      'Den echten Aha-Moment erreicht';
+
+  @override
+  String get onboardingMetricsYes => 'ja';
+
+  @override
   String get onboardingRecordingStyleAnalogue => 'Analog — VU-Meter';
 
   @override
@@ -8600,52 +8624,53 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsLabelsColorHeading => 'Farbe';
 
   @override
-  String get settingsLabelsColorSubheading => 'Quick presets';
+  String get settingsLabelsColorSubheading => 'Schnellauswahl';
 
   @override
-  String get settingsLabelsCreateTitle => 'Create label';
+  String get settingsLabelsCreateTitle => 'Label erstellen';
 
   @override
-  String get settingsLabelsDeleteConfirmAction => 'Delete';
+  String get settingsLabelsDeleteConfirmAction => 'Löschen';
 
   @override
   String settingsLabelsDeleteConfirmMessage(Object labelName) {
-    return 'Are you sure you want to delete \"$labelName\"? Tasks with this label will lose the assignment.';
+    return 'Möchtest du das Label \"$labelName\" wirklich löschen? Aufgaben mit diesem Label verlieren die Zuordnung.';
   }
 
   @override
-  String get settingsLabelsDeleteConfirmTitle => 'Delete label';
+  String get settingsLabelsDeleteConfirmTitle => 'Label löschen';
 
   @override
   String settingsLabelsDeleteSuccess(Object labelName) {
-    return 'Label \"$labelName\" deleted';
+    return 'Label \"$labelName\" wurde gelöscht';
   }
 
   @override
   String get settingsLabelsDescriptionHint =>
-      'Explain when to apply this label';
+      'Erkläre, wann dieses Label verwendet werden soll';
 
   @override
-  String get settingsLabelsDescriptionLabel => 'Description (optional)';
+  String get settingsLabelsDescriptionLabel => 'Beschreibung (optional)';
 
   @override
-  String get settingsLabelsEditTitle => 'Edit label';
+  String get settingsLabelsEditTitle => 'Label bearbeiten';
 
   @override
-  String get settingsLabelsEmptyState => 'No labels yet';
+  String get settingsLabelsEmptyState => 'Noch keine Labels';
 
   @override
   String get settingsLabelsEmptyStateHint =>
-      'Tap the + button to create your first label.';
+      'Tippe auf +, um dein erstes Label zu erstellen.';
 
   @override
-  String get settingsLabelsErrorLoading => 'Failed to load labels';
+  String get settingsLabelsErrorLoading =>
+      'Labels konnten nicht geladen werden';
 
   @override
-  String get settingsLabelsNameHint => 'Bug, Release blocker, Sync…';
+  String get settingsLabelsNameHint => 'Fehler, Release-Blocker, Sync…';
 
   @override
-  String get settingsLabelsNameLabel => 'Label name';
+  String get settingsLabelsNameLabel => 'Labelname';
 
   @override
   String settingsLabelsNoMatchCreate(String query) {
@@ -8665,10 +8690,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsLabelsPrivateTitle => 'Privat';
 
   @override
-  String get settingsLabelsSearchHint => 'Search labels…';
+  String get settingsLabelsSearchHint => 'Labels durchsuchen…';
 
   @override
-  String get settingsLabelsSubtitle => 'Organize tasks with colored labels';
+  String get settingsLabelsSubtitle =>
+      'Aufgaben mit farbigen Labels organisieren';
 
   @override
   String get settingsLabelsTitle => 'Labels';
@@ -8704,6 +8730,22 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get settingsLoggingSlowQueriesSubtitle =>
       'Langsame Abfragen werden in slow_queries-YYYY-MM-DD.log geschrieben';
+
+  @override
+  String get settingsMaintenanceOnboardingAnimationGallerySubtitle =>
+      'Vergleiche Begrüßungsanimationen und die Verbindungsseite live (Debug)';
+
+  @override
+  String get settingsMaintenanceOnboardingAnimationGalleryTitle =>
+      'Onboarding-Animationsgalerie';
+
+  @override
+  String get settingsMaintenanceOnboardingWelcomeSubtitle =>
+      'Vorschau der FTUE-Begrüßung und Anbieter-Kacheln (Debug)';
+
+  @override
+  String get settingsMaintenanceOnboardingWelcomeTitle =>
+      'Onboarding-Begrüßung anzeigen';
 
   @override
   String get settingsMaintenanceTitle => 'Wartung';
@@ -9230,15 +9272,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncActivityIdle => 'inaktiv';
 
   @override
-  String get syncActivityInboxLabel => 'Inbox';
+  String get syncActivityInboxLabel => 'Posteingang';
 
   @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
-    return 'Sync-Aktivität. Outbox: $outbox. Inbox: $inbox. Sync-Outbox öffnen.';
+    return 'Sync-Aktivität. Postausgang: $outbox. Posteingang: $inbox. Sync-Postausgang öffnen.';
   }
 
   @override
-  String get syncActivityOutboxLabel => 'Outbox';
+  String get syncActivityOutboxLabel => 'Postausgang';
 
   @override
   String get syncActivitySyncingTitle => 'Sync läuft';
@@ -9280,10 +9322,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get syncListPayloadKindLabel => 'Payload';
+  String get syncListPayloadKindLabel => 'Nutzlast';
 
   @override
-  String get syncListUnknownPayload => 'Unbekannter Payload';
+  String get syncListUnknownPayload => 'Unbekannte Nutzlast';
 
   @override
   String get syncNotLoggedInToast => 'Sync ist nicht angemeldet';
@@ -10235,6 +10277,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get viewMenuZoomReset => 'Originalgröße';
+
+  @override
+  String get whatsNewBadgeNew => 'NEU';
 
   @override
   String get whatsNewDoneButton => 'Fertig';

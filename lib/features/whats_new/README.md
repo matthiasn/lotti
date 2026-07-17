@@ -200,7 +200,8 @@ Important behaviors:
 `WhatsNewModal` is one Wolt modal page per unseen release. Each page contains:
 
 - a 21:9 hero banner with a fallback gradient when the image is missing
-- a version badge, with `NEW` only on the newest loaded release
+- a localized version badge, using `whatsNewBadgeNew` only on the newest loaded
+  release
 - a single scrollable Markdown document for that release
 - a sticky footer with arrows, position dots, and `Skip` or `Done`
 - banner and inline-image precaching for smoother transitions

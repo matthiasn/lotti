@@ -3586,6 +3586,34 @@
   "onboardingFirstTaskSuggestionPlanWeek": "Plan my week",
   "onboardingFirstTaskSuggestionsLabel": "Not ready to talk? Start with one of these:",
   "onboardingFirstTaskTitle": "Create your first task",
+  "onboardingMetricsActiveDays": "Active days",
+  "@onboardingMetricsActiveDays": {
+    "description": "Label for the active-day count in the onboarding metrics debug view."
+  },
+  "onboardingMetricsActiveDaysInFirstSeven": "Active days in first 7",
+  "@onboardingMetricsActiveDaysInFirstSeven": {
+    "description": "Label for the active-day count during the first seven days in the onboarding metrics debug view."
+  },
+  "onboardingMetricsBaselineCohort": "Baseline cohort (pre-FTUE)",
+  "@onboardingMetricsBaselineCohort": {
+    "description": "Label for whether a user belongs to the pre-FTUE baseline cohort in the onboarding metrics debug view."
+  },
+  "onboardingMetricsInstallFirstSeenUtc": "Install first seen (UTC)",
+  "@onboardingMetricsInstallFirstSeenUtc": {
+    "description": "Label for the first observed install timestamp in the onboarding metrics debug view."
+  },
+  "onboardingMetricsNo": "no",
+  "@onboardingMetricsNo": {
+    "description": "Negative boolean value in the onboarding metrics debug view."
+  },
+  "onboardingMetricsReachedRealAha": "Reached real aha",
+  "@onboardingMetricsReachedRealAha": {
+    "description": "Label for whether a user has reached the meaningful onboarding activation event."
+  },
+  "onboardingMetricsYes": "yes",
+  "@onboardingMetricsYes": {
+    "description": "Positive boolean value in the onboarding metrics debug view."
+  },
   "onboardingRecordingStyleAnalogue": "Analogue — VU meter",
   "onboardingRecordingStyleContinue": "Continue",
   "onboardingRecordingStyleExplanation": "Pick a look for the mic. You can change it any time in Settings.",
@@ -4265,6 +4293,22 @@
   "settingsLoggingGlobalToggleSubtitle": "Master switch for all logging",
   "settingsLoggingSlowQueries": "Slow Database Queries",
   "settingsLoggingSlowQueriesSubtitle": "Writes slow queries to slow_queries-YYYY-MM-DD.log",
+  "settingsMaintenanceOnboardingAnimationGallerySubtitle": "Compare welcome animations + connect page live (debug)",
+  "@settingsMaintenanceOnboardingAnimationGallerySubtitle": {
+    "description": "Debug-only subtitle for the onboarding animation gallery in Maintenance."
+  },
+  "settingsMaintenanceOnboardingAnimationGalleryTitle": "Onboarding animation gallery",
+  "@settingsMaintenanceOnboardingAnimationGalleryTitle": {
+    "description": "Debug-only title for the onboarding animation gallery in Maintenance."
+  },
+  "settingsMaintenanceOnboardingWelcomeSubtitle": "Preview the FTUE welcome + provider tiles (debug)",
+  "@settingsMaintenanceOnboardingWelcomeSubtitle": {
+    "description": "Debug-only subtitle for reopening the onboarding welcome from Maintenance."
+  },
+  "settingsMaintenanceOnboardingWelcomeTitle": "Show onboarding welcome",
+  "@settingsMaintenanceOnboardingWelcomeTitle": {
+    "description": "Debug-only title for reopening the onboarding welcome from Maintenance."
+  },
   "settingsMaintenanceTitle": "Maintenance",
   "settingsMatrixAccept": "Accept",
   "settingsMatrixAcceptVerificationLabel": "Other device shows emojis, continue",
@@ -4960,6 +5004,10 @@
   "viewMenuZoomIn": "Zoom In",
   "viewMenuZoomOut": "Zoom Out",
   "viewMenuZoomReset": "Actual Size",
+  "whatsNewBadgeNew": "NEW",
+  "@whatsNewBadgeNew": {
+    "description": "Badge displayed on the newest release in the What's New view."
+  },
   "whatsNewDoneButton": "Done",
   "whatsNewSkipButton": "Skip"
 }

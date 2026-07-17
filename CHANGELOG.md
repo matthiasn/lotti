@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   browser.
 
 ### Changed
+- **Czech and German setup, automation, and release-note screens now stay in
+  their selected language.** Agent controls, inference profiles, labels, Sync
+  activity, onboarding diagnostics, maintenance previews, and the newest
+  release badge no longer fall back to mixed English UI copy.
 - **German and large-text layouts stay usable in key setup flows.** AI form
   status text truncates without pushing its actions off-screen, Daily OS time
   anchors wrap at accessibility text sizes, and the What's New footer gives

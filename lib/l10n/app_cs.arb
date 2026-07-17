@@ -50,6 +50,17 @@
   "agentBinaryChoiceYes": "Ano",
   "agentCategoryRatingsScaleMax": "Opravit první",
   "agentCategoryRatingsScaleMin": "Nechat být",
+  "agentCategoryRatingsStarLabel": "{starIndex} z {totalStars} hvězdiček",
+  "@agentCategoryRatingsStarLabel": {
+    "placeholders": {
+      "starIndex": {
+        "type": "int"
+      },
+      "totalStars": {
+        "type": "int"
+      }
+    }
+  },
   "agentCategoryRatingsSubmit": "Použít tyto priority",
   "agentCategoryRatingsSubtitle": "Jak důležité je, abych každou z těchto věcí opravil? 1 znamená nechat být, 5 znamená opravit jako první.",
   "agentCategoryRatingsTitle": "Pomoz mi s prioritami",
@@ -72,6 +83,20 @@
   "agentControlsReanalyzeButton": "Znovu analyzovat",
   "agentControlsResumeButton": "Pokračovat",
   "agentConversationEmpty": "Zatím žádné konverzace.",
+  "agentConversationThreadSummary": "{messageCount} zpráv, {toolCallCount} volání nástrojů · {shortId}",
+  "@agentConversationThreadSummary": {
+    "placeholders": {
+      "messageCount": {
+        "type": "int"
+      },
+      "toolCallCount": {
+        "type": "int"
+      },
+      "shortId": {
+        "type": "String"
+      }
+    }
+  },
   "agentConversationTokenCount": "{tokenCount} tokenů",
   "@agentConversationTokenCount": {
     "placeholders": {
@@ -91,6 +116,79 @@
   },
   "agentDetailNotFound": "Agent nebyl nalezen.",
   "agentDetailUnexpectedType": "Neočekávaný typ entity.",
+  "agentEvolutionApprovalRate": "Míra schválení",
+  "agentEvolutionChartMttrTrend": "Trend MTTR",
+  "agentEvolutionChartSuccessRateTrend": "Trend úspěšnosti",
+  "agentEvolutionChartVersionPerformance": "Podle verze",
+  "agentEvolutionChartWakeHistory": "Historie probuzení",
+  "agentEvolutionChatPlaceholder": "Sdílej zpětnou vazbu nebo se zeptej na výkon…",
+  "agentEvolutionCurrentDirectives": "Aktuální direktivy",
+  "agentEvolutionDashboardTitle": "Výkon",
+  "agentEvolutionHistoryTitle": "Historie vývoje",
+  "agentEvolutionMetricActive": "Aktivní",
+  "agentEvolutionMetricAvgDuration": "Průměrná doba trvání",
+  "agentEvolutionMetricFailures": "Selhání",
+  "agentEvolutionMetricSuccess": "Úspěch",
+  "agentEvolutionMetricWakes": "Probuzení",
+  "agentEvolutionNoSessions": "Zatím žádné relace vývoje",
+  "agentEvolutionNoteRecorded": "Poznámka uložena",
+  "agentEvolutionProposalApprovalFailed": "Schválení se nezdařilo — zkus to znovu",
+  "agentEvolutionProposalRationale": "Odůvodnění",
+  "agentEvolutionProposalRejected": "Návrh zamítnut — pokračuj v konverzaci",
+  "agentEvolutionProposalTitle": "Navržené změny",
+  "agentEvolutionProposedDirectives": "Navržené direktivy",
+  "agentEvolutionSessionAbandoned": "Relace skončila bez změn",
+  "agentEvolutionSessionCompleted": "Relace dokončena — vytvořena verze {version}",
+  "@agentEvolutionSessionCompleted": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentEvolutionSessionCount": "Relace",
+  "agentEvolutionSessionError": "Nepodařilo se zahájit relaci vývoje",
+  "agentEvolutionSessionProgress": "Relace {sessionNumber} z {totalSessions}",
+  "@agentEvolutionSessionProgress": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      },
+      "totalSessions": {
+        "type": "int"
+      }
+    }
+  },
+  "agentEvolutionSessionStarting": "Zahajuji relaci vývoje…",
+  "agentEvolutionSessionTitle": "Vývoj č. {sessionNumber}",
+  "@agentEvolutionSessionTitle": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "agentEvolutionSoulCurrentField": "Aktuální — {field}",
+  "@agentEvolutionSoulCurrentField": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "agentEvolutionSoulProposedField": "Navrhované — {field}",
+  "@agentEvolutionSoulProposedField": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "agentEvolutionStatusAbandoned": "Opuštěno",
+  "agentEvolutionStatusActive": "Aktivní",
+  "agentEvolutionStatusCompleted": "Dokončeno",
+  "agentEvolutionTimelineFeedbackLabel": "Zpětná vazba",
+  "agentEvolutionVersionProposed": "Navržena verze",
   "agentFeedbackCategoryAccuracy": "Přesnost",
   "agentFeedbackCategoryBreakdownTitle": "Rozložení podle kategorií",
   "agentFeedbackCategoryCommunication": "Komunikace",
@@ -186,6 +284,7 @@
       }
     }
   },
+  "agentObservationsEmpty": "Zatím žádná zaznamenaná pozorování.",
   "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 probuzení} other{{count} probuzení}} ({reasons})",
   "agentPendingWakesActivityTitle": "Aktivita probuzení (24h)",
   "agentPendingWakesActivityTotal": "{count, plural, =1{1 probuzení celkem} other{{count} probuzení celkem}}",
@@ -200,7 +299,11 @@
   "agentPendingWakesSortDueLatest": "Spustí se nejpozději",
   "agentPendingWakesSortDueSoonest": "Spustí se nejdříve",
   "agentPendingWakesTitle": "Cykly probouzení",
+  "agentReportHistoryBadge": "Zpráva",
+  "agentReportHistoryEmpty": "Zatím žádné uložené snímky zpráv.",
+  "agentReportHistoryError": "Při načítání historie zpráv došlo k chybě.",
   "agentReportNone": "Report zatím není k dispozici.",
+  "agentRitualReviewAction": "Zahájit konverzaci",
   "agentRitualReviewNegativeSignals": "Negativní",
   "agentRitualReviewNeutralSignals": "Neutrální",
   "agentRitualReviewNoFeedback": "V tomto okně nejsou žádné signály zpětné vazby",
@@ -208,6 +311,23 @@
   "agentRitualReviewNoNeutralSignals": "V této záložce nejsou žádné neutrální signály zpětné vazby",
   "agentRitualReviewNoPositiveSignals": "V této záložce nejsou žádné pozitivní signály zpětné vazby",
   "agentRitualReviewPositiveSignals": "Pozitivní",
+  "agentRitualReviewProposalSection": "Aktuální návrh",
+  "agentRitualReviewSessionHistory": "Historie relací",
+  "agentRitualReviewTitle": "1-on-1",
+  "agentRitualSummaryApprovedChangesHeading": "Schválené změny",
+  "agentRitualSummaryConversationHeading": "Konverzace",
+  "agentRitualSummaryRecapHeading": "Shrnutí relace",
+  "agentRitualSummaryRoleAssistant": "Agent",
+  "agentRitualSummaryRoleUser": "Ty",
+  "agentRitualSummaryStartHint": "Zahaj 1-on-1 a projdi, co ti vadilo, co fungovalo a co by se mělo změnit.",
+  "agentRitualSummarySubtitle": "Nedávné 1-on-1, skutečná aktivita probuzení a domluvené změny.",
+  "agentRitualSummaryTokensSinceLast": "Tokeny od posledního 1-on-1",
+  "agentRitualSummaryWakeHistory30Days": "Aktivita probuzení (posledních 30 dní)",
+  "agentRitualSummaryWakesSinceLast": "Probuzení od posledního 1-on-1",
+  "agentRunningIndicator": "Běží",
+  "agentSessionProgressTitle": "Průběh relace",
+  "agentSettingsSubtitle": "Šablony, instance a sledování",
+  "agentSettingsTitle": "Agenti",
   "agentSoulAntiSycophancyLabel": "Zásady proti pochlebování",
   "agentSoulAssignedTemplatesTitle": "Přiřazené šablony",
   "agentSoulAssignmentLabel": "Duše",
@@ -220,9 +340,15 @@
   "agentSoulDisplayNameLabel": "Název",
   "agentSoulEvolutionHistoryTitle": "Historie vývoje duše",
   "agentSoulEvolutionNoSessions": "Zatím žádné relace vývoje duše",
+  "agentSoulFieldAntiSycophancy": "Zásady proti pochlebování",
+  "agentSoulFieldCoachingStyle": "Styl koučování",
+  "agentSoulFieldToneBounds": "Hranice tónu",
+  "agentSoulFieldVoice": "Hlas",
   "agentSoulInfoTab": "Info",
   "agentSoulNoneAssigned": "Žádná duše přiřazena",
   "agentSoulNotFound": "Duše nenalezena",
+  "agentSoulProposalSubtitle": "Navržené změny osobnosti",
+  "agentSoulProposalTitle": "Návrh změn osobnosti duše",
   "agentSoulReviewHeroSubtitle": "Uprav osobnost napříč všemi šablonami sdílejícími tuto duši. Agent pro vývoj vidí zpětnou vazbu z každé šablony, která tuto osobnost používá.",
   "agentSoulReviewStartAction": "Zahájit revizi osobnosti",
   "agentSoulReviewStartHint": "Zahaj relaci zaměřenou na osobnost, kde projdeš zpětnou vazbu a rozvineš hlas, tón, styl koučování a přímost.",
@@ -305,6 +431,15 @@
   "agentTabReports": "Zprávy",
   "agentTabStats": "Statistiky",
   "agentTemplateAggregateTokenUsageHeading": "Celkové využití tokenů",
+  "agentTemplateAssignedLabel": "Šablona",
+  "agentTemplateCreatedSuccess": "Šablona vytvořena",
+  "agentTemplateCreateTitle": "Vytvořit šablonu",
+  "agentTemplateDeleteConfirm": "Smazat tuto šablonu? Tuto akci nelze vrátit zpět.",
+  "agentTemplateDeleteHasInstances": "Nelze smazat: tuto šablonu používají aktivní agenti.",
+  "agentTemplateDisplayNameLabel": "Název",
+  "agentTemplateEditTitle": "Upravit šablonu",
+  "agentTemplateEvolveApprove": "Schválit a uložit",
+  "agentTemplateEvolveReject": "Zamítnout",
   "agentTemplateGeneralDirectiveHint": "Definuj osobnost, nástroje, cíle a styl interakce agenta...",
   "agentTemplateGeneralDirectiveLabel": "Obecná direktiva",
   "agentTemplateInstanceBreakdownHeading": "Rozpis podle instancí",
@@ -313,9 +448,26 @@
   "agentTemplateKindImprover": "Zlepšovač šablon",
   "agentTemplateKindProjectAgent": "Agent projektu",
   "agentTemplateKindTaskAgent": "Agent úkolů",
+  "agentTemplateMetricsTotalWakes": "Celkový počet probuzení",
+  "agentTemplateNoneAssigned": "Není přiřazena žádná šablona",
+  "agentTemplateNoTemplates": "Nejsou k dispozici žádné šablony. Nejdřív vytvoř šablonu v Nastavení.",
+  "agentTemplateNotFound": "Šablona nenalezena",
+  "agentTemplateNoVersions": "Žádné verze",
   "agentTemplateReportDirectiveHint": "Definuj strukturu reportu, povinné sekce a pravidla formátování...",
   "agentTemplateReportDirectiveLabel": "Direktiva reportu",
+  "agentTemplateReportsEmpty": "Zatím žádné zprávy.",
   "agentTemplateReportsTab": "Reporty",
+  "agentTemplateRollbackAction": "Vrátit tuto verzi",
+  "agentTemplateRollbackConfirm": "Vrátit na verzi {version}? Agent tuto verzi použije při příštím probuzení.",
+  "@agentTemplateRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateSaveNewVersion": "Uložit",
+  "agentTemplateSelectTitle": "Vybrat šablonu",
   "agentTemplatesEmptyFiltered": "Žádné šablony neodpovídají tvým filtrům.",
   "agentTemplateSettingsTab": "Nastavení",
   "agentTemplatesFilterSectionKind": "Druh",
@@ -323,6 +475,21 @@
   "agentTemplatesGroupNone": "Vše",
   "agentTemplatesSearchPlaceholder": "Hledat šablony…",
   "agentTemplateStatsTab": "Statistiky",
+  "agentTemplateStatusActive": "Aktivní",
+  "agentTemplateStatusArchived": "Archivovaná",
+  "agentTemplatesTitle": "Šablony agentů",
+  "agentTemplateSwitchHint": "Chceš-li použít jinou šablonu, znič tohoto agenta a vytvoř nového.",
+  "agentTemplateVersionHistoryTitle": "Historie verzí",
+  "agentTemplateVersionLabel": "Verze {version}",
+  "@agentTemplateVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateVersionSaved": "Nová verze šablony uložena",
+  "agentThreadReportLabel": "Zpráva vytvořená během tohoto probuzení",
   "agentTokenUsageCachedTokens": "Z mezipaměti",
   "agentTokenUsageEmpty": "Zatím nebyla zaznamenána žádná spotřeba tokenů.",
   "agentTokenUsageErrorLoading": "Nepodařilo se načíst spotřebu tokenů: {error}",
@@ -1089,6 +1256,37 @@
   "categoryPrivateBadgeLabel": "Soukromá",
   "categoryPrivateDescription": "Viditelné pouze při zobrazení soukromých záznamů",
   "categorySearchPlaceholder": "Vyhledávat kategorie...",
+  "changeSetCardTitle": "Navržené změny",
+  "changeSetConfirmAll": "Potvrdit vše",
+  "changeSetConfirmAllPartialIssues": "{count, plural, =1{1 položka měla dílčí potíže} few{{count} položky měly dílčí potíže} other{{count} položek mělo dílčí potíže}}",
+  "@changeSetConfirmAllPartialIssues": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "changeSetConfirmError": "Nepodařilo se použít změnu",
+  "changeSetItemConfirmed": "Změna použita",
+  "changeSetItemConfirmedWithWarning": "Použito s upozorněním: {warning}",
+  "@changeSetItemConfirmedWithWarning": {
+    "placeholders": {
+      "warning": {
+        "type": "String"
+      }
+    }
+  },
+  "changeSetItemRejected": "Změna zamítnuta",
+  "changeSetPendingCount": "{count, plural, =1{1 čekající} few{{count} čekající} other{{count} čekajících}}",
+  "@changeSetPendingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "changeSetSwipeConfirm": "Potvrdit",
+  "changeSetSwipeReject": "Zamítnout",
   "chatInputCancelRealtime": "Zrušit (Esc)",
   "chatInputCancelRecording": "Zrušit nahrávání (Esc)",
   "chatInputConfigureModel": "Konfigurovat model",
@@ -2239,6 +2437,10 @@
   "inactiveSwitchDescription": "Lze vybrat pro nové záznamy, když je zapnuto",
   "inferenceProfileChooseModelTitle": "Vyber model",
   "inferenceProfileChooseTitle": "Vyber profil inference",
+  "inferenceProfileCreateTitle": "Vytvořit profil",
+  "inferenceProfileDescriptionLabel": "Popis",
+  "inferenceProfileDesktopOnly": "Jen pro počítač",
+  "inferenceProfileDesktopOnlyDescription": "K dispozici jen na počítačových platformách (např. pro místní modely)",
   "inferenceProfileDetailLoadError": "Profil se nepodařilo načíst: {error}",
   "@inferenceProfileDetailLoadError": {
     "placeholders": {
@@ -2248,15 +2450,22 @@
     }
   },
   "inferenceProfileDetailNotFound": "Profil nenalezen",
+  "inferenceProfileEditTitle": "Upravit profil",
+  "inferenceProfileImageGeneration": "Generování obrázků",
+  "inferenceProfileImageRecognition": "Rozpoznávání obrázků",
   "inferenceProfileModelUnavailable": "Model není dostupný — jeho poskytovatel byl možná odebrán",
+  "inferenceProfileNameLabel": "Název profilu",
+  "inferenceProfileNameRequired": "Název profilu je povinný",
   "inferenceProfilePinnedHostHelper": "Když je nastaveno, pouze toto zařízení automaticky spouští inference pro synchronizované zvukové záznamy používající tento profil.",
   "inferenceProfilePinnedHostLabel": "Připnuté zařízení",
   "inferenceProfilePinnedHostNoEligibleNodes": "Žádné známé zařízení neoznamuje poskytovatele, které tento profil používá. Otevři nastavení synchronizačních uzlů na cílovém zařízení.",
   "inferenceProfilePinnedHostNoneHelper": "Synchronizované zvukové záznamy se nebudou automaticky přepisovat, dokud nebude připnuté nějaké zařízení.",
   "inferenceProfilePinnedHostNoneLabel": "Nepřipnuto (bez automatického spuštění)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (toto zařízení)",
+  "inferenceProfileSaveButton": "Uložit",
   "inferenceProfileSelectModel": "Vyber model…",
   "inferenceProfileSelectProfile": "Vyber profil…",
+  "inferenceProfilesEmpty": "Zatím žádné inferenční profily",
   "inferenceProfileSkillModelRequired": "Vyžaduje nastavení modelu {slotName}",
   "@inferenceProfileSkillModelRequired": {
     "placeholders": {
@@ -2274,6 +2483,11 @@
       }
     }
   },
+  "inferenceProfilesTitle": "Inferenční profily",
+  "inferenceProfileThinking": "Uvažování",
+  "inferenceProfileThinkingHighEnd": "Uvažování (pokročilé)",
+  "inferenceProfileThinkingRequired": "Je potřeba model pro uvažování",
+  "inferenceProfileTranscription": "Přepis",
   "inferenceProfileUnavailable": "Inferenční profil není k dispozici",
   "inputDataTypeAudioFilesDescription": "Použijte audio soubory jako vstup",
   "inputDataTypeAudioFilesName": "Audio soubory",
@@ -2774,6 +2988,13 @@
   "onboardingFirstTaskSuggestionPlanWeek": "Naplánovat můj týden",
   "onboardingFirstTaskSuggestionsLabel": "Ještě se ti nechce mluvit? Začni jedním z těchto:",
   "onboardingFirstTaskTitle": "Vytvoř svůj první úkol",
+  "onboardingMetricsActiveDays": "Aktivní dny",
+  "onboardingMetricsActiveDaysInFirstSeven": "Aktivní dny během prvních 7 dnů",
+  "onboardingMetricsBaselineCohort": "Výchozí kohorta (před FTUE)",
+  "onboardingMetricsInstallFirstSeenUtc": "První zaznamenaná instalace (UTC)",
+  "onboardingMetricsNo": "ne",
+  "onboardingMetricsReachedRealAha": "Dosaženo skutečného aha momentu",
+  "onboardingMetricsYes": "ano",
   "onboardingRecordingStyleAnalogue": "Analogový — VU metr",
   "onboardingRecordingStyleContinue": "Pokračovat",
   "onboardingRecordingStyleExplanation": "Vyber vzhled pro mikrofon. Kdykoli ho můžeš změnit v Nastavení.",
@@ -3357,13 +3578,25 @@
       }
     }
   },
+  "settingsLoggingDomainsSubtitle": "Nastav, které oblasti zapisují do logu",
+  "settingsLoggingDomainsTitle": "Oblasti protokolování",
+  "settingsLoggingGlobalToggle": "Zapnout protokolování",
+  "settingsLoggingGlobalToggleSubtitle": "Hlavní přepínač pro veškeré protokolování",
   "settingsLoggingSlowQueries": "Pomalé databázové dotazy",
   "settingsLoggingSlowQueriesSubtitle": "Pomalé dotazy se zapisují do slow_queries-YYYY-MM-DD.log",
+  "settingsMaintenanceOnboardingAnimationGallerySubtitle": "Porovnej uvítací animace a stránku připojení živě (ladění)",
+  "settingsMaintenanceOnboardingAnimationGalleryTitle": "Galerie animací onboardingu",
+  "settingsMaintenanceOnboardingWelcomeSubtitle": "Náhled uvítání FTUE a dlaždic poskytovatelů (ladění)",
+  "settingsMaintenanceOnboardingWelcomeTitle": "Zobrazit uvítání onboardingu",
   "settingsMaintenanceTitle": "Údržba",
   "settingsMatrixAccept": "Přijmout",
   "settingsMatrixAcceptVerificationLabel": "Jiné zařízení zobrazuje emoji, pokračovat",
   "settingsMatrixCancel": "Zrušit",
   "settingsMatrixContinueVerificationLabel": "Přijměte na jiném zařízení pro pokračování",
+  "settingsMatrixDiagnosticCopied": "Diagnostické informace zkopírovány do schránky",
+  "settingsMatrixDiagnosticCopyButton": "Kopírovat do schránky",
+  "settingsMatrixDiagnosticDialogTitle": "Diagnostické informace synchronizace",
+  "settingsMatrixDiagnosticShowButton": "Zobrazit diagnostické informace",
   "settingsMatrixDone": "Hotovo",
   "settingsMatrixLastUpdated": "Naposledy aktualizováno:",
   "settingsMatrixListUnverifiedLabel": "Neověřená zařízení",
@@ -3973,6 +4206,7 @@
   "viewMenuZoomIn": "Přiblížit",
   "viewMenuZoomOut": "Oddálit",
   "viewMenuZoomReset": "Skutečná velikost",
+  "whatsNewBadgeNew": "NOVÉ",
   "whatsNewDoneButton": "Hotovo",
   "whatsNewSkipButton": "Přeskočit"
 }

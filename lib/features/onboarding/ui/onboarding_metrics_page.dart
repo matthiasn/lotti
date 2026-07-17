@@ -33,9 +33,8 @@ class OnboardingMetricsPage extends StatelessWidget {
 /// cohort, real-aha reached) plus per-event counts, with a confirmed QA reset
 /// for both prompt cadence and metrics.
 ///
-/// Read-only diagnostic rows stay in plain English (matching the repaint-
-/// rainbow tile in Maintenance); the navigable title and interactive reset
-/// action are localized.
+/// The diagnostic data is localized like the rest of Settings; event wire
+/// names remain technical identifiers so they can be correlated with logs.
 class OnboardingMetricsBody extends StatefulWidget {
   const OnboardingMetricsBody({super.key});
 
@@ -106,28 +105,32 @@ class _OnboardingMetricsBodyState extends State<OnboardingMetricsBody> {
           final summary = <({IconData icon, String title, String value})>[
             (
               icon: Icons.event_available_outlined,
-              title: 'Install first seen (UTC)',
+              title: context.messages.onboardingMetricsInstallFirstSeenUtc,
               value: state.installFirstSeen?.toUtc().toIso8601String() ?? '—',
             ),
             (
               icon: Icons.calendar_today_outlined,
-              title: 'Active days',
+              title: context.messages.onboardingMetricsActiveDays,
               value: '${state.activeDaysCount}',
             ),
             (
               icon: Icons.looks_one_outlined,
-              title: 'Active days in first 7',
+              title: context.messages.onboardingMetricsActiveDaysInFirstSeven,
               value: '${state.activeDaysInFirst7}',
             ),
             (
               icon: Icons.flag_outlined,
-              title: 'Baseline cohort (pre-FTUE)',
-              value: state.isBaselineCohort ? 'yes' : 'no',
+              title: context.messages.onboardingMetricsBaselineCohort,
+              value: state.isBaselineCohort
+                  ? context.messages.onboardingMetricsYes
+                  : context.messages.onboardingMetricsNo,
             ),
             (
               icon: Icons.auto_awesome,
-              title: 'Reached real aha',
-              value: state.reachedRealAha ? 'yes' : 'no',
+              title: context.messages.onboardingMetricsReachedRealAha,
+              value: state.reachedRealAha
+                  ? context.messages.onboardingMetricsYes
+                  : context.messages.onboardingMetricsNo,
             ),
           ];
 

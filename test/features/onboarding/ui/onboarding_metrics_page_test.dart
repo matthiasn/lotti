@@ -45,8 +45,21 @@ void main() {
   // Pumps without pumpAndSettle: the loading-state CircularProgressIndicator
   // never settles, so we pump a bounded number of frames until the async
   // funnel load resolves.
-  Future<void> pumpUntilLoaded(WidgetTester tester, Finder finder) async {
-    await tester.pumpWidget(makeTestableWidget(const OnboardingMetricsBody()));
+  Future<void> pumpUntilLoaded(
+    WidgetTester tester,
+    Finder finder, {
+    Locale? locale,
+  }) async {
+    final body = locale == null
+        ? const OnboardingMetricsBody()
+        : Builder(
+            builder: (context) => Localizations.override(
+              context: context,
+              locale: locale,
+              child: const OnboardingMetricsBody(),
+            ),
+          );
+    await tester.pumpWidget(makeTestableWidget(body));
     for (var i = 0; i < 10 && finder.evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 20));
     }
@@ -83,6 +96,21 @@ void main() {
     expect(find.text('no'), findsWidgets);
     // Install date is unknown.
     expect(find.text('—'), findsOneWidget);
+  });
+
+  testWidgets('localizes summary metrics', (tester) async {
+    await repo.recordAppFirstSeenIfAbsent();
+    await repo.recordEvent(OnboardingEventName.realAha);
+
+    await pumpUntilLoaded(
+      tester,
+      find.text('Dosaženo skutečného aha momentu'),
+      locale: const Locale('cs'),
+    );
+
+    expect(find.text('Aktivní dny'), findsOneWidget);
+    expect(find.text('Dosaženo skutečného aha momentu'), findsOneWidget);
+    expect(find.text('ano'), findsOneWidget);
   });
 
   testWidgets('OnboardingMetricsPage renders the body inside the page chrome', (

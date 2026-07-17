@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// 21:9 hero banner with gradient overlay and version badge.
@@ -156,9 +157,9 @@ class _VersionBadge extends StatelessWidget {
                     color: _goldAccent,
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text(
-                    'NEW',
-                    style: TextStyle(
+                  child: Text(
+                    context.messages.whatsNewBadgeNew,
+                    style: const TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.5,

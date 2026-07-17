@@ -12346,6 +12346,48 @@ abstract class AppLocalizations {
   /// **'Create your first task'**
   String get onboardingFirstTaskTitle;
 
+  /// Label for the active-day count in the onboarding metrics debug view.
+  ///
+  /// In en, this message translates to:
+  /// **'Active days'**
+  String get onboardingMetricsActiveDays;
+
+  /// Label for the active-day count during the first seven days in the onboarding metrics debug view.
+  ///
+  /// In en, this message translates to:
+  /// **'Active days in first 7'**
+  String get onboardingMetricsActiveDaysInFirstSeven;
+
+  /// Label for whether a user belongs to the pre-FTUE baseline cohort in the onboarding metrics debug view.
+  ///
+  /// In en, this message translates to:
+  /// **'Baseline cohort (pre-FTUE)'**
+  String get onboardingMetricsBaselineCohort;
+
+  /// Label for the first observed install timestamp in the onboarding metrics debug view.
+  ///
+  /// In en, this message translates to:
+  /// **'Install first seen (UTC)'**
+  String get onboardingMetricsInstallFirstSeenUtc;
+
+  /// Negative boolean value in the onboarding metrics debug view.
+  ///
+  /// In en, this message translates to:
+  /// **'no'**
+  String get onboardingMetricsNo;
+
+  /// Label for whether a user has reached the meaningful onboarding activation event.
+  ///
+  /// In en, this message translates to:
+  /// **'Reached real aha'**
+  String get onboardingMetricsReachedRealAha;
+
+  /// Positive boolean value in the onboarding metrics debug view.
+  ///
+  /// In en, this message translates to:
+  /// **'yes'**
+  String get onboardingMetricsYes;
+
   /// No description provided for @onboardingRecordingStyleAnalogue.
   ///
   /// In en, this message translates to:
@@ -14865,6 +14907,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Writes slow queries to slow_queries-YYYY-MM-DD.log'**
   String get settingsLoggingSlowQueriesSubtitle;
+
+  /// Debug-only subtitle for the onboarding animation gallery in Maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare welcome animations + connect page live (debug)'**
+  String get settingsMaintenanceOnboardingAnimationGallerySubtitle;
+
+  /// Debug-only title for the onboarding animation gallery in Maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Onboarding animation gallery'**
+  String get settingsMaintenanceOnboardingAnimationGalleryTitle;
+
+  /// Debug-only subtitle for reopening the onboarding welcome from Maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview the FTUE welcome + provider tiles (debug)'**
+  String get settingsMaintenanceOnboardingWelcomeSubtitle;
+
+  /// Debug-only title for reopening the onboarding welcome from Maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Show onboarding welcome'**
+  String get settingsMaintenanceOnboardingWelcomeTitle;
 
   /// No description provided for @settingsMaintenanceTitle.
   ///
@@ -17490,6 +17556,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Actual Size'**
   String get viewMenuZoomReset;
+
+  /// Badge displayed on the newest release in the What's New view.
+  ///
+  /// In en, this message translates to:
+  /// **'NEW'**
+  String get whatsNewBadgeNew;
 
   /// No description provided for @whatsNewDoneButton.
   ///

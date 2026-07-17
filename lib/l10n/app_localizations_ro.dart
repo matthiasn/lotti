@@ -7256,6 +7256,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Creați-vă prima sarcină';
 
   @override
+  String get onboardingMetricsActiveDays => 'Zile active';
+
+  @override
+  String get onboardingMetricsActiveDaysInFirstSeven =>
+      'Zile active în primele 7 zile';
+
+  @override
+  String get onboardingMetricsBaselineCohort =>
+      'Cohorta de referință (înainte de FTUE)';
+
+  @override
+  String get onboardingMetricsInstallFirstSeenUtc =>
+      'Prima instalare detectată (UTC)';
+
+  @override
+  String get onboardingMetricsNo => 'nu';
+
+  @override
+  String get onboardingMetricsReachedRealAha =>
+      'Momentul «aha» real a fost atins';
+
+  @override
+  String get onboardingMetricsYes => 'da';
+
+  @override
   String get onboardingRecordingStyleAnalogue => 'Analogic — VU-metru';
 
   @override
@@ -8822,6 +8847,22 @@ class AppLocalizationsRo extends AppLocalizations {
       'Interogările lente sunt scrise în slow_queries-YYYY-MM-DD.log';
 
   @override
+  String get settingsMaintenanceOnboardingAnimationGallerySubtitle =>
+      'Comparați în direct animațiile de bun venit și pagina de conectare (depanare)';
+
+  @override
+  String get settingsMaintenanceOnboardingAnimationGalleryTitle =>
+      'Galeria de animații pentru onboarding';
+
+  @override
+  String get settingsMaintenanceOnboardingWelcomeSubtitle =>
+      'Previzualizați ecranul de bun venit FTUE și cardurile furnizorilor (depanare)';
+
+  @override
+  String get settingsMaintenanceOnboardingWelcomeTitle =>
+      'Afișați mesajul de bun venit pentru onboarding';
+
+  @override
   String get settingsMaintenanceTitle => 'Mentenanță';
 
   @override
@@ -10358,6 +10399,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get viewMenuZoomReset => 'Dimensiune reală';
+
+  @override
+  String get whatsNewBadgeNew => 'NOU';
 
   @override
   String get whatsNewDoneButton => 'Gata';

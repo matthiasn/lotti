@@ -65,16 +65,21 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
     final items =
         <({String title, String subtitle, IconData icon, VoidCallback onTap})>[
           (
-            title: 'Show onboarding welcome',
-            subtitle: 'Preview the FTUE welcome + provider tiles (debug)',
+            title: context.messages.settingsMaintenanceOnboardingWelcomeTitle,
+            subtitle:
+                context.messages.settingsMaintenanceOnboardingWelcomeSubtitle,
             icon: Icons.auto_awesome_motion_rounded,
             onTap: () => unawaited(
               OnboardingWelcomeModal.show(context, onDismiss: () {}),
             ),
           ),
           (
-            title: 'Onboarding animation gallery',
-            subtitle: 'Compare welcome animations + connect page live (debug)',
+            title: context
+                .messages
+                .settingsMaintenanceOnboardingAnimationGalleryTitle,
+            subtitle: context
+                .messages
+                .settingsMaintenanceOnboardingAnimationGallerySubtitle,
             icon: Icons.animation_rounded,
             onTap: () => unawaited(
               // Root navigator on mobile so the gallery covers the shell's

@@ -7084,6 +7084,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Create your first task';
 
   @override
+  String get onboardingMetricsActiveDays => 'Active days';
+
+  @override
+  String get onboardingMetricsActiveDaysInFirstSeven =>
+      'Active days in first 7';
+
+  @override
+  String get onboardingMetricsBaselineCohort => 'Baseline cohort (pre-FTUE)';
+
+  @override
+  String get onboardingMetricsInstallFirstSeenUtc => 'Install first seen (UTC)';
+
+  @override
+  String get onboardingMetricsNo => 'no';
+
+  @override
+  String get onboardingMetricsReachedRealAha => 'Reached real aha';
+
+  @override
+  String get onboardingMetricsYes => 'yes';
+
+  @override
   String get onboardingRecordingStyleAnalogue => 'Analogue — VU meter';
 
   @override
@@ -8608,6 +8630,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Writes slow queries to slow_queries-YYYY-MM-DD.log';
 
   @override
+  String get settingsMaintenanceOnboardingAnimationGallerySubtitle =>
+      'Compare welcome animations + connect page live (debug)';
+
+  @override
+  String get settingsMaintenanceOnboardingAnimationGalleryTitle =>
+      'Onboarding animation gallery';
+
+  @override
+  String get settingsMaintenanceOnboardingWelcomeSubtitle =>
+      'Preview the FTUE welcome + provider tiles (debug)';
+
+  @override
+  String get settingsMaintenanceOnboardingWelcomeTitle =>
+      'Show onboarding welcome';
+
+  @override
   String get settingsMaintenanceTitle => 'Maintenance';
 
   @override
@@ -10106,6 +10144,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewMenuZoomReset => 'Actual Size';
+
+  @override
+  String get whatsNewBadgeNew => 'NEW';
 
   @override
   String get whatsNewDoneButton => 'Done';

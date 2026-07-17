@@ -7256,6 +7256,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Crée ta première tâche';
 
   @override
+  String get onboardingMetricsActiveDays => 'Jours actifs';
+
+  @override
+  String get onboardingMetricsActiveDaysInFirstSeven =>
+      'Jours actifs durant les 7 premiers jours';
+
+  @override
+  String get onboardingMetricsBaselineCohort =>
+      'Cohorte de référence (avant le FTUE)';
+
+  @override
+  String get onboardingMetricsInstallFirstSeenUtc =>
+      'Première installation détectée (UTC)';
+
+  @override
+  String get onboardingMetricsNo => 'non';
+
+  @override
+  String get onboardingMetricsReachedRealAha => 'Moment « aha » réel atteint';
+
+  @override
+  String get onboardingMetricsYes => 'oui';
+
+  @override
   String get onboardingRecordingStyleAnalogue => 'Analogique — VU-mètre';
 
   @override
@@ -8833,6 +8857,22 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les requêtes lentes sont écrites dans slow_queries-YYYY-MM-DD.log';
 
   @override
+  String get settingsMaintenanceOnboardingAnimationGallerySubtitle =>
+      'Compare en direct les animations d’accueil et la page de connexion (débogage)';
+
+  @override
+  String get settingsMaintenanceOnboardingAnimationGalleryTitle =>
+      'Galerie d’animations d’intégration';
+
+  @override
+  String get settingsMaintenanceOnboardingWelcomeSubtitle =>
+      'Prévisualise l’accueil FTUE et les cartes des fournisseurs (débogage)';
+
+  @override
+  String get settingsMaintenanceOnboardingWelcomeTitle =>
+      'Afficher l’accueil d’intégration';
+
+  @override
   String get settingsMaintenanceTitle => 'Maintenance';
 
   @override
@@ -10373,6 +10413,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get viewMenuZoomReset => 'Taille réelle';
+
+  @override
+  String get whatsNewBadgeNew => 'NOUVEAU';
 
   @override
   String get whatsNewDoneButton => 'Terminé';

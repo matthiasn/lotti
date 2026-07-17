@@ -15,6 +15,15 @@ In the current codebase, Settings does four concrete things:
 
 That last point matters. Settings is mostly a router, but not only a router.
 
+## Localization boundary
+
+Settings-owned leaf pages use `context.messages` for every user-visible label,
+including debug and QA-only actions. This is particularly important for
+Advanced → Maintenance: its onboarding preview and animation-gallery rows are
+real app UI and must not introduce an English island in another locale. Add new
+copy to every supported ARB source and regenerate localization output; do not
+put display strings directly in the widget.
+
 One thing Settings no longer does is hand-maintain its own menu. The landing
 list and the section hubs are no longer bespoke widgets with hard-coded item
 arrays. They render from a single declarative tree — `buildSettingsTree(...)`
