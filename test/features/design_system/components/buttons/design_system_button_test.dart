@@ -173,6 +173,10 @@ void main() {
             fg: tokens.colors.interactive.enabled,
             bg: null,
           ),
+          DesignSystemButtonVariant.outlined: (
+            fg: tokens.colors.text.highEmphasis,
+            bg: null,
+          ),
           DesignSystemButtonVariant.danger: (
             fg: tokens.colors.text.onInteractiveAlert,
             bg: tokens.colors.alert.error.defaultColor,

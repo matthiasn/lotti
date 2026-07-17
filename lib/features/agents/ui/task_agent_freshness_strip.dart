@@ -97,17 +97,24 @@ class TaskAgentFreshnessStrip extends StatelessWidget {
         border: Border.all(color: ai.rowBorder),
       ),
       // Wide: message leads, CTA holds the trailing edge. Narrow: the CTA
-      // drops to its own right-aligned line so the message keeps one line
-      // (it wraps rather than truncates if a translation still overflows).
+      // drops below, left-aligned to the message's own text grid line
+      // (glyph + gap), so message and button form one flush block instead of
+      // a diagonal with a dead corner. The message wraps rather than
+      // truncates if a translation still overflows.
       child: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth < _compactWidth) {
             return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 messageLine,
                 SizedBox(height: tokens.spacing.step2),
-                Align(alignment: Alignment.centerRight, child: cta),
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: tokens.spacing.step5 + tokens.spacing.step3,
+                  ),
+                  child: cta,
+                ),
               ],
             );
           }

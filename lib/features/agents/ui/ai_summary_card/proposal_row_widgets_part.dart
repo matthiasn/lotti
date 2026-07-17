@@ -35,10 +35,11 @@ class RowActions extends StatelessWidget {
         ),
       );
     }
-    // Each [_SquareIconButton] is a quiet ghost icon inside a 40×40 hit
-    // zone — color (meta-gray reject, accent confirm) carries the meaning,
-    // so the rows shed the boxed chrome. A `step4` gap separates the two hit
-    // zones so the destructive reject is never flush against accept.
+    // Reject is a quiet ghost glyph; confirm sits in a tonal wash circle so
+    // the affirmative action reads as the row's one button. A `step2` gap
+    // separates the two hit zones — the asymmetric chrome keeps the
+    // opposite-meaning targets visually distinct, and swipe remains the
+    // primary gesture.
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -48,7 +49,7 @@ class RowActions extends StatelessWidget {
           onPressed: onReject,
           variant: _SquareIconVariant.outline,
         ),
-        SizedBox(width: context.designTokens.spacing.step4),
+        SizedBox(width: context.designTokens.spacing.step2),
         _SquareIconButton(
           icon: Icons.check_rounded,
           tooltip: context.messages.changeSetSwipeConfirm,
@@ -80,7 +81,8 @@ class _SquareIconButton extends StatelessWidget {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final isAccent = variant == _SquareIconVariant.accent;
-    // Ghost chrome: just the glyph, centered in a 40×40 hit target so
+    // Confirm wears a tonal wash circle so it reads as the row's one button;
+    // reject stays a bare ghost glyph. Both center in a 40×40 hit target so
     // reduced-motor-control users still get a compliant tap zone without the
     // slot inflating the row.
     // Explicit button role + label, merged into one node, so screen readers
@@ -103,10 +105,23 @@ class _SquareIconButton extends StatelessWidget {
               child: SizedBox(
                 width: 40,
                 height: 40,
-                child: Icon(
-                  icon,
-                  size: tokens.spacing.step5,
-                  color: isAccent ? ai.accent : ai.metaText,
+                child: Center(
+                  child: Container(
+                    width: tokens.spacing.step7,
+                    height: tokens.spacing.step7,
+                    alignment: Alignment.center,
+                    decoration: isAccent
+                        ? BoxDecoration(
+                            color: ai.accentSoft,
+                            shape: BoxShape.circle,
+                          )
+                        : null,
+                    child: Icon(
+                      icon,
+                      size: tokens.spacing.step5,
+                      color: isAccent ? ai.accent : ai.metaText,
+                    ),
+                  ),
                 ),
               ),
             ),

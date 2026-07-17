@@ -168,7 +168,7 @@ class ProposalsSection extends StatelessWidget {
                       DesignSystemButton(
                         label: messages.changeSetConfirmAll,
                         leadingIcon: Icons.done_all_rounded,
-                        variant: DesignSystemButtonVariant.secondary,
+                        variant: DesignSystemButtonVariant.outlined,
                         isLoading: confirmAllBusy,
                         onPressed: () => unawaited(onConfirmAll!()),
                       ),

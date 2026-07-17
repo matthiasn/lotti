@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
@@ -79,108 +80,106 @@ class TaskAgentControlsFooter extends StatelessWidget {
         tokens.spacing.cardPadding,
         tokens.spacing.step3,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (hasWakeRow) ...[
-            // One wake affordance per state, in a constant-height slot: the
-            // countdown chip replaces the button while an automatic wake is
-            // scheduled (the scheduled update *is* the pending wake). step8
-            // fits the taller of the two (the cancel button) exactly — a
-            // 48px floor left a dead band under the compact controls.
-            ConstrainedBox(
-              constraints: BoxConstraints(minHeight: tokens.spacing.step8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: countdownVisible
-                    ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _CountdownChip(
-                            nextWakeAt: wakeAt,
-                            onExpired: onCountdownExpired,
-                          ),
-                          SizedBox(width: tokens.spacing.step2),
-                          IconButton(
-                            icon: Icon(
-                              Icons.close_rounded,
-                              size: tokens.spacing.step5,
-                              color: ai.metaText,
-                            ),
-                            tooltip: messages.taskAgentCancelTimerTooltip,
-                            constraints: BoxConstraints.tightFor(
-                              width: tokens.spacing.step8,
-                              height: tokens.spacing.step8,
-                            ),
-                            padding: EdgeInsets.zero,
-                            onPressed: onCancelTimer,
-                          ),
-                        ],
-                      )
-                    : DesignSystemButton(
-                        key: const ValueKey('taskAgentWakeButton'),
-                        label: isRunning
-                            ? messages.aiSummaryThinkingLabel
-                            : messages.taskAgentWakeAgent,
-                        leadingIcon: Icons.refresh_rounded,
-                        variant: DesignSystemButtonVariant.tertiary,
-                        isLoading: isRunning,
-                        onPressed: inferenceAvailable ? onRunNow : null,
-                      ),
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step2),
-          ],
-          Row(
+      // The wash band spans the card, but the content snaps to the same
+      // reading measure as the summary and the proposal rows — one shared
+      // right edge for every actionable element on the card.
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: TldrBody.maxReadingWidth,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: TaskAgentIdentityRegion(
-                  data: identityData,
-                  onSetupTap: onSetupTap,
+              if (hasWakeRow) ...[
+                // One wake affordance per state, in a constant-height slot: the
+                // countdown chip replaces the button while an automatic wake is
+                // scheduled (the scheduled update *is* the pending wake). step8
+                // fits the taller of the two (the cancel button) exactly — a
+                // 48px floor left a dead band under the compact controls.
+                ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: countdownVisible
+                        ? _CountdownChip(
+                            nextWakeAt: wakeAt,
+                            onCancel: onCancelTimer,
+                            cancelTooltip: messages.taskAgentCancelTimerTooltip,
+                            onExpired: onCountdownExpired,
+                          )
+                        : DesignSystemButton(
+                            key: const ValueKey('taskAgentWakeButton'),
+                            label: isRunning
+                                ? messages.aiSummaryThinkingLabel
+                                : messages.taskAgentWakeAgent,
+                            leadingIcon: Icons.refresh_rounded,
+                            variant: DesignSystemButtonVariant.tertiary,
+                            isLoading: isRunning,
+                            onPressed: inferenceAvailable ? onRunNow : null,
+                          ),
+                  ),
                 ),
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Text(
-                messages.taskAgentAutomaticUpdatesLabel,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: ai.metaText,
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              DesignSystemToggle(
-                key: const Key('taskAgentAutomaticUpdatesCheckbox'),
-                value: automaticUpdatesEnabled,
-                semanticsLabel: messages.taskAgentAutomaticUpdatesLabel,
-                // The disabled toggle explains itself on demand instead of
-                // spending a permanent caption line on it.
-                tooltipIcon: inferenceAvailable
-                    ? null
-                    : Icons.info_outline_rounded,
-                tooltipMessage: inferenceAvailable
-                    ? null
-                    : messages.taskAgentAutomaticUpdatesNeedsSetup,
-                enabled: inferenceAvailable && !automationBusy,
-                onChanged: onAutomaticUpdatesChanged,
+                SizedBox(height: tokens.spacing.step2),
+              ],
+              Row(
+                children: [
+                  Expanded(
+                    child: TaskAgentIdentityRegion(
+                      data: identityData,
+                      onSetupTap: onSetupTap,
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  Text(
+                    messages.taskAgentAutomaticUpdatesLabel,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: ai.metaText,
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  DesignSystemToggle(
+                    key: const Key('taskAgentAutomaticUpdatesCheckbox'),
+                    value: automaticUpdatesEnabled,
+                    semanticsLabel: messages.taskAgentAutomaticUpdatesLabel,
+                    // The disabled toggle explains itself on demand instead of
+                    // spending a permanent caption line on it.
+                    tooltipIcon: inferenceAvailable
+                        ? null
+                        : Icons.info_outline_rounded,
+                    tooltipMessage: inferenceAvailable
+                        ? null
+                        : messages.taskAgentAutomaticUpdatesNeedsSetup,
+                    enabled: inferenceAvailable && !automationBusy,
+                    onChanged: onAutomaticUpdatesChanged,
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// Informational countdown until the next scheduled automatic wake
-/// ("Next update in 1:30"). Deliberately not tappable — cancelling lives on
-/// the dedicated close button next to it so the largest surface in the row
-/// can never destroy scheduled work by accident.
+/// Countdown until the next scheduled automatic wake ("Next update in
+/// 1:30 ×") as one capsule. The label region is informational — only the
+/// trailing ✕, with its own tap target and tooltip, cancels the scheduled
+/// wake, so the largest surface can never destroy scheduled work by
+/// accident.
 class _CountdownChip extends StatefulWidget {
   const _CountdownChip({
     required this.nextWakeAt,
+    required this.onCancel,
+    required this.cancelTooltip,
     required this.onExpired,
   });
 
   final DateTime nextWakeAt;
+  final VoidCallback onCancel;
+  final String cancelTooltip;
   final VoidCallback onExpired;
 
   @override
@@ -211,22 +210,52 @@ class _CountdownChipState extends State<_CountdownChip>
     // the same urgency-class as pending proposals — the ON toggle is the
     // scheduled footer's single accent.
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step3,
-        vertical: tokens.spacing.step1,
-      ),
+      padding: EdgeInsets.only(left: tokens.spacing.step3),
       decoration: BoxDecoration(
         color: ai.subtleWashStrong,
         borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
       ),
-      child: Text(
-        context.messages.taskAgentNextUpdateIn(
-          formatCountdown(countdownSeconds),
-        ),
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: ai.metaText,
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            context.messages.taskAgentNextUpdateIn(
+              formatCountdown(countdownSeconds),
+            ),
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: ai.metaText,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          Semantics(
+            button: true,
+            label: widget.cancelTooltip,
+            excludeSemantics: true,
+            child: Tooltip(
+              message: widget.cancelTooltip,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: widget.onCancel,
+                  borderRadius: BorderRadius.circular(
+                    tokens.radii.badgesPills,
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.spacing.step3,
+                      vertical: tokens.spacing.step2,
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: tokens.spacing.step4,
+                      color: ai.metaText,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -174,34 +173,77 @@ class TldrBody extends StatelessWidget {
           ),
         ],
         if (hasMore || expanded) ...[
-          SizedBox(height: tokens.spacing.step4),
+          SizedBox(height: tokens.spacing.step3),
           Wrap(
-            spacing: tokens.spacing.step3,
-            runSpacing: tokens.spacing.step3,
+            spacing: tokens.spacing.step4,
+            runSpacing: tokens.spacing.step2,
             children: [
               if (hasMore)
-                DesignSystemButton(
+                _QuietDisclosureLink(
                   key: const ValueKey('taskAgentReportDisclosure'),
                   label: expanded
                       ? messages.aiCardShowLess
                       : messages.aiCardReadMore,
-                  trailingIcon: expanded
+                  icon: expanded
                       ? Icons.expand_less_rounded
                       : Icons.expand_more_rounded,
-                  variant: DesignSystemButtonVariant.tertiary,
                   onPressed: onToggle,
                 ),
               if (expanded)
-                DesignSystemButton(
+                _QuietDisclosureLink(
                   label: messages.aiCardOpenAgentInternals,
-                  leadingIcon: Icons.tune_rounded,
-                  variant: DesignSystemButtonVariant.tertiary,
+                  icon: Icons.tune_rounded,
                   onPressed: onOpenInternals,
                 ),
             ],
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Quiet text-link disclosure matching the proposals section's History
+/// toggle: caption meta-gray with a leading glyph. Disclosures don't spend
+/// the accent — the summary they reveal is the hero, not the link.
+class _QuietDisclosureLink extends StatelessWidget {
+  const _QuietDisclosureLink({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    super.key,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: tokens.spacing.step5, color: ai.metaText),
+              SizedBox(width: tokens.spacing.step2),
+              Text(
+                label,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: ai.metaText,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

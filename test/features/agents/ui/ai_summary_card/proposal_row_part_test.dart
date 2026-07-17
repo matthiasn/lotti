@@ -57,10 +57,11 @@ void main() {
               .first,
         );
 
-        // The two 48x48 hit zones must NOT abut: a deliberate dead band sits
-        // between the destructive reject and accept so a near-miss can't land
-        // on the wrong control. (Adjacent zones would give a gap of 0.)
-        expect(acceptZone.left - rejectZone.right, greaterThan(4));
+        // The two hit zones must NOT abut: a step2 dead band sits between
+        // the destructive reject and accept — combined with the confirm's
+        // wash-circle chrome — so a near-miss can't land on the wrong
+        // control. (Adjacent zones would give a gap of 0.)
+        expect(acceptZone.left - rejectZone.right, greaterThanOrEqualTo(4));
       },
     );
   });

@@ -947,7 +947,7 @@ class ProposalRowContent extends StatelessWidget {
     return Row(
       children: [
         Expanded(child: textWidget),
-        SizedBox(width: tokens.spacing.step3),
+        SizedBox(width: tokens.spacing.step2),
         _trailing(),
       ],
     );
