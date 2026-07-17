@@ -46,20 +46,35 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import '../../screenshot_harness.dart';
 
 final DateTime _now = DateTime(2026, 6, 7, 9, 41);
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
-const String _shortUtterance =
-    'Tomorrow starts with the orbital penguin habitat inspection';
+final String _shortUtterance = _t(
+  'Tomorrow starts with the orbital penguin habitat inspection',
+  'Morgen beginnt mit der Inspektion des Pinguin-Habitats im Orbit',
+);
 
-const String _longUtterance =
-    'Tomorrow I need to inspect the orbital penguin habitat before Mission '
-    'Control wakes up, run the emperor penguin roll call, and negotiate the '
-    'sardine futures contract with Reykjavik. At eleven we have the Project '
-    'Waddle launch review. Please protect lunch because apparently coffee is '
-    'not a vegetable. In the afternoon I need ninety minutes for the '
-    'zero-gravity fish feeder, a legal review called Is a penguin a '
-    'passenger, and the board briefing. Add a buffer before the live habitat '
-    'demo, then leave thirty minutes for a walk and a debrief with Sir '
-    'Flaps-a-Lot. Nothing important should begin after five.';
+final String _longUtterance = _t(
+  'Tomorrow I need to inspect the orbital penguin habitat before Mission '
+      'Control wakes up, run the emperor penguin roll call, and negotiate the '
+      'sardine futures contract with Reykjavik. At eleven we have the Project '
+      'Waddle launch review. Please protect lunch because apparently coffee is '
+      'not a vegetable. In the afternoon I need ninety minutes for the '
+      'zero-gravity fish feeder, a legal review called Is a penguin a '
+      'passenger, and the board briefing. Add a buffer before the live habitat '
+      'demo, then leave thirty minutes for a walk and a debrief with Sir '
+      'Flaps-a-Lot. Nothing important should begin after five.',
+  'Morgen muss ich das Pinguin-Habitat im Orbit inspizieren, bevor die '
+      'Missionskontrolle aufwacht, den Zählappell der Kaiserpinguine '
+      'durchführen und den Sardinen-Terminkontrakt mit Reykjavík verhandeln. '
+      'Um elf ist die Startprüfung für Project Waddle. Bitte halte die '
+      'Mittagspause frei, denn Kaffee ist offenbar kein Gemüse. Am Nachmittag '
+      'brauche ich neunzig Minuten für den Schwerelos-Futterautomaten, eine '
+      'Rechtsprüfung mit dem Titel Ist ein Pinguin ein Passagier und das '
+      'Vorstandsbriefing. Plane vor der Live-Demo des Habitats einen Puffer '
+      'ein und danach dreißig Minuten für einen Spaziergang und die '
+      'Nachbesprechung mit Sir Flaps-a-Lot. Nach fünf soll nichts Wichtiges '
+      'mehr beginnen.',
+);
 
 /// Deterministic rolling amplitude window for the live waveform.
 List<double> _amplitudes(int count) => [
@@ -85,27 +100,27 @@ final _transcribing = CaptureState(
   amplitudes: _amplitudes(48),
 );
 
-const _captured = CaptureState(
+final _captured = CaptureState(
   phase: CapturePhase.captured,
   transcript: _longUtterance,
-  amplitudes: [],
+  amplitudes: const [],
 );
 
-const _category = DayAgentCategory(
+final _category = DayAgentCategory(
   id: 'cat-mission',
-  name: 'Mission Control',
+  name: _t('Mission Control', 'Missionskontrolle'),
   colorHex: '4F9DDE',
 );
 
-const _deepWork = DayAgentCategory(
+final _deepWork = DayAgentCategory(
   id: 'cat-penguin',
-  name: 'Penguin Operations',
+  name: _t('Penguin Operations', 'Pinguinbetrieb'),
   colorHex: '8B5CF6',
 );
 
-const _health = DayAgentCategory(
+final _health = DayAgentCategory(
   id: 'cat-human',
-  name: 'Human Maintenance',
+  name: _t('Human Maintenance', 'Menschenwartung'),
   colorHex: '34D399',
 );
 
@@ -133,11 +148,23 @@ DraftPlan _refineDraft() {
   return DraftPlan(
     dayDate: DateTime(2026, 6, 8),
     blocks: [
-      block('blk-1', 'Orbital habitat inspection', 8, 10, _deepWork),
-      block('blk-2', 'Project Waddle launch review', 10, 11, _category),
+      block(
+        'blk-1',
+        _t('Orbital habitat inspection', 'Inspektion des Orbital-Habitats'),
+        8,
+        10,
+        _deepWork,
+      ),
+      block(
+        'blk-2',
+        _t('Project Waddle launch review', 'Startprüfung für Project Waddle'),
+        10,
+        11,
+        _category,
+      ),
       block(
         'blk-3',
-        'Zero-gravity fish feeder',
+        _t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat'),
         13,
         14,
         _deepWork,
@@ -145,7 +172,7 @@ DraftPlan _refineDraft() {
       ),
       block(
         'blk-4',
-        'Walk without a headset',
+        _t('Walk without a headset', 'Spaziergang ohne Headset'),
         17,
         18,
         _health,
@@ -196,32 +223,50 @@ class _ReviewAgent extends MockDayAgent {
       );
 
   @override
-  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => const [
+  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => [
     ParsedItem(
       id: 'p_waddle_briefing',
       kind: ParsedItemKind.matched,
-      title: 'Send Project Waddle briefing',
+      title: _t(
+        'Send Project Waddle briefing',
+        'Project-Waddle-Briefing senden',
+      ),
       category: _category,
       confidence: ParsedItemConfidence.high,
-      spokenPhrase: 'the Project Waddle launch review',
+      spokenPhrase: _t(
+        'the Project Waddle launch review',
+        'die Startprüfung für Project Waddle',
+      ),
       matchedTaskId: 't_waddle_briefing',
-      matchedTaskTitle: 'Project Waddle launch briefing',
-      matchedTaskState: 'In progress · 2 sessions',
+      matchedTaskTitle: _t(
+        'Project Waddle launch briefing',
+        'Startbriefing für Project Waddle',
+      ),
+      matchedTaskState: _t(
+        'In progress · 2 sessions',
+        'In Arbeit · 2 Sitzungen',
+      ),
       estimateMinutes: 60,
     ),
     ParsedItem(
       id: 'p_habitat',
       kind: ParsedItemKind.newTask,
-      title: 'Inspect orbital penguin habitat',
+      title: _t(
+        'Inspect orbital penguin habitat',
+        'Pinguin-Habitat im Orbit inspizieren',
+      ),
       category: _deepWork,
       confidence: ParsedItemConfidence.high,
       estimateMinutes: 120,
-      timeAnchor: 'before Mission Control wakes up',
+      timeAnchor: _t(
+        'before Mission Control wakes up',
+        'bevor die Missionskontrolle aufwacht',
+      ),
     ),
     ParsedItem(
       id: 'p_sardines',
       kind: ParsedItemKind.newTask,
-      title: 'Negotiate sardine futures',
+      title: _t('Negotiate sardine futures', 'Sardinen-Futures verhandeln'),
       category: _category,
       confidence: ParsedItemConfidence.medium,
       estimateMinutes: 90,
@@ -229,43 +274,67 @@ class _ReviewAgent extends MockDayAgent {
     ParsedItem(
       id: 'p_roll_call',
       kind: ParsedItemKind.update,
-      title: 'Emperor penguin roll call',
+      title: _t('Emperor penguin roll call', 'Kaiserpinguine durchzählen'),
       category: _deepWork,
       confidence: ParsedItemConfidence.high,
-      spokenPhrase: 'run the emperor penguin roll call',
+      spokenPhrase: _t(
+        'run the emperor penguin roll call',
+        'den Zählappell der Kaiserpinguine durchführen',
+      ),
       matchedTaskId: 't_roll_call',
-      matchedTaskTitle: 'Emperor penguin roll call',
-      matchedTaskState: 'Recurring · weekdays',
-      proposedUpdate: 'Mark complete after all 37 answer',
+      matchedTaskTitle: _t(
+        'Emperor penguin roll call',
+        'Kaiserpinguine durchzählen',
+      ),
+      matchedTaskState: _t('Recurring · weekdays', 'Wiederkehrend · werktags'),
+      proposedUpdate: _t(
+        'Mark complete after all 37 answer',
+        'Als erledigt markieren, wenn alle 37 geantwortet haben',
+      ),
     ),
   ];
 
   @override
   Future<List<PendingItem>> surfacePendingDecisions({
     DateTime? forDate,
-  }) async => const [
+  }) async => [
     PendingItem(
       taskId: 't_fish_bucket',
-      title: 'Replace the diplomatic fish bucket',
+      title: _t(
+        'Replace the diplomatic fish bucket',
+        'Diplomatischen Fischeimer ersetzen',
+      ),
       category: _category,
       reason: PendingItemReason.inProgress,
-      note: 'Started Friday, dignity not included',
+      note: _t(
+        'Started Friday, dignity not included',
+        'Freitag begonnen, Würde nicht inbegriffen',
+      ),
       sessionCount: 1,
     ),
     PendingItem(
       taskId: 't_orbital_permit',
-      title: 'Renew orbital wildlife permit',
+      title: _t(
+        'Renew orbital wildlife permit',
+        'Orbitale Wildtiergenehmigung erneuern',
+      ),
       category: _deepWork,
       reason: PendingItemReason.overdue,
-      note: 'The penguins are currently technically cargo',
+      note: _t(
+        'The penguins are currently technically cargo',
+        'Die Pinguine gelten derzeit technisch als Fracht',
+      ),
       overdueByDays: 3,
     ),
     PendingItem(
       taskId: 't_calm_flapping',
-      title: 'Practice calm during surprise flapping',
+      title: _t(
+        'Practice calm during surprise flapping',
+        'Ruhe bei überraschendem Flattern üben',
+      ),
       category: _health,
       reason: PendingItemReason.missedRecurring,
-      note: 'Last skipped Thursday',
+      note: _t('Last skipped Thursday', 'Zuletzt am Donnerstag ausgelassen'),
     ),
   ];
 }
@@ -325,6 +394,7 @@ Widget _app({
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: manualScreenshotLocale,
           home: home,
         ),
       ),
@@ -375,14 +445,14 @@ Future<void> _openModal(
                   dayDate: DateTime(2026, 6, 8),
                   intent: intent,
                 ),
-                child: const Text('open'),
+                child: Text(_t('open', 'öffnen')),
               ),
             ),
           ),
         ),
       ),
     );
-    await tester.tap(find.text('open'));
+    await tester.tap(find.text(_t('open', 'öffnen')));
     await settleFrames(tester);
   });
 }
@@ -655,7 +725,10 @@ void main() {
   testWidgets('capture with "Today so far" card — mini dark', (tester) async {
     final block = TimeBlock(
       id: 'actual:entry-1',
-      title: 'Retrieve penguin from ventilation duct',
+      title: _t(
+        'Retrieve penguin from ventilation duct',
+        'Pinguin aus dem Lüftungsschacht holen',
+      ),
       start: DateTime(2026, 6, 8, 8),
       end: DateTime(2026, 6, 8, 9, 30),
       type: TimeBlockType.manual,
@@ -685,7 +758,12 @@ void main() {
       await settleFrames(tester);
     });
     expect(
-      find.text('Retrieve penguin from ventilation duct'),
+      find.text(
+        _t(
+          'Retrieve penguin from ventilation duct',
+          'Pinguin aus dem Lüftungsschacht holen',
+        ),
+      ),
       findsOneWidget,
     );
     await captureScreenshot(tester, 'mini_14_capture_today_so_far_dark');

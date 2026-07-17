@@ -76,6 +76,7 @@ import '../../../categories/test_utils.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
 
 const _subdir = 'journal';
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 const _briefingId = 'journal-project-waddle-briefing';
 
 class _ManualJournalPageController extends JournalPageController {
@@ -136,7 +137,6 @@ Widget _app({
         data: MediaQueryData(size: device.size, disableAnimations: true),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          locale: const Locale('en'),
           theme: screenshotTheme,
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -145,6 +145,7 @@ Widget _app({
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: manualScreenshotLocale,
           home: AppCommandHost(
             handlers: const {},
             platform: platform,
@@ -213,17 +214,17 @@ void main() {
 
     final missionControl = CategoryTestUtils.createTestCategory(
       id: 'manual-mission-control',
-      name: 'Mission Control',
+      name: _t('Mission Control', 'Missionskontrolle'),
       color: '#6750A4',
     );
     final fishDiplomacy = CategoryTestUtils.createTestCategory(
       id: 'manual-fish-diplomacy',
-      name: 'Fish Diplomacy',
+      name: _t('Fish Diplomacy', 'Fischdiplomatie'),
       color: '#FBA337',
     );
     final humanMaintenance = CategoryTestUtils.createTestCategory(
       id: 'manual-human-maintenance',
-      name: 'Human Maintenance',
+      name: _t('Human Maintenance', 'Menschenwartung'),
       color: '#3CB371',
     );
     categories = [
@@ -244,16 +245,25 @@ void main() {
         ],
         starred: true,
       ),
-      entryText: const EntryText(
-        plainText:
-            'Project Waddle mission log — pressure seals green, 37 emperor '
-            'penguins present, and the sardine cargo is cold.',
-        markdown:
-            '# Project Waddle mission log\n\n'
-            'All **37 emperor penguins** reported for launch rehearsal.\n\n'
-            '- Pressure seals: green\n'
-            '- Sardine cargo: cold\n'
-            '- Fish feeder: suspiciously enthusiastic',
+      entryText: EntryText(
+        plainText: _t(
+          'Project Waddle mission log — pressure seals green, 37 emperor '
+              'penguins present, and the sardine cargo is cold.',
+          'Project-Waddle-Missionslog — Druckdichtungen grün, 37 '
+              'Kaiserpinguine anwesend und die Sardinenfracht ist kalt.',
+        ),
+        markdown: _t(
+          '# Project Waddle mission log\n\n'
+              'All **37 emperor penguins** reported for launch rehearsal.\n\n'
+              '- Pressure seals: green\n'
+              '- Sardine cargo: cold\n'
+              '- Fish feeder: suspiciously enthusiastic',
+          '# Project-Waddle-Missionslog\n\n'
+              'Alle **37 Kaiserpinguine** meldeten sich zur Startprobe.\n\n'
+              '- Druckdichtungen: grün\n'
+              '- Sardinenfracht: kalt\n'
+              '- Futterautomat: verdächtig enthusiastisch',
+        ),
       ),
     );
 
@@ -264,9 +274,11 @@ void main() {
         DateTime(2026, 7, 17, 9, 15),
         labelIds: const [manualDemoProjectLabelId],
       ),
-      entryText: const EntryText(
-        plainText:
-            'Mission Control approves the Project Waddle launch corridor.',
+      entryText: EntryText(
+        plainText: _t(
+          'Mission Control approves the Project Waddle launch corridor.',
+          'Die Missionskontrolle genehmigt den Startkorridor für Project Waddle.',
+        ),
       ),
     );
 
@@ -278,10 +290,13 @@ void main() {
         categoryId: missionControl.id,
         flag: EntryFlag.import,
       ),
-      entryText: const EntryText(
-        plainText:
-            'Voice memo: Europa sardines are colder than the diplomatic '
-            'protocol requires.',
+      entryText: EntryText(
+        plainText: _t(
+          'Voice memo: Europa sardines are colder than the diplomatic '
+              'protocol requires.',
+          'Sprachnotiz: Die Europa-Sardinen sind kälter, als es das '
+              'diplomatische Protokoll verlangt.',
+        ),
       ),
       data: AudioData(
         dateFrom: DateTime(2026, 7, 17, 7, 52),
@@ -289,30 +304,39 @@ void main() {
         duration: const Duration(minutes: 7, seconds: 42),
         audioFile: 'europa-cold-chain.m4a',
         audioDirectory: '/manual_demo/',
-        language: 'en',
+        language: manualScreenshotLocale.languageCode,
         transcripts: [
           AudioTranscript(
             created: DateTime(2026, 7, 17, 8, 2),
             library: 'Mistral',
             model: 'voxtral-mini-latest',
-            detectedLanguage: 'en',
+            detectedLanguage: manualScreenshotLocale.languageCode,
             processingTime: const Duration(seconds: 8),
-            transcript:
-                'Project Waddle voice memo. Europa sardine cargo is holding '
-                'at minus eighteen degrees. All 37 emperor penguins are '
-                'present. Recalibrate the zero-gravity fish feeder before '
-                'the launch review, and ask Sir Flaps-a-Lot to stop saluting '
-                'the pressure gauge.',
+            transcript: _t(
+              'Project Waddle voice memo. Europa sardine cargo is holding '
+                  'at minus eighteen degrees. All 37 emperor penguins are '
+                  'present. Recalibrate the zero-gravity fish feeder before '
+                  'the launch review, and ask Sir Flaps-a-Lot to stop saluting '
+                  'the pressure gauge.',
+              'Project-Waddle-Sprachnotiz. Die Europa-Sardinenfracht bleibt '
+                  'bei minus achtzehn Grad. Alle 37 Kaiserpinguine sind '
+                  'anwesend. Kalibriere den Schwerelos-Futterautomaten vor '
+                  'der Startprüfung neu und bitte Sir Flaps-a-Lot, die '
+                  'Druckanzeige nicht mehr zu salutieren.',
+            ),
           ),
           AudioTranscript(
             created: DateTime(2026, 7, 17, 8),
             library: 'Whisper',
             model: 'large-v3-turbo',
-            detectedLanguage: 'en',
+            detectedLanguage: manualScreenshotLocale.languageCode,
             processingTime: const Duration(seconds: 12),
-            transcript:
-                'Europa cold-chain check: sardines stable, emperor penguin '
-                'roll call complete, feeder calibration still pending.',
+            transcript: _t(
+              'Europa cold-chain check: sardines stable, emperor penguin '
+                  'roll call complete, feeder calibration still pending.',
+              'Europa-Kühlkettenprüfung: Sardinen stabil, Kaiserpinguine '
+                  'vollzählig, Futterautomat-Kalibrierung noch ausstehend.',
+            ),
           ),
         ],
       ),
@@ -325,14 +349,19 @@ void main() {
         duration: const Duration(hours: 2),
         categoryId: fishDiplomacy.id,
       ),
-      data: const EventData(
-        title: 'Europa sardine futures summit',
+      data: EventData(
+        title: _t(
+          'Europa sardine futures summit',
+          'Europa-Sardinen-Futures-Gipfel',
+        ),
         status: EventStatus.planned,
         stars: 0,
       ),
-      entryText: const EntryText(
-        plainText:
-            'Price discovery, cold-chain diplomacy, and formal fish hats.',
+      entryText: EntryText(
+        plainText: _t(
+          'Price discovery, cold-chain diplomacy, and formal fish hats.',
+          'Preisfindung, Kühlketten-Diplomatie und formelle Fischhüte.',
+        ),
       ),
     );
 
@@ -342,14 +371,21 @@ void main() {
         DateTime(2026, 7, 17, 7, 35),
         categoryId: missionControl.id,
       ),
-      data: const AiResponseData(
-        model: 'Penguin Operations Analyst',
+      data: AiResponseData(
+        model: _t('Penguin Operations Analyst', 'Pinguinbetriebs-Analyst'),
         systemMessage: '',
-        prompt: 'Summarize the cargo telemetry.',
+        prompt: _t(
+          'Summarize the cargo telemetry.',
+          'Fasse die Frachttelemetrie zusammen.',
+        ),
         thoughts: '',
-        response:
-            'Cargo telemetry is stable. One pod contains 4% more sardines '
-            'than declared, which Mission Control considers excellent news.',
+        response: _t(
+          'Cargo telemetry is stable. One pod contains 4% more sardines '
+              'than declared, which Mission Control considers excellent news.',
+          'Die Frachttelemetrie ist stabil. Eine Kapsel enthält 4 % mehr '
+              'Sardinen als angegeben, was die Missionskontrolle für '
+              'ausgezeichnete Nachrichten hält.',
+        ),
         type: AiResponseType.imageAnalysis,
       ),
     );
@@ -361,10 +397,13 @@ void main() {
         duration: const Duration(minutes: 23),
         labelIds: const [manualDemoProjectLabelId],
       ),
-      entryText: const EntryText(
-        plainText:
-            'Rehearsed the emperor penguin roll call and rerouted one '
-            'confused cargo pod.',
+      entryText: EntryText(
+        plainText: _t(
+          'Rehearsed the emperor penguin roll call and rerouted one '
+              'confused cargo pod.',
+          'Den Zählappell der Kaiserpinguine geprobt und eine verwirrte '
+              'Frachtkapsel umgeleitet.',
+        ),
       ),
     );
 
@@ -373,14 +412,21 @@ void main() {
         'ai-fish-feeder-diagnostic-prompt',
         DateTime(2026, 7, 17, 9),
       ),
-      data: const AiResponseData(
-        model: 'Penguin Operations Coder',
+      data: AiResponseData(
+        model: _t('Penguin Operations Coder', 'Pinguinbetriebs-Programmierer'),
         systemMessage: '',
-        prompt: 'Prepare a diagnostic prompt.',
+        prompt: _t(
+          'Prepare a diagnostic prompt.',
+          'Erstelle einen Diagnose-Prompt.',
+        ),
         thoughts: '',
-        response:
-            'Prepare a read-only diagnostic for the zero-gravity fish feeder. '
-            'Explain any result that points lunch toward Mission Control.',
+        response: _t(
+          'Prepare a read-only diagnostic for the zero-gravity fish feeder. '
+              'Explain any result that points lunch toward Mission Control.',
+          'Erstelle eine schreibgeschützte Diagnose für den '
+              'Schwerelos-Futterautomaten. Erkläre jedes Ergebnis, das das '
+              'Mittagessen in Richtung Missionskontrolle lenkt.',
+        ),
         type: AiResponseType.promptGeneration,
         skillId: 'coding-prompt',
       ),
@@ -459,8 +505,11 @@ void main() {
           RatingDimension(key: 'focus', value: 0.9),
           RatingDimension(key: 'challenge_skill', value: 0.5),
         ],
-        note:
-            'Mission Control briefing stayed focused despite one airborne sardine.',
+        note: _t(
+          'Mission Control briefing stayed focused despite one airborne sardine.',
+          'Das Briefing der Missionskontrolle blieb trotz einer fliegenden '
+              'Sardine fokussiert.',
+        ),
       ),
     );
 
@@ -631,12 +680,18 @@ void main() {
         expect(find.byType(CardWrapperWidget), findsNWidgets(5));
         expect(
           find.text(
-            'Mission Control approves the Project Waddle launch corridor.',
+            _t(
+              'Mission Control approves the Project Waddle launch corridor.',
+              'Die Missionskontrolle genehmigt den Startkorridor für '
+                  'Project Waddle.',
+            ),
           ),
           findsOneWidget,
         );
         expect(
-          find.textContaining('Project Waddle mission log'),
+          find.textContaining(
+            _t('Project Waddle mission log', 'Project-Waddle-Missionslog'),
+          ),
           findsOneWidget,
         );
         await captureScreenshot(
@@ -660,9 +715,15 @@ void main() {
           ),
         );
         await settleFrames(tester, 6);
-        expect(find.text('Filter journal'), findsOneWidget);
-        expect(find.text('Entry types'), findsOneWidget);
-        expect(find.text('Category'), findsWidgets);
+        expect(
+          find.text(_t('Filter journal', 'Tagebuch filtern')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Entry types', 'Eintragstypen')),
+          findsOneWidget,
+        );
+        expect(find.text(_t('Category', 'Kategorie')), findsWidgets);
         await captureScreenshot(
           tester,
           'journal_filters_${viewport}_$theme',
@@ -679,11 +740,14 @@ void main() {
         );
         await tester.tap(find.byType(DesignSystemFloatingActionButton));
         await settleFrames(tester, 6);
-        expect(find.text('Add'), findsOneWidget);
-        expect(find.text('Event'), findsOneWidget);
-        expect(find.text('Task'), findsOneWidget);
-        expect(find.text('Audio Recording'), findsOneWidget);
-        expect(find.text('Text Entry'), findsOneWidget);
+        expect(find.text(_t('Add', 'Hinzufügen')), findsOneWidget);
+        expect(find.text(_t('Event', 'Ereignis')), findsOneWidget);
+        expect(find.text(_t('Task', 'Aufgabe')), findsOneWidget);
+        expect(
+          find.text(_t('Audio Recording', 'Audioaufnahme')),
+          findsOneWidget,
+        );
+        expect(find.text(_t('Text Entry', 'Texteingabe')), findsOneWidget);
         await captureScreenshot(
           tester,
           'journal_create_${viewport}_$theme',
@@ -704,13 +768,16 @@ void main() {
         expect(
           editors.any(
             (editor) => editor.controller.document.toPlainText().contains(
-              'Project Waddle mission log',
+              _t('Project Waddle mission log', 'Project-Waddle-Missionslog'),
             ),
           ),
           isTrue,
         );
         expect(find.text('Project Waddle'), findsWidgets);
-        expect(find.text('Habitat critical'), findsWidgets);
+        expect(
+          find.text(_t('Habitat critical', 'Habitat kritisch')),
+          findsWidgets,
+        );
         final image = find.descendant(
           of: find.byType(EntryImageWidget),
           matching: find.byType(RawImage),
@@ -739,19 +806,31 @@ void main() {
         await settleFrames(tester, 8);
 
         expect(find.byType(EntryDateTimeEditor), findsOneWidget);
-        expect(find.text('Date & Time'), findsOneWidget);
-        expect(find.text('Start time'), findsOneWidget);
-        expect(find.text('End time'), findsOneWidget);
+        expect(
+          find.text(_t('Date & Time', 'Datum & Uhrzeit')),
+          findsOneWidget,
+        );
+        expect(find.text(_t('Start time', 'Startzeit')), findsOneWidget);
+        expect(find.text(_t('End time', 'Endzeit')), findsOneWidget);
         await captureScreenshot(
           tester,
           'journal_date_time_editor_${viewport}_$theme',
           subdir: _subdir,
         );
 
-        await tester.tap(find.text('Friday, July 17, 2026').first);
+        await tester.tap(
+          find
+              .text(
+                _t(
+                  'Friday, July 17, 2026',
+                  'Freitag, 17. Juli 2026',
+                ),
+              )
+              .first,
+        );
         await settleFrames(tester, 8);
-        expect(find.text('Start date'), findsOneWidget);
-        expect(find.text('July 2026'), findsOneWidget);
+        expect(find.text(_t('Start date', 'Startdatum')), findsOneWidget);
+        expect(find.text(_t('July 2026', 'Juli 2026')), findsOneWidget);
         await captureScreenshot(
           tester,
           'journal_date_picker_${viewport}_$theme',
@@ -772,16 +851,26 @@ void main() {
           matching: find.byType(Scrollable),
         );
         await tester.scrollUntilVisible(
-          find.textContaining('Prepare a read-only diagnostic'),
+          find.textContaining(
+            _t(
+              'Prepare a read-only diagnostic',
+              'Erstelle eine schreibgeschützte Diagnose',
+            ),
+          ),
           360,
           scrollable: scrollable.first,
         );
         await settleFrames(tester, 4);
         expect(find.text('Timer'), findsOneWidget);
-        expect(find.text('Images'), findsOneWidget);
+        expect(find.text(_t('Images', 'Bilder')), findsOneWidget);
         expect(find.text('Code'), findsOneWidget);
         expect(
-          find.textContaining('Prepare a read-only diagnostic'),
+          find.textContaining(
+            _t(
+              'Prepare a read-only diagnostic',
+              'Erstelle eine schreibgeschützte Diagnose',
+            ),
+          ),
           findsOneWidget,
         );
         await captureScreenshot(
@@ -816,11 +905,24 @@ void main() {
         await tester.tap(filterTrigger);
         await settleFrames(tester, 6);
 
-        expect(find.text('Filter & Sort'), findsOneWidget);
-        expect(find.text('Newest first'), findsWidgets);
-        expect(find.text('Oldest first'), findsOneWidget);
-        await tester.tap(find.text('Oldest first'));
-        await tester.tap(find.text('Show hidden entries'));
+        expect(
+          find.text(_t('Filter & Sort', 'Filtern & Sortieren')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Newest first', 'Neueste zuerst')),
+          findsWidgets,
+        );
+        expect(
+          find.text(_t('Oldest first', 'Älteste zuerst')),
+          findsOneWidget,
+        );
+        await tester.tap(find.text(_t('Oldest first', 'Älteste zuerst')));
+        await tester.tap(
+          find.text(
+            _t('Show hidden entries', 'Versteckte Einträge anzeigen'),
+          ),
+        );
         await settleFrames(tester, 3);
         await captureScreenshot(
           tester,
@@ -880,7 +982,12 @@ void main() {
           find.byIcon(Icons.keyboard_double_arrow_down_outlined).first,
         );
         await settleFrames(tester, 4);
-        expect(find.textContaining('All 37 emperor penguins'), findsOneWidget);
+        expect(
+          find.textContaining(
+            _t('All 37 emperor penguins', 'Alle 37 Kaiserpinguine'),
+          ),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'recording_transcript_expanded_${viewport}_$theme',
@@ -901,19 +1008,53 @@ void main() {
         await settleFrames(tester, 8);
 
         expect(find.byType(RatingModal), findsOneWidget);
-        expect(find.text('Rate this session'), findsOneWidget);
-        expect(find.text('How productive was this session?'), findsOneWidget);
-        expect(find.text('How energized did you feel?'), findsOneWidget);
-        expect(find.text('How focused were you?'), findsOneWidget);
-        expect(find.text('Just right'), findsOneWidget);
+        expect(
+          find.text(_t('Rate this session', 'Sitzung bewerten')),
+          findsOneWidget,
+        );
         expect(
           find.text(
-            'Mission Control briefing stayed focused despite one airborne sardine.',
+            _t(
+              'How productive was this session?',
+              'Wie produktiv war diese Sitzung?',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            _t(
+              'How energized did you feel?',
+              'Wie energiegeladen hast du dich gefühlt?',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            _t(
+              'How focused were you?',
+              'Wie fokussiert warst du?',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Just right', 'Genau richtig')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            _t(
+              'Mission Control briefing stayed focused despite one airborne sardine.',
+              'Das Briefing der Missionskontrolle blieb trotz einer fliegenden '
+                  'Sardine fokussiert.',
+            ),
           ),
           findsOneWidget,
         );
         final saveButton = tester.widget<FilledButton>(
-          find.widgetWithText(FilledButton, 'Save'),
+          find.widgetWithText(FilledButton, _t('Save', 'Speichern')),
         );
         expect(saveButton.onPressed, isNotNull);
 

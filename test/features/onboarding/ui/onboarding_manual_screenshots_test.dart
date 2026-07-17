@@ -50,9 +50,16 @@ import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
 
-const _typedMission =
-    'Inspect the Europa sardine relay before the emperor penguin roll call';
-const _createdTaskTitle = 'Inspect the Europa sardine relay';
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+
+final String _typedMission = _t(
+  'Inspect the Europa sardine relay before the emperor penguin roll call',
+  'Europa-Sardinenrelais vor dem Zählappell der Kaiserpinguine inspizieren',
+);
+final String _createdTaskTitle = _t(
+  'Inspect the Europa sardine relay',
+  'Europa-Sardinenrelais inspizieren',
+);
 
 class _FakeProbe extends ConnectionProbe {
   _FakeProbe(this.result);
@@ -111,7 +118,6 @@ Widget _app({
         data: MediaQueryData(size: size, disableAnimations: true),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          locale: const Locale('en'),
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
               : DesignSystemTheme.light(),
@@ -123,6 +129,7 @@ Widget _app({
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: manualScreenshotLocale,
           home: home,
         ),
       ),
@@ -212,7 +219,7 @@ void main() {
     ).thenAnswer((invocation) async {
       final name = invocation.namedArguments[#name]! as String;
       return CategoryTestUtils.createTestCategory(
-        id: name == 'Penguin Operations'
+        id: name == _t('Penguin Operations', 'Pinguinbetrieb')
             ? 'penguin-operations'
             : 'mission-control',
         name: name,
@@ -231,10 +238,10 @@ void main() {
       (_) async => OnboardingCaptureResult(
         task: MockTask(id: 'europa-sardine-relay'),
         title: _createdTaskTitle,
-        checklistItems: const [
-          'Verify relay pressure',
-          'Count all emperor penguins',
-          'Route the sardine cargo pods',
+        checklistItems: [
+          _t('Verify relay pressure', 'Relaisdruck prüfen'),
+          _t('Count all emperor penguins', 'Alle Kaiserpinguine zählen'),
+          _t('Route the sardine cargo pods', 'Sardinen-Frachtkapseln routen'),
         ],
         isRealAha: true,
       ),
@@ -325,8 +332,8 @@ void main() {
   }
 
   Future<void> driveToProviders(WidgetTester tester) async {
-    await tapText(tester, 'Choose your AI brain');
-    await tapText(tester, 'More options');
+    await tapText(tester, _t('Choose your AI brain', 'KI-Gehirn wählen'));
+    await tapText(tester, _t('More options', 'Mehr Optionen'));
     expect(find.text('Ollama'), findsOneWidget);
   }
 
@@ -336,45 +343,96 @@ void main() {
 
     await tester.pump(const Duration(milliseconds: 1100));
     await settleFrames(tester, 4);
-    expect(find.text('Connection verified'), findsOneWidget);
+    expect(
+      find.text(_t('Connection verified', 'Verbindung bestätigt')),
+      findsOneWidget,
+    );
 
-    await tapText(tester, 'Connect');
-    await tapText(tester, 'Get started');
-    expect(find.text('How should recording feel?'), findsOneWidget);
-    await tapText(tester, 'Continue');
+    await tapText(tester, _t('Connect', 'Verbinden'));
+    await tapText(tester, _t('Get started', "Los geht's"));
+    expect(
+      find.text(
+        _t('How should recording feel?', 'Wie soll die Aufnahme wirken?'),
+      ),
+      findsOneWidget,
+    );
+    await tapText(tester, _t('Continue', 'Weiter'));
 
-    expect(find.text('Where should your AI work?'), findsOneWidget);
-    await tapText(tester, 'Add your own', frames: 4);
-    await tester.enterText(find.byType(TextField).last, 'Penguin Operations');
+    expect(
+      find.text(
+        _t('Where should your AI work?', 'Wo soll deine KI arbeiten?'),
+      ),
+      findsOneWidget,
+    );
+    await tapText(tester, _t('Add your own', 'Eigene hinzufügen'), frames: 4);
+    await tester.enterText(
+      find.byType(TextField).last,
+      _t('Penguin Operations', 'Pinguinbetrieb'),
+    );
     await tapText(tester, 'OK');
-    expect(find.text('Penguin Operations'), findsOneWidget);
+    expect(
+      find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
+      findsOneWidget,
+    );
 
-    await tapText(tester, 'Add your own', frames: 4);
-    await tester.enterText(find.byType(TextField).last, 'Mission Control');
+    await tapText(tester, _t('Add your own', 'Eigene hinzufügen'), frames: 4);
+    await tester.enterText(
+      find.byType(TextField).last,
+      _t('Mission Control', 'Missionskontrolle'),
+    );
     await tapText(tester, 'OK');
-    expect(find.text('Mission Control'), findsOneWidget);
-    await tapText(tester, 'Continue', frames: 12);
+    expect(
+      find.text(_t('Mission Control', 'Missionskontrolle')),
+      findsOneWidget,
+    );
+    await tapText(tester, _t('Continue', 'Weiter'), frames: 12);
 
-    expect(find.text('Create your first task'), findsOneWidget);
-    expect(find.text('Penguin Operations'), findsOneWidget);
-    expect(find.text('Mission Control'), findsOneWidget);
+    expect(
+      find.text(_t('Create your first task', 'Erstelle deine erste Aufgabe')),
+      findsOneWidget,
+    );
+    expect(
+      find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
+      findsOneWidget,
+    );
+    expect(
+      find.text(_t('Mission Control', 'Missionskontrolle')),
+      findsOneWidget,
+    );
   }
 
   Future<void> driveToFirstTaskListening(WidgetTester tester) async {
     await driveToFirstTaskPrompt(tester);
-    await tester.tap(find.bySemanticsLabel('Record your thought'));
+    await tester.tap(
+      find.bySemanticsLabel(
+        _t('Record your thought', 'Deinen Gedanken aufnehmen'),
+      ),
+    );
     await settleFrames(tester, 6);
-    expect(find.text("Listening… tap when you're done"), findsOneWidget);
+    expect(
+      find.text(
+        _t(
+          "Listening… tap when you're done",
+          'Ich höre zu … tippe, wenn du fertig bist',
+        ),
+      ),
+      findsOneWidget,
+    );
     expect(find.byType(AiVoiceInputShader), findsOneWidget);
   }
 
   Future<void> driveToCreatedTask(WidgetTester tester) async {
     await driveToFirstTaskPrompt(tester);
-    await tapText(tester, 'Rather type?', frames: 4);
+    await tapText(tester, _t('Rather type?', 'Lieber tippen?'), frames: 4);
     await tester.enterText(find.byType(TextField).last, _typedMission);
     await tapText(tester, 'OK', frames: 10);
     await settleFrames(tester, 6);
-    expect(find.text('Your first task is ready'), findsOneWidget);
+    expect(
+      find.text(
+        _t('Your first task is ready', 'Deine erste Aufgabe ist fertig'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text(_createdTaskTitle), findsOneWidget);
   }
 
@@ -416,12 +474,22 @@ void main() {
       switch (scenario) {
         case _OnboardingCase.settings:
           expect(
-            find.text("You've created your first AI task"),
+            find.text(
+              _t(
+                "You've created your first AI task",
+                'Du hast deine erste KI-Aufgabe erstellt',
+              ),
+            ),
             findsOneWidget,
           );
         case _OnboardingCase.welcome:
           expect(
-            find.text('Talk. Lotti turns it into a plan.'),
+            find.text(
+              _t(
+                'Talk. Lotti turns it into a plan.',
+                'Sprich. Lotti macht einen Plan daraus.',
+              ),
+            ),
             findsOneWidget,
           );
         case _OnboardingCase.providers:

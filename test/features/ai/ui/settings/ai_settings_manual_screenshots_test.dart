@@ -61,6 +61,7 @@ import '../../../../widget_test_utils.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
 
 const String _subdir = 'ai_settings';
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
 enum _AiSurface {
   providers,
@@ -75,7 +76,7 @@ enum _AiSurface {
 
 final CategoryDefinition _missionControlCategory = CategoryDefinition(
   id: 'manual-mission-control',
-  name: 'Mission Control',
+  name: _t('Mission Control', 'Missionskontrolle'),
   color: '#4F9DDE',
   createdAt: manualDemoNow.subtract(const Duration(days: 120)),
   updatedAt: manualDemoNow,
@@ -183,7 +184,6 @@ Widget _app({
         data: MediaQueryData(size: device.size),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          locale: const Locale('en'),
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
               : DesignSystemTheme.light(),
@@ -195,6 +195,7 @@ Widget _app({
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: manualScreenshotLocale,
           home: AppCommandHost(
             handlers: const <AppCommandId, AppCommandHandler>{},
             platform: device.isPhone
@@ -449,10 +450,22 @@ void main() {
             brightness: brightness,
             world: world,
           );
-          expect(find.text('Mission Control Router'), findsOneWidget);
-          expect(find.text('Habitat Local Lab'), findsOneWidget);
-          expect(find.text('Orbital Vision'), findsOneWidget);
-          expect(find.text('Penguin Audio Bay'), findsOneWidget);
+          expect(
+            find.text(_t('Mission Control Router', 'Missionskontroll-Router')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(_t('Habitat Local Lab', 'Lokales Habitat-Labor')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(_t('Orbital Vision', 'Orbitaler Blick')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(_t('Penguin Audio Bay', 'Pinguin-Audiobucht')),
+            findsOneWidget,
+          );
           await captureScreenshot(
             tester,
             'ai_providers_${viewport}_$theme',
@@ -471,9 +484,23 @@ void main() {
             brightness: brightness,
             world: world,
           );
-          expect(find.text('Waddle Command 70B'), findsOneWidget);
-          expect(find.text('Sardine Logistics 14B'), findsOneWidget);
-          expect(find.text('Project Waddle Cover Artist'), findsOneWidget);
+          expect(
+            find.text(_t('Waddle Command 70B', 'Watschelkommando 70B')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(_t('Sardine Logistics 14B', 'Sardinenlogistik 14B')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(
+              _t(
+                'Project Waddle Cover Artist',
+                'Project-Waddle-Titelkünstler',
+              ),
+            ),
+            findsOneWidget,
+          );
           await captureScreenshot(
             tester,
             'ai_models_${viewport}_$theme',
@@ -492,9 +519,20 @@ void main() {
             brightness: brightness,
             world: world,
           );
-          expect(find.text('Project Waddle Command'), findsOneWidget);
-          expect(find.text('Habitat Local-First'), findsOneWidget);
-          expect(find.text('Fish Diplomacy'), findsOneWidget);
+          expect(
+            find.text(
+              _t('Project Waddle Command', 'Project-Waddle-Kommando'),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.text(_t('Habitat Local-First', 'Habitat zuerst lokal')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(_t('Fish Diplomacy', 'Fischdiplomatie')),
+            findsOneWidget,
+          );
           await captureScreenshot(
             tester,
             'ai_profiles_${viewport}_$theme',
@@ -515,10 +553,19 @@ void main() {
             brightness: brightness,
             world: world,
           );
-          expect(find.text('Mission Control Router'), findsWidgets);
-          expect(find.text('Connection'), findsOneWidget);
-          expect(find.text('Waddle Command 70B'), findsAtLeastNWidgets(1));
-          expect(find.text('Emperor Reasoning XL'), findsAtLeastNWidgets(1));
+          expect(
+            find.text(_t('Mission Control Router', 'Missionskontroll-Router')),
+            findsWidgets,
+          );
+          expect(find.text(_t('Connection', 'Verbindung')), findsOneWidget);
+          expect(
+            find.text(_t('Waddle Command 70B', 'Watschelkommando 70B')),
+            findsAtLeastNWidgets(1),
+          );
+          expect(
+            find.text(_t('Emperor Reasoning XL', 'Kaiserpinguin-Denken XL')),
+            findsAtLeastNWidgets(1),
+          );
           await captureScreenshot(
             tester,
             'ai_provider_detail_${viewport}_$theme',
@@ -537,12 +584,18 @@ void main() {
               ),
             );
           } else {
-            await tester.tap(find.text('Edit').first);
+            await tester.tap(find.text(_t('Edit', 'Bearbeiten')).first);
           }
           await settleFrames(tester, 8);
-          expect(find.text('Mission Control Router'), findsWidgets);
-          expect(find.text('Provider Type'), findsOneWidget);
-          expect(find.text('API Key'), findsOneWidget);
+          expect(
+            find.text(_t('Mission Control Router', 'Missionskontroll-Router')),
+            findsWidgets,
+          );
+          expect(
+            find.text(_t('Provider Type', 'Anbietertyp')),
+            findsOneWidget,
+          );
+          expect(find.text(_t('API Key', 'API-Schlüssel')), findsOneWidget);
           await captureScreenshot(
             tester,
             'ai_provider_editor_${viewport}_$theme',
@@ -561,10 +614,22 @@ void main() {
             brightness: brightness,
             world: world,
           );
-          expect(find.text('Edit Model'), findsOneWidget);
-          expect(find.text('Waddle Command 70B'), findsWidgets);
-          expect(find.text('Mission Control Router'), findsWidgets);
-          expect(find.text('Capabilities'), findsOneWidget);
+          expect(
+            find.text(_t('Edit Model', 'Modell bearbeiten')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(_t('Waddle Command 70B', 'Watschelkommando 70B')),
+            findsWidgets,
+          );
+          expect(
+            find.text(_t('Mission Control Router', 'Missionskontroll-Router')),
+            findsWidgets,
+          );
+          expect(
+            find.text(_t('Capabilities', 'Fähigkeiten')),
+            findsOneWidget,
+          );
           await captureScreenshot(
             tester,
             'ai_model_editor_${viewport}_$theme',
@@ -585,21 +650,40 @@ void main() {
             brightness: brightness,
             world: world,
           );
-          expect(find.text('Edit Profile'), findsOneWidget);
-          expect(find.text('Project Waddle Command'), findsOneWidget);
-          expect(find.text('Waddle Command 70B'), findsOneWidget);
+          expect(
+            find.text(_t('Edit Profile', 'Profil bearbeiten')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(
+              _t('Project Waddle Command', 'Project-Waddle-Kommando'),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.text(_t('Waddle Command 70B', 'Watschelkommando 70B')),
+            findsOneWidget,
+          );
           await captureScreenshot(
             tester,
             'ai_profile_editor_${viewport}_$theme',
             subdir: _subdir,
           );
 
-          final thinkingField = find.text('Thinking *');
+          final thinkingField = find.text(_t('Thinking *', 'Denken *'));
           expect(thinkingField, findsOneWidget);
-          await tester.tap(find.text('Waddle Command 70B'));
+          await tester.tap(
+            find.text(_t('Waddle Command 70B', 'Watschelkommando 70B')),
+          );
           await settleFrames(tester, 6);
-          expect(find.text('Choose a model'), findsOneWidget);
-          expect(find.text('Waddle Command 70B'), findsOneWidget);
+          expect(
+            find.text(_t('Choose a model', 'Modell auswählen')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(_t('Waddle Command 70B', 'Watschelkommando 70B')),
+            findsOneWidget,
+          );
           expect(find.text('OpenRouter'), findsOneWidget);
           expect(find.text('Ollama'), findsOneWidget);
           await captureScreenshot(
@@ -621,9 +705,12 @@ void main() {
               brightness: brightness,
               world: world,
             );
-            expect(find.text('AI Impact'), findsOneWidget);
+            expect(find.text(_t('AI Impact', 'KI-Impact')), findsOneWidget);
             expect(find.text(formatCredits(1.2)), findsOneWidget);
-            expect(find.text('Cost by category'), findsOneWidget);
+            expect(
+              find.text(_t('Cost by category', 'Kosten nach Kategorie')),
+              findsOneWidget,
+            );
             await captureScreenshot(
               tester,
               'ai_usage_${viewport}_$theme',
@@ -645,9 +732,20 @@ void main() {
             brightness: brightness,
             world: world,
           );
-          expect(find.text('Inference Profiles'), findsOneWidget);
-          expect(find.text('Project Waddle Command'), findsOneWidget);
-          expect(find.text('Habitat Local-First'), findsOneWidget);
+          expect(
+            find.text(_t('Inference Profiles', 'Inferenz-Profile')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(
+              _t('Project Waddle Command', 'Project-Waddle-Kommando'),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.text(_t('Habitat Local-First', 'Habitat zuerst lokal')),
+            findsOneWidget,
+          );
           await captureScreenshot(
             tester,
             'ai_legacy_profiles_${viewport}_$theme',

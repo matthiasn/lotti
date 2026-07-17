@@ -36,6 +36,7 @@ import 'package:path/path.dart' as p;
 
 import '../../../mocks/mocks.dart';
 import '../../categories/test_utils.dart';
+import '../../daily_os_next/screenshot_harness.dart';
 import 'insights_test_scenarios.dart';
 
 // Deliberately LOCAL, matching app reality (`clock.now()` is always
@@ -53,16 +54,37 @@ const _missionControlId = 'manual-mission-control';
 const _fishDiplomacyId = 'manual-fish-diplomacy';
 const _orbitalResearchId = 'manual-orbital-research';
 const _humanMaintenanceId = 'manual-human-maintenance';
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
 CategoryDefinition _manualCategory(String id, String name, String color) =>
     CategoryTestUtils.createTestCategory(id: id, name: name, color: color);
 
 final _manualCategories = <CategoryDefinition>[
-  _manualCategory(_penguinOperationsId, 'Penguin Operations', '#40B5E8'),
-  _manualCategory(_missionControlId, 'Mission Control', '#6750A4'),
-  _manualCategory(_fishDiplomacyId, 'Fish Diplomacy', '#FBA337'),
-  _manualCategory(_orbitalResearchId, 'Orbital Research', '#1F7963'),
-  _manualCategory(_humanMaintenanceId, 'Human Maintenance', '#3CB371'),
+  _manualCategory(
+    _penguinOperationsId,
+    _t('Penguin Operations', 'Pinguinbetrieb'),
+    '#40B5E8',
+  ),
+  _manualCategory(
+    _missionControlId,
+    _t('Mission Control', 'Missionskontrolle'),
+    '#6750A4',
+  ),
+  _manualCategory(
+    _fishDiplomacyId,
+    _t('Fish Diplomacy', 'Fischdiplomatie'),
+    '#FBA337',
+  ),
+  _manualCategory(
+    _orbitalResearchId,
+    _t('Orbital Research', 'Orbitalforschung'),
+    '#1F7963',
+  ),
+  _manualCategory(
+    _humanMaintenanceId,
+    _t('Human Maintenance', 'Menschenwartung'),
+    '#3CB371',
+  ),
 ];
 
 InsightsTimeRow _manualRow(
@@ -234,6 +256,7 @@ Future<void> _pumpDashboard(
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
+            locale: manualScreenshotLocale,
             home: const TimeAnalysisPage(),
           ),
         ),
@@ -564,10 +587,13 @@ void main() {
           brightness: brightness,
           size: size,
         );
-        expect(find.text('Time Analysis'), findsOneWidget);
-        expect(find.text('TOTAL'), findsWidgets);
-        expect(find.text('FOCUS'), findsOneWidget);
-        expect(find.text('Penguin Operations'), findsWidgets);
+        expect(find.text(_t('Time Analysis', 'Zeitanalyse')), findsOneWidget);
+        expect(find.text(_t('TOTAL', 'GESAMT')), findsWidgets);
+        expect(find.text(_t('FOCUS', 'FOKUS')), findsOneWidget);
+        expect(
+          find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
+          findsWidgets,
+        );
         await _capture(tester, 'time_analysis_overview_${viewport}_$theme');
       });
 
@@ -584,12 +610,24 @@ void main() {
           size: size,
         );
 
-        final runningTotal = find.text('Running total').last;
+        final runningTotal = find
+            .text(
+              _t('Running total', 'Laufende Summe'),
+            )
+            .last;
         await tester.ensureVisible(runningTotal);
         await tester.pump(const Duration(milliseconds: 300));
         await _tap(tester, runningTotal);
 
-        expect(find.text('Running total over the range'), findsOneWidget);
+        expect(
+          find.text(
+            _t(
+              'Running total over the range',
+              'Laufende Summe im Zeitraum',
+            ),
+          ),
+          findsOneWidget,
+        );
         expect(find.byType(LineChart), findsOneWidget);
         await tester.ensureVisible(find.byType(LineChart));
         await tester.pump(const Duration(milliseconds: 300));
@@ -615,10 +653,10 @@ void main() {
           brightness: brightness,
           size: size,
         );
-        await _tap(tester, find.text('Compare'));
+        await _tap(tester, find.text(_t('Compare', 'Vergleichen')));
         final comparisonHeader = size == _mobileSize
-            ? find.text('Change')
-            : find.text('PREVIOUS');
+            ? find.text(_t('Change', 'Änderung'))
+            : find.text(_t('PREVIOUS', 'VORHER'));
         if (size == _mobileSize) {
           final list = find.byType(ListView);
           for (
@@ -633,7 +671,10 @@ void main() {
           await tester.pump(const Duration(milliseconds: 300));
         }
         expect(comparisonHeader, findsOneWidget);
-        expect(find.text('Penguin Operations'), findsWidgets);
+        expect(
+          find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
+          findsWidgets,
+        );
         await _capture(tester, 'time_analysis_compare_${viewport}_$theme');
       });
     }

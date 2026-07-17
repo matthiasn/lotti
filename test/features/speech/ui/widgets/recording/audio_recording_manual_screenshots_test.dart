@@ -23,6 +23,7 @@ import '../../../../daily_os_next/screenshot_harness.dart';
 
 const _linkedTaskId = 'payment-confirmation';
 const _categoryId = 'focused-work';
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 const ValueKey<String> _openRecordingKey = ValueKey<String>(
   'open-audio-recording',
 );
@@ -62,9 +63,12 @@ void main() {
 
         expect(find.byType(AudioRecordingModalContent), findsOneWidget);
         expect(find.text('0:00:42'), findsOneWidget);
-        expect(find.text('STOP'), findsOneWidget);
+        expect(find.text(_t('STOP', 'STOPP')), findsOneWidget);
         expect(
-          find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+          find.widgetWithText(
+            LottiAnimatedCheckbox,
+            'Speech Recognition',
+          ),
           findsOneWidget,
         );
         await captureScreenshot(
@@ -120,10 +124,16 @@ Future<void> _pumpActiveRecording(
               : DesignSystemTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: manualScreenshotLocale,
           home: Builder(
             builder: (context) => Scaffold(
               appBar: AppBar(
-                title: const Text('Inspect orbital penguin habitat'),
+                title: Text(
+                  _t(
+                    'Inspect orbital penguin habitat',
+                    'Pinguin-Habitat im Orbit inspizieren',
+                  ),
+                ),
               ),
               body: Center(
                 child: FilledButton.icon(
@@ -134,7 +144,12 @@ Future<void> _pumpActiveRecording(
                     categoryId: _categoryId,
                   ),
                   icon: const Icon(Icons.mic_rounded),
-                  label: const Text('Record habitat update'),
+                  label: Text(
+                    _t(
+                      'Record habitat update',
+                      'Habitat-Update aufnehmen',
+                    ),
+                  ),
                 ),
               ),
             ),

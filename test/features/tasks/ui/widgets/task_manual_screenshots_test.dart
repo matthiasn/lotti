@@ -76,12 +76,19 @@ class _ManualRunningInferenceController extends InferenceStatusController {
 
 const _manualTaskAgentId = 'agent-habitat-watcher';
 const _manualTaskAgentStateId = 'state-habitat-watcher';
-const _manualTaskAgentName = 'Habitat Watcher';
-const _manualTaskAgentTldr =
-    'All 37 emperor penguins are accounted for. Habitat pressure held at '
-    '101.3 kPa overnight; the remaining launch risk is the zero-gravity '
-    'sardine feeder calibration.';
-const _manualTaskAgentReport = '''
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+
+final String _manualTaskAgentName = _t('Habitat Watcher', 'Habitatwächter');
+final String _manualTaskAgentTldr = _t(
+  'All 37 emperor penguins are accounted for. Habitat pressure held at '
+      '101.3 kPa overnight; the remaining launch risk is the zero-gravity '
+      'sardine feeder calibration.',
+  'Alle 37 Kaiserpinguine sind vollzählig. Der Habitatdruck blieb über Nacht '
+      'bei 101,3 kPa; als einziges Startrisiko bleibt die Kalibrierung des '
+      'Schwerelos-Futterautomaten.',
+);
+final String _manualTaskAgentReport = _t(
+  '''
 ## Latest assessment
 
 - Pressure seals A–F stayed stable across the night shift.
@@ -91,7 +98,19 @@ const _manualTaskAgentReport = '''
 ## Recommended next step
 
 Run the feeder test, attach the telemetry image, then request launch approval.
-''';
+''',
+  '''
+## Aktuelle Einschätzung
+
+- Die Druckdichtungen A–F blieben während der Nachtschicht stabil.
+- 840 Sardinen sind geladen; die Futterautomat-Kalibrierung verhindert noch die Freigabe.
+- Die Freigabe der Missionskontrolle muss vor dem Zählappell um 06:30 Uhr vorliegen.
+
+## Empfohlener nächster Schritt
+
+Führe den Automatentest aus, hänge das Telemetriebild an und fordere dann die Startfreigabe an.
+''',
+);
 
 final AiConfigModel _manualThinkingModel = manualDemoAiModels.firstWhere(
   (model) => model.id == manualWaddleCommandModelId,
@@ -133,7 +152,10 @@ final AgentReportEntity _manualAgentReport = makeTestReport(
   createdAt: manualDemoNow.subtract(const Duration(minutes: 4)),
   tldr: _manualTaskAgentTldr,
   content: _manualTaskAgentReport,
-  oneLiner: 'Habitat stable; zero-gravity sardine feeder blocks sign-off.',
+  oneLiner: _t(
+    'Habitat stable; zero-gravity sardine feeder blocks sign-off.',
+    'Habitat stabil; der Schwerelos-Futterautomat verhindert die Freigabe.',
+  ),
   provenance: ReportInferenceProvenance(
     runKey: 'run-habitat-night-watch',
     threadId: 'thread-project-waddle-habitat',
@@ -186,16 +208,27 @@ List<PendingSuggestion> _manualTaskAgentSuggestions() {
     threadId: 'thread-project-waddle-habitat',
     runKey: 'run-habitat-night-watch',
     createdAt: manualDemoNow.subtract(const Duration(minutes: 3)),
-    items: const [
+    items: [
       ChangeItem(
         toolName: 'add_checklist_item',
-        args: {'title': 'Run zero-gravity sardine feeder test'},
-        humanSummary: 'Add: "Run zero-gravity sardine feeder test"',
+        args: {
+          'title': _t(
+            'Run zero-gravity sardine feeder test',
+            'Schwerelos-Futterautomaten testen',
+          ),
+        },
+        humanSummary: _t(
+          'Add: "Run zero-gravity sardine feeder test"',
+          'Hinzufügen: "Schwerelos-Futterautomaten testen"',
+        ),
       ),
       ChangeItem(
         toolName: 'update_task_estimate',
         args: {'minutes': 75},
-        humanSummary: 'Estimate: 45m → 1h 15m',
+        humanSummary: _t(
+          'Estimate: 45m → 1h 15m',
+          'Schätzung: 45 Min. → 1 Std. 15 Min.',
+        ),
       ),
     ],
   );
@@ -406,7 +439,12 @@ void main() {
 
         expect(find.byType(TasksTabPage), findsOneWidget);
         expect(
-          find.text('Inspect orbital penguin habitat'),
+          find.text(
+            _t(
+              'Inspect orbital penguin habitat',
+              'Pinguin-Habitat im Orbit inspizieren',
+            ),
+          ),
           findsAtLeastNWidgets(1),
         );
         expect(find.byType(CoverArtThumbnail), findsAtLeastNWidgets(3));
@@ -450,7 +488,15 @@ void main() {
         );
 
         expect(find.byType(TaskDetailsPage), findsOneWidget);
-        expect(find.text('Inspect orbital penguin habitat'), findsWidgets);
+        expect(
+          find.text(
+            _t(
+              'Inspect orbital penguin habitat',
+              'Pinguin-Habitat im Orbit inspizieren',
+            ),
+          ),
+          findsWidgets,
+        );
         expect(find.text(_manualTaskAgentName), findsOneWidget);
         await captureScreenshot(
           tester,
@@ -473,16 +519,31 @@ void main() {
         );
 
         await _focusTaskAgentCard(tester, device: device);
-        expect(find.text('AI summary'), findsOneWidget);
-        expect(find.text(_manualTaskAgentName), findsOneWidget);
-        expect(find.text(_manualTaskAgentTldr), findsOneWidget);
-        expect(find.text('Automatic updates'), findsOneWidget);
         expect(
-          find.text('Bundle task changes and update after two minutes.'),
+          find.text(_t('AI summary', 'KI-Zusammenfassung')),
           findsOneWidget,
         );
-        expect(find.textContaining('Waddle Command 70B'), findsOneWidget);
-        expect(find.text('Read more'), findsOneWidget);
+        expect(find.text(_manualTaskAgentName), findsOneWidget);
+        expect(find.text(_manualTaskAgentTldr), findsOneWidget);
+        expect(
+          find.text(_t('Automatic updates', 'Automatische Updates')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            _t(
+              'Bundle task changes and update after two minutes.',
+              'Aufgabenänderungen werden gebündelt und nach zwei Minuten '
+                  'aktualisiert.',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(_t('Waddle Command 70B', 'Watschelkommando 70B')),
+          findsOneWidget,
+        );
+        expect(find.text(_t('Read more', 'Mehr lesen')), findsOneWidget);
         await captureScreenshot(
           tester,
           'task_agent_collapsed_${viewport}_$theme',
@@ -509,10 +570,21 @@ void main() {
         );
         await settleFrames(tester, 8);
         await _focusTaskAgentCard(tester, device: device);
-        expect(find.text('Latest assessment'), findsOneWidget);
-        expect(find.text('Recommended next step'), findsOneWidget);
-        expect(find.text('Open agent internals'), findsOneWidget);
-        expect(find.text('Show less'), findsOneWidget);
+        expect(
+          find.text(_t('Latest assessment', 'Aktuelle Einschätzung')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            _t('Recommended next step', 'Empfohlener nächster Schritt'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Open agent internals', 'Agent-Internes öffnen')),
+          findsOneWidget,
+        );
+        expect(find.text(_t('Show less', 'Weniger anzeigen')), findsOneWidget);
         await captureScreenshot(
           tester,
           'task_agent_expanded_${viewport}_$theme',
@@ -537,14 +609,25 @@ void main() {
 
         await _focusTaskAgentCard(tester, device: captureDevice);
         await _focusTaskAgentSuggestions(tester, device: captureDevice);
-        expect(find.text('Proposed changes'), findsOneWidget);
-        expect(find.text('2 pending'), findsOneWidget);
         expect(
-          find.text('"Run zero-gravity sardine feeder test"'),
+          find.text(_t('Proposed changes', 'Vorgeschlagene Änderungen')),
           findsOneWidget,
         );
-        expect(find.text('45m → 1h 15m'), findsOneWidget);
-        expect(find.text('Confirm all'), findsOneWidget);
+        expect(find.text(_t('2 pending', '2 ausstehend')), findsOneWidget);
+        expect(
+          find.text(
+            _t(
+              '"Run zero-gravity sardine feeder test"',
+              '"Schwerelos-Futterautomaten testen"',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('45m → 1h 15m', '45 Min. → 1 Std. 15 Min.')),
+          findsOneWidget,
+        );
+        expect(find.text(_t('Confirm all', 'Alle bestätigen')), findsOneWidget);
         await captureScreenshot(
           tester,
           'task_agent_suggestions_${viewport}_$theme',
@@ -571,17 +654,38 @@ void main() {
         await _focusTaskAgentCard(tester, device: device);
         expect(
           find.text(
-            'Automatic updates are off. Wake the agent when you want a fresh '
-            'report.',
+            _t(
+              'Automatic updates are off. Wake the agent when you want a fresh '
+                  'report.',
+              'Automatische Updates sind aus. Wecke den Agenten, wenn du einen '
+                  'aktuellen Bericht möchtest.',
+            ),
           ),
           findsOneWidget,
         );
-        expect(find.text('This summary is out of date'), findsOneWidget);
         expect(
-          find.text('The task changed after this summary was generated.'),
+          find.text(
+            _t(
+              'This summary is out of date',
+              'Diese Zusammenfassung ist veraltet',
+            ),
+          ),
           findsOneWidget,
         );
-        expect(find.text('Wake agent'), findsOneWidget);
+        expect(
+          find.text(
+            _t(
+              'The task changed after this summary was generated.',
+              'Die Aufgabe hat sich geändert, nachdem diese Zusammenfassung '
+                  'erstellt wurde.',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Wake agent', 'Agenten aufwecken')),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'task_agent_manual_${viewport}_$theme',
@@ -602,7 +706,10 @@ void main() {
 
         await tester.tap(find.byIcon(Icons.filter_list_rounded).first);
         await settleFrames(tester, 6);
-        expect(find.text('Filter tasks'), findsOneWidget);
+        expect(
+          find.text(_t('Filter tasks', 'Aufgaben filtern')),
+          findsOneWidget,
+        );
         expect(
           find.byKey(
             const ValueKey('design-system-task-filter-priority-p1'),
@@ -641,10 +748,18 @@ void main() {
 
         await tester.tap(find.byIcon(Icons.assistant_outlined));
         await settleFrames(tester, 6);
-        expect(find.text('Generate…'), findsOneWidget);
+        expect(find.text(_t('Generate…', 'Generieren…')), findsOneWidget);
         expect(find.text('Skills'), findsOneWidget);
-        expect(find.text('Inspect habitat photo'), findsOneWidget);
-        expect(find.textContaining('pressure-gauge anomalies'), findsOneWidget);
+        expect(
+          find.text(_t('Inspect habitat photo', 'Habitatfoto prüfen')),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(
+            _t('pressure-gauge anomalies', 'auffällige Druckanzeigen'),
+          ),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'ai_skills_${viewport}_$theme',
@@ -674,9 +789,12 @@ void main() {
           ),
         );
         await settleFrames(tester, 8);
-        expect(find.text('Add'), findsOneWidget);
-        expect(find.text('Checklist'), findsOneWidget);
-        expect(find.text('Audio Recording'), findsOneWidget);
+        expect(find.text(_t('Add', 'Hinzufügen')), findsOneWidget);
+        expect(find.text(_t('Checklist', 'Checkliste')), findsOneWidget);
+        expect(
+          find.text(_t('Audio Recording', 'Audioaufnahme')),
+          findsOneWidget,
+        );
         expect(find.text('Timer'), findsOneWidget);
         await captureScreenshot(
           tester,
@@ -723,7 +841,12 @@ void main() {
           ),
         );
         await settleFrames(tester, 10);
-        expect(find.text('Select Reference Images'), findsOneWidget);
+        expect(
+          find.text(
+            _t('Select Reference Images', 'Referenzbilder auswählen'),
+          ),
+          findsOneWidget,
+        );
         final modalImages = find.descendant(
           of: find.byType(CoverArtSkillModal),
           matching: find.byType(Image),
@@ -741,10 +864,13 @@ void main() {
           subdir: 'manual',
         );
 
-        await tester.tap(find.text('Continue'));
+        await tester.tap(find.text(_t('Continue', 'Weiter')));
         await settleFrames(tester, 8);
         await tester.pump(const Duration(milliseconds: 720));
-        expect(find.text('Generating image...'), findsOneWidget);
+        expect(
+          find.text(_t('Generating image...', 'Bild wird generiert...')),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'task_cover_generating_${viewport}_$theme',
@@ -774,13 +900,31 @@ void main() {
           ),
         );
         await settleFrames(tester, 30);
-        expect(find.text('Link existing task...'), findsOneWidget);
         expect(
-          find.text('Confirm the interplanetary sardine cargo pods'),
+          find.text(
+            _t(
+              'Link existing task...',
+              'Vorhandene Aufgabe verknüpfen...',
+            ),
+          ),
           findsOneWidget,
         );
         expect(
-          find.text('Ask Legal whether a penguin is a passenger'),
+          find.text(
+            _t(
+              'Confirm the interplanetary sardine cargo pods',
+              'Interplanetare Sardinen-Frachtkapseln bestätigen',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            _t(
+              'Ask Legal whether a penguin is a passenger',
+              'Rechtsabteilung fragen, ob ein Pinguin Passagier ist',
+            ),
+          ),
           findsOneWidget,
         );
         await captureScreenshot(
@@ -853,13 +997,22 @@ Future<void> _pumpTaskSurface(
             ),
             taskOneLinerProvider.overrideWith(
               (ref, taskId) async => switch (taskId) {
-                manualOrbitalHabitatTaskId =>
+                manualOrbitalHabitatTaskId => _t(
                   'Pressure stable · 37 penguins accounted for',
-                manualFishFeederTaskId =>
+                  'Druck stabil · 37 Pinguine vollzählig',
+                ),
+                manualFishFeederTaskId => _t(
                   'Feeder calibration blocks the habitat demo',
-                manualSardineCargoTaskId =>
+                  'Futterautomat-Kalibrierung blockiert die Habitat-Demo',
+                ),
+                manualSardineCargoTaskId => _t(
                   'Europa cold-chain manifest ready to reconcile',
-                _ => 'Awaiting an answer from orbital transport counsel',
+                  'Europa-Kühlkettenmanifest bereit zum Abgleich',
+                ),
+                _ => _t(
+                  'Awaiting an answer from orbital transport counsel',
+                  'Warte auf Antwort der orbitalen Transportrechtsberatung',
+                ),
               },
             ),
             hasAvailableSkillsProvider((
@@ -944,6 +1097,7 @@ Future<void> _pumpTaskSurface(
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
+            locale: manualScreenshotLocale,
             home: surface,
           ),
         ),
@@ -957,7 +1111,7 @@ Future<void> _focusTaskAgentCard(
   WidgetTester tester, {
   required ScreenshotDevice device,
 }) async {
-  final summary = find.text('AI summary');
+  final summary = find.text(_t('AI summary', 'KI-Zusammenfassung'));
   final scrollable = find.byType(Scrollable).first;
   await tester.scrollUntilVisible(
     summary,
@@ -982,7 +1136,9 @@ Future<void> _focusTaskAgentSuggestions(
   WidgetTester tester, {
   required ScreenshotDevice device,
 }) async {
-  final proposals = find.text('Proposed changes');
+  final proposals = find.text(
+    _t('Proposed changes', 'Vorgeschlagene Änderungen'),
+  );
   final scrollable = find.byType(Scrollable).first;
   await tester.scrollUntilVisible(
     proposals,

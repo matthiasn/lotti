@@ -40,6 +40,7 @@ import '../../../agents/test_utils.dart';
 import '../../screenshot_harness.dart';
 
 const String _subdir = 'daily_os_settings';
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
 class _PreferencesController extends DailyOsPreferencesController {
   @override
@@ -63,7 +64,6 @@ Widget _app({
         data: MediaQueryData(size: size),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          locale: const Locale('en'),
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
               : DesignSystemTheme.light(),
@@ -75,6 +75,7 @@ Widget _app({
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: manualScreenshotLocale,
           home: home,
         ),
       ),
@@ -131,9 +132,12 @@ void main() {
     final template = makeTestTemplate(
       id: dayAgentTemplateId,
       agentId: dayAgentTemplateId,
-      displayName: 'Project Waddle Day Planner',
+      displayName: _t(
+        'Project Waddle Day Planner',
+        'Project-Waddle-Tagesplaner',
+      ),
       kind: AgentTemplateKind.dayAgent,
-      modelId: 'Waddle Command 70B',
+      modelId: _t('Waddle Command 70B', 'Watschelkommando 70B'),
       profileId: manualProjectWaddleProfileId,
       createdAt: manualDemoNow.subtract(const Duration(days: 36)),
       updatedAt: manualDemoNow.subtract(const Duration(hours: 5)),
@@ -188,9 +192,24 @@ void main() {
           }
 
           expect(find.byType(DailyOsSettingsBody), findsOneWidget);
-          expect(find.text('Project Waddle Command'), findsOneWidget);
-          expect(find.textContaining('Waddle Command 70B'), findsOneWidget);
-          expect(find.textContaining('Mission Control Router'), findsWidgets);
+          expect(
+            find.text(
+              _t('Project Waddle Command', 'Project-Waddle-Kommando'),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining(
+              _t('Waddle Command 70B', 'Watschelkommando 70B'),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining(
+              _t('Mission Control Router', 'Missionskontroll-Router'),
+            ),
+            findsWidgets,
+          );
           expect(find.text('Director Aurora'), findsOneWidget);
           await captureScreenshot(
             tester,

@@ -52,6 +52,7 @@ import '../../../daily_os_next/screenshot_harness.dart';
 
 const _subdir = 'events';
 const _detailEventId = 'event-project-waddle-launch-gala';
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 const ValueKey<String> _precacheKey = ValueKey<String>(
   'events-manual-precache-host',
 );
@@ -97,7 +98,6 @@ Widget _app({
         ),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          locale: const Locale('en'),
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
               : DesignSystemTheme.light(),
@@ -108,6 +108,7 @@ Widget _app({
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: manualScreenshotLocale,
           home: home,
         ),
       ),
@@ -144,17 +145,17 @@ void main() {
 
     final missionControl = CategoryTestUtils.createTestCategory(
       id: 'manual-mission-control',
-      name: 'Mission Control',
+      name: _t('Mission Control', 'Missionskontrolle'),
       color: '#6750A4',
     );
     final fishDiplomacy = CategoryTestUtils.createTestCategory(
       id: 'manual-fish-diplomacy',
-      name: 'Fish Diplomacy',
+      name: _t('Fish Diplomacy', 'Fischdiplomatie'),
       color: '#FBA337',
     );
     final humanMaintenance = CategoryTestUtils.createTestCategory(
       id: 'manual-human-maintenance',
-      name: 'Human Maintenance',
+      name: _t('Human Maintenance', 'Menschenwartung'),
       color: '#3CB371',
     );
     categories = [
@@ -193,54 +194,81 @@ void main() {
 
     detailEvent = event(
       id: _detailEventId,
-      title: 'Project Waddle launch gala',
+      title: _t('Project Waddle launch gala', 'Project-Waddle-Startgala'),
       date: DateTime(2026, 7, 16, 18, 30),
       status: EventStatus.completed,
       category: world.category,
       coverArtId: manualLaunchReviewCoverImageId,
       stars: 5,
-      summary:
-          'The habitat passed inspection, all 37 emperor penguins saluted in '
-          'roughly the same direction, and the sardine cargo arrived cold.',
+      summary: _t(
+        'The habitat passed inspection, all 37 emperor penguins saluted in '
+            'roughly the same direction, and the sardine cargo arrived cold.',
+        'Das Habitat bestand die Inspektion, alle 37 Kaiserpinguine salutierten '
+            'grob in dieselbe Richtung und die Sardinenfracht kam kalt an.',
+      ),
     );
 
     final sardineSummit = event(
       id: 'event-europa-sardine-futures-summit',
-      title: 'Europa sardine futures summit',
+      title: _t(
+        'Europa sardine futures summit',
+        'Europa-Sardinen-Futures-Gipfel',
+      ),
       date: DateTime(2026, 8, 3, 14),
       status: EventStatus.planned,
       category: fishDiplomacy,
       coverArtId: manualSardineFuturesCoverImageId,
-      summary: 'Price discovery, cold-chain diplomacy, and formal fish hats.',
+      summary: _t(
+        'Price discovery, cold-chain diplomacy, and formal fish hats.',
+        'Preisfindung, Kühlketten-Diplomatie und formelle Fischhüte.',
+      ),
     );
     final rollCallGala = event(
       id: 'event-emperor-penguin-roll-call',
-      title: 'Emperor penguin roll-call gala',
+      title: _t(
+        'Emperor penguin roll-call gala',
+        'Kaiserpinguin-Zählappell-Gala',
+      ),
       date: DateTime(2026, 7, 12, 17),
       status: EventStatus.completed,
       category: world.category,
       coverArtId: manualRollCallCoverImageId,
-      summary: 'Every penguin was present; two attended twice.',
+      summary: _t(
+        'Every penguin was present; two attended twice.',
+        'Jeder Pinguin war anwesend; zwei nahmen doppelt teil.',
+      ),
       stars: 5,
     );
     final cargoOpening = event(
       id: 'event-europa-cold-chain-opening',
-      title: 'Europa cold-chain grand opening',
+      title: _t(
+        'Europa cold-chain grand opening',
+        'Eröffnung der Europa-Kühlkette',
+      ),
       date: DateTime(2025, 11, 8, 10),
       status: EventStatus.completed,
       category: missionControl,
       coverArtId: manualSardineCargoCoverImageId,
-      summary: 'The ribbon froze before anyone could cut it.',
+      summary: _t(
+        'The ribbon froze before anyone could cut it.',
+        'Das Band fror ein, bevor es jemand durchschneiden konnte.',
+      ),
       stars: 4,
     );
     final iceGardenOpening = event(
       id: 'event-orbital-ice-garden-opening',
-      title: 'Orbital ice-garden opening',
+      title: _t(
+        'Orbital ice-garden opening',
+        'Eröffnung des Orbital-Eisgartens',
+      ),
       date: DateTime(2024, 12, 2, 16),
       status: EventStatus.completed,
       category: humanMaintenance,
       coverArtId: manualHeadsetWalkCoverImageId,
-      summary: 'One quiet lap, zero status meetings.',
+      summary: _t(
+        'One quiet lap, zero status meetings.',
+        'Eine stille Runde, null Statusbesprechungen.',
+      ),
       stars: 5,
     );
 
@@ -298,7 +326,11 @@ void main() {
       linkedPhoto(
         manualLaunchReviewCoverImageId,
         DateTime(2026, 7, 16, 18, 35),
-        'Mission Control declares the ice-pad trajectory officially waddly.',
+        _t(
+          'Mission Control declares the ice-pad trajectory officially waddly.',
+          'Die Missionskontrolle erklärt die Eisplattform-Flugbahn offiziell '
+              'für watschelig.',
+        ),
       ),
       JournalEntry(
         meta: Metadata(
@@ -309,19 +341,28 @@ void main() {
           dateTo: DateTime(2026, 7, 16, 18, 50),
           categoryId: world.category.id,
         ),
-        entryText: const EntryText(
-          plainText: 'Pressure seals green. Tiny oxygen packs counted twice.',
+        entryText: EntryText(
+          plainText: _t(
+            'Pressure seals green. Tiny oxygen packs counted twice.',
+            'Druckdichtungen grün. Winzige Sauerstoffpakete doppelt gezählt.',
+          ),
         ),
       ),
       linkedPhoto(
         manualHabitatCoverImageId,
         DateTime(2026, 7, 16, 19, 5),
-        'The orbital habitat, five minutes before the ceremonial sardines.',
+        _t(
+          'The orbital habitat, five minutes before the ceremonial sardines.',
+          'Das Orbital-Habitat, fünf Minuten vor den Zeremonialsardinen.',
+        ),
       ),
       linkedPhoto(
         manualSardineCargoCoverImageId,
         DateTime(2026, 7, 16, 19, 20),
-        'Europa cargo pods arrive at a crisp and diplomatic temperature.',
+        _t(
+          'Europa cargo pods arrive at a crisp and diplomatic temperature.',
+          'Europa-Frachtkapseln kommen bei knackig-diplomatischer Temperatur an.',
+        ),
       ),
       world.fishFeederTask,
       world.sardineCargoTask,
@@ -439,8 +480,21 @@ void main() {
           overrides: overviewOverrides(),
         );
         expect(find.byType(EventsOverviewView), findsOneWidget);
-        expect(find.text('Europa sardine futures summit'), findsOneWidget);
-        expect(find.text('Project Waddle launch gala'), findsOneWidget);
+        expect(
+          find.text(
+            _t(
+              'Europa sardine futures summit',
+              'Europa-Sardinen-Futures-Gipfel',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            _t('Project Waddle launch gala', 'Project-Waddle-Startgala'),
+          ),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'events_overview_${viewport}_$theme',
@@ -457,9 +511,17 @@ void main() {
           overrides: detailOverrides(),
         );
         expect(find.byType(EventDetailView), findsOneWidget);
-        expect(find.text('Project Waddle launch gala'), findsOneWidget);
-        expect(find.text('Penguin Operations'), findsOneWidget);
-        expect(find.text('Summary'), findsOneWidget);
+        expect(
+          find.text(
+            _t('Project Waddle launch gala', 'Project-Waddle-Startgala'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
+          findsOneWidget,
+        );
+        expect(find.text(_t('Summary', 'Zusammenfassung')), findsOneWidget);
         final galleryImages = find.descendant(
           of: find.byType(EventPhotoGrid),
           matching: find.byType(RawImage),
@@ -492,15 +554,25 @@ void main() {
           matching: find.byType(Scrollable),
         );
         await tester.scrollUntilVisible(
-          find.text('Recalibrate the zero-gravity fish feeder'),
+          find.text(
+            _t(
+              'Recalibrate the zero-gravity fish feeder',
+              'Schwerelosen Fischfütterer neu kalibrieren',
+            ),
+          ),
           360,
           scrollable: scrollable.first,
         );
         await settleFrames(tester, 4);
-        expect(find.text('Photos'), findsOneWidget);
-        expect(find.text('Timeline'), findsOneWidget);
+        expect(find.text(_t('Photos', 'Fotos')), findsOneWidget);
+        expect(find.text(_t('Timeline', 'Zeitleiste')), findsOneWidget);
         expect(
-          find.text('Recalibrate the zero-gravity fish feeder'),
+          find.text(
+            _t(
+              'Recalibrate the zero-gravity fish feeder',
+              'Schwerelosen Fischfütterer neu kalibrieren',
+            ),
+          ),
           findsOneWidget,
         );
         await captureScreenshot(
