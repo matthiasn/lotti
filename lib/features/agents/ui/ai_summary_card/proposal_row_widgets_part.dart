@@ -1,38 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/ui/ai_summary_card/proposal_kind_part.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-
-class KindChip extends StatelessWidget {
-  const KindChip({required this.meta, super.key});
-
-  final KindMeta meta;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Container(
-      height: 20,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      margin: const EdgeInsets.only(top: 1),
-      decoration: BoxDecoration(
-        color: meta.surface,
-        borderRadius: BorderRadius.circular(5),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        meta.label,
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: meta.color,
-          fontWeight: FontWeight.w600,
-          height: 1,
-          letterSpacing: 0,
-        ),
-      ),
-    );
-  }
-}
 
 class RowActions extends StatelessWidget {
   const RowActions({
@@ -49,11 +18,11 @@ class RowActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (busy) {
-      // Match the 48×48 footprint of a single non-busy
+      // Match the 40×40 footprint of a single non-busy
       // [_SquareIconButton] so the row doesn't reflow when toggling.
       return SizedBox(
-        width: 48,
-        height: 48,
+        width: 40,
+        height: 40,
         child: Center(
           child: SizedBox(
             width: 14,
@@ -66,11 +35,10 @@ class RowActions extends StatelessWidget {
         ),
       );
     }
-    // Each [_SquareIconButton] centers its 26×26 visual inside a 48×48 hit
-    // zone. A `step4` gap separates the two hit zones so the destructive
-    // reject is never flush against accept — a mis-tap between the adjacent
-    // 48×48 zones is the failure users with reduced motor control fear most,
-    // and the dead band between them removes it.
+    // Each [_SquareIconButton] is a quiet ghost icon inside a 40×40 hit
+    // zone — color (meta-gray reject, accent confirm) carries the meaning,
+    // so the rows shed the boxed chrome. A `step4` gap separates the two hit
+    // zones so the destructive reject is never flush against accept.
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -109,13 +77,12 @@ class _SquareIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ai = context.designTokens.colors.aiCard;
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
     final isAccent = variant == _SquareIconVariant.accent;
-    // The visual chip stays at the spec'd 26×26, but it's centered
-    // inside a 48×48 hit target so users with reduced motor control or
-    // touch precision still get a Material-compliant tap zone. The
-    // outer SizedBox + InkWell expand the gesture-accepting region;
-    // the inner Container preserves the compact look.
+    // Ghost chrome: just the glyph, centered in a 40×40 hit target so
+    // reduced-motor-control users still get a compliant tap zone without the
+    // slot inflating the row.
     // Explicit button role + label, merged into one node, so screen readers
     // announce "Confirm, button" / "Reject, button" and rotor "next button"
     // navigation finds them — rather than leaning on the tooltip surfacing as
@@ -132,31 +99,14 @@ class _SquareIconButton extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: onPressed.call,
-              borderRadius: BorderRadius.circular(7),
+              borderRadius: BorderRadius.circular(tokens.radii.s),
               child: SizedBox(
-                width: 48,
-                height: 48,
-                child: Center(
-                  child: Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      color: isAccent
-                          ? ai.accent.withValues(alpha: 0.13)
-                          : null,
-                      border: Border.all(
-                        color: isAccent
-                            ? ai.accent.withValues(alpha: 0.33)
-                            : ai.rowBorderStrong,
-                      ),
-                      borderRadius: BorderRadius.circular(7),
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 14,
-                      color: isAccent ? ai.accent : ai.metaText,
-                    ),
-                  ),
+                width: 40,
+                height: 40,
+                child: Icon(
+                  icon,
+                  size: tokens.spacing.step5,
+                  color: isAccent ? ai.accent : ai.metaText,
                 ),
               ),
             ),

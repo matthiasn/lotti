@@ -1140,10 +1140,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Transcription';
 
   @override
-  String get aiCardEmptyProposals =>
-      'No open proposals · agent will surface new changes here';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'History · $count';
   }
@@ -9498,14 +9494,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose an AI setup before turning on automatic updates.';
 
   @override
-  String get taskAgentAutomaticUpdatesOffDescription =>
-      'Automatic updates are off. Wake the agent when you want a fresh report.';
-
-  @override
-  String get taskAgentAutomaticUpdatesSummary =>
-      'Bundle task changes and update after two minutes.';
-
-  @override
   String get taskAgentCancelTimerTooltip => 'Cancel pending automatic update';
 
   @override
@@ -9553,6 +9541,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskAgentModelPickerTitle => 'Choose thinking model';
 
   @override
+  String taskAgentNextUpdateIn(String countdown) {
+    return 'Next update in $countdown';
+  }
+
+  @override
   String get taskAgentNoAiSetup => 'No AI setup';
 
   @override
@@ -9583,11 +9576,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Profile default';
 
   @override
-  String get taskAgentReportOutdatedDescription =>
-      'The task changed after this summary was generated.';
+  String get taskAgentReportOutdatedTitle => 'This summary is out of date';
 
   @override
-  String get taskAgentReportOutdatedTitle => 'This summary is out of date';
+  String get taskAgentReportUpToDate => 'Summary is up to date';
 
   @override
   String get taskAgentRouteVia => 'via';

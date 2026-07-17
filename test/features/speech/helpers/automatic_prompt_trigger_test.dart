@@ -103,12 +103,12 @@ void main() {
     ).thenAnswer((_) async => null);
 
     when(
-      () => mockWakeOrchestrator.enqueueManualWake(
+      () => mockWakeOrchestrator.requestContentWake(
         agentId: any(named: 'agentId'),
         reason: any(named: 'reason'),
         triggerTokens: any(named: 'triggerTokens'),
       ),
-    ).thenReturn(null);
+    ).thenReturn(true);
 
     container = ProviderContainer(
       overrides: [
@@ -362,10 +362,69 @@ void main() {
           );
 
           verify(
-            () => mockWakeOrchestrator.enqueueManualWake(
+            () => mockWakeOrchestrator.requestContentWake(
               agentId: 'agent-nudge',
               reason: 'transcriptionComplete',
               triggerTokens: {taskId, entryId},
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'logs the stale outcome when automatic updates are off and the '
+        'orchestrator only marks the report stale instead of waking',
+        () async {
+          const taskId = 'task-stale';
+          const entryId = 'entry-stale';
+          final skill = testSkill();
+          final result = AutomationResult(handled: true, skill: skill);
+          final agent = makeTestIdentity(agentId: 'agent-stale');
+
+          when(
+            () => mockProfileAutomationService.tryTranscribe(
+              taskId: taskId,
+              enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
+            ),
+          ).thenAnswer((_) async => result);
+          when(
+            () => mockRunner.runTranscription(
+              audioEntryId: entryId,
+              automationResult: result,
+              linkedTaskId: taskId,
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockTaskAgentService.getTaskAgentForTask(taskId),
+          ).thenAnswer((_) async => agent);
+          when(
+            () => mockWakeOrchestrator.requestContentWake(
+              agentId: 'agent-stale',
+              reason: 'transcriptionComplete',
+              triggerTokens: {taskId, entryId},
+            ),
+          ).thenReturn(false);
+
+          final trigger = container.read(automaticPromptTriggerProvider);
+
+          await trigger.triggerAutomaticPrompts(
+            entryId,
+            stoppedState(),
+            linkedTaskId: taskId,
+          );
+
+          verify(
+            () => mockWakeOrchestrator.requestContentWake(
+              agentId: 'agent-stale',
+              reason: 'transcriptionComplete',
+              triggerTokens: {taskId, entryId},
+            ),
+          ).called(1);
+          verify(
+            () => mockDomainLogger.log(
+              LogDomain.ai,
+              any<String>(that: contains('Marked report stale')),
+              subDomain: 'nudgeTaskAgent',
             ),
           ).called(1);
         },
@@ -408,7 +467,7 @@ void main() {
             ),
           );
           verify(
-            () => mockWakeOrchestrator.enqueueManualWake(
+            () => mockWakeOrchestrator.requestContentWake(
               agentId: 'agent-rt',
               reason: 'transcriptionComplete',
               triggerTokens: {taskId, entryId},
@@ -451,7 +510,7 @@ void main() {
           );
 
           verifyNever(
-            () => mockWakeOrchestrator.enqueueManualWake(
+            () => mockWakeOrchestrator.requestContentWake(
               agentId: any(named: 'agentId'),
               reason: any(named: 'reason'),
               triggerTokens: any(named: 'triggerTokens'),
@@ -482,7 +541,7 @@ void main() {
           );
 
           verifyNever(
-            () => mockWakeOrchestrator.enqueueManualWake(
+            () => mockWakeOrchestrator.requestContentWake(
               agentId: any(named: 'agentId'),
               reason: any(named: 'reason'),
               triggerTokens: any(named: 'triggerTokens'),

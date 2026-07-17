@@ -1153,10 +1153,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Přepis';
 
   @override
-  String get aiCardEmptyProposals =>
-      'Žádné otevřené návrhy · agent zde zobrazí nové změny';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'Historie · $count';
   }
@@ -9689,14 +9685,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Než zapneš automatické aktualizace, vyber nastavení AI.';
 
   @override
-  String get taskAgentAutomaticUpdatesOffDescription =>
-      'Automatické aktualizace jsou vypnuté. Když chceš aktuální zprávu, probuď agenta.';
-
-  @override
-  String get taskAgentAutomaticUpdatesSummary =>
-      'Změny úkolu se seskupí a aktualizace proběhne po dvou minutách.';
-
-  @override
   String get taskAgentCancelTimerTooltip =>
       'Zrušit čekající automatickou aktualizaci';
 
@@ -9745,6 +9733,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentModelPickerTitle => 'Vybrat model pro uvažování';
 
   @override
+  String taskAgentNextUpdateIn(String countdown) {
+    return 'Další aktualizace za $countdown';
+  }
+
+  @override
   String get taskAgentNoAiSetup => 'Bez nastavení AI';
 
   @override
@@ -9775,11 +9768,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Výchozí model profilu';
 
   @override
-  String get taskAgentReportOutdatedDescription =>
-      'Úkol se změnil po vytvoření tohoto souhrnu.';
+  String get taskAgentReportOutdatedTitle => 'Tento souhrn je zastaralý';
 
   @override
-  String get taskAgentReportOutdatedTitle => 'Tento souhrn je zastaralý';
+  String get taskAgentReportUpToDate => 'Souhrn je aktuální';
 
   @override
   String get taskAgentRouteVia => 'přes';

@@ -544,10 +544,6 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.text(messages.taskAgentAutomaticUpdatesSummary),
-          findsOneWidget,
-        );
-        expect(
           find.textContaining(_t('Waddle Command 70B', 'Watschelkommando 70B')),
           findsOneWidget,
         );
@@ -670,15 +666,7 @@ void main() {
           tester.element(find.byType(TaskDetailsPage)),
         )!;
         expect(
-          find.text(messages.taskAgentAutomaticUpdatesOffDescription),
-          findsOneWidget,
-        );
-        expect(
           find.text(messages.taskAgentReportOutdatedTitle),
-          findsOneWidget,
-        );
-        expect(
-          find.text(messages.taskAgentReportOutdatedDescription),
           findsOneWidget,
         );
         expect(find.text(messages.taskAgentWakeAgent), findsOneWidget);

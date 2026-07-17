@@ -1,16 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Proposals section sandwiched between the TLDR body and the activity
+/// Proposals section sandwiched between the TLDR body and the controls
 /// footer. Always shows the section title + pending count badge +
-/// optional "Confirm all" button. The body is either an empty-state
-/// placeholder or a vertical list of [ProposalRow]s. Resolved entries
-/// are rendered through [_HistoryToggle] + a hidden-by-default list.
+/// optional "Confirm all" button. With open proposals the body is a
+/// vertical list of [ProposalRow]s; with none, the "0 pending" pill
+/// already carries the state, so no placeholder band is rendered.
+/// Resolved entries are rendered through [_HistoryToggle] + a
+/// hidden-by-default list.
 class ProposalsSection extends StatelessWidget {
   const ProposalsSection({
     required this.open,
@@ -69,108 +75,124 @@ class ProposalsSection extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: ai.borderSoft)),
       ),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title block on the left (icon + label + pending-count
-          // pill, wraps internally if the card is too narrow to fit
-          // them on one line) and the Confirm-all button pinned to
-          // the right edge so it lines up with the Read-more pill in
-          // the header above. `Expanded` collapses harmlessly on
-          // empty/single-child rows when the button isn't shown.
-          Row(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.cardPadding,
+        vertical: tokens.spacing.step4,
+      ),
+      // Same reading measure as the summary: full-width rows strand the
+      // accept/reject actions at the far card edge on wide surfaces.
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: TldrBody.maxReadingWidth,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.fact_check_outlined,
-                      size: 16,
-                      color: ai.accent,
-                    ),
-                    Text(
+              // One clean header line: icon + title + pending pill. All
+              // list-level operations live on the bottom rail instead, so
+              // the header never has to squeeze or wrap a button.
+              Row(
+                children: [
+                  Icon(
+                    Icons.fact_check_outlined,
+                    size: tokens.spacing.step5,
+                    color: ai.titleText,
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  Flexible(
+                    child: Text(
                       messages.changeSetCardTitle,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: ai.titleText,
-                        fontWeight: FontWeight.w600,
-                        height: 1.1,
-                      ),
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(color: ai.titleText),
                     ),
-                    _PendingPill(count: pendingCount ?? open.length),
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  _PendingPill(count: pendingCount ?? open.length),
+                ],
+              ),
+              if (open.isNotEmpty) ...[
+                SizedBox(height: tokens.spacing.step3),
+                // No inter-row Padding here: each open row owns a trailing gap
+                // (step4) *inside* its collapse subtree, so the gap closes with the
+                // row when it leaves — no leftover spacing to snap on prune.
+                for (var i = 0; i < open.length; i++)
+                  // A newly arrived proposal eases its own height open; the initial
+                  // batch (and a row re-appearing mid-collapse) appears instantly.
+                  // SizeFadeEntrance is a SizeTransition, so it composes with the
+                  // row's own collapse on exit without fighting it.
+                  SizeFadeEntrance(
+                    key: ValueKey(
+                      'enter-${open[i].changeSet.id}-${open[i].itemIndex}',
+                    ),
+                    animate: newlyArrived.contains(open[i].fingerprint),
+                    child: ProposalRow(
+                      // Stable identity (set id + item index) so the row's
+                      // timer/animation/busy state stays bound to its suggestion
+                      // when the open list mutates (e.g. confirm-all), instead of
+                      // index-based element reuse transferring it to a sibling.
+                      key: ValueKey(
+                        'open-${open[i].changeSet.id}-${open[i].itemIndex}',
+                      ),
+                      suggestion: open[i],
+                      // Only the first pending row gets the swipe-affordance
+                      // wiggle hint so the page doesn't pulse with every
+                      // visible row.
+                      isFirst: i == 0,
+                      confirmAllPulse: confirmAllPulse,
+                      cascadeIndex: i,
+                      onResolveStart: onResolveStart,
+                      onResolveEnd: onResolveEnd,
+                      settling: settling,
+                      pendingCount: pendingCount ?? open.length,
+                    ),
+                  ),
+              ],
+              // Bottom rail: the list-level operations share one line —
+              // History disclosure left, batch confirm right. Open rows
+              // already end with their own trailing gap, so only the empty
+              // list needs one here.
+              if (resolved.isNotEmpty || onConfirmAll != null) ...[
+                if (open.isEmpty) SizedBox(height: tokens.spacing.step3),
+                Row(
+                  children: [
+                    if (resolved.isNotEmpty)
+                      _HistoryToggle(
+                        open: historyOpen,
+                        count: resolved.length,
+                        onPressed: onToggleHistory,
+                      ),
+                    const Spacer(),
+                    if (onConfirmAll != null)
+                      DesignSystemButton(
+                        label: messages.changeSetConfirmAll,
+                        leadingIcon: Icons.done_all_rounded,
+                        variant: DesignSystemButtonVariant.secondary,
+                        isLoading: confirmAllBusy,
+                        onPressed: () => unawaited(onConfirmAll!()),
+                      ),
                   ],
                 ),
-              ),
-              if (onConfirmAll != null)
-                _ConfirmAllButton(
-                  busy: confirmAllBusy,
-                  onPressed: onConfirmAll!,
-                ),
+              ],
+              if (resolved.isNotEmpty && historyOpen) ...[
+                SizedBox(height: tokens.spacing.step2),
+                for (var i = 0; i < resolved.length; i++)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: i == 0 ? 0 : tokens.spacing.step2,
+                    ),
+                    child: ProposalRow.fromLedger(
+                      key: ValueKey(
+                        'resolved-${resolved[i].changeSetId}-${resolved[i].itemIndex}',
+                      ),
+                      entry: resolved[i],
+                    ),
+                  ),
+              ],
             ],
           ),
-          const SizedBox(height: 10),
-          if (open.isEmpty)
-            const _EmptyProposalsRow()
-          else
-            // No inter-row Padding here: each open row owns a trailing gap
-            // (step4) *inside* its collapse subtree, so the gap closes with the
-            // row when it leaves — no leftover spacing to snap on prune.
-            for (var i = 0; i < open.length; i++)
-              // A newly arrived proposal eases its own height open; the initial
-              // batch (and a row re-appearing mid-collapse) appears instantly.
-              // SizeFadeEntrance is a SizeTransition, so it composes with the
-              // row's own collapse on exit without fighting it.
-              SizeFadeEntrance(
-                key: ValueKey(
-                  'enter-${open[i].changeSet.id}-${open[i].itemIndex}',
-                ),
-                animate: newlyArrived.contains(open[i].fingerprint),
-                child: ProposalRow(
-                  // Stable identity (set id + item index) so the row's
-                  // timer/animation/busy state stays bound to its suggestion
-                  // when the open list mutates (e.g. confirm-all), instead of
-                  // index-based element reuse transferring it to a sibling.
-                  key: ValueKey(
-                    'open-${open[i].changeSet.id}-${open[i].itemIndex}',
-                  ),
-                  suggestion: open[i],
-                  // Only the first pending row gets the swipe-affordance
-                  // wiggle hint so the page doesn't pulse with every
-                  // visible row.
-                  isFirst: i == 0,
-                  confirmAllPulse: confirmAllPulse,
-                  cascadeIndex: i,
-                  onResolveStart: onResolveStart,
-                  onResolveEnd: onResolveEnd,
-                  settling: settling,
-                  pendingCount: pendingCount ?? open.length,
-                ),
-              ),
-          if (resolved.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _HistoryToggle(
-              open: historyOpen,
-              count: resolved.length,
-              onPressed: onToggleHistory,
-            ),
-            if (historyOpen) ...[
-              const SizedBox(height: 8),
-              for (var i = 0; i < resolved.length; i++)
-                Padding(
-                  padding: EdgeInsets.only(top: i == 0 ? 0 : 6),
-                  child: ProposalRow.fromLedger(
-                    key: ValueKey(
-                      'resolved-${resolved[i].changeSetId}-${resolved[i].itemIndex}',
-                    ),
-                    entry: resolved[i],
-                  ),
-                ),
-            ],
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -185,18 +207,20 @@ class _PendingPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
-    final hasItems = count > 0;
-    // Fade-through on count change (a value transition, not a spatial one), so
-    // the number resolves rather than hard-swapping. Instant under reduced
-    // motion. Keyed by count so the switcher cross-fades only when it changes.
+    // Neutral always: a status count is not an action and must not outshine
+    // the confirm buttons. Fade-through on count change (a value transition,
+    // not a spatial one), so the number resolves rather than hard-swapping.
+    // Instant under reduced motion. Keyed by count so the switcher
+    // cross-fades only when it changes.
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step3,
+        vertical: tokens.spacing.step1,
+      ),
       decoration: BoxDecoration(
-        color: hasItems
-            ? ai.accent.withValues(alpha: 0.10)
-            : ai.subtleWashStrong,
-        borderRadius: BorderRadius.circular(999),
+        color: ai.subtleWashStrong,
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
       ),
       child: AnimatedSwitcher(
         duration: reduceMotion ? Duration.zero : MotionDurations.medium1,
@@ -206,98 +230,7 @@ class _PendingPill extends StatelessWidget {
           context.messages.changeSetPendingCount(count),
           key: ValueKey(count),
           style: tokens.typography.styles.others.caption.copyWith(
-            color: hasItems ? ai.accent : ai.metaText,
-            fontWeight: FontWeight.w600,
-            height: 1.1,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ConfirmAllButton extends StatelessWidget {
-  const _ConfirmAllButton({required this.busy, required this.onPressed});
-
-  final bool busy;
-  final Future<void> Function() onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final ai = tokens.colors.aiCard;
-    // The card's primary action: a filled tonal accent pill (was a plain
-    // text link), so the eye lands on it. Mirrors the header pills' chrome
-    // — an accentSoft fill with an accent-tinted border — but reads as the
-    // hero affordance via the leading double-check glyph.
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: busy ? null : onPressed.call,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 32),
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step3,
-            vertical: tokens.spacing.step2,
-          ),
-          decoration: BoxDecoration(
-            color: ai.accentSoft,
-            borderRadius: BorderRadius.circular(tokens.radii.m),
-            border: Border.all(color: ai.accent.withValues(alpha: 0.35)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (busy)
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: ai.accent,
-                  ),
-                )
-              else
-                Icon(Icons.done_all_rounded, size: 16, color: ai.accent),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                context.messages.changeSetConfirmAll,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: ai.accent,
-                  fontWeight: FontWeight.w600,
-                  height: 1.1,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyProposalsRow extends StatelessWidget {
-  const _EmptyProposalsRow();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final ai = tokens.colors.aiCard;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: ai.subtleWash,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: ai.subtleBorder),
-      ),
-      child: Center(
-        child: Text(
-          context.messages.aiCardEmptyProposals,
-          style: tokens.typography.styles.others.caption.copyWith(
             color: ai.metaText,
-            fontWeight: FontWeight.w400,
-            height: 1.4,
           ),
         ),
       ),
@@ -324,24 +257,27 @@ class _HistoryToggle extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
+          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+          // Quiet meta like the footer's model line — the chevron and hit
+          // target signal interactivity without spending accent on a
+          // low-priority disclosure.
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                open ? Icons.keyboard_arrow_down : Icons.chevron_right,
-                size: 14,
+                open
+                    ? Icons.keyboard_arrow_down_rounded
+                    : Icons.chevron_right_rounded,
+                size: tokens.spacing.step5,
                 color: ai.metaText,
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: tokens.spacing.step2),
               Text(
                 context.messages.aiCardHistoryToggle(count),
                 style: tokens.typography.styles.others.caption.copyWith(
                   color: ai.metaText,
-                  fontWeight: FontWeight.w500,
-                  height: 1.1,
                 ),
               ),
             ],

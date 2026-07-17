@@ -518,7 +518,6 @@
   "aiCapabilityChipImageRecognition": "Rozpoznávání obrázků",
   "aiCapabilityChipThinking": "Uvažování",
   "aiCapabilityChipTranscription": "Přepis",
-  "aiCardEmptyProposals": "Žádné otevřené návrhy · agent zde zobrazí nové změny",
   "aiCardHistoryToggle": "Historie · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3898,8 +3897,6 @@
   "taskAgentAttributionUnavailable": "Autorství není dostupné",
   "taskAgentAutomaticUpdatesLabel": "Automatické aktualizace",
   "taskAgentAutomaticUpdatesNeedsSetup": "Než zapneš automatické aktualizace, vyber nastavení AI.",
-  "taskAgentAutomaticUpdatesOffDescription": "Automatické aktualizace jsou vypnuté. Když chceš aktuální zprávu, probuď agenta.",
-  "taskAgentAutomaticUpdatesSummary": "Změny úkolu se seskupí a aktualizace proběhne po dvou minutách.",
   "taskAgentCancelTimerTooltip": "Zrušit čekající automatickou aktualizaci",
   "taskAgentChooseModel": "Vybrat model pro uvažování",
   "taskAgentChooseProfile": "Vyber profil inference",
@@ -3928,6 +3925,7 @@
   "taskAgentDisableConfirmTitle": "Vypnout AI pro tohoto agenta?",
   "taskAgentInferenceProfileLabel": "Inferenční profil",
   "taskAgentModelPickerTitle": "Vybrat model pro uvažování",
+  "taskAgentNextUpdateIn": "Další aktualizace za {countdown}",
   "taskAgentNoAiSetup": "Bez nastavení AI",
   "taskAgentNoAiSetupDescription": "Pozastaví inferenci, dokud nevybereš profil nebo model.",
   "taskAgentNoModelsAvailable": "Nejsou dostupné žádné kompatibilní modely",
@@ -3943,8 +3941,8 @@
     }
   },
   "taskAgentProfileDefaultBadge": "Výchozí model profilu",
-  "taskAgentReportOutdatedDescription": "Úkol se změnil po vytvoření tohoto souhrnu.",
   "taskAgentReportOutdatedTitle": "Tento souhrn je zastaralý",
+  "taskAgentReportUpToDate": "Souhrn je aktuální",
   "taskAgentRouteVia": "přes",
   "taskAgentRunNowTooltip": "Spustit nyní",
   "taskAgentSavingSetup": "Ukládání nastavení agenta",

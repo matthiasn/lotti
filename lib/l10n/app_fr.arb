@@ -511,7 +511,6 @@
   "aiCapabilityChipImageRecognition": "Reconnaissance d'images",
   "aiCapabilityChipThinking": "Réflexion",
   "aiCapabilityChipTranscription": "Transcription",
-  "aiCardEmptyProposals": "Aucune proposition ouverte · l'agent affichera ici les nouvelles modifications",
   "aiCardHistoryToggle": "Historique · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3891,8 +3890,6 @@
   "taskAgentAttributionUnavailable": "Attribution indisponible",
   "taskAgentAutomaticUpdatesLabel": "Mises à jour automatiques",
   "taskAgentAutomaticUpdatesNeedsSetup": "Choisis une configuration IA avant d’activer les mises à jour automatiques.",
-  "taskAgentAutomaticUpdatesOffDescription": "Les mises à jour automatiques sont désactivées. Réveille l’agent quand tu veux un rapport à jour.",
-  "taskAgentAutomaticUpdatesSummary": "Regroupe les modifications de la tâche et actualise après deux minutes.",
   "taskAgentCancelTimerTooltip": "Annuler la mise à jour automatique en attente",
   "taskAgentChooseModel": "Choisir un modèle de réflexion",
   "taskAgentChooseProfile": "Choisis un profil d’inférence",
@@ -3921,6 +3918,7 @@
   "taskAgentDisableConfirmTitle": "Désactiver l’IA pour cet agent ?",
   "taskAgentInferenceProfileLabel": "Profil d’inférence",
   "taskAgentModelPickerTitle": "Choisir un modèle de réflexion",
+  "taskAgentNextUpdateIn": "Prochaine mise à jour dans {countdown}",
   "taskAgentNoAiSetup": "Aucune configuration IA",
   "taskAgentNoAiSetupDescription": "Met l’inférence en pause jusqu’à ce que tu choisisses un profil ou un modèle.",
   "taskAgentNoModelsAvailable": "Aucun modèle de réflexion compatible disponible",
@@ -3936,8 +3934,8 @@
     }
   },
   "taskAgentProfileDefaultBadge": "Réglage du profil",
-  "taskAgentReportOutdatedDescription": "La tâche a changé après la création de ce résumé.",
   "taskAgentReportOutdatedTitle": "Ce résumé n’est plus à jour",
+  "taskAgentReportUpToDate": "Le résumé est à jour",
   "taskAgentRouteVia": "via",
   "taskAgentRunNowTooltip": "Exécuter maintenant",
   "taskAgentSavingSetup": "Enregistrement de la configuration de l’agent",

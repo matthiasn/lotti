@@ -601,6 +601,43 @@ class WakeOrchestrator {
     unawaited(processNext());
   }
 
+  /// Wake [agentId] for externally produced content (e.g. a completed audio
+  /// transcription) while honoring the automatic-updates opt-in.
+  ///
+  /// When automatic updates are enabled this enqueues an immediate wake that
+  /// bypasses the subscription throttle, so freshly transcribed content is
+  /// processed right away. When the user has switched automatic updates off,
+  /// the change only persists the stale watermark — the card surfaces the
+  /// manual "Wake agent" CTA and no inference is enqueued.
+  ///
+  /// The wake carries [WakeInitiator.automation] so a later toggle-off sweeps
+  /// it out of the queue along with other automation jobs.
+  ///
+  /// Returns `true` when a wake was enqueued, `false` when the report was
+  /// only marked stale.
+  bool requestContentWake({
+    required String agentId,
+    required String reason,
+    Set<String> triggerTokens = const {},
+  }) {
+    if (_automaticUpdatesDisabledAgents.contains(agentId)) {
+      _scheduleReportStale(agentId, clock.now());
+      _log(
+        'automatic updates disabled — marked report stale instead of waking '
+        '${DomainLogger.sanitizeId(agentId)} (reason=$reason)',
+        subDomain: 'stale',
+      );
+      return false;
+    }
+    enqueueManualWake(
+      agentId: agentId,
+      reason: reason,
+      triggerTokens: triggerTokens,
+      initiator: WakeInitiator.automation,
+    );
+    return true;
+  }
+
   // ── Internal notification handling ─────────────────────────────────────────
 
   /// Process the next pending job; see [WakeDrainEngine].

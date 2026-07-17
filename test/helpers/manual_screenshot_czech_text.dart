@@ -24,8 +24,6 @@ const _copy = <String, String>{
   'more tokens today': 'Dnes používáš více tokenů',
   'AI summary': 'Souhrn AI',
   'Automatic updates': 'Automatické aktualizace',
-  'Bundle task changes and update after two minutes.':
-      'Změny úkolu se seskupí a aktualizace proběhne po dvou minutách.',
   'Read more': 'Číst více',
   'Open agent internals': 'Otevřít interní informace agenta',
   'Show less': 'Skrýt podrobnosti',
@@ -35,12 +33,7 @@ const _copy = <String, String>{
       'Přidat: "Provést test sardinkového krmítka v beztíži"',
   'Estimate: 45m → 1h 15m': 'Odhad: 45 min → 1 h 15 min',
   '45m → 1h 15m': '45 min → 1 h 15 min',
-  'Automatic updates are off. Wake the agent when you want a fresh report.':
-      'Automatické aktualizace jsou vypnuté. Když chceš aktuální zprávu, '
-      'probuď agenta.',
   'This summary is out of date': 'Tento souhrn je zastaralý',
-  'The task changed after this summary was generated.':
-      'Úkol se změnil po vytvoření tohoto souhrnu.',
   'Wake agent': 'Probudit agenta',
   'Filter tasks': 'Filtrovat úkoly',
   'Filter projects': 'Filtrovat projekty',

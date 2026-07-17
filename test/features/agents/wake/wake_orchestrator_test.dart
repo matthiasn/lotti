@@ -1163,6 +1163,81 @@ void main() {
       );
 
       test(
+        'requestContentWake marks the report stale without queueing '
+        'inference when automatic updates are off',
+        () async {
+          final transcriptAt = DateTime(2026, 7, 17, 10, 15);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: DateTime(2026, 7, 17, 10),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            syncEntityWriter: (entity) async {
+              state = entity as AgentStateEntity;
+            },
+          )..disableAutomaticUpdatesRuntime('agent-1');
+
+          late bool woken;
+          await withClock(Clock.fixed(transcriptAt), () async {
+            woken = orchestrator.requestContentWake(
+              agentId: 'agent-1',
+              reason: WakeReason.transcriptionComplete.name,
+              triggerTokens: {'entity-1', 'audio-1'},
+            );
+            await pumpEventQueue();
+          });
+
+          expect(woken, isFalse);
+          expect(queue.isEmpty, isTrue);
+          expect(state.reportStaleAt, transcriptAt);
+          expect(state.isReportStale, isTrue);
+        },
+      );
+
+      test(
+        'requestContentWake enqueues an automation-initiated wake when '
+        'automatic updates are on',
+        () async {
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+          );
+          // Hold the single-flight lock so the job stays observable in the
+          // queue instead of being drained immediately.
+          expect(await runner.tryAcquire('agent-1'), isTrue);
+
+          final woken = orchestrator.requestContentWake(
+            agentId: 'agent-1',
+            reason: WakeReason.transcriptionComplete.name,
+            triggerTokens: {'entity-1', 'audio-1'},
+          );
+          await pumpEventQueue();
+
+          expect(woken, isTrue);
+          expect(queue.length, 1);
+          final job = queue.dequeue();
+          expect(job?.reason, WakeReason.transcriptionComplete.name);
+          expect(job?.triggerTokens, {'entity-1', 'audio-1'});
+          // Automation-initiated so a later toggle-off sweeps it from the
+          // queue together with other automatic jobs.
+          expect(job?.initiator, WakeInitiator.automation);
+          runner.release('agent-1');
+        },
+      );
+
+      test(
         'successful manual wake acknowledges changes seen before it began',
         () async {
           final staleAt = DateTime(2026, 7, 16, 8, 59);

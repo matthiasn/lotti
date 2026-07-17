@@ -1160,10 +1160,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Transcriere';
 
   @override
-  String get aiCardEmptyProposals =>
-      'Nicio propunere deschisă · agentul va afișa aici noile modificări';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'Istoric · $count';
   }
@@ -9743,14 +9739,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alegeți o configurare AI înainte de a activa actualizările automate.';
 
   @override
-  String get taskAgentAutomaticUpdatesOffDescription =>
-      'Actualizările automate sunt dezactivate. Treziți agentul când doriți un raport actualizat.';
-
-  @override
-  String get taskAgentAutomaticUpdatesSummary =>
-      'Modificările sarcinii sunt grupate, iar actualizarea are loc după două minute.';
-
-  @override
   String get taskAgentCancelTimerTooltip =>
       'Anulați actualizarea automată în așteptare';
 
@@ -9800,6 +9788,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentModelPickerTitle => 'Alegeți modelul de raționament';
 
   @override
+  String taskAgentNextUpdateIn(String countdown) {
+    return 'Următoarea actualizare în $countdown';
+  }
+
+  @override
   String get taskAgentNoAiSetup => 'Fără configurare AI';
 
   @override
@@ -9830,11 +9823,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Modelul implicit al profilului';
 
   @override
-  String get taskAgentReportOutdatedDescription =>
-      'Sarcina s-a modificat după generarea acestui rezumat.';
+  String get taskAgentReportOutdatedTitle => 'Acest rezumat nu mai este actual';
 
   @override
-  String get taskAgentReportOutdatedTitle => 'Acest rezumat nu mai este actual';
+  String get taskAgentReportUpToDate => 'Rezumatul este actualizat';
 
   @override
   String get taskAgentRouteVia => 'prin';

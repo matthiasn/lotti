@@ -245,12 +245,12 @@ class _Bench {
     }
 
     when(
-      () => wakeOrchestrator.enqueueManualWake(
+      () => wakeOrchestrator.requestContentWake(
         agentId: any(named: 'agentId'),
         reason: any(named: 'reason'),
         triggerTokens: any(named: 'triggerTokens'),
       ),
-    ).thenReturn(null);
+    ).thenReturn(true);
   }
 
   /// Models indexed by the `providerModelId` profile slots store; the
@@ -384,7 +384,7 @@ void main() {
       ),
     );
     verifyNever(
-      () => bench.wakeOrchestrator.enqueueManualWake(
+      () => bench.wakeOrchestrator.requestContentWake(
         agentId: any(named: 'agentId'),
         reason: any(named: 'reason'),
         triggerTokens: any(named: 'triggerTokens'),
@@ -408,7 +408,7 @@ void main() {
           ),
         ).called(1);
         verify(
-          () => bench.wakeOrchestrator.enqueueManualWake(
+          () => bench.wakeOrchestrator.requestContentWake(
             agentId: _kAgentId,
             reason: WakeReason.transcriptionComplete.name,
             triggerTokens: {_kTaskId, _kAudioId},
@@ -671,7 +671,7 @@ void main() {
           ),
         ).called(1);
         verifyNever(
-          () => bench.wakeOrchestrator.enqueueManualWake(
+          () => bench.wakeOrchestrator.requestContentWake(
             agentId: any(named: 'agentId'),
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),
@@ -697,7 +697,7 @@ void main() {
         // The dispatcher catches the throw inside the try/catch and then
         // sees no new transcript — no wake fires.
         verifyNever(
-          () => bench.wakeOrchestrator.enqueueManualWake(
+          () => bench.wakeOrchestrator.requestContentWake(
             agentId: any(named: 'agentId'),
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),
@@ -712,7 +712,7 @@ void main() {
         bench.stubHappyPath(taskAgentPresent: false);
         await bench.dispatcher.maybeDispatch(_kAudioId);
         verifyNever(
-          () => bench.wakeOrchestrator.enqueueManualWake(
+          () => bench.wakeOrchestrator.requestContentWake(
             agentId: any(named: 'agentId'),
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),
@@ -865,7 +865,7 @@ void main() {
           ),
         ).called(1);
         verifyNever(
-          () => bench2.wakeOrchestrator.enqueueManualWake(
+          () => bench2.wakeOrchestrator.requestContentWake(
             agentId: any(named: 'agentId'),
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),
@@ -928,7 +928,7 @@ void main() {
           scenario.taskAgentPresent;
       if (shouldWake) {
         verify(
-          () => localBench.wakeOrchestrator.enqueueManualWake(
+          () => localBench.wakeOrchestrator.requestContentWake(
             agentId: _kAgentId,
             reason: WakeReason.transcriptionComplete.name,
             triggerTokens: {_kTaskId, _kAudioId},
@@ -936,7 +936,7 @@ void main() {
         ).called(1);
       } else {
         verifyNever(
-          () => localBench.wakeOrchestrator.enqueueManualWake(
+          () => localBench.wakeOrchestrator.requestContentWake(
             agentId: any(named: 'agentId'),
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),

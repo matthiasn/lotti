@@ -511,7 +511,6 @@
   "aiCapabilityChipImageRecognition": "Recunoaștere de imagini",
   "aiCapabilityChipThinking": "Gândire",
   "aiCapabilityChipTranscription": "Transcriere",
-  "aiCardEmptyProposals": "Nicio propunere deschisă · agentul va afișa aici noile modificări",
   "aiCardHistoryToggle": "Istoric · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3891,8 +3890,6 @@
   "taskAgentAttributionUnavailable": "Atribuirea nu este disponibilă",
   "taskAgentAutomaticUpdatesLabel": "Actualizări automate",
   "taskAgentAutomaticUpdatesNeedsSetup": "Alegeți o configurare AI înainte de a activa actualizările automate.",
-  "taskAgentAutomaticUpdatesOffDescription": "Actualizările automate sunt dezactivate. Treziți agentul când doriți un raport actualizat.",
-  "taskAgentAutomaticUpdatesSummary": "Modificările sarcinii sunt grupate, iar actualizarea are loc după două minute.",
   "taskAgentCancelTimerTooltip": "Anulați actualizarea automată în așteptare",
   "taskAgentChooseModel": "Alegeți un model de raționament",
   "taskAgentChooseProfile": "Alegeți un profil de inferență",
@@ -3921,6 +3918,7 @@
   "taskAgentDisableConfirmTitle": "Dezactivați AI pentru acest agent?",
   "taskAgentInferenceProfileLabel": "Profil de inferență",
   "taskAgentModelPickerTitle": "Alegeți modelul de raționament",
+  "taskAgentNextUpdateIn": "Următoarea actualizare în {countdown}",
   "taskAgentNoAiSetup": "Fără configurare AI",
   "taskAgentNoAiSetupDescription": "Opriți inferența până când alegeți un profil sau un model.",
   "taskAgentNoModelsAvailable": "Nu există modele de raționament compatibile",
@@ -3936,8 +3934,8 @@
     }
   },
   "taskAgentProfileDefaultBadge": "Modelul implicit al profilului",
-  "taskAgentReportOutdatedDescription": "Sarcina s-a modificat după generarea acestui rezumat.",
   "taskAgentReportOutdatedTitle": "Acest rezumat nu mai este actual",
+  "taskAgentReportUpToDate": "Rezumatul este actualizat",
   "taskAgentRouteVia": "prin",
   "taskAgentRunNowTooltip": "Rulează acum",
   "taskAgentSavingSetup": "Se salvează configurarea agentului",

@@ -272,23 +272,26 @@ class SyncedAudioInferenceDispatcher {
       return;
     }
 
-    // 17. Nudge the task's agent.
+    // 17. Nudge the task's agent — honoring the automatic-updates opt-in.
+    // When the user has switched automatic updates off, the transcript only
+    // marks the report stale (surfacing the manual wake CTA) instead of
+    // spending tokens on an unrequested inference cycle.
     final agent = await _taskAgentService.getTaskAgentForTask(linkedTaskId);
     if (agent == null) {
       _log('skip wake', id, 'no task agent for task $linkedTaskId');
       return;
     }
-    _wakeOrchestrator.enqueueManualWake(
+    final woken = _wakeOrchestrator.requestContentWake(
       agentId: agent.agentId,
       reason: WakeReason.transcriptionComplete.name,
       triggerTokens: {linkedTaskId, id},
     );
     _log(
-      'dispatched',
+      woken ? 'dispatched' : 'marked stale',
       id,
       'profile=${profileConfig.id} task=$linkedTaskId '
-          'agent=${agent.agentId} '
-          'transcripts $priorTranscriptCount→$postCount',
+      'agent=${agent.agentId} '
+      'transcripts $priorTranscriptCount→$postCount',
     );
   }
 

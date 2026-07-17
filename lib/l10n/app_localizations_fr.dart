@@ -1161,10 +1161,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Transcription';
 
   @override
-  String get aiCardEmptyProposals =>
-      'Aucune proposition ouverte · l\'agent affichera ici les nouvelles modifications';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'Historique · $count';
   }
@@ -9752,14 +9748,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Choisis une configuration IA avant d’activer les mises à jour automatiques.';
 
   @override
-  String get taskAgentAutomaticUpdatesOffDescription =>
-      'Les mises à jour automatiques sont désactivées. Réveille l’agent quand tu veux un rapport à jour.';
-
-  @override
-  String get taskAgentAutomaticUpdatesSummary =>
-      'Regroupe les modifications de la tâche et actualise après deux minutes.';
-
-  @override
   String get taskAgentCancelTimerTooltip =>
       'Annuler la mise à jour automatique en attente';
 
@@ -9808,6 +9796,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskAgentModelPickerTitle => 'Choisir un modèle de réflexion';
 
   @override
+  String taskAgentNextUpdateIn(String countdown) {
+    return 'Prochaine mise à jour dans $countdown';
+  }
+
+  @override
   String get taskAgentNoAiSetup => 'Aucune configuration IA';
 
   @override
@@ -9838,11 +9831,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Réglage du profil';
 
   @override
-  String get taskAgentReportOutdatedDescription =>
-      'La tâche a changé après la création de ce résumé.';
+  String get taskAgentReportOutdatedTitle => 'Ce résumé n’est plus à jour';
 
   @override
-  String get taskAgentReportOutdatedTitle => 'Ce résumé n’est plus à jour';
+  String get taskAgentReportUpToDate => 'Le résumé est à jour';
 
   @override
   String get taskAgentRouteVia => 'via';

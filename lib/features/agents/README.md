@@ -149,12 +149,32 @@ stateDiagram-v2
 ```
 
 The AI-summary card keeps report reading and agent controls in separate
-information groups. On desktop, the report and proposals form the reading
-column while automation and setup occupy a compact utility rail. On narrow
-surfaces, automation, setup, report, disclosure, and proposals follow one
-linear order. The automatic-updates toggle is always top-level. A stale report
-uses a focused error accent and `Wake agent` CTA rather than turning the whole
-card into an error surface. `Read more` follows the report it expands.
+information groups. The report is the hero: header, TLDR (reading measure
+capped at ~75 characters even when the card itself is wider), disclosure,
+and proposals form one linear reading column at every width. With no open
+proposals the `0 pending` pill carries the empty state — no placeholder
+band. All secondary controls live in a quiet footer pinned to the card
+bottom (`TaskAgentControlsFooter`), as two fixed rows so no control ever
+relocates between states: a wake row (the manual `Wake agent` button and,
+while an automatic wake is scheduled, a self-labeled `Next update in m:ss`
+chip that cancels the scheduled wake on tap), then the identity row — the
+tappable model/provider line with the automatic-updates toggle pinned
+trailing (caption-weight label; when setup is missing the disabled toggle
+explains itself via an info tooltip). The filled accent is reserved for the
+one wake CTA per state; the TTS play control idles as a whispered
+subtleWash/metaText icon and earns the accent pair only while preparing or
+playing. While automation is off, `TaskAgentFreshnessStrip`
+holds a constant-geometry slot directly after the summary (and before the
+proposals): stale renders the alert-warning glyph with
+"This summary is out of date" and a primary wake CTA, fresh renders a quiet
+accent check with "Summary is up to date" and a secondary wake CTA — the
+same height in both states, so freshness flips never shift the layout. The
+strip wears the same hairline chrome and reading measure as the proposal
+rows; the hue lives on the status glyph only and the message stays at
+standard foreground contrast. The footer hides its own wake button while the strip
+owns that affordance (it returns only for the no-report-yet edge, where the
+strip has nothing to describe). `Read more` follows the
+report it expands.
 
 The setup region compares the live route fingerprint with the immutable
 final-author route on the visible report. Equal routes collapse to one editable
@@ -902,7 +922,15 @@ The persisted wake reasons are:
 - `scheduled`
 - `transcriptionComplete` — fired after speech transcription completes for a
   task-linked audio entry; bypasses the throttle so the user does not wait out
-  the 120-second coalescing window after speaking
+  the 120-second coalescing window after speaking. Both transcript paths (the
+  local `AutomaticPromptTrigger` and the synced
+  `SyncedAudioInferenceDispatcher`) route through
+  `WakeOrchestrator.requestContentWake`, which honors the automatic-updates
+  opt-in: with automation off the transcript only persists the stale
+  watermark (surfacing the manual `Wake agent` CTA) instead of enqueuing
+  inference. The enqueued wake carries `WakeInitiator.automation`, so
+  toggling automation off sweeps a still-queued transcript wake from the
+  queue.
 
 Subscription-driven wakes are throttled with a 120-second window. A
 subscription can opt into daily-digest deferral for propagated-only matches;
@@ -1310,14 +1338,20 @@ The `AiSummaryCard` presentation is tuned for both quick action and a sense of
 craft. The surface carries a directional accent gradient + glow anchored on the
 sparkle badge so it reads as a distinct "assistant" zone, and it renders *below*
 the task's checklists so the user's own work comes first. Each proposal is a
-colour-coded row keyed by change kind (add / update / priority / estimate /
-status / label / due). On narrow viewports the row stacks the kind chip + visible
-✕ / ✓ buttons above full-width text, and the whole row stays swipeable (right =
-confirm, left = dismiss). The per-row ✕ (reject) and ✓ (accept) each sit in a
-48×48 hit zone, and a `step4` dead band separates the two zones so the
-destructive reject is never flush against accept — a near-miss between adjacent
-zones is the failure users with reduced motor precision fear, and the gap
-removes it. "Confirm all" is an accent pill; pressing it cascades a
+neutral hairline row whose change kind (add / update / priority / estimate /
+status / label / due) is named by a quiet wash chip — the accent family is
+reserved for actions, so taxonomy never pre-reads as "confirmed". Rows lead
+with their content: on narrow viewports the full-width proposal text comes
+first, then one slim meta/action line (kind chip left, ghost ✕ / ✓ icons
+right); on wide surfaces chip, text, and actions share one vertically
+centered line capped at the summary's reading measure. The whole row stays
+swipeable (right = confirm, left = dismiss). The per-row ✕ (reject) and ✓
+(accept) each sit in a 40×40 hit zone, and a `step4` dead band separates the
+two zones so the destructive reject is never flush against accept — a
+near-miss between adjacent zones is the failure users with reduced motor
+precision fear, and the gap removes it. List-level operations share one
+bottom rail (History disclosure left, "Confirm all" as a neutral secondary
+button right); pressing Confirm all cascades a
 top-to-bottom pop across the rows (per-row 45 ms stagger + a throttled selection
 haptic) so a batch confirm reads as a satisfying sweep. At gesture time the
 shell synchronously adds every batch fingerprint to `_exitingFingerprints`
@@ -1924,12 +1958,17 @@ agent runtime produces:
 - a `History · N` toggle (`_HistoryToggle`, label `aiCardHistoryToggle`) that
   lazily expands resolved ledger entries, rendered with `Confirmed` /
   `Dismissed` tags and a strikethrough.
-- the wake-cycle affordances directly in the header: a running spinner
-  while a wake is in flight, otherwise a refresh icon button (calls
-  `TaskAgentService.triggerReanalysis`) when no wake is scheduled, or
-  a play button + countdown pill (`m:ss` below one hour, `h:mm:ss` once
-  the hour cell is needed) + cancel button (calls `cancelScheduledWake`)
-  while one is.
+- the wake-cycle affordances in the controls footer
+  (`task_agent_controls_footer.dart`): a compact `Wake agent` button
+  (calls `TaskAgentService.triggerReanalysis`; swaps to a `Thinking…`
+  spinner while a wake runs), a self-labeled `Next update in m:ss`
+  countdown chip (`h:mm:ss` once the hour cell is needed) that calls
+  `cancelScheduledWake` on tap while a wake is scheduled, the
+  automatic-updates toggle, and the tappable model/provider identity
+  row (`TaskAgentIdentityRegion`, opens `AgentModelSheet`). While
+  automation is off, `TaskAgentFreshnessStrip` directly under the
+  report owns the wake CTA instead (stale warning or quiet up-to-date
+  confirmation in one constant-geometry slot).
 
 The card keeps the last visible suggestion list in widget state while an
 agent wake is running. If the provider briefly reloads to an empty or partial

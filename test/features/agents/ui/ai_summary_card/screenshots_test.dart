@@ -70,25 +70,44 @@ AgentReportEntity _report() => makeTestReport(
   ).toReportMap(),
 );
 
-UnifiedSuggestionList _suggestions() => UnifiedSuggestionList(
-  open: const [],
-  activity: [
-    for (var index = 0; index < 11; index++)
-      makeLedgerEntry(
-        id: 'history-$index',
-        status: index.isEven
-            ? ChangeItemStatus.confirmed
-            : ChangeItemStatus.rejected,
-      ),
-  ],
-  agentName: 'Task Laura',
-);
+UnifiedSuggestionList _suggestions({bool withOpen = false}) =>
+    UnifiedSuggestionList(
+      open: withOpen
+          ? [
+              makePending(
+                id: 'p-timer',
+                toolName: 'set_running_timer_text',
+                humanSummary:
+                    'running timer text: "Continuing card polish — focusing '
+                    'on proposal rows after the footer restructure."',
+              ),
+              makePending(
+                id: 'p-check',
+                toolName: 'add_checklist_item',
+                humanSummary:
+                    'Add: "Re-rate the card with the expert panel after the '
+                    'proposal-row polish."',
+              ),
+            ]
+          : const [],
+      activity: [
+        for (var index = 0; index < 11; index++)
+          makeLedgerEntry(
+            id: 'history-$index',
+            status: index.isEven
+                ? ChangeItemStatus.confirmed
+                : ChangeItemStatus.rejected,
+          ),
+      ],
+      agentName: 'Task Laura',
+    );
 
 Future<void> _capture(
   WidgetTester tester, {
   required ScreenshotDevice device,
   required Brightness brightness,
   required bool automaticUpdates,
+  bool withOpenProposals = false,
 }) async {
   // The toggle and entrance widgets are stateful. Explicitly unmount the
   // previous fixture before applying the next viewport so sequential matrix
@@ -126,7 +145,7 @@ Future<void> _capture(
         key: screenshotBoundaryKey,
         child: AgentTestBench(
           report: _report(),
-          suggestions: _suggestions(),
+          suggestions: _suggestions(withOpen: withOpenProposals),
           state: state,
           identity: identity,
           template: _template(),
@@ -148,7 +167,11 @@ Future<void> _capture(
   expect(find.text('Task Laura'), findsOneWidget);
   expect(find.text(_summary), findsOneWidget);
 
-  final mode = automaticUpdates ? 'scheduled' : 'manual';
+  final mode = withOpenProposals
+      ? 'proposals'
+      : automaticUpdates
+      ? 'scheduled'
+      : 'manual';
   final theme = brightness == Brightness.dark ? 'dark' : 'light';
   await captureScreenshot(
     tester,
@@ -185,6 +208,19 @@ void main() {
           );
         });
       }
+      // The real-world hot path: automation off, stale report, and open
+      // proposals awaiting review — exercises the proposal rows the other
+      // states leave empty.
+      final theme = brightness == Brightness.dark ? 'dark' : 'light';
+      testWidgets('${device.name} proposals $theme', (tester) async {
+        await _capture(
+          tester,
+          device: device,
+          brightness: brightness,
+          automaticUpdates: false,
+          withOpenProposals: true,
+        );
+      });
     }
   }
 }

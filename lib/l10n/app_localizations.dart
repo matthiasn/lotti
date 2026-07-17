@@ -2083,12 +2083,6 @@ abstract class AppLocalizations {
   /// **'Transcription'**
   String get aiCapabilityChipTranscription;
 
-  /// No description provided for @aiCardEmptyProposals.
-  ///
-  /// In en, this message translates to:
-  /// **'No open proposals · agent will surface new changes here'**
-  String get aiCardEmptyProposals;
-
   /// No description provided for @aiCardHistoryToggle.
   ///
   /// In en, this message translates to:
@@ -16471,18 +16465,6 @@ abstract class AppLocalizations {
   /// **'Choose an AI setup before turning on automatic updates.'**
   String get taskAgentAutomaticUpdatesNeedsSetup;
 
-  /// No description provided for @taskAgentAutomaticUpdatesOffDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatic updates are off. Wake the agent when you want a fresh report.'**
-  String get taskAgentAutomaticUpdatesOffDescription;
-
-  /// No description provided for @taskAgentAutomaticUpdatesSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'Bundle task changes and update after two minutes.'**
-  String get taskAgentAutomaticUpdatesSummary;
-
   /// No description provided for @taskAgentCancelTimerTooltip.
   ///
   /// In en, this message translates to:
@@ -16567,6 +16549,12 @@ abstract class AppLocalizations {
   /// **'Choose thinking model'**
   String get taskAgentModelPickerTitle;
 
+  /// Countdown chip in the task-agent card footer; tapping it cancels the scheduled automatic update
+  ///
+  /// In en, this message translates to:
+  /// **'Next update in {countdown}'**
+  String taskAgentNextUpdateIn(String countdown);
+
   /// No description provided for @taskAgentNoAiSetup.
   ///
   /// In en, this message translates to:
@@ -16615,17 +16603,17 @@ abstract class AppLocalizations {
   /// **'Profile default'**
   String get taskAgentProfileDefaultBadge;
 
-  /// No description provided for @taskAgentReportOutdatedDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'The task changed after this summary was generated.'**
-  String get taskAgentReportOutdatedDescription;
-
   /// No description provided for @taskAgentReportOutdatedTitle.
   ///
   /// In en, this message translates to:
   /// **'This summary is out of date'**
   String get taskAgentReportOutdatedTitle;
+
+  /// No description provided for @taskAgentReportUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary is up to date'**
+  String get taskAgentReportUpToDate;
 
   /// No description provided for @taskAgentRouteVia.
   ///
