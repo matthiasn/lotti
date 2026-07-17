@@ -1,53 +1,125 @@
 ---
-title: Habits & measurables
-description: Track recurring behavior and numeric observations without confusing the two.
+title: Track habits & measurements
+description: Configure recurring behaviors and numeric observations, then record each honestly.
 ---
 
-# Habits & measurables
+# Track habits & measurements
 
-A habit records whether a recurring behavior succeeded, failed, or should be
-skipped. A measurable records a numeric observation. They can support one
-another without being the same thing: “inspect habitat seals” is a habit,
-while “sardines consumed” and “habitat temperature” are measurable values.
+A habit answers **did this recurring behavior happen?** A measurable answers
+**what numeric value did I observe?** They can support the same goal without
+being interchangeable: “Emperor penguin roll call” is a habit, while “Penguins
+accounted for” is a measurable value.
+
+## Work with habits
+
+The Habits page organizes active definitions into what is due now, scheduled
+for later, and completed. Its daily summary, consistency history, streaks, and
+completion-rate chart help you notice patterns without treating one missed day
+as the entire story.
 
 <ManualScreenshot
   caseId="habits/today"
-  alt="Penguin Ops habits dashboard showing habitat checks, penguin roll call, sardine inventory, completion state, streaks, and recent history"
+  alt="Penguin Operations habits dashboard showing habitat checks, penguin roll call, sardine inventory, completion state, streaks, and recent history"
 />
 
-The habits page separates what is due now, scheduled for later, and already
-completed. Use the filters to focus on one of those groups or return to the full
-list. The recent-history grid and streak summaries make patterns visible
-without turning a single missed day into the whole story.
-
-## Create a habit
+### Create and find habit definitions
 
 1. Open **Settings → Habits**.
-2. Add a habit and give it a specific title.
-3. Assign a category when that helps filtering and recognition.
-4. Configure its schedule and start date.
-5. Save it.
+2. Select **Create habit**.
+3. Give the behavior a concrete, repeatable name and useful description.
+4. Choose its category, options, and schedule.
+5. Save.
 
-When completing a habit, choose the state that preserves what happened:
+<ManualScreenshot
+  caseId="habits/settings-list"
+  alt="Habit settings containing Emperor penguin roll call, Review sardine forecast, and Walk the habitat seals with favorite, inactive, and private states"
+  caption="Search definitions here. The star, hidden-eye, and lock identify favorite, inactive, and private habits."
+/>
 
-- **Success** — you completed the intended behavior.
-- **Missed** — the behavior was possible but did not happen.
-- **Skip** — it was not applicable or not reasonably possible.
+<ManualScreenshot
+  caseId="habits/settings-detail"
+  alt="Emperor penguin roll call habit editor with expedition description, Penguin Operations category, and favorite, private, and active options"
+/>
+
+The definition editor includes:
+
+- **Category** for filtering and visual context.
+- **Dashboard** when the habit should appear as a chart on a selected dashboard.
+- **Favorite** for higher prominence.
+- **Private** to hide it unless private entries are shown.
+- **Active** to control whether it appears on the Habits page without deleting
+  its history.
+
+### Schedule a daily habit
+
+<ManualScreenshot
+  caseId="habits/schedule"
+  alt="Emperor penguin roll call schedule starting July 1, shown from 06:00 with a 06:30 alert"
+/>
+
+The current editor is daily-first. Set a **Start date**, optionally delay when
+the habit is **shown from**, and optionally choose when Lotti should **show an
+alert**. The data model also understands weekly and monthly schedules, but the
+present editor exposes the richer time controls for daily habits.
+
+### Record what actually happened
+
+Open a due habit or use its quick action. The detailed completion form supports
+three outcomes:
+
+- **Success** — the behavior happened.
+- **Missed** — it was expected and possible, but did not happen.
+- **Skip** — it did not reasonably apply that day.
 
 <ManualScreenshot
   caseId="habits/record"
   alt="Habit completion form for inspecting the penguin habitat seals, with Success, Skip, and Missed outcomes plus date and notes"
 />
 
-Do not use success merely to remove an uncomfortable red state; honest history
-is more useful than a perfect chart.
+Use the state that preserves reality. A candid history is more useful than a
+perfect-looking chart. Completion records are journal entries, so later views
+can reconstruct the effective result for each habit and day.
 
-## Create a measurable data type
+## Work with measurables
 
-Open **Settings → Measurable data types**, then add a name, optional description,
-unit, and aggregation behavior. Aggregation determines whether a dashboard
-shows individual values or combines observations over a day.
+A measurable definition describes the number before you record it: its name,
+unit, privacy, and how multiple observations combine on charts.
 
-For example, configure **Sardines consumed** with the unit `fish` and daily-sum
-aggregation. Each meal or delivery can add an observation, while the dashboard
-combines them into one daily total.
+<ManualScreenshot
+  caseId="measurables/settings-list"
+  alt="Measurable settings containing Habitat pressure, Penguins accounted for, and Sardines consumed"
+/>
+
+### Create a measurable data type
+
+1. Open **Settings → Measurable data types**.
+2. Select the add action.
+3. Add a name, optional description, and concise unit abbreviation.
+4. Choose the default aggregation used by charts.
+5. Decide whether it should be favorite or private, then save.
+
+<ManualScreenshot
+  caseId="measurables/settings-detail"
+  alt="Habitat pressure measurable editor using kPa and Daily average aggregation"
+/>
+
+Choose aggregation based on what repeated readings mean:
+
+| Aggregation | Use it when |
+| --- | --- |
+| No aggregation | Every individual observation matters |
+| Daily sum | Readings accumulate, such as sardines consumed |
+| Daily maximum | The day's peak is the important signal |
+| Daily average | Readings sample a changing value, such as habitat pressure |
+| Hourly sum | Accumulation needs finer hourly buckets |
+
+The unit is display context, not a converter. If you define habitat pressure as
+`kPa`, record values in kPa consistently. Create a separate measurable if a
+different unit represents a genuinely different series.
+
+## Connect the two without confusing them
+
+A roll call can be completed successfully even if only 36 penguins were
+counted—the habit records whether the procedure happened, while the measurable
+records the result. Put both on a [dashboard](./dashboards.mdx) when their
+relationship answers a recurring operational question.

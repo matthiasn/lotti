@@ -186,6 +186,8 @@ HabitDefinition _habit({
   required String name,
   required String description,
   String? categoryId,
+  HabitSchedule? schedule,
+  DateTime? activeFrom,
   bool priority = false,
   bool private = false,
   bool active = true,
@@ -196,7 +198,8 @@ HabitDefinition _habit({
   createdAt: _created,
   updatedAt: _created,
   vectorClock: null,
-  habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
+  habitSchedule: schedule ?? const HabitSchedule.daily(requiredCompletions: 1),
+  activeFrom: activeFrom,
   active: active,
   private: private,
   priority: priority,
@@ -208,6 +211,12 @@ final HabitDefinition _rollCall = _habit(
   name: 'Emperor penguin roll call',
   description: 'Account for all 37 expedition penguins before launch.',
   categoryId: manualDemoCategoryId,
+  schedule: HabitSchedule.daily(
+    requiredCompletions: 1,
+    showFrom: DateTime(2026, 7, 17, 6),
+    alertAtTime: DateTime(2026, 7, 17, 6, 30),
+  ),
+  activeFrom: DateTime(2026, 7),
   priority: true,
 );
 final HabitDefinition _habitatSealWalk = _habit(
@@ -391,6 +400,28 @@ Future<void> _pumpScreen(
     ),
   );
   await settleFrames(tester);
+}
+
+void _alignInOuterScrollView(
+  WidgetTester tester,
+  Finder target, {
+  double top = 72,
+}) {
+  final position = tester
+      .stateList<ScrollableState>(find.byType(Scrollable))
+      .map((state) => state.position)
+      .reduce(
+        (largest, candidate) =>
+            candidate.maxScrollExtent > largest.maxScrollExtent
+            ? candidate
+            : largest,
+      );
+  final targetTop = tester.getTopLeft(target).dy;
+  final offset = (position.pixels + targetTop - top).clamp(
+    position.minScrollExtent,
+    position.maxScrollExtent,
+  );
+  position.jumpTo(offset);
 }
 
 void main() {
@@ -713,112 +744,198 @@ void main() {
   // Habits.
   // -------------------------------------------------------------------------
 
-  testWidgets('mini habits list — dark', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: miniDevice,
-      overrides: [
-        habitDefinitionsStreamProvider.overrideWith(
-          (ref) => Stream.value(_allHabits),
-        ),
-      ],
-      home: const HabitsPage(),
-    );
-    expect(find.text('Emperor penguin roll call'), findsOneWidget);
-    expect(find.text('Walk the habitat seals'), findsOneWidget);
-    await captureScreenshot(tester, 'mini_habits_list_dark', subdir: _subdir);
-  });
+  for (final device in [miniDevice, desktopDevice]) {
+    final viewport = device.isPhone ? 'mobile' : 'desktop';
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      final theme = brightness.name;
 
-  testWidgets('mini habits detail (edit) — dark', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: miniDevice,
-      home: EditHabitPage(habitId: _rollCall.id),
-    );
-    expect(find.text('Edit habit'), findsOneWidget);
-    expect(find.text('Emperor penguin roll call'), findsOneWidget);
-    await captureScreenshot(tester, 'mini_habits_detail_dark', subdir: _subdir);
-  });
+      testWidgets('$viewport habits settings list — $theme', (tester) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          overrides: [
+            habitDefinitionsStreamProvider.overrideWith(
+              (ref) => Stream.value(_allHabits),
+            ),
+          ],
+          home: const HabitsPage(),
+        );
+        expect(find.text('Emperor penguin roll call'), findsOneWidget);
+        expect(find.text('Walk the habitat seals'), findsOneWidget);
+        expect(find.text('Review sardine forecast'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'habits_settings_list_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport habits settings detail — $theme', (tester) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          home: EditHabitPage(habitId: _rollCall.id),
+        );
+        expect(find.text('Edit habit'), findsOneWidget);
+        expect(find.text('Emperor penguin roll call'), findsOneWidget);
+        expect(find.text('Penguin Operations'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'habits_settings_detail_${viewport}_$theme',
+          subdir: _subdir,
+        );
+
+        await tester.scrollUntilVisible(
+          find.text('Schedule'),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await settleFrames(tester);
+        expect(find.text('Start date'), findsOneWidget);
+        expect(find.text('Show from'), findsOneWidget);
+        expect(find.text('Show alert at'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'habits_schedule_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+    }
+  }
 
   // -------------------------------------------------------------------------
   // Measurables.
   // -------------------------------------------------------------------------
 
-  testWidgets('mini measurables list — dark', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: miniDevice,
-      overrides: [
-        measurableDataTypesStreamProvider.overrideWith(
-          (ref) => Stream.value(_allMeasurables),
-        ),
-      ],
-      home: const MeasurablesPage(),
-    );
-    expect(find.text('Habitat pressure'), findsOneWidget);
-    expect(find.text('Penguins accounted for'), findsOneWidget);
-    await captureScreenshot(
-      tester,
-      'mini_measurables_list_dark',
-      subdir: _subdir,
-    );
-  });
+  for (final device in [miniDevice, desktopDevice]) {
+    final viewport = device.isPhone ? 'mobile' : 'desktop';
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      final theme = brightness.name;
 
-  testWidgets('mini measurables detail (edit) — dark', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: miniDevice,
-      home: MeasurableDetailsPage(dataType: _habitatPressure),
-    );
-    expect(find.text('Edit measurable'), findsOneWidget);
-    expect(find.text('Habitat pressure'), findsOneWidget);
-    await captureScreenshot(
-      tester,
-      'mini_measurables_detail_dark',
-      subdir: _subdir,
-    );
-  });
+      testWidgets('$viewport measurables settings list — $theme', (
+        tester,
+      ) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          overrides: [
+            measurableDataTypesStreamProvider.overrideWith(
+              (ref) => Stream.value(_allMeasurables),
+            ),
+          ],
+          home: const MeasurablesPage(),
+        );
+        expect(find.text('Habitat pressure'), findsOneWidget);
+        expect(find.text('Sardines consumed'), findsOneWidget);
+        expect(find.text('Penguins accounted for'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'measurables_settings_list_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport measurables settings detail — $theme', (
+        tester,
+      ) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          home: MeasurableDetailsPage(dataType: _habitatPressure),
+        );
+        expect(find.text('Edit measurable'), findsOneWidget);
+        expect(find.text('Habitat pressure'), findsOneWidget);
+        expect(find.text('kPa'), findsOneWidget);
+        expect(find.text('Daily average'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'measurables_settings_detail_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+    }
+  }
 
   // -------------------------------------------------------------------------
   // Dashboards.
   // -------------------------------------------------------------------------
 
-  testWidgets('mini dashboards list — dark', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: miniDevice,
-      overrides: [
-        allDashboardsStreamProvider.overrideWith(
-          (ref) => Stream.value(_allDashboards),
-        ),
-      ],
-      home: const DashboardSettingsPage(),
-    );
-    expect(find.text('Colony operations'), findsOneWidget);
-    expect(find.text('Mission readiness'), findsOneWidget);
-    await captureScreenshot(
-      tester,
-      'mini_dashboards_list_dark',
-      subdir: _subdir,
-    );
-  });
+  for (final device in [miniDevice, desktopDevice]) {
+    final viewport = device.isPhone ? 'mobile' : 'desktop';
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      final theme = brightness.name;
 
-  testWidgets('mini dashboards detail (edit, with items) — dark', (
-    tester,
-  ) async {
-    await _pumpScreen(
-      tester,
-      device: miniDevice,
-      home: DashboardDefinitionPage(dashboard: _colonyOperations),
-    );
-    expect(find.text('Edit dashboard'), findsOneWidget);
-    expect(find.text('Colony operations'), findsOneWidget);
-    // The reorderable charts list renders one dismissible card per item.
-    expect(find.byType(Dismissible), findsNWidgets(3));
-    await captureScreenshot(
-      tester,
-      'mini_dashboards_detail_dark',
-      subdir: _subdir,
-    );
-  });
+      testWidgets('$viewport dashboards settings list — $theme', (
+        tester,
+      ) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          overrides: [
+            allDashboardsStreamProvider.overrideWith(
+              (ref) => Stream.value(_allDashboards),
+            ),
+          ],
+          home: const DashboardSettingsPage(),
+        );
+        expect(find.text('Colony operations'), findsOneWidget);
+        expect(find.text('Mission readiness'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'dashboards_settings_list_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport dashboards settings detail — $theme', (
+        tester,
+      ) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          home: DashboardDefinitionPage(dashboard: _colonyOperations),
+        );
+        expect(find.text('Edit dashboard'), findsOneWidget);
+        expect(find.text('Colony operations'), findsOneWidget);
+        // The reorderable charts list renders one dismissible card per item.
+        expect(find.byType(Dismissible), findsNWidgets(3));
+        await captureScreenshot(
+          tester,
+          'dashboards_settings_detail_${viewport}_$theme',
+          subdir: _subdir,
+        );
+
+        _alignInOuterScrollView(
+          tester,
+          find.text('Charts on this dashboard'),
+        );
+        await settleFrames(tester);
+        expect(find.text('Habitat pressure — Daily average'), findsOneWidget);
+        expect(find.text('Sardines consumed — Daily sum'), findsOneWidget);
+        expect(find.text('Penguins accounted for — Daily sum'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'dashboards_charts_${viewport}_$theme',
+          subdir: _subdir,
+        );
+
+        _alignInOuterScrollView(tester, find.text('Add charts by type'));
+        await settleFrames(tester);
+        expect(find.text('Habits'), findsOneWidget);
+        expect(find.text('Measurements'), findsOneWidget);
+        expect(find.text('Health'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'dashboards_sources_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+    }
+  }
 }

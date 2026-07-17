@@ -59,18 +59,28 @@
       "id": "habits-measurables",
       "title": "Habits and measurables",
       "page": "organize-and-reflect/habits-and-measurables",
-      "status": "needs-screenshot-refresh",
+      "status": "verified",
       "screenshotCases": [
         "habits/today",
-        "habits/record"
+        "habits/settings-list",
+        "habits/settings-detail",
+        "habits/schedule",
+        "habits/record",
+        "measurables/settings-list",
+        "measurables/settings-detail"
       ]
     },
     {
       "id": "dashboards",
       "title": "Dashboards",
       "page": "organize-and-reflect/dashboards",
-      "status": "needs-screenshot-refresh",
-      "screenshotCases": []
+      "status": "verified",
+      "screenshotCases": [
+        "dashboards/settings-list",
+        "dashboards/settings-detail",
+        "dashboards/charts",
+        "dashboards/sources"
+      ]
     },
     {
       "id": "ai-provider-setup",

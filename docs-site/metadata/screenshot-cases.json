@@ -167,6 +167,39 @@
       }
     },
     {
+      "id": "habits/settings-list",
+      "title": "Habit definitions",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "habits_settings_list_mobile_light.png",
+        "mobile-dark": "habits_settings_list_mobile_dark.png",
+        "desktop-light": "habits_settings_list_desktop_light.png",
+        "desktop-dark": "habits_settings_list_desktop_dark.png"
+      }
+    },
+    {
+      "id": "habits/settings-detail",
+      "title": "Habit details",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "habits_settings_detail_mobile_light.png",
+        "mobile-dark": "habits_settings_detail_mobile_dark.png",
+        "desktop-light": "habits_settings_detail_desktop_light.png",
+        "desktop-dark": "habits_settings_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "habits/schedule",
+      "title": "Habit schedule",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "habits_schedule_mobile_light.png",
+        "mobile-dark": "habits_schedule_mobile_dark.png",
+        "desktop-light": "habits_schedule_desktop_light.png",
+        "desktop-dark": "habits_schedule_desktop_dark.png"
+      }
+    },
+    {
       "id": "habits/record",
       "title": "Habit completion",
       "sourceTest": "test/features/habits/ui/habits_manual_screenshots_test.dart",
@@ -175,6 +208,72 @@
         "mobile-dark": "habits_record_mobile_dark.png",
         "desktop-light": "habits_record_desktop_light.png",
         "desktop-dark": "habits_record_desktop_dark.png"
+      }
+    },
+    {
+      "id": "measurables/settings-list",
+      "title": "Measurable definitions",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "measurables_settings_list_mobile_light.png",
+        "mobile-dark": "measurables_settings_list_mobile_dark.png",
+        "desktop-light": "measurables_settings_list_desktop_light.png",
+        "desktop-dark": "measurables_settings_list_desktop_dark.png"
+      }
+    },
+    {
+      "id": "measurables/settings-detail",
+      "title": "Measurable details",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "measurables_settings_detail_mobile_light.png",
+        "mobile-dark": "measurables_settings_detail_mobile_dark.png",
+        "desktop-light": "measurables_settings_detail_desktop_light.png",
+        "desktop-dark": "measurables_settings_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "dashboards/settings-list",
+      "title": "Dashboard definitions",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "dashboards_settings_list_mobile_light.png",
+        "mobile-dark": "dashboards_settings_list_mobile_dark.png",
+        "desktop-light": "dashboards_settings_list_desktop_light.png",
+        "desktop-dark": "dashboards_settings_list_desktop_dark.png"
+      }
+    },
+    {
+      "id": "dashboards/settings-detail",
+      "title": "Dashboard details",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "dashboards_settings_detail_mobile_light.png",
+        "mobile-dark": "dashboards_settings_detail_mobile_dark.png",
+        "desktop-light": "dashboards_settings_detail_desktop_light.png",
+        "desktop-dark": "dashboards_settings_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "dashboards/charts",
+      "title": "Dashboard chart composition",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "dashboards_charts_mobile_light.png",
+        "mobile-dark": "dashboards_charts_mobile_dark.png",
+        "desktop-light": "dashboards_charts_desktop_light.png",
+        "desktop-dark": "dashboards_charts_desktop_dark.png"
+      }
+    },
+    {
+      "id": "dashboards/sources",
+      "title": "Dashboard chart sources",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "dashboards_sources_mobile_light.png",
+        "mobile-dark": "dashboards_sources_mobile_dark.png",
+        "desktop-light": "dashboards_sources_desktop_light.png",
+        "desktop-dark": "dashboards_sources_desktop_dark.png"
       }
     },
     {

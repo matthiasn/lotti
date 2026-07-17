@@ -1,28 +1,85 @@
 ---
-title: Build dashboards
-description: Combine measurements into a view that helps answer a recurring question.
+title: Build useful dashboards
+description: Combine habits, measurements, health, surveys, and workouts into a reusable operational view.
 ---
 
-# Build dashboards
+# Build useful dashboards
 
-A dashboard groups charts for measurements you want to interpret together.
-Build one around a question—“How is training changing?”—instead of collecting
-every available number on one screen.
+A dashboard groups charts that answer a recurring question. **Colony
+operations** brings habitat pressure, sardine demand, and expedition headcount
+together; **Mission readiness** keeps a private launch review separate. Build
+around a decision rather than collecting every available number.
+
+<ManualScreenshot
+  caseId="dashboards/settings-list"
+  alt="Dashboard settings containing Colony operations and the private Mission readiness dashboard"
+/>
 
 ## Create a dashboard
 
 1. Open **Settings → Dashboard management**.
-2. Add a dashboard with a clear name and optional description.
-3. Add one or more measurable-data charts.
-4. Reorder the charts so the most useful signal appears first.
-5. Save, then open the dashboard from the Dashboards area.
+2. Select **Create dashboard**.
+3. Add a clear name and a description of the question it should answer.
+4. Optionally assign a category and privacy setting.
+5. Add and arrange charts, then save.
 
-Health data may be imported when a dashboard first requests it. Platform
-permission prompts and available data types differ by device.
+<ManualScreenshot
+  caseId="dashboards/settings-detail"
+  alt="Colony operations dashboard editor assigned to Penguin Operations with privacy and active options"
+/>
 
-:::note Screenshot refresh in progress
+- **Category** makes the dashboard available to category-based filtering.
+- **Private** hides the dashboard unless private entries are shown.
+- **Active** controls whether it appears in the Dashboards list without
+  deleting the definition.
 
-The previous dashboard images are retained in Git history but do not represent
-the current design. The automated screenshot catalog will supply the new set.
+## Compose and order charts
 
-:::
+<ManualScreenshot
+  caseId="dashboards/charts"
+  alt="Colony operations chart list with Habitat pressure daily average, Sardines consumed daily sum, and Penguins accounted for daily sum"
+  caption="Drag with the handle to reorder. Select the adjustment control on a measurement chart to change its aggregation, or remove it with ×."
+/>
+
+Chart order is dashboard order. Put the signal that frames the rest first. For
+Colony operations, habitat pressure leads because an unsafe habitat changes how
+every other number should be interpreted.
+
+Measurement charts keep their own aggregation on the dashboard item. That lets
+the same measurable appear with a different summary in another dashboard
+without changing the underlying observations.
+
+## Add charts from supported sources
+
+<ManualScreenshot
+  caseId="dashboards/sources"
+  alt="Dashboard editor offering Habits, Measurements, Health, Surveys, and Workouts as chart sources plus JSON export"
+/>
+
+The editor can add:
+
+- **Habits** for completion history.
+- **Measurements** for user-defined numeric observations.
+- **Health** data supported by the current platform and permissions.
+- **Surveys** for configured questionnaire results.
+- **Workouts** imported from supported health sources.
+
+Expand a source, select one or more charts, and add them. Availability depends
+on the definitions and platform data that exist; health permission prompts and
+supported types vary by device.
+
+## Open and interpret a dashboard
+
+Open the Dashboards area and select a dashboard. On desktop, the list and
+selected dashboard can remain side by side; on mobile, the selected dashboard
+opens as its own page. Use the time-span control to change the visible range.
+
+Treat a chart as evidence, not a verdict. Check the aggregation, units, date
+range, missing observations, and privacy state before drawing conclusions.
+
+## Export dashboard configuration
+
+**Save and copy JSON** persists the dashboard, then copies its configuration
+and referenced measurable definitions. This is useful for inspection or moving
+a configuration, but it is not a live sync link: later edits do not update an
+already copied payload.
