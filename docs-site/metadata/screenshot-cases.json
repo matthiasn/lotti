@@ -57,6 +57,61 @@
       }
     },
     {
+      "id": "daily-os/settings",
+      "title": "Daily OS settings",
+      "sourceTest": "test/features/daily_os_next/ui/pages/daily_os_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "daily_os_settings_mobile_light.png",
+        "mobile-dark": "daily_os_settings_mobile_dark.png",
+        "desktop-light": "daily_os_settings_desktop_light.png",
+        "desktop-dark": "daily_os_settings_desktop_dark.png"
+      }
+    },
+    {
+      "id": "daily-os/refine",
+      "title": "Daily OS plan refinement",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "daily_os_refine_mobile_light.png",
+        "mobile-dark": "daily_os_refine_mobile_dark.png",
+        "desktop-light": "daily_os_refine_desktop_light.png",
+        "desktop-dark": "daily_os_refine_desktop_dark.png"
+      }
+    },
+    {
+      "id": "daily-os/commit",
+      "title": "Daily OS plan commitment",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "daily_os_commit_mobile_light.png",
+        "mobile-dark": "daily_os_commit_mobile_dark.png",
+        "desktop-light": "daily_os_commit_desktop_light.png",
+        "desktop-dark": "daily_os_commit_desktop_dark.png"
+      }
+    },
+    {
+      "id": "daily-os/block-editor",
+      "title": "Daily OS block editor",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "daily_os_block_editor_mobile_light.png",
+        "mobile-dark": "daily_os_block_editor_mobile_dark.png",
+        "desktop-light": "daily_os_block_editor_desktop_light.png",
+        "desktop-dark": "daily_os_block_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "daily-os/shutdown",
+      "title": "Daily OS end-of-day shutdown",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "daily_os_shutdown_mobile_light.png",
+        "mobile-dark": "daily_os_shutdown_mobile_dark.png",
+        "desktop-light": "daily_os_shutdown_desktop_light.png",
+        "desktop-dark": "daily_os_shutdown_desktop_dark.png"
+      }
+    },
+    {
       "id": "settings/home",
       "title": "Settings home",
       "sourceTest": "test/features/settings/ui/settings_home_screenshots_test.dart",

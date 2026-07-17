@@ -166,6 +166,8 @@ manual_screenshots: manual_deps
 	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/settings/ui/settings_home_screenshots_test.dart
 	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/daily_os_next/ui/pages/day_planning_modal_screenshots_test.dart --name '^(mini|desktop) (capture captured|captured|reconcile) — (dark|light)$$'
 	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart --name '^((mini|desktop) (agenda|timeline)|(pro|desktop) timeline arrange mode) — (dark|light)$$'
+	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart --name '^manual daily OS'
+	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/daily_os_next/ui/pages/daily_os_settings_manual_screenshots_test.dart
 	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/settings/ui/settings_definitions_screenshots_test.dart
 	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/settings/ui/settings_preferences_screenshots_test.dart
 	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/tasks/ui/widgets/task_manual_screenshots_test.dart

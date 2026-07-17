@@ -5,13 +5,18 @@
       "id": "daily-os",
       "title": "Daily OS",
       "page": "plan-and-capture/daily-os",
-      "status": "migrated",
+      "status": "verified",
       "screenshotCases": [
+        "daily-os/settings",
         "daily-os/capture-review",
         "daily-os/reconcile",
         "daily-os/agenda",
+        "daily-os/refine",
+        "daily-os/commit",
         "daily-os/timeline",
-        "daily-os/arrange"
+        "daily-os/arrange",
+        "daily-os/block-editor",
+        "daily-os/shutdown"
       ]
     },
     {

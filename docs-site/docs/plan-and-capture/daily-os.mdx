@@ -1,50 +1,64 @@
 ---
-title: Plan a day with Daily OS
-description: Turn a spoken or typed check-in into an editable plan and compare it with reality.
+title: Plan and close a day with Daily OS
+description: Turn a spoken or typed check-in into an editable plan, operate it beside recorded time, and carry the right work forward.
 ---
 
-# Plan a day with Daily OS
+# Plan and close a day with Daily OS
 
-Daily OS turns a spoken or typed check-in into an editable plan for one day. It
-does not replace tasks or time records: it proposes when work could happen,
-shows the plan beside what you actually recorded, and lets you reshape the
-schedule by voice or directly on the calendar.
+Daily OS turns a spoken or typed check-in into a plan for one day. It does not
+replace tasks or time records: tasks describe the work, the day plan describes
+intent, and recorded sessions describe what actually happened.
 
-The examples use a deliberately busy synthetic day for a fictional Director
-of Interplanetary Penguin Logistics. Your penguin situation may vary.
+The examples follow Director Aurora through a deliberately busy day at
+Interplanetary Penguin Logistics. The planner protects a Project Waddle launch
+review, moves sardine negotiations, and keeps a zero-gravity fish-feeder demo
+clear. Your penguin situation may vary.
 
 ## Before your first check-in
 
-Open **Settings → Daily OS** and choose an inference profile. The settings page
-identifies whether the configured endpoint is on this device or remote. You can
-also set the name used in the greeting.
+Open **Settings → Daily OS**. Choose the inference profile that should plan
+your days and enter the name Daily OS should use when addressing you. The
+privacy notice identifies the selected provider and whether processing is on
+this device or remote.
 
-In **Settings → Categories**, enable **Day planning** for the categories the
-planner may use. Keeping that set intentional improves suggestions and keeps
-unrelated areas out of the ritual.
+<ManualScreenshot
+  alt="Daily OS settings configured for Director Aurora and the Project Waddle inference profile"
+  caseId="daily-os/settings"
+  caption="Director Aurora uses the Project Waddle Command profile, Waddle Command 70B, and the Mission Control Router provider."
+/>
+
+Then open **Settings → Categories** and enable **Day planning** only for the
+categories the planner may use. An intentional allow-list keeps unrelated
+tasks out of planning and prevents Daily OS from changing work outside those
+categories.
 
 ## 1. Say what the day needs
 
-Open **Daily OS**, select the date, and choose **Speak a check-in**. Mention
-fixed commitments, outcomes, rough durations, energy constraints, breaks, and
-anything that should not happen too late. Use **Type instead** when speaking is
-inconvenient.
+Open **Daily OS**, choose the date, and select **Speak a check-in**. Mention:
 
-After recognition, review the complete transcript before continuing. Correct
-names, numbers, and other mistakes in place.
+- fixed commitments and deadlines;
+- the outcomes that matter;
+- rough durations and available capacity;
+- breaks, energy constraints, and work that should not happen too late;
+- anything already in progress or likely to carry over.
+
+Choose **Type instead** when speaking is inconvenient. After recognition,
+review the complete transcript and correct names, numbers, or other mistakes
+in place.
 
 <ManualScreenshot
   alt="The complete Daily OS check-in transcript ready for review"
   caseId="daily-os/capture-review"
-  caption="Review the recognized text before asking Daily OS to match it with your work."
+  caption="Review the recognized text before Daily OS matches it with Project Waddle tasks."
 />
 
-Choose **Re-record** to start over or **Review** to continue. **Build my day**
-remains unavailable until the initial matching pass has completed.
+Choose **Re-record** to start over or **Review** to continue. Building the day
+remains unavailable until the matching pass has completed.
 
-## 2. Reconcile what the assistant heard
+## 2. Reconcile speech with real work
 
-Reconcile is the safety check between speech and action:
+Reconcile is the safety check between what the assistant heard and what Lotti
+will change:
 
 - **Matched** points to an existing task. Confirm that it is the task you meant.
 - **New** is a phrase that can become work for today.
@@ -52,25 +66,26 @@ Reconcile is the safety check between speech and action:
 - Confidence and time-anchor labels show where review is most useful.
 
 <ManualScreenshot
-  alt="Daily OS matching a spoken check-in with existing and new work"
+  alt="Daily OS reconciling a spoken check-in with existing and new Project Waddle work"
   caseId="daily-os/reconcile"
-  caption="Reconcile keeps proposed matches and changes visible before anything becomes part of the plan."
+  caption="The orbital habitat inspection is matched to real work while new requests stay explicit decisions."
 />
 
-The next section surfaces work already in progress, overdue, due today, or
+Daily OS also surfaces work that is in progress, overdue, due today, or
 recently missed. Decide what belongs today instead of importing the entire
 backlog.
 
 ## 3. Judge the draft
 
-Choose **Build my day** after the decisions look right. The first result opens
-on **Agenda**. The capacity card answers “does this fit?” before the numbered
-list answers “what matters?”
+Choose **Build my day** after the reconciliation decisions look right. The
+result opens on **Agenda**. The capacity card answers “does this fit?” before
+the numbered list answers “what matters?” Task-backed rows keep their real
+category, status, estimate, and cover thumbnail.
 
 <ManualScreenshot
-  alt="A busy Daily OS agenda with capacity, priorities, and category totals"
+  alt="A Project Waddle Daily OS agenda with capacity, task thumbnails, priorities, and category totals"
   caseId="daily-os/agenda"
-  caption="The agenda adapts to the selected device layout and manual theme."
+  caption="Every task in the agenda keeps its own Project Waddle cover art, including completed work."
 />
 
 Use the quick adjustments when the shape is wrong:
@@ -78,44 +93,113 @@ Use the quick adjustments when the shape is wrong:
 - **Too much** asks for a smaller plan.
 - **Move lighter** moves demanding work away from low-energy periods.
 - **Add buffer** creates breathing room.
-- **Refine** opens a free-form check-in for another change.
+- **Refine** opens a free-form voice or text adjustment.
 
 Choose **Looks good** only when the draft is genuinely acceptable.
 
-## 4. Compare the plan with reality
+## 4. Review every proposed refinement
 
-Switch from **Agenda** to **Day** for the calendar projection. On desktop, Plan
-and Actual share one time axis; on a phone, swipe horizontally between them.
-Planned blocks use a lighter treatment and recorded sessions are filled, so
-drift remains visible without rewriting history.
+Refine never silently rewrites the schedule. Describe the change, then inspect
+each added, moved, or dropped block with its old and proposed time and the
+planner's reason. Accept or reject proposals individually, choose **Revert** to
+discard the pending set, or keep talking to request another pass.
 
 <ManualScreenshot
-  alt="Daily OS timeline comparing planned blocks with recorded time"
-  caseId="daily-os/timeline"
-  caption="The phone pages between planned and recorded lanes; desktop shows both on the same time axis."
+  alt="Daily OS proposing two reviewed time changes for sardine negotiations and the fish-feeder demo"
+  caseId="daily-os/refine"
+  caption="Sardine negotiations move later to protect Mission Control's launch review; the fish-feeder demo follows the new buffer."
 />
 
-## 5. Arrange the plan directly
+Only accepted proposals become part of the draft. **Looks good** exits the
+review once the plan says what you intend.
+
+## 5. Lock in the day
+
+The **Lock it in** page gives the complete draft one final reading: order,
+duration, outcomes, and remaining capacity. Hold the confirmation control for
+a second to move the plan from drafted to committed. Keyboard users can focus
+the control and press Enter or Space; assistive-technology activation confirms
+it directly.
+
+<ManualScreenshot
+  alt="The Project Waddle draft and deliberate hold-to-confirm action on the Daily OS commitment page"
+  caseId="daily-os/commit"
+  caption="Eight pieces of work use 8h 45m of a 9h day, leaving a 15-minute margin before Director Aurora signs off."
+/>
+
+Committing locks in the plan's bones, not your ability to adapt. You can still
+use **Refine** afterward, but proposed changes remain reviewable.
+
+## 6. Compare the plan with reality
+
+Switch from **Agenda** to **Day** for the calendar projection. On desktop,
+Plan and Actual share one time axis. On a phone, swipe horizontally between
+the planned and recorded lanes. Planned blocks use a lighter treatment and
+recorded sessions are filled, so drift stays visible without rewriting
+history.
+
+<ManualScreenshot
+  alt="Daily OS timeline comparing Project Waddle planned blocks with recorded time"
+  caseId="daily-os/timeline"
+  caption="The phone pages between planned and recorded lanes; desktop shows both on one time axis."
+/>
+
+Start and stop time recording from the linked task as usual. Daily OS reads
+those records as reality; it does not manufacture completed work from the
+plan.
+
+## 7. Move, resize, or edit a block
 
 Choose the four-arrow **Arrange** action above the timeline. Drag a block body
-to move it; drag the top or bottom handle to change its start or end. Changes
-snap to 15-minute increments and stay inside the selected day. Use **Undo** in
-the confirmation message when the old slot was better.
+to move it, or drag its top or bottom handle to change its start or end.
+Changes snap to 15-minute increments and stay inside the selected day. Use
+**Undo** in the confirmation message when the old slot was better.
 
 <ManualScreenshot
-  alt="Daily OS arrange mode with move and resize controls on planned blocks"
+  alt="Daily OS arrange mode with move and resize controls on Project Waddle blocks"
   caseId="daily-os/arrange"
-  caption="Arrange mode exposes the same move and resize actions in phone and desktop layouts."
+  caption="Arrange mode exposes the same direct move and resize actions on phone and desktop."
 />
 
-The pencil action opens title, category, timing, and placement details. A
-task-linked block keeps its task-owned title and category read-only; use **Open
-task** to change those at the source. Its scheduled start and end remain
-editable from Daily OS.
+The pencil action opens the block editor. A task-linked block keeps its
+task-owned title and category read-only; choose **Open task** to change those
+at the source. Its scheduled start and end remain editable from Daily OS.
 
-## Remember
+<ManualScreenshot
+  alt="Daily OS block editor for the zero-gravity fish feeder task"
+  caseId="daily-os/block-editor"
+  caption="The linked task owns its title and Penguin Operations category; Daily OS owns the 2:30–4:00 PM slot and planning reason."
+/>
 
-- Tasks describe the work.
-- The day plan describes intent.
+Standalone plan blocks can edit their own title and category because no task
+owns that metadata.
+
+## 8. Close out the day
+
+After a committed day, choose **Wrap up**. Shutdown separates decisions that
+should not be conflated:
+
+- **What you did** lists completed work with actual tracked duration.
+- **Carries forward** lets you schedule unfinished work for tomorrow, pick a
+  date, or drop it.
+- Metrics summarize focus time, flow sessions, context switches, and energy.
+- A one-line reflection feeds the next draft.
+- **What I've learned** lets you confirm or forget durable planner knowledge.
+- **For tomorrow** preserves the concise handoff note.
+
+<ManualScreenshot
+  alt="Daily OS shutdown with completed Project Waddle work, carryover choices, metrics, reflection, and learned preferences"
+  caseId="daily-os/shutdown"
+  caption="Director Aurora completed the habitat inspection, launch review, and sardine deal; the fish-feeder demo and passenger question stay explicit carryover decisions."
+/>
+
+Choose **Save & close** to leave the review without declaring the day closed,
+or **Close the day** when the carryover and learning decisions are ready.
+
+## The ownership rule
+
+- Tasks describe the work and own task metadata.
+- The day plan describes intent and owns scheduled blocks.
 - Time records describe reality.
+- Planner knowledge records reviewed preferences for future days.
 - The assistant proposes; you decide.

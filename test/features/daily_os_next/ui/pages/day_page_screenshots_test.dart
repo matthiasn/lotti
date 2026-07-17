@@ -25,12 +25,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
+import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
@@ -453,6 +458,141 @@ class _ScreenshotPreferencesController extends DailyOsPreferencesController {
   );
 }
 
+/// Production-page data source for the manual's Refine and Shutdown routes.
+///
+/// The pages and controllers are real; only the durable backend responses are
+/// deterministic so every capture tells the same connected Project Waddle
+/// story.
+class _ManualDailyOsAgent extends MockDayAgent {
+  _ManualDailyOsAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        draftLatency: Duration.zero,
+        summarizeLatency: Duration.zero,
+        clock: () => _now,
+      );
+
+  @override
+  Future<PlanDiff> proposePlanDiff({
+    required DraftPlan currentPlan,
+    required String voiceTranscript,
+    bool Function()? isCancelled,
+  }) async {
+    final updatedBlocks = [
+      for (final block in currentPlan.blocks)
+        if (block.id == 'blk-followup')
+          block.copyWith(start: _at(13, 30), end: _at(15))
+        else
+          block,
+    ];
+    return PlanDiff(
+      id: 'diff-project-waddle-launch-buffer',
+      transcript: voiceTranscript,
+      changes: [
+        PlanDiffChange(
+          id: 'change-protect-launch-review',
+          kind: PlanDiffChangeKind.moved,
+          title: 'Move sardine negotiations 30 minutes later',
+          category: _client,
+          reason:
+              'Protect the launch review and give Mission Control a buffer.',
+          affectedBlockId: 'blk-followup',
+          fromStart: _at(13),
+          fromEnd: _at(14, 30),
+          toStart: _at(13, 30),
+          toEnd: _at(15),
+        ),
+        PlanDiffChange(
+          id: 'change-protect-feeder-demo',
+          kind: PlanDiffChangeKind.moved,
+          title: 'Start the fish-feeder demo after the new buffer',
+          category: _deepWork,
+          reason:
+              'Keep the zero-gravity demo clear of the sardine negotiation.',
+          affectedBlockId: 'blk-slides',
+          fromStart: _at(14, 30),
+          fromEnd: _at(16),
+          toStart: _at(15),
+          toEnd: _at(16, 30),
+        ),
+      ],
+      updatedPlan: currentPlan.copyWith(blocks: updatedBlocks),
+    );
+  }
+
+  @override
+  Future<
+    ({
+      List<CompletedItem> completed,
+      List<CarryoverItem> carryover,
+      ShutdownMetrics metrics,
+    })
+  >
+  surfaceShutdownData({required DateTime forDate}) async => (
+    completed: const [
+      CompletedItem(
+        taskId: manualOrbitalHabitatTaskId,
+        title: 'Inspect orbital penguin habitat',
+        category: _deepWork,
+        durationMinutes: 93,
+        note: 'Seals green; all 37 emperor penguins accounted for.',
+      ),
+      CompletedItem(
+        taskId: manualLaunchReviewTaskId,
+        title: 'Project Waddle launch review',
+        category: _client,
+        durationMinutes: 47,
+        note: 'Mission Control approved the revised habitat checklist.',
+      ),
+      CompletedItem(
+        taskId: manualSardineFuturesTaskId,
+        title: 'Negotiate sardine futures',
+        category: _client,
+        durationMinutes: 110,
+        note: 'Q3 supply secured below the emergency fish ceiling.',
+      ),
+    ],
+    carryover: const [
+      CarryoverItem(
+        taskId: manualFishFeederTaskId,
+        title: 'Zero-gravity fish feeder',
+        category: _deepWork,
+        reason: 'Prototype calibrated; live habitat demo still pending.',
+        suggestedTarget: '→ tomorrow morning',
+      ),
+      CarryoverItem(
+        taskId: manualPenguinPassengerTaskId,
+        title: 'Legal: Is a penguin a passenger?',
+        category: _admin,
+        reason: 'Mission Control review ran long.',
+        suggestedTarget: '→ tomorrow afternoon',
+      ),
+    ],
+    metrics: const ShutdownMetrics(
+      focusMinutes: 250,
+      flowSessions: 4,
+      contextSwitches: 3,
+      contextSwitchesWeekAvg: 5.2,
+      energyScore: 8.3,
+      energyDeltaVsWeek: 1.1,
+    ),
+  );
+
+  @override
+  Future<TomorrowNote> generateTomorrowNote({
+    required DateTime forDate,
+  }) async => const TomorrowNote(
+    body:
+        'Start with the live fish-feeder demo at 09:00, then resolve the '
+        'penguin passenger question before the launch window opens.',
+    maturity: 3,
+  );
+}
+
+enum _ManualDailyOsSurface { refine, commit, shutdown }
+
 Widget _app({
   required Widget home,
   required Brightness brightness,
@@ -633,6 +773,58 @@ Future<void> _pumpDayPage(
       ),
     );
     await settleFrames(tester);
+  });
+}
+
+Future<void> _pumpManualDailyOsSurface(
+  WidgetTester tester, {
+  required _ManualDailyOsSurface surface,
+  required ScreenshotDevice device,
+  required Brightness brightness,
+}) async {
+  applyScreenshotDevice(tester, device);
+  final draft = _plan();
+  final agent = _ManualDailyOsAgent();
+  final home = switch (surface) {
+    _ManualDailyOsSurface.refine => RefinePage(draft: draft),
+    _ManualDailyOsSurface.commit => CommitPage(draft: draft),
+    _ManualDailyOsSurface.shutdown => ShutdownPage(forDate: _day),
+  };
+
+  await withClock(Clock.fixed(_now), () async {
+    await tester.pumpWidget(
+      _app(
+        brightness: brightness,
+        size: device.size,
+        overrides: [
+          captureControllerProvider.overrideWith(_stubCapture),
+          dayAgentProvider.overrideWithValue(agent),
+          plannerKnowledgeProvider.overrideWith(
+            (ref) async => _knowledgeView(),
+          ),
+          dailyOsPreferencesControllerProvider.overrideWith(
+            () => _ScreenshotPreferencesController(retireDayFooterHint: true),
+          ),
+        ],
+        home: home,
+      ),
+    );
+    await settleFrames(tester, 6);
+
+    if (surface == _ManualDailyOsSurface.refine) {
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(RefinePage)),
+      );
+      final notifier = container.read(
+        refineControllerProvider(draft).notifier,
+      );
+      await (notifier..reviewTranscript(
+            'Protect the launch review, move sardine negotiations later, and '
+            'keep the fish-feeder demo clear.',
+          ))
+          .submitReviewedTranscript();
+      await settleFrames(tester, 6);
+    }
   });
 }
 
@@ -929,6 +1121,87 @@ void main() {
     await _enableArrangeMode(tester);
     await captureScreenshot(tester, 'day_desktop_06_timeline_arrange_light');
   });
+
+  for (final deviceCase in [
+    (device: proDevice, viewport: 'mobile'),
+    (device: desktopDevice, viewport: 'desktop'),
+  ]) {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      final theme = brightness.name;
+
+      for (final surface in _ManualDailyOsSurface.values) {
+        testWidgets(
+          'manual daily OS ${surface.name} ${deviceCase.viewport} — $theme',
+          (tester) async {
+            await _pumpManualDailyOsSurface(
+              tester,
+              surface: surface,
+              device: deviceCase.device,
+              brightness: brightness,
+            );
+
+            switch (surface) {
+              case _ManualDailyOsSurface.refine:
+                expect(find.byType(RefinePage), findsOneWidget);
+                expect(
+                  find.text('Move sardine negotiations 30 minutes later'),
+                  findsOneWidget,
+                );
+              case _ManualDailyOsSurface.commit:
+                expect(find.byType(CommitPage), findsOneWidget);
+                expect(
+                  find.text('Inspect orbital penguin habitat'),
+                  findsOneWidget,
+                );
+                if (deviceCase.device.isPhone) {
+                  await tester.ensureVisible(
+                    find.byKey(const Key('hold-to-confirm-focus')),
+                  );
+                  await settleFrames(tester);
+                }
+                expect(
+                  find.byKey(const Key('hold-to-confirm-focus')),
+                  findsOneWidget,
+                );
+              case _ManualDailyOsSurface.shutdown:
+                expect(find.byType(ShutdownPage), findsOneWidget);
+                expect(
+                  find.text('Zero-gravity fish feeder'),
+                  findsOneWidget,
+                );
+            }
+
+            await captureScreenshot(
+              tester,
+              'daily_os_${surface.name}_${deviceCase.viewport}_$theme',
+            );
+          },
+        );
+      }
+
+      testWidgets(
+        'manual daily OS block editor ${deviceCase.viewport} — $theme',
+        (tester) async {
+          await _pumpDayPage(
+            tester,
+            device: deviceCase.device,
+            brightness: brightness,
+          );
+          await _switchToDayView(tester);
+          await _openBlockEditor(tester, blockId: 'blk-slides');
+          expect(find.text('Zero-gravity fish feeder'), findsWidgets);
+          expect(
+            find.text(_messages(tester).dailyOsNextBlockEditTimeLabel),
+            findsOneWidget,
+          );
+          await captureScreenshot(
+            tester,
+            'daily_os_block_editor_${deviceCase.viewport}_$theme',
+          );
+        },
+      );
+    }
+  }
 
   testWidgets('mini agenda — dark, 1.3x text', (tester) async {
     await _pumpDayPage(tester, device: miniDevice, textScale: 1.3);
