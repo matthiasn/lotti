@@ -139,12 +139,15 @@ jobs:
           (github.event_name == 'workflow_dispatch' && inputs.deploy &&
            needs.metadata.outputs.version == 'development')
         working-directory: lotti/docs-site
+        env:
+          PAGES_PREFIX: ${{ github.event.repository.name }}
+          VERSION: ${{ needs.metadata.outputs.version }}
         run: >-
           npm run pages:assemble --
           --build-root build
           --output-root "${RUNNER_TEMP}/lotti-manual-pages"
-          --pages-prefix "${{ github.event.repository.name }}"
-          --version "${{ needs.metadata.outputs.version }}"
+          --pages-prefix "$PAGES_PREFIX"
+          --version "$VERSION"
 
       - name: Upload GitHub Pages artifact
         if: >-
