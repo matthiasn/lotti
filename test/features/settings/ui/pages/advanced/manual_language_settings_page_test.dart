@@ -5,6 +5,9 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/components/radio_buttons/design_system_radio_button.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/manual_language_settings_page.dart';
+import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -14,7 +17,11 @@ void main() {
   late TestGetItMocks mocks;
 
   setUp(() async {
-    mocks = await setUpTestGetIt();
+    mocks = await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<UserActivityService>(UserActivityService());
+      },
+    );
     when(
       () => mocks.settingsDb.removeSettingsItem(any()),
     ).thenAnswer((_) async {});
@@ -39,6 +46,24 @@ void main() {
       ),
     );
   }
+
+  testWidgets('wraps the selector in a titled back-navigation page', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(const ManualLanguageSettingsPage()),
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+
+    final context = tester.element(find.byType(ManualLanguageSettingsPage));
+    final page = tester.widget<SliverBoxAdapterPage>(
+      find.byType(SliverBoxAdapterPage),
+    );
+
+    expect(page.title, context.messages.settingsManualLanguageTitle);
+    expect(page.showBackButton, isTrue);
+    expect(find.byType(ManualLanguageSettingsBody), findsOneWidget);
+  });
 
   testWidgets(
     'renders the tokenized grouped choices with Follow system active',
@@ -91,6 +116,20 @@ void main() {
       ).called(1);
     },
   );
+
+  testWidgets('the trailing radio control selects English', (tester) async {
+    await pumpPage(tester);
+    final context = tester.element(find.byType(ManualLanguageSettingsBody));
+    final english = context.messages.settingsManualLanguageEnglishTitle;
+
+    await tester.tap(find.byType(DesignSystemRadioButton).at(1));
+    await tester.pump();
+
+    expect(rowFor(tester, english).selected, isTrue);
+    verify(
+      () => mocks.settingsDb.saveSettingsItem(manualLanguageSettingsKey, 'en'),
+    ).called(1);
+  });
 
   testWidgets('Follow system clears a selected override', (tester) async {
     await pumpPage(tester);
