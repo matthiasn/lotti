@@ -20,6 +20,14 @@ const localeExpectations = {
     mobile: 'Mobil',
     openViewer: 'Screenshot-Ansicht öffnen',
   },
+  fr: {
+    allScreenshots: 'Toutes les captures d’écran',
+    desktop: 'Ordinateur',
+    firstTaskTitle: 'Crée ta première tâche',
+    layoutLabel: 'Présentation des captures pour toutes les images',
+    mobile: 'Mobile',
+    openViewer: 'Ouvrir la visionneuse de captures',
+  },
   cs: {
     allScreenshots: 'Všechny snímky',
     desktop: 'Počítač',

@@ -155,6 +155,13 @@ AppPrefs _neverResolvingRecordingStylePrefs() => AppPrefs(
   setString: ({required key, required value}) async => true,
 );
 
+Finder _speechRecognitionCheckbox(WidgetTester tester) => find.widgetWithText(
+  LottiAnimatedCheckbox,
+  AppLocalizations.of(
+    tester.element(find.byType(Scaffold).first),
+  )!.speechModalTitle,
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -360,6 +367,8 @@ void main() {
 
           return MaterialApp(
             theme: DesignSystemTheme.light(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: AudioRecordingModalContent(
                 categoryId: provideCategory ? 'test-category' : null,
@@ -387,7 +396,7 @@ void main() {
       await tester.pump();
 
       expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+        _speechRecognitionCheckbox(tester),
         findsOneWidget,
       );
     });
@@ -403,7 +412,7 @@ void main() {
       await tester.pump();
 
       expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+        _speechRecognitionCheckbox(tester),
         findsNothing,
       );
     });
@@ -543,6 +552,8 @@ void main() {
           overrides: baseOverrides(),
           child: MaterialApp(
             theme: resolveTestTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
               builder: (context) {
                 return Scaffold(
@@ -1743,6 +1754,8 @@ void main() {
 
             return MaterialApp(
               theme: DesignSystemTheme.light(),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: AudioRecordingModalContent(
                   categoryId: 'test-category',
@@ -1787,7 +1800,7 @@ void main() {
 
       // Speech recognition checkbox should be visible for a Task
       expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+        _speechRecognitionCheckbox(tester),
         findsOneWidget,
       );
     });
@@ -1855,6 +1868,8 @@ void main() {
 
               return MaterialApp(
                 theme: DesignSystemTheme.light(),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 home: const Scaffold(
                   body: AudioRecordingModalContent(
                     categoryId: 'test-category',
@@ -1873,7 +1888,7 @@ void main() {
 
       // Only speech recognition checkbox should be visible, not task-specific ones
       expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+        _speechRecognitionCheckbox(tester),
         findsOneWidget,
       );
     });
@@ -1935,6 +1950,8 @@ void main() {
 
               return MaterialApp(
                 theme: DesignSystemTheme.light(),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 home: const Scaffold(
                   body: AudioRecordingModalContent(
                     categoryId: 'test-category',
@@ -1953,7 +1970,7 @@ void main() {
 
       // Only speech recognition should be visible
       expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+        _speechRecognitionCheckbox(tester),
         findsOneWidget,
       );
     });
@@ -2010,6 +2027,8 @@ void main() {
 
               return MaterialApp(
                 theme: DesignSystemTheme.light(),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 home: const Scaffold(
                   body: AudioRecordingModalContent(
                     categoryId: 'test-category',
@@ -2028,7 +2047,7 @@ void main() {
 
       // Only speech recognition visible, task checkboxes hidden
       expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+        _speechRecognitionCheckbox(tester),
         findsOneWidget,
       );
     });
@@ -2087,6 +2106,9 @@ void main() {
 
                 return MaterialApp(
                   theme: DesignSystemTheme.light(),
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
                   home: const Scaffold(
                     body: AudioRecordingModalContent(
                       categoryId: 'test-category',
@@ -2105,7 +2127,7 @@ void main() {
 
         // Only speech recognition visible
         expect(
-          find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+          _speechRecognitionCheckbox(tester),
           findsOneWidget,
         );
       },
@@ -2165,6 +2187,8 @@ void main() {
 
               return MaterialApp(
                 theme: DesignSystemTheme.light(),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 home: const Scaffold(
                   body: AudioRecordingModalContent(
                     categoryId: 'test-category',
@@ -2183,7 +2207,7 @@ void main() {
 
       // All checkboxes visible optimistically during loading
       expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+        _speechRecognitionCheckbox(tester),
         findsOneWidget,
       );
     });
@@ -2241,6 +2265,8 @@ void main() {
 
               return MaterialApp(
                 theme: DesignSystemTheme.light(),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 home: const Scaffold(
                   body: AudioRecordingModalContent(
                     categoryId: 'test-category',
@@ -2261,7 +2287,7 @@ void main() {
 
       // Only speech recognition visible on error
       expect(
-        find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+        _speechRecognitionCheckbox(tester),
         findsOneWidget,
       );
     });
@@ -2339,6 +2365,9 @@ void main() {
 
                 return MaterialApp(
                   theme: DesignSystemTheme.light(),
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
                   home: const Scaffold(
                     body: AudioRecordingModalContent(
                       categoryId: 'test-category',
@@ -2357,7 +2386,7 @@ void main() {
 
         // Speech checkbox visible via profile-driven transcription
         expect(
-          find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
+          _speechRecognitionCheckbox(tester),
           findsOneWidget,
         );
       },
