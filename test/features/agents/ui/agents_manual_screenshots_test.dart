@@ -1337,7 +1337,14 @@ void main() {
           );
           expect(
             find.textContaining(
-              _t('pressure anomaly', 'Druckanomalie'),
+              _t(
+                'The sentinel caught the pressure anomaly, but its launch '
+                    'report buried the go/no-go decision beneath six '
+                    'paragraphs of fish trivia.',
+                'Der Wächter erkannte die Druckanomalie, aber sein '
+                    'Startbericht vergrub die Start-oder-Stopp-Entscheidung '
+                    'unter sechs Absätzen Fischwissen.',
+              ),
             ),
             findsOneWidget,
           );

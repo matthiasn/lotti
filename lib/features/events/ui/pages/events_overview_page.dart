@@ -61,6 +61,7 @@ class _EventsOverviewPageState extends ConsumerState<EventsOverviewPage> {
   Widget _content(BuildContext context, EventsOverviewState data) {
     final messages = context.messages;
     final now = DateTime.now();
+    final locale = Localizations.localeOf(context).toString();
     final fallbackTitle = messages.entryTypeLabelJournalEvent;
     final controller = ref.read(eventsOverviewControllerProvider.notifier);
 
@@ -68,7 +69,11 @@ class _EventsOverviewPageState extends ConsumerState<EventsOverviewPage> {
       for (final r in data.events)
         eventCardDataFromEvent(
           r.event,
-          dateLabel: eventDateLabel(r.event.meta.dateFrom, now),
+          dateLabel: eventDateLabel(
+            r.event.meta.dateFrom,
+            now,
+            locale: locale,
+          ),
           categoryColor: r.categoryColor,
           categoryName: r.categoryName,
           fallbackTitle: fallbackTitle,

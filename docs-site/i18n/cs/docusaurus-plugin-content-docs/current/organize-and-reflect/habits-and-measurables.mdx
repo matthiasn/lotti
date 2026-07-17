@@ -1,0 +1,157 @@
+---
+title: Sledování návyků a měření
+description: Nastav opakované chování a číselná pozorování a potom je poctivě zaznamenávej.
+---
+
+# Sledování návyků a měření
+
+Návyk odpovídá na otázku **proběhlo toto opakované chování?** Měřitelná veličina
+odpovídá **jakou číselnou hodnotu jsem pozoroval?** Mohou podporovat stejný cíl,
+ale nejsou zaměnitelné: „Nástup tučňáků císařských“ je návyk, zatímco „Počet
+tučňáků“ je měřitelná hodnota.
+
+## Práce s návyky
+
+Stránka Návyky dělí aktivní návyky na ty, které jsou splatné nyní,
+naplánované později a dokončené. Denní shrnutí, historie pravidelnosti, série a
+graf míry dokončení pomáhají všímat si vzorců, aniž by jeden zmeškaný den
+vyprávěl celý příběh.
+
+<ManualScreenshot
+  caseId="habits/today"
+  alt="Přehled návyků Tučňáčí provoz s kontrolami obydlí, nástupem tučňáků, inventurou sardinek, stavem dokončení, sériemi a nedávnou historií"
+/>
+
+### Vytvářej a hledej definice návyků
+
+1. Otevři **Nastavení → Návyky**.
+2. Vyber **Vytvořit návyk**.
+3. Pojmenuj chování konkrétně a opakovatelně a přidej užitečný popis.
+4. Vyber kategorii, možnosti a rozvrh.
+5. Ulož.
+
+<ManualScreenshot
+  caseId="habits/settings-list"
+  alt="Nastavení návyků s Nástupem tučňáků císařských, Kontrolou sardinkové předpovědi a Kontrolou těsnění obydlí v oblíbeném, neaktivním a soukromém stavu"
+  caption="Definice hledej zde. Hvězda, skryté oko a zámek označují oblíbené, neaktivní a soukromé návyky."
+/>
+
+<ManualScreenshot
+  caseId="habits/settings-detail"
+  alt="Editor návyku Nástup tučňáků císařských s popisem expedice, kategorií Tučňáčí provoz a volbami oblíbené, soukromé a aktivní"
+/>
+
+Editor definice obsahuje:
+
+- **Kategorii** pro filtrování a vizuální kontext.
+- **Panel**, pokud se má návyk zobrazit jako graf ve vybraném přehledu.
+- **Oblíbené** pro vyšší viditelnost.
+- **Soukromé** pro skrytí, pokud nejsou zobrazené soukromé záznamy.
+- **Aktivní** pro řízení zobrazení na stránce Návyky bez smazání historie.
+
+### Naplánuj denní návyk
+
+<ManualScreenshot
+  caseId="habits/schedule"
+  alt="Rozvrh nástupu tučňáků císařských od 1. července, zobrazovaný od 06:00 s upozorněním v 06:30"
+/>
+
+Aktuální editor je zaměřený na denní návyky. Nastav **Datum začátku**, volitelně
+odlož **Zobrazovat od** a případně vyber čas, kdy má Lotti **Zobrazit
+upozornění**. Lotti umí pracovat také s týdenními a měsíčními rozvrhy, ale
+současný editor nabízí podrobnější časové ovládání pro denní návyky.
+
+### Zaznamenej, co se skutečně stalo
+
+Otevři splatný návyk nebo použij jeho rychlou akci. Podrobný formulář dokončení
+podporuje tři výsledky:
+
+- **Úspěch** — chování proběhlo.
+- **Zmeškáno** — bylo očekávané a možné, ale neproběhlo.
+- **Přeskočeno** — v daný den se přiměřeně netýkalo situace.
+
+<ManualScreenshot
+  caseId="habits/record"
+  alt="Formulář dokončení návyku kontroly těsnění obydlí s výsledky Úspěch, Přeskočeno a Zmeškáno, datem a poznámkami"
+/>
+
+Použij stav, který zachovává skutečnost. Upřímná historie je užitečnější než
+dokonale vypadající graf. Záznamy dokončení jsou záznamy deníku, takže pozdější
+pohledy mohou obnovit účinný výsledek každého návyku a dne.
+
+## Práce s měřitelnými veličinami
+
+Definice měřitelné veličiny popisuje číslo před jeho zaznamenáním: název,
+jednotku, soukromí a způsob kombinování více pozorování v grafech.
+
+<ManualScreenshot
+  caseId="measurables/settings-list"
+  alt="Nastavení měřitelných veličin s Tlakem obydlí, Počtem tučňáků a Spotřebovanými sardinkami"
+/>
+
+### Vytvoř typ měřitelných dat
+
+1. Otevři **Nastavení → Typy měřitelných dat**.
+2. Vyber akci přidání.
+3. Přidej název, volitelný popis a stručnou zkratku jednotky.
+4. Vyber výchozí agregaci používanou grafy.
+5. Rozhodni o oblíbeném a soukromém stavu a ulož.
+
+<ManualScreenshot
+  caseId="measurables/settings-detail"
+  alt="Editor veličiny Tlak obydlí s jednotkou kPa a agregací Denní průměr"
+/>
+
+Agregaci vybírej podle významu opakovaných hodnot:
+
+| Agregace | Kdy ji použít |
+| --- | --- |
+| Bez agregace | Záleží na každém jednotlivém pozorování |
+| Denní součet | Hodnoty se sčítají, například spotřebované sardinky |
+| Denní maximum | Důležitý je nejvyšší bod dne |
+| Denní průměr | Hodnoty vzorkují měnící se veličinu, například tlak obydlí |
+| Hodinový součet | Sčítání potřebuje jemnější hodinové úseky |
+
+Jednotka je kontext zobrazení, ne převodník. Pokud tlak obydlí definuješ v
+`kPa`, zaznamenávej hodnoty důsledně v kPa. Pro skutečně odlišnou řadu v jiné
+jednotce vytvoř samostatnou veličinu.
+
+### Zaznamenej měření
+
+Otevři přehled obsahující veličinu a vyber akci přidání na jejím grafu. Zadej
+pozorovanou hodnotu; Lotti drží jednotku vedle čísla, aby bylo jasné, co se
+uloží. Nedávné odlišné hodnoty se zobrazí jako akce **Rychlý záznam**, pokud je
+užitečné některou zopakovat.
+
+<ManualScreenshot
+  caseId="measurements/capture"
+  alt="Editor měření Spotřebované sardinky otevřený z naplněného grafu přehledu s hodnotou 84, návrhy rychlého záznamu, časem pozorování, komentářem a akcí Uložit"
+/>
+
+**Pozorováno v** používej pro čas skutečného odečtu, ne pro čas zadávání. První
+stránka vybírá kalendářní datum. **Dnes** se vrátí přímo k aktuálnímu datu.
+
+<ManualScreenshot
+  caseId="measurements/date"
+  alt="Kalendář Pozorováno v s vybraným pátkem 17. července 2026 pro měření sardinek"
+/>
+
+Posuň se k části času a nastav hodinu a minutu. **Nyní** obnoví aktuální čas.
+Volbou **Hotovo** se vrať do stále vyplněného konceptu měření a pomocí
+**Uložit** vytvoř záznam deníku.
+
+<ManualScreenshot
+  caseId="measurements/time"
+  alt="Časový volič Pozorováno v nastavený na 10:30 pro měření sardinek"
+/>
+
+Komentář je volitelný, ale hodí se, když číslo potřebuje provozní kontext,
+například dodávku, neobvyklou směnu nebo změnu metody měření. Uložení měření
+nemění definici veličiny ani její pravidlo agregace.
+
+## Propoj je, ale nezaměňuj
+
+Nástup může být úspěšně dokončen, i když bylo napočítáno jen 36 tučňáků —
+návyk zaznamenává, zda proběhl postup, zatímco veličina zaznamenává výsledek.
+Umísti oba na [nástěnku](./dashboards.mdx), pokud jejich vztah odpovídá na
+opakovanou provozní otázku.

@@ -104,7 +104,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String agentCategoryRatingsStarLabel(int starIndex, int totalStars) {
-    return '$starIndex of $totalStars stars';
+    return '$starIndex z $totalStars hvězdiček';
   }
 
   @override
@@ -163,7 +163,7 @@ class AppLocalizationsCs extends AppLocalizations {
     int toolCallCount,
     String shortId,
   ) {
-    return '$messageCount messages, $toolCallCount tool calls · $shortId';
+    return '$messageCount zpráv, $toolCallCount volání nástrojů · $shortId';
   }
 
   @override
@@ -186,122 +186,123 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentDetailUnexpectedType => 'Neočekávaný typ entity.';
 
   @override
-  String get agentEvolutionApprovalRate => 'Approval Rate';
+  String get agentEvolutionApprovalRate => 'Míra schválení';
 
   @override
-  String get agentEvolutionChartMttrTrend => 'MTTR Trend';
+  String get agentEvolutionChartMttrTrend => 'Trend MTTR';
 
   @override
-  String get agentEvolutionChartSuccessRateTrend => 'Success Trend';
+  String get agentEvolutionChartSuccessRateTrend => 'Trend úspěšnosti';
 
   @override
-  String get agentEvolutionChartVersionPerformance => 'By Version';
+  String get agentEvolutionChartVersionPerformance => 'Podle verze';
 
   @override
-  String get agentEvolutionChartWakeHistory => 'Wake History';
+  String get agentEvolutionChartWakeHistory => 'Historie probuzení';
 
   @override
   String get agentEvolutionChatPlaceholder =>
-      'Share feedback or ask about performance...';
+      'Sdílej zpětnou vazbu nebo se zeptej na výkon…';
 
   @override
-  String get agentEvolutionCurrentDirectives => 'Current Directives';
+  String get agentEvolutionCurrentDirectives => 'Aktuální direktivy';
 
   @override
-  String get agentEvolutionDashboardTitle => 'Performance';
+  String get agentEvolutionDashboardTitle => 'Výkon';
 
   @override
-  String get agentEvolutionHistoryTitle => 'Evolution History';
+  String get agentEvolutionHistoryTitle => 'Historie vývoje';
 
   @override
-  String get agentEvolutionMetricActive => 'Active';
+  String get agentEvolutionMetricActive => 'Aktivní';
 
   @override
-  String get agentEvolutionMetricAvgDuration => 'Avg Duration';
+  String get agentEvolutionMetricAvgDuration => 'Průměrná doba trvání';
 
   @override
-  String get agentEvolutionMetricFailures => 'Failures';
+  String get agentEvolutionMetricFailures => 'Selhání';
 
   @override
-  String get agentEvolutionMetricSuccess => 'Success';
+  String get agentEvolutionMetricSuccess => 'Úspěch';
 
   @override
-  String get agentEvolutionMetricWakes => 'Wakes';
+  String get agentEvolutionMetricWakes => 'Probuzení';
 
   @override
-  String get agentEvolutionNoSessions => 'No evolution sessions yet';
+  String get agentEvolutionNoSessions => 'Zatím žádné relace vývoje';
 
   @override
-  String get agentEvolutionNoteRecorded => 'Note Recorded';
+  String get agentEvolutionNoteRecorded => 'Poznámka uložena';
 
   @override
   String get agentEvolutionProposalApprovalFailed =>
-      'Approval failed — please try again';
+      'Schválení se nezdařilo — zkus to znovu';
 
   @override
-  String get agentEvolutionProposalRationale => 'Rationale';
+  String get agentEvolutionProposalRationale => 'Odůvodnění';
 
   @override
   String get agentEvolutionProposalRejected =>
-      'Proposal rejected — continue the conversation';
+      'Návrh zamítnut — pokračuj v konverzaci';
 
   @override
-  String get agentEvolutionProposalTitle => 'Proposed Changes';
+  String get agentEvolutionProposalTitle => 'Navržené změny';
 
   @override
-  String get agentEvolutionProposedDirectives => 'Proposed Directives';
+  String get agentEvolutionProposedDirectives => 'Navržené direktivy';
 
   @override
-  String get agentEvolutionSessionAbandoned => 'Session ended without changes';
+  String get agentEvolutionSessionAbandoned => 'Relace skončila bez změn';
 
   @override
   String agentEvolutionSessionCompleted(int version) {
-    return 'Session completed — version $version created';
+    return 'Relace dokončena — vytvořena verze $version';
   }
 
   @override
-  String get agentEvolutionSessionCount => 'Sessions';
+  String get agentEvolutionSessionCount => 'Relace';
 
   @override
-  String get agentEvolutionSessionError => 'Failed to start evolution session';
+  String get agentEvolutionSessionError =>
+      'Nepodařilo se zahájit relaci vývoje';
 
   @override
   String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
-    return 'Session $sessionNumber of $totalSessions';
+    return 'Relace $sessionNumber z $totalSessions';
   }
 
   @override
-  String get agentEvolutionSessionStarting => 'Starting evolution session...';
+  String get agentEvolutionSessionStarting => 'Zahajuji relaci vývoje…';
 
   @override
   String agentEvolutionSessionTitle(int sessionNumber) {
-    return 'Evolution #$sessionNumber';
+    return 'Vývoj č. $sessionNumber';
   }
 
   @override
   String agentEvolutionSoulCurrentField(String field) {
-    return 'Current — $field';
+    return 'Aktuální — $field';
   }
 
   @override
   String agentEvolutionSoulProposedField(String field) {
-    return 'Proposed — $field';
+    return 'Navrhované — $field';
   }
 
   @override
-  String get agentEvolutionStatusAbandoned => 'Abandoned';
+  String get agentEvolutionStatusAbandoned => 'Opuštěno';
 
   @override
-  String get agentEvolutionStatusActive => 'Active';
+  String get agentEvolutionStatusActive => 'Aktivní';
 
   @override
-  String get agentEvolutionStatusCompleted => 'Completed';
+  String get agentEvolutionStatusCompleted => 'Dokončeno';
 
   @override
-  String get agentEvolutionTimelineFeedbackLabel => 'Feedback';
+  String get agentEvolutionTimelineFeedbackLabel => 'Zpětná vazba';
 
   @override
-  String get agentEvolutionVersionProposed => 'Version proposed';
+  String get agentEvolutionVersionProposed => 'Navržena verze';
 
   @override
   String get agentFeedbackCategoryAccuracy => 'Přesnost';
@@ -507,7 +508,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get agentObservationsEmpty => 'No observations recorded yet.';
+  String get agentObservationsEmpty => 'Zatím žádná zaznamenaná pozorování.';
 
   @override
   String agentPendingWakesActivityHourDetail(
@@ -581,20 +582,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentPendingWakesTitle => 'Cykly probouzení';
 
   @override
-  String get agentReportHistoryBadge => 'Report';
+  String get agentReportHistoryBadge => 'Zpráva';
 
   @override
-  String get agentReportHistoryEmpty => 'No report snapshots yet.';
+  String get agentReportHistoryEmpty => 'Zatím žádné uložené snímky zpráv.';
 
   @override
   String get agentReportHistoryError =>
-      'An error occurred while loading the report history.';
+      'Při načítání historie zpráv došlo k chybě.';
 
   @override
   String get agentReportNone => 'Report zatím není k dispozici.';
 
   @override
-  String get agentRitualReviewAction => 'Start Conversation';
+  String get agentRitualReviewAction => 'Zahájit konverzaci';
 
   @override
   String get agentRitualReviewNegativeSignals => 'Negativní';
@@ -622,58 +623,59 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentRitualReviewPositiveSignals => 'Pozitivní';
 
   @override
-  String get agentRitualReviewProposalSection => 'Current Proposal';
+  String get agentRitualReviewProposalSection => 'Aktuální návrh';
 
   @override
-  String get agentRitualReviewSessionHistory => 'Session History';
+  String get agentRitualReviewSessionHistory => 'Historie relací';
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
 
   @override
-  String get agentRitualSummaryApprovedChangesHeading => 'Approved changes';
+  String get agentRitualSummaryApprovedChangesHeading => 'Schválené změny';
 
   @override
-  String get agentRitualSummaryConversationHeading => 'Conversation';
+  String get agentRitualSummaryConversationHeading => 'Konverzace';
 
   @override
-  String get agentRitualSummaryRecapHeading => 'Session Recap';
+  String get agentRitualSummaryRecapHeading => 'Shrnutí relace';
 
   @override
   String get agentRitualSummaryRoleAssistant => 'Agent';
 
   @override
-  String get agentRitualSummaryRoleUser => 'You';
+  String get agentRitualSummaryRoleUser => 'Ty';
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Start a 1-on-1 to review what bothered you, what worked, and what should change next.';
+      'Zahaj 1-on-1 a projdi, co ti vadilo, co fungovalo a co by se mělo změnit.';
 
   @override
   String get agentRitualSummarySubtitle =>
-      'Recent 1-on-1s, real wake activity, and the changes you agreed to.';
+      'Nedávné 1-on-1, skutečná aktivita probuzení a domluvené změny.';
 
   @override
-  String get agentRitualSummaryTokensSinceLast => 'Tokens since last 1-on-1';
+  String get agentRitualSummaryTokensSinceLast => 'Tokeny od posledního 1-on-1';
 
   @override
   String get agentRitualSummaryWakeHistory30Days =>
-      'Wake activity (last 30 days)';
+      'Aktivita probuzení (posledních 30 dní)';
 
   @override
-  String get agentRitualSummaryWakesSinceLast => 'Wakes since last 1-on-1';
+  String get agentRitualSummaryWakesSinceLast =>
+      'Probuzení od posledního 1-on-1';
 
   @override
-  String get agentRunningIndicator => 'Running';
+  String get agentRunningIndicator => 'Běží';
 
   @override
-  String get agentSessionProgressTitle => 'Session Progress';
+  String get agentSessionProgressTitle => 'Průběh relace';
 
   @override
-  String get agentSettingsSubtitle => 'Templates, instances, and monitoring';
+  String get agentSettingsSubtitle => 'Šablony, instance a sledování';
 
   @override
-  String get agentSettingsTitle => 'Agents';
+  String get agentSettingsTitle => 'Agenti';
 
   @override
   String get agentSoulAntiSycophancyLabel => 'Zásady proti pochlebování';
@@ -713,16 +715,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSoulEvolutionNoSessions => 'Zatím žádné relace vývoje duše';
 
   @override
-  String get agentSoulFieldAntiSycophancy => 'Anti-Sycophancy';
+  String get agentSoulFieldAntiSycophancy => 'Zásady proti pochlebování';
 
   @override
-  String get agentSoulFieldCoachingStyle => 'Coaching Style';
+  String get agentSoulFieldCoachingStyle => 'Styl koučování';
 
   @override
-  String get agentSoulFieldToneBounds => 'Tone Bounds';
+  String get agentSoulFieldToneBounds => 'Hranice tónu';
 
   @override
-  String get agentSoulFieldVoice => 'Voice';
+  String get agentSoulFieldVoice => 'Hlas';
 
   @override
   String get agentSoulInfoTab => 'Info';
@@ -734,10 +736,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSoulNotFound => 'Duše nenalezena';
 
   @override
-  String get agentSoulProposalSubtitle => 'Proposed personality changes';
+  String get agentSoulProposalSubtitle => 'Navržené změny osobnosti';
 
   @override
-  String get agentSoulProposalTitle => 'Soul Personality Proposal';
+  String get agentSoulProposalTitle => 'Návrh změn osobnosti duše';
 
   @override
   String get agentSoulReviewHeroSubtitle =>
@@ -938,33 +940,33 @@ class AppLocalizationsCs extends AppLocalizations {
       'Celkové využití tokenů';
 
   @override
-  String get agentTemplateAssignedLabel => 'Template';
+  String get agentTemplateAssignedLabel => 'Šablona';
 
   @override
-  String get agentTemplateCreatedSuccess => 'Template created';
+  String get agentTemplateCreatedSuccess => 'Šablona vytvořena';
 
   @override
-  String get agentTemplateCreateTitle => 'Create Template';
+  String get agentTemplateCreateTitle => 'Vytvořit šablonu';
 
   @override
   String get agentTemplateDeleteConfirm =>
-      'Delete this template? This cannot be undone.';
+      'Smazat tuto šablonu? Tuto akci nelze vrátit zpět.';
 
   @override
   String get agentTemplateDeleteHasInstances =>
-      'Cannot delete: active agents are using this template.';
+      'Nelze smazat: tuto šablonu používají aktivní agenti.';
 
   @override
-  String get agentTemplateDisplayNameLabel => 'Name';
+  String get agentTemplateDisplayNameLabel => 'Název';
 
   @override
-  String get agentTemplateEditTitle => 'Edit Template';
+  String get agentTemplateEditTitle => 'Upravit šablonu';
 
   @override
-  String get agentTemplateEvolveApprove => 'Approve & Save';
+  String get agentTemplateEvolveApprove => 'Schválit a uložit';
 
   @override
-  String get agentTemplateEvolveReject => 'Reject';
+  String get agentTemplateEvolveReject => 'Zamítnout';
 
   @override
   String get agentTemplateGeneralDirectiveHint =>
@@ -992,20 +994,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateKindTaskAgent => 'Agent úkolů';
 
   @override
-  String get agentTemplateMetricsTotalWakes => 'Total Wakes';
+  String get agentTemplateMetricsTotalWakes => 'Celkový počet probuzení';
 
   @override
-  String get agentTemplateNoneAssigned => 'No template assigned';
+  String get agentTemplateNoneAssigned => 'Není přiřazena žádná šablona';
 
   @override
   String get agentTemplateNoTemplates =>
-      'No templates available. Create one in Settings first.';
+      'Nejsou k dispozici žádné šablony. Nejdřív vytvoř šablonu v Nastavení.';
 
   @override
-  String get agentTemplateNotFound => 'Template not found';
+  String get agentTemplateNotFound => 'Šablona nenalezena';
 
   @override
-  String get agentTemplateNoVersions => 'No versions';
+  String get agentTemplateNoVersions => 'Žádné verze';
 
   @override
   String get agentTemplateReportDirectiveHint =>
@@ -1015,24 +1017,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateReportDirectiveLabel => 'Direktiva reportu';
 
   @override
-  String get agentTemplateReportsEmpty => 'No reports yet.';
+  String get agentTemplateReportsEmpty => 'Zatím žádné zprávy.';
 
   @override
   String get agentTemplateReportsTab => 'Reporty';
 
   @override
-  String get agentTemplateRollbackAction => 'Roll Back to This Version';
+  String get agentTemplateRollbackAction => 'Vrátit tuto verzi';
 
   @override
   String agentTemplateRollbackConfirm(int version) {
-    return 'Roll back to version $version? The agent will use this version on its next wake.';
+    return 'Vrátit na verzi $version? Agent tuto verzi použije při příštím probuzení.';
   }
 
   @override
-  String get agentTemplateSaveNewVersion => 'Save';
+  String get agentTemplateSaveNewVersion => 'Uložit';
 
   @override
-  String get agentTemplateSelectTitle => 'Select Template';
+  String get agentTemplateSelectTitle => 'Vybrat šablonu';
 
   @override
   String get agentTemplatesEmptyFiltered =>
@@ -1057,31 +1059,32 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateStatsTab => 'Statistiky';
 
   @override
-  String get agentTemplateStatusActive => 'Active';
+  String get agentTemplateStatusActive => 'Aktivní';
 
   @override
-  String get agentTemplateStatusArchived => 'Archived';
+  String get agentTemplateStatusArchived => 'Archivovaná';
 
   @override
-  String get agentTemplatesTitle => 'Agent Templates';
+  String get agentTemplatesTitle => 'Šablony agentů';
 
   @override
   String get agentTemplateSwitchHint =>
-      'To use a different template, destroy this agent and create a new one.';
+      'Chceš-li použít jinou šablonu, znič tohoto agenta a vytvoř nového.';
 
   @override
-  String get agentTemplateVersionHistoryTitle => 'Version History';
+  String get agentTemplateVersionHistoryTitle => 'Historie verzí';
 
   @override
   String agentTemplateVersionLabel(int version) {
-    return 'Version $version';
+    return 'Verze $version';
   }
 
   @override
-  String get agentTemplateVersionSaved => 'New version saved';
+  String get agentTemplateVersionSaved => 'Nová verze šablony uložena';
 
   @override
-  String get agentThreadReportLabel => 'Report produced during this wake';
+  String get agentThreadReportLabel =>
+      'Zpráva vytvořená během tohoto probuzení';
 
   @override
   String get agentTokenUsageCachedTokens => 'Z mezipaměti';
@@ -2735,46 +2738,54 @@ class AppLocalizationsCs extends AppLocalizations {
   String get categorySearchPlaceholder => 'Vyhledávat kategorie...';
 
   @override
-  String get changeSetCardTitle => 'Proposed changes';
+  String get changeSetCardTitle => 'Navržené změny';
 
   @override
-  String get changeSetConfirmAll => 'Confirm all';
+  String get changeSetConfirmAll => 'Potvrdit vše';
 
   @override
   String changeSetConfirmAllPartialIssues(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count items had partial issues',
-      one: '1 item had partial issues',
+      other: '$count položek mělo dílčí potíže',
+      few: '$count položky měly dílčí potíže',
+      one: '1 položka měla dílčí potíže',
     );
     return '$_temp0';
   }
 
   @override
-  String get changeSetConfirmError => 'Failed to apply change';
+  String get changeSetConfirmError => 'Nepodařilo se použít změnu';
 
   @override
-  String get changeSetItemConfirmed => 'Change applied';
+  String get changeSetItemConfirmed => 'Změna použita';
 
   @override
   String changeSetItemConfirmedWithWarning(String warning) {
-    return 'Applied with warning: $warning';
+    return 'Použito s upozorněním: $warning';
   }
 
   @override
-  String get changeSetItemRejected => 'Change rejected';
+  String get changeSetItemRejected => 'Změna zamítnuta';
 
   @override
   String changeSetPendingCount(int count) {
-    return '$count pending';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count čekajících',
+      few: '$count čekající',
+      one: '1 čekající',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get changeSetSwipeConfirm => 'Confirm';
+  String get changeSetSwipeConfirm => 'Potvrdit';
 
   @override
-  String get changeSetSwipeReject => 'Reject';
+  String get changeSetSwipeReject => 'Zamítnout';
 
   @override
   String get chatInputCancelRealtime => 'Zrušit (Esc)';
@@ -5676,17 +5687,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileChooseTitle => 'Vyber profil inference';
 
   @override
-  String get inferenceProfileCreateTitle => 'Create Profile';
+  String get inferenceProfileCreateTitle => 'Vytvořit profil';
 
   @override
-  String get inferenceProfileDescriptionLabel => 'Description';
+  String get inferenceProfileDescriptionLabel => 'Popis';
 
   @override
-  String get inferenceProfileDesktopOnly => 'Desktop Only';
+  String get inferenceProfileDesktopOnly => 'Jen pro počítač';
 
   @override
   String get inferenceProfileDesktopOnlyDescription =>
-      'Only available on desktop platforms (e.g. for local models)';
+      'K dispozici jen na počítačových platformách (např. pro místní modely)';
 
   @override
   String inferenceProfileDetailLoadError(String error) {
@@ -5697,23 +5708,23 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileDetailNotFound => 'Profil nenalezen';
 
   @override
-  String get inferenceProfileEditTitle => 'Edit Profile';
+  String get inferenceProfileEditTitle => 'Upravit profil';
 
   @override
-  String get inferenceProfileImageGeneration => 'Image Generation';
+  String get inferenceProfileImageGeneration => 'Generování obrázků';
 
   @override
-  String get inferenceProfileImageRecognition => 'Image Recognition';
+  String get inferenceProfileImageRecognition => 'Rozpoznávání obrázků';
 
   @override
   String get inferenceProfileModelUnavailable =>
       'Model není dostupný — jeho poskytovatel byl možná odebrán';
 
   @override
-  String get inferenceProfileNameLabel => 'Profile Name';
+  String get inferenceProfileNameLabel => 'Název profilu';
 
   @override
-  String get inferenceProfileNameRequired => 'A profile name is required';
+  String get inferenceProfileNameRequired => 'Název profilu je povinný';
 
   @override
   String get inferenceProfilePinnedHostHelper =>
@@ -5738,7 +5749,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (toto zařízení)';
 
   @override
-  String get inferenceProfileSaveButton => 'Save';
+  String get inferenceProfileSaveButton => 'Uložit';
 
   @override
   String get inferenceProfileSelectModel => 'Vyber model…';
@@ -5747,7 +5758,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileSelectProfile => 'Vyber profil…';
 
   @override
-  String get inferenceProfilesEmpty => 'No inference profiles yet';
+  String get inferenceProfilesEmpty => 'Zatím žádné inferenční profily';
 
   @override
   String inferenceProfileSkillModelRequired(String slotName) {
@@ -5763,19 +5774,20 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get inferenceProfilesTitle => 'Inference Profiles';
+  String get inferenceProfilesTitle => 'Inferenční profily';
 
   @override
-  String get inferenceProfileThinking => 'Thinking';
+  String get inferenceProfileThinking => 'Uvažování';
 
   @override
-  String get inferenceProfileThinkingHighEnd => 'Thinking (High-End)';
+  String get inferenceProfileThinkingHighEnd => 'Uvažování (pokročilé)';
 
   @override
-  String get inferenceProfileThinkingRequired => 'A thinking model is required';
+  String get inferenceProfileThinkingRequired =>
+      'Je potřeba model pro uvažování';
 
   @override
-  String get inferenceProfileTranscription => 'Transcription';
+  String get inferenceProfileTranscription => 'Přepis';
 
   @override
   String get inferenceProfileUnavailable =>
@@ -7211,6 +7223,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Vytvoř svůj první úkol';
 
   @override
+  String get onboardingMetricsActiveDays => 'Aktivní dny';
+
+  @override
+  String get onboardingMetricsActiveDaysInFirstSeven =>
+      'Aktivní dny během prvních 7 dnů';
+
+  @override
+  String get onboardingMetricsBaselineCohort => 'Výchozí kohorta (před FTUE)';
+
+  @override
+  String get onboardingMetricsInstallFirstSeenUtc =>
+      'První zaznamenaná instalace (UTC)';
+
+  @override
+  String get onboardingMetricsNo => 'ne';
+
+  @override
+  String get onboardingMetricsReachedRealAha =>
+      'Dosaženo skutečného aha momentu';
+
+  @override
+  String get onboardingMetricsYes => 'ano';
+
+  @override
   String get onboardingRecordingStyleAnalogue => 'Analogový — VU metr';
 
   @override
@@ -7436,6 +7472,99 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get panasCompletionText => 'Děkujeme za vyplnění dotazníku PANAS!';
+
+  @override
+  String get panasCompletionTitle => 'Hotovo';
+
+  @override
+  String get panasEmotionActive => 'Aktivní';
+
+  @override
+  String get panasEmotionAfraid => 'Bojácný';
+
+  @override
+  String get panasEmotionAlert => 'Pozorný';
+
+  @override
+  String get panasEmotionAshamed => 'Zahanbený';
+
+  @override
+  String get panasEmotionAttentive => 'Soustředěný';
+
+  @override
+  String get panasEmotionDetermined => 'Odhodlaný';
+
+  @override
+  String get panasEmotionDistressed => 'V tísni';
+
+  @override
+  String get panasEmotionEnthusiastic => 'Plný nadšení';
+
+  @override
+  String get panasEmotionExcited => 'Vzrušený';
+
+  @override
+  String get panasEmotionGuilty => 'Provinilý';
+
+  @override
+  String get panasEmotionHostile => 'Nepřátelský';
+
+  @override
+  String get panasEmotionInspired => 'Inspirovaný';
+
+  @override
+  String get panasEmotionInterested => 'Zaujatý';
+
+  @override
+  String get panasEmotionIrritable => 'Podrážděný';
+
+  @override
+  String get panasEmotionJittery => 'Roztěkaný';
+
+  @override
+  String get panasEmotionNervous => 'Nervózní';
+
+  @override
+  String get panasEmotionProud => 'Hrdý';
+
+  @override
+  String get panasEmotionScared => 'Vystrašený';
+
+  @override
+  String get panasEmotionStrong => 'Silný';
+
+  @override
+  String get panasEmotionUpset => 'Rozčilený';
+
+  @override
+  String get panasInstructionFootnote =>
+      'Watson, D., Clark, L. A., & Tellegen, A. (1988). Development and validation of brief measures of positive and negative affect: The PANAS scales. Journal of Personality and Social Psychology, 54(6), 1063–1070.';
+
+  @override
+  String get panasInstructionText =>
+      'Uveď, do jaké míry se takto cítíš právě teď, v tomto okamžiku.\n\n1—Vůbec nebo jen velmi málo,\n2—Trochu,\n3—Středně,\n4—Docela hodně,\n5—Extrémně';
+
+  @override
+  String get panasInstructionTitle =>
+      'Škála pozitivních a negativních emocí (PANAS; Watson et al., 1988)';
+
+  @override
+  String get panasScaleALittle => 'Trochu';
+
+  @override
+  String get panasScaleExtremely => 'Extrémně';
+
+  @override
+  String get panasScaleModerately => 'Středně';
+
+  @override
+  String get panasScaleQuiteABit => 'Docela hodně';
+
+  @override
+  String get panasScaleVerySlightlyOrNotAtAll => 'Vůbec nebo jen velmi málo';
 
   @override
   String get privateLabel => 'Soukromé';
@@ -8749,17 +8878,17 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsLoggingDomainsSubtitle =>
-      'Control which domains write to the log';
+      'Nastav, které oblasti zapisují do logu';
 
   @override
-  String get settingsLoggingDomainsTitle => 'Logging Domains';
+  String get settingsLoggingDomainsTitle => 'Oblasti protokolování';
 
   @override
-  String get settingsLoggingGlobalToggle => 'Enable Logging';
+  String get settingsLoggingGlobalToggle => 'Zapnout protokolování';
 
   @override
   String get settingsLoggingGlobalToggleSubtitle =>
-      'Master switch for all logging';
+      'Hlavní přepínač pro veškeré protokolování';
 
   @override
   String get settingsLoggingSlowQueries => 'Pomalé databázové dotazy';
@@ -8767,6 +8896,22 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get settingsLoggingSlowQueriesSubtitle =>
       'Pomalé dotazy se zapisují do slow_queries-YYYY-MM-DD.log';
+
+  @override
+  String get settingsMaintenanceOnboardingAnimationGallerySubtitle =>
+      'Porovnej uvítací animace a stránku připojení živě (ladění)';
+
+  @override
+  String get settingsMaintenanceOnboardingAnimationGalleryTitle =>
+      'Galerie animací onboardingu';
+
+  @override
+  String get settingsMaintenanceOnboardingWelcomeSubtitle =>
+      'Náhled uvítání FTUE a dlaždic poskytovatelů (ladění)';
+
+  @override
+  String get settingsMaintenanceOnboardingWelcomeTitle =>
+      'Zobrazit uvítání onboardingu';
 
   @override
   String get settingsMaintenanceTitle => 'Údržba';
@@ -8787,16 +8932,18 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMatrixDiagnosticCopied =>
-      'Diagnostic info copied to clipboard';
+      'Diagnostické informace zkopírovány do schránky';
 
   @override
-  String get settingsMatrixDiagnosticCopyButton => 'Copy to Clipboard';
+  String get settingsMatrixDiagnosticCopyButton => 'Kopírovat do schránky';
 
   @override
-  String get settingsMatrixDiagnosticDialogTitle => 'Sync Diagnostic Info';
+  String get settingsMatrixDiagnosticDialogTitle =>
+      'Diagnostické informace synchronizace';
 
   @override
-  String get settingsMatrixDiagnosticShowButton => 'Show Diagnostic Info';
+  String get settingsMatrixDiagnosticShowButton =>
+      'Zobrazit diagnostické informace';
 
   @override
   String get settingsMatrixDone => 'Hotovo';
@@ -9287,6 +9434,45 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechVoicePreviewTooltip => 'Přehrát ukázku hlasu';
+
+  @override
+  String get surveyBackButton => 'Zpět';
+
+  @override
+  String get surveyCancelConfirmation => 'Zrušit dotazník?';
+
+  @override
+  String get surveyChooseOneOption => 'Vyber jednu možnost';
+
+  @override
+  String get surveyChooseOneOrMoreOptions => 'Vyber jednu nebo více možností';
+
+  @override
+  String get surveyDiscardConfirmation => 'Zahodit výsledky a ukončit?';
+
+  @override
+  String get surveyInputNumberValidation => 'Zadej číslo';
+
+  @override
+  String get surveyNextButton => 'Další';
+
+  @override
+  String get surveyNoButton => 'Ne';
+
+  @override
+  String get surveyProgressOf => 'z';
+
+  @override
+  String get surveyTapToAnswer => 'Klepni pro odpověď';
+
+  @override
+  String get surveyValueAnd => 'a';
+
+  @override
+  String get surveyValueBetween => 'Musí být mezi';
+
+  @override
+  String get surveyYesButton => 'Ano';
 
   @override
   String get syncActivityIdle => 'nečinné';
@@ -10291,6 +10477,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get viewMenuZoomReset => 'Skutečná velikost';
+
+  @override
+  String get whatsNewBadgeNew => 'NOVÉ';
 
   @override
   String get whatsNewDoneButton => 'Hotovo';

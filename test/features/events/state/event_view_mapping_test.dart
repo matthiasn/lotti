@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -65,6 +67,12 @@ AiResponseEntry _aiResponse(
 }
 
 void main() {
+  setUpAll(() async {
+    await initializeDateFormatting('cs');
+    await initializeDateFormatting('de');
+    await initializeDateFormatting('en');
+  });
+
   final now = DateTime(2026, 6, 19);
   String yearTitle(int year) => year == now.year ? 'Earlier in $year' : '$year';
 
@@ -176,6 +184,18 @@ void main() {
         eventDateLabel(DateTime(2025, 8), DateTime(2026, 6)),
         'Aug 2025',
       );
+    });
+
+    test('uses the supplied locale for Czech and German dates', () {
+      final date = DateTime(2026, 5, 12);
+      final now = DateTime(2026, 6);
+
+      for (final locale in ['cs', 'de']) {
+        expect(
+          eventDateLabel(date, now, locale: locale),
+          DateFormat('d MMM', locale).format(date),
+        );
+      }
     });
   });
 
@@ -326,6 +346,7 @@ void main() {
           event: event,
           linked: linked,
           now: now,
+          locale: 'en',
           categoryColor: const Color(0xFF112233),
           categoryName: 'Friends',
           fallbackTitle: 'Untitled event',

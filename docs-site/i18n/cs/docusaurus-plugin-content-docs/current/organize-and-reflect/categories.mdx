@@ -1,0 +1,76 @@
+---
+title: Organizace pomocí kategorií
+description: Používej kategorie jako smysluplné hranice pro filtrování, plánování, soukromí a automatizaci.
+---
+
+# Organizace pomocí kategorií
+
+Kategorie je hlavním strukturálním domovem záznamu. Použij ji, když oblast práce
+potřebuje vlastní pravidla plánování, hranici soukromí, vizuální identitu nebo
+kontext AI. V ukázkovém prostoru oddělují **Tučňáčí provoz**, **Řízení mise**,
+**Rybí diplomacie** a **Péče o posádku** skutečně odlišné oblasti expedice.
+
+<ManualScreenshot
+  caseId="categories/list"
+  alt="Nastavení kategorií s Tučňáčím provozem, Řízením mise, Rybí diplomacií a Péčí o posádku, počty úkolů a stavovými ikonami"
+  caption="Seznam lze prohledávat a ukazuje počty úkolů. Ikony na první pohled označují oblíbené, soukromé a neaktivní kategorie."
+/>
+
+## Vytvoř kategorii
+
+1. Otevři **Nastavení → Kategorie**.
+2. Vyber **Vytvořit kategorii**.
+3. Zadej odlišný název, barvu a ikonu.
+4. Kategorii vytvoř a znovu ji otevři pro nastavení chování.
+
+Vytvoření záměrně začíná identifikačními poli. Plánování, soukromí, jazyk a
+automatizace se nastavují v úplném editoru až po vytvoření kategorie.
+
+## Nastav chování kategorie
+
+<ManualScreenshot
+  caseId="categories/detail"
+  alt="Editor kategorie Tučňáčí provoz s názvem, fialovou identitou letu a volbami oblíbené, soukromé, aktivní a denní plánování"
+/>
+
+Editor ovládá víc než vzhled:
+
+- **Oblíbená** usnadňuje rozpoznání a výběr důležité kategorie.
+- **Soukromá** skrývá obsah, pokud nejsou zobrazené soukromé záznamy.
+- **Aktivní** určuje, zda lze kategorii vybrat pro nové záznamy. Deaktivace
+  zachová existující data.
+- **Denní plánování** dovoluje kategorii účastnit se plánování Daily OS.
+- **Jazyk** určuje výchozí jazyk nových úkolů v kategorii.
+
+**Denní plánování** používej výběrově. Zapnutí pro každou kategorii rozšiřuje
+kontext plánovače a přidává každodennímu rituálu šum.
+
+## Přidej automatizační kontext kategorie
+
+Kategorie může poskytnout výchozí hodnoty pro nové úkoly: profil inference a
+šablonu agenta. Jde o výchozí volby, ne trvalé zámky; na úrovni úkolu je lze
+později změnit.
+
+<ManualScreenshot
+  caseId="categories/automation"
+  alt="Pokročilé nastavení Tučňáčího provozu se slovní zásobou rozpoznání Project Waddle a naučenými opravami kontrolního seznamu pro Sir Flaps-a-Lot"
+  caption="Výrazy rozpoznání řeči odděluj středníky. Opravy kontrolních seznamů se učí z úprav a zde je lze kontrolovat nebo mazat."
+/>
+
+Slovník **Rozpoznání řeči** se hodí pro jména, místa, zkratky a odborné výrazy,
+které přepis často míjí. Tučňáčí provoz například učí Lotti `Project Waddle`,
+`Sir Flaps-a-Lot`, `sardinka` a `Europa`.
+
+Když ručně opravíš vygenerované názvy položek kontrolního seznamu, Lotti si
+může příklady před a po uchovat pro budoucí návrhy AI. Zde je kontroluj a
+odstraň opravy, které nemají ovlivňovat pozdější výstup.
+
+## Kategorie oproti štítkům
+
+Kategorii používej jako primární domov práce a [štítek](./labels.mdx) jako
+vlastnost napříč oblastmi. **Tučňáčí provoz** je kategorie; **Kritické pro
+obydlí** je štítek, který může platit také pro práci Řízení mise.
+
+Udržuj systém kategorií dostatečně malý, aby byl výběr zřejmý. Novou kategorii
+přidej, když mění plánování, filtrování, soukromí nebo automatizaci — ne jen
+proto, že se objevil nový podstatný výraz.

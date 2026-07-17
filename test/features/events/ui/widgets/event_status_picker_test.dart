@@ -23,6 +23,61 @@ void main() {
       expect(eventStatusLabel(ctx, EventStatus.completed), 'Completed');
       expect(eventStatusLabel(ctx, EventStatus.rescheduled), 'Rescheduled');
     });
+
+    testWidgets('uses Czech and German copy for every event status', (
+      tester,
+    ) async {
+      final expectedLabels = <Locale, List<String>>{
+        const Locale('cs'): [
+          'Předběžně',
+          'Naplánováno',
+          'Probíhá',
+          'Dokončeno',
+          'Zrušeno',
+          'Odloženo',
+          'Přeplánováno',
+          'Zmeškáno',
+        ],
+        const Locale('de'): [
+          'Vorläufig',
+          'Geplant',
+          'Läuft',
+          'Abgeschlossen',
+          'Abgesagt',
+          'Verschoben',
+          'Neu geplant',
+          'Verpasst',
+        ],
+      };
+
+      for (final localeLabels in expectedLabels.entries) {
+        late BuildContext localizedContext;
+        await tester.pumpWidget(
+          makeTestableWidget2(
+            Builder(
+              builder: (context) => Localizations.override(
+                context: context,
+                locale: localeLabels.key,
+                child: Builder(
+                  builder: (context) {
+                    localizedContext = context;
+                    return const SizedBox();
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          [
+            for (final status in EventStatus.values)
+              eventStatusLabel(localizedContext, status),
+          ],
+          localeLabels.value,
+        );
+      }
+    });
   });
 
   group('showEventStatusPicker', () {

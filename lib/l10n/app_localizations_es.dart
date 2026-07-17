@@ -7231,6 +7231,30 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingFirstTaskTitle => 'Crea tu primera tarea';
 
   @override
+  String get onboardingMetricsActiveDays => 'Días activos';
+
+  @override
+  String get onboardingMetricsActiveDaysInFirstSeven =>
+      'Días activos en los primeros 7';
+
+  @override
+  String get onboardingMetricsBaselineCohort =>
+      'Cohorte de referencia (antes de FTUE)';
+
+  @override
+  String get onboardingMetricsInstallFirstSeenUtc =>
+      'Primera instalación detectada (UTC)';
+
+  @override
+  String get onboardingMetricsNo => 'no';
+
+  @override
+  String get onboardingMetricsReachedRealAha => 'Alcanzó el momento «ajá» real';
+
+  @override
+  String get onboardingMetricsYes => 'sí';
+
+  @override
   String get onboardingRecordingStyleAnalogue => 'Analógico — vúmetro';
 
   @override
@@ -7453,6 +7477,99 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get panasCompletionText => '¡Gracias por completar el PANAS!';
+
+  @override
+  String get panasCompletionTitle => 'Terminado';
+
+  @override
+  String get panasEmotionActive => 'Activo/a';
+
+  @override
+  String get panasEmotionAfraid => 'Temeroso/a';
+
+  @override
+  String get panasEmotionAlert => 'Alerta';
+
+  @override
+  String get panasEmotionAshamed => 'Avergonzado/a';
+
+  @override
+  String get panasEmotionAttentive => 'Atento/a';
+
+  @override
+  String get panasEmotionDetermined => 'Decidido/a';
+
+  @override
+  String get panasEmotionDistressed => 'Afligido/a';
+
+  @override
+  String get panasEmotionEnthusiastic => 'Entusiasta';
+
+  @override
+  String get panasEmotionExcited => 'Emocionado/a';
+
+  @override
+  String get panasEmotionGuilty => 'Culpable';
+
+  @override
+  String get panasEmotionHostile => 'Hostil';
+
+  @override
+  String get panasEmotionInspired => 'Inspirado/a';
+
+  @override
+  String get panasEmotionInterested => 'Interesado/a';
+
+  @override
+  String get panasEmotionIrritable => 'Irritable';
+
+  @override
+  String get panasEmotionJittery => 'Inquieto/a';
+
+  @override
+  String get panasEmotionNervous => 'Nervioso/a';
+
+  @override
+  String get panasEmotionProud => 'Orgulloso/a';
+
+  @override
+  String get panasEmotionScared => 'Asustado/a';
+
+  @override
+  String get panasEmotionStrong => 'Fuerte';
+
+  @override
+  String get panasEmotionUpset => 'Molesto/a';
+
+  @override
+  String get panasInstructionFootnote =>
+      'Watson, D., Clark, L. A., & Tellegen, A. (1988). Development and validation of brief measures of positive and negative affect: The PANAS scales. Journal of Personality and Social Psychology, 54(6), 1063–1070.';
+
+  @override
+  String get panasInstructionText =>
+      'Indica hasta qué punto te sientes así ahora mismo, en este momento.\n\n1—Nada o muy poco,\n2—Un poco,\n3—Moderadamente,\n4—Bastante,\n5—Muchísimo';
+
+  @override
+  String get panasInstructionTitle =>
+      'Escala de afecto positivo y negativo (PANAS; Watson et al., 1988)';
+
+  @override
+  String get panasScaleALittle => 'Un poco';
+
+  @override
+  String get panasScaleExtremely => 'Muchísimo';
+
+  @override
+  String get panasScaleModerately => 'Moderadamente';
+
+  @override
+  String get panasScaleQuiteABit => 'Bastante';
+
+  @override
+  String get panasScaleVerySlightlyOrNotAtAll => 'Nada o muy poco';
 
   @override
   String get privateLabel => 'Privado';
@@ -8793,6 +8910,22 @@ class AppLocalizationsEs extends AppLocalizations {
       'Las consultas lentas se escriben en slow_queries-YYYY-MM-DD.log';
 
   @override
+  String get settingsMaintenanceOnboardingAnimationGallerySubtitle =>
+      'Compara en directo las animaciones de bienvenida y la página de conexión (depuración)';
+
+  @override
+  String get settingsMaintenanceOnboardingAnimationGalleryTitle =>
+      'Galería de animaciones de onboarding';
+
+  @override
+  String get settingsMaintenanceOnboardingWelcomeSubtitle =>
+      'Vista previa de la bienvenida FTUE y de las tarjetas de proveedores (depuración)';
+
+  @override
+  String get settingsMaintenanceOnboardingWelcomeTitle =>
+      'Mostrar bienvenida de onboarding';
+
+  @override
   String get settingsMaintenanceTitle => 'Mantenimiento';
 
   @override
@@ -9320,6 +9453,45 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get speechVoicePreviewTooltip => 'Escuchar la voz';
+
+  @override
+  String get surveyBackButton => 'Atrás';
+
+  @override
+  String get surveyCancelConfirmation => '¿Cancelar la encuesta?';
+
+  @override
+  String get surveyChooseOneOption => 'Elige una opción';
+
+  @override
+  String get surveyChooseOneOrMoreOptions => 'Elige una o más opciones';
+
+  @override
+  String get surveyDiscardConfirmation => '¿Descartar los resultados y salir?';
+
+  @override
+  String get surveyInputNumberValidation => 'Introduce un número';
+
+  @override
+  String get surveyNextButton => 'Siguiente';
+
+  @override
+  String get surveyNoButton => 'No';
+
+  @override
+  String get surveyProgressOf => 'de';
+
+  @override
+  String get surveyTapToAnswer => 'Toca para responder';
+
+  @override
+  String get surveyValueAnd => 'y';
+
+  @override
+  String get surveyValueBetween => 'Debe estar entre';
+
+  @override
+  String get surveyYesButton => 'Sí';
 
   @override
   String get syncActivityIdle => 'inactiva';
@@ -10330,6 +10502,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get viewMenuZoomReset => 'Tamaño real';
+
+  @override
+  String get whatsNewBadgeNew => 'NUEVO';
 
   @override
   String get whatsNewDoneButton => 'Listo';

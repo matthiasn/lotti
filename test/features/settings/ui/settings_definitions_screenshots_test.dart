@@ -23,6 +23,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -103,7 +105,7 @@ final CategoryDefinition _penguinOperations =
           capturedAt: manualDemoNow.subtract(const Duration(days: 3)),
         ),
         ChecklistCorrectionExample(
-          before: _t('project waddle habitat', 'project waddle habitat'),
+          before: _t('project waddle habitat', 'projekt waddle habitat'),
           after: _t('Project Waddle habitat', 'Project-Waddle-Habitat'),
           capturedAt: manualDemoNow.subtract(const Duration(days: 1)),
         ),
@@ -532,9 +534,19 @@ void main() {
   // token (it previously used a null-family style that painted as
   // FlutterTest blocks), so every title renders with real glyphs in
   // these captures.
+  late String? previousIntlDefaultLocale;
+
   setUpAll(() async {
+    previousIntlDefaultLocale = Intl.defaultLocale;
+    final locale = manualScreenshotLocale.toLanguageTag();
+    await initializeDateFormatting(locale);
+    Intl.defaultLocale = locale;
     registerAllFallbackValues();
     await loadScreenshotFonts();
+  });
+
+  tearDownAll(() {
+    Intl.defaultLocale = previousIntlDefaultLocale;
   });
 
   late TestGetItMocks mocks;
@@ -928,7 +940,10 @@ void main() {
           overrides: labelsDetailOverrides(),
           home: LabelDetailsPage(labelId: _projectWaddle.id),
         );
-        expect(find.text('Edit label'), findsOneWidget);
+        expect(
+          find.text(_t('Edit label', 'Label bearbeiten')),
+          findsOneWidget,
+        );
         expect(find.text('Project Waddle'), findsOneWidget);
         // Demonstrate the armed action state while preserving the story.
         await tester.enterText(
@@ -959,7 +974,10 @@ void main() {
       overrides: labelsDetailOverrides(),
       home: LabelDetailsPage(labelId: _projectWaddle.id),
     );
-    expect(find.text('Edit label'), findsOneWidget);
+    expect(
+      find.text(_t('Edit label', 'Label bearbeiten')),
+      findsOneWidget,
+    );
     await captureScreenshot(
       tester,
       'mini_labels_detail_dark_2x',
@@ -1177,8 +1195,11 @@ void main() {
           brightness: brightness,
           home: DashboardDefinitionPage(dashboard: _colonyOperations),
         );
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(DashboardDefinitionPage)),
+        )!;
         expect(
-          find.text(_t('Edit dashboard', 'Dashboard bearbeiten')),
+          find.text(messages.settingsDashboardDetailsLabel),
           findsOneWidget,
         );
         expect(
@@ -1195,9 +1216,7 @@ void main() {
 
         _alignInOuterScrollView(
           tester,
-          find.text(
-            _t('Charts on this dashboard', 'Diagramme auf diesem Dashboard'),
-          ),
+          find.text(messages.dashboardCurrentChartsTitle),
         );
         await settleFrames(tester);
         expect(
@@ -1401,23 +1420,26 @@ void main() {
         await settleFrames(tester, 8);
 
         final task = tester.widget<RPUITask>(find.byType(RPUITask));
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(RPUITask)),
+        )!;
         expect(task.task.identifier, 'panasSurveyTask');
-        expect(
-          find.textContaining('Indicate to what extent you feel this way'),
-          findsOneWidget,
-        );
-        expect(find.text('NEXT'), findsOneWidget);
+        expect(find.text(messages.panasInstructionText), findsOneWidget);
+        expect(find.text(messages.surveyNextButton), findsOneWidget);
         await captureScreenshot(
           tester,
           'survey_panas_intro_${viewport}_$theme',
           subdir: _subdir,
         );
 
-        await tester.tap(find.text('NEXT'));
+        await tester.tap(find.text(messages.surveyNextButton));
         await settleFrames(tester, 8);
-        expect(find.text('Interested'), findsOneWidget);
-        expect(find.text('Very slightly or not at all'), findsOneWidget);
-        expect(find.text('Extremely'), findsOneWidget);
+        expect(find.text(messages.panasEmotionInterested), findsOneWidget);
+        expect(
+          find.text(messages.panasScaleVerySlightlyOrNotAtAll),
+          findsOneWidget,
+        );
+        expect(find.text(messages.panasScaleExtremely), findsOneWidget);
         await captureScreenshot(
           tester,
           'survey_panas_question_${viewport}_$theme',

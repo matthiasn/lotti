@@ -1,0 +1,114 @@
+---
+title: Návrh šablon agentů a duší
+description: Definuj opakovaně použitelné odpovědnosti, odděl osobnost od pokynů a obojí zlepšuj pomocí verzovaných individuálních revizí.
+---
+
+# Návrh šablon agentů a duší
+
+**Šablona agenta** definuje opakovaně použitelnou odpovědnost: druh agenta,
+profil inference, provozní směrnice, formát zprávy a volitelnou osobnost.
+**Duše** uchovává opakovaně použitelný hlas, hranice tónu, styl koučování a
+pravidla proti podlézavosti. Oddělení těchto pojmů umožňuje jedné osobnosti
+zlepšovat se napříč více šablonami bez kopírování pokynů.
+
+## Prohlížej katalog šablon
+
+Otevři **Nastavení → Agenti → Šablony agentů**. Katalog ukazuje druh šablony,
+identitu modelu, aktivní verzi a informaci, zda kontrola potřebuje pozornost.
+
+<ManualScreenshot
+  caseId="agents/templates"
+  alt="Šablony agentů Lotti pro bezpečnost orbitálního obydlí, plánování dne Project Waddle, sledování zásob sardinek a koučování rybí diplomacie"
+  caption="Každá šablona Project Waddle má úzkou odpovědnost a viditelnou verzi, místo jednoho univerzálního agenta s nekontrolovatelnou výzvou."
+/>
+
+Vestavěné druhy slouží různým rozsahům:
+
+- **Agent úkolu** pracuje nad jedním úkolem a jeho propojenými podklady.
+- **Agent dne** plánuje a upravuje den.
+- **Agent projektu** dlouhodobě sleduje projekt.
+- **Agent události** sleduje pracovní prostor události.
+- **Vylepšovač šablony** podporuje verzovaný proces individuální kontroly.
+
+## Uprav šablonu
+
+Vyber šablonu a uprav aktuální nastavení. Zvol výchozí profil inference s
+nástroji a modalitami potřebnými pro odpovědnost a volitelně přiřaď duši.
+
+<ManualScreenshot
+  caseId="agents/template-editor"
+  alt="Editor šablony Strážce orbitálního obydlí používající Velení Project Waddle a Admiral Pebble se směrnicemi bezpečnosti obydlí a zpráv"
+  caption="Provozní směrnice strážce popisuje, co kontrolovat; Admiral Pebble přidává komunikační styl a způsob zpochybňování."
+/>
+
+Dvě pole směrnic používej záměrně:
+
+- **Obecná směrnice** definuje odpovědnost, hranice a rozhodovací pravidla.
+- **Směrnice zprávy** definuje obsah užitečné uložené zprávy.
+
+Uložení upravené šablony vytvoří novou verzi. Historie zůstává dostupná pro
+audit a návrat; neskrývej nesouvisející odpovědnosti v jedné dlouhé směrnici
+jen kvůli menšímu počtu šablon.
+
+## Proveď individuální kontrolu šablony
+
+Stránka šablony **1 na 1** zasazuje navržené změny do skutečné aktivity
+probuzení, zpětné vazby, výkonu a předchozích relací. Čekající relace je návrh,
+ne automatický přepis.
+
+<ManualScreenshot
+  caseId="agents/template-review"
+  alt="Individuální kontrola Strážce orbitálního obydlí s návrhem na zvýraznění rozhodnutí o spuštění a nedávnými metrikami výkonu"
+  caption="Ukázkový návrh reaguje na konkrétní selhání: bezpečnostní zjištění bylo správné, ale rozhodnutí spustit či nespustit se ztratilo pod rybími drobnostmi."
+/>
+
+Zahaj konverzaci, zkontroluj podklady a schval jen změny, které zlepšují danou
+odpovědnost. Schválený výsledek se stane dalším verzovaným záznamem šablony.
+
+## Udržuj osobnost znovu použitelnou pomocí duší
+
+V **Duších** najdeš osobnosti, které mohou šablony sdílet. Duše není další
+výzva úkolu; řídí způsob komunikace, koučování a odporu agenta.
+
+<ManualScreenshot
+  caseId="agents/souls"
+  alt="Katalog duší Lotti s Admiral Pebble, Dr. Flipper a Captain Sardina"
+  caption="Project Waddle odděluje klidného letového ředitele, zvídavého vědce a praktického koordinátora nákladu od rolí, které je používají."
+/>
+
+Editor duše udržuje čtyři oblasti výslovné:
+
+<ManualScreenshot
+  caseId="agents/soul-editor"
+  alt="Editor duše Admiral Pebble s hlasem, hranicemi tónu, stylem koučování a pravidlem proti podlézavosti"
+  caption="Admiral Pebble může zůstat vřelý a rozhodný a současně pomocí podkladů zpochybňovat příliš optimistické předpoklady spuštění."
+/>
+
+- **Směrnice hlasu** popisuje rozpoznatelný hlas a komunikační priority.
+- **Hranice tónu** určují, čemu se má hlas vyhnout.
+- **Styl koučování** popisuje, jak pomáhá dojít k rozhodnutí.
+- **Pravidlo proti podlézavosti** vysvětluje, kdy a jak má nesouhlasit.
+
+Používej konkrétní hranice chování. „Buď nápomocný“ se špatně kontroluje;
+„zpochybni optimistické předpoklady spuštění a uveď pozorování, které změnilo
+tvůj závěr“ lze porovnat se skutečným výstupem.
+
+## Sdílenou duši rozvíjej opatrně
+
+Individuální kontrola duše čerpá zpětnou vazbu ze všech šablon používajících
+danou osobnost. Změna je proto silná: schválení může zlepšit několik agentů,
+ale špatná změna může ovlivnit všechny.
+
+<ManualScreenshot
+  caseId="agents/soul-review"
+  alt="Individuální kontrola duše Admiral Pebble s návrhem, jednou sdílející šablonou a historií dokončených relací"
+  caption="Počet sdílení a historie relací ukazují rozsah dopadu ještě před schválením změn osobnosti."
+/>
+
+Před zahájením kontroly osobnosti přečti počet sdílení, shrnutí navržené zpětné
+vazby a předchozí rekapitulaci. Pokud zpětná vazba platí jen pro jednu
+odpovědnost, změň její šablonu, místo abys společnou duši učil pravidlo
+specifické pro úkol.
+
+Vrať se na [Spouštění a sledování agentů](./agents.mdx) a prohlédni instance a
+cykly probuzení vytvořené z těchto návrhů.

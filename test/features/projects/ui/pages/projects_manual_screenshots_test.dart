@@ -584,7 +584,7 @@ void main() {
           find.text(_t('Filter projects', 'Projekte filtern')),
           findsOneWidget,
         );
-        expect(find.text('Status'), findsOneWidget);
+        expect(find.text(_t('Status', 'Status')), findsOneWidget);
         expect(find.text(_t('Category', 'Kategorie')), findsOneWidget);
         await captureScreenshot(
           tester,

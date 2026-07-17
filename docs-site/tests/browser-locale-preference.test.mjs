@@ -11,7 +11,15 @@ import {
 
 test('browser locale matching uses the first supported language', () => {
   assert.equal(
-    preferredSupportedLocale(['fr-FR', 'de-DE', 'en-US'], ['en', 'de'], 'en'),
+    preferredSupportedLocale(
+      ['fr-FR', 'cs-CZ', 'de-DE', 'en-US'],
+      ['en', 'de', 'cs'],
+      'en',
+    ),
+    'cs',
+  );
+  assert.equal(
+    preferredSupportedLocale(['fr-FR', 'de-DE', 'en-US'], ['en', 'de', 'cs'], 'en'),
     'de',
   );
   assert.equal(
@@ -62,6 +70,10 @@ test('locale root URLs preserve the default route and add alternatives', () => {
     localeRootUrl('/lotti/manual/development/', 'de', 'en'),
     '/lotti/manual/development/de/',
   );
+  assert.equal(
+    localeRootUrl('/lotti/manual/development/', 'cs', 'en'),
+    '/lotti/manual/development/cs/',
+  );
 });
 
 test('an explicit locale dropdown choice is persisted', () => {
@@ -78,6 +90,7 @@ test('an explicit locale dropdown choice is persisted', () => {
     localeConfigs: {
       en: {htmlLang: 'en-US'},
       de: {htmlLang: 'de-DE'},
+      cs: {htmlLang: 'cs-CZ'},
     },
     storage: {setItem: (key, value) => stored.set(key, value)},
   });

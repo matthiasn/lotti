@@ -6,47 +6,97 @@ sidebar_label: Willkommen
 description: Erfahre, wie du mit Lotti planst, festhältst, organisierst und reflektierst.
 ---
 
-<div className="manual-hero">
-  <h1>Mach deinen Tag sichtbar.</h1>
-  <div className="manual-hero-copy">Lotti bringt Pläne, Aufgaben, Zeiteinträge, Gewohnheiten, Messwerte und private KI-Unterstützung an einem ruhigen Ort zusammen. Dieses Handbuch beginnt mit dem gewünschten Ergebnis und zeigt dir dann die passenden Bedienelemente.</div>
+<div className="manual-hero manual-hero--welcome">
+  <div className="manual-eyebrow">Ein privates Logbuch, keine Produktivitätsüberwachung</div>
+  <h1>Behalte die Fakten. Mach den Tag zu deinem.</h1>
+  <div className="manual-hero-copy">Aufgaben, Zeit, Sprachnotizen, Gewohnheiten, Gesundheitsdaten und der seltsam nützliche Gedanke zwischendurch verdienen ein besseres Schicksal als Browser-Tab-Purgatorium. Lotti hält die Geschichte fest; du entscheidest, was als Nächstes passiert.</div>
+  <div className="manual-hero-principles">
+    <div><strong>Deine Geschichte bleibt deine.</strong><span>Sie liegt in deinem lokalen Logbuch, nicht in einem Lotti-Cloudkonto.</span></div>
+    <div><strong>KI fragt an; du entscheidest.</strong><span>Agenten können beobachten, nachdenken und Vorschläge machen. Die Schlüssel zu deinem Leben bekommen sie nicht.</span></div>
+    <div><strong>Mach es erinnerbar.</strong><span>Nützlich, ernst, herrlich seltsam: Dein Arbeitsbereich darf nach dir klingen.</span></div>
+  </div>
 </div>
 
-## Wähle deinen Einstieg
+<ManualScreenshot
+  caseId="tasks/detail"
+  alt="Lotti-Aufgabenseite für das Orbit-Habitat von Project Waddle mit Kontext, Titelbild, Checkliste und Zeiteinträgen"
+  caption="Eine Aufgabe ist ein lebender Eintrag: Ergebnis, Kontext, nächste Schritte und Arbeitsbelege reisen zusammen."
+/>
+
+## Nicht noch eine Maschine, die so tut, als wäre alles nach Plan gelaufen
+
+Lotti trennt bewusst zwischen dem, was du vorhattest, und dem, was tatsächlich
+passiert ist. Eine Aufgabe kann wichtig sein, ohne den ganzen Tag zu besitzen.
+Ein Plan darf umsortiert werden, ohne die Vergangenheit umzuschreiben. Und ein
+Zeiteintrag darf ehrlich sagen, dass das Meeting länger dauerte und die gute
+Idee erst auf dem Heimweg kam.
+
+Diese Trennung ist der Punkt, keine Bürokratie. Gerade in lauten Wochen macht
+sie deine Aufzeichnung vertrauenswürdig.
+
+:::note Über die Pinguine (und anderen ausgezeichneten Unsinn)
+
+Die Pinguine, das Orbit-Habitat, Sardinen und **Project Waddle** gehören nur
+zum fiktiven Beispiel-Arbeitsbereich **Intergalactic Penguin Logistics** in
+diesem Handbuch. So erzählen die Screenshots eine zusammenhängende Geschichte;
+die gezeigten Funktionen und Abläufe sind aber die echte Lotti-App. Dein
+Arbeitsbereich darf ganz gewöhnlich sein – oder genauso reizvoll seltsam.
+Titelbilder für Aufgaben sind optional; eine gute visuelle Metapher kann eine
+volle Woche deutlich lesbarer machen.
+
+:::
+
+## Starte dort, wo es gerade hakt
 
 <div className="manual-cards">
   <a className="manual-card" href="getting-started/mental-model/">
-    <strong>Lotti verstehen</strong>
-    Erfahre, wie Pläne, Aufgaben, Einträge und tatsächliche Zeit zusammengehören.
+    <strong>Dein Leben ist kein Backlog</strong>
+    Verstehe, wie Absicht, Pläne, tatsächliche Zeit, Belege und Rückschau getrennt – und dadurch nützlich – bleiben.
   </a>
   <a className="manual-card" href="plan-and-capture/daily-os/">
-    <strong>Heute planen</strong>
-    Verwandle einen gesprochenen oder getippten Check-in in einen bearbeitbaren Tagesplan.
+    <strong>Plane einen Tag, der atmen darf</strong>
+    Mach aus einem gesprochenen oder getippten Check-in einen bearbeitbaren Tagesplan, der die Wirklichkeit mitdenkt.
   </a>
   <a className="manual-card" href="organize-and-reflect/tasks/">
-    <strong>Arbeit voranbringen</strong>
-    Erstelle Aufgaben, setze Prioritäten und mache aus Kontext konkrete Checklisten.
+    <strong>Gib der Arbeit ein Zuhause</strong>
+    Erstelle Aufgaben, hänge Kontext an, setze Prioritäten und mache aus Unklarheit nächste Schritte.
   </a>
   <a className="manual-card" href="ai-and-automation/provider-setup/">
-    <strong>KI verbinden</strong>
-    Wähle einen Cloud- oder lokalen Anbieter und bestimme, welche Modelle Lotti verwendet.
+    <strong>Wähle ein KI-Gehirn verantwortungsvoll</strong>
+    Entscheide dich bewusst für lokale oder Cloud-Inferenz – Privatsphäre, Speicherung, Standort und Energie gehören alle dazu.
   </a>
 </div>
 
-## Was Lotti bewusst trennt
+## KI ist optional. Ihre Folgen nicht.
 
-- **Aufgaben** beschreiben Arbeit und ihren Status.
-- **Pläne** beschreiben, was du wann tun möchtest.
-- **Einträge** bewahren Notizen, Aufnahmen, Bilder, Messwerte und andere Belege.
-- **Zeiteinträge** beschreiben, was tatsächlich passiert ist.
-- **Kategorien** schaffen Grenzen für Filter, Automatisierung und Reflexion.
+Lotti betreibt keinen Inferenz-Server und erhält keine Kopie deiner Modellein-
+gaben. Bei lokaler Inferenz können deine Inhalte auf deinem Gerät bleiben. Bei
+einem Cloud-Anbieter geht der von dir gewählte Kontext direkt über **dein**
+Konto und deinen API-Schlüssel dorthin. Damit liegt die Entscheidung bei dir –
+und die Prüfung leider auch.
 
-Diese Trennung ist Absicht: Ein Plan darf sich ändern, ohne die Vergangenheit
-umzuschreiben. Und die tatsächliche Zeit darf vom Plan abweichen, ohne so zu
-tun, als wäre der Tag anders verlaufen.
+<div className="manual-responsibility-grid">
+  <div className="manual-responsibility-card">
+    <strong>Privatsphäre ist eine Routing-Entscheidung.</strong>
+    <p>Für besonders sensible Inhalte nutze ein fähiges lokales Modell oder einen Anbieter erst, nachdem du Speicherung, Training, Rechtsraum und Kontoeinstellungen geprüft hast. „Cloud“ heißt nie automatisch „es wird nichts gespeichert“.</p>
+  </div>
+  <div className="manual-responsibility-card">
+    <strong>Auch Energie ist eine Routing-Entscheidung.</strong>
+    <p>KI läuft an physischen Orten. Bevorzuge ein lokales Setup oder einen Anbieter, dessen Strommix, Standort und CO₂-Aussagen du wirklich prüfen kannst. Ein glaubwürdig erneuerbar betriebener Weg kann verhindern, dass die Gesundheits- und Klimakosten fossiler Rechenleistung – besonders von Gasturbinen – auf Gemeinschaften mit weniger Möglichkeiten zum Widerspruch ausgelagert werden.</p>
+  </div>
+  <div className="manual-responsibility-card">
+    <strong>Menschliche Freigabe ist eine Produktregel.</strong>
+    <p>Agenten können Kontext analysieren und Änderungen entwerfen, doch Vorschläge warten auf dich. Lotti macht aus „hilfreich“ nicht „unkontrollierbar“.</p>
+  </div>
+</div>
+
+Die praktische Regel: Wenn du keinen Daten- und Energiepfad findest, hinter
+dem du stehen kannst, lass KI aus. Lotti bleibt auch ohne sie nützlich.
 
 :::tip Fang klein an
 
 Erstelle ein paar sinnvolle Kategorien, eine echte Aufgabe und einen Daily-OS-
-Check-in. Füge erst dann mehr Struktur hinzu, wenn sie dir wirklich hilft.
+Check-in. Füge erst dann mehr Struktur hinzu, wenn sie dir wirklich hilft; du
+baust eine Aufzeichnung deines Lebens, keine Futtermaschine für Produktivität.
 
 :::

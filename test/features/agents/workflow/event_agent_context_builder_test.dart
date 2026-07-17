@@ -201,7 +201,7 @@ void main() {
       );
 
       expect(message, contains("**Title**: Maya's 30th"));
-      expect(message, contains('**Status**: ${EventStatus.completed.label}'));
+      expect(message, contains('**Status**: ${EventStatus.completed.name}'));
       expect(message, contains('### Event note'));
       expect(message, contains('My note about the night.'));
       expect(message, contains('### Photos (3)'));

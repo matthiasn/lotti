@@ -6,48 +6,94 @@ sidebar_label: Welcome
 description: Learn how to plan, capture, organize, and reflect with Lotti.
 ---
 
-<div className="manual-hero">
-  <h1>Make the day visible.</h1>
-  <div className="manual-hero-copy">Lotti brings plans, tasks, time records, habits, measurements, and private AI assistance into one calm place. This manual starts with outcomes, then shows the controls that get you there.</div>
+<div className="manual-hero manual-hero--welcome">
+  <div className="manual-eyebrow">A private logbook, not a productivity panopticon</div>
+  <h1>Keep the facts. Make the day yours.</h1>
+  <div className="manual-hero-copy">Tasks, time, voice notes, habits, health data, and the odd useful thought all deserve a better fate than tab purgatory. Lotti keeps the record; you decide what happens next.</div>
+  <div className="manual-hero-principles">
+    <div><strong>Your history stays yours.</strong><span>It lives in your local logbook, not in a Lotti cloud account.</span></div>
+    <div><strong>AI asks; you decide.</strong><span>Agents can notice, think, and propose. They do not get the keys to your life.</span></div>
+    <div><strong>Make it memorable.</strong><span>Useful, serious, delightfully weird: the workspace gets to sound like you.</span></div>
+  </div>
 </div>
 
-## Choose a path
+<ManualScreenshot
+  caseId="tasks/detail"
+  alt="Lotti task page for the Project Waddle orbital penguin habitat, with task context, cover art, checklist, and time records"
+  caption="A task is a living record: the outcome, its context, its next moves, and the evidence of the work all travel together."
+/>
+
+## Not another machine for pretending everything went to plan
+
+Lotti distinguishes the things you meant to do from the things that actually
+happened. A task can be important without owning your whole day. A plan can be
+rearranged without falsifying history. A time record can say, honestly, that
+the meeting ran long and the good idea arrived while you were walking home.
+
+That separation is the point, not paperwork. It gives you a record you can
+trust when the week gets noisy.
+
+:::note About the penguins (and other excellent nonsense)
+
+The penguins, orbital habitat, sardines, and **Project Waddle** appear only in
+this manual's fictional **Intergalactic Penguin Logistics** demo workspace.
+They make the screenshots feel like one coherent story, while the controls,
+flows, and product behaviour shown are the real Lotti app. Your own workspace
+can be as ordinary—or as delightfully strange—as you like. Task cover art is
+optional; a good visual metaphor can make a crowded week much easier to read.
+
+:::
+
+## Start where the friction is
 
 <div className="manual-cards">
   <a className="manual-card" href="getting-started/mental-model/">
-    <strong>Understand Lotti</strong>
-    Learn how plans, tasks, entries, and actual time fit together.
+    <strong>Your life is not a backlog</strong>
+    See how intent, plans, actual time, evidence, and reflection stay distinct—and useful.
   </a>
   <a className="manual-card" href="plan-and-capture/daily-os/">
-    <strong>Plan today</strong>
-    Turn a spoken or typed check-in into an editable day plan.
+    <strong>Build a day that can breathe</strong>
+    Turn a spoken or typed check-in into an editable, reality-aware day plan.
   </a>
   <a className="manual-card" href="organize-and-reflect/tasks/">
-    <strong>Move work forward</strong>
-    Create tasks, set priorities, and turn context into checklists.
+    <strong>Give work a home</strong>
+    Create tasks, attach context, set priorities, and turn ambiguity into next moves.
   </a>
   <a className="manual-card" href="ai-and-automation/provider-setup/">
-    <strong>Connect AI</strong>
-    Choose a cloud or local provider and control which models Lotti uses.
+    <strong>Choose a brain responsibly</strong>
+    Pick local or cloud inference deliberately—privacy, retention, region, and energy are all part of the choice.
   </a>
 </div>
 
-## What Lotti keeps separate
+## AI is optional. Its consequences are not.
 
-- **Tasks** describe work and its status.
-- **Plans** describe what you intend to do and when.
-- **Entries** preserve notes, recordings, images, measurements, and other
-  evidence.
-- **Time records** describe what actually happened.
-- **Categories** create boundaries for filtering, automation, and reflection.
+Lotti has no inference backend and no copy of your model input. With local
+inference, your material can stay on your device. With a cloud provider, your
+chosen context goes directly to that provider under **your** account and API
+key. That makes the decision yours—but it also makes the due diligence yours.
 
-That separation is deliberate: a plan can change without rewriting history,
-and actual time can differ from the plan without pretending the day went
-differently.
+<div className="manual-responsibility-grid">
+  <div className="manual-responsibility-card">
+    <strong>Privacy is a routing decision.</strong>
+    <p>For sensitive material, run a capable model locally or choose a provider only after checking its retention, training, jurisdiction, and account settings. “Cloud” never automatically means “nothing is stored.”</p>
+  </div>
+  <div className="manual-responsibility-card">
+    <strong>Energy is a routing decision too.</strong>
+    <p>AI runs in physical places. Prefer a local setup or provider whose electricity, location, and carbon claims you can actually verify. A renewable-powered route can avoid outsourcing the health and climate cost of fossil-powered compute—especially gas-turbine generation—to communities with less power to refuse it.</p>
+  </div>
+  <div className="manual-responsibility-card">
+    <strong>Human approval is a product rule.</strong>
+    <p>Agents can analyse context and draft changes, but proposals wait for you. Lotti does not turn “helpful” into “unaccountable.”</p>
+  </div>
+</div>
+
+The practical rule: if you cannot find a data and energy path you are happy to
+stand behind, leave AI off. Lotti remains useful without it.
 
 :::tip Start small
 
 Create a couple of meaningful categories, one real task, and one Daily OS
-check-in. Add more structure only when it earns its place.
+check-in. Add more structure only when it earns its place; you are building a
+record of a life, not feeding a productivity machine.
 
 :::

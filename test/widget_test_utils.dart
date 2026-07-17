@@ -319,6 +319,7 @@ Widget makeTestableWidgetNoScroll(
   List<Override> overrides = const [],
   MediaQueryData? mediaQueryData,
   ThemeData? theme,
+  Locale? locale,
   List<NavigatorObserver> navigatorObservers = const [],
   GlobalKey<NavigatorState>? navigatorKey,
 }) {
@@ -341,6 +342,7 @@ Widget makeTestableWidgetNoScroll(
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
+        locale: locale,
         home: child,
       ),
     ),

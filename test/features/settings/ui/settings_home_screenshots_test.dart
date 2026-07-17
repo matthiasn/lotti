@@ -295,7 +295,7 @@ void main() {
       expect(find.text(_t('Categories', 'Kategorien')), findsOneWidget);
       expect(find.text(_t('Labels', 'Labels')), findsOneWidget);
       expect(find.text(_t('Habits', 'Gewohnheiten')), findsOneWidget);
-      expect(find.text('Dashboards'), findsOneWidget);
+      expect(find.text(_t('Dashboards', 'Dashboards')), findsOneWidget);
       expect(find.text(_t('Measurables', 'Messgrößen')), findsOneWidget);
       await captureScreenshot(
         tester,
@@ -317,7 +317,7 @@ void main() {
       expect(find.text(_t('Categories', 'Kategorien')), findsOneWidget);
       expect(find.text(_t('Labels', 'Labels')), findsOneWidget);
       expect(find.text(_t('Habits', 'Gewohnheiten')), findsOneWidget);
-      expect(find.text('Dashboards'), findsOneWidget);
+      expect(find.text(_t('Dashboards', 'Dashboards')), findsOneWidget);
       expect(find.text(_t('Measurables', 'Messgrößen')), findsOneWidget);
       await captureScreenshot(
         tester,

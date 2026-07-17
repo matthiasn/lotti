@@ -1,0 +1,141 @@
+---
+title: Nastavení Lotti pomocí úvodního průvodce
+description: Připoj poskytovatele AI, vyber styl nahrávání a pracovní oblasti a proměň první myšlenku ve skutečný úkol.
+---
+
+# Nastavení Lotti pomocí úvodního průvodce
+
+Úvodní průvodce nastaví jen to nejnutnější pro práci s úkoly za pomoci AI:
+jednoho poskytovatele, styl nahrávání, alespoň jednu kategorii a první skutečný
+úkol. Jde o řízené nastavení, ne o oddělené ukázkové prostředí —
+poskytovatelé, kategorie a úkoly vytvořené zde zůstávají v běžné aplikaci.
+
+Kdykoli budeš chtít průvodce spustit nebo zopakovat, otevři **Nastavení →
+Úvodní průvodce**. Stránka také ukazuje, zda už tento profil vytvořil svůj
+první úkol vytvořený pomocí AI.
+
+<ManualScreenshot
+  caseId="onboarding/settings"
+  alt="Nastavení úvodního průvodce Lotti s aktivním stavem a akcí pro jeho zopakování"
+  caption="Tento profil Project Waddle už vytvořil svůj první úkol pomocí AI. Průvodce můžeš zopakovat i po aktivaci."
+/>
+
+## Začni krátkým uvítáním
+
+<ManualScreenshot
+  caseId="onboarding/welcome"
+  alt="Uvítací panel průvodce Lotti s výzvou k připojení AI a převodu řeči na strukturovaný úkol"
+  caption="Uvítací panel se otevře nad aktuální aplikací. Pokračuj volbou AI, nebo průvodce opusť beze změny nastavení."
+/>
+
+Začni volbou **Vybrat AI**. **Nejdřív se rozhlédnout**, ztmavená oblast mimo
+panel i systémová akce zpět ukončí průvodce bez připojení čehokoli. Později se
+k němu můžeš vrátit z Nastavení.
+
+Lotti může toto uvítání nabídnout vhodnému profilu také automaticky.
+Automatická výzva se opakuje jen omezeně; položka v Nastavení toto omezení
+nemá, takže cesta zpět zůstane vždy dostupná.
+
+## Vyber službu, která úkoly strukturuje
+
+<ManualScreenshot
+  caseId="onboarding/providers"
+  alt="Výběr poskytovatele v průvodci Lotti s možnostmi Melious.ai, Mistral, Gemini, Qwen, OpenAI a Ollama"
+  caption="Hlavní cloudoví poskytovatelé jsou uvedeni jako první. OpenAI a místní Ollamu najdeš po rozbalení dalších možností."
+/>
+
+Stránka poskytovatelů rozlišuje dostupné cloudové a místní možnosti:
+
+- **Melious.ai** je doporučená výchozí volba hostovaná v EU s dynamickým
+  směrováním modelů.
+- **Mistral**, **Gemini** a **Qwen** používají své vlastní cloudové služby.
+- **OpenAI** najdeš mezi rozšířenými možnostmi.
+- **Ollama** se připojuje ke kompatibilnímu místnímu koncovému bodu a
+  nepotřebuje hostovaný API klíč.
+
+<ManualScreenshot
+  caseId="onboarding/api-key"
+  alt="Ověřovací krok úvodního průvodce s potvrzeným místním připojením k Ollamě"
+  caption="Lotti zvoleného poskytovatele ověří dřív, než zpřístupní Připojit. U cloudového poskytovatele ukazuje stejný krok i pole pro API klíč."
+/>
+
+U cloudového poskytovatele vlož jeho API klíč. Lotti ověří připojení, než
+zpřístupní tlačítko **Připojit**. U Ollamy ověří nastavený místní koncový bod a
+zobrazí dostupné modely. Úspěšné připojení uloží poskytovatele a připraví modely
+i profil inference pro zbývající kroky.
+
+<ManualScreenshot
+  caseId="onboarding/success"
+  alt="Potvrzení úvodního průvodce, že poskytovatel AI je připojený a připravený"
+  caption="Potvrzení připojení je záměrně klidné. Důležitější okamžik přijde s prvním skutečným úkolem."
+/>
+
+Text zachyceného úkolu se kvůli strukturování posílá poskytovateli přiřazenému k
+vybrané kategorii. Vyber poskytovatele, jehož způsob nasazení a nakládání s daty
+odpovídá materiálu, který chceš zachycovat. Dostupný místní koncový bod Ollama
+ponechá požadavek na strukturování na počítači, na kterém běží.
+
+## Vyber způsob nahrávání a pracovní oblasti
+
+<ManualScreenshot
+  caseId="onboarding/recording-style"
+  alt="Výběr stylu nahrávání s moderní energetickou koulí a analogovým VU metrem"
+  caption="Vyber si vizualizaci nahrávání, která ti připadá nejčitelnější. Obě možnosti používají stejný proces zachycení."
+/>
+
+Po úspěšném připojení zvol styl nahrávání pro zachycení prvního úkolu i
+pozdější hlasové vstupy. Znovu ho můžeš změnit v **Nastavení → Styl
+nahrávání**.
+
+<ManualScreenshot
+  caseId="onboarding/categories"
+  alt="Výběr pracovních oblastí s Prací, Kondicí, Rodinou, Přáteli a možností přidat vlastní"
+  caption="Vyber jednu nebo více oblastí. V úzkém rozvržení nebo při větším písmu se možnosti automaticky zobrazí po jedné přes celou šířku."
+/>
+
+Potom vyber jednu nebo více pracovních oblastí. Předvolby pokrývají běžné
+kategorie jako Práce, Kondice, Rodina a Přátelé; volba **Přidat vlastní**
+vytvoří kategorii podle tvého zadání. Pokud už kategorie se stejným názvem
+existuje, průvodce ji použije místo vytváření duplikátu. V případě potřeby ji
+znovu aktivuje a propojí s nově připraveným profilem inference.
+
+Na snímcích v příručce jsou dvě skutečné kategorie — **Tučňáčí provoz** a
+**Řízení mise** — takže další krok ukazuje stejný výběr jako běžný účet.
+
+## Zachyť první skutečný úkol
+
+<ManualScreenshot
+  caseId="onboarding/first-task"
+  alt="Panel prvního úkolu s hlasovým vstupem, kategoriemi Tučňáčí provoz a Řízení mise a možností raději psát"
+  caption="Vyber, kam má úkol patřit, a potom mluv přirozeně, použij úvodní návrh nebo zvol psaní. Na snímku je vybraný Tučňáčí provoz."
+/>
+
+Panel prvního úkolu používá běžný proces zachycení v Lotti. Vyber cílovou
+kategorii a potom jednu ze tří cest:
+
+1. Spusť nahrávání a řekni úkol běžnou větou.
+2. Vyber úvodní návrh a hned vyzkoušej strukturování.
+3. Zvol **Raději psát?** a zadej myšlenku bez mikrofonu.
+
+Lotti během strukturování zobrazuje zachycená slova. Výsledkem je skutečný úkol
+ve vybrané kategorii, ne ukázková data určená jen pro průvodce. Pokud
+strukturování vytvoří návrhy kontrolního seznamu, dorazí k úkolu jako návrhy,
+které můžeš potvrdit, místo aby úkol tiše změnily.
+
+<ManualScreenshot
+  caseId="onboarding/task-created"
+  alt="Panel úspěšného dokončení průvodce s vytvořeným úkolem Zkontrolovat sardinkový retranslátor na Europě"
+  caption="Napsaná myšlenka z Project Waddle se promění v úkol „Zkontrolovat sardinkový retranslátor na Europě“. Dokud ho nevybereš, zůstane v panelu."
+/>
+
+Výběrem karty vytvořeného úkolu zavřeš průvodce a otevřeš běžnou stránku úkolu.
+Tam můžeš zkontrolovat návrhy kontrolního seznamu, přidat titulní obrázek nebo
+podklady, nastavit termín a prioritu a zařadit úkol do Daily OS.
+
+Pokud průvodce zavřeš po připojení poskytovatele, Lotti jeho nastavení zachová
+a uvítání považuje za dokončené. Pozdější zopakování průvodce je bezpečné: jde
+o výslovnou akci v Nastavení, ne o další automatickou výzvu.
+
+Pokračuj na [vytvoření prvního úkolu](./first-task.mdx),
+[správu kategorií](../organize-and-reflect/categories.mdx) a
+[nastavení poskytovatelů](../ai-and-automation/provider-setup.mdx).

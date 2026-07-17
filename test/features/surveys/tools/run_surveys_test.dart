@@ -57,18 +57,29 @@ void main() {
 
   Future<void> pumpRunner(
     WidgetTester tester,
-    void Function(BuildContext) run,
-  ) async {
+    void Function(BuildContext) run, {
+    Locale? locale,
+  }) async {
+    final surveyLauncher = Scaffold(
+      body: Builder(
+        builder: (context) => ElevatedButton(
+          onPressed: () => run(context),
+          child: const Text('open'),
+        ),
+      ),
+    );
+
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        Scaffold(
-          body: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () => run(context),
-              child: const Text('open'),
-            ),
-          ),
-        ),
+        locale == null
+            ? surveyLauncher
+            : Builder(
+                builder: (context) => Localizations.override(
+                  context: context,
+                  locale: locale,
+                  child: surveyLauncher,
+                ),
+              ),
       ),
     );
     await tester.tap(find.text('open'));
@@ -128,7 +139,7 @@ void main() {
             themeData: Theme.of(context),
             linkedId: linkedId,
           ),
-          expectedId: panasSurveyTask.identifier,
+          expectedId: 'panasSurveyTask',
           scoreDefinitions: panasScoreDefinitions,
           answers: const [
             (questionId: 'panasQuestion1', value: 4),
@@ -221,6 +232,32 @@ void main() {
         ).called(1);
       },
     );
+  }
+
+  for (final localeCase in [
+    (
+      locale: const Locale('cs'),
+      instruction: 'Uveď, do jaké míry se takto cítíš právě teď',
+    ),
+    (
+      locale: const Locale('de'),
+      instruction: 'Gib an, wie stark du dich genau jetzt',
+    ),
+  ]) {
+    testWidgets('runPanas renders ${localeCase.locale.languageCode} copy', (
+      tester,
+    ) async {
+      await pumpRunner(
+        tester,
+        (context) => runPanas(
+          context: context,
+          themeData: Theme.of(context),
+        ),
+        locale: localeCase.locale,
+      );
+
+      expect(find.textContaining(localeCase.instruction), findsOneWidget);
+    });
   }
 
   testWidgets('runSurvey shows the provided task without firing the callback', (

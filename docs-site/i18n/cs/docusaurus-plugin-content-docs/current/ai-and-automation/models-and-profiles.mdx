@@ -1,0 +1,124 @@
+---
+title: Směrování práce pomocí modelů a profilů
+description: Popiš schopnosti modelu jednou a pomocí profilů inference směruj přemýšlení, obraz, zvuk a generování obrázků.
+---
+
+# Směrování práce pomocí modelů a profilů
+
+Poskytovatel říká Lotti, kam se připojit. Model zaznamenává jedno ID modelu
+poskytovatele a jeho schopnosti. Profil inference potom přiřazuje tyto modely k
+úlohám, kterým Lotti rozumí. Otázka „který model zpracovává zvuk?“ tak nemusí
+být v každém úkolu a pravidle automatizace.
+
+## Prohlížej uložené modely
+
+Otevři **Nastavení → Nastavení AI → Modely**. Seznam seskupuje modely podle
+poskytovatele a nabízí filtry schopností pro text, obraz, zvuk a uvažování.
+
+<ManualScreenshot
+  caseId="ai/models"
+  alt="Seznam modelů AI v Lotti s textovými, uvažovacími, obrazovými, přepisovacími a generativními modely Project Waddle"
+  caption="Prostor Project Waddle kombinuje cloudové a místní modely a schopnosti každého modelu drží výslovně viditelné."
+/>
+
+Ovládání **Souběžná probuzení agentů** nahoře v Nastavení AI omezuje počet
+různých agentů, kteří mohou současně spouštět inferenci. Vyšší hodnota může
+zvýšit propustnost, ale také počet souběžných požadavků na poskytovatele a zátěž
+místního zařízení. Udržuj ji opatrnou, když má poskytovatel přísné limity nebo
+místní server modelů omezenou paměť.
+
+## Přidej nebo uprav model
+
+Vyber kartu modelu nebo ho přidej pomocí **+**. Definice obsahuje:
+
+- připojení poskytovatele;
+- přátelský název a volitelný popis;
+- přesné ID modelu u poskytovatele;
+- nejvyšší počet tokenů dokončení;
+- vstupní a výstupní modality; a
+- příznaky schopností jako uvažování nebo volání funkcí.
+
+<ManualScreenshot
+  caseId="ai/model-editor"
+  alt="Editor modelu Lotti pro Waddle Command 70B s poskytovatelem, ID modelu, limitem dokončení, modalitami a schopností uvažování"
+  caption="Metadata schopností jsou důležitá: Lotti podle nich rozhoduje, které modely lze použít v jednotlivých pozicích profilu a jednorázových výběrech."
+/>
+
+Použij přesný identifikátor očekávaný poskytovatelem. Zobrazovaný název je jen
+pro lidi; jeho změna nemění model, který poskytovatel spouští. Neuváděj podporu
+obrázků, zvuku, nástrojů nebo uvažování, pokud je daný model a koncový bod
+skutečně neposkytují.
+
+## Sestav profil inference
+
+Otevři **Nastavení → Nastavení AI → Profily inference**. Každý profil je
+opakovaně použitelné pravidlo směrování. Přehled ukazuje model přiřazený ke
+každé nastavené pozici.
+
+<ManualScreenshot
+  caseId="ai/profiles"
+  alt="Profily inference Lotti Velení Project Waddle, Obydlí přednostně místně a Rybí diplomacie s jejich směrovanými modely"
+  caption="Profily mohou optimalizovat odlišné hranice: široký cloudový profil, místní profil jen pro počítač nebo specializovaný profil uvažování."
+/>
+
+Uprav profil a přiřaď modely používaným schopnostem:
+
+- **Přemýšlení** je povinný obecný textový model.
+- **Přemýšlení (špičkové)** může zpracovat práci výslovně žádající schopnější
+  cestu uvažování.
+- **Rozpoznání obrázků** analyzuje obrázky.
+- **Přepis** převádí zvuk na text.
+- **Generování obrázků** vytváří grafiku úkolů a další generované obrázky.
+
+<ManualScreenshot
+  caseId="ai/profile-editor"
+  alt="Editor profilu Velení Project Waddle s přiřazeným modelem přemýšlení, špičkového uvažování, rozpoznání obrázků, přepisu a generování obrázků"
+  caption="Jeden profil směruje všechny modality Project Waddle bez opakování voleb modelů v jednotlivých úkolech."
+/>
+
+Přepínač **Desktop Only** (jen počítač) skryje profil na mobilních platformách,
+což se hodí, pokud závisí na modelu dostupném pouze z pracovní stanice.
+Připnutí zařízení slouží pro automatické zpracování synchronizovaného zvuku:
+připínej jen zařízení, které nabízí poskytovatele potřebné profilem. Bez
+připnutého zařízení se synchronizovaný zvuk tímto profilem automaticky
+nepřepisuje.
+
+## Vyber model bez pamatování ID
+
+Výběr modelu začíná poskytovatelem a ukazuje jen kompatibilní uložené modely.
+Výběr v textové pozici profilu například nenabídne model určený pouze pro zvuk.
+
+<ManualScreenshot
+  caseId="ai/model-picker"
+  alt="Dialog Vybrat model v Lotti s poskytovateli OpenRouter, Ollama a Google Gemini nad editorem profilu Project Waddle"
+  caption="Nejdřív vyber poskytovatele; Lotti potom zúží další stránku na vhodné modely z tohoto připojení."
+/>
+
+## Nastav výchozí profil kategorie
+
+Kategorie může zvolit výchozí profil inference v **Nastavení → Definice →
+Kategorie**. Nová práce v kategorii potom může zdědit ucelené směrování. Vyber
+profil, jehož kombinace soukromí a schopností odpovídá kategorii, ne pouze
+nejrychlejší možnost.
+
+<ManualScreenshot
+  caseId="ai/profile-picker"
+  alt="Editor kategorie Tučňáčí provoz s dialogem profilů Velení Project Waddle, Obydlí přednostně místně a Rybí diplomacie"
+  caption="Označení Desktop Only zviditelňuje platformní omezení před výběrem výchozího profilu kategorie."
+/>
+
+## Starší cesta profilu
+
+Starší samostatná cesta **Profily inference** zůstává kvůli kompatibilitě a
+upravuje stejné uložené profily. Ukazuje interní ID modelů a méně kontextu
+závislostí než Nastavení AI, proto pro běžnou údržbu používej aktuální stránku
+**Nastavení AI → Profily inference**.
+
+<ManualScreenshot
+  caseId="ai/legacy-profiles"
+  alt="Starší stránka Profily inference Lotti zobrazující pozice profilu Project Waddle jako interní identifikátory modelů"
+  caption="Tuto obrazovku kompatibility použij jen při příchodu ze staršího odkazu; aktuální karty profilů v Nastavení AI se lépe kontrolují."
+/>
+
+V části [Dovednosti AI](./skills.mdx) zjistíš, jak se vybraný profil stane akcí
+na úkolu nebo záznamu.

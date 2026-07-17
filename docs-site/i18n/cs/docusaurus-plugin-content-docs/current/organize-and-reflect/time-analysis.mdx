@@ -1,0 +1,155 @@
+---
+title: Zjištění, kam zmizel čas
+description: Rozděl zaznamenaný čas podle kategorií, sleduj oblasti soustředění a porovnávej odpovídající období bez opuštění Daily OS.
+---
+
+# Zjištění, kam zmizel čas
+
+Analýza času mění zaznamenaná sezení na rozdělení podle kategorií. Pomůže ti
+zjistit, kolik času jsi zaznamenal, kam šel a zda se jeho skladba změnila oproti
+předchozímu období. Příklad Project Waddle odděluje **Tučňáčí provoz**,
+**Řízení mise**, **Rybí diplomacii**, **Orbitální výzkum** a **Péči o posádku**
+a současně ukazuje čas bez kategorie, který potřebuje pozornost.
+
+Na počítači otevři **Daily OS** a pod kalendářem v postranním panelu vyber
+**Analýza času**. Přehled vyplní obsahovou oblast, takže graf a přesnou tabulku
+lze číst společně. Na malé šířce se ovládání přeskupí, aniž by změnilo funkci.
+
+<ManualScreenshot
+  caseId="time-analysis/overview"
+  alt="Přehled Analýzy času zobrazující čas Project Waddle v pěti provozních kategoriích a práci bez kategorie"
+  caption="Přehled kombinuje hlavní součty, skládaný graf sedmi dní a přesnou tabulku kategorií. Přepínej příručku mezi mobilem a počítačem i světlým a tmavým režimem a prohlédni si všechna produkční rozvržení."
+/>
+
+## Čti hlavní karty
+
+První řádek shrnuje vybrané období:
+
+- **CELKEM** je všechen zaznamenaný čas. Popisek uvádí největší kategorii a
+  její podíl, takže karta odpovídá, kam šlo nejvíce času i kolik ho bylo.
+- **SOUSTŘEDĚNÍ** sčítá kategorie, které chceš sledovat. V příkladu tvoří sadu
+  Tučňáčí provoz a Řízení mise.
+- **OSTATNÍ** je vše mimo tuto sadu.
+
+Dokud sada neexistuje, Lotti místo dvou nulových karet zobrazí **Vybrat
+kategorie soustředění**. Vyber ji, zvol jednu nebo více aktivních kategorií a
+dokonči pomocí **Hotovo**. Tlačítkem ladění na kartě Soustředění sadu kdykoli
+změníš. Tato předvolba je místní pro Lotti a nemění kategorie žádného záznamu.
+
+## Vyber užitečné období
+
+Výběrem jednotky přepínej mezi **Dnem**, **Týdnem**, **Měsícem**, **Čtvrtletím**
+a **Rokem**. Šipkami se posouvej vždy o jedno úplné období. Šipka dopředu končí
+na aktuálním období, takže nástěnka nikdy nepřejde do prázdného budoucího
+rozsahu.
+
+Výběrem popisku data otevři kalendář a přejdi přímo do období obsahujícího jiný
+den. Hranice týdne se řídí prvním dnem týdne nastaveným oblastí zařízení.
+
+Dvě zkratky pokrývají nejčastější otázky:
+
+- **Tento měsíc** zobrazí dosavadní část měsíce; a
+- **Tento rok** zobrazí dosavadní část roku.
+
+Tyto rozsahy končí dnes a nepřidávají prázdné budoucí dny. Popisek obsahuje
+**(dosud)** a průměry používají jen uplynulé dny.
+
+## Čti graf a tabulku společně
+
+Skládané sloupce ukazují podíl každé kategorie v každé hodině, dni nebo týdnu
+rozsahu. Najeď na sloupec nebo ho stiskni a zobraz hodnoty kategorií v daném
+úseku.
+
+### Sleduj průběžný součet
+
+Vyber **Průběžný součet**, když se otázka změní z „co se stalo v tomto úseku?“
+na „kolik jsem nahromadil od začátku rozsahu?“. Lotti promění každou kategorii
+v kumulativní plochu:
+
+- tloušťka barevného pásu u data je čas dané kategorie od začátku vybraného
+  rozsahu do tohoto data;
+- horní hrana celé skládané plochy je všechen čas nahromaděný ve stejném
+  intervalu; a
+- pásy mohou jen zůstat stejné nebo růst. Rovná část znamená, že v dané
+  kategorii během těchto úseků nepřibyl čas; dřívější práci neodečítá.
+
+<ManualScreenshot
+  caseId="time-analysis/running-total"
+  alt="Graf průběžného součtu Analýzy času s kategoriemi Project Waddle hromaděnými během vybraného měsíce"
+  caption="Průběžný součet hromadí každou kategorii od začátku rozsahu. Horní hrana je dosud zaznamenaný čas celkem; každý pás ukazuje příspěvek své kategorie."
+/>
+
+Vybraný rozsah určuje, kde počítání začíná. Přechod do jiného období součet
+restartuje v jeho prvním úseku. **Den** používá hodinové úseky, kratší vícedenní
+rozsahy denní a dlouhé rozsahy týdenní, ale kumulativní význam zůstává stejný.
+V aktuálním nedokončeném období Lotti ukončí plochu u posledního uplynulého
+úseku, místo aby nakreslil zavádějící rovnou čáru do budoucna.
+
+Průběžný součet mění jen projekci grafu. **CELKEM**, **SOUSTŘEDĚNÍ**,
+**OSTATNÍ** a tabulka kategorií dál popisují celý vybraný rozsah. Najeď na plochu
+nebo ji stiskni a zobraz průběžnou hodnotu všech kategorií v daném bodě.
+Volbou **Za den**, **Za týden** nebo **Za hodinu** se vrať k hodnotám
+jednotlivých úseků. Pokud uplynul jen jeden úsek, Lotti ponechá sloupce, protože
+jednobodová průběžná čára by trend nesdělila.
+
+Tabulka je přesný přehled. Řadí kategorie podle času a ukazuje celkovou hodnotu,
+podíl, průměr za den a relativní datový pruh. Šedý řádek **Bez kategorie** je
+záměrný: zviditelňuje chybějící přiřazení, místo aby ho tiše skryl. Otevři
+související záznamy nebo úkoly a přiřaď kategorii, pokud čas patří do provozní
+oblasti.
+
+## Porovnávej odpovídající období
+
+<ManualScreenshot
+  caseId="time-analysis/compare"
+  alt="Porovnání Analýzy času pro Project Waddle s aktuálním časem, časem předchozího období a procentními změnami podle kategorie"
+  caption="Porovnání používá stejný počet uplynulých dní v každém období. Směr sděluje šipka, znaménko i barva a graf zůstává zaměřený na aktuální období."
+/>
+
+Výběrem **Porovnat** přidej předchozí období. U probíhajícího týdne, měsíce,
+čtvrtletí nebo roku Lotti porovná uplynulou část se stejným počtem dní
+bezprostředně před ní. Nedělní výsledek od začátku měsíce se tedy neporovnává s
+celým předchozím měsícem.
+
+Hlavní karty získají procentní změnu a předchozí hodnotu. Tabulka přepne na
+**AKTUÁLNÍ**, **PŘEDCHOZÍ** a **Změna**. Na malé šířce se méně důležitý sloupec
+Předchozí vynechá, zatímco Aktuální a Změna zůstanou. Růst nebo pokles používá
+šipku a výslovné znaménko vedle barvy; velmi malé změny zůstávají neutrální a
+výsledek bez předchozí základny se označí jako nový.
+
+Graf dál zobrazuje jen aktuální období. Poznámka **Porovnání je uvedeno v
+tabulce níže** odkazuje na přesné hodnoty a brání druhé sadě sloupců zakrýt
+skladbu kategorií.
+
+## Co Lotti počítá
+
+Analýza času počítá časované záznamy deníku, jejichž konec je později než
+začátek. Délka zvuku se samostatně nepočítá, protože nahrávka pořízená během
+spuštěného časovače by se jinak započítala dvakrát.
+
+Přiřazení kategorie následuje práci:
+
+1. Pokud je časový záznam propojený s úkolem s kategorií, vítězí kategorie
+   úkolu.
+2. Jinak se použije vlastní kategorie časového záznamu.
+3. Pokud neexistuje ani jedna, čas se zobrazí jako Bez kategorie.
+
+Překrývající se časovače ve stejné kategorii se před výpočtem součtu sloučí.
+Překryvy v různých kategoriích zůstávají v obou, protože představují odlišné
+druhy zaznamenané aktivity. Záznamy přes půlnoc se rozdělí do správných
+místních kalendářních dní. Soukromé záznamy respektují globální viditelnost
+soukromých dat a přehled se obnoví při změně záznamů, propojení, kategorií
+úkolů nebo tohoto nastavení.
+
+## Udržuj obraz důvěryhodný
+
+Používej kategorie důsledně u úkolů, které vlastní zaznamenanou práci.
+Pravidelně kontroluj řádek Bez kategorie a vybírej kategorie soustředění, které
+odpovídají na skutečnou otázku, místo snahy zahrnout vše. Pro Project Waddle
+dělá sledování Tučňáčího provozu a Řízení mise z karty Soustředění signál
+připravenosti, zatímco Rybí diplomacie a Péče o posádku zůstávají viditelné
+v úplném rozdělení.
+
+Analýza času zatím neexportuje CSV, neseskupuje výsledky podle projektu ani
+nekreslí předchozí období jako další řadu grafu. Přesné srovnávací hodnoty
+zůstávají v tabulce, kde se lépe čtou a méně zkreslují obraz aktuálního období.

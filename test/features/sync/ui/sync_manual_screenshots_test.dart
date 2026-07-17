@@ -23,6 +23,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -742,7 +743,10 @@ void main() {
         await tester.tap(find.byType(OutboxMessageCard));
         await settleFrames(tester, 4);
       case _SyncSurface.conflictCombine:
-        final context = tester.element(find.text(_t('Title', 'Titel')));
+        final messages = tester.element(find.byType(Scaffold).first).messages;
+        final context = tester.element(
+          find.text(messages.conflictFieldTitle),
+        );
         await tester.tap(find.text(context.messages.conflictPickerCombine));
         await settleFrames(tester, 4);
       case _SyncSurface.hub:
@@ -756,46 +760,48 @@ void main() {
     }
   }
 
-  void expectSurface(_SyncSurface surface) {
+  void expectSurface(WidgetTester tester, _SyncSurface surface) {
+    final context = tester.element(find.byType(Scaffold).first);
+    final messages = context.messages;
+
     switch (surface) {
       case _SyncSurface.hub:
-        expect(
-          find.text(_t('Provisioned Sync', 'Provisionierte Synchronisierung')),
-          findsWidgets,
-        );
-        expect(find.text(_t('Maintenance', 'Wartung')), findsWidgets);
+        expect(find.text(messages.provisionedSyncTitle), findsWidgets);
+        expect(find.text(messages.settingsMaintenanceTitle), findsWidgets);
       case _SyncSurface.provisioned:
         expect(find.text(_provisioningBundle.homeServer), findsOneWidget);
         expect(find.text(_provisioningBundle.user), findsOneWidget);
       case _SyncSurface.status:
         expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
         expect(
-          find.text(_t('Show Diagnostic Info', 'Diagnoseinfos anzeigen')),
+          find.text(messages.settingsMatrixDiagnosticShowButton),
           findsOneWidget,
         );
-        expect(find.text(_t('Disconnect', 'Trennen')), findsOneWidget);
+        expect(find.text(messages.provisionedSyncDisconnect), findsOneWidget);
       case _SyncSurface.verification:
         expect(
           find.text(_t('Admiral Pebble’s Phone', 'Admiral Pebbles Telefon')),
           findsWidgets,
         );
         expect(
-          find.textContaining(_t('emojis below', 'unten stehenden Emojis')),
+          find.textContaining(
+            messages.settingsMatrixVerifyConfirm.split(' ').take(4).join(' '),
+          ),
           findsOneWidget,
         );
-        expect(find.text(_t('Accept', 'Akzeptieren')), findsOneWidget);
+        expect(find.text(messages.settingsMatrixAccept), findsOneWidget);
       case _SyncSurface.nodeProfile:
         expect(find.text(_localNode.displayName), findsOneWidget);
         expect(
-          find.text(_t('Orbital Habitat Console', 'Orbitale Habitatkonsole')),
+          find.text(_knownNodes[1].displayName),
           findsOneWidget,
         );
       case _SyncSurface.backfill:
-        expect(find.text(_t('2 device IDs', '2 Geräte-IDs')), findsOneWidget);
-        expect(find.text(_t('2,868', '2.868')), findsOneWidget);
+        expect(find.text(messages.backfillDevicesMeta(2)), findsOneWidget);
+        expect(find.text(formatCount(context, 2868)), findsOneWidget);
       case _SyncSurface.stats:
         expect(
-          find.textContaining(_t('Sync Metrics', 'Sync-Metriken')),
+          find.textContaining(messages.settingsMatrixMetrics),
           findsOneWidget,
         );
         expect(find.text('Top KPIs'), findsOneWidget);
@@ -808,48 +814,45 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.text(_t('Retry all', 'Alle erneut senden')),
+          find.text(messages.outboxRetryAll),
           findsOneWidget,
         );
       case _SyncSurface.conflicts:
+        final label = toBeginningOfSentenceCase(
+          messages.conflictsUnresolved,
+          Localizations.localeOf(context).toString(),
+        );
         expect(
-          find.text(_t('Unresolved · 2 items', 'Ungelöst · 2 Elemente')),
+          find.text(messages.syncListCountSummary(label, 2)),
           findsOneWidget,
         );
         expect(find.text(_t('Task', 'Aufgabe')), findsOneWidget);
       case _SyncSurface.conflictDetail:
-        expect(find.text(_t('Title', 'Titel')), findsOneWidget);
-        expect(find.text(_t('Body', 'Text')), findsOneWidget);
+        expect(find.text(messages.conflictFieldTitle), findsOneWidget);
+        expect(find.text(messages.conflictFieldBody), findsOneWidget);
         expect(
-          find.text(_t('Use this device', 'Dieses Gerät verwenden')),
+          find.text(messages.conflictPickerUseThisDevice),
           findsOneWidget,
         );
         expect(
-          find.text(_t('Use from sync', 'Aus Sync verwenden')),
+          find.text(messages.conflictPickerUseFromSync),
           findsOneWidget,
         );
       case _SyncSurface.conflictCombine:
-        expect(find.text(_t('Start from', 'Ausgehen von')), findsOneWidget);
-        expect(find.text(_t('Title', 'Titel')), findsOneWidget);
-        expect(find.text(_t('Body', 'Text')), findsOneWidget);
+        expect(find.text(messages.conflictCombineStartFrom), findsOneWidget);
+        expect(find.text(messages.conflictFieldTitle), findsOneWidget);
+        expect(find.text(messages.conflictFieldBody), findsOneWidget);
         expect(
-          find.text(_t('Apply combined', 'Kombiniert übernehmen')),
+          find.text(messages.conflictCombineApply),
           findsOneWidget,
         );
       case _SyncSurface.maintenance:
         expect(
-          find.text(
-            _t('Re-sync messages', 'Nachrichten erneut synchronisieren'),
-          ),
+          find.text(messages.maintenanceReSync),
           findsOneWidget,
         );
         expect(
-          find.text(
-            _t(
-              'Purge old sent outbox items',
-              'Alte gesendete Outbox-Einträge löschen',
-            ),
-          ),
+          find.text(messages.maintenancePurgeSentOutbox),
           findsOneWidget,
         );
     }
@@ -923,7 +926,7 @@ void main() {
             brightness: brightness,
           );
 
-          expectSurface(surface);
+          expectSurface(tester, surface);
           expect(tester.takeException(), isNull);
           await captureScreenshot(
             tester,

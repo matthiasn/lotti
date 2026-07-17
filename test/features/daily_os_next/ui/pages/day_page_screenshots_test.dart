@@ -755,13 +755,13 @@ Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
         DesktopNavigationSidebar(
           destinations: [
             destination(
-              'Tasks',
+              _t('Tasks', 'Aufgaben'),
               Icons.check_circle_outline_rounded,
               Icons.check_circle_rounded,
             ),
             destination('Daily OS', Icons.today_outlined, Icons.today_rounded),
             destination(
-              'Logbook',
+              _t('Logbook', 'Logbuch'),
               Icons.menu_book_outlined,
               Icons.menu_book_rounded,
             ),
@@ -769,19 +769,22 @@ Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
           activeIndex: 1,
           onDestinationSelected: (_) {},
           settingsDestination: destination(
-            'Settings',
+            _t('Settings', 'Einstellungen'),
             Icons.settings_outlined,
             Icons.settings_rounded,
           ),
           onSettingsSelected: () {},
           utilityDestination: DesktopSidebarDestination(
-            label: 'Manual',
+            label: _t('Manual', 'Handbuch'),
             iconBuilder: ({required active}) =>
                 const Icon(Icons.help_outline_rounded),
             trailingBuilder: ({required active}) =>
                 const Icon(Icons.open_in_new_rounded),
             isLink: true,
-            semanticsHint: 'Opens in your browser',
+            semanticsHint: _t(
+              'Opens in your browser',
+              'Wird im Browser geöffnet',
+            ),
           ),
           onUtilitySelected: () {},
           onToggleCollapsed: () {},
@@ -794,29 +797,29 @@ Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
   return Stack(
     children: [
       dayPage,
-      const Positioned(
+      Positioned(
         left: 0,
         right: 0,
         bottom: 0,
         child: DesignSystemBottomNavigationBar(
           items: [
-            DesignSystemFiveSlotNavBarItem(
+            const DesignSystemFiveSlotNavBarItem(
               label: 'Daily OS',
               icon: Icon(Icons.today_outlined),
               activeIcon: Icon(Icons.today_rounded),
               active: true,
             ),
             DesignSystemFiveSlotNavBarItem(
-              label: 'Tasks',
-              icon: Icon(Icons.check_circle_outline_rounded),
+              label: _t('Tasks', 'Aufgaben'),
+              icon: const Icon(Icons.check_circle_outline_rounded),
             ),
             DesignSystemFiveSlotNavBarItem(
-              label: 'Calendar',
-              icon: Icon(Icons.calendar_month_outlined),
+              label: _t('Calendar', 'Kalender'),
+              icon: const Icon(Icons.calendar_month_outlined),
             ),
             DesignSystemFiveSlotNavBarItem(
-              label: 'Settings',
-              icon: Icon(Icons.settings_outlined),
+              label: _t('Settings', 'Einstellungen'),
+              icon: const Icon(Icons.settings_outlined),
             ),
           ],
         ),

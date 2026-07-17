@@ -1,25 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// The localized display label for an [EventStatus]. (Replaces the previous
-/// locale-independent capitalization of the all-caps `EventStatus.label`.)
-String eventStatusLabel(BuildContext context, EventStatus status) {
-  final messages = context.messages;
-  return switch (status) {
-    EventStatus.tentative => messages.eventsStatusTentative,
-    EventStatus.planned => messages.eventsStatusPlanned,
-    EventStatus.ongoing => messages.eventsStatusOngoing,
-    EventStatus.completed => messages.eventsStatusCompleted,
-    EventStatus.cancelled => messages.eventsStatusCancelled,
-    EventStatus.postponed => messages.eventsStatusPostponed,
-    EventStatus.rescheduled => messages.eventsStatusRescheduled,
-    EventStatus.missed => messages.eventsStatusMissed,
-  };
-}
+/// The localized display label for an [EventStatus].
+String eventStatusLabel(BuildContext context, EventStatus status) =>
+    status.localizedLabel(context);
 
 /// Opens a modal listing every [EventStatus] and resolves to the chosen one, or
 /// `null` when dismissed. Reuses the app's single-page modal chrome.

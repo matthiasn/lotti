@@ -1,0 +1,39 @@
+---
+title: Údržba synchronizace
+description: Používej opravy a čištění Matrix Sync záměrně, od opětovného odeslání záznamů po obnovu historie posloupnosti.
+---
+
+# Údržba synchronizace
+
+Databázové opravy a čištění najdeš v **Nastavení → Sync → Údržba**. Tyto akce
+nepatří k běžnému párování ani každodenní synchronizaci. Před použitím nech
+dokončit aktivní zápisy a měj aktuální zálohu dat, která nelze znovu vytvořit.
+
+<ManualScreenshot
+  caseId="sync/maintenance"
+  alt="Údržba Matrix Sync v Lotti se smazáním synchronizační databáze, synchronizací definic, opětovnou synchronizací zpráv, naplněním protokolu posloupnosti a čištěním odeslané fronty"
+  caption="Údržba seskupuje destruktivní, opakovací a čisticí akce na jedné stránce. Potvrzovací text vymezuje rozsah každé operace."
+/>
+
+## Vyber nejužší opravu
+
+- **Smazat synchronizační databázi** odstraní místní databázi Sync. Jde o
+  destruktivní místní obnovu, ne běžný způsob odpojení zařízení.
+- **Synchronizovat definice** znovu odešle aktuální definice, například
+  kategorie a další sdílené nastavení.
+- **Znovu synchronizovat zprávy** přehraje vybrané zprávy, když vzdálený stav
+  chybí nebo je potřeba zopakovat dřívější doručení.
+- **Naplnit protokol posloupnosti** obnoví místní historii používanou pro
+  hledání mezer a doplnění.
+- **Vyčistit staré odeslané položky fronty** smaže diagnostickou historii již
+  odeslaných položek po době uchování. Neodstraní čekající ani chybné položky.
+
+Začni nejmenší operací odpovídající příznaku. Zaseknutá příloha patří do
+[Odchozí fronty](./sync.mdx#kontroluj-odchozí-frontu), trvalé mezery do
+Doplnění a dvě platné souběžné úpravy do [Konfliktů](./conflicts.mdx). Smazání
+synchronizační databáze má být poslední místní reset se známým funkčním
+zařízením a dostupnou zálohou.
+
+Po opravě se vrať na **Statistiky synchronizace**, potvrď postup zpracování bez
+rostoucího počtu chyb a zkontroluj, že se Odchozí fronta a počet chybějících v
+Doplnění ustálí.

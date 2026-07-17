@@ -1,4 +1,3 @@
-import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -141,7 +140,7 @@ persist across recaps but are not shown to the user.''';
     final data = entity.data;
     buf
       ..writeln('- **Title**: ${data.title}')
-      ..writeln('- **Status**: ${data.status.label}')
+      ..writeln('- **Status**: ${data.status.name}')
       ..writeln(
         '- **When**: '
         '${entity.meta.dateFrom.toIso8601String()} → '

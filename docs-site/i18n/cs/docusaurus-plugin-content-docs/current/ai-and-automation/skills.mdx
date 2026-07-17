@@ -1,0 +1,51 @@
+---
+title: Spouštění kontextových dovedností AI
+description: V nabídce Generovat spouštěj jen akce AI platné pro aktuální úkol, nahrávku, obrázek nebo záznam.
+---
+
+# Spouštění kontextových dovedností AI
+
+Dovednosti AI jsou pojmenované akce s pokyny a požadavky na vstup. Lotti
+filtruje nabídku **Generovat…** podle aktuální entity, takže úkol nenabídne
+přepis vyžadující zvuk a obrázek nenabídne akci vyžadující nahrávku.
+
+<ManualScreenshot
+  caseId="ai/skills"
+  alt="Obrázek obydlí Project Waddle s dialogem Generovat nabízejícím Zkontrolovat fotografii obydlí"
+  caption="Na obrázku obydlí propojeném s úkolem hledá použitelná akce odchylky tlakoměrů a viditelné poškození těsnění."
+/>
+
+## Spusť dovednost
+
+1. Otevři úkol nebo podporovaný záznam deníku.
+2. Vyber obrysovou akci asistenta v záhlaví záznamu. Otevře se
+   **Generovat…**.
+3. Přečti popis dovednosti a vyber požadovanou akci.
+4. Pokud Lotti nabídne výběr modelu nebo režimu přemýšlení, potvrď výchozí
+   hodnotu nebo zvol jednorázovou změnu.
+5. Během inference pokračuj v práci; po dokončení se výsledek připojí k
+   příslušnému úkolu nebo záznamu.
+
+Dostupná nabídka se mění podle kontextu:
+
+- úkoly mohou nabízet textové akce a akce s kontextem úkolu;
+- zvukové záznamy mohou nabízet přepis a akce pracující se zvukem;
+- obrázky mohou nabízet vizuální analýzu; a
+- textové záznamy mohou nabízet výzvy nebo generování přijímající text.
+
+Některé dovednosti potřebují propojený úkol, protože čtou širší kontext nebo
+zapisují výsledek zpět k úkolu. Pokud akce chybí, nejdřív zkontroluj typ záznamu
+a propojení s úkolem a potom ověř, že aktivní profil inference má model pro
+potřebnou schopnost.
+
+## Přepsání modelu je dočasné
+
+Když dovednost nabídne výběr modelu, volba platí pro aktuální spuštění. Potichu
+nepřepíše výchozí hodnotu kategorie ani profil inference. Běžnou trasu změň v
+[Modelech a profilech inference](./models-and-profiles.mdx).
+
+## S vygenerovaným výstupem zacházej jako s návrhem
+
+Před použitím kontroluj vygenerované výzvy, shrnutí, přepisy, analýzy obrázků a
+grafiku. Kontext úkolu může být neúplný, poskytovatel může vrátit chybný výstup
+a i schopný model může nepochopit velmi vážnou sardinkovou nouzi.

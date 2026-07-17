@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart'; // metrics section (renamed from v2_metrics_section)
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/diagnostics_panel.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_actions.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_grid.dart';
@@ -126,21 +127,27 @@ class SyncMetricsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          spacing: tokens.spacing.step3,
+          runSpacing: tokens.spacing.step1,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: tokens.typography.styles.subtitle.subtitle1,
             ),
-            const SizedBox(width: 12),
             Text(
               lastUpdated == null
                   ? '$lastUpdatedLabel —'
                   : '$lastUpdatedLabel ${_formatTime(lastUpdated)}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
             ),
           ],
         ),
