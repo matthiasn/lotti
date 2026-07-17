@@ -14,8 +14,34 @@ documentation can land together. Generated screenshots live in the sibling
 1. Edit or add an MDX file under `docs-site/docs`.
 2. Add it to `docs-site/sidebars.ts` when it is a new page.
 3. Update `docs-site/metadata/features.json` when coverage changes.
-4. Run `make manual_check`.
-5. Review the production build locally with `make manual_serve`.
+4. Update the matching entries in
+   `docs-site/metadata/surface-inventory.json`. A surface becomes **verified**
+   only when its current production UI, prose, and screenshot coverage have
+   all been reviewed.
+5. Run `make manual_check`.
+6. Review the production build locally with `make manual_serve`.
+
+## Keep the coverage inventory authoritative
+
+The inventory defines the V1 English-manual boundary: every Beamer page, every
+Settings V2 leaf or editor, and every major workflow that creates or materially
+changes data or cross-cutting configuration. Each entry records its owning
+source file and a source-text anchor. Validation fails if either disappears,
+which forces a route or UI change to update the manual audit instead of leaving
+an invisible stale row.
+
+Coverage states have deliberately strict meanings:
+
+- **Planned** means the surface is known but still lacks complete coverage.
+- **Documented** means useful prose exists, but current production screenshots
+  or an end-to-end accuracy review are still missing.
+- **Verified** means the relevant feature page is verified and backed by
+  registered production screenshots.
+
+Run `npm --prefix docs-site run coverage:complete` for the release gate. It
+fails until every inventoried surface is verified; ordinary incremental manual
+builds continue to report the remaining counts without blocking topic-sized
+commits.
 
 ## Add a screenshot case
 

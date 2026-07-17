@@ -18,6 +18,9 @@ import {
 const options = parseNamedArguments(process.argv.slice(2));
 const features = await readJson(resolve(siteDirectory, 'metadata/features.json'));
 const releases = await readJson(resolve(siteDirectory, 'metadata/releases.json'));
+const surfaceInventory = await readJson(
+  resolve(siteDirectory, 'metadata/surface-inventory.json'),
+);
 const screenshotRegistry = await readJson(
   resolve(siteDirectory, 'metadata/screenshot-cases.json'),
 );
@@ -31,6 +34,7 @@ const allowedFeatureStatuses = new Set([
 ]);
 const caseIds = new Set(screenshotRegistry.cases.map((item) => item.id));
 const featureIds = new Set();
+const verifiedFeaturePages = new Set();
 
 if (features.schemaVersion !== 1 || !Array.isArray(features.features)) {
   errors.push('features.json must use schemaVersion 1 and contain features.');
@@ -57,6 +61,177 @@ if (features.schemaVersion !== 1 || !Array.isArray(features.features)) {
     if (feature.status === 'verified' && feature.screenshotCases.length === 0) {
       errors.push(`${feature.id} is verified but has no screenshot coverage.`);
     }
+    if (feature.status === 'verified') {
+      verifiedFeaturePages.add(feature.page);
+    }
+  }
+}
+
+const allowedSurfaceKinds = new Set(['route-page', 'settings-page', 'workflow']);
+const allowedSurfaceStatuses = new Set(['planned', 'documented', 'verified']);
+const surfaceIds = new Set();
+const surfaceStatusCounts = new Map(
+  [...allowedSurfaceStatuses].map((status) => [status, 0]),
+);
+const surfaceSourceCache = new Map();
+const inventoriedRoutes = new Map();
+
+if (
+  surfaceInventory.schemaVersion !== 1 ||
+  !Array.isArray(surfaceInventory.surfaces)
+) {
+  errors.push(
+    'surface-inventory.json must use schemaVersion 1 and contain surfaces.',
+  );
+} else {
+  for (const surface of surfaceInventory.surfaces) {
+    if (surfaceIds.has(surface.id)) {
+      errors.push(`Duplicate surface id: ${surface.id}`);
+    }
+    surfaceIds.add(surface.id);
+
+    if (!allowedSurfaceKinds.has(surface.kind)) {
+      errors.push(`${surface.id} has unknown surface kind ${surface.kind}.`);
+    }
+    if (!allowedSurfaceStatuses.has(surface.status)) {
+      errors.push(`${surface.id} has unknown coverage status ${surface.status}.`);
+    } else {
+      surfaceStatusCounts.set(
+        surface.status,
+        surfaceStatusCounts.get(surface.status) + 1,
+      );
+    }
+
+    for (const field of ['id', 'title', 'source', 'sourcePattern', 'locator', 'page']) {
+      if (typeof surface[field] !== 'string' || surface[field].trim() === '') {
+        errors.push(`${surface.id ?? 'Unknown surface'} has invalid ${field}.`);
+      }
+    }
+
+    if (surface.routes !== undefined && !Array.isArray(surface.routes)) {
+      errors.push(`${surface.id} routes must be an array when present.`);
+    }
+    for (const route of surface.routes ?? []) {
+      if (typeof route !== 'string' || !route.startsWith('/')) {
+        errors.push(`${surface.id} has invalid route ${route}.`);
+        continue;
+      }
+      const previousOwner = inventoriedRoutes.get(route);
+      if (previousOwner) {
+        errors.push(
+          `Route ${route} is inventoried by both ${previousOwner} and ${surface.id}.`,
+        );
+      }
+      inventoriedRoutes.set(route, surface.id);
+    }
+
+    const pagePath = resolve(siteDirectory, 'docs', `${surface.page}.mdx`);
+    if (surface.status !== 'planned') {
+      try {
+        await access(pagePath);
+      } catch {
+        errors.push(
+          `${surface.id} is ${surface.status} but points to missing page ` +
+            `${surface.page}.mdx.`,
+        );
+      }
+    }
+    if (
+      surface.status === 'verified' &&
+      !verifiedFeaturePages.has(surface.page)
+    ) {
+      errors.push(
+        `${surface.id} is verified but ${surface.page} is not a verified feature.`,
+      );
+    }
+
+    const sourcePath = resolve(repositoryDirectory, surface.source);
+    let source = surfaceSourceCache.get(sourcePath);
+    if (source === undefined) {
+      try {
+        source = await readFile(sourcePath, 'utf8');
+        surfaceSourceCache.set(sourcePath, source);
+      } catch {
+        errors.push(`${surface.id} points to missing source ${surface.source}.`);
+        surfaceSourceCache.set(sourcePath, null);
+        continue;
+      }
+    }
+    if (source !== null && !source.includes(surface.sourcePattern)) {
+      errors.push(
+        `${surface.id} source anchor was not found in ${surface.source}: ` +
+          surface.sourcePattern,
+      );
+    }
+
+    if (options['require-complete'] && surface.status !== 'verified') {
+      errors.push(
+        `${surface.id} is ${surface.status}; complete coverage requires verified.`,
+      );
+    }
+  }
+}
+
+const locationsDirectory = resolve(repositoryDirectory, 'lib/beamer/locations');
+const locationEntries = await readdir(locationsDirectory, {withFileTypes: true});
+const discoveredRoutes = new Map();
+for (const entry of locationEntries) {
+  if (!entry.isFile() || !entry.name.endsWith('_location.dart')) continue;
+  const sourcePath = resolve(locationsDirectory, entry.name);
+  const source = await readFile(sourcePath, 'utf8');
+  const patternsBlock = /List<String>\s+get pathPatterns\s*=>\s*([\s\S]*?);/g;
+  for (const block of source.matchAll(patternsBlock)) {
+    for (const routeMatch of block[1].matchAll(/'(\/[^']+)'/g)) {
+      const route = routeMatch[1];
+      const previousSource = discoveredRoutes.get(route);
+      if (previousSource) {
+        errors.push(
+          `Beamer route ${route} is declared by both ${previousSource} and ${entry.name}.`,
+        );
+      }
+      discoveredRoutes.set(route, entry.name);
+    }
+  }
+}
+for (const [route, source] of discoveredRoutes) {
+  if (!inventoriedRoutes.has(route)) {
+    errors.push(`Beamer route ${route} from ${source} is missing from the surface inventory.`);
+  }
+}
+for (const [route, surfaceId] of inventoriedRoutes) {
+  if (!discoveredRoutes.has(route)) {
+    errors.push(`${surfaceId} inventories route ${route}, but no Beamer location declares it.`);
+  }
+}
+
+const settingsTreeRelativePath =
+  'lib/features/settings_v2/domain/settings_tree_data.dart';
+const settingsTreeSource = await readFile(
+  resolve(repositoryDirectory, settingsTreeRelativePath),
+  'utf8',
+);
+const discoveredSettingsLeafIds = new Set(
+  [...settingsTreeSource.matchAll(/\bleaf\(\s*'([^']+)'/g)].map(
+    (match) => match[1],
+  ),
+);
+const inventoriedSettingsLeafIds = new Map();
+for (const surface of surfaceInventory.surfaces ?? []) {
+  if (surface.source !== settingsTreeRelativePath) continue;
+  const idMatch = /^'([^']+)'$/.exec(surface.sourcePattern);
+  if (!idMatch || !discoveredSettingsLeafIds.has(idMatch[1])) continue;
+  const previousOwner = inventoriedSettingsLeafIds.get(idMatch[1]);
+  if (previousOwner) {
+    errors.push(
+      `Settings leaf ${idMatch[1]} is inventoried by both ` +
+        `${previousOwner} and ${surface.id}.`,
+    );
+  }
+  inventoriedSettingsLeafIds.set(idMatch[1], surface.id);
+}
+for (const leafId of discoveredSettingsLeafIds) {
+  if (!inventoriedSettingsLeafIds.has(leafId)) {
+    errors.push(`Settings leaf ${leafId} is missing from the surface inventory.`);
   }
 }
 
@@ -196,7 +371,11 @@ if (errors.length > 0) {
 } else {
   console.log(
     `Manual validation passed: ${features.features.length} features, ` +
-      `${docFiles.length} pages, ${screenshotRegistry.cases.length} screenshot case(s).`,
+      `${docFiles.length} pages, ${screenshotRegistry.cases.length} screenshot case(s), ` +
+      `${surfaceInventory.surfaces.length} inventoried surface(s) ` +
+      `(${surfaceStatusCounts.get('verified')} verified, ` +
+      `${surfaceStatusCounts.get('documented')} documented, ` +
+      `${surfaceStatusCounts.get('planned')} planned).`,
   );
 }
 
