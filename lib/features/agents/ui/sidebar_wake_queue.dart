@@ -163,7 +163,7 @@ class _Header extends StatelessWidget {
     final countStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
       fontFeatures: numericBadgeFontFeatures,
-      fontWeight: FontWeight.w600,
+      fontWeight: tokens.typography.weight.semiBold,
     );
     final summary = _summary(context);
 
@@ -266,7 +266,7 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
     );
     final statusStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
-      fontWeight: FontWeight.w600,
+      fontWeight: tokens.typography.weight.semiBold,
       fontFeatures: numericBadgeFontFeatures,
     );
 
@@ -443,7 +443,7 @@ class _WakeRowState extends ConsumerState<_WakeRow> {
     );
     final statusStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
-      fontWeight: FontWeight.w600,
+      fontWeight: tokens.typography.weight.semiBold,
       fontFeatures: numericBadgeFontFeatures,
     );
     final taskRoute = taskId == null || taskId.isEmpty
@@ -528,7 +528,7 @@ class _MoreWakesRow extends StatelessWidget {
     final label = _label(context);
     final style = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
-      fontWeight: FontWeight.w600,
+      fontWeight: tokens.typography.weight.semiBold,
       fontFeatures: numericBadgeFontFeatures,
     );
 

@@ -436,8 +436,7 @@ class _TaskViewLabel extends StatelessWidget {
     final tokens = context.designTokens;
     final style = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.highEmphasis,
-      fontWeight: selected ? FontWeight.w700 : null,
-      height: 1,
+      fontWeight: selected ? tokens.typography.weight.bold : null,
     );
     final middleDot = label.lastIndexOf('·');
     final colon = label.lastIndexOf(':');
