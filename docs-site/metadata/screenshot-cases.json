@@ -849,6 +849,17 @@
       }
     },
     {
+      "id": "health-import/overview",
+      "title": "Mobile health import",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_health_import_mobile_light.png",
+        "mobile-dark": "advanced_settings_health_import_mobile_dark.png",
+        "desktop-light": "advanced_settings_health_import_desktop_light.png",
+        "desktop-dark": "advanced_settings_health_import_desktop_dark.png"
+      }
+    },
+    {
       "id": "advanced-settings/maintenance",
       "title": "Maintenance actions",
       "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",

@@ -1,0 +1,36 @@
+---
+title: Import health data
+description: Import a selected date range from the phone's health-data store.
+---
+
+# Import health data
+
+Health Import is available on iOS and Android. Open **Settings → Advanced →
+Health Import**, choose a start and end date, then select the data family you
+want Lotti to read from the phone's health-data store.
+
+<ManualScreenshot
+  caseId="health-import/overview"
+  alt="Health Import with a start date, an end date, and separate import actions for activity, sleep, heart rate, blood pressure, body measurements, and workouts"
+  caption="The Mobile view shows the import screen. Health Import is intentionally absent from the desktop Advanced settings tree, which the Desktop view demonstrates."
+/>
+
+The available imports are:
+
+- **Activity** for activity totals;
+- **Sleep** for sleep samples;
+- **Heart Rate** for pulse observations;
+- **Blood Pressure** for blood-pressure readings;
+- **Body Measurement** for measurements such as body metrics; and
+- **Workout** for recorded workouts.
+
+Each button imports only its own data family over the displayed date range.
+Changing the range does not start an import by itself.
+
+Your operating system may ask for health-data permission. Lotti can only read
+the types you grant. If an expected data family is missing, check the app's
+health permissions in the phone's system settings and try that import again.
+
+Health Import is not shown on desktop because the underlying mobile health
+stores are not available there. Imported observations can still be viewed in
+the relevant Lotti dashboards after they have synced to another device.

@@ -58,6 +58,7 @@ const sidebars: SidebarsConfig = {
         'sync-and-data/sync',
         'sync-and-data/conflicts',
         'sync-and-data/maintenance',
+        'sync-and-data/health-import',
       ],
     },
     {

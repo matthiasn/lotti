@@ -357,6 +357,15 @@
       ]
     },
     {
+      "id": "health-import",
+      "title": "Health import",
+      "page": "sync-and-data/health-import",
+      "status": "verified",
+      "screenshotCases": [
+        "health-import/overview"
+      ]
+    },
+    {
       "id": "sync-conflicts",
       "title": "Sync conflict resolution",
       "page": "sync-and-data/conflicts",

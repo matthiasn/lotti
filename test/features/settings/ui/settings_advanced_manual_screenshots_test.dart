@@ -28,15 +28,18 @@ import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
+import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -133,6 +136,7 @@ typedef _AdvancedCase = ({
   String route,
   Widget Function() mobilePage,
   String expectedText,
+  String? desktopExpectedText,
   String? scrollTo,
 });
 
@@ -142,6 +146,7 @@ final List<_AdvancedCase> _cases = [
     route: '/settings/advanced',
     mobilePage: () => const SettingsMobileBranchPage(branchId: 'advanced'),
     expectedText: 'Config Flags',
+    desktopExpectedText: null,
     scrollTo: null,
   ),
   (
@@ -149,6 +154,7 @@ final List<_AdvancedCase> _cases = [
     route: '/settings/flags',
     mobilePage: FlagsPage.new,
     expectedText: 'Show private entries?',
+    desktopExpectedText: null,
     scrollTo: null,
   ),
   (
@@ -156,6 +162,15 @@ final List<_AdvancedCase> _cases = [
     route: '/settings/advanced/logging_domains',
     mobilePage: LoggingSettingsPage.new,
     expectedText: 'Enable Logging',
+    desktopExpectedText: null,
+    scrollTo: null,
+  ),
+  (
+    id: 'health_import',
+    route: '/settings/advanced',
+    mobilePage: HealthImportPage.new,
+    expectedText: 'Import Activity Data',
+    desktopExpectedText: 'Config Flags',
     scrollTo: null,
   ),
   (
@@ -163,6 +178,7 @@ final List<_AdvancedCase> _cases = [
     route: '/settings/advanced/maintenance',
     mobilePage: MaintenancePage.new,
     expectedText: 'Purge deleted items',
+    desktopExpectedText: null,
     scrollTo: 'Purge deleted items',
   ),
   (
@@ -170,6 +186,7 @@ final List<_AdvancedCase> _cases = [
     route: '/settings/advanced/onboarding_metrics',
     mobilePage: OnboardingMetricsPage.new,
     expectedText: 'Reached real aha',
+    desktopExpectedText: null,
     scrollTo: null,
   ),
   (
@@ -177,6 +194,7 @@ final List<_AdvancedCase> _cases = [
     route: '/settings/advanced/about',
     mobilePage: AboutPage.new,
     expectedText: '2604',
+    desktopExpectedText: null,
     scrollTo: null,
   ),
 ];
@@ -214,6 +232,7 @@ void main() {
     maintenance = MockMaintenance();
     metricsRepository = MockOnboardingMetricsRepository();
     final persistenceLogic = MockPersistenceLogic();
+    final healthImport = MockHealthImport();
 
     when(() => mocks.journalDb.watchConfigFlag(any())).thenAnswer(
       (invocation) => Stream.value(
@@ -249,6 +268,7 @@ void main() {
     getIt
       ..registerSingleton<UserActivityService>(UserActivityService())
       ..registerSingleton<Maintenance>(maintenance)
+      ..registerSingleton<HealthImport>(healthImport)
       ..registerSingleton<PersistenceLogic>(persistenceLogic)
       ..registerSingleton<OnboardingMetricsRepository>(metricsRepository);
 
@@ -312,6 +332,15 @@ void main() {
       );
       await settleFrames(tester, 18);
 
+      if (device.isPhone && scenario.id == 'health_import') {
+        final fields = tester
+            .widgetList<DateTimeField>(find.byType(DateTimeField))
+            .toList(growable: false);
+        fields[0].setDateTime(DateTime(2026, 7, 10));
+        fields[1].setDateTime(DateTime(2026, 7, 17));
+        await settleFrames(tester, 4);
+      }
+
       final target = scenario.scrollTo;
       if (target != null) {
         await tester.ensureVisible(find.text(target).last);
@@ -337,7 +366,10 @@ void main() {
               brightness: brightness,
             );
 
-            expect(find.text(scenario.expectedText), findsWidgets);
+            final expectedText = device.isPhone
+                ? scenario.expectedText
+                : scenario.desktopExpectedText ?? scenario.expectedText;
+            expect(find.text(expectedText), findsWidgets);
             expect(tester.takeException(), isNull);
             await captureScreenshot(
               tester,
