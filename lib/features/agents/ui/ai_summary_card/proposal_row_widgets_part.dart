@@ -1,38 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/ui/ai_summary_card/proposal_kind_part.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-
-class KindChip extends StatelessWidget {
-  const KindChip({required this.meta, super.key});
-
-  final KindMeta meta;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Container(
-      height: 20,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      margin: const EdgeInsets.only(top: 1),
-      decoration: BoxDecoration(
-        color: meta.surface,
-        borderRadius: BorderRadius.circular(5),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        meta.label,
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: meta.color,
-          fontWeight: FontWeight.w600,
-          height: 1,
-          letterSpacing: 0,
-        ),
-      ),
-    );
-  }
-}
 
 class RowActions extends StatelessWidget {
   const RowActions({
@@ -66,11 +35,11 @@ class RowActions extends StatelessWidget {
         ),
       );
     }
-    // Each [_SquareIconButton] centers its 26×26 visual inside a 48×48 hit
-    // zone. A `step4` gap separates the two hit zones so the destructive
-    // reject is never flush against accept — a mis-tap between the adjacent
-    // 48×48 zones is the failure users with reduced motor control fear most,
-    // and the dead band between them removes it.
+    // Reject is a quiet ghost glyph; confirm sits in a tonal wash circle so
+    // the affirmative action reads as the row's one button. A `step2` gap
+    // separates the two hit zones — the asymmetric chrome keeps the
+    // opposite-meaning targets visually distinct, and swipe remains the
+    // primary gesture.
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -80,7 +49,7 @@ class RowActions extends StatelessWidget {
           onPressed: onReject,
           variant: _SquareIconVariant.outline,
         ),
-        SizedBox(width: context.designTokens.spacing.step4),
+        SizedBox(width: context.designTokens.spacing.step2),
         _SquareIconButton(
           icon: Icons.check_rounded,
           tooltip: context.messages.changeSetSwipeConfirm,
@@ -109,13 +78,14 @@ class _SquareIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ai = context.designTokens.colors.aiCard;
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
     final isAccent = variant == _SquareIconVariant.accent;
-    // The visual chip stays at the spec'd 26×26, but it's centered
-    // inside a 48×48 hit target so users with reduced motor control or
-    // touch precision still get a Material-compliant tap zone. The
-    // outer SizedBox + InkWell expand the gesture-accepting region;
-    // the inner Container preserves the compact look.
+    // A matched pair in weight, asymmetric in hue: confirm wears the accent
+    // wash circle, reject the neutral wash circle — both read as buttons of
+    // one component class while the color still ranks confirm first. The
+    // compact discs center in full 48×48 hit targets so reduced-motor-control
+    // users keep a Material-compliant tap zone.
     // Explicit button role + label, merged into one node, so screen readers
     // announce "Confirm, button" / "Reject, button" and rotor "next button"
     // navigation finds them — rather than leaning on the tooltip surfacing as
@@ -132,28 +102,22 @@ class _SquareIconButton extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: onPressed.call,
-              borderRadius: BorderRadius.circular(7),
+              borderRadius: BorderRadius.circular(tokens.radii.s),
               child: SizedBox(
                 width: 48,
                 height: 48,
                 child: Center(
                   child: Container(
-                    width: 26,
-                    height: 26,
+                    width: tokens.spacing.step7,
+                    height: tokens.spacing.step7,
+                    alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: isAccent
-                          ? ai.accent.withValues(alpha: 0.13)
-                          : null,
-                      border: Border.all(
-                        color: isAccent
-                            ? ai.accent.withValues(alpha: 0.33)
-                            : ai.rowBorderStrong,
-                      ),
-                      borderRadius: BorderRadius.circular(7),
+                      color: isAccent ? ai.accentSoft : ai.subtleWashStrong,
+                      shape: BoxShape.circle,
                     ),
                     child: Icon(
                       icon,
-                      size: 14,
+                      size: tokens.spacing.step5,
                       color: isAccent ? ai.accent : ai.metaText,
                     ),
                   ),
@@ -178,7 +142,10 @@ class ResolvedTag extends StatelessWidget {
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
     final isConfirmed = status == ChangeItemStatus.confirmed;
-    final color = isConfirmed ? ai.accent : ai.faintMeta;
+    // Quiet meta for confirmed too — an inert history tag must not flood the
+    // card with accent when the ledger expands; the check glyph vs plain
+    // word already separates the two outcomes.
+    final color = isConfirmed ? ai.metaText : ai.faintMeta;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       child: Row(

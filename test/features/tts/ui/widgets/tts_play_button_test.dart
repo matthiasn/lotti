@@ -34,7 +34,7 @@ void main() {
     return tester.widget<CircularProgressIndicator>(finder);
   }
 
-  testWidgets('idle shows a play triangle, no ring, and plays on tap', (
+  testWidgets('idle shows a speaker glyph, no ring, and plays on tap', (
     tester,
   ) async {
     var played = 0;
@@ -46,7 +46,7 @@ void main() {
       onStop: () => stopped++,
     );
 
-    expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
     expect(indicator(tester), isNull);
 
     await tester.tap(find.byType(TtsPlayButton));
@@ -84,10 +84,10 @@ void main() {
 
     expect(indicator(tester), isNotNull);
     expect(indicator(tester)?.value, isNull); // indeterminate
-    // Distinct glyph from idle (play) and playing (stop), so the state is
+    // Distinct glyph from idle (speaker) and playing (stop), so the state is
     // legible by shape alone even under reduced motion.
     expect(find.byIcon(Icons.hourglass_empty), findsOneWidget);
-    expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
+    expect(find.byIcon(Icons.volume_up_rounded), findsNothing);
 
     await tester.tap(find.byType(TtsPlayButton));
     expect(stopped, 1);

@@ -34,7 +34,7 @@ void main() {
     registerFallbackValue(<String>{});
   });
   group('AiSummaryCard – Proposals', () {
-    testWidgets('shows empty proposals row when nothing is pending', (
+    testWidgets('collapses to the header pill when nothing is pending', (
       tester,
     ) async {
       await tester.pumpWidget(AgentTestBench().build());
@@ -42,7 +42,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Proposed changes'), findsOneWidget);
-      expect(find.textContaining('No open proposals'), findsOneWidget);
+      // At zero the pill disappears too — the header plus History disclosure
+      // alone carry the empty state.
+      expect(find.text('0 pending'), findsNothing);
+      expect(find.byType(ProposalRow), findsNothing);
     });
 
     testWidgets('flags only newly-arrived rows to animate their entrance', (
@@ -109,7 +112,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Proposed changes'), findsOneWidget);
-      expect(find.text('Estimate'), findsOneWidget);
+      expect(find.textContaining('Estimate · '), findsOneWidget);
       expect(find.textContaining('1h 30m → 3h 15m'), findsOneWidget);
       expect(find.textContaining('Estimate: 1h 30m'), findsNothing);
     });
@@ -292,7 +295,7 @@ void main() {
         await tester.pump();
 
         expect(find.textContaining('Set status to GROOMED'), findsOneWidget);
-        expect(find.textContaining('No open proposals'), findsNothing);
+        expect(find.text('1 pending'), findsOneWidget);
 
         currentSuggestions = const UnifiedSuggestionList.empty();
         runningController.add(false);
@@ -300,7 +303,8 @@ void main() {
         await tester.pump();
 
         expect(find.textContaining('Set status to GROOMED'), findsNothing);
-        expect(find.textContaining('No open proposals'), findsOneWidget);
+        expect(find.text('0 pending'), findsNothing);
+        expect(find.text('1 pending'), findsNothing);
       },
     );
 
@@ -481,7 +485,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.drag(find.text('Status'), const Offset(150, 0));
+      await tester.drag(
+        find.textContaining('Set status to GROOMED'),
+        const Offset(150, 0),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -513,7 +520,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.drag(find.text('Status'), const Offset(-150, 0));
+      await tester.drag(
+        find.textContaining('Set status to GROOMED'),
+        const Offset(-150, 0),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -542,7 +552,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.drag(find.text('Status'), const Offset(40, 0));
+      await tester.drag(
+        find.textContaining('Set status to GROOMED'),
+        const Offset(40, 0),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -780,7 +793,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       final gesture = await tester.startGesture(
-        tester.getCenter(find.text('Status')),
+        tester.getCenter(find.textContaining('Set status to GROOMED')),
       );
       await gesture.moveBy(const Offset(40, 0));
       await tester.pump();
@@ -862,7 +875,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Dismissed'), findsOneWidget);
-      final bodyText = tester.widget<Text>(find.text('"Stale row"'));
+      final bodyText = tester.widget<Text>(
+        find.textContaining('"Stale row"'),
+      );
       expect(bodyText.style?.decoration, TextDecoration.lineThrough);
     });
 
@@ -896,7 +911,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Dismissed'), findsOneWidget);
-      final bodyText = tester.widget<Text>(find.text('"Redundant row"'));
+      final bodyText = tester.widget<Text>(
+        find.textContaining('"Redundant row"'),
+      );
       expect(bodyText.style?.decoration, TextDecoration.lineThrough);
 
       // The body is rendered dimmed (Opacity 0.45) on resolved-rejected
@@ -904,7 +921,7 @@ void main() {
       final opacity = tester.widget<Opacity>(
         find
             .ancestor(
-              of: find.text('"Redundant row"'),
+              of: find.textContaining('"Redundant row"'),
               matching: find.byType(Opacity),
             )
             .first,
@@ -1118,8 +1135,8 @@ void main() {
         await tester.pumpWidget(bench.build());
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        expect(find.text('Alpha proposal'), findsOneWidget);
-        expect(find.text('Beta proposal'), findsOneWidget);
+        expect(find.textContaining('Alpha proposal'), findsOneWidget);
+        expect(find.textContaining('Beta proposal'), findsOneWidget);
 
         await tester.tap(find.byIcon(Icons.check_rounded).first);
         await tester.pump();
@@ -1136,7 +1153,7 @@ void main() {
 
         // Alpha is retained on screen even though the provider dropped it —
         // _retainExitingSuggestions re-inserts it until its exit completes.
-        expect(find.text('Alpha proposal'), findsOneWidget);
+        expect(find.textContaining('Alpha proposal'), findsOneWidget);
 
         // Release the write → Alpha collapses and is finally pruned; Beta stays.
         completer.complete(
@@ -1147,8 +1164,8 @@ void main() {
         await tester.pump(ProposalMotion.collapse);
         await tester.pump(ProposalMotion.collapse);
         await tester.pump();
-        expect(find.text('Alpha proposal'), findsNothing);
-        expect(find.text('Beta proposal'), findsOneWidget);
+        expect(find.textContaining('Alpha proposal'), findsNothing);
+        expect(find.textContaining('Beta proposal'), findsOneWidget);
       },
     );
 
@@ -1223,8 +1240,8 @@ void main() {
         // Every committed row must remain mounted until its own collapse
         // completes; otherwise later rows blink out instead of joining the
         // confirm-all sweep.
-        expect(find.text('Check Alpha'), findsOneWidget);
-        expect(find.text('Check Beta'), findsOneWidget);
+        expect(find.textContaining('Check Alpha'), findsOneWidget);
+        expect(find.textContaining('Check Beta'), findsOneWidget);
 
         completer.complete(const []);
         await tester.pump();

@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1052]
+### Fixed
+- **Audio transcripts respect the automatic-updates switch.** Finishing an
+  audio transcription — locally or synced from another device — no longer
+  wakes the task agent while automatic updates are off. The summary is marked
+  out of date instead, so the card shows the Wake agent action and no
+  inference tokens are spent without consent.
+
+### Changed
+- **The task AI summary card is more compact and calmer.** The summary now
+  leads directly under a tighter header, and all secondary controls moved
+  into a quiet footer at the card bottom: the Wake agent button, a small
+  countdown chip while an automatic update is scheduled, the
+  automatic-updates switch, and the model/provider line. While automatic
+  updates are off, a slim status strip under the summary always reserves the
+  same space — "This summary is out of date" with a right-sized Wake agent
+  button, or a quiet "Summary is up to date" confirmation — so the card
+  never jumps when freshness changes. Proposal rows now lead with the
+  proposed change itself over quiet accept/reject icons and a neutral kind
+  tag, long summaries keep a readable line length on wide windows, and
+  History plus Confirm all share one row under the list. Duplicated
+  explanatory captions are gone.
+
 ## [0.9.1051]
 ### Fixed
 - **The entry date stays readable on narrow phones.** When an entry header's

@@ -102,9 +102,12 @@ class AutomaticPromptTrigger {
     }
   }
 
-  /// Enqueue a manual wake on the task's agent so a freshly-completed
-  /// transcription is processed immediately, bypassing the 2-minute
-  /// subscription throttle.
+  /// Nudge the task's agent so a freshly-completed transcription is
+  /// processed immediately, bypassing the 2-minute subscription throttle.
+  ///
+  /// Honors the automatic-updates opt-in: when the user has switched
+  /// automatic updates off, the report is only marked stale (surfacing the
+  /// manual "Wake agent" CTA) and no inference is enqueued.
   ///
   /// No-op when no task agent is registered for [linkedTaskId]. Failures
   /// are logged but never propagate — a missed nudge is recoverable via
@@ -117,17 +120,18 @@ class AutomaticPromptTrigger {
       final taskAgentService = ref.read(taskAgentServiceProvider);
       final agent = await taskAgentService.getTaskAgentForTask(linkedTaskId);
       if (agent == null) return;
-      ref
+      final woken = ref
           .read(wakeOrchestratorProvider)
-          .enqueueManualWake(
+          .requestContentWake(
             agentId: agent.agentId,
             reason: WakeReason.transcriptionComplete.name,
             triggerTokens: {linkedTaskId, entryId},
           );
       loggingService.log(
         LogDomain.ai,
-        'Nudged task agent ${agent.agentId} after transcription '
-        'completion (task $linkedTaskId, entry $entryId)',
+        '${woken ? 'Nudged' : 'Marked report stale for'} task agent '
+        '${agent.agentId} after transcription completion '
+        '(task $linkedTaskId, entry $entryId)',
         subDomain: 'nudgeTaskAgent',
       );
     } catch (exception, stackTrace) {

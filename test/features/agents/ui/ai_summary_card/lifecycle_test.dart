@@ -259,7 +259,7 @@ void main() {
           find.textContaining('Synchronous proposal body'),
           findsOneWidget,
         );
-        expect(find.textContaining('No open proposals'), findsNothing);
+        expect(find.text('1 pending'), findsOneWidget);
       },
     );
   });
@@ -293,7 +293,7 @@ void main() {
 
           // The initial scheduled wake shows the countdown + cancel.
           expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-          expect(find.text('0:30'), findsOneWidget);
+          expect(find.text('Next update in 0:30'), findsOneWidget);
 
           // Cancel it → _cancelledManually = true → countdown hidden.
           await tester.tap(find.byIcon(Icons.close_rounded));
@@ -316,7 +316,7 @@ void main() {
             () => taskAgentService.cancelScheduledWake(any()),
           ).called(1);
           expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-          expect(find.text('1:30'), findsOneWidget);
+          expect(find.text('Next update in 1:30'), findsOneWidget);
         });
       },
     );

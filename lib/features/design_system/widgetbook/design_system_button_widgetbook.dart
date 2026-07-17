@@ -241,6 +241,7 @@ String _labelForVariant(DesignSystemButtonVariant variant) {
     DesignSystemButtonVariant.primary => 'Primary',
     DesignSystemButtonVariant.secondary => 'Secondary',
     DesignSystemButtonVariant.tertiary => 'Tertiary',
+    DesignSystemButtonVariant.outlined => 'Outlined',
     DesignSystemButtonVariant.danger => 'Danger',
     DesignSystemButtonVariant.dangerSecondary => 'Danger secondary',
     DesignSystemButtonVariant.dangerTertiary => 'Danger tertiary',

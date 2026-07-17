@@ -17,7 +17,7 @@ void main() {
     runtimeSettings: {},
   );
 
-  testWidgets('combined row is tappable, accessible, and at least 48 high', (
+  testWidgets('combined row is tappable, accessible, and at least 40 high', (
     tester,
   ) async {
     var taps = 0;
@@ -39,7 +39,7 @@ void main() {
       findsOneWidget,
     );
     final inkWell = find.byType(InkWell).first;
-    expect(tester.getSize(inkWell).height, greaterThanOrEqualTo(48));
+    expect(tester.getSize(inkWell).height, greaterThanOrEqualTo(40));
     expect(
       find.bySemanticsLabel(
         RegExp('This report and current setup use Qwen 3.5 Plus'),
@@ -50,7 +50,7 @@ void main() {
     expect(taps, 1);
   });
 
-  testWidgets('split state labels current setup and historical report', (
+  testWidgets('split state keeps the historical report attribution line', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -66,9 +66,19 @@ void main() {
       ),
     );
 
-    expect(find.text('Current setup'), findsOneWidget);
+    expect(
+      find.text('Qwen 3.5 Plus · Alibaba · via Melious.ai'),
+      findsOneWidget,
+    );
     expect(find.text('This report'), findsOneWidget);
     expect(find.text('Attribution unavailable'), findsOneWidget);
+    // "Current setup" wording moved into the semantics label; visually the
+    // placement and glyph carry it.
+    expect(find.text('Current setup'), findsNothing);
+    expect(
+      find.bySemanticsLabel(RegExp('Current setup: Qwen 3.5 Plus')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('no setup is a visible error with a concrete recovery hint', (
@@ -85,7 +95,6 @@ void main() {
       ),
     );
 
-    expect(find.text('No AI setup'), findsOneWidget);
     expect(
       find.text(
         'Choose a saved setup or thinking model before this agent can run.',
@@ -93,6 +102,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('No AI setup')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('broken setup keeps historical report attribution visible', (
@@ -110,7 +123,6 @@ void main() {
       ),
     );
 
-    expect(find.text('Current setup'), findsOneWidget);
     expect(find.text('Selected AI setup is unavailable'), findsOneWidget);
     expect(find.text('This report'), findsOneWidget);
     expect(

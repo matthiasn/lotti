@@ -8,12 +8,14 @@ enum TtsButtonMode { idle, preparing, playing }
 
 /// Calm, accessible play/stop control for reading a TL;DR aloud.
 ///
-/// A 44x44 hit target wrapping a ~36px filled-`accent` circle so it clearly
-/// reads as the card's focal action. Play vs stop is conveyed by glyph SHAPE
-/// (triangle vs square) plus a semantic label — never by color alone, so it
-/// works under color blindness. While [TtsButtonMode.preparing] it shows an
-/// indeterminate ring; while [TtsButtonMode.playing], a determinate progress
-/// arc from [progress]. Reduced-motion renders the preparing ring static.
+/// A 44x44 hit target wrapping a ~36px tonal circle (`accentSoft` fill,
+/// `accent` glyph — the same recipe as the header badge and countdown chip).
+/// The filled accent is reserved for the card's primary wake CTA, so this
+/// utility stays quiet. Play vs stop is conveyed by glyph SHAPE (triangle vs
+/// square) plus a semantic label — never by color alone, so it works under
+/// color blindness. While [TtsButtonMode.preparing] it shows an indeterminate
+/// ring; while [TtsButtonMode.playing], a determinate progress arc from
+/// [progress]. Reduced-motion renders the preparing ring static.
 ///
 /// Sizes here are fixed control / accessibility dimensions (not layout
 /// spacing), matching the surrounding header's existing convention; layout
@@ -57,10 +59,13 @@ class TtsPlayButton extends StatelessWidget {
     };
     // Three distinct glyphs so the states are legible by shape alone —
     // including under reduced motion, where the ring/arc difference vanishes.
+    // Idle uses a speaker, not a play triangle: on a card whose headline verb
+    // is "Wake agent", a bare triangle reads as "run the agent" rather than
+    // "read this aloud".
     final glyph = switch (mode) {
       TtsButtonMode.playing => Icons.stop_rounded,
       TtsButtonMode.preparing => Icons.hourglass_empty,
-      TtsButtonMode.idle => Icons.play_arrow_rounded,
+      TtsButtonMode.idle => Icons.volume_up_rounded,
     };
     // Idle plays; preparing/playing stop (preparing-stop cancels).
     final onTap = mode == TtsButtonMode.idle ? onPlay : onStop;
@@ -97,18 +102,28 @@ class TtsPlayButton extends StatelessWidget {
                     ),
                   DecoratedBox(
                     decoration: BoxDecoration(
-                      color: ai.accent,
+                      // Idle stays a whispered utility so the header keeps a
+                      // single accent (the sparkle badge); the accent pair is
+                      // earned only while actively preparing/playing.
+                      color: mode == TtsButtonMode.idle
+                          ? ai.subtleWash
+                          : ai.accentSoft,
                       shape: BoxShape.circle,
+                      border: Border.all(
+                        color: mode == TtsButtonMode.idle
+                            ? ai.subtleBorder
+                            : ai.border,
+                      ),
                     ),
                     child: SizedBox(
                       width: _circleSize,
                       height: _circleSize,
-                      // Dark card-background glyph on the light accent fill:
-                      // high contrast both ways. Verify AA at build.
                       child: Icon(
                         glyph,
                         size: _glyphSize,
-                        color: ai.background,
+                        color: mode == TtsButtonMode.idle
+                            ? ai.metaText
+                            : ai.accent,
                       ),
                     ),
                   ),

@@ -1158,10 +1158,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Transkription';
 
   @override
-  String get aiCardEmptyProposals =>
-      'Keine offenen Vorschläge · der Agent zeigt neue Änderungen hier an';
-
-  @override
   String aiCardHistoryToggle(int count) {
     return 'Verlauf · $count';
   }
@@ -9619,14 +9615,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wähle eine KI-Einrichtung, bevor du automatische Aktualisierungen einschaltest.';
 
   @override
-  String get taskAgentAutomaticUpdatesOffDescription =>
-      'Automatische Aktualisierungen sind aus. Wecke den Agenten, wenn du einen aktuellen Bericht möchtest.';
-
-  @override
-  String get taskAgentAutomaticUpdatesSummary =>
-      'Aufgabenänderungen werden gebündelt und nach zwei Minuten aktualisiert.';
-
-  @override
   String get taskAgentCancelTimerTooltip =>
       'Ausstehende automatische Aktualisierung abbrechen';
 
@@ -9676,6 +9664,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskAgentModelPickerTitle => 'Denkmodell wählen';
 
   @override
+  String taskAgentNextUpdateIn(String countdown) {
+    return 'Nächste Aktualisierung in $countdown';
+  }
+
+  @override
   String get taskAgentNoAiSetup => 'Keine KI-Einrichtung';
 
   @override
@@ -9706,12 +9699,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskAgentProfileDefaultBadge => 'Profilstandard';
 
   @override
-  String get taskAgentReportOutdatedDescription =>
-      'Die Aufgabe hat sich geändert, nachdem diese Zusammenfassung erstellt wurde.';
-
-  @override
   String get taskAgentReportOutdatedTitle =>
       'Diese Zusammenfassung ist veraltet';
+
+  @override
+  String get taskAgentReportUpToDate => 'Zusammenfassung ist aktuell';
 
   @override
   String get taskAgentRouteVia => 'über';

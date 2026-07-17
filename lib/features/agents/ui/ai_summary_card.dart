@@ -20,8 +20,8 @@ import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
-import 'package:lotti/features/agents/ui/task_agent_automation_panel.dart';
-import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
+import 'package:lotti/features/agents/ui/task_agent_controls_footer.dart';
+import 'package:lotti/features/agents/ui/task_agent_freshness_strip.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -39,12 +39,15 @@ export 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_pa
 /// Unified AI summary card for the task details column.
 ///
 /// Replaces the separate "AI Summary" + "Decision Activity" stack with
-/// a single deep-teal-tinted-navy surface that exposes the agent's
-/// TLDR, an expandable inline report, the actionable proposals list,
-/// and the resolved-proposal history. Also surfaces the wake-cycle
-/// affordances (countdown / run-now / cancel) directly in the header.
-/// Uses the same data sources as the prior `AgentSuggestionsPanel`
-/// (proposal ledger, agent report, wake state).
+/// a single deep-teal-tinted-navy surface. Reading order: identity
+/// header, the TLDR with an expandable inline report, a constant-height
+/// freshness strip with the manual wake CTA (while automatic updates
+/// are off — out-of-date warning or up-to-date confirmation, no layout
+/// jump between the two), the actionable proposals list with
+/// resolved history, and a quiet controls footer (wake / countdown /
+/// automatic-updates toggle / model identity). Uses the same data
+/// sources as the prior `AgentSuggestionsPanel` (proposal ledger, agent
+/// report, wake state).
 ///
 /// The card is a library split across part files in the
 /// `ai_summary_card/` directory:
@@ -553,12 +556,21 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       setState(() => _cancelledManually = true);
     }
 
-    final automationPanel = TaskAgentAutomationPanel(
+    // While automatic updates are off, the freshness strip under the report
+    // owns the wake CTA in a slot of constant geometry (out-of-date warning
+    // or a quiet up-to-date confirmation — no jump when freshness flips);
+    // the footer hides its own button so the affordance never appears twice.
+    // Without any report content the strip has nothing to describe, so the
+    // footer keeps the wake button instead.
+    final hasReportContent = tldr.isNotEmpty || additionalReport != null;
+    final showFreshnessStrip = !automaticUpdatesEnabled && hasReportContent;
+
+    final controlsFooter = TaskAgentControlsFooter(
       automaticUpdatesEnabled: automaticUpdatesEnabled,
       automationBusy: _automaticUpdatesBusyAgentIds.contains(agentId),
       inferenceAvailable: inferenceAvailable,
       isRunning: isRunning,
-      isStale: reportIsStale,
+      showWakeButton: !showFreshnessStrip,
       showCountdown: showCountdown,
       nextWakeAt: nextWakeAt,
       onAutomaticUpdatesChanged: (enabled) =>
@@ -568,16 +580,13 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       onCountdownExpired: () {
         if (mounted) setState(() {});
       },
-    );
-    final identityRegion = TaskAgentIdentityRegion(
-      data: identityData,
+      identityData: identityData,
       onSetupTap: () => AgentModelSheet.show(
         context: context,
         taskId: widget.taskId,
         agentId: agentId,
       ),
     );
-    final hasReportContent = tldr.isNotEmpty || additionalReport != null;
     final reportBody = TldrBody(
       tldr: tldr,
       expanded: _expanded,
@@ -657,78 +666,44 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
               onAgentTap: () => _openInternals(agentName: subtitle),
               playbackControl: playbackControl,
             ),
-            // Hide proposals until their first value to avoid flashing the
-            // empty state. On wide surfaces they stay in the report column so
-            // the control rail no longer creates a large dead zone; mobile
-            // preserves the full-width, linear reading order.
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final useControlRail =
-                    constraints.maxWidth >= tokens.spacing.step13 * 5;
-                final controls = Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    automationPanel,
-                    SizedBox(height: tokens.spacing.step4),
-                    identityRegion,
-                  ],
-                );
-                final contentPadding = EdgeInsets.fromLTRB(
+            // Reading order: the summary first, then the update CTA for the
+            // summary just read, then the proposals. One step4 of air between
+            // each block keeps the rhythm even.
+            if (hasReportContent)
+              Padding(
+                padding: EdgeInsets.fromLTRB(
                   tokens.spacing.cardPadding,
                   0,
                   tokens.spacing.cardPadding,
+                  tokens.spacing.step4,
+                ),
+                child: reportBody,
+              ),
+            if (showFreshnessStrip)
+              Padding(
+                padding: EdgeInsets.fromLTRB(
                   tokens.spacing.cardPadding,
-                );
-
-                if (!useControlRail) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: contentPadding,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            controls,
-                            if (hasReportContent) ...[
-                              SizedBox(height: tokens.spacing.sectionGap),
-                              reportBody,
-                            ],
-                          ],
-                        ),
-                      ),
-                      ?proposalsSection,
-                    ],
-                  );
-                }
-
-                return Padding(
-                  padding: contentPadding,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (hasReportContent) reportBody,
-                            if (hasReportContent && proposalsSection != null)
-                              SizedBox(height: tokens.spacing.sectionGap),
-                            ?proposalsSection,
-                          ],
-                        ),
-                      ),
-                      SizedBox(width: tokens.spacing.sectionGap),
-                      SizedBox(
-                        width: tokens.spacing.step13 * 2 + tokens.spacing.step8,
-                        child: controls,
-                      ),
-                    ],
+                  0,
+                  tokens.spacing.cardPadding,
+                  tokens.spacing.step4,
+                ),
+                // Same reading measure as the summary above it: a full-width
+                // strip whose content ends a quarter of the way across reads
+                // lopsided on wide surfaces.
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: TldrBody.maxReadingWidth,
                   ),
-                );
-              },
-            ),
+                  child: TaskAgentFreshnessStrip(
+                    isStale: reportIsStale,
+                    isRunning: isRunning,
+                    onRunNow: runNow,
+                  ),
+                ),
+              ),
+            // Hidden until the first value to avoid flashing the empty state.
+            ?proposalsSection,
+            controlsFooter,
           ],
         ),
       ),

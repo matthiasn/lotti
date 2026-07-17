@@ -18,21 +18,6 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Width threshold below which the proposal row switches from chip-beside-text
-/// to stacking its kind chip above the full-width proposal text. Measured
-/// against the row's **own available width** (via a `LayoutBuilder` in
-/// [ProposalRowContent])
-/// so a narrow resizable task pane on a wide desktop stacks too — a screen-width
-/// check alone kept that pane in the cramped beside layout. [isCompactWidth]
-/// (screen width) is retained as a fallback that still flips phones and covers
-/// unbounded constraints. Matches `AgentInternalsPanel.mobileBreakpoint`.
-const double _proposalRowCompactWidth = 600;
-
-/// Screen-width compact check, kept as the fallback signal for the proposal
-/// row's adaptive layout — the primary signal is the row's own constraints.
-bool isCompactWidth(BuildContext context) =>
-    MediaQuery.sizeOf(context).width < _proposalRowCompactWidth;
-
 /// Whether the one-shot swipe-affordance nudge has already played this session.
 ///
 /// Held outside the row (session scope) on purpose: the old wiggle re-armed
@@ -637,9 +622,9 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
       ),
       null => baseRowColor,
     };
-    final baseBorder = widget.isResolved
-        ? ai.rowBorder
-        : Color.alphaBlend(meta.color.withValues(alpha: 0.55), ai.rowBorder);
+    // Kind color lives on the chip only — a tinted frame made every pending
+    // row read as a differently-colored alert box.
+    final baseBorder = ai.rowBorder;
     final borderColor = switch (resolveKindLocal) {
       ProposalResolveKind.accept => Color.alphaBlend(
         ai.accent.withValues(alpha: 0.5 * resolveValue),
@@ -653,7 +638,7 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     };
 
     final rowVisual = ClipRRect(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(tokens.radii.s),
       child: Stack(
         children: [
           Positioned.fill(
@@ -676,7 +661,9 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
                       ),
               ),
               alignment: dx > 0 ? Alignment.centerLeft : Alignment.centerRight,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+              ),
               child: intentLabel == null
                   ? const SizedBox.shrink()
                   : Row(
@@ -684,7 +671,7 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
                       children: [
                         if (dx > 0)
                           Icon(Icons.check, size: 14, color: intentColor),
-                        if (dx > 0) const SizedBox(width: 6),
+                        if (dx > 0) SizedBox(width: tokens.spacing.step2),
                         Text(
                           intentLabel,
                           style: tokens.typography.styles.others.caption
@@ -693,7 +680,7 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
                                 fontWeight: FontWeight.w600,
                               ),
                         ),
-                        if (dx < 0) const SizedBox(width: 6),
+                        if (dx < 0) SizedBox(width: tokens.spacing.step2),
                         if (dx < 0)
                           Icon(Icons.close, size: 14, color: intentColor),
                       ],
@@ -707,13 +694,13 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
             transform: Matrix4.translationValues(dx, 0, 0),
             decoration: BoxDecoration(
               color: rowColor,
-              borderRadius: BorderRadius.circular(10),
-              // Pending rows pick up a faint tint of their kind color so
-              // the frame reinforces the proposal type at a glance;
-              // resolved rows stay neutral.
+              borderRadius: BorderRadius.circular(tokens.radii.s),
               border: Border.all(color: borderColor),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step4,
+              vertical: tokens.spacing.step3,
+            ),
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onHorizontalDragStart: _onHorizontalDragStart,
@@ -931,8 +918,25 @@ class ProposalRowContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
-    final textWidget = Text(
-      text,
+    // One anatomy at every width: the proposal text leads with its kind as a
+    // quiet inline prefix ("Update · …"), the verdict actions sit trailing
+    // and vertically centered. Every summary starts on the same axis (no
+    // variable-width leading chip) and the kind never owns a line of its
+    // own. The prefix keeps the body's size and metrics — color alone
+    // separates it, so the line reads as one run of text instead of two
+    // sizes patched together. The whole row stays swipeable (right =
+    // confirm, left = dismiss) — the buttons are an additional, visible
+    // affordance so the action isn't swipe-only-and-hidden.
+    final textWidget = Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '${meta.label} · ',
+            style: TextStyle(color: ai.metaText),
+          ),
+          TextSpan(text: text),
+        ],
+      ),
       style: tokens.typography.styles.body.bodySmall.copyWith(
         color: ai.bodyText,
         height: 1.5,
@@ -940,50 +944,12 @@ class ProposalRowContent extends StatelessWidget {
       ),
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Decide on the width actually available to the row, not the whole
-        // window: the task-detail card can sit in a narrow resizable pane on a
-        // wide desktop, where the screen check alone kept the cramped
-        // chip-beside-text layout. The screen check ([isCompactWidth]) stays as
-        // a fallback so phones still flip and unbounded constraints degrade
-        // gracefully.
-        final compact =
-            isCompactWidth(context) ||
-            constraints.maxWidth < _proposalRowCompactWidth;
-
-        if (compact) {
-          // Narrow: kind chip + trailing actions on the first line, then
-          // full-width text below. The whole row also stays swipeable (right =
-          // confirm, left = dismiss) — the buttons are an additional, visible
-          // affordance so the action isn't swipe-only-and-hidden.
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  KindChip(meta: meta),
-                  const Spacer(),
-                  _trailing(),
-                ],
-              ),
-              SizedBox(height: tokens.spacing.step2),
-              textWidget,
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            KindChip(meta: meta),
-            SizedBox(width: tokens.spacing.step3),
-            Expanded(child: textWidget),
-            SizedBox(width: tokens.spacing.step3),
-            _trailing(),
-          ],
-        );
-      },
+    return Row(
+      children: [
+        Expanded(child: textWidget),
+        SizedBox(width: tokens.spacing.step2),
+        _trailing(),
+      ],
     );
   }
 }

@@ -511,7 +511,6 @@
   "aiCapabilityChipImageRecognition": "Bilderkennung",
   "aiCapabilityChipThinking": "Denken",
   "aiCapabilityChipTranscription": "Transkription",
-  "aiCardEmptyProposals": "Keine offenen Vorschläge · der Agent zeigt neue Änderungen hier an",
   "aiCardHistoryToggle": "Verlauf · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -3891,8 +3890,6 @@
   "taskAgentAttributionUnavailable": "Zuordnung nicht verfügbar",
   "taskAgentAutomaticUpdatesLabel": "Automatische Aktualisierungen",
   "taskAgentAutomaticUpdatesNeedsSetup": "Wähle eine KI-Einrichtung, bevor du automatische Aktualisierungen einschaltest.",
-  "taskAgentAutomaticUpdatesOffDescription": "Automatische Aktualisierungen sind aus. Wecke den Agenten, wenn du einen aktuellen Bericht möchtest.",
-  "taskAgentAutomaticUpdatesSummary": "Aufgabenänderungen werden gebündelt und nach zwei Minuten aktualisiert.",
   "taskAgentCancelTimerTooltip": "Ausstehende automatische Aktualisierung abbrechen",
   "taskAgentChooseModel": "Denkmodell wählen",
   "taskAgentChooseProfile": "Inferenzprofil auswählen",
@@ -3921,6 +3918,7 @@
   "taskAgentDisableConfirmTitle": "KI für diesen Agenten ausschalten?",
   "taskAgentInferenceProfileLabel": "Inferenzprofil",
   "taskAgentModelPickerTitle": "Denkmodell wählen",
+  "taskAgentNextUpdateIn": "Nächste Aktualisierung in {countdown}",
   "taskAgentNoAiSetup": "Keine KI-Einrichtung",
   "taskAgentNoAiSetupDescription": "Pausiert die Inferenz, bis du ein Profil oder Modell auswählst.",
   "taskAgentNoModelsAvailable": "Keine kompatiblen Denkmodelle verfügbar",
@@ -3936,8 +3934,8 @@
     }
   },
   "taskAgentProfileDefaultBadge": "Profilstandard",
-  "taskAgentReportOutdatedDescription": "Die Aufgabe hat sich geändert, nachdem diese Zusammenfassung erstellt wurde.",
   "taskAgentReportOutdatedTitle": "Diese Zusammenfassung ist veraltet",
+  "taskAgentReportUpToDate": "Zusammenfassung ist aktuell",
   "taskAgentRouteVia": "über",
   "taskAgentRunNowTooltip": "Jetzt ausführen",
   "taskAgentSavingSetup": "Agent-Einrichtung wird gespeichert",

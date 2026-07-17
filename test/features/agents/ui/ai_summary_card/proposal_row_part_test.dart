@@ -57,10 +57,11 @@ void main() {
               .first,
         );
 
-        // The two 48x48 hit zones must NOT abut: a deliberate dead band sits
-        // between the destructive reject and accept so a near-miss can't land
-        // on the wrong control. (Adjacent zones would give a gap of 0.)
-        expect(acceptZone.left - rejectZone.right, greaterThan(4));
+        // The two hit zones must NOT abut: a step2 dead band sits between
+        // the destructive reject and accept — combined with the confirm's
+        // wash-circle chrome — so a near-miss can't land on the wrong
+        // control. (Adjacent zones would give a gap of 0.)
+        expect(acceptZone.left - rejectZone.right, greaterThanOrEqualTo(4));
       },
     );
   });
@@ -236,7 +237,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pump(ProposalMotion.nudge);
 
-        expect(find.text('Status'), findsOneWidget);
+        expect(find.textContaining('Status · '), findsOneWidget);
         expect(rowTransform(tester)!.getTranslation().x, 0);
         expect(tester.takeException(), isNull);
       },
@@ -264,7 +265,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Status'), findsOneWidget);
+        expect(find.textContaining('Status · '), findsOneWidget);
         // At rest before the start delay.
         expect(rowTransform(tester)!.getTranslation().x, 0);
 
@@ -321,7 +322,7 @@ void main() {
         await tester.pump(ProposalMotion.nudge);
 
         // The row never peeked — the nudge was suppressed by the session flag.
-        expect(find.text('Status'), findsOneWidget);
+        expect(find.textContaining('Status · '), findsOneWidget);
         expect(rowTransform(tester)!.getTranslation().x, 0);
         expect(tester.takeException(), isNull);
       },
@@ -358,7 +359,7 @@ void main() {
         // short of the -70 reject trigger, so the row stays in the
         // "Reject" affordance state without firing the service.
         final gesture = await tester.startGesture(
-          tester.getCenter(find.text('Status')),
+          tester.getCenter(find.textContaining('Set status to GROOMED')),
         );
         await gesture.moveBy(const Offset(-50, 0));
         await tester.pump();
@@ -378,10 +379,8 @@ void main() {
     );
   });
   group('AiSummaryCard – compact-width proposal row', () {
-    // A phone-width viewport (< _proposalRowCompactWidth = 600) where the
-    // row drops its explicit confirm/reject buttons and relies on swipe
-    // alone. Animations stay disabled so the wiggle hint doesn't add its
-    // own offset on top of the drag.
+    // A phone-width viewport. Animations stay disabled so the wiggle hint
+    // doesn't add its own offset on top of the drag.
     const compactPhone = MediaQueryData(
       size: Size(420, 800),
       disableAnimations: true,
@@ -421,7 +420,10 @@ void main() {
 
         // Swiping the row right past the trigger still confirms too — the
         // gesture remains available alongside the buttons.
-        await tester.drag(find.text('Status'), const Offset(150, 0));
+        await tester.drag(
+          find.textContaining('Set status to GROOMED'),
+          const Offset(150, 0),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -457,7 +459,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.drag(find.text('Status'), const Offset(-150, 0));
+        await tester.drag(
+          find.textContaining('Set status to GROOMED'),
+          const Offset(-150, 0),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -473,126 +478,62 @@ void main() {
       humanSummary: 'Add checklist item: Write integration tests',
     );
 
-    const chipLabel = 'Add';
     const bodyText = 'checklist item: Write integration tests';
 
+    Future<void> pumpRow(WidgetTester tester, {required Size size}) async {
+      final bench = AgentTestBench(
+        mediaQueryData: MediaQueryData(size: size, disableAnimations: true),
+        suggestions: UnifiedSuggestionList(
+          open: [addPending()],
+          activity: const [],
+        ),
+      );
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
     testWidgets(
-      'stacks the kind chip above full-width text on a narrow viewport',
+      'renders one anatomy on a narrow viewport: inline kind prefix, '
+      'trailing actions',
       (tester) async {
-        final bench = AgentTestBench(
-          mediaQueryData: const MediaQueryData(
-            size: Size(420, 800),
-            disableAnimations: true,
-          ),
-          suggestions: UnifiedSuggestionList(
-            open: [addPending()],
-            activity: const [],
-          ),
-        );
+        await pumpRow(tester, size: const Size(420, 800));
 
-        await tester.pumpWidget(bench.build());
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        // The kind renders as an inline prefix of the proposal text — one
+        // rich text, one shared left axis, no chip line of its own.
+        final rowText = find.textContaining(bodyText);
+        expect(rowText, findsOneWidget);
+        expect(find.textContaining('Add · '), findsOneWidget);
 
-        final chip = find.text(chipLabel);
-        final body = find.text(bodyText);
-        expect(chip, findsOneWidget);
-        expect(body, findsOneWidget);
-
-        // Column layout: the body text sits clearly below the chip and is
-        // NOT indented to the right of it — a clean full-width block
-        // starting at the row's left edge, not text squished into a ragged
-        // column beside the chip.
-        expect(
-          tester.getTopLeft(body).dy,
-          greaterThan(tester.getTopLeft(chip).dy + 10),
-        );
-        expect(
-          tester.getTopLeft(body).dx,
-          lessThanOrEqualTo(tester.getTopLeft(chip).dx),
-        );
+        // The verdict actions are present at every width and share the
+        // text's band instead of owning a separate rail below it.
+        final check = find.byIcon(Icons.check_rounded);
+        final close = find.byIcon(Icons.close_rounded);
+        expect(check, findsOneWidget);
+        expect(close, findsOneWidget);
+        final textRect = tester.getRect(rowText);
+        final checkCenterDy = tester.getCenter(check).dy;
+        expect(checkCenterDy, greaterThan(textRect.top));
+        expect(checkCenterDy, lessThan(textRect.bottom));
       },
     );
 
     testWidgets(
-      'keeps the chip inline with the text and shows actions when wide',
+      'keeps the same anatomy on a wide surface',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(1400, 800));
         addTearDown(() => tester.binding.setSurfaceSize(null));
-        final bench = AgentTestBench(
-          mediaQueryData: const MediaQueryData(
-            size: Size(1400, 800),
-            disableAnimations: true,
-          ),
-          suggestions: UnifiedSuggestionList(
-            open: [addPending()],
-            activity: const [],
-          ),
-        );
+        await pumpRow(tester, size: const Size(1400, 800));
 
-        await tester.pumpWidget(bench.build());
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        final chip = find.text(chipLabel);
-        final body = find.text(bodyText);
-        expect(chip, findsOneWidget);
-        expect(body, findsOneWidget);
-
-        // Row layout: chip and first text line share roughly the same top,
-        // and the text sits to the right of the chip rather than below it.
-        expect(
-          tester.getTopLeft(body).dy,
-          moreOrLessEquals(tester.getTopLeft(chip).dy, epsilon: 6),
-        );
-        expect(
-          tester.getTopLeft(body).dx,
-          greaterThan(tester.getTopLeft(chip).dx),
-        );
-
-        // Explicit confirm/reject actions are present on the comfortable
-        // layout (hidden on the narrow swipe-only layout).
+        final rowText = find.textContaining(bodyText);
+        expect(rowText, findsOneWidget);
+        expect(find.textContaining('Add · '), findsOneWidget);
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);
         expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'stacks text under the chip in a narrow pane on a wide screen',
-      (tester) async {
-        // Wide screen (screen-width check would pick the beside layout) but the
-        // card is squeezed into a narrow resizable task pane — the row must
-        // still stack the text under the chip based on its own width.
-        final bench = AgentTestBench(
-          mediaQueryData: const MediaQueryData(
-            size: Size(1200, 800),
-            disableAnimations: true,
-          ),
-          width: 360,
-          suggestions: UnifiedSuggestionList(
-            open: [addPending()],
-            activity: const [],
-          ),
-        );
-
-        await tester.pumpWidget(bench.build());
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        final chip = find.text(chipLabel);
-        final body = find.text(bodyText);
-        expect(chip, findsOneWidget);
-        expect(body, findsOneWidget);
-
-        // Column layout despite the wide screen: text sits below the chip and
-        // is not indented to the right of it.
+        // Actions trail the text on the same band.
         expect(
-          tester.getTopLeft(body).dy,
-          greaterThan(tester.getTopLeft(chip).dy + 10),
-        );
-        expect(
-          tester.getTopLeft(body).dx,
-          lessThanOrEqualTo(tester.getTopLeft(chip).dx),
+          tester.getCenter(find.byIcon(Icons.check_rounded)).dx,
+          greaterThan(tester.getRect(rowText).right),
         );
       },
     );

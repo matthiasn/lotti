@@ -413,7 +413,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Confirm suggestions section is rendered.
-        expect(find.text('Set estimate to 30 minutes'), findsOneWidget);
+        expect(
+          find.textContaining('Set estimate to 30 minutes'),
+          findsOneWidget,
+        );
 
         final container = ProviderScope.containerOf(
           tester.element(find.byType(TaskDetailsPage)),

@@ -374,7 +374,7 @@ void main() {
       // animations) must finish before the focus intent is published.
       await tester.pumpAndSettle();
 
-      expect(find.text('Set estimate to 30 minutes'), findsOneWidget);
+      expect(find.textContaining('Set estimate to 30 minutes'), findsOneWidget);
 
       final container = ProviderScope.containerOf(
         tester.element(find.byType(TaskDetailsPage)),
@@ -471,7 +471,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // The proposals section is up with the (first) open proposal showing.
-        expect(find.text('Set estimate to 30 minutes'), findsOneWidget);
+        expect(
+          find.textContaining('Set estimate to 30 minutes'),
+          findsOneWidget,
+        );
 
         // Simulate confirming one proposal: the open list shrinks 2 -> 1,
         // which fires the page's suggestion listener and engages the scroll
@@ -485,7 +488,10 @@ void main() {
         // The page absorbed the shrink cleanly (the anchor ran, no exception)
         // and the surviving proposal is still shown.
         expect(tester.takeException(), isNull);
-        expect(find.text('Set estimate to 30 minutes'), findsOneWidget);
+        expect(
+          find.textContaining('Set estimate to 30 minutes'),
+          findsOneWidget,
+        );
 
         // Dispose the container (cancels the entry-controller cache timer)
         // before the framework's pending-timer check.
@@ -518,7 +524,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Set estimate to 30 minutes'), findsOneWidget);
+        expect(
+          find.textContaining('Set estimate to 30 minutes'),
+          findsOneWidget,
+        );
         expect(find.byType(ProposalRow), findsOneWidget);
 
         final position = tester

@@ -5,6 +5,10 @@ enum DesignSystemButtonVariant {
   primary,
   secondary,
   tertiary,
+
+  /// Transparent body with a neutral hairline border — a labeled action that
+  /// must read as a button without spending a fill or the interactive accent.
+  outlined,
   danger,
   dangerSecondary,
   dangerTertiary,
@@ -113,6 +117,9 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
     );
     final buttonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
+      side: variantSpec.borderColor != null
+          ? BorderSide(color: variantSpec.borderColor!)
+          : BorderSide.none,
     );
 
     final button = Material(
@@ -324,6 +331,7 @@ class _ButtonVariantSpec {
   const _ButtonVariantSpec({
     required this.foregroundColor,
     required this.backgroundColor,
+    this.borderColor,
   });
 
   factory _ButtonVariantSpec.fromTokens({
@@ -344,11 +352,15 @@ class _ButtonVariantSpec {
         DesignSystemButtonVariant.danger ||
         DesignSystemButtonVariant.dangerSecondary => true,
         DesignSystemButtonVariant.tertiary ||
+        DesignSystemButtonVariant.outlined ||
         DesignSystemButtonVariant.dangerTertiary => false,
       };
       return _ButtonVariantSpec(
         foregroundColor: tokens.colors.text.lowEmphasis,
         backgroundColor: isFilled ? tokens.colors.surface.enabled : null,
+        borderColor: variant == DesignSystemButtonVariant.outlined
+            ? tokens.colors.text.lowEmphasis
+            : null,
       );
     }
 
@@ -394,6 +406,13 @@ class _ButtonVariantSpec {
             ? null
             : surfaceColor,
       ),
+      DesignSystemButtonVariant.outlined => _ButtonVariantSpec(
+        foregroundColor: tokens.colors.text.highEmphasis,
+        backgroundColor: visualState == DesignSystemButtonVisualState.idle
+            ? null
+            : surfaceColor,
+        borderColor: tokens.colors.text.lowEmphasis,
+      ),
       DesignSystemButtonVariant.danger => _ButtonVariantSpec(
         foregroundColor: tokens.colors.text.onInteractiveAlert,
         backgroundColor: dangerColor,
@@ -413,4 +432,7 @@ class _ButtonVariantSpec {
 
   final Color foregroundColor;
   final Color? backgroundColor;
+
+  /// Hairline stroke for the outlined variant; null renders no border.
+  final Color? borderColor;
 }

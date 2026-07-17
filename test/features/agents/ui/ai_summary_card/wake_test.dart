@@ -71,7 +71,7 @@ void main() {
     );
 
     testWidgets(
-      'countdown pill renders next to the run-now button when scheduled',
+      'scheduled countdown replaces the manual wake button entirely',
       (
         tester,
       ) async {
@@ -91,9 +91,11 @@ void main() {
           await tester.pumpWidget(bench.build());
           await tester.pumpAndSettle();
 
-          expect(find.text('Wake agent'), findsOneWidget);
+          // One wake affordance per state: while the countdown runs, the
+          // scheduled update IS the pending wake — no second button.
+          expect(find.text('Wake agent'), findsNothing);
           expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-          expect(find.text('0:30'), findsOneWidget);
+          expect(find.text('Next update in 0:30'), findsOneWidget);
         });
       },
     );
@@ -120,20 +122,13 @@ void main() {
 
         expect(find.text('Automatic updates'), findsOneWidget);
         expect(
-          find.text(
-            'Automatic updates are off. Wake the agent when you want a fresh '
-            'report.',
-          ),
-          findsOneWidget,
-        );
-        expect(
           find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
           findsOneWidget,
         );
         expect(find.text('Wake agent'), findsOneWidget);
         expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
         expect(find.byIcon(Icons.close_rounded), findsNothing);
-        expect(find.text('0:30'), findsNothing);
+        expect(find.textContaining('0:30'), findsNothing);
         await tester.tap(find.byKey(const ValueKey('taskAgentWakeButton')));
         verify(() => taskAgentService.triggerReanalysis(any())).called(1);
       },
@@ -165,10 +160,6 @@ void main() {
 
       expect(find.text('This summary is out of date'), findsOneWidget);
       expect(
-        find.text('The task changed after this summary was generated.'),
-        findsOneWidget,
-      );
-      expect(
         find.byKey(const ValueKey('taskAgentStaleNotice')),
         findsOneWidget,
       );
@@ -181,6 +172,33 @@ void main() {
 
       verify(() => taskAgentService.triggerReanalysis(any())).called(1);
     });
+
+    testWidgets(
+      'stale without any report keeps the footer wake button — the strip '
+      'has nothing to describe',
+      (tester) async {
+        final identity = makeTestIdentity().copyWith(
+          config: const AgentConfig(automaticUpdatesEnabled: false),
+        );
+        final state = makeTestState().copyWith(
+          reportStaleAt: DateTime(2026, 5, 4, 12),
+        );
+        final bench = AgentTestBench(identity: identity, state: state);
+
+        await tester.pumpWidget(bench.build());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('taskAgentStaleNotice')),
+          findsNothing,
+        );
+        expect(find.text('This summary is out of date'), findsNothing);
+        expect(
+          find.byKey(const ValueKey('taskAgentWakeButton')),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('auto-wake toggle persists the opt-in from the card', (
       tester,
@@ -261,11 +279,16 @@ void main() {
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
-      expect(find.text('No AI setup'), findsOneWidget);
       expect(
-        find.text('Choose an AI setup before turning on automatic updates.'),
+        find.text(
+          'Choose a saved setup or thinking model before this agent can run.',
+        ),
         findsOneWidget,
       );
+      expect(find.bySemanticsLabel(RegExp('No AI setup')), findsOneWidget);
+      // The disabled toggle carries the needs-setup explanation as a tooltip
+      // instead of a permanent caption line.
+      expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
       final wakeButton = tester.widget<DesignSystemButton>(
         find.byKey(const ValueKey('taskAgentWakeButton')),
       );
@@ -295,10 +318,10 @@ void main() {
         await tester.pumpWidget(bench.build());
         await tester.pumpAndSettle();
 
-        expect(find.text('Wake agent'), findsOneWidget);
+        expect(find.text('Wake agent'), findsNothing);
         expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-        expect(find.text('5:39:14'), findsOneWidget);
-        expect(find.text('339:14'), findsNothing);
+        expect(find.text('Next update in 5:39:14'), findsOneWidget);
+        expect(find.textContaining('339:14'), findsNothing);
       });
     });
 

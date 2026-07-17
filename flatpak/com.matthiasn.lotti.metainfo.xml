@@ -33,6 +33,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1052" date="2026-07-18">
+      <description>
+          <p>The task AI summary card is more compact and calmer. The summary leads directly under a tighter header, and all secondary controls moved into a quiet footer at the card bottom: the Wake agent button, a small countdown chip while an automatic update is scheduled, the automatic-updates switch, and the model line. While automatic updates are off, a slim status strip under the summary always reserves the same space, showing either an out-of-date notice with a right-sized Wake agent button or a quiet up-to-date confirmation, so the card never jumps when freshness changes. Proposal rows lead with the proposed change itself over quiet accept and reject icons and a neutral kind tag, long summaries keep a readable line length on wide windows, and History plus Confirm all share one row under the list.</p>
+          <p>Audio transcripts respect the automatic-updates switch. Finishing an audio transcription, locally or synced from another device, no longer wakes the task agent while automatic updates are off. The summary is marked out of date instead, so the card shows the Wake agent action and no inference tokens are spent without consent.</p>
+      </description>
+    </release>
     <release version="0.9.1051" date="2026-07-17">
       <description>
           <p>French, Spanish, and Romanian now read more naturally throughout the app. Agent controls, AI and Sync setup, dashboards, health import, and task actions keep the selected language's own register and terminology instead of exposing literal or mixed-language copy.</p>

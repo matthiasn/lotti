@@ -699,7 +699,6 @@
   "aiCapabilityChipImageRecognition": "Image recognition",
   "aiCapabilityChipThinking": "Thinking",
   "aiCapabilityChipTranscription": "Transcription",
-  "aiCardEmptyProposals": "No open proposals · agent will surface new changes here",
   "aiCardHistoryToggle": "History · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -4633,8 +4632,6 @@
   "taskAgentAttributionUnavailable": "Attribution unavailable",
   "taskAgentAutomaticUpdatesLabel": "Automatic updates",
   "taskAgentAutomaticUpdatesNeedsSetup": "Choose an AI setup before turning on automatic updates.",
-  "taskAgentAutomaticUpdatesOffDescription": "Automatic updates are off. Wake the agent when you want a fresh report.",
-  "taskAgentAutomaticUpdatesSummary": "Bundle task changes and update after two minutes.",
   "taskAgentCancelTimerTooltip": "Cancel pending automatic update",
   "taskAgentChooseModel": "Choose a thinking model",
   "taskAgentChooseProfile": "Choose an inference profile",
@@ -4663,6 +4660,16 @@
   "taskAgentDisableConfirmTitle": "Turn off AI for this agent?",
   "taskAgentInferenceProfileLabel": "Inference profile",
   "taskAgentModelPickerTitle": "Choose thinking model",
+  "taskAgentNextUpdateIn": "Next update in {countdown}",
+  "@taskAgentNextUpdateIn": {
+    "description": "Countdown chip in the task-agent card footer; tapping it cancels the scheduled automatic update",
+    "placeholders": {
+      "countdown": {
+        "type": "String",
+        "example": "1:30"
+      }
+    }
+  },
   "taskAgentNoAiSetup": "No AI setup",
   "taskAgentNoAiSetupDescription": "Pauses agent inference until you choose a profile or model.",
   "taskAgentNoModelsAvailable": "No compatible thinking models available",
@@ -4678,8 +4685,8 @@
     }
   },
   "taskAgentProfileDefaultBadge": "Profile default",
-  "taskAgentReportOutdatedDescription": "The task changed after this summary was generated.",
   "taskAgentReportOutdatedTitle": "This summary is out of date",
+  "taskAgentReportUpToDate": "Summary is up to date",
   "taskAgentRouteVia": "via",
   "taskAgentRunNowTooltip": "Run now",
   "taskAgentSavingSetup": "Saving agent setup",
