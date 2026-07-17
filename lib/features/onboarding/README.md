@@ -56,8 +56,9 @@ independent of the "connect your brain" front door's own step logic above.
 | `OnboardingWelcomeCadence` | `AsyncNotifier<void>` — the mutation side: `recordShown()` and `markCompleted()`, persisted to `SettingsDb` under a private `welcome_*` key prefix (deliberately **not** a `ConfigFlags` row — those are public, user-toggleable; this is per-install bookkeeping the user never edits directly). |
 
 **Eligibility** (all must hold):
-- the prepared rollout backfill provider has resolved; it is a read/write-free
-  no-op while the Daily OS release lever is off,
+- the one-shot existing-install backfill has resolved; configured installs are
+  marked complete before cadence is read, independently of the Daily OS rollout
+  lever,
 - What's New has nothing unseen left to show (sequenced behind it so the two
   auto-shown overlays never race for the screen),
 - the welcome has not been marked `completed`,
@@ -108,36 +109,46 @@ period, and a hard block on first skip would defeat that.
 ## Daily OS rollout and production testing
 
 `state/onboarding_rollout.dart` keeps the future all-install Daily OS rollout
-prepared without activating it. `onboardingRolloutEnabled` is the single
-release lever and is currently `false`. The Daily OS config flag also seeds
-`false`; the welcome has no flag.
+prepared without activating it. `onboardingRolloutEnabled` controls only that
+Daily OS force-enable migration and is currently `false`. The Daily OS config
+flag also seeds `false`; the welcome has no flag.
 
 | Piece | Lever off (current release) | Lever on (future rollout) |
 |---|---|---|
 | `applyOnboardingRolloutFlags` | Returns before any database read or write. | Overwrites the Daily OS walkthrough flag to `true` once, before `runApp`, then writes `onboarding_rollout_v1_flags_applied`. |
-| `applyOnboardingRolloutBackfill` | Returns before reading readiness, cadence, or its marker. | Classifies an install once; a provider-ready install gets `welcome_completed`, then `onboarding_rollout_v1_backfill_applied` is written. |
-| Failure behavior | No operation exists to fail. | Logs, leaves the relevant marker absent, and retries next launch. |
+| `applyOnboardingRolloutBackfill` | Classifies an install once; a provider-ready install gets `welcome_completed`, then `onboarding_rollout_v1_backfill_applied` is written. | Same behavior — the Welcome cleanup is independent of this lever. |
+| Failure behavior | The flag migration is a no-op. A backfill failure is logged and leaves its marker absent for the next evaluation. | Either migration logs its failure, leaves the relevant marker absent, and retries later. |
 
 The force-enable remains necessary because `initConfigFlags` uses
 `insertFlagIfNotExists`: changing a seed cannot update an existing `false` row.
 The startup half therefore remains awaited from `registerSingletons()` after
-seeding. The backfill remains awaited by `shouldAutoShowOnboarding`, where a
-Riverpod container exists. Its readiness signal waits for agent initialization
-before resolving so template/version seeding cannot produce a false one-shot
-classification.
+seeding. The independent backfill is awaited by `shouldAutoShowOnboarding`,
+where a Riverpod container exists. Its readiness signal waits for agent
+initialization before resolving so template/version seeding cannot produce a
+false one-shot classification. The marker is deliberately outside the QA reset
+set: resetting Welcome completion can expose the flow again without a connected
+provider immediately retiring it a second time.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> WelcomeReleased: no FTUE flag or legacy prompt
-    WelcomeReleased --> DailyOsDarkLaunch: onboardingRolloutEnabled = false
-    DailyOsDarkLaunch --> ManualTest: tester enables Daily OS config flag
-    ManualTest --> DailyOsDarkLaunch: tester disables Daily OS config flag
-    DailyOsDarkLaunch --> RolloutArmed: release changes the lever to true
-    RolloutArmed --> FlagsForced: startup force-enables Daily OS once
-    FlagsForced --> WelcomeRetired: existing install has a resolvable planner route
-    FlagsForced --> WelcomeEligible: install is not yet configured
-    WelcomeRetired --> [*]
-    WelcomeEligible --> [*]
+    state "Welcome cleanup" as WelcomeCleanup {
+        [*] --> BackfillPending
+        BackfillPending --> WelcomeRetired: existing install has a resolvable planner route
+        BackfillPending --> WelcomeEligible: install is not yet configured
+        WelcomeRetired --> BackfillApplied: write marker
+        WelcomeEligible --> BackfillApplied: write marker
+        BackfillApplied --> [*]
+    }
+    state "Daily OS release" as DailyOsRelease {
+        [*] --> DarkLaunch: onboardingRolloutEnabled = false
+        DarkLaunch --> ManualTest: tester enables config flag
+        ManualTest --> DarkLaunch: tester disables config flag
+        DarkLaunch --> RolloutArmed: release changes lever to true
+        RolloutArmed --> FlagForced: startup force-enables Daily OS once
+        FlagForced --> [*]
+    }
+    [*] --> WelcomeCleanup: FTUE flag removed
+    [*] --> DailyOsRelease: independent rollout track
 ```
 
 ### Resetting test state

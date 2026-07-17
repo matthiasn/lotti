@@ -4,13 +4,14 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 
-/// The single release lever for the onboarding rollout.
+/// Release lever for force-enabling the Daily OS walkthrough.
 ///
 /// Keep this `false` throughout production testing. Testers opt in to the Daily
 /// OS walkthrough with its public config flag instead. Flipping this to `true`
-/// activates both one-shot migrations below: startup force-enables that flag
-/// for every install, then the welcome gate retires FTUE for installs that
-/// already have a working planner route.
+/// activates the startup migration that force-enables that flag for every
+/// install. The Welcome backfill is intentionally independent: retiring the
+/// FTUE flag must classify configured existing installs even while this lever
+/// remains off.
 const onboardingRolloutEnabled = false;
 
 /// Marker written after the rollout force-enables its remaining master flag.
@@ -75,18 +76,15 @@ Future<void> applyOnboardingRolloutFlags({
 /// initialization, so its one-shot answer cannot race template/version seeding.
 /// Failures leave the marker absent for a later retry.
 ///
-/// When [rolloutEnabled] is false this returns before reading the marker or
-/// invoking [readProviderReady], so manual production testing cannot silently
-/// retire the welcome.
+/// This runs independently of [onboardingRolloutEnabled] now that the Welcome
+/// has no master flag. The one-shot marker preserves deliberate QA resets and
+/// prevents a later provider connection from reclassifying an install.
 Future<void> applyOnboardingRolloutBackfill({
   required Future<bool> Function() readProviderReady,
   required Future<void> Function() retireWelcome,
   required SettingsDb settingsDb,
   required DomainLogger logger,
-  bool rolloutEnabled = onboardingRolloutEnabled,
 }) async {
-  if (!rolloutEnabled) return;
-
   try {
     final alreadyApplied = await settingsDb.itemByKey(
       onboardingRolloutBackfillAppliedKey,

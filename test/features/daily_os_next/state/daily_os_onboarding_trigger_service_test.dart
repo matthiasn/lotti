@@ -178,6 +178,7 @@ void main() {
     ProviderContainer createContainer({
       bool onboardingEnabled = true,
       bool providerReady = true,
+      bool Function()? readProviderReady,
       bool welcomeStillOwed = false,
       bool useRealWelcomeGate = false,
       bool whatsNewUnseen = false,
@@ -208,7 +209,7 @@ void main() {
           agentRepositoryProvider.overrideWithValue(mockAgentRepo),
           currentDraftPlanProvider.overrideWith((ref, date) async => todayPlan),
           dailyOsOnboardingProviderReadyProvider.overrideWith(
-            (ref) async => providerReady,
+            (ref) async => readProviderReady?.call() ?? providerReady,
           ),
           whatsNewControllerProvider.overrideWith(
             whatsNewUnseen
@@ -248,7 +249,11 @@ void main() {
     });
 
     test('re-evaluates after the general FTUE welcome completes', () async {
-      final container = createContainer(useRealWelcomeGate: true);
+      var providerReady = false;
+      final container = createContainer(
+        useRealWelcomeGate: true,
+        readProviderReady: () => providerReady,
+      );
 
       await withClock(Clock.fixed(fixedNow), () async {
         final subscription = container.listen(
@@ -264,6 +269,8 @@ void main() {
           isFalse,
         );
 
+        providerReady = true;
+        container.invalidate(dailyOsOnboardingProviderReadyProvider);
         await container
             .read(onboardingWelcomeCadenceProvider.notifier)
             .markCompleted();

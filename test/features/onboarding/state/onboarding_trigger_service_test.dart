@@ -178,6 +178,7 @@ void main() {
     ProviderContainer createContainer({
       bool whatsNewHasUnseen = false,
       bool whatsNewFeatureEnabled = true,
+      bool providerReady = false,
     }) {
       final mockJournalDb = MockJournalDb();
       when(
@@ -191,6 +192,9 @@ void main() {
             whatsNewHasUnseen
                 ? _UnseenWhatsNewController.new
                 : _NoUnseenWhatsNewController.new,
+          ),
+          dailyOsOnboardingProviderReadyProvider.overrideWith(
+            (ref) async => providerReady,
           ),
         ],
       );
@@ -211,6 +215,9 @@ void main() {
             journalDbProvider.overrideWithValue(mockJournalDb),
             whatsNewControllerProvider.overrideWith(
               _NoUnseenWhatsNewController.new,
+            ),
+            dailyOsOnboardingProviderReadyProvider.overrideWith(
+              (ref) async => false,
             ),
           ],
         );
@@ -267,6 +274,27 @@ void main() {
 
       expect(result, isTrue);
     });
+
+    test(
+      'returns false for a configured pre-FTUE install after backfill',
+      () async {
+        final container = createContainer(providerReady: true);
+
+        final result = await container.read(
+          shouldAutoShowOnboardingProvider.future,
+        );
+
+        expect(result, isFalse);
+        expect(
+          await settingsDb.itemByKey(onboardingWelcomeCompletedKey),
+          'true',
+        );
+        expect(
+          await settingsDb.itemByKey(onboardingRolloutBackfillAppliedKey),
+          'true',
+        );
+      },
+    );
 
     test('returns false once marked completed', () async {
       await settingsDb.saveSettingsItem(onboardingWelcomeCompletedKey, 'true');
@@ -514,6 +542,9 @@ void main() {
             whatsNewControllerProvider.overrideWith(
               _NoUnseenWhatsNewController.new,
             ),
+            dailyOsOnboardingProviderReadyProvider.overrideWith(
+              (ref) async => false,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -559,7 +590,7 @@ void main() {
       await tearDownTestGetIt();
     });
 
-    test('wires readiness and retirement when explicitly armed', () async {
+    test('wires readiness and retirement by default', () async {
       final container = ProviderContainer(
         overrides: [
           dailyOsOnboardingProviderReadyProvider.overrideWith(
@@ -569,7 +600,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      await container.read(onboardingRolloutBackfillProvider(true).future);
+      await container.read(onboardingRolloutBackfillProvider.future);
 
       expect(
         await settingsDb.itemByKey(onboardingWelcomeCompletedKey),

@@ -186,34 +186,7 @@ void main() {
     tearDown(() => settingsDb.close());
 
     test(
-      'disabled lever does not inspect readiness or persist state',
-      () async {
-        var readinessReads = 0;
-        var retireWrites = 0;
-
-        await applyOnboardingRolloutBackfill(
-          readProviderReady: () async {
-            readinessReads++;
-            return true;
-          },
-          retireWelcome: () async {
-            retireWrites++;
-          },
-          settingsDb: settingsDb,
-          logger: logger,
-        );
-
-        expect(readinessReads, 0);
-        expect(retireWrites, 0);
-        expect(
-          await settingsDb.itemByKey(onboardingRolloutBackfillAppliedKey),
-          isNull,
-        );
-      },
-    );
-
-    test(
-      'armed lever retires a ready install and records its marker',
+      'retires a ready install and records its marker',
       () async {
         await applyOnboardingRolloutBackfill(
           readProviderReady: () async => true,
@@ -223,7 +196,6 @@ void main() {
           ),
           settingsDb: settingsDb,
           logger: logger,
-          rolloutEnabled: true,
         );
 
         expect(
@@ -238,7 +210,7 @@ void main() {
     );
 
     test(
-      'armed lever leaves an unconfigured install welcome-eligible',
+      'leaves an unconfigured install welcome-eligible',
       () async {
         var retireWrites = 0;
 
@@ -249,7 +221,6 @@ void main() {
           },
           settingsDb: settingsDb,
           logger: logger,
-          rolloutEnabled: true,
         );
 
         expect(retireWrites, 0);
@@ -261,7 +232,7 @@ void main() {
     );
 
     test(
-      'armed lever does not reclassify an install after its marker',
+      'does not reclassify an install after its marker',
       () async {
         await settingsDb.saveSettingsItem(
           onboardingRolloutBackfillAppliedKey,
@@ -277,7 +248,6 @@ void main() {
           retireWelcome: () async {},
           settingsDb: settingsDb,
           logger: logger,
-          rolloutEnabled: true,
         );
 
         expect(readinessReads, 0);
@@ -291,7 +261,6 @@ void main() {
           retireWelcome: () async => throw Exception('write failed'),
           settingsDb: settingsDb,
           logger: logger,
-          rolloutEnabled: true,
         ),
         completes,
       );
