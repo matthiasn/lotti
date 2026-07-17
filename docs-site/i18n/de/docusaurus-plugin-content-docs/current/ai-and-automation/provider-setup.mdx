@@ -5,8 +5,8 @@ description: Verbinde Cloud- oder lokale Inferenz, prüfe Modelle und behalte Zu
 
 # Einen KI-Anbieter verbinden
 
-Lotti trennt KI-Einrichtung in drei Ebenen: Ein **Anbieter** ist der verbundene
-Dienst, ein **Modell** ist ein darüber verfügbares Modell und ein
+Lotti trennt die KI-Einrichtung in drei Ebenen: Ein **Anbieter** ist der
+verbundene Dienst, ein **Modell** ist ein Modell dieses Dienstes und ein
 **Inferenzprofil** leitet jede Arbeitsart zu einem Modell. Beginne mit dem
 Anbieter und prüfe danach Modelle und Profile.
 
@@ -20,8 +20,12 @@ Anbieter und prüfe danach Modelle und Profile.
 
 - Ein Cloud-Anbieter ist meist am schnellsten eingerichtet und braucht häufig
   einen API-Schlüssel. Gesendete Texte, Audios oder Bilder verlassen das Gerät.
-- Ein lokaler Anbieter kann Inferenz auf deiner Maschine halten. Sein Dienst
-  muss laufen und vom aufrufenden Lotti-Gerät erreichbar sein.
+- Ein lokaler Anbieter kann Inferenz auf deiner Maschine oder an einem lokalen
+  Endpunkt halten, den du kontrollierst. Sein Dienst muss laufen und vom
+  aufrufenden Lotti-Gerät erreichbar sein. Eine LAN-Adresse kann eine Anfrage
+  dennoch zwischen deinen Geräten übertragen; „lokal“ heißt, dass sie nicht an
+  einen gehosteten Modellanbieter geht, nicht dass gar kein Netzwerk beteiligt
+  ist.
 - Eine eigene Basis-URL kann einen unterstützten Anbietertyp auf einen
   kompatiblen Proxy oder Gateway richten. Der Anbietertyp steuert weiterhin
   protokollspezifisches Verhalten.
@@ -65,13 +69,15 @@ Abhängigkeiten.
 Unter [Modelle und Inferenzprofile](./models-and-profiles.mdx) siehst du, was
 der Anbieter bereitstellt und wie Lotti Fähigkeiten verteilt. Kategorien
 können ein Standardprofil setzen; einzelne Abläufe können ein Modell wählen
-oder einmalig überschreiben.
+oder einmalig überschreiben, wenn der jeweilige Ablauf diese Wahl anbietet.
 
 ## Datenschutzgrenze
 
 Prüfe vor sensiblen Texten, Audios oder Bildern, ob der Endpunkt lokal oder
 entfernt ist. Ein freundlicher Name wie „Lokales Habitat-Labor“ ist keine
-Sicherheitsgrenze – Basis-URL und bereitstellende Maschine sind es.
+Sicherheitsgrenze – Basis-URL, Netzwerkpfad und bereitstellende Maschine sind
+es. Das Logbuch bleibt in beiden Fällen lokal; diese Entscheidung betrifft den
+Inferenzaufruf selbst.
 
 :::warning API-Schlüssel
 

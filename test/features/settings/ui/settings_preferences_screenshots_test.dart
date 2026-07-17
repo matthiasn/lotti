@@ -322,8 +322,11 @@ void main() {
             navService: navService,
             overrides: overrides(),
           );
+          final messages = AppLocalizations.of(
+            tester.element(find.byType(Scaffold).first),
+          )!;
           expect(
-            find.text(_t('Recording Style', 'Aufnahme-Stil')),
+            find.text(messages.settingsRecordingStyleTitle),
             findsWidgets,
           );
           expect(

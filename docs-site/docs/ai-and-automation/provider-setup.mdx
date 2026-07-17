@@ -20,8 +20,11 @@ provider, then review the models and profiles created around it.
 
 - A cloud provider is usually the quickest setup and commonly requires an API
   key. Text, audio, or images sent through it leave the device.
-- A local provider can keep inference on your own machine, but its service must
-  be running and reachable from the device where Lotti invokes it.
+- A local provider can keep inference on your own machine or a local endpoint
+  you control, but its service must be running and reachable from the device
+  where Lotti invokes it. A LAN address may still move a prompt between your
+  devices; “local” means it is not sent to a hosted model provider, not that no
+  network hop exists.
 - A custom base URL can point a supported provider type at a compatible proxy
   or gateway. The provider type still controls protocol-specific behavior.
 
@@ -70,7 +73,9 @@ override a model where the workflow offers that choice.
 
 Before sending sensitive text, audio, or images, confirm whether the configured
 endpoint is local or remote. A friendly name such as “Habitat Local Lab” is not
-the security boundary—the base URL and the machine serving it are.
+the security boundary—the base URL, the network path, and the machine serving
+it are. Lotti stores the logbook locally either way; this decision controls the
+inference call itself.
 
 :::warning API keys
 

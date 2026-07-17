@@ -200,7 +200,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentEvolutionChartVersionPerformance => 'Nach Version';
 
   @override
-  String get agentEvolutionChartWakeHistory => 'Wake-Verlauf';
+  String get agentEvolutionChartWakeHistory => 'Aufwachverlauf';
 
   @override
   String get agentEvolutionChatPlaceholder =>
@@ -631,7 +631,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentRitualReviewSessionHistory => 'Sitzungsverlauf';
 
   @override
-  String get agentRitualReviewTitle => '1-on-1';
+  String get agentRitualReviewTitle => 'Einzelgespräch';
 
   @override
   String get agentRitualSummaryApprovedChangesHeading =>
@@ -651,23 +651,23 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Starte ein 1-on-1, um zu prüfen, was den Nutzer gestört hat, was gut funktioniert hat und was sich als Nächstes ändern sollte.';
+      'Starte ein Einzelgespräch, um zu prüfen, was dich gestört hat, was gut funktioniert hat und was sich als Nächstes ändern sollte.';
 
   @override
   String get agentRitualSummarySubtitle =>
-      'Frühere 1-on-1s, echte Wake-Aktivität und die Änderungen, auf die du dich mit dem Agenten geeinigt hast.';
+      'Frühere Einzelgespräche, echte Aufwachaktivität und die Änderungen, auf die du dich mit dem Agenten geeinigt hast.';
 
   @override
   String get agentRitualSummaryTokensSinceLast =>
-      'Tokens seit dem letzten 1-on-1';
+      'Token seit dem letzten Einzelgespräch';
 
   @override
   String get agentRitualSummaryWakeHistory30Days =>
-      'Wake-Aktivität (letzte 30 Tage)';
+      'Aufwachaktivität (letzte 30 Tage)';
 
   @override
   String get agentRitualSummaryWakesSinceLast =>
-      'Wakes seit dem letzten 1-on-1';
+      'Aufwachvorgänge seit dem letzten Einzelgespräch';
 
   @override
   String get agentRunningIndicator => 'Läuft';
@@ -770,7 +770,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get agentSoulReviewTitle => 'Seelen-1-on-1';
+  String get agentSoulReviewTitle => 'Seelen-Einzelgespräch';
 
   @override
   String get agentSoulRollbackAction => 'Auf diese Version zurücksetzen';
@@ -1034,7 +1034,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String agentTemplateRollbackConfirm(int version) {
-    return 'Auf Version $version zurücksetzen? Der Agent wird diese Version beim nächsten Wake verwenden.';
+    return 'Auf Version $version zurücksetzen? Der Agent wird diese Version beim nächsten Aufwachen verwenden.';
   }
 
   @override
@@ -1090,7 +1090,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplateVersionSaved => 'Neue Version gespeichert';
 
   @override
-  String get agentThreadReportLabel => 'Bericht aus diesem Wake-Zyklus';
+  String get agentThreadReportLabel => 'Bericht aus diesem Aufwachzyklus';
 
   @override
   String get agentTokenUsageCachedTokens => 'Gecacht';
@@ -1278,7 +1278,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get aiConsumptionTypeAgentTurn => 'Agenten-Turn';
+  String get aiConsumptionTypeAgentTurn => 'Agentendurchlauf';
 
   @override
   String get aiConsumptionTypeAudioTranscription => 'Transkription';
@@ -2014,7 +2014,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiResponseTypeAudioTranscription => 'Audio-Transkription';
 
   @override
-  String get aiResponseTypeChecklistUpdates => 'Checklisten-Updates';
+  String get aiResponseTypeChecklistUpdates => 'Checklisten-Aktualisierungen';
 
   @override
   String get aiResponseTypeImageAnalysis => 'Bildanalyse';
@@ -3007,7 +3007,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get configFlagEnableNotificationsDescription =>
-      'Erhalte Benachrichtigungen für Erinnerungen, Updates und wichtige Ereignisse.';
+      'Erhalte Benachrichtigungen für Erinnerungen, Aktualisierungen und wichtige Ereignisse.';
 
   @override
   String get configFlagEnableProjects => 'Projekte aktivieren';
@@ -3389,7 +3389,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get coverArtChipSet => 'Titelbild setzen';
 
   @override
-  String get coverArtGenerationComplete => 'Cover-Art fertig!';
+  String get coverArtGenerationComplete => 'Titelbild fertig!';
 
   @override
   String get coverArtGenerationDismissHint =>
@@ -3788,7 +3788,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextDraftingRecoveryBody =>
-      'Der Wake hat keinen Plan erzeugt. Versuch es erneut oder geh zurück und passe die Entscheidungen vor dem Planen an.';
+      'Der Aufwachvorgang hat keinen Plan erzeugt. Versuch es erneut oder geh zurück und passe die Entscheidungen vor dem Planen an.';
 
   @override
   String get dailyOsNextDraftingRecoveryTitle => 'Planung hängt';
@@ -5204,7 +5204,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsChangeCover => 'Titelbild ändern';
 
   @override
-  String get eventsDeleteEvent => 'Event löschen';
+  String get eventsDeleteEvent => 'Ereignis löschen';
 
   @override
   String get eventsFilterAll => 'Alle';
@@ -5299,7 +5299,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsTimelineSection => 'Zeitleiste';
 
   @override
-  String get eventsTitleHint => 'Event-Titel';
+  String get eventsTitleHint => 'Ereignistitel';
 
   @override
   String get eventsVoiceNote => 'Sprachnotiz';
@@ -5354,11 +5354,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get geminiThinkingModeMinimalLabel => 'Minimal';
 
   @override
-  String get generateCoverArt => 'Cover generieren';
+  String get generateCoverArt => 'Titelbild generieren';
 
   @override
   String get generateCoverArtSubtitle =>
-      'Bild aus Sprachbeschreibung erstellen';
+      'Bild aus einer Beschreibung erstellen';
 
   @override
   String get goMenuTitle => 'Gehe zu';
@@ -7757,7 +7757,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String projectSummaryOutdatedScheduled(String date, String time) {
-    return 'Zusammenfassung ist veraltet. Nächstes Update am $date um $time.';
+    return 'Zusammenfassung ist veraltet. Nächste Aktualisierung am $date um $time.';
   }
 
   @override
@@ -8183,7 +8183,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsAgentsInstancesSubtitle => 'Laufende Agenten';
 
   @override
-  String get settingsAgentsPendingWakesSubtitle => 'Geplante Wake-Timer';
+  String get settingsAgentsPendingWakesSubtitle => 'Geplante Aufwachzyklen';
 
   @override
   String get settingsAgentsSoulsSubtitle =>
@@ -9069,7 +9069,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'VU-Meter oder Energie-Orb bei der Aufnahme';
 
   @override
-  String get settingsRecordingStyleTitle => 'Aufnahme-Stil';
+  String get settingsRecordingStyleTitle => 'Aufnahmestil';
 
   @override
   String get settingsResetGeminiConfirm => 'Zurücksetzen';
@@ -9215,7 +9215,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsWhatsNewSubtitle =>
-      'Sieh dir die neuesten Updates und Funktionen an';
+      'Sieh dir die neuesten Neuigkeiten und Funktionen an';
 
   @override
   String get settingsWhatsNewTitle => 'Was gibt\'s Neues';
@@ -9582,15 +9582,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskAgentAttributionUnavailable => 'Zuordnung nicht verfügbar';
 
   @override
-  String get taskAgentAutomaticUpdatesLabel => 'Automatische Updates';
+  String get taskAgentAutomaticUpdatesLabel => 'Automatische Aktualisierungen';
 
   @override
   String get taskAgentAutomaticUpdatesNeedsSetup =>
-      'Wähle ein KI-Setup, bevor du automatische Updates einschaltest.';
+      'Wähle eine KI-Einrichtung, bevor du automatische Aktualisierungen einschaltest.';
 
   @override
   String get taskAgentAutomaticUpdatesOffDescription =>
-      'Automatische Updates sind aus. Wecke den Agenten, wenn du einen aktuellen Bericht möchtest.';
+      'Automatische Aktualisierungen sind aus. Wecke den Agenten, wenn du einen aktuellen Bericht möchtest.';
 
   @override
   String get taskAgentAutomaticUpdatesSummary =>
@@ -9598,7 +9598,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskAgentCancelTimerTooltip =>
-      'Ausstehendes automatisches Update abbrechen';
+      'Ausstehende automatische Aktualisierung abbrechen';
 
   @override
   String get taskAgentChooseModel => 'Denkmodell wählen';
@@ -9669,7 +9669,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String taskAgentProfileChangedToast(String profile) {
-    return '$profile wird für jedes zukünftige Agent-Update verwendet, bis du es änderst.';
+    return '$profile wird für jede künftige Aktualisierung des Agenten verwendet, bis du es änderst.';
   }
 
   @override
@@ -9703,7 +9703,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String taskAgentSetupChangedToast(String model) {
-    return '$model wird für jedes zukünftige Agent-Update verwendet, bis du es änderst.';
+    return '$model wird für jede künftige Aktualisierung des Agenten verwendet, bis du es änderst.';
   }
 
   @override
@@ -9729,7 +9729,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskAgentSetupPersistenceDescription =>
-      'Änderungen gelten für alle zukünftigen Updates, bis du sie wieder änderst.';
+      'Änderungen gelten für alle künftigen Aktualisierungen, bis du sie wieder änderst.';
 
   @override
   String taskAgentSetupSemantics(String identity) {

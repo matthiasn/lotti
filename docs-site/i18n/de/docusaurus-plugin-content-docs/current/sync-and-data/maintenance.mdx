@@ -12,7 +12,7 @@ abschließen und halte eine aktuelle Sicherung unersetzlicher Daten bereit.
 
 <ManualScreenshot
   caseId="sync/maintenance"
-  alt="Lottis Matrix-Synchronisierungswartung mit Löschen der Sync-Datenbank, Definitionsabgleich, erneutem Nachrichtenabgleich, Aufbau des Sequenzprotokolls und Bereinigung gesendeter Ausgangseinträge"
+  alt="Lottis Matrix-Synchronisierungswartung mit Löschen der Sync-Datenbank, Definitionsabgleich, erneutem Nachrichtenabgleich, Aufbau des Sequenzprotokolls und Bereinigung gesendeter Postausgangseinträge"
   caption="Wartung bündelt destruktive, wiederholende und bereinigende Aktionen. Der Bestätigungstext beschreibt jeweils ihren Umfang."
 />
 
@@ -27,18 +27,18 @@ abschließen und halte eine aktuelle Sicherung unersetzlicher Daten bereit.
   einmal ab, wenn Remote-Zustand fehlt oder eine frühere Zustellung wiederholt
   werden muss.
 - **Sequenzprotokoll füllen** rekonstruiert den lokalen Sequenzverlauf, mit dem
-  Lücken erkannt und Nachlieferungen gesteuert werden.
-- **Alte gesendete Ausgangseinträge bereinigen** löscht bereits gesendeten
+  Lücken erkannt und Nachfüllungen gesteuert werden.
+- **Alte gesendete Postausgangseinträge bereinigen** löscht bereits gesendeten
   Diagnoseverlauf nach Ablauf der Aufbewahrungszeit. Ausstehende oder
   fehlgeschlagene Arbeit bleibt erhalten.
 
 Beginne mit der kleinsten Aktion, die zum Symptom passt. Ein festhängender
-Anhang gehört in den [Ausgang](./sync.mdx#den-ausgang-prüfen), dauerhafte
-Sequenzlücken zur Nachlieferung und zwei gültige gleichzeitige Änderungen in
+Anhang gehört in den [Postausgang](./sync.mdx#den-ausgang-prüfen), dauerhafte
+Sequenzlücken zur Nachfüllung und zwei gültige gleichzeitige Änderungen in
 die [Konflikte](./conflicts.mdx). Das Löschen der Sync-Datenbank ist der letzte
 Ausweg und sollte nur mit einem bekannten, vollständigen Peer und einer
 Sicherung erfolgen.
 
 Kehre danach zu **Synchronisierungsstatistik** zurück. Prüfe, ob die Anzahl
 verarbeiteter Elemente weiterläuft, ohne dass die Fehlerzahl anwächst, und ob
-sich Ausgang sowie Anzahl fehlender Nachlieferungen beruhigen.
+sich Postausgang sowie Anzahl fehlender Nachfüllungen beruhigen.

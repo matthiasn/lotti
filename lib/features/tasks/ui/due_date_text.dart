@@ -33,7 +33,9 @@ class _DueDateTextState extends State<DueDateText> {
       return context.messages.taskDueToday;
     }
     return context.messages.taskDueDateWithDate(
-      DateFormat.yMMMd().format(widget.dueDate),
+      DateFormat.yMMMd(
+        Localizations.localeOf(context).toLanguageTag(),
+      ).format(widget.dueDate),
     );
   }
 

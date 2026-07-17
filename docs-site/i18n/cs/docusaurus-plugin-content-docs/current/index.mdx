@@ -9,11 +9,11 @@ description: Nauč se s Lotti plánovat, zaznamenávat, organizovat a vyhodnocov
 <div className="manual-hero manual-hero--welcome">
   <div className="manual-eyebrow">Soukromý deník, ne panoptikum produktivity</div>
   <h1>Nech si fakta. Udělej si den po svém.</h1>
-  <div className="manual-hero-copy">Úkoly, čas, hlasové poznámky, návyky, zdravotní data i občasná podivně užitečná myšlenka si zaslouží lepší osud než očistec v otevřených kartách. Lotti uchová záznam; o dalším kroku rozhoduješ ty.</div>
+  <div className="manual-hero-copy">Úkoly, čas, hlasové poznámky, návyky, zdravotní data i občasná podivně užitečná myšlenka si zaslouží lepší osud než očistec v otevřených kartách. Lotti uchovává záznam; o dalším kroku rozhoduješ ty.</div>
   <div className="manual-hero-principles">
     <div><strong>Tvoje historie zůstává tvoje.</strong><span>Je v tvém místním deníku, ne v cloudovém účtu Lotti.</span></div>
     <div><strong>AI se ptá; ty rozhoduješ.</strong><span>Agenti mohou všímat, přemýšlet a navrhovat. Klíče od tvého života ale nedostanou.</span></div>
-    <div><strong>Udělej si ho zapamatovatelný.</strong><span>Užitečný, vážný i rozkošně podivný: pracovní prostor může znít jako ty.</span></div>
+    <div><strong>Udělej si z něj něco, co si zapamatuješ.</strong><span>Užitečný, vážný i rozkošně podivný: pracovní prostor může znít jako ty.</span></div>
   </div>
 </div>
 
@@ -43,6 +43,14 @@ prostor může být úplně všední — nebo stejně příjemně podivný. Titu
 úkolu je volitelný; dobrá vizuální metafora může přeplněný týden výrazně lépe
 zpřehlednit.
 
+Svět ukázky není počáteční obsah a nikdy se nepřidá do tvého profilu. Jde o
+deterministickou sadu snímků: jedna bláznivá logistická operace, vracející se
+postavy a odlišné titulní obrázky umožňují sledovat funkci od agendy přes úkol,
+projekt a deník až k přehledu, aniž by sis pletl ukázková data se slibem
+produktu. Titulní obrázky jsou ve skutečné práci stejně volitelné: vytvoř je v
+Lotti, když užitečný, vážný nebo báječně podivný obraz pomůže práci rychleji
+poznat.
+
 :::
 
 ## Začni tam, kde to teď drhne
@@ -69,9 +77,11 @@ zpřehlednit.
 ## AI je volitelná. Její důsledky ne.
 
 Lotti neprovozuje inferenční backend a nedostává kopii toho, co posíláš modelu.
-Při místní inferenci mohou tvé materiály zůstat na zařízení. U cloudového
-poskytovatele jde tebou vybraný kontext přímo přes **tvůj** účet a API klíč k
-němu. Rozhodnutí je tedy na tobě — a bohužel také prověření.
+Místní úložiště a místní inference spolu souvisejí, ale nejsou tožné sliby:
+deník zůstává na tvých zařízeních v obou případech. U místního poskytovatele
+zpracuje vybraný materiál počítač nebo místní koncový bod, který nastavíš. U
+cloudového poskytovatele jde vybraný kontext přímo přes **tvůj** účet a API
+klíč k němu. Rozhodnutí je tedy na tobě — a bohužel také prověření.
 
 <div className="manual-responsibility-grid">
   <div className="manual-responsibility-card">
@@ -84,7 +94,7 @@ němu. Rozhodnutí je tedy na tobě — a bohužel také prověření.
   </div>
   <div className="manual-responsibility-card">
     <strong>Lidské schválení je pravidlo produktu.</strong>
-    <p>Agenti mohou analyzovat kontext a navrhovat změny, ale návrhy čekají na tebe. Lotti nemění „užitečné“ na „bez odpovědnosti“.</p>
+    <p>Agenti mohou analyzovat kontext a navrhovat změny, ale změny v tvém záznamu čekají na tebe. Úzkou výjimkou je první název nebo jazyk jinak prázdného úkolu. Lotti nemění „užitečné“ na „bez odpovědnosti“.</p>
   </div>
 </div>
 

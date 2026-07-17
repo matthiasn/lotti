@@ -5,10 +5,10 @@ description: Popiš schopnosti modelu jednou a pomocí profilů inference směru
 
 # Směrování práce pomocí modelů a profilů
 
-Poskytovatel říká Lotti, kam se připojit. Model zaznamenává jedno ID modelu
+Poskytovatel říká Lotti, kam se připojit. Model představuje jedno ID modelu
 poskytovatele a jeho schopnosti. Profil inference potom přiřazuje tyto modely k
-úlohám, kterým Lotti rozumí. Otázka „který model zpracovává zvuk?“ tak nemusí
-být v každém úkolu a pravidle automatizace.
+úlohám, pro které Lotti nabízí volby. Otázka „který model zpracovává zvuk?“ tak
+nemusí být v každém úkolu a pravidle automatizace.
 
 ## Prohlížej uložené modely
 
@@ -32,7 +32,7 @@ místní server modelů omezenou paměť.
 Vyber kartu modelu nebo ho přidej pomocí **+**. Definice obsahuje:
 
 - připojení poskytovatele;
-- přátelský název a volitelný popis;
+- zobrazený název a volitelný popis;
 - přesné ID modelu u poskytovatele;
 - nejvyšší počet tokenů dokončení;
 - vstupní a výstupní modality; a
@@ -69,6 +69,9 @@ Uprav profil a přiřaď modely používaným schopnostem:
 - **Rozpoznání obrázků** analyzuje obrázky.
 - **Přepis** převádí zvuk na text.
 - **Generování obrázků** vytváří grafiku úkolů a další generované obrázky.
+  Aktuální vestavěná cesta generování obrázků používá nastaveného vzdáleného
+  poskytovatele; poskytovatele i odeslané reference proto vybírej se stejnou
+  péčí jako u jiné cloudové inference.
 
 <ManualScreenshot
   caseId="ai/profile-editor"
@@ -76,7 +79,7 @@ Uprav profil a přiřaď modely používaným schopnostem:
   caption="Jeden profil směruje všechny modality Project Waddle bez opakování voleb modelů v jednotlivých úkolech."
 />
 
-Přepínač **Desktop Only** (jen počítač) skryje profil na mobilních platformách,
+Přepínač **Jen pro počítač** skryje profil na mobilních platformách,
 což se hodí, pokud závisí na modelu dostupném pouze z pracovní stanice.
 Připnutí zařízení slouží pro automatické zpracování synchronizovaného zvuku:
 připínej jen zařízení, které nabízí poskytovatele potřebné profilem. Bez
@@ -104,7 +107,7 @@ nejrychlejší možnost.
 <ManualScreenshot
   caseId="ai/profile-picker"
   alt="Editor kategorie Tučňáčí provoz s dialogem profilů Velení Project Waddle, Obydlí přednostně místně a Rybí diplomacie"
-  caption="Označení Desktop Only zviditelňuje platformní omezení před výběrem výchozího profilu kategorie."
+  caption="Označení Jen pro počítač zviditelňuje platformní omezení před výběrem výchozího profilu kategorie."
 />
 
 ## Starší cesta profilu

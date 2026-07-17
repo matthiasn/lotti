@@ -12,6 +12,7 @@ class WidgetTestBench extends StatelessWidget {
     this.overrides = const [],
     this.theme,
     this.mediaQueryData,
+    this.locale,
     this.surfaceConstraints,
     super.key,
   });
@@ -20,6 +21,7 @@ class WidgetTestBench extends StatelessWidget {
   final List<Override> overrides;
   final ThemeData? theme;
   final MediaQueryData? mediaQueryData;
+  final Locale? locale;
 
   /// Override the inner ConstrainedBox that wraps [child]. Defaults to
   /// `BoxConstraints(minHeight: 800, minWidth: 800)` so most widget tests
@@ -49,6 +51,7 @@ class WidgetTestBench extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: locale,
           home: Scaffold(
             body: ConstrainedBox(
               constraints: constraints,
