@@ -18,6 +18,7 @@ aplikace bez samostatné lokalizační změny.
 | --- | --- | --- |
 | Nahrávání zvuku | `Speech Recognition` | Text zaškrtávacího pole je ve widgetu pevně anglicky, a proto zůstává anglický také v české variantě aplikace. |
 | Nahrávání zvuku | `STOP` | Popisek akce zastavení nahrávání je ve widgetu pevně anglicky, a proto se v české variantě aplikace nepřeloží. |
+| Uložené přepisy | `Vyberte jazyk`, `English`, `Lang`, `Model` | Výběr jazyka používá formální oslovení a anglické názvy voleb i popisky metadat. To neodpovídá neformální češtině zbytku aplikace. |
 | Co je nového | `NEW` | Označení nejnovější verze v hlavním banneru je pevně anglicky. |
 | Metriky Sync | `Top KPIs`, `Processed` | Oba popisky grafů jsou v metrickém widgetu pevně anglicky. |
 | Metriky průvodce | `Reached real aha` | Interní název události zůstává v českém pohledu anglicky. |
@@ -35,6 +36,7 @@ aplikace bez samostatné lokalizační změny.
 | Nastavení AI – profily | `Inference Profiles`, `Edit Profile`, `Thinking`, `Image Recognition`, `Transcription`, `Image Generation` | Na několika obrazovkách profilů inference zůstávají nadpisy a názvy pozic anglicky. Je potřeba rozlišit modelová ID od běžných ovládacích prvků a přeložit druhé z nich. |
 | Nastavení agentů | `Agents`, `Stats`, `Agent Templates`, `Instances`, `Due` | Kromě dříve zaznamenaného titulku nastavení zůstávají anglické i názvy hlavních záložek a stavů. Na české obrazovce působí jako neúplná lokalizace. |
 | Kontroly šablon a duší agentů | `Current Proposal`, `Session History`, `Start Conversation`, `Edit Template` | Ovládací prvky a názvy sekcí pro individuální kontroly agentů se ve snímcích zobrazují anglicky. S výrazy „Duše 1-on-1“ vedle nich vzniká směs tří stylů. |
+| Časová osa Daily OS | `Přejeď na skutečnost` | Popisek gesta působí jako doslovný překlad a není jasné, že má přepnout z plánované na zaznamenanou stopu. Přirozenější by byl směr typu „Přepni na skutečný čas“. |
 
 Tyto body se v PR příručky neopravují v lokalizaci aplikace. Slouží jako
 konkrétní podklad pro pozdější samostatnou lokalizační práci.
