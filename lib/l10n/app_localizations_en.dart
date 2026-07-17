@@ -3027,19 +3027,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable this to automatically resend failed attachment uploads when the connection is restored.';
 
   @override
-  String get configFlagShowSidebarWakeQueue => 'Show sidebar wake queue';
-
-  @override
-  String get configFlagShowSidebarWakeQueueDescription =>
-      'Show the inline Wake Queue above Settings — header, the next two pending wakes with countdowns, and a link to the full list.';
-
-  @override
   String get configFlagShowSyncActivityIndicator =>
       'Show sync activity indicator';
 
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
-      'Show live sync activity in the sidebar — a tx/rx LED strip with outbox and inbox depth.';
+      'Show a quiet sync status in the sidebar; queue counts appear only while work is pending.';
 
   @override
   String get conflictApplyButton => 'Apply';
@@ -8983,7 +8976,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingThemingLight => 'Light Theme';
 
   @override
-  String get sidebarActiveSectionTitle => 'Active';
+  String get sidebarActiveSectionTitle => 'Activity';
+
+  @override
+  String get sidebarActivityCollapseTooltip => 'Collapse activity';
+
+  @override
+  String get sidebarActivityExpandTooltip => 'Expand activity';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Recording';
@@ -9875,10 +9874,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksSavedFiltersEdit => 'Edit';
 
   @override
-  String get tasksSavedFiltersGroupSemantics => 'Saved filters';
+  String get tasksSavedFiltersFilterNameLabel => 'Filter name';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Saved';
+  String get tasksSavedFiltersGroupSemantics => 'Task filters';
+
+  @override
+  String get tasksSavedFiltersManageTooltip => 'Manage task filters';
+
+  @override
+  String get tasksSavedFiltersRailButton => 'Filters';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {
@@ -9886,24 +9891,42 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Save filter';
+  String get tasksSavedFiltersReorderHelper =>
+      'Drag to set the order. The first five filters appear in the sidebar.';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Save current filter as…';
+  String get tasksSavedFiltersSaveAsNewButtonLabel => 'Save as new…';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewDescription =>
+      'Keep the existing filter unchanged and create a separate one.';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewTitle => 'Save as a new filter';
+
+  @override
+  String get tasksSavedFiltersSaveButtonLabel => 'Save filter…';
+
+  @override
+  String get tasksSavedFiltersSaveChoiceIntro =>
+      'Choose whether to update the saved filter or create a separate one.';
+
+  @override
+  String get tasksSavedFiltersSaveChoiceTitle => 'Save filter';
+
+  @override
+  String get tasksSavedFiltersSaveCurrentAs => 'Save current filter…';
+
+  @override
+  String get tasksSavedFiltersSaveError =>
+      'Couldn\'t save this filter. Try again.';
+
+  @override
+  String get tasksSavedFiltersSavePageHelper =>
+      'Give this filter a short name. You can reorder it later in Task filters.';
 
   @override
   String get tasksSavedFiltersSavePopupCancel => 'Cancel';
-
-  @override
-  String tasksSavedFiltersSavePopupHelper(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count filters active. Saved to sidebar under Tasks.',
-      one: '1 filter active. Saved to sidebar under Tasks.',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get tasksSavedFiltersSavePopupHint => 'e.g. Blocked or on hold';
@@ -9915,7 +9938,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksSavedFiltersSavePopupTitle => 'Name this filter';
 
   @override
-  String get tasksSavedFiltersSheetTitle => 'Saved filters';
+  String get tasksSavedFiltersSheetTitle => 'Task filters';
 
   @override
   String get tasksSavedFiltersShowLess => 'Show fewer';
@@ -9941,6 +9964,16 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get tasksSavedFiltersUpdateButtonLabel => 'Update filter';
+
+  @override
+  String get tasksSavedFiltersUpdateExistingDescription =>
+      'Replace its saved criteria with the current filter configuration.';
+
+  @override
+  String get tasksSavedFiltersUpdateExistingTitle => 'Update existing filter';
 
   @override
   String get tasksSavedFilterToastDeleted => 'Filter deleted';

@@ -88,7 +88,6 @@ void main() {
         // intentionally pulled.
         dailyOsOnboardingEnabledFlag: false,
         showSyncActivityIndicatorFlag: false,
-        showSidebarWakeQueueFlag: false,
       };
 
       for (final entry in defaults.entries) {

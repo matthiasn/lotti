@@ -9,7 +9,7 @@ import 'package:lotti/utils/color.dart';
 /// Resolves the leading-dot colour for a saved filter: the colour of its first
 /// selected category that still resolves to a non-empty hex (deleted or
 /// colourless categories are skipped), or null when the filter selects no
-/// category. Mirrors the desktop `SavedTaskFilterRow` dot resolution.
+/// category. Shared by the desktop and mobile task-pane rail.
 Color? savedFilterCategoryColor(SavedTaskFilter filter) {
   final cache = getIt<EntitiesCacheService>();
   for (final id in filter.filter.selectedCategoryIds) {
@@ -35,7 +35,7 @@ String? savedFilterCategoryName(SavedTaskFilter filter) {
 ///
 /// Anatomy (left → right): an optional [categoryColor] dot, an ellipsizing
 /// [label], and a stable-width trailing count slot. There is exactly **one**
-/// disclosure chevron in the rail and it lives on the "Saved" button alone —
+/// disclosure chevron in the rail and it lives on the "Filters" button alone —
 /// the pill carries no chevron of its own, so every pill reads as a single
 /// predictable tap target rather than a chip with an ambiguous caret. There is
 /// also deliberately **no in-pill selection check** — the active state is
@@ -204,6 +204,8 @@ class SavedFilterCountText extends StatelessWidget {
     required this.count,
     this.selected = false,
     this.minWidth,
+    this.prominent = false,
+    this.textAlign = TextAlign.end,
     super.key,
   });
 
@@ -218,6 +220,15 @@ class SavedFilterCountText extends StatelessWidget {
   /// Reserved column min-width. Defaults to `step7` (the rail pill slot); the
   /// sheet passes `step8` for its slightly wider comparison column.
   final double? minWidth;
+
+  /// Lifts the count to the design-system body-small token for count-first
+  /// desktop queue monitors. The default caption treatment remains unchanged
+  /// for mobile pills and sheet columns.
+  final bool prominent;
+
+  /// Alignment inside the reserved count slot. Queue-monitor tiles center the
+  /// metric; pills and sheet columns keep the default trailing alignment.
+  final TextAlign textAlign;
 
   @override
   Widget build(BuildContext context) {
@@ -243,14 +254,19 @@ class SavedFilterCountText extends StatelessWidget {
       constraints: BoxConstraints(minWidth: minWidth ?? tokens.spacing.step7),
       child: Text(
         text,
-        textAlign: TextAlign.end,
+        textAlign: textAlign,
         maxLines: 1,
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: color,
-          height: 1,
-          fontWeight: FontWeight.w600,
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ),
+        style:
+            (prominent
+                    ? tokens.typography.styles.body.bodySmall
+                    : tokens.typography.styles.others.caption)
+                .copyWith(
+                  color: color,
+                  fontWeight: prominent
+                      ? tokens.typography.weight.bold
+                      : tokens.typography.weight.semiBold,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
       ),
     );
   }

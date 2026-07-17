@@ -13,6 +13,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
@@ -770,26 +771,24 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
       await tester.pumpAndSettle();
 
-      // Tap the Save button to open the popup.
+      // Save navigates within the existing modal instead of opening a popup.
       final saveBtn = find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey);
       await tester.ensureVisible(saveBtn);
       await tester.tap(saveBtn);
       await tester.pumpAndSettle();
 
-      // Type a name in the popup text field.
-      final field = find.byKey(
-        DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
+      final field = find.descendant(
+        of: find.byKey(DesignSystemFilterSavePageKeys.nameField),
+        matching: find.byType(TextField),
       );
       await tester.enterText(field, 'My Filter');
       await tester.pump();
 
-      // Commit via the popup commit button.
-      final commitBtn = find.byKey(
-        DesignSystemTaskFilterActionBar.saveNamePopupCommitKey,
-      );
+      final commitBtn = find.byKey(DesignSystemFilterSavePageKeys.commit);
       await tester.ensureVisible(commitBtn);
       await tester.tap(commitBtn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Modal should have closed (apply + save + dismiss).
       expect(find.text('Filter tasks'), findsNothing);
@@ -818,15 +817,14 @@ void main() {
         await tester.tap(saveBtn);
         await tester.pumpAndSettle();
 
-        final field = find.byKey(
-          DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
+        final field = find.descendant(
+          of: find.byKey(DesignSystemFilterSavePageKeys.nameField),
+          matching: find.byType(TextField),
         );
         await tester.enterText(field, 'Error Filter');
         await tester.pump();
 
-        final commitBtn = find.byKey(
-          DesignSystemTaskFilterActionBar.saveNamePopupCommitKey,
-        );
+        final commitBtn = find.byKey(DesignSystemFilterSavePageKeys.commit);
         await tester.ensureVisible(commitBtn);
         await tester.tap(commitBtn);
         await tester.pumpAndSettle();
@@ -840,6 +838,11 @@ void main() {
             subDomain: 'saveFilter',
           ),
         ).called(1);
+
+        expect(
+          find.text("Couldn't save this filter. Try again."),
+          findsOneWidget,
+        );
 
         // Close the modal so it doesn't leak into subsequent tests.
         tester.state<NavigatorState>(find.byType(Navigator).last).pop();
@@ -1193,9 +1196,15 @@ void main() {
       );
     }
 
-    Future<void> openModalAndSave(
+    Finder saveNameTextField() => find.descendant(
+      of: find.byKey(DesignSystemFilterSavePageKeys.nameField),
+      matching: find.byType(TextField),
+    );
+
+    Future<void> openModalAndCreate(
       WidgetTester tester, {
       required String typedName,
+      bool chooseSaveAsNew = false,
     }) async {
       await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
       await tester.pumpAndSettle();
@@ -1205,14 +1214,37 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(
-        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
-        typedName,
-      );
+      if (chooseSaveAsNew) {
+        expect(
+          find.byKey(DesignSystemFilterSavePageKeys.choicePage),
+          findsOneWidget,
+        );
+        await tester.tap(
+          find.byKey(DesignSystemFilterSavePageKeys.saveAsNew),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      await tester.enterText(saveNameTextField(), typedName);
       await tester.pump();
+      await tester.tap(find.byKey(DesignSystemFilterSavePageKeys.commit));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+
+    Future<void> openModalAndUpdate(WidgetTester tester) async {
+      await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+      await tester.pumpAndSettle();
       await tester.tap(
-        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
+        find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
       );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(DesignSystemFilterSavePageKeys.choicePage),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(DesignSystemFilterSavePageKeys.update));
       await tester.pumpAndSettle();
     }
 
@@ -1235,7 +1267,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await openModalAndSave(tester, typedName: '  My filter  ');
+        await openModalAndCreate(tester, typedName: '  My filter  ');
 
         expect(recorder.creates, hasLength(1));
         expect(recorder.creates.single.name, 'My filter');
@@ -1253,7 +1285,7 @@ void main() {
     );
 
     testWidgets(
-      'updates the active saved filter when typed name matches the active name',
+      'updates the active saved filter without asking for its name again',
       (tester) async {
         final recorder = _RecordingSavedFiltersController(
           const [
@@ -1285,7 +1317,7 @@ void main() {
         await container.read(savedTaskFiltersControllerProvider.future);
         await tester.pumpAndSettle();
 
-        await openModalAndSave(tester, typedName: 'In progress');
+        await openModalAndUpdate(tester);
 
         expect(recorder.updates, hasLength(1));
         expect(recorder.updates.single.id, 'sv-1');
@@ -1309,7 +1341,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await openModalAndSave(tester, typedName: 'Whatever');
+        await openModalAndCreate(tester, typedName: 'Whatever');
 
         expect(recorder.creates, hasLength(1));
         expect(recorder.creates.single.name, 'Whatever');
@@ -1318,7 +1350,7 @@ void main() {
     );
 
     testWidgets(
-      'creates a new saved filter when typed name differs from active name',
+      'Save as new explicitly preserves the active filter and creates another',
       (tester) async {
         final recorder = _RecordingSavedFiltersController(
           const [
@@ -1350,7 +1382,11 @@ void main() {
         await container.read(savedTaskFiltersControllerProvider.future);
         await tester.pumpAndSettle();
 
-        await openModalAndSave(tester, typedName: 'Different');
+        await openModalAndCreate(
+          tester,
+          typedName: 'Different',
+          chooseSaveAsNew: true,
+        );
 
         expect(recorder.creates, hasLength(1));
         expect(recorder.creates.single.name, 'Different');
@@ -1382,15 +1418,11 @@ void main() {
           find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
         );
         await tester.pumpAndSettle();
-        await tester.enterText(
-          find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
-          'Edited',
-        );
+        await tester.enterText(saveNameTextField(), 'Edited');
         await tester.pump();
-        await tester.tap(
-          find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
-        );
-        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(DesignSystemFilterSavePageKeys.commit));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
         expect(recorder.creates, hasLength(1));
         expect(recorder.creates.single.name, 'Edited');

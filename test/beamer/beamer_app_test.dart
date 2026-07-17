@@ -11,7 +11,6 @@ import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -26,7 +25,6 @@ import 'package:lotti/features/design_system/components/navigation/design_system
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
@@ -41,6 +39,7 @@ import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
@@ -53,8 +52,8 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
+import 'package:lotti/widgets/misc/sidebar_activity_summary.dart';
 import 'package:lotti/widgets/misc/sidebar_audio_recording_section.dart';
 import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
@@ -307,10 +306,9 @@ Future<void> _pumpAppScreen(
         shouldAutoShowDailyOsOnboardingProvider.overrideWith(
           (ref) async => false,
         ),
-        // The Tasks destination's expanded subtree (TasksSavedFiltersTree)
-        // watches saved-filter providers. Override them with safe defaults so
-        // this test doesn't transitively trigger the real JournalPageController
-        // build chain (which needs Fts5Db etc. that aren't wired up here).
+        // Saved-filter surfaces watch these providers.
+        // Override them with safe defaults so this test doesn't transitively
+        // trigger the real JournalPageController build chain.
         savedTaskFiltersControllerProvider.overrideWith(
           () => _StubSavedTaskFiltersController(const []),
         ),
@@ -1341,6 +1339,7 @@ void main() {
       );
 
       expect(find.byType(DesktopNavigationSidebar), findsOneWidget);
+      expect(find.byType(SidebarSavedTaskFilters), findsOneWidget);
       expect(find.byType(DesignSystemBottomNavigationBar), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -1589,8 +1588,8 @@ void main() {
     });
 
     testWidgets(
-      'desktop layout has no floating TimeRecordingIndicator — '
-      'the running timer lives in the sidebar instead',
+      'desktop layout has no floating TimeRecordingIndicator and wires the '
+      'compact activity summary into the sidebar',
       (tester) async {
         final mockNavService = MockNavService();
         await _stubNavService(
@@ -1611,19 +1610,13 @@ void main() {
         );
 
         // The legacy bottom-anchored TimeRecordingIndicator must not appear in
-        // the desktop layout; timer and audio recording cards render inside
-        // the desktop sidebar's aboveSettings slot.
+        // the desktop layout. Transient systems share the compact summary.
         expect(find.byType(TimeRecordingIndicator), findsNothing);
         expect(
-          find.byType(SidebarTimerSection),
+          find.byType(SidebarActivitySummary),
           findsOneWidget,
           reason:
-              'SidebarTimerSection should be wired into the desktop sidebar.',
-        );
-        expect(
-          find.byType(SidebarAudioRecordingSection),
-          _isFlatpakTestHost() ? findsNothing : findsOneWidget,
-          reason: 'Audio section is hidden in Flatpak builds.',
+              'SidebarActivitySummary should be wired into the desktop sidebar.',
         );
 
         await tester.pumpWidget(const SizedBox.shrink());
@@ -2750,9 +2743,9 @@ void main() {
     );
   });
 
-  group('AppScreen desktop sidebar aboveSettings gaps', () {
+  group('AppScreen desktop sidebar activity summary', () {
     testWidgets(
-      'inserts timer→wakes gap when wakes visible and a timer is running',
+      'consolidates timer, recording, and agents into one persistent surface',
       (tester) async {
         final mockNavService = MockNavService();
         await _stubNavService(
@@ -2763,7 +2756,6 @@ void main() {
           isHabitsEnabled: () => true,
           isDashboardsEnabled: () => true,
         );
-        // A running timer makes hasTimer (and therefore hasBelowWake) true.
         await _registerAppScreenGetIt(
           mockNavService,
           runningTimer: _runningTimerEntry,
@@ -2775,11 +2767,6 @@ void main() {
           navService: mockNavService,
           viewportSize: _desktopViewportSize,
           extraOverrides: [
-            // Enable the wake-queue section and give it an ongoing wake so
-            // sidebarWakeQueueHasVisibleContent → true.
-            configFlagProvider(showSidebarWakeQueueFlag).overrideWith(
-              (ref) => Stream<bool>.value(true),
-            ),
             ongoingWakeRecordsProvider.overrideWith(
               (ref) async => [
                 OngoingWakeRecord(
@@ -2791,61 +2778,9 @@ void main() {
             ),
             pendingWakeRecordsProvider.overrideWith((ref) async => const []),
           ],
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // The wake card renders last (live-first order: audio → timer →
-        // wakes), so with a running timer above it the timer→wakes spacer
-        // takes its non-zero (step4) branch.
-        expect(find.byType(SidebarWakeQueue), findsOneWidget);
-        expect(find.byType(SidebarTimerSection), findsOneWidget);
-        final tokens = tester
-            .element(find.byType(SidebarWakeQueue))
-            .designTokens;
-        final gap = _aboveSettingsGapHeight(
-          tester,
-          belowChildType: SidebarWakeQueue,
-        );
-        expect(gap, tokens.spacing.step4);
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
-      'inserts audio→timer gap when recording and a timer is running',
-      (tester) async {
-        // Audio recording is hidden on Flatpak builds, so audioVisible can
-        // never be true there — the gap stays at 0. Skip on Flatpak hosts.
-        if (_isFlatpakTestHost()) {
-          return;
-        }
-
-        final mockNavService = MockNavService();
-        await _stubNavService(
-          mockNavService,
-          indexStream: Stream.value(0),
-          isProjectsEnabled: () => true,
-          isDailyOsEnabled: () => true,
-          isHabitsEnabled: () => true,
-          isDashboardsEnabled: () => true,
-        );
-        await _registerAppScreenGetIt(
-          mockNavService,
-          runningTimer: _runningTimerEntry,
-        );
-        addTearDown(tearDownTestGetIt);
-
-        await _pumpAppScreen(
-          tester,
-          navService: mockNavService,
-          viewportSize: _desktopViewportSize,
-          // Active recording (modal not visible) → audioVisible == true.
           audioRecorderState: AudioRecorderState(
             status: AudioRecorderStatus.recording,
-            progress: Duration.zero,
+            progress: const Duration(seconds: 8),
             vu: -20,
             dBFS: -40,
             showIndicator: true,
@@ -2855,14 +2790,35 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        final tokens = tester
-            .element(find.byType(SidebarAudioRecordingSection))
-            .designTokens;
-        final gap = _aboveSettingsGapHeight(
-          tester,
-          belowChildType: SidebarTimerSection,
+        expect(
+          find.byKey(SidebarActivitySummaryKeys.root),
+          findsOneWidget,
         );
-        expect(gap, tokens.spacing.step4);
+        expect(
+          find.byKey(SidebarActivitySummaryKeys.timer),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(SidebarActivitySummaryKeys.agents),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(SidebarActivitySummaryKeys.audio),
+          _isFlatpakTestHost() ? findsNothing : findsOneWidget,
+        );
+        expect(find.byType(SidebarTimerSection), findsNothing);
+        expect(find.byType(SidebarWakeQueue), findsNothing);
+        expect(find.byType(SidebarAudioRecordingSection), findsNothing);
+
+        await tester.tap(find.byKey(SidebarActivitySummaryKeys.root));
+        await tester.pump(SidebarTimerSection.animationDuration);
+        expect(find.byKey(SidebarActivitySummaryKeys.details), findsOneWidget);
+        expect(find.byType(SidebarTimerSection), findsOneWidget);
+        expect(find.byType(SidebarWakeQueue), findsOneWidget);
+        expect(
+          find.byType(SidebarAudioRecordingSection),
+          _isFlatpakTestHost() ? findsNothing : findsOneWidget,
+        );
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -2870,14 +2826,8 @@ void main() {
     );
 
     testWidgets(
-      'collapses both gaps when only the wake card is visible',
+      'always shows the agent metric when agents are the sole activity',
       (tester) async {
-        // The audio section widget is absent on Flatpak builds, so the
-        // gap lookup below SidebarAudioRecordingSection cannot run there.
-        if (_isFlatpakTestHost()) {
-          return;
-        }
-
         final mockNavService = MockNavService();
         await _stubNavService(
           mockNavService,
@@ -2887,8 +2837,6 @@ void main() {
           isHabitsEnabled: () => true,
           isDashboardsEnabled: () => true,
         );
-        // No running timer and (default) stopped recorder → hasBelowWake
-        // is false even though the wake card itself is visible.
         await _registerAppScreenGetIt(mockNavService);
         addTearDown(tearDownTestGetIt);
 
@@ -2897,9 +2845,6 @@ void main() {
           navService: mockNavService,
           viewportSize: _desktopViewportSize,
           extraOverrides: [
-            configFlagProvider(showSidebarWakeQueueFlag).overrideWith(
-              (ref) => Stream<bool>.value(true),
-            ),
             ongoingWakeRecordsProvider.overrideWith(
               (ref) async => [
                 OngoingWakeRecord(
@@ -2915,24 +2860,21 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Wake card is rendered, but with no timer and no recording both
-        // spacers — audio→timer (above the timer) and timer→wakes (above the
-        // wake card) — stay on their zero-height branch.
+        expect(
+          find.byKey(SidebarActivitySummaryKeys.root),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(SidebarActivitySummaryKeys.agents),
+          findsOneWidget,
+        );
+        expect(find.byKey(SidebarActivitySummaryKeys.timer), findsNothing);
+        expect(find.byKey(SidebarActivitySummaryKeys.audio), findsNothing);
+
+        await tester.tap(find.byKey(SidebarActivitySummaryKeys.root));
+        await tester.pump(SidebarTimerSection.animationDuration);
         expect(find.byType(SidebarWakeQueue), findsOneWidget);
-        expect(
-          _aboveSettingsGapHeight(
-            tester,
-            belowChildType: SidebarTimerSection,
-          ),
-          0,
-        );
-        expect(
-          _aboveSettingsGapHeight(
-            tester,
-            belowChildType: SidebarWakeQueue,
-          ),
-          0,
-        );
+        expect(find.text('Running wake'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -2940,12 +2882,8 @@ void main() {
     );
 
     testWidgets(
-      'collapses the audio→timer gap when a timer runs without a recording',
+      'collapses the activity surface when every system is idle',
       (tester) async {
-        if (_isFlatpakTestHost()) {
-          return;
-        }
-
         final mockNavService = MockNavService();
         await _stubNavService(
           mockNavService,
@@ -2955,15 +2893,9 @@ void main() {
           isHabitsEnabled: () => true,
           isDashboardsEnabled: () => true,
         );
-        await _registerAppScreenGetIt(
-          mockNavService,
-          runningTimer: _runningTimerEntry,
-        );
+        await _registerAppScreenGetIt(mockNavService);
         addTearDown(tearDownTestGetIt);
 
-        // Default stopped recorder → audioVisible == false despite the
-        // running timer, so the audio→timer spacer stays at zero. The wake
-        // queue flag is off, so its section (and gap) never renders.
         await _pumpAppScreen(
           tester,
           navService: mockNavService,
@@ -2972,15 +2904,8 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byType(SidebarWakeQueue), findsNothing);
-        expect(find.byType(SidebarTimerSection), findsOneWidget);
-        expect(
-          _aboveSettingsGapHeight(
-            tester,
-            belowChildType: SidebarTimerSection,
-          ),
-          0,
-        );
+        expect(find.byType(SidebarActivitySummary), findsOneWidget);
+        expect(find.byKey(SidebarActivitySummaryKeys.root), findsNothing);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -3252,35 +3177,6 @@ void main() {
       await tester.pump();
     });
   });
-}
-
-/// Reads the height of the animated gap [SizedBox] that sits immediately above
-/// [belowChildType] inside the desktop sidebar's `aboveSettings` column. The gap
-/// is an `AnimatedSize` wrapping a single `SizedBox`, and it is the element that
-/// directly precedes [belowChildType] in the column's `children` list.
-double _aboveSettingsGapHeight(
-  WidgetTester tester, {
-  required Type belowChildType,
-}) {
-  // The aboveSettings column is the one that contains the SidebarTimerSection
-  // and uses MainAxisSize.min with a stretch cross-axis.
-  final column = tester
-      .widgetList<Column>(find.byType(Column))
-      .firstWhere(
-        (c) =>
-            c.mainAxisSize == MainAxisSize.min &&
-            c.crossAxisAlignment == CrossAxisAlignment.stretch &&
-            c.children.any((w) => w is SidebarTimerSection),
-      );
-
-  final children = column.children;
-  final sectionIndex = children.indexWhere(
-    (w) => w.runtimeType == belowChildType,
-  );
-  // The gap AnimatedSize precedes the section directly.
-  final gapWidget = children[sectionIndex - 1] as AnimatedSize;
-  final sizedBox = gapWidget.child! as SizedBox;
-  return sizedBox.height ?? 0;
 }
 
 class _ArbitraryLocation extends BeamLocation<BeamState> {

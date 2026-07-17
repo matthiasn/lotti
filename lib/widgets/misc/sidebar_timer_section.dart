@@ -11,23 +11,17 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/misc/sidebar_live_card.dart';
 import 'package:lotti/widgets/misc/timer_navigation.dart';
 
-/// Inline timer panel rendered in the desktop sidebar's `aboveSettings`
-/// slot whenever a time-recording session is active.
+/// Detailed timer panel rendered from the expanded desktop sidebar activity
+/// disclosure whenever a time-recording session is active.
 ///
 /// Tapping anywhere on the body navigates to the running task (or the
 /// timer's journal entry, if not linked to a task). Tapping the stop
 /// button stops the timer.
 ///
-/// Visibility is a pure function of whether a timer is running: the card
-/// stays mounted for the entire lifetime of a session and collapses only
-/// when no timer is running. It is deliberately *not* suppressed when the
-/// running task is open in the task-details pane, nor when the user
-/// navigates to another tab. The running indicator in the task detail
-/// action bar and this sidebar card may both be on screen at once — that
-/// duplication is intentional. A single, always-present sidebar surface
-/// guarantees the user never loses the elapsed-time readout or the
-/// one-tap path back to the running task, no matter where they are in the
-/// app.
+/// Visibility is a pure function of whether a timer is running: while the
+/// activity disclosure is open, the card collapses only when the session stops.
+/// The persistent `SidebarActivitySummary` owns the always-available elapsed
+/// readout while details are collapsed.
 ///
 /// Reactivity:
 ///

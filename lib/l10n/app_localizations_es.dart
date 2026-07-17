@@ -3083,20 +3083,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'Activar para reenviar automáticamente las cargas de archivos adjuntos fallidas cuando se restablezca la conexión.';
 
   @override
-  String get configFlagShowSidebarWakeQueue =>
-      'Mostrar la cola de despertares en la barra lateral';
-
-  @override
-  String get configFlagShowSidebarWakeQueueDescription =>
-      'Muestra la cola de despertares encima de Ajustes — la cabecera, los dos próximos despertares con cuenta atrás y un enlace a la lista completa.';
-
-  @override
   String get configFlagShowSyncActivityIndicator =>
       'Mostrar indicador de actividad de sincronización';
 
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
-      'Muestra la actividad de sincronización en directo en la barra lateral — una franja LED tx/rx con la profundidad de bandejas de entrada y salida.';
+      'Muestra un estado de sincronización discreto en la barra lateral; los recuentos de cola aparecen solo cuando hay trabajo pendiente.';
 
   @override
   String get conflictApplyButton => 'Aplicar';
@@ -9187,7 +9179,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingThemingLight => 'Tema claro';
 
   @override
-  String get sidebarActiveSectionTitle => 'Activo';
+  String get sidebarActiveSectionTitle => 'Actividad';
+
+  @override
+  String get sidebarActivityCollapseTooltip => 'Contraer actividad';
+
+  @override
+  String get sidebarActivityExpandTooltip => 'Expandir actividad';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Grabación';
@@ -10097,10 +10095,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksSavedFiltersEdit => 'Editar';
 
   @override
-  String get tasksSavedFiltersGroupSemantics => 'Filtros guardados';
+  String get tasksSavedFiltersFilterNameLabel => 'Nombre del filtro';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Guardados';
+  String get tasksSavedFiltersGroupSemantics => 'Filtros de tareas';
+
+  @override
+  String get tasksSavedFiltersManageTooltip => 'Gestionar filtros de tareas';
+
+  @override
+  String get tasksSavedFiltersRailButton => 'Filtros';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {
@@ -10108,25 +10112,42 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Guardar filtro';
+  String get tasksSavedFiltersReorderHelper =>
+      'Arrastra para ordenar. Los primeros cinco filtros aparecen en la barra lateral.';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Guardar el filtro actual como…';
+  String get tasksSavedFiltersSaveAsNewButtonLabel => 'Guardar como nuevo…';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewDescription =>
+      'Mantén el filtro existente sin cambios y crea uno independiente.';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewTitle => 'Guardar como filtro nuevo';
+
+  @override
+  String get tasksSavedFiltersSaveButtonLabel => 'Guardar filtro…';
+
+  @override
+  String get tasksSavedFiltersSaveChoiceIntro =>
+      'Elige si quieres actualizar el filtro guardado o crear uno independiente.';
+
+  @override
+  String get tasksSavedFiltersSaveChoiceTitle => 'Guardar filtro';
+
+  @override
+  String get tasksSavedFiltersSaveCurrentAs => 'Guardar el filtro actual…';
+
+  @override
+  String get tasksSavedFiltersSaveError =>
+      'No se pudo guardar este filtro. Inténtalo de nuevo.';
+
+  @override
+  String get tasksSavedFiltersSavePageHelper =>
+      'Ponle un nombre corto al filtro. Después puedes reordenarlo en Filtros de tareas.';
 
   @override
   String get tasksSavedFiltersSavePopupCancel => 'Cancelar';
-
-  @override
-  String tasksSavedFiltersSavePopupHelper(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other:
-          '$count filtros activos. Guardados en la barra lateral, bajo Tareas.',
-      one: '1 filtro activo. Guardado en la barra lateral, bajo Tareas.',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get tasksSavedFiltersSavePopupHint => 'p. ej. Bloqueadas o en pausa';
@@ -10139,7 +10160,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Asigna un nombre a este filtro';
 
   @override
-  String get tasksSavedFiltersSheetTitle => 'Filtros guardados';
+  String get tasksSavedFiltersSheetTitle => 'Filtros de tareas';
 
   @override
   String get tasksSavedFiltersShowLess => 'Mostrar menos';
@@ -10165,6 +10186,17 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get tasksSavedFiltersUpdateButtonLabel => 'Actualizar filtro';
+
+  @override
+  String get tasksSavedFiltersUpdateExistingDescription =>
+      'Sustituye sus criterios guardados por la configuración actual del filtro.';
+
+  @override
+  String get tasksSavedFiltersUpdateExistingTitle =>
+      'Actualizar filtro existente';
 
   @override
   String get tasksSavedFilterToastDeleted => 'Filtro eliminado';

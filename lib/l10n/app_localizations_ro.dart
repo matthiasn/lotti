@@ -3091,20 +3091,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.';
 
   @override
-  String get configFlagShowSidebarWakeQueue =>
-      'Afișează coada de treziri în bara laterală';
-
-  @override
-  String get configFlagShowSidebarWakeQueueDescription =>
-      'Afișează coada de treziri deasupra Setărilor — anteturile, următoarele două treziri cu numărătoare inversă și un link către lista completă.';
-
-  @override
   String get configFlagShowSyncActivityIndicator =>
       'Afișează indicatorul de activitate de sincronizare';
 
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
-      'Afișează activitatea de sincronizare live în bara laterală — o bandă LED tx/rx cu adâncimea cozilor de ieșire și intrare.';
+      'Afișează discret starea sincronizării în bara laterală; numerele din coadă apar doar când există operații în așteptare.';
 
   @override
   String get conflictApplyButton => 'Aplică';
@@ -9213,7 +9205,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingThemingLight => 'Temă luminoasă';
 
   @override
-  String get sidebarActiveSectionTitle => 'Active';
+  String get sidebarActiveSectionTitle => 'Activitate';
+
+  @override
+  String get sidebarActivityCollapseTooltip => 'Restrângeți activitatea';
+
+  @override
+  String get sidebarActivityExpandTooltip => 'Extindeți activitatea';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Înregistrare';
@@ -10124,36 +10122,59 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksSavedFiltersEdit => 'Editează';
 
   @override
-  String get tasksSavedFiltersGroupSemantics => 'Filtre salvate';
+  String get tasksSavedFiltersFilterNameLabel => 'Numele filtrului';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Salvate';
+  String get tasksSavedFiltersGroupSemantics => 'Filtre de sarcini';
+
+  @override
+  String get tasksSavedFiltersManageTooltip => 'Gestionați filtrele de sarcini';
+
+  @override
+  String get tasksSavedFiltersRailButton => 'Filtre';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {
-    return 'Redenumește $name';
+    return 'Redenumiți $name';
   }
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Salvați filtrul';
+  String get tasksSavedFiltersReorderHelper =>
+      'Trageți pentru a stabili ordinea. Primele cinci filtre apar în bara laterală.';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewButtonLabel => 'Salvați ca filtru nou…';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewDescription =>
+      'Păstrați filtrul existent neschimbat și creați unul separat.';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewTitle => 'Salvați ca filtru nou';
+
+  @override
+  String get tasksSavedFiltersSaveButtonLabel => 'Salvați filtrul…';
+
+  @override
+  String get tasksSavedFiltersSaveChoiceIntro =>
+      'Alegeți dacă actualizați filtrul salvat sau creați unul separat.';
+
+  @override
+  String get tasksSavedFiltersSaveChoiceTitle => 'Salvați filtrul';
 
   @override
   String get tasksSavedFiltersSaveCurrentAs => 'Salvați filtrul curent ca…';
 
   @override
-  String get tasksSavedFiltersSavePopupCancel => 'Anulați';
+  String get tasksSavedFiltersSaveError =>
+      'Filtrul nu a putut fi salvat. Încercați din nou.';
 
   @override
-  String tasksSavedFiltersSavePopupHelper(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de filtre active. Salvate în bara laterală, sub Sarcini.',
-      few: '$count filtre active. Salvate în bara laterală, sub Sarcini.',
-      one: '1 filtru activ. Salvat în bara laterală, sub Sarcini.',
-    );
-    return '$_temp0';
-  }
+  String get tasksSavedFiltersSavePageHelper =>
+      'Dați filtrului un nume scurt. Îl puteți reordona ulterior în Filtre de sarcini.';
+
+  @override
+  String get tasksSavedFiltersSavePopupCancel => 'Anulați';
 
   @override
   String get tasksSavedFiltersSavePopupHint => 'ex.: Blocate sau în așteptare';
@@ -10165,7 +10186,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksSavedFiltersSavePopupTitle => 'Denumiți acest filtru';
 
   @override
-  String get tasksSavedFiltersSheetTitle => 'Filtre salvate';
+  String get tasksSavedFiltersSheetTitle => 'Filtre de sarcini';
 
   @override
   String get tasksSavedFiltersShowLess => 'Afișați mai puțin';
@@ -10193,6 +10214,17 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get tasksSavedFiltersUpdateButtonLabel => 'Actualizați filtrul';
+
+  @override
+  String get tasksSavedFiltersUpdateExistingDescription =>
+      'Înlocuiți criteriile salvate cu configurația curentă a filtrului.';
+
+  @override
+  String get tasksSavedFiltersUpdateExistingTitle =>
+      'Actualizați filtrul existent';
 
   @override
   String get tasksSavedFilterToastDeleted => 'Filtru șters';

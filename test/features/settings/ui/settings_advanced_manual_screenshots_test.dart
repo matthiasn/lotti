@@ -68,7 +68,6 @@ const Map<String, bool> _flagValues = {
   enableWhatsNewFlag: true,
   dailyOsOnboardingEnabledFlag: false,
   showSyncActivityIndicatorFlag: true,
-  showSidebarWakeQueueFlag: true,
   enableForkHealingFlag: false,
   logSlowQueriesFlag: false,
 };

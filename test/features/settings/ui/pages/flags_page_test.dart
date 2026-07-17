@@ -24,7 +24,7 @@ import '../../../../widget_test_utils.dart';
 /// derived from `FlagsBody.defaultDisplayedItems`: these tests supply their own
 /// `displayedItems`, and asserting against the production list would make this
 /// a tautology.
-const _displayedFlagCount = 12;
+const _displayedFlagCount = 11;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -96,12 +96,7 @@ void main() {
           ),
           const ConfigFlag(
             name: showSyncActivityIndicatorFlag,
-            description: 'Show live sync activity in the sidebar.',
-            status: false,
-          ),
-          const ConfigFlag(
-            name: showSidebarWakeQueueFlag,
-            description: 'Show the inline Wake Queue in the sidebar.',
+            description: 'Show sync status in the sidebar.',
             status: false,
           ),
           const ConfigFlag(
@@ -341,18 +336,7 @@ void main() {
             icon: Icons.network_check_rounded,
             expectedToggle: const ConfigFlag(
               name: showSyncActivityIndicatorFlag,
-              description: 'Show live sync activity in the sidebar.',
-              status: true,
-            ),
-          ),
-          (
-            name: 'sidebar-wake-queue',
-            title: (m) => m.configFlagShowSidebarWakeQueue,
-            description: (m) => m.configFlagShowSidebarWakeQueueDescription,
-            icon: Icons.alarm_rounded,
-            expectedToggle: const ConfigFlag(
-              name: showSidebarWakeQueueFlag,
-              description: 'Show the inline Wake Queue in the sidebar.',
+              description: 'Show sync status in the sidebar.',
               status: true,
             ),
           ),
@@ -804,12 +788,7 @@ void main() {
             ),
             const ConfigFlag(
               name: showSyncActivityIndicatorFlag,
-              description: 'Show live sync activity in the sidebar.',
-              status: false,
-            ),
-            const ConfigFlag(
-              name: showSidebarWakeQueueFlag,
-              description: 'Show the inline Wake Queue in the sidebar.',
+              description: 'Show sync status in the sidebar.',
               status: false,
             ),
             // Previously uncovered flags:

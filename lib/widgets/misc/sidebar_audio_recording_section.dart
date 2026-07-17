@@ -30,9 +30,9 @@ bool _recordingIsVisible(AudioRecorderState state) {
   return state.status == AudioRecorderStatus.recording && !state.modalVisible;
 }
 
-/// Inline audio recording panel rendered in the desktop sidebar's
-/// `aboveSettings` slot whenever the microphone is active and the modal is
-/// not already open.
+/// Detailed audio recording panel rendered from the expanded desktop sidebar
+/// activity disclosure whenever the microphone is active and the recording
+/// modal is not already open.
 ///
 /// The card shares [SidebarLiveCard] with `SidebarTimerSection`: a soft
 /// accent-tinted card with an accent rail, a leading glyph, the linked title

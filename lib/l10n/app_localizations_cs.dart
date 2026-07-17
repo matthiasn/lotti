@@ -3071,20 +3071,12 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolte toto nastavení pro automatické opětovné odeslání neúspěšného nahrávání příloh po obnovení připojení.';
 
   @override
-  String get configFlagShowSidebarWakeQueue =>
-      'Zobrazit frontu probuzení v postranním panelu';
-
-  @override
-  String get configFlagShowSidebarWakeQueueDescription =>
-      'Zobrazí frontu probuzení nad Nastavením — záhlaví, dvě nejbližší naplánovaná probuzení s odpočtem a odkaz na úplný seznam.';
-
-  @override
   String get configFlagShowSyncActivityIndicator =>
       'Zobrazit indikátor aktivity synchronizace';
 
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
-      'Zobrazit živou aktivitu synchronizace v postranním panelu — tx/rx LED proužek s hloubkou odchozí a příchozí fronty.';
+      'Zobrazí nenápadný stav synchronizace v postranním panelu; počty ve frontě se objeví jen tehdy, když něco čeká.';
 
   @override
   String get conflictApplyButton => 'Použít';
@@ -9153,7 +9145,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingThemingLight => 'Světlé téma';
 
   @override
-  String get sidebarActiveSectionTitle => 'Aktivní';
+  String get sidebarActiveSectionTitle => 'Aktivita';
+
+  @override
+  String get sidebarActivityCollapseTooltip => 'Sbalit aktivitu';
+
+  @override
+  String get sidebarActivityExpandTooltip => 'Rozbalit aktivitu';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Nahrávání';
@@ -10055,10 +10053,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksSavedFiltersEdit => 'Upravit';
 
   @override
-  String get tasksSavedFiltersGroupSemantics => 'Uložené filtry';
+  String get tasksSavedFiltersFilterNameLabel => 'Název filtru';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Uložené';
+  String get tasksSavedFiltersGroupSemantics => 'Filtry úkolů';
+
+  @override
+  String get tasksSavedFiltersManageTooltip => 'Spravovat filtry úkolů';
+
+  @override
+  String get tasksSavedFiltersRailButton => 'Filtry';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {
@@ -10066,25 +10070,42 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Uložit filtr';
+  String get tasksSavedFiltersReorderHelper =>
+      'Přetažením nastavíš pořadí. Prvních pět filtrů se zobrazí v postranním panelu.';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Uložit aktuální filtr jako…';
+  String get tasksSavedFiltersSaveAsNewButtonLabel => 'Uložit jako nový…';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewDescription =>
+      'Ponech stávající filtr beze změny a vytvoř samostatný.';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewTitle => 'Uložit jako nový filtr';
+
+  @override
+  String get tasksSavedFiltersSaveButtonLabel => 'Uložit filtr…';
+
+  @override
+  String get tasksSavedFiltersSaveChoiceIntro =>
+      'Zvol, jestli chceš aktualizovat uložený filtr, nebo vytvořit samostatný.';
+
+  @override
+  String get tasksSavedFiltersSaveChoiceTitle => 'Uložit filtr';
+
+  @override
+  String get tasksSavedFiltersSaveCurrentAs => 'Uložit aktuální filtr…';
+
+  @override
+  String get tasksSavedFiltersSaveError =>
+      'Filtr se nepodařilo uložit. Zkus to znovu.';
+
+  @override
+  String get tasksSavedFiltersSavePageHelper =>
+      'Dej filtru krátký název. Pořadí můžeš později změnit ve Filtrech úkolů.';
 
   @override
   String get tasksSavedFiltersSavePopupCancel => 'Zrušit';
-
-  @override
-  String tasksSavedFiltersSavePopupHelper(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Aktivních $count filtrů. Uloženo na boční panel pod Úkoly.',
-      few: 'Aktivní $count filtry. Uloženo na boční panel pod Úkoly.',
-      one: 'Aktivní 1 filtr. Uloženo na boční panel pod Úkoly.',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get tasksSavedFiltersSavePopupHint =>
@@ -10097,7 +10118,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksSavedFiltersSavePopupTitle => 'Pojmenuj tento filtr';
 
   @override
-  String get tasksSavedFiltersSheetTitle => 'Uložené filtry';
+  String get tasksSavedFiltersSheetTitle => 'Filtry úkolů';
 
   @override
   String get tasksSavedFiltersShowLess => 'Zobrazit méně';
@@ -10125,6 +10146,17 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get tasksSavedFiltersUpdateButtonLabel => 'Aktualizovat filtr';
+
+  @override
+  String get tasksSavedFiltersUpdateExistingDescription =>
+      'Nahraď jeho uložená kritéria aktuálním nastavením filtru.';
+
+  @override
+  String get tasksSavedFiltersUpdateExistingTitle =>
+      'Aktualizovat stávající filtr';
 
   @override
   String get tasksSavedFilterToastDeleted => 'Filtr smazán';

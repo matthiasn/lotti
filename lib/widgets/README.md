@@ -182,13 +182,26 @@ Widget displaying multiple task count statistics.
 Individual task count display component.
 
 ### SidebarLiveCard
-Shared visual shell for the sidebar's *live* status surfaces — the running timer and an active audio recording (`lib/widgets/misc/sidebar_live_card.dart`). Each is its own accent-tinted card (`Color.alphaBlend(accent.withValues(alpha: 0.14), background.level01)` — the accent composited over the darker base so the colour reads richer and the elapsed time keeps strong parity contrast across hues; radius `m`) with a 3px accent rail, laid out as two rows: a **top row** with the leading glyph, the prominent **accent-coloured** elapsed time (`subtitle1`, tabular figures), and the trailing action pinned right; and a **second row** with the linked title (`bodySmall`) spanning the full card width so it wraps to two lines (full value via tooltip) before truncating. The accent both identifies the kind at a glance (teal = timer, red = recording) and gives the card real presence — without the old saturated alarm-red fill, glow, or reactive frame. The composer (`_DesktopSidebarAboveSettings` in `lib/beamer/beamer_app.dart`) stacks the live cards plus the quieter neutral agent-queue card in the `aboveSettings` slot, ordered live-first (audio → timer → agents), with animated gaps that appear only between cards that are both visible.
+Shared visual shell for the detailed running-timer and active-recording controls shown from `SidebarActivitySummary`. Each is an accent-tinted card (`Color.alphaBlend(accent.withValues(alpha: 0.14), background.level01)`, radius `m`) with an accent rail, a top row containing glyph, elapsed time, and trailing action, and a second row for the linked title. These cards live in the summary's inline expanded state rather than permanently occupying navigation height.
 
 - `pulse: true` overlays a small breathing record dot on the glyph (recording), and respects the platform reduce-motion setting (static when animations are disabled).
 - The card is announced as an actionable button. Its semantics label names the live state, and its value includes the linked title plus elapsed time.
 
+### SidebarActivitySummary
+Persistent desktop-sidebar activity surface. It combines active recording,
+timer, and agent work into one token-backed disclosure: a quiet `Activity`
+heading owns the first line, while compact icon/value metrics wrap beneath it
+instead of competing with the heading for horizontal space. Sub-hour durations
+use `mm:ss`; longer sessions retain hours. Selecting the row expands the live detail sections directly
+above Settings: `SidebarAudioRecordingSection`, `SidebarTimerSection`, and
+`SidebarWakeQueue`. Only sections with current activity are mounted, so one
+active subsystem does not create empty gaps. Selecting the summary again
+collapses the details without interrupting the work. Agent activity is always
+observed rather than hidden behind a configuration flag. The whole summary is
+a minimum 48dp target. When every subsystem is idle, it collapses completely.
+
 ### SidebarTimerSection
-Live card surfaced in the sidebar whenever a time-recording session is active (via `SidebarLiveCard`). Replaces the legacy bottom-anchored floating indicator on desktop.
+Detailed timer card shown inside the expanded activity disclosure whenever a time-recording session is active (via `SidebarLiveCard`).
 
 - Layout: top row = teal `Icons.timer_outlined` glyph + a prominent teal tabular HH:MM:SS time + a 28px circular stop button (a teal-tinted chip + teal glyph, matching the audio card's red stop chip — same affordance, accent the only difference; red stays exclusive to the consequential recording stop); second row = the task title (two lines, full title via hover tooltip when truncated). A 3px teal accent rail runs the full height.
 - Typography: Inter with `numericBadgeFontFeatures` (tabular figures, slashed zero, `cv02`/`cv03`/`cv04` open digits) so 4/6/9 stay legible and digits do not breathe.
@@ -197,7 +210,7 @@ Live card surfaced in the sidebar whenever a time-recording session is active (v
 - Idle state: collapses to `SizedBox.shrink` so the slot consumes no vertical space.
 
 ### SidebarAudioRecordingSection
-Live card surfaced whenever an audio recording is active and the recording modal is not visible (via `SidebarLiveCard`). It sits above `SidebarTimerSection`.
+Detailed recording card shown inside the expanded activity disclosure whenever an audio recording is active and its recording modal is not already visible.
 
 - Layout: top row = `Icons.mic_rounded` glyph with a **gentle pulsing record dot** (record convention, reduce-motion aware) + a prominent red tabular HH:MM:SS time + a red 28px circular stop button (the consequential action keeps the destructive red); second row = the linked title (two lines, full title via tooltip). A 3px red accent rail runs the full height.
 - No `AudioRecordingOrb` and no dBFS-reactive frame/shadow in the sidebar — the red accent + pulsing dot carry "recording" without the reactive orb. (The live orb still drives the mobile recording pill and the modal's VU meter.)
@@ -205,7 +218,7 @@ Live card surfaced whenever an audio recording is active and the recording modal
 - Idle state: collapses to `SizedBox.shrink` so the slot consumes no vertical space.
 
 ### TimeRecordingIndicator
-Visual indicator showing whether time recording is currently active. Used on **mobile** only — it sits in the bottom-nav overlay above the navigation bar. On desktop the running timer is rendered by `SidebarTimerSection` instead.
+Visual indicator showing whether time recording is currently active. Used on **mobile** only — it sits in the bottom-nav overlay above the navigation bar. Desktop uses `SidebarActivitySummary`.
 
 - Typography: Uses `tabularFigureStyle` with tabular figures to ensure the duration text does not jitter as digits change.
 - Dimensions: Matches its height (`AudioRecordingIndicatorConstants.indicatorHeight`) with the audio recording indicator to keep overlays consistent.

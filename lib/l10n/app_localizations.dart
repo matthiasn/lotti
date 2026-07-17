@@ -5245,18 +5245,6 @@ abstract class AppLocalizations {
   /// **'Enable this to automatically resend failed attachment uploads when the connection is restored.'**
   String get configFlagResendAttachmentsDescription;
 
-  /// No description provided for @configFlagShowSidebarWakeQueue.
-  ///
-  /// In en, this message translates to:
-  /// **'Show sidebar wake queue'**
-  String get configFlagShowSidebarWakeQueue;
-
-  /// No description provided for @configFlagShowSidebarWakeQueueDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Show the inline Wake Queue above Settings — header, the next two pending wakes with countdowns, and a link to the full list.'**
-  String get configFlagShowSidebarWakeQueueDescription;
-
   /// No description provided for @configFlagShowSyncActivityIndicator.
   ///
   /// In en, this message translates to:
@@ -5266,7 +5254,7 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagShowSyncActivityIndicatorDescription.
   ///
   /// In en, this message translates to:
-  /// **'Show live sync activity in the sidebar — a tx/rx LED strip with outbox and inbox depth.'**
+  /// **'Show a quiet sync status in the sidebar; queue counts appear only while work is pending.'**
   String get configFlagShowSyncActivityIndicatorDescription;
 
   /// No description provided for @conflictApplyButton.
@@ -15532,8 +15520,20 @@ abstract class AppLocalizations {
   /// No description provided for @sidebarActiveSectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Active'**
+  /// **'Activity'**
   String get sidebarActiveSectionTitle;
+
+  /// No description provided for @sidebarActivityCollapseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse activity'**
+  String get sidebarActivityCollapseTooltip;
+
+  /// No description provided for @sidebarActivityExpandTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand activity'**
+  String get sidebarActivityExpandTooltip;
 
   /// No description provided for @sidebarAudioRecordingStatusLabel.
   ///
@@ -17095,16 +17095,28 @@ abstract class AppLocalizations {
   /// **'Edit'**
   String get tasksSavedFiltersEdit;
 
+  /// No description provided for @tasksSavedFiltersFilterNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter name'**
+  String get tasksSavedFiltersFilterNameLabel;
+
   /// No description provided for @tasksSavedFiltersGroupSemantics.
   ///
   /// In en, this message translates to:
-  /// **'Saved filters'**
+  /// **'Task filters'**
   String get tasksSavedFiltersGroupSemantics;
+
+  /// No description provided for @tasksSavedFiltersManageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage task filters'**
+  String get tasksSavedFiltersManageTooltip;
 
   /// No description provided for @tasksSavedFiltersRailButton.
   ///
   /// In en, this message translates to:
-  /// **'Saved'**
+  /// **'Filters'**
   String get tasksSavedFiltersRailButton;
 
   /// No description provided for @tasksSavedFiltersRenameNamed.
@@ -17113,29 +17125,71 @@ abstract class AppLocalizations {
   /// **'Rename {name}'**
   String tasksSavedFiltersRenameNamed(String name);
 
+  /// No description provided for @tasksSavedFiltersReorderHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to set the order. The first five filters appear in the sidebar.'**
+  String get tasksSavedFiltersReorderHelper;
+
+  /// No description provided for @tasksSavedFiltersSaveAsNewButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as new…'**
+  String get tasksSavedFiltersSaveAsNewButtonLabel;
+
+  /// No description provided for @tasksSavedFiltersSaveAsNewDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the existing filter unchanged and create a separate one.'**
+  String get tasksSavedFiltersSaveAsNewDescription;
+
+  /// No description provided for @tasksSavedFiltersSaveAsNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as a new filter'**
+  String get tasksSavedFiltersSaveAsNewTitle;
+
   /// No description provided for @tasksSavedFiltersSaveButtonLabel.
   ///
   /// In en, this message translates to:
-  /// **'Save filter'**
+  /// **'Save filter…'**
   String get tasksSavedFiltersSaveButtonLabel;
+
+  /// No description provided for @tasksSavedFiltersSaveChoiceIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose whether to update the saved filter or create a separate one.'**
+  String get tasksSavedFiltersSaveChoiceIntro;
+
+  /// No description provided for @tasksSavedFiltersSaveChoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save filter'**
+  String get tasksSavedFiltersSaveChoiceTitle;
 
   /// No description provided for @tasksSavedFiltersSaveCurrentAs.
   ///
   /// In en, this message translates to:
-  /// **'Save current filter as…'**
+  /// **'Save current filter…'**
   String get tasksSavedFiltersSaveCurrentAs;
+
+  /// No description provided for @tasksSavedFiltersSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save this filter. Try again.'**
+  String get tasksSavedFiltersSaveError;
+
+  /// No description provided for @tasksSavedFiltersSavePageHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Give this filter a short name. You can reorder it later in Task filters.'**
+  String get tasksSavedFiltersSavePageHelper;
 
   /// No description provided for @tasksSavedFiltersSavePopupCancel.
   ///
   /// In en, this message translates to:
   /// **'Cancel'**
   String get tasksSavedFiltersSavePopupCancel;
-
-  /// No description provided for @tasksSavedFiltersSavePopupHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 filter active. Saved to sidebar under Tasks.} other{{count} filters active. Saved to sidebar under Tasks.}}'**
-  String tasksSavedFiltersSavePopupHelper(int count);
 
   /// No description provided for @tasksSavedFiltersSavePopupHint.
   ///
@@ -17158,7 +17212,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFiltersSheetTitle.
   ///
   /// In en, this message translates to:
-  /// **'Saved filters'**
+  /// **'Task filters'**
   String get tasksSavedFiltersSheetTitle;
 
   /// No description provided for @tasksSavedFiltersShowLess.
@@ -17178,6 +17232,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 task} other{{count} tasks}}'**
   String tasksSavedFiltersTaskCount(int count);
+
+  /// No description provided for @tasksSavedFiltersUpdateButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Update filter'**
+  String get tasksSavedFiltersUpdateButtonLabel;
+
+  /// No description provided for @tasksSavedFiltersUpdateExistingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace its saved criteria with the current filter configuration.'**
+  String get tasksSavedFiltersUpdateExistingDescription;
+
+  /// No description provided for @tasksSavedFiltersUpdateExistingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update existing filter'**
+  String get tasksSavedFiltersUpdateExistingTitle;
 
   /// No description provided for @tasksSavedFilterToastDeleted.
   ///

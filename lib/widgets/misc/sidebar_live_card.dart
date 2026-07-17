@@ -113,7 +113,8 @@ class SidebarLiveCard extends StatelessWidget {
                                 style: tokens.typography.styles.body.bodySmall
                                     .copyWith(
                                       color: tokens.colors.text.mediumEmphasis,
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight:
+                                          tokens.typography.weight.semiBold,
                                     ),
                               ),
                             ),

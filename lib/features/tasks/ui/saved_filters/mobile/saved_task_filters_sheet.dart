@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -25,6 +26,8 @@ abstract final class SavedTaskFiltersSheetKeys {
   static const Key allRow = Key('saved-filters-sheet-all-row');
   static const Key createRow = Key('saved-filters-sheet-create-row');
   static Key row(String id) => Key('saved-filters-sheet-row-$id');
+  static Key dragHandle(String id) =>
+      Key('saved-filters-sheet-drag-handle-$id');
   static Key rename(String id) => Key('saved-filters-sheet-rename-$id');
   static Key delete(String id) => Key('saved-filters-sheet-delete-$id');
 }
@@ -114,7 +117,7 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
         .delete(saved.id);
     // Safe fallback: deleting the *active* filter would otherwise leave the
     // list showing an orphaned filter shape with no pill selected. Reset the
-    // live filter to the default "All" view so the selection is never
+    // live filter to the default "All" filter so the selection is never
     // undefined. clearToDefault() makes the live shape match no saved filter,
     // so `currentSavedTaskFilterIdProvider` resolves to null ("All" selected).
     if (wasActive) await _activator.clearToDefault();
@@ -127,6 +130,21 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
     // blank name returns null and should leave the user on the list.
     final created = await promptSaveCurrentTaskFilter(context, ref);
     if (created != null && mounted) await Navigator.of(context).maybePop();
+  }
+
+  void _reorder(
+    List<SavedTaskFilter> saved,
+    int oldIndex,
+    int newIndex,
+  ) {
+    if (newIndex == oldIndex) return;
+    final dragId = saved[oldIndex].id;
+    final targetId = saved[newIndex].id;
+    unawaited(
+      ref
+          .read(savedTaskFiltersControllerProvider.notifier)
+          .reorder(dragId, targetId),
+    );
   }
 
   @override
@@ -145,58 +163,127 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
     final total = ref.watch(allTasksTotalCountProvider).value;
 
     final allSelected = activeId == null && !hasUnsaved;
-
-    return Column(
-      key: SavedTaskFiltersSheetKeys.root,
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            key: SavedTaskFiltersSheetKeys.editToggle,
-            // Teal foreground (not the default purple TextButton theme) so the
-            // sheet carries exactly one tappable accent.
-            style: TextButton.styleFrom(
-              foregroundColor: tokens.colors.interactive.enabled,
-            ),
-            onPressed: () => setState(() => _editing = !_editing),
-            child: Text(
-              _editing
-                  ? messages.tasksSavedFiltersDone
-                  : messages.tasksSavedFiltersEdit,
-            ),
-          ),
-        ),
-        _AllTasksRow(
-          key: SavedTaskFiltersSheetKeys.allRow,
-          rowKey: allSelected ? _activeRowKey : null,
-          selected: allSelected,
-          total: total,
-          editing: _editing,
-          onTap: _applyAll,
-        ),
-        for (final f in saved)
-          _SavedFilterRow(
+    final editRowHeight = tokens.spacing.step8 + tokens.spacing.step3;
+    final savedListViewportHeight = math.min(
+      editRowHeight * saved.length,
+      tokens.spacing.step13 * 2,
+    );
+    final editList = ReorderableListView.builder(
+      primary: false,
+      padding: EdgeInsets.zero,
+      itemExtent: editRowHeight,
+      buildDefaultDragHandles: false,
+      itemCount: saved.length,
+      onReorderItem: (oldIndex, newIndex) =>
+          _reorder(saved, oldIndex, newIndex),
+      proxyDecorator: (child, index, animation) => Material(
+        type: MaterialType.transparency,
+        child: child,
+      ),
+      itemBuilder: (context, index) {
+        final f = saved[index];
+        return KeyedSubtree(
+          key: ValueKey('saved-filter-sheet-item-${f.id}'),
+          child: _SavedFilterRow(
             key: SavedTaskFiltersSheetKeys.row(f.id),
             rowKey: f.id == activeId ? _activeRowKey : null,
             filter: f,
             selected: f.id == activeId,
             count: counts?[f.id],
-            editing: _editing,
-            onTap: () => _applySaved(f),
+            editing: true,
+            reorderIndex: index,
             onRename: () => _rename(f),
             onDelete: () => _delete(f),
           ),
-        Divider(
-          height: tokens.spacing.step6,
-          color: tokens.colors.decorative.level01,
-        ),
-        _CreateRow(
-          key: SavedTaskFiltersSheetKeys.createRow,
-          onTap: _create,
-        ),
-      ],
+        );
+      },
+    );
+    final savedList = ListView.builder(
+      primary: false,
+      padding: EdgeInsets.zero,
+      itemExtent: editRowHeight,
+      itemCount: saved.length,
+      itemBuilder: (context, index) {
+        final f = saved[index];
+        return _SavedFilterRow(
+          key: SavedTaskFiltersSheetKeys.row(f.id),
+          rowKey: f.id == activeId ? _activeRowKey : null,
+          filter: f,
+          selected: f.id == activeId,
+          count: counts?[f.id],
+          editing: false,
+          onTap: () => _applySaved(f),
+        );
+      },
+    );
+
+    return KeyedSubtree(
+      key: ValueKey(_editing),
+      child: Column(
+        key: SavedTaskFiltersSheetKeys.root,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              key: SavedTaskFiltersSheetKeys.editToggle,
+              // Teal foreground (not the default purple TextButton theme) so the
+              // sheet carries exactly one tappable accent.
+              style: TextButton.styleFrom(
+                foregroundColor: tokens.colors.interactive.enabled,
+              ),
+              onPressed: () => setState(() => _editing = !_editing),
+              child: Text(
+                _editing
+                    ? messages.tasksSavedFiltersDone
+                    : messages.tasksSavedFiltersEdit,
+              ),
+            ),
+          ),
+          _AllTasksRow(
+            key: SavedTaskFiltersSheetKeys.allRow,
+            rowKey: allSelected ? _activeRowKey : null,
+            selected: allSelected,
+            total: total,
+            editing: _editing,
+            onTap: _applyAll,
+          ),
+          if (_editing) ...[
+            Padding(
+              padding: EdgeInsetsDirectional.fromSTEB(
+                tokens.spacing.step3,
+                tokens.spacing.step2,
+                tokens.spacing.step3,
+                tokens.spacing.step3,
+              ),
+              child: Text(
+                messages.tasksSavedFiltersReorderHelper,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+            ),
+            if (saved.isNotEmpty)
+              SizedBox(
+                height: savedListViewportHeight,
+                child: editList,
+              ),
+          ] else if (saved.isNotEmpty)
+            SizedBox(
+              height: savedListViewportHeight,
+              child: savedList,
+            ),
+          Divider(
+            height: tokens.spacing.step6,
+            color: tokens.colors.decorative.level01,
+          ),
+          _CreateRow(
+            key: SavedTaskFiltersSheetKeys.createRow,
+            onTap: _create,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -378,9 +465,10 @@ class _SavedFilterRow extends StatelessWidget {
     required this.selected,
     required this.count,
     required this.editing,
-    required this.onTap,
-    required this.onRename,
-    required this.onDelete,
+    this.onTap,
+    this.onRename,
+    this.onDelete,
+    this.reorderIndex,
     this.rowKey,
     super.key,
   });
@@ -389,9 +477,10 @@ class _SavedFilterRow extends StatelessWidget {
   final bool selected;
   final int? count;
   final bool editing;
-  final VoidCallback onTap;
-  final VoidCallback onRename;
-  final VoidCallback onDelete;
+  final VoidCallback? onTap;
+  final VoidCallback? onRename;
+  final VoidCallback? onDelete;
+  final int? reorderIndex;
   final Key? rowKey;
 
   @override
@@ -462,14 +551,17 @@ class _SavedFilterRow extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
             child: Row(
               children: [
-                _SelectionIndicator(selected: selected, editing: true),
-                SizedBox(width: tokens.spacing.step3),
+                _EditDragHandle(
+                  filterId: filter.id,
+                  index: reorderIndex!,
+                  selected: selected,
+                ),
                 nameWidget,
                 _EditAction(
                   buttonKey: SavedTaskFiltersSheetKeys.rename(filter.id),
                   icon: Icons.edit_outlined,
                   tooltip: messages.tasksSavedFiltersRenameNamed(filter.name),
-                  onTap: onRename,
+                  onTap: onRename!,
                 ),
                 // Generous gap between the two ≥48dp targets so the destructive
                 // Delete is clearly separated from Rename (mis-tap safety) and
@@ -479,7 +571,7 @@ class _SavedFilterRow extends StatelessWidget {
                   buttonKey: SavedTaskFiltersSheetKeys.delete(filter.id),
                   icon: Icons.delete_outline_rounded,
                   tooltip: messages.tasksSavedFiltersDeleteNamed(filter.name),
-                  onTap: onDelete,
+                  onTap: onDelete!,
                   destructive: true,
                 ),
                 // Breathing room between the destructive target and the row's
@@ -498,7 +590,7 @@ class _SavedFilterRow extends StatelessWidget {
       child: _SheetRowScaffold(
         selected: selected,
         semanticsLabel: semanticsLabel,
-        onTap: onTap,
+        onTap: onTap!,
         children: [
           _SelectionIndicator(selected: selected),
           SizedBox(width: tokens.spacing.step3),
@@ -509,6 +601,63 @@ class _SavedFilterRow extends StatelessWidget {
             minWidth: tokens.spacing.step8,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EditDragHandle extends StatelessWidget {
+  const _EditDragHandle({
+    required this.filterId,
+    required this.index,
+    required this.selected,
+  });
+
+  final String filterId;
+  final int index;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final label = context.messages.tasksSavedFilterDragHandleSemantics;
+    final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        label: label,
+        child: ReorderableDragStartListener(
+          key: SavedTaskFiltersSheetKeys.dragHandle(filterId),
+          index: index,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: minTarget,
+              minHeight: minTarget,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.drag_indicator_rounded,
+                  size: tokens.spacing.step5,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+                if (selected) ...[
+                  SizedBox(width: tokens.spacing.step1),
+                  Container(
+                    width: tokens.spacing.step3,
+                    height: tokens.spacing.step3,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: tokens.colors.interactive.enabled,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

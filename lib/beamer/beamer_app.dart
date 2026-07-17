@@ -14,7 +14,6 @@ import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
@@ -47,7 +46,7 @@ import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_activity_indicator.dart';
-import 'package:lotti/features/tasks/ui/saved_filters/tasks_saved_filters_tree.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
@@ -64,8 +63,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/uuid.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
-import 'package:lotti/widgets/misc/sidebar_audio_recording_section.dart';
-import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
+import 'package:lotti/widgets/misc/sidebar_activity_summary.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -644,9 +642,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     final showSyncIndicator =
         ref.watch(configFlagProvider(showSyncActivityIndicatorFlag)).value ??
         false;
-    final showSidebarWakeQueue =
-        ref.watch(configFlagProvider(showSidebarWakeQueueFlag)).value ?? false;
-
     return Scaffold(
       // Scaffold fills behind the outer ResizableDivider's 3 px reserved
       // SizedBox; without an explicit colour Flutter would paint the theme
@@ -693,9 +688,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               onToggleCollapsed: () => ref
                   .read(paneWidthControllerProvider.notifier)
                   .toggleSidebarCollapsed(),
-              aboveSettings: _DesktopSidebarAboveSettings(
-                showWakeQueue: showSidebarWakeQueue,
-              ),
+              aboveSettings: const _DesktopSidebarAboveSettings(),
               belowSettings: showSyncIndicator
                   ? const SyncActivityIndicator()
                   : SizedBox(height: context.designTokens.spacing.step3),
@@ -970,7 +963,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         label: context.messages.navTabTitleTasks,
         iconBuilder: ({required active}) =>
             Icon(active ? Icons.list_rounded : Icons.list_outlined),
-        expandedChildBuilder: () => const TasksSavedFiltersTree(),
+        expandedChildBuilder: () => const SidebarSavedTaskFilters(),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.dailyOs,
@@ -1420,71 +1413,16 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
   }
 }
 
-/// Composer for the desktop sidebar's `aboveSettings` slot. Stacks the
-/// active-status surfaces as a family of distinct cards, ordered live-first:
-/// the active audio recording (red), the running timer (teal), then the
-/// optional inline agent queue (a quieter neutral card). Each card carries its
-/// own surface and self-collapses when inactive; animated gaps appear only
-/// between cards that are both visible, so the stack grows and shrinks
-/// smoothly without leaving phantom spacing.
-class _DesktopSidebarAboveSettings extends ConsumerWidget {
-  const _DesktopSidebarAboveSettings({required this.showWakeQueue});
-
-  final bool showWakeQueue;
-
-  Widget _gap(BuildContext context, {required bool visible}) {
-    final tokens = context.designTokens;
-    return AnimatedSize(
-      duration: SidebarAudioRecordingSection.animationDuration,
-      curve: Curves.easeInOut,
-      alignment: Alignment.bottomCenter,
-      child: SizedBox(height: visible ? tokens.spacing.step4 : 0),
-    );
-  }
+/// Composer for the desktop sidebar's `aboveSettings` slot.
+///
+/// All transient systems share one compact summary surface. Selecting it
+/// expands the detailed recording, timer, and agent controls in place without
+/// permanently letting those operational tools displace primary navigation.
+class _DesktopSidebarAboveSettings extends StatelessWidget {
+  const _DesktopSidebarAboveSettings();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final wakesVisible =
-        showWakeQueue && sidebarWakeQueueHasVisibleContent(ref);
-    final audioVisible =
-        !_isRunningInFlatpak() && sidebarAudioRecordingHasVisibleContent(ref);
-
-    return StreamBuilder<JournalEntity?>(
-      stream: getIt<TimeService>().getStream(),
-      initialData: getIt<TimeService>().getCurrent(),
-      builder: (context, snapshot) {
-        final hasTimer = snapshot.data != null;
-        final hasActiveStatus = audioVisible || hasTimer || wakesVisible;
-        final tokens = context.designTokens;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (hasActiveStatus) ...[
-              Padding(
-                padding: EdgeInsetsDirectional.only(
-                  start: tokens.spacing.step1,
-                  bottom: tokens.spacing.step2,
-                ),
-                child: Text(
-                  context.messages.sidebarActiveSectionTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-            if (!_isRunningInFlatpak()) const SidebarAudioRecordingSection(),
-            _gap(context, visible: audioVisible && (hasTimer || wakesVisible)),
-            const SidebarTimerSection(),
-            _gap(context, visible: hasTimer && wakesVisible),
-            if (showWakeQueue) const SidebarWakeQueue(),
-          ],
-        );
-      },
-    );
+  Widget build(BuildContext context) {
+    return SidebarActivitySummary(showAudio: !_isRunningInFlatpak());
   }
 }

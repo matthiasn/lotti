@@ -3066,20 +3066,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aktiviere diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.';
 
   @override
-  String get configFlagShowSidebarWakeQueue =>
-      'Weckvorgang-Warteschlange in der Seitenleiste anzeigen';
-
-  @override
-  String get configFlagShowSidebarWakeQueueDescription =>
-      'Zeige die Weckvorgang-Warteschlange über den Einstellungen — Header, die nächsten zwei anstehenden Weckvorgänge mit Countdown und ein Link zur vollständigen Liste.';
-
-  @override
   String get configFlagShowSyncActivityIndicator =>
       'Sync-Aktivitätsanzeige einblenden';
 
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
-      'Live-Sync-Aktivität in der Seitenleiste anzeigen — eine tx/rx-LED-Leiste mit Outbox- und Inbox-Tiefe.';
+      'Zeigt einen dezenten Synchronisierungsstatus in der Seitenleiste; Warteschlangenzahlen erscheinen nur, wenn Arbeit ansteht.';
 
   @override
   String get conflictApplyButton => 'Übernehmen';
@@ -9093,7 +9085,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingThemingLight => 'Helles Design';
 
   @override
-  String get sidebarActiveSectionTitle => 'Aktiv';
+  String get sidebarActiveSectionTitle => 'Aktivität';
+
+  @override
+  String get sidebarActivityCollapseTooltip => 'Aktivität einklappen';
+
+  @override
+  String get sidebarActivityExpandTooltip => 'Aktivität ausklappen';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Aufnahme';
@@ -10001,10 +9999,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksSavedFiltersEdit => 'Bearbeiten';
 
   @override
-  String get tasksSavedFiltersGroupSemantics => 'Gespeicherte Filter';
+  String get tasksSavedFiltersFilterNameLabel => 'Filtername';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Gespeichert';
+  String get tasksSavedFiltersGroupSemantics => 'Aufgabenfilter';
+
+  @override
+  String get tasksSavedFiltersManageTooltip => 'Aufgabenfilter verwalten';
+
+  @override
+  String get tasksSavedFiltersRailButton => 'Filter';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {
@@ -10012,26 +10016,44 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Filter speichern';
+  String get tasksSavedFiltersReorderHelper =>
+      'Zieh die Filter in die gewünschte Reihenfolge. Die ersten fünf erscheinen in der Seitenleiste.';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewButtonLabel =>
+      'Als neuen Filter speichern…';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewDescription =>
+      'Der bestehende Filter bleibt unverändert und ein separater wird erstellt.';
+
+  @override
+  String get tasksSavedFiltersSaveAsNewTitle => 'Als neuen Filter speichern';
+
+  @override
+  String get tasksSavedFiltersSaveButtonLabel => 'Filter speichern…';
+
+  @override
+  String get tasksSavedFiltersSaveChoiceIntro =>
+      'Wähle, ob du den gespeicherten Filter aktualisieren oder einen separaten erstellen möchtest.';
+
+  @override
+  String get tasksSavedFiltersSaveChoiceTitle => 'Filter speichern';
 
   @override
   String get tasksSavedFiltersSaveCurrentAs =>
       'Aktuellen Filter speichern als…';
 
   @override
-  String get tasksSavedFiltersSavePopupCancel => 'Abbrechen';
+  String get tasksSavedFiltersSaveError =>
+      'Der Filter konnte nicht gespeichert werden. Versuch es noch einmal.';
 
   @override
-  String tasksSavedFiltersSavePopupHelper(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other:
-          '$count Filter aktiv. In der Seitenleiste unter „Aufgaben“ gespeichert.',
-      one: '1 Filter aktiv. In der Seitenleiste unter „Aufgaben“ gespeichert.',
-    );
-    return '$_temp0';
-  }
+  String get tasksSavedFiltersSavePageHelper =>
+      'Gib diesem Filter einen kurzen Namen. Du kannst ihn später in den Aufgabenfiltern neu anordnen.';
+
+  @override
+  String get tasksSavedFiltersSavePopupCancel => 'Abbrechen';
 
   @override
   String get tasksSavedFiltersSavePopupHint => 'z. B. Blockiert oder pausiert';
@@ -10043,7 +10065,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksSavedFiltersSavePopupTitle => 'Diesen Filter benennen';
 
   @override
-  String get tasksSavedFiltersSheetTitle => 'Gespeicherte Filter';
+  String get tasksSavedFiltersSheetTitle => 'Aufgabenfilter';
 
   @override
   String get tasksSavedFiltersShowLess => 'Weniger anzeigen';
@@ -10069,6 +10091,17 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get tasksSavedFiltersUpdateButtonLabel => 'Filter aktualisieren';
+
+  @override
+  String get tasksSavedFiltersUpdateExistingDescription =>
+      'Ersetze seine gespeicherten Kriterien durch die aktuelle Filterkonfiguration.';
+
+  @override
+  String get tasksSavedFiltersUpdateExistingTitle =>
+      'Bestehenden Filter aktualisieren';
 
   @override
   String get tasksSavedFilterToastDeleted => 'Filter gelöscht';

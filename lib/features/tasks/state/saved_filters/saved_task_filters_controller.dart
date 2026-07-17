@@ -6,7 +6,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repo
 import 'package:lotti/get_it.dart';
 import 'package:uuid/uuid.dart';
 
-/// Riverpod controller backing the user's pinned task-filter list.
+/// Riverpod controller backing the user's saved task-filter list.
 ///
 /// State is the ordered list of [SavedTaskFilter]s. Position in the list is
 /// the sort order. Mutations are routed through [SavedTaskFiltersRepository] so
@@ -30,7 +30,7 @@ class SavedTaskFiltersController extends AsyncNotifier<List<SavedTaskFilter>> {
   /// Appends a new saved filter built from [filter] with the given [name].
   ///
   /// Returns the newly-created [SavedTaskFilter] so callers can mark it as
-  /// the currently-active saved view in the page state.
+  /// the currently-active saved filter in the page state.
   Future<SavedTaskFilter> create({
     required String name,
     required TasksFilter filter,
@@ -69,7 +69,7 @@ class SavedTaskFiltersController extends AsyncNotifier<List<SavedTaskFilter>> {
 
   /// Replaces the filter payload of the saved filter with [id].
   ///
-  /// Used when "Update '`<name>`'" is invoked from the modal — the saved view
+  /// Used when "Update '`<name>`'" is invoked from the modal — the saved filter
   /// keeps its name and id but takes on the currently-active filter shape.
   Future<void> updateFilter(String id, TasksFilter filter) async {
     final current = await future;

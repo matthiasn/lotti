@@ -28,7 +28,7 @@ abstract final class SavedTaskFilterRailKeys {
 /// filter exists; otherwise it collapses to nothing so the layout is unchanged
 /// for users without saved filters.
 ///
-/// Left → right: a borderless, chip-chromed "Saved" button (visually distinct
+/// Left → right: a borderless, chip-chromed "Filters" button (visually distinct
 /// from the bordered filter pills) carrying the saved-filter count and the
 /// rail's single panel-disclosure glyph (opens the complete sheet), then a
 /// hard-capped, non-scrolling run of pills — "All" (clears to the default
@@ -36,13 +36,13 @@ abstract final class SavedTaskFilterRailKeys {
 /// count for an ad-hoc filter), and as many most-recently-used quick-jump pills
 /// as fit — and a trailing teal-tinted "+ Save" call-to-action pill shown only
 /// when the live filter has unsaved clauses. Overflow lives in the sheet; the
-/// normal rail never scrolls. The disclosure glyph lives ONLY on the "Saved"
+/// normal rail never scrolls. The disclosure glyph lives ONLY on the "Filters"
 /// button — the active and "Custom" pills carry none, so each pill is a single
 /// predictable tap target (inactive pills apply/switch their filter; the active
 /// and "Custom" pills open the sheet on a whole-pill tap).
 ///
 /// At large text (textScaler ≥ ~1.3) the rail collapses to a SINGLE
-/// horizontally scrolling run — [active anchor] [All] [Saved] [+Save?] — sharing
+/// horizontally scrolling run — [active anchor] [All] [Filters] [+Save?] — sharing
 /// the normal rail's inter-pill gap so chips never overlap (the MRU quick-jumps
 /// are dropped). A trailing alpha fade marks the run as scrollable. The active
 /// anchor leads and is fully visible; "All" is kept because return-to-unfiltered
@@ -82,7 +82,7 @@ class SavedTaskFilterRail extends ConsumerWidget {
     // The "Custom" anchor's live magnitude. Only watched when an ad-hoc filter
     // is active (`hasUnsaved` implies no saved filter matched, hence no active
     // saved pill), so the count query never runs for the common saved/"All"
-    // views. Stale-while-revalidate via `AsyncValue.value` keeps the last count
+    // filters. Stale-while-revalidate via `AsyncValue.value` keeps the last count
     // during a background recompute instead of flashing back to `–`.
     final customCount = hasUnsaved
         ? ref.watch(currentTasksFilterCountProvider).value
@@ -410,7 +410,7 @@ class SavedTaskFilterRail extends ConsumerWidget {
   }
 
   /// Coarse, deterministic fit: how many MRU pills the remaining width holds
-  /// after reserving the fixed head (Saved button + All pill + optional Save
+  /// after reserving the fixed head (Filters button + All pill + optional Save
   /// chip) and a generous slot for the flexible anchor pill. Hard-capped at
   /// [maxMruPills]. Widths are token-derived layout heuristics, so overflow is
   /// decided by layout — not implementer judgement — and the rail never scrolls.
@@ -421,7 +421,7 @@ class SavedTaskFilterRail extends ConsumerWidget {
     required bool showSaveChip,
   }) {
     final gap = tokens.spacing.step2; // 4
-    // The Saved button now carries the shared count slot + disclosure glyph, so
+    // The Filters button carries the shared count slot + disclosure glyph, so
     // it is wider than the old label-only chip; reserve a count slot (step7)
     // more so the heuristic never under-reserves and overflows.
     final savedButton =
@@ -448,7 +448,7 @@ class SavedTaskFilterRail extends ConsumerWidget {
   }
 }
 
-/// The band-leading "Saved" button — the rail's single explicit sheet opener,
+/// The band-leading "Filters" button — the rail's single explicit sheet opener,
 /// and the **only** element to carry a disclosure affordance (the active and
 /// "Custom" pills dropped theirs so each pill is one unambiguous tap target).
 ///
@@ -457,7 +457,7 @@ class SavedTaskFilterRail extends ConsumerWidget {
 /// menu-opener never reads as just another selectable filter value. It is led
 /// by a bookmark glyph, carries the saved-filter [count] in the SAME shared
 /// count slot the rail pills use (`SavedFilterCountText`, medium-emphasis,
-/// tabular, min-width-growable) so it reads "Saved  6" consistent with
+/// tabular, min-width-growable) so it reads "Filters  6" consistent with
 /// "All 214", and is closed by an `unfold_more` glyph — a down-chevron implied a
 /// dropdown, but the manager rises from the bottom as a sheet, so the
 /// bidirectional unfold glyph signals "opens a panel/list".

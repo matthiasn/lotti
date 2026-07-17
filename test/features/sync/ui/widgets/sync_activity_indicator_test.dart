@@ -30,16 +30,12 @@ void main() {
       await rxCtl.close();
     });
 
-    // Both channels now flash on the brand teal accent (interactive.enabled);
-    // the idle dot is decorative.level01 and the hover wash is surface.enabled.
-    // Resolve them from the rendered theme so a token tweak doesn't silently
-    // break these assertions.
+    // Resolve colors from the rendered theme so token changes do not silently
+    // break the interaction assertions.
     DsTokens tokensOf(WidgetTester tester) =>
         tester.element(find.byType(SyncActivityIndicator)).designTokens;
     Color accentOf(WidgetTester tester) =>
         tokensOf(tester).colors.interactive.enabled;
-    Color ledIdleOf(WidgetTester tester) =>
-        tokensOf(tester).colors.decorative.level01;
 
     Future<void> pumpIndicator(
       WidgetTester tester, {
@@ -78,6 +74,7 @@ void main() {
         final height1x = tester
             .getSize(find.byType(SyncActivityIndicator))
             .height;
+        expect(height1x, greaterThanOrEqualTo(48));
 
         await pumpIndicator(tester, outbox: 1573, textScale: 2);
         final height2x = tester
@@ -85,33 +82,36 @@ void main() {
             .height;
 
         // The footer grows with the text scale rather than clamping to a
-        // fixed 18px-per-row height, so the label/count never clip.
+        // fixed row height, so the label/count never clip.
         expect(height2x, greaterThan(height1x));
         expect(find.text('Syncing'), findsOneWidget);
-        expect(find.text('Outbox 999+ · Inbox idle'), findsOneWidget);
+        expect(find.text('999+'), findsOneWidget);
       },
     );
 
-    testWidgets('renders one compact summary with both queue counts', (
+    testWidgets('renders compact directional metrics for active queues', (
       tester,
     ) async {
-      // A 4-digit outbox count proves it renders in full (the inline count
-      // has no fixed-width column to clip against).
       await pumpIndicator(tester, outbox: 1573, inbox: 14);
 
       expect(find.text('Syncing'), findsOneWidget);
-      expect(find.text('Outbox 999+ · Inbox 14'), findsOneWidget);
+      expect(find.text('999+'), findsOneWidget);
+      expect(find.text('14'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_downward_rounded), findsOneWidget);
     });
 
-    testWidgets('summarizes the idle inbox without a second channel row', (
+    testWidgets('healthy sync stays quiet and omits transport telemetry', (
       tester,
     ) async {
       await pumpIndicator(tester);
 
       expect(find.text('Sync'), findsOneWidget);
-      expect(find.text('Outbox 0 · Inbox idle'), findsOneWidget);
       expect(find.text('Outbox'), findsNothing);
       expect(find.text('Inbox'), findsNothing);
+      expect(find.text('0'), findsNothing);
+      expect(find.byIcon(Icons.arrow_upward_rounded), findsNothing);
+      expect(find.byIcon(Icons.arrow_downward_rounded), findsNothing);
     });
 
     testWidgets('keeps a non-zero outbox visible while inbox is idle', (
@@ -120,7 +120,9 @@ void main() {
       await pumpIndicator(tester, outbox: 12);
 
       expect(find.text('Syncing'), findsOneWidget);
-      expect(find.text('Outbox 12 · Inbox idle'), findsOneWidget);
+      expect(find.text('12'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_downward_rounded), findsNothing);
     });
 
     testWidgets(
@@ -227,70 +229,56 @@ void main() {
       },
     );
 
-    /// Returns every LED background colour in widget tree order
-    /// (tx first, rx second). LEDs are the only `AnimatedContainer`s
-    /// whose decoration uses `BoxShape.circle`, so we filter on that.
-    List<Color?> ledColors(WidgetTester tester) {
-      return tester
-          .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
-          .where((c) {
-            final decoration = c.decoration;
-            return decoration is BoxDecoration &&
-                decoration.shape == BoxShape.circle;
-          })
-          .map((c) => (c.decoration! as BoxDecoration).color)
-          .toList();
+    Color? syncIconColor(WidgetTester tester) {
+      return tester.widget<Icon>(find.byIcon(Icons.sync_rounded)).color;
     }
 
     testWidgets(
-      'Outbox pulse turns the LED on, then off after the hold window',
+      'Outbox pulse temporarily promotes healthy sync to active',
       (tester) async {
-        await pumpIndicator(tester, outbox: 1);
+        await pumpIndicator(tester);
         final accent = accentOf(tester);
 
-        // Idle: the LED is not lit with the accent.
-        expect(ledColors(tester).first, isNot(equals(accent)));
+        expect(find.text('Sync'), findsOneWidget);
+        expect(syncIconColor(tester), isNot(equals(accent)));
 
         txCtl.add(DateTime(2026, 5, 2, 10));
         await tester.pump();
         await tester.pump();
 
-        expect(ledColors(tester).first, equals(accent));
+        expect(find.text('Syncing'), findsOneWidget);
+        expect(syncIconColor(tester), equals(accent));
 
         await tester.pump(
           kSyncActivityLedHold + const Duration(milliseconds: 5),
         );
 
-        expect(ledColors(tester).first, isNot(equals(accent)));
+        expect(find.text('Sync'), findsOneWidget);
+        expect(syncIconColor(tester), isNot(equals(accent)));
       },
     );
 
-    testWidgets('Inbox pulse only lights the Inbox LED, leaving Outbox dark', (
+    testWidgets('Inbox pulse uses the same compact active treatment', (
       tester,
     ) async {
-      await pumpIndicator(tester, inbox: 3);
+      await pumpIndicator(tester);
       final accent = accentOf(tester);
-      final idle = ledIdleOf(tester);
 
       rxCtl.add(DateTime(2026, 5, 2, 10));
       await tester.pump();
       await tester.pump();
 
-      final colors = ledColors(tester);
-      // First LED is Outbox (stays idle), second is Inbox (lit on the brand
-      // teal accent). Both channels share one accent now — direction is
-      // carried by which LED lights, not by a second hue.
-      expect(colors[0], equals(idle));
-      expect(colors[1], equals(accent));
+      expect(find.text('Syncing'), findsOneWidget);
+      expect(syncIconColor(tester), equals(accent));
 
       await tester.pump(
         kSyncActivityLedHold + const Duration(milliseconds: 5),
       );
+      expect(find.text('Sync'), findsOneWidget);
     });
 
-    testWidgets('rapid pulses extend the LED hold window', (tester) async {
-      await pumpIndicator(tester, outbox: 5);
-      final accent = accentOf(tester);
+    testWidgets('rapid pulses extend the active status window', (tester) async {
+      await pumpIndicator(tester);
 
       txCtl.add(DateTime(2026, 5, 2, 10));
       await tester.pump();
@@ -301,10 +289,10 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // After the original hold window would have expired (140 ms), the
-      // LED is still on because the second pulse re-armed the timer.
+      // After the original hold window would have expired, the status is still
+      // active because the second pulse re-armed the timer.
       await tester.pump(const Duration(milliseconds: 80));
-      expect(ledColors(tester).first, equals(accent));
+      expect(find.text('Syncing'), findsOneWidget);
 
       // Drain the timer so the test exits clean.
       await tester.pump(

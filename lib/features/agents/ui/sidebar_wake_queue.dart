@@ -16,20 +16,17 @@ import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 /// Settings sub-route that opens the full Wake Cycles list.
 const String kSidebarWakeQueueListRoute = '/settings/agents/pending-wakes';
 
-/// How many *scheduled* wake rows the inline sidebar block renders
+/// How many *scheduled* wake rows the activity-detail block renders
 /// before collapsing the remainder into the summary row.
 const int kSidebarWakeQueueRowLimit = 1;
 
-/// How many currently-running wake rows the inline sidebar renders before
-/// collapsing the remainder into the summary row. The sidebar is an ambient
-/// status rail, not the full wake manager; the full list remains one click
-/// away from the header / summary row.
+/// How many currently-running wake rows the activity-detail block renders
+/// before collapsing the remainder into the summary row.
 const int kSidebarWakeQueueOngoingRowLimit = 1;
 
-/// Maximum lookahead for scheduled wakes shown inline. Anything beyond
-/// this window still surfaces via the trailing "+N more →" affordance
-/// and the full Wake Cycles page, but does not clutter the
-/// always-visible sidebar block.
+/// Maximum lookahead for scheduled wakes shown in activity detail. Anything
+/// beyond this window remains available on the full Wake Cycles page but is
+/// omitted from both the compact activity surface and its trailing count.
 const Duration kSidebarWakeQueueScheduledLookahead = Duration(hours: 1);
 
 /// Test hook that lets widget tests intercept the navigation calls the
@@ -40,25 +37,8 @@ abstract final class SidebarWakeQueueTestHooks {
   static void Function(String path)? navigatorOverride;
 }
 
-/// Whether [SidebarWakeQueue] would render a non-empty card given the
-/// current snapshot of the pending- and ongoing-wake providers. The
-/// composer above the sidebar uses this to decide whether to insert a
-/// spacer between the wake card and the running-timer card — neither
-/// widget should leave a phantom gap when its data is empty.
-bool sidebarWakeQueueHasVisibleContent(WidgetRef ref) {
-  final wakes =
-      ref.watch(pendingWakeRecordsProvider).value ??
-      const <PendingWakeRecord>[];
-  final ongoing =
-      ref.watch(ongoingWakeRecordsProvider).value ??
-      const <OngoingWakeRecord>[];
-  if (ongoing.isNotEmpty) return true;
-  final cutoff = clock.now().add(kSidebarWakeQueueScheduledLookahead);
-  return wakes.any((r) => !r.dueAt.isAfter(cutoff));
-}
-
-/// Quiet inline Wake Queue surfaced in the desktop sidebar's
-/// `aboveSettings` slot. When at least one wake is active it renders:
+/// Detailed Wake Queue surfaced from `SidebarActivitySummary`. When at least
+/// one wake is active it renders:
 ///
 /// 1. A `WAKES N ↗` header that links to the full Wake Cycles page.
 /// 2. Up to [kSidebarWakeQueueOngoingRowLimit] currently *running* agents,
@@ -70,13 +50,11 @@ bool sidebarWakeQueueHasVisibleContent(WidgetRef ref) {
 ///
 /// When the pre-resolve / zero-wake state holds, `build` returns
 /// [SizedBox.shrink] so the card is hidden entirely rather than
-/// presenting an empty header above the running-timer card.
+/// presenting an empty section in the expanded activity disclosure.
 class SidebarWakeQueue extends ConsumerWidget {
   const SidebarWakeQueue({super.key});
 
-  /// Matches `SidebarTimerSection.animationDuration` so the wake card and
-  /// the running-timer card share one rhythm when they appear or collapse
-  /// in the sidebar's `aboveSettings` slot.
+  /// Matches the detailed timer/recording cards' transition rhythm.
   static const Duration animationDuration = Duration(milliseconds: 220);
 
   /// Stable key used by the hidden state so [AnimatedSwitcher] cross-fades
@@ -185,7 +163,7 @@ class _Header extends StatelessWidget {
     final countStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
       fontFeatures: numericBadgeFontFeatures,
-      fontWeight: FontWeight.w600,
+      fontWeight: tokens.typography.weight.semiBold,
     );
     final summary = _summary(context);
 
@@ -288,7 +266,7 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
     );
     final statusStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
-      fontWeight: FontWeight.w600,
+      fontWeight: tokens.typography.weight.semiBold,
       fontFeatures: numericBadgeFontFeatures,
     );
 
@@ -465,7 +443,7 @@ class _WakeRowState extends ConsumerState<_WakeRow> {
     );
     final statusStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
-      fontWeight: FontWeight.w600,
+      fontWeight: tokens.typography.weight.semiBold,
       fontFeatures: numericBadgeFontFeatures,
     );
     final taskRoute = taskId == null || taskId.isEmpty
@@ -550,7 +528,7 @@ class _MoreWakesRow extends StatelessWidget {
     final label = _label(context);
     final style = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.mediumEmphasis,
-      fontWeight: FontWeight.w600,
+      fontWeight: tokens.typography.weight.semiBold,
       fontFeatures: numericBadgeFontFeatures,
     );
 

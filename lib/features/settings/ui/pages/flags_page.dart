@@ -113,7 +113,6 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableWhatsNewFlag,
     dailyOsOnboardingEnabledFlag,
     showSyncActivityIndicatorFlag,
-    showSidebarWakeQueueFlag,
     enableForkHealingFlag,
   ];
 
@@ -174,8 +173,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.tips_and_updates_outlined;
       case showSyncActivityIndicatorFlag:
         return Icons.network_check_rounded;
-      case showSidebarWakeQueueFlag:
-        return Icons.alarm_rounded;
       case enableForkHealingFlag:
         return Icons.call_merge_rounded;
       default:
@@ -223,8 +220,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagDailyOsOnboardingEnabledDescription;
       case showSyncActivityIndicatorFlag:
         return context.messages.configFlagShowSyncActivityIndicatorDescription;
-      case showSidebarWakeQueueFlag:
-        return context.messages.configFlagShowSidebarWakeQueueDescription;
       case enableForkHealingFlag:
         return context.messages.configFlagEnableForkHealingDescription;
       default:
@@ -272,8 +267,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagDailyOsOnboardingEnabled;
       case showSyncActivityIndicatorFlag:
         return context.messages.configFlagShowSyncActivityIndicator;
-      case showSidebarWakeQueueFlag:
-        return context.messages.configFlagShowSidebarWakeQueue;
       case enableForkHealingFlag:
         return context.messages.configFlagEnableForkHealing;
       default:

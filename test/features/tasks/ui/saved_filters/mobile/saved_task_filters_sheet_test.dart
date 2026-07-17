@@ -37,6 +37,7 @@ class _RecordingSavedController extends SavedTaskFiltersController {
   final List<(String id, String name)> renameCalls = [];
   final List<String> deleteCalls = [];
   final List<String> createCalls = [];
+  final List<(String dragId, String targetId)> reorderCalls = [];
 
   @override
   Future<List<SavedTaskFilter>> build() async => _seed;
@@ -58,6 +59,11 @@ class _RecordingSavedController extends SavedTaskFiltersController {
   }) async {
     createCalls.add(name);
     return SavedTaskFilter(id: 'new', name: name, filter: filter);
+  }
+
+  @override
+  Future<void> reorder(String dragId, String targetId) async {
+    reorderCalls.add((dragId, targetId));
   }
 }
 
@@ -88,6 +94,11 @@ _pumpSheet(
 }
 
 void main() {
+  Finder nameTextField() => find.descendant(
+    of: find.byKey(SaveCurrentTaskFilterKeys.nameField),
+    matching: find.byType(TextField),
+  );
+
   setUp(() async {
     await setUpTestGetIt(
       additionalSetup: () {
@@ -429,6 +440,86 @@ void main() {
     expect(find.byKey(SavedTaskFiltersSheetKeys.rename('f1')), findsNothing);
   });
 
+  testWidgets(
+    'Edit mode explains sidebar order and reorders saved filters',
+    (tester) async {
+      final bench = await _pumpSheet(tester);
+
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+      await tester.pump();
+
+      expect(
+        find.text(
+          'Drag to set the order. The first five filters appear in the sidebar.',
+        ),
+        findsOneWidget,
+      );
+      for (final id in ['f1', 'f2']) {
+        final handle = find.byKey(
+          SavedTaskFiltersSheetKeys.dragHandle(id),
+        );
+        expect(handle, findsOneWidget);
+        expect(tester.getSize(handle).width, greaterThanOrEqualTo(48));
+        expect(tester.getSize(handle).height, greaterThanOrEqualTo(48));
+      }
+
+      final list = tester.widget<ReorderableListView>(
+        find.byType(ReorderableListView),
+      );
+      final proxy = list.proxyDecorator!(
+        const Text('Drag preview'),
+        0,
+        const AlwaysStoppedAnimation<double>(1),
+      );
+      expect(proxy, isA<Material>());
+      expect((proxy as Material).type, MaterialType.transparency);
+
+      list.onReorderItem!(1, 0);
+      await tester.pump();
+
+      list.onReorderItem!(0, 1);
+      await tester.pump();
+
+      expect(bench.saved.reorderCalls, [
+        ('f2', 'f1'),
+        ('f1', 'f2'),
+      ]);
+    },
+  );
+
+  testWidgets('Edit mode keeps long saved-filter lists scrollable', (
+    tester,
+  ) async {
+    final saved = List.generate(
+      20,
+      (index) => SavedTaskFilter(
+        id: 'filter-$index',
+        name: 'Filter $index',
+        filter: const TasksFilter(),
+      ),
+    );
+    await _pumpSheet(tester, seed: saved);
+
+    await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+    await tester.pump();
+
+    final listFinder = find.byType(ReorderableListView);
+    final list = tester.widget<ReorderableListView>(listFinder);
+    expect(list.physics, isNot(isA<NeverScrollableScrollPhysics>()));
+
+    final scrollableFinder = find.descendant(
+      of: listFinder,
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(listFinder, const Offset(0, -300));
+    await tester.pump();
+
+    expect(
+      tester.state<ScrollableState>(scrollableFinder).position.pixels,
+      greaterThan(0),
+    );
+  });
+
   testWidgets('Rename opens the name modal and renames via the controller', (
     tester,
   ) async {
@@ -440,8 +531,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
+    expect(find.text('Rename In Progress'), findsOneWidget);
     await tester.enterText(
-      find.byKey(SaveCurrentTaskFilterKeys.nameField),
+      nameTextField(),
       'Doing now',
     );
     await tester.pump();
@@ -516,7 +608,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     await tester.enterText(
-      find.byKey(SaveCurrentTaskFilterKeys.nameField),
+      nameTextField(),
       'My filter',
     );
     await tester.pump();
@@ -626,7 +718,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       await tester.enterText(
-        find.byKey(SaveCurrentTaskFilterKeys.nameField),
+        nameTextField(),
         'My filter',
       );
       await tester.pump();

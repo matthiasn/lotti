@@ -175,15 +175,7 @@ Future<void> initConfigFlags(
   await db.insertFlagIfNotExists(
     const ConfigFlag(
       name: showSyncActivityIndicatorFlag,
-      description: 'Show live sync activity in the sidebar.',
-      status: false,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: showSidebarWakeQueueFlag,
-      description: 'Show the inline Wake Queue in the sidebar.',
+      description: 'Show sync status in the sidebar.',
       status: false,
     ),
   );

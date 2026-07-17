@@ -31,11 +31,11 @@ class DesktopSidebarDestination {
   /// Optional builder for a subtree rendered immediately below the
   /// destination row when the sidebar is in its expanded layout.
   ///
-  /// The builder is only invoked while the destination is the active tab —
-  /// the design system uses this to host the Tasks "Saved filters" treeview
-  /// without having to special-case the tasks destination in every consumer.
+  /// The builder is only invoked while the destination is the active tab.
   /// Subtrees stay collapsed when the sidebar is in its narrow icon-only
-  /// layout.
+  /// layout. Product-specific secondary navigation can use this slot when it
+  /// benefits from persistent visibility without becoming a global
+  /// destination, such as Tasks' saved filters.
   final Widget Function()? expandedChildBuilder;
 }
 
@@ -101,9 +101,9 @@ class DesktopNavigationSidebar extends StatelessWidget {
 
   /// Optional widget rendered between the scrollable nav and the
   /// Settings row in the expanded layout. The Lotti app uses this slot
-  /// to host the inline Wake Queue (sidebar handoff S1). The slot is
-  /// intentionally suppressed in [collapsed] mode — the monospace
-  /// header and avatar/title rows would not fit the icon-only column.
+  /// for its compact, inline-expandable activity disclosure. The slot is
+  /// intentionally suppressed in [collapsed] mode, where the metrics and
+  /// detail cards would not fit the icon-only rail.
   final Widget? aboveSettings;
 
   /// Optional widget rendered immediately below the Settings row in the
@@ -176,9 +176,8 @@ class DesktopNavigationSidebar extends StatelessWidget {
             ),
           ),
 
-          // Optional ambient indicator slot (e.g. sync activity).
-          // Hidden in collapsed mode because the strip is too narrow
-          // to display readable monospace counters.
+          // Optional transient-activity slot. Hidden in collapsed mode because
+          // the compact metrics do not fit the icon-only rail.
           if (!collapsed && aboveSettings != null) ...[
             SizedBox(height: tokens.spacing.step5),
             aboveSettings!,

@@ -865,18 +865,22 @@ void main() {
     );
   });
 
-  group('Tasks saved-filter rail', () {
-    // The header no longer carries a "· {name}" suffix; the mobile rail surfaces
-    // the active saved filter instead. These tests exercise the page-level
-    // wiring (rail visible only when ≥1 saved filter exists, active name shown).
+  group('Tasks saved-filter controls', () {
+    // The header no longer carries a "· {name}" suffix; task-local controls
+    // surface the active saved filter instead. These tests exercise page-level
+    // responsive wiring, collapse behavior, and the active view name.
     Widget buildSubjectWithSavedFilter({
       required String? activeId,
       required List<SavedTaskFilter> seed,
+      JournalPageState? pageState,
+      bool hasUnsaved = false,
+      MediaQueryData? mediaQueryData,
     }) {
-      fakeController = FakeJournalPageController(state());
+      fakeController = FakeJournalPageController(pageState ?? state());
 
       return makeTestableWidgetNoScroll(
         const TasksTabPage(),
+        mediaQueryData: mediaQueryData,
         overrides: [
           journalPageScopeProvider.overrideWithValue(true),
           journalPageControllerProvider(
@@ -887,7 +891,9 @@ void main() {
             () => _StubSavedTaskFiltersController(seed),
           ),
           currentSavedTaskFilterIdProvider.overrideWith((ref) => activeId),
-          tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+          tasksFilterHasUnsavedClausesProvider.overrideWith(
+            (ref) => hasUnsaved,
+          ),
           // Keep counts off the GetIt-backed repository in this page-level test.
           savedTaskFilterCountsProvider.overrideWith(
             (ref) async => const {'sv-1': 3},
@@ -909,7 +915,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // The rail collapses to nothing — no Saved button — and the old
+      // The mobile rail collapses to nothing — no Filters button — and the old
       // "· {name}" header suffix is gone for good.
       expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsNothing);
       expect(find.textContaining('· '), findsNothing);
@@ -934,15 +940,118 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
-      // The Saved button keeps the plain "Saved" label (its saved-count rides a
+      // The Filters button keeps a plain label (its saved-count rides a
       // separate slot, not a parenthetical).
-      expect(find.text('Saved'), findsOneWidget);
+      expect(find.text('Filters'), findsOneWidget);
       // The active pill shows the saved filter's name.
       expect(find.text('In Progress P0'), findsOneWidget);
     });
 
+    testWidgets('does not duplicate saved filters in the desktop task pane', (
+      tester,
+    ) async {
+      final selectedTaskId = ValueNotifier<String?>(null);
+      addTearDown(selectedTaskId.dispose);
+      when(
+        () => mockNavService.desktopSelectedTaskId,
+      ).thenReturn(selectedTaskId);
+
+      await tester.pumpWidget(
+        buildSubjectWithSavedFilter(
+          activeId: 'sv-1',
+          seed: const [
+            SavedTaskFilter(
+              id: 'sv-1',
+              name: 'Desktop focus',
+              filter: TasksFilter(),
+            ),
+          ],
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Desktop focus'), findsNothing);
+      expect(find.byKey(SavedTaskFilterRailKeys.root), findsNothing);
+      expect(find.byType(RefreshIndicator), findsOneWidget);
+    });
+
     testWidgets(
-      'rail collapses when activeId does not resolve to any saved view',
+      'matched saved filter replaces rather than duplicates its filter chips',
+      (tester) async {
+        final selectedTaskId = ValueNotifier<String?>(null);
+        addTearDown(selectedTaskId.dispose);
+        when(
+          () => mockNavService.desktopSelectedTaskId,
+        ).thenReturn(selectedTaskId);
+
+        await tester.pumpWidget(
+          buildSubjectWithSavedFilter(
+            activeId: 'sv-1',
+            seed: const [
+              SavedTaskFilter(
+                id: 'sv-1',
+                name: 'Urgent in progress',
+                filter: TasksFilter(
+                  selectedTaskStatuses: {'IN PROGRESS'},
+                  selectedPriorities: {'P0'},
+                ),
+              ),
+            ],
+            pageState: state(
+              selectedTaskStatuses: const {'IN PROGRESS'},
+              selectedCategoryIds: const {},
+              selectedPriorities: const {'P0'},
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Urgent in progress'), findsNothing);
+        expect(find.byType(ActiveFilterChip), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'custom desktop filter keeps removable chips in the task pane',
+      (
+        tester,
+      ) async {
+        final selectedTaskId = ValueNotifier<String?>(null);
+        addTearDown(selectedTaskId.dispose);
+        when(
+          () => mockNavService.desktopSelectedTaskId,
+        ).thenReturn(selectedTaskId);
+
+        await tester.pumpWidget(
+          buildSubjectWithSavedFilter(
+            activeId: null,
+            hasUnsaved: true,
+            seed: const [
+              SavedTaskFilter(
+                id: 'sv-1',
+                name: 'Saved baseline',
+                filter: TasksFilter(),
+              ),
+            ],
+            pageState: state(
+              selectedTaskStatuses: const {'OPEN'},
+              selectedCategoryIds: const {},
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+        expect(find.text('Saved baseline'), findsNothing);
+        expect(find.text('Custom'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'rail collapses when activeId does not resolve to any saved filter',
       (tester) async {
         // Stale-id case: provider says sv-1 is active, but the list is empty
         // (e.g. concurrent delete). The rail must collapse rather than throw.
@@ -959,6 +1068,39 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets('stale active id keeps custom filter chips removable', (
+      tester,
+    ) async {
+      final selectedTaskId = ValueNotifier<String?>(null);
+      addTearDown(selectedTaskId.dispose);
+      when(
+        () => mockNavService.desktopSelectedTaskId,
+      ).thenReturn(selectedTaskId);
+
+      await tester.pumpWidget(
+        buildSubjectWithSavedFilter(
+          activeId: 'deleted',
+          seed: const [
+            SavedTaskFilter(
+              id: 'still-saved',
+              name: 'Still saved',
+              filter: TasksFilter(),
+            ),
+          ],
+          pageState: state(
+            selectedPriorities: const {'P0'},
+            selectedCategoryIds: const {},
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(ActiveFilterChip), findsNWidgets(2));
+      expect(find.text('Custom'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   testWidgets(

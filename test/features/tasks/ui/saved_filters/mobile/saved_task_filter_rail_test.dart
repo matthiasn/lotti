@@ -160,12 +160,12 @@ void main() {
   });
 
   testWidgets(
-    'Saved button shows the saved-filter count in the shared slot and opens '
+    'Filters button shows the saved-filter count in the shared slot and opens '
     'the sheet',
     (
       tester,
     ) async {
-      // Seed has 2 filters → the Saved button reads "Saved  2", using the SAME
+      // Seed has 2 filters → the Filters button reads "Filters  2", using the SAME
       // shared count widget as the rail pills so it stays consistent with the
       // "All 124" / per-filter numerals.
       await _pumpRail(tester, pageState: const JournalPageState());
@@ -173,7 +173,7 @@ void main() {
       final label = tester.widget<Text>(
         find.descendant(
           of: find.byKey(SavedTaskFilterRailKeys.savedButton),
-          matching: find.text('Saved'),
+          matching: find.text('Filters'),
         ),
       );
       // The label inherits the filled pill's high-emphasis colour…
@@ -211,7 +211,7 @@ void main() {
   );
 
   testWidgets(
-    'Saved button glyphs use high-emphasis for light-theme contrast',
+    'Filters button glyphs use high-emphasis for light-theme contrast',
     (
       tester,
     ) async {
@@ -236,7 +236,7 @@ void main() {
   );
 
   testWidgets(
-    'Saved button is a distinct borderless chip with a panel-disclosure glyph',
+    'Filters button is a distinct borderless chip with a panel-disclosure glyph',
     (
       tester,
     ) async {
@@ -308,7 +308,7 @@ void main() {
 
       // The active saved pill is the anchor and LEADS; the MRU f2 quick-jump is
       // dropped, but "All" is KEPT (an unselected reset) so return-to-unfiltered
-      // stays one tap, followed by the Saved button.
+      // stays one tap, followed by the Filters button.
       expect(
         _pill(tester, SavedTaskFilterRailKeys.pill('f1')).selected,
         isTrue,
@@ -378,7 +378,7 @@ void main() {
     );
 
     // All is the active selection, surfaced as the single anchor pill (no
-    // duplicate reset) and leading the Saved button; no quick-jump pills render.
+    // duplicate reset) and leading the Filters button; no quick-jump pills render.
     expect(_pill(tester, SavedTaskFilterRailKeys.allPill).selected, isTrue);
     expect(find.byKey(SavedTaskFilterRailKeys.pill('f1')), findsNothing);
     expect(find.byKey(SavedTaskFilterRailKeys.pill('f2')), findsNothing);
