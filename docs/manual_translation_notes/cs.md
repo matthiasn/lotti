@@ -35,6 +35,8 @@ aplikace bez samostatné lokalizační změny.
 | Zprovoznění synchronizace | `Provizní synchronizace` | Klíč `provisionedSyncTitle` působí jako doslovný překlad anglického „provisioned“. V kontextu importu zabezpečeného párovacího balíčku by potřeboval přirozenější české pojmenování. |
 | Nastavení AI – profily | `Inference Profiles`, `Edit Profile`, `Thinking`, `Image Recognition`, `Transcription`, `Image Generation` | Na několika obrazovkách profilů inference zůstávají nadpisy a názvy pozic anglicky. Je potřeba rozlišit modelová ID od běžných ovládacích prvků a přeložit druhé z nich. |
 | Nastavení agentů | `Agents`, `Stats`, `Agent Templates`, `Instances`, `Due` | Kromě dříve zaznamenaného titulku nastavení zůstávají anglické i názvy hlavních záložek a stavů. Na české obrazovce působí jako neúplná lokalizace. |
+| Karta agenta úkolu | `Proposed changes`, `pending`, `Confirm all` | Nástroje pro návrhy agenta zůstávají na jinak české kartě anglicky. Příručka používá viditelný název `Confirm all`, aby se čtenář mohl v aktuální aplikaci zorientovat. |
+| Podrobnost úkolu | `Zadejte poznámky…` | Zástupný text poznámek používá formální imperativ, který neodpovídá neformálnímu tónu zbytku českého rozhraní. |
 | Kontroly šablon a duší agentů | `Current Proposal`, `Session History`, `Start Conversation`, `Edit Template` | Ovládací prvky a názvy sekcí pro individuální kontroly agentů se ve snímcích zobrazují anglicky. S výrazy „Duše 1-on-1“ vedle nich vzniká směs tří stylů. |
 | Časová osa Daily OS | `Přejeď na skutečnost` | Popisek gesta působí jako doslovný překlad a není jasné, že má přepnout z plánované na zaznamenanou stopu. Přirozenější by byl směr typu „Přepni na skutečný čas“. |
 
