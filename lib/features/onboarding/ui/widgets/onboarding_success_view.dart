@@ -67,9 +67,9 @@ class _OnboardingSuccessViewState extends State<OnboardingSuccessView>
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final panelBg = dsTokensDark.colors.background.level01;
-    final textHigh = dsTokensDark.colors.text.highEmphasis;
-    final textMedium = dsTokensDark.colors.text.mediumEmphasis;
+    final panelBg = tokens.colors.background.level01;
+    final textHigh = tokens.colors.text.highEmphasis;
+    final textMedium = tokens.colors.text.mediumEmphasis;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.l),
@@ -120,7 +120,7 @@ class _OnboardingSuccessViewState extends State<OnboardingSuccessView>
                     child: _CheckMark(
                       size: _checkSize,
                       accent: widget.accent,
-                      iconColor: panelBg,
+                      iconColor: tokens.colors.text.onInteractiveAlert,
                     ),
                   ),
                 ),

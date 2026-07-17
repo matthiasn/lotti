@@ -23,8 +23,8 @@ enum OnboardingFirstTaskPhase {
   /// thinking shimmer.
   thinking,
 
-  /// The task landed — the created beat: the title + checklist as a glowing
-  /// tappable card that hands off to the real task page.
+  /// The task landed — the created beat: the title as a glowing tappable card
+  /// that hands off to the real task page, where checklist proposals appear.
   created,
 }
 
@@ -39,7 +39,8 @@ enum OnboardingFirstTaskPhase {
 /// listening, and the thinking cluster while structuring. A quiet "Rather
 /// type?" escape hatch stays pinned under the composing frames. The created
 /// frame swaps the band for the landed task itself — a glowing tappable card
-/// (title + checklist) whose tap fires [onOpenTask].
+/// whose tap fires [onOpenTask]. Checklist proposals stay on the real task
+/// page, where they can be reviewed and confirmed.
 ///
 /// It is string- and callback-injected (no `getIt`/Riverpod) so it renders
 /// identically under the real capture flow and in isolation for design review.
@@ -163,9 +164,9 @@ class OnboardingFirstTaskView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final textHigh = dsTokensDark.colors.text.highEmphasis;
-    final textMedium = dsTokensDark.colors.text.mediumEmphasis;
-    final panelBg = dsTokensDark.colors.background.level01;
+    final textHigh = tokens.colors.text.highEmphasis;
+    final textMedium = tokens.colors.text.mediumEmphasis;
+    final panelBg = tokens.colors.background.level01;
     // Minimum height for the band the active element is centred in, so the
     // recording visual and the thinking cluster share one optical anchor across
     // phases. Sized on the token scale to seat the tallest visual (the modern
@@ -208,7 +209,7 @@ class OnboardingFirstTaskView extends StatelessWidget {
                 Text(
                   _headline,
                   textAlign: TextAlign.center,
-                  style: tokens.typography.styles.heading.heading3.copyWith(
+                  style: tokens.typography.styles.heading.heading2.copyWith(
                     color: textHigh,
                   ),
                 ),
@@ -244,7 +245,7 @@ class OnboardingFirstTaskView extends StatelessWidget {
                   Text(
                     listeningCaption,
                     textAlign: TextAlign.center,
-                    style: tokens.typography.styles.body.bodyLarge.copyWith(
+                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
                       color: textHigh,
                     ),
                   ),
@@ -276,9 +277,10 @@ class OnboardingFirstTaskView extends StatelessWidget {
                     onPressed: onRatherType,
                     child: Text(
                       ratherTypeLabel,
-                      style: tokens.typography.styles.body.bodyLarge.copyWith(
-                        color: accent,
-                      ),
+                      style: tokens.typography.styles.subtitle.subtitle1
+                          .copyWith(
+                            color: accent,
+                          ),
                     ),
                   ),
                 ],
@@ -314,11 +316,12 @@ class OnboardingFirstTaskView extends StatelessWidget {
         return VoiceOrbZone(
           phase: capturePhase,
           caption: '',
-          captionColor: dsTokensDark.colors.text.mediumEmphasis,
+          captionColor: tokens.colors.text.mediumEmphasis,
           semanticLabel: recordSemanticLabel,
           onTap: onRecordTap,
           amplitudes: amplitudes,
           dbfs: dbfs,
+          listeningCoreColor: tokens.colors.background.level02,
         );
       case RecordingStyle.analogue:
         return _AnalogueRecorder(
@@ -357,25 +360,30 @@ class _AnalogueRecorder extends StatelessWidget {
     return Semantics(
       button: true,
       label: semanticLabel,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnalogVuMeter(
-              // 0 VU ≈ -18 dBFS, so VU ≈ dBFS + 18, clamped to the meter range.
-              vu: (dbfs + 18).clamp(-20.0, 3.0),
-              dBFS: dbfs,
-              size: tokens.spacing.step11 * 3,
-              colorScheme: colorScheme,
-            ),
-            SizedBox(height: tokens.spacing.step3),
-            LiveWaveform(
-              amplitudes: amplitudes,
-              color: dsTokensDark.colors.text.highEmphasis,
-            ),
-          ],
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(tokens.radii.l),
+          focusColor: tokens.colors.surface.focusPressed,
+          hoverColor: tokens.colors.surface.hover,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnalogVuMeter(
+                // 0 VU ≈ -18 dBFS, so VU ≈ dBFS + 18, clamped to the meter range.
+                vu: (dbfs + 18).clamp(-20.0, 3.0),
+                dBFS: dbfs,
+                size: tokens.spacing.step11 * 3,
+                colorScheme: colorScheme,
+              ),
+              SizedBox(height: tokens.spacing.step3),
+              LiveWaveform(
+                amplitudes: amplitudes,
+                color: tokens.colors.text.highEmphasis,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -401,14 +409,14 @@ class _SuggestionChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textHigh = dsTokensDark.colors.text.highEmphasis;
+    final textHigh = tokens.colors.text.highEmphasis;
     return Column(
       children: [
         Text(
           label,
           textAlign: TextAlign.center,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: dsTokensDark.colors.text.mediumEmphasis,
+          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
           ),
         ),
         SizedBox(height: tokens.spacing.step3),
@@ -428,8 +436,9 @@ class _SuggestionChips extends StatelessWidget {
                     borderRadius: BorderRadius.circular(tokens.radii.l),
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: dsTokensDark.colors.background.level02
-                            .withValues(alpha: 0.4),
+                        color: tokens.colors.background.level02.withValues(
+                          alpha: 0.4,
+                        ),
                         borderRadius: BorderRadius.circular(tokens.radii.l),
                         border: Border.all(
                           color: textHigh.withValues(alpha: 0.32),
@@ -460,8 +469,8 @@ class _SuggestionChips extends StatelessWidget {
 /// The first-task destination picker: a short prompt over a centred wrap of
 /// pills naming the areas the user created, so they choose which one the
 /// structured task lands in. Selection is colour-led (a solid brand fill for
-/// the chosen area, an outline for the rest) so it stays legible on the dark
-/// panel.
+/// the chosen area, an outline for the rest) so it stays legible on either
+/// themed panel.
 class _CategoryPicker extends StatelessWidget {
   const _CategoryPicker({
     required this.tokens,
@@ -486,8 +495,8 @@ class _CategoryPicker extends StatelessWidget {
         Text(
           prompt,
           textAlign: TextAlign.center,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: dsTokensDark.colors.text.mediumEmphasis,
+          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
           ),
         ),
         SizedBox(height: tokens.spacing.step3),
@@ -511,8 +520,8 @@ class _CategoryPicker extends StatelessWidget {
   }
 }
 
-/// One destination pill. Selected fills solid brand with a dark label; the rest
-/// are a quiet outline with a light label.
+/// One destination pill. Selected fills solid brand with an on-interactive
+/// label; the rest use a quiet outline and high-emphasis label.
 class _PickerChip extends StatelessWidget {
   const _PickerChip({
     required this.tokens,
@@ -531,36 +540,42 @@ class _PickerChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fg = selected
-        ? dsTokensDark.colors.background.level01
-        : dsTokensDark.colors.text.highEmphasis;
+        ? tokens.colors.text.onInteractiveAlert
+        : tokens.colors.text.highEmphasis;
     final radius = BorderRadius.circular(tokens.radii.l);
     return Semantics(
       button: true,
       selected: selected,
       label: label,
-      child: GestureDetector(
-        onTap: onTap,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: selected ? accent : Colors.transparent,
-            borderRadius: radius,
-            border: Border.all(
-              color: selected
-                  ? accent
-                  : dsTokensDark.colors.text.mediumEmphasis.withValues(
-                      alpha: 0.5,
-                    ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          focusColor: tokens.colors.surface.focusPressed,
+          hoverColor: tokens.colors.surface.hover,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: selected ? accent : Colors.transparent,
+              borderRadius: radius,
+              border: Border.all(
+                color: selected
+                    ? accent
+                    : tokens.colors.text.mediumEmphasis.withValues(
+                        alpha: 0.5,
+                      ),
+              ),
             ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step4,
-              vertical: tokens.spacing.step2,
-            ),
-            child: Text(
-              label,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: fg,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+                vertical: tokens.spacing.step2,
+              ),
+              child: Text(
+                label,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: fg,
+                ),
               ),
             ),
           ),
@@ -628,7 +643,7 @@ class _CreatedTaskCardState extends State<_CreatedTaskCard>
   @override
   Widget build(BuildContext context) {
     final tokens = widget.tokens;
-    final textHigh = dsTokensDark.colors.text.highEmphasis;
+    final textHigh = tokens.colors.text.highEmphasis;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
@@ -642,7 +657,7 @@ class _CreatedTaskCardState extends State<_CreatedTaskCard>
             border: Border.all(
               color: widget.accent.withValues(alpha: 0.35 + 0.35 * t),
             ),
-            color: dsTokensDark.colors.background.level02.withValues(
+            color: tokens.colors.background.level02.withValues(
               alpha: 0.55,
             ),
             boxShadow: [
@@ -672,23 +687,28 @@ class _CreatedTaskCardState extends State<_CreatedTaskCard>
     final content = Semantics(
       button: true,
       label: widget.taskTitle,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            card,
-            SizedBox(height: tokens.spacing.step3),
-            Text(
-              widget.hint,
-              textAlign: TextAlign.center,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: widget.accent,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(tokens.radii.l),
+          focusColor: tokens.colors.surface.focusPressed,
+          hoverColor: tokens.colors.surface.hover,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              card,
+              SizedBox(height: tokens.spacing.step3),
+              Text(
+                widget.hint,
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: widget.accent,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -749,7 +769,7 @@ class _ThinkingCluster extends StatelessWidget {
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
               style: tokens.typography.styles.body.bodyLarge.copyWith(
-                color: dsTokensDark.colors.text.highEmphasis,
+                color: tokens.colors.text.highEmphasis,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -759,7 +779,7 @@ class _ThinkingCluster extends StatelessWidget {
             reassurance,
             textAlign: TextAlign.center,
             style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: dsTokensDark.colors.text.mediumEmphasis,
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
         ],

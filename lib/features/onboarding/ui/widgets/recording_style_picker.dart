@@ -23,13 +23,10 @@ final List<double> _idleAmplitudes = List<double>.generate(
 /// any surrounding chrome (title/explanation copy, Continue CTA, backdrop) so
 /// onboarding and Settings render an identical picker.
 ///
-/// [surfaceTokens] supplies the card text/fill colors — pass [dsTokensDark]
-/// for a fixed dark card (onboarding, which always sits over its own dark
-/// `OnboardingBackdrop`) or the ambient `context.designTokens` for a card
-/// that follows the host page's light/dark theme (Settings, which has no
-/// such backdrop — a fixed-dark card there would render low-contrast, near
-/// -illegible text on a light background). Layout (spacing/radii/typography)
-/// stays ambient either way, since those scale values don't vary by theme.
+/// [surfaceTokens] supplies the card text/fill colors. Both onboarding and
+/// Settings pass their ambient `context.designTokens`, keeping the picker in
+/// sync with the active light/dark theme. Layout (spacing/radii/typography)
+/// stays ambient too.
 ///
 ///  * **Modern** — the [AiVoiceInputShader] orb + a brand-tinted [LiveWaveform].
 ///  * **Analogue** — the skeuomorphic [AnalogVuMeter] + a neutral [LiveWaveform].
@@ -61,8 +58,7 @@ class RecordingStylePicker extends StatelessWidget {
   /// theme-adaptive; pass a scheme matching [surfaceTokens]'s brightness).
   final ColorScheme colorScheme;
 
-  /// Text/fill colors for the cards and toggle. See the class doc for when
-  /// to pass [dsTokensDark] vs. the ambient `context.designTokens`.
+  /// Text/fill colors for the cards and toggle.
   final DsTokens surfaceTokens;
 
   final String analogueLabel;

@@ -4,15 +4,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Slow flowing aurora: several large soft colour blooms drift on lissajous
-/// paths and blend additively over a dark surface, producing a calm, premium
-/// "living gradient". Pure [CustomPainter] (additive radial gradients) so it
-/// renders identically in offline goldens — no fragment shader needed.
+/// paths and blend over the host surface, producing a calm, premium "living
+/// gradient". Pure [CustomPainter] (radial gradients) so it renders identically
+/// in offline goldens — no fragment shader needed.
 ///
 /// Used as the ambient backdrop of the connect page (a different motion from
 /// the welcome's neural constellation). Under reduced motion a single static
 /// frame is painted.
 class AuroraHero extends StatefulWidget {
-  const AuroraHero({required this.colors, this.maxAlpha = 0.55, super.key});
+  const AuroraHero({
+    required this.colors,
+    this.maxAlpha = 0.55,
+    this.blendMode = BlendMode.plus,
+    super.key,
+  });
 
   /// Bloom colours (3–4 reads best); each drifts and blends additively.
   final List<Color> colors;
@@ -20,6 +25,11 @@ class AuroraHero extends StatefulWidget {
   /// Peak alpha of each bloom centre — lower it to keep the aurora subtle
   /// behind foreground content.
   final double maxAlpha;
+
+  /// How each bloom is composited onto the host surface. Additive blending
+  /// makes colour glow on dark backgrounds; normal source-over blending keeps
+  /// the same blooms visible on light backgrounds instead of adding into white.
+  final BlendMode blendMode;
 
   @override
   State<AuroraHero> createState() => _AuroraHeroState();
@@ -67,6 +77,7 @@ class _AuroraHeroState extends State<AuroraHero>
               colors: widget.colors,
               t: _controller.value * _loop.inSeconds,
               maxAlpha: widget.maxAlpha,
+              blendMode: widget.blendMode,
             ),
           );
         },
@@ -80,11 +91,13 @@ class _AuroraPainter extends CustomPainter {
     required this.colors,
     required this.t,
     required this.maxAlpha,
+    required this.blendMode,
   });
 
   final List<Color> colors;
   final double t;
   final double maxAlpha;
+  final BlendMode blendMode;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -111,7 +124,7 @@ class _AuroraPainter extends CustomPainter {
         radius,
         Paint()
           ..shader = shader
-          ..blendMode = BlendMode.plus,
+          ..blendMode = blendMode,
       );
     }
   }
@@ -120,5 +133,6 @@ class _AuroraPainter extends CustomPainter {
   bool shouldRepaint(covariant _AuroraPainter oldDelegate) =>
       oldDelegate.t != t ||
       oldDelegate.maxAlpha != maxAlpha ||
+      oldDelegate.blendMode != blendMode ||
       !listEquals(oldDelegate.colors, colors);
 }

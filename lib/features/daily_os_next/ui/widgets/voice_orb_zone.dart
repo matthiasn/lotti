@@ -39,6 +39,7 @@ class VoiceOrbZone extends StatelessWidget {
     required this.onTap,
     this.amplitudes = const [],
     this.dbfs = CaptureState.defaultDbfs,
+    this.listeningCoreColor,
     super.key,
   });
 
@@ -64,6 +65,9 @@ class VoiceOrbZone extends StatelessWidget {
 
   /// Latest recorder amplitude in dBFS, passed through to the orb shader.
   final double dbfs;
+
+  /// Optional themed surface forwarded to the listening button center.
+  final Color? listeningCoreColor;
 
   @override
   Widget build(BuildContext context) {
@@ -101,6 +105,7 @@ class VoiceOrbZone extends StatelessWidget {
           dbfs: dbfs,
           semanticLabel: semanticLabel,
           onTap: onTap,
+          listeningCoreColor: listeningCoreColor,
         ),
         SizedBox(height: tokens.spacing.step5),
         // One shared style across phases keeps the (scaled) line height —

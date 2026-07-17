@@ -337,7 +337,7 @@ void main() {
     expect(find.text('Ollama'), findsOneWidget);
   }
 
-  Future<void> driveToFirstTaskPrompt(WidgetTester tester) async {
+  Future<void> driveToApiKey(WidgetTester tester) async {
     await driveToProviders(tester);
     await tapText(tester, 'Ollama');
 
@@ -347,8 +347,16 @@ void main() {
       find.text(_t('Connection verified', 'Verbindung bestätigt')),
       findsOneWidget,
     );
+  }
 
+  Future<void> driveToSuccess(WidgetTester tester) async {
+    await driveToApiKey(tester);
     await tapText(tester, _t('Connect', 'Verbinden'));
+    expect(find.text(_t("You're all set", 'Alles bereit')), findsOneWidget);
+  }
+
+  Future<void> driveToRecordingStyle(WidgetTester tester) async {
+    await driveToSuccess(tester);
     await tapText(tester, _t('Get started', "Los geht's"));
     expect(
       find.text(
@@ -356,14 +364,21 @@ void main() {
       ),
       findsOneWidget,
     );
-    await tapText(tester, _t('Continue', 'Weiter'));
+  }
 
+  Future<void> driveToCategories(WidgetTester tester) async {
+    await driveToRecordingStyle(tester);
+    await tapText(tester, _t('Continue', 'Weiter'));
     expect(
       find.text(
         _t('Where should your AI work?', 'Wo soll deine KI arbeiten?'),
       ),
       findsOneWidget,
     );
+  }
+
+  Future<void> driveToFirstTaskPrompt(WidgetTester tester) async {
+    await driveToCategories(tester);
     await tapText(tester, _t('Add your own', 'Eigene hinzufügen'), frames: 4);
     await tester.enterText(
       find.byType(TextField).last,

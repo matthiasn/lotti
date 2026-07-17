@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/onboarding/ui/widgets/aurora_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/crystallize_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/neural_constellation.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/waveform_text_hero.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -107,9 +113,11 @@ void main() {
   });
 
   group('buildOnboardingHeroVisual', () {
-    test('constellation welcome uses the entangled multi-vine variant', () {
+    test('dark constellation uses the entangled multi-vine variant', () {
       final visual = buildOnboardingHeroVisual(
         OnboardingHeroStyle.constellation,
+        tokens: dsTokensDark,
+        brightness: Brightness.dark,
       );
 
       final constellation = visual as NeuralConstellation;
@@ -123,7 +131,11 @@ void main() {
       testWidgets('builds a non-null visual for ${style.label}', (
         tester,
       ) async {
-        final visual = buildOnboardingHeroVisual(style);
+        final visual = buildOnboardingHeroVisual(
+          style,
+          tokens: dsTokensLight,
+          brightness: Brightness.light,
+        );
         expect(visual, isNotNull);
         expect(visual, isA<Widget>());
 
@@ -148,9 +160,243 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+
+    test('uses decoder bars in light mode and the constellation in dark', () {
+      final lightVisual = buildOnboardingHeroVisual(
+        OnboardingHeroStyle.constellation,
+        tokens: dsTokensLight,
+        brightness: Brightness.light,
+      );
+      expect(lightVisual, isA<OnboardingThinkingBarsHero>());
+
+      final darkVisual =
+          buildOnboardingHeroVisual(
+                OnboardingHeroStyle.constellation,
+                tokens: dsTokensDark,
+                brightness: Brightness.dark,
+              )
+              as NeuralConstellation;
+      expect(darkVisual.nodeColor, dsTokensDark.colors.aiProvider.ollama.color);
+      expect(
+        darkVisual.lineColor,
+        dsTokensDark.colors.aiProvider.anthropic.color,
+      );
+      expect(
+        darkVisual.pulseColor,
+        dsTokensDark.colors.proposalKind.update.color,
+      );
+    });
+
+    testWidgets('light welcome reuses the AI decoder-bars treatment', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const SizedBox(
+            width: 390,
+            height: 276,
+            child: OnboardingThinkingBarsHero(),
+          ),
+          mediaQueryData: reducedMotionMq,
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+      await tester.pump();
+
+      final presence = tester.widget<AiThinkingShaderPresence>(
+        find.byType(AiThinkingShaderPresence),
+      );
+      expect(presence.isRunning, isTrue);
+      expect(presence.height, dsTokensLight.spacing.step10);
+      expect(presence.primaryColor, dsTokensLight.colors.interactive.enabled);
+      expect(
+        presence.secondaryColor,
+        dsTokensLight.colors.text.highEmphasis,
+      );
+      expect(
+        TickerMode.valuesOf(
+          tester.element(find.byType(AiThinkingShaderPresence)),
+        ).enabled,
+        isFalse,
+      );
+    });
+
+    test('uses theme-specific visual colours and aurora blending', () {
+      for (final theme in [
+        (
+          tokens: dsTokensLight,
+          brightness: Brightness.light,
+          blendMode: BlendMode.srcOver,
+        ),
+        (
+          tokens: dsTokensDark,
+          brightness: Brightness.dark,
+          blendMode: BlendMode.plus,
+        ),
+      ]) {
+        final crystallize =
+            buildOnboardingHeroVisual(
+                  OnboardingHeroStyle.crystallize,
+                  tokens: theme.tokens,
+                  brightness: theme.brightness,
+                )
+                as CrystallizeHero;
+        expect(
+          crystallize.cardColor,
+          theme.tokens.colors.background.level02,
+        );
+        expect(
+          crystallize.onCardColor,
+          theme.tokens.colors.text.highEmphasis,
+        );
+
+        final aurora =
+            buildOnboardingHeroVisual(
+                  OnboardingHeroStyle.aurora,
+                  tokens: theme.tokens,
+                  brightness: theme.brightness,
+                )
+                as AuroraHero;
+        expect(aurora.blendMode, theme.blendMode);
+
+        final waveform =
+            buildOnboardingHeroVisual(
+                  OnboardingHeroStyle.waveform,
+                  tokens: theme.tokens,
+                  brightness: theme.brightness,
+                )
+                as WaveformTextHero;
+        expect(
+          waveform.textColor,
+          theme.tokens.colors.text.highEmphasis,
+        );
+      }
+    });
   });
 
   group('OnboardingHeroPanel', () {
+    for (final theme in [
+      (
+        name: 'light',
+        data: DesignSystemTheme.light(),
+        tokens: dsTokensLight,
+      ),
+      (
+        name: 'dark',
+        data: DesignSystemTheme.dark(),
+        tokens: dsTokensDark,
+      ),
+    ]) {
+      testWidgets('uses the ${theme.name} surface and text tokens', (
+        tester,
+      ) async {
+        tester.view
+          ..physicalSize = const Size(390, 1000)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            boundedPanel(
+              OnboardingHeroPanel(onConnect: () {}, onSkip: () {}),
+            ),
+            mediaQueryData: reducedMotionMq,
+            theme: theme.data,
+          ),
+        );
+        await tester.pump();
+
+        final surfaces = tester.widgetList<ColoredBox>(
+          find.descendant(
+            of: find.byType(OnboardingHeroPanel),
+            matching: find.byType(ColoredBox),
+          ),
+        );
+        final title = tester.widget<Text>(
+          find.text(messages.onboardingWelcomeTitle),
+        );
+
+        expect(surfaces.first.color, theme.tokens.colors.background.level01);
+        final heroBox = find
+            .descendant(
+              of: find.byType(OnboardingHeroPanel),
+              matching: find.byType(SizedBox),
+            )
+            .first;
+        final artworkSurface = tester.widget<ColoredBox>(
+          find.descendant(
+            of: heroBox,
+            matching: find.byType(ColoredBox),
+          ),
+        );
+        expect(
+          artworkSurface.color,
+          theme.name == 'light'
+              ? theme.tokens.colors.background.level01
+              : theme.tokens.colors.aiCard.background,
+        );
+        expect(title.style?.color, theme.tokens.colors.text.highEmphasis);
+        expect(
+          title.style?.fontSize,
+          theme.tokens.typography.styles.heading.heading2.fontSize,
+        );
+      });
+
+      testWidgets(
+        'uses the ${theme.name} panel hue for transparent hero fade stops',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(390, 1000)
+            ..devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          await tester.pumpWidget(
+            makeTestableWidgetNoScroll(
+              boundedPanel(
+                OnboardingHeroPanel(onConnect: () {}, onSkip: () {}),
+              ),
+              mediaQueryData: reducedMotionMq,
+              theme: theme.data,
+            ),
+          );
+          await tester.pump();
+
+          final heroBox = find
+              .descendant(
+                of: find.byType(OnboardingHeroPanel),
+                matching: find.byType(SizedBox),
+              )
+              .first;
+          final gradients = tester
+              .widgetList<DecoratedBox>(
+                find.descendant(
+                  of: heroBox,
+                  matching: find.byType(DecoratedBox),
+                ),
+              )
+              .map((box) => (box.decoration as BoxDecoration).gradient)
+              .whereType<Gradient>();
+          final transparentStops = gradients
+              .expand((gradient) => gradient.colors)
+              .where((color) => color.a == 0);
+          final opaquePanel = theme.tokens.colors.background.level01.withValues(
+            alpha: 1,
+          );
+
+          expect(transparentStops, isNotEmpty);
+          for (final color in transparentStops) {
+            expect(
+              color.withValues(alpha: 1),
+              opaquePanel,
+              reason:
+                  'Transparent black fades darken light surfaces while their '
+                  'alpha is interpolated, creating a visible grey band.',
+            );
+          }
+        },
+      );
+    }
+
     for (final style in OnboardingHeroStyle.values) {
       testWidgets('renders promise text, connect + skip for ${style.label}', (
         tester,
@@ -351,5 +597,52 @@ void main() {
       expect(find.byType(CustomPaint), findsWidgets);
       expect(tester.takeException(), isNull);
     });
+
+    for (final theme in [
+      (
+        name: 'light',
+        data: DesignSystemTheme.light(),
+        tokens: dsTokensLight,
+      ),
+      (
+        name: 'dark',
+        data: DesignSystemTheme.dark(),
+        tokens: dsTokensDark,
+      ),
+    ]) {
+      testWidgets(
+        'uses the ${theme.name} surface hue for transparent scrim stops',
+        (tester) async {
+          await tester.pumpWidget(
+            makeTestableWidgetNoScroll(
+              boundedBackdrop(const OnboardingBackdrop()),
+              mediaQueryData: reducedMotionMq,
+              theme: theme.data,
+            ),
+          );
+          await tester.pump();
+
+          final gradients = tester
+              .widgetList<DecoratedBox>(
+                find.descendant(
+                  of: find.byType(OnboardingBackdrop),
+                  matching: find.byType(DecoratedBox),
+                ),
+              )
+              .map((box) => (box.decoration as BoxDecoration).gradient)
+              .whereType<Gradient>();
+          final transparentStops = gradients
+              .expand((gradient) => gradient.colors)
+              .where((color) => color.a == 0);
+          final opaqueSurface = theme.tokens.colors.background.level01
+              .withValues(alpha: 1);
+
+          expect(transparentStops, isNotEmpty);
+          for (final color in transparentStops) {
+            expect(color.withValues(alpha: 1), opaqueSurface);
+          }
+        },
+      );
+    }
   });
 }

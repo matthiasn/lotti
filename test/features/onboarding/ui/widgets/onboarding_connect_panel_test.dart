@@ -1,4 +1,7 @@
+import 'dart:ui' show SemanticsAction;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
@@ -90,6 +93,31 @@ void main() {
       expect(backed, isTrue);
     });
 
+    testWidgets('back control is localized and keyboard operable', (
+      tester,
+    ) async {
+      var backed = false;
+      await pumpPanel(tester, onBack: () => backed = true);
+
+      final back = find.byTooltip('Back');
+      expect(back, findsOneWidget);
+      final semantics = tester.getSemantics(find.bySemanticsLabel('Back'));
+      expect(semantics.label, 'Back');
+      expect(
+        semantics.getSemanticsData().hasAction(SemanticsAction.tap),
+        isTrue,
+      );
+
+      Focus.of(
+        tester.element(find.byIcon(Icons.arrow_back_rounded)),
+      ).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(backed, isTrue);
+    });
+
     testWidgets('More options reveals the extra providers and toggles back', (
       tester,
     ) async {
@@ -142,6 +170,33 @@ void main() {
       await tester.pump();
 
       expect(selected, [InferenceProviderType.mistral]);
+    });
+
+    testWidgets('a primary provider activates via keyboard', (tester) async {
+      final selected = <InferenceProviderType>[];
+      await pumpPanel(tester, onSelect: selected.add);
+
+      final providerName = find.text(
+        onboardingProviderName(m, InferenceProviderType.mistral),
+      );
+      final focus = Focus.of(tester.element(providerName))..requestFocus();
+      await tester.pump();
+      expect(focus.hasPrimaryFocus, isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(selected, [InferenceProviderType.mistral]);
+      final provider = find.bySemanticsLabel(
+        onboardingProviderName(m, InferenceProviderType.mistral),
+      );
+      expect(provider, findsOneWidget);
+      final semantics = tester.getSemantics(provider);
+      expect(semantics.label, contains('Mistral'));
+      expect(
+        semantics.getSemanticsData().hasAction(SemanticsAction.tap),
+        isTrue,
+      );
     });
 
     testWidgets('tapping a revealed extra tile fires onSelect with its type', (

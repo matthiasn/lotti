@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_recording_style_view.dart';
@@ -25,7 +24,6 @@ class OnboardingRecordingStyleStep extends ConsumerStatefulWidget {
 
 class _OnboardingRecordingStyleStepState
     extends ConsumerState<OnboardingRecordingStyleStep> {
-  late final ColorScheme _darkScheme = DesignSystemTheme.dark().colorScheme;
   RecordingStyle _selected = RecordingStyle.modern;
   bool _selectionEdited = false;
 
@@ -58,8 +56,8 @@ class _OnboardingRecordingStyleStepState
     return RecordingStyleLivePreview(
       builder: (context, state) {
         return OnboardingRecordingStyleView(
-          accent: dsTokensDark.colors.interactive.enabled,
-          colorScheme: _darkScheme,
+          accent: context.designTokens.colors.interactive.enabled,
+          colorScheme: Theme.of(context).colorScheme,
           title: messages.onboardingRecordingStyleTitle,
           explanation: messages.onboardingRecordingStyleExplanation,
           analogueLabel: messages.onboardingRecordingStyleAnalogue,

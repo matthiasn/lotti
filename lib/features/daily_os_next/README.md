@@ -429,7 +429,9 @@ sequenceDiagram
   shader subtree for the other phases. The glyph is bound to the state
   machine — mic (idle/error), an inverted stop mark (listening — the filled
   teal disc drops away and the stop square is itself drawn in the orb's teal,
-  sitting in the shader field), dimmed mic (transcribing), outlined mic
+  sitting in the shader field; hosts may supply a themed center surface when
+  the surrounding panel needs extra edge definition), dimmed mic
+  (transcribing), outlined mic
   (captured — demoted so the advance CTA carries the primary weight). Presses
   scale the core down with an overshoot release
   and the ink ripple paints *above* the gradient (via `Ink`), so taps read as

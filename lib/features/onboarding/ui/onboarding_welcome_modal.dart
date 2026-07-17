@@ -170,7 +170,7 @@ void openOnboardingCreatedTask(String taskId) {
   beamToNamed('/tasks/$taskId');
 }
 
-/// Full-screen dark canvas hosting the flow, centered + scrollable so the
+/// Full-screen transparent canvas hosting the themed flow, centered + scrollable so the
 /// keyboard step fits on small viewports.
 class _OnboardingScaffold extends StatelessWidget {
   const _OnboardingScaffold({
@@ -192,7 +192,7 @@ class _OnboardingScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Transparent scaffold so the dim barrier (and the app behind it) shows
-    // around the panel; the panel supplies its own dark surface.
+    // around the panel; the panel supplies its own themed surface.
     final mq = MediaQuery.of(context);
     final wide = mq.size.width >= 600;
     // The panel swallows its own taps (an opaque no-op tap) so tapping it never
@@ -382,7 +382,7 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
       case _FlowStep.success:
         return OnboardingSuccessView(
           key: const ValueKey('onboarding-success'),
-          accent: dsTokensDark.colors.interactive.enabled,
+          accent: context.designTokens.colors.interactive.enabled,
           title: context.messages.onboardingSuccessTitle,
           subtitle: context.messages.onboardingSuccessSubtitle,
           continueLabel: context.messages.onboardingSuccessContinue,
@@ -625,7 +625,7 @@ class _OnboardingCategoryStepState
     final messages = context.messages;
     final options = _options(messages);
     return OnboardingCategoryView(
-      accent: dsTokensDark.colors.interactive.enabled,
+      accent: context.designTokens.colors.interactive.enabled,
       title: messages.onboardingCategoryTitle,
       explanation: messages.onboardingCategoryExplanation,
       whyLabel: messages.onboardingCategoryWhy,

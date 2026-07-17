@@ -69,7 +69,7 @@ Color onboardingProviderBrandColor(InferenceProviderType type) {
   };
 }
 
-/// The cinematic connect page: an always-dark panel matching the welcome, with
+/// The cinematic connect page: a theme-aware panel matching the welcome, with
 /// an ambient **aurora** backdrop (a different motion from the welcome's
 /// constellation) behind a back/title header and clean, Apple-style provider
 /// tiles — soft brand-tinted fills, no outlines.
@@ -93,9 +93,9 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final accent = dsTokensDark.colors.interactive.enabled;
-    final panelBg = dsTokensDark.colors.background.level01;
-    final textHigh = dsTokensDark.colors.text.highEmphasis;
+    final accent = tokens.colors.interactive.enabled;
+    final panelBg = tokens.colors.background.level01;
+    final textHigh = tokens.colors.text.highEmphasis;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.l),
@@ -159,6 +159,9 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                   child: _IconBtn(
                     icon: Icons.arrow_back_rounded,
                     color: textHigh,
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).backButtonTooltip,
                     onTap: widget.onBack,
                   ),
                 ),
@@ -175,7 +178,7 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                 Text(
                   context.messages.onboardingConnectNotSure,
                   style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: dsTokensDark.colors.text.mediumEmphasis,
+                    color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),
                 SizedBox(height: tokens.spacing.step5),
@@ -262,22 +265,30 @@ class _IconBtn extends StatelessWidget {
   const _IconBtn({
     required this.icon,
     required this.color,
+    required this.tooltip,
     required this.onTap,
   });
 
   final IconData icon;
   final Color color;
+  final String tooltip;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return InkWell(
+    return Semantics(
+      button: true,
+      label: tooltip,
       onTap: onTap,
-      borderRadius: BorderRadius.circular(tokens.radii.s),
-      child: Padding(
-        padding: EdgeInsets.all(tokens.spacing.step2),
-        child: Icon(icon, color: color, size: tokens.spacing.step5),
+      child: ExcludeSemantics(
+        child: IconButton(
+          tooltip: tooltip,
+          onPressed: onTap,
+          iconSize: tokens.spacing.step5,
+          color: color,
+          icon: Icon(icon),
+        ),
       ),
     );
   }
@@ -286,89 +297,123 @@ class _IconBtn extends StatelessWidget {
 /// Clean, Apple-style provider tile: a soft brand-tinted gradient fill with
 /// rounded corners and NO outline/border, a brand icon in a soft chip, name +
 /// tagline, and a quiet chevron.
-class _ProviderTile extends StatelessWidget {
+class _ProviderTile extends StatefulWidget {
   const _ProviderTile({required this.type, required this.onTap});
 
   final InferenceProviderType type;
   final VoidCallback onTap;
 
   @override
+  State<_ProviderTile> createState() => _ProviderTileState();
+}
+
+class _ProviderTileState extends State<_ProviderTile> {
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final accent = onboardingProviderBrandColor(type);
-    final textHigh = dsTokensDark.colors.text.highEmphasis;
-    final textMed = dsTokensDark.colors.text.mediumEmphasis;
-    final tileBase = dsTokensDark.colors.background.level02;
-    final tagline = onboardingProviderTagline(messages, type);
+    final accent = onboardingProviderBrandColor(widget.type);
+    final textHigh = tokens.colors.text.highEmphasis;
+    final textMed = tokens.colors.text.mediumEmphasis;
+    final tileBase = tokens.colors.background.level02;
+    final name = onboardingProviderName(messages, widget.type);
+    final tagline = onboardingProviderTagline(messages, widget.type);
 
-    return AnimatedModalItem(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.all(tokens.spacing.step4),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color.lerp(tileBase, accent, 0.18)!,
-              Color.lerp(tileBase, accent, 0.07)!,
-            ],
+    return Semantics(
+      button: true,
+      label: name,
+      onTap: widget.onTap,
+      child: FocusableActionDetector(
+        mouseCursor: SystemMouseCursors.click,
+        onShowFocusHighlight: (focused) {
+          if (_focused == focused) return;
+          setState(() => _focused = focused);
+        },
+        actions: <Type, Action<Intent>>{
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              widget.onTap();
+              return null;
+            },
           ),
-          borderRadius: BorderRadius.circular(tokens.radii.l),
-          border: Border.all(color: accent.withValues(alpha: 0.1)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: tokens.spacing.step1,
-              height: tokens.spacing.step6 * 2,
+        },
+        child: ExcludeSemantics(
+          child: AnimatedModalItem(
+            onTap: widget.onTap,
+            child: Container(
+              padding: EdgeInsets.all(tokens.spacing.step4),
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.62),
-                borderRadius: BorderRadius.circular(tokens.radii.s),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color.lerp(tileBase, accent, 0.18)!,
+                    Color.lerp(tileBase, accent, 0.07)!,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(tokens.radii.l),
+                border: Border.all(
+                  color: _focused
+                      ? tokens.colors.interactive.enabled
+                      : accent.withValues(alpha: 0.1),
+                ),
               ),
-            ),
-            SizedBox(width: tokens.spacing.step3),
-            Container(
-              padding: EdgeInsets.all(tokens.spacing.step3),
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(tokens.radii.m),
-              ),
-              child: Icon(
-                aiProviderIcon(type),
-                color: Color.lerp(accent, textHigh, 0.18),
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step4),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(
-                    onboardingProviderName(messages, type),
-                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                      color: textHigh,
+                  Container(
+                    width: tokens.spacing.step1,
+                    height: tokens.spacing.step6 * 2,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.62),
+                      borderRadius: BorderRadius.circular(tokens.radii.s),
                     ),
                   ),
-                  if (tagline.isNotEmpty)
-                    Padding(
-                      padding: EdgeInsets.only(top: tokens.spacing.step1),
-                      child: Text(
-                        tagline,
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: textMed,
-                        ),
-                      ),
+                  SizedBox(width: tokens.spacing.step3),
+                  Container(
+                    padding: EdgeInsets.all(tokens.spacing.step3),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(tokens.radii.m),
                     ),
+                    child: Icon(
+                      aiProviderIcon(widget.type),
+                      color: Color.lerp(accent, textHigh, 0.18),
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step4),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: tokens.typography.styles.subtitle.subtitle1
+                              .copyWith(color: textHigh),
+                        ),
+                        if (tagline.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: tokens.spacing.step1,
+                            ),
+                            child: Text(
+                              tagline,
+                              style: tokens.typography.styles.body.bodySmall
+                                  .copyWith(color: textMed),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: textHigh.withValues(alpha: 0.5),
+                  ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: textHigh.withValues(alpha: 0.5),
-            ),
-          ],
+          ),
         ),
       ),
     );

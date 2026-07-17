@@ -14,6 +14,7 @@ void main() {
     String caption = 'Tap to talk',
     Color captionColor = Colors.white70,
     List<double> amplitudes = const [],
+    Color? listeningCoreColor,
     VoidCallback? onTap,
   }) async {
     await tester.pumpWidget(
@@ -25,6 +26,7 @@ void main() {
             captionColor: captionColor,
             semanticLabel: 'Record voice',
             amplitudes: amplitudes,
+            listeningCoreColor: listeningCoreColor,
             onTap: onTap ?? () {},
           ),
         ),
@@ -114,6 +116,22 @@ void main() {
     await pumpZone(tester, onTap: () => taps += 1);
     await tester.tap(find.byKey(VoiceButton.coreButtonKey));
     expect(taps, 1);
+  });
+
+  testWidgets('forwards a listening center surface to the voice button', (
+    tester,
+  ) async {
+    const surface = Color(0xFFF1F4F3);
+    await pumpZone(
+      tester,
+      phase: CapturePhase.listening,
+      listeningCoreColor: surface,
+    );
+
+    expect(
+      tester.widget<VoiceButton>(find.byType(VoiceButton)).listeningCoreColor,
+      surface,
+    );
   });
 
   group('LiveTranscriptView', () {

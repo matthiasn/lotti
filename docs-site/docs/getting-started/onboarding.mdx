@@ -54,11 +54,23 @@ The provider page identifies the available hosted and local choices:
 - **Ollama** connects to a compatible local endpoint and does not require a
   hosted API key.
 
+<ManualScreenshot
+  caseId="onboarding/api-key"
+  alt="Lotti onboarding provider verification panel showing a verified local Ollama connection"
+  caption="Lotti verifies the chosen provider before enabling Connect. Hosted providers use the same step with an API-key field."
+/>
+
 For a hosted provider, paste the provider API key. Lotti verifies the
 connection before enabling **Connect**. Ollama verifies the configured local
 endpoint and reports reachable models. A successful connection persists the
 provider and seeds the models and inference profile used by the remaining
 steps.
+
+<ManualScreenshot
+  caseId="onboarding/success"
+  alt="Lotti onboarding confirmation that the AI provider is connected and ready"
+  caption="The connection confirmation is intentionally calm; the larger payoff is reserved for the first real task."
+/>
 
 Captured task text is sent to the provider assigned to the selected category
 for structuring. Choose a provider whose deployment and data-handling model
@@ -67,9 +79,21 @@ that structuring request on the machine running it.
 
 ## Pick the recording feel and work areas
 
+<ManualScreenshot
+  caseId="onboarding/recording-style"
+  alt="Lotti onboarding recording-style chooser with Modern energy orb and Analogue VU meter options"
+  caption="Choose the recording visual that feels clearest. Both options use the same capture pipeline."
+/>
+
 After connection succeeds, choose the recording style used by the first-task
 capture and later voice-capture surfaces. You can change it again under
 **Settings → Recording Style**.
+
+<ManualScreenshot
+  caseId="onboarding/categories"
+  alt="Lotti onboarding work-area chooser with Work, Fitness, Family, Friends, and Add your own choices"
+  caption="Choose one or more areas for the new provider. Scaled text and narrow layouts automatically use one full-width choice per row."
+/>
 
 Next, select one or more work areas. Presets cover common categories such as
 Work, Fitness, Family, and Friends; **Add your own** creates a category with a
