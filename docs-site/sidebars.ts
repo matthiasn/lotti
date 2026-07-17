@@ -28,6 +28,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'organize-and-reflect/tasks',
         'organize-and-reflect/projects',
+        'organize-and-reflect/events',
         'organize-and-reflect/categories',
         'organize-and-reflect/labels',
         'organize-and-reflect/habits-and-measurables',

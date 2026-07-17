@@ -39,6 +39,17 @@
       ]
     },
     {
+      "id": "events",
+      "title": "Events",
+      "page": "organize-and-reflect/events",
+      "status": "verified",
+      "screenshotCases": [
+        "events/overview",
+        "events/detail",
+        "events/timeline"
+      ]
+    },
+    {
       "id": "settings",
       "title": "Settings",
       "page": "reference/settings",

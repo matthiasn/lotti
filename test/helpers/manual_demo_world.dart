@@ -402,29 +402,38 @@ Future<void> primeManualDemoCoverArt(
       final bytes = await file.readAsBytes();
       final cache = PaintingBinding.instance.imageCache;
       for (final extent in extents) {
-        final provider = ResizeImage(
-          fileImage,
-          width: extent,
-          height: extent,
-          policy: ResizeImagePolicy.fit,
-        );
+        final providers = [
+          ResizeImage(
+            fileImage,
+            width: extent,
+            height: extent,
+            policy: ResizeImagePolicy.fit,
+          ),
+          ResizeImage(
+            fileImage,
+            width: extent,
+            policy: ResizeImagePolicy.fit,
+          ),
+        ];
         final codec = await ui.instantiateImageCodec(
           bytes,
           targetWidth: extent,
           allowUpscaling: false,
         );
         final frame = await codec.getNextFrame();
-        final key = await provider.obtainKey(ImageConfiguration.empty);
-        cache
-          ..evict(key)
-          ..putIfAbsent(
-            key,
-            () => OneFrameImageStreamCompleter(
-              SynchronousFuture(
-                ImageInfo(image: frame.image.clone()),
+        for (final provider in providers) {
+          final key = await provider.obtainKey(ImageConfiguration.empty);
+          cache
+            ..evict(key)
+            ..putIfAbsent(
+              key,
+              () => OneFrameImageStreamCompleter(
+                SynchronousFuture(
+                  ImageInfo(image: frame.image.clone()),
+                ),
               ),
-            ),
-          );
+            );
+        }
         frame.image.dispose();
         codec.dispose();
       }

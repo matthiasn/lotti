@@ -429,6 +429,39 @@
         "desktop-light": "projects_create_desktop_light.png",
         "desktop-dark": "projects_create_desktop_dark.png"
       }
+    },
+    {
+      "id": "events/overview",
+      "title": "Events overview",
+      "sourceTest": "test/features/events/ui/pages/events_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "events_overview_mobile_light.png",
+        "mobile-dark": "events_overview_mobile_dark.png",
+        "desktop-light": "events_overview_desktop_light.png",
+        "desktop-dark": "events_overview_desktop_dark.png"
+      }
+    },
+    {
+      "id": "events/detail",
+      "title": "Event detail",
+      "sourceTest": "test/features/events/ui/pages/events_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "events_detail_mobile_light.png",
+        "mobile-dark": "events_detail_mobile_dark.png",
+        "desktop-light": "events_detail_desktop_light.png",
+        "desktop-dark": "events_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "events/timeline",
+      "title": "Event timeline and tasks",
+      "sourceTest": "test/features/events/ui/pages/events_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "events_timeline_mobile_light.png",
+        "mobile-dark": "events_timeline_mobile_dark.png",
+        "desktop-light": "events_timeline_desktop_light.png",
+        "desktop-dark": "events_timeline_desktop_dark.png"
+      }
     }
   ]
 }
