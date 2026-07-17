@@ -36,11 +36,16 @@ const _measurableId = 'manual-sardines-consumed';
 final _rangeStart = DateTime(2026, 6, 18);
 final _rangeEnd = DateTime(2026, 7, 18);
 
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+
 final MeasurableDataType _sardinesConsumed = MeasurableDataType(
   id: _measurableId,
-  displayName: 'Sardines consumed',
-  description: 'Daily fish consumption across the orbital habitat.',
-  unitName: 'sardines',
+  displayName: _t('Sardines consumed', 'Verzehrte Sardinen'),
+  description: _t(
+    'Daily fish consumption across the orbital habitat.',
+    'Täglicher Fischverbrauch im orbitalen Habitat.',
+  ),
+  unitName: _t('sardines', 'Sardinen'),
   createdAt: manualDemoNow.subtract(const Duration(days: 120)),
   updatedAt: manualDemoNow,
   vectorClock: null,
@@ -116,6 +121,7 @@ Future<void> _pumpDashboard(
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
               : DesignSystemTheme.light(),
+          locale: manualScreenshotLocale,
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -192,28 +198,38 @@ void main() {
           device: device,
           brightness: brightness,
         );
-        expect(find.text('Sardines consumed'), findsOneWidget);
+        expect(
+          find.text(_t('Sardines consumed', 'Verzehrte Sardinen')),
+          findsOneWidget,
+        );
         expect(find.byIcon(Icons.add_rounded), findsOneWidget);
 
         await withClock(Clock.fixed(manualDemoNow), () async {
           await tester.tap(find.byIcon(Icons.add_rounded));
           await settleFrames(tester, 10);
         });
-        expect(find.text('Sardines consumed'), findsWidgets);
+        expect(
+          find.text(_t('Sardines consumed', 'Verzehrte Sardinen')),
+          findsWidgets,
+        );
 
         await tester.enterText(
           find.byKey(const Key('measurement_value_field')),
           '84',
         );
+        final comment = _t(
+          'Dinner shift after the Europa cargo docked',
+          'Abendschicht nach dem Andocken der Europa-Fracht',
+        );
         await tester.enterText(
           find.byKey(const Key('measurement_comment_field')),
-          'Dinner shift after the Europa cargo docked',
+          comment,
         );
         FocusManager.instance.primaryFocus?.unfocus();
         await settleFrames(tester, 4);
         expect(find.text('84'), findsOneWidget);
         expect(
-          find.text('Dinner shift after the Europa cargo docked'),
+          find.text(comment),
           findsOneWidget,
         );
         await captureScreenshot(
@@ -224,7 +240,7 @@ void main() {
 
         await tester.tap(find.byKey(const Key('measurement_observed_at')));
         await settleFrames(tester, 10);
-        expect(find.text('Observed at'), findsOneWidget);
+        expect(find.text(_t('Observed at', 'Erfasst um')), findsOneWidget);
         await captureScreenshot(
           tester,
           'measurement_capture_date_${viewport}_$theme',

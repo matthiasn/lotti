@@ -45,7 +45,17 @@ const config: Config = {
   },
   i18n: {
     defaultLocale: 'en',
-    locales: ['en'],
+    locales: ['en', 'de'],
+    localeConfigs: {
+      en: {
+        label: 'English',
+        htmlLang: 'en-US',
+      },
+      de: {
+        label: 'Deutsch',
+        htmlLang: 'de-DE',
+      },
+    },
   },
   customFields: {
     manualVersion,
@@ -64,8 +74,10 @@ const config: Config = {
           routeBasePath: '/',
           sidebarPath: './sidebars.ts',
           breadcrumbs: true,
-          editUrl:
-            'https://github.com/matthiasn/lotti/edit/main/docs-site/docs/',
+          editUrl: ({locale, docPath}) =>
+            locale === 'en'
+              ? `https://github.com/matthiasn/lotti/edit/main/docs-site/docs/${docPath}`
+              : `https://github.com/matthiasn/lotti/edit/main/docs-site/i18n/${locale}/docusaurus-plugin-content-docs/current/${docPath}`,
           showLastUpdateAuthor: true,
           showLastUpdateTime: true,
         },
@@ -85,7 +97,7 @@ const config: Config = {
         indexBlog: false,
         indexPages: false,
         docsRouteBasePath: '/',
-        language: ['en'],
+        language: ['en', 'de'],
       },
     ],
   ],
@@ -107,6 +119,10 @@ const config: Config = {
         },
         {
           type: 'custom-manualVersion',
+          position: 'right',
+        },
+        {
+          type: 'localeDropdown',
           position: 'right',
         },
         {
@@ -141,7 +157,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Lotti Manual · ${manualVersion} · Source app ${sourceAppVersion}`,
+      copyright: `Lotti · ${manualVersion} · App ${sourceAppVersion}`,
     },
     prism: {
       theme: prismThemes.github,

@@ -1,0 +1,120 @@
+---
+title: Arbeit mit Modellen und Profilen routen
+description: Beschreibe Modellfähigkeiten einmal und verteile Denken, Bild, Audio und Bilderzeugung über Inferenzprofile.
+---
+
+# Arbeit mit Modellen und Profilen routen
+
+Ein Anbieter sagt Lotti, wohin es verbindet. Ein Modell erfasst eine
+Anbieter-Modell-ID und Fähigkeiten. Ein Inferenzprofil weist diese Modelle den
+von Lotti verstandenen Aufgaben zu. So muss „Welches Modell verarbeitet Audio?“
+nicht in jeder Aufgabe und Automatisierungsregel stehen.
+
+## Gespeicherte Modelle prüfen
+
+Öffne **Einstellungen → KI-Einstellungen → Modelle**. Die Liste gruppiert nach
+Anbieter und filtert Fähigkeiten für Text, Bild, Audio und Schlussfolgern.
+
+<ManualScreenshot
+  caseId="ai/models"
+  alt="Lottis KI-Modellliste mit Project-Waddle-Modellen für Text, Schlussfolgern, Bild, Transkription und Bilderzeugung"
+  caption="Der Arbeitsbereich kombiniert Cloud- und lokale Modelle und hält ihre Fähigkeiten explizit."
+/>
+
+**Gleichzeitige Agenten-Aufwachvorgänge** begrenzt, wie viele verschiedene
+Agenten parallel inferieren. Höhere Werte steigern Durchsatz, aber auch
+gleichzeitige Anbieteranfragen und lokale Last. Bleibe bei strengen Ratenlimits
+oder wenig Modellspeicher konservativ.
+
+## Ein Modell hinzufügen oder bearbeiten
+
+Wähle eine Karte oder **+**. Eine Modelldefinition enthält:
+
+- Anbieter-Verbindung;
+- freundlichen Namen und optionale Beschreibung;
+- exakte Modell-ID des Anbieters;
+- maximale Anzahl Ausgabe-Token;
+- Eingabe- und Ausgabemodalitäten; und
+- Fähigkeiten wie Schlussfolgern oder Funktionsaufrufe.
+
+<ManualScreenshot
+  caseId="ai/model-editor"
+  alt="Lottis Modell-Editor für Watschelkommando 70B mit Anbieter, Modell-ID, Ausgabelimit, Modalitäten und Schlussfolgerungsfähigkeit"
+  caption="Fähigkeitsmetadaten bestimmen, welche Modelle für Profilplätze und einmalige Auswahlen infrage kommen."
+/>
+
+Verwende exakt die vom Anbieter erwartete ID. Der Anzeigename ist nur für
+Menschen; seine Änderung ändert das ausgeführte Modell nicht. Behaupte Bild-,
+Audio-, Werkzeug- oder Denkfähigkeiten nur, wenn Modell und Endpunkt sie
+wirklich anbieten.
+
+## Ein Inferenzprofil bauen
+
+Öffne **Einstellungen → KI-Einstellungen → Inferenzprofile**. Jedes Profil ist
+eine wiederverwendbare Routingregel. Die Übersicht zeigt jedes zugeordnete
+Modell.
+
+<ManualScreenshot
+  caseId="ai/profiles"
+  alt="Lottis Inferenzprofile Project-Waddle-Kommando, Habitat zuerst lokal und Fischdiplomatie mit zugeordneten Modellen"
+  caption="Profile optimieren verschiedene Grenzen: breites Cloud-Profil, nur auf Desktop erreichbares lokales Profil oder spezialisiertes Denkprofil."
+/>
+
+Ordne beim Bearbeiten benötigte Fähigkeiten zu:
+
+- **Denken**: erforderliches allgemeines Textmodell.
+- **Denken (High-End)**: fähigerer Pfad für ausdrücklich angeforderte Aufgaben.
+- **Bilderkennung**: analysiert Bilder.
+- **Transkription**: wandelt Audio in Text.
+- **Bilderzeugung**: erstellt Aufgabengrafiken und andere Bilder.
+
+<ManualScreenshot
+  caseId="ai/profile-editor"
+  alt="Editor des Project-Waddle-Kommando-Profils mit Modellen für Denken, High-End-Denken, Bilderkennung, Transkription und Bilderzeugung"
+  caption="Ein Profil routet jede Project-Waddle-Modalität, ohne Modellwahlen in Aufgaben zu wiederholen."
+/>
+
+**Nur Desktop** blendet ein Profil mobil aus, etwa wenn ein Modell nur vom
+Arbeitsrechner erreichbar ist. Gerätebindung gilt für automatische Verarbeitung
+synchronisierter Audios: Binde nur ein Gerät, das benötigte Anbieter meldet.
+Ohne gebundenes Gerät werden synchronisierte Audios nicht automatisch über
+dieses Profil transkribiert.
+
+## Ein Modell ohne IDs auswendig zu lernen wählen
+
+Auswahlen beginnen beim Anbieter und zeigen danach nur kompatible gespeicherte
+Modelle. Ein Profilplatz für Textdenken bietet etwa kein reines Audiomodell an.
+
+<ManualScreenshot
+  caseId="ai/model-picker"
+  alt="Lottis Modellauswahl mit OpenRouter, Ollama und Google Gemini über dem Project-Waddle-Profil-Editor"
+  caption="Wähle zuerst den Anbieter; Lotti begrenzt danach auf geeignete Modelle dieser Verbindung."
+/>
+
+## Einen Kategoriestandard setzen
+
+Eine Kategorie kann unter **Einstellungen → Definitionen → Kategorien** ein
+Standard-Inferenzprofil wählen. Neue Arbeit erbt so eine zusammenhängende
+Routingregel. Entscheide nach Datenschutz und Fähigkeiten, nicht nur Tempo.
+
+<ManualScreenshot
+  caseId="ai/profile-picker"
+  alt="Editor für Pinguinbetrieb mit Project-Waddle-Kommando, Habitat zuerst lokal und Fischdiplomatie als Profiloptionen"
+  caption="Das Nur-Desktop-Abzeichen zeigt Plattformgrenzen vor der Auswahl."
+/>
+
+## Alte Profilroute
+
+Die frühere eigenständige Route **Inferenzprofile** bleibt kompatibel und
+bearbeitet dieselben Datensätze. Sie zeigt interne Modell-IDs und weniger
+Abhängigkeitskontext. Verwende normalerweise **KI-Einstellungen →
+Inferenzprofile**.
+
+<ManualScreenshot
+  caseId="ai/legacy-profiles"
+  alt="Alte Lotti-Seite für Inferenzprofile mit Project-Waddle-Profilplätzen als interne Modell-IDs"
+  caption="Nutze diese Kompatibilitätsansicht nur über ältere Links; aktuelle Profilkarten sind leichter zu prüfen."
+/>
+
+[KI-Fähigkeiten](./skills.mdx) zeigt, wie das gewählte Profil zur Aktion an
+Aufgabe oder Eintrag wird.

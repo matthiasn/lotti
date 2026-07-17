@@ -42,22 +42,34 @@ const _launchBannerUrl =
     'https://manual.invalid/project-waddle-launch-review.webp';
 const _sardineBannerUrl =
     'https://manual.invalid/project-waddle-sardine-futures.webp';
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
 final _manualReleases = <WhatsNewContent>[
   WhatsNewContent(
     release: WhatsNewRelease(
       version: '0.9.1049',
       date: DateTime.utc(2026, 7, 17),
-      title: 'Project Waddle is cleared for orbit',
+      title: _t(
+        'Project Waddle is cleared for orbit',
+        'Project Waddle ist für den Orbit freigegeben',
+      ),
       folder: '0.9.1049',
     ),
-    headerMarkdown: '''
+    headerMarkdown: _t(
+      '''
 # Project Waddle is cleared for orbit
 
 The emperor penguin logistics crew can now plan the whole mission in Lotti.
 ''',
-    sections: const [
       '''
+# Project Waddle ist für den Orbit freigegeben
+
+Die Kaiserpinguin-Logistikcrew kann jetzt die gesamte Mission in Lotti planen.
+''',
+    ),
+    sections: [
+      _t(
+        '''
 ## A calmer Daily OS
 
 Task cover art now travels with each agenda item, so the Europa relay,
@@ -68,6 +80,18 @@ orbital habitat, and sardine cargo review remain easy to spot.
 Use the refreshed task workspace to inspect priorities, linked evidence, and
 time records without losing the mission context.
 ''',
+        '''
+## Ein ruhigeres Daily OS
+
+Aufgaben-Titelgrafiken begleiten jetzt jeden Agendaeintrag. So bleiben
+Europa-Relais, Orbital-Habitat und Sardinenfrachtprüfung leicht erkennbar.
+
+## Präzisere Aufgabensteuerung
+
+Im überarbeiteten Aufgabenbereich prüfst du Prioritäten, verknüpfte Belege und
+Zeiterfassungen, ohne den Missionskontext zu verlieren.
+''',
+      ),
     ],
     bannerImageUrl: _launchBannerUrl,
   ),
@@ -75,16 +99,28 @@ time records without losing the mission context.
     release: WhatsNewRelease(
       version: '0.9.1048',
       date: DateTime.utc(2026, 7, 10),
-      title: 'Sardine telemetry reaches Mission Control',
+      title: _t(
+        'Sardine telemetry reaches Mission Control',
+        'Sardinentelemetrie erreicht die Missionskontrolle',
+      ),
       folder: '0.9.1048',
     ),
-    headerMarkdown: '''
+    headerMarkdown: _t(
+      '''
 # Sardine telemetry reaches Mission Control
 
 Project Waddle has a clearer view of every crate, habitat, and hungry crew.
 ''',
-    sections: const [
       '''
+# Sardinentelemetrie erreicht die Missionskontrolle
+
+Project Waddle sieht jetzt jede Kiste, jedes Habitat und jede hungrige Crew
+deutlicher.
+''',
+    ),
+    sections: [
+      _t(
+        '''
 ## Compare the mission
 
 Time Analysis now makes it easier to compare habitat inspections with cargo
@@ -95,6 +131,18 @@ handling and see where the week really went.
 Track sardines consumed, cargo pods delivered, and penguins safely accounted
 for with the same definitions used throughout the workspace.
 ''',
+        '''
+## Die Mission vergleichen
+
+Die Zeitanalyse erleichtert den Vergleich von Habitatinspektionen und
+Frachtabfertigung und zeigt, wohin die Woche wirklich ging.
+
+## Dashboard-fähige Signale
+
+Erfasse verzehrte Sardinen, gelieferte Frachtkapseln und sicher gezählte
+Pinguine mit denselben Definitionen wie im restlichen Arbeitsbereich.
+''',
+      ),
     ],
     bannerImageUrl: _sardineBannerUrl,
   ),
@@ -149,7 +197,6 @@ Widget _app({
         data: MediaQueryData(size: size, disableAnimations: true),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          locale: const Locale('en'),
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
               : DesignSystemTheme.light(),
@@ -161,6 +208,7 @@ Widget _app({
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: manualScreenshotLocale,
           home: const _WhatsNewLaunchHost(),
         ),
       ),
@@ -286,7 +334,10 @@ void main() {
         expect(find.text('NEW'), findsOneWidget);
         expect(
           find.textContaining(
-            'Project Waddle is cleared for orbit',
+            _t(
+              'Project Waddle is cleared for orbit',
+              'Project Waddle ist für den Orbit freigegeben',
+            ),
             findRichText: true,
           ),
           findsOneWidget,
@@ -307,10 +358,13 @@ void main() {
           pastRelease: true,
         );
 
-        expect(find.text('NEW'), findsNothing);
+        expect(find.text(_t('NEW', 'NEU')), findsNothing);
         expect(
           find.textContaining(
-            'Sardine telemetry reaches Mission Control',
+            _t(
+              'Sardine telemetry reaches Mission Control',
+              'Sardinentelemetrie erreicht die Missionskontrolle',
+            ),
             findRichText: true,
           ),
           findsOneWidget,

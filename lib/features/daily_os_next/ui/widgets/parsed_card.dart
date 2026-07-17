@@ -327,10 +327,12 @@ class _TimeAnchorChip extends StatelessWidget {
           color: tokens.colors.text.mediumEmphasis,
         ),
         SizedBox(width: tokens.spacing.step1),
-        Text(
-          anchor,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
+        Flexible(
+          child: Text(
+            anchor,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
           ),
         ),
       ],

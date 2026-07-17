@@ -18,6 +18,7 @@ void main() {
     ParsedItemConfidence confidence = ParsedItemConfidence.high,
     String? spokenPhrase,
     String? matchedTaskTitle,
+    String? timeAnchor,
   }) {
     return ParsedItem(
       id: 'item-1',
@@ -27,6 +28,7 @@ void main() {
       confidence: confidence,
       spokenPhrase: spokenPhrase,
       matchedTaskTitle: matchedTaskTitle,
+      timeAnchor: timeAnchor,
     );
   }
 
@@ -34,6 +36,7 @@ void main() {
     WidgetTester tester,
     ParsedItem parsedItem, {
     VoidCallback? onBreakLink,
+    MediaQueryData? mediaQueryData,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -43,6 +46,7 @@ void main() {
             onBreakLink: onBreakLink ?? () {},
           ),
         ),
+        mediaQueryData: mediaQueryData,
       ),
     );
     await tester.pump();
@@ -123,6 +127,20 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await pumpCard(tester, item(confidence: ParsedItemConfidence.low));
       expect(find.text('low confidence'), findsOneWidget);
+    });
+
+    testWidgets('long time anchor fits at 200% text scaling', (tester) async {
+      const anchor = 'bevor die Missionskontrolle aufwacht';
+      await pumpCard(
+        tester,
+        item(timeAnchor: anchor),
+        mediaQueryData: phoneMediaQueryData.copyWith(
+          textScaler: const TextScaler.linear(2),
+        ),
+      );
+
+      expect(find.text(anchor), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('matched chip warning accent follows non-high confidence', (

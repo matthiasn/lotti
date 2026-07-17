@@ -1,0 +1,156 @@
+---
+title: Verstehen, wohin deine Zeit ging
+description: Teile erfasste Zeit nach Kategorie auf, beobachte Fokusbereiche und vergleiche gleich lange Zeiträume direkt in Daily OS.
+---
+
+# Verstehen, wohin deine Zeit ging
+
+Die Zeitanalyse zerlegt aufgezeichnete Sitzungen nach Kategorie. Sie beantwortet,
+wie viel Zeit du erfasst hast, wohin sie ging und ob sich die Mischung seit dem
+vorherigen Zeitraum verändert hat. Das Project-Waddle-Beispiel trennt
+**Pinguinbetrieb**, **Missionskontrolle**, **Fischdiplomatie**,
+**Orbitalforschung** und **Menschenwartung** und zeigt zugleich nicht
+kategorisierte Zeit, die Aufmerksamkeit braucht.
+
+Öffne auf dem Desktop **Daily OS** und wähle unter dem Kalender
+**Zeitanalyse**. Das Dashboard füllt den Inhaltsbereich, damit Diagramm und
+exakte Tabelle gemeinsam lesbar sind. Bei schmaler Breite ordnen sich die
+Bedienelemente neu, ohne ihr Verhalten zu ändern.
+
+<ManualScreenshot
+  caseId="time-analysis/overview"
+  alt="Zeitanalyse-Dashboard mit Project-Waddle-Zeit in fünf operativen Kategorien und nicht kategorisierter Arbeit"
+  caption="Die Übersicht verbindet Gesamtsummen, ein gestapeltes Sieben-Tage-Diagramm und die genaue Kategorientabelle. Wechsle Mobil/Desktop sowie Hell/Dunkel für alle produktiven Layouts."
+/>
+
+## Die Übersichtskarten lesen
+
+Die erste Zeile fasst den Zeitraum zusammen:
+
+- **GESAMT** ist alle erfasste Zeit. Die Unterzeile nennt größte Kategorie und
+  Anteil – damit beantwortet die Karte sowohl Menge als auch Schwerpunkt.
+- **FOKUS** addiert die von dir beobachteten Kategorien. Im Beispiel sind das
+  Pinguinbetrieb und Missionskontrolle.
+- **ANDERE** ist alles außerhalb dieses Fokussets.
+
+Ohne Fokusset zeigt Lotti **Fokuskategorien wählen** statt zweier Nullkarten.
+Wähle aktive Kategorien und beende mit **Fertig**. Über den Regler auf der
+Fokuskarte änderst du die Auswahl. Diese lokale Einstellung verändert keine
+Kategorie an Einträgen.
+
+## Einen nützlichen Zeitraum wählen
+
+Wechsle über die Einheit zwischen **Tag**, **Woche**, **Monat**, **Quartal** und
+**Jahr**. Pfeile bewegen jeweils einen vollständigen Zeitraum. Der Vorwärtspfeil
+endet beim aktuellen Zeitraum, sodass kein leerer Zukunftsbereich entsteht.
+
+Wähle das Datumslabel für den Kalender und einen beliebigen Tag; Lotti springt
+zum Zeitraum, der ihn enthält. Wochen beginnen gemäß Geräteeinstellung.
+
+Zwei Abkürzungen decken häufige Fragen ab:
+
+- **Dieser Monat** zeigt den bisherigen Monat;
+- **Dieses Jahr** zeigt das bisherige Jahr.
+
+Beide enden heute statt leere Zukunftstage einzubeziehen. Das Label enthält
+**(bisher)**, und Durchschnitte verwenden nur vergangene Tage.
+
+## Diagramm und Tabelle gemeinsam lesen
+
+Gestapelte Balken zeigen den Kategorienbeitrag jeder Stunde, jedes Tages oder
+jeder Woche. Fahre mit der Maus darüber oder drücke einen Balken, um Werte des
+Buckets zu sehen.
+
+### Der laufenden Summe folgen
+
+Wähle **Laufende Summe**, wenn aus „Was passierte in diesem Bucket?“ die Frage
+„Wie viel hat sich seit Beginn angesammelt?“ wird. Jede Kategorie wird zur
+kumulativen Fläche:
+
+- Die Dicke eines farbigen Bandes an einem Datum ist die seit Zeitraumstart bis
+  dorthin erfasste Zeit dieser Kategorie.
+- Die Oberkante des gesamten Stapels ist alle im selben Intervall angesammelte
+  Zeit.
+- Bänder bleiben gleich oder steigen. Ein flacher Abschnitt bedeutet, dass in
+  diesen Buckets nichts hinzukam; frühere Arbeit wird nicht abgezogen.
+
+<ManualScreenshot
+  caseId="time-analysis/running-total"
+  alt="Zeitanalyse mit laufender Summe der Project-Waddle-Kategorien über den gewählten Monat"
+  caption="Jede Kategorie sammelt ab Beginn des Zeitraums. Die Oberkante ist die bisherige Gesamtzeit; jedes Band zeigt seinen Beitrag."
+/>
+
+Der gewählte Zeitraum bestimmt den Startpunkt. Beim Wechsel beginnt die Summe
+im ersten Bucket des neuen Zeitraums wieder bei null. **Tag** verwendet
+Stunden, kürzere Mehrtagesbereiche Tage und lange Bereiche Wochen; die
+kumulative Bedeutung bleibt gleich. In einem laufenden Zeitraum endet die
+Fläche beim neuesten vergangenen Bucket, statt mit einer irreführenden flachen
+Linie in die Zukunft zu laufen.
+
+Nur die Diagrammprojektion ändert sich. **GESAMT**, **FOKUS**, **ANDERE** und
+Tabelle beschreiben weiterhin den ganzen Zeitraum. Maus oder Druck zeigt den
+laufenden Wert jeder Kategorie am Punkt. Mit **Pro Tag**, **Pro Woche** oder
+**Pro Stunde** kehrst du zu Einzelwerten zurück. Ist nur ein Bucket vergangen,
+bleiben Balken sichtbar, weil eine Einpunktlinie keinen Verlauf vermittelt.
+
+Die Tabelle ist der präzise Nachschlageort. Sie sortiert nach Zeit und zeigt
+Summe, Anteil, Tagesdurchschnitt und relativen Datenbalken. Eine graue Zeile
+**Nicht kategorisiert** macht fehlende Zuordnung bewusst sichtbar. Weise den
+betroffenen Einträgen oder Aufgaben eine Kategorie zu, wenn die Zeit zu einem
+operativen Bereich gehört.
+
+## Gleichwertige Zeiträume vergleichen
+
+<ManualScreenshot
+  caseId="time-analysis/compare"
+  alt="Project-Waddle-Zeitvergleich mit aktuellem und vorherigem Zeitraum sowie prozentualer Änderung nach Kategorie"
+  caption="Der Vergleich verwendet dieselbe Anzahl vergangener Tage. Pfeil, Vorzeichen und Farbe zeigen die Richtung; das Diagramm bleibt beim aktuellen Zeitraum."
+/>
+
+**Vergleichen** ergänzt den vorherigen Zeitraum. Bei laufender Woche, Monat,
+Quartal oder Jahr vergleicht Lotti den vergangenen Teil mit derselben Anzahl
+direkt davor liegender Tage. Ein Monat-bis-Sonntag wird nicht mit einem ganzen
+Vormonat verglichen.
+
+Übersichtskarten erhalten prozentuale Änderung und vorherigen Wert. Die Tabelle
+wechselt zu **AKTUELL**, **VORHER** und **Änderung**. Bei schmaler Breite fällt
+die weniger wichtige Vorher-Spalte weg; Aktuell und Änderung bleiben. Pfeil,
+explizites Vorzeichen und Farbe zeigen Richtung. Sehr kleine Änderungen bleiben
+neutral, ein Ergebnis ohne Basis erscheint als neu.
+
+Das Diagramm zeigt nur den aktuellen Zeitraum. Der Hinweis **Vergleich in der
+Tabelle unten** verweist auf exakte Werte und verhindert, dass ein zweiter
+Balkensatz die Kategorienmischung verdeckt.
+
+## Was Lotti zählt
+
+Die Zeitanalyse zählt zeitlich erfasste Journaleinträge, deren Ende nach dem
+Start liegt. Audiodauer wird nicht zusätzlich gezählt, weil eine Aufnahme bei
+laufendem Timer sonst doppelt wäre.
+
+Die Kategorie folgt der Arbeit:
+
+1. Ist der Zeiteintrag mit einer kategorisierten Aufgabe verknüpft, gewinnt
+   deren Kategorie.
+2. Sonst gilt die eigene Kategorie des Zeiteintrags.
+3. Ohne beides erscheint die Zeit als Nicht kategorisiert.
+
+Überlappende Timer derselben Kategorie werden vor der Summe zusammengeführt.
+Überlappungen verschiedener Kategorien bleiben in beiden, weil sie getrennte
+Aktivitätsarten darstellen. Einträge über Mitternacht werden auf lokale
+Kalendertage geteilt. Private Einträge folgen der globalen Sichtbarkeit. Das
+Dashboard aktualisiert sich bei Änderungen an Einträgen, Links,
+Aufgabenkategorien oder Privat-Sichtbarkeit.
+
+## Ein vertrauenswürdiges Bild bewahren
+
+Verwende Kategorien konsistent an Aufgaben mit Zeitaufzeichnung. Prüfe Nicht
+kategorisiert regelmäßig und wähle Fokuskategorien für eine echte Frage statt
+für alles. Bei Project Waddle macht Pinguinbetrieb plus Missionskontrolle die
+Fokuskarte zum Bereitschaftssignal, während Fischdiplomatie und Menschenwartung
+in der vollständigen Aufteilung sichtbar bleiben.
+
+Derzeit exportiert die Zeitanalyse kein CSV, gruppiert nicht nach Projekt und
+zeichnet den vorherigen Zeitraum nicht als zweite Diagrammserie. Exakte
+Vergleichswerte bleiben in der Tabelle, wo sie leichter lesbar sind und das
+aktuelle Bild weniger verzerren.

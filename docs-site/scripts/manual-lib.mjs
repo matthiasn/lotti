@@ -38,8 +38,27 @@ export function validateManualVersion(version) {
 
 export function validateScreenshotRegistry(registry) {
   const errors = [];
-  if (registry.schemaVersion !== 1) {
-    errors.push('screenshot-cases.json must use schemaVersion 1.');
+  if (registry.schemaVersion !== 2) {
+    errors.push('screenshot-cases.json must use schemaVersion 2.');
+  }
+  if (!Array.isArray(registry.locales) || registry.locales.length === 0) {
+    errors.push('screenshot-cases.json must list at least one locale.');
+  } else {
+    if (!registry.locales.includes(registry.defaultLocale)) {
+      errors.push(
+        'screenshot-cases.json defaultLocale must be listed in locales.',
+      );
+    }
+    const seenLocales = new Set();
+    for (const locale of registry.locales) {
+      if (!/^[a-z]{2}(?:-[A-Z]{2})?$/.test(locale)) {
+        errors.push(`screenshot-cases.json contains invalid locale ${locale}.`);
+      }
+      if (seenLocales.has(locale)) {
+        errors.push(`screenshot-cases.json contains duplicate locale ${locale}.`);
+      }
+      seenLocales.add(locale);
+    }
   }
   if (!Array.isArray(registry.cases) || registry.cases.length === 0) {
     errors.push('screenshot-cases.json must contain at least one case.');
@@ -100,12 +119,18 @@ export function findLegacyManualImport(source) {
   return null;
 }
 
-export function canonicalVariantPath(caseId, variant) {
+export function canonicalVariantPath(
+  caseId,
+  variant,
+  locale = 'en',
+  defaultLocale = 'en',
+) {
   validateCaseId(caseId);
   if (!requiredVariants.includes(variant)) {
     throw new Error(`Unknown screenshot variant: ${variant}`);
   }
-  return `${caseId}/${variant}.webp`;
+  const localePrefix = locale === defaultLocale ? '' : `${locale}/`;
+  return `${localePrefix}${caseId}/${variant}.webp`;
 }
 
 export function sha256(buffer) {

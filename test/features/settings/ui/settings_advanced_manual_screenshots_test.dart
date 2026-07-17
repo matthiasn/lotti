@@ -48,6 +48,8 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
 
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+
 const Map<String, bool> _flagValues = {
   privateFlag: true,
   enableNotificationsFlag: true,
@@ -76,7 +78,10 @@ Set<ConfigFlag> get _manualFlags => {
   for (final name in FlagsBody.defaultDisplayedItems)
     ConfigFlag(
       name: name,
-      description: 'Manual capture value for $name',
+      description: _t(
+        'Manual capture value for $name',
+        'Handbuch-Aufnahmewert für $name',
+      ),
       status: _flagValues[name] ?? false,
     ),
 };
@@ -111,7 +116,6 @@ Widget _app({
         data: MediaQueryData(size: size),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          locale: const Locale('en'),
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
               : DesignSystemTheme.light(),
@@ -123,6 +127,7 @@ Widget _app({
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: manualScreenshotLocale,
           home: home,
         ),
       ),
@@ -144,7 +149,7 @@ final List<_AdvancedCase> _cases = [
     id: 'hub',
     route: '/settings/advanced',
     mobilePage: () => const SettingsMobileBranchPage(branchId: 'advanced'),
-    expectedText: 'Config Flags',
+    expectedText: _t('Config Flags', 'Konfigurationsflags'),
     desktopExpectedText: null,
     scrollTo: null,
   ),
@@ -152,7 +157,10 @@ final List<_AdvancedCase> _cases = [
     id: 'flags',
     route: '/settings/flags',
     mobilePage: FlagsPage.new,
-    expectedText: 'Show private entries?',
+    expectedText: _t(
+      'Show private entries?',
+      'Private Einträge anzeigen?',
+    ),
     desktopExpectedText: null,
     scrollTo: null,
   ),
@@ -160,7 +168,7 @@ final List<_AdvancedCase> _cases = [
     id: 'logging',
     route: '/settings/advanced/logging_domains',
     mobilePage: LoggingSettingsPage.new,
-    expectedText: 'Enable Logging',
+    expectedText: _t('Enable Logging', 'Protokollierung aktivieren'),
     desktopExpectedText: null,
     scrollTo: null,
   ),
@@ -168,15 +176,21 @@ final List<_AdvancedCase> _cases = [
     id: 'health_import',
     route: '/settings/advanced',
     mobilePage: HealthImportPage.new,
-    expectedText: 'Import Activity Data',
-    desktopExpectedText: 'Config Flags',
+    expectedText: _t(
+      'Import Activity Data',
+      'Aktivitätsdaten importieren',
+    ),
+    desktopExpectedText: _t('Config Flags', 'Konfigurationsflags'),
     scrollTo: null,
   ),
   (
     id: 'maintenance',
     route: '/settings/advanced/maintenance',
     mobilePage: MaintenancePage.new,
-    expectedText: 'Purge deleted items',
+    expectedText: _t(
+      'Purge deleted items',
+      'Gelöschte Elemente löschen',
+    ),
     desktopExpectedText: null,
     scrollTo: null,
   ),

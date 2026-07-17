@@ -406,6 +406,10 @@ the settings panel, so the nested push is kept there. The form's footer is
 wrapped in a bottom-only `SafeArea` so the save action clears the home
 indicator once it owns the bottom edge.
 
+`FormBottomBar` keeps the localized status line in the flexible part of the
+footer. Long translations are ellipsized to one line, while Cancel and Save
+retain their complete labels and remain reachable at phone widths.
+
 The same helper backs the agent template/soul editors and the evolution chat
 (pushed from review pages); the route-driven counterpart for editors that
 *are* their own settings routes is `settingsRouteHidesBottomNav` in

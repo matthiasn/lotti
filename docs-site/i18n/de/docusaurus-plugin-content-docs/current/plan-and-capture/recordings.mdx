@@ -1,0 +1,71 @@
+---
+title: Audio aufnehmen
+description: Halte eine Sprachnotiz fest und entscheide, welche automatische Verarbeitung folgen soll.
+---
+
+# Audio aufnehmen
+
+Audio eignet sich, wenn Sprechen schneller ist als Tippen oder Tonfall und
+Details wichtig sind. Eine Aufnahme kann allein stehen oder in einer Aufgabe
+liegen.
+
+## Eine Aufnahme erstellen
+
+1. Öffne das Journal oder die Aufgabe, der die Aufnahme gehören soll.
+2. Verwende **+** und wähle **Audioaufnahme**.
+3. Prüfe die verfügbaren Verarbeitungsoptionen.
+4. Starte die Aufnahme, sprich deutlich und stoppe am Ende.
+
+<ManualScreenshot
+  caseId="recordings/active"
+  alt="Aktive Audioaufnahme mit Live-Visualisierung, vergangener Zeit sowie Aktionen für Pause, Verwerfen, Stoppen und Spracherkennung"
+/>
+
+Während der Aufnahme bleiben vergangene Zeit und Live-Eingangsanzeige sichtbar.
+Du kannst pausieren und fortsetzen, ohne die Aufnahme zu beenden, den Versuch
+verwerfen oder mit **Stopp** speichern. Wenn aufgabenbezogene Transkription
+verfügbar ist, steuert **Spracherkennung**, ob die Verarbeitung nach dem
+Speichern beginnen soll.
+
+Mit konfiguriertem Inferenzprofil und Transkriptionsfähigkeit kann Lotti die
+Aufnahme anschließend transkribieren. Aufgabenaufnahmen können außerdem
+aufgabenbezogene Verarbeitung wie Checklisten- oder Zusammenfassungsänderungen
+anbieten.
+
+## Gespeicherte Transkripte prüfen
+
+Öffne einen Audioeintrag, sein **…**-Menü und **Spracherkennung**. Der
+Prüfdialog behält jedes gespeicherte Transkript bei der Aufnahme, statt ein
+früheres Ergebnis zu überschreiben. Jede Zeile zeigt Zeitpunkt, Dauer,
+erkannte Sprache sowie Anbieter und Modell.
+
+<ManualScreenshot
+  caseId="recordings/transcripts"
+  alt="Spracherkennungsdialog über einer deutschen Project-Waddle-Audioaufnahme mit zwei gespeicherten Ergebnissen von Mistral und Whisper"
+  caption="Die Quellaufnahme bleibt hinter dem Dialog sichtbar; jedes Erkennungsergebnis bewahrt seine eigene Herkunft."
+/>
+
+Die Sprachauswahl bietet derzeit **Automatisch**, **English** und **Deutsch**.
+Verwende **Automatisch**, wenn der Anbieter die Sprache erkennen soll, oder
+wähle sie vorher, wenn du sie kennst. Die Auswahl wird am Audioeintrag
+gespeichert.
+
+Mit dem Doppelpfeil öffnest du den vollständigen, markierbaren Text. In der
+geöffneten Zeile erscheint auch die Löschaktion. Sie entfernt dieses
+Transkript, nicht die Quellaufnahme oder andere Ergebnisse.
+
+<ManualScreenshot
+  caseId="recordings/transcript-expanded"
+  alt="Geöffnetes deutsches Project-Waddle-Transkript über Sardinenfracht von Europa, 37 Kaiserpinguine und den schwerelosen Fischfütterer"
+  caption="Prüfe vollständigen Wortlaut und Herkunft, bevor du erzeugten Text als Aufgabenkontext verwendest."
+/>
+
+## Automatisierung bewusst wählen
+
+Verarbeitungsoptionen sind Anfragen an konfigurierte KI-Fähigkeiten. Der
+gewählte Anbieter kann lokal oder entfernt sein. Prüfe deshalb bei sensiblen
+Inhalten das aktive Inferenzprofil. Behandle erzeugten Text und vorgeschlagene
+Aufgabenänderungen als Entwurf, nicht als Wahrheit.
+
+Unter [KI-Anbieter einrichten](../ai-and-automation/provider-setup.mdx)
+steuerst du, wo Inferenz läuft.

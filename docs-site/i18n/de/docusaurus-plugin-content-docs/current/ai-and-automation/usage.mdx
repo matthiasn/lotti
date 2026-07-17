@@ -1,0 +1,61 @@
+---
+title: KI-Nutzung und Auswirkungen prüfen
+description: Vergleiche KI-Anfragen nach Zeitraum, Kategorie und Modell einschließlich geschätzter Kosten, Energie, Emissionen und Token.
+---
+
+# KI-Nutzung und Auswirkungen prüfen
+
+Öffne **Einstellungen → KI-Einstellungen → Nutzung & Auswirkungen**, um die
+Verwendung konfigurierter Cloud-Modelle zu verstehen. Dieselbe Analyse ist auch
+über die Route des KI-Auswirkungs-Dashboards erreichbar.
+
+<ManualScreenshot
+  caseId="ai/usage"
+  alt="Lottis KI-Auswirkungs-Dashboard für Juli 2026 mit Kosten, Energie, CO₂-Äquivalent, Token, Anfragen und Kategorienbalken"
+  caption="Der Beispielmonat von Project Waddle trennt Missionskontrolle und Pinguinbetrieb, während der gesamte Fußabdruck sichtbar bleibt."
+/>
+
+## Die Übersichtskarten lesen
+
+Die oberen Karten fassen den gewählten Zeitraum zusammen:
+
+- **Kosten** schätzt die Ausgaben beim Anbieter.
+- **Energie** schätzt den Stromanteil der gemessenen Cloud-Inferenz.
+- **CO₂e** zeigt die dazugehörige Emissionsschätzung.
+- **Token** zählt verarbeitete Modell-Token.
+- **Anfragen** zählt Inferenzaufrufe.
+
+Wenn möglich, vergleicht die Anzeige mit dem vorherigen gleich langen Zeitraum.
+Ein prozentualer Anstieg ist Kontext und nicht automatisch ein Problem: Eine
+Woche mit Startprüfung lässt sich nicht blind mit einer ruhigen Koloniewoche
+vergleichen.
+
+Energie, CO₂e und Kosten werden nur für Cloud-Modelle erfasst. Lokale Inferenz
+kann viel Geräteenergie verbrauchen, ohne in diesen Cloud-Schätzungen
+aufzutauchen. Die Seite ist daher kein vollständiger Stromzähler des Systems.
+
+## Die Analyse ändern
+
+Wechsle mit Zeitraumsteuerung und Pfeilen durch die Zeit oder springe zu
+**Dieser Monat** und **Dieses Jahr**. Wähle dann **Beides**, **Nach Kategorie**
+oder **Nach Modell**. In einem Diagramm kannst du – sofern verfügbar – zwischen
+Tageswerten, laufender Summe und Anteilen umschalten.
+
+Die Kategorienansicht beantwortet „Welcher Arbeitsbereich hat die Nutzung
+verursacht?“, die Modellansicht „Welches konfigurierte Modell?“. Prüfe beides,
+bevor du ein Profil änderst: Ein teures Modell kann für eine Fachkategorie
+sinnvoll und als allgemeiner Standard verschwenderisch sein.
+
+## Auf überraschende Werte reagieren
+
+Wenn die Nutzung unerwartet springt:
+
+1. begrenze den Zeitraum auf den ersten betroffenen Tag;
+2. vergleiche Aufteilungen nach Kategorie und Modell;
+3. prüfe Automatisierung und parallele Agenten;
+4. kontrolliere das Inferenzprofil der betroffenen Kategorie; und
+5. gleiche die Abrechnung beim Anbieter ab, bevor du Lottis Schätzung als
+   Rechnung behandelst.
+
+Den Pfad künftiger Aufrufe änderst du unter
+[Modelle und Inferenzprofile](./models-and-profiles.mdx).

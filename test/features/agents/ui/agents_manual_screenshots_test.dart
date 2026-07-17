@@ -71,6 +71,7 @@ import '../../daily_os_next/screenshot_harness.dart';
 import '../test_utils.dart';
 
 const String _subdir = 'agents';
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 const String _habitatTemplateId = 'template-habitat-sentinel';
 const String _dayPlannerTemplateId = 'template-waddle-day-planner';
 const String _cargoTemplateId = 'template-sardine-cargo-watch';
@@ -99,8 +100,11 @@ final List<AgentTemplateEntity> _templates = [
   makeTestTemplate(
     id: _habitatTemplateId,
     agentId: _habitatTemplateId,
-    displayName: 'Orbital Habitat Sentinel',
-    modelId: 'Waddle Command 70B',
+    displayName: _t(
+      'Orbital Habitat Sentinel',
+      'Wächter des Orbital-Habitats',
+    ),
+    modelId: _t('Waddle Command 70B', 'Watschelkommando 70B'),
     categoryIds: const {manualDemoCategoryId},
     profileId: manualProjectWaddleProfileId,
     createdAt: manualDemoNow.subtract(const Duration(days: 48)),
@@ -109,9 +113,12 @@ final List<AgentTemplateEntity> _templates = [
   makeTestTemplate(
     id: _dayPlannerTemplateId,
     agentId: _dayPlannerTemplateId,
-    displayName: 'Project Waddle Day Planner',
+    displayName: _t(
+      'Project Waddle Day Planner',
+      'Project-Waddle-Tagesplaner',
+    ),
     kind: AgentTemplateKind.dayAgent,
-    modelId: 'Emperor Reasoning XL',
+    modelId: _t('Emperor Reasoning XL', 'Kaiserpinguin-Denken XL'),
     categoryIds: const {manualDemoCategoryId},
     profileId: manualProjectWaddleProfileId,
     createdAt: manualDemoNow.subtract(const Duration(days: 36)),
@@ -120,9 +127,9 @@ final List<AgentTemplateEntity> _templates = [
   makeTestTemplate(
     id: _cargoTemplateId,
     agentId: _cargoTemplateId,
-    displayName: 'Sardine Supply Watch',
+    displayName: _t('Sardine Supply Watch', 'Sardinen-Vorratswache'),
     kind: AgentTemplateKind.projectAgent,
-    modelId: 'Sardine Logistics 14B',
+    modelId: _t('Sardine Logistics 14B', 'Sardinenlogistik 14B'),
     categoryIds: const {manualDemoCategoryId},
     profileId: manualHabitatLocalProfileId,
     createdAt: manualDemoNow.subtract(const Duration(days: 29)),
@@ -131,9 +138,9 @@ final List<AgentTemplateEntity> _templates = [
   makeTestTemplate(
     id: _diplomacyTemplateId,
     agentId: _diplomacyTemplateId,
-    displayName: 'Fish Diplomacy Coach',
+    displayName: _t('Fish Diplomacy Coach', 'Fischdiplomatie-Coach'),
     kind: AgentTemplateKind.templateImprover,
-    modelId: 'Emperor Reasoning XL',
+    modelId: _t('Emperor Reasoning XL', 'Kaiserpinguin-Denken XL'),
     profileId: manualFishDiplomacyProfileId,
     createdAt: manualDemoNow.subtract(const Duration(days: 21)),
     updatedAt: manualDemoNow.subtract(const Duration(days: 3)),
@@ -145,13 +152,19 @@ final Map<String, AgentTemplateVersionEntity> _templateVersions = {
     id: 'version-habitat-v4',
     agentId: _habitatTemplateId,
     version: 4,
-    generalDirective:
-        'Protect Project Waddle by checking pressure seals, habitat telemetry, '
-        'and every suspiciously cheerful penguin before launch.',
-    reportDirective:
-        'End with a concise go/no-go recommendation and list any seals that '
-        'need a human inspection.',
-    authoredBy: 'Mission Control',
+    generalDirective: _t(
+      'Protect Project Waddle by checking pressure seals, habitat telemetry, '
+          'and every suspiciously cheerful penguin before launch.',
+      'Schütze Project Waddle, indem du vor dem Start Druckdichtungen, '
+          'Habitattelemetrie und jeden verdächtig fröhlichen Pinguin prüfst.',
+    ),
+    reportDirective: _t(
+      'End with a concise go/no-go recommendation and list any seals that '
+          'need a human inspection.',
+      'Schließe mit einer knappen Start-oder-Stopp-Empfehlung und liste alle '
+          'Dichtungen auf, die ein Mensch inspizieren muss.',
+    ),
+    authoredBy: _t('Mission Control', 'Missionskontrolle'),
     profileId: manualProjectWaddleProfileId,
     createdAt: manualDemoNow.subtract(const Duration(days: 2)),
   ),
@@ -159,12 +172,18 @@ final Map<String, AgentTemplateVersionEntity> _templateVersions = {
     id: 'version-day-planner-v3',
     agentId: _dayPlannerTemplateId,
     version: 3,
-    generalDirective:
-        'Build a realistic day around energy, fixed launch windows, and the '
-        'colony rule that lunch still counts even during a sardine emergency.',
-    reportDirective:
-        'Call out over-capacity plans before asking for commitment.',
-    authoredBy: 'Project Waddle Operations',
+    generalDirective: _t(
+      'Build a realistic day around energy, fixed launch windows, and the '
+          'colony rule that lunch still counts even during a sardine emergency.',
+      'Baue einen realistischen Tag um Energie, feste Startfenster und die '
+          'Kolonieregel, dass die Mittagspause auch bei einem '
+          'Sardinennotfall zählt.',
+    ),
+    reportDirective: _t(
+      'Call out over-capacity plans before asking for commitment.',
+      'Benenne überladene Pläne, bevor du um eine Zusage bittest.',
+    ),
+    authoredBy: _t('Project Waddle Operations', 'Project-Waddle-Betrieb'),
     profileId: manualProjectWaddleProfileId,
     createdAt: manualDemoNow.subtract(const Duration(days: 4)),
   ),
@@ -172,12 +191,19 @@ final Map<String, AgentTemplateVersionEntity> _templateVersions = {
     id: 'version-cargo-v2',
     agentId: _cargoTemplateId,
     version: 2,
-    generalDirective:
-        'Track sardine cargo pods, cold-chain handoffs, and zero-gravity feeder '
-        'stock without sending private manifests to a cloud model.',
-    reportDirective:
-        'Report shortages by habitat, pod, and expected penguin impact.',
-    authoredBy: 'Cargo Bay',
+    generalDirective: _t(
+      'Track sardine cargo pods, cold-chain handoffs, and zero-gravity feeder '
+          'stock without sending private manifests to a cloud model.',
+      'Verfolge Sardinen-Frachtkapseln, Kühlkettenübergaben und den Bestand '
+          'des Schwerelos-Futterautomaten, ohne private Frachtlisten an ein '
+          'Cloud-Modell zu senden.',
+    ),
+    reportDirective: _t(
+      'Report shortages by habitat, pod, and expected penguin impact.',
+      'Melde Engpässe nach Habitat, Kapsel und erwarteter Auswirkung auf '
+          'die Pinguine.',
+    ),
+    authoredBy: _t('Cargo Bay', 'Frachtbucht'),
     profileId: manualHabitatLocalProfileId,
     createdAt: manualDemoNow.subtract(const Duration(days: 6)),
   ),
@@ -185,11 +211,17 @@ final Map<String, AgentTemplateVersionEntity> _templateVersions = {
     id: 'version-diplomacy-v2',
     agentId: _diplomacyTemplateId,
     version: 2,
-    generalDirective:
-        'Coach agent templates to be clear, skeptical, and gracious during '
-        'high-stakes fish negotiations.',
-    reportDirective: 'Explain each proposed wording change without flattery.',
-    authoredBy: 'Interplanetary Relations',
+    generalDirective: _t(
+      'Coach agent templates to be clear, skeptical, and gracious during '
+          'high-stakes fish negotiations.',
+      'Trainiere Agentenvorlagen, bei wichtigen Fischverhandlungen klar, '
+          'skeptisch und höflich zu sein.',
+    ),
+    reportDirective: _t(
+      'Explain each proposed wording change without flattery.',
+      'Erkläre jede vorgeschlagene Formulierungsänderung ohne Schmeichelei.',
+    ),
+    authoredBy: _t('Interplanetary Relations', 'Interplanetare Beziehungen'),
     profileId: manualFishDiplomacyProfileId,
     createdAt: manualDemoNow.subtract(const Duration(days: 8)),
   ),
@@ -224,40 +256,76 @@ final Map<String, SoulDocumentVersionEntity> _soulVersions = {
     id: 'soul-version-pebble-v5',
     agentId: _pebbleSoulId,
     version: 5,
-    authoredBy: 'Mission Control',
-    voiceDirective:
-        'Speak like a calm flight director who respects both evidence and '
-        'penguins. Put the operational decision first.',
-    toneBounds:
-        'Dry warmth is welcome. Never turn a safety warning into a joke.',
-    coachingStyle:
-        'Ask one clarifying question when telemetry is ambiguous, then propose '
-        'the smallest safe next step.',
-    antiSycophancyPolicy:
-        'Challenge optimistic launch assumptions and cite the observation that '
-        'changed your conclusion.',
+    authoredBy: _t('Mission Control', 'Missionskontrolle'),
+    voiceDirective: _t(
+      'Speak like a calm flight director who respects both evidence and '
+          'penguins. Put the operational decision first.',
+      'Sprich wie ein ruhiger Flugleiter, der Belege und Pinguine respektiert. '
+          'Stelle die betriebliche Entscheidung an den Anfang.',
+    ),
+    toneBounds: _t(
+      'Dry warmth is welcome. Never turn a safety warning into a joke.',
+      'Trockene Wärme ist willkommen. Mache aus einer Sicherheitswarnung '
+          'niemals einen Witz.',
+    ),
+    coachingStyle: _t(
+      'Ask one clarifying question when telemetry is ambiguous, then propose '
+          'the smallest safe next step.',
+      'Stelle bei mehrdeutiger Telemetrie eine klärende Frage und schlage '
+          'dann den kleinsten sicheren nächsten Schritt vor.',
+    ),
+    antiSycophancyPolicy: _t(
+      'Challenge optimistic launch assumptions and cite the observation that '
+          'changed your conclusion.',
+      'Hinterfrage optimistische Startannahmen und nenne die Beobachtung, '
+          'die deine Schlussfolgerung verändert hat.',
+    ),
     createdAt: manualDemoNow.subtract(const Duration(days: 3)),
   ),
   _flipperSoulId: makeTestSoulDocumentVersion(
     id: 'soul-version-flipper-v3',
     agentId: _flipperSoulId,
     version: 3,
-    authoredBy: 'Habitat Science',
-    voiceDirective: 'Be curious, precise, and delighted by useful anomalies.',
-    toneBounds: 'No alarmism; distinguish measurements from hypotheses.',
-    coachingStyle: 'Turn vague concerns into an observable test.',
-    antiSycophancyPolicy: 'Prefer an awkward fact over an elegant story.',
+    authoredBy: _t('Habitat Science', 'Habitatforschung'),
+    voiceDirective: _t(
+      'Be curious, precise, and delighted by useful anomalies.',
+      'Sei neugierig, präzise und erfreut über nützliche Anomalien.',
+    ),
+    toneBounds: _t(
+      'No alarmism; distinguish measurements from hypotheses.',
+      'Kein Alarmismus; unterscheide Messungen von Hypothesen.',
+    ),
+    coachingStyle: _t(
+      'Turn vague concerns into an observable test.',
+      'Mache aus vagen Bedenken einen beobachtbaren Test.',
+    ),
+    antiSycophancyPolicy: _t(
+      'Prefer an awkward fact over an elegant story.',
+      'Bevorzuge eine unbequeme Tatsache gegenüber einer eleganten Geschichte.',
+    ),
     createdAt: manualDemoNow.subtract(const Duration(days: 7)),
   ),
   _sardinaSoulId: makeTestSoulDocumentVersion(
     id: 'soul-version-sardina-v2',
     agentId: _sardinaSoulId,
     version: 2,
-    authoredBy: 'Cargo Bay',
-    voiceDirective: 'Be brisk, practical, and exact about quantities.',
-    toneBounds: 'Never shame a penguin for an empty feeder.',
-    coachingStyle: 'Name the blocked handoff and the next owner.',
-    antiSycophancyPolicy: 'Do not declare cargo healthy without pod counts.',
+    authoredBy: _t('Cargo Bay', 'Frachtbucht'),
+    voiceDirective: _t(
+      'Be brisk, practical, and exact about quantities.',
+      'Sei zügig, praktisch und bei Mengen exakt.',
+    ),
+    toneBounds: _t(
+      'Never shame a penguin for an empty feeder.',
+      'Beschäme keinen Pinguin wegen eines leeren Futterautomaten.',
+    ),
+    coachingStyle: _t(
+      'Name the blocked handoff and the next owner.',
+      'Benenne die blockierte Übergabe und die nächste verantwortliche Person.',
+    ),
+    antiSycophancyPolicy: _t(
+      'Do not declare cargo healthy without pod counts.',
+      'Erkläre Fracht nicht ohne Kapselzahlen für gesund.',
+    ),
     createdAt: manualDemoNow.subtract(const Duration(days: 10)),
   ),
 };
@@ -266,7 +334,7 @@ final List<AgentIdentityEntity> _agents = [
   makeTestIdentity(
     id: _habitatAgentId,
     agentId: _habitatAgentId,
-    displayName: 'Habitat Seal Inspector',
+    displayName: _t('Habitat Seal Inspector', 'Habitatdichtungs-Inspektor'),
     allowedCategoryIds: const {manualDemoCategoryId},
     currentStateId: 'state-habitat',
     config: const AgentConfig(profileId: manualProjectWaddleProfileId),
@@ -277,7 +345,7 @@ final List<AgentIdentityEntity> _agents = [
     id: _dayPlannerAgentId,
     agentId: _dayPlannerAgentId,
     kind: AgentKinds.dayAgent,
-    displayName: 'Project Waddle Planner',
+    displayName: _t('Project Waddle Planner', 'Project-Waddle-Planer'),
     allowedCategoryIds: const {manualDemoCategoryId},
     currentStateId: 'state-day-planner',
     config: const AgentConfig(profileId: manualProjectWaddleProfileId),
@@ -288,7 +356,7 @@ final List<AgentIdentityEntity> _agents = [
     id: _cargoAgentId,
     agentId: _cargoAgentId,
     kind: AgentKinds.projectAgent,
-    displayName: 'Sardine Cargo Coordinator',
+    displayName: _t('Sardine Cargo Coordinator', 'Sardinenfracht-Koordinator'),
     lifecycle: AgentLifecycle.dormant,
     allowedCategoryIds: const {manualDemoCategoryId},
     currentStateId: 'state-cargo',
@@ -332,38 +400,44 @@ final Map<String, AgentStateEntity> _agentStates = {
 final List<InstanceVm> _instanceVms = [
   InstanceVm(
     id: _habitatAgentId,
-    displayName: 'Habitat Seal Inspector',
+    displayName: _t('Habitat Seal Inspector', 'Habitatdichtungs-Inspektor'),
     type: InstanceType.taskAgent,
     status: AgentLifecycle.active,
     updatedAt: manualDemoNow.subtract(const Duration(minutes: 7)),
     soulName: 'Admiral Pebble',
     soulId: _pebbleSoulId,
     templateId: _habitatTemplateId,
-    templateName: 'Orbital Habitat Sentinel',
+    templateName: _t(
+      'Orbital Habitat Sentinel',
+      'Wächter des Orbital-Habitats',
+    ),
     searchKey: 'habitat seal inspector admiral pebble orbital sentinel',
   ),
   InstanceVm(
     id: _dayPlannerAgentId,
-    displayName: 'Project Waddle Planner',
+    displayName: _t('Project Waddle Planner', 'Project-Waddle-Planer'),
     type: InstanceType.dayAgent,
     status: AgentLifecycle.active,
     updatedAt: manualDemoNow.subtract(const Duration(minutes: 19)),
     soulName: 'Dr. Flipper',
     soulId: _flipperSoulId,
     templateId: _dayPlannerTemplateId,
-    templateName: 'Project Waddle Day Planner',
+    templateName: _t(
+      'Project Waddle Day Planner',
+      'Project-Waddle-Tagesplaner',
+    ),
     searchKey: 'project waddle planner dr flipper day planner',
   ),
   InstanceVm(
     id: _cargoAgentId,
-    displayName: 'Sardine Cargo Coordinator',
+    displayName: _t('Sardine Cargo Coordinator', 'Sardinenfracht-Koordinator'),
     type: InstanceType.projectAgent,
     status: AgentLifecycle.dormant,
     updatedAt: manualDemoNow.subtract(const Duration(hours: 6)),
     soulName: 'Captain Sardina',
     soulId: _sardinaSoulId,
     templateId: _cargoTemplateId,
-    templateName: 'Sardine Supply Watch',
+    templateName: _t('Sardine Supply Watch', 'Sardinen-Vorratswache'),
     searchKey: 'sardine cargo coordinator captain sardina supply watch',
   ),
   InstanceVm(
@@ -390,7 +464,10 @@ final List<PendingWakeRecord> _pendingWakes = [
     state: _agentStates[_dayPlannerAgentId]!,
     type: PendingWakeType.scheduled,
     dueAt: manualDemoNow.add(const Duration(minutes: 35)),
-    subjectLabel: 'Project Waddle launch day · July 18',
+    subjectLabel: _t(
+      'Project Waddle launch day · July 18',
+      'Project-Waddle-Starttag · 18. Juli',
+    ),
   ),
   PendingWakeRecord(
     agent: _agents[2],
@@ -451,9 +528,12 @@ final EvolutionSessionEntity _templateReviewSession = makeTestEvolutionSession(
   agentId: _habitatTemplateId,
   templateId: _habitatTemplateId,
   sessionNumber: 5,
-  feedbackSummary:
-      'The sentinel caught the pressure anomaly, but its launch report '
-      'buried the go/no-go decision beneath six paragraphs of fish trivia.',
+  feedbackSummary: _t(
+    'The sentinel caught the pressure anomaly, but its launch report '
+        'buried the go/no-go decision beneath six paragraphs of fish trivia.',
+    'Der Wächter erkannte die Druckanomalie, aber sein Startbericht vergrub '
+        'die Start-oder-Stopp-Entscheidung unter sechs Absätzen Fischwissen.',
+  ),
   createdAt: manualDemoNow.subtract(const Duration(minutes: 46)),
   updatedAt: manualDemoNow.subtract(const Duration(minutes: 12)),
 );
@@ -465,7 +545,10 @@ final EvolutionSessionEntity _completedTemplateReview =
       templateId: _habitatTemplateId,
       sessionNumber: 4,
       status: EvolutionSessionStatus.completed,
-      feedbackSummary: 'Make seal evidence easier to scan.',
+      feedbackSummary: _t(
+        'Make seal evidence easier to scan.',
+        'Belege zu Dichtungen leichter erfassbar machen.',
+      ),
       userRating: 4.8,
       createdAt: manualDemoNow.subtract(const Duration(days: 8)),
       updatedAt: manualDemoNow.subtract(const Duration(days: 8)),
@@ -477,12 +560,22 @@ final EvolutionSessionRecapEntity _completedTemplateRecap =
       id: 'recap-habitat-v4',
       agentId: _habitatTemplateId,
       sessionId: 'evolution-habitat-v4',
-      tldr: 'Put seal anomalies first and make the final launch call explicit.',
-      recapMarkdown:
-          '## Result\n\n- Evidence now leads each finding.\n'
-          '- Reports end with a plain-language launch recommendation.',
-      approvedChangeSummary:
-          'Promoted pressure evidence and added an explicit go/no-go ending.',
+      tldr: _t(
+        'Put seal anomalies first and make the final launch call explicit.',
+        'Dichtungsanomalien zuerst nennen und die Startentscheidung klar '
+            'aussprechen.',
+      ),
+      recapMarkdown: _t(
+        '## Result\n\n- Evidence now leads each finding.\n'
+            '- Reports end with a plain-language launch recommendation.',
+        '## Ergebnis\n\n- Belege stehen jetzt vor jedem Befund.\n'
+            '- Berichte enden mit einer klaren Startempfehlung.',
+      ),
+      approvedChangeSummary: _t(
+        'Promoted pressure evidence and added an explicit go/no-go ending.',
+        'Druckbelege vorangestellt und einen klaren Start-oder-Stopp-Abschluss '
+            'ergänzt.',
+      ),
       createdAt: manualDemoNow.subtract(const Duration(days: 8)),
     );
 
@@ -507,7 +600,6 @@ Widget _app({
         data: MediaQueryData(size: device.size),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          locale: const Locale('en'),
           theme: theme,
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -517,6 +609,7 @@ Widget _app({
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: manualScreenshotLocale,
           home: AppCommandHost(
             handlers: const <AppCommandId, AppCommandHandler>{},
             platform: device.isPhone
@@ -795,9 +888,9 @@ void main() {
         };
       }),
       agentTokenUsageSummariesProvider.overrideWith(
-        (ref, id) async => const [
+        (ref, id) async => [
           AgentTokenUsageSummary(
-            modelId: 'Waddle Command 70B',
+            modelId: _t('Waddle Command 70B', 'Watschelkommando 70B'),
             inputTokens: 82400,
             outputTokens: 21600,
             thoughtsTokens: 12300,
@@ -805,7 +898,10 @@ void main() {
             wakeCount: 42,
           ),
           AgentTokenUsageSummary(
-            modelId: 'Emperor Reasoning XL',
+            modelId: _t(
+              'Emperor Reasoning XL',
+              'Kaiserpinguin-Denken XL',
+            ),
             inputTokens: 18900,
             outputTokens: 7400,
             thoughtsTokens: 9100,
@@ -838,7 +934,10 @@ void main() {
         (ref) async => [
           OngoingWakeRecord(
             agentId: _habitatAgentId,
-            title: 'Inspect orbital penguin habitat',
+            title: _t(
+              'Inspect orbital penguin habitat',
+              'Pinguin-Habitat im Orbit inspizieren',
+            ),
             subjectId: manualOrbitalHabitatTaskId,
             subjectRoute: '/tasks/$manualOrbitalHabitatTaskId',
             startedAt: manualDemoNow.subtract(const Duration(minutes: 7)),
@@ -847,7 +946,10 @@ void main() {
       ),
       pendingWakeTargetTitleProvider.overrideWith((ref, entryId) async {
         return switch (entryId) {
-          manualOrbitalHabitatTaskId => 'Inspect orbital penguin habitat',
+          manualOrbitalHabitatTaskId => _t(
+            'Inspect orbital penguin habitat',
+            'Pinguin-Habitat im Orbit inspizieren',
+          ),
           'project-waddle' => 'Project Waddle',
           _ => null,
         };
@@ -865,8 +967,8 @@ void main() {
       ),
       dailyTokenUsageByModelProvider.overrideWith(
         (ref, days) async => {
-          'Waddle Command 70B': _dailyUsage,
-          'Emperor Reasoning XL': [
+          _t('Waddle Command 70B', 'Watschelkommando 70B'): _dailyUsage,
+          _t('Emperor Reasoning XL', 'Kaiserpinguin-Denken XL'): [
             for (final item in _dailyUsage)
               DailyTokenUsage(
                 date: item.date,
@@ -879,32 +981,41 @@ void main() {
         },
       ),
       tokenSourceBreakdownProvider.overrideWith(
-        (ref) async => const [
+        (ref) async => [
           TokenSourceBreakdown(
             templateId: _habitatTemplateId,
-            displayName: 'Orbital Habitat Sentinel',
+            displayName: _t(
+              'Orbital Habitat Sentinel',
+              'Wächter des Orbital-Habitats',
+            ),
             totalTokens: 14300,
             percentage: 55,
             wakeCount: 7,
-            totalDuration: Duration(minutes: 38),
+            totalDuration: const Duration(minutes: 38),
             isHighUsage: false,
           ),
           TokenSourceBreakdown(
             templateId: _dayPlannerTemplateId,
-            displayName: 'Project Waddle Day Planner',
+            displayName: _t(
+              'Project Waddle Day Planner',
+              'Project-Waddle-Tagesplaner',
+            ),
             totalTokens: 7800,
             percentage: 30,
             wakeCount: 4,
-            totalDuration: Duration(minutes: 21),
+            totalDuration: const Duration(minutes: 21),
             isHighUsage: false,
           ),
           TokenSourceBreakdown(
             templateId: _cargoTemplateId,
-            displayName: 'Sardine Supply Watch',
+            displayName: _t(
+              'Sardine Supply Watch',
+              'Sardinen-Vorratswache',
+            ),
             totalTokens: 3900,
             percentage: 15,
             wakeCount: 3,
-            totalDuration: Duration(minutes: 12),
+            totalDuration: const Duration(minutes: 12),
             isHighUsage: false,
           ),
         ],
@@ -951,9 +1062,12 @@ void main() {
           agentId: _pebbleSoulId,
           templateId: _habitatTemplateId,
           sessionNumber: 6,
-          feedbackSummary:
-              'Admiral Pebble is appropriately skeptical, but should ask fewer '
-              'questions when a launch hold is already obvious.',
+          feedbackSummary: _t(
+            'Admiral Pebble is appropriately skeptical, but should ask fewer '
+                'questions when a launch hold is already obvious.',
+            'Admiral Pebble ist angemessen skeptisch, sollte aber weniger '
+                'Fragen stellen, wenn ein Startstopp bereits offensichtlich ist.',
+          ),
           createdAt: manualDemoNow.subtract(const Duration(minutes: 33)),
           updatedAt: manualDemoNow.subtract(const Duration(minutes: 9)),
         ),
@@ -1011,7 +1125,10 @@ void main() {
               device: device,
               brightness: brightness,
             );
-            expect(find.textContaining('more tokens today'), findsOneWidget);
+            expect(
+              find.textContaining(_t('more tokens today', 'heute mehr Tokens')),
+              findsOneWidget,
+            );
             expect(find.text('26K'), findsWidgets);
             await captureScreenshot(
               tester,
@@ -1037,24 +1154,36 @@ void main() {
           );
           expect(
             find.textContaining(
-              'Orbital Habitat Sentinel',
+              _t(
+                'Orbital Habitat Sentinel',
+                'Wächter des Orbital-Habitats',
+              ),
               findRichText: true,
             ),
             findsAtLeastNWidgets(1),
           );
           expect(
             find.textContaining(
-              'Project Waddle Day Planner',
+              _t(
+                'Project Waddle Day Planner',
+                'Project-Waddle-Tagesplaner',
+              ),
               findRichText: true,
             ),
             findsAtLeastNWidgets(1),
           );
           expect(
-            find.textContaining('Sardine Supply Watch', findRichText: true),
+            find.textContaining(
+              _t('Sardine Supply Watch', 'Sardinen-Vorratswache'),
+              findRichText: true,
+            ),
             findsAtLeastNWidgets(1),
           );
           expect(
-            find.textContaining('Fish Diplomacy Coach', findRichText: true),
+            find.textContaining(
+              _t('Fish Diplomacy Coach', 'Fischdiplomatie-Coach'),
+              findRichText: true,
+            ),
             findsAtLeastNWidgets(1),
           );
         });
@@ -1074,16 +1203,28 @@ void main() {
             subdir: _subdir,
           );
           expect(
-            find.textContaining('Habitat Seal Inspector', findRichText: true),
-            findsAtLeastNWidgets(1),
-          );
-          expect(
-            find.textContaining('Project Waddle Planner', findRichText: true),
+            find.textContaining(
+              _t(
+                'Habitat Seal Inspector',
+                'Habitatdichtungs-Inspektor',
+              ),
+              findRichText: true,
+            ),
             findsAtLeastNWidgets(1),
           );
           expect(
             find.textContaining(
-              'Sardine Cargo Coordinator',
+              _t('Project Waddle Planner', 'Project-Waddle-Planer'),
+              findRichText: true,
+            ),
+            findsAtLeastNWidgets(1),
+          );
+          expect(
+            find.textContaining(
+              _t(
+                'Sardine Cargo Coordinator',
+                'Sardinenfracht-Koordinator',
+              ),
               findRichText: true,
             ),
             findsAtLeastNWidgets(1),
@@ -1121,14 +1262,17 @@ void main() {
             );
             expect(
               find.textContaining(
-                'Inspect orbital penguin habitat',
+                _t(
+                  'Inspect orbital penguin habitat',
+                  'Pinguin-Habitat im Orbit inspizieren',
+                ),
                 findRichText: true,
               ),
               findsAtLeastNWidgets(1),
             );
             expect(
               find.textContaining(
-                'Project Waddle launch day',
+                _t('Project Waddle launch day', 'Project-Waddle-Starttag'),
                 findRichText: true,
               ),
               findsAtLeastNWidgets(1),
@@ -1150,8 +1294,21 @@ void main() {
             device: device,
             brightness: brightness,
           );
-          expect(find.text('Orbital Habitat Sentinel'), findsWidgets);
-          expect(find.text('Project Waddle Command'), findsWidgets);
+          expect(
+            find.text(
+              _t(
+                'Orbital Habitat Sentinel',
+                'Wächter des Orbital-Habitats',
+              ),
+            ),
+            findsWidgets,
+          );
+          expect(
+            find.text(
+              _t('Project Waddle Command', 'Project-Waddle-Kommando'),
+            ),
+            findsWidgets,
+          );
           expect(find.text('Admiral Pebble'), findsWidgets);
           await captureScreenshot(
             tester,
@@ -1169,9 +1326,19 @@ void main() {
             device: device,
             brightness: brightness,
           );
-          expect(find.text('Orbital Habitat Sentinel'), findsOneWidget);
           expect(
-            find.textContaining('pressure anomaly'),
+            find.text(
+              _t(
+                'Orbital Habitat Sentinel',
+                'Wächter des Orbital-Habitats',
+              ),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining(
+              _t('pressure anomaly', 'Druckanomalie'),
+            ),
             findsOneWidget,
           );
           await captureScreenshot(
@@ -1191,7 +1358,12 @@ void main() {
             brightness: brightness,
           );
           expect(find.text('Admiral Pebble'), findsWidgets);
-          expect(find.textContaining('calm flight director'), findsOneWidget);
+          expect(
+            find.textContaining(
+              _t('calm flight director', 'ruhiger Flugleiter'),
+            ),
+            findsOneWidget,
+          );
           await captureScreenshot(
             tester,
             'agents_soul_editor_${viewport}_$theme',
@@ -1209,7 +1381,12 @@ void main() {
             brightness: brightness,
           );
           expect(find.text('Admiral Pebble'), findsOneWidget);
-          expect(find.textContaining('launch hold'), findsOneWidget);
+          expect(
+            find.textContaining(
+              _t('launch hold', 'Startstopp'),
+            ),
+            findsOneWidget,
+          );
           await captureScreenshot(
             tester,
             'agents_soul_review_${viewport}_$theme',
@@ -1227,9 +1404,30 @@ void main() {
               device: device,
               brightness: brightness,
             );
-            expect(find.text('Habitat Seal Inspector'), findsOneWidget);
-            expect(find.text('Orbital Habitat Sentinel'), findsOneWidget);
-            expect(find.textContaining('Waddle Command'), findsWidgets);
+            expect(
+              find.text(
+                _t(
+                  'Habitat Seal Inspector',
+                  'Habitatdichtungs-Inspektor',
+                ),
+              ),
+              findsOneWidget,
+            );
+            expect(
+              find.text(
+                _t(
+                  'Orbital Habitat Sentinel',
+                  'Wächter des Orbital-Habitats',
+                ),
+              ),
+              findsOneWidget,
+            );
+            expect(
+              find.textContaining(
+                _t('Waddle Command', 'Watschelkommando'),
+              ),
+              findsWidgets,
+            );
             await captureScreenshot(
               tester,
               'agents_instance_detail_${viewport}_$theme',

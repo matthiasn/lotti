@@ -20,6 +20,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:path/path.dart' as p;
 
+export '../../helpers/manual_screenshot_locale.dart';
+
 /// Stable key expected on the [RepaintBoundary] that frames the app under
 /// test.
 const ValueKey<String> screenshotBoundaryKey = ValueKey<String>(

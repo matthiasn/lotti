@@ -13,6 +13,9 @@ on:
       - 'test/features/settings/ui/settings_home_screenshots_test.dart'
       - 'test/features/daily_os_next/screenshot_harness.dart'
       - 'test/features/**/*_screenshots_test.dart'
+      - 'test/helpers/manual_demo_world.dart'
+      - 'test/helpers/manual_screenshot_locale.dart'
+      - 'test/pages/create/create_measurement_dialog_screenshots_test.dart'
   push:
     branches: [main]
     paths:
@@ -25,6 +28,9 @@ on:
       - 'test/features/settings/ui/settings_home_screenshots_test.dart'
       - 'test/features/daily_os_next/screenshot_harness.dart'
       - 'test/features/**/*_screenshots_test.dart'
+      - 'test/helpers/manual_demo_world.dart'
+      - 'test/helpers/manual_screenshot_locale.dart'
+      - 'test/pages/create/create_measurement_dialog_screenshots_test.dart'
   schedule:
     - cron: '23 2 * * *'
   workflow_dispatch:
@@ -165,7 +171,7 @@ jobs:
       github.event_name == 'schedule' ||
       (github.event_name == 'workflow_dispatch' && inputs.capture_screenshots)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout Lotti
         uses: actions/checkout@v5

@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   browser.
 
 ### Changed
+- **German and large-text layouts stay usable in key setup flows.** AI form
+  status text truncates without pushing its actions off-screen, Daily OS time
+  anchors wrap at accessibility text sizes, and the What's New footer gives
+  translated actions enough room on phones.
 - **The desktop sidebar is navigation-first and keeps important task filters
   visible.** Saved task filters now appear directly under Tasks with live
   counts. The first five follow the order you set, More expands the complete

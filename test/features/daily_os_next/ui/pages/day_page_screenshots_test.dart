@@ -63,25 +63,26 @@ final DateTime _now = DateTime(2026, 6, 8, 15, 55);
 final DateTime _day = DateTime(2026, 6, 8);
 late ManualDemoWorld _manualWorld;
 Directory? _manualDocumentsDirectory;
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
-const _deepWork = DayAgentCategory(
+final _deepWork = DayAgentCategory(
   id: 'cat-penguin',
-  name: 'Penguin Operations',
+  name: _t('Penguin Operations', 'Pinguinbetrieb'),
   colorHex: '8B5CF6',
 );
-const _client = DayAgentCategory(
+final _client = DayAgentCategory(
   id: 'cat-mission',
-  name: 'Mission Control',
+  name: _t('Mission Control', 'Missionskontrolle'),
   colorHex: '4F9DDE',
 );
-const _health = DayAgentCategory(
+final _health = DayAgentCategory(
   id: 'cat-human',
-  name: 'Human Maintenance',
+  name: _t('Human Maintenance', 'Menschenwartung'),
   colorHex: '34D399',
 );
-const _admin = DayAgentCategory(
+final _admin = DayAgentCategory(
   id: 'cat-diplomacy',
-  name: 'Fish Diplomacy',
+  name: _t('Fish Diplomacy', 'Fischdiplomatie'),
   colorHex: 'E8A33D',
 );
 
@@ -133,7 +134,7 @@ DraftPlan _plan() {
   final blocks = [
     _planned(
       'blk-review',
-      'Emperor penguin roll call',
+      _t('Emperor penguin roll call', 'Kaiserpinguine durchzählen'),
       _at(8, 30),
       _at(9),
       _admin,
@@ -141,16 +142,22 @@ DraftPlan _plan() {
     ),
     _planned(
       'blk-deep',
-      'Inspect orbital penguin habitat',
+      _t(
+        'Inspect orbital penguin habitat',
+        'Pinguin-Habitat im Orbit inspizieren',
+      ),
       _at(9),
       _at(11),
       _deepWork,
-      reason: 'Best done before Mission Control and the penguins get chatty',
+      reason: _t(
+        'Best done before Mission Control and the penguins get chatty',
+        'Am besten, bevor Missionskontrolle und Pinguine gesprächig werden',
+      ),
       taskId: 'task-orbital-habitat',
     ),
     TimeBlock(
       id: 'blk-buffer',
-      title: 'Buffer',
+      title: _t('Buffer', 'Puffer'),
       start: _at(11),
       end: _at(11, 15),
       type: TimeBlockType.buffer,
@@ -159,7 +166,7 @@ DraftPlan _plan() {
     ),
     _planned(
       'blk-design',
-      'Project Waddle launch review',
+      _t('Project Waddle launch review', 'Startprüfung für Project Waddle'),
       _at(11, 15),
       _at(12),
       _client,
@@ -167,7 +174,10 @@ DraftPlan _plan() {
     ),
     _planned(
       'blk-lunch',
-      'Lunch (coffee is not a vegetable)',
+      _t(
+        'Lunch (coffee is not a vegetable)',
+        'Mittagspause (Kaffee ist kein Gemüse)',
+      ),
       _at(12),
       _at(13),
       _health,
@@ -175,7 +185,7 @@ DraftPlan _plan() {
     ),
     _planned(
       'blk-followup',
-      'Negotiate sardine futures',
+      _t('Negotiate sardine futures', 'Sardinen-Futures verhandeln'),
       _at(13),
       _at(14, 30),
       _client,
@@ -183,18 +193,24 @@ DraftPlan _plan() {
     ),
     _planned(
       'blk-slides',
-      'Zero-gravity fish feeder',
+      _t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat'),
       _at(14, 30),
       _at(16),
       _deepWork,
       sessionIndex: 1,
       sessionTotal: 2,
-      reason: 'The fish are least suspicious immediately after lunch',
+      reason: _t(
+        'The fish are least suspicious immediately after lunch',
+        'Direkt nach dem Mittagessen sind die Fische am wenigsten misstrauisch',
+      ),
       taskId: manualFishFeederTaskId,
     ),
     _planned(
       'blk-email',
-      'Legal: Is a penguin a passenger?',
+      _t(
+        'Legal: Is a penguin a passenger?',
+        'Rechtsfrage: Ist ein Pinguin ein Passagier?',
+      ),
       _at(16, 15),
       _at(17),
       _admin,
@@ -202,7 +218,7 @@ DraftPlan _plan() {
     ),
     _planned(
       'blk-run',
-      'Walk without a headset',
+      _t('Walk without a headset', 'Spaziergang ohne Headset'),
       _at(17, 30),
       _at(18),
       _health,
@@ -218,31 +234,34 @@ DraftPlan _plan() {
         start: _at(9),
         end: _at(12),
         level: EnergyLevel.high,
-        label: 'HIGH ENERGY',
+        label: _t('HIGH ENERGY', 'HOHE ENERGIE'),
       ),
       EnergyBand(
         start: _at(13),
         end: _at(15),
         level: EnergyLevel.low,
-        label: 'POST-LUNCH DIP',
+        label: _t('POST-LUNCH DIP', 'MITTAGSTIEF'),
       ),
       EnergyBand(
         start: _at(16),
         end: _at(18),
         level: EnergyLevel.secondWind,
-        label: 'SECOND WIND',
+        label: _t('SECOND WIND', 'ZWEITER SCHWUNG'),
       ),
     ],
     // Blocks sum to 525m (8h45m) — capacity leaves an honest 15m gap.
     capacityMinutes: 540,
     scheduledMinutes: 525,
-    agendaItems: const [
+    agendaItems: [
       AgendaItem(
         id: 'ag-review',
         taskId: manualRollCallTaskId,
-        title: 'Emperor penguin roll call',
+        title: _t(
+          'Emperor penguin roll call',
+          'Kaiserpinguine durchzählen',
+        ),
         category: _admin,
-        linkedBlockIds: ['blk-review'],
+        linkedBlockIds: const ['blk-review'],
         totalEstimateMinutes: 30,
         progress: 1,
         state: AgendaItemState.done,
@@ -250,20 +269,29 @@ DraftPlan _plan() {
       AgendaItem(
         id: 'ag-deep',
         taskId: 'task-orbital-habitat',
-        title: 'Inspect orbital penguin habitat',
+        title: _t(
+          'Inspect orbital penguin habitat',
+          'Pinguin-Habitat im Orbit inspizieren',
+        ),
         category: _deepWork,
-        linkedBlockIds: ['blk-deep'],
+        linkedBlockIds: const ['blk-deep'],
         totalEstimateMinutes: 120,
         progress: 1,
         state: AgendaItemState.done,
-        outcome: 'Habitat seals green; tiny helmets still pending',
+        outcome: _t(
+          'Habitat seals green; tiny helmets still pending',
+          'Habitatdichtungen grün; winzige Helme noch ausstehend',
+        ),
       ),
       AgendaItem(
         id: 'ag-design',
         taskId: manualLaunchReviewTaskId,
-        title: 'Project Waddle launch review',
+        title: _t(
+          'Project Waddle launch review',
+          'Startprüfung für Project Waddle',
+        ),
         category: _client,
-        linkedBlockIds: ['blk-design'],
+        linkedBlockIds: const ['blk-design'],
         totalEstimateMinutes: 45,
         progress: 1,
         state: AgendaItemState.done,
@@ -271,9 +299,12 @@ DraftPlan _plan() {
       AgendaItem(
         id: 'ag-lunch',
         taskId: manualLunchTaskId,
-        title: 'Lunch (coffee is not a vegetable)',
+        title: _t(
+          'Lunch (coffee is not a vegetable)',
+          'Mittagspause (Kaffee ist kein Gemüse)',
+        ),
         category: _health,
-        linkedBlockIds: ['blk-lunch'],
+        linkedBlockIds: const ['blk-lunch'],
         totalEstimateMinutes: 60,
         progress: 1,
         state: AgendaItemState.done,
@@ -283,39 +314,48 @@ DraftPlan _plan() {
       AgendaItem(
         id: 'ag-followup',
         taskId: manualSardineFuturesTaskId,
-        title: 'Negotiate sardine futures',
+        title: _t('Negotiate sardine futures', 'Sardinen-Futures verhandeln'),
         category: _client,
-        linkedBlockIds: ['blk-followup'],
+        linkedBlockIds: const ['blk-followup'],
         totalEstimateMinutes: 90,
         progress: 1,
         state: AgendaItemState.done,
-        outcome: 'Locked Q3 sardines below the emergency fish ceiling',
+        outcome: _t(
+          'Locked Q3 sardines below the emergency fish ceiling',
+          'Q3-Sardinen unter der Fisch-Notfallgrenze gesichert',
+        ),
       ),
       AgendaItem(
         id: 'ag-slides',
         taskId: manualFishFeederTaskId,
-        title: 'Zero-gravity fish feeder',
+        title: _t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat'),
         category: _deepWork,
-        linkedBlockIds: ['blk-slides'],
+        linkedBlockIds: const ['blk-slides'],
         totalEstimateMinutes: 180,
         progress: 0.4,
         state: AgendaItemState.inProgress,
-        outcome: 'Prototype ready for the live habitat demo',
+        outcome: _t(
+          'Prototype ready for the live habitat demo',
+          'Prototyp bereit für die Live-Demo des Habitats',
+        ),
       ),
       AgendaItem(
         id: 'ag-email',
         taskId: manualPenguinPassengerTaskId,
-        title: 'Legal: Is a penguin a passenger?',
+        title: _t(
+          'Legal: Is a penguin a passenger?',
+          'Rechtsfrage: Ist ein Pinguin ein Passagier?',
+        ),
         category: _admin,
-        linkedBlockIds: ['blk-email'],
+        linkedBlockIds: const ['blk-email'],
         totalEstimateMinutes: 45,
       ),
       AgendaItem(
         id: 'ag-run',
         taskId: manualHeadsetWalkTaskId,
-        title: 'Walk without a headset',
+        title: _t('Walk without a headset', 'Spaziergang ohne Headset'),
         category: _health,
-        linkedBlockIds: ['blk-run'],
+        linkedBlockIds: const ['blk-run'],
         totalEstimateMinutes: 30,
       ),
     ],
@@ -328,43 +368,55 @@ DraftPlan _plan() {
 List<TimeBlock> _actuals() => [
   _tracked(
     'review',
-    'Emperor penguin roll call',
+    _t('Emperor penguin roll call', 'Kaiserpinguine durchzählen'),
     _at(8, 42),
     _at(9, 5),
     _admin,
   ),
   _tracked(
     'deep',
-    'Inspect orbital penguin habitat',
+    _t(
+      'Inspect orbital penguin habitat',
+      'Pinguin-Habitat im Orbit inspizieren',
+    ),
     _at(9, 5),
     _at(10, 38),
     _deepWork,
   ),
   _tracked(
     'incident',
-    'Retrieve penguin from ventilation duct',
+    _t(
+      'Retrieve penguin from ventilation duct',
+      'Pinguin aus dem Lüftungsschacht holen',
+    ),
     _at(10, 40),
     _at(11, 2),
     _client,
   ),
   _tracked(
     'design',
-    'Project Waddle launch review',
+    _t('Project Waddle launch review', 'Startprüfung für Project Waddle'),
     _at(11, 18),
     _at(12, 5),
     _client,
   ),
-  _tracked('lunch', 'Lunch, technically', _at(12, 10), _at(12, 50), _health),
+  _tracked(
+    'lunch',
+    _t('Lunch, technically', 'Technisch gesehen Mittagspause'),
+    _at(12, 10),
+    _at(12, 50),
+    _health,
+  ),
   _tracked(
     'followup',
-    'Negotiate sardine futures',
+    _t('Negotiate sardine futures', 'Sardinen-Futures verhandeln'),
     _at(13, 5),
     _at(14, 55),
     _client,
   ),
   _tracked(
     'slides',
-    'Zero-gravity fish feeder',
+    _t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat'),
     _at(15, 10),
     _at(15, 45),
     _deepWork,
@@ -401,18 +453,32 @@ PlannerKnowledgeView _knowledgeView() => PlannerKnowledgeView(
     _knowledge(
       'kn-1',
       'habitat-before-mission-control',
-      'Habitat work lands before Mission Control wakes',
-      'Habitat inspections started before the first call run 30% longer '
-          'before a penguin or executive finds the red button.',
+      _t(
+        'Habitat work lands before Mission Control wakes',
+        'Habitatarbeit vor dem Aufwachen der Missionskontrolle',
+      ),
+      _t(
+        'Habitat inspections started before the first call run 30% longer '
+            'before a penguin or executive finds the red button.',
+        'Habitatinspektionen vor dem ersten Anruf dauern 30 % länger, bevor '
+            'ein Pinguin oder eine Führungskraft den roten Knopf findet.',
+      ),
       status: KnowledgeStatus.proposed,
       tags: const ['penguins', 'mornings'],
     ),
     _knowledge(
       'kn-2',
       'walks-skipped-after-escapes',
-      'Walks get skipped after penguin escapes',
-      'When a penguin enters the ventilation system, the planned walk is '
-          'usually dropped — protect it explicitly.',
+      _t(
+        'Walks get skipped after penguin escapes',
+        'Spaziergänge entfallen nach Pinguinausbrüchen',
+      ),
+      _t(
+        'When a penguin enters the ventilation system, the planned walk is '
+            'usually dropped — protect it explicitly.',
+        'Gerät ein Pinguin in die Lüftung, entfällt der geplante Spaziergang '
+            'meistens – schütze ihn ausdrücklich.',
+      ),
       status: KnowledgeStatus.proposed,
       tags: const ['health'],
     ),
@@ -421,8 +487,11 @@ PlannerKnowledgeView _knowledgeView() => PlannerKnowledgeView(
     _knowledge(
       'kn-3',
       'no-briefings-before-ten',
-      'No briefings before 10:00',
-      'Keep mornings briefing-free until 10:00 — stated preference.',
+      _t('No briefings before 10:00', 'Keine Briefings vor 10:00 Uhr'),
+      _t(
+        'Keep mornings briefing-free until 10:00 — stated preference.',
+        'Vormittage bis 10:00 Uhr briefingfrei halten – geäußerte Präferenz.',
+      ),
       status: KnowledgeStatus.confirmed,
       source: KnowledgeSource.userStated,
       tags: const ['mornings'],
@@ -496,10 +565,16 @@ class _ManualDailyOsAgent extends MockDayAgent {
         PlanDiffChange(
           id: 'change-protect-launch-review',
           kind: PlanDiffChangeKind.moved,
-          title: 'Move sardine negotiations 30 minutes later',
+          title: _t(
+            'Move sardine negotiations 30 minutes later',
+            'Sardinenverhandlung um 30 Minuten verschieben',
+          ),
           category: _client,
-          reason:
-              'Protect the launch review and give Mission Control a buffer.',
+          reason: _t(
+            'Protect the launch review and give Mission Control a buffer.',
+            'Die Startprüfung schützen und der Missionskontrolle einen Puffer '
+                'geben.',
+          ),
           affectedBlockId: 'blk-followup',
           fromStart: _at(13),
           fromEnd: _at(14, 30),
@@ -509,10 +584,15 @@ class _ManualDailyOsAgent extends MockDayAgent {
         PlanDiffChange(
           id: 'change-protect-feeder-demo',
           kind: PlanDiffChangeKind.moved,
-          title: 'Start the fish-feeder demo after the new buffer',
+          title: _t(
+            'Start the fish-feeder demo after the new buffer',
+            'Futterautomaten-Demo nach dem neuen Puffer starten',
+          ),
           category: _deepWork,
-          reason:
-              'Keep the zero-gravity demo clear of the sardine negotiation.',
+          reason: _t(
+            'Keep the zero-gravity demo clear of the sardine negotiation.',
+            'Die Schwerelos-Demo von der Sardinenverhandlung freihalten.',
+          ),
           affectedBlockId: 'blk-slides',
           fromStart: _at(14, 30),
           fromEnd: _at(16),
@@ -533,43 +613,67 @@ class _ManualDailyOsAgent extends MockDayAgent {
     })
   >
   surfaceShutdownData({required DateTime forDate}) async => (
-    completed: const [
+    completed: [
       CompletedItem(
         taskId: manualOrbitalHabitatTaskId,
-        title: 'Inspect orbital penguin habitat',
+        title: _t(
+          'Inspect orbital penguin habitat',
+          'Pinguin-Habitat im Orbit inspizieren',
+        ),
         category: _deepWork,
         durationMinutes: 93,
-        note: 'Seals green; all 37 emperor penguins accounted for.',
+        note: _t(
+          'Seals green; all 37 emperor penguins accounted for.',
+          'Dichtungen grün; alle 37 Kaiserpinguine sind vollzählig.',
+        ),
       ),
       CompletedItem(
         taskId: manualLaunchReviewTaskId,
-        title: 'Project Waddle launch review',
+        title: _t(
+          'Project Waddle launch review',
+          'Startprüfung für Project Waddle',
+        ),
         category: _client,
         durationMinutes: 47,
-        note: 'Mission Control approved the revised habitat checklist.',
+        note: _t(
+          'Mission Control approved the revised habitat checklist.',
+          'Die Missionskontrolle genehmigte die überarbeitete Habitat-Checkliste.',
+        ),
       ),
       CompletedItem(
         taskId: manualSardineFuturesTaskId,
-        title: 'Negotiate sardine futures',
+        title: _t('Negotiate sardine futures', 'Sardinen-Futures verhandeln'),
         category: _client,
         durationMinutes: 110,
-        note: 'Q3 supply secured below the emergency fish ceiling.',
+        note: _t(
+          'Q3 supply secured below the emergency fish ceiling.',
+          'Q3-Vorrat unter der Fisch-Notfallgrenze gesichert.',
+        ),
       ),
     ],
-    carryover: const [
+    carryover: [
       CarryoverItem(
         taskId: manualFishFeederTaskId,
-        title: 'Zero-gravity fish feeder',
+        title: _t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat'),
         category: _deepWork,
-        reason: 'Prototype calibrated; live habitat demo still pending.',
-        suggestedTarget: '→ tomorrow morning',
+        reason: _t(
+          'Prototype calibrated; live habitat demo still pending.',
+          'Prototyp kalibriert; Live-Demo des Habitats steht noch aus.',
+        ),
+        suggestedTarget: _t('→ tomorrow morning', '→ morgen Vormittag'),
       ),
       CarryoverItem(
         taskId: manualPenguinPassengerTaskId,
-        title: 'Legal: Is a penguin a passenger?',
+        title: _t(
+          'Legal: Is a penguin a passenger?',
+          'Rechtsfrage: Ist ein Pinguin ein Passagier?',
+        ),
         category: _admin,
-        reason: 'Mission Control review ran long.',
-        suggestedTarget: '→ tomorrow afternoon',
+        reason: _t(
+          'Mission Control review ran long.',
+          'Die Prüfung der Missionskontrolle dauerte länger.',
+        ),
+        suggestedTarget: _t('→ tomorrow afternoon', '→ morgen Nachmittag'),
       ),
     ],
     metrics: const ShutdownMetrics(
@@ -585,10 +689,13 @@ class _ManualDailyOsAgent extends MockDayAgent {
   @override
   Future<TomorrowNote> generateTomorrowNote({
     required DateTime forDate,
-  }) async => const TomorrowNote(
-    body:
-        'Start with the live fish-feeder demo at 09:00, then resolve the '
-        'penguin passenger question before the launch window opens.',
+  }) async => TomorrowNote(
+    body: _t(
+      'Start with the live fish-feeder demo at 09:00, then resolve the '
+          'penguin passenger question before the launch window opens.',
+      'Beginne um 09:00 Uhr mit der Live-Demo des Futterautomaten und kläre '
+          'danach die Pinguin-Passagierfrage, bevor sich das Startfenster öffnet.',
+    ),
     maturity: 3,
   );
 }
@@ -623,6 +730,7 @@ Widget _app({
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: manualScreenshotLocale,
           home: home,
         ),
       ),
@@ -831,8 +939,12 @@ Future<void> _pumpManualDailyOsSurface(
         refineControllerProvider(draft).notifier,
       );
       await (notifier..reviewTranscript(
-            'Protect the launch review, move sardine negotiations later, and '
-            'keep the fish-feeder demo clear.',
+            _t(
+              'Protect the launch review, move sardine negotiations later, '
+                  'and keep the fish-feeder demo clear.',
+              'Schütze die Startprüfung, verschiebe die Sardinenverhandlung '
+                  'nach hinten und halte die Futterautomaten-Demo frei.',
+            ),
           ))
           .submitReviewedTranscript();
       await settleFrames(tester, 6);
@@ -1030,7 +1142,10 @@ void main() {
     await _pumpDayPage(tester, device: proDevice);
     await _switchToDayView(tester);
     await _openBlockEditor(tester, blockId: 'blk-slides');
-    expect(find.text('Zero-gravity fish feeder'), findsWidgets);
+    expect(
+      find.text(_t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat')),
+      findsWidgets,
+    );
     expect(
       find.text(_messages(tester).dailyOsNextBlockEditTimeLabel),
       findsOneWidget,
@@ -1156,13 +1271,23 @@ void main() {
               case _ManualDailyOsSurface.refine:
                 expect(find.byType(RefinePage), findsOneWidget);
                 expect(
-                  find.text('Move sardine negotiations 30 minutes later'),
+                  find.text(
+                    _t(
+                      'Move sardine negotiations 30 minutes later',
+                      'Sardinenverhandlung um 30 Minuten verschieben',
+                    ),
+                  ),
                   findsOneWidget,
                 );
               case _ManualDailyOsSurface.commit:
                 expect(find.byType(CommitPage), findsOneWidget);
                 expect(
-                  find.text('Inspect orbital penguin habitat'),
+                  find.text(
+                    _t(
+                      'Inspect orbital penguin habitat',
+                      'Pinguin-Habitat im Orbit inspizieren',
+                    ),
+                  ),
                   findsOneWidget,
                 );
                 if (deviceCase.device.isPhone) {
@@ -1178,7 +1303,12 @@ void main() {
               case _ManualDailyOsSurface.shutdown:
                 expect(find.byType(ShutdownPage), findsOneWidget);
                 expect(
-                  find.text('Zero-gravity fish feeder'),
+                  find.text(
+                    _t(
+                      'Zero-gravity fish feeder',
+                      'Schwerelos-Futterautomat',
+                    ),
+                  ),
                   findsOneWidget,
                 );
             }
@@ -1201,7 +1331,12 @@ void main() {
           );
           await _switchToDayView(tester);
           await _openBlockEditor(tester, blockId: 'blk-slides');
-          expect(find.text('Zero-gravity fish feeder'), findsWidgets);
+          expect(
+            find.text(
+              _t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat'),
+            ),
+            findsWidgets,
+          );
           expect(
             find.text(_messages(tester).dailyOsNextBlockEditTimeLabel),
             findsOneWidget,

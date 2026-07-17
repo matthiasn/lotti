@@ -1,0 +1,112 @@
+---
+title: Lotti mit dem Onboarding einrichten
+description: Verbinde einen KI-Anbieter, wähle Aufnahmestil und Arbeitsbereiche und verwandle einen ersten Gedanken in eine echte Aufgabe.
+---
+
+# Lotti mit dem Onboarding einrichten
+
+Das Onboarding verbindet die Mindestbausteine für Lottis KI-gestützte
+Aufgabenarbeit: einen Anbieter, einen Aufnahmestil, mindestens eine Kategorie
+und eine erste echte Aufgabe. Es ist eine geführte Einrichtung, keine getrennte
+Demo. Anbieter, Kategorien und Aufgaben bleiben in der normalen App.
+
+Öffne **Einstellungen → Onboarding**, um den Ablauf zu starten oder zu
+wiederholen. Die Seite zeigt außerdem, ob dieses Profil bereits seine erste
+KI-strukturierte Aufgabe erstellt hat.
+
+<ManualScreenshot
+  caseId="onboarding/settings"
+  alt="Lottis Onboarding-Einstellungen mit aktiviertem Status und Aktion zum Wiederholen"
+  caption="Dieses Project-Waddle-Profil hat bereits seine erste KI-Aufgabe erstellt. Die Wiederholung bleibt danach verfügbar."
+/>
+
+## Mit dem Versprechen beginnen
+
+<ManualScreenshot
+  caseId="onboarding/welcome"
+  alt="Lottis Onboarding-Begrüßung mit Einladung, ein KI-Gehirn zu verbinden und Sprache in eine strukturierte Aufgabe zu verwandeln"
+  caption="Die Begrüßung öffnet sich über der aktuellen App. Wähle dein KI-Gehirn oder verlasse den Ablauf ohne Änderungen."
+/>
+
+Wähle **Dein KI-Gehirn auswählen**. **Erst umsehen**, der abgedunkelte Bereich
+außerhalb und die System-Zurück-Aktion verlassen das Onboarding ohne Verbindung.
+Du kannst später aus den Einstellungen zurückkehren.
+
+Lotti kann die Begrüßung geeigneten Profilen automatisch anbieten. Dieser
+Hinweis folgt einem begrenzten Wiederholungsrhythmus; der Einstellungseintrag
+bleibt jederzeit verfügbar.
+
+## Wählen, wo Aufgaben strukturiert werden
+
+<ManualScreenshot
+  caseId="onboarding/providers"
+  alt="Lottis Onboarding-Anbieterauswahl mit Melious.ai, Mistral, Gemini, Qwen, OpenAI und Ollama"
+  caption="Wichtige gehostete Anbieter stehen zuerst. Unter Mehr Optionen findest du OpenAI und den lokalen Ollama-Pfad."
+/>
+
+Die Seite trennt gehostete und lokale Möglichkeiten:
+
+- **Melious.ai** ist der empfohlene EU-gehostete Standard mit dynamischem Modellrouting.
+- **Mistral**, **Gemini** und **Qwen** verwenden ihre jeweiligen Hostingregionen.
+- **OpenAI** steht unter den erweiterten Optionen.
+- **Ollama** verbindet einen kompatiblen lokalen Endpunkt ohne gehosteten API-Schlüssel.
+
+Bei gehosteten Anbietern fügst du den API-Schlüssel ein. Lotti prüft die
+Verbindung, bevor **Verbinden** aktiv wird. Ollama prüft den lokalen Endpunkt
+und meldet erreichbare Modelle. Erfolg speichert Anbieter, Modelle und das für
+weitere Schritte benötigte Inferenzprofil.
+
+Erfasster Aufgabentext wird zur Strukturierung an den Anbieter der gewählten
+Kategorie gesendet. Wähle nach Bereitstellung und Datenverarbeitung. Ein
+erreichbares lokales Ollama hält die Anfrage auf seiner Maschine.
+
+## Aufnahmestil und Arbeitsbereiche wählen
+
+Nach der Verbindung wählst du den Aufnahmestil für erste und spätere
+Sprachaufnahmen. Ändere ihn jederzeit unter **Einstellungen → Aufnahmestil**.
+
+Wähle danach einen oder mehrere Arbeitsbereiche. Vorlagen decken Arbeit,
+Fitness, Familie und Freunde ab; **Eigenen hinzufügen** erstellt eine passend
+benannte Kategorie. Das Onboarding verwendet eine vorhandene gleichnamige
+Kategorie, reaktiviert sie bei Bedarf und verbindet sie mit dem neuen Profil,
+statt ein Duplikat anzulegen.
+
+Die Handbuchfixture erstellt **Pinguinbetrieb** und **Missionskontrolle**, damit
+der nächste Schritt dieselbe Zielauswahl wie ein echter Arbeitsbereich zeigt.
+
+## Die erste echte Aufgabe erfassen
+
+<ManualScreenshot
+  caseId="onboarding/first-task"
+  alt="Lottis Onboarding für die erste Aufgabe mit Sprachaufnahme, Pinguinbetrieb, Missionskontrolle, Vorschlägen und Lieber tippen"
+  caption="Wähle die Zielkategorie und sprich natürlich, verwende einen Startvorschlag oder tippe lieber. Hier ist Pinguinbetrieb gewählt."
+/>
+
+Die erste Aufgabe verwendet Lottis normale Erfassungspipeline. Wähle die
+Kategorie und einen von drei Wegen:
+
+1. Tippe auf die Aufnahmevisualisierung und sprich einen normalen Satz.
+2. Verwende einen Startvorschlag für eine sofortige Strukturierung.
+3. Wähle **Lieber tippen?** und gib den Gedanken ohne Mikrofon ein.
+
+Während der Strukturierung spiegelt Lotti die erfassten Wörter. Das Ergebnis
+ist eine echte Aufgabe. Checklisten-Vorschläge erscheinen als Vorschläge an der
+Aufgabe, damit du sie bestätigst statt still geändert zu werden.
+
+<ManualScreenshot
+  caseId="onboarding/task-created"
+  alt="Lottis Erfolgspanel mit der erstellten Aufgabe Sardinenrelais von Europa inspizieren"
+  caption="Der getippte Project-Waddle-Gedanke wird zu „Sardinenrelais von Europa inspizieren“. Die Aufgabe bleibt bis zur Auswahl im Panel."
+/>
+
+Wähle die Aufgabenkarte, um das Onboarding zu schließen und die normale
+Aufgabenseite zu öffnen. Dort prüfst du Vorschläge, ergänzt Titelgrafik oder
+Belege, setzt Fälligkeit und Priorität und nimmst die Aufgabe in Daily OS auf.
+
+Schließt du nach der Anbieterverbindung, behält Lotti diese Einrichtung und
+betrachtet die Begrüßung als abgeschlossen. Eine spätere Wiederholung ist eine
+explizite Einstellungsaktion und löst keinen neuen automatischen Hinweis aus.
+
+Weiter geht es mit [deiner ersten Aufgabe](./first-task.mdx),
+[Kategorien](../organize-and-reflect/categories.mdx) und
+[Anbietern](../ai-and-automation/provider-setup.mdx).

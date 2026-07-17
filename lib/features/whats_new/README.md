@@ -205,6 +205,10 @@ Important behaviors:
 - a sticky footer with arrows, position dots, and `Skip` or `Done`
 - banner and inline-image precaching for smoother transitions
 
+The footer reserves a wider design-system slot for visible localized actions
+than for hidden placeholders. Long labels such as German `Überspringen` remain
+single-line and tappable without displacing the navigation controls.
+
 The presentation is deliberately more magazine than changelog. Release notes should not feel like a raw JSON dump wearing a blazer.
 
 ## Network and Privacy Boundary

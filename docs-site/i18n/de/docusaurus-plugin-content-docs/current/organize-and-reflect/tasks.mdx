@@ -1,0 +1,214 @@
+---
+title: Mit Aufgaben arbeiten
+description: Bringe Ergebnisse mit Status, Priorität, Checklisten und angehängtem Kontext voran.
+---
+
+# Mit Aufgaben arbeiten
+
+Aufgaben gruppieren ein Ergebnis mit Kontext und Schritten bis zum Abschluss.
+Formuliere Titel als Ergebnisse und bewahre unterstützende Notizen, Bilder,
+Aufnahmen und Zeiteinträge in der Aufgabe.
+
+<ManualScreenshot
+  caseId="tasks/workspace"
+  alt="Produktiver Aufgabenarbeitsbereich mit echten Zeilen und Titelbild-Vorschauen aus den Demo-Daten der interplanetaren Pinguinlogistik"
+/>
+
+Auf Desktop bleibt die Liste neben der gewählten Aufgabe sichtbar. Mobil
+öffnet die Auswahl die Details als Vollseite. Titelgrafiken folgen der Aufgabe
+überall, auch in Liste und verknüpften Daily-OS-Agendaeinträgen.
+
+<ManualScreenshot
+  caseId="tasks/detail"
+  alt="Produktive Aufgabendetailseite zur Inspektion des orbitalen Pinguin-Habitats mit derselben Titelgrafik wie in der Vorschau"
+/>
+
+Eine Aufgabe kann Beschreibung, Kategorie, Labels, Fälligkeit, Zeiteinträge,
+Checklisten, Bilder, Links und Audioaufnahmen enthalten.
+
+## Einen Aufgabenagenten zuweisen
+
+Eine Aufgabe kann einen Aufgabenagenten haben. Dadurch erhält sie einen
+dauerhaften KI-Assistenten mit eigener Inferenzkonfiguration, Bericht,
+Aufwachstatus und Vorschlagsverlauf. Er liest Aufgabe und verknüpften Kontext,
+verdichtet die Lage zu einem kurzen Bericht und kann Änderungen an Aufgabe oder
+Checkliste vorschlagen, die du bestätigst oder ablehnst.
+
+Der Agent erscheint unter Checklisten und verknüpften Aufgaben. Die
+eingeklappte Karte zeigt letzte Zusammenfassung, Automatikschalter,
+**Agenten aufwecken** und aktive Modellroute, ohne die Seite zur KI-Konsole zu
+machen.
+
+<ManualScreenshot
+  caseId="tasks/agent-card"
+  alt="Zugewiesener Aufgabenagent Habitatwächter mit aktueller Zusammenfassung, automatischen Aktualisierungen, Aufwachaktion und Project-Waddle-Modellroute"
+  caption="Habitatwächter ist zugewiesen; Zuweisung und automatische Aktualisierung sind getrennte Entscheidungen."
+/>
+
+**Mehr lesen** klappt den vollständigen Bericht an Ort und Stelle auf. Die
+Aufgabe bleibt sichtbar, während Einschätzung, empfohlener nächster Schritt und
+bei Bedarf **Agenten-Interna öffnen** für Berichte, Gespräche, Beobachtungen
+oder Laufzeitdetails hinzukommen.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-expanded"
+  alt="Aufgeklappte Habitatwächter-Karte mit vollständiger Project-Waddle-Habitatbewertung und empfohlenem nächsten Schritt"
+  caption="Der vollständige Bericht öffnet sich in der Aufgabe statt auf einer getrennten Seite."
+/>
+
+### Vorgeschlagene Änderungen prüfen
+
+Ein abgeschlossener Aufwachvorgang kann Bericht und Änderungsvorschläge
+aktualisieren. Automatische Aktualisierung entscheidet, **wann der Agent
+aufwacht**; sie erlaubt ihm nicht, die Aufgabe selbst zu bearbeiten. Vorschläge
+bleiben ausstehend, bis du handelst.
+
+<ManualScreenshot
+  caseId="tasks/agent-suggestions"
+  alt="Habitatwächter-Karte mit zwei ausstehenden Project-Waddle-Vorschlägen, getrennten Ablehnen- und Bestätigen-Aktionen sowie Alle bestätigen"
+  caption="Der Agent schlägt einen Fütterertest als Checklistenpunkt und eine neue Schätzung vor; noch wurde nichts angewendet."
+/>
+
+Mit dem Kreuz **verwirfst** du einen Vorschlag, mit dem Haken **bestätigst** und
+wendest du ihn an. Wischen nach links verwirft, nach rechts bestätigt. Bei
+mehreren Vorschlägen wendet **Alle bestätigen** die aktuell gelisteten
+Änderungen gemeinsam an. Prüfe Massenaktionen besonders bei Status, Datum und
+Checkliste sorgfältig.
+
+Unter **Verlauf** findest du jüngste Ergebnisse. Er unterscheidet bestätigte
+von verworfenen Änderungen. Ein verworfener Eintrag kann deine Entscheidung
+sein oder ein Vorschlag, den der Agent nach neuem Kontext als veraltet
+zurückgezogen hat.
+
+Manuelles **Agenten aufwecken** kann dieselben Berichte und Vorschläge erzeugen
+wie Automatik. Das Abschalten automatischer Aktualisierungen stoppt künftige
+Hintergrundzyklen, wendet aber bereits wartende Vorschläge weder an noch
+verwirft es sie.
+
+### Automatische oder manuelle Aktualisierung wählen
+
+Neue Aufgabenagenten starten mit **Automatische Aktualisierungen aus**. Die
+Zuweisung allein verbraucht keine Hintergrund-Token. Lotti bemerkt weiterhin
+relevante Änderungen an Aufgabe und verknüpften Einträgen, markiert alte
+Zusammenfassungen als veraltet und wartet auf **Agenten aufwecken**. Ein
+manueller Zyklus ist mit funktionierender KI-Konfiguration jederzeit möglich.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-manual"
+  alt="Habitatwächter-Karte mit ausgeschalteter Automatik, Hinweis auf veralteten Bericht und manueller Aufwachaktion"
+  caption="Der manuelle Modus beobachtet Änderungen und meldet Veraltung, ohne Inferenz zu starten."
+/>
+
+Bei aktiver **Automatischer Aktualisierung** bündelt Lotti passende Änderungen
+etwa zwei Minuten, bevor es eine Aktualisierung plant. Dadurch wacht der Agent
+nicht für jede kleine Bearbeitung auf. **Agenten aufwecken** bleibt für eine
+sofortige, von dir angeforderte Aktualisierung verfügbar.
+
+Das Ausschalten löscht den ausstehenden Countdown und geplante automatische
+Aktualisierungen, bricht aber keinen ausdrücklich von dir angeforderten Zyklus
+ab. Erneutes Einschalten gilt für künftige Änderungen und spielt nichts nach,
+was während der manuellen Phase ankam.
+
+## Priorität
+
+Lotti verwendet vier kompakte Stufen:
+
+| Priorität | Bedeutung | Verwendung |
+| --- | --- | --- |
+| P0 | Dringend | Arbeit, die wirklich als Nächstes Aufmerksamkeit braucht |
+| P1 | Hoch | Wichtige Arbeit für bald |
+| P2 | Mittel | Normaler Standard |
+| P3 | Niedrig | Arbeit, die warten kann |
+
+Ändere die Stufe über die Prioritätssteuerung im Aufgabenkopf. Vorhandene
+Aufgaben ohne explizite Priorität verhalten sich wie P2.
+
+## Aufgabenliste filtern und sortieren
+
+Öffne die Aufgabenfilter und wähle Prioritäten. Leere die Auswahl für alle
+Stufen. Priorität lässt sich mit Kategorien und anderen Eigenschaften
+kombinieren.
+
+<ManualScreenshot
+  caseId="tasks/filters"
+  alt="Aufgabenfilter mit Sortierung, Status, Priorität, Kategorie und Labels"
+/>
+
+Standardmäßig sortiert Lotti P0 bis P3. Innerhalb einer Stufe stehen neuere
+Aufgaben zuerst, sofern keine andere Ansicht oder Sortierung gilt.
+
+## Checklisten für die nächste Ebene verwenden
+
+Ein Checklistenpunkt sollte kleiner und konkreter als seine Aufgabe sein.
+„Handbuch veröffentlichen“ ist eine Aufgabe; „jeden Navigationslink prüfen“
+ein Checklistenpunkt. Du kannst Checklisten direkt bearbeiten; konfigurierte
+KI-Fähigkeiten können sie außerdem aus Kontext vorschlagen.
+
+## Aufgabenkontext hinzufügen
+
+Über **Hinzufügen** hängst du Checkliste, weitere Aufgabe, Audioaufnahme, Timer,
+Texteintrag oder Bild an, ohne die Aufgabe zu verlassen. Aktionen hängen von
+Plattform und Kontext ab.
+
+<ManualScreenshot
+  caseId="entries/create-menu"
+  alt="Hinzufügen-Menü über der Orbitalhabitat-Aufgabe mit aufgabenbezogenen Erfassungsaktionen"
+/>
+
+[Einträge und Kontext hinzufügen](../plan-and-capture/entries.mdx) erklärt die
+passenden Einsatzfälle.
+
+## Titelgrafik aus echten Aufgabenbildern erzeugen
+
+Bei konfigurierter Bilderzeugung öffne das Erzeugen-Menü der Aufgabe und wähle
+die Titelgrafik-Aktion. Lotti zeigt zuerst angehängte Bilder sowie verfügbare
+Titelbilder verknüpfter Aufgaben. Wähle bis zu fünf Referenzen oder fahre ohne
+fort.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Dialog Titelgrafik erzeugen mit fünf unterschiedlichen Project-Waddle-Referenzbildern aus dem Aufgabenkontext"
+  caption="Die Auswahl verwendet dieselben Bilder wie der übrige Demo-Arbeitsbereich."
+/>
+
+Danach läuft die Bilderzeugung im Hintergrund. Der Fortschritt nutzt Lottis
+produktive Denkvisualisierung und kann geschlossen werden, ohne den Auftrag
+abzubrechen.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Laufende Titelbilderzeugung mit Lottis produktiver Shader-Visualisierung"
+/>
+
+Das Ergebnis wird Titelgrafik und folgt der Aufgabe in Liste, Detail, Projekt
+und Daily OS. Eine gute Grafik bleibt auch beim quadratischen Ausschnitt einer
+kleinen Vorschau erkennbar.
+
+## Verwandte Aufgaben verknüpfen
+
+Öffne **Verknüpft** und wähle eine vorhandene Aufgabe. Durchsuche den Dialog
+und wähle das verwandte Ergebnis. Aktuelle und bereits in dieser Richtung
+verknüpfte Aufgaben werden ausgeschlossen.
+
+<ManualScreenshot
+  caseId="tasks/link-picker"
+  alt="Produktive Aufgabenverknüpfung mit verwandten Project-Waddle-Aufgaben samt Status, Priorität, Kategorie und Fälligkeit"
+/>
+
+Links sind gerichtet: Die aktuelle Aufgabe zeigt zur gewählten. Beide Seiten
+bleiben über ihre verknüpften Einträge erreichbar, behalten aber eigenen
+Status, Zeitplan und Anhänge.
+
+## Sprache nutzen, ohne Kontrolle zu verlieren
+
+Nimm eine Notiz in der Aufgabe auf, wenn Sprechen schneller erklärt. Mit
+Transkription und Aufgabenfähigkeiten kann Lotti daraus Text und
+Checklistenänderungen vorschlagen. Prüfe besonders Namen, Daten und
+destruktive Änderungen. [Audio aufnehmen](../plan-and-capture/recordings.mdx)
+erklärt Steuerung und Verarbeitung.
+
+:::tip
+
+Verwende P0 sparsam. Wenn alles dringend ist, trägt das Label keine Information.
+
+:::

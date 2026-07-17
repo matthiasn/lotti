@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -57,13 +58,17 @@ class FormBottomBar extends StatelessWidget {
                   color: context.colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  context.messages.aiFormNoChanges,
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
+                Expanded(
+                  child: Text(
+                    context.messages.aiFormNoChanges,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
-                const Spacer(),
+                SizedBox(width: context.designTokens.spacing.step5),
               ] else if (!isFormValid) ...[
                 Icon(
                   Icons.info_outline_rounded,

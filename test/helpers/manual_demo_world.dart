@@ -14,6 +14,9 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 
 import 'entity_factories.dart';
+import 'manual_screenshot_locale.dart';
+
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
 /// Fixed clock shared by the manual screenshot fixtures.
 final manualDemoNow = DateTime(2026, 7, 17, 10, 30);
@@ -68,8 +71,11 @@ manualDemoAiProviders = List<AiConfigInferenceProvider>.unmodifiable([
     id: manualMissionControlProviderId,
     baseUrl: 'https://openrouter.ai/api/v1',
     apiKey: 'sk-demo-project-waddle-7f3a',
-    name: 'Mission Control Router',
-    description: 'Cloud routing for launch planning and high-stakes reasoning.',
+    name: _t('Mission Control Router', 'Missionskontroll-Router'),
+    description: _t(
+      'Cloud routing for launch planning and high-stakes reasoning.',
+      'Cloud-Routing für Startplanung und besonders wichtige Entscheidungen.',
+    ),
     createdAt: manualDemoNow.subtract(const Duration(days: 90)),
     inferenceProviderType: InferenceProviderType.openRouter,
   ),
@@ -77,8 +83,11 @@ manualDemoAiProviders = List<AiConfigInferenceProvider>.unmodifiable([
     id: manualHabitatLabProviderId,
     baseUrl: 'http://habitat-ai.local:11434',
     apiKey: '',
-    name: 'Habitat Local Lab',
-    description: 'Local models for private colony notes and sardine logistics.',
+    name: _t('Habitat Local Lab', 'Lokales Habitat-Labor'),
+    description: _t(
+      'Local models for private colony notes and sardine logistics.',
+      'Lokale Modelle für private Kolonienotizen und Sardinenlogistik.',
+    ),
     createdAt: manualDemoNow.subtract(const Duration(days: 72)),
     inferenceProviderType: InferenceProviderType.ollama,
   ),
@@ -86,8 +95,11 @@ manualDemoAiProviders = List<AiConfigInferenceProvider>.unmodifiable([
     id: manualOrbitalVisionProviderId,
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
     apiKey: 'demo-orbital-vision-91c2',
-    name: 'Orbital Vision',
-    description: 'Multimodal inspection for habitat imagery and cover art.',
+    name: _t('Orbital Vision', 'Orbitaler Blick'),
+    description: _t(
+      'Multimodal inspection for habitat imagery and cover art.',
+      'Multimodale Prüfung von Habitatbildern und Titelgrafiken.',
+    ),
     createdAt: manualDemoNow.subtract(const Duration(days: 61)),
     inferenceProviderType: InferenceProviderType.gemini,
   ),
@@ -95,8 +107,11 @@ manualDemoAiProviders = List<AiConfigInferenceProvider>.unmodifiable([
     id: manualAudioBayProviderId,
     baseUrl: 'http://audio-bay.local:11344',
     apiKey: '',
-    name: 'Penguin Audio Bay',
-    description: 'Local transcription for mission briefings.',
+    name: _t('Penguin Audio Bay', 'Pinguin-Audiobucht'),
+    description: _t(
+      'Local transcription for mission briefings.',
+      'Lokale Transkription für Missionsbriefings.',
+    ),
     createdAt: manualDemoNow.subtract(const Duration(days: 45)),
     inferenceProviderType: InferenceProviderType.voxtral,
   ),
@@ -107,9 +122,11 @@ final List<AiConfigModel>
 manualDemoAiModels = List<AiConfigModel>.unmodifiable([
   AiConfigModel(
     id: manualWaddleCommandModelId,
-    name: 'Waddle Command 70B',
-    description:
-        'Fast tool-calling model for routine Project Waddle operations.',
+    name: _t('Waddle Command 70B', 'Watschelkommando 70B'),
+    description: _t(
+      'Fast tool-calling model for routine Project Waddle operations.',
+      'Schnelles Tool-Modell für den Routinebetrieb von Project Waddle.',
+    ),
     providerModelId: 'meta-llama/llama-3.3-70b-instruct',
     inferenceProviderId: manualMissionControlProviderId,
     createdAt: manualDemoNow.subtract(const Duration(days: 80)),
@@ -121,9 +138,11 @@ manualDemoAiModels = List<AiConfigModel>.unmodifiable([
   ),
   AiConfigModel(
     id: manualEmperorReasoningModelId,
-    name: 'Emperor Reasoning XL',
-    description:
-        'Deliberate model for launch reviews and unusually formal penguins.',
+    name: _t('Emperor Reasoning XL', 'Kaiserpinguin-Denken XL'),
+    description: _t(
+      'Deliberate model for launch reviews and unusually formal penguins.',
+      'Gründliches Modell für Startprüfungen und auffallend förmliche Pinguine.',
+    ),
     providerModelId: 'anthropic/claude-sonnet-4.5',
     inferenceProviderId: manualMissionControlProviderId,
     createdAt: manualDemoNow.subtract(const Duration(days: 76)),
@@ -135,9 +154,11 @@ manualDemoAiModels = List<AiConfigModel>.unmodifiable([
   ),
   AiConfigModel(
     id: manualSardineLogisticsModelId,
-    name: 'Sardine Logistics 14B',
-    description:
-        'Local planning model for cargo manifests and feeder calibration.',
+    name: _t('Sardine Logistics 14B', 'Sardinenlogistik 14B'),
+    description: _t(
+      'Local planning model for cargo manifests and feeder calibration.',
+      'Lokales Planungsmodell für Frachtlisten und Futterautomat-Kalibrierung.',
+    ),
     providerModelId: 'qwen3:14b',
     inferenceProviderId: manualHabitatLabProviderId,
     createdAt: manualDemoNow.subtract(const Duration(days: 69)),
@@ -149,9 +170,11 @@ manualDemoAiModels = List<AiConfigModel>.unmodifiable([
   ),
   AiConfigModel(
     id: manualHabitatVisionModelId,
-    name: 'Habitat Vision Pro',
-    description:
-        'Checks pressure gauges, ice seals, and suspicious fish-shaped alerts.',
+    name: _t('Habitat Vision Pro', 'Habitat-Sicht Pro'),
+    description: _t(
+      'Checks pressure gauges, ice seals, and suspicious fish-shaped alerts.',
+      'Prüft Druckanzeigen, Eisdichtungen und verdächtig fischförmige Alarme.',
+    ),
     providerModelId: 'gemini-2.5-flash',
     inferenceProviderId: manualOrbitalVisionProviderId,
     createdAt: manualDemoNow.subtract(const Duration(days: 58)),
@@ -163,9 +186,11 @@ manualDemoAiModels = List<AiConfigModel>.unmodifiable([
   ),
   AiConfigModel(
     id: manualPenguinBriefingsModelId,
-    name: 'Voxtral Penguin Briefings',
-    description:
-        'Transcribes habitat voice memos with Project Waddle vocabulary.',
+    name: _t('Voxtral Penguin Briefings', 'Voxtral-Pinguinbriefings'),
+    description: _t(
+      'Transcribes habitat voice memos with Project Waddle vocabulary.',
+      'Transkribiert Habitat-Sprachnotizen mit dem Wortschatz von Project Waddle.',
+    ),
     providerModelId: 'voxtral-mini-latest',
     inferenceProviderId: manualAudioBayProviderId,
     createdAt: manualDemoNow.subtract(const Duration(days: 42)),
@@ -176,9 +201,11 @@ manualDemoAiModels = List<AiConfigModel>.unmodifiable([
   ),
   AiConfigModel(
     id: manualCoverArtistModelId,
-    name: 'Project Waddle Cover Artist',
-    description:
-        'Creates centered 16:9 mission art that survives square thumbnail crops.',
+    name: _t('Project Waddle Cover Artist', 'Project-Waddle-Titelkünstler'),
+    description: _t(
+      'Creates centered 16:9 mission art that survives square thumbnail crops.',
+      'Erstellt zentrierte 16:9-Missionsgrafiken für quadratische Vorschaubilder.',
+    ),
     providerModelId: 'gemini-2.5-flash-image',
     inferenceProviderId: manualOrbitalVisionProviderId,
     createdAt: manualDemoNow.subtract(const Duration(days: 35)),
@@ -190,104 +217,151 @@ manualDemoAiModels = List<AiConfigModel>.unmodifiable([
 ]);
 
 /// Inference profiles demonstrate cloud, local-first, and specialist routing.
-final List<AiConfigInferenceProfile>
-manualDemoAiProfiles = List<AiConfigInferenceProfile>.unmodifiable([
-  AiConfigInferenceProfile(
-    id: manualProjectWaddleProfileId,
-    name: 'Project Waddle Command',
-    description:
-        'Launch-critical planning, habitat vision, briefings, and cover art.',
-    createdAt: manualDemoNow.subtract(const Duration(days: 33)),
-    thinkingModelId: manualWaddleCommandModelId,
-    thinkingHighEndModelId: manualEmperorReasoningModelId,
-    imageRecognitionModelId: manualHabitatVisionModelId,
-    transcriptionModelId: manualPenguinBriefingsModelId,
-    imageGenerationModelId: manualCoverArtistModelId,
-    isDefault: true,
-    skillAssignments: const [
-      SkillAssignment(skillId: skillTranscribeContextId, automate: true),
-      SkillAssignment(
-        skillId: skillImageAnalysisContextId,
-        automate: true,
+final List<AiConfigInferenceProfile> manualDemoAiProfiles =
+    List<AiConfigInferenceProfile>.unmodifiable([
+      AiConfigInferenceProfile(
+        id: manualProjectWaddleProfileId,
+        name: _t('Project Waddle Command', 'Project-Waddle-Kommando'),
+        description: _t(
+          'Launch-critical planning, habitat vision, briefings, and cover art.',
+          'Startkritische Planung, Habitat-Sicht, Briefings und Titelgrafiken.',
+        ),
+        createdAt: manualDemoNow.subtract(const Duration(days: 33)),
+        thinkingModelId: manualWaddleCommandModelId,
+        thinkingHighEndModelId: manualEmperorReasoningModelId,
+        imageRecognitionModelId: manualHabitatVisionModelId,
+        transcriptionModelId: manualPenguinBriefingsModelId,
+        imageGenerationModelId: manualCoverArtistModelId,
+        isDefault: true,
+        skillAssignments: const [
+          SkillAssignment(skillId: skillTranscribeContextId, automate: true),
+          SkillAssignment(
+            skillId: skillImageAnalysisContextId,
+            automate: true,
+          ),
+        ],
       ),
-    ],
-  ),
-  AiConfigInferenceProfile(
-    id: manualHabitatLocalProfileId,
-    name: 'Habitat Local-First',
-    description:
-        'Keeps private colony notes and routine sardine logistics local.',
-    createdAt: manualDemoNow.subtract(const Duration(days: 27)),
-    thinkingModelId: manualSardineLogisticsModelId,
-    transcriptionModelId: manualPenguinBriefingsModelId,
-    desktopOnly: true,
-    skillAssignments: const [
-      SkillAssignment(skillId: skillTranscribeId, automate: true),
-    ],
-  ),
-  AiConfigInferenceProfile(
-    id: manualFishDiplomacyProfileId,
-    name: 'Fish Diplomacy',
-    description:
-        'Extra deliberation for Europa sardine markets and passenger law.',
-    createdAt: manualDemoNow.subtract(const Duration(days: 19)),
-    thinkingModelId: manualEmperorReasoningModelId,
-    imageRecognitionModelId: manualHabitatVisionModelId,
-  ),
-]);
+      AiConfigInferenceProfile(
+        id: manualHabitatLocalProfileId,
+        name: _t('Habitat Local-First', 'Habitat zuerst lokal'),
+        description: _t(
+          'Keeps private colony notes and routine sardine logistics local.',
+          'Hält private Kolonienotizen und alltägliche Sardinenlogistik lokal.',
+        ),
+        createdAt: manualDemoNow.subtract(const Duration(days: 27)),
+        thinkingModelId: manualSardineLogisticsModelId,
+        transcriptionModelId: manualPenguinBriefingsModelId,
+        desktopOnly: true,
+        skillAssignments: const [
+          SkillAssignment(skillId: skillTranscribeId, automate: true),
+        ],
+      ),
+      AiConfigInferenceProfile(
+        id: manualFishDiplomacyProfileId,
+        name: _t('Fish Diplomacy', 'Fischdiplomatie'),
+        description: _t(
+          'Extra deliberation for Europa sardine markets and passenger law.',
+          'Besonders gründlich für Europas Sardinenmärkte und Passagierrecht.',
+        ),
+        createdAt: manualDemoNow.subtract(const Duration(days: 19)),
+        thinkingModelId: manualEmperorReasoningModelId,
+        imageRecognitionModelId: manualHabitatVisionModelId,
+      ),
+    ]);
 
 /// Available actions shown over the orbital-habitat task in the AI menu.
 final List<AiConfigSkill> manualDemoAiSkills = List<AiConfigSkill>.unmodifiable(
   [
     AiConfigSkill(
       id: 'skill-habitat-briefing',
-      name: 'Transcribe habitat briefing',
-      description:
-          'Turn a Project Waddle voice memo into punctuated mission notes.',
+      name: _t(
+        'Transcribe habitat briefing',
+        'Habitat-Briefing transkribieren',
+      ),
+      description: _t(
+        'Turn a Project Waddle voice memo into punctuated mission notes.',
+        'Verwandle eine Project-Waddle-Sprachnotiz in gegliederte Missionsnotizen.',
+      ),
       createdAt: manualDemoNow,
       skillType: SkillType.transcription,
       requiredInputModalities: const [Modality.audio],
-      systemInstructions: 'Transcribe the mission briefing accurately.',
-      userInstructions: 'Preserve Project Waddle names and terminology.',
+      systemInstructions: _t(
+        'Transcribe the mission briefing accurately.',
+        'Transkribiere das Missionsbriefing genau.',
+      ),
+      userInstructions: _t(
+        'Preserve Project Waddle names and terminology.',
+        'Behalte Namen und Begriffe von Project Waddle bei.',
+      ),
       contextPolicy: ContextPolicy.fullTask,
       isPreconfigured: true,
     ),
     AiConfigSkill(
       id: 'skill-habitat-photo',
-      name: 'Inspect habitat photo',
-      description:
-          'Find pressure-gauge anomalies and task-relevant seal damage.',
+      name: _t('Inspect habitat photo', 'Habitatfoto prüfen'),
+      description: _t(
+        'Find pressure-gauge anomalies and task-relevant seal damage.',
+        'Finde auffällige Druckanzeigen und relevante Schäden an Dichtungen.',
+      ),
       createdAt: manualDemoNow,
       skillType: SkillType.imageAnalysis,
       requiredInputModalities: const [Modality.image],
-      systemInstructions: 'Inspect the habitat image for operational risks.',
-      userInstructions: 'Report only visible and actionable findings.',
+      systemInstructions: _t(
+        'Inspect the habitat image for operational risks.',
+        'Prüfe das Habitatbild auf Betriebsrisiken.',
+      ),
+      userInstructions: _t(
+        'Report only visible and actionable findings.',
+        'Melde nur sichtbare und praktisch relevante Befunde.',
+      ),
       contextPolicy: ContextPolicy.fullTask,
       isPreconfigured: true,
     ),
     AiConfigSkill(
       id: 'skill-waddle-cover-art',
-      name: 'Generate Project Waddle cover art',
-      description:
-          'Create centered 16:9 art for the task and its square thumbnail.',
+      name: _t(
+        'Generate Project Waddle cover art',
+        'Project-Waddle-Titelgrafik erzeugen',
+      ),
+      description: _t(
+        'Create centered 16:9 art for the task and its square thumbnail.',
+        'Erstelle eine zentrierte 16:9-Grafik samt quadratischem Vorschaubild.',
+      ),
       createdAt: manualDemoNow,
       skillType: SkillType.imageGeneration,
       requiredInputModalities: const [Modality.text],
-      systemInstructions: 'Create memorable mission cover art.',
-      userInstructions: 'Keep the penguin subject inside the square-safe area.',
+      systemInstructions: _t(
+        'Create memorable mission cover art.',
+        'Erstelle eine einprägsame Titelgrafik für die Mission.',
+      ),
+      userInstructions: _t(
+        'Keep the penguin subject inside the square-safe area.',
+        'Halte den Pinguin im sicheren Bereich für den quadratischen Zuschnitt.',
+      ),
       contextPolicy: ContextPolicy.fullTask,
       isPreconfigured: true,
     ),
     AiConfigSkill(
       id: 'skill-launch-prompt',
-      name: 'Draft launch-review prompt',
-      description:
-          'Prepare a complete AI prompt for the next Mission Control review.',
+      name: _t(
+        'Draft launch-review prompt',
+        'Prompt für Startprüfung entwerfen',
+      ),
+      description: _t(
+        'Prepare a complete AI prompt for the next Mission Control review.',
+        'Bereite einen vollständigen KI-Prompt für die nächste Startprüfung vor.',
+      ),
       createdAt: manualDemoNow,
       skillType: SkillType.promptGeneration,
       requiredInputModalities: const [Modality.text],
-      systemInstructions: 'Write a precise operational prompt.',
-      userInstructions: 'Include the task context and outstanding risks.',
+      systemInstructions: _t(
+        'Write a precise operational prompt.',
+        'Schreibe einen präzisen operativen Prompt.',
+      ),
+      userInstructions: _t(
+        'Include the task context and outstanding risks.',
+        'Beziehe den Aufgabenkontext und offene Risiken ein.',
+      ),
       contextPolicy: ContextPolicy.fullTask,
       isPreconfigured: true,
       useReasoning: true,
@@ -350,7 +424,7 @@ class ManualDemoWorld {
       id: manualDemoCategoryId,
       createdAt: manualDemoNow,
       updatedAt: manualDemoNow,
-      name: 'Penguin Operations',
+      name: _t('Penguin Operations', 'Pinguinbetrieb'),
       vectorClock: null,
       private: false,
       active: true,
@@ -369,7 +443,7 @@ class ManualDemoWorld {
       ),
       LabelDefinition(
         id: manualDemoCriticalLabelId,
-        name: 'Habitat critical',
+        name: _t('Habitat critical', 'Habitat kritisch'),
         color: '#FBA337',
         createdAt: manualDemoNow,
         updatedAt: manualDemoNow,
@@ -463,10 +537,13 @@ class ManualDemoWorld {
       tasks: [
         task(
           id: manualRollCallTaskId,
-          title: 'Emperor penguin roll call',
-          description:
-              'Count every expedition penguin, check the tiny oxygen packs, '
-              'and record any suspiciously formal salutes.',
+          title: _t('Emperor penguin roll call', 'Kaiserpinguine durchzählen'),
+          description: _t(
+            'Count every expedition penguin, check the tiny oxygen packs, '
+                'and record any suspiciously formal salutes.',
+            'Zähle alle Expeditionspinguine, prüfe die winzigen Sauerstoffpacks '
+                'und notiere verdächtig förmliche Grüße.',
+          ),
           status: agendaStatus,
           priority: TaskPriority.p2Medium,
           due: DateTime(2026, 7, 17, 9),
@@ -476,11 +553,18 @@ class ManualDemoWorld {
         ),
         task(
           id: manualOrbitalHabitatTaskId,
-          title: 'Inspect orbital penguin habitat',
-          description:
-              'Inspect pressure seals, confirm all 37 emperor penguins are '
-              'present, and route the sardine cargo pods before the live '
-              'Project Waddle demonstration.',
+          title: _t(
+            'Inspect orbital penguin habitat',
+            'Pinguin-Habitat im Orbit inspizieren',
+          ),
+          description: _t(
+            'Inspect pressure seals, confirm all 37 emperor penguins are '
+                'present, and route the sardine cargo pods before the live '
+                'Project Waddle demonstration.',
+            'Prüfe die Druckdichtungen, bestätige alle 37 Kaiserpinguine und '
+                'route die Sardinen-Frachtkapseln vor der Live-Demo von '
+                'Project Waddle.',
+          ),
           status: orbitalStatus,
           priority: TaskPriority.p1High,
           due: DateTime(2026, 7, 17, 12),
@@ -493,11 +577,18 @@ class ManualDemoWorld {
         ),
         task(
           id: manualLaunchReviewTaskId,
-          title: 'Project Waddle launch review',
-          description:
-              'Review the ice-pad trajectory, confirm the snack manifest, '
-              'and make sure Mission Control has removed the fish-shaped '
-              'cursor from the launch display.',
+          title: _t(
+            'Project Waddle launch review',
+            'Startprüfung für Project Waddle',
+          ),
+          description: _t(
+            'Review the ice-pad trajectory, confirm the snack manifest, '
+                'and make sure Mission Control has removed the fish-shaped '
+                'cursor from the launch display.',
+            'Prüfe die Flugbahn vom Eisstartplatz, bestätige die Snackliste '
+                'und stelle sicher, dass die Missionskontrolle den '
+                'fischförmigen Mauszeiger entfernt hat.',
+          ),
           status: agendaStatus,
           priority: TaskPriority.p1High,
           due: DateTime(2026, 7, 17, 12),
@@ -507,10 +598,17 @@ class ManualDemoWorld {
         ),
         task(
           id: manualLunchTaskId,
-          title: 'Lunch (coffee is not a vegetable)',
-          description:
-              'Eat something recognizable as food before the robot '
-              'nutritionist files another orbital wellness incident.',
+          title: _t(
+            'Lunch (coffee is not a vegetable)',
+            'Mittagessen (Kaffee ist kein Gemüse)',
+          ),
+          description: _t(
+            'Eat something recognizable as food before the robot '
+                'nutritionist files another orbital wellness incident.',
+            'Iss etwas, das als Essen erkennbar ist, bevor der '
+                'Roboter-Ernährungsberater den nächsten orbitalen '
+                'Gesundheitsvorfall meldet.',
+          ),
           status: agendaStatus,
           priority: TaskPriority.p3Low,
           due: DateTime(2026, 7, 17, 13),
@@ -520,11 +618,14 @@ class ManualDemoWorld {
         ),
         task(
           id: manualSardineFuturesTaskId,
-          title: 'Negotiate sardine futures',
-          description:
-              "Lock the colony's Q3 sardine price before the Europa exchange "
-              'discovers why the emergency fish ceiling is shaped like a '
-              'penguin.',
+          title: _t('Negotiate sardine futures', 'Sardinen-Futures verhandeln'),
+          description: _t(
+            "Lock the colony's Q3 sardine price before the Europa exchange "
+                'discovers why the emergency fish ceiling is shaped like a '
+                'penguin.',
+            'Sichere den Sardinenpreis der Kolonie für Q3, bevor die Europa-Börse '
+                'entdeckt, warum der Notfall-Fischdeckel wie ein Pinguin aussieht.',
+          ),
           status: agendaStatus,
           priority: TaskPriority.p1High,
           due: DateTime(2026, 7, 17, 14, 30),
@@ -534,10 +635,16 @@ class ManualDemoWorld {
         ),
         task(
           id: manualFishFeederTaskId,
-          title: 'Recalibrate the zero-gravity fish feeder',
-          description:
-              'Run the low-orbit sardine test and stop the feeder from '
-              'launching lunch toward Mission Control.',
+          title: _t(
+            'Recalibrate the zero-gravity fish feeder',
+            'Schwerelosen Fischfütterer neu kalibrieren',
+          ),
+          description: _t(
+            'Run the low-orbit sardine test and stop the feeder from '
+                'launching lunch toward Mission Control.',
+            'Führe den Sardinentest im niedrigen Orbit aus und hindere den '
+                'Fütterer daran, das Mittagessen zur Missionskontrolle zu schießen.',
+          ),
           status: feederStatus,
           priority: TaskPriority.p0Urgent,
           due: DateTime(2026, 7, 17, 15),
@@ -547,10 +654,16 @@ class ManualDemoWorld {
         ),
         task(
           id: manualSardineCargoTaskId,
-          title: 'Confirm the interplanetary sardine cargo pods',
-          description:
-              'Reconcile the cold-chain manifest with the colony dashboard '
-              'before the next supply shuttle leaves Europa.',
+          title: _t(
+            'Confirm the interplanetary sardine cargo pods',
+            'Interplanetare Sardinen-Frachtkapseln bestätigen',
+          ),
+          description: _t(
+            'Reconcile the cold-chain manifest with the colony dashboard '
+                'before the next supply shuttle leaves Europa.',
+            'Gleiche die Kühlketten-Frachtliste mit dem Kolonie-Dashboard ab, '
+                'bevor das nächste Versorgungsshuttle Europa verlässt.',
+          ),
           status: cargoStatus,
           priority: TaskPriority.p2Medium,
           due: DateTime(2026, 7, 18, 9),
@@ -560,10 +673,16 @@ class ManualDemoWorld {
         ),
         task(
           id: manualPenguinPassengerTaskId,
-          title: 'Ask Legal whether a penguin is a passenger',
-          description:
-              'Resolve whether Sir Flaps-a-Lot needs a boarding pass or a '
-              'cargo declaration before launch.',
+          title: _t(
+            'Ask Legal whether a penguin is a passenger',
+            'Rechtsabteilung fragen, ob ein Pinguin Passagier ist',
+          ),
+          description: _t(
+            'Resolve whether Sir Flaps-a-Lot needs a boarding pass or a '
+                'cargo declaration before launch.',
+            'Kläre, ob Sir Flatterviel vor dem Start eine Bordkarte oder eine '
+                'Frachtdeklaration braucht.',
+          ),
           status: passengerStatus,
           priority: TaskPriority.p3Low,
           due: DateTime(2026, 7, 20, 16),
@@ -573,10 +692,13 @@ class ManualDemoWorld {
         ),
         task(
           id: manualHeadsetWalkTaskId,
-          title: 'Walk without a headset',
-          description:
-              'Take one quiet lap around the orbital ice garden without '
-              'turning it into a briefing, podcast, or emergency call.',
+          title: _t('Walk without a headset', 'Spaziergang ohne Headset'),
+          description: _t(
+            'Take one quiet lap around the orbital ice garden without '
+                'turning it into a briefing, podcast, or emergency call.',
+            'Dreh eine ruhige Runde durch den orbitalen Eisgarten, ohne daraus '
+                'ein Briefing, einen Podcast oder einen Notruf zu machen.',
+          ),
           status: agendaStatus,
           priority: TaskPriority.p3Low,
           due: DateTime(2026, 7, 17, 18),

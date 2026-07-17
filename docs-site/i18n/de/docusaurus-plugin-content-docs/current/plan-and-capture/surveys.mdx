@@ -1,0 +1,75 @@
+---
+title: Fragebögen ausfüllen und wiederfinden
+description: Starte integrierte Fragebögen aus einem Dashboard, beantworte sie Schritt für Schritt und bewahre Ergebnisse im Journal.
+---
+
+# Fragebögen ausfüllen und wiederfinden
+
+Lotti enthält drei feste Fragebögen: **CFQ-11**, **GHQ-12** und **PANAS**. Füge
+den verwendeten Fragebogen einem Dashboard hinzu und wähle am Diagramm **+**,
+wenn du eine neue Antwort erfassen möchtest. Das Dashboard startet den Ablauf
+und zeigt abgeschlossene Werte als Verlauf.
+
+Die Beispiele öffnen den echten PANAS-Ablauf aus dem Dashboard
+**Koloniebetrieb**. Fragebogen und Navigation stammen aus demselben produktiven
+Runner wie in der App.
+
+<ManualScreenshot
+  caseId="surveys/panas-intro"
+  alt="PANAS-Anleitung über dem Dashboard Koloniebetrieb"
+  caption="Lies Zeitraum und Antwortskala vor dem Start. Der Fortschritt zählt Anleitung, jede Frage und den Abschluss."
+/>
+
+## Einen Fragebogen zum Dashboard hinzufügen
+
+Öffne **Einstellungen → Definitionen → Dashboards**, bearbeite ein Dashboard
+und füge ein Diagramm aus **Fragebögen** hinzu. Verfügbar sind:
+
+- **CFQ-11**, die Chalder Fatigue Scale;
+- **GHQ-12**, der General Health Questionnaire; und
+- **PANAS**, die Positive and Negative Affect Schedule.
+
+Öffne anschließend das Dashboard. Das Diagramm zeigt gespeicherte Ergebnisse
+des Instruments; **+** beginnt eine neue Antwort. Jedes Diagramm startet seinen
+festen Fragebogen. Es gibt kein generisches Formular, dessen Fragen aus der
+Dokumentation stammen.
+
+## Die aktuelle Frage beantworten
+
+Die Anleitung erklärt Zeitraum und Antwortskala. Wähle **WEITER**. PANAS zeigt
+danach 20 Gefühlswörter einzeln und verlangt jeweils eine Wahl von **Sehr wenig
+oder gar nicht** bis **Äußerst**.
+
+<ManualScreenshot
+  caseId="surveys/panas-question"
+  alt="PANAS-Frage Interessiert mit fünf Antwortmöglichkeiten von Sehr wenig oder gar nicht bis Äußerst"
+  caption="Fragen erscheinen nacheinander. Wähle eine Antwort, fahre fort und orientiere dich an der Fortschrittszahl."
+/>
+
+Die anderen Fragebögen verwenden eigene feste Fragen und Bewertungen. Antworte
+gemäß Wortlaut und Zeitraum des Instruments; Lotti deutet nichts um und füllt
+nichts automatisch aus.
+
+## Bewusst absenden oder abbrechen
+
+Gehe bis zum Abschlussschritt, um zu speichern. Lotti legt Rohantwort und
+berechnete Wertgruppen als Fragebogeneintrag im Journal ab. Das Dashboard liest
+diese Einträge; jede weitere Teilnahme ergänzt eine datierte Beobachtung.
+
+Beim Schließen fragt Lotti, ob das aktuelle Ergebnis verworfen werden soll.
+Abgebrochene und teilweise beantwortete Fragebögen werden nicht gespeichert.
+Schließe deshalb den Abschlussschritt ab, wenn die Antwort wichtig ist.
+
+## Gespeicherte Werte verstehen
+
+Der Eintrag bewahrt Einzelantworten und berechnete Zusammenfassungen:
+
+- **CFQ-11** erzeugt seinen konfigurierten Ermüdungswert;
+- **GHQ-12** erzeugt seinen allgemeinen Gesundheitswert; und
+- **PANAS** erzeugt getrennte Summen für **Positiven Affekt** und
+  **Negativen Affekt**.
+
+Öffne den Journaleintrag für die gespeicherte Zusammenfassung. Das Dashboard
+zeigt Veränderung über Zeit, das Journal den datierten Quelldatensatz. Diagramme
+ersetzen die Anleitung nicht; Lotti bietet auch keinen Editor für diese
+integrierten Definitionen.

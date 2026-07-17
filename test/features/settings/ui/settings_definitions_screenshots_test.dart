@@ -66,6 +66,7 @@ import '../../daily_os_next/screenshot_harness.dart';
 import '../../labels/test_utils.dart';
 
 const String _subdir = 'settings_definitions';
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
 final DateTime _created = manualDemoNow;
 
@@ -82,17 +83,17 @@ const _sardineMarketLabelId = 'manual-sardine-market';
 final CategoryDefinition _penguinOperations =
     CategoryTestUtils.createTestCategory(
       id: manualDemoCategoryId,
-      name: 'Penguin Operations',
+      name: _t('Penguin Operations', 'Pinguinbetrieb'),
       color: '#8B5CF6',
       icon: CategoryIcon.airplane,
       favorite: true,
       isAvailableForDayPlan: true,
-      defaultLanguageCode: 'en',
+      defaultLanguageCode: manualScreenshotLocale.languageCode,
       defaultProfileId: manualProjectWaddleProfileId,
       speechDictionary: [
         'Project Waddle',
         'Sir Flaps-a-Lot',
-        'sardine',
+        _t('sardine', 'Sardine'),
         'Europa',
       ],
       correctionExamples: [
@@ -102,15 +103,15 @@ final CategoryDefinition _penguinOperations =
           capturedAt: manualDemoNow.subtract(const Duration(days: 3)),
         ),
         ChecklistCorrectionExample(
-          before: 'project waddle habitat',
-          after: 'Project Waddle habitat',
+          before: _t('project waddle habitat', 'project waddle habitat'),
+          after: _t('Project Waddle habitat', 'Project-Waddle-Habitat'),
           capturedAt: manualDemoNow.subtract(const Duration(days: 1)),
         ),
       ],
     );
 final CategoryDefinition _missionControl = CategoryTestUtils.createTestCategory(
   id: _missionControlCategoryId,
-  name: 'Mission Control',
+  name: _t('Mission Control', 'Missionskontrolle'),
   color: '#4F9DDE',
   icon: CategoryIcon.connectivity,
   isAvailableForDayPlan: true,
@@ -118,14 +119,14 @@ final CategoryDefinition _missionControl = CategoryTestUtils.createTestCategory(
 );
 final CategoryDefinition _fishDiplomacy = CategoryTestUtils.createTestCategory(
   id: _fishDiplomacyCategoryId,
-  name: 'Fish Diplomacy',
+  name: _t('Fish Diplomacy', 'Fischdiplomatie'),
   color: '#E8A33D',
   icon: CategoryIcon.meeting,
 );
 final CategoryDefinition _humanMaintenance =
     CategoryTestUtils.createTestCategory(
       id: _humanMaintenanceCategoryId,
-      name: 'Human Maintenance',
+      name: _t('Human Maintenance', 'Menschenwartung'),
       color: '#34D399',
       icon: CategoryIcon.fitness,
       active: false,
@@ -147,10 +148,12 @@ const Map<String, int> _taskCounts = {
 
 final LabelDefinition _projectWaddle = LabelTestUtils.createTestLabel(
   id: manualDemoProjectLabelId,
-  name: 'Project Waddle',
+  name: _t('Project Waddle', 'Project Waddle'),
   color: '#1F9CF5',
-  description:
-      'Launch-critical work for the first interplanetary penguin habitat.',
+  description: _t(
+    'Launch-critical work for the first interplanetary penguin habitat.',
+    'Startkritische Arbeit für das erste interplanetare Pinguin-Habitat.',
+  ),
   applicableCategoryIds: [
     manualDemoCategoryId,
     _missionControlCategoryId,
@@ -159,24 +162,32 @@ final LabelDefinition _projectWaddle = LabelTestUtils.createTestLabel(
 );
 final LabelDefinition _habitatCritical = LabelTestUtils.createTestLabel(
   id: manualDemoCriticalLabelId,
-  name: 'Habitat critical',
+  name: _t('Habitat critical', 'Habitatkritisch'),
   color: '#FBA337',
-  description:
-      'Must be resolved before emperor penguins enter the orbital habitat.',
+  description: _t(
+    'Must be resolved before emperor penguins enter the orbital habitat.',
+    'Muss gelöst sein, bevor die Kaiserpinguine das Orbital-Habitat betreten.',
+  ),
   applicableCategoryIds: [manualDemoCategoryId, _missionControlCategoryId],
 );
 final LabelDefinition _awaitingMissionControl = LabelTestUtils.createTestLabel(
   id: _awaitingMissionControlLabelId,
-  name: 'Awaiting Mission Control',
+  name: _t('Awaiting Mission Control', 'Wartet auf Missionskontrolle'),
   color: '#8B5CF6',
-  description: 'Blocked until the lunar shift sends clearance.',
+  description: _t(
+    'Blocked until the lunar shift sends clearance.',
+    'Blockiert, bis die Mondschicht die Freigabe sendet.',
+  ),
   applicableCategoryIds: [manualDemoCategoryId, _missionControlCategoryId],
 );
 final LabelDefinition _sardineMarket = LabelTestUtils.createTestLabel(
   id: _sardineMarketLabelId,
-  name: 'Sardine market sensitive',
+  name: _t('Sardine market sensitive', 'Sardinenmarktsensibel'),
   color: '#34D399',
-  description: 'Private negotiations with the Europa fish exchange.',
+  description: _t(
+    'Private negotiations with the Europa fish exchange.',
+    'Private Verhandlungen mit der Europa-Fischbörse.',
+  ),
   private: true,
   applicableCategoryIds: [_fishDiplomacyCategoryId],
 );
@@ -222,8 +233,11 @@ HabitDefinition _habit({
 
 final HabitDefinition _rollCall = _habit(
   id: 'habit-emperor-roll-call',
-  name: 'Emperor penguin roll call',
-  description: 'Account for all 37 expedition penguins before launch.',
+  name: _t('Emperor penguin roll call', 'Kaiserpinguine durchzählen'),
+  description: _t(
+    'Account for all 37 expedition penguins before launch.',
+    'Vor dem Start alle 37 Expeditionspinguine erfassen.',
+  ),
   categoryId: manualDemoCategoryId,
   schedule: HabitSchedule.daily(
     requiredCompletions: 1,
@@ -235,15 +249,21 @@ final HabitDefinition _rollCall = _habit(
 );
 final HabitDefinition _habitatSealWalk = _habit(
   id: 'habit-habitat-seals',
-  name: 'Walk the habitat seals',
-  description: 'Inspect every pressure seal after the artificial sunrise.',
+  name: _t('Walk the habitat seals', 'Habitatdichtungen ablaufen'),
+  description: _t(
+    'Inspect every pressure seal after the artificial sunrise.',
+    'Nach dem künstlichen Sonnenaufgang jede Druckdichtung inspizieren.',
+  ),
   categoryId: manualDemoCategoryId,
   private: true,
 );
 final HabitDefinition _sardineForecast = _habit(
   id: 'habit-sardine-forecast',
-  name: 'Review sardine forecast',
-  description: 'Paused while the Europa exchange recalibrates its fish index.',
+  name: _t('Review sardine forecast', 'Sardinenprognose prüfen'),
+  description: _t(
+    'Paused while the Europa exchange recalibrates its fish index.',
+    'Pausiert, während die Europa-Börse ihren Fischindex neu kalibriert.',
+  ),
   categoryId: _fishDiplomacyCategoryId,
   active: false,
 );
@@ -276,20 +296,23 @@ MeasurableDataType _measurable({
 
 final MeasurableDataType _habitatPressure = _measurable(
   id: 'meas-habitat-pressure',
-  displayName: 'Habitat pressure',
+  displayName: _t('Habitat pressure', 'Habitatdruck'),
   unitName: 'kPa',
-  description: 'Average pressure across the orbital habitat.',
+  description: _t(
+    'Average pressure across the orbital habitat.',
+    'Durchschnittlicher Druck im gesamten Orbital-Habitat.',
+  ),
   aggregationType: AggregationType.dailyAvg,
 );
 final MeasurableDataType _sardinesConsumed = _measurable(
   id: 'meas-sardines-consumed',
-  displayName: 'Sardines consumed',
-  unitName: 'sardines',
+  displayName: _t('Sardines consumed', 'Verzehrte Sardinen'),
+  unitName: _t('sardines', 'Sardinen'),
 );
 final MeasurableDataType _penguinsAccountedFor = _measurable(
   id: 'meas-penguins-accounted-for',
-  displayName: 'Penguins accounted for',
-  unitName: 'penguins',
+  displayName: _t('Penguins accounted for', 'Gezählte Pinguine'),
+  unitName: _t('penguins', 'Pinguine'),
   favorite: true,
 );
 
@@ -323,8 +346,11 @@ DashboardDefinition _dashboard({
 
 final DashboardDefinition _colonyOperations = _dashboard(
   id: 'dash-colony-operations',
-  name: 'Colony operations',
-  description: 'Habitat pressure, sardine demand, and crew headcount.',
+  name: _t('Colony operations', 'Koloniebetrieb'),
+  description: _t(
+    'Habitat pressure, sardine demand, and crew headcount.',
+    'Habitatdruck, Sardinenbedarf und Besatzungsstärke.',
+  ),
   categoryId: manualDemoCategoryId,
   items: const [
     DashboardMeasurementItem(
@@ -351,8 +377,11 @@ final DashboardDefinition _colonyOperations = _dashboard(
 );
 final DashboardDefinition _missionReadiness = _dashboard(
   id: 'dash-mission-readiness',
-  name: 'Mission readiness',
-  description: 'Private launch review for Project Waddle.',
+  name: _t('Mission readiness', 'Missionsbereitschaft'),
+  description: _t(
+    'Private launch review for Project Waddle.',
+    'Private Startprüfung für Project Waddle.',
+  ),
   categoryId: _missionControlCategoryId,
   private: true,
   items: const [],
@@ -435,6 +464,7 @@ Widget _app({
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: manualScreenshotLocale,
           home: home,
         ),
       ),
@@ -673,9 +703,15 @@ void main() {
           overrides: categoriesListOverrides(),
           home: const CategoriesListPage(),
         );
-        expect(find.text('Penguin Operations'), findsOneWidget);
-        expect(find.text('Mission Control'), findsOneWidget);
-        expect(find.text('37 tasks'), findsOneWidget);
+        expect(
+          find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Mission Control', 'Missionskontrolle')),
+          findsOneWidget,
+        );
+        expect(find.text(_t('37 tasks', '37 Aufgaben')), findsOneWidget);
         await captureScreenshot(
           tester,
           'categories_list_${viewport}_$theme',
@@ -691,14 +727,20 @@ void main() {
           overrides: categoriesDetailOverrides(),
           home: CategoryDetailsPage(categoryId: _penguinOperations.id),
         );
-        expect(find.text('Edit category'), findsOneWidget);
-        expect(find.text('Penguin Operations'), findsOneWidget);
+        expect(
+          find.text(_t('Edit category', 'Kategorie bearbeiten')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
+          findsOneWidget,
+        );
         expect(
           tester
               .widget<TextField>(find.byType(TextField).first)
               .controller
               ?.text,
-          'Penguin Operations',
+          _t('Penguin Operations', 'Pinguinbetrieb'),
         );
         await captureScreenshot(
           tester,
@@ -707,12 +749,20 @@ void main() {
         );
 
         await tester.scrollUntilVisible(
-          find.text('Checklist correction examples'),
+          find.text(
+            _t(
+              'Checklist correction examples',
+              'Checklisten-Korrekturbeispiele',
+            ),
+          ),
           300,
           scrollable: find.byType(Scrollable).first,
         );
         await settleFrames(tester);
-        expect(find.text('Speech recognition'), findsOneWidget);
+        expect(
+          find.text(_t('Speech recognition', 'Spracherkennung')),
+          findsOneWidget,
+        );
         expect(find.textContaining('Project Waddle'), findsWidgets);
         await captureScreenshot(
           tester,
@@ -732,7 +782,9 @@ void main() {
           home: CategoryDetailsPage(categoryId: _penguinOperations.id),
         );
 
-        final selectedProfile = find.text('Project Waddle Command');
+        final selectedProfile = find.text(
+          _t('Project Waddle Command', 'Project-Waddle-Kommando'),
+        );
         if (device.isPhone) {
           await tester.scrollUntilVisible(
             selectedProfile,
@@ -746,11 +798,25 @@ void main() {
         await tester.tap(selectedProfile);
         await settleFrames(tester, 6);
 
-        expect(find.text('Choose an inference profile'), findsOneWidget);
-        expect(find.text('Project Waddle Command'), findsWidgets);
-        expect(find.text('Fish Diplomacy'), findsOneWidget);
+        expect(
+          find.text(
+            _t('Choose an inference profile', 'Inferenzprofil auswählen'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Project Waddle Command', 'Project-Waddle-Kommando')),
+          findsWidgets,
+        );
+        expect(
+          find.text(_t('Fish Diplomacy', 'Fischdiplomatie')),
+          findsOneWidget,
+        );
         if (!device.isPhone) {
-          expect(find.text('Habitat Local-First'), findsOneWidget);
+          expect(
+            find.text(_t('Habitat Local-First', 'Habitat zuerst lokal')),
+            findsOneWidget,
+          );
         }
         await captureScreenshot(
           tester,
@@ -768,7 +834,10 @@ void main() {
       overrides: categoriesDetailOverrides(),
       home: const CategoryDetailsPage(),
     );
-    expect(find.text('Create category'), findsOneWidget);
+    expect(
+      find.text(_t('Create category', 'Kategorie erstellen')),
+      findsOneWidget,
+    );
     await captureScreenshot(
       tester,
       'mini_categories_create_dark',
@@ -786,7 +855,10 @@ void main() {
       overrides: categoriesListOverrides(),
       home: const CategoriesListPage(),
     );
-    expect(find.text('No categories yet'), findsOneWidget);
+    expect(
+      find.text(_t('No categories yet', 'Noch keine Kategorien')),
+      findsOneWidget,
+    );
     await captureScreenshot(
       tester,
       'mini_categories_list_empty_dark',
@@ -836,8 +908,11 @@ void main() {
           home: const LabelsListPage(),
         );
         expect(find.text('Project Waddle'), findsOneWidget);
-        expect(find.text('Habitat critical'), findsOneWidget);
-        expect(find.text('14 tasks'), findsOneWidget);
+        expect(
+          find.text(_t('Habitat critical', 'Habitatkritisch')),
+          findsOneWidget,
+        );
+        expect(find.text(_t('14 tasks', '14 Aufgaben')), findsOneWidget);
         await captureScreenshot(
           tester,
           'labels_list_${viewport}_$theme',
@@ -858,10 +933,13 @@ void main() {
         // Demonstrate the armed action state while preserving the story.
         await tester.enterText(
           find.byType(TextField).first,
-          'Project Waddle — launch',
+          _t('Project Waddle — launch', 'Project Waddle — Start'),
         );
         await settleFrames(tester, 4);
-        expect(find.text('Project Waddle — launch'), findsOneWidget);
+        expect(
+          find.text(_t('Project Waddle — launch', 'Project Waddle — Start')),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'labels_detail_${viewport}_$theme',
@@ -910,9 +988,20 @@ void main() {
           ],
           home: const HabitsPage(),
         );
-        expect(find.text('Emperor penguin roll call'), findsOneWidget);
-        expect(find.text('Walk the habitat seals'), findsOneWidget);
-        expect(find.text('Review sardine forecast'), findsOneWidget);
+        expect(
+          find.text(
+            _t('Emperor penguin roll call', 'Kaiserpinguine durchzählen'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Walk the habitat seals', 'Habitatdichtungen ablaufen')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Review sardine forecast', 'Sardinenprognose prüfen')),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'habits_settings_list_${viewport}_$theme',
@@ -927,9 +1016,20 @@ void main() {
           brightness: brightness,
           home: EditHabitPage(habitId: _rollCall.id),
         );
-        expect(find.text('Edit habit'), findsOneWidget);
-        expect(find.text('Emperor penguin roll call'), findsOneWidget);
-        expect(find.text('Penguin Operations'), findsOneWidget);
+        expect(
+          find.text(_t('Edit habit', 'Gewohnheit bearbeiten')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            _t('Emperor penguin roll call', 'Kaiserpinguine durchzählen'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'habits_settings_detail_${viewport}_$theme',
@@ -937,14 +1037,17 @@ void main() {
         );
 
         await tester.scrollUntilVisible(
-          find.text('Schedule'),
+          find.text(_t('Schedule', 'Zeitplan')),
           300,
           scrollable: find.byType(Scrollable).first,
         );
         await settleFrames(tester);
-        expect(find.text('Start date'), findsOneWidget);
-        expect(find.text('Show from'), findsOneWidget);
-        expect(find.text('Show alert at'), findsOneWidget);
+        expect(find.text(_t('Start date', 'Startdatum')), findsOneWidget);
+        expect(find.text(_t('Show from', 'Anzeigen ab')), findsOneWidget);
+        expect(
+          find.text(_t('Show alert at', 'Alarm anzeigen um')),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'habits_schedule_${viewport}_$theme',
@@ -977,9 +1080,18 @@ void main() {
           ],
           home: const MeasurablesPage(),
         );
-        expect(find.text('Habitat pressure'), findsOneWidget);
-        expect(find.text('Sardines consumed'), findsOneWidget);
-        expect(find.text('Penguins accounted for'), findsOneWidget);
+        expect(
+          find.text(_t('Habitat pressure', 'Habitatdruck')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Sardines consumed', 'Verzehrte Sardinen')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Penguins accounted for', 'Gezählte Pinguine')),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'measurables_settings_list_${viewport}_$theme',
@@ -996,10 +1108,19 @@ void main() {
           brightness: brightness,
           home: MeasurableDetailsPage(dataType: _habitatPressure),
         );
-        expect(find.text('Edit measurable'), findsOneWidget);
-        expect(find.text('Habitat pressure'), findsOneWidget);
+        expect(
+          find.text(_t('Edit measurable', 'Messgröße bearbeiten')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Habitat pressure', 'Habitatdruck')),
+          findsOneWidget,
+        );
         expect(find.text('kPa'), findsOneWidget);
-        expect(find.text('Daily average'), findsOneWidget);
+        expect(
+          find.text(_t('Daily average', 'Tagesdurchschnitt')),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'measurables_settings_detail_${viewport}_$theme',
@@ -1032,8 +1153,14 @@ void main() {
           ],
           home: const DashboardSettingsPage(),
         );
-        expect(find.text('Colony operations'), findsOneWidget);
-        expect(find.text('Mission readiness'), findsOneWidget);
+        expect(
+          find.text(_t('Colony operations', 'Koloniebetrieb')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Mission readiness', 'Missionsbereitschaft')),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'dashboards_settings_list_${viewport}_$theme',
@@ -1050,8 +1177,14 @@ void main() {
           brightness: brightness,
           home: DashboardDefinitionPage(dashboard: _colonyOperations),
         );
-        expect(find.text('Edit dashboard'), findsOneWidget);
-        expect(find.text('Colony operations'), findsOneWidget);
+        expect(
+          find.text(_t('Edit dashboard', 'Dashboard bearbeiten')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Colony operations', 'Koloniebetrieb')),
+          findsOneWidget,
+        );
         // The reorderable charts list renders one dismissible card per item.
         expect(find.byType(Dismissible), findsNWidgets(4));
         await captureScreenshot(
@@ -1062,12 +1195,38 @@ void main() {
 
         _alignInOuterScrollView(
           tester,
-          find.text('Charts on this dashboard'),
+          find.text(
+            _t('Charts on this dashboard', 'Diagramme auf diesem Dashboard'),
+          ),
         );
         await settleFrames(tester);
-        expect(find.text('Habitat pressure — Daily average'), findsOneWidget);
-        expect(find.text('Sardines consumed — Daily sum'), findsOneWidget);
-        expect(find.text('Penguins accounted for — Daily sum'), findsOneWidget);
+        expect(
+          find.text(
+            _t(
+              'Habitat pressure — Daily average',
+              'Habitatdruck — Tagesdurchschnitt',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            _t(
+              'Sardines consumed — Daily sum',
+              'Verzehrte Sardinen — Tagessumme',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            _t(
+              'Penguins accounted for — Daily sum',
+              'Gezählte Pinguine — Tagessumme',
+            ),
+          ),
+          findsOneWidget,
+        );
         expect(find.text('PANAS'), findsOneWidget);
         await captureScreenshot(
           tester,
@@ -1075,11 +1234,16 @@ void main() {
           subdir: _subdir,
         );
 
-        _alignInOuterScrollView(tester, find.text('Add charts by type'));
+        _alignInOuterScrollView(
+          tester,
+          find.text(
+            _t('Add charts by type', 'Diagramme nach Typ hinzufügen'),
+          ),
+        );
         await settleFrames(tester);
-        expect(find.text('Habits'), findsOneWidget);
-        expect(find.text('Measurements'), findsOneWidget);
-        expect(find.text('Health'), findsOneWidget);
+        expect(find.text(_t('Habits', 'Gewohnheiten')), findsOneWidget);
+        expect(find.text(_t('Measurements', 'Messungen')), findsOneWidget);
+        expect(find.text(_t('Health', 'Gesundheit')), findsOneWidget);
         await captureScreenshot(
           tester,
           'dashboards_sources_${viewport}_$theme',
@@ -1114,13 +1278,22 @@ void main() {
           );
         });
         expect(
-          find.text('Colony operations'),
+          find.text(_t('Colony operations', 'Koloniebetrieb')),
           device.isPhone ? findsOneWidget : findsNWidgets(2),
         );
-        expect(find.text('Mission readiness'), findsOneWidget);
+        expect(
+          find.text(_t('Mission readiness', 'Missionsbereitschaft')),
+          findsOneWidget,
+        );
         if (!device.isPhone) {
-          expect(find.text('Habitat pressure'), findsOneWidget);
-          expect(find.text('Sardines consumed'), findsOneWidget);
+          expect(
+            find.text(_t('Habitat pressure', 'Habitatdruck')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(_t('Sardines consumed', 'Verzehrte Sardinen')),
+            findsOneWidget,
+          );
         }
         await captureScreenshot(
           tester,
@@ -1152,9 +1325,18 @@ void main() {
           );
           await settleFrames(tester, 12);
         });
-        expect(find.text('Colony operations'), findsWidgets);
-        expect(find.text('Habitat pressure'), findsOneWidget);
-        expect(find.text('Sardines consumed'), findsOneWidget);
+        expect(
+          find.text(_t('Colony operations', 'Koloniebetrieb')),
+          findsWidgets,
+        );
+        expect(
+          find.text(_t('Habitat pressure', 'Habitatdruck')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Sardines consumed', 'Verzehrte Sardinen')),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'dashboard_view_${viewport}_$theme',
@@ -1162,12 +1344,15 @@ void main() {
         );
 
         await tester.scrollUntilVisible(
-          find.text('Penguins accounted for'),
+          find.text(_t('Penguins accounted for', 'Gezählte Pinguine')),
           350,
           scrollable: find.byType(Scrollable).last,
         );
         await settleFrames(tester, 8);
-        expect(find.text('Penguins accounted for'), findsOneWidget);
+        expect(
+          find.text(_t('Penguins accounted for', 'Gezählte Pinguine')),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'dashboard_view_crew_${viewport}_$theme',

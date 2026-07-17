@@ -85,12 +85,14 @@ import '../../daily_os_next/screenshot_harness.dart';
 const String _subdir = 'sync';
 const String _conflictId = 'habitat';
 
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+
 final ManualDemoWorld _world = ManualDemoWorld.penguinLogistics();
 final DateTime _syncTime = DateTime(2026, 7, 17, 10, 22);
 
 final SyncNodeProfile _localNode = SyncNodeProfile(
   hostId: 'mission-control-mac',
-  displayName: 'Mission Control Mac',
+  displayName: _t('Mission Control Mac', 'Missionskontrolle Mac'),
   platform: 'macos',
   capabilities: const [
     NodeCapability.mlxAudio,
@@ -104,7 +106,7 @@ final List<SyncNodeProfile> _knownNodes = [
   _localNode,
   SyncNodeProfile(
     hostId: 'habitat-linux',
-    displayName: 'Orbital Habitat Console',
+    displayName: _t('Orbital Habitat Console', 'Orbitale Habitatkonsole'),
     platform: 'linux',
     capabilities: const [
       NodeCapability.ollamaLlm,
@@ -114,7 +116,7 @@ final List<SyncNodeProfile> _knownNodes = [
   ),
   SyncNodeProfile(
     hostId: 'penguin-phone',
-    displayName: 'Admiral Pebble’s Phone',
+    displayName: _t('Admiral Pebble’s Phone', 'Admiral Pebbles Telefon'),
     platform: 'android',
     capabilities: const [],
     updatedAt: _syncTime.subtract(const Duration(minutes: 8)),
@@ -159,18 +161,32 @@ Task _taskVersion({
 }
 
 final Task _localTask = _taskVersion(
-  title: 'Inspect orbital penguin habitat before launch',
-  description:
-      'Mission Control cleared 36 penguins. Recheck pressure seal C and hold '
-      'the sardine cargo pod until the final emperor arrives.',
+  title: _t(
+    'Inspect orbital penguin habitat before launch',
+    'Orbitales Pinguinhabitat vor dem Start inspizieren',
+  ),
+  description: _t(
+    'Mission Control cleared 36 penguins. Recheck pressure seal C and hold '
+        'the sardine cargo pod until the final emperor arrives.',
+    'Die Missionskontrolle hat 36 Pinguine freigegeben. Druckdichtung C '
+        'erneut prüfen und den Sardinen-Frachtbehälter zurückhalten, bis der '
+        'letzte Kaiserpinguin eintrifft.',
+  ),
   clock: const {'mission-control-mac': 14, 'penguin-phone': 7},
 );
 
 final Task _remoteTask = _taskVersion(
-  title: 'Launch orbital penguin habitat after seal inspection',
-  description:
-      'Habitat Console cleared all 37 penguins and pressure seal C. Release '
-      'the zero-gravity sardine cargo pod at 11:20.',
+  title: _t(
+    'Launch orbital penguin habitat after seal inspection',
+    'Orbitales Pinguinhabitat nach Dichtungsprüfung starten',
+  ),
+  description: _t(
+    'Habitat Console cleared all 37 penguins and pressure seal C. Release '
+        'the zero-gravity sardine cargo pod at 11:20.',
+    'Die Habitatkonsole hat alle 37 Pinguine und Druckdichtung C '
+        'freigegeben. Den Schwerelosigkeits-Sardinenbehälter um 11:20 Uhr '
+        'ausklinken.',
+  ),
   clock: const {'mission-control-mac': 13, 'habitat-linux': 11},
 );
 
@@ -204,8 +220,11 @@ final JournalEntry _cargoNote = JournalEntry(
     dateTo: _syncTime.subtract(const Duration(minutes: 20)),
     vectorClock: const VectorClock({'penguin-phone': 9}),
   ),
-  entryText: const EntryText(
-    plainText: 'Europa sardine cargo manifest revised by Admiral Pebble.',
+  entryText: EntryText(
+    plainText: _t(
+      'Europa sardine cargo manifest revised by Admiral Pebble.',
+      'Sardinen-Frachtmanifest für Europa von Admiral Pebble überarbeitet.',
+    ),
   ),
 );
 
@@ -259,7 +278,10 @@ final List<OutboxItem> _outboxItems = [
   _outboxItem(
     id: 1,
     status: OutboxStatus.sending,
-    subject: 'Inspect orbital penguin habitat',
+    subject: _t(
+      'Inspect orbital penguin habitat',
+      'Orbitales Pinguinhabitat inspizieren',
+    ),
     message: const SyncMessage.journalEntity(
       id: manualOrbitalHabitatTaskId,
       jsonPath: '/sync/project-waddle/orbital-habitat.json',
@@ -272,7 +294,7 @@ final List<OutboxItem> _outboxItems = [
   _outboxItem(
     id: 2,
     status: OutboxStatus.pending,
-    subject: 'Project Waddle node profile',
+    subject: _t('Project Waddle node profile', 'Project-Waddle-Knotenprofil'),
     message: SyncMessage.syncNodeProfile(profile: _localNode),
     age: const Duration(minutes: 2),
     payloadSize: 1220,
@@ -280,7 +302,10 @@ final List<OutboxItem> _outboxItems = [
   _outboxItem(
     id: 3,
     status: OutboxStatus.error,
-    subject: 'Habitat pressure-seal photo',
+    subject: _t(
+      'Habitat pressure-seal photo',
+      'Foto der Habitat-Druckdichtung',
+    ),
     message: const SyncMessage.journalEntity(
       id: manualHabitatCoverImageId,
       jsonPath: '/sync/project-waddle/habitat-photo.json',
@@ -295,10 +320,13 @@ final List<OutboxItem> _outboxItems = [
   _outboxItem(
     id: 4,
     status: OutboxStatus.sent,
-    subject: 'Project Waddle private-mode flag',
-    message: const SyncMessage.configFlag(
+    subject: _t(
+      'Project Waddle private-mode flag',
+      'Project-Waddle-Flag für privaten Modus',
+    ),
+    message: SyncMessage.configFlag(
       name: 'privateFlag',
-      description: 'Show private entries',
+      description: _t('Show private entries', 'Private Einträge anzeigen'),
       status: true,
     ),
     age: const Duration(minutes: 12),
@@ -441,7 +469,6 @@ Widget _app({
         data: MediaQueryData(size: size),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          locale: const Locale('en'),
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
               : DesignSystemTheme.light(),
@@ -453,6 +480,7 @@ Widget _app({
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: manualScreenshotLocale,
           home: home,
         ),
       ),
@@ -563,7 +591,12 @@ void main() {
     );
     when(
       () => matrixService.getSyncDiagnosticsText(),
-    ).thenAnswer((_) async => 'Project Waddle sync healthy');
+    ).thenAnswer(
+      (_) async => _t(
+        'Project Waddle sync healthy',
+        'Project-Waddle-Synchronisierung fehlerfrei',
+      ),
+    );
 
     when(
       () => syncDatabase.getOutboxItems(limit: any(named: 'limit')),
@@ -591,21 +624,21 @@ void main() {
       '@admiral-pebble:project-waddle.test',
     );
     when(() => unverifiedDevice.deviceDisplayName).thenReturn(
-      'Admiral Pebble’s Phone',
+      _t('Admiral Pebble’s Phone', 'Admiral Pebbles Telefon'),
     );
     when(() => unverifiedDevice.deviceId).thenReturn('PEBBLE-PHONE-7F3A');
     when(() => verificationRunner.lastStep).thenReturn(
       'm.key.verification.key',
     );
     when(() => verificationRunner.emojis).thenReturn([
-      FakeKeyVerificationEmoji('🐧', 'Penguin'),
-      FakeKeyVerificationEmoji('🐟', 'Fish'),
-      FakeKeyVerificationEmoji('🚀', 'Rocket'),
-      FakeKeyVerificationEmoji('🧊', 'Ice'),
-      FakeKeyVerificationEmoji('🌍', 'Earth'),
-      FakeKeyVerificationEmoji('🌙', 'Moon'),
-      FakeKeyVerificationEmoji('⭐', 'Star'),
-      FakeKeyVerificationEmoji('🔭', 'Telescope'),
+      FakeKeyVerificationEmoji('🐧', _t('Penguin', 'Pinguin')),
+      FakeKeyVerificationEmoji('🐟', _t('Fish', 'Fisch')),
+      FakeKeyVerificationEmoji('🚀', _t('Rocket', 'Rakete')),
+      FakeKeyVerificationEmoji('🧊', _t('Ice', 'Eis')),
+      FakeKeyVerificationEmoji('🌍', _t('Earth', 'Erde')),
+      FakeKeyVerificationEmoji('🌙', _t('Moon', 'Mond')),
+      FakeKeyVerificationEmoji('⭐', _t('Star', 'Stern')),
+      FakeKeyVerificationEmoji('🔭', _t('Telescope', 'Teleskop')),
     ]);
     final keyVerification = MockKeyVerification();
     when(() => keyVerification.isDone).thenReturn(false);
@@ -709,7 +742,7 @@ void main() {
         await tester.tap(find.byType(OutboxMessageCard));
         await settleFrames(tester, 4);
       case _SyncSurface.conflictCombine:
-        final context = tester.element(find.text('Title'));
+        final context = tester.element(find.text(_t('Title', 'Titel')));
         await tester.tap(find.text(context.messages.conflictPickerCombine));
         await settleFrames(tester, 4);
       case _SyncSurface.hub:
@@ -726,48 +759,99 @@ void main() {
   void expectSurface(_SyncSurface surface) {
     switch (surface) {
       case _SyncSurface.hub:
-        expect(find.text('Provisioned Sync'), findsWidgets);
-        expect(find.text('Maintenance'), findsWidgets);
+        expect(
+          find.text(_t('Provisioned Sync', 'Provisionierte Synchronisierung')),
+          findsWidgets,
+        );
+        expect(find.text(_t('Maintenance', 'Wartung')), findsWidgets);
       case _SyncSurface.provisioned:
         expect(find.text(_provisioningBundle.homeServer), findsOneWidget);
         expect(find.text(_provisioningBundle.user), findsOneWidget);
       case _SyncSurface.status:
         expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
-        expect(find.text('Show Diagnostic Info'), findsOneWidget);
-        expect(find.text('Disconnect'), findsOneWidget);
+        expect(
+          find.text(_t('Show Diagnostic Info', 'Diagnoseinfos anzeigen')),
+          findsOneWidget,
+        );
+        expect(find.text(_t('Disconnect', 'Trennen')), findsOneWidget);
       case _SyncSurface.verification:
-        expect(find.text('Admiral Pebble’s Phone'), findsWidgets);
-        expect(find.textContaining('emojis below'), findsOneWidget);
-        expect(find.text('Accept'), findsOneWidget);
+        expect(
+          find.text(_t('Admiral Pebble’s Phone', 'Admiral Pebbles Telefon')),
+          findsWidgets,
+        );
+        expect(
+          find.textContaining(_t('emojis below', 'unten stehenden Emojis')),
+          findsOneWidget,
+        );
+        expect(find.text(_t('Accept', 'Akzeptieren')), findsOneWidget);
       case _SyncSurface.nodeProfile:
         expect(find.text(_localNode.displayName), findsOneWidget);
-        expect(find.text('Orbital Habitat Console'), findsOneWidget);
+        expect(
+          find.text(_t('Orbital Habitat Console', 'Orbitale Habitatkonsole')),
+          findsOneWidget,
+        );
       case _SyncSurface.backfill:
-        expect(find.text('2 device IDs'), findsOneWidget);
-        expect(find.text('2,868'), findsOneWidget);
+        expect(find.text(_t('2 device IDs', '2 Geräte-IDs')), findsOneWidget);
+        expect(find.text(_t('2,868', '2.868')), findsOneWidget);
       case _SyncSurface.stats:
-        expect(find.textContaining('Sync Metrics'), findsOneWidget);
+        expect(
+          find.textContaining(_t('Sync Metrics', 'Sync-Metriken')),
+          findsOneWidget,
+        );
         expect(find.text('Top KPIs'), findsOneWidget);
         expect(find.text('Processed'), findsWidgets);
       case _SyncSurface.outbox:
-        expect(find.text('Habitat pressure-seal photo'), findsOneWidget);
-        expect(find.text('Retry all'), findsOneWidget);
+        expect(
+          find.text(
+            _t('Habitat pressure-seal photo', 'Foto der Habitat-Druckdichtung'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Retry all', 'Alle erneut senden')),
+          findsOneWidget,
+        );
       case _SyncSurface.conflicts:
-        expect(find.text('Unresolved · 2 items'), findsOneWidget);
-        expect(find.text('Task'), findsOneWidget);
+        expect(
+          find.text(_t('Unresolved · 2 items', 'Ungelöst · 2 Elemente')),
+          findsOneWidget,
+        );
+        expect(find.text(_t('Task', 'Aufgabe')), findsOneWidget);
       case _SyncSurface.conflictDetail:
-        expect(find.text('Title'), findsOneWidget);
-        expect(find.text('Body'), findsOneWidget);
-        expect(find.text('Use this device'), findsOneWidget);
-        expect(find.text('Use from sync'), findsOneWidget);
+        expect(find.text(_t('Title', 'Titel')), findsOneWidget);
+        expect(find.text(_t('Body', 'Text')), findsOneWidget);
+        expect(
+          find.text(_t('Use this device', 'Dieses Gerät verwenden')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Use from sync', 'Aus Sync verwenden')),
+          findsOneWidget,
+        );
       case _SyncSurface.conflictCombine:
-        expect(find.text('Start from'), findsOneWidget);
-        expect(find.text('Title'), findsOneWidget);
-        expect(find.text('Body'), findsOneWidget);
-        expect(find.text('Apply combined'), findsOneWidget);
+        expect(find.text(_t('Start from', 'Ausgehen von')), findsOneWidget);
+        expect(find.text(_t('Title', 'Titel')), findsOneWidget);
+        expect(find.text(_t('Body', 'Text')), findsOneWidget);
+        expect(
+          find.text(_t('Apply combined', 'Kombiniert übernehmen')),
+          findsOneWidget,
+        );
       case _SyncSurface.maintenance:
-        expect(find.text('Re-sync messages'), findsOneWidget);
-        expect(find.text('Purge old sent outbox items'), findsOneWidget);
+        expect(
+          find.text(
+            _t('Re-sync messages', 'Nachrichten erneut synchronisieren'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            _t(
+              'Purge old sent outbox items',
+              'Alte gesendete Outbox-Einträge löschen',
+            ),
+          ),
+          findsOneWidget,
+        );
     }
   }
 

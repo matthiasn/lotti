@@ -1,0 +1,114 @@
+---
+title: Agentenvorlagen und Seelen entwerfen
+description: Definiere wiederverwendbare Verantwortungen, trenne Persönlichkeit von Anweisungen und verbessere beides in versionierten Einzelgesprächen.
+---
+
+# Agentenvorlagen und Seelen entwerfen
+
+Eine **Agentenvorlage** definiert eine wiederverwendbare Verantwortung: Art,
+Inferenzprofil, Arbeitsanweisungen, Berichtsformat und optionale Persönlichkeit.
+Eine **Seele** enthält gemeinsame Stimme, Tongrenzen, Coachingstil und Regeln
+gegen Gefälligkeit. Durch die Trennung kann sich eine Persönlichkeit über
+mehrere Vorlagen hinweg verbessern, ohne Anweisungen zu kopieren.
+
+## Den Vorlagenkatalog prüfen
+
+Öffne **Einstellungen → Agenten → Agentenvorlagen**. Der Katalog zeigt Art,
+Modellidentität, aktive Version und offenen Prüfbedarf.
+
+<ManualScreenshot
+  caseId="agents/templates"
+  alt="Lottis Agentenvorlagen für Sicherheit des orbitalen Habitats, Project-Waddle-Tagesplanung, Sardinenversorgung und Fischdiplomatie-Coaching"
+  caption="Jede Project-Waddle-Vorlage hat eine enge Verantwortung und sichtbare Version statt eines Allzweckagenten mit unprüfbarem Prompt."
+/>
+
+Die eingebauten Arten decken unterschiedliche Bereiche ab:
+
+- **Aufgabenagent** arbeitet an einer Aufgabe und ihren Belegen.
+- **Tagesagent** plant und überarbeitet einen Tag.
+- **Projektagent** verfolgt ein Projekt über Zeit.
+- **Ereignisagent** verfolgt einen Ereignisarbeitsbereich.
+- **Vorlagenverbesserer** unterstützt versionierte Einzelprüfungen.
+
+## Eine Vorlage bearbeiten
+
+Wähle eine Vorlage und ein Standard-Inferenzprofil mit den Werkzeugen und
+Modalitäten der Verantwortung. Weise optional eine Seele zu.
+
+<ManualScreenshot
+  caseId="agents/template-editor"
+  alt="Editor für die Vorlage Orbitaler Habitatwächter mit Project-Waddle-Kommando, Admiral Kiesel sowie Sicherheits- und Berichtsanweisungen"
+  caption="Die Arbeitsanweisung beschreibt die Inspektion; Admiral Kiesel liefert Kommunikations- und Widerspruchsstil."
+/>
+
+Nutze beide Anweisungsfelder bewusst:
+
+- **Allgemeine Anweisung** definiert Verantwortung, Grenzen und Entscheidungsregeln.
+- **Berichtsanweisung** definiert den Inhalt eines nützlichen gespeicherten Berichts.
+
+Speichern erzeugt eine neue Vorlagenversion. Verlauf bleibt für Audit und
+Rollback erhalten. Verstecke nicht mehrere Verantwortungen in einer langen
+Anweisung, nur um weniger Vorlagen zu haben.
+
+## Eine Vorlage im Einzelgespräch prüfen
+
+Die Seite **1:1** stellt vorgeschlagene Änderungen echter Aufwachaktivität,
+Feedback, Leistung und früheren Sitzungen gegenüber. Eine ausstehende Sitzung
+ist ein Vorschlag, kein automatisches Umschreiben.
+
+<ManualScreenshot
+  caseId="agents/template-review"
+  alt="Einzelgespräch zum Orbitalen Habitatwächter mit Vorschlag, Startentscheidung deutlicher zu zeigen, und aktuellen Leistungswerten"
+  caption="Der Vorschlag reagiert auf einen konkreten Fehler: Der Sicherheitsbefund stimmte, aber die Startentscheidung verschwand unter Fischtrivia."
+/>
+
+Beginne das Gespräch, prüfe die Belege und genehmige nur Verbesserungen der
+Verantwortung. Das Ergebnis wird eine weitere versionierte Vorlage.
+
+## Persönlichkeit mit Seelen wiederverwenden
+
+Unter **Seelen** findest du gemeinsam verwendbare Persönlichkeiten. Eine Seele
+ist kein weiterer Aufgabenprompt; sie steuert Kommunikation, Coaching und
+Widerspruch.
+
+<ManualScreenshot
+  caseId="agents/souls"
+  alt="Lottis Seelenkatalog mit Admiral Kiesel, Dr. Flosse und Kapitän Sardina"
+  caption="Project Waddle trennt ruhige Flugleitung, neugierige Wissenschaft und praktische Frachtkoordination von ihren jeweiligen Aufgaben."
+/>
+
+Der Editor trennt vier Anliegen:
+
+<ManualScreenshot
+  caseId="agents/soul-editor"
+  alt="Editor für Admiral Kiesels Seele mit Stimme, Tongrenzen, Coachingstil und Anti-Gefälligkeits-Regel"
+  caption="Admiral Kiesel bleibt warm und entschieden, fordert aber optimistische Startannahmen mit Belegen heraus."
+/>
+
+- **Stimmenanweisung** beschreibt erkennbare Stimme und Kommunikationsprioritäten.
+- **Tongrenzen** benennen zu vermeidendes Verhalten.
+- **Coachingstil** beschreibt die Hilfe bei Entscheidungen.
+- **Anti-Gefälligkeits-Regel** erklärt, wann und wie widersprochen wird.
+
+Verwende prüfbare Grenzen. „Sei hilfreich“ ist vage; „Hinterfrage
+optimistische Startannahmen und nenne die entscheidende Beobachtung“ lässt sich
+an echten Ergebnissen prüfen.
+
+## Eine gemeinsame Seele vorsichtig entwickeln
+
+Ein **1:1** der Seele zieht Feedback aus jeder verwendenden Vorlage. Das ist
+mächtig: Eine gute Änderung verbessert mehrere Agenten, eine schlechte trifft
+ebenfalls alle.
+
+<ManualScreenshot
+  caseId="agents/soul-review"
+  alt="Einzelgespräch für Admiral Kiesel mit Vorschlag, einer teilenden Vorlage und abgeschlossenen Sitzungen"
+  caption="Anzahl teilender Vorlagen und Sitzungsverlauf machen die Auswirkungen vor der Genehmigung sichtbar."
+/>
+
+Lies Anzahl, Feedbackzusammenfassung und frühere Rückblicke. Gilt Feedback nur
+für eine Verantwortung, ändere die Vorlage statt der gemeinsamen Seele eine
+aufgabenspezifische Regel beizubringen.
+
+Unter [Agenten ausführen und überwachen](./agents.mdx) prüfst du daraus
+entstandene Instanzen und Aufwachzyklen.

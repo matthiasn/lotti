@@ -1,0 +1,72 @@
+---
+title: Synchronisierungskonflikte lösen
+description: Vergleiche gleichzeitige Änderungen Feld für Feld und behalte oder kombiniere die richtigen Informationen.
+---
+
+# Synchronisierungskonflikte lösen
+
+Ein Konflikt entsteht, wenn zwei Geräte denselben Eintrag unabhängig ändern
+und keine Version eindeutig neuer ist. Lotti bewahrt beide Versionen, statt
+still eine auszuwählen.
+
+Öffne **Einstellungen → Synchronisierung → Konflikte**. Die Liste trennt offene
+und gelöste Fälle und zeigt Elementtyp sowie Zeitpunkt des Konflikts.
+
+<ManualScreenshot
+  caseId="sync/conflicts"
+  alt="Lottis Konfliktliste mit offenen Project-Waddle-Aufgaben- und Sardinenlisten-Konflikten sowie einer gelösten Aufgabe"
+  caption="Löse aktuelle Fälle zuerst. Gelöste Einträge bleiben als Verlauf früherer Entscheidungen sichtbar."
+/>
+
+## Beide Versionen vergleichen
+
+Öffne einen Konflikt, um alle abweichenden Felder zu sehen. Textänderungen
+enthalten Hervorhebungen auf Wortebene. Unveränderte Felder werden
+zusammengefasst, damit die Seite nicht verbirgt, wie viel noch übereinstimmt.
+
+<ManualScreenshot
+  caseId="sync/conflict-detail"
+  alt="Lottis Konfliktdetail mit lokalem und synchronisiertem Titel und Beschreibung einer Project-Waddle-Aufgabe"
+  caption="Dieses Gerät behielt den letzten Kaiserpinguin und Frachtraum; die synchronisierte Version bestätigte alle 37 Tiere und plante die Sardinenfreigabe. Beides ist wichtig."
+/>
+
+Drei Auflösungen stehen bereit:
+
+- **Dieses Gerät verwenden** behält die vollständige lokale Version.
+- **Aus Synchronisierung verwenden** behält die vollständige eingehende Version.
+- **Kombinieren** lässt dich eine Ausgangsseite und dann für jedes unabhängig
+  zusammenführbare Feld die bessere Version wählen.
+
+Eine vollständige Seite zu behalten passt, wenn die andere schlicht veraltet
+ist. **Kombinieren** ist sicherer, wenn beide Geräte gültige Arbeit in
+verschiedenen Feldern enthalten. Bei mehreren abweichenden, zusammenführbaren
+Feldern markiert Lotti diese Wahl als empfohlen.
+
+## Felder ohne erneutes Tippen kombinieren
+
+Wähle **Kombinieren**, bestimme die Ausgangsversion und schalte einzelne Felder
+auf die andere Seite um. Nicht unabhängig kombinierbare Felder folgen der
+gewählten Ausgangsversion.
+
+<ManualScreenshot
+  caseId="sync/conflict-combine"
+  alt="Lottis Kombinieren-Editor mit Ausgangsversion und getrennten Entscheidungen für Aufgabentitel und -text"
+  caption="Beginne mit einem strukturell vollständigen Eintrag und übernimm dann Titel und Text jeweils von diesem Gerät oder aus der Synchronisierung."
+/>
+
+Prüfe jedes aufgeführte Feld, bevor du **Kombination anwenden** wählst. Der
+gelöste Eintrag erhält einen zusammengeführten Sync-Verlauf, damit dieselben
+beiden Änderungen nicht sofort wieder kollidieren.
+
+:::caution Eine Auflösung ändert das gemeinsame Ergebnis
+
+Das Behalten einer Seite oder Anwenden einer Kombination schreibt den Gewinner
+lokal und lässt ihn auf andere Geräte synchronisieren. Lies vor der Bestätigung
+den vollständigen Unterschied. Wenn eine Seite den Eintrag gelöscht und die
+andere ihn bearbeitet hat, zeigt Lotti eine sicherere Löschen-oder-Bearbeiten-
+Entscheidung statt einer normalen Feldzusammenführung.
+
+:::
+
+Unter [Geräte synchronisieren](./sync.mdx) kannst du Zustellung und Aufholstatus
+prüfen.

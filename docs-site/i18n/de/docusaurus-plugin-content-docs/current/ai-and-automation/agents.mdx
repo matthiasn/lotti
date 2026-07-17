@@ -1,0 +1,86 @@
+---
+title: Agenten ausführen und überwachen
+description: Überwache Aktivität, prüfe laufende Instanzen und steuere geplante Aufwachzyklen mit vollständigem Verlauf.
+---
+
+# Agenten ausführen und überwachen
+
+Agenten tragen eine definierte Verantwortung über mehrere Aufwachzyklen. Jede
+laufende Instanz stammt aus einer Agentenvorlage, verwendet eine
+Inferenzkonfiguration und führt eigenen Zustand, Berichte, Beobachtungen und
+Aktivitätsverlauf. Öffne **Einstellungen → Agenten** für die Gesamtansicht.
+
+## Aktivität lesen, bevor du etwas änderst
+
+**Statistik** kombiniert Aufwachaktivität und Token-Nutzung. Das erste Diagramm
+zeigt die letzten 24 Stunden. Der Tagesbereich vergleicht heute zur gleichen
+Zeit mit jüngeren Tagen und teilt danach nach Modell und Quelle auf.
+
+<ManualScreenshot
+  caseId="agents/stats"
+  alt="Lottis Agentenstatistik mit Project-Waddle-Aufwachaktivität, täglicher Token-Nutzung und Modelldiagrammen"
+  caption="Die Beispielflotte ist rund um Habitatprüfungen und Startplanung am aktivsten. Modell- und Quellbereiche ordnen diese Aktivität zu."
+/>
+
+Die Seite beantwortet drei Fragen:
+
+- **Wann liefen Agenten?** Lies das 24-Stunden-Diagramm.
+- **Wie viel Inferenz nutzten sie?** Vergleiche Tages- und Modelldiagramme.
+- **Welche Verantwortung verursachte sie?** Prüfe Vorlage und Quelle.
+
+Eine Spitze ist nicht automatisch ein Fehler. Ein Startprüfungstag ist aktiver
+als Koloniealltag. Öffne bei unerwarteter Aktivität zuerst Quellvorlage oder
+Instanz, bevor du ein globales Parallelitätslimit änderst.
+
+## Laufende Instanzen prüfen
+
+Unter **Instanzen** siehst du alle Agenten und Evolutionssitzungen. Zeilen
+zeigen Art, Lebenszyklus, Vorlage und Seele. Eine Gruppierung nach Seele hilft,
+wenn mehrere Verantwortungen Stimme und Entscheidungsstil teilen.
+
+<ManualScreenshot
+  caseId="agents/instances"
+  alt="Lottis Agenteninstanzen gruppiert nach Admiral Kiesel, Dr. Flosse, Kapitän Sardina und einer Evolutionssitzung"
+  caption="Habitatdichtungs-Inspektor, Project-Waddle-Planer und Sardinenfracht-Koordinator bleiben getrennte Instanzen, auch wenn sie Systemressourcen teilen."
+/>
+
+Wähle eine Instanz. Ihr Tab **Statistik** zeigt Modellnutzung, Vorlage,
+aktuellen Inferenzpfad, Lebenszyklusaktionen, Aufwachzahl und Zeitplanung.
+
+<ManualScreenshot
+  caseId="agents/instance-detail"
+  alt="Detail des Habitatdichtungs-Inspektors mit Token-Nutzung, Vorlage Orbitaler Habitatwächter, Inferenzpfad, Lebenszyklus und Aufwachstatus"
+  caption="Die Instanz bewahrt genug Herkunft, um vor Pausieren, Neuanalyse oder Zerstören zu erklären, welche Vorlage und Route ihre Arbeit erzeugten."
+/>
+
+Weitere Tabs bewahren unterschiedliche Belege:
+
+- **Berichte**: gespeicherte Berichtsschnappschüsse.
+- **Unterhaltungen**: Nachrichten gruppiert nach Aufwachzyklus.
+- **Beobachtungen**: erfasste Befunde getrennt von Berichten.
+- **Aktivität**: chronologischer Nachrichten- und Werkzeugverlauf.
+
+**Pausieren** behält die Instanz, stoppt aber normale Arbeit. **Neu analysieren**
+fordert einen Aufgabenagenten zur erneuten Bewertung auf. **Zerstören** ist
+destruktiv und nur passend, wenn die Instanz selbst nicht mehr gewünscht ist.
+Eine Vorlage für künftige Agenten zu ändern erfordert kein Zerstören anderer
+Instanzen.
+
+## Aufwachzyklen verstehen
+
+**Aufwachzyklen** zeigt aktuelle und später fällige Arbeit. **Ausstehend**
+wurde vom Agenten angefordert, **Geplant** vom System oder Planner gesetzt.
+Jede Zeile hält Aufgabe, Projekt oder Tag neben Agent und Live-Countdown.
+
+<ManualScreenshot
+  caseId="agents/pending-wakes"
+  alt="Lottis Aufwachzyklen mit laufender Habitatinspektion sowie geplanten Project-Waddle- und Sardinenlogistik-Zyklen"
+  caption="Die Warteschlange trennt die vom Agenten angeforderte Habitatnachprüfung von Start- und Frachtplänen. Jeder Countdown hat Grund und Eigentümer."
+/>
+
+Das Löschen eines geplanten Zyklus entfernt den Timer, nicht Agent oder
+verknüpfte Aufgabe. Kehrt er sofort zurück, prüfe Agentenzustand oder die
+anfordernde Automatisierung, statt wiederholt das Symptom zu löschen.
+
+[Agentenvorlagen und Seelen](./agent-blueprints.mdx) definieren als Nächstes,
+was diese Instanzen tun und wie sie kommunizieren.

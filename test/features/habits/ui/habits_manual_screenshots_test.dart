@@ -30,10 +30,11 @@ import '../../daily_os_next/screenshot_harness.dart';
 import '../test_utils.dart';
 
 final _today = DateTime(2026, 7, 17);
+String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
 final _penguinOps = CategoryDefinition(
   id: 'penguin-ops',
-  name: 'Penguin Ops',
+  name: _t('Penguin Ops', 'Pinguinbetrieb'),
   color: '#34A889',
   createdAt: _today,
   updatedAt: _today,
@@ -62,23 +63,35 @@ HabitDefinition _habit({
 
 final HabitDefinition _inspectHabitatSeals = _habit(
   id: 'inspect-habitat-seals',
-  name: 'Inspect habitat seals',
-  description: 'Check the pressure seals before the colony wakes.',
+  name: _t('Inspect habitat seals', 'Habitatdichtungen inspizieren'),
+  description: _t(
+    'Check the pressure seals before the colony wakes.',
+    'Prüfe die Druckdichtungen, bevor die Kolonie aufwacht.',
+  ),
 );
 final HabitDefinition _penguinRollCall = _habit(
   id: 'penguin-roll-call',
-  name: 'Log penguin roll call',
-  description: 'Confirm all 37 emperor penguins are aboard.',
+  name: _t('Log penguin roll call', 'Pinguin-Zählappell protokollieren'),
+  description: _t(
+    'Confirm all 37 emperor penguins are aboard.',
+    'Bestätige, dass alle 37 Kaiserpinguine an Bord sind.',
+  ),
 );
 final HabitDefinition _recalibrateFishFeeder = _habit(
   id: 'recalibrate-fish-feeder',
-  name: 'Recalibrate fish feeder',
-  description: 'Tune the zero-gravity feeder after the midday delivery.',
+  name: _t('Recalibrate fish feeder', 'Futterautomaten neu kalibrieren'),
+  description: _t(
+    'Tune the zero-gravity feeder after the midday delivery.',
+    'Stimme den Schwerelos-Futterautomaten nach der Mittagslieferung ab.',
+  ),
 );
 final HabitDefinition _reviewSardineInventory = _habit(
   id: 'review-sardine-inventory',
-  name: 'Review sardine inventory',
-  description: 'Reconcile consumed crates with the orbital manifest.',
+  name: _t('Review sardine inventory', 'Sardinenbestand prüfen'),
+  description: _t(
+    'Reconcile consumed crates with the orbital manifest.',
+    'Gleiche verbrauchte Kisten mit dem Orbitalmanifest ab.',
+  ),
 );
 final List<HabitDefinition> _habits = [
   _inspectHabitatSeals,
@@ -139,9 +152,17 @@ void main() {
           brightness: brightness,
         );
 
-        expect(find.text('Habits'), findsOneWidget);
-        expect(find.text('Inspect habitat seals'), findsOneWidget);
-        expect(find.text('Review sardine inventory'), findsOneWidget);
+        expect(find.text(_t('Habits', 'Gewohnheiten')), findsOneWidget);
+        expect(
+          find.text(
+            _t('Inspect habitat seals', 'Habitatdichtungen inspizieren'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_t('Review sardine inventory', 'Sardinenbestand prüfen')),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'habits_today_${viewport}_$theme',
@@ -156,10 +177,18 @@ void main() {
           brightness: brightness,
         );
 
-        expect(find.text('Inspect habitat seals'), findsOneWidget);
-        expect(find.text('Success'), findsNWidgets(2));
-        expect(find.text('Skip'), findsNWidgets(2));
-        expect(find.text('Missed'), findsNWidgets(2));
+        expect(
+          find.text(
+            _t('Inspect habitat seals', 'Habitatdichtungen inspizieren'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(_t('Success', 'Erfolgreich')), findsNWidgets(2));
+        expect(
+          find.text(_t('Skip', 'Überspringen')),
+          findsNWidgets(2),
+        );
+        expect(find.text(_t('Missed', 'Verpasst')), findsNWidgets(2));
         expect(find.byKey(const Key('habit_save')), findsOneWidget);
         await captureScreenshot(
           tester,
@@ -198,6 +227,7 @@ Future<void> _pumpHabitsDashboard(
         theme: theme,
         localizationsDelegates: _localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        locale: manualScreenshotLocale,
         home: const RepaintBoundary(
           key: screenshotBoundaryKey,
           child: HabitsTabPage(),
@@ -230,6 +260,7 @@ Future<void> _pumpHabitCompletion(
       theme: theme,
       localizationsDelegates: _localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      locale: manualScreenshotLocale,
       home: RepaintBoundary(
         key: screenshotBoundaryKey,
         child: Scaffold(

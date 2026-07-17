@@ -1,0 +1,79 @@
+---
+title: Mit Kategorien organisieren
+description: Verwende Kategorien als sinnvolle Grenzen für Filter, Planung, Datenschutz und Automatisierung.
+---
+
+# Mit Kategorien organisieren
+
+Eine Kategorie ist der strukturelle Hauptort eines Eintrags. Verwende sie, wenn
+ein Arbeitsbereich eigene Planungsregeln, Datenschutzgrenzen, visuelle Identität
+oder KI-Kontext braucht. Im Demo-Arbeitsbereich trennen **Pinguinbetrieb**,
+**Missionskontrolle**, **Fischdiplomatie** und **Menschenwartung** tatsächlich
+verschiedene Expeditionsbereiche.
+
+<ManualScreenshot
+  caseId="categories/list"
+  alt="Kategorieeinstellungen mit Pinguinbetrieb, Missionskontrolle, Fischdiplomatie und Menschenwartung samt Aufgabenzahlen und Statussymbolen"
+  caption="Die Liste ist durchsuchbar und zeigt Aufgabenzahlen. Symbole markieren favorisierte, private und inaktive Kategorien."
+/>
+
+## Eine Kategorie erstellen
+
+1. Öffne **Einstellungen → Kategorien**.
+2. Wähle **Kategorie erstellen**.
+3. Gib einen eindeutigen Namen ein und wähle Farbe sowie Symbol.
+4. Erstelle die Kategorie und öffne sie erneut, um ihr Verhalten einzustellen.
+
+Beim Erstellen geht es bewusst nur um die Identität. Planung, Datenschutz,
+Sprache und Automatisierung stehen im vollständigen Editor bereit, sobald die
+Kategorie existiert.
+
+## Das Verhalten konfigurieren
+
+<ManualScreenshot
+  caseId="categories/detail"
+  alt="Editor für Pinguinbetrieb mit Name, violetter Flugidentität sowie Optionen für Favorit, Privat, Aktiv und Tagesplanung"
+/>
+
+Der Editor steuert mehr als das Aussehen:
+
+- **Favorit** macht eine wichtige Kategorie leichter erkennbar und auswählbar.
+- **Privat** verbirgt ihren Inhalt, solange private Einträge ausgeblendet sind.
+- **Aktiv** bestimmt, ob sie für neue Einträge gewählt werden kann. Deaktivieren
+  bewahrt vorhandene Daten.
+- **Tagesplanung** lässt die Kategorie an der Daily-OS-Planung teilnehmen.
+- **Sprache** ist die Standardsprache neuer Aufgaben dieser Kategorie.
+
+Aktiviere **Tagesplanung** gezielt. Bei jeder Kategorie wird der Planner-Kontext
+breiter und das tägliche Ritual unruhiger.
+
+## Kategoriespezifischen Automatisierungskontext ergänzen
+
+Eine Kategorie kann Standards für neue Aufgaben liefern: ein Inferenzprofil
+und eine Agentenvorlage. Das sind Vorgaben, keine dauerhaften Sperren;
+Aufgabeneinstellungen können später abweichen.
+
+<ManualScreenshot
+  caseId="categories/automation"
+  alt="Erweiterte Einstellungen für Pinguinbetrieb mit Project-Waddle-Sprachwortschatz und gelernten Checklisten-Korrekturen für Sir Flatterviel"
+  caption="Sprachbegriffe werden mit Semikolon getrennt. Lotti lernt Checklisten-Korrekturen aus Bearbeitungen; du kannst sie hier prüfen und löschen."
+/>
+
+Das Wörterbuch für **Spracherkennung** hilft bei Namen, Orten, Abkürzungen und
+Fachwortschatz. Pinguinbetrieb bringt Lotti zum Beispiel `Project Waddle`,
+`Sir Flatterviel`, `Sardine` und `Europa` bei.
+
+Wenn du erzeugte Checklisten-Titel manuell korrigierst, kann Lotti Vorher-
+Nachher-Beispiele für künftige KI-Vorschläge behalten. Prüfe sie hier und
+entferne Korrekturen, die spätere Ergebnisse nicht beeinflussen sollen.
+
+## Kategorien oder Labels
+
+Verwende die Kategorie für den primären Ort der Arbeit und ein
+[Label](./labels.mdx) für eine übergreifende Eigenschaft. **Pinguinbetrieb** ist
+eine Kategorie; **Habitat kritisch** ist ein Label, das auch auf Arbeit der
+Missionskontrolle passen kann.
+
+Halte dein Kategoriensystem klein genug für eine offensichtliche Wahl. Ergänze
+eine Kategorie, wenn sie Planung, Filter, Datenschutz oder Automatisierung
+ändert – nicht nur, weil ein neues Substantiv aufgetaucht ist.

@@ -1,0 +1,54 @@
+---
+title: Kontextbezogene KI-Fähigkeiten ausführen
+description: Starte über das Erzeugen-Menü nur KI-Aktionen, die zur aktuellen Aufgabe, Aufnahme, zum Bild oder Eintrag passen.
+---
+
+# Kontextbezogene KI-Fähigkeiten ausführen
+
+KI-Fähigkeiten sind benannte Aktionen mit Anweisungen und
+Eingabeanforderungen. Lotti filtert das Menü **Erzeugen…** anhand des aktuellen
+Elements. Eine Aufgabe bietet daher keine reine Audio-Transkription an und ein
+Bild keine Aktion, die eine Aufnahme benötigt.
+
+<ManualScreenshot
+  caseId="ai/skills"
+  alt="Project-Waddle-Habitatbild mit dem Erzeugen-Dialog und der Aktion Habitatfoto prüfen"
+  caption="Bei einem mit der Aufgabe verknüpften Habitatbild sucht die passende Aktion nach auffälligen Druckanzeigen und sichtbaren Schäden an Dichtungen."
+/>
+
+## Eine Fähigkeit ausführen
+
+1. Öffne eine Aufgabe oder einen unterstützten Journaleintrag.
+2. Wähle die umrandete Assistentenaktion im Kopf des Eintrags. Dadurch öffnet
+   sich **Erzeugen…**.
+3. Lies die Beschreibung und wähle die gewünschte Aktion.
+4. Falls Lotti ein Modell oder einen Denkmodus anbietet, bestätige die
+   Voreinstellung oder wähle eine einmalige Abweichung.
+5. Arbeite weiter, während die Inferenz läuft. Das Ergebnis wird anschließend
+   an die passende Aufgabe oder den Eintrag angehängt.
+
+Das Menü ändert sich mit dem Kontext:
+
+- Aufgaben können Text- und aufgabenbezogene Aktionen anbieten;
+- Audioeinträge können Transkription und audiofähige Aktionen anbieten;
+- Bilder können visuell analysiert werden; und
+- Texteinträge können Prompt- oder Erzeugungsaktionen für Text anbieten.
+
+Manche Fähigkeiten brauchen eine verknüpfte Aufgabe, weil sie weiteren
+Aufgabenkontext lesen oder ihr Ergebnis dorthin schreiben. Fehlt eine Aktion,
+prüfe zuerst Eintragstyp und Aufgabenverknüpfung. Prüfe danach, ob das aktive
+Inferenzprofil ein Modell für die nötige Fähigkeit enthält.
+
+## Modellabweichungen sind einmalig
+
+Wenn eine Fähigkeit eine Modellauswahl anbietet, gilt diese nur für den
+aktuellen Aufruf. Sie überschreibt weder still den Kategorienstandard noch das
+Inferenzprofil. Den normalen Pfad änderst du unter
+[Modelle und Inferenzprofile](./models-and-profiles.mdx).
+
+## Erzeugte Ergebnisse sind Entwürfe
+
+Prüfe erzeugte Prompts, Zusammenfassungen, Transkripte, Bildanalysen und
+Grafiken, bevor du dich darauf verlässt. Aufgabenkontext kann unvollständig
+sein, Anbieter können falsche Ergebnisse liefern und selbst ein starkes Modell
+kann einen sehr ernsten Sardinennotfall missverstehen.

@@ -1,0 +1,108 @@
+---
+title: Nützliche Dashboards bauen
+description: Kombiniere Gewohnheiten, Messwerte, Gesundheit, Fragebögen und Trainings zu einer wiederverwendbaren Übersicht.
+---
+
+# Nützliche Dashboards bauen
+
+Ein Dashboard gruppiert Diagramme, die eine wiederkehrende Frage beantworten.
+**Koloniebetrieb** verbindet Habitatdruck, Sardinenbedarf und Expeditionsstärke;
+**Missionsbereitschaft** hält die private Startprüfung getrennt. Baue um eine
+Entscheidung herum, nicht als Sammlung aller verfügbaren Zahlen.
+
+<ManualScreenshot
+  caseId="dashboards/settings-list"
+  alt="Dashboard-Einstellungen mit Koloniebetrieb und dem privaten Dashboard Missionsbereitschaft"
+/>
+
+## Ein Dashboard erstellen
+
+1. Öffne **Einstellungen → Dashboard-Verwaltung**.
+2. Wähle **Dashboard erstellen**.
+3. Gib einen klaren Namen und die zu beantwortende Frage als Beschreibung ein.
+4. Weise optional Kategorie und Datenschutz zu.
+5. Füge Diagramme hinzu, ordne sie und speichere.
+
+<ManualScreenshot
+  caseId="dashboards/settings-detail"
+  alt="Editor für Koloniebetrieb mit Kategorie Pinguinbetrieb sowie privaten und aktiven Optionen"
+/>
+
+- **Kategorie** macht das Dashboard für Kategorienfilter verfügbar.
+- **Privat** verbirgt es, solange private Einträge ausgeblendet sind.
+- **Aktiv** steuert die Sichtbarkeit in der Dashboard-Liste, ohne die Definition
+  zu löschen.
+
+## Diagramme zusammenstellen und ordnen
+
+<ManualScreenshot
+  caseId="dashboards/charts"
+  alt="Diagrammliste von Koloniebetrieb mit täglichem mittlerem Habitatdruck, täglicher Summe verzehrter Sardinen und täglicher Summe gezählter Pinguine"
+  caption="Ziehe am Griff zum Sortieren. Ändere über die Einstellung eines Messdiagramms seine Aggregation oder entferne es mit ×."
+/>
+
+Die Diagrammreihenfolge ist die Dashboard-Reihenfolge. Stelle das Signal zuerst,
+das alle weiteren einordnet. Beim Koloniebetrieb führt der Habitatdruck: Ein
+unsicheres Habitat verändert die Bedeutung jeder anderen Zahl.
+
+Messdiagramme speichern ihre Aggregation am Dashboard-Element. Dieselbe
+Messgröße kann in einem anderen Dashboard anders zusammengefasst werden, ohne
+die Beobachtungen zu verändern.
+
+## Diagramme aus unterstützten Quellen hinzufügen
+
+<ManualScreenshot
+  caseId="dashboards/sources"
+  alt="Dashboard-Editor mit Gewohnheiten, Messungen, Gesundheit, Fragebögen und Trainings als Diagrammquellen sowie JSON-Export"
+/>
+
+Der Editor bietet:
+
+- **Gewohnheiten** für Abschlussverläufe.
+- **Messungen** für selbst definierte numerische Beobachtungen.
+- **Gesundheit** für von Plattform und Berechtigungen unterstützte Daten.
+- **Fragebögen** für integrierte Ergebnisse.
+- **Trainings** aus unterstützten Gesundheitsquellen.
+
+Öffne eine Quelle, wähle Diagramme und füge sie hinzu. Verfügbarkeit hängt von
+Definitionen, Gerätedaten, Berechtigungen und Plattform ab.
+
+## Ein Dashboard öffnen und lesen
+
+Unter **Einblicke** siehst du aktive Dashboards mit Kategorie, Name und Zweck.
+Der Kopffilter begrenzt auf eine oder mehrere Kategorien.
+
+<ManualScreenshot
+  caseId="dashboards/list"
+  alt="Lottis Dashboard-Liste unter Einblicke mit Koloniebetrieb und privater Missionsbereitschaft"
+  caption="Desktop reserviert den rechten Bereich für das gewählte Dashboard; mobil öffnet es als eigene Seite."
+/>
+
+Wähle **Koloniebetrieb**. Auf dem Desktop bleiben Liste und Dashboard
+nebeneinander; mobil gibt es eine eigene Seite mit Zurück-Schaltfläche.
+
+<ManualScreenshot
+  caseId="dashboards/view"
+  alt="Dashboard Koloniebetrieb mit 90 Tagen Habitatdruck und Sardinenverbrauch sowie Desktop-Liste daneben"
+  caption="Der feste Kopf hält 30-, 90-, 180- und 365-Tage-Auswahl sichtbar, während Diagramme darunter scrollen."
+/>
+
+Der Zeitraum gilt für jedes Diagramm. Karten behalten Einheit und Aggregation:
+Habitatdruck verwendet Tagesmittel, Sardinenverbrauch und Pinguinzahl
+Tagessummen. **+** an einer Messkarte erfasst eine neue Beobachtung dieses Typs.
+
+<ManualScreenshot
+  caseId="dashboards/view-crew"
+  alt="Dashboard Koloniebetrieb bei den Diagrammen Verzehrte Sardinen und Gezählte Pinguine"
+  caption="In der 90-Tage-Besatzung fällt die Zahl kurz auf 36; die umliegenden Tage kehren zu den erwarteten 37 zurück."
+/>
+
+Behandle Diagramme als Belege, nicht als Urteil. Prüfe Aggregation, Einheit,
+Zeitraum, fehlende Beobachtungen und Datenschutz vor Schlussfolgerungen.
+
+## Dashboard-Konfiguration exportieren
+
+**Speichern und JSON kopieren** speichert das Dashboard und kopiert seine
+Konfiguration samt referenzierten Messdefinitionen. Das hilft bei Prüfung und
+Übertragung, ist aber kein Live-Sync-Link: Spätere Änderungen aktualisieren ein
+bereits kopiertes Paket nicht.

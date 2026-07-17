@@ -1,0 +1,81 @@
+---
+title: Einen KI-Anbieter verbinden
+description: Verbinde Cloud- oder lokale Inferenz, prüfe Modelle und behalte Zugangsdaten sowie Endpunkte unter Kontrolle.
+---
+
+# Einen KI-Anbieter verbinden
+
+Lotti trennt KI-Einrichtung in drei Ebenen: Ein **Anbieter** ist der verbundene
+Dienst, ein **Modell** ist ein darüber verfügbares Modell und ein
+**Inferenzprofil** leitet jede Arbeitsart zu einem Modell. Beginne mit dem
+Anbieter und prüfe danach Modelle und Profile.
+
+<ManualScreenshot
+  caseId="ai/providers"
+  alt="Lottis KI-Einstellungen mit Missionskontroll-Router, lokalem Habitat-Labor, Orbitalem Blick und Pinguin-Audiobucht"
+  caption="Cloud- und lokale Verbindungen stehen gemeinsam in den KI-Einstellungen. Jede Karte zeigt Verbindungsstatus und Anzahl zugeordneter Modelle."
+/>
+
+## Lokal oder entfernt wählen
+
+- Ein Cloud-Anbieter ist meist am schnellsten eingerichtet und braucht häufig
+  einen API-Schlüssel. Gesendete Texte, Audios oder Bilder verlassen das Gerät.
+- Ein lokaler Anbieter kann Inferenz auf deiner Maschine halten. Sein Dienst
+  muss laufen und vom aufrufenden Lotti-Gerät erreichbar sein.
+- Eine eigene Basis-URL kann einen unterstützten Anbietertyp auf einen
+  kompatiblen Proxy oder Gateway richten. Der Anbietertyp steuert weiterhin
+  protokollspezifisches Verhalten.
+
+## Einen Anbieter verbinden
+
+1. Öffne **Einstellungen → KI-Einstellungen → Anbieter**.
+2. Wähle **+**.
+3. Wähle einen unterstützten Anbieter.
+4. Gib Anzeigename, Endpunkt und bei Bedarf API-Schlüssel ein.
+5. Füge gewünschte vorgeschlagene Modelle hinzu und speichere.
+
+Bei unterstützten Ersteinrichtungen legt Lotti nützliche Modelle und ein oder
+mehrere Inferenzprofile an. Die Ergebnisseite fasst alles Erstellte zusammen.
+
+<ManualScreenshot
+  caseId="ai/provider-editor"
+  alt="Lottis Anbietereditor für den Missionskontroll-Router mit OpenRouter, Basis-URL, maskiertem API-Schlüssel und Modellvorschlägen"
+  caption="Zugangsdaten bleiben maskiert. Vorgeschlagene Modelle sind Abkürzungen; anbieterspezifische Modell-IDs kannst du später ergänzen."
+/>
+
+## Eine Verbindung prüfen und pflegen
+
+Öffne eine Anbieterkarte für maskierte Zugangsdaten, Basis-URL, gespeicherte
+Modelle und aktive abhängige Profile. Hier kannst du die Verbindung bearbeiten,
+ein Modell ergänzen oder den Anbieter entfernen.
+
+<ManualScreenshot
+  caseId="ai/provider-detail"
+  alt="Detail des Missionskontroll-Routers mit Verbindung, Watschelkommando-Modellen und aktivem Project-Waddle-Profil"
+  caption="Die Abhängigkeitsübersicht zeigt die Auswirkungen, bevor du einen Anbieter änderst oder entfernst."
+/>
+
+Eine neue Basis-URL oder ein neuer API-Schlüssel betrifft jedes Modell dieses
+Anbieters. Teste danach eine repräsentative KI-Aktion. Auch das Entfernen kann
+Profile beschädigen, die über diese Modelle routen; prüfe zuerst die
+Abhängigkeiten.
+
+## Profilrouting prüfen
+
+Unter [Modelle und Inferenzprofile](./models-and-profiles.mdx) siehst du, was
+der Anbieter bereitstellt und wie Lotti Fähigkeiten verteilt. Kategorien
+können ein Standardprofil setzen; einzelne Abläufe können ein Modell wählen
+oder einmalig überschreiben.
+
+## Datenschutzgrenze
+
+Prüfe vor sensiblen Texten, Audios oder Bildern, ob der Endpunkt lokal oder
+entfernt ist. Ein freundlicher Name wie „Lokales Habitat-Labor“ ist keine
+Sicherheitsgrenze – Basis-URL und bereitstellende Maschine sind es.
+
+:::warning API-Schlüssel
+
+Behandle Anbieterschlüssel wie Geheimnisse. Kopiere sie nie in Dokumentation,
+Issues oder Screenshots.
+
+:::
