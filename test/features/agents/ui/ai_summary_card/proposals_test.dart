@@ -42,8 +42,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Proposed changes'), findsOneWidget);
-      // The "0 pending" pill carries the empty state; no placeholder band.
-      expect(find.text('0 pending'), findsOneWidget);
+      // At zero the pill disappears too — the header plus History disclosure
+      // alone carry the empty state.
+      expect(find.text('0 pending'), findsNothing);
       expect(find.byType(ProposalRow), findsNothing);
     });
 
@@ -302,7 +303,8 @@ void main() {
         await tester.pump();
 
         expect(find.textContaining('Set status to GROOMED'), findsNothing);
-        expect(find.text('0 pending'), findsOneWidget);
+        expect(find.text('0 pending'), findsNothing);
+        expect(find.text('1 pending'), findsNothing);
       },
     );
 

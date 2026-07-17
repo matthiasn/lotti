@@ -81,10 +81,11 @@ class _SquareIconButton extends StatelessWidget {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final isAccent = variant == _SquareIconVariant.accent;
-    // Confirm wears a tonal wash circle so it reads as the row's one button;
-    // reject stays a bare ghost glyph. Both center in a 40×40 hit target so
-    // reduced-motor-control users still get a compliant tap zone without the
-    // slot inflating the row.
+    // A matched pair in weight, asymmetric in hue: confirm wears the accent
+    // wash circle, reject the neutral wash circle — both read as buttons of
+    // one component class while the color still ranks confirm first. Both
+    // center in a 40×40 hit target so reduced-motor-control users get a
+    // compliant tap zone without the slot inflating the row.
     // Explicit button role + label, merged into one node, so screen readers
     // announce "Confirm, button" / "Reject, button" and rotor "next button"
     // navigation finds them — rather than leaning on the tooltip surfacing as
@@ -110,12 +111,10 @@ class _SquareIconButton extends StatelessWidget {
                     width: tokens.spacing.step7,
                     height: tokens.spacing.step7,
                     alignment: Alignment.center,
-                    decoration: isAccent
-                        ? BoxDecoration(
-                            color: ai.accentSoft,
-                            shape: BoxShape.circle,
-                          )
-                        : null,
+                    decoration: BoxDecoration(
+                      color: isAccent ? ai.accentSoft : ai.subtleWashStrong,
+                      shape: BoxShape.circle,
+                    ),
                     child: Icon(
                       icon,
                       size: tokens.spacing.step5,
@@ -143,7 +142,10 @@ class ResolvedTag extends StatelessWidget {
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
     final isConfirmed = status == ChangeItemStatus.confirmed;
-    final color = isConfirmed ? ai.accent : ai.faintMeta;
+    // Quiet meta for confirmed too — an inert history tag must not flood the
+    // card with accent when the ledger expands; the check glyph vs plain
+    // word already separates the two outcomes.
+    final color = isConfirmed ? ai.metaText : ai.faintMeta;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       child: Row(

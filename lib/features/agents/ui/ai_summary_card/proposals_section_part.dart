@@ -108,8 +108,13 @@ class ProposalsSection extends StatelessWidget {
                           .copyWith(color: ai.titleText),
                     ),
                   ),
-                  SizedBox(width: tokens.spacing.step3),
-                  _PendingPill(count: pendingCount ?? open.length),
+                  // At zero the pill is furniture — the absence of rows
+                  // already says it, so the count earns its ink only when
+                  // there is something to act on.
+                  if ((pendingCount ?? open.length) > 0) ...[
+                    SizedBox(width: tokens.spacing.step3),
+                    _PendingPill(count: pendingCount ?? open.length),
+                  ],
                 ],
               ),
               if (open.isNotEmpty) ...[
