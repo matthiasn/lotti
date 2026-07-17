@@ -6787,6 +6787,125 @@ class AppLocalizationsFr extends AppLocalizations {
   String get manageLinks => 'Gérer les liens...';
 
   @override
+  String get matrixStatsCatchupBatches => 'Lots de rattrapage';
+
+  @override
+  String get matrixStatsCircuitOpens => 'Ouvertures du coupe-circuit';
+
+  @override
+  String get matrixStatsConflicts => 'Conflits';
+
+  @override
+  String get matrixStatsCopyDiagnostics => 'Copier les diagnostics';
+
+  @override
+  String get matrixStatsCopyDiagnosticsTooltip =>
+      'Copier les diagnostics de synchronisation dans le presse-papiers';
+
+  @override
+  String get matrixStatsDbApplied => 'Base de données appliquée';
+
+  @override
+  String get matrixStatsDbApply => 'Application à la base de données';
+
+  @override
+  String get matrixStatsDbIgnoredVectorClock =>
+      'Ignoré par la base de données (VectorClock)';
+
+  @override
+  String get matrixStatsDbMissingBase => 'Base de données manquante';
+
+  @override
+  String matrixStatsDroppedByType(Object type) {
+    return 'Abandonné ($type)';
+  }
+
+  @override
+  String get matrixStatsEntryLinkNoops => 'Opérations nulles EntryLink';
+
+  @override
+  String get matrixStatsFailures => 'Échecs';
+
+  @override
+  String get matrixStatsFlushes => 'Vidages';
+
+  @override
+  String get matrixStatsForceRescan => 'Forcer la nouvelle analyse';
+
+  @override
+  String get matrixStatsForceRescanTooltip =>
+      'Forcer la nouvelle analyse et le rattrapage maintenant';
+
+  @override
+  String get matrixStatsLegend => 'Légende';
+
+  @override
+  String get matrixStatsLegendTooltip =>
+      'Légende :\n• processed.<type> = messages de synchronisation traités par type de charge utile\n• droppedByType.<type> = abandons par type après les tentatives ou l’ignorance des anciens messages\n• dbApplied = lignes écrites dans la base de données\n• dbIgnoredByVectorClock = données entrantes anciennes ou identiques ignorées par la base de données\n• conflictsCreated = horloges vectorielles concurrentes consignées\n• dbMissingBase = ignoré dans l’attente d’une dépendance ou ligne de base manquante\n• staleAttachmentPurges = descripteurs obsolètes en cache supprimés avant l’actualisation';
+
+  @override
+  String get matrixStatsProcessed => 'Traité';
+
+  @override
+  String matrixStatsProcessedByType(Object type) {
+    return 'Traité ($type)';
+  }
+
+  @override
+  String get matrixStatsRefresh => 'Actualiser';
+
+  @override
+  String get matrixStatsReliability => 'Fiabilité';
+
+  @override
+  String get matrixStatsRetriesScheduled => 'Tentatives planifiées';
+
+  @override
+  String get matrixStatsRetryNow => 'Réessayer maintenant';
+
+  @override
+  String get matrixStatsRetryNowTooltip =>
+      'Réessayer maintenant les échecs en attente';
+
+  @override
+  String get matrixStatsSignalLatencyLast => 'Latence du signal (derniers ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMax => 'Latence du signal (max. ms)';
+
+  @override
+  String get matrixStatsSignalLatencyMin => 'Latence du signal (min. ms)';
+
+  @override
+  String get matrixStatsSignals => 'Signaux';
+
+  @override
+  String get matrixStatsSignalsClientStream => 'Signaux (flux client)';
+
+  @override
+  String get matrixStatsSignalsConnectivity => 'Signaux (connectivité)';
+
+  @override
+  String get matrixStatsSignalsTimelineCallbacks =>
+      'Signaux (rappels de chronologie)';
+
+  @override
+  String get matrixStatsSkipped => 'Ignoré';
+
+  @override
+  String get matrixStatsSkippedRetryCap => 'Ignoré (limite de tentatives)';
+
+  @override
+  String get matrixStatsStaleAttachmentPurges =>
+      'Pièces jointes obsolètes purgées';
+
+  @override
+  String get matrixStatsThroughput => 'Débit';
+
+  @override
+  String get matrixStatsTopKpis => 'Indicateurs clés';
+
+  @override
   String get measurableDeleteConfirm => 'OUI, SUPPRIMER CET ÉLÉMENT MESURABLE';
 
   @override
@@ -9061,6 +9180,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsMatrixRoomInviteTitle => 'Invitation au salon';
+
+  @override
+  String settingsMatrixSentMessageType(String eventType) {
+    return 'Envoyé ($eventType)';
+  }
 
   @override
   String get settingsMatrixSentMessagesLabel => 'Messages envoyés :';

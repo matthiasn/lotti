@@ -1,0 +1,50 @@
+---
+title: Graba audio
+description: Captura una nota de voz y decide qué procesamiento automatizado debe seguir.
+---
+
+# Graba audio
+
+El audio es útil cuando hablar es más rápido que escribir o cuando importan el tono y el detalle. Una grabación puede ser independiente o estar dentro de una tarea.
+
+## Captura una grabación
+
+1. Abre el diario o la tarea que deba ser dueña de la grabación.
+2. Usa la acción **+** y elige **Grabación de audio**.
+3. Revisa las opciones de procesamiento disponibles.
+4. Empieza a grabar, habla con claridad y detén la grabación cuando termines.
+
+<ManualScreenshot
+  caseId="recordings/active"
+  alt="Panel de grabación de audio activo con el visualizador en vivo, tiempo transcurrido y controles para pausar, descartar, detener y reconocer voz"
+/>
+
+Durante la captura, el panel mantiene a la vista el tiempo transcurrido y el visualizador de entrada en vivo. Puedes pausar y reanudar sin terminar la grabación, descartar la toma o elegir **PARAR** para guardarla. Cuando está disponible la transcripción con contexto de la tarea, la opción **Reconocimiento de voz** controla si el procesamiento empieza después de guardar la grabación.
+
+Cuando están configurados un perfil de inferencia y una habilidad de transcripción, Lotti puede transcribir la grabación después de capturarla. Las grabaciones de tareas también pueden ofrecer procesamiento con contexto de la tarea, como actualizaciones de la lista de verificación o del resumen.
+
+## Revisa las transcripciones guardadas
+
+Abre una entrada de audio, usa su menú **…** y elige **Reconocimiento de voz**. El panel de revisión conserva cada transcripción guardada con la grabación en vez de sustituir un resultado anterior. Cada fila muestra cuándo se ejecutó el procesamiento, cuánto tardó, el idioma detectado y el proveedor y modelo que lo produjeron.
+
+<ManualScreenshot
+  caseId="recordings/transcripts"
+  alt="Panel de Reconocimiento de voz sobre una entrada de audio de Project Waddle, con English seleccionado y dos resultados de transcripción guardados de Mistral y Whisper"
+  caption="La grabación de origen sigue visible detrás del panel, mientras cada resultado de reconocimiento conserva su propia procedencia."
+/>
+
+El selector de idioma ofrece actualmente **Auto**, **English** y **Deutsch**. Usa **Auto** cuando el proveedor deba detectar el idioma, o selecciona uno antes de ejecutar el reconocimiento si ya lo conoces. La elección se guarda en la entrada de audio.
+
+Selecciona el icono de doble galón de un resultado para mostrar el texto completo y seleccionable. Al expandir una fila también aparece la acción para eliminarla. Eliminar una transcripción borra ese resultado de reconocimiento, no la grabación de origen ni las demás transcripciones.
+
+<ManualScreenshot
+  caseId="recordings/transcript-expanded"
+  alt="Transcripción ampliada de Project Waddle que describe cargamento de sardinas de Europa, 37 pingüinos emperador y el comedero de peces en gravedad cero"
+  caption="Revisa la redacción completa y la procedencia del proveedor antes de usar texto generado como contexto para una tarea."
+/>
+
+## Elige la automatización deliberadamente
+
+Las opciones de procesamiento son solicitudes a habilidades de IA configuradas. El proveedor seleccionado puede ser local o remoto, así que verifica el perfil de inferencia activo antes de usar material sensible. Revisa el texto generado y los cambios propuestos en las tareas en lugar de tratarlos como fuente de verdad.
+
+Consulta [configuración del proveedor de IA](../ai-and-automation/provider-setup.mdx) para controlar dónde se ejecuta la inferencia.

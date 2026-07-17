@@ -1,0 +1,163 @@
+---
+title: Sincroniza dispositivos
+description: Empareja dispositivos, verifica su identidad, supervisa la entrega y recupera datos que faltan sin suposiciones.
+---
+
+# Sincroniza dispositivos
+
+Lotti Sync mantiene alineados los datos compatibles entre tus dispositivos. Cada
+dispositivo tiene su propia base de datos local; Sync mueve los cambios mediante
+la cuenta de sincronización configurada y actualiza un dispositivo después de
+que haya estado sin conexión. Sync no traslada el sistema de registro a una nube
+de Lotti: el servicio Matrix configurado retransmite cargas cifradas de extremo
+a extremo entre tus dispositivos, mientras cada dispositivo conserva su propia
+copia local.
+
+Abre **Ajustes → Sync** para ver las páginas disponibles de configuración,
+estado y recuperación. El número junto a **Bandeja de salida** es trabajo que
+aún no ha llegado al servicio de sincronización.
+
+<ManualScreenshot
+  caseId="sync/hub"
+  alt="Ajustes de Lotti Sync con Provisioned Sync, identidad de dispositivo, relleno, estadísticas, bandeja de salida, conflictos y mantenimiento"
+  caption="El centro de Sync mantiene el estado diario cerca de las herramientas de diagnóstico y recuperación. Project Waddle tiene actualmente tres elementos en la bandeja de salida que conviene inspeccionar."
+/>
+
+## Empareja otro dispositivo
+
+Empieza en un dispositivo que ya esté conectado:
+
+1. Abre **Ajustes → Sync → Provisioned Sync**.
+2. En el escritorio, muestra el código QR de transferencia. Mantén esta pantalla
+   privada: el paquete concede acceso a tu cuenta y sala de sincronización.
+3. En el dispositivo nuevo, abre la misma página y escanea el código QR o pega
+   el paquete de aprovisionamiento completo.
+4. Revisa el servidor, usuario y sala descodificados antes de seleccionar
+   **Importar**.
+5. Deja que termine la primera sincronización antes de cerrar cualquiera de las
+   dos aplicaciones.
+
+<ManualScreenshot
+  caseId="sync/status"
+  alt="Estado de Provisioned Sync en móvil y código QR de transferencia segura entre dispositivos en escritorio"
+  caption="El escritorio puede mostrar el código QR de transferencia; el móvil muestra la cuenta conectada y el estado de verificación. Trata el código QR como una contraseña."
+/>
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Revisión de la importación de aprovisionamiento de Lotti con el servidor, usuario y sala de sincronización de Project Waddle"
+  caption="Importa solo cuando cada valor descodificado pertenezca a la cuenta de sincronización a la que pretendías unirte."
+/>
+
+Si la importación informa de un error, mantén conectado el dispositivo original,
+genera un paquete de transferencia nuevo e inténtalo otra vez con el valor
+completo. No edites manualmente el paquete codificado.
+
+## Verifica el dispositivo nuevo
+
+El emparejamiento conecta el dispositivo; la verificación confirma que ambos
+dispositivos se comunican entre sí sin que haya un dispositivo desconocido en
+medio.
+
+<ManualScreenshot
+  caseId="sync/verification"
+  alt="Verificación de dispositivos de Lotti que compara una secuencia de emoji de pingüino, pez, cohete, hielo, Tierra, luna, estrella y telescopio"
+  caption="Compara la secuencia de emoji completa en ambos dispositivos. Acepta solo si cada imagen y su orden coinciden exactamente."
+/>
+
+Compara los emoji en persona o mediante una llamada de confianza. Selecciona
+**Aceptar** en ambos dispositivos solo cuando coincida la secuencia completa. Si
+un solo emoji es distinto, cancela la verificación e investiga la cuenta y los
+nombres de los dispositivos antes de volver a intentarlo.
+
+## Nombra dispositivos y anuncia capacidades
+
+El **perfil de nodo Sync** identifica el dispositivo actual al resto del grupo
+de sincronización. Ponle un nombre que distinga la máquina física, como
+«Mission Control Mac» en vez de «Escritorio».
+
+<ManualScreenshot
+  caseId="sync/node-profile"
+  alt="Perfil de nodo Lotti Sync de Mission Control Mac con capacidades de inferencia local y dispositivos conocidos de Project Waddle"
+  caption="Los nombres claros de dispositivo hacen mucho más fácil auditar la verificación, el diagnóstico y la inferencia local fijada a dispositivo."
+/>
+
+La página también muestra capacidades que el dispositivo puede ofrecer, como
+transcripción de audio local o inferencia local de modelos de lenguaje. Los
+dispositivos conocidos muestran lo que anunciaron más recientemente los demás
+nodos. La disponibilidad de capacidades es descriptiva; el perfil de IA
+pertinente debe seguir configurado para usarla.
+
+## Entiende la puesta al día y el relleno
+
+La sincronización normal procesa cambios conforme llegan. **Relleno** detecta
+huecos en la secuencia recibida de dispositivos conocidos y vuelve a solicitar
+los registros que faltan.
+
+<ManualScreenshot
+  caseId="sync/backfill"
+  alt="Página de relleno de Lotti Sync con estado entrante, ausente y omitido, además de estadísticas de secuencia y relleno automático"
+  caption="Project Waddle ha recibido 2.868 registros de secuencia y actualmente conoce cuatro registros ausentes repartidos entre dos ID de dispositivo."
+/>
+
+- **Entrante** es el trabajo que espera ahora en la cola de entrada.
+- **Ausentes** es el número de huecos conocidos en la secuencia.
+- **Omitidos** es el trabajo que la cola de entrada abandonó tras no poder
+  procesarlo normalmente.
+- **Relleno automático** solicita continuamente huecos recuperables y es el
+  valor predeterminado correcto para el uso normal.
+- **Recuperación avanzada** contiene controles manuales para una investigación.
+  Úsala solo después de dar tiempo para estabilizarse a la sincronización
+  normal y al relleno automático.
+
+Un número de ausentes distinto de cero no equivale automáticamente a pérdida de
+datos: otro dispositivo puede seguir sin conexión o la solicitud ya puede estar
+en curso. Investiga si el número permanece igual mientras todos los dispositivos
+esperados están conectados.
+
+## Lee las estadísticas de Sync
+
+**Estadísticas de Sync** separa el volumen de mensajes de la salud del
+procesamiento. Es útil cuando los datos parecen obsoletos, pero la cuenta sigue
+apareciendo como conectada.
+
+<ManualScreenshot
+  caseId="sync/stats"
+  alt="Estadísticas de Matrix Sync de Lotti con recuentos de mensajes enviados, principales KPI de procesamiento, tipos de mensaje, fallos, reintentos y totales de entidades"
+  caption="Los recuentos establecen si los mensajes se mueven; los fallos y reintentos programados indican si la canalización avanza limpiamente."
+/>
+
+La tarjeta de mensajes enviados agrupa tipos de eventos Matrix. **KPI
+principales** resume los mensajes procesados, fallos y reintentos programados,
+mientras que los totales de entidades muestran qué familias de cargas de Lotti
+contribuyeron a ese trabajo. Un recuento de procesados creciente con fallos
+estables es saludable. Los fallos repetidos o reintentos que nunca desaparecen
+requieren comprobar la bandeja de salida y la conectividad del otro dispositivo.
+
+## Inspecciona la bandeja de salida
+
+La **Bandeja de salida** es la cola local de cambios pendientes de envío.
+Fíltrala por estado para separar el trabajo activo de los fallos.
+
+<ManualScreenshot
+  caseId="sync/outbox"
+  alt="Bandeja de salida de Lotti Sync filtrada a una foto fallida de sellos de presión del hábitat de Project Waddle, con acciones de reintento y eliminación"
+  caption="Los elementos fallidos conservan su asunto, detalles de carga, historial de reintentos y ruta local del adjunto, para que la recuperación sea específica y no ciega."
+/>
+
+- Los elementos **Pendientes** esperan su turno.
+- Los elementos **Enviando** están actualmente en curso.
+- Los elementos **Fallidos** agotaron su intento actual y permanecen disponibles
+  para inspección.
+- Los elementos **Enviados** se han entregado y se conservan temporalmente para
+  diagnóstico.
+
+Usa **Reintentar todo** después de corregir el problema de conexión o cuenta
+subyacente. Elimina un elemento fallido solo si realmente no quieres que ese
+cambio llegue a los demás dispositivos. Eliminarlo de la bandeja de salida no
+sustituye reparar la entrada local o adjunto correspondientes.
+
+Continúa con [Resolver conflictos de sincronización](./conflicts.mdx) cuando dos
+dispositivos hayan editado de manera independiente la misma entrada, o con
+[Mantenimiento de Sync](./maintenance.mdx) para herramientas de recuperación a
+nivel de base de datos.

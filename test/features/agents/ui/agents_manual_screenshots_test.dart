@@ -578,6 +578,9 @@ final EvolutionSessionRecapEntity _completedTemplateRecap =
         'Druckbelege vorangestellt und einen klaren Start-oder-Stopp-Abschluss '
             'ergänzt.',
       ),
+      categoryRatings: {
+        _t('language', 'Sprache'): 4,
+      },
       createdAt: manualDemoNow.subtract(const Duration(days: 8)),
     );
 
@@ -1414,7 +1417,12 @@ void main() {
           );
           expect(
             find.textContaining(
-              _t('launch hold', 'Startstopp'),
+              _t(
+                'Admiral Pebble is appropriately skeptical, but should ask '
+                    'fewer questions when a launch hold is already obvious.',
+                'Admiral Kiesel ist angemessen skeptisch, sollte aber weniger '
+                    'Fragen stellen, wenn ein Startstopp bereits offensichtlich ist.',
+              ),
             ),
             findsOneWidget,
           );

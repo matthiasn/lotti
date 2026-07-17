@@ -1,0 +1,91 @@
+---
+title: Conecta un proveedor de IA
+description: Conecta inferencia en la nube o local, inspecciona sus modelos y mantén bajo control las credenciales y los endpoints.
+---
+
+# Conecta un proveedor de IA
+
+Lotti separa una configuración de IA en tres capas: un **proveedor** es el
+servicio al que se conecta; un **modelo** es un modelo expuesto por ese servicio;
+y un **perfil de inferencia** dirige cada tipo de trabajo a un modelo. Empieza
+por el proveedor y revisa después los modelos y perfiles creados a su alrededor.
+
+<ManualScreenshot
+  caseId="ai/providers"
+  alt="Ajustes de IA de Lotti con los proveedores Mission Control Router, Habitat Local Lab, Orbital Vision y Penguin Audio Bay"
+  caption="Ajustes de IA reúne las conexiones en la nube y locales. Cada tarjeta muestra el estado de conexión y cuántos modelos guardados la utilizan."
+/>
+
+## Elige entre local y remoto
+
+- Un proveedor en la nube suele ser la configuración más rápida y normalmente
+  requiere una clave de API. El texto, audio o imágenes que envíes mediante él
+  salen del dispositivo.
+- Un proveedor local puede mantener la inferencia en tu propia máquina o en un
+  endpoint local que controlas, pero su servicio debe estar ejecutándose y ser
+  accesible desde el dispositivo en el que Lotti lo invoque. Una dirección de
+  LAN puede seguir moviendo un prompt entre tus dispositivos; «local» significa
+  que no se envía a un proveedor de modelos alojado, no que no haya ningún salto
+  de red.
+- Una URL base personalizada puede dirigir un tipo de proveedor compatible a un
+  proxy o gateway compatible. El tipo de proveedor sigue controlando el
+  comportamiento específico del protocolo.
+
+## Conecta un proveedor
+
+1. Abre **Ajustes → Ajustes de IA → Proveedores**.
+2. Selecciona el botón **+**.
+3. Elige un proveedor compatible.
+4. Introduce su nombre visible, endpoint y clave de API cuando sea necesario.
+5. Añade los modelos sugeridos que quieras y guarda.
+
+Para los proveedores compatibles de la primera configuración, Lotti prepara
+modelos útiles y uno o más perfiles de inferencia. La pantalla de resultados
+resume lo creado.
+
+<ManualScreenshot
+  caseId="ai/provider-editor"
+  alt="Editor de proveedores de Lotti para Mission Control Router con OpenRouter seleccionado, una URL base, clave de API enmascarada y modelos sugeridos"
+  caption="Las credenciales permanecen enmascaradas. Los modelos sugeridos son atajos, no un requisito: puedes añadir más tarde ID de modelo específicos del proveedor."
+/>
+
+## Inspecciona y mantén una conexión
+
+Abre una tarjeta de proveedor para inspeccionar su credencial enmascarada, URL
+base, modelos guardados y cualquier perfil activo que dependa de esos modelos.
+Desde ahí puedes editar la conexión, añadir otro modelo o eliminar el proveedor.
+
+<ManualScreenshot
+  caseId="ai/provider-detail"
+  alt="Detalle del proveedor Mission Control Router con su conexión, modelos Waddle Command y perfil activo de Project Waddle"
+  caption="El resumen de dependencias hace visible el alcance antes de cambiar o eliminar un proveedor."
+/>
+
+Cambiar una URL base o una clave de API afecta a todos los modelos vinculados a
+ese proveedor. Después de cambiar cualquiera de esos valores, verifica una
+acción de IA representativa antes de dar la conexión por sana. Eliminar un
+proveedor también puede afectar a perfiles que dirigen trabajo mediante sus
+modelos; revisa primero la información de dependencias.
+
+## Revisa el enrutamiento de perfiles
+
+Abre [Modelos y perfiles de inferencia](./models-and-profiles.mdx) para
+verificar qué expone el proveedor y cómo dirige Lotti cada capacidad. Las
+categorías pueden establecer un perfil predeterminado para su trabajo, mientras
+que cada automatización puede seleccionar o sustituir un modelo cuando el flujo
+de trabajo ofrezca esa posibilidad.
+
+## Límite de privacidad
+
+Antes de enviar texto, audio o imágenes sensibles, confirma si el endpoint
+configurado es local o remoto. Un nombre amistoso como «Habitat Local Lab» no es
+el límite de seguridad: lo son la URL base, la ruta de red y la máquina que lo
+sirve. Lotti guarda el cuaderno localmente en ambos casos; esta decisión controla
+la llamada de inferencia en sí.
+
+:::warning Claves de API
+
+Trata las claves de proveedor como secretos. No las pegues nunca en
+documentación, incidencias ni capturas de pantalla.
+
+:::

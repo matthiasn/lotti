@@ -3371,6 +3371,52 @@
   "maintenanceSyncDefinitions": "Sync measurables, dashboards, habits, categories, AI settings",
   "maintenanceSyncDefinitionsDescription": "Sync measurables, dashboards, habits, categories, and AI settings",
   "manageLinks": "Manage links...",
+  "matrixStatsCatchupBatches": "Catch-up Batches",
+  "matrixStatsCircuitOpens": "Circuit Opens",
+  "matrixStatsConflicts": "Conflicts",
+  "matrixStatsCopyDiagnostics": "Copy Diagnostics",
+  "matrixStatsCopyDiagnosticsTooltip": "Copy sync diagnostics to the clipboard",
+  "matrixStatsDbApplied": "DB Applied",
+  "matrixStatsDbApply": "DB Apply",
+  "matrixStatsDbIgnoredVectorClock": "DB Ignored (VectorClock)",
+  "matrixStatsDbMissingBase": "DB Missing Base",
+  "matrixStatsDroppedByType": "Dropped ({type})",
+  "@matrixStatsDroppedByType": {
+    "placeholders": {
+      "type": {}
+    }
+  },
+  "matrixStatsEntryLinkNoops": "EntryLink No-ops",
+  "matrixStatsFailures": "Failures",
+  "matrixStatsFlushes": "Flushes",
+  "matrixStatsForceRescan": "Force Rescan",
+  "matrixStatsForceRescanTooltip": "Force rescan and catch up now",
+  "matrixStatsLegend": "Legend",
+  "matrixStatsLegendTooltip": "Legend:\n• processed.<type> = processed sync messages by payload type\n• droppedByType.<type> = per-type drops after retries or older-message ignores\n• dbApplied = database rows written\n• dbIgnoredByVectorClock = older or identical incoming data ignored by the database\n• conflictsCreated = concurrent vector clocks logged\n• dbMissingBase = skipped while awaiting a missing dependency or base row\n• staleAttachmentPurges = cached stale descriptors cleared before refresh",
+  "matrixStatsProcessed": "Processed",
+  "matrixStatsProcessedByType": "Processed ({type})",
+  "@matrixStatsProcessedByType": {
+    "placeholders": {
+      "type": {}
+    }
+  },
+  "matrixStatsRefresh": "Refresh",
+  "matrixStatsReliability": "Reliability",
+  "matrixStatsRetriesScheduled": "Retries Scheduled",
+  "matrixStatsRetryNow": "Retry Now",
+  "matrixStatsRetryNowTooltip": "Retry pending failures now",
+  "matrixStatsSignalLatencyLast": "Signal Latency (last ms)",
+  "matrixStatsSignalLatencyMax": "Signal Latency (max ms)",
+  "matrixStatsSignalLatencyMin": "Signal Latency (min ms)",
+  "matrixStatsSignals": "Signals",
+  "matrixStatsSignalsClientStream": "Signals (client stream)",
+  "matrixStatsSignalsConnectivity": "Signals (connectivity)",
+  "matrixStatsSignalsTimelineCallbacks": "Signals (timeline callbacks)",
+  "matrixStatsSkipped": "Skipped",
+  "matrixStatsSkippedRetryCap": "Skipped (Retry Cap)",
+  "matrixStatsStaleAttachmentPurges": "Stale Attachment Purges",
+  "matrixStatsThroughput": "Throughput",
+  "matrixStatsTopKpis": "Top KPIs",
   "measurableDeleteConfirm": "YES, DELETE THIS MEASURABLE",
   "measurableDeleteQuestion": "Do you want to delete this measurable data type?",
   "measurableNotFound": "Measurable not found",
@@ -4378,6 +4424,14 @@
   },
   "settingsMatrixRoomInviteTitle": "Room invite",
   "settingsMatrixSentMessagesLabel": "Sent messages:",
+  "settingsMatrixSentMessageType": "Sent ({eventType})",
+  "@settingsMatrixSentMessageType": {
+    "placeholders": {
+      "eventType": {
+        "type": "String"
+      }
+    }
+  },
   "settingsMatrixStartVerificationLabel": "Start Verification",
   "settingsMatrixStatsTitle": "Matrix Stats",
   "settingsMatrixTitle": "Sync Settings",

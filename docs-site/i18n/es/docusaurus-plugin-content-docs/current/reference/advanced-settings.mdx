@@ -1,0 +1,165 @@
+---
+title: Usa los Ajustes avanzados con seguridad
+description: Controla indicadores de configuración y registro, ejecuta herramientas de mantenimiento, inspecciona métricas de incorporación y verifica la compilación instalada de Lotti.
+---
+
+# Usa los Ajustes avanzados con seguridad
+
+Abre **Ajustes → Ajustes avanzados** para acceder a controles avanzados,
+diagnósticos y mantenimiento. Estas páginas cambian cómo se ejecuta Lotti u
+operan directamente sobre los datos locales, así que la personalización habitual
+debe hacerse en otras partes de Ajustes.
+
+El escritorio mantiene el árbol de ajustes junto a la página seleccionada. En el
+móvil se abre una página cada vez y hay un botón Atrás. Se usan los mismos
+controles y valores persistentes en ambos diseños.
+
+<ManualScreenshot
+  caseId="advanced-settings/hub"
+  alt="Centro de Ajustes avanzados de Lotti con indicadores de configuración, animaciones, idioma, registro, mantenimiento, métricas de incorporación y Acerca de Lotti"
+  caption="Ajustes avanzados agrupa controles operativos lejos de las preferencias diarias. Algunas entradas varían según la plataforma y las capacidades activadas."
+/>
+
+## Elige el idioma del Manual
+
+Abre **Idioma** para decidir qué Manual publicado abre la aplicación. **Seguir el
+sistema** es el valor predeterminado y elige el Manual en inglés, alemán o checo
+según el idioma de tu dispositivo. Selecciona **Inglés**, **Alemán** o **Checo**
+para conservar una elección distinta. La entrada Manual al final de Ajustes y
+**Ayuda → Manual** en macOS usan ambos este ajuste.
+
+## Controla las capacidades con indicadores de configuración
+
+<ManualScreenshot
+  caseId="advanced-settings/flags"
+  alt="Página de indicadores de configuración de Lotti con interruptores con búsqueda para entradas privadas, notificaciones, registro de ubicación, sugerencias y streaming de IA"
+  caption="La búsqueda coincide con los nombres y las descripciones de los indicadores. Cada interruptor cambia de inmediato la capacidad de tiempo de ejecución almacenada."
+/>
+
+Los **indicadores de configuración** son el tablero de interruptores de
+capacidades. Incluyen controles para:
+
+- visibilidad de entradas privadas, notificaciones, captura de ubicación y
+  sugerencias;
+- streaming de respuestas de IA y reproducción de resúmenes;
+- comportamiento del registro y de la sincronización Matrix;
+- páginas de funciones, como Hábitos, Paneles, Eventos, Proyectos y Novedades;
+- embeddings y búsqueda vectorial; y
+- indicadores operativos, como la actividad de sincronización, las activaciones
+  de agentes pendientes y la reparación de bifurcaciones.
+
+Usa **Buscar indicadores** para limitar la lista por título o descripción.
+Selecciona una fila o su interruptor para cambiar el indicador. El valor nuevo
+se conserva de inmediato; no hay una acción Guardar independiente.
+
+Los indicadores pueden mostrar comportamiento experimental o de diagnóstico.
+Cambia uno de forma deliberada y verifica el flujo de trabajo afectado antes de
+cambiar otro. El indicador **¿Mostrar entradas privadas?** controla si el
+contenido sensible se incluye en listas y selectores; no cifra, exporta, elimina
+ni cambia la privacidad de una entrada.
+
+## Elige qué registra Lotti
+
+<ManualScreenshot
+  caseId="advanced-settings/logging"
+  alt="Ajustes de registro de Lotti con un interruptor maestro, dominios operativos individuales y registro de consultas lentas"
+  caption="El interruptor maestro controla los controles por dominio. El conjunto de Project Waddle mantiene activados Sync, IA y Tareas para un diagnóstico centrado."
+/>
+
+**Registro** comienza con el interruptor global **Activar registro**. Cuando está
+activado, habilita solo los dominios necesarios para una investigación, como
+Sync, IA, Tareas, Etiquetas, Salud, Hábitos, Navegación, Notificaciones o Daily
+OS. **Registrar consultas lentas** añade diagnósticos del rendimiento de la base
+de datos.
+
+Desactivar el interruptor maestro desactiva los controles por dominio. Los
+errores se siguen escribiendo en el registro diario `error-*.log`; estos
+interruptores controlan el registro de diagnóstico adicional, no el registro
+mínimo de errores. Desactiva los dominios ruidosos tras una investigación para
+que los registros se mantengan centrados y el uso de almacenamiento sea
+predecible.
+
+## Ejecuta las acciones de mantenimiento deliberadamente
+
+<ManualScreenshot
+  caseId="advanced-settings/maintenance"
+  alt="Página de mantenimiento de Lotti con vistas previas de incorporación, acciones de restablecimiento, eliminación de base de datos, purga, índice de búsqueda, embeddings y diagnósticos de repintado"
+  caption="Mantenimiento combina vistas previas seguras con acciones destructivas y de diagnóstico. Lee la confirmación y el alcance antes de continuar."
+/>
+
+**Mantenimiento** contiene varios tipos de acciones:
+
+- **Mostrar bienvenida de incorporación** y **Galería de animaciones de
+  incorporación** son vistas previas en directo para desarrollo y QA.
+- **Restablecer sugerencias de la aplicación** permite que los consejos de una
+  sola vez vuelvan a aparecer.
+- **Restablecer diálogo de configuración de Gemini** borra su descarte para que
+  se pueda probar de nuevo el mensaje del proveedor.
+- **Eliminar base de datos del editor** quita los borradores del editor.
+- **Eliminar base de datos de agentes** quita la base de datos de agentes y
+  cierra Lotti para que la aplicación pueda reiniciarse con un almacén limpio.
+- **Purgar elementos eliminados** borra permanentemente registros eliminados de
+  forma lógica mediante un flujo de confirmación específico.
+- **Recrear índice de texto completo** reconstruye los datos de búsqueda locales
+  sin recrear entradas de diario.
+- **Generar embeddings** aparece cuando el almacén de embeddings está disponible
+  y completa categorías seleccionadas.
+- **Repintar superposición arcoíris** ilumina las regiones que se repintan para
+  el diagnóstico de interfaz. Se conserva en memoria y vuelve a desactivarse al
+  reiniciar.
+
+Las acciones de vista previa y restablecimiento no comparten el mismo riesgo que
+la eliminación y la purga. Para acciones destructivas, confirma que el destino
+sea el almacén local previsto y deja que termine antes cualquier operación de
+sincronización o escritura actual.
+
+## Inspecciona el embudo de incorporación
+
+<ManualScreenshot
+  caseId="advanced-settings/onboarding-metrics"
+  alt="Página de métricas de incorporación de Lotti con hora de instalación, cuatro días activos, estado de activación y recuentos de eventos sin contenido"
+  caption="El conjunto determinista del manual alcanzó su verdadera experiencia aha durante cuatro días activos después de conectar un proveedor y grabar varias capturas."
+/>
+
+**Métricas de incorporación** es una superficie para desarrollo y QA. Deriva un
+embudo local de eventos sin contenido y muestra:
+
+- la marca de tiempo de primera detección en UTC;
+- el total de días activos y los días activos durante los primeros siete días;
+- si la instalación pertenece a la cohorte base anterior a FTUE;
+- si se alcanzó el hito de activación real; y
+- un recuento de cada evento de incorporación.
+
+La página registra nombres de eventos y metadatos de cardinalidad baja, no texto
+de diario, títulos de tareas, transcripciones ni los detalles sensibles a las
+sardinas de Project Waddle.
+
+**Restablecer estado de prueba de incorporación** borra la cadencia de avisos de
+incorporación y las métricas locales del embudo tras confirmación. No elimina los
+datos de diario, los indicadores de configuración ni el historial real de planes
+de Daily OS. Por tanto, un perfil que ya haya planificado un día sigue sin ser
+elegible para la ruta exacta de primer plan de un perfil limpio.
+
+## Verifica la compilación y los totales locales
+
+<ManualScreenshot
+  caseId="advanced-settings/about"
+  alt="Página Acerca de Lotti con versión, plataforma, tipo de compilación, 2604 entradas de diario, 11 entradas marcadas y recuentos de tareas"
+  caption="Acerca de Lotti identifica la compilación en ejecución y resume los datos locales. El conjunto de Project Waddle contiene 2.604 entradas y 65 tareas en cinco estados."
+/>
+
+**Acerca de Lotti** es el lugar más rápido para verificar qué compilación se está
+ejecutando realmente. Muestra la versión y número de compilación de la
+aplicación, la plataforma y el tipo de compilación. Incluye estos valores en un
+informe de diagnóstico para poder asociar un comportamiento al código y la
+versión correctos.
+
+La tarjeta **Tus datos** resume las entradas de diario locales, las entradas
+marcadas y los recuentos de tareas divididos en Abiertas, En curso, En espera,
+Bloqueadas y Hechas. El espacio de trabajo establecido de Project Waddle del
+manual demuestra una cuenta no vacía: 2.604 entradas de diario, 11 entradas
+marcadas y 65 tareas, en vez de ceros de marcador de posición.
+
+Los efectos de finalización tienen su propia guía: consulta
+**[Personalizar celebraciones de finalización](./completion-celebrations.mdx)**
+para la página Animaciones y su área de pruebas en directo.

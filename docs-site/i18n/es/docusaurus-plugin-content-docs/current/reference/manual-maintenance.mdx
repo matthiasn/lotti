@@ -1,0 +1,88 @@
+---
+title: Mantén este manual
+description: El flujo de contribución ligero para el contenido y las capturas de pantalla del manual.
+---
+
+# Mantén este manual
+
+El código fuente vive en el repositorio de la aplicación, para que un cambio de
+comportamiento y su documentación puedan publicarse juntos. Las capturas
+generadas viven en el repositorio hermano `lotti-docs` y nunca se confirman en
+el árbol de la aplicación.
+
+## Edita el texto
+
+1. Edita o añade el archivo MDX en inglés bajo `docs-site/docs`.
+2. Actualiza el archivo correspondiente para cada idioma publicado bajo
+   `docs-site/i18n/<locale>/docusaurus-plugin-content-docs/current`.
+3. Añade una página nueva a `docs-site/sidebars.ts`.
+4. Actualiza `docs-site/metadata/features.json` cuando cambie la cobertura.
+5. Actualiza las entradas correspondientes en
+   `docs-site/metadata/surface-inventory.json`. Una superficie pasa a estar
+   **verificada** solo cuando se han revisado su interfaz de producción actual,
+   el texto y la cobertura de capturas.
+6. Ejecuta `make manual_check`.
+7. Revisa la compilación de producción localmente con `make manual_serve`,
+   incluido el selector de idioma y cada ruta localizada.
+
+La validación exige que cada árbol de traducciones publicado contenga las mismas
+rutas de página que el árbol fuente en inglés. También rechaza cuerpos de página
+traducidos que sean idénticos al inglés, para que las páginas nuevas no se
+publiquen silenciosamente como copias sin traducir. Las URL públicas en inglés no
+cambian; los otros idiomas se publican bajo su propio prefijo de idioma
+versionado.
+
+## Mantén autoritario el inventario de cobertura
+
+El inventario define el límite del manual en inglés para V1: cada página Beamer,
+cada hoja o editor de Settings V2 y cada flujo de trabajo importante que crea o
+cambia materialmente datos o configuración transversal. Cada entrada registra su
+archivo fuente propietario y un ancla de texto fuente. La validación falla si
+cualquiera de ellos desaparece, lo que obliga a que un cambio de ruta o interfaz
+actualice la auditoría del manual en vez de dejar una fila obsoleta invisible.
+
+Los estados de cobertura tienen significados deliberadamente estrictos:
+
+- **Planificada** significa que la superficie se conoce, pero aún no tiene una
+  cobertura completa.
+- **Documentada** significa que existe texto útil, pero aún faltan capturas de
+  producción actuales o una revisión de precisión integral.
+- **Verificada** significa que la página de la función correspondiente está
+  verificada y respaldada por capturas de producción registradas.
+
+Ejecuta `npm --prefix docs-site run coverage:complete` para la puerta de
+publicación. Falla hasta que toda superficie inventariada esté verificada; las
+compilaciones incrementales normales del manual siguen informando de los
+recuentos restantes sin bloquear confirmaciones por tema.
+
+## Añade un caso de captura
+
+1. Añade o reutiliza un entorno determinista de capturas de Flutter.
+2. Registra el caso y sus cuatro imágenes fuente en
+   `docs-site/metadata/screenshot-cases.json`.
+3. Sitúa el texto visible del conjunto tras `manualScreenshotText(...)` para cada
+   idioma compatible cuando aún no lo proporcionen los archivos de localización
+   de la aplicación.
+4. Captura cada idioma en `../lotti-docs`; nunca en este repositorio.
+5. Genera y valida el manifiesto de medios.
+6. Haz referencia al caso con
+   `<ManualScreenshot caseId="…" alt="…" />` en cada página de idioma.
+
+Cada captura de la aplicación de una página creada debe usar
+`ManualScreenshot`. Los enlaces directos a imágenes antiguas de `lotti-docs`
+fallan la validación del manual porque no pueden seguir la elección global
+Móvil/Escritorio ni el tema claro u oscuro del manual.
+
+Cada caso automatizado debe proporcionar variantes móvil-clara, móvil-oscura,
+escritorio-clara y escritorio-oscura en cada idioma publicado. El componente del
+manual elige el idioma y tema correspondientes. Cambiar Móvil/Escritorio en
+cualquier imagen actualiza inmediatamente todas las capturas y persiste entre
+páginas y pestañas abiertas del manual.
+
+## Publica una versión
+
+El código fuente del manual no se copia para cada versión de la aplicación. La
+etiqueta de versión de la aplicación ya conserva su código exacto. CI consulta
+esa etiqueta, compila con `MANUAL_VERSION=<version>` y publica un directorio
+estático inmutable. El menú desplegable de versiones es un manifiesto pequeño de
+esos directorios.

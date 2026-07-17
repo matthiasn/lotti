@@ -1,0 +1,64 @@
+---
+title: Revisa el uso y el impacto de la IA
+description: Compara solicitudes de IA por periodo, categoría y modelo, incluidos el coste estimado, la energía, las emisiones y el uso de tokens.
+---
+
+# Revisa el uso y el impacto de la IA
+
+Abre **Ajustes → Ajustes de IA → Uso e impacto** para entender cómo se usan los
+modelos en la nube configurados. El mismo análisis también está disponible desde
+la ruta del panel de impacto de IA.
+
+<ManualScreenshot
+  caseId="ai/usage"
+  alt="Panel de impacto de IA de Lotti para julio de 2026 con coste, energía, dióxido de carbono equivalente, tokens, solicitudes y barras por categoría"
+  caption="El mes de ejemplo de Project Waddle separa Mission Control y Penguin Operations, manteniendo visible la huella total de solicitudes."
+/>
+
+## Lee las tarjetas de resumen
+
+Las tarjetas superiores resumen el periodo seleccionado:
+
+- **Coste** estima el gasto del proveedor.
+- **Energía** estima la electricidad atribuible a la inferencia en la nube
+  medida.
+- **CO₂e** expresa la estimación de emisiones asociadas.
+- **Tokens** cuenta los tokens de modelo procesados.
+- **Solicitudes** cuenta las llamadas de inferencia.
+
+El indicador de comparación usa el periodo equivalente anterior cuando existe.
+Un incremento porcentual aporta contexto, pero no es automáticamente un
+problema: una semana de revisión de lanzamiento no debería compararse a ciegas
+con una semana tranquila de la colonia.
+
+La energía, el CO₂e y el coste se miden solo para los modelos en la nube. La
+inferencia local puede consumir mucha energía del dispositivo sin aparecer en
+esas estimaciones de nube, por lo que esta página no es un medidor de potencia
+completo para todo el sistema.
+
+## Cambia el análisis
+
+Usa el control de periodo y las flechas para moverte por el tiempo, o salta a
+**Este mes** y **Este año**. Después elige **Ambos**, **Por categoría** o **Por
+modelo**. Dentro de un gráfico, cambia entre valores diarios, totales acumulados
+y proporción cuando estén disponibles.
+
+Las vistas por categoría responden «¿qué área de trabajo impulsó el uso?». Las
+vistas por modelo responden «¿qué modelo configurado impulsó el uso?». Usa ambas
+antes de modificar un perfil: un modelo de coste alto puede estar justificado
+para una categoría especializada, pero resultar derrochador como valor
+predeterminado general.
+
+## Actúa ante un resultado sorprendente
+
+Si el uso aumenta inesperadamente:
+
+1. limita el periodo al primer día afectado;
+2. compara los desgloses por categoría y modelo;
+3. revisa la automatización y la concurrencia de agentes;
+4. inspecciona el perfil de inferencia asignado a la categoría afectada; y
+5. verifica la facturación del proveedor antes de tratar la estimación de Lotti
+   como una factura.
+
+Para cambiar la ruta responsable de llamadas futuras, vuelve a
+[Modelos y perfiles de inferencia](./models-and-profiles.mdx).

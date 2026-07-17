@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/language_dropdown.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list.dart';
@@ -100,11 +101,15 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('Deutsch').last);
+        final context = tester.element(find.byType(LanguageDropdown));
+        final arabicLabel = SupportedLanguage.ar.localizedName(context);
+        await tester.tap(
+          find.text(arabicLabel).last,
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(controller.setLanguageCalls, ['de']);
+        expect(controller.setLanguageCalls, ['ar']);
       },
     );
 

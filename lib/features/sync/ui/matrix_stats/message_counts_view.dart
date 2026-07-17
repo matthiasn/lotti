@@ -69,7 +69,9 @@ class MessageCountsViewState extends ConsumerState<MessageCountsView> {
 
     String labelFor(String key) {
       if (key.startsWith('sent.')) {
-        return 'Sent (${key.substring(5)})';
+        return context.messages.settingsMatrixSentMessageType(
+          key.substring(5),
+        );
       }
       return key;
     }

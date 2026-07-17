@@ -1,0 +1,72 @@
+---
+title: Resuelve conflictos de sincronización
+description: Compara ediciones simultáneas campo por campo y conserva o combina la información adecuada.
+---
+
+# Resuelve conflictos de sincronización
+
+Un conflicto aparece cuando dos dispositivos cambiaron la misma entrada de forma
+independiente y ninguna versión es claramente más reciente. Lotti conserva ambas
+versiones en vez de elegir una silenciosamente.
+
+Abre **Ajustes → Sync → Conflictos**. La lista separa los elementos resueltos de
+los no resueltos e identifica el tipo de entidad y la hora de cada conflicto.
+
+<ManualScreenshot
+  caseId="sync/conflicts"
+  alt="Lista de conflictos de Lotti Sync con conflictos sin resolver de una tarea de Project Waddle y un manifiesto de sardinas, además de una tarea resuelta"
+  caption="Resuelve primero los elementos actuales. Los elementos resueltos siguen visibles como historial de auditoría de decisiones anteriores."
+/>
+
+## Compara ambas versiones
+
+Abre un conflicto para ver cada campo diferente. Los cambios de texto incluyen
+resaltados a nivel de palabra; los campos sin cambios se resumen para que la
+página no oculte cuánto de la entrada sigue coincidiendo.
+
+<ManualScreenshot
+  caseId="sync/conflict-detail"
+  alt="Detalle de conflicto de Lotti que compara campo por campo los títulos y descripciones de la tarea Project Waddle local y sincronizada"
+  caption="Este dispositivo conservó el emperador final y la bodega de carga; la versión sincronizada contabilizó los 37 pingüinos y programó la liberación de sardinas. Ambos hechos importan."
+/>
+
+Las tres rutas de resolución son:
+
+- **Usar este dispositivo** conserva la versión local completa.
+- **Usar desde Sync** conserva la versión entrante completa.
+- **Combinar** te permite elegir un lado inicial y después seleccionar el
+  ganador de cada campo que se pueda fusionar de forma independiente.
+
+Conservar un lado completo es apropiado cuando el otro simplemente está
+obsoleto. **Combinar** es la opción más segura cuando campos distintos contienen
+trabajo válido de ambos dispositivos; Lotti la marca como recomendada cuando
+varios campos que se pueden fusionar difieren.
+
+## Combina campos sin volver a escribir
+
+Selecciona **Combinar**, elige la versión de partida y, después, cambia campos
+individuales al otro lado. Los campos que no se pueden fusionar de forma
+independiente siguen la versión inicial elegida.
+
+<ManualScreenshot
+  caseId="sync/conflict-combine"
+  alt="Editor de combinación de conflictos de Lotti con control de versión inicial y elecciones separadas para el título y el cuerpo de la tarea"
+  caption="Empieza con una entrada estructuralmente completa y toma después el mejor título y cuerpo de este dispositivo o de Sync."
+/>
+
+Revisa cada campo de la lista antes de seleccionar **Aplicar combinación**. La
+entrada resuelta recibe un historial de sincronización fusionado para que las
+mismas dos ediciones no vuelvan a entrar en conflicto de inmediato.
+
+:::caution Una resolución cambia el resultado compartido
+
+Conservar un lado o aplicar una versión combinada escribe el ganador localmente
+y permite sincronizarlo con los demás dispositivos. Lee la diferencia completa
+antes de confirmar. Si un lado eliminó la entrada mientras el otro la editaba,
+Lotti muestra la opción más segura de eliminar frente a editar en vez de una
+fusión normal de campos.
+
+:::
+
+Vuelve a [Sincronizar dispositivos](./sync.mdx) para inspeccionar el estado de
+la entrega y la puesta al día.

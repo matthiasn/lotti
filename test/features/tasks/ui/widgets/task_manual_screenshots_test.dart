@@ -746,7 +746,10 @@ void main() {
         );
         expect(
           find.textContaining(
-            _t('pressure-gauge anomalies', 'auffällige Druckanzeigen'),
+            _t(
+              'Find pressure-gauge anomalies and task-relevant seal damage.',
+              'Finde auffällige Druckanzeigen und relevante Schäden an Dichtungen.',
+            ),
           ),
           findsOneWidget,
         );

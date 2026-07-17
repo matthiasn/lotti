@@ -1,0 +1,106 @@
+---
+title: Ejecuta y supervisa agentes
+description: Supervisa la actividad de los agentes, inspecciona instancias en ejecución y controla los ciclos de activación programados sin perder el historial de auditoría.
+---
+
+# Ejecuta y supervisa agentes
+
+Los agentes permiten que Lotti asuma una responsabilidad definida a lo largo de
+varios ciclos de activación. Cada instancia en ejecución procede de una
+plantilla de agente, usa una configuración de inferencia y conserva su propio
+estado, informes, observaciones e historial de actividad. Abre
+**Ajustes → Agentes** para ver el sistema completo.
+
+Los informes, las observaciones y las activaciones en cola describen el estado
+de trabajo del agente; no reescriben silenciosamente tu cuaderno personal.
+Cuando un agente de tareas quiere cambiar datos de una tarea, Lotti te presenta
+una propuesta para que la revises. Consulta
+[Revisar los cambios propuestos](../organize-and-reflect/tasks.mdx#revisa-los-cambios-propuestos)
+para conocer los controles de aprobación por tarea y sus limitadas excepciones
+para el título inicial y el idioma.
+
+## Lee la actividad de los agentes antes de modificarla
+
+La página **Estadísticas** combina la actividad de activación y el uso de
+tokens. El primer gráfico muestra cuándo se activaron los agentes durante las
+últimas 24 horas. La sección diaria compara hoy con la misma hora de días
+recientes y, después, desglosa el uso por modelo y fuente.
+
+<ManualScreenshot
+  caseId="agents/stats"
+  alt="Estadísticas de agentes de Lotti con la actividad de activación de Project Waddle, el uso diario de tokens y gráficos por modelo"
+  caption="La flota de ejemplo de Project Waddle está más ocupada durante las comprobaciones del hábitat y la planificación del lanzamiento; las secciones por modelo y fuente permiten atribuir esa actividad."
+/>
+
+Usa esta página para responder a tres preguntas distintas:
+
+- **¿Cuándo se ejecutaron los agentes?** Consulta el gráfico de activaciones de
+  24 horas.
+- **¿Cuánta inferencia usaron?** Compara los gráficos diarios y por modelo.
+- **¿Qué responsabilidad la provocó?** Revisa el desglose por plantilla y
+  fuente.
+
+Un pico no es automáticamente un fallo. Un día de revisión de lanzamiento
+debería ser más intenso que un día normal en la colonia. Investiga una actividad
+inesperada abriendo la plantilla o la instancia de origen antes de cambiar un
+límite global de concurrencia.
+
+## Inspecciona las instancias en ejecución
+
+Abre **Instancias** para ver todos los agentes y las sesiones de evolución. Las
+filas muestran el tipo de agente, su ciclo de vida, la plantilla asignada y el
+alma. Agrupar por alma es útil cuando varias responsabilidades comparten una
+misma voz y estilo de decisión.
+
+<ManualScreenshot
+  caseId="agents/instances"
+  alt="Instancias de agentes de Lotti agrupadas por Admiral Pebble, Dr. Flipper, Captain Sardina y una sesión de evolución"
+  caption="El Inspector de Sellos del Hábitat, el Planificador de Project Waddle y el Coordinador de Carga de Sardinas siguen siendo instancias separadas aunque compartan recursos a nivel del sistema."
+/>
+
+Selecciona una instancia para inspeccionar sus detalles internos. La pestaña
+**Estadísticas** muestra el uso de modelos, su plantilla, la ruta de inferencia
+actual, los controles de ciclo de vida, el número de activaciones y el estado de
+programación.
+
+<ManualScreenshot
+  caseId="agents/instance-detail"
+  alt="Detalle de la instancia Habitat Seal Inspector con uso de tokens, la plantilla Orbital Habitat Sentinel, ruta de inferencia, controles de ciclo de vida y estado de activación"
+  caption="La instancia conserva la procedencia suficiente para explicar qué plantilla y ruta produjeron su trabajo antes de pausarla, volver a analizarla o destruirla."
+/>
+
+Las demás pestañas de la instancia conservan evidencias distintas:
+
+- **Informes** contiene las instantáneas guardadas de los informes del agente.
+- **Conversaciones** agrupa los mensajes por ciclo de activación.
+- **Observaciones** muestra los hallazgos capturados sin mezclarlos con los
+  informes.
+- **Actividad** muestra el rastro cronológico de mensajes y herramientas.
+
+**Pausar** conserva la instancia, pero detiene el trabajo normal. **Volver a
+analizar** pide a un agente de tareas que reconsidere su asunto actual.
+**Destruir** es una operación destructiva y solo debería usarse cuando ya no
+quieras la instancia; cambiar la plantilla para futuros agentes no exige
+destruir instancias sin relación.
+
+## Entiende los ciclos de activación
+
+Abre **Ciclos de activación** para ver el trabajo que se está ejecutando ahora y
+el que vencerá más tarde. Una activación **Pendiente** fue solicitada por el
+agente. Una activación **Programada** fue creada por el sistema o el
+planificador. Cada fila mantiene visible la tarea, el proyecto o el día
+vinculado, junto al agente responsable y una cuenta atrás en directo.
+
+<ManualScreenshot
+  caseId="agents/pending-wakes"
+  alt="Ciclos de activación de Lotti con la inspección del hábitat en curso y activaciones programadas de Project Waddle y de logística de sardinas"
+  caption="La cola distingue un seguimiento del hábitat solicitado por el agente de los calendarios del día de lanzamiento y de carga, para que toda cuenta atrás tenga un motivo y una persona responsable."
+/>
+
+Eliminar una activación en cola elimina ese temporizador; no elimina el agente
+ni la tarea vinculada. Si una activación vuelve de inmediato, inspecciona el
+estado del agente o la automatización que la solicitó, en lugar de borrar el
+síntoma repetidamente.
+
+Continúa con [Plantillas y almas de agentes](./agent-blueprints.mdx) para definir
+qué hacen estas instancias y cómo se comunican.

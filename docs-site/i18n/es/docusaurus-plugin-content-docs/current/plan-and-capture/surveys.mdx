@@ -1,0 +1,54 @@
+---
+title: Completa y consulta de nuevo encuestas
+description: Inicia los cuestionarios incluidos desde un panel, responde una pregunta cada vez y conserva las puntuaciones resultantes en el diario.
+---
+
+# Completa y consulta de nuevo encuestas
+
+Lotti incluye tres cuestionarios fijos: **CFQ-11**, **GHQ-12** y **PANAS**. Añade la encuesta que usas a un panel y selecciona la acción **+** de su gráfico cada vez que quieras registrar otra respuesta. El panel es a la vez el punto de inicio y el lugar donde las puntuaciones completadas se convierten en una tendencia.
+
+Los ejemplos siguientes abren el cuestionario PANAS real desde el panel **Operaciones de la colonia**. El cuestionario y su navegación proceden del mismo ejecutor de encuestas de producción que usa la app.
+
+<ManualScreenshot
+  caseId="surveys/panas-intro"
+  alt="Instrucciones de la encuesta PANAS abiertas sobre el panel Operaciones de la colonia"
+  caption="Lee el periodo temporal del instrumento y la escala de respuesta antes de continuar. El indicador de progreso cuenta cada instrucción, pregunta y paso de finalización."
+/>
+
+## Añade una encuesta a un panel
+
+Abre **Ajustes → Definiciones → Paneles**, edita un panel y añade un gráfico desde **Encuestas**. Los instrumentos disponibles son:
+
+- **CFQ-11**, la Escala de Fatiga de Chalder;
+- **GHQ-12**, el Cuestionario de Salud General; y
+- **PANAS**, la Escala de Afecto Positivo y Negativo.
+
+Vuelve a **Paneles** y abre el panel. El gráfico muestra los resultados enviados para su instrumento. Selecciona su acción **+** para iniciar una respuesta nueva. Cada gráfico abre el cuestionario correspondiente; no hay un formulario genérico que cambie sus preguntas según datos de la documentación.
+
+## Responde a la pregunta actual
+
+El paso de instrucciones explica el periodo temporal solicitado y el significado de la escala de respuesta. Selecciona **Siguiente** para empezar. PANAS presenta entonces 20 términos que describen emociones, uno a uno, y pide una elección en una escala de cinco puntos. Las instrucciones del instrumento, los términos, el texto de finalización y las etiquetas de escala siguen el idioma de la app; esta captura en español muestra **Nada o muy poco** hasta **Muchísimo**.
+
+<ManualScreenshot
+  caseId="surveys/panas-question"
+  alt="Pregunta Interesado/a de PANAS con cinco opciones de respuesta, de Nada o muy poco a Muchísimo"
+  caption="Las preguntas se presentan de forma secuencial. Elige una respuesta, continúa y usa el contador de progreso para saber en qué punto del cuestionario estás."
+/>
+
+Las demás encuestas incluidas usan sus propias definiciones fijas de preguntas y puntuación. Elige la respuesta que corresponda a la redacción y al periodo temporal que muestra el instrumento; Lotti no reinterpreta ni rellena las respuestas automáticamente.
+
+## Envía o cancela con intención
+
+Continúa hasta el paso de finalización para enviar. Lotti guarda el resultado bruto del cuestionario y su desglose de puntuaciones calculado como una entrada de encuesta en el diario. El panel vuelve a leer esas entradas en su gráfico, de modo que cada encuesta completada añade otra observación fechada.
+
+Al cerrar la tarea se pregunta si quieres descartar el resultado actual. Una encuesta cancelada no se guarda, incluido el trabajo respondido parcialmente. Si la respuesta importa, termina el paso de finalización antes de salir de la hoja.
+
+## Entiende las puntuaciones guardadas
+
+La entrada guardada conserva tanto las respuestas individuales como el resumen calculado que usan los gráficos:
+
+- **CFQ-11** produce su puntuación de fatiga configurada;
+- **GHQ-12** produce su puntuación de salud general configurada; y
+- **PANAS** produce totales separados de **Afecto positivo** y **Afecto negativo**.
+
+Abre la entrada correspondiente del diario para inspeccionar el resumen de la encuesta guardada. Usa el panel para observar los cambios a lo largo del tiempo y el diario para consultar el registro fuente fechado. Los gráficos de encuestas no sustituyen las instrucciones del cuestionario, y Lotti no permite crear encuestas para modificar estas definiciones incluidas.
