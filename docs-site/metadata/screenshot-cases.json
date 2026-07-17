@@ -189,6 +189,17 @@
       }
     },
     {
+      "id": "tasks/agent-suggestions",
+      "title": "Task agent proposed changes",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "task_agent_suggestions_mobile_light.png",
+        "mobile-dark": "task_agent_suggestions_mobile_dark.png",
+        "desktop-light": "task_agent_suggestions_desktop_light.png",
+        "desktop-dark": "task_agent_suggestions_desktop_dark.png"
+      }
+    },
+    {
       "id": "tasks/filters",
       "title": "Task filters",
       "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",

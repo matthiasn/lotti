@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -63,6 +64,7 @@ import '../../../../helpers/manual_demo_world.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../agents/test_data/change_set_factories.dart';
 import '../../../agents/test_data/entity_factories.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
 import '../pages/task_details_page_test_helpers.dart';
@@ -175,6 +177,39 @@ AgentStateEntity _manualTaskAgentState({required bool automaticUpdates}) =>
           ? manualDemoNow.subtract(const Duration(minutes: 4))
           : manualDemoNow.subtract(const Duration(minutes: 5)),
     );
+
+List<PendingSuggestion> _manualTaskAgentSuggestions() {
+  final changeSet = makeTestChangeSet(
+    id: 'changes-habitat-launch-readiness',
+    agentId: _manualTaskAgentId,
+    taskId: manualOrbitalHabitatTaskId,
+    threadId: 'thread-project-waddle-habitat',
+    runKey: 'run-habitat-night-watch',
+    createdAt: manualDemoNow.subtract(const Duration(minutes: 3)),
+    items: const [
+      ChangeItem(
+        toolName: 'add_checklist_item',
+        args: {'title': 'Run zero-gravity sardine feeder test'},
+        humanSummary: 'Add: "Run zero-gravity sardine feeder test"',
+      ),
+      ChangeItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 75},
+        humanSummary: 'Estimate: 45m → 1h 15m',
+      ),
+    ],
+  );
+
+  return [
+    for (var index = 0; index < changeSet.items.length; index++)
+      PendingSuggestion(
+        changeSet: changeSet,
+        itemIndex: index,
+        item: changeSet.items[index],
+        fingerprint: ChangeItem.fingerprint(changeSet.items[index]),
+      ),
+  ];
+}
 
 void main() {
   if (!screenshotCaptureEnabled) {
@@ -485,6 +520,38 @@ void main() {
         );
       });
 
+      testWidgets('$viewport task agent suggestions — $theme', (tester) async {
+        final captureDevice = device.isPhone ? proMaxDevice : device;
+        await _pumpTaskSurface(
+          tester,
+          device: captureDevice,
+          brightness: brightness,
+          world: world,
+          pageController: pageController,
+          journalRepository: journalRepository,
+          showAgentSuggestions: true,
+          surface: TaskDetailsPage(
+            taskId: world.orbitalHabitatTask.meta.id,
+          ),
+        );
+
+        await _focusTaskAgentCard(tester, device: captureDevice);
+        await _focusTaskAgentSuggestions(tester, device: captureDevice);
+        expect(find.text('Proposed changes'), findsOneWidget);
+        expect(find.text('2 pending'), findsOneWidget);
+        expect(
+          find.text('"Run zero-gravity sardine feeder test"'),
+          findsOneWidget,
+        );
+        expect(find.text('45m → 1h 15m'), findsOneWidget);
+        expect(find.text('Confirm all'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'task_agent_suggestions_${viewport}_$theme',
+          subdir: 'manual',
+        );
+      });
+
       testWidgets('$viewport task agent manual updates — $theme', (
         tester,
       ) async {
@@ -735,6 +802,7 @@ Future<void> _pumpTaskSurface(
   required JournalRepository journalRepository,
   required Widget surface,
   bool automaticUpdates = true,
+  bool showAgentSuggestions = false,
 }) async {
   applyScreenshotDevice(tester, device);
   final tasksById = {
@@ -838,9 +906,11 @@ Future<void> _pumpTaskSurface(
                   agentId == _manualTaskAgentId ? taskAgentState : null,
             ),
             unifiedSuggestionListProvider.overrideWith(
-              (ref, taskId) async => const UnifiedSuggestionList(
-                open: [],
-                activity: [],
+              (ref, taskId) async => UnifiedSuggestionList(
+                open: showAgentSuggestions
+                    ? _manualTaskAgentSuggestions()
+                    : const [],
+                activity: const [],
                 agentName: _manualTaskAgentName,
               ),
             ),
@@ -899,6 +969,31 @@ Future<void> _focusTaskAgentCard(
   final position = tester.state<ScrollableState>(scrollable).position;
   final targetTop = tester.getTopLeft(summary).dy;
   final desiredTop = device.isPhone ? 112.0 : 24.0;
+  position.jumpTo(
+    (position.pixels + targetTop - desiredTop).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    ),
+  );
+  await settleFrames(tester, 4);
+}
+
+Future<void> _focusTaskAgentSuggestions(
+  WidgetTester tester, {
+  required ScreenshotDevice device,
+}) async {
+  final proposals = find.text('Proposed changes');
+  final scrollable = find.byType(Scrollable).first;
+  await tester.scrollUntilVisible(
+    proposals,
+    320,
+    scrollable: scrollable,
+  );
+  await settleFrames(tester, 4);
+
+  final position = tester.state<ScrollableState>(scrollable).position;
+  final targetTop = tester.getTopLeft(proposals).dy;
+  final desiredTop = device.isPhone ? 560.0 : 740.0;
   position.jumpTo(
     (position.pixels + targetTop - desiredTop).clamp(
       position.minScrollExtent,
