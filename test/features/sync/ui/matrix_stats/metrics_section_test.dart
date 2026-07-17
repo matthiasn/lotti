@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_section.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -272,6 +273,54 @@ void main() {
       expect(find.text('Signals'), findsOneWidget);
       expect(find.text('Signals (client stream)'), findsOneWidget);
       expect(find.text('Signals (connectivity)'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'renders localized labels for every non-zero signal metric',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: SyncMetricsSection(
+              metrics: const {
+                'signalClientStream': 5,
+                'signalTimelineCallbacks': 4,
+                'signalConnectivity': 3,
+                'signalLatencyLastMs': 22,
+                'signalLatencyMinMs': 11,
+                'signalLatencyMaxMs': 44,
+              },
+              lastUpdated: DateTime(2025, 1, 1, 12),
+              title: 'Sync Metrics',
+              lastUpdatedLabel: 'Last updated:',
+              onForceRescan: _noop,
+              onRetryNow: _noop,
+              onCopyDiagnostics: _noop,
+              onRefresh: _noop,
+              fetchDiagnostics: _emptyDiagnostics,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final messages = tester.element(find.byType(SyncMetricsSection)).messages;
+      expect(
+        find.text(messages.matrixStatsSignalsClientStream),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.matrixStatsSignalsTimelineCallbacks),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.matrixStatsSignalsConnectivity),
+        findsOneWidget,
+      );
+      expect(find.text(messages.matrixStatsSignalLatencyLast), findsOneWidget);
+      expect(find.text(messages.matrixStatsSignalLatencyMin), findsOneWidget);
+      expect(find.text(messages.matrixStatsSignalLatencyMax), findsOneWidget);
     },
   );
 }
