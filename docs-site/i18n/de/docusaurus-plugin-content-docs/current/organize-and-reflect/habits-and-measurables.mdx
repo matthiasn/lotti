@@ -1,0 +1,156 @@
+---
+title: Gewohnheiten und Messungen verfolgen
+description: Konfiguriere wiederkehrendes Verhalten und numerische Beobachtungen und erfasse beides ehrlich.
+---
+
+# Gewohnheiten und Messungen verfolgen
+
+Eine Gewohnheit beantwortet **Hat dieses wiederkehrende Verhalten
+stattgefunden?**, eine Messgröße **Welchen numerischen Wert habe ich
+beobachtet?**. Beide können dasselbe Ziel unterstützen, sind aber nicht
+austauschbar: „Kaiserpinguine durchzählen“ ist eine Gewohnheit,
+„Gezählte Pinguine“ ein Messwert.
+
+## Mit Gewohnheiten arbeiten
+
+Die Gewohnheitsseite ordnet aktive Definitionen nach jetzt fällig, später
+geplant und abgeschlossen. Tagesübersicht, Konsistenzverlauf, Serien und
+Abschlussquote zeigen Muster, ohne einen verpassten Tag zur ganzen Geschichte
+zu machen.
+
+<ManualScreenshot
+  caseId="habits/today"
+  alt="Gewohnheitsübersicht für Pinguinbetrieb mit Habitatprüfungen, Pinguinzählung, Sardinenbestand, Abschlussstatus, Serien und Verlauf"
+/>
+
+### Gewohnheitsdefinitionen erstellen und finden
+
+1. Öffne **Einstellungen → Gewohnheiten**.
+2. Wähle **Gewohnheit erstellen**.
+3. Gib dem Verhalten einen konkreten, wiederholbaren Namen und eine nützliche
+   Beschreibung.
+4. Wähle Kategorie, Optionen und Zeitplan.
+5. Speichere.
+
+<ManualScreenshot
+  caseId="habits/settings-list"
+  alt="Gewohnheitseinstellungen mit Kaiserpinguine durchzählen, Sardinenprognose prüfen und Habitatdichtungen ablaufen samt Favorit-, Inaktiv- und Privatstatus"
+  caption="Durchsuche hier Definitionen. Stern, verborgenes Auge und Schloss markieren Favorit, Inaktiv und Privat."
+/>
+
+<ManualScreenshot
+  caseId="habits/settings-detail"
+  alt="Editor für Kaiserpinguine durchzählen mit Expeditionsbeschreibung, Kategorie Pinguinbetrieb und Optionen Favorit, Privat und Aktiv"
+/>
+
+Der Editor enthält:
+
+- **Kategorie** für Filter und visuellen Kontext.
+- **Dashboard**, wenn die Gewohnheit dort als Diagramm erscheinen soll.
+- **Favorit** für höhere Sichtbarkeit.
+- **Privat**, um sie bei ausgeblendeten privaten Einträgen zu verstecken.
+- **Aktiv**, um ihre Sichtbarkeit ohne Löschen des Verlaufs zu steuern.
+
+### Eine tägliche Gewohnheit planen
+
+<ManualScreenshot
+  caseId="habits/schedule"
+  alt="Zeitplan für Kaiserpinguine durchzählen ab 1. Juli, sichtbar ab 06:00 Uhr mit Alarm um 06:30 Uhr"
+/>
+
+Der aktuelle Editor ist auf tägliche Gewohnheiten ausgerichtet. Setze ein
+**Startdatum**, verschiebe optional **Anzeigen ab** und wähle optional einen
+**Alarm**. Das Datenmodell versteht auch wöchentliche und monatliche Pläne,
+aber der aktuelle Editor bietet die reicheren Zeitoptionen für täglich.
+
+### Erfassen, was tatsächlich passiert ist
+
+Öffne eine fällige Gewohnheit oder ihre Schnellaktion. Das Formular bietet:
+
+- **Erfolg** – das Verhalten fand statt.
+- **Verpasst** – es war erwartet und möglich, fand aber nicht statt.
+- **Überspringen** – es war an diesem Tag nicht sinnvoll anwendbar.
+
+<ManualScreenshot
+  caseId="habits/record"
+  alt="Gewohnheitsabschluss für die Inspektion der Pinguin-Habitatdichtungen mit Erfolg, Überspringen, Verpasst, Datum und Notizen"
+/>
+
+Wähle den Zustand, der die Wirklichkeit bewahrt. Ein ehrlicher Verlauf ist
+nützlicher als ein perfektes Diagramm. Abschlüsse sind Journaleinträge; spätere
+Ansichten können Ergebnis pro Gewohnheit und Tag rekonstruieren.
+
+## Mit Messgrößen arbeiten
+
+Eine Messgrößendefinition beschreibt die Zahl vor der Erfassung: Name, Einheit,
+Datenschutz und Zusammenfassung mehrerer Beobachtungen.
+
+<ManualScreenshot
+  caseId="measurables/settings-list"
+  alt="Messgrößeneinstellungen mit Habitatdruck, Gezählte Pinguine und Verzehrte Sardinen"
+/>
+
+### Einen Messdatentyp erstellen
+
+1. Öffne **Einstellungen → Messdatentypen**.
+2. Wähle Hinzufügen.
+3. Gib Name, optionale Beschreibung und kurze Einheit ein.
+4. Wähle die Standardaggregation für Diagramme.
+5. Entscheide über Favorit und Privat, dann speichere.
+
+<ManualScreenshot
+  caseId="measurables/settings-detail"
+  alt="Editor für Habitatdruck mit kPa und täglicher Mittelwert-Aggregation"
+/>
+
+Wähle nach der Bedeutung wiederholter Werte:
+
+| Aggregation | Verwende sie, wenn … |
+| --- | --- |
+| Keine Aggregation | Jede Beobachtung einzeln zählt |
+| Tagessumme | Werte sich aufsummieren, etwa verzehrte Sardinen |
+| Tagesmaximum | Die Spitze des Tages entscheidend ist |
+| Tagesmittel | Werte eine wechselnde Größe abtasten, etwa Habitatdruck |
+| Stundensumme | Eine Summe feinere Stundenblöcke braucht |
+
+Die Einheit ist Anzeigekontext, kein Umrechner. Bei `kPa` musst du konsistent
+kPa erfassen. Lege eine andere Messgröße an, wenn eine andere Einheit eine
+wirklich andere Reihe darstellt.
+
+### Eine Messung erfassen
+
+Öffne ein Dashboard mit der Messgröße und wähle am Diagramm Hinzufügen. Gib den
+Wert ein; Lotti hält die Einheit daneben. Jüngste unterschiedliche Werte
+erscheinen als **Schnellerfassung**, wenn Wiederholen sinnvoll ist.
+
+<ManualScreenshot
+  caseId="measurements/capture"
+  alt="Editor für Verzehrte Sardinen über dem gefüllten Dashboard mit 84 Sardinen, Schnellerfassungen, Beobachtungszeit, Kommentar und Speichern"
+/>
+
+**Erfasst um** ist der echte Messzeitpunkt, nicht die spätere Eingabezeit.
+Die erste Seite wählt das Datum; **Heute** kehrt zum aktuellen Tag zurück.
+
+<ManualScreenshot
+  caseId="measurements/date"
+  alt="Kalender für Erfasst um mit Freitag, 17. Juli 2026 für die Sardinenmessung"
+/>
+
+Scrolle zur Uhrzeit. **Jetzt** stellt die aktuelle Zeit wieder her. **Fertig**
+kehrt zum gefüllten Entwurf zurück, **Speichern** erstellt den Journaleintrag.
+
+<ManualScreenshot
+  caseId="measurements/time"
+  alt="Zeitwahl für Erfasst um auf 10:30 Uhr bei der Sardinenmessung"
+/>
+
+Ein Kommentar ist optional, aber hilfreich bei Lieferung, ungewöhnlicher
+Schicht oder neuer Messmethode. Speichern ändert weder Definition noch
+Aggregationsregel.
+
+## Beides verbinden, ohne es zu verwechseln
+
+Das Durchzählen kann erfolgreich abgeschlossen sein, obwohl nur 36 Pinguine
+gezählt wurden: Die Gewohnheit erfasst das Verfahren, die Messgröße das
+Ergebnis. Setze beide auf ein [Dashboard](./dashboards.mdx), wenn ihre Beziehung
+eine wiederkehrende operative Frage beantwortet.

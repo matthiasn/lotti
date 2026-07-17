@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import {access, readdir, readFile} from 'node:fs/promises';
-import {resolve} from 'node:path';
+import {relative, resolve} from 'node:path';
 
 import {
   findLegacyManualImport,
@@ -286,10 +286,55 @@ for (const screenshotCase of screenshotRegistry.cases) {
   }
 }
 
-const docFiles = await collectFiles(resolve(siteDirectory, 'docs'));
+const docsDirectory = resolve(siteDirectory, 'docs');
+const docFiles = await collectFiles(docsDirectory);
+const localizedDocFiles = [...docFiles];
+for (const locale of screenshotRegistry.locales ?? []) {
+  if (locale === screenshotRegistry.defaultLocale) continue;
+  const localeDocsDirectory = resolve(
+    siteDirectory,
+    'i18n',
+    locale,
+    'docusaurus-plugin-content-docs',
+    'current',
+  );
+  let translatedFiles = [];
+  try {
+    translatedFiles = await collectFiles(localeDocsDirectory);
+  } catch {
+    errors.push(`Missing translated docs directory for ${locale}.`);
+    continue;
+  }
+  const translatedByPath = new Map(
+    translatedFiles.map((path) => [relative(localeDocsDirectory, path), path]),
+  );
+  const sourcePaths = new Set();
+  for (const docFile of docFiles) {
+    const relativePath = relative(docsDirectory, docFile);
+    sourcePaths.add(relativePath);
+    const translatedPath = translatedByPath.get(relativePath);
+    if (!translatedPath) {
+      errors.push(`${locale} is missing translated page ${relativePath}.`);
+      continue;
+    }
+    const [source, translation] = await Promise.all([
+      readFile(docFile, 'utf8'),
+      readFile(translatedPath, 'utf8'),
+    ]);
+    if (source.trim() === translation.trim()) {
+      errors.push(`${locale} page ${relativePath} is still identical to English.`);
+    }
+  }
+  for (const relativePath of translatedByPath.keys()) {
+    if (!sourcePaths.has(relativePath)) {
+      errors.push(`${locale} contains obsolete translated page ${relativePath}.`);
+    }
+  }
+  localizedDocFiles.push(...translatedFiles);
+}
 const referencedCaseIds = new Set();
 const screenshotPattern = /<ManualScreenshot[\s\S]*?caseId=["']([^"']+)["'][\s\S]*?\/>/g;
-for (const docFile of docFiles) {
+for (const docFile of localizedDocFiles) {
   const source = await readFile(docFile, 'utf8');
   const authoringMarkup = source
     .replace(/```[\s\S]*?```/g, '')
@@ -328,6 +373,18 @@ if (options['media-root']) {
     errors.push(`Missing or invalid media manifest for ${version}.`);
   }
   if (manifest) {
+    if (manifest.schemaVersion !== 2) {
+      errors.push(`Media manifest for ${version} must use schemaVersion 2.`);
+    }
+    if (manifest.defaultLocale !== screenshotRegistry.defaultLocale) {
+      errors.push(`Media manifest for ${version} has the wrong default locale.`);
+    }
+    if (
+      JSON.stringify(manifest.locales) !==
+      JSON.stringify(screenshotRegistry.locales)
+    ) {
+      errors.push(`Media manifest for ${version} has the wrong locale catalog.`);
+    }
     const manifestCases = new Map(
       (manifest.cases ?? []).map((item) => [item.id, item]),
     );
@@ -337,16 +394,20 @@ if (options['media-root']) {
         errors.push(`Media manifest is missing ${screenshotCase.id}.`);
         continue;
       }
-      for (const variant of requiredVariants) {
-        const metadata = manifestCase.variants?.[variant];
-        if (!metadata) {
-          errors.push(`Media manifest is missing ${screenshotCase.id} ${variant}.`);
-          continue;
-        }
-        try {
-          await access(resolve(versionRoot, metadata.path));
-        } catch {
-          errors.push(`Media file does not exist: ${version}/${metadata.path}.`);
+      for (const locale of screenshotRegistry.locales) {
+        for (const variant of requiredVariants) {
+          const metadata = manifestCase.locales?.[locale]?.variants?.[variant];
+          if (!metadata) {
+            errors.push(
+              `Media manifest is missing ${locale} ${screenshotCase.id} ${variant}.`,
+            );
+            continue;
+          }
+          try {
+            await access(resolve(versionRoot, metadata.path));
+          } catch {
+            errors.push(`Media file does not exist: ${version}/${metadata.path}.`);
+          }
         }
       }
     }
@@ -372,7 +433,8 @@ if (errors.length > 0) {
 } else {
   console.log(
     `Manual validation passed: ${features.features.length} features, ` +
-      `${docFiles.length} pages, ${screenshotRegistry.cases.length} screenshot case(s), ` +
+      `${docFiles.length} source pages across ${screenshotRegistry.locales.length} locale(s), ` +
+      `${screenshotRegistry.cases.length} screenshot case(s), ` +
       `${surfaceInventory.surfaces.length} inventoried surface(s) ` +
       `(${surfaceStatusCounts.get('verified')} verified, ` +
       `${surfaceStatusCounts.get('documented')} documented, ` +

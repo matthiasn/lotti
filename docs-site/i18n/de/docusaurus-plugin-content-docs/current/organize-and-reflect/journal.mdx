@@ -1,0 +1,170 @@
+---
+title: Ein nützliches Journal führen
+description: Finde Notizen, Fotos, Aufnahmen, Ereignisse und KI-Ergebnisse in einem Feed und verbinde die unterstützende Aktivität.
+---
+
+# Ein nützliches Journal führen
+
+Das Journal ist Lottis gemischter Eintragsfeed. Es bringt Notizen, Fotos,
+Aufnahmen, Ereignisse, Checklisten, Messungen und KI-Antworten zusammen, ohne
+sie zu Aufgaben zu machen. Verwende es zum Erinnern, Prüfen und Verbinden von
+Geschehenem; verwende **Aufgaben**, wenn der Eintrag selbst noch zu erledigende
+Arbeit ist.
+
+<ManualScreenshot
+  caseId="journal/overview"
+  alt="Journalfeed mit Project-Waddle-Startfoto, Missionslog, Europa-Sardinen-Sprachnotiz, Gipfelereignis und Frachttelemetrie-Zusammenfassung"
+  caption="Typglyphen machen den gemischten Feed lesbar; Kategorienfarben, Labels, Sterne, Markierungen, Dauer und Statuschips halten Kontext an jedem Eintrag."
+/>
+
+## Den gemischten Feed lesen
+
+Jede Karte beginnt mit ihrem Inhalt und zeigt den Typ über eine farbige Glyphe.
+Die Farbe stammt aus der Kategorie, sodass **Pinguinbetrieb**,
+**Missionskontrolle** und **Fischdiplomatie** auch zwischen verschiedenen
+Eintragstypen erkennbar bleiben.
+
+Karten ergänzen typabhängige Metadaten:
+
+- Audiomemo: Dauer und Markierung;
+- Ereignis: Status, Datum, Bewertung und Notiz;
+- Checkliste: Abschlussfortschritt;
+- Messung: Wert und Einheit;
+- KI-Antwort: Kennzeichnung als KI-erzeugt.
+
+Der Feed lädt seitenweise, statt einen langen Verlauf vollständig zu rendern.
+
+## Nach Wörtern oder Bedeutung suchen
+
+**Volltext** findet gespeicherte Wörter. Bei aktivierter Vektorsuche findet
+**Vektor** Einträge mit ähnlicher Bedeutung trotz anderer Formulierung.
+Vektortreffer erscheinen als eine sortierte Ergebnismenge, nicht als endloser
+Feed.
+
+Ist Vektorsuche nicht verfügbar oder wird später deaktiviert, kehrt Lotti zu
+Volltext zurück, statt die Suche unbenutzbar zu lassen.
+
+## Sichtbare Einträge filtern
+
+<ManualScreenshot
+  caseId="journal/filters"
+  alt="Journalfilter mit Favorit-, Markiert-, Privat-, Typ- und Kategoriensteuerung über dem Pinguinlogistik-Feed"
+  caption="Kombiniere Eigenschaften, Typen und Kategorien zur benötigten Teilansicht."
+/>
+
+Öffne den Filter neben der Suche. Begrenzen kannst du auf:
+
+- favorisierte, markierte oder private Einträge;
+- Typen wie Text, Ereignis, Audio, Foto, Checkliste, To-do und KI-Antwort; und
+- eine oder mehrere Kategorien.
+
+Die Journalwahl bleibt gespeichert. Aufgabenfilter werden getrennt gehalten;
+eine Journaländerung ordnet die Aufgabenseite nicht unerwartet um.
+
+## Einen Eintrag hinzufügen
+
+<ManualScreenshot
+  caseId="journal/create"
+  alt="Hinzufügen-Menü über dem Project-Waddle-Journal mit Ereignis, Aufgabe, Audioaufnahme, Texteintrag, Bildimport und Screenshot"
+  caption="Das Menü zeigt nur Aktionen, die aktuelle Plattform und Kontext unterstützen."
+/>
+
+Wähle **+**. Im Hauptjournal kannst du Text, Aufgabe, Ereignis oder Audio
+erstellen, ein Foto importieren oder einen Screenshot aufnehmen. Bild-Einfügen
+aus der Zwischenablage erscheint bei verfügbarem Bild; Ereignisse nur bei
+aktiviertem Feature.
+
+Innerhalb eines Eintrags passt sich dasselbe Menü an: Dort kann es etwa einen
+bereits verknüpften Timer erstellen, in Aufgabendetails auch eine Checkliste.
+Importierte, eingefügte, abgelegte und aufgenommene Bilder können bei
+konfigurierter Automatisierung automatisch analysiert werden.
+
+## Einen Eintrag lesen und bearbeiten
+
+<ManualScreenshot
+  caseId="journal/detail"
+  alt="Detail des Project-Waddle-Missionslogs mit Kategorie, Labels, Stern, Dauer, Rich Text, Aktivitätsfiltern und verknüpftem Startfoto"
+  caption="Der Eintrag bleibt maßgeblich; unterstützende Fotos, Timer, Prompts und eingehende Links hängen darunter."
+/>
+
+Der Kopf bündelt Datum, Kategorie, Labels, Stern, Markierung, Privatstatus und
+Überlaufaktionen. Wähle den Text für Rich-Text-Bearbeitung. Speichere über den
+Editor oder mit **Strg+S** unter Windows/Linux und **Befehl+S** unter macOS.
+Ungespeicherter Text bleibt Entwurf; Verwerfen stellt den letzten Speicherstand
+wieder her.
+
+Das Überlaufmenü enthält passende Aktionen wie Kopieren, Löschen und
+Medienfunktionen. Auf Desktop können Bild- und Audioeinträge ihre Quelldatei im
+Dateimanager zeigen.
+
+### Datum und Dauer ändern
+
+Wähle Datum oder Dauer im Kopf für **Datum & Uhrzeit**. Bei Einträgen an einem
+Tag wählst du ein Datum und unabhängige Start-/Endzeit. Die Dauer aktualisiert
+sich mit den Rädern. **Eigenes Enddatum wählen** erlaubt Nacht- und
+Mehrtagesbereiche. **Jetzt** setzt den jeweiligen Endpunkt auf aktuellen
+Zeitpunkt.
+
+<ManualScreenshot
+  caseId="journal/date-time"
+  alt="Datum-und-Uhrzeit-Editor für das Project-Waddle-Missionslog am 17. Juli von 08:10 bis 08:40 Uhr mit 30 Minuten Dauer"
+/>
+
+Die Datumsschaltfläche öffnet den Kalender. **Heute** kehrt zum aktuellen Tag,
+**Fertig** zum Bereichseditor zurück und **Speichern** wendet Start und Ende an.
+
+<ManualScreenshot
+  caseId="journal/date-picker"
+  alt="Startdatumskalender mit Freitag, 17. Juli 2026 für das Project-Waddle-Missionslog"
+/>
+
+Der Zeitstempel bestimmt die Position in chronologischen Ansichten. Er ändert
+weder Text noch verknüpfte Aktivität.
+
+## Verknüpfte Aktivität verfolgen
+
+<ManualScreenshot
+  caseId="journal/activity"
+  alt="Verknüpfte Project-Waddle-Aktivität mit KI-Coding-Prompt, 23-minütiger Probe zum Pinguinzählen und eingehender Startprüfungsaufgabe"
+  caption="Ausgehende Aktivität zeigt, was dieser Eintrag enthält; Verknüpft von zeigt Einträge, die auf ihn verweisen."
+/>
+
+Einträge können Fotos, Timer, Audio, KI-Ergebnisse, Notizen und andere Belege
+verknüpfen. Aktivitätspillen zeigen oder verstecken **Timer**, **Audio**,
+**Bilder** und **Code**. Im Sortierdialog wechselst du zwischen neu/alt zuerst,
+nimmst verborgene Links hinzu oder zeigst nur Markiertes.
+
+Die Richtungen unterscheiden sich:
+
+- Aktivität unter dem Eintrag ist **von diesem Eintrag** verknüpft;
+- **Verknüpft von** nennt Einträge, die **auf diesen Eintrag** zeigen.
+
+Das Missionslog enthält Startfoto, Diagnoseprompt und Zähltimer. Die
+Startprüfungsaufgabe steht unter Verknüpft von, weil sie auf das Log verweist.
+
+Im Sortierdialog kannst du mehrere Änderungen vorbereiten. Reihenfolge,
+verborgene Einträge und Nur-markiert gelten erst nach dem Haken; anderes
+Schließen verwirft die vorbereitete Auswahl.
+
+<ManualScreenshot
+  caseId="journal/linked-filter"
+  alt="Filter-und-Sortier-Dialog über Project-Waddle-Aktivität mit Älteste zuerst und Verborgene Einträge anzeigen"
+/>
+
+## Ein Foto öffnen und speichern
+
+Wähle ein Foto für den Vollbildbetrachter. Zoome und verschiebe per Geste oder
+Steuerung und setze bei Bedarf zurück. Speichern verwendet die Originaldatei,
+nicht die Vorschau: Mobil geht sie nach Berechtigung in die Fotobibliothek,
+Desktop öffnet den System-Speicherdialog.
+
+## Journal oder Aufgabe?
+
+| Journal für … | Aufgaben für … |
+| --- | --- |
+| Missionslog, Foto, Sprachnotiz, Messung, Ereigniserinnerung oder KI-Ergebnis | Aktion mit Status, Priorität, Schätzung, Checkliste oder Arbeitssitzung |
+| „Europa-Sardinen sind kälter als das diplomatische Protokoll verlangt“ | „Schwerelosen Fischfütterer neu kalibrieren“ |
+| Belege und Kontext zum späteren Nachschlagen | Arbeit zum Planen, Ausführen und Abschließen |
+
+Verknüpfe sie, wenn eine Aufgabe Journalbelege braucht. So bleibt die Aktion
+fokussiert und die reichere operative Aufzeichnung erhalten.

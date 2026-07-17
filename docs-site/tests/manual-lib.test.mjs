@@ -19,7 +19,9 @@ test('the screenshot contract requires the complete viewport and theme matrix', 
     'desktop-dark',
   ]);
   const errors = validateScreenshotRegistry({
-    schemaVersion: 1,
+    schemaVersion: 2,
+    defaultLocale: 'en',
+    locales: ['en', 'de'],
     cases: [
       {
         id: 'settings/home',
@@ -71,6 +73,32 @@ test('canonical media paths are stable and nested by case', () => {
   assert.equal(
     canonicalVariantPath('settings/home', 'desktop-dark'),
     'settings/home/desktop-dark.webp',
+  );
+  assert.equal(
+    canonicalVariantPath('settings/home', 'desktop-dark', 'de', 'en'),
+    'de/settings/home/desktop-dark.webp',
+  );
+});
+
+test('the screenshot registry requires a valid default and unique locales', () => {
+  const screenshotCase = {
+    id: 'settings/home',
+    variants: Object.fromEntries(
+      requiredVariants.map((variant) => [variant, `${variant}.png`]),
+    ),
+  };
+
+  assert.deepEqual(
+    validateScreenshotRegistry({
+      schemaVersion: 2,
+      defaultLocale: 'fr',
+      locales: ['en', 'de', 'de'],
+      cases: [screenshotCase],
+    }),
+    [
+      'screenshot-cases.json defaultLocale must be listed in locales.',
+      'screenshot-cases.json contains duplicate locale de.',
+    ],
   );
 });
 

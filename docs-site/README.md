@@ -13,6 +13,19 @@ make manual_deps
 make manual_start
 ```
 
+`manual_start` serves the English authoring locale. Use the production build to
+review the complete locale matrix and browser-language routing:
+
+```bash
+make manual_check
+make manual_serve
+```
+
+The local English root is `/manual/development/`; German is available at
+`/manual/development/de/`. The navbar selector preserves the current page, and
+a German browser visiting the unqualified manual root is redirected to German
+unless the reader has explicitly chosen a language before.
+
 Run the complete manual check with:
 
 ```bash
@@ -69,15 +82,23 @@ registry reuses deterministic feature screenshot harnesses:
 make manual_screenshots
 ```
 
-That command captures all registered mobile/desktop and light/dark PNG inputs
-into an ignored staging directory, converts them to canonical WebP paths, and
-writes a checksum/dimension manifest under
+That command captures all registered English and German mobile/desktop and
+light/dark PNG inputs into an ignored staging directory, converts them to
+canonical WebP paths, and writes a checksum/dimension manifest under
 `../lotti-docs/manual/screenshots/development/`.
+
+English media keeps the established
+`development/<case>/<viewport>-<theme>.webp` path. German media lives at
+`development/de/<case>/<viewport>-<theme>.webp`. Visible deterministic demo
+copy that does not come from the app ARB files must use
+`manualScreenshotText(en: …, de: …)` so the two catalogs show the same scenario
+in the selected language.
 
 Add a screenshot by extending `metadata/screenshot-cases.json`, reusing or
 adding an opt-in Flutter screenshot test, then referencing its stable case ID
 from MDX with `ManualScreenshot`. Direct one-off app images are rejected: every
-displayed app screenshot must have the complete four-variant matrix.
+displayed app screenshot must have the complete four-variant matrix in every
+manual locale.
 
 ## Release model
 

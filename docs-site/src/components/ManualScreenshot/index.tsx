@@ -1,5 +1,6 @@
 import React, {useMemo, useRef, useSyncExternalStore} from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import {translate} from '@docusaurus/Translate';
 import {useColorMode} from '@docusaurus/theme-common';
 
 import styles from './styles.module.css';
@@ -7,6 +8,7 @@ import {
   screenshotViewportStore,
   type ScreenshotViewport,
 } from './viewportPreference.mjs';
+import {manualScreenshotSource} from './screenshotSource.mjs';
 
 type Theme = 'light' | 'dark';
 
@@ -23,7 +25,10 @@ export default function ManualScreenshot({
   caption,
   mediaVersion,
 }: Props): React.JSX.Element {
-  const {siteConfig} = useDocusaurusContext();
+  const {
+    i18n: {currentLocale, defaultLocale},
+    siteConfig,
+  } = useDocusaurusContext();
   const {colorMode} = useColorMode();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const viewport = useSyncExternalStore(
@@ -40,9 +45,66 @@ export default function ManualScreenshot({
   ).replace(/\/$/, '');
 
   const source = useMemo(
-    () => `${mediaBaseUrl}/${version}/${caseId}/${viewport}-${theme}.webp`,
-    [caseId, mediaBaseUrl, theme, version, viewport],
+    () =>
+      manualScreenshotSource({
+        caseId,
+        defaultLocale,
+        locale: currentLocale,
+        mediaBaseUrl,
+        theme,
+        version,
+        viewport,
+      }),
+    [
+      caseId,
+      currentLocale,
+      defaultLocale,
+      mediaBaseUrl,
+      theme,
+      version,
+      viewport,
+    ],
   );
+
+  const labels = {
+    allScreenshots: translate({
+      id: 'manual.screenshot.allScreenshots',
+      message: 'All screenshots',
+      description: 'Label for the global screenshot viewport preference',
+    }),
+    close: translate({id: 'manual.screenshot.close', message: 'Close'}),
+    desktop: translate({id: 'manual.screenshot.desktop', message: 'Desktop'}),
+    desktopView: translate({
+      id: 'manual.screenshot.desktopView',
+      message: 'Desktop view',
+    }),
+    expand: translate({id: 'manual.screenshot.expand', message: 'Expand'}),
+    expandedViewer: translate({
+      id: 'manual.screenshot.expandedViewer',
+      message: 'Expanded screenshot viewer',
+    }),
+    fullscreen: translate({
+      id: 'manual.screenshot.fullscreen',
+      message: 'Fullscreen',
+    }),
+    layoutLabel: translate({
+      id: 'manual.screenshot.layoutLabel',
+      message: 'Screenshot layout for all images',
+    }),
+    mobile: translate({id: 'manual.screenshot.mobile', message: 'Mobile'}),
+    mobileView: translate({
+      id: 'manual.screenshot.mobileView',
+      message: 'Mobile view',
+    }),
+    openViewer: translate({
+      id: 'manual.screenshot.openViewer',
+      message: 'Open screenshot viewer',
+    }),
+    screenshot: translate({
+      id: 'manual.screenshot.screenshot',
+      message: 'Screenshot',
+    }),
+  };
 
   function selectViewport(nextViewport: ScreenshotViewport): void {
     screenshotViewportStore.setViewport(nextViewport);
@@ -71,8 +133,8 @@ export default function ManualScreenshot({
 
   return (
     <figure className={styles.figure} data-case-id={caseId}>
-      <div className={styles.toolbar} aria-label="Screenshot layout for all images">
-        <span className={styles.label}>All screenshots</span>
+      <div className={styles.toolbar} aria-label={labels.layoutLabel}>
+        <span className={styles.label}>{labels.allScreenshots}</span>
         <div className={styles.toolbarActions}>
           <div className={styles.segmentedControl} role="group">
             {(['mobile', 'desktop'] as const).map((option) => (
@@ -83,18 +145,18 @@ export default function ManualScreenshot({
                 onClick={() => selectViewport(option)}
                 type="button"
               >
-                {option === 'mobile' ? 'Mobile' : 'Desktop'}
+                {option === 'mobile' ? labels.mobile : labels.desktop}
               </button>
             ))}
           </div>
           <button className={styles.expandButton} onClick={openViewer} type="button">
-            Expand
+            {labels.expand}
           </button>
         </div>
       </div>
       <div className={styles.imageStage} data-viewport={viewport}>
         <button
-          aria-label="Open screenshot viewer"
+          aria-label={labels.openViewer}
           className={styles.imageButton}
           onClick={openViewer}
           type="button"
@@ -111,7 +173,7 @@ export default function ManualScreenshot({
       </div>
       {caption ? <figcaption className={styles.caption}>{caption}</figcaption> : null}
       <dialog
-        aria-label="Expanded screenshot viewer"
+        aria-label={labels.expandedViewer}
         className={styles.dialog}
         onClick={(event) => {
           if (event.target === event.currentTarget) closeViewer();
@@ -121,15 +183,17 @@ export default function ManualScreenshot({
         <div className={styles.viewer} data-viewport={viewport}>
           <div className={styles.viewerToolbar}>
             <div>
-              <strong>Screenshot</strong>
-              <span>{viewport === 'mobile' ? 'Mobile view' : 'Desktop view'}</span>
+              <strong>{labels.screenshot}</strong>
+              <span>
+                {viewport === 'mobile' ? labels.mobileView : labels.desktopView}
+              </span>
             </div>
             <div className={styles.viewerActions}>
               <button onClick={enterFullscreen} type="button">
-                Fullscreen
+                {labels.fullscreen}
               </button>
               <button onClick={closeViewer} type="button">
-                Close
+                {labels.close}
               </button>
             </div>
           </div>

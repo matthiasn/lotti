@@ -64,39 +64,54 @@ const generatedAt =
 const manifestCases = [];
 
 for (const screenshotCase of registry.cases) {
-  const variants = {};
-  for (const variant of requiredVariants) {
-    const inputPath = resolve(captureDirectory, screenshotCase.variants[variant]);
-    const relativeOutputPath = canonicalVariantPath(screenshotCase.id, variant);
-    const outputPath = resolve(outputDirectory, relativeOutputPath);
-    await mkdir(resolve(outputPath, '..'), {recursive: true});
+  const locales = {};
+  for (const locale of registry.locales) {
+    const variants = {};
+    for (const variant of requiredVariants) {
+      const inputPath = resolve(
+        captureDirectory,
+        locale,
+        screenshotCase.variants[variant],
+      );
+      const relativeOutputPath = canonicalVariantPath(
+        screenshotCase.id,
+        variant,
+        locale,
+        registry.defaultLocale,
+      );
+      const outputPath = resolve(outputDirectory, relativeOutputPath);
+      await mkdir(resolve(outputPath, '..'), {recursive: true});
 
-    const input = await readFile(inputPath);
-    await sharp(input)
-      .webp({quality: 88, effort: 5, smartSubsample: true})
-      .toFile(outputPath);
-    const output = await readFile(outputPath);
-    const metadata = await sharp(output).metadata();
+      const input = await readFile(inputPath);
+      await sharp(input)
+        .webp({quality: 88, effort: 5, smartSubsample: true})
+        .toFile(outputPath);
+      const output = await readFile(outputPath);
+      const metadata = await sharp(output).metadata();
 
-    variants[variant] = {
-      path: relativeOutputPath,
-      width: metadata.width,
-      height: metadata.height,
-      bytes: output.byteLength,
-      sha256: sha256(output),
-    };
+      variants[variant] = {
+        path: relativeOutputPath,
+        width: metadata.width,
+        height: metadata.height,
+        bytes: output.byteLength,
+        sha256: sha256(output),
+      };
+    }
+    locales[locale] = {variants};
   }
   manifestCases.push({
     id: screenshotCase.id,
     title: screenshotCase.title,
     sourceTest: screenshotCase.sourceTest,
-    variants,
+    locales,
   });
 }
 
 const manifest = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   version,
+  defaultLocale: registry.defaultLocale,
+  locales: registry.locales,
   generatedAt,
   appCommit,
   cases: manifestCases,

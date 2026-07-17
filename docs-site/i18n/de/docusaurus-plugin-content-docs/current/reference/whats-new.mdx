@@ -1,0 +1,67 @@
+---
+title: Neuigkeiten ansehen
+description: Lies die aktuelle Lotti-Version, blättere durch ältere Versionshinweise und steuere ungesehene Updates.
+---
+
+# Neuigkeiten ansehen
+
+**Neuigkeiten** zeigt Versionshinweise direkt in Lotti und passend zu deiner
+installierten Version. Die Ansicht kann nach einem geeigneten ersten Start oder
+Versionswechsel automatisch erscheinen. Bei aktivierter Funktion erreichst du
+sie auch über **Neuigkeiten** in den Einstellungen.
+
+Die neuesten Hinweise stehen zuerst. Jede Seite kombiniert ein eigenes
+Titelbild, die genaue App-Version und eine kurze Beschreibung sichtbarer
+Änderungen.
+
+<ManualScreenshot
+  caseId="whats-new/latest"
+  alt="Lottis Neuigkeiten-Dialog für Version 0.9.1049 mit Project-Waddle-Missionskontrollbild und Versionshinweisen"
+  caption="Die neueste ungesehene Version trägt NEU. Dieses Beispiel erklärt Verbesserungen an Daily OS und Aufgabenarbeitsbereich vor Project Waddles Orbitalstart."
+/>
+
+## Die aktuelle Version lesen
+
+Das Versionsabzeichen benennt die angezeigte Version. **NEU** markiert die
+neueste Version des geladenen Satzes; es bedeutet nicht, dass Inhalte
+unfertig oder experimentell sind.
+
+Bei langen Hinweisen scrollt der Text unabhängig. Links verwenden Lottis
+normalen Link-Handler. Verfügbare Bilder werden vor einem Seitenwechsel
+vorgeladen, damit das Blättern flüssig bleibt.
+
+## Durch ältere Versionen blättern
+
+<ManualScreenshot
+  caseId="whats-new/past-release"
+  alt="Lottis Neuigkeiten-Dialog für Version 0.9.1048 mit Pinguin-Sardinenmarkt-Grafik und Navigation zu älteren Hinweisen"
+  caption="Blättere mit Pfeilen oder Positionspunkten. Der ältere Project-Waddle-Hinweis behandelt Zeitvergleiche und dashboardfähige Sardinentelemetrie."
+/>
+
+Die Fußzeile bietet:
+
+- rechter Pfeil: nächstältere Version;
+- linker Pfeil: neuere Version;
+- Positionspunkte: aktuelle Stelle im geladenen Satz;
+- **Überspringen**: schließt vor der letzten Seite und markiert den gesamten
+  geladenen Satz als gesehen;
+- **Fertig**: erscheint auf der ältesten Seite und markiert ebenfalls alles als
+  gesehen.
+
+Wischst du den Dialog weg oder tippst außerhalb, ist Lotti vorsichtiger: Nur
+Hinweise bis zur am weitesten erreichten Seite gelten als gesehen. Nicht
+erreichte Versionen können beim nächsten Öffnen wieder erscheinen.
+
+## Bereits geschlossene Hinweise erneut ansehen
+
+Sind keine ungesehenen Versionen übrig, zeigt Neuigkeiten **Du bist auf dem
+neuesten Stand**. Mit **Frühere Versionen ansehen** löschst du lokale Gesehen-
+Marker und kannst den verfügbaren Satz erneut durchblättern. Das ändert weder
+die installierte App-Version noch lädt es einen anderen Build.
+
+Neuigkeiten zeigt niemals Hinweise für eine neuere als die installierte
+Lotti-Version. Kann Inhalt nicht geladen werden, fällt die App auf einen leeren
+Zustand zurück, statt Hinweise zum falschen Build zu präsentieren.
+
+Exakte Buildnummer, Plattform, lokale Eintrags- und Aufgabenzahlen findest du
+unter [Über Lotti](./advanced-settings.mdx#build-und-lokale-summen-prüfen).

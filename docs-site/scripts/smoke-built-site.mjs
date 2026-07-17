@@ -21,6 +21,7 @@ assert.ok(
 );
 for (const feature of features.features) {
   await access(resolve(buildDirectory, feature.page, 'index.html'));
+  await access(resolve(buildDirectory, 'de', feature.page, 'index.html'));
 }
 
 const settingsHtml = await readFile(
@@ -36,7 +37,21 @@ assert.match(
   /manual\/screenshots\/development\/settings\/home\/mobile-dark\.webp/,
 );
 
+const germanSettingsHtml = await readFile(
+  resolve(buildDirectory, 'de', 'reference/settings/index.html'),
+  'utf8',
+);
+assert.match(germanSettingsHtml, /aria-label="Screenshot-Layout für alle Bilder"/);
+assert.match(germanSettingsHtml, />Alle Screenshots</);
+assert.match(germanSettingsHtml, />Mobil</);
+assert.match(germanSettingsHtml, />Desktop</);
+assert.match(
+  germanSettingsHtml,
+  /manual\/screenshots\/development\/de\/settings\/home\/mobile-dark\.webp/,
+);
+
 let screenshotControlCount = 0;
+let germanScreenshotControlCount = 0;
 for (const feature of features.features) {
   if (feature.screenshotCases.length === 0) continue;
   const html = await readFile(
@@ -58,8 +73,21 @@ for (const feature of features.features) {
     `Every ${feature.title} screenshot case must render its expandable viewer.`,
   );
   screenshotControlCount += renderedControls;
+  const germanHtml = await readFile(
+    resolve(buildDirectory, 'de', feature.page, 'index.html'),
+    'utf8',
+  );
+  const germanRenderedControls =
+    germanHtml.match(/aria-label="Screenshot-Layout für alle Bilder"/g)?.length ?? 0;
+  assert.equal(
+    germanRenderedControls,
+    feature.screenshotCases.length,
+    `Every translated ${feature.title} screenshot case must render its viewport control.`,
+  );
+  germanScreenshotControlCount += germanRenderedControls;
   for (const caseId of feature.screenshotCases) {
     assert.match(html, new RegExp(`data-case-id=["']?${caseId}`));
+    assert.match(germanHtml, new RegExp(`data-case-id=["']?${caseId}`));
   }
 }
 
@@ -69,9 +97,15 @@ const searchIndex = await readFile(
 );
 assert.match(searchIndex, /Daily OS/);
 assert.match(searchIndex, /Create your first task/);
+const germanSearchIndex = await readFile(
+  resolve(buildDirectory, 'de', 'search-index.json'),
+  'utf8',
+);
+assert.match(germanSearchIndex, /Daily OS/);
+assert.match(germanSearchIndex, /Deine erste Aufgabe erstellen/);
 
 console.log(
   `Built-site smoke test passed for ${features.features.length} feature routes, ` +
-    `${screenshotControlCount} global screenshot controls, ` +
-    'the interactive screenshot shell, and local search.',
+    `${screenshotControlCount} English and ${germanScreenshotControlCount} German ` +
+    'global screenshot controls, the interactive screenshot shell, and both local search indexes.',
 );

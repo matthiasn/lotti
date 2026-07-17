@@ -1,5 +1,6 @@
 import React from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import {translate} from '@docusaurus/Translate';
 import DropdownNavbarItem from '@theme/NavbarItem/DropdownNavbarItem';
 
 type Release = {
@@ -21,7 +22,10 @@ type Props = Omit<
 export default function ManualVersionNavbarItem(
   props: Props,
 ): React.JSX.Element {
-  const {siteConfig} = useDocusaurusContext();
+  const {
+    i18n: {currentLocale, defaultLocale},
+    siteConfig,
+  } = useDocusaurusContext();
   const currentVersion = String(
     siteConfig.customFields?.manualVersion ?? 'development',
   );
@@ -29,19 +33,30 @@ export default function ManualVersionNavbarItem(
     siteConfig.customFields?.manualRootPath ?? '/manual',
   ).replace(/\/$/, '');
   const catalog = siteConfig.customFields?.manualReleases as ReleaseCatalog;
+  const localeSuffix = currentLocale === defaultLocale ? '' : `/${currentLocale}`;
   const items = catalog.versions.map((release) => ({
     label:
       release.status === 'development'
-        ? `${release.label} (${String(siteConfig.customFields?.sourceAppVersion)})`
+        ? `${translate({
+            id: 'manual.version.development',
+            message: 'Development',
+          })} (${String(siteConfig.customFields?.sourceAppVersion)})`
         : release.label,
-    href: `${manualRootPath}/${release.version}/`,
+    href: `${manualRootPath}/${release.version}${localeSuffix}/`,
   }));
 
   return (
     <DropdownNavbarItem
       {...props}
       items={items}
-      label={currentVersion === 'development' ? 'Development' : currentVersion}
+      label={
+        currentVersion === 'development'
+          ? translate({
+              id: 'manual.version.development',
+              message: 'Development',
+            })
+          : currentVersion
+      }
     />
   );
 }

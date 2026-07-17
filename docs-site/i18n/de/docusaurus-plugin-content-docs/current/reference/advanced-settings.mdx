@@ -1,0 +1,131 @@
+---
+title: Erweiterte Einstellungen sicher verwenden
+description: Steuere Funktionsschalter und Protokollierung, führe Wartung aus, prüfe Onboarding-Metriken und den installierten Build.
+---
+
+# Erweiterte Einstellungen sicher verwenden
+
+Öffne **Einstellungen → Erweiterte Einstellungen** für Power-User-Steuerung,
+Diagnose und Wartung. Diese Seiten verändern Lottis Laufzeit oder lokale Daten;
+normale Personalisierung gehört an andere Stellen.
+
+Desktop hält den Einstellungsbaum neben der gewählten Seite, mobil öffnet jede
+Seite einzeln. Bedienelemente und gespeicherte Werte sind identisch.
+
+<ManualScreenshot
+  caseId="advanced-settings/hub"
+  alt="Lottis erweiterte Einstellungen mit Funktionsschaltern, Animationen, Protokollierung, Wartung, Onboarding-Metriken und Über Lotti"
+  caption="Operative Steuerung bleibt von alltäglichen Vorlieben getrennt. Manche Einträge hängen von Plattform und Fähigkeiten ab."
+/>
+
+## Fähigkeiten mit Funktionsschaltern steuern
+
+<ManualScreenshot
+  caseId="advanced-settings/flags"
+  alt="Lottis Funktionsschalter mit Suche und Optionen für private Einträge, Benachrichtigungen, Standort, Tooltips und KI-Streaming"
+  caption="Die Suche trifft Namen und Beschreibungen. Jeder Schalter ändert die gespeicherte Laufzeitfähigkeit sofort."
+/>
+
+**Funktionsschalter** enthält unter anderem:
+
+- private Einträge, Benachrichtigungen, Standorterfassung und Tooltips;
+- KI-Antwortstreaming und Zusammenfassungswiedergabe;
+- Protokollierung und Matrix-Sync-Verhalten;
+- Seiten wie Gewohnheiten, Dashboards, Ereignisse, Projekte und Neuigkeiten;
+- Embeddings und Vektorsuche; und
+- operative Anzeigen wie Sync-Aktivität, ausstehende Agenten und Fork-Heilung.
+
+**Schalter suchen** filtert nach Titel oder Beschreibung. Zeile oder Switch
+ändert den Wert sofort ohne Speichern.
+
+Schalter können experimentelles oder diagnostisches Verhalten öffnen. Ändere
+gezielt einen und prüfe den Ablauf. **Private Einträge anzeigen?** steuert die
+Einbeziehung sensibler Inhalte in Listen und Auswahlfeldern; es verschlüsselt,
+exportiert oder löscht nichts und ändert keinen Datenschutzstatus.
+
+## Festlegen, was Lotti protokolliert
+
+<ManualScreenshot
+  caseId="advanced-settings/logging"
+  alt="Lottis Protokollierung mit Hauptschalter, einzelnen Betriebsbereichen und langsamen Abfragen"
+  caption="Der Hauptschalter steuert die Bereiche. Die Project-Waddle-Fixture aktiviert gezielt Sync, KI und Aufgaben."
+/>
+
+**Protokollierung aktivieren** ist der Hauptschalter. Aktiviere nur benötigte
+Bereiche wie Sync, KI, Aufgaben, Labels, Gesundheit, Gewohnheiten, Navigation,
+Benachrichtigungen oder Daily OS. **Langsame Abfragen protokollieren** ergänzt
+Datenbankdiagnose.
+
+Ohne Hauptschalter sind Bereichsregler deaktiviert. Fehler landen weiterhin in
+der täglichen `error-*.log`; diese Optionen steuern zusätzliche Diagnose, nicht
+den Mindestfehlerdatensatz. Deaktiviere Rauschen nach der Untersuchung.
+
+## Wartungsaktionen bewusst ausführen
+
+<ManualScreenshot
+  caseId="advanced-settings/maintenance"
+  alt="Lottis Wartungsseite mit Onboarding-Vorschauen, Resets, Datenbanklöschung, Bereinigung, Suchindex, Embeddings und Repaint-Diagnose"
+  caption="Sichere Vorschauen stehen neben destruktiven und diagnostischen Aktionen. Lies Bestätigung und Umfang."
+/>
+
+**Wartung** enthält verschiedene Klassen:
+
+- **Onboarding-Begrüßung zeigen** und **Onboarding-Animationsgalerie** sind
+  Live-Vorschauen für Entwicklung und QA.
+- **In-App-Hinweise zurücksetzen** lässt einmalige Tipps erneut erscheinen.
+- **Gemini-Einrichtungsdialog zurücksetzen** löscht seine Ablehnung zum Testen.
+- **Editor-Datenbank löschen** entfernt Entwürfe.
+- **Agenten-Datenbank löschen** entfernt sie und beendet Lotti für einen
+  sauberen Neustart.
+- **Gelöschte Elemente bereinigen** entfernt Soft-Deletes nach Bestätigung endgültig.
+- **Volltextindex neu erstellen** baut Suche ohne Journaleinträge neu.
+- **Embeddings erzeugen** füllt bei verfügbarem Speicher ausgewählte Kategorien.
+- **Repaint-Regenbogen** markiert neu gezeichnete UI-Bereiche und ist nach
+  Neustart wieder aus.
+
+Vorschau und Reset haben nicht dasselbe Risiko wie Löschen. Prüfe bei
+destruktiven Aktionen den lokalen Zielspeicher und lass laufende Sync- oder
+Schreibvorgänge enden.
+
+## Den Onboarding-Trichter prüfen
+
+<ManualScreenshot
+  caseId="advanced-settings/onboarding-metrics"
+  alt="Lottis Onboarding-Metriken mit Installationszeit, vier aktiven Tagen, Aktivierung und inhaltsfreien Ereigniszahlen"
+  caption="Die Fixture erreicht ihren echten Aha-Moment über vier Tage nach Anbieter-Verbindung und mehreren Erfassungen."
+/>
+
+**Onboarding-Metriken** ist für Entwicklung und QA. Die lokale Auswertung zeigt:
+
+- ersten Zeitstempel in UTC;
+- aktive Tage insgesamt und in den ersten sieben Tagen;
+- Zugehörigkeit zur Baseline vor FTUE;
+- Erreichen des echten Aktivierungsmeilensteins; und
+- Anzahl jedes Onboarding-Ereignisses.
+
+Gespeichert werden Ereignisnamen und grobe Metadaten, nicht Journaltext,
+Aufgabentitel, Transkripte oder sardinenkritische Project-Waddle-Details.
+
+**Onboarding-Testzustand zurücksetzen** löscht Hinweisrhythmus und lokale
+Metriken nach Bestätigung. Journal, Schalter und echte Daily-OS-Pläne bleiben.
+Ein Profil mit bereits geplantem Tag ist daher weiterhin nicht für den exakten
+Erstplan-Pfad eines leeren Profils geeignet.
+
+## Build und lokale Summen prüfen
+
+<ManualScreenshot
+  caseId="advanced-settings/about"
+  alt="Lottis Über-Seite mit Version, Plattform, Buildtyp, 2604 Journaleinträgen, 11 markierten Einträgen und Aufgabenzahlen"
+  caption="Über Lotti identifiziert den Build und fasst lokale Daten zusammen. Project Waddle enthält 2.604 Einträge und 65 Aufgaben in fünf Status."
+/>
+
+**Über Lotti** zeigt App-Version und Buildnummer, Plattform und Buildtyp. Nenne
+diese Werte in Diagnoseberichten, damit Verhalten dem richtigen Code und
+Release zugeordnet wird.
+
+**Deine Daten** fasst lokale Journaleinträge, Markierungen und Aufgaben nach
+Offen, In Arbeit, Pausiert, Blockiert und Fertig zusammen. Die Fixture zeigt
+2.604 Einträge, 11 Markierungen und 65 Aufgaben statt Platzhalternullen.
+
+Die Animationsseite erklärt
+**[Abschlussfeiern anpassen](./completion-celebrations.mdx)**.
