@@ -72,6 +72,8 @@ import '../test_utils.dart';
 
 const String _subdir = 'agents';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+AppLocalizations _messages(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(Scaffold).first))!;
 const String _habitatTemplateId = 'template-habitat-sentinel';
 const String _dayPlannerTemplateId = 'template-waddle-day-planner';
 const String _cargoTemplateId = 'template-sardine-cargo-watch';
@@ -1125,8 +1127,9 @@ void main() {
               device: device,
               brightness: brightness,
             );
+            final messages = _messages(tester);
             expect(
-              find.textContaining(_t('more tokens today', 'heute mehr Tokens')),
+              find.text(messages.agentStatsUsageAboveAverage('10:30')),
               findsOneWidget,
             );
             expect(find.text('26K'), findsWidgets);
@@ -1379,7 +1382,13 @@ void main() {
           );
           expect(
             find.textContaining(
-              _t('calm flight director', 'ruhiger Flugleiter'),
+              _t(
+                'Speak like a calm flight director who respects both evidence '
+                    'and penguins. Put the operational decision first.',
+                'Sprich wie ein ruhiger Flugleiter, der Belege und Pinguine '
+                    'respektiert. Stelle die betriebliche Entscheidung an den '
+                    'Anfang.',
+              ),
             ),
             findsOneWidget,
           );

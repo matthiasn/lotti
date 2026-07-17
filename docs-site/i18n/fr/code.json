@@ -1,0 +1,102 @@
+{
+  "manual.screenshot.allScreenshots": {
+    "message": "Toutes les captures d’écran",
+    "description": "Label for the global screenshot viewport preference"
+  },
+  "manual.screenshot.close": {
+    "message": "Fermer"
+  },
+  "manual.screenshot.desktop": {
+    "message": "Ordinateur"
+  },
+  "manual.screenshot.desktopView": {
+    "message": "Vue ordinateur"
+  },
+  "manual.screenshot.expand": {
+    "message": "Agrandir"
+  },
+  "manual.screenshot.expandedViewer": {
+    "message": "Vue agrandie de la capture"
+  },
+  "manual.screenshot.fullscreen": {
+    "message": "Plein écran"
+  },
+  "manual.screenshot.layoutLabel": {
+    "message": "Présentation des captures pour toutes les images"
+  },
+  "manual.screenshot.mobile": {
+    "message": "Mobile"
+  },
+  "manual.screenshot.mobileView": {
+    "message": "Vue mobile"
+  },
+  "manual.screenshot.openViewer": {
+    "message": "Ouvrir la visionneuse de captures"
+  },
+  "manual.screenshot.screenshot": {
+    "message": "Capture d’écran"
+  },
+  "manual.translationNotice.disclosure": {
+    "message": "Cette traduction a été créée avec GPT 5.6 Sol xHigh et n’a pas encore été relue."
+  },
+  "manual.translationNotice.invitation": {
+    "message": "Les corrections et améliorations sont très bienvenues, sous la forme d’une"
+  },
+  "manual.translationNotice.issue": {
+    "message": "issue GitHub"
+  },
+  "manual.translationNotice.or": {
+    "message": "ou d’une"
+  },
+  "manual.translationNotice.pullRequest": {
+    "message": "pull request"
+  },
+  "manual.translationNotice.title": {
+    "message": "Traduction automatique — vos retours sont les bienvenus"
+  },
+  "manual.version.development": {
+    "message": "Développement"
+  },
+  "theme.colorToggle.ariaLabel.mode.system": {
+    "message": "mode système"
+  },
+  "theme.docs.sidebar.navAriaLabel": {
+    "message": "Navigation latérale de la documentation"
+  },
+  "theme.IconExternalLink.ariaLabel": {
+    "message": "(s’ouvre dans un nouvel onglet)"
+  },
+  "theme.NavBar.navAriaLabel": {
+    "message": "Navigation principale"
+  },
+  "theme.SearchBar.label": {
+    "message": "Rechercher"
+  },
+  "theme.SearchBar.noResultsText": {
+    "message": "Aucun résultat"
+  },
+  "theme.SearchBar.searchInContext": {
+    "message": "Voir tous les résultats dans « {context} »"
+  },
+  "theme.SearchBar.seeAllOutsideContext": {
+    "message": "Voir tous les résultats hors de « {context} »"
+  },
+  "theme.SearchBar.seeAll": {
+    "message": "Voir tous les résultats"
+  },
+  "theme.SearchPage.existingResultsTitle": {
+    "message": "Résultats de recherche pour « {query} »"
+  },
+  "theme.SearchPage.emptyResultsTitle": {
+    "message": "Rechercher dans la documentation"
+  },
+  "theme.SearchPage.documentsFound.plurals": {
+    "message": "Un document trouvé|{count} documents trouvés"
+  },
+  "theme.SearchPage.noResultsText": {
+    "message": "Aucun document trouvé"
+  },
+  "theme.SearchPage.searchContext.everywhere": {
+    "message": "Partout"
+  }
+}

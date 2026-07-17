@@ -1,0 +1,54 @@
+---
+title: Remplir et revoir les questionnaires
+description: Lance les questionnaires inclus depuis un tableau de bord, réponds une question à la fois et conserve les scores dans le Journal.
+---
+
+# Remplir et revoir les questionnaires
+
+Lotti inclut trois questionnaires fixes : **CFQ-11**, **GHQ-12** et **PANAS**. Ajoute celui que tu utilises à un tableau de bord, puis sélectionne l'action **+** de son graphique chaque fois que tu veux enregistrer une nouvelle réponse. Le tableau de bord sert à la fois de point de départ et d'endroit où les scores complétés deviennent une tendance.
+
+Les exemples ci-dessous lancent le vrai questionnaire PANAS depuis le tableau de bord **Opérations de la colonie**. Le questionnaire et sa navigation viennent du même moteur de questionnaires de production que l'app.
+
+<ManualScreenshot
+  caseId="surveys/panas-intro"
+  alt="Instructions du questionnaire PANAS ouvertes au-dessus du tableau de bord Opérations de la colonie"
+  caption="Lis la période concernée par l'instrument et l'échelle de réponse avant de continuer. L'indicateur de progression compte chaque étape d'instruction, de question et de fin."
+/>
+
+## Ajouter un questionnaire à un tableau de bord
+
+Ouvre **Réglages → Définitions → Tableaux de bord**, modifie un tableau de bord et ajoute un graphique depuis **Questionnaires**. Les instruments disponibles sont :
+
+- **CFQ-11**, l'échelle de fatigue de Chalder ;
+- **GHQ-12**, le questionnaire de santé générale ;
+- **PANAS**, l'échelle des affects positifs et négatifs.
+
+Retourne dans **Tableaux de bord** et ouvre le tableau. Le graphique montre les résultats soumis pour son instrument. Sélectionne son action **+** pour commencer une nouvelle réponse. Chaque graphique lance le questionnaire correspondant : il n'existe pas de formulaire générique qui modifie les questions à partir des données de la documentation.
+
+## Répondre à la question en cours
+
+L'étape d'instructions explique la période demandée et le sens de l'échelle de réponse. Sélectionne **Suivant** pour commencer. PANAS présente ensuite 20 mots d'affect, un à la fois, et demande un choix sur une échelle à cinq points. Les instructions, mots d'affect, textes de fin et libellés d'échelle suivent la langue de l'app ; la capture française va de **Pas du tout ou très peu** à **Extrêmement**.
+
+<ManualScreenshot
+  caseId="surveys/panas-question"
+  alt="Question PANAS Intéressé·e avec cinq choix de réponse de Pas du tout ou très peu à Extrêmement"
+  caption="Les questions sont présentées séquentiellement. Choisis une réponse, continue et utilise le compteur de progression pour savoir où tu en es dans le questionnaire."
+/>
+
+Les autres questionnaires inclus utilisent leurs propres définitions fixes de questions et de calcul de score. Choisis la réponse correspondant à la formulation et à la période affichées ; Lotti ne réinterprète ni ne remplit automatiquement les réponses.
+
+## Soumettre ou annuler délibérément
+
+Continue jusqu'à l'étape de fin pour soumettre. Lotti enregistre le résultat brut et ses groupes de scores calculés comme entrée de questionnaire dans le Journal. Le tableau de bord relit ces entrées dans son graphique : chaque questionnaire complété ajoute donc une observation datée.
+
+Fermer le questionnaire demande si tu veux abandonner le résultat en cours. Un questionnaire annulé n'est pas enregistré, y compris le travail partiellement répondu. Si la réponse compte, termine l'étape de fin avant de quitter la feuille.
+
+## Comprendre les scores enregistrés
+
+L'entrée persistée conserve les réponses individuelles et le résumé calculé utilisé par les graphiques :
+
+- **CFQ-11** produit son score de fatigue configuré ;
+- **GHQ-12** produit son score de santé générale configuré ;
+- **PANAS** produit des totaux distincts d'**Affect positif** et d'**Affect négatif**.
+
+Ouvre l'entrée correspondante du Journal pour inspecter le résumé enregistré. Utilise le tableau de bord pour l'évolution dans le temps et le Journal pour la source datée. Les graphiques de questionnaire ne remplacent pas les instructions de l'instrument, et Lotti ne propose pas de système de création de questionnaires permettant de modifier ces définitions incluses.

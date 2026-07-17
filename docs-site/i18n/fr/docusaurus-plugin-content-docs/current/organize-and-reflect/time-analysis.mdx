@@ -1,0 +1,172 @@
+---
+title: Comprends où est passé ton temps
+description: Ventile le temps suivi par catégorie, suis les domaines de concentration et compare des périodes équivalentes sans quitter Daily OS.
+---
+
+# Comprends où est passé ton temps
+
+L’Analyse du temps transforme tes sessions enregistrées en ventilation par
+catégorie. Utilise-la pour savoir combien de temps tu as suivi, où il est passé
+et si sa répartition a changé par rapport à la période précédente. L’exemple
+Project Waddle sépare **Opérations Pingouins**, **Contrôle de mission**,
+**Diplomatie des poissons**, **Recherche orbitale** et **Maintenance humaine**,
+tout en laissant visible le temps sans catégorie qui demande ton attention.
+
+Sur ordinateur, ouvre **Daily OS** et sélectionne **Analyse du temps** sous le
+calendrier de la barre latérale. Le tableau de bord occupe la zone de contenu
+pour que le graphique et le tableau exact se lisent ensemble. Ses commandes se
+réorganisent aux largeurs étroites sans changer de rôle.
+
+<ManualScreenshot
+  caseId="time-analysis/overview"
+  alt="Tableau de bord Analyse du temps montrant le temps Project Waddle dans cinq catégories opérationnelles et du travail sans catégorie"
+  caption="La vue d’ensemble combine des totaux principaux, un graphique empilé sur sept jours et le tableau exact par catégorie. Passe le manuel en mode mobile ou ordinateur, clair ou sombre, pour examiner chaque mise en page de production."
+/>
+
+## Lis les cartes principales
+
+La première ligne résume la période sélectionnée :
+
+- **TOTAL** est l’ensemble du temps suivi. Sa légende nomme la plus grande
+  catégorie et sa part : la carte indique donc à la fois où est allé
+  l’essentiel du temps et combien a été enregistré.
+- **CONCENTRATION** additionne les catégories que tu as choisi de surveiller.
+  Dans l’exemple, Opérations Pingouins et Contrôle de mission forment cet
+  ensemble.
+- **AUTRE** correspond à tout ce qui est hors de l’ensemble de concentration.
+
+Tant qu’aucun ensemble de concentration n’existe, Lotti affiche **Choisir les
+catégories de concentration** à la place de deux cartes à zéro. Sélectionne-le,
+choisis une ou plusieurs catégories actives, puis termine avec **Terminé**.
+Utilise le bouton de réglage de la carte Concentration quand l’ensemble doit
+changer. Cette préférence est locale à Lotti et ne modifie les catégories
+d’aucune entrée.
+
+## Choisis une période utile
+
+Sélectionne l’unité de période pour passer de **Jour** à **Semaine**, **Mois**,
+**Trimestre** ou **Année**. Utilise les chevrons pour avancer ou reculer d’une
+période complète à la fois. Le chevron avant s’arrête à la période en cours :
+le tableau de bord ne navigue donc jamais dans une plage future vide.
+
+Sélectionne l’étiquette de date pour ouvrir le calendrier et aller directement
+à la période qui contient un autre jour. Les limites de semaine suivent le
+premier jour de semaine configuré dans la région de l’appareil.
+
+Deux raccourcis couvrent les questions les plus courantes :
+
+- **Ce mois-ci** affiche le mois écoulé jusqu’ici ;
+- **Cette année** affiche l’année écoulée jusqu’ici.
+
+Ces plages s’arrêtent aujourd’hui au lieu d’ajouter des jours futurs vides.
+L’étiquette inclut **(jusqu’ici)** et les moyennes n’utilisent que les jours
+déjà écoulés.
+
+## Lis ensemble le graphique et le tableau
+
+Les barres empilées montrent comment chaque catégorie a contribué à chaque
+heure, jour ou semaine de la période. Survole ou appuie sur une barre pour voir
+les valeurs de catégorie de ce créneau.
+
+### Suis le total cumulé
+
+Sélectionne **Total cumulé** lorsque la question passe de « que s’est-il passé
+dans ce créneau ? » à « combien ai-je accumulé depuis le début de cette
+plage ? ». Lotti transforme alors chaque catégorie en aire cumulative :
+
+- l’épaisseur d’une bande colorée à une date correspond au temps suivi dans
+  cette catégorie depuis le début de la plage sélectionnée jusqu’à cette date ;
+- le bord supérieur de l’empilement complet est tout le temps suivi accumulé
+  sur ce même intervalle ;
+- les bandes ne peuvent que rester stables ou monter. Une portion plate signifie
+  qu’aucun temps n’a été ajouté dans cette catégorie durant ces créneaux ; elle
+  ne soustrait jamais le travail antérieur.
+
+<ManualScreenshot
+  caseId="time-analysis/running-total"
+  alt="Graphique de total cumulé de l’Analyse du temps, accumulant les catégories Project Waddle sur le mois sélectionné"
+  caption="Le total cumulé additionne chaque catégorie depuis le début de la plage. Son bord supérieur est le temps suivi total à ce stade ; chaque bande montre la contribution de sa catégorie à ce total."
+/>
+
+La plage sélectionnée détermine le point de départ du compte. Changer de période
+réinitialise le total au premier créneau de cette période. **Jour** utilise des
+créneaux horaires, les plages plus courtes de plusieurs jours des créneaux
+quotidiens et les longues plages des créneaux hebdomadaires ; le sens cumulatif
+reste le même. Dans une période en cours et inachevée, Lotti arrête l’aire au
+dernier créneau écoulé plutôt que de tracer une ligne plate trompeuse à travers
+des dates futures.
+
+Le total cumulé ne change que la projection du graphique. **TOTAL**,
+**CONCENTRATION**, **AUTRE** et le tableau par catégorie continuent de décrire
+l’ensemble de la période sélectionnée. Survole ou appuie sur l’aire pour voir
+la valeur cumulée de chaque catégorie à cet endroit. Sélectionne **Par jour**,
+**Par semaine** ou **Par heure** pour revenir aux valeurs de créneaux
+individuels. Si un seul créneau est écoulé, Lotti conserve les barres : une
+courbe cumulative d’un seul point ne montrerait pas de tendance.
+
+Le tableau est la consultation précise. Il ordonne les catégories selon le
+temps suivi et montre leur total, leur part, leur moyenne par jour et une barre
+de données relative. Une ligne grise **Sans catégorie** est volontaire : elle
+rend visible une attribution manquante au lieu de la cacher silencieusement.
+Ouvre les entrées ou tâches associées et attribue une catégorie lorsque ce temps
+doit appartenir à un domaine opérationnel.
+
+## Compare des périodes équivalentes
+
+<ManualScreenshot
+  caseId="time-analysis/compare"
+  alt="Comparaison de l’Analyse du temps pour Project Waddle montrant le temps actuel, le temps de la période précédente et les variations en pourcentage par catégorie"
+  caption="La comparaison utilise le même nombre de jours écoulés dans chaque période. Une flèche, un signe et une couleur indiquent le sens, tandis que le graphique reste centré sur la période actuelle."
+/>
+
+Sélectionne **Comparer** pour ajouter la période précédente. Pour une semaine,
+un mois, un trimestre ou une année en cours, Lotti compare la portion écoulée
+avec le même nombre de jours immédiatement antérieurs. Ainsi, un résultat de
+mois écoulé jusqu’à un dimanche n’est pas comparé à un mois précédent complet.
+
+Les cartes principales gagnent leur pourcentage de variation et leur valeur
+précédente. Le tableau bascule vers **ACTUEL**, **PRÉCÉDENT** et **Évolution**.
+Aux largeurs étroites, la colonne secondaire Précédent disparaît, tandis que
+Actuel et Évolution restent visibles. Une hausse ou une baisse utilise une
+flèche et un signe explicite en plus de la couleur ; les écarts très faibles
+restent neutres, et un résultat sans base antérieure s’affiche comme nouveau.
+
+Le graphique continue d’afficher uniquement la période actuelle. La note
+**Comparaison affichée dans le tableau ci-dessous** renvoie aux valeurs exactes
+et évite qu’une seconde série de barres masque la répartition des catégories.
+
+## Ce que Lotti compte
+
+L’Analyse du temps compte les entrées de journal chronométrées dont la fin est
+postérieure au début. La durée audio n’est pas comptée séparément, car un
+enregistrement effectué pendant un minuteur en cours serait autrement compté
+deux fois.
+
+L’attribution de catégorie suit le travail :
+
+1. Si l’entrée de temps est liée à une tâche ayant une catégorie, la catégorie de la tâche l’emporte.
+2. Sinon, la catégorie propre à l’entrée de temps est utilisée.
+3. Si aucune n’existe, le temps apparaît comme Sans catégorie.
+
+Les minuteurs qui se chevauchent dans une même catégorie sont fusionnés avant
+le calcul du total. Les chevauchements dans des catégories différentes restent
+dans les deux catégories, car ils représentent des types distincts d’activité
+enregistrée. Les entrées qui traversent minuit sont réparties dans les bons
+jours calendaires locaux. Les entrées privées respectent le réglage global de
+visibilité des données privées, et le tableau de bord s’actualise quand les
+entrées, liens, catégories de tâche ou ce réglage de visibilité changent.
+
+## Garde une image fiable
+
+Utilise les catégories de façon cohérente pour les tâches qui possèdent du
+travail enregistré. Consulte régulièrement la ligne Sans catégorie et choisis
+des catégories de concentration qui répondent à une vraie question, sans
+chercher à tout inclure. Pour Project Waddle, surveiller Opérations Pingouins
+et Contrôle de mission fait de la carte Concentration un signal d’état de
+préparation opérationnelle, tandis que Diplomatie des poissons et Maintenance
+humaine restent visibles dans la ventilation complète.
+
+L’Analyse du temps n’exporte pas encore en CSV, ne regroupe pas les résultats
+par projet et ne trace pas la période précédente comme autre série graphique.
+Les valeurs exactes de comparaison restent dans le tableau, où elles sont plus
+faciles à lire et risquent moins de déformer l’image de la période actuelle.

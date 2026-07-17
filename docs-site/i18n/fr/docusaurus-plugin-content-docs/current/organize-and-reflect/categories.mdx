@@ -1,0 +1,86 @@
+---
+title: Organise avec des catégories
+description: Utilise les catégories comme frontières pertinentes pour filtrer, planifier, protéger la vie privée et automatiser.
+---
+
+# Organise avec des catégories
+
+Une catégorie est le principal foyer structurel d’une entrée. Utilise-en une
+lorsqu’un ensemble de travail a besoin de ses propres règles de planification,
+d’une frontière de confidentialité, d’une identité visuelle ou d’un contexte
+pour l’IA. Dans l’espace de démonstration, **Opérations Pingouins**, **Contrôle
+de mission**, **Diplomatie des poissons** et **Maintenance humaine** séparent des
+domaines réellement distincts de l’expédition.
+
+<ManualScreenshot
+  caseId="categories/list"
+  alt="Réglages des catégories contenant Opérations Pingouins, Contrôle de mission, Diplomatie des poissons et Maintenance humaine, avec nombres de tâches et icônes d’état"
+  caption="La liste est consultable et affiche le nombre de tâches. Les icônes permettent d’identifier d’un coup d’œil les catégories favorites, privées et inactives."
+/>
+
+## Crée une catégorie
+
+1. Ouvre **Réglages → Catégories**.
+2. Sélectionne **Créer une catégorie**.
+3. Saisis un nom, une couleur et une icône distinctifs.
+4. Crée-la, puis ouvre de nouveau la catégorie pour configurer son comportement.
+
+La création commence volontairement par les champs d’identification. Les options
+de planification, de confidentialité, de langue et d’automatisation se trouvent
+dans l’éditeur complet, une fois la catégorie créée.
+
+## Configure le comportement de la catégorie
+
+<ManualScreenshot
+  caseId="categories/detail"
+  alt="Éditeur de catégorie Opérations Pingouins affichant son nom, son identité violette de vol et les options favori, privée, actif et planification du jour"
+/>
+
+L’éditeur contrôle plus que l’apparence :
+
+- **Favori** rend une catégorie importante plus facile à reconnaître et à sélectionner.
+- **Privée** masque son contenu tant que les entrées privées ne sont pas affichées. C’est
+  une frontière de visibilité, pas un chiffrement séparé de la catégorie.
+- **Actif** indique si la catégorie peut être choisie pour de nouvelles entrées.
+  La désactiver préserve les données existantes.
+- **Planification du jour** permet à la catégorie de participer à la planification Daily OS.
+- **Langue** définit la langue par défaut des nouvelles tâches de la catégorie.
+
+Utilise **Planification du jour** avec discernement. L’activer pour chaque
+catégorie élargit le contexte du planificateur et rend le rituel quotidien plus
+bruyant.
+
+## Ajoute un contexte d’automatisation propre à la catégorie
+
+Une catégorie peut fournir des valeurs par défaut pour les nouvelles tâches : un
+profil d’inférence et un modèle d’agent. Ce sont des valeurs par défaut, pas des
+verrous permanents ; les choix au niveau de la tâche peuvent encore changer
+plus tard.
+
+<ManualScreenshot
+  caseId="categories/automation"
+  alt="Réglages avancés d’Opérations Pingouins avec vocabulaire vocal Project Waddle et corrections de liste de contrôle apprises pour Sir Flaps-a-Lot"
+  caption="Les termes vocaux sont séparés par des points-virgules. Les corrections de liste de contrôle sont apprises à partir des modifications ; tu peux les examiner ou les supprimer ici."
+/>
+
+Le dictionnaire de **Reconnaissance vocale** est utile pour les noms, lieux,
+acronymes et le vocabulaire spécialisé que la transcription manque souvent.
+Opérations Pingouins apprend par exemple à Lotti `Project Waddle`,
+`Sir Flaps-a-Lot`, `sardine` et `Europa`.
+
+Lorsque tu corriges manuellement des titres de listes de contrôle générés, Lotti
+peut conserver les exemples avant/après pour de futures suggestions IA. Examine
+les exemples ici et supprime toute correction qui ne devrait pas guider les
+résultats ultérieurs.
+
+## Catégories et étiquettes
+
+Utilise une catégorie pour le foyer principal du travail et une
+[étiquette](./labels.mdx) pour une propriété transversale. **Opérations
+Pingouins** est une catégorie ; **Habitat critique** est une étiquette qui peut
+aussi s’appliquer au travail de Contrôle de mission.
+
+Garde le système de catégories assez petit pour que le choix soit évident.
+Ajoute une catégorie lorsqu’elle change la planification, le filtrage, la
+confidentialité ou l’automatisation — pas simplement parce qu’un nouveau nom
+est apparu.

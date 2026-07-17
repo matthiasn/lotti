@@ -32,6 +32,14 @@ import '../test_utils.dart';
 final _today = DateTime(2026, 7, 17);
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
+AppLocalizations _messages(WidgetTester tester) {
+  final habitsPage = find.byType(HabitsTabPage);
+  final context = habitsPage.evaluate().isNotEmpty
+      ? tester.element(habitsPage)
+      : tester.element(find.byType(HabitDialog));
+  return AppLocalizations.of(context)!;
+}
+
 final _penguinOps = CategoryDefinition(
   id: 'penguin-ops',
   name: _t('Penguin Ops', 'Pinguinbetrieb'),
@@ -152,7 +160,10 @@ void main() {
           brightness: brightness,
         );
 
-        expect(find.text(_t('Habits', 'Gewohnheiten')), findsOneWidget);
+        expect(
+          find.text(_messages(tester).settingsHabitsTitle),
+          findsOneWidget,
+        );
         expect(
           find.text(
             _t('Inspect habitat seals', 'Habitatdichtungen inspizieren'),
@@ -183,12 +194,19 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(find.text(_t('Success', 'Erfolgreich')), findsNWidgets(2));
+        final messages = _messages(tester);
         expect(
-          find.text(_t('Skip', 'Überspringen')),
+          find.text(messages.completeHabitSuccessButton),
           findsNWidgets(2),
         );
-        expect(find.text(_t('Missed', 'Verpasst')), findsNWidgets(2));
+        expect(
+          find.text(messages.completeHabitSkipButton),
+          findsNWidgets(2),
+        );
+        expect(
+          find.text(messages.completeHabitFailButton),
+          findsNWidgets(2),
+        );
         expect(find.byKey(const Key('habit_save')), findsOneWidget);
         await captureScreenshot(
           tester,

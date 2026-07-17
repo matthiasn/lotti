@@ -1,0 +1,64 @@
+---
+title: Parcourir « Quoi de neuf »
+description: Consulte la dernière version de Lotti, parcours les notes de versions précédentes et contrôle les mises à jour qui restent non lues.
+---
+
+# Parcourir « Quoi de neuf »
+
+« Quoi de neuf » présente les notes de version dans Lotti, correspondant à la
+version que tu utilises. Cette vue peut s’ouvrir automatiquement après un
+premier lancement éligible ou un changement de version ; elle est aussi
+disponible depuis l’entrée **Quoi de neuf** des Réglages lorsque cette
+fonctionnalité est activée.
+
+Les notes de version sont classées de la plus récente à la plus ancienne. Chaque page associe une image principale propre à la version, son numéro exact et un court récit des changements visibles par les utilisateurs.
+
+<ManualScreenshot
+  caseId="whats-new/latest"
+  alt="Fenêtre modale « Quoi de neuf » de Lotti pour la version 0.9.1049, avec une bannière de contrôle de mission du projet Waddle et les notes de version"
+  caption="La dernière version non lue porte un badge NOUVEAU. Cette capture de démonstration explique les améliorations de Daily OS et de l’espace de travail des tâches derrière le lancement orbital du projet Waddle."
+/>
+
+## Lire la version actuelle
+
+Le badge de version identifie la version dont les notes sont affichées. **NOUVEAU** désigne la version la plus récente de l’ensemble actuel ; cela ne signifie pas que tous les éléments de la page sont inachevés ou expérimentaux.
+
+Le corps défile indépendamment lorsque la version est plus longue que la hauteur disponible. Les liens utilisent le gestionnaire de liens normal de Lotti, et les images sont chargées avant les changements de page lorsque cela est possible, afin que le passage d’une version à l’autre reste fluide.
+
+## Parcourir l’historique des versions
+
+<ManualScreenshot
+  caseId="whats-new/past-release"
+  alt="Fenêtre modale « Quoi de neuf » de Lotti pour la version 0.9.1048, avec une illustration de couverture du marché aux sardines des manchots et la navigation dans les anciennes versions"
+  caption="Utilise les chevrons du pied de page ou les repères de position pour parcourir les versions. La note plus ancienne du projet Waddle présente la comparaison de temps et la télémétrie des sardines prête pour les tableaux de bord."
+/>
+
+Utilise les commandes du pied de page pour naviguer :
+
+- le chevron droit ouvre la version suivante, plus ancienne ;
+- le chevron gauche revient à une version plus récente ;
+- les repères de position indiquent où se trouve la page actuelle dans l’ensemble chargé ;
+- **Ignorer** ferme un ensemble de plusieurs versions avant la dernière page et marque l’ensemble chargé comme lu ; et
+- **Terminé** apparaît sur la page la plus ancienne et marque également l’ensemble entier comme lu.
+
+Fermer la fenêtre en la faisant glisser ou en touchant l’arrière-plan est plus
+prudent : Lotti ne marque comme lues que les versions que tu as réellement
+atteintes, jusqu’à la dernière page consultée. Les versions non atteintes peuvent
+donc réapparaître à la prochaine ouverture de « Quoi de neuf ».
+
+## Revoir des notes déjà ignorées
+
+Lorsqu’il ne reste aucune version non lue, ouvrir « Quoi de neuf » affiche l’état
+**Tu es à jour**. Choisis **Voir les versions précédentes** pour effacer les
+marqueurs locaux de lecture et parcourir de nouveau l’ensemble de versions
+disponible. Cela ne modifie que l’historique local des notes de version ; ni la
+version installée de l’application ni aucun autre build ne sont modifiés ou
+téléchargés.
+
+« Quoi de neuf » n’affiche jamais de notes pour une version plus récente que la
+version installée de Lotti. Si le contenu d’une version ne peut pas être chargé,
+l’application revient à un état vide plutôt que de présenter les notes d’un
+mauvais build.
+
+Pour le numéro de build exact, la plateforme, les totaux d’entrées locales et le
+nombre de tâches, consulte [À propos de Lotti](./advanced-settings.mdx#vérifier-la-version-et-les-totaux-locaux).

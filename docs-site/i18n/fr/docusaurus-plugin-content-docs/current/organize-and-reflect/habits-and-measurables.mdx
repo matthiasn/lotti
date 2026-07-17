@@ -1,0 +1,169 @@
+---
+title: Suis les habitudes et les mesures
+description: Configure des comportements récurrents et des observations chiffrées, puis consigne chacun avec honnêteté.
+---
+
+# Suis les habitudes et les mesures
+
+Une habitude répond à la question **ce comportement récurrent a-t-il eu lieu ?**
+Une mesure répond à **quelle valeur chiffrée ai-je observée ?** Elles peuvent
+servir le même objectif sans être interchangeables : « Appel des manchots
+empereurs » est une habitude, tandis que « Pingouins recensés » est une valeur
+mesurable.
+
+## Travaille avec les habitudes
+
+La page Habitudes organise les définitions actives entre ce qui est dû
+maintenant, prévu plus tard et terminé. Son résumé quotidien, son historique de
+régularité, ses séries et son graphique de taux de réalisation t’aident à
+repérer des tendances sans faire d’un jour manqué toute l’histoire.
+
+<ManualScreenshot
+  caseId="habits/today"
+  alt="Tableau de bord des habitudes Opérations Pingouins montrant vérifications de l’habitat, appel des manchots, inventaire des sardines, état de réalisation, séries et historique récent"
+/>
+
+### Crée et retrouve des définitions d’habitudes
+
+1. Ouvre **Réglages → Habitudes**.
+2. Sélectionne **Créer une habitude**.
+3. Donne au comportement un nom concret et répétable, ainsi qu’une description utile.
+4. Choisis sa catégorie, ses options et son calendrier.
+5. Enregistre.
+
+<ManualScreenshot
+  caseId="habits/settings-list"
+  alt="Réglages des habitudes contenant Appel des manchots empereurs, Examiner les prévisions de sardines et Inspecter les joints de l’habitat, avec états favori, inactif et privé"
+  caption="Cherche les définitions ici. L’étoile, l’œil barré et le cadenas identifient les habitudes favorites, inactives et privées."
+/>
+
+<ManualScreenshot
+  caseId="habits/settings-detail"
+  alt="Éditeur de l’habitude Appel des manchots empereurs, avec description de l’expédition, catégorie Opérations Pingouins et options favori, privée et actif"
+/>
+
+L’éditeur de définition comprend :
+
+- **Catégorie** pour le filtrage et le contexte visuel.
+- **Tableau de bord** lorsque l’habitude doit apparaître comme graphique dans un tableau de bord choisi.
+- **Favori** pour lui donner plus d’importance.
+- **Privée** pour la masquer tant que les entrées privées ne sont pas affichées.
+- **Actif** pour déterminer si elle apparaît sur la page Habitudes sans
+  supprimer son historique.
+
+### Programme une habitude quotidienne
+
+<ManualScreenshot
+  caseId="habits/schedule"
+  alt="Calendrier de l’appel des manchots empereurs commençant le 1er juillet, affiché à partir de 06:00 avec une alerte à 06:30"
+/>
+
+L’éditeur actuel privilégie les habitudes quotidiennes. Définis une **Date de
+début**, retarde si besoin l’heure à laquelle l’habitude est **affichée à
+partir de**, puis choisis éventuellement quand Lotti doit **afficher une
+alerte**. Le modèle de données comprend aussi les calendriers hebdomadaires et
+mensuels, mais l’éditeur expose aujourd’hui les contrôles temporels plus riches
+pour les habitudes quotidiennes.
+
+### Consigne ce qui s’est réellement passé
+
+Ouvre une habitude due ou utilise son action rapide. Le formulaire détaillé de
+réalisation prend en charge trois résultats :
+
+- **Réussi** — le comportement a eu lieu.
+- **Manqué** — il était prévu et possible, mais n’a pas eu lieu.
+- **Ignoré** — il ne s’appliquait raisonnablement pas ce jour-là.
+
+<ManualScreenshot
+  caseId="habits/record"
+  alt="Formulaire de réalisation de l’habitude Inspecter les joints de l’habitat des manchots, avec résultats Réussi, Ignoré et Manqué, ainsi qu’une date et des notes"
+/>
+
+Utilise l’état qui préserve la réalité. Un historique sincère est plus utile
+qu’un graphique parfait. Les enregistrements de réalisation sont des entrées de
+journal ; les vues ultérieures peuvent donc reconstruire le résultat effectif
+pour chaque habitude et chaque jour.
+
+## Travaille avec les mesures
+
+Une définition de mesure décrit le nombre avant que tu ne le consignes : son
+nom, son unité, sa confidentialité et la façon dont plusieurs observations se
+combinent dans les graphiques.
+
+<ManualScreenshot
+  caseId="measurables/settings-list"
+  alt="Réglages des mesures contenant Pression de l’habitat, Pingouins recensés et Sardines consommées"
+/>
+
+### Crée un type de données mesurable
+
+1. Ouvre **Réglages → Types de données mesurables**.
+2. Sélectionne l’action d’ajout.
+3. Ajoute un nom, une description facultative et une abréviation d’unité concise.
+4. Choisis l’agrégation par défaut utilisée par les graphiques.
+5. Décide si elle doit être favorite ou privée, puis enregistre.
+
+<ManualScreenshot
+  caseId="measurables/settings-detail"
+  alt="Éditeur de mesure Pression de l’habitat utilisant kPa et l’agrégation Moyenne quotidienne"
+/>
+
+Choisis l’agrégation selon ce que signifient des relevés répétés :
+
+| Agrégation | À utiliser lorsque |
+| --- | --- |
+| Aucune agrégation | Chaque observation individuelle compte |
+| Somme quotidienne | Les relevés s’accumulent, comme les sardines consommées |
+| Maximum quotidien | Le pic du jour est le signal important |
+| Moyenne quotidienne | Les relevés échantillonnent une valeur changeante, comme la pression de l’habitat |
+| Somme horaire | L’accumulation nécessite des créneaux horaires plus fins |
+
+L’unité donne le contexte d’affichage, ce n’est pas un convertisseur. Si tu
+définis la pression de l’habitat en `kPa`, consigne les valeurs en kPa de
+façon cohérente. Crée une mesure distincte si une autre unité représente une
+série réellement différente.
+
+### Consigne une mesure
+
+Ouvre un tableau de bord qui contient la mesure et sélectionne l’action d’ajout
+sur son graphique. Saisis la valeur observée ; Lotti garde l’unité près du
+nombre afin que ce qui sera enregistré soit clair. Les valeurs distinctes
+récentes apparaissent en actions **Saisie rapide** lorsqu’il est utile
+d’en répéter une.
+
+<ManualScreenshot
+  caseId="measurements/capture"
+  alt="Éditeur de mesure Sardines consommées, ouvert depuis son graphique de tableau de bord rempli, avec 84 sardines, suggestions de saisie rapide, heure d’observation, commentaire et action Enregistrer"
+/>
+
+Utilise **Observé le** pour l’heure à laquelle le relevé a vraiment été pris,
+plutôt que celle à laquelle tu le saisis. La première page sélectionne la date
+du calendrier. **Aujourd’hui** revient directement à la date courante.
+
+<ManualScreenshot
+  caseId="measurements/date"
+  alt="Calendrier Observé le sélectionnant le vendredi 17 juillet 2026 pour la mesure de sardines"
+/>
+
+Fais défiler jusqu’à la section de l’heure pour définir l’heure et les minutes.
+**Maintenant** rétablit l’heure actuelle. Sélectionne **Terminé** pour revenir
+au brouillon de mesure toujours rempli, puis **Enregistrer** pour créer
+l’entrée de journal.
+
+<ManualScreenshot
+  caseId="measurements/time"
+  alt="Molette d’heure Observé le réglée sur 10 h 30 pour la mesure de sardines"
+/>
+
+Le commentaire est facultatif, mais utile lorsqu’un nombre a besoin de contexte
+opérationnel — par exemple une livraison, un changement inhabituel ou une
+méthode de mesure modifiée. Enregistrer une mesure ne change ni sa définition
+ni sa règle d’agrégation.
+
+## Relie les deux sans les confondre
+
+Un appel peut être réalisé avec succès même si seulement 36 manchots ont été
+comptés : l’habitude consigne si la procédure a eu lieu, tandis que la mesure
+consigne le résultat. Place les deux sur un [tableau de
+bord](./dashboards.mdx) lorsque leur relation répond à une question
+opérationnelle récurrente.

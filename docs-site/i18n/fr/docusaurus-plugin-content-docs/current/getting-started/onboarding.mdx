@@ -1,0 +1,151 @@
+---
+title: Configure Lotti lors de l’intégration
+description: Connecte un fournisseur d’IA, choisis le style d’enregistrement et les domaines de travail, puis transforme une première pensée en vraie tâche.
+---
+
+# Configure Lotti lors de l’intégration
+
+Le parcours d’intégration rassemble les éléments minimaux nécessaires au parcours de tâches
+assisté par IA de Lotti : un fournisseur, un style d’enregistrement, au moins
+une catégorie et une première vraie tâche. C’est une configuration guidée, pas
+un environnement de démo distinct : les fournisseurs, catégories et tâches
+créés ici restent dans l’application normale.
+
+Ouvre **Paramètres → Intégration** chaque fois que tu veux démarrer ou revoir le
+parcours. La page indique aussi si ce profil a déjà créé sa première tâche
+structurée par IA.
+
+<ManualScreenshot
+  caseId="onboarding/settings"
+  alt="Paramètres d’intégration de Lotti affichant un état activé et l’action Revoir l’intégration"
+  caption="Ce profil du Projet Waddle a déjà créé sa première tâche IA. Revoir l’intégration reste possible après l’activation."
+/>
+
+## Commence par la promesse de bienvenue
+
+<ManualScreenshot
+  caseId="onboarding/welcome"
+  alt="Panneau de bienvenue de l’intégration Lotti invitant à connecter un cerveau IA et à transformer la parole en tâche structurée"
+  caption="Le panneau de bienvenue s’ouvre au-dessus de l’application actuelle. Choisis ton cerveau IA pour continuer, ou quitte le parcours sans modifier ta configuration."
+/>
+
+Choisis **Choisir ton cerveau IA** pour commencer. **Explorer d’abord**, la zone
+assombrie hors du panneau et l’action système de retour quittent tous
+l’intégration sans rien connecter. Tu pourras y revenir plus tard depuis les
+Paramètres.
+
+Lotti peut aussi proposer automatiquement cette bienvenue à un profil éligible.
+L’invite automatique a une cadence de tentatives limitée ; l’entrée dans les
+Paramètres n’en a pas, de sorte que tu gardes toujours un moyen d’y revenir.
+
+## Choisis où structurer les tâches
+
+<ManualScreenshot
+  caseId="onboarding/providers"
+  alt="Sélecteur de fournisseurs de l’intégration Lotti avec Melious.ai, Mistral, Gemini, Qwen, OpenAI et Ollama"
+  caption="Les principaux fournisseurs hébergés apparaissent d’abord. Déplie Plus d’options pour OpenAI et le parcours local Ollama."
+/>
+
+La page des fournisseurs présente les choix hébergés et locaux disponibles :
+
+- **Melious.ai** est le choix par défaut recommandé, hébergé dans l’UE, avec
+  routage dynamique des modèles.
+- **Mistral**, **Gemini** et **Qwen** exposent leurs régions hébergées
+  correspondantes.
+- **OpenAI** est disponible parmi les options supplémentaires.
+- **Ollama** se connecte à un point de terminaison local compatible et ne
+  nécessite pas de clé d’API hébergée.
+
+<ManualScreenshot
+  caseId="onboarding/api-key"
+  alt="Panneau de vérification de fournisseur de l’intégration Lotti montrant une connexion Ollama locale vérifiée"
+  caption="Lotti vérifie le fournisseur choisi avant d’activer Connecter. Les fournisseurs hébergés utilisent la même étape avec un champ de clé API."
+/>
+
+Pour un fournisseur hébergé, colle sa clé API. Lotti vérifie la connexion avant
+d’activer **Connecter**. Ollama vérifie le point de terminaison local configuré
+et indique les modèles joignables. Une connexion réussie conserve le
+fournisseur et prépare les modèles ainsi que le profil d’inférence utilisés
+dans les étapes suivantes.
+
+<ManualScreenshot
+  caseId="onboarding/success"
+  alt="Confirmation de l’intégration Lotti que le fournisseur d’IA est connecté et prêt"
+  caption="La confirmation de connexion est volontairement sobre ; la récompense plus importante est réservée à la première vraie tâche."
+/>
+
+Le texte capturé pour une tâche est envoyé au fournisseur affecté à la catégorie
+sélectionnée afin d’être structuré. Choisis un fournisseur dont le déploiement
+et le traitement des données correspondent au contenu que tu prévois de
+capturer. Un point de terminaison Ollama local joignable garde cette demande de
+structuration sur la machine qui l’exécute.
+
+## Choisis le style d’enregistrement et les domaines de travail
+
+<ManualScreenshot
+  caseId="onboarding/recording-style"
+  alt="Sélecteur de style d’enregistrement de l’intégration Lotti avec les options orbe d’énergie moderne et vumètre analogique"
+  caption="Choisis le visuel d’enregistrement qui te paraît le plus clair. Les deux options utilisent le même pipeline de capture."
+/>
+
+Après avoir établi la connexion, choisis le style d’enregistrement utilisé pour
+la capture de la première tâche et les surfaces de capture vocale suivantes.
+Tu pourras le modifier dans **Paramètres → Style d’enregistrement**.
+
+<ManualScreenshot
+  caseId="onboarding/categories"
+  alt="Sélecteur de domaines de travail de l’intégration Lotti avec Travail, Forme, Famille, Amis et l’option Ajouter la tienne"
+  caption="Choisis un ou plusieurs domaines pour le nouveau fournisseur. Avec un texte agrandi ou une mise en page étroite, chaque choix occupe automatiquement une ligne sur toute sa largeur."
+/>
+
+Choisis ensuite un ou plusieurs domaines de travail. Les préréglages couvrent
+des catégories courantes comme Travail, Forme, Famille et Amis ; **Ajouter la
+tienne** crée une catégorie dont le nom correspond à ton espace de travail.
+L’intégration réutilise une catégorie existante portant le même nom plutôt que
+d’en créer un doublon, la restaure si nécessaire et la relie au profil
+d’inférence nouvellement préparé.
+
+Le jeu de données du manuel crée deux vraies destinations — **Opérations
+pingouins** et **Mission Control** — afin que l’étape suivante montre le
+même choix de catégorie que voit un compte en utilisation.
+
+## Capture la première vraie tâche
+
+<ManualScreenshot
+  caseId="onboarding/first-task"
+  alt="Panneau de première tâche de l’intégration Lotti avec capture vocale, destinations Opérations pingouins et Mission Control, suggestions et Plutôt écrire ?"
+  caption="Choisis où la tâche doit arriver, puis parle naturellement, utilise une suggestion de départ ou choisis Plutôt écrire ?. Opérations pingouins est sélectionnée ici."
+/>
+
+Le panneau de première tâche utilise le pipeline de capture habituel de Lotti.
+Choisis la catégorie cible, puis suis l’un de ces trois chemins :
+
+1. Sélectionne le visuel d’enregistrement et exprime la tâche dans une phrase naturelle.
+2. Choisis une suggestion de départ pour essayer tout de suite le parcours de structuration.
+3. Choisis **Plutôt écrire ?** et saisis la pensée sans utiliser le microphone.
+
+Lotti affiche les mots capturés pendant qu’il les structure. Le résultat est une
+vraie tâche dans la catégorie choisie, pas des données d’exemple réservées à
+l’intégration. Lorsque la structuration produit des suggestions de liste de
+contrôle, elles arrivent sur la tâche sous forme de propositions : tu peux les
+confirmer plutôt que de laisser la tâche changer en silence.
+
+<ManualScreenshot
+  caseId="onboarding/task-created"
+  alt="Panneau de réussite de l’intégration Lotti montrant la tâche créée Inspecter le relais de sardines d’Europe"
+  caption="La pensée saisie du Projet Waddle devient « Inspecter le relais de sardines d’Europe ». La tâche reste dans le panneau jusqu’à ce que tu la choisisses."
+/>
+
+Choisis la carte de la tâche créée pour fermer l’intégration et ouvrir sa page
+normale. Tu peux alors examiner les propositions de liste de contrôle, ajouter
+une illustration de couverture ou une preuve, définir une échéance et une
+priorité, puis intégrer la tâche à Daily OS.
+
+Si tu fermes le parcours après avoir connecté un fournisseur, Lotti conserve
+cette configuration et considère la bienvenue comme terminée. Revoir
+l’intégration plus tard reste sans risque : c’est une action explicite des
+Paramètres, pas une nouvelle invite automatique.
+
+Continue avec [crée ta première tâche](./first-task.mdx),
+[gère les catégories](../organize-and-reflect/categories.mdx) et
+[configure les fournisseurs](../ai-and-automation/provider-setup.mdx).

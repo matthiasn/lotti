@@ -1,0 +1,30 @@
+{
+  "version.label": {
+    "message": "Actuelle",
+    "description": "The label for version current"
+  },
+  "sidebar.manualSidebar.category.Start here": {
+    "message": "Commencer ici",
+    "description": "The label for category 'Start here' in sidebar 'manualSidebar'"
+  },
+  "sidebar.manualSidebar.category.Plan & capture": {
+    "message": "Planifier et capturer",
+    "description": "The label for category 'Plan & capture' in sidebar 'manualSidebar'"
+  },
+  "sidebar.manualSidebar.category.Organize & reflect": {
+    "message": "Organiser et prendre du recul",
+    "description": "The label for category 'Organize & reflect' in sidebar 'manualSidebar'"
+  },
+  "sidebar.manualSidebar.category.AI & automation": {
+    "message": "IA et automatisation",
+    "description": "The label for category 'AI & automation' in sidebar 'manualSidebar'"
+  },
+  "sidebar.manualSidebar.category.Sync & data": {
+    "message": "Synchronisation et données",
+    "description": "The label for category 'Sync & data' in sidebar 'manualSidebar'"
+  },
+  "sidebar.manualSidebar.category.Reference": {
+    "message": "Référence",
+    "description": "The label for category 'Reference' in sidebar 'manualSidebar'"
+  }
+}

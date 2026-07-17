@@ -70,6 +70,9 @@ import '../../labels/test_utils.dart';
 const String _subdir = 'settings_definitions';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
+AppLocalizations _messages(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(Scaffold).first))!;
+
 final DateTime _created = manualDemoNow;
 
 // ---------------------------------------------------------------------------
@@ -723,7 +726,10 @@ void main() {
           find.text(_t('Mission Control', 'Missionskontrolle')),
           findsOneWidget,
         );
-        expect(find.text(_t('37 tasks', '37 Aufgaben')), findsOneWidget);
+        expect(
+          find.text(_messages(tester).settingsCategoriesTaskCount(37)),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'categories_list_${viewport}_$theme',
@@ -740,7 +746,7 @@ void main() {
           home: CategoryDetailsPage(categoryId: _penguinOperations.id),
         );
         expect(
-          find.text(_t('Edit category', 'Kategorie bearbeiten')),
+          find.text(_messages(tester).settingsCategoriesDetailsLabel),
           findsOneWidget,
         );
         expect(
@@ -761,18 +767,13 @@ void main() {
         );
 
         await tester.scrollUntilVisible(
-          find.text(
-            _t(
-              'Checklist correction examples',
-              'Checklisten-Korrekturbeispiele',
-            ),
-          ),
+          find.text(_messages(tester).correctionExamplesSectionTitle),
           300,
           scrollable: find.byType(Scrollable).first,
         );
         await settleFrames(tester);
         expect(
-          find.text(_t('Speech recognition', 'Spracherkennung')),
+          find.text(_messages(tester).speechDictionarySectionTitle),
           findsOneWidget,
         );
         expect(find.textContaining('Project Waddle'), findsWidgets);
@@ -811,9 +812,7 @@ void main() {
         await settleFrames(tester, 6);
 
         expect(
-          find.text(
-            _t('Choose an inference profile', 'Inferenzprofil auswählen'),
-          ),
+          find.text(_messages(tester).inferenceProfileChooseTitle),
           findsOneWidget,
         );
         expect(
@@ -847,7 +846,7 @@ void main() {
       home: const CategoryDetailsPage(),
     );
     expect(
-      find.text(_t('Create category', 'Kategorie erstellen')),
+      find.text(_messages(tester).settingsCategoriesCreateTitle),
       findsOneWidget,
     );
     await captureScreenshot(
@@ -868,7 +867,7 @@ void main() {
       home: const CategoriesListPage(),
     );
     expect(
-      find.text(_t('No categories yet', 'Noch keine Kategorien')),
+      find.text(_messages(tester).settingsCategoriesEmptyState),
       findsOneWidget,
     );
     await captureScreenshot(
@@ -924,7 +923,10 @@ void main() {
           find.text(_t('Habitat critical', 'Habitatkritisch')),
           findsOneWidget,
         );
-        expect(find.text(_t('14 tasks', '14 Aufgaben')), findsOneWidget);
+        expect(
+          find.text(_messages(tester).settingsLabelsUsageCount(14)),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'labels_list_${viewport}_$theme',
@@ -941,7 +943,7 @@ void main() {
           home: LabelDetailsPage(labelId: _projectWaddle.id),
         );
         expect(
-          find.text(_t('Edit label', 'Label bearbeiten')),
+          find.text(_messages(tester).settingsLabelsEditTitle),
           findsOneWidget,
         );
         expect(find.text('Project Waddle'), findsOneWidget);
@@ -975,7 +977,7 @@ void main() {
       home: LabelDetailsPage(labelId: _projectWaddle.id),
     );
     expect(
-      find.text(_t('Edit label', 'Label bearbeiten')),
+      find.text(_messages(tester).settingsLabelsEditTitle),
       findsOneWidget,
     );
     await captureScreenshot(
@@ -1035,7 +1037,7 @@ void main() {
           home: EditHabitPage(habitId: _rollCall.id),
         );
         expect(
-          find.text(_t('Edit habit', 'Gewohnheit bearbeiten')),
+          find.text(_messages(tester).settingsHabitsDetailsLabel),
           findsOneWidget,
         );
         expect(
@@ -1055,15 +1057,21 @@ void main() {
         );
 
         await tester.scrollUntilVisible(
-          find.text(_t('Schedule', 'Zeitplan')),
+          find.text(_messages(tester).habitSectionScheduleTitle),
           300,
           scrollable: find.byType(Scrollable).first,
         );
         await settleFrames(tester);
-        expect(find.text(_t('Start date', 'Startdatum')), findsOneWidget);
-        expect(find.text(_t('Show from', 'Anzeigen ab')), findsOneWidget);
         expect(
-          find.text(_t('Show alert at', 'Alarm anzeigen um')),
+          find.text(_messages(tester).habitActiveFromLabel),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_messages(tester).habitShowFromLabel),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_messages(tester).habitShowAlertAtLabel),
           findsOneWidget,
         );
         await captureScreenshot(
@@ -1127,7 +1135,7 @@ void main() {
           home: MeasurableDetailsPage(dataType: _habitatPressure),
         );
         expect(
-          find.text(_t('Edit measurable', 'Messgröße bearbeiten')),
+          find.text(_messages(tester).settingsMeasurableDetailsLabel),
           findsOneWidget,
         );
         expect(
@@ -1136,7 +1144,7 @@ void main() {
         );
         expect(find.text('kPa'), findsOneWidget);
         expect(
-          find.text(_t('Daily average', 'Tagesdurchschnitt')),
+          find.text(_messages(tester).dashboardAggregationDailyAverage),
           findsOneWidget,
         );
         await captureScreenshot(
@@ -1221,28 +1229,22 @@ void main() {
         await settleFrames(tester);
         expect(
           find.text(
-            _t(
-              'Habitat pressure — Daily average',
-              'Habitatdruck — Tagesdurchschnitt',
-            ),
+            '${_habitatPressure.displayName} '
+            '— ${messages.dashboardAggregationDailyAverage}',
           ),
           findsOneWidget,
         );
         expect(
           find.text(
-            _t(
-              'Sardines consumed — Daily sum',
-              'Verzehrte Sardinen — Tagessumme',
-            ),
+            '${_sardinesConsumed.displayName} '
+            '— ${messages.aggregationDailySum}',
           ),
           findsOneWidget,
         );
         expect(
           find.text(
-            _t(
-              'Penguins accounted for — Daily sum',
-              'Gezählte Pinguine — Tagessumme',
-            ),
+            '${_penguinsAccountedFor.displayName} '
+            '— ${messages.aggregationDailySum}',
           ),
           findsOneWidget,
         );
@@ -1255,14 +1257,15 @@ void main() {
 
         _alignInOuterScrollView(
           tester,
-          find.text(
-            _t('Add charts by type', 'Diagramme nach Typ hinzufügen'),
-          ),
+          find.text(messages.dashboardAvailableChartsTitle),
         );
         await settleFrames(tester);
-        expect(find.text(_t('Habits', 'Gewohnheiten')), findsOneWidget);
-        expect(find.text(_t('Measurements', 'Messungen')), findsOneWidget);
-        expect(find.text(_t('Health', 'Gesundheit')), findsOneWidget);
+        expect(find.text(messages.dashboardAddHabitButton), findsOneWidget);
+        expect(
+          find.text(messages.dashboardAddMeasurementButton),
+          findsOneWidget,
+        );
+        expect(find.text(messages.dashboardAddHealthButton), findsOneWidget);
         await captureScreenshot(
           tester,
           'dashboards_sources_${viewport}_$theme',

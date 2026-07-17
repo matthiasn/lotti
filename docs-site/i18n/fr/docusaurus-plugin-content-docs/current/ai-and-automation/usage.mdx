@@ -1,0 +1,64 @@
+---
+title: Examiner l’utilisation et l’impact de l’IA
+description: Compare les requêtes IA par période, catégorie et modèle, y compris l’estimation du coût, de l’énergie, des émissions et de l’usage des jetons.
+---
+
+# Examiner l’utilisation et l’impact de l’IA
+
+Ouvre **Paramètres → Paramètres IA → Utilisation et impact** pour comprendre
+l’usage des modèles cloud configurés. La même analyse est aussi accessible
+depuis la route du tableau de bord d’impact IA.
+
+<ManualScreenshot
+  caseId="ai/usage"
+  alt="Tableau de bord Impact IA de Lotti pour juillet 2026, affichant le coût, l’énergie, l’équivalent dioxyde de carbone, les jetons, les requêtes et des barres par catégorie"
+  caption="Le mois d’exemple du Projet Waddle sépare Mission Control et Opérations pingouins tout en gardant visible l’empreinte totale des requêtes."
+/>
+
+## Lire les cartes de synthèse
+
+Les cartes du haut résument la période sélectionnée :
+
+- **Coût** estime la dépense auprès du fournisseur.
+- **Énergie** estime l’électricité attribuable à l’inférence cloud mesurée.
+- **CO₂e** exprime l’estimation des émissions associées.
+- **Jetons** compte les jetons traités par les modèles.
+- **Requêtes** compte les appels d’inférence.
+
+L’indicateur de comparaison utilise la période équivalente précédente lorsqu’elle
+existe. Une hausse en pourcentage donne du contexte, sans être automatiquement
+un problème : ne compare pas aveuglément une semaine de revue de lancement à
+une semaine calme dans la colonie.
+
+L’énergie, le CO₂e et le coût ne sont mesurés que pour les modèles cloud.
+L’inférence locale peut consommer beaucoup d’énergie sur l’appareil sans
+apparaître dans ces estimations cloud ; cette page n’est donc pas un compteur
+électrique complet pour tout le système.
+
+## Modifier l’analyse
+
+Utilise le contrôle de période et les boutons fléchés pour naviguer dans le
+temps, ou saute à **Ce mois-ci** et **Cette année**. Choisis ensuite **Les
+deux**, **Par catégorie** ou **Par modèle**. Dans un graphique, passe, lorsque
+l’option existe, entre les valeurs quotidiennes, les totaux cumulés et les
+proportions.
+
+Les vues par catégorie répondent à « quel domaine de travail a entraîné cet
+usage ? ». Les vues par modèle répondent à « quel modèle configuré a entraîné
+cet usage ? ». Consulte les deux avant de modifier un profil : un modèle coûteux
+peut se justifier dans une catégorie spécialisée, mais être gaspillé comme
+valeur par défaut générale.
+
+## Agir face à un résultat surprenant
+
+Si l’usage augmente de façon inattendue :
+
+1. réduis la période au premier jour concerné ;
+2. compare les répartitions par catégorie et par modèle ;
+3. examine les automatisations et la concurrence des agents ;
+4. inspecte le profil d’inférence assigné à la catégorie concernée ;
+5. vérifie la facturation côté fournisseur avant de traiter l’estimation de
+   Lotti comme une facture.
+
+Pour modifier la route responsable des futurs appels, reviens à
+[Modèles et profils d’inférence](./models-and-profiles.mdx).

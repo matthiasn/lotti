@@ -44,7 +44,9 @@ import '../../../widget_test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
 
 const String _subdir = 'settings_home';
-String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+
+AppLocalizations _messages(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(Scaffold).first))!;
 
 /// Config-flag values driving the rendered tree/list: a rich-but-quiet
 /// surface (Matrix/Sync, Habits, Dashboards on; What's New off so the
@@ -196,9 +198,10 @@ void main() {
       home: const SettingsRootPage(),
     );
     // Top-level tree leaves prove the V2 tree rendered.
-    expect(find.text(_t('Theming', 'Farbschema')), findsOneWidget);
+    final messages = _messages(tester);
+    expect(find.text(messages.settingsThemingTitle), findsOneWidget);
     expect(
-      find.text(_t('Advanced Settings', 'Erweiterte Einstellungen')),
+      find.text(messages.settingsAdvancedTitle),
       findsOneWidget,
     );
     await captureScreenshot(
@@ -216,9 +219,10 @@ void main() {
       overrides: baseOverrides(),
       home: const SettingsRootPage(),
     );
-    expect(find.text(_t('Theming', 'Farbschema')), findsOneWidget);
+    final messages = _messages(tester);
+    expect(find.text(messages.settingsThemingTitle), findsOneWidget);
     expect(
-      find.text(_t('Advanced Settings', 'Erweiterte Einstellungen')),
+      find.text(messages.settingsAdvancedTitle),
       findsOneWidget,
     );
     await captureScreenshot(
@@ -240,9 +244,10 @@ void main() {
       home: const SettingsRootPage(),
     );
     // Legacy single-page list rows.
-    expect(find.text(_t('Theming', 'Farbschema')), findsOneWidget);
+    final messages = _messages(tester);
+    expect(find.text(messages.settingsThemingTitle), findsOneWidget);
     expect(
-      find.text(_t('Advanced Settings', 'Erweiterte Einstellungen')),
+      find.text(messages.settingsAdvancedTitle),
       findsOneWidget,
     );
     await captureScreenshot(
@@ -260,9 +265,10 @@ void main() {
       overrides: baseOverrides(),
       home: const SettingsRootPage(),
     );
-    expect(find.text(_t('Theming', 'Farbschema')), findsOneWidget);
+    final messages = _messages(tester);
+    expect(find.text(messages.settingsThemingTitle), findsOneWidget);
     expect(
-      find.text(_t('Advanced Settings', 'Erweiterte Einstellungen')),
+      find.text(messages.settingsAdvancedTitle),
       findsOneWidget,
     );
     await captureScreenshot(
@@ -291,12 +297,13 @@ void main() {
       );
       await _openDesktopDefinitions(tester);
 
-      expect(find.text(_t('Definitions', 'Definitionen')), findsWidgets);
-      expect(find.text(_t('Categories', 'Kategorien')), findsOneWidget);
-      expect(find.text(_t('Labels', 'Labels')), findsOneWidget);
-      expect(find.text(_t('Habits', 'Gewohnheiten')), findsOneWidget);
-      expect(find.text(_t('Dashboards', 'Dashboards')), findsOneWidget);
-      expect(find.text(_t('Measurables', 'Messgrößen')), findsOneWidget);
+      final messages = _messages(tester);
+      expect(find.text(messages.settingsDefinitionsTitle), findsWidgets);
+      expect(find.text(messages.settingsCategoriesTitle), findsOneWidget);
+      expect(find.text(messages.settingsLabelsTitle), findsOneWidget);
+      expect(find.text(messages.settingsHabitsTitle), findsOneWidget);
+      expect(find.text(messages.settingsDashboardsTitle), findsOneWidget);
+      expect(find.text(messages.settingsMeasurablesTitle), findsOneWidget);
       await captureScreenshot(
         tester,
         'desktop_settings_definitions_$themeName',
@@ -313,12 +320,13 @@ void main() {
         home: const SettingsMobileBranchPage(branchId: 'definitions'),
       );
 
-      expect(find.text(_t('Definitions', 'Definitionen')), findsOneWidget);
-      expect(find.text(_t('Categories', 'Kategorien')), findsOneWidget);
-      expect(find.text(_t('Labels', 'Labels')), findsOneWidget);
-      expect(find.text(_t('Habits', 'Gewohnheiten')), findsOneWidget);
-      expect(find.text(_t('Dashboards', 'Dashboards')), findsOneWidget);
-      expect(find.text(_t('Measurables', 'Messgrößen')), findsOneWidget);
+      final messages = _messages(tester);
+      expect(find.text(messages.settingsDefinitionsTitle), findsOneWidget);
+      expect(find.text(messages.settingsCategoriesTitle), findsOneWidget);
+      expect(find.text(messages.settingsLabelsTitle), findsOneWidget);
+      expect(find.text(messages.settingsHabitsTitle), findsOneWidget);
+      expect(find.text(messages.settingsDashboardsTitle), findsOneWidget);
+      expect(find.text(messages.settingsMeasurablesTitle), findsOneWidget);
       await captureScreenshot(
         tester,
         'mobile_settings_definitions_$themeName',

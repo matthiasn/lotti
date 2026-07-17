@@ -1,0 +1,127 @@
+---
+title: Concevoir des modèles et des âmes d’agents
+description: Définis des responsabilités d’agent réutilisables, sépare la personnalité des instructions et améliore les deux au fil d’entretiens individuels versionnés.
+---
+
+# Concevoir des modèles et des âmes d’agents
+
+Un **modèle d’agent** définit une responsabilité réutilisable : le type d’agent,
+son profil d’inférence, ses directives de fonctionnement, le format de ses
+rapports et, éventuellement, sa personnalité. Une **âme** rassemble la voix
+réutilisable, les limites de ton, le style d’accompagnement et la politique
+anti-complaisance. Les garder distincts permet d’améliorer une personnalité de
+façon cohérente dans plusieurs modèles, sans recopier les instructions.
+
+## Examiner le catalogue de modèles
+
+Ouvre **Paramètres → Agents → Modèles d’agents**. Le catalogue indique le type de
+modèle, l’identité du modèle d’IA, la version active et si une révision demande
+ton attention.
+
+<ManualScreenshot
+  caseId="agents/templates"
+  alt="Modèles d’agents Lotti pour la sécurité de l’habitat orbital, la planification de la journée du Projet Waddle, le suivi des réserves de sardines et l’accompagnement de la diplomatie des poissons"
+  caption="Chaque modèle du Projet Waddle a une responsabilité précise et une version visible, au lieu d’un unique agent fourre-tout avec un prompt impossible à relire."
+/>
+
+Les types intégrés couvrent des périmètres différents :
+
+- **Agent de tâche** travaille sur une tâche et les éléments qui lui sont liés.
+- **Agent de journée** planifie et révise une journée.
+- **Agent de projet** suit un projet dans le temps.
+- **Agent d’événement** suit l’espace de travail d’un événement.
+- **Améliorateur de modèle** accompagne les 1-on-1 versionnés.
+
+## Modifier un modèle
+
+Sélectionne un modèle pour modifier sa configuration actuelle. Choisis un profil
+d’inférence par défaut doté des outils et modalités dont cette responsabilité a
+besoin, puis associe éventuellement une âme.
+
+<ManualScreenshot
+  caseId="agents/template-editor"
+  alt="Éditeur du modèle Sentinelle de l’habitat orbital utilisant Commandement Projet Waddle et l’amiral Pebble, avec des directives sur la sécurité de l’habitat et les rapports"
+  caption="La directive opérationnelle de la Sentinelle précise quoi inspecter ; l’amiral Pebble apporte le style de communication et de remise en question."
+/>
+
+Utilise volontairement les deux champs de directives :
+
+- **Directive générale** définit la responsabilité, les limites et les règles
+  de décision.
+- **Directive de rapport** définit le contenu d’un rapport enregistré utile.
+
+Enregistrer un modèle modifié crée une nouvelle version. L’historique reste
+disponible pour l’audit et le retour en arrière ; n’enfouis pas des
+responsabilités sans lien dans une longue directive uniquement pour réduire le
+nombre de modèles.
+
+## Faire un 1-on-1 avec un modèle
+
+La page **1-on-1** d’un modèle replace les changements proposés dans le
+contexte de l’activité réelle des réveils, des retours, des
+performances et des séances précédentes. Une séance en attente est une
+proposition, pas une réécriture automatique.
+
+<ManualScreenshot
+  caseId="agents/template-review"
+  alt="1-on-1 de la Sentinelle de l’habitat orbital montrant une proposition pour mettre en avant la décision de lancement et des métriques de performance récentes"
+  caption="La proposition répond à un échec concret : le constat de sécurité était juste, mais la décision de lancer ou non était cachée sous des anecdotes sur les poissons."
+/>
+
+Démarre la conversation, examine les éléments probants et n’approuve que les
+changements qui améliorent la responsabilité. Le résultat approuvé devient un
+nouvel enregistrement de modèle versionné.
+
+## Garder la personnalité réutilisable avec les âmes
+
+Ouvre **Âmes** pour voir les personnalités que les modèles peuvent partager.
+Une âme n’est pas un autre prompt de tâche : elle définit la façon dont un agent
+communique, accompagne et exprime son désaccord.
+
+<ManualScreenshot
+  caseId="agents/souls"
+  alt="Catalogue d’âmes Lotti contenant Admiral Pebble, Dr. Flipper et Captain Sardina"
+  caption="Le Projet Waddle sépare un directeur de vol calme, une scientifique curieuse et un coordinateur de cargaison pragmatique des tâches qui emploient ces personnalités."
+/>
+
+L’éditeur d’âme rend explicites quatre dimensions :
+
+<ManualScreenshot
+  caseId="agents/soul-editor"
+  alt="Éditeur de l’âme de l’amiral Pebble avec la voix, les limites de ton, le style d’accompagnement et la politique anti-complaisance"
+  caption="L’amiral Pebble peut rester chaleureux et décisif tout en contestant les hypothèses optimistes de lancement à l’aide d’éléments probants."
+/>
+
+- **Directive de voix** décrit la voix reconnaissable et les priorités de
+  communication.
+- **Limites de ton** indiquent ce que cette voix doit éviter.
+- **Style d’accompagnement** décrit comment elle aide une personne à prendre
+  une décision.
+- **Politique anti-complaisance** explique quand et comment l’agent doit être
+  en désaccord.
+
+Fixe des limites de comportement concrètes. « Sois utile » est difficile à
+réviser ; « conteste les hypothèses optimistes de lancement et cite
+l’observation qui a changé ta conclusion » peut être vérifié dans la sortie
+réelle.
+
+## Faire évoluer une âme partagée avec prudence
+
+Le **1-on-1** d’une âme rassemble les retours de tous les modèles
+qui utilisent cette personnalité. Le changement a donc de la portée :
+l’approuver peut améliorer plusieurs agents, mais un mauvais changement peut
+aussi tous les affecter.
+
+<ManualScreenshot
+  caseId="agents/soul-review"
+  alt="1-on-1 de l’âme de l’amiral Pebble avec une proposition, un modèle partageant cette âme et l’historique de séances terminées"
+  caption="Le nombre de partages et l’historique des séances rendent l’étendue des effets visible avant l’approbation d’un changement de personnalité."
+/>
+
+Lis le nombre de partages, le résumé des retours proposés et le récapitulatif
+précédent avant de démarrer une révision de personnalité. Si un retour ne vaut
+que pour une responsabilité, modifie ce modèle plutôt que d’enseigner une règle
+spécifique à une tâche à l’âme partagée.
+
+Reviens à [Exécuter et surveiller les agents](./agents.mdx) pour examiner les
+instances et les cycles de réveil issus de ces modèles.

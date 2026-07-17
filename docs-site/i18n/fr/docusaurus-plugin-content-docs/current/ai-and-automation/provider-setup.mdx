@@ -1,0 +1,94 @@
+---
+title: Connecter un fournisseur d’IA
+description: Connecte une inférence cloud ou locale, examine ses modèles et garde le contrôle sur les identifiants et les points de terminaison.
+---
+
+# Connecter un fournisseur d’IA
+
+Lotti sépare une configuration d’IA en trois couches : un **fournisseur** est le
+service auquel elle se connecte, un **modèle** est un modèle exposé par ce
+service et un **profil d’inférence** oriente chaque type de travail vers un
+modèle. Commence par le fournisseur, puis examine les modèles et profils créés
+autour de lui.
+
+<ManualScreenshot
+  caseId="ai/providers"
+  alt="Paramètres IA de Lotti affichant les fournisseurs Routeur Mission Control, Laboratoire local de l’habitat, Vision orbitale et Baie audio des pingouins"
+  caption="Les Paramètres IA regroupent les connexions cloud et locales. Chaque carte indique l’état de la connexion et le nombre de modèles enregistrés qui l’utilisent."
+/>
+
+## Choisir le local ou le distant
+
+- Un fournisseur cloud est généralement le moyen le plus rapide de démarrer et
+  demande souvent une clé API. Le texte, l’audio ou les images que tu lui
+  envoies quittent l’appareil.
+- Un fournisseur local peut conserver l’inférence sur ta machine ou sur un
+  point de terminaison local que tu contrôles, mais son service doit être lancé
+  et accessible depuis l’appareil qui l’invoque dans Lotti. Une adresse LAN peut
+  tout de même faire passer un prompt entre tes appareils ; « local » signifie
+  qu’il n’est pas envoyé à un fournisseur de modèles hébergé, pas qu’il n’y a
+  aucun saut réseau.
+- Une URL de base personnalisée peut diriger un type de fournisseur pris en
+  charge vers un proxy ou une passerelle compatible. Le type de fournisseur
+  contrôle toujours le comportement propre au protocole.
+
+## Connecter un fournisseur
+
+1. Ouvre **Paramètres → Paramètres IA → Fournisseurs**.
+2. Sélectionne le bouton **+**.
+3. Choisis un fournisseur pris en charge.
+4. Saisis son nom d’affichage, son point de terminaison et sa clé API si nécessaire.
+5. Ajoute les modèles suggérés que tu souhaites, puis enregistre.
+
+Pour les fournisseurs de première configuration pris en charge, Lotti prépare
+des modèles utiles et un ou plusieurs profils d’inférence. L’écran de résultat
+résume les éléments créés.
+
+<ManualScreenshot
+  caseId="ai/provider-editor"
+  alt="Éditeur de fournisseur Lotti pour Mission Control Router avec OpenRouter sélectionné, une URL de base, une clé API masquée et des modèles suggérés"
+  caption="Les identifiants restent masqués. Les modèles suggérés sont des raccourcis, pas une obligation : tu peux ajouter plus tard des identifiants de modèle propres au fournisseur."
+/>
+
+## Examiner et entretenir une connexion
+
+Ouvre une carte de fournisseur pour examiner son identifiant masqué, son URL de
+base, ses modèles enregistrés et tout profil actif qui dépend de ces modèles.
+Tu peux modifier la connexion, ajouter un autre modèle ou supprimer le
+fournisseur.
+
+<ManualScreenshot
+  caseId="ai/provider-detail"
+  alt="Détail du fournisseur Routeur Mission Control montrant sa connexion, les modèles Waddle Command et le profil Projet Waddle actif"
+  caption="Le résumé des dépendances rend l’étendue des effets visible avant de modifier ou de supprimer un fournisseur."
+/>
+
+Modifier une URL de base ou une clé API affecte tous les modèles associés à ce
+fournisseur. Après avoir modifié l’une de ces valeurs, vérifie une action IA
+représentative avant de supposer que la connexion fonctionne. Supprimer un
+fournisseur peut aussi affecter les profils qui orientent du travail vers ses
+modèles : examine d’abord les informations de dépendance.
+
+## Examiner l’orientation des profils
+
+Ouvre [Modèles et profils d’inférence](./models-and-profiles.mdx) pour vérifier
+ce que le fournisseur expose et la façon dont Lotti oriente chaque capacité.
+Les catégories peuvent définir un profil par défaut pour leur travail, tandis
+que chaque automatisation peut sélectionner ou remplacer un modèle lorsque le
+flux de travail le permet.
+
+## Frontière de confidentialité
+
+Avant d’envoyer du texte, de l’audio ou des images sensibles, vérifie si le
+point de terminaison configuré est local ou distant. Un nom sympathique comme
+« Habitat Local Lab » n’est pas la frontière de sécurité : ce sont l’URL de
+base, le chemin réseau et la machine qui sert le modèle qui comptent. Dans les
+deux cas, Lotti conserve le journal localement ; ce choix contrôle l’appel
+d’inférence lui-même.
+
+:::warning Clés API
+
+Traite les clés de fournisseur comme des secrets. Ne les colle jamais dans la
+documentation, des tickets ou des captures d’écran.
+
+:::

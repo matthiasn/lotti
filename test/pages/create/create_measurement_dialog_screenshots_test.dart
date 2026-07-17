@@ -38,6 +38,9 @@ final _rangeEnd = DateTime(2026, 7, 18);
 
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
+AppLocalizations _messages(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(MeasurablesBarChart)))!;
+
 final MeasurableDataType _sardinesConsumed = MeasurableDataType(
   id: _measurableId,
   displayName: _t('Sardines consumed', 'Verzehrte Sardinen'),
@@ -240,7 +243,10 @@ void main() {
 
         await tester.tap(find.byKey(const Key('measurement_observed_at')));
         await settleFrames(tester, 10);
-        expect(find.text(_t('Observed at', 'Erfasst um')), findsOneWidget);
+        expect(
+          find.text(_messages(tester).addMeasurementDateLabel),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'measurement_capture_date_${viewport}_$theme',

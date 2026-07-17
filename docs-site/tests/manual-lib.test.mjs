@@ -7,6 +7,7 @@ import {
   findUnmanagedScreenshotReferences,
   requiredVariants,
   resolveCaptureLocales,
+  resolveScreenshotCases,
   validateCaseId,
   validateManualVersion,
   validateScreenshotRegistry,
@@ -104,21 +105,43 @@ test('the screenshot registry requires a valid default and unique locales', () =
 });
 
 test('incremental captures select only registered locales', () => {
-  assert.deepEqual(resolveCaptureLocales(undefined, ['en', 'de', 'cs']), [
+  assert.deepEqual(resolveCaptureLocales(undefined, ['en', 'de', 'fr', 'cs']), [
     'en',
     'de',
+    'fr',
     'cs',
   ]);
-  assert.deepEqual(resolveCaptureLocales('cs, de', ['en', 'de', 'cs']), [
+  assert.deepEqual(resolveCaptureLocales('cs, fr', ['en', 'de', 'fr', 'cs']), [
     'cs',
-    'de',
+    'fr',
   ]);
   assert.throws(
-    () => resolveCaptureLocales('fr', ['en', 'de', 'cs']),
+    () => resolveCaptureLocales('es', ['en', 'de', 'fr', 'cs']),
     /Unsupported manual screenshot locale/,
   );
   assert.throws(
     () => resolveCaptureLocales('cs cs', ['en', 'de', 'cs']),
+    /contains duplicates/,
+  );
+});
+
+test('incremental captures select only registered screenshot cases', () => {
+  const cases = [
+    {id: 'onboarding/welcome'},
+    {id: 'onboarding/api-key'},
+    {id: 'onboarding/success'},
+  ];
+  assert.deepEqual(resolveScreenshotCases(undefined, cases), cases);
+  assert.deepEqual(resolveScreenshotCases('onboarding/api-key, onboarding/success', cases), [
+    cases[1],
+    cases[2],
+  ]);
+  assert.throws(
+    () => resolveScreenshotCases('onboarding/unknown', cases),
+    /Unknown manual screenshot case/,
+  );
+  assert.throws(
+    () => resolveScreenshotCases('onboarding/welcome onboarding/welcome', cases),
     /contains duplicates/,
   );
 });

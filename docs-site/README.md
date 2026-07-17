@@ -21,11 +21,12 @@ make manual_check
 make manual_serve
 ```
 
-The local English root is `/manual/development/`; German and Czech are
-available at `/manual/development/de/` and `/manual/development/cs/`. The
-navbar selector preserves the current page, and a German or Czech browser
-visiting the unqualified manual root is redirected to that language unless the
-reader has explicitly chosen a language before.
+The local English root is `/manual/development/`; German, French, and Czech are
+available at `/manual/development/de/`, `/manual/development/fr/`, and
+`/manual/development/cs/`. The navbar selector preserves the current page, and
+a browser using one of those languages that visits the unqualified manual root
+is redirected to that language unless the reader has explicitly chosen a
+language before.
 
 Run the complete manual check with:
 
@@ -83,16 +84,35 @@ registry reuses deterministic feature screenshot harnesses:
 make manual_screenshots
 ```
 
-That command captures all registered English, German, and Czech
+That command captures all registered English, German, French, and Czech
 mobile/desktop and light/dark PNG inputs into an ignored staging directory,
 converts them to canonical WebP paths, and writes a checksum/dimension manifest under
 `../lotti-docs/manual/screenshots/development/`.
+
+CI runs this same full pipeline on every manual-relevant push to `main`, nightly
+at 02:23 UTC, and on demand. Main-branch captures fast-forward a normal commit
+to `lotti-docs/main`; pull requests only validate the site and never publish
+generated media.
+
+When only a new or changed case needs publishing, pass its IDs to the manifest
+builder so the existing catalog remains untouched. For example:
+
+```bash
+npm run manifest -- --locales en,de --cases onboarding/api-key,onboarding/success
+```
+
+Use `--skip-manifest` only to prepare an incomplete locale catalog before a
+subsequent complete manifest run; it converts the selected cases but deliberately
+does not write a partial manifest.
+
+Use `--manifest-only` after a complete catalog already exists when metadata must
+be refreshed without recompressing any image files.
 
 English media keeps the established
 `development/<case>/<viewport>-<theme>.webp` path. Localized media lives at
 `development/<locale>/<case>/<viewport>-<theme>.webp`. Visible deterministic
 demo copy that does not come from the app ARB files must use
-`manualScreenshotText(en: …, de: …, cs: …)` so all three catalogs show the
+`manualScreenshotText(en: …, de: …, fr: …, cs: …)` so all four catalogs show the
 same scenario in the selected language.
 
 Add a screenshot by extending `metadata/screenshot-cases.json`, reusing or
@@ -103,7 +123,8 @@ manual locale.
 
 ## Release model
 
-For app version `1.0.0`, CI checks out the app's `1.0.0` tag and builds with:
+For app version `1.0.0`, a release build must check out the app's `1.0.0` tag and
+build with:
 
 ```bash
 MANUAL_VERSION=1.0.0 \
@@ -113,7 +134,9 @@ MANUAL_BASE_URL=/lotti/manual/1.0.0/ \
 npm run build
 ```
 
-The result is published as an immutable directory. `metadata/releases.json`
-drives cross-version links and records which publicly distributed App Store
-version should receive the `latest` alias. No `versioned_docs` directory is
+`metadata/releases.json` drives cross-version links and records which publicly
+distributed App Store version should receive the `latest` alias. The current
+GitHub Pages workflow publishes the development snapshot; the first App Store
+release needs the companion tagged-release job to assemble the immutable
+versioned Pages snapshot and media catalog. No `versioned_docs` directory is
 allowed.

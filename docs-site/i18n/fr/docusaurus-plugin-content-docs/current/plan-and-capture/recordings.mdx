@@ -1,0 +1,50 @@
+---
+title: Enregistrer de l'audio
+description: Capture une note vocale et décide du traitement automatisé à effectuer ensuite.
+---
+
+# Enregistrer de l'audio
+
+L'audio est utile lorsque parler est plus rapide qu'écrire ou lorsque le ton et les détails comptent. Un enregistrement peut vivre seul ou dans une tâche.
+
+## Capturer un enregistrement
+
+1. Ouvre le journal ou la tâche qui doit posséder l'enregistrement.
+2. Utilise l'action **+**, puis choisis **Enregistrement audio**.
+3. Examine les options de traitement disponibles.
+4. Démarre l'enregistrement, parle distinctement, puis arrête-le quand tu as terminé.
+
+<ManualScreenshot
+  caseId="recordings/active"
+  alt="Feuille d'enregistrement audio active avec visualiseur en direct, temps écoulé, pause, abandon, arrêt et commandes de reconnaissance vocale"
+/>
+
+Pendant la capture, la feuille garde le temps écoulé et le visualiseur d'entrée en direct visibles. Tu peux mettre en pause et reprendre sans terminer, abandonner la prise ou choisir **Arrêter** pour l'enregistrer. Lorsque la transcription liée à une tâche est disponible, l'option **Reconnaissance vocale** détermine si le traitement doit commencer après l'enregistrement.
+
+Lorsqu'un profil d'inférence et une compétence de transcription sont configurés, Lotti peut transcrire l'enregistrement après la capture. Les enregistrements de tâche peuvent aussi proposer un traitement lié à la tâche, comme des mises à jour de liste de vérification ou de résumé.
+
+## Relire les transcriptions enregistrées
+
+Ouvre une entrée audio, utilise son menu **…**, puis choisis **Reconnaissance vocale**. La feuille de relecture conserve chaque transcription avec l'enregistrement au lieu de remplacer un résultat antérieur. Chaque ligne indique le moment du traitement, sa durée, la langue détectée et le fournisseur ainsi que le modèle qui l'ont produit.
+
+<ManualScreenshot
+  caseId="recordings/transcripts"
+  alt="Feuille de reconnaissance vocale au-dessus d'une entrée audio Project Waddle, avec l'anglais sélectionné et deux transcriptions enregistrées de Mistral et Whisper"
+  caption="L'enregistrement source reste visible derrière la feuille, tandis que chaque résultat de reconnaissance conserve sa propre provenance."
+/>
+
+Le sélecteur de langue propose actuellement **Auto**, **English** et **Deutsch**. Utilise **Auto** lorsque le fournisseur doit détecter la langue, ou sélectionne une langue avant la reconnaissance si tu la connais déjà. Le choix est enregistré sur l'entrée audio.
+
+Sélectionne le double chevron d'un résultat pour afficher le texte complet et sélectionnable. Déplier une ligne révèle aussi son action de suppression. Supprimer une transcription retire ce résultat de reconnaissance, pas l'enregistrement source ni les autres transcriptions.
+
+<ManualScreenshot
+  caseId="recordings/transcript-expanded"
+  alt="Transcription Project Waddle dépliée décrivant la cargaison de sardines Europa, 37 manchots empereurs et le distributeur de poissons en apesanteur"
+  caption="Relis la formulation complète et la provenance du fournisseur avant d'utiliser le texte généré comme contexte de tâche."
+/>
+
+## Choisir l'automatisation délibérément
+
+Les options de traitement sont des demandes adressées aux compétences IA configurées. Le fournisseur choisi peut être local ou distant : vérifie donc le profil d'inférence actif avant d'utiliser du contenu sensible. Relis le texte généré et les changements de tâche proposés au lieu de les traiter comme une source de vérité.
+
+Consulte [Configurer un fournisseur IA](../ai-and-automation/provider-setup.mdx) pour décider où s'exécute l'inférence.

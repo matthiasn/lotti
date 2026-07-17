@@ -62,6 +62,8 @@ import '../../../daily_os_next/screenshot_harness.dart';
 
 const String _subdir = 'ai_settings';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+AppLocalizations _messages(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(Scaffold).first))!;
 
 enum _AiSurface {
   providers,
@@ -553,11 +555,15 @@ void main() {
             brightness: brightness,
             world: world,
           );
+          final messages = _messages(tester);
           expect(
             find.text(_t('Mission Control Router', 'Missionskontroll-Router')),
             findsWidgets,
           );
-          expect(find.text(_t('Connection', 'Verbindung')), findsOneWidget);
+          expect(
+            find.text(messages.aiProviderDetailConnectionTitle),
+            findsOneWidget,
+          );
           expect(
             find.text(_t('Waddle Command 70B', 'Watschelkommando 70B')),
             findsAtLeastNWidgets(1),
@@ -584,7 +590,9 @@ void main() {
               ),
             );
           } else {
-            await tester.tap(find.text(_t('Edit', 'Bearbeiten')).first);
+            await tester.tap(
+              find.text(messages.aiProviderDetailEditButton).first,
+            );
           }
           await settleFrames(tester, 8);
           expect(
@@ -592,10 +600,10 @@ void main() {
             findsWidgets,
           );
           expect(
-            find.text(_t('Provider Type', 'Anbietertyp')),
+            find.text(messages.apiKeyProviderTypeLabel),
             findsOneWidget,
           );
-          expect(find.text(_t('API Key', 'API-Schlüssel')), findsOneWidget);
+          expect(find.text(messages.apiKeyInputLabel), findsOneWidget);
           await captureScreenshot(
             tester,
             'ai_provider_editor_${viewport}_$theme',
@@ -614,8 +622,9 @@ void main() {
             brightness: brightness,
             world: world,
           );
+          final messages = _messages(tester);
           expect(
-            find.text(_t('Edit Model', 'Modell bearbeiten')),
+            find.text(messages.modelEditPageTitle),
             findsOneWidget,
           );
           expect(
@@ -627,7 +636,7 @@ void main() {
             findsWidgets,
           );
           expect(
-            find.text(_t('Capabilities', 'Fähigkeiten')),
+            find.text(messages.modelEditSectionCapabilities),
             findsOneWidget,
           );
           await captureScreenshot(
@@ -650,8 +659,9 @@ void main() {
             brightness: brightness,
             world: world,
           );
+          final messages = _messages(tester);
           expect(
-            find.text(_t('Edit Profile', 'Profil bearbeiten')),
+            find.text(messages.inferenceProfileEditTitle),
             findsOneWidget,
           );
           expect(
@@ -670,14 +680,16 @@ void main() {
             subdir: _subdir,
           );
 
-          final thinkingField = find.text(_t('Thinking *', 'Denken *'));
+          final thinkingField = find.text(
+            '${messages.inferenceProfileThinking} *',
+          );
           expect(thinkingField, findsOneWidget);
           await tester.tap(
             find.text(_t('Waddle Command 70B', 'Watschelkommando 70B')),
           );
           await settleFrames(tester, 6);
           expect(
-            find.text(_t('Choose a model', 'Modell auswählen')),
+            find.text(messages.inferenceProfileChooseModelTitle),
             findsOneWidget,
           );
           expect(
@@ -705,11 +717,12 @@ void main() {
               brightness: brightness,
               world: world,
             );
-            expect(find.text(_t('AI Impact', 'KI-Impact')), findsOneWidget);
+            final messages = _messages(tester);
+            expect(find.text(messages.aiImpactTitle), findsOneWidget);
             expect(find.text(formatCredits(1.2)), findsOneWidget);
             expect(
-              find.text(_t('Cost by category', 'Kosten nach Kategorie')),
-              findsOneWidget,
+              find.text(messages.aiImpactBreakdownCategory),
+              findsWidgets,
             );
             await captureScreenshot(
               tester,
@@ -732,8 +745,9 @@ void main() {
             brightness: brightness,
             world: world,
           );
+          final messages = _messages(tester);
           expect(
-            find.text(_t('Inference Profiles', 'Inferenz-Profile')),
+            find.text(messages.inferenceProfilesTitle),
             findsOneWidget,
           );
           expect(

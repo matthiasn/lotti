@@ -44,6 +44,9 @@ const _sardineBannerUrl =
     'https://manual.invalid/project-waddle-sardine-futures.webp';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
+AppLocalizations _messages(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(Scaffold).first))!;
+
 final _manualReleases = <WhatsNewContent>[
   WhatsNewContent(
     release: WhatsNewRelease(
@@ -331,7 +334,7 @@ void main() {
           pastRelease: false,
         );
 
-        expect(find.text('NEW'), findsOneWidget);
+        expect(find.text(_messages(tester).whatsNewBadgeNew), findsOneWidget);
         expect(
           find.textContaining(
             _t(
@@ -358,7 +361,10 @@ void main() {
           pastRelease: true,
         );
 
-        expect(find.text(_t('NEW', 'NEU')), findsNothing);
+        expect(
+          find.text(_messages(tester).whatsNewBadgeNew),
+          findsNothing,
+        );
         expect(
           find.textContaining(
             _t(

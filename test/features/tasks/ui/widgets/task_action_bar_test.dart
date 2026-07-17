@@ -793,7 +793,7 @@ void main() {
     (tester) async {
       // Outer 420 → inner ~388, which is at-or-above
       // [TaskActionBar.minWidthForChecklistButton] (340) and below
-      // [TaskActionBar.minWidthForImageButton] (400).
+      // [TaskActionBar.minWidthForImageButton] (416).
       await tester.binding.setSurfaceSize(const Size(420, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -822,6 +822,29 @@ void main() {
 
       expect(find.byKey(TaskActionBar.imageKey), findsOneWidget);
       expect(find.byKey(TaskActionBar.checklistKey), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'uses the compact affordance set before French Track time text overflows',
+    (tester) async {
+      // Outer 440 → inner ~408. The localized "Suivre le temps" pill is
+      // wider than English, so this must stay below the image threshold.
+      tester.binding.platformDispatcher.localeTestValue = const Locale('fr');
+      addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
+      await tester.binding.setSurfaceSize(const Size(440, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pumpBar(tester);
+
+      expect(find.byKey(TaskActionBar.imageKey), findsNothing);
+      expect(find.byKey(TaskActionBar.checklistKey), findsOneWidget);
+      expectSingleRowWithin(tester, const [
+        TaskActionBar.trackTimeKey,
+        TaskActionBar.audioKey,
+        TaskActionBar.checklistKey,
+        TaskActionBar.moreKey,
+      ]);
     },
   );
 }

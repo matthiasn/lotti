@@ -1,0 +1,45 @@
+---
+title: Maintenance de la synchronisation
+description: Utilise délibérément les actions de réparation et de nettoyage de la synchronisation Matrix, du renvoi d’enregistrements à la reconstruction de l’historique de séquence.
+---
+
+# Maintenance de la synchronisation
+
+Ouvre **Réglages → Synchronisation → Maintenance** pour les réparations et le
+nettoyage au niveau de la base de données. Ces actions ne font pas partie de
+l’appairage habituel ni de la synchronisation quotidienne. Avant de les
+utiliser, laisse les écritures actives se terminer et conserve une sauvegarde
+récente des données que tu ne peux pas recréer.
+
+<ManualScreenshot
+  caseId="sync/maintenance"
+  alt="Maintenance de synchronisation Matrix Lotti avec suppression de la base de données de synchronisation, synchronisation des définitions, resynchronisation des messages, remplissage du journal de séquence et purge de la boîte d’envoi déjà envoyée"
+  caption="La maintenance réunit actions destructives, répétition et nettoyage sur une page. Le texte de confirmation définit la portée de chaque opération."
+/>
+
+## Choisir la réparation la plus limitée
+
+- **Supprimer la base de données de synchronisation** retire la base locale de
+  synchronisation. C’est une récupération locale destructive, pas la méthode
+  normale pour déconnecter un appareil.
+- **Synchroniser les définitions** renvoie les enregistrements de définition
+  actuels, comme les catégories et d’autres configurations partagées.
+- **Resynchroniser les messages** rejoue les messages sélectionnés lorsqu’un
+  état distant manque ou qu’une livraison antérieure doit être répétée.
+- **Remplir le journal de séquence** reconstruit l’historique de séquence local
+  utilisé pour détecter les écarts et piloter le rattrapage.
+- **Purger les anciens éléments envoyés de la boîte d’envoi** supprime
+  l’historique déjà envoyé de la file de diagnostic après sa période de
+  conservation. Cela ne retire pas le travail en attente ou échoué.
+
+Commence par l’opération la plus petite qui correspond au symptôme. Une pièce
+jointe bloquée relève de la [boîte d’envoi](./sync.mdx#examiner-la-boîte-denvoi) ; des
+écarts de séquence persistants relèvent du rattrapage ; deux modifications
+concurrentes valides relèvent des [conflits](./conflicts.mdx). Supprimer la base
+de données de synchronisation doit rester une réinitialisation locale de dernier
+recours, réalisée avec un pair fiable et une sauvegarde disponible.
+
+Après une réparation, reviens aux **Statistiques de synchronisation**, confirme
+que le travail traité progresse sans augmentation du nombre d’échecs, puis
+vérifie que les éléments manquants de la boîte d’envoi et du rattrapage se
+stabilisent.

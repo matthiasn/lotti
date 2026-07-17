@@ -1,0 +1,155 @@
+---
+title: Travailler avec les tâches
+description: Utilise état, priorité, listes de contrôle et contexte joint pour faire avancer les résultats.
+---
+
+# Travailler avec les tâches
+
+Les tâches regroupent un résultat et le contexte ainsi que les étapes nécessaires pour le terminer. Donne aux titres une orientation vers le résultat et place les notes, images, enregistrements et relevés de temps qui les étayent dans la tâche.
+
+<ManualScreenshot
+  caseId="tasks/workspace"
+  alt="Espace de travail de tâches de production affichant de vraies lignes de tâche et des vignettes d’illustration de couverture issues des données de démonstration Interplanetary Penguin Logistics"
+/>
+
+Sur ordinateur, la liste de tâches reste visible à côté de la tâche sélectionnée : tu peux parcourir le travail sans perdre le contexte. Sur mobile, sélectionner une tâche ouvre son détail en plein écran. L’illustration de couverture accompagne la tâche partout où elle apparaît, y compris dans la liste des tâches et les éléments liés de l’agenda Daily OS.
+
+L’illustration de couverture est facultative, mais elle peut rendre un espace de travail dense beaucoup plus facile à parcourir. Utilise-la comme repère visuel utile, référence de produit ou métaphore mémorable du travail. Les illustrations de Project Waddle dans ce manuel ne sont qu’un exemple : une couverture peut être aussi pratique, joueuse ou merveilleusement étrange que tu le souhaites.
+
+<ManualScreenshot
+  caseId="tasks/detail"
+  alt="Page de détail de tâche de production pour inspecter l’habitat orbital des manchots, avec la même illustration de couverture utilisée par les vignettes de tâche"
+/>
+
+Une même tâche peut contenir une description, une catégorie, des étiquettes, une date d’échéance, des relevés de temps, des éléments de liste de contrôle, des images, des liens et des enregistrements audio.
+
+## Affecter un agent de tâche
+
+Une tâche peut avoir un agent de tâche. Lui en affecter un donne à cette tâche un assistant IA persistant, avec sa propre configuration d’inférence, son rapport, son état de réveil et son historique de propositions. L’agent lit la tâche et son contexte lié, distille la situation actuelle dans un bref rapport et peut faire apparaître des modifications proposées de la tâche ou de sa liste de contrôle, que tu confirmes ou refuses.
+
+L’agent affecté apparaît sous les listes de contrôle et les tâches liées. Sa carte repliée garde visible le dernier résumé, le contrôle des mises à jour automatiques, l’action **Réveiller l’agent** et la route de modèle active, sans transformer la page de tâche en console IA.
+
+<ManualScreenshot
+  caseId="tasks/agent-card"
+  alt="Agent de tâche Habitat Watcher affecté à la tâche d’habitat orbital des manchots, avec son résumé actuel, les mises à jour automatiques, l’action de réveil et la route de modèle Projet Waddle"
+  caption="Habitat Watcher est affecté à cette tâche ; l’affectation et les mises à jour automatiques sont deux choix distincts."
+/>
+
+Choisis **Lire la suite** pour développer le rapport complet sur place. La carte développée conserve la tâche visible, ajoute l’évaluation étayant le rapport et l’étape suivante recommandée, et propose **Ouvrir les détails internes de l’agent** lorsque tu as besoin des rapports, conversations, observations ou détails d’exécution.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-expanded"
+  alt="Carte développée de l’agent de tâche Habitat Watcher avec l’évaluation complète de l’habitat de Project Waddle et l’étape suivante recommandée"
+  caption="Le rapport complet se développe dans la tâche plutôt que de t’envoyer sur une page séparée."
+/>
+
+### Examiner les modifications proposées
+
+Un réveil terminé peut mettre à jour le rapport et ajouter des modifications proposées. Les mises à jour automatiques décident *quand l’agent se réveille* ; elles ne lui donnent pas le droit de modifier la tâche. Les propositions restent en attente jusqu’à ton intervention.
+
+<ManualScreenshot
+  caseId="tasks/agent-suggestions"
+  alt="Carte de l’agent Habitat Watcher avec deux propositions de Project Waddle en attente, des actions individuelles Ignorer et Confirmer, et une action Tout confirmer"
+  caption="L’agent propose une étape de liste de contrôle pour tester le distributeur et une estimation révisée ; aucune des deux modifications n’a encore été appliquée."
+/>
+
+Utilise la croix pour **Ignorer** une proposition ou la coche pour **Confirmer** et l’appliquer. Tu peux aussi balayer une proposition vers la gauche pour l’ignorer ou vers la droite pour la confirmer. Lorsque plusieurs propositions sont en attente, **Tout confirmer** applique ensemble les modifications actuellement listées. Examine attentivement les propositions groupées, surtout les modifications d’état, de date et de liste de contrôle.
+
+Ouvre **Historique** pour revoir les résultats récents. Il distingue les modifications confirmées de celles qui ont été ignorées. Une entrée ignorée peut représenter ta décision ou une proposition que l’agent a retirée après qu’un contexte de tâche plus récent l’a rendue obsolète.
+
+Un **Réveiller l’agent** manuel peut produire les mêmes types de rapport et de propositions qu’un réveil automatique. Désactiver les mises à jour automatiques arrête les futurs réveils en arrière-plan ; cela n’applique, ne rejette ni ne résout autrement les propositions qui attendent déjà ta décision.
+
+### Choisir les mises à jour automatiques ou manuelles
+
+Les nouveaux agents de tâche commencent avec les **mises à jour automatiques désactivées**. La seule affectation ne consomme pas de jetons en arrière-plan. Lorsque les mises à jour sont désactivées, Lotti continue de repérer les changements pertinents de la tâche et de ses entrées liées, indique qu’un résumé plus ancien n’est plus à jour et attend que tu choisisses **Réveiller l’agent**. Un réveil manuel reste disponible dès que l’agent possède une configuration IA fonctionnelle.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-manual"
+  alt="Carte de l’agent Habitat Watcher avec mises à jour automatiques désactivées, avertissement de rapport obsolète et action manuelle Réveiller l’agent"
+  caption="Le mode manuel observe les changements et signale l’obsolescence sans lancer d’inférence."
+/>
+
+Lorsque les **mises à jour automatiques** sont activées, Lotti regroupe les changements de tâche correspondants pendant environ deux minutes avant de programmer une actualisation. Ce regroupement évite un réveil d’agent à chaque petite modification. **Réveiller l’agent** reste disponible pour une actualisation immédiate que tu demandes.
+
+Désactiver les mises à jour automatiques efface son compte à rebours en attente et les actualisations automatiques en file, mais n’annule pas un réveil que tu as explicitement demandé. Les réactiver s’applique aux changements futurs ; cela ne rejoue pas les changements arrivés lorsque l’automatisation était désactivée.
+
+## Priorité
+
+Lotti utilise quatre niveaux de priorité concis :
+
+| Priorité | Signification | Utilise-la pour |
+| --- | --- | --- |
+| P0 | Urgente | Le travail qui a réellement besoin d’attention ensuite |
+| P1 | Élevée | Le travail important à faire bientôt |
+| P2 | Moyenne | La valeur normale par défaut |
+| P3 | Faible | Le travail qui peut attendre |
+
+Ouvre une tâche et utilise le contrôle de priorité dans son en-tête pour changer le niveau. Les tâches existantes sans priorité explicite se comportent comme des P2.
+
+## Filtrer et ordonner la liste de tâches
+
+Ouvre les filtres de tâches et sélectionne une ou plusieurs priorités. Efface cette sélection pour revenir à toutes les priorités. La priorité fait partie des filtres qui peuvent être combinés avec les catégories et d’autres propriétés de tâche.
+
+<ManualScreenshot
+  caseId="tasks/filters"
+  alt="Feuille de filtre des tâches avec commandes de tri, état, priorité, catégorie et étiquette"
+/>
+
+L’ordre de priorité par défaut va de P0 à P3. Au sein d’une priorité, les tâches les plus récentes apparaissent d’abord, sauf si une autre vue ou un autre tri actif modifie le résultat.
+
+## Utiliser des listes de contrôle pour l’étape suivante
+
+Un élément de liste de contrôle doit être plus petit et plus concret que sa tâche. « Publier le manuel » est une tâche ; « vérifier chaque lien de navigation » est un élément de liste de contrôle. Les listes de contrôle se modifient directement et peuvent aussi être proposées par des compétences IA configurées à partir du contexte de la tâche.
+
+## Ajouter du contexte à une tâche
+
+Utilise l’action **Ajouter** de la tâche pour joindre une liste de contrôle, une autre tâche, un enregistrement audio, un minuteur, une entrée de texte ou une image sans quitter la tâche. Les actions disponibles dépendent de la plateforme et du contexte actuels.
+
+<ManualScreenshot
+  caseId="entries/create-menu"
+  alt="Menu Ajouter au-dessus de la tâche d’habitat orbital, avec des actions de capture tenant compte de la tâche"
+/>
+
+Consulte [Ajouter des entrées et du contexte](../plan-and-capture/entries.mdx) pour savoir quand employer chaque type d’entrée.
+
+## Générer une illustration de couverture à partir d’images réelles de la tâche
+
+Si une compétence de génération d’images est configurée, ouvre le menu de génération de la tâche et choisis son action d’illustration de couverture. Lotti affiche d’abord les images déjà jointes à la tâche ainsi que les images de couverture disponibles dans les tâches liées. Sélectionne jusqu’à cinq références pour guider le résultat, ou continue sans référence.
+
+La couverture générée est créée dans Lotti à partir du contexte de la tâche et des références que tu sélectionnes. C’est une aide visuelle, pas un champ obligatoire : utilise-la lorsqu’une image distinctive rend le travail plus facile ou plus agréable à reconnaître. La route de génération d’images actuelle utilise le fournisseur configuré ; considère donc l’invite de génération et les références sélectionnées comme des données que tu envoies intentionnellement à ce fournisseur. Une route locale de réflexion ou de transcription ne rend pas la génération de couverture locale.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Feuille Générer une illustration de couverture présentant cinq images de référence distinctes de Project Waddle tirées du contexte de la tâche"
+  caption="Le sélecteur utilise les mêmes images de tâche visibles dans toute la démonstration de Project Waddle."
+/>
+
+Après avoir continué, la génération d’image s’exécute en arrière-plan. La vue de progression utilise le visualiseur de réflexion de production de Lotti et peut être fermée sans annuler la tâche.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Génération d’illustration de couverture de tâche en cours avec le visualiseur de shader de production de Lotti"
+/>
+
+L’image générée devient la couverture de la tâche et suit celle-ci dans les vues liste, détail, projet et Daily OS. Une couverture efficace reste reconnaissable lorsque l’image source large est recadrée en vignette compacte. Elle peut être une preuve littérale, une métaphore sobre ou aussi étrange que le mérite le travail ; le seul test utile est de savoir si tu reconnaîtras la tâche plus vite ensuite.
+
+## Relier des tâches apparentées
+
+Ouvre la section **Lié** de la tâche et choisis de relier une tâche existante. Recherche-la dans le sélecteur, puis sélectionne le résultat associé. Lotti exclut la tâche actuelle et les tâches déjà liées dans cette direction.
+
+<ManualScreenshot
+  caseId="tasks/link-picker"
+  alt="Sélecteur de liens de tâche de production listant des tâches apparentées de Project Waddle avec leur contexte d’état, de priorité, de catégorie et de date d’échéance"
+/>
+
+Les liens de tâche sont directionnels : la tâche actuelle pointe vers celle que tu choisis. Les deux côtés restent accessibles via leurs sections d’entrées liées, tandis que chaque tâche conserve son propre état, calendrier et pièces jointes.
+
+## Utiliser la voix sans perdre le contrôle
+
+Enregistre une note dans la tâche lorsqu’il est plus rapide d’expliquer la situation à voix haute. Avec la transcription et des compétences de tâche configurées, Lotti peut transformer ce contexte en texte et en propositions d’éléments de liste de contrôle. Examine le résultat, en particulier les noms, les dates et les modifications destructrices. Consulte [Enregistrer de l’audio](../plan-and-capture/recordings.mdx) pour les commandes d’enregistrement et les options de traitement.
+
+:::tip
+
+Utilise P0 avec parcimonie. Si tout est urgent, l’étiquette ne transmet plus d’information.
+
+:::
