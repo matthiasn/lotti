@@ -21,8 +21,12 @@ class CelebrationPreviewHero extends StatefulWidget {
     this.neighbours = 2,
     this.replayTick = 0,
     this.framed = true,
+    this.sampleTitles,
     super.key,
-  });
+  }) : assert(
+         sampleTitles == null || sampleTitles.length >= 3,
+         'A contextual celebration preview needs at least three sample titles.',
+       );
 
   /// The variant + tuned look the live row fires.
   final CelebrationParams params;
@@ -34,6 +38,10 @@ class CelebrationPreviewHero extends StatefulWidget {
   /// hero already sits inside a framing panel (the playground editor card), so
   /// the rows sit on that surface instead of a nested same-colour card.
   final bool framed;
+
+  /// Optional checklist titles for embedded previews such as the manual
+  /// screenshot harness. Normal app usage falls back to the localized samples.
+  final List<String>? sampleTitles;
 
   /// A monotonically increasing counter; whenever it changes the hero replays
   /// the burst. The playground bumps it on each slider release so tuning a knob
@@ -103,11 +111,13 @@ class _CelebrationPreviewHeroState extends State<CelebrationPreviewHero>
     final messages = context.messages;
     // Realistic sample rows (not skeleton bars) so the preview reads as an
     // actual checklist, with the live row as a concrete item you complete.
-    final samples = [
-      messages.settingsCelebrationsPreviewSample1,
-      messages.settingsCelebrationsPreviewSample2,
-      messages.settingsCelebrationsPreviewSample3,
-    ];
+    final samples =
+        widget.sampleTitles ??
+        [
+          messages.settingsCelebrationsPreviewSample1,
+          messages.settingsCelebrationsPreviewSample2,
+          messages.settingsCelebrationsPreviewSample3,
+        ];
     String sampleAt(int i) => samples[i % samples.length];
 
     final rows = Column(

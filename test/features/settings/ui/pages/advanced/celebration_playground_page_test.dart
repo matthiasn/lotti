@@ -24,10 +24,18 @@ void main() {
 
   const variant = CelebrationVariant.sparks;
 
-  Future<ProviderContainer> pump(WidgetTester tester) async {
+  Future<ProviderContainer> pump(
+    WidgetTester tester, {
+    List<String>? previewSampleTitles,
+  }) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: _Host(child: CelebrationPlaygroundPage(variant: variant)),
+      ProviderScope(
+        child: _Host(
+          child: CelebrationPlaygroundPage(
+            variant: variant,
+            previewSampleTitles: previewSampleTitles,
+          ),
+        ),
       ),
     );
     return ProviderScope.containerOf(
@@ -44,6 +52,25 @@ void main() {
       find.byType(Slider),
       findsNWidgets(celebrationSliderSpecs(variant).length),
     );
+  });
+
+  testWidgets('forwards supplied demo titles to the preview', (tester) async {
+    const samples = [
+      'Count emperor penguins',
+      'Route sardine cargo',
+      'Brief Mission Control',
+    ];
+    await pump(tester, previewSampleTitles: samples);
+
+    final preview = tester.widget<CelebrationPreviewHero>(
+      find.byType(CelebrationPreviewHero),
+    );
+    expect(preview.sampleTitles, samples);
+    // The test host is phone-width, where the playground intentionally drops
+    // neighbour rows. The live row still proves the override reaches visible
+    // UI rather than only changing a constructor field.
+    expect(find.text(samples.first), findsOneWidget);
+    expect(find.text('Morning walk'), findsNothing);
   });
 
   testWidgets('editing a slider customizes and persists the variant', (

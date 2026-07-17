@@ -135,7 +135,7 @@ class _DsSegmentItem extends StatelessWidget {
         color: isSelected ? teal : tokens.colors.text.mediumEmphasis,
       );
     } else {
-      content = Stack(
+      final labelStack = Stack(
         alignment: Alignment.center,
         children: [
           // Invisible ghost at the selected weight reserves the width so the
@@ -161,6 +161,13 @@ class _DsSegmentItem extends StatelessWidget {
           ),
         ],
       );
+      // Expanded segments divide the available width equally. Some localized
+      // labels are a few pixels wider than their share on a phone; scale those
+      // labels down just enough to remain complete instead of clipping their
+      // trailing characters. Natural-width toggles keep their normal type size.
+      content = dense
+          ? FittedBox(fit: BoxFit.scaleDown, child: labelStack)
+          : labelStack;
     }
 
     // Material + InkWell + Semantics (the codebase's button pattern) so each
