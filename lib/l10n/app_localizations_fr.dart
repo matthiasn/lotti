@@ -3093,7 +3093,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get configFlagShowSidebarWakeQueueDescription =>
-      'Affiche la file des réveils au-dessus des Réglages — l\'en-tête, les deux prochains réveils avec compte à rebours, et un lien vers la liste complète.';
+      'Affiche l’activité des agents dans le résumé compact de la barre latérale ; ouvre-le pour voir les réveils actifs et en attente.';
 
   @override
   String get configFlagShowSyncActivityIndicator =>
@@ -3101,7 +3101,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
-      'Affiche l\'activité de synchronisation en direct dans la barre latérale — une bande LED tx/rx avec la profondeur des files d\'entrée et de sortie.';
+      'Affiche un état de synchronisation discret dans la barre latérale ; les compteurs de file apparaissent uniquement quand du travail est en attente.';
 
   @override
   String get conflictApplyButton => 'Appliquer';

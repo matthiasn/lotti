@@ -267,17 +267,6 @@ already covered). No new Glados tests recommended.
   different accents produce different last stops while sharing the same first stop.
   No change.
 
-- [x] **[LOW]** `lib/features/agents/ui/sidebar_wake_queue.dart:46` —
-  `sidebarWakeQueueHasVisibleContent` is a pure function tested at lines 1027–1083
-  of the sidebar test. The `'within the 5-minute cutoff'` boundary scenario
-  (exactly at `cutoff`) is worth an explicit test to confirm the `!isAfter`
-  boundary condition.
-  **RESOLVED:** Done — the real cutoff is `kSidebarWakeQueueScheduledLookahead`
-  (1h, not 5min). Added two boundary tests to the `sidebarWakeQueueHasVisibleContent`
-  group: a wake due exactly at the cutoff (`eta == kSidebarWakeQueueScheduledLookahead`)
-  returns `true` (`!dueAt.isAfter(cutoff)` with `dueAt == cutoff`), and a wake one
-  microsecond past the cutoff returns `false`, pinning the exclusive far boundary.
-
 ---
 
 ## Test execution speed opportunities

@@ -3031,7 +3031,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configFlagShowSidebarWakeQueueDescription =>
-      'Show the inline Wake Queue above Settings — header, the next two pending wakes with countdowns, and a link to the full list.';
+      'Show agent activity in the compact sidebar summary; open it for active and queued wake details.';
 
   @override
   String get configFlagShowSyncActivityIndicator =>
@@ -3039,7 +3039,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
-      'Show live sync activity in the sidebar — a tx/rx LED strip with outbox and inbox depth.';
+      'Show a quiet sync status in the sidebar; queue counts appear only while work is pending.';
 
   @override
   String get conflictApplyButton => 'Apply';

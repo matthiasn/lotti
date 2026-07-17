@@ -3076,7 +3076,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get configFlagShowSidebarWakeQueueDescription =>
-      'Zobrazí frontu probuzení nad Nastavením — záhlaví, dvě nejbližší naplánovaná probuzení s odpočtem a odkaz na úplný seznam.';
+      'Zobrazí aktivitu agentů v kompaktním souhrnu postranního panelu; po otevření uvidíš podrobnosti o aktivních a zařazených probuzeních.';
 
   @override
   String get configFlagShowSyncActivityIndicator =>
@@ -3084,7 +3084,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
-      'Zobrazit živou aktivitu synchronizace v postranním panelu — tx/rx LED proužek s hloubkou odchozí a příchozí fronty.';
+      'Zobrazí nenápadný stav synchronizace v postranním panelu; počty ve frontě se objeví jen tehdy, když něco čeká.';
 
   @override
   String get conflictApplyButton => 'Použít';

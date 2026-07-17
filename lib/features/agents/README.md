@@ -327,14 +327,16 @@ Templates and Souls are the only tabs that currently expose create FABs. Those
 buttons are now wrapped with the shared bottom-navigation clearance so they do
 not sink behind the floating app-shell nav on narrow layouts.
 
-### Inline sidebar Wake Queue
+### Sidebar agent activity
 
-`SidebarWakeQueue` (`lib/features/agents/ui/sidebar_wake_queue.dart`) is a
-compact ambient surface that lives in the desktop sidebar's `aboveSettings`
-slot. It watches the same `pendingWakeRecordsProvider` as the full Pending
-Wakes page, surfacing running wakes plus the next three scheduled wakes within
-the one-hour sidebar lookahead so the queue is visible
-without leaving whatever tab the operator is on:
+`SidebarActivitySummary` (`lib/widgets/misc/sidebar_activity_summary.dart`)
+owns the persistent desktop-sidebar representation. It watches
+`ongoingWakeRecordsProvider` and `pendingWakeRecordsProvider`, counts scheduled
+wakes inside the one-hour lookahead, and contributes one compact
+`auto_awesome + total` metric beside recording and timer activity.
+
+Selecting that summary opens the detailed `SidebarWakeQueue`
+(`lib/features/agents/ui/sidebar_wake_queue.dart`), which surfaces:
 
 - a quiet sentence-case `Agents` sublabel (Inter `caption`, low emphasis)
   with a summary such as `1 active · 2 queued` and an open-in-new icon,
@@ -348,15 +350,11 @@ without leaving whatever tab the operator is on:
 - the header link switches to the Settings tab and beams to
   `/settings/agents/pending-wakes` for the full list.
 
-The widget renders as its own **quiet neutral card** (`surface.enabled`, radius
-`m`, no accent rail or tint) — deliberately a tier below the accent-tinted live
-cards (`SidebarLiveCard`: the teal running timer and red recording). The desktop
-sidebar composer stacks all three live-first (audio → timer → agents) so the eye
-lands on what is actively running before the scheduled/background agent work.
-Every row aligns its leading dot to the live cards' glyph column and the nav
-rows above. Type is the app's Inter family throughout (no monospace); elapsed
-times use tabular figures. Titles surface in full via a hover tooltip when the
-row truncates them.
+The detailed widget renders as a quiet neutral card (`surface.enabled`, radius
+`m`, no accent rail or tint). It no longer reserves permanent sidebar height;
+the summary dialog is the operational detail surface. Type is the app's Inter
+family throughout, elapsed times use tabular figures, and truncated titles
+remain available through tooltips.
 
 Rows are actionable: task-linked wakes route directly to `/tasks/<taskId>` and
 show a small open-task glyph, while unlinked or project-only wakes fall back to
@@ -374,7 +372,8 @@ header and rows would not fit the narrow column.
 ```mermaid
 flowchart LR
   Provider[pendingWakeRecordsProvider]
-  Provider --> WakeBlock[SidebarWakeQueue<br/>aboveSettings slot]
+  Provider --> Summary[SidebarActivitySummary<br/>one persistent metric]
+  Summary -->|tap| WakeBlock[SidebarWakeQueue<br/>activity dialog]
   Provider --> WakesPage[Pending Wakes page<br/>full list view]
   WakeBlock -->|tap task-linked row| TaskRoute[/tasks/taskId/]
   WakeBlock -->|tap unlinked row| InstanceRoute[/settings/agents/instances/agentId/]

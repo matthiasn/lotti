@@ -28,21 +28,11 @@ const String kSyncOutboxRoute = '/settings/sync';
 /// packet, then fades to its idle state.
 const Duration kSyncActivityLedHold = Duration(milliseconds: 140);
 
-/// Ambient sidebar footer showing live Matrix sync traffic as one compact
-/// status control: title (`Sync`), summary (`Outbox 0 · Inbox idle`), and two
-/// subtle LEDs that flash on tx/rx pulses.
+/// Ambient sidebar footer showing Matrix sync as one compact status control.
 ///
-/// The treatment deliberately matches the rest of the sidebar — Inter
-/// type, design-system text colors, and the teal `interactive.enabled`
-/// accent (no monospace, no off-token amber) — so it reads as a calm part
-/// of the rail rather than a terminal readout. It is quiet at rest (dim
-/// neutral dots, no counts) and only "speaks" colour/numbers when there is
-/// actually a queue to drain.
-///
-/// The numeric slot for each channel is fixed-width so the row never
-/// reflows as the queue depths grow or shrink — the LED, label and
-/// trailing tab stop stay anchored to the same x-coordinate even when
-/// the value rolls over between e.g. `9` and `99`.
+/// Healthy sync is intentionally just an icon and label. Queue counts appear
+/// only while work exists, keeping transport telemetry subordinate to global
+/// navigation while preserving a one-click route to detailed diagnostics.
 class SyncActivityIndicator extends ConsumerStatefulWidget {
   const SyncActivityIndicator({super.key});
 
@@ -126,19 +116,8 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
       outbox,
       inbox,
     );
-    final outboxLabel = context.messages.syncActivityOutboxLabel;
-    final inboxLabel = context.messages.syncActivityInboxLabel;
-    final summary =
-        '$outboxLabel ${_formatQueueCount(outbox)} · $inboxLabel '
-        '${inbox == 0 ? context.messages.syncActivityIdle : _formatQueueCount(inbox)}';
-
     final tokens = context.designTokens;
-    // Both channels flash on the brand teal accent and the focus ring
-    // follows it, so the footer reads consistently with every other
-    // affordance in the sidebar. State is carried by brightness + count,
-    // not by a second hue.
     final accent = tokens.colors.interactive.enabled;
-    final ledIdle = tokens.colors.decorative.level01;
     final hoverWash = tokens.colors.surface.enabled;
 
     return Semantics(
@@ -167,8 +146,6 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOut,
-                // Align the LED column to the same left inset as the nav
-                // icons and the activity-well glyphs above.
                 padding: EdgeInsets.symmetric(
                   horizontal: tokens.spacing.step4,
                   vertical: tokens.spacing.step3,
@@ -189,61 +166,38 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
                   children: [
                     Icon(
                       Icons.sync_rounded,
-                      size: 18,
-                      color: tokens.colors.text.mediumEmphasis,
+                      size: tokens.spacing.step5,
+                      color: hasWork ? accent : tokens.colors.text.lowEmphasis,
                     ),
                     SizedBox(width: tokens.spacing.step3),
                     Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ExcludeSemantics(
-                            child: Text(
-                              hasWork
-                                  ? context.messages.syncActivitySyncingTitle
-                                  : context.messages.syncActivityTitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: tokens.typography.styles.others.caption
-                                  .copyWith(
-                                    color: tokens.colors.text.mediumEmphasis,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                          ),
-                          ExcludeSemantics(
-                            child: Text(
-                              summary,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: tokens.typography.styles.others.caption
-                                  .copyWith(
-                                    color: tokens.colors.text.lowEmphasis,
-                                    fontFeatures: numericBadgeFontFeatures,
-                                  ),
-                            ),
-                          ),
-                        ],
+                      child: ExcludeSemantics(
+                        child: Text(
+                          hasWork
+                              ? context.messages.syncActivitySyncingTitle
+                              : context.messages.syncActivityTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                                fontWeight: tokens.typography.weight.semiBold,
+                              ),
+                        ),
                       ),
                     ),
-                    SizedBox(width: tokens.spacing.step3),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _SyncActivityLed(
-                          on: _txOn,
-                          color: accent,
-                          idleColor: ledIdle,
-                        ),
-                        SizedBox(width: tokens.spacing.step2),
-                        _SyncActivityLed(
-                          on: _rxOn,
-                          color: accent,
-                          idleColor: ledIdle,
-                        ),
-                      ],
-                    ),
+                    if (outbox > 0)
+                      _QueueMetric(
+                        icon: Icons.arrow_upward_rounded,
+                        value: _formatQueueCount(outbox),
+                      ),
+                    if (outbox > 0 && inbox > 0)
+                      SizedBox(width: tokens.spacing.step3),
+                    if (inbox > 0)
+                      _QueueMetric(
+                        icon: Icons.arrow_downward_rounded,
+                        value: _formatQueueCount(inbox),
+                      ),
                   ],
                 ),
               ),
@@ -257,28 +211,33 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
 
 String _formatQueueCount(int value) => value > 999 ? '999+' : '$value';
 
-class _SyncActivityLed extends StatelessWidget {
-  const _SyncActivityLed({
-    required this.on,
-    required this.color,
-    required this.idleColor,
-  });
+class _QueueMetric extends StatelessWidget {
+  const _QueueMetric({required this.icon, required this.value});
 
-  final bool on;
-  final Color color;
-  final Color idleColor;
+  final IconData icon;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
-    // No glow/boxShadow — the colour swap alone carries the packet flash,
-    // keeping the footer free of peripheral motion-noise.
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 90),
-      width: 6,
-      height: 6,
-      decoration: BoxDecoration(
-        color: on ? color : idleColor,
-        shape: BoxShape.circle,
+    final tokens = context.designTokens;
+    return ExcludeSemantics(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: tokens.spacing.step4,
+            color: tokens.colors.text.lowEmphasis,
+          ),
+          SizedBox(width: tokens.spacing.step1),
+          Text(
+            value,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+              fontFeatures: numericBadgeFontFeatures,
+            ),
+          ),
+        ],
       ),
     );
   }

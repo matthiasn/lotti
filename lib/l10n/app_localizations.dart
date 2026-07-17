@@ -5254,7 +5254,7 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagShowSidebarWakeQueueDescription.
   ///
   /// In en, this message translates to:
-  /// **'Show the inline Wake Queue above Settings — header, the next two pending wakes with countdowns, and a link to the full list.'**
+  /// **'Show agent activity in the compact sidebar summary; open it for active and queued wake details.'**
   String get configFlagShowSidebarWakeQueueDescription;
 
   /// No description provided for @configFlagShowSyncActivityIndicator.
@@ -5266,7 +5266,7 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagShowSyncActivityIndicatorDescription.
   ///
   /// In en, this message translates to:
-  /// **'Show live sync activity in the sidebar — a tx/rx LED strip with outbox and inbox depth.'**
+  /// **'Show a quiet sync status in the sidebar; queue counts appear only while work is pending.'**
   String get configFlagShowSyncActivityIndicatorDescription;
 
   /// No description provided for @conflictApplyButton.

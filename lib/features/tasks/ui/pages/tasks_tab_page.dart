@@ -232,10 +232,10 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
               onFilterPressed: () =>
                   showTaskFilterModal(context, showTasks: true),
             ),
-            // Mobile-only saved-filter glance band. Self-collapses to nothing
-            // when no saved filters exist, so the layout is unchanged for users
-            // without any. Desktop surfaces saved filters in the sidebar.
-            if (!isDesktopLayout(context)) const SavedTaskFilterRail(),
+            // Saved views are task-scoped controls, so they stay beside the
+            // task list on every form factor instead of displacing global
+            // desktop navigation. The rail self-collapses when no views exist.
+            const SavedTaskFilterRail(),
             const _TasksTabActiveFilters(),
             Expanded(
               child: RefreshIndicator(

@@ -308,8 +308,8 @@ subtle frame in light and dark themes.
   - Idle: tapping starts a new timer linked to this task.
   - Tracking-this-task: the live elapsed time replaces the label, with
     an inset stop circle on the leading edge. Tapping the pill body
-    navigates to the running timer entry (mirrors the desktop sidebar
-    timer card); only the inset stop circle stops the timer. The
+    navigates to the running timer entry (mirrors the desktop activity
+    detail); only the inset stop circle stops the timer. The
   duration text uses `numericBadgeFontFeatures` (tabular figures,
   slashed zero, cv02/03/04) so digits don't shift width as they tick.
   When linked AI inference is running for the task, the bar grows an inline
@@ -339,10 +339,9 @@ subtle frame in light and dark themes.
   `/tasks/<uuid>` (computed in `_AppScreenState._isTaskDetailRoute`,
   no per-page lifecycle plumbing), so the action bar can dock flush
   against the home indicator. This predicate is mobile-only — the desktop
-  shell has no floating recording indicator; the desktop running-timer
-  surface is the sidebar `SidebarTimerSection` card, which stays visible for
-  the whole lifetime of a running timer (see "Sidebar timer coordination"
-  below).
+  shell has no floating recording indicator; the desktop sidebar exposes the
+  running session through `SidebarActivitySummary` (see "Sidebar activity
+  coordination" below).
   TaskActionBar consumes the safe-area inset internally.
 
 ```mermaid
@@ -366,36 +365,37 @@ flowchart TD
 
 This page is not just "show task fields." It is the task workspace where task metadata, linked content, time tracking, and AI-adjacent affordances meet.
 
-### Sidebar timer coordination
+### Sidebar activity coordination
 
-`SidebarTimerSection` (desktop, `aboveSettings` slot — see `lib/widgets/README.md` for the visual contract) and `TaskActionBar`'s running pill both render the same live `TimeService` session. They are allowed to be on screen at the same time: the sidebar card is **not** suppressed while the running task is open in the details pane. A single, always-present place to read the elapsed time and jump back to the running task is worth more than avoiding the duplicate title — so the duplication is intentional.
+`SidebarActivitySummary` (desktop, `aboveSettings` slot — see
+`lib/widgets/README.md`) and `TaskActionBar`'s running pill both read the same
+live `TimeService` session. The persistent sidebar representation is one
+compact timer metric shared with recording and agent activity. Selecting the
+summary opens the detailed `SidebarTimerSection`, where the linked title,
+navigation target, and stop action remain available.
 
-Visibility is a pure function of `TimeService.getStream()`:
+Visibility is derived from the live systems:
 
-- a running entity → the card is shown,
-- `null` (timer stopped) → the card collapses to `SizedBox.shrink`.
+- a running entity adds the timer metric,
+- `null` removes the timer metric,
+- no recording, timer, or visible agent work collapses the whole summary.
 
-Neither `NavService.desktopSelectedTaskId`, the active route, nor the selected top-level tab affects visibility. The card therefore survives every navigation: opening the running task, switching to Habits/Settings, or leaving the Tasks tab entirely all leave it in place. The stream is seeded with `TimeService.getCurrent()` as `initialData` so an already-running session renders on the first frame instead of flashing through a hidden state.
-
-The appear/disappear transition runs through an `AnimatedSwitcher` + `AnimatedSize` (`SidebarTimerSection.animationDuration` ≈ 220 ms, `Curves.easeInOut`) so the card fades and the surrounding sidebar collapses smoothly instead of popping.
+Neither `NavService.desktopSelectedTaskId`, the active route, nor the selected
+top-level tab affects timer visibility. The metric therefore survives
+navigation. The stream is seeded with `TimeService.getCurrent()` as
+`initialData` so an already-running session renders on the first frame.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Hidden
-    Hidden --> Visible: TimeService emits a running entity
-    Visible --> Hidden: TimeService emits null (timer stopped)
+    Hidden --> Visible: any live subsystem becomes active
+    Visible --> Hidden: recording, timer, and agents all become idle
+    Visible --> Visible: TimeService starts or stops\ntimer metric added or removed
     note right of Visible
       Navigation, the open task, and the
-      selected tab do NOT affect visibility —
-      the card persists everywhere while a
-      timer is running (duplicated with the
-      action bar on the task detail page).
-    end note
-    note right of Hidden
-      AnimatedSwitcher fades the outgoing
-      card; AnimatedSize collapses the
-      surrounding column (~220 ms,
-      Curves.easeInOut).
+      selected tab do not affect visibility.
+      The summary persists while any
+      subsystem remains active.
     end note
 ```
 
@@ -708,7 +708,9 @@ the localized **Unassigned** chip instead of disappearing.
 
 ### Saved Filters
 
-The tasks tab also supports user-saved filters surfaced as a treeview under the Tasks destination in the desktop sidebar. The model lives in `lib/features/tasks/state/saved_filters/`:
+The tasks tab supports user-saved filters through a task-scoped rail directly
+above the list on mobile and desktop. The model lives in
+`lib/features/tasks/state/saved_filters/`:
 
 - `SavedTaskFilter` (`{id, name, filter: TasksFilter}`) is a Freezed JSON-serializable model. The ephemeral `match` (search text) field on `JournalPageState` is intentionally NOT part of the saved payload — it stays on the live page state and is preserved across saved-filter activations.
 - `SavedTaskFiltersPersistence` writes the ordered list as a single JSON blob to `SettingsDb` under the `SAVED_TASK_FILTERS` key. Position in the list IS the sort order. Mirrors the dedup-on-write pattern of `JournalFilterPersistence`.
@@ -722,14 +724,13 @@ Two derived providers wire the UI to the live page state:
 
 Both derive the live `TasksFilter` snapshot from the page state via the top-level helper `liveTasksFilterFor(JournalPageState)` in `saved_task_filter_activator.dart` (the desktop Save flow builds the filter via `_draftStateToTasksFilter` in `task_filter_modal.dart`; the mobile "Save current filter as…" flow reuses `liveTasksFilterFor`) — there is no `liveTasksFilterProvider`. `SavedTaskFilterActivator` also exposes `clearToDefault()`, which resets every clause to the `TasksFilter` defaults (the mobile "All" entry; the search query is preserved).
 
-Sidebar counts: `savedTaskFilterCountsProvider` computes `{savedFilterId → matching task count}` by fanning out one `repo.count` per saved filter, recomputed on `taskNotification`. Because each recompute is one count query per filter, notification-driven invalidations are debounced (300ms in `savedTaskFilterCounts`) so a sync burst — already coalesced upstream by `UpdateNotifications` into ~1s/100ms batches — collapses into a single recompute instead of re-running every filter's count per batch. The initial computation is never debounced. `allTasksTotalCountProvider` (the rail/sheet "All" total) and `currentTasksFilterCountProvider` (the rail "Custom" pill's live filtered count) share the same repository + debounce wiring; `currentTasksFilterCountProvider` additionally expands an empty status selection to every status before counting, mirroring how the live list treats "no status filter" as "all statuses" so the Custom pill's number agrees with the list.
+Saved-view counts: `savedTaskFilterCountsProvider` computes `{savedFilterId → matching task count}` by fanning out one `repo.count` per saved filter, recomputed on `taskNotification`. Because each recompute is one count query per filter, notification-driven invalidations are debounced (300ms in `savedTaskFilterCounts`) so a sync burst — already coalesced upstream by `UpdateNotifications` into ~1s/100ms batches — collapses into a single recompute instead of re-running every filter's count per batch. The initial computation is never debounced. `allTasksTotalCountProvider` (the rail/sheet "All" total) and `currentTasksFilterCountProvider` (the rail "Custom" pill's live filtered count) share the same repository + debounce wiring; `currentTasksFilterCountProvider` additionally expands an empty status selection to every status before counting, mirroring how the live list treats "no status filter" as "all statuses" so the Custom pill's number agrees with the list.
 
 Surfaces:
 
-1. Sidebar treeview (`TasksSavedFiltersTree` → `SavedTaskFiltersSection` + `SavedTaskFilterRow`) — rendered via `DesktopSidebarDestination.expandedChildBuilder` only when the Tasks destination is active and the sidebar is expanded. The desktop section has its own caption header and count, shows the first four saved filters by default, and adds a token-backed More/Less row when the list is longer; tapping More reveals every saved filter and swaps the control to Show fewer. While collapsed, if the active saved filter is outside the first four, it replaces the last visible row so the current view never disappears behind the fold. Hover-trash with two-tap confirm delete, double-click rename, drag-to-reorder via `ReorderableListView.builder`. When there are no saved filters the section is hidden entirely (`SizedBox.shrink`) — there is no add affordance in the sidebar; new filters are saved only through the Save filter action in the Tasks Filter modal.
+1. Task-pane saved-filter rail + sheet (`lib/features/tasks/ui/saved_filters/mobile/`, shared by mobile and desktop) — see "Saved-filter rail" below. The rail replaces the old header `· {savedFilterName}` suffix and keeps the current view beside the content it changes.
 2. Filter modal save flow — `DesignSystemTaskFilterActionBar` exposes the localized **Save filter** action next to Apply. Tapping it opens an inline name popup (`MenuAnchor`-anchored) with autofocus, Enter-to-commit, Escape-to-cancel, click-outside dismiss. The name is passed to `showTaskFilterModal`'s `onSavePressed` handler, which calls `create()` for new saves and `updateFilter()` when the user edits and re-saves the currently active filter under the same name.
-3. Mobile saved-filter rail + sheet (`lib/features/tasks/ui/saved_filters/mobile/`) — see "Mobile saved-filter rail" below. The mobile rail replaces the old header `· {savedFilterName}` suffix (the now-removed `_SavedFilterTitleSuffix`); the desktop layout still surfaces the active filter through the sidebar treeview.
-4. Save / update / delete confirmation toasts via the design-system toast (`context.showToast`, in `saved_task_filter_toast.dart`).
+3. Save / update / delete confirmation toasts via the design-system toast (`context.showToast`, in `saved_task_filter_toast.dart`).
 
 ```mermaid
 stateDiagram-v2
@@ -743,11 +744,15 @@ stateDiagram-v2
   Saved --> Saved: Save with same name →\nupdateFilter (no rename)
 ```
 
-Counts in the saved-filter rows are surfaced through the optional `counts: Map<String, int>?` parameter on `SavedTaskFiltersSection`. The desktop wiring (`TasksSavedFiltersTree`) supplies real counts by watching `savedTaskFilterCountsProvider` (falling back to an empty map while loading); the row hides the count for any filter not present in the map.
+### Saved-filter rail
 
-### Mobile saved-filter rail
-
-On mobile (`!isDesktopLayout`), `TasksTabPage` renders `SavedTaskFilterRail` between the header and the active-filter chips. The mobile widgets live in `lib/features/tasks/ui/saved_filters/mobile/` and reuse the shared state (`savedTaskFiltersControllerProvider`, `currentSavedTaskFilterIdProvider`, `tasksFilterHasUnsavedClausesProvider`, `savedTaskFilterCountsProvider`, `SavedTaskFilterActivator`) — they create no dependency on the desktop `SavedTaskFilterRow`.
+`TasksTabPage` renders `SavedTaskFilterRail` between the header and the
+active-filter chips on every form factor. The widgets retain their historical
+`lib/features/tasks/ui/saved_filters/mobile/` path but are shared by desktop and
+mobile. They reuse the common state (`savedTaskFiltersControllerProvider`,
+`currentSavedTaskFilterIdProvider`, `tasksFilterHasUnsavedClausesProvider`,
+`savedTaskFilterCountsProvider`, `SavedTaskFilterActivator`) and do not depend
+on global navigation.
 
 - `SavedTaskFilterRail` — a conditional band rendered only when ≥1 saved filter exists (otherwise `SizedBox.shrink`, so the layout is unchanged for users without saved filters). The normal layout is a non-scrolling `Row`, left→right: the band-leading "Saved" button, then an "All" pill (clears to the default view), then the active saved pill (or a "Custom" pill carrying the live filtered count for an ad-hoc filter that matches no saved filter — sourced from `currentTasksFilterCountProvider`, which mirrors the live list's empty-status→all-statuses expansion so the number agrees with the list), then as many most-recently-used quick-jump pills as fit, and a trailing "+ Save" call-to-action shown only when `tasksFilterHasUnsavedClausesProvider` is true.
   - **"Saved" button** (`_SavedButton`) — the rail's single explicit sheet opener, and deliberately distinct from the filter pills: a **borderless** filled `DsPill` (the All / active pills are filled **and** bordered), so the menu-opener never reads as just another selectable filter value. It is led by a `bookmarks_outlined` glyph, carries the **saved-filter count** (`saved.length`) in the SAME shared `SavedFilterCountText` slot the rail pills use — so it reads "Saved 6" peer to "All 214", not a subordinate parenthetical numeral — and is closed by an `unfold_more` glyph rather than a down-chevron: a down-chevron implied a dropdown, but the manager rises from the bottom as a sheet, so the bidirectional unfold glyph signals "opens a panel that rises". Label word and glyphs use `text.highEmphasis` so they stay legible over the light-theme pill fill. One tap opens the sheet.

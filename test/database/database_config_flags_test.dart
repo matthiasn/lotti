@@ -135,12 +135,12 @@ final expectedFlags = <ConfigFlag>{
   ),
   const ConfigFlag(
     name: showSyncActivityIndicatorFlag,
-    description: 'Show live sync activity in the sidebar.',
+    description: 'Show sync status in the sidebar.',
     status: false,
   ),
   const ConfigFlag(
     name: showSidebarWakeQueueFlag,
-    description: 'Show the inline Wake Queue in the sidebar.',
+    description: 'Show agent activity in the sidebar summary.',
     status: false,
   ),
   const ConfigFlag(

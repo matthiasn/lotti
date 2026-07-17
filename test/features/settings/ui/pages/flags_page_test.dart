@@ -96,12 +96,12 @@ void main() {
           ),
           const ConfigFlag(
             name: showSyncActivityIndicatorFlag,
-            description: 'Show live sync activity in the sidebar.',
+            description: 'Show sync status in the sidebar.',
             status: false,
           ),
           const ConfigFlag(
             name: showSidebarWakeQueueFlag,
-            description: 'Show the inline Wake Queue in the sidebar.',
+            description: 'Show agent activity in the sidebar summary.',
             status: false,
           ),
           const ConfigFlag(
@@ -341,7 +341,7 @@ void main() {
             icon: Icons.network_check_rounded,
             expectedToggle: const ConfigFlag(
               name: showSyncActivityIndicatorFlag,
-              description: 'Show live sync activity in the sidebar.',
+              description: 'Show sync status in the sidebar.',
               status: true,
             ),
           ),
@@ -352,7 +352,7 @@ void main() {
             icon: Icons.alarm_rounded,
             expectedToggle: const ConfigFlag(
               name: showSidebarWakeQueueFlag,
-              description: 'Show the inline Wake Queue in the sidebar.',
+              description: 'Show agent activity in the sidebar summary.',
               status: true,
             ),
           ),
@@ -804,12 +804,12 @@ void main() {
             ),
             const ConfigFlag(
               name: showSyncActivityIndicatorFlag,
-              description: 'Show live sync activity in the sidebar.',
+              description: 'Show sync status in the sidebar.',
               status: false,
             ),
             const ConfigFlag(
               name: showSidebarWakeQueueFlag,
-              description: 'Show the inline Wake Queue in the sidebar.',
+              description: 'Show agent activity in the sidebar summary.',
               status: false,
             ),
             // Previously uncovered flags:

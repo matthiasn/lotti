@@ -9,7 +9,7 @@ import 'package:lotti/utils/color.dart';
 /// Resolves the leading-dot colour for a saved filter: the colour of its first
 /// selected category that still resolves to a non-empty hex (deleted or
 /// colourless categories are skipped), or null when the filter selects no
-/// category. Mirrors the desktop `SavedTaskFilterRow` dot resolution.
+/// category. Shared by the desktop and mobile task-pane rail.
 Color? savedFilterCategoryColor(SavedTaskFilter filter) {
   final cache = getIt<EntitiesCacheService>();
   for (final id in filter.filter.selectedCategoryIds) {

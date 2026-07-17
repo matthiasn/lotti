@@ -872,11 +872,13 @@ void main() {
     Widget buildSubjectWithSavedFilter({
       required String? activeId,
       required List<SavedTaskFilter> seed,
+      MediaQueryData? mediaQueryData,
     }) {
       fakeController = FakeJournalPageController(state());
 
       return makeTestableWidgetNoScroll(
         const TasksTabPage(),
+        mediaQueryData: mediaQueryData,
         overrides: [
           journalPageScopeProvider.overrideWithValue(true),
           journalPageControllerProvider(
@@ -939,6 +941,40 @@ void main() {
       expect(find.text('Saved'), findsOneWidget);
       // The active pill shows the saved filter's name.
       expect(find.text('In Progress P0'), findsOneWidget);
+    });
+
+    testWidgets('keeps saved views beside the task list on desktop', (
+      tester,
+    ) async {
+      final selectedTaskId = ValueNotifier<String?>(null);
+      addTearDown(selectedTaskId.dispose);
+      when(
+        () => mockNavService.desktopSelectedTaskId,
+      ).thenReturn(selectedTaskId);
+
+      await tester.pumpWidget(
+        buildSubjectWithSavedFilter(
+          activeId: 'sv-1',
+          seed: const [
+            SavedTaskFilter(
+              id: 'sv-1',
+              name: 'Desktop focus',
+              filter: TasksFilter(),
+            ),
+          ],
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
+      expect(find.text('Desktop focus'), findsOneWidget);
+
+      final railTop = tester
+          .getTopLeft(find.byKey(SavedTaskFilterRailKeys.root))
+          .dy;
+      final taskListTop = tester.getTopLeft(find.byType(RefreshIndicator)).dy;
+      expect(railTop, lessThan(taskListTop));
     });
 
     testWidgets(

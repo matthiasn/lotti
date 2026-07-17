@@ -3088,7 +3088,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get configFlagShowSidebarWakeQueueDescription =>
-      'Muestra la cola de despertares encima de Ajustes — la cabecera, los dos próximos despertares con cuenta atrás y un enlace a la lista completa.';
+      'Muestra la actividad de los agentes en el resumen compacto de la barra lateral; ábrelo para ver los despertares activos y en cola.';
 
   @override
   String get configFlagShowSyncActivityIndicator =>
@@ -3096,7 +3096,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
-      'Muestra la actividad de sincronización en directo en la barra lateral — una franja LED tx/rx con la profundidad de bandejas de entrada y salida.';
+      'Muestra un estado de sincronización discreto en la barra lateral; los recuentos de cola aparecen solo cuando hay trabajo pendiente.';
 
   @override
   String get conflictApplyButton => 'Aplicar';

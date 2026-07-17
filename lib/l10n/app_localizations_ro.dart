@@ -3096,7 +3096,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagShowSidebarWakeQueueDescription =>
-      'Afișează coada de treziri deasupra Setărilor — anteturile, următoarele două treziri cu numărătoare inversă și un link către lista completă.';
+      'Afișează activitatea agenților în rezumatul compact din bara laterală, cu detalii despre trezirile active și cele din coadă la deschidere.';
 
   @override
   String get configFlagShowSyncActivityIndicator =>
@@ -3104,7 +3104,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
-      'Afișează activitatea de sincronizare live în bara laterală — o bandă LED tx/rx cu adâncimea cozilor de ieșire și intrare.';
+      'Afișează discret starea sincronizării în bara laterală; numerele din coadă apar doar când există operații în așteptare.';
 
   @override
   String get conflictApplyButton => 'Aplică';

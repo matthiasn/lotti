@@ -3071,7 +3071,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get configFlagShowSidebarWakeQueueDescription =>
-      'Zeige die Weckvorgang-Warteschlange über den Einstellungen — Header, die nächsten zwei anstehenden Weckvorgänge mit Countdown und ein Link zur vollständigen Liste.';
+      'Zeigt Agentenaktivität in der kompakten Seitenleistenübersicht; öffne sie für Details zu aktiven und wartenden Weckvorgängen.';
 
   @override
   String get configFlagShowSyncActivityIndicator =>
@@ -3079,7 +3079,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
-      'Live-Sync-Aktivität in der Seitenleiste anzeigen — eine tx/rx-LED-Leiste mit Outbox- und Inbox-Tiefe.';
+      'Zeigt einen dezenten Synchronisierungsstatus in der Seitenleiste; Warteschlangenzahlen erscheinen nur, wenn Arbeit ansteht.';
 
   @override
   String get conflictApplyButton => 'Übernehmen';
