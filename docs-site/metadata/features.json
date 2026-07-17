@@ -100,7 +100,8 @@
       "page": "reference/settings",
       "status": "verified",
       "screenshotCases": [
-        "settings/home"
+        "settings/home",
+        "settings/definitions"
       ]
     },
     {

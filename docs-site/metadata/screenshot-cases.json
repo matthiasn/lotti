@@ -123,6 +123,17 @@
       }
     },
     {
+      "id": "settings/definitions",
+      "title": "Settings definitions hub",
+      "sourceTest": "test/features/settings/ui/settings_home_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "mobile_settings_definitions_light.png",
+        "mobile-dark": "mobile_settings_definitions_dark.png",
+        "desktop-light": "desktop_settings_definitions_light.png",
+        "desktop-dark": "desktop_settings_definitions_dark.png"
+      }
+    },
+    {
       "id": "tasks/workspace",
       "title": "Production task workspace",
       "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
