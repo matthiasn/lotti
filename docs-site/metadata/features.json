@@ -133,7 +133,10 @@
         "habits/schedule",
         "habits/record",
         "measurables/settings-list",
-        "measurables/settings-detail"
+        "measurables/settings-detail",
+        "measurements/capture",
+        "measurements/date",
+        "measurements/time"
       ]
     },
     {
