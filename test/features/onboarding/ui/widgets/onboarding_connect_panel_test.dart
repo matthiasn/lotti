@@ -176,10 +176,10 @@ void main() {
       final selected = <InferenceProviderType>[];
       await pumpPanel(tester, onSelect: selected.add);
 
-      final provider = find.text(
+      final providerName = find.text(
         onboardingProviderName(m, InferenceProviderType.mistral),
       );
-      final focus = Focus.of(tester.element(provider))..requestFocus();
+      final focus = Focus.of(tester.element(providerName))..requestFocus();
       await tester.pump();
       expect(focus.hasPrimaryFocus, isTrue);
 
@@ -187,6 +187,10 @@ void main() {
       await tester.pump();
 
       expect(selected, [InferenceProviderType.mistral]);
+      final provider = find.bySemanticsLabel(
+        onboardingProviderName(m, InferenceProviderType.mistral),
+      );
+      expect(provider, findsOneWidget);
       final semantics = tester.getSemantics(provider);
       expect(semantics.label, contains('Mistral'));
       expect(

@@ -554,7 +554,7 @@ class _PickerChip extends StatelessWidget {
           borderRadius: radius,
           focusColor: tokens.colors.surface.focusPressed,
           hoverColor: tokens.colors.surface.hover,
-          child: DecoratedBox(
+          child: Ink(
             decoration: BoxDecoration(
               color: selected ? accent : Colors.transparent,
               borderRadius: radius,

@@ -324,6 +324,7 @@ class _ProviderTileState extends State<_ProviderTile> {
     return Semantics(
       button: true,
       label: name,
+      onTap: widget.onTap,
       child: FocusableActionDetector(
         mouseCursor: SystemMouseCursors.click,
         onShowFocusHighlight: (focused) {
@@ -338,77 +339,79 @@ class _ProviderTileState extends State<_ProviderTile> {
             },
           ),
         },
-        child: AnimatedModalItem(
-          onTap: widget.onTap,
-          child: Container(
-            padding: EdgeInsets.all(tokens.spacing.step4),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color.lerp(tileBase, accent, 0.18)!,
-                  Color.lerp(tileBase, accent, 0.07)!,
+        child: ExcludeSemantics(
+          child: AnimatedModalItem(
+            onTap: widget.onTap,
+            child: Container(
+              padding: EdgeInsets.all(tokens.spacing.step4),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color.lerp(tileBase, accent, 0.18)!,
+                    Color.lerp(tileBase, accent, 0.07)!,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(tokens.radii.l),
+                border: Border.all(
+                  color: _focused
+                      ? tokens.colors.interactive.enabled
+                      : accent.withValues(alpha: 0.1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: tokens.spacing.step1,
+                    height: tokens.spacing.step6 * 2,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.62),
+                      borderRadius: BorderRadius.circular(tokens.radii.s),
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  Container(
+                    padding: EdgeInsets.all(tokens.spacing.step3),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(tokens.radii.m),
+                    ),
+                    child: Icon(
+                      aiProviderIcon(widget.type),
+                      color: Color.lerp(accent, textHigh, 0.18),
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step4),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: tokens.typography.styles.subtitle.subtitle1
+                              .copyWith(color: textHigh),
+                        ),
+                        if (tagline.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: tokens.spacing.step1,
+                            ),
+                            child: Text(
+                              tagline,
+                              style: tokens.typography.styles.body.bodySmall
+                                  .copyWith(color: textMed),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: textHigh.withValues(alpha: 0.5),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(tokens.radii.l),
-              border: Border.all(
-                color: _focused
-                    ? tokens.colors.interactive.enabled
-                    : accent.withValues(alpha: 0.1),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: tokens.spacing.step1,
-                  height: tokens.spacing.step6 * 2,
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.62),
-                    borderRadius: BorderRadius.circular(tokens.radii.s),
-                  ),
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                Container(
-                  padding: EdgeInsets.all(tokens.spacing.step3),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(tokens.radii.m),
-                  ),
-                  child: Icon(
-                    aiProviderIcon(widget.type),
-                    color: Color.lerp(accent, textHigh, 0.18),
-                  ),
-                ),
-                SizedBox(width: tokens.spacing.step4),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: tokens.typography.styles.subtitle.subtitle1
-                            .copyWith(color: textHigh),
-                      ),
-                      if (tagline.isNotEmpty)
-                        Padding(
-                          padding: EdgeInsets.only(
-                            top: tokens.spacing.step1,
-                          ),
-                          child: Text(
-                            tagline,
-                            style: tokens.typography.styles.body.bodySmall
-                                .copyWith(color: textMed),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: textHigh.withValues(alpha: 0.5),
-                ),
-              ],
             ),
           ),
         ),

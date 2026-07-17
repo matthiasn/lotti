@@ -536,14 +536,32 @@ class _CategoryChip extends StatelessWidget {
       button: true,
       selected: selected,
       label: option.label,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: radius,
-          focusColor: tokens.colors.surface.focusPressed,
-          hoverColor: tokens.colors.surface.hover,
-          child: body,
+      onTap: onTap,
+      child: FocusableActionDetector(
+        actions: <Type, Action<Intent>>{
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              onTap();
+              return null;
+            },
+          ),
+        },
+        child: Stack(
+          children: [
+            body,
+            Positioned.fill(
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: onTap,
+                  excludeFromSemantics: true,
+                  borderRadius: radius,
+                  focusColor: tokens.colors.surface.focusPressed,
+                  hoverColor: tokens.colors.surface.hover,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -573,50 +591,69 @@ class _AddOwnChip extends StatelessWidget {
     final textHigh = tokens.colors.text.highEmphasis;
     final textMedium = tokens.colors.text.mediumEmphasis;
     final radius = BorderRadius.circular(tokens.radii.m);
+    final body = _FrostedGlass(
+      tint: accent,
+      topAlpha: _kAddOwnTintTopAlpha,
+      bottomAlpha: _kAddOwnTintBottomAlpha,
+      borderColor: textHigh.withValues(alpha: _kAddOwnBorderAlpha),
+      radius: radius,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step4,
+          vertical: tokens.spacing.step4,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_rounded,
+              size: tokens.spacing.step5,
+              color: textMedium,
+            ),
+            SizedBox(width: tokens.spacing.step2),
+            Flexible(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.body.bodyLarge.copyWith(
+                  color: textMedium,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
     return Semantics(
       button: true,
       label: label,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: radius,
-          focusColor: tokens.colors.surface.focusPressed,
-          hoverColor: tokens.colors.surface.hover,
-          child: _FrostedGlass(
-            tint: accent,
-            topAlpha: _kAddOwnTintTopAlpha,
-            bottomAlpha: _kAddOwnTintBottomAlpha,
-            borderColor: textHigh.withValues(alpha: _kAddOwnBorderAlpha),
-            radius: radius,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step4,
-                vertical: tokens.spacing.step4,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.add_rounded,
-                    size: tokens.spacing.step5,
-                    color: textMedium,
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  Flexible(
-                    child: Text(
-                      label,
-                      textAlign: TextAlign.center,
-                      style: tokens.typography.styles.body.bodyLarge.copyWith(
-                        color: textMedium,
-                      ),
-                    ),
-                  ),
-                ],
+      onTap: onTap,
+      child: FocusableActionDetector(
+        actions: <Type, Action<Intent>>{
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              onTap();
+              return null;
+            },
+          ),
+        },
+        child: Stack(
+          children: [
+            body,
+            Positioned.fill(
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: onTap,
+                  excludeFromSemantics: true,
+                  borderRadius: radius,
+                  focusColor: tokens.colors.surface.focusPressed,
+                  hoverColor: tokens.colors.surface.hover,
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
