@@ -146,6 +146,17 @@ void main() {
           );
         }
       });
+
+      test('$name overline normalizes the Figma 8% tracking value', () {
+        final overline = tokens.typography.styles.others.overline;
+
+        expect(overline.fontSize, 12);
+        expect(overline.letterSpacing, closeTo(12 * 0.08, 1e-9));
+        expect(
+          theme.textTheme.labelSmall?.letterSpacing,
+          closeTo(12 * 0.08, 1e-9),
+        );
+      });
     }
 
     testWidgets('designTokens getter returns the active extension', (

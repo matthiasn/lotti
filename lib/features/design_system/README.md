@@ -32,6 +32,11 @@ flowchart LR
 
 The generated token file is the spine. Components and feature UI are supposed to consume typed tokens, not freelance their own palette and spacing system on a Friday afternoon.
 
+Typography `letterSpacing` values in `tokens.json` are stored as Flutter
+logical-pixel values. Percentage tracking from Figma must therefore be
+normalized against the font size before import; for example, 8% tracking on a
+12px overline is stored as `0.96`, not `8`.
+
 ## Directory Shape
 
 ```text

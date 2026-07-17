@@ -29,7 +29,7 @@ TextStyle monoMetaStyle(
 // ---------------------------------------------------------------------------
 // Calm typography — the "ship calm" type system from the Daily OS design
 // handoff (v2, item 6). The generated token tree still carries the louder
-// legacy scale (overline 12/700/+8 tracking, heading1 35/700); these helpers
+// legacy scale (overline 12/700, heading1 35/700); these helpers
 // derive the calmer treatment on top of the existing token styles so every
 // surface converges on one system. The values fold into the generated tokens
 // once the Figma export catches up — keep call sites on these helpers, not on
