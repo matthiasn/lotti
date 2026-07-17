@@ -192,7 +192,7 @@ void main() {
       expect(
         welcomeConstellation.nodeColor,
         theme.name == 'light'
-            ? theme.tokens.colors.text.highEmphasis
+            ? theme.tokens.colors.text.highEmphasis.withValues(alpha: 1)
             : theme.tokens.colors.aiProvider.ollama.color,
       );
 

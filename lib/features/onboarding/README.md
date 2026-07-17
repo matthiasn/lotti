@@ -292,13 +292,14 @@ the aurora compositor: additive `BlendMode.plus` keeps blooms luminous on dark
 surfaces, while `BlendMode.srcOver` preserves their colour and contrast on a
 light surface instead of adding them into white. The welcome constellation has
 an intentionally mode-specific treatment: light mode uses the level-01 white
-surface with high-emphasis monochrome nodes and branches plus alert-red
-travelling activations; dark mode uses the semantic AI-card background with
-the themed Ollama purple for nodes, Anthropic blue for branches, and AI-card
-accent for activations. Its bottom fade uses transparent stops with the panel
-surface's RGB values; this avoids the grey band produced when transparent black
-is interpolated into a light surface. Later-step `OnboardingBackdrop` instances
-stay on the quieter interactive-colour palette.
+surface with fully opaque, high-emphasis monochrome nodes and branches; dark
+mode uses the semantic AI-card background with the themed Ollama purple for
+nodes and Anthropic blue for branches. Both modes use the Task Agent card's
+`proposalKind.update.color` token for travelling activations, keeping the
+signal's role consistent across themes. Its bottom fade uses transparent stops
+with the panel surface's RGB values; this avoids the grey band produced when
+transparent black is interpolated into a light surface. Later-step
+`OnboardingBackdrop` instances stay on the quieter interactive-colour palette.
 
 ```mermaid
 flowchart LR

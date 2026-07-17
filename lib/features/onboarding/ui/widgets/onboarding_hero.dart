@@ -143,16 +143,17 @@ Widget buildOnboardingHeroVisual(
   switch (style) {
     case OnboardingHeroStyle.constellation:
       final monochromeLight = brightness == Brightness.light;
+      final monochrome = tokens.colors.text.highEmphasis.withValues(alpha: 1);
       return NeuralConstellation(
         nodeColor: monochromeLight
-            ? tokens.colors.text.highEmphasis
+            ? monochrome
             : tokens.colors.aiProvider.ollama.color,
         lineColor: monochromeLight
-            ? tokens.colors.text.highEmphasis
+            ? monochrome
             : tokens.colors.aiProvider.anthropic.color,
-        pulseColor: monochromeLight
-            ? tokens.colors.alert.error.defaultColor
-            : tokens.colors.aiCard.accent,
+        // Reuse the Task Agent update signal in both themes instead of
+        // introducing a welcome-only accent.
+        pulseColor: tokens.colors.proposalKind.update.color,
         nodeCount: 62,
         // The welcome page is the only place where the organism should own the
         // opening beat. Later FTUE pages use OnboardingBackdrop's smaller,

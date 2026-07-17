@@ -181,14 +181,13 @@ void main() {
                 )
                 as NeuralConstellation;
         final expectedNodeColor = theme.brightness == Brightness.light
-            ? theme.tokens.colors.text.highEmphasis
+            ? theme.tokens.colors.text.highEmphasis.withValues(alpha: 1)
             : theme.tokens.colors.aiProvider.ollama.color;
         final expectedLineColor = theme.brightness == Brightness.light
-            ? theme.tokens.colors.text.highEmphasis
+            ? theme.tokens.colors.text.highEmphasis.withValues(alpha: 1)
             : theme.tokens.colors.aiProvider.anthropic.color;
-        final expectedPulseColor = theme.brightness == Brightness.light
-            ? theme.tokens.colors.alert.error.defaultColor
-            : theme.tokens.colors.aiCard.accent;
+        final expectedPulseColor =
+            theme.tokens.colors.proposalKind.update.color;
         expect(
           constellation.nodeColor,
           expectedNodeColor,
