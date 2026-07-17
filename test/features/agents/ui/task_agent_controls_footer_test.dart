@@ -36,6 +36,7 @@ void main() {
     ValueChanged<bool>? onAutomaticUpdatesChanged,
     VoidCallback? onRunNow,
     VoidCallback? onCancelTimer,
+    VoidCallback? onCountdownExpired,
     VoidCallback? onSetupTap,
   }) {
     return TaskAgentControlsFooter(
@@ -49,7 +50,7 @@ void main() {
       onAutomaticUpdatesChanged: onAutomaticUpdatesChanged ?? (_) {},
       onRunNow: onRunNow,
       onCancelTimer: onCancelTimer ?? () {},
-      onCountdownExpired: () {},
+      onCountdownExpired: onCountdownExpired ?? () {},
       identityData: identityData,
       onSetupTap: onSetupTap ?? () {},
     );
@@ -127,6 +128,67 @@ void main() {
       });
 
       expect(cancellations, 1);
+    },
+  );
+
+  testWidgets(
+    'a rescheduled wake resyncs the countdown chip in place',
+    (tester) async {
+      final now = DateTime(2026, 7, 16, 9);
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            subject(
+              automaticUpdatesEnabled: true,
+              showCountdown: true,
+              nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
+              onRunNow: () {},
+            ),
+          ),
+        );
+        expect(find.text('Next update in 1:30'), findsOneWidget);
+
+        // Same widget position, new deadline → didUpdateWidget resyncs the
+        // ticking seconds instead of keeping the stale countdown.
+        await tester.pumpWidget(
+          makeTestableWidget(
+            subject(
+              automaticUpdatesEnabled: true,
+              showCountdown: true,
+              nextWakeAt: now.add(const Duration(seconds: 45)),
+              onRunNow: () {},
+            ),
+          ),
+        );
+        expect(find.text('Next update in 0:45'), findsOneWidget);
+        expect(find.text('Next update in 1:30'), findsNothing);
+      });
+    },
+  );
+
+  testWidgets(
+    'an already-expired deadline renders nothing and reports expiry',
+    (tester) async {
+      final now = DateTime(2026, 7, 16, 9);
+      var expiries = 0;
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            subject(
+              automaticUpdatesEnabled: true,
+              showCountdown: true,
+              nextWakeAt: now.subtract(const Duration(seconds: 1)),
+              onCountdownExpired: () => expiries++,
+              onRunNow: () {},
+            ),
+          ),
+        );
+        // The expiry callback is delivered post-frame.
+        await tester.pump();
+      });
+
+      expect(find.textContaining('Next update in'), findsNothing);
+      expect(expiries, 1);
     },
   );
 
