@@ -482,6 +482,39 @@ void main() {
     },
   );
 
+  testWidgets('Edit mode keeps long saved-view lists scrollable', (
+    tester,
+  ) async {
+    final saved = List.generate(
+      20,
+      (index) => SavedTaskFilter(
+        id: 'filter-$index',
+        name: 'Filter $index',
+        filter: const TasksFilter(),
+      ),
+    );
+    await _pumpSheet(tester, seed: saved);
+
+    await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+    await tester.pump();
+
+    final listFinder = find.byType(ReorderableListView);
+    final list = tester.widget<ReorderableListView>(listFinder);
+    expect(list.physics, isNot(isA<NeverScrollableScrollPhysics>()));
+
+    final scrollableFinder = find.descendant(
+      of: listFinder,
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(listFinder, const Offset(0, -300));
+    await tester.pump();
+
+    expect(
+      tester.state<ScrollableState>(scrollableFinder).position.pixels,
+      greaterThan(0),
+    );
+  });
+
   testWidgets('Rename opens the name modal and renames via the controller', (
     tester,
   ) async {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
+import 'package:lotti/features/agents/ui/pending_wakes/wake_countdown_ticker.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -97,7 +98,6 @@ class _SidebarActivitySummaryState
             timerDuration: timer == null ? null : entryDuration(timer),
             agentCounts: agentsVisible ? agentCounts : null,
           ),
-          liveRegion: audioVisible,
           expanded: _expanded,
           onTap: () => setState(() => _expanded = !_expanded),
           details: _ActivityDetails(
@@ -117,7 +117,10 @@ class _SidebarActivitySummaryState
     final ongoing =
         ref.watch(ongoingWakeRecordsProvider).value ??
         const <OngoingWakeRecord>[];
-    final cutoff = clock.now().add(kSidebarWakeQueueScheduledLookahead);
+    final now = scheduled.isEmpty
+        ? clock.now()
+        : ref.watch(wakeCountdownTickerProvider).value ?? clock.now();
+    final cutoff = now.add(kSidebarWakeQueueScheduledLookahead);
     final queued = scheduled
         .where((wake) => !wake.dueAt.isAfter(cutoff))
         .length;
@@ -156,7 +159,6 @@ class _ActivitySurface extends StatelessWidget {
   const _ActivitySurface({
     required this.metrics,
     required this.semanticsLabel,
-    required this.liveRegion,
     required this.expanded,
     required this.details,
     required this.onTap,
@@ -164,7 +166,6 @@ class _ActivitySurface extends StatelessWidget {
 
   final List<_ActivityMetric> metrics;
   final String semanticsLabel;
-  final bool liveRegion;
   final bool expanded;
   final Widget details;
   final VoidCallback onTap;
@@ -193,7 +194,7 @@ class _ActivitySurface extends StatelessWidget {
       children: [
         Semantics(
           button: true,
-          liveRegion: liveRegion,
+          liveRegion: false,
           label: '$semanticsLabel, $toggleTooltip',
           child: Material(
             key: SidebarActivitySummaryKeys.root,

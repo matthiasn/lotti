@@ -9208,10 +9208,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get sidebarActiveSectionTitle => 'Activitate';
 
   @override
-  String get sidebarActivityCollapseTooltip => 'Restrânge activitatea';
+  String get sidebarActivityCollapseTooltip => 'Restrângeți activitatea';
 
   @override
-  String get sidebarActivityExpandTooltip => 'Extinde activitatea';
+  String get sidebarActivityExpandTooltip => 'Extindeți activitatea';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Înregistrare';

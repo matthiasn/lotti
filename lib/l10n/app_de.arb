@@ -3713,8 +3713,8 @@
   "settingThemingDark": "Dunkles Design",
   "settingThemingLight": "Helles Design",
   "sidebarActiveSectionTitle": "Aktivität",
-  "sidebarActivityCollapseTooltip": "Aktivität zuklappen",
-  "sidebarActivityExpandTooltip": "Aktivität aufklappen",
+  "sidebarActivityCollapseTooltip": "Aktivität einklappen",
+  "sidebarActivityExpandTooltip": "Aktivität ausklappen",
   "sidebarAudioRecordingStatusLabel": "Aufnahme",
   "sidebarRunningTimerLabel": "Laufender Timer",
   "sidebarRunningTimerStopTooltip": "Timer stoppen",
@@ -4105,7 +4105,7 @@
   "tasksSavedFiltersSaveButtonLabel": "Filter speichern",
   "tasksSavedFiltersSaveCurrentAs": "Aktuellen Filter speichern als…",
   "tasksSavedFiltersSavePopupCancel": "Abbrechen",
-  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 Filter aktiv. In den Aufgabenansichten gespeichert.} other{{count} Filter aktiv. In den Aufgabenansichten gespeichert.}}",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 Ansicht aktiv. In den Aufgabenansichten gespeichert.} other{{count} Ansichten aktiv. In den Aufgabenansichten gespeichert.}}",
   "@tasksSavedFiltersSavePopupHelper": {
     "placeholders": {
       "count": {

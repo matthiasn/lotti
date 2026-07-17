@@ -21,7 +21,9 @@ import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/desktop/desktop_saved_task_view_bar.dart';
@@ -402,7 +404,13 @@ class _TasksTabActiveFilters extends ConsumerWidget {
     // filter shape. Repeating every underlying clause immediately below it
     // creates a second, competing representation of the same state. Keep
     // removable chips for ad-hoc/custom filters only.
-    if (ref.watch(currentSavedTaskFilterIdProvider) != null) {
+    final activeId = ref.watch(currentSavedTaskFilterIdProvider);
+    final saved =
+        ref.watch(savedTaskFiltersControllerProvider).value ??
+        const <SavedTaskFilter>[];
+    final hasResolvedSavedView =
+        activeId != null && saved.any((filter) => filter.id == activeId);
+    if (hasResolvedSavedView) {
       return const SizedBox.shrink();
     }
 

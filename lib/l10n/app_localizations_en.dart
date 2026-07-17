@@ -9832,13 +9832,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksSavedFilterDeleteConfirmTooltip => 'Tap again to delete';
 
   @override
-  String get tasksSavedFilterDeleteTooltip => 'Delete saved filter';
+  String get tasksSavedFilterDeleteTooltip => 'Delete saved view';
 
   @override
   String get tasksSavedFilterDragHandleSemantics => 'Drag to reorder';
 
   @override
-  String get tasksSavedFilterRenameSemantics => 'Rename saved filter';
+  String get tasksSavedFilterRenameSemantics => 'Rename saved view';
 
   @override
   String get tasksSavedFiltersAllShort => 'All';
@@ -9854,7 +9854,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String tasksSavedFiltersDeleteConfirmMessage(String name) {
-    return 'Delete the saved filter \'$name\'? This can\'t be undone.';
+    return 'Delete the saved view \'$name\'? This can\'t be undone.';
   }
 
   @override
@@ -9889,10 +9889,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Drag to choose which views stay visible above the task list.';
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Save filter';
+  String get tasksSavedFiltersSaveButtonLabel => 'Save view';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Save current filter as…';
+  String get tasksSavedFiltersSaveCurrentAs => 'Save current filter as a view…';
 
   @override
   String get tasksSavedFiltersSavePopupCancel => 'Cancel';
@@ -9915,7 +9915,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksSavedFiltersSavePopupSave => 'Save';
 
   @override
-  String get tasksSavedFiltersSavePopupTitle => 'Name this filter';
+  String get tasksSavedFiltersSavePopupTitle => 'Name this view';
 
   @override
   String get tasksSavedFiltersSheetTitle => 'Saved views';
@@ -9928,8 +9928,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count more saved filters',
-      one: '1 more saved filter',
+      other: '$count more saved views',
+      one: '1 more saved view',
     );
     return '$_temp0';
   }
@@ -9946,7 +9946,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFilterToastDeleted => 'Filter deleted';
+  String get tasksSavedFilterToastDeleted => 'View deleted';
 
   @override
   String tasksSavedFilterToastSaved(String name) {

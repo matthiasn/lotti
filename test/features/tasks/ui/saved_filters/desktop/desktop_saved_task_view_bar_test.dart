@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_repository.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_mru_controller.dart';
@@ -474,6 +475,29 @@ void main() {
       find.byKey(DesktopSavedTaskViewBarKeys.monitor('blocked')),
       findsNothing,
     );
+  });
+
+  testWidgets('a stale saved-view id is represented as Custom', (tester) async {
+    await _pumpBar(
+      tester,
+      pageState: const JournalPageState(selectedPriorities: {'P1'}),
+      extraOverrides: [
+        currentSavedTaskFilterIdProvider.overrideWith((ref) => 'deleted'),
+        tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+      ],
+    );
+
+    final current = find.byKey(DesktopSavedTaskViewBarKeys.currentView);
+    expect(
+      find.descendant(of: current, matching: find.text('Custom')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: current, matching: find.text('4')),
+      findsOneWidget,
+    );
+    expect(find.byKey(DesktopSavedTaskViewBarKeys.allTasks), findsOneWidget);
+    expect(find.byKey(DesktopSavedTaskViewBarKeys.save), findsOneWidget);
   });
 
   testWidgets(

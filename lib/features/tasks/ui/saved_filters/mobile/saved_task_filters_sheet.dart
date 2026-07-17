@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -162,101 +163,127 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
     final total = ref.watch(allTasksTotalCountProvider).value;
 
     final allSelected = activeId == null && !hasUnsaved;
-
-    return Column(
-      key: SavedTaskFiltersSheetKeys.root,
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            key: SavedTaskFiltersSheetKeys.editToggle,
-            // Teal foreground (not the default purple TextButton theme) so the
-            // sheet carries exactly one tappable accent.
-            style: TextButton.styleFrom(
-              foregroundColor: tokens.colors.interactive.enabled,
-            ),
-            onPressed: () => setState(() => _editing = !_editing),
-            child: Text(
-              _editing
-                  ? messages.tasksSavedFiltersDone
-                  : messages.tasksSavedFiltersEdit,
-            ),
+    final editRowHeight = tokens.spacing.step8 + tokens.spacing.step3;
+    final savedListViewportHeight = math.min(
+      editRowHeight * saved.length,
+      tokens.spacing.step13 * 2,
+    );
+    final editList = ReorderableListView.builder(
+      primary: false,
+      padding: EdgeInsets.zero,
+      itemExtent: editRowHeight,
+      buildDefaultDragHandles: false,
+      itemCount: saved.length,
+      onReorderItem: (oldIndex, newIndex) =>
+          _reorder(saved, oldIndex, newIndex),
+      proxyDecorator: (child, index, animation) => Material(
+        type: MaterialType.transparency,
+        child: child,
+      ),
+      itemBuilder: (context, index) {
+        final f = saved[index];
+        return KeyedSubtree(
+          key: ValueKey('saved-filter-sheet-item-${f.id}'),
+          child: _SavedFilterRow(
+            key: SavedTaskFiltersSheetKeys.row(f.id),
+            rowKey: f.id == activeId ? _activeRowKey : null,
+            filter: f,
+            selected: f.id == activeId,
+            count: counts?[f.id],
+            editing: true,
+            reorderIndex: index,
+            onRename: () => _rename(f),
+            onDelete: () => _delete(f),
           ),
-        ),
-        _AllTasksRow(
-          key: SavedTaskFiltersSheetKeys.allRow,
-          rowKey: allSelected ? _activeRowKey : null,
-          selected: allSelected,
-          total: total,
-          editing: _editing,
-          onTap: _applyAll,
-        ),
-        if (_editing) ...[
-          Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(
-              tokens.spacing.step3,
-              tokens.spacing.step2,
-              tokens.spacing.step3,
-              tokens.spacing.step3,
-            ),
-            child: Text(
-              messages.tasksSavedFiltersReorderHelper,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
+        );
+      },
+    );
+    final savedList = ListView.builder(
+      primary: false,
+      padding: EdgeInsets.zero,
+      itemExtent: editRowHeight,
+      itemCount: saved.length,
+      itemBuilder: (context, index) {
+        final f = saved[index];
+        return _SavedFilterRow(
+          key: SavedTaskFiltersSheetKeys.row(f.id),
+          rowKey: f.id == activeId ? _activeRowKey : null,
+          filter: f,
+          selected: f.id == activeId,
+          count: counts?[f.id],
+          editing: false,
+          onTap: () => _applySaved(f),
+        );
+      },
+    );
+
+    return KeyedSubtree(
+      key: ValueKey(_editing),
+      child: Column(
+        key: SavedTaskFiltersSheetKeys.root,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              key: SavedTaskFiltersSheetKeys.editToggle,
+              // Teal foreground (not the default purple TextButton theme) so the
+              // sheet carries exactly one tappable accent.
+              style: TextButton.styleFrom(
+                foregroundColor: tokens.colors.interactive.enabled,
+              ),
+              onPressed: () => setState(() => _editing = !_editing),
+              child: Text(
+                _editing
+                    ? messages.tasksSavedFiltersDone
+                    : messages.tasksSavedFiltersEdit,
               ),
             ),
           ),
-          ReorderableListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            buildDefaultDragHandles: false,
-            itemCount: saved.length,
-            onReorderItem: (oldIndex, newIndex) =>
-                _reorder(saved, oldIndex, newIndex),
-            proxyDecorator: (child, index, animation) => Material(
-              type: MaterialType.transparency,
-              child: child,
-            ),
-            itemBuilder: (context, index) {
-              final f = saved[index];
-              return KeyedSubtree(
-                key: ValueKey('saved-filter-sheet-item-${f.id}'),
-                child: _SavedFilterRow(
-                  key: SavedTaskFiltersSheetKeys.row(f.id),
-                  rowKey: f.id == activeId ? _activeRowKey : null,
-                  filter: f,
-                  selected: f.id == activeId,
-                  count: counts?[f.id],
-                  editing: true,
-                  reorderIndex: index,
-                  onRename: () => _rename(f),
-                  onDelete: () => _delete(f),
-                ),
-              );
-            },
+          _AllTasksRow(
+            key: SavedTaskFiltersSheetKeys.allRow,
+            rowKey: allSelected ? _activeRowKey : null,
+            selected: allSelected,
+            total: total,
+            editing: _editing,
+            onTap: _applyAll,
           ),
-        ] else
-          for (final f in saved)
-            _SavedFilterRow(
-              key: SavedTaskFiltersSheetKeys.row(f.id),
-              rowKey: f.id == activeId ? _activeRowKey : null,
-              filter: f,
-              selected: f.id == activeId,
-              count: counts?[f.id],
-              editing: false,
-              onTap: () => _applySaved(f),
+          if (_editing) ...[
+            Padding(
+              padding: EdgeInsetsDirectional.fromSTEB(
+                tokens.spacing.step3,
+                tokens.spacing.step2,
+                tokens.spacing.step3,
+                tokens.spacing.step3,
+              ),
+              child: Text(
+                messages.tasksSavedFiltersReorderHelper,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
             ),
-        Divider(
-          height: tokens.spacing.step6,
-          color: tokens.colors.decorative.level01,
-        ),
-        _CreateRow(
-          key: SavedTaskFiltersSheetKeys.createRow,
-          onTap: _create,
-        ),
-      ],
+            if (saved.isNotEmpty)
+              SizedBox(
+                height: savedListViewportHeight,
+                child: editList,
+              ),
+          ] else if (saved.isNotEmpty)
+            SizedBox(
+              height: savedListViewportHeight,
+              child: savedList,
+            ),
+          Divider(
+            height: tokens.spacing.step6,
+            color: tokens.colors.decorative.level01,
+          ),
+          _CreateRow(
+            key: SavedTaskFiltersSheetKeys.createRow,
+            onTap: _create,
+          ),
+        ],
+      ),
     );
   }
 }

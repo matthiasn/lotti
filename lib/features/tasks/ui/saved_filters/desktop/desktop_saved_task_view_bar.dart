@@ -59,12 +59,14 @@ class DesktopSavedTaskViewBar extends ConsumerWidget {
     final activeFilter = activeId == null
         ? null
         : saved.where((filter) => filter.id == activeId).firstOrNull;
-    final allSelected = activeFilter == null && !hasUnsaved;
-    final customCount = hasUnsaved
+    final hasUnresolvedActiveId = activeId != null && activeFilter == null;
+    final isCustom = hasUnsaved || hasUnresolvedActiveId;
+    final allSelected = activeId == null && !isCustom;
+    final customCount = isCustom
         ? ref.watch(currentTasksFilterCountProvider).value
         : null;
 
-    final currentCount = switch ((activeFilter, hasUnsaved)) {
+    final currentCount = switch ((activeFilter, isCustom)) {
       (final filter?, _) => counts?[filter.id],
       (null, true) => customCount,
       (null, false) => total,
@@ -72,7 +74,7 @@ class DesktopSavedTaskViewBar extends ConsumerWidget {
     final current = _CurrentView(
       name:
           activeFilter?.name ??
-          (hasUnsaved
+          (isCustom
               ? context.messages.tasksSavedFiltersCustom
               : context.messages.tasksSavedFiltersAllTasks),
       count: currentCount,
@@ -123,7 +125,7 @@ class DesktopSavedTaskViewBar extends ConsumerWidget {
               final monitorLimit = _monitorLimitForWidth(
                 tokens: tokens,
                 available: constraints.maxWidth,
-                hasUnsaved: hasUnsaved,
+                hasUnsaved: isCustom,
               );
               final monitors = monitorCandidates
                   .take(monitorLimit)
@@ -144,7 +146,7 @@ class DesktopSavedTaskViewBar extends ConsumerWidget {
                       gap,
                       _MonitorButton(monitor: monitor),
                     ],
-                    if (hasUnsaved) ...[
+                    if (isCustom) ...[
                       gap,
                       _SaveFilterButton(
                         onTap: () => promptSaveCurrentTaskFilter(context, ref),
@@ -178,10 +180,11 @@ class DesktopSavedTaskViewBar extends ConsumerWidget {
   }
 
   Future<void> _applySaved(WidgetRef ref, SavedTaskFilter filter) async {
+    final mru = ref.read(savedTaskFilterMruProvider.notifier);
     await SavedTaskFilterActivator(
       ref.read(journalPageControllerProvider(true).notifier),
     ).activate(filter);
-    ref.read(savedTaskFilterMruProvider.notifier).touch(filter.id);
+    mru.touch(filter.id);
   }
 
   Future<void> _applyAll(WidgetRef ref) {

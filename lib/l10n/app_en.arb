@@ -4816,14 +4816,14 @@
   "tasksPriorityPickerTitle": "Select priority",
   "tasksQuickFilterUnassignedLabel": "Unassigned",
   "tasksSavedFilterDeleteConfirmTooltip": "Tap again to delete",
-  "tasksSavedFilterDeleteTooltip": "Delete saved filter",
+  "tasksSavedFilterDeleteTooltip": "Delete saved view",
   "tasksSavedFilterDragHandleSemantics": "Drag to reorder",
-  "tasksSavedFilterRenameSemantics": "Rename saved filter",
+  "tasksSavedFilterRenameSemantics": "Rename saved view",
   "tasksSavedFiltersAllShort": "All",
   "tasksSavedFiltersAllTasks": "All tasks",
   "tasksSavedFiltersCustom": "Custom",
   "tasksSavedFiltersDeleteConfirmAction": "Delete",
-  "tasksSavedFiltersDeleteConfirmMessage": "Delete the saved filter '{name}'? This can't be undone.",
+  "tasksSavedFiltersDeleteConfirmMessage": "Delete the saved view '{name}'? This can't be undone.",
   "@tasksSavedFiltersDeleteConfirmMessage": {
     "placeholders": {
       "name": {
@@ -4860,8 +4860,8 @@
     }
   },
   "tasksSavedFiltersReorderHelper": "Drag to choose which views stay visible above the task list.",
-  "tasksSavedFiltersSaveButtonLabel": "Save filter",
-  "tasksSavedFiltersSaveCurrentAs": "Save current filter as…",
+  "tasksSavedFiltersSaveButtonLabel": "Save view",
+  "tasksSavedFiltersSaveCurrentAs": "Save current filter as a view…",
   "tasksSavedFiltersSavePopupCancel": "Cancel",
   "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filter active. Saved in Task views.} other{{count} filters active. Saved in Task views.}}",
   "@tasksSavedFiltersSavePopupHelper": {
@@ -4873,10 +4873,10 @@
   },
   "tasksSavedFiltersSavePopupHint": "e.g. Blocked or on hold",
   "tasksSavedFiltersSavePopupSave": "Save",
-  "tasksSavedFiltersSavePopupTitle": "Name this filter",
+  "tasksSavedFiltersSavePopupTitle": "Name this view",
   "tasksSavedFiltersSheetTitle": "Saved views",
   "tasksSavedFiltersShowLess": "Show fewer",
-  "tasksSavedFiltersShowMore": "{count, plural, =1{1 more saved filter} other{{count} more saved filters}}",
+  "tasksSavedFiltersShowMore": "{count, plural, =1{1 more saved view} other{{count} more saved views}}",
   "@tasksSavedFiltersShowMore": {
     "placeholders": {
       "count": {
@@ -4892,7 +4892,7 @@
       }
     }
   },
-  "tasksSavedFilterToastDeleted": "Filter deleted",
+  "tasksSavedFilterToastDeleted": "View deleted",
   "tasksSavedFilterToastSaved": "Saved '{name}'",
   "@tasksSavedFilterToastSaved": {
     "placeholders": {

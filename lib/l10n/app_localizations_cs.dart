@@ -10011,13 +10011,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksSavedFilterDeleteConfirmTooltip => 'Klepni znovu pro smazání';
 
   @override
-  String get tasksSavedFilterDeleteTooltip => 'Smazat uložený filtr';
+  String get tasksSavedFilterDeleteTooltip => 'Smazat uložené zobrazení';
 
   @override
   String get tasksSavedFilterDragHandleSemantics => 'Přetáhni pro změnu pořadí';
 
   @override
-  String get tasksSavedFilterRenameSemantics => 'Přejmenovat uložený filtr';
+  String get tasksSavedFilterRenameSemantics => 'Přejmenovat uložené zobrazení';
 
   @override
   String get tasksSavedFiltersAllShort => 'Vše';
@@ -10033,7 +10033,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String tasksSavedFiltersDeleteConfirmMessage(String name) {
-    return 'Smazat uložený filtr „$name“? Tuto akci nelze vrátit zpět.';
+    return 'Smazat uložené zobrazení „$name“? Tuto akci nelze vrátit zpět.';
   }
 
   @override
@@ -10068,10 +10068,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přetažením zvolíš, která zobrazení zůstanou viditelná nad seznamem úkolů.';
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Uložit filtr';
+  String get tasksSavedFiltersSaveButtonLabel => 'Uložit zobrazení';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Uložit aktuální filtr jako…';
+  String get tasksSavedFiltersSaveCurrentAs =>
+      'Uložit aktuální filtr jako zobrazení…';
 
   @override
   String get tasksSavedFiltersSavePopupCancel => 'Zrušit';
@@ -10096,7 +10097,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksSavedFiltersSavePopupSave => 'Uložit';
 
   @override
-  String get tasksSavedFiltersSavePopupTitle => 'Pojmenuj tento filtr';
+  String get tasksSavedFiltersSavePopupTitle => 'Pojmenuj toto zobrazení';
 
   @override
   String get tasksSavedFiltersSheetTitle => 'Uložená zobrazení';
@@ -10109,9 +10110,9 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count dalších uložených filtrů',
-      few: '$count další uložené filtry',
-      one: '1 další uložený filtr',
+      other: '$count dalších uložených zobrazení',
+      few: '$count další uložená zobrazení',
+      one: '1 další uložené zobrazení',
     );
     return '$_temp0';
   }
@@ -10129,7 +10130,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFilterToastDeleted => 'Filtr smazán';
+  String get tasksSavedFilterToastDeleted => 'Zobrazení smazáno';
 
   @override
   String tasksSavedFilterToastSaved(String name) {

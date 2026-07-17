@@ -9185,7 +9185,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get sidebarActivityCollapseTooltip => 'Contraer actividad';
 
   @override
-  String get sidebarActivityExpandTooltip => 'Ampliar actividad';
+  String get sidebarActivityExpandTooltip => 'Expandir actividad';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Grabación';
@@ -10053,13 +10053,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Toca otra vez para eliminar';
 
   @override
-  String get tasksSavedFilterDeleteTooltip => 'Eliminar filtro guardado';
+  String get tasksSavedFilterDeleteTooltip => 'Eliminar vista guardada';
 
   @override
   String get tasksSavedFilterDragHandleSemantics => 'Arrastra para reordenar';
 
   @override
-  String get tasksSavedFilterRenameSemantics => 'Renombrar filtro guardado';
+  String get tasksSavedFilterRenameSemantics => 'Renombrar vista guardada';
 
   @override
   String get tasksSavedFiltersAllShort => 'Todas';
@@ -10075,7 +10075,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String tasksSavedFiltersDeleteConfirmMessage(String name) {
-    return '¿Eliminar el filtro guardado «$name»? No se puede deshacer.';
+    return '¿Eliminar la vista guardada «$name»? No se puede deshacer.';
   }
 
   @override
@@ -10110,10 +10110,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Arrastra arriba las vistas que quieras mantener visibles sobre la lista de tareas.';
 
   @override
-  String get tasksSavedFiltersSaveButtonLabel => 'Guardar filtro';
+  String get tasksSavedFiltersSaveButtonLabel => 'Guardar vista';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Guardar el filtro actual como…';
+  String get tasksSavedFiltersSaveCurrentAs =>
+      'Guardar el filtro actual como vista…';
 
   @override
   String get tasksSavedFiltersSavePopupCancel => 'Cancelar';
@@ -10123,8 +10124,8 @@ class AppLocalizationsEs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count filtros activos. Guardados en las vistas de Tareas.',
-      one: '1 filtro activo. Guardado en las vistas de Tareas.',
+      other: '$count criterios activos. Guardados en las vistas de Tareas.',
+      one: '1 criterio activo. Guardado en las vistas de Tareas.',
     );
     return '$_temp0';
   }
@@ -10136,8 +10137,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksSavedFiltersSavePopupSave => 'Guardar';
 
   @override
-  String get tasksSavedFiltersSavePopupTitle =>
-      'Asigna un nombre a este filtro';
+  String get tasksSavedFiltersSavePopupTitle => 'Asigna un nombre a esta vista';
 
   @override
   String get tasksSavedFiltersSheetTitle => 'Vistas guardadas';
@@ -10150,8 +10150,8 @@ class AppLocalizationsEs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count filtros guardados más',
-      one: '1 filtro guardado más',
+      other: '$count vistas guardadas más',
+      one: '1 vista guardada más',
     );
     return '$_temp0';
   }
@@ -10168,7 +10168,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get tasksSavedFilterToastDeleted => 'Filtro eliminado';
+  String get tasksSavedFilterToastDeleted => 'Vista eliminada';
 
   @override
   String tasksSavedFilterToastSaved(String name) {

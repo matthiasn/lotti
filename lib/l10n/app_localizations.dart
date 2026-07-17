@@ -17026,7 +17026,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFilterDeleteTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Delete saved filter'**
+  /// **'Delete saved view'**
   String get tasksSavedFilterDeleteTooltip;
 
   /// No description provided for @tasksSavedFilterDragHandleSemantics.
@@ -17038,7 +17038,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFilterRenameSemantics.
   ///
   /// In en, this message translates to:
-  /// **'Rename saved filter'**
+  /// **'Rename saved view'**
   String get tasksSavedFilterRenameSemantics;
 
   /// No description provided for @tasksSavedFiltersAllShort.
@@ -17068,7 +17068,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFiltersDeleteConfirmMessage.
   ///
   /// In en, this message translates to:
-  /// **'Delete the saved filter \'{name}\'? This can\'t be undone.'**
+  /// **'Delete the saved view \'{name}\'? This can\'t be undone.'**
   String tasksSavedFiltersDeleteConfirmMessage(String name);
 
   /// No description provided for @tasksSavedFiltersDeleteConfirmNamed.
@@ -17122,13 +17122,13 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFiltersSaveButtonLabel.
   ///
   /// In en, this message translates to:
-  /// **'Save filter'**
+  /// **'Save view'**
   String get tasksSavedFiltersSaveButtonLabel;
 
   /// No description provided for @tasksSavedFiltersSaveCurrentAs.
   ///
   /// In en, this message translates to:
-  /// **'Save current filter as…'**
+  /// **'Save current filter as a view…'**
   String get tasksSavedFiltersSaveCurrentAs;
 
   /// No description provided for @tasksSavedFiltersSavePopupCancel.
@@ -17158,7 +17158,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFiltersSavePopupTitle.
   ///
   /// In en, this message translates to:
-  /// **'Name this filter'**
+  /// **'Name this view'**
   String get tasksSavedFiltersSavePopupTitle;
 
   /// No description provided for @tasksSavedFiltersSheetTitle.
@@ -17176,7 +17176,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFiltersShowMore.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 more saved filter} other{{count} more saved filters}}'**
+  /// **'{count, plural, =1{1 more saved view} other{{count} more saved views}}'**
   String tasksSavedFiltersShowMore(int count);
 
   /// No description provided for @tasksSavedFiltersTaskCount.
@@ -17188,7 +17188,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFilterToastDeleted.
   ///
   /// In en, this message translates to:
-  /// **'Filter deleted'**
+  /// **'View deleted'**
   String get tasksSavedFilterToastDeleted;
 
   /// No description provided for @tasksSavedFilterToastSaved.

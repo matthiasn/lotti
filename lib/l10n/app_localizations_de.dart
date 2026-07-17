@@ -9088,10 +9088,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sidebarActiveSectionTitle => 'Aktivität';
 
   @override
-  String get sidebarActivityCollapseTooltip => 'Aktivität zuklappen';
+  String get sidebarActivityCollapseTooltip => 'Aktivität einklappen';
 
   @override
-  String get sidebarActivityExpandTooltip => 'Aktivität aufklappen';
+  String get sidebarActivityExpandTooltip => 'Aktivität ausklappen';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Aufnahme';
@@ -10029,8 +10029,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count Filter aktiv. In den Aufgabenansichten gespeichert.',
-      one: '1 Filter aktiv. In den Aufgabenansichten gespeichert.',
+      other: '$count Ansichten aktiv. In den Aufgabenansichten gespeichert.',
+      one: '1 Ansicht aktiv. In den Aufgabenansichten gespeichert.',
     );
     return '$_temp0';
   }

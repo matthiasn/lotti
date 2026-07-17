@@ -1074,6 +1074,39 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets('stale active id keeps custom filter chips removable', (
+      tester,
+    ) async {
+      final selectedTaskId = ValueNotifier<String?>(null);
+      addTearDown(selectedTaskId.dispose);
+      when(
+        () => mockNavService.desktopSelectedTaskId,
+      ).thenReturn(selectedTaskId);
+
+      await tester.pumpWidget(
+        buildSubjectWithSavedFilter(
+          activeId: 'deleted',
+          seed: const [
+            SavedTaskFilter(
+              id: 'still-saved',
+              name: 'Still saved',
+              filter: TasksFilter(),
+            ),
+          ],
+          pageState: state(
+            selectedPriorities: const {'P0'},
+            selectedCategoryIds: const {},
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(ActiveFilterChip), findsNWidgets(2));
+      expect(find.text('Custom'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   testWidgets(

@@ -25,8 +25,8 @@ const int kSidebarWakeQueueRowLimit = 1;
 const int kSidebarWakeQueueOngoingRowLimit = 1;
 
 /// Maximum lookahead for scheduled wakes shown in activity detail. Anything
-/// beyond this window still surfaces via the trailing "+N more →" affordance
-/// and the full Wake Cycles page, but does not clutter the compact surface.
+/// beyond this window remains available on the full Wake Cycles page but is
+/// omitted from both the compact activity surface and its trailing count.
 const Duration kSidebarWakeQueueScheduledLookahead = Duration(hours: 1);
 
 /// Test hook that lets widget tests intercept the navigation calls the

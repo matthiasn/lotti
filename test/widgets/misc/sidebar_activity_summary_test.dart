@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
+import 'package:lotti/features/agents/ui/pending_wakes/wake_countdown_ticker.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
@@ -66,6 +69,7 @@ void main() {
     bool showAudio = true,
     List<PendingWakeRecord> pending = const [],
     List<OngoingWakeRecord> ongoing = const [],
+    Stream<DateTime>? wakeTicks,
     MediaQueryData? mediaQueryData,
     double width = 320,
   }) {
@@ -82,6 +86,8 @@ void main() {
         ),
         pendingWakeRecordsProvider.overrideWith((ref) async => pending),
         ongoingWakeRecordsProvider.overrideWith((ref) async => ongoing),
+        if (wakeTicks != null)
+          wakeCountdownTickerProvider.overrideWith((ref) => wakeTicks),
       ],
       mediaQueryData: mediaQueryData,
     );
@@ -186,6 +192,31 @@ void main() {
     expect(summaryHeight, greaterThanOrEqualTo(48));
   });
 
+  testWidgets('does not announce the recording duration on every tick', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      subject(
+        recorder: recorderState(
+          status: AudioRecorderStatus.recording,
+          progress: const Duration(seconds: 8),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      tester
+          .getSemantics(find.byKey(SidebarActivitySummaryKeys.root))
+          .flagsCollection
+          .isLiveRegion,
+      isFalse,
+    );
+    semantics.dispose();
+  });
+
   testWidgets('large text keeps three long-running metrics overflow-free', (
     tester,
   ) async {
@@ -263,6 +294,49 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('refreshes when scheduled work enters the lookahead', (
+    tester,
+  ) async {
+    final now = DateTime(2026, 7, 17, 9);
+    final ticks = StreamController<DateTime>();
+    addTearDown(ticks.close);
+    final wake = PendingWakeRecord(
+      agent: makeTestIdentity(
+        agentId: 'entering-lookahead',
+        id: 'entering-lookahead',
+        displayName: 'Entering lookahead',
+      ),
+      state: makeTestState(agentId: 'entering-lookahead'),
+      type: PendingWakeType.pending,
+      dueAt: now.add(const Duration(minutes: 61)),
+    );
+
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        subject(
+          recorder: recorderState(),
+          pending: [wake],
+          wakeTicks: ticks.stream,
+        ),
+      );
+      await tester.pump();
+      expect(find.byKey(SidebarActivitySummaryKeys.root), findsNothing);
+
+      ticks.add(now.add(const Duration(minutes: 2)));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(SidebarActivitySummaryKeys.agents), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(SidebarActivitySummaryKeys.agents),
+          matching: find.text('1'),
+        ),
+        findsOneWidget,
+      );
+    });
   });
 
   testWidgets('expands and collapses detailed controls in place', (
