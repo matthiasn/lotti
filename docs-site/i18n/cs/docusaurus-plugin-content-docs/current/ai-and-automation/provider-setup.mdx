@@ -20,8 +20,11 @@ potom zkontroluj modely a profily vytvořené kolem něj.
 
 - Cloudový poskytovatel je obvykle nejrychlejší na nastavení a běžně vyžaduje
   API klíč. Text, zvuk nebo obrázky odeslané přes něj opouštějí zařízení.
-- Místní poskytovatel může ponechat inferenci na tvém počítači, ale jeho služba
-  musí běžet a být dostupná ze zařízení, kde ji Lotti volá.
+- Místní poskytovatel může ponechat inferenci na tvém počítači nebo na místním
+  koncovém bodu, který spravuješ, ale jeho služba musí běžet a být dostupná ze
+  zařízení, kde ji Lotti volá. Adresa v místní síti může prompt stále přenášet
+  mezi tvými zařízeními; „místní“ znamená, že se neposílá hostovanému
+  poskytovateli modelu, ne že vůbec neprojde sítí.
 - Vlastní základní URL může nasměrovat podporovaný typ poskytovatele na
   kompatibilní proxy nebo bránu. Typ poskytovatele stále řídí chování
   specifické pro protokol.
@@ -71,7 +74,9 @@ nebo přepsat model tam, kde to postup umožňuje.
 
 Před odesláním citlivého textu, zvuku nebo obrázků ověř, zda je nastavený
 koncový bod místní, nebo vzdálený. Přátelský název jako „Habitat Local Lab“
-není bezpečnostní hranice — tou je základní URL a počítač, který ji obsluhuje.
+není bezpečnostní hranice — tou je základní URL, síťová cesta a počítač, který
+ji obsluhuje. Lotti ukládá deník místně v obou případech; toto rozhodnutí řídí
+jen samotné inferenční volání.
 
 :::warning API klíče
 

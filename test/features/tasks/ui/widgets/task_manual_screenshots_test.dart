@@ -525,8 +525,11 @@ void main() {
         );
         expect(find.text(_manualTaskAgentName), findsOneWidget);
         expect(find.text(_manualTaskAgentTldr), findsOneWidget);
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(TaskDetailsPage)),
+        )!;
         expect(
-          find.text(_t('Automatic updates', 'Automatische Updates')),
+          find.text(messages.taskAgentAutomaticUpdatesLabel),
           findsOneWidget,
         );
         expect(
@@ -609,11 +612,14 @@ void main() {
 
         await _focusTaskAgentCard(tester, device: captureDevice);
         await _focusTaskAgentSuggestions(tester, device: captureDevice);
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(TaskDetailsPage)),
+        )!;
         expect(
-          find.text(_t('Proposed changes', 'Vorgeschlagene Änderungen')),
+          find.text(messages.changeSetCardTitle),
           findsOneWidget,
         );
-        expect(find.text(_t('2 pending', '2 ausstehend')), findsOneWidget);
+        expect(find.text(messages.changeSetPendingCount(2)), findsOneWidget);
         expect(
           find.text(
             _t(
@@ -627,7 +633,7 @@ void main() {
           find.text(_t('45m → 1h 15m', '45 Min. → 1 Std. 15 Min.')),
           findsOneWidget,
         );
-        expect(find.text(_t('Confirm all', 'Alle bestätigen')), findsOneWidget);
+        expect(find.text(messages.changeSetConfirmAll), findsOneWidget);
         await captureScreenshot(
           tester,
           'task_agent_suggestions_${viewport}_$theme',
@@ -652,15 +658,11 @@ void main() {
         );
 
         await _focusTaskAgentCard(tester, device: device);
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(TaskDetailsPage)),
+        )!;
         expect(
-          find.text(
-            _t(
-              'Automatic updates are off. Wake the agent when you want a fresh '
-                  'report.',
-              'Automatische Updates sind aus. Wecke den Agenten, wenn du einen '
-                  'aktuellen Bericht möchtest.',
-            ),
-          ),
+          find.text(messages.taskAgentAutomaticUpdatesOffDescription),
           findsOneWidget,
         );
         expect(
@@ -841,10 +843,11 @@ void main() {
           ),
         );
         await settleFrames(tester, 10);
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(TaskDetailsPage)),
+        )!;
         expect(
-          find.text(
-            _t('Select Reference Images', 'Referenzbilder auswählen'),
-          ),
+          find.text(messages.referenceImageSelectionTitle),
           findsOneWidget,
         );
         final modalImages = find.descendant(
@@ -1136,9 +1139,10 @@ Future<void> _focusTaskAgentSuggestions(
   WidgetTester tester, {
   required ScreenshotDevice device,
 }) async {
-  final proposals = find.text(
-    _t('Proposed changes', 'Vorgeschlagene Änderungen'),
-  );
+  final messages = AppLocalizations.of(
+    tester.element(find.byType(TaskDetailsPage)),
+  )!;
+  final proposals = find.text(messages.changeSetCardTitle);
   final scrollable = find.byType(Scrollable).first;
   await tester.scrollUntilVisible(
     proposals,

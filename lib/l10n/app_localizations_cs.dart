@@ -2654,7 +2654,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get categoryAiDefaultsDescription =>
-      'Nastavte výchozí AI profil a šablonu agenta pro nové úkoly v této kategorii';
+      'Nastav výchozí AI profil a šablonu agenta pro nové úkoly v této kategorii';
 
   @override
   String get categoryAiDefaultsTitle => 'Výchozí hodnoty AI';
@@ -2670,7 +2670,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get categoryDayPlanLabel => 'Denní plánování';
 
   @override
-  String get categoryDefaultEventTemplateHint => 'Vyberte šablonu…';
+  String get categoryDefaultEventTemplateHint => 'Vyber šablonu…';
 
   @override
   String get categoryDefaultEventTemplateLabel =>
@@ -2678,13 +2678,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get categoryDefaultLanguageDescription =>
-      'Nastavte výchozí jazyk pro úkoly v této kategorii';
+      'Nastav výchozí jazyk pro úkoly v této kategorii';
 
   @override
-  String get categoryDefaultProfileHint => 'Vyberte profil…';
+  String get categoryDefaultProfileHint => 'Vyber profil…';
 
   @override
-  String get categoryDefaultTemplateHint => 'Vyberte šablonu…';
+  String get categoryDefaultTemplateHint => 'Vyber šablonu…';
 
   @override
   String get categoryDefaultTemplateLabel => 'Výchozí šablona agenta';
@@ -2707,13 +2707,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Označit tuto kategorii jako oblíbenou';
 
   @override
-  String get categoryIconChooseHint => 'Vyberte ikonu';
+  String get categoryIconChooseHint => 'Vyber ikonu';
 
   @override
-  String get categoryIconCreateHint => 'Vyberte ikonu';
+  String get categoryIconCreateHint => 'Vyber ikonu';
 
   @override
-  String get categoryIconEditHint => 'Vyberte jinou ikonu';
+  String get categoryIconEditHint => 'Vyber jinou ikonu';
 
   @override
   String get categoryIconLabel => 'Ikona';
@@ -4226,7 +4226,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextTimelineSwipeHint =>
-      'Přejeď na skutečnost · svislým štípnutím přiblížíš';
+      'Přejeď na Skutečnost · svislým sevřením prstů přiblížíš';
 
   @override
   String get dailyOsNextTimelineTracked => 'zaznamenáno';
@@ -4502,7 +4502,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dashboardConfigurationDescription =>
-      'Ulož dashboard a zkopíruj jeho JSON konfiguraci.';
+      'Ulož panel a zkopíruj jeho konfiguraci ve formátu JSON.';
 
   @override
   String get dashboardConfigurationTitle => 'Export konfigurace';
@@ -4518,17 +4518,16 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přetažením změníš pořadí. U grafů měření můžeš změnit agregaci.';
 
   @override
-  String get dashboardCurrentChartsTitle => 'Grafy na tomto dashboardu';
+  String get dashboardCurrentChartsTitle => 'Grafy na tomto panelu';
 
   @override
   String get dashboardDeleteConfirm => 'ANO, SMAZAT TENTO PANEL';
 
   @override
-  String get dashboardDeleteHint => 'Smazat dashboard';
+  String get dashboardDeleteHint => 'Smazat panel';
 
   @override
-  String get dashboardDeleteQuestion =>
-      'Opravdu chcete smazat tento dashboard?';
+  String get dashboardDeleteQuestion => 'Opravdu chceš smazat tento panel?';
 
   @override
   String get dashboardDescriptionLabel => 'Popis (volitelné)';
@@ -4567,7 +4566,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyber grafy měření. Před přidáním uprav režim grafu na vybraných řádcích.';
 
   @override
-  String get dashboardNameLabel => 'Název dashboardu';
+  String get dashboardNameLabel => 'Název panelu';
 
   @override
   String get dashboardNoChartsAdded => 'Zatím žádné grafy. Přidej jeden níže.';
@@ -4581,7 +4580,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nejdřív si vytvoř měřitelnou hodnotu, abys mohl/a přidat grafy měření.';
 
   @override
-  String get dashboardNotFound => 'Dashboard nenalezen';
+  String get dashboardNotFound => 'Panel nenalezen';
 
   @override
   String get dashboardPrivateLabel => 'Soukromý';
@@ -5105,7 +5104,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get desktopEmptyStateSelectDashboard =>
-      'Vyber nástěnku pro zobrazení podrobností';
+      'Vyber panel, jehož podrobnosti chceš zobrazit';
 
   @override
   String get desktopEmptyStateSelectProject =>
@@ -5141,7 +5140,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get editorMoreFormatting => 'Více formátování';
 
   @override
-  String get editorPlaceholder => 'Zadejte poznámky...';
+  String get editorPlaceholder => 'Zadej poznámky...';
 
   @override
   String get embeddingSelectAll => 'Vybrat vše';
@@ -5395,7 +5394,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitArchivedLabel => 'Archivováno';
 
   @override
-  String get habitCategoryHint => 'Vyberte kategorii';
+  String get habitCategoryHint => 'Vyber kategorii';
 
   @override
   String get habitCategoryLabel => 'Kategorie';
@@ -5421,7 +5420,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitCompletionStatusSkipped => 'Přeskočeno';
 
   @override
-  String get habitDashboardHint => 'Vyberte panel';
+  String get habitDashboardHint => 'Vyber panel';
 
   @override
   String get habitDashboardLabel => 'Panel (volitelné)';
@@ -5432,10 +5431,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get habitDeleteConfirm => 'ANO, SMAŽ TENTO ZVYK';
+  String get habitDeleteConfirm => 'ANO, SMAŽ TENTO NÁVYK';
 
   @override
-  String get habitDeleteQuestion => 'Chcete tento zvyk smazat?';
+  String get habitDeleteQuestion => 'Chceš tento návyk smazat?';
 
   @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
@@ -5862,7 +5861,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsChartWeeklyCaption => 'Čas za týden';
 
   @override
-  String get insightsChooseFocusCategories => 'Vybrat fokusové kategorie';
+  String get insightsChooseFocusCategories => 'Vybrat sledované kategorie';
 
   @override
   String get insightsCompare => 'Porovnat';
@@ -5908,7 +5907,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsFocusCategoriesEmpty => 'Zatím žádné aktivní kategorie.';
 
   @override
-  String get insightsFocusCategoriesTitle => 'Fokusové kategorie';
+  String get insightsFocusCategoriesTitle => 'Sledované kategorie';
 
   @override
   String get insightsKpiFocus => 'FOKUS';
@@ -7861,10 +7860,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get promptSelectionModalTitle => 'Vyberte přednastavenou výzvu';
 
   @override
-  String get provisionedSyncBundleImported => 'Provizní kód importován';
+  String get provisionedSyncBundleImported => 'Párovací balíček importován';
 
   @override
-  String get provisionedSyncConfigureButton => 'Konfigurovat';
+  String get provisionedSyncConfigureButton => 'Nastavit';
 
   @override
   String get provisionedSyncCopiedToClipboard => 'Zkopírováno do schránky';
@@ -7876,27 +7875,27 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncDone => 'Synchronizace úspěšně nakonfigurována';
 
   @override
-  String get provisionedSyncError => 'Konfigurace selhala';
+  String get provisionedSyncError => 'Nastavení se nezdařilo';
 
   @override
   String get provisionedSyncErrorConfigurationFailed =>
-      'Při konfiguraci došlo k chybě. Zkuste to znovu.';
+      'Při nastavování došlo k chybě. Zkus to znovu.';
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Přihlášení selhalo. Zkontrolujte své přihlašovací údaje a zkuste to znovu.';
+      'Přihlášení selhalo. Zkontroluj přihlašovací údaje a zkus to znovu.';
 
   @override
   String get provisionedSyncImportButton => 'Importovat';
 
   @override
-  String get provisionedSyncImportHint => 'Vložte provizní kód sem';
+  String get provisionedSyncImportHint => 'Sem vlož párovací balíček';
 
   @override
   String get provisionedSyncImportTitle => 'Nastavit synchronizaci';
 
   @override
-  String get provisionedSyncInvalidBundle => 'Neplatný provizní kód';
+  String get provisionedSyncInvalidBundle => 'Neplatný párovací balíček';
 
   @override
   String get provisionedSyncJoiningRoom =>
@@ -7910,7 +7909,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get provisionedSyncReady =>
-      'Naskenujte tento QR kód na svém mobilním zařízení';
+      'Naskenuj tento QR kód na mobilním zařízení';
 
   @override
   String get provisionedSyncRetry => 'Zkusit znovu';
@@ -7922,11 +7921,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncScanButton => 'Naskenovat QR kód';
 
   @override
-  String get provisionedSyncShowQr => 'Zobrazit QR kód pro spárování';
+  String get provisionedSyncShowQr => 'Zobrazit párovací QR kód';
 
   @override
   String get provisionedSyncSubtitle =>
-      'Nastavit synchronizaci z provizního balíčku';
+      'Nastav synchronizaci pomocí párovacího balíčku';
 
   @override
   String get provisionedSyncSummaryHomeserver => 'Server';
@@ -7938,7 +7937,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncSummaryUser => 'Uživatel';
 
   @override
-  String get provisionedSyncTitle => 'Provizní synchronizace';
+  String get provisionedSyncTitle => 'Nastavení synchronizace';
 
   @override
   String get provisionedSyncVerifyDevicesTitle => 'Ověření zařízení';
@@ -8106,14 +8105,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get referenceImageLoadError =>
-      'Nepodařilo se načíst obrázky. Zkuste to prosím znovu.';
+      'Nepodařilo se načíst obrázky. Zkus to prosím znovu.';
 
   @override
   String get referenceImageSelectionSubtitle =>
-      'Vyberte až 5 obrázků pro vedení vizuálního stylu AI';
+      'Vyber až 5 obrázků, které povedou vizuální styl AI';
 
   @override
-  String get referenceImageSelectionTitle => 'Vyberte referenční obrázky';
+  String get referenceImageSelectionTitle => 'Vyber referenční obrázky';
 
   @override
   String get referenceImageSkip => 'Přeskočit';
@@ -8155,7 +8154,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get selectLanguage => 'Vybrat jazyk';
 
   @override
-  String get sessionRatingCardLabel => 'Hodnocení relace';
+  String get sessionRatingCardLabel => 'Hodnocení sezení';
 
   @override
   String get sessionRatingChallengeJustRight => 'Tak akorát';
@@ -8173,20 +8172,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get sessionRatingEditButton => 'Upravit hodnocení';
 
   @override
-  String get sessionRatingEnergyQuestion => 'Jak energický/á jste se cítil/a?';
+  String get sessionRatingEnergyQuestion => 'Kolik jsi měl/a energie?';
 
   @override
-  String get sessionRatingFocusQuestion => 'Jak soustředění jste byli?';
+  String get sessionRatingFocusQuestion =>
+      'Jak dobře ses dokázal/a soustředit?';
 
   @override
   String get sessionRatingNoteHint => 'Krátká poznámka (volitelné)';
 
   @override
   String get sessionRatingProductivityQuestion =>
-      'Jak produktivní byla tato relace?';
+      'Jak produktivní bylo toto sezení?';
 
   @override
-  String get sessionRatingRateAction => 'Ohodnotit relaci';
+  String get sessionRatingRateAction => 'Ohodnotit sezení';
 
   @override
   String get sessionRatingSaveButton => 'Uložit';
@@ -8199,7 +8199,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get sessionRatingSkipButton => 'Přeskočit';
 
   @override
-  String get sessionRatingTitle => 'Ohodnoťte tuto relaci';
+  String get sessionRatingTitle => 'Ohodnoť toto sezení';
 
   @override
   String get sessionRatingViewAction => 'Zobrazit hodnocení';
@@ -8653,7 +8653,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsDashboardsEmptyStateHint =>
-      'Klepněte na tlačítko + pro vytvoření prvního panelu.';
+      'Klepni na tlačítko + a vytvoř první panel.';
 
   @override
   String get settingsDashboardsErrorLoading => 'Chyba při načítání panelů';
@@ -8667,7 +8667,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsDashboardsSearchHint => 'Hledat panely';
 
   @override
-  String get settingsDashboardsSubtitle => 'Přizpůsobit zobrazení panelu';
+  String get settingsDashboardsSubtitle => 'Přizpůsob si zobrazení panelu';
 
   @override
   String get settingsDashboardsTitle => 'Panely';

@@ -7,7 +7,10 @@ description: Pair devices, verify their identity, monitor delivery, and recover 
 
 Lotti Sync keeps supported data aligned between your devices. Each device has
 its own local database; Sync moves changes through the configured sync account
-and catches a device up after it has been offline.
+and catches a device up after it has been offline. Sync does not move the
+system of record into a Lotti cloud: the configured Matrix service relays
+end-to-end encrypted payloads between your devices while each device retains
+its own local copy.
 
 Open **Settings → Sync** to see the available setup, health, and recovery
 pages. The number beside **Outbox** is work that has not reached the sync

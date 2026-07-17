@@ -231,21 +231,21 @@ final List<SoulDocumentEntity> _souls = [
   makeTestSoulDocument(
     id: _pebbleSoulId,
     agentId: _pebbleSoulId,
-    displayName: 'Admiral Pebble',
+    displayName: _t('Admiral Pebble', 'Admiral Kiesel'),
     createdAt: manualDemoNow.subtract(const Duration(days: 44)),
     updatedAt: manualDemoNow.subtract(const Duration(hours: 3)),
   ),
   makeTestSoulDocument(
     id: _flipperSoulId,
     agentId: _flipperSoulId,
-    displayName: 'Dr. Flipper',
+    displayName: _t('Dr. Flipper', 'Dr. Flosse'),
     createdAt: manualDemoNow.subtract(const Duration(days: 31)),
     updatedAt: manualDemoNow.subtract(const Duration(days: 1)),
   ),
   makeTestSoulDocument(
     id: _sardinaSoulId,
     agentId: _sardinaSoulId,
-    displayName: 'Captain Sardina',
+    displayName: _t('Captain Sardina', 'Kapitän Sardina'),
     createdAt: manualDemoNow.subtract(const Duration(days: 25)),
     updatedAt: manualDemoNow.subtract(const Duration(days: 2)),
   ),
@@ -404,7 +404,7 @@ final List<InstanceVm> _instanceVms = [
     type: InstanceType.taskAgent,
     status: AgentLifecycle.active,
     updatedAt: manualDemoNow.subtract(const Duration(minutes: 7)),
-    soulName: 'Admiral Pebble',
+    soulName: _t('Admiral Pebble', 'Admiral Kiesel'),
     soulId: _pebbleSoulId,
     templateId: _habitatTemplateId,
     templateName: _t(
@@ -419,7 +419,7 @@ final List<InstanceVm> _instanceVms = [
     type: InstanceType.dayAgent,
     status: AgentLifecycle.active,
     updatedAt: manualDemoNow.subtract(const Duration(minutes: 19)),
-    soulName: 'Dr. Flipper',
+    soulName: _t('Dr. Flipper', 'Dr. Flosse'),
     soulId: _flipperSoulId,
     templateId: _dayPlannerTemplateId,
     templateName: _t(
@@ -434,7 +434,7 @@ final List<InstanceVm> _instanceVms = [
     type: InstanceType.projectAgent,
     status: AgentLifecycle.dormant,
     updatedAt: manualDemoNow.subtract(const Duration(hours: 6)),
-    soulName: 'Captain Sardina',
+    soulName: _t('Captain Sardina', 'Kapitän Sardina'),
     soulId: _sardinaSoulId,
     templateId: _cargoTemplateId,
     templateName: _t('Sardine Supply Watch', 'Sardinen-Vorratswache'),
@@ -1065,7 +1065,7 @@ void main() {
           feedbackSummary: _t(
             'Admiral Pebble is appropriately skeptical, but should ask fewer '
                 'questions when a launch hold is already obvious.',
-            'Admiral Pebble ist angemessen skeptisch, sollte aber weniger '
+            'Admiral Kiesel ist angemessen skeptisch, sollte aber weniger '
                 'Fragen stellen, wenn ein Startstopp bereits offensichtlich ist.',
           ),
           createdAt: manualDemoNow.subtract(const Duration(minutes: 33)),
@@ -1240,9 +1240,15 @@ void main() {
             device: device,
             brightness: brightness,
           );
-          expect(find.text('Admiral Pebble'), findsOneWidget);
-          expect(find.text('Dr. Flipper'), findsOneWidget);
-          expect(find.text('Captain Sardina'), findsOneWidget);
+          expect(
+            find.text(_t('Admiral Pebble', 'Admiral Kiesel')),
+            findsOneWidget,
+          );
+          expect(find.text(_t('Dr. Flipper', 'Dr. Flosse')), findsOneWidget);
+          expect(
+            find.text(_t('Captain Sardina', 'Kapitän Sardina')),
+            findsOneWidget,
+          );
           await captureScreenshot(
             tester,
             'agents_souls_${viewport}_$theme',
@@ -1309,7 +1315,10 @@ void main() {
             ),
             findsWidgets,
           );
-          expect(find.text('Admiral Pebble'), findsWidgets);
+          expect(
+            find.text(_t('Admiral Pebble', 'Admiral Kiesel')),
+            findsWidgets,
+          );
           await captureScreenshot(
             tester,
             'agents_template_editor_${viewport}_$theme',
@@ -1364,7 +1373,10 @@ void main() {
             device: device,
             brightness: brightness,
           );
-          expect(find.text('Admiral Pebble'), findsWidgets);
+          expect(
+            find.text(_t('Admiral Pebble', 'Admiral Kiesel')),
+            findsWidgets,
+          );
           expect(
             find.textContaining(
               _t('calm flight director', 'ruhiger Flugleiter'),
@@ -1387,7 +1399,10 @@ void main() {
             device: device,
             brightness: brightness,
           );
-          expect(find.text('Admiral Pebble'), findsOneWidget);
+          expect(
+            find.text(_t('Admiral Pebble', 'Admiral Kiesel')),
+            findsOneWidget,
+          );
           expect(
             find.textContaining(
               _t('launch hold', 'Startstopp'),

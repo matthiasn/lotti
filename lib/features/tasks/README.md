@@ -211,6 +211,10 @@ estimate edits through `showEstimatePicker`:
   includes its weekday and the month grid exposes weekday headers. **Today**
   updates the draft, **Clear** produces an explicit null result, and dismissal
   remains distinct from either action;
+- absolute due-date text is formatted with `DateFormat.yMMMd` using the active
+  Flutter locale in both `DueDateText` and `DesktopTaskHeaderConnector`; the
+  persisted value remains a locale-neutral `DateTime` while a German, Czech, or
+  other localized surface gets its own calendar wording;
 - estimates use `DesignSystemDurationWheel` in the same token-backed frame and
   shared glass action footer. The draft is committed only when Done confirms a
   changed duration; Clear resets a non-zero estimate.

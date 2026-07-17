@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -204,6 +205,7 @@ void main() {
     ProjectEntry? project,
     List<LabelDefinition> labels = const [],
     TaskProgressState? progress,
+    Locale locale = const Locale('en'),
   }) {
     return ProviderScope(
       overrides: [
@@ -228,6 +230,7 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
+        locale: locale,
         home: Scaffold(
           body: DesktopTaskHeaderConnector(taskId: task.id),
         ),
@@ -245,6 +248,25 @@ void main() {
 
       expect(find.byType(DesktopTaskHeader), findsOneWidget);
       expect(find.text('Test Task'), findsOneWidget);
+    });
+
+    testWidgets('formats due dates for the active German locale', (
+      tester,
+    ) async {
+      final due = DateTime(2026, 7, 17);
+      final task = buildTask(due: due);
+
+      await tester.pumpWidget(
+        pumpConnector(task: task, locale: const Locale('de')),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.text('Fällig: ${DateFormat.yMMMd('de').format(due)}'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Jul 17, 2026'), findsNothing);
     });
 
     testWidgets('emits SizedBox.shrink for non-Task entities', (tester) async {

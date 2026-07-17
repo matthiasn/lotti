@@ -59,6 +59,29 @@ void main() {
       });
     });
 
+    testWidgets('formats absolute dates for the active German locale', (
+      tester,
+    ) async {
+      final fakeNow = DateTime(2025, 6, 15, 12);
+      final dueDate = DateTime(2025, 6, 20);
+
+      await withClock(Clock(() => fakeNow), () async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            locale: const Locale('de'),
+            child: DueDateText(dueDate: dueDate),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(
+          find.text('Fällig: ${DateFormat.yMMMd('de').format(dueDate)}'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Jun 20, 2025'), findsNothing);
+      });
+    });
+
     testWidgets('toggles to relative format on tap', (tester) async {
       final fakeNow = DateTime(2025, 6, 15, 12);
       final dueDate = DateTime(2025, 6, 20); // 5 days from reference

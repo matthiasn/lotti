@@ -5,8 +5,8 @@ description: Beschreibe Modellfähigkeiten einmal und verteile Denken, Bild, Aud
 
 # Arbeit mit Modellen und Profilen routen
 
-Ein Anbieter sagt Lotti, wohin es verbindet. Ein Modell erfasst eine
-Anbieter-Modell-ID und Fähigkeiten. Ein Inferenzprofil weist diese Modelle den
+Ein Anbieter sagt Lotti, wohin es verbindet. Ein Modell hält die Modell-ID des
+Anbieters und seine Fähigkeiten fest. Ein Inferenzprofil weist diese Modelle den
 von Lotti verstandenen Aufgaben zu. So muss „Welches Modell verarbeitet Audio?“
 nicht in jeder Aufgabe und Automatisierungsregel stehen.
 
@@ -66,7 +66,10 @@ Ordne beim Bearbeiten benötigte Fähigkeiten zu:
 - **Denken (High-End)**: fähigerer Pfad für ausdrücklich angeforderte Aufgaben.
 - **Bilderkennung**: analysiert Bilder.
 - **Transkription**: wandelt Audio in Text.
-- **Bilderzeugung**: erstellt Aufgabengrafiken und andere Bilder.
+- **Bilderzeugung**: erstellt Aufgabengrafiken und andere Bilder. Der aktuelle
+  integrierte Weg für Bilderzeugung verwendet einen eingerichteten entfernten
+  Anbieter. Wähle ihn und die übermittelten Referenzen daher mit derselben
+  Sorgfalt wie jeden anderen Cloud-Inferenzweg.
 
 <ManualScreenshot
   caseId="ai/profile-editor"

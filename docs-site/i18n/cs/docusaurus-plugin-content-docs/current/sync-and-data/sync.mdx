@@ -7,7 +7,9 @@ description: Páruj zařízení, ověřuj jejich identitu, sleduj doručení a o
 
 Lotti Sync udržuje podporovaná data sladěná mezi tvými zařízeními. Každé
 zařízení má vlastní místní databázi; Sync přenáší změny přes nastavený účet a
-doplní zařízení poté, co bylo offline.
+doplní zařízení poté, co bylo offline. Sync nepřesouvá zdroj pravdy do cloudu
+Lotti: nastavená služba Matrix přenáší mezi tvými zařízeními koncově šifrovaná
+data a každé zařízení si ponechává vlastní místní kopii.
 
 Otevři **Nastavení → Sync** a zobraz dostupné stránky nastavení, zdraví a
 obnovy. Číslo vedle **Odchozí fronty** označuje práci, která ještě nedorazila k
@@ -15,7 +17,7 @@ synchronizační službě.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Nastavení Lotti Sync s Provizní synchronizací, identitou zařízení, doplněním, statistikami, odchozí frontou, konflikty a údržbou"
+  alt="Nastavení Lotti Sync s Nastavením synchronizace, identitou zařízení, doplněním, statistikami, odchozí frontou, konflikty a údržbou"
   caption="Centrum Sync drží běžný stav vedle diagnostiky a nástrojů obnovy. Project Waddle má právě tři položky odchozí fronty ke kontrole."
 />
 
@@ -23,7 +25,7 @@ synchronizační službě.
 
 Začni na zařízení, které už je připojené:
 
-1. Otevři **Nastavení → Sync → Provizní synchronizace**.
+1. Otevři **Nastavení → Sync → Nastavení synchronizace**.
 2. Na počítači zobraz předávací QR kód. Udržuj tuto obrazovku soukromou: balíček
    uděluje přístup k synchronizačnímu účtu a místnosti.
 3. Na novém zařízení otevři stejnou stránku a QR kód naskenuj nebo vlož celý
@@ -34,7 +36,7 @@ Začni na zařízení, které už je připojené:
 
 <ManualScreenshot
   caseId="sync/status"
-  alt="Stav Provizní synchronizace na mobilu a bezpečný předávací QR kód zařízení na počítači"
+  alt="Stav Nastavení synchronizace na mobilu a bezpečný párovací QR kód zařízení na počítači"
   caption="Počítač může zobrazit předávací QR kód; mobil ukazuje připojený účet a stav ověření. S QR kódem zacházej jako s heslem."
 />
 

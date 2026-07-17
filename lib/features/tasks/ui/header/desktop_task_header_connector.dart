@@ -117,7 +117,9 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
         ? null
         : DesktopTaskHeaderDueDate(
             label: context.messages.taskDueDateWithDate(
-              DateFormat.yMMMd().format(due),
+              DateFormat.yMMMd(
+                Localizations.localeOf(context).toLanguageTag(),
+              ).format(due),
             ),
             urgency: _dueUrgency(task.data),
           );

@@ -7,16 +7,19 @@ description: Kopple Geräte, prüfe ihre Identität, überwache Zustellung und s
 
 Lotti Sync gleicht unterstützte Daten zwischen Geräten ab. Jedes Gerät hat
 eine lokale Datenbank; Sync transportiert Änderungen über das konfigurierte
-Konto und holt Geräte nach Offlinezeiten auf.
+Konto und holt Geräte nach Offlinezeiten auf. Sync verlegt den Datenbestand
+nicht in eine Lotti-Cloud: Der eingerichtete Matrix-Dienst leitet
+Ende-zu-Ende-verschlüsselte Nutzdaten zwischen deinen Geräten weiter, während
+jedes Gerät seine eigene lokale Kopie behält.
 
 Öffne **Einstellungen → Synchronisierung** für Einrichtung, Gesundheit und
-Wiederherstellung. Die Zahl bei **Ausgang** sind Änderungen, die den Sync-Dienst
-noch nicht erreicht haben.
+Wiederherstellung. Die Zahl bei **Sync-Postausgang** sind Änderungen, die den
+Sync-Dienst noch nicht erreicht haben.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Lottis Sync-Einstellungen mit bereitgestellter Synchronisierung, Geräteidentität, Nachlieferung, Statistik, Ausgang, Konflikten und Wartung"
-  caption="Alltagsstatus steht neben Diagnose und Wiederherstellung. Project Waddle hat drei Ausgangselemente."
+  alt="Lottis Sync-Einstellungen mit bereitgestellter Synchronisierung, Geräteidentität, Nachfüllung, Statistik, Postausgang, Konflikten und Wartung"
+  caption="Alltagsstatus steht neben Diagnose und Wiederherstellung. Project Waddle hat drei Elemente im Postausgang."
 />
 
 ## Ein weiteres Gerät koppeln
@@ -26,7 +29,8 @@ Beginne auf einem bereits verbundenen Gerät:
 1. Öffne **Einstellungen → Synchronisierung → Bereitgestellte Synchronisierung**.
 2. Zeige auf dem Desktop den Übergabe-QR-Code. Halte ihn privat: Das Paket
    gewährt Zugang zu Konto und Raum.
-3. Scanne ihn auf dem neuen Gerät oder füge das vollständige Paket ein.
+3. Öffne auf dem neuen Gerät dieselbe Seite und scanne den QR-Code oder füge
+   das vollständige Bereitstellungspaket ein.
 4. Prüfe Server, Benutzer und Raum vor **Importieren**.
 5. Lass die erste Synchronisierung enden, bevor du eine App schließt.
 
@@ -53,7 +57,7 @@ Zwischengerät miteinander sprechen.
 <ManualScreenshot
   caseId="sync/verification"
   alt="Lottis Geräteverifizierung mit einer Folge aus Pinguin-, Fisch-, Raketen-, Eis-, Erde-, Mond-, Stern- und Teleskop-Emoji"
-  caption="Vergleiche die vollständige Folge auf beiden Geräten und akzeptiere nur bei exakt gleichen Bildern und Reihenfolge."
+  caption="Vergleiche die vollständige Folge auf beiden Geräten und akzeptiere nur, wenn jedes Symbol und seine Reihenfolge exakt übereinstimmen."
 />
 
 Vergleiche persönlich oder über einen vertrauenswürdigen Anruf. Wähle auf
@@ -72,26 +76,30 @@ Das **Sync-Knotenprofil** identifiziert das aktuelle Gerät. Gib einen Namen wie
 />
 
 Die Seite listet Fähigkeiten wie lokale Audiotranskription oder Sprachmodell-
-Inferenz. Bekannte Geräte zeigen zuletzt gemeldete Möglichkeiten. Das ist
-beschreibend; das passende KI-Profil muss sie weiterhin verwenden.
+Inferenz. Bekannte Geräte zeigen die zuletzt von anderen Knoten gemeldeten
+Möglichkeiten. Das ist beschreibend; das passende KI-Profil muss sie weiterhin
+verwenden.
 
-## Aufholen und Nachlieferung verstehen
+## Aufholen und Nachfüllung verstehen
 
-Normaler Sync verarbeitet eintreffende Änderungen. **Nachlieferung** erkennt
 Lücken in Sequenzen bekannter Geräte und fordert Datensätze erneut an.
+Normaler Sync verarbeitet eintreffende Änderungen. **Nachfüllung** erkennt
+Lücken in Sequenzen bekannter Geräte und fordert fehlende Datensätze erneut an.
 
 <ManualScreenshot
   caseId="sync/backfill"
-  alt="Lottis Nachlieferungsseite mit eingehendem, fehlendem und übersprungenem Status, Sequenzstatistik und automatischer Nachlieferung"
+  alt="Lottis Sync-Nachfüllungsseite mit eingehendem, fehlendem und übersprungenem Status, Sequenzstatistik und automatischer Nachfüllung"
   caption="Project Waddle erhielt 2.868 Sequenzeinträge und kennt vier fehlende Einträge von zwei Geräten."
 />
 
 - **Eingehend** wartet in der Empfangswarteschlange.
 - **Fehlend** zählt bekannte Sequenzlücken.
 - **Übersprungen** konnte nach normalen Versuchen nicht verarbeitet werden.
-- **Automatische Nachlieferung** fordert behebbare Lücken kontinuierlich an
+- **Automatische Nachfüllung** fordert behebbare Lücken kontinuierlich an
   und ist der richtige Standard.
-- **Erweiterte Wiederherstellung** enthält manuelle Untersuchungsaktionen.
+- **Erweiterte Wiederherstellung** enthält manuelle Untersuchungsaktionen. Nutze
+  sie erst, nachdem normaler Sync und automatische Nachfüllung Zeit hatten,
+  sich zu beruhigen.
 
 Eine fehlende Zahl ist nicht automatisch Datenverlust: Ein Gerät kann offline
 oder die Anfrage unterwegs sein. Untersuche, wenn der Wert bei allen online
@@ -100,7 +108,8 @@ erwarteten Geräten unverändert bleibt.
 ## Synchronisierungsstatistik lesen
 
 **Synchronisierungsstatistik** trennt Nachrichtenmenge von
-Verarbeitungsgesundheit.
+Verarbeitungsgesundheit. Sie hilft besonders, wenn Daten veraltet wirken, das
+Konto aber weiterhin als verbunden angezeigt wird.
 
 <ManualScreenshot
   caseId="sync/stats"
@@ -108,20 +117,20 @@ Verarbeitungsgesundheit.
   caption="Zahlen zeigen Bewegung; Fehler und geplante Wiederholungen zeigen, ob die Pipeline sauber läuft."
 />
 
-Die Karte gesendeter Nachrichten gruppiert Matrix-Ereignistypen. **Top-KPIs**
-fasst verarbeitet, fehlgeschlagen und geplante Wiederholungen zusammen;
-Elementsummen zeigen Lotti-Nutzlastfamilien. Steigende Verarbeitung bei
-stabilen Fehlern ist gesund. Wiederholte Fehler oder nie endende Wiederholungen
-führen zu Ausgang und Verbindung anderer Geräte.
+Die Karte gesendeter Nachrichten gruppiert Matrix-Ereignistypen. Die
+**KPI-Übersicht** fasst verarbeitete Nachrichten, Fehler und geplante
+Wiederholungen zusammen; Elementsummen zeigen Lotti-Nutzlastfamilien. Steigende
+Verarbeitung bei stabilen Fehlern ist gesund. Wiederholte Fehler oder nie
+endende Wiederholungen führen zum Postausgang und zur Verbindung anderer Geräte.
 
 ## Den Ausgang prüfen
 
-Der **Ausgang** ist die lokale Warteschlange zu sendender Änderungen. Filtere
-nach Zustand.
+Der **Sync-Postausgang** ist die lokale Warteschlange zu sendender Änderungen.
+Filtere nach Zustand.
 
 <ManualScreenshot
   caseId="sync/outbox"
-  alt="Lottis Ausgang gefiltert auf ein fehlgeschlagenes Project-Waddle-Foto einer Habitatdruckdichtung mit Wiederholen und Entfernen"
+  alt="Lottis Sync-Postausgang gefiltert auf ein fehlgeschlagenes Project-Waddle-Foto einer Habitatdruckdichtung mit Wiederholen und Entfernen"
   caption="Fehler bewahren Betreff, Nutzlast, Versuchshistorie und lokalen Anhangspfad für gezielte Wiederherstellung."
 />
 
@@ -130,7 +139,7 @@ nach Zustand.
 - **Fehlgeschlagen** hat Versuche erschöpft und bleibt prüfbar.
 - **Gesendet** wurde zugestellt und kurz für Diagnose behalten.
 
-Verwende **Alle erneut versuchen**, nachdem Verbindung oder Konto repariert
+Verwende **Alle erneut senden**, nachdem Verbindung oder Konto repariert
 sind. Entferne einen Fehler nur, wenn die Änderung bewusst nie andere Geräte
 erreichen soll. Das ersetzt keine Reparatur des lokalen Eintrags oder Anhangs.
 

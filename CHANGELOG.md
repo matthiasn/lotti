@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   browser.
 
 ### Changed
+- **Czech now reads consistently across Lotti and its manual.** Category,
+  dashboard, habit, time-analysis, session-rating, reference-image, and sync
+  labels use one informal Czech voice, with the accompanying manual and
+  screenshots using the same terms.
+- **Absolute task due dates now use the selected app language.** The desktop
+  task header and reusable due-date label format calendar dates in the active
+  locale instead of falling back to English month names.
 - **Events and built-in surveys now follow the app language end to end.** Event
   status and date labels, the PANAS questionnaire, and its embedded navigation,
   progress, validation, and dismissal controls no longer fall back to English
