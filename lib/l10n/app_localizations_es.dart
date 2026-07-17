@@ -9187,7 +9187,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingThemingLight => 'Tema claro';
 
   @override
-  String get sidebarActiveSectionTitle => 'Activo';
+  String get sidebarActiveSectionTitle => 'Actividad';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Grabación';

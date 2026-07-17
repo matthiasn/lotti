@@ -119,6 +119,7 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
     final tokens = context.designTokens;
     final accent = tokens.colors.interactive.enabled;
     final hoverWash = tokens.colors.surface.enabled;
+    final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
 
     return Semantics(
       button: true,
@@ -146,6 +147,7 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOut,
+                constraints: BoxConstraints(minHeight: minTarget),
                 padding: EdgeInsets.symmetric(
                   horizontal: tokens.spacing.step4,
                   vertical: tokens.spacing.step3,

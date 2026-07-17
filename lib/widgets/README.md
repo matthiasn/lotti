@@ -189,11 +189,12 @@ Shared visual shell for the detailed running-timer and active-recording controls
 
 ### SidebarActivitySummary
 Persistent desktop-sidebar activity surface. It combines active recording,
-timer, and agent work into one token-backed row: a quiet `Active` label plus
+timer, and agent work into one token-backed row: a quiet `Activity` label plus
 compact icon/value metrics. Sub-hour durations use `mm:ss`; longer sessions
 retain hours. Selecting the row opens one dialog containing the detailed
 `SidebarAudioRecordingSection`, `SidebarTimerSection`, and `SidebarWakeQueue`.
-When every subsystem is idle, the summary collapses completely.
+The whole summary is a minimum 48dp target. When every subsystem is idle, it
+collapses completely.
 
 ### SidebarTimerSection
 Detailed timer card shown inside the activity dialog whenever a time-recording session is active (via `SidebarLiveCard`).

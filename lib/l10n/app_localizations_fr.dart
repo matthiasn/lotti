@@ -9227,7 +9227,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingThemingLight => 'Thème clair';
 
   @override
-  String get sidebarActiveSectionTitle => 'Actif';
+  String get sidebarActiveSectionTitle => 'Activité';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Enregistrement';

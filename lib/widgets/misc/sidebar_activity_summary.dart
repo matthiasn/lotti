@@ -188,6 +188,7 @@ class _ActivitySurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final radius = BorderRadius.circular(tokens.radii.m);
+    final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
     final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.3;
 
     return Semantics(
@@ -204,47 +205,54 @@ class _ActivitySurface extends StatelessWidget {
           borderRadius: radius,
           hoverColor: tokens.colors.surface.hover,
           focusColor: tokens.colors.surface.focusPressed,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step4,
-              vertical: tokens.spacing.step3,
-            ),
-            child: largeText
-                ? Wrap(
-                    spacing: tokens.spacing.step4,
-                    runSpacing: tokens.spacing.step2,
-                    children: [
-                      for (final metric in metrics)
-                        ExcludeSemantics(child: metric),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          context.messages.sidebarActiveSectionTitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                                fontWeight: tokens.typography.weight.semiBold,
-                              ),
-                        ),
-                      ),
-                      for (var index = 0; index < metrics.length; index++) ...[
-                        if (index > 0)
-                          SizedBox(
-                            height: tokens.spacing.step5,
-                            child: VerticalDivider(
-                              width: tokens.spacing.step4,
-                              color: tokens.colors.decorative.level01,
-                            ),
-                          ),
-                        ExcludeSemantics(child: metrics[index]),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: minTarget),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+                vertical: tokens.spacing.step3,
+              ),
+              child: largeText
+                  ? Wrap(
+                      spacing: tokens.spacing.step4,
+                      runSpacing: tokens.spacing.step2,
+                      children: [
+                        for (final metric in metrics)
+                          ExcludeSemantics(child: metric),
                       ],
-                    ],
-                  ),
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            context.messages.sidebarActiveSectionTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: tokens.typography.styles.others.caption
+                                .copyWith(
+                                  color: tokens.colors.text.mediumEmphasis,
+                                  fontWeight: tokens.typography.weight.semiBold,
+                                ),
+                          ),
+                        ),
+                        for (
+                          var index = 0;
+                          index < metrics.length;
+                          index++
+                        ) ...[
+                          if (index > 0)
+                            SizedBox(
+                              height: tokens.spacing.step5,
+                              child: VerticalDivider(
+                                width: tokens.spacing.step4,
+                                color: tokens.colors.decorative.level01,
+                              ),
+                            ),
+                          ExcludeSemantics(child: metrics[index]),
+                        ],
+                      ],
+                    ),
+            ),
           ),
         ),
       ),

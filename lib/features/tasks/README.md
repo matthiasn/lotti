@@ -769,26 +769,31 @@ flowchart LR
 ```
 
 - `DesktopSavedTaskViewBar` is the desktop information architecture. The
-  widest, selected control always names the current saved view, `All tasks`, or
-  `Custom`, carries its live result count, and opens the complete sheet. Beside
-  it, at most four compact monitor tiles surface queue magnitude above the view
-  name: `All` is the one-tap reset when necessary, then saved views follow their
-  persisted order while the active view is excluded because it is already the
-  primary control. The result is stable ambient monitoring; MRU activity never
-  silently redefines what is important. The width-derived cap steps down from
-  four monitors to two and then one as the task pane narrows. With an unsaved
-  custom filter the bar reserves a `Save filter` action and caps monitors at
-  two. At text scale `>= 1.3`, secondary saved monitors collapse and a
-  horizontal run preserves the current view, `All` reset, and save action
-  without overflow.
+  widest, selected control carries the current saved view, `All tasks`, or
+  `Custom`, its live result count, and the disclosure to the complete sheet.
+  It receives twice the width of a monitor tile. At standard task-pane widths,
+  category-scoped names keep the category dot and meaningful trailing segment
+  (`Lotti · In progress` becomes `In progress`); wider panes restore the full
+  visible name, while the tooltip and semantics always retain it. Beside it,
+  at most four compact monitor tiles surface queue magnitude above the view
+  name: `All` is the one-tap reset when necessary, then saved views follow
+  their persisted order while the active view is excluded because it is
+  already the primary control. The result is stable ambient monitoring; MRU
+  activity never silently redefines what is important. The width-derived cap
+  steps down from four monitors to two and then one as the task pane narrows.
+  With an unsaved custom filter the bar reserves a `Save filter` action and
+  caps monitors at two. At text scale `>= 1.3`, secondary saved monitors
+  collapse and a horizontal run preserves the current view, `All` reset, and
+  save action without overflow.
 - Desktop monitor counts use `SavedFilterCountText(prominent: true)`: tabular
   `bodySmall`/`w700` numerals, centered above a caption label. `0` remains
   visible at low emphasis, values cap at `999+`, and `AsyncValue.value` keeps
   the previous count during background refresh. Category colours remain a
   leading dot and category names are included in semantics. Compact names
   containing `·` or `:` drop the leading prefix in the tile so a constrained
-  `Lotti · Blocked` monitor reads simply `Blocked`; the primary selector,
-  tooltip, and semantics retain the full name.
+  `Lotti · Blocked` monitor reads simply `Blocked`; the current-view selector
+  follows the same rule only while compact, and its tooltip and semantics
+  retain the full name.
 - `SavedTaskFilterRail` remains the compact mobile entry surface. It shows the
   `Views` disclosure, `All`, the current saved/custom view, width-permitting MRU
   quick jumps, and `Save filter` for an ad-hoc filter. Large text keeps the

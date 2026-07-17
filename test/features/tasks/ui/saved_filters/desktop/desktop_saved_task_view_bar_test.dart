@@ -171,13 +171,35 @@ void main() {
       expect(
         find.descendant(
           of: current,
-          matching: find.text('Lotti · In progress'),
+          matching: find.text('In progress'),
         ),
         findsOneWidget,
       );
       expect(
+        tester
+            .widget<Tooltip>(
+              find.ancestor(of: current, matching: find.byType(Tooltip)),
+            )
+            .message,
+        'Lotti · In progress',
+      );
+      expect(
         find.descendant(of: current, matching: find.text('5')),
         findsOneWidget,
+      );
+      expect(
+        tester.getSize(current).width,
+        greaterThan(
+          tester
+                  .getSize(
+                    find.byKey(
+                      DesktopSavedTaskViewBarKeys.monitor('blocked'),
+                    ),
+                  )
+                  .width *
+              1.8,
+        ),
+        reason: 'the selected task context gets priority over monitor width',
       );
 
       await tester.tap(current);
@@ -252,6 +274,24 @@ void main() {
       );
     },
   );
+
+  testWidgets('wide current view keeps the complete saved name visible', (
+    tester,
+  ) async {
+    await _pumpBar(
+      tester,
+      pageState: const JournalPageState(
+        selectedTaskStatuses: {'IN_PROGRESS'},
+      ),
+      width: 1000,
+    );
+
+    final label = find.descendant(
+      of: find.byKey(DesktopSavedTaskViewBarKeys.currentView),
+      matching: find.text('Lotti · In progress'),
+    );
+    expect(label, findsOneWidget);
+  });
 
   testWidgets('tapping a monitor applies its saved filter', (tester) async {
     final bench = await _pumpBar(

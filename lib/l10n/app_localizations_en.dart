@@ -8983,7 +8983,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingThemingLight => 'Light Theme';
 
   @override
-  String get sidebarActiveSectionTitle => 'Active';
+  String get sidebarActiveSectionTitle => 'Activity';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Recording';

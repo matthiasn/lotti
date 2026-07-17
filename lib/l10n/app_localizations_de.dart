@@ -9093,7 +9093,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingThemingLight => 'Helles Design';
 
   @override
-  String get sidebarActiveSectionTitle => 'Aktiv';
+  String get sidebarActiveSectionTitle => 'Aktivität';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Aufnahme';

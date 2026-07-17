@@ -107,7 +107,7 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(SidebarActivitySummaryKeys.root), findsNothing);
-    expect(find.text('Active'), findsNothing);
+    expect(find.text('Activity'), findsNothing);
   });
 
   testWidgets('summarizes recording, timer, and agents in one row', (
@@ -172,6 +172,7 @@ void main() {
     final summaryHeight = tester
         .getSize(find.byKey(SidebarActivitySummaryKeys.root))
         .height;
+    expect(summaryHeight, greaterThanOrEqualTo(48));
     expect(summaryHeight, lessThan(64));
   });
 
@@ -278,6 +279,13 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(SidebarActivitySummaryKeys.dialog), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(SidebarActivitySummaryKeys.dialog),
+        matching: find.text('Activity'),
+      ),
+      findsOneWidget,
+    );
     expect(find.byType(SidebarTimerSection), findsOneWidget);
     expect(find.text('00:02:05'), findsOneWidget);
   });

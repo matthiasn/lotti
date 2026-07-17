@@ -1014,11 +1014,12 @@ The signaler is registered as a `getIt` singleton and exposed to the UI
 via `syncActivityTxPulsesProvider` / `syncActivityRxPulsesProvider`.
 The sidebar `SyncActivityIndicator` (`ui/widgets/sync_activity_indicator.dart`,
 gated behind the `show_sync_activity_indicator` config flag) listens to both
-streams. Healthy sync renders only a quiet sync icon and `Sync` label. A pulse
-temporarily promotes the icon and label to the active accent; real backlog adds
-directional upload/download metrics, with visible counts capped at `999+` so
-large queues do not dominate the rail. Exact outbox and inbox counts remain in
-the semantics label. Counts come from `outboxPendingCountProvider` and
+streams. Healthy sync renders only a quiet sync icon and `Sync` label inside a
+48dp minimum interaction target. A pulse temporarily promotes the icon and
+label to the active accent; real backlog adds directional upload/download
+metrics, with visible counts capped at `999+` so large queues do not dominate
+the rail. Exact outbox and inbox counts remain in the semantics label. Counts
+come from `outboxPendingCountProvider` and
 `inboundQueueDepthProvider` (sourced from `InboundQueue.depthChanges` via
 `MatrixService.queueCoordinator`). Tapping the row beams to `/settings/sync`
 (Settings → Sync), where the outbox monitor, queue depth card, backfill, and

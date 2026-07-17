@@ -15532,7 +15532,7 @@ abstract class AppLocalizations {
   /// No description provided for @sidebarActiveSectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Active'**
+  /// **'Activity'**
   String get sidebarActiveSectionTitle;
 
   /// No description provided for @sidebarAudioRecordingStatusLabel.

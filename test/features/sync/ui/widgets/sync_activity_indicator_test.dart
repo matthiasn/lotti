@@ -74,6 +74,7 @@ void main() {
         final height1x = tester
             .getSize(find.byType(SyncActivityIndicator))
             .height;
+        expect(height1x, greaterThanOrEqualTo(48));
 
         await pumpIndicator(tester, outbox: 1573, textScale: 2);
         final height2x = tester

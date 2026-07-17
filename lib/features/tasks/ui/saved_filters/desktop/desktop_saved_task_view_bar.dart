@@ -158,6 +158,11 @@ class DesktopSavedTaskViewBar extends ConsumerWidget {
               key: DesktopSavedTaskViewBarKeys.root,
               children: [
                 Expanded(
+                  // The selected view carries the task pane's current
+                  // context, so it owns twice the width of each count-first
+                  // watch cell. At compact widths its category dot and
+                  // trailing view name preserve meaning without stealing
+                  // width from visible queue counts.
                   flex: 2,
                   child: _CurrentViewButton(current: current),
                 ),
@@ -247,56 +252,64 @@ class _CurrentViewButton extends StatelessWidget {
       ?countClause,
     ].join(', ');
 
-    return Tooltip(
-      message: current.name,
-      child: Semantics(
-        button: true,
-        selected: true,
-        label: semanticsLabel,
-        onTap: () => showSavedTaskFiltersSheet(context),
-        child: ExcludeSemantics(
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              key: DesktopSavedTaskViewBarKeys.currentView,
-              borderRadius: radius,
-              onTap: () => showSavedTaskFiltersSheet(context),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: minTarget),
-                child: Center(
-                  child: DsPill(
-                    variant: DsPillVariant.filled,
-                    bordered: true,
-                    selected: true,
-                    leading: _CategoryDot(color: current.categoryColor),
-                    labelWidget: _TaskViewLabel(
-                      label: current.name,
-                      selected: true,
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SavedFilterCountText(
-                          count: current.count,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compactName =
+            constraints.hasBoundedWidth &&
+            constraints.maxWidth < tokens.spacing.step13 + tokens.spacing.step9;
+        return Tooltip(
+          message: current.name,
+          child: Semantics(
+            button: true,
+            selected: true,
+            label: semanticsLabel,
+            onTap: () => showSavedTaskFiltersSheet(context),
+            child: ExcludeSemantics(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  key: DesktopSavedTaskViewBarKeys.currentView,
+                  borderRadius: radius,
+                  onTap: () => showSavedTaskFiltersSheet(context),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: minTarget),
+                    child: Center(
+                      child: DsPill(
+                        variant: DsPillVariant.filled,
+                        bordered: true,
+                        selected: true,
+                        leading: _CategoryDot(color: current.categoryColor),
+                        labelWidget: _TaskViewLabel(
+                          label: current.name,
                           selected: true,
-                          minWidth: tokens.spacing.step6,
-                          prominent: true,
+                          preferTrailingSegment: compactName,
                         ),
-                        SizedBox(width: tokens.spacing.step2),
-                        Icon(
-                          Icons.unfold_more_rounded,
-                          size: tokens.spacing.step4,
-                          color: tokens.colors.text.highEmphasis,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SavedFilterCountText(
+                              count: current.count,
+                              selected: true,
+                              minWidth: tokens.spacing.step6,
+                              prominent: true,
+                            ),
+                            SizedBox(width: tokens.spacing.step2),
+                            Icon(
+                              Icons.unfold_more_rounded,
+                              size: tokens.spacing.step4,
+                              color: tokens.colors.text.highEmphasis,
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -443,8 +456,7 @@ class _CategoryDot extends StatelessWidget {
 /// Preserves the meaningful trailing segment of names such as
 /// "Lotti · Blocked" or "Lotti: Blocked" in a compact monitor. The status or
 /// view segment is the scan target, while the category dot carries category
-/// context when available. The primary selector, tooltip, and semantics retain
-/// the complete name.
+/// context when available. Tooltips and semantics retain the complete name.
 class _TaskViewLabel extends StatelessWidget {
   const _TaskViewLabel({
     required this.label,

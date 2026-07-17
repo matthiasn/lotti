@@ -9213,7 +9213,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingThemingLight => 'Temă luminoasă';
 
   @override
-  String get sidebarActiveSectionTitle => 'Active';
+  String get sidebarActiveSectionTitle => 'Activitate';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Înregistrare';

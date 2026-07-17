@@ -9153,7 +9153,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingThemingLight => 'Světlé téma';
 
   @override
-  String get sidebarActiveSectionTitle => 'Aktivní';
+  String get sidebarActiveSectionTitle => 'Aktivita';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Nahrávání';
