@@ -14,6 +14,10 @@ void main() {
       expect(ManualLanguage.fromStoredValue('fr'), ManualLanguage.french);
       expect(ManualLanguage.fromStoredValue('cs'), ManualLanguage.czech);
       expect(ManualLanguage.fromStoredValue('ro'), ManualLanguage.romanian);
+      expect(
+        ManualLanguage.fromStoredValue('pt'),
+        ManualLanguage.portuguese,
+      );
       expect(ManualLanguage.fromStoredValue(null), isNull);
     });
   });
@@ -35,6 +39,10 @@ void main() {
       expect(
         manualLanguageForSystemLocale(const Locale('ro', 'RO')),
         ManualLanguage.romanian,
+      );
+      expect(
+        manualLanguageForSystemLocale(const Locale('pt', 'BR')),
+        ManualLanguage.portuguese,
       );
     });
 
@@ -63,6 +71,10 @@ void main() {
       expect(
         manualUriFor(systemLocale: const Locale('ro')).toString(),
         '${lottiManualBaseUrl}ro/',
+      );
+      expect(
+        manualUriFor(systemLocale: const Locale('pt')).toString(),
+        '${lottiManualBaseUrl}pt/',
       );
     });
 
@@ -120,16 +132,16 @@ void main() {
         manualLanguageControllerProvider.notifier,
       );
 
-      await controller.setOverride(ManualLanguage.romanian);
+      await controller.setOverride(ManualLanguage.portuguese);
 
       expect(
         container.read(manualLanguageControllerProvider),
-        ManualLanguage.romanian,
+        ManualLanguage.portuguese,
       );
       verify(
         () => mocks.settingsDb.saveSettingsItem(
           manualLanguageSettingsKey,
-          'ro',
+          'pt',
         ),
       ).called(1);
 

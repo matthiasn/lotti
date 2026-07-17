@@ -302,7 +302,7 @@ Contributions are welcome — but with deliberate boundaries. Please read this b
 ### What's very welcome
 
 - 🐛 **Issues and bug reports** — the best place to start. Tell us what broke and how to reproduce it.
-- 🌍 **Translations** — new languages, corrections, improvements to existing locales (currently English, German, Spanish, French, Romanian, Czech). AI‑assisted translations are fine **provided you contribute from a real‑name, established GitHub profile** (not a recently created throwaway).
+- 🌍 **Translations** — new languages, corrections, improvements to existing locales (currently English, German, Spanish, French, Portuguese, Romanian, Czech). AI‑assisted translations are fine **provided you contribute from a real‑name, established GitHub profile** (not a recently created throwaway).
 - 💡 **Discussion of new features** — open an issue, describe what you'd like to have and why, and let's agree on the shape before any code is written.
 - 🐍 **Local image generation service** — a reliable, local Python‑based image‑gen service (following the same architecture as our local Voxtral integration) is a **specifically wanted contribution**. If you have experience in this area and want to take it on, please open an issue first so we can align on the integration shape.
 

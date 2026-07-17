@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   full-size tap target.
 
 ### Added
+- **Portuguese is now available across Lotti and its Manual.** The app follows
+  Portuguese system locales, and the published Manual now has a Portuguese
+  route with matching localized screenshots. Settings → Advanced → Language
+  can also select Portuguese explicitly.
 - **Romanian Manual and language-aware links are now available.** Lotti opens
   the published Manual in English, German, French, Czech, or Romanian based on
   your system language, and Settings → Advanced → Language lets you choose one

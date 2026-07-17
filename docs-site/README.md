@@ -22,9 +22,10 @@ make manual_serve
 ```
 
 The local English root is `/manual/development/`; German, French, Spanish,
-Czech, and Romanian are available at `/manual/development/de/`,
+Czech, Romanian, and Portuguese are available at `/manual/development/de/`,
 `/manual/development/fr/`, `/manual/development/es/`,
-`/manual/development/cs/`, and `/manual/development/ro/`. The navbar selector
+`/manual/development/cs/`, `/manual/development/ro/`, and
+`/manual/development/pt/`. The navbar selector
 preserves the current page, and a browser using one of those languages that
 visits the unqualified manual root is redirected to that language unless the
 reader has explicitly chosen a language before.
@@ -86,7 +87,8 @@ make manual_screenshots
 ```
 
 That command captures all registered English, German, French, Spanish, Czech,
-and Romanian mobile/desktop and light/dark PNG inputs into an ignored staging
+Romanian, and Portuguese mobile/desktop and light/dark PNG inputs into an
+ignored staging
 directory,
 converts them to canonical WebP paths, and writes a checksum/dimension manifest under
 `../lotti-docs/manual/screenshots/development/`.
@@ -114,8 +116,8 @@ English media keeps the established
 `development/<case>/<viewport>-<theme>.webp` path. Localized media lives at
 `development/<locale>/<case>/<viewport>-<theme>.webp`. Visible deterministic
 demo copy that does not come from the app ARB files must use
-`manualScreenshotText(en: …, de: …, fr: …, es: …, cs: …, ro: …)` so all six
-catalogs show the
+`manualScreenshotText(en: …, de: …, fr: …, es: …, cs: …, ro: …, pt: …)` so all
+seven catalogs show the
 same scenario in the selected language.
 
 Add a screenshot by extending `metadata/screenshot-cases.json`, reusing or

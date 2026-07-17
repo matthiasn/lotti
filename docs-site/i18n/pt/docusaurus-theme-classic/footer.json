@@ -1,0 +1,30 @@
+{
+  "link.title.Manual": {
+    "message": "Manual",
+    "description": "The title of the footer links column with title=Manual in the footer"
+  },
+  "link.title.Project": {
+    "message": "Projeto",
+    "description": "The title of the footer links column with title=Project in the footer"
+  },
+  "link.item.label.Start here": {
+    "message": "Comece aqui",
+    "description": "The label of footer link with label=Start here linking to /"
+  },
+  "link.item.label.Daily OS": {
+    "message": "Daily OS",
+    "description": "The label of footer link with label=Daily OS linking to /plan-and-capture/daily-os/"
+  },
+  "link.item.label.Tasks": {
+    "message": "Tarefas",
+    "description": "The label of footer link with label=Tasks linking to /organize-and-reflect/tasks/"
+  },
+  "link.item.label.Source code": {
+    "message": "Código-fonte",
+    "description": "The label of footer link with label=Source code linking to https://github.com/matthiasn/lotti"
+  },
+  "link.item.label.Report a documentation issue": {
+    "message": "Informar um problema na documentação",
+    "description": "The label of footer link with label=Report a documentation issue linking to https://github.com/matthiasn/lotti/issues/new"
+  }
+}

@@ -1,0 +1,85 @@
+---
+title: Conecte um provedor de IA
+description: Conecte nuvem ou inferência local, inspecione seus modelos e mantenha credenciais e endpoints sob controle.
+---
+
+# Conecte um provedor de IA
+
+Lotti separa uma configuração de IA em três camadas: um **provedor** é o serviço que ele
+ao qual se conecta, um **modelo** é um modelo exposto por meio desse serviço e um
+**perfil de inferência** roteia cada tipo de trabalho para um modelo. Comece com o
+provedor e, em seguida, revise os modelos e perfis criados em torno dele.
+
+<ManualScreenshot
+  caseId="ai/providers"
+  alt="Configurações de Lotti AI mostrando os provedores Mission Control Router, Habitat Local Lab, Orbital Vision e Penguin Audio Bay"
+  caption="As configurações de IA mantêm as conexões locais e na nuvem juntas. Cada cartão mostra o estado da conexão e quantos modelos salvos a utilizam."
+/>
+
+## Escolha local ou remoto
+
+- Um provedor de nuvem geralmente é a configuração mais rápida e geralmente requer uma API
+  chave. Texto, áudio ou imagens enviados por meio dele saem do dispositivo.
+- Um provedor local pode manter a inferência em sua própria máquina ou em um endpoint local
+  você controla, mas seu serviço deve estar em execução e acessível a partir do dispositivo
+  onde Lotti o invoca. Um endereço LAN ainda pode mover um prompt entre o seu
+  dispositivos; “local” significa que não é enviado para um provedor de modelo hospedado, não que nenhum
+  existe salto de rede.
+- Um URL base personalizado pode apontar um tipo de provedor compatível para um proxy compatível
+  ou portal. O tipo de provedor ainda controla o comportamento específico do protocolo.
+
+## Conecte um provedor
+
+1. Abra **Configurações → Configurações de IA → Provedores**.
+2. Selecione o botão **+**.
+3. Escolha um provedor compatível.
+4. Insira seu nome de exibição, endpoint e chave de API quando necessário.
+5. Adicione os modelos sugeridos desejados e salve.
+
+Para provedores de primeira execução com suporte, Lotti semeia modelos úteis e um ou mais
+perfis de inferência. A tela de resultados resume o que foi criado.
+
+<ManualScreenshot
+  caseId="ai/provider-editor"
+  alt="Editor de provedor Lotti para Mission Control Router com OpenRouter selecionado, URL base, chave de API mascarada e modelos sugeridos"
+  caption="As credenciais permanecem mascaradas. Os modelos sugeridos são atalhos, não um requisito. Você pode adicionar IDs de modelo específicos do provedor posteriormente."
+/>
+
+## Inspecione e mantenha uma conexão
+
+Abra um cartão de provedor para inspecionar sua credencial mascarada, URL base, modelos salvos,
+e qualquer perfil ativo que dependa desses modelos. A partir daqui você pode editar o
+conexão, adicione outro modelo ou remova o provedor.
+
+<ManualScreenshot
+  caseId="ai/provider-detail"
+  alt="Detalhe do provedor do Mission Control Router mostrando sua conexão, modelos do Waddle Command e perfil ativo do Project Waddle"
+  caption="O resumo da dependência torna o raio de explosão visível antes de você alterar ou remover um provedor."
+/>
+
+A alteração de um URL base ou chave de API afeta todos os modelos anexados a esse provedor.
+Depois de alterar qualquer um dos valores, verifique uma ação representativa da IA antes de assumir
+a conexão está saudável. A remoção de um provedor também pode afetar perfis que
+encaminhar o trabalho através de seus modelos; revise as informações de dependência primeiro.
+
+## Revise o roteamento do perfil
+
+Abra [Modelos e perfis de inferência](./models-and-profiles.mdx) para verificar o que
+o provedor expõe e como Lotti roteia cada recurso. As categorias podem definir um
+perfil padrão para seu trabalho, enquanto a automação individual pode selecionar ou
+substituir um modelo onde o fluxo de trabalho oferece essa escolha.
+
+## Limite de privacidade
+
+Antes de enviar texto, áudio ou imagens sensíveis, confirme se o configurado
+o endpoint é local ou remoto. Um nome amigável como “Habitat Local Lab” não é
+o limite de segurança – o URL base, o caminho da rede e a máquina que atende
+são. Lotti armazena o diário de bordo localmente de qualquer maneira; esta decisão controla o
+chamada de inferência em si.
+
+:::warning Chaves API
+
+Trate as chaves do provedor como segredos. Nunca cole-os em documentação, problemas ou
+capturas de tela.
+
+:::

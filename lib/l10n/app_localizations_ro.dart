@@ -9099,6 +9099,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsManualLanguageGermanTitle => 'Germană';
 
   @override
+  String get settingsManualLanguagePortugueseTitle => 'Portugheză';
+
+  @override
   String get settingsManualLanguageRomanianTitle => 'Română';
 
   @override

@@ -80,6 +80,13 @@ class ManualLanguageSettingsBody extends ConsumerWidget {
             selected: selectedOverride == ManualLanguage.romanian,
             onTap: () =>
                 unawaited(controller.setOverride(ManualLanguage.romanian)),
+            showDivider: true,
+          ),
+          _ManualLanguageOption(
+            title: messages.settingsManualLanguagePortugueseTitle,
+            selected: selectedOverride == ManualLanguage.portuguese,
+            onTap: () =>
+                unawaited(controller.setOverride(ManualLanguage.portuguese)),
           ),
         ],
       ),

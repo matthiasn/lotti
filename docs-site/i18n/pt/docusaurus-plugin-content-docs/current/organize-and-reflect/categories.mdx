@@ -1,0 +1,80 @@
+---
+title: Organize com categorias
+description: Use categorias como limites significativos para filtragem, planejamento, privacidade e automação.
+---
+
+# Organize com categorias
+
+Uma categoria é a principal estrutura estrutural de uma entrada. Use um quando um corpo de
+o trabalho precisa de suas próprias regras de planejamento, limites de privacidade, identidade visual ou IA
+contexto. No espaço de trabalho de demonstração, **Penguin Operations**, **Mission Control**,
+**Diplomacia dos Peixes** e **Manutenção Humana** separam
+áreas da expedição.
+
+<ManualScreenshot
+  caseId="categories/list"
+  alt="Configurações de categoria contendo operações de pinguins, controle de missão, diplomacia de peixes e manutenção humana com contagens de tarefas e ícones de status"
+  caption="A lista é pesquisável e mostra contagens de tarefas. Os ícones identificam rapidamente as categorias favoritas, privadas e inativas."
+/>
+
+## Crie uma categoria
+
+1. Abra **Configurações → Categorias**.
+2. Selecione **Criar categoria**.
+3. Insira um nome, cor e ícone distintos.
+4. Crie-o e abra a categoria novamente para configurar seu comportamento.
+
+A criação começa intencionalmente com os campos de identificação. Planejamento, privacidade,
+idioma e opções de automação ficam no editor completo após a categoria
+existe.
+
+## Configurar o comportamento da categoria
+
+<ManualScreenshot
+  caseId="categories/detail"
+  alt="Editor da categoria Penguin Operations mostrando seu nome, identidade de voo roxa e opções favoritas, privadas, ativas e de planejamento diário"
+/>
+
+O editor controla mais do que a aparência:
+
+- **Favorito** torna uma categoria importante mais fácil de reconhecer e selecionar.
+- **Privado** oculta seu conteúdo, a menos que entradas privadas estejam sendo mostradas. É
+  um limite de visibilidade, não uma criptografia separada para a categoria em si.
+- **Ativo** controla se a categoria pode ser selecionada para novas entradas.
+  Desativá-lo preserva os dados existentes.
+- **Planejamento diário** permite que a categoria participe do planejamento diário do SO.
+- **Idioma** fornece o idioma padrão para novas tarefas na categoria.
+
+Use o **planejamento diário** seletivamente. Ativá-lo para todas as categorias amplia o
+contexto do planejador e torna o ritual diário mais barulhento.
+
+## Adicione contexto de automação específico da categoria
+
+Uma categoria pode fornecer padrões para novas tarefas: um perfil de inferência e um
+modelo de agente. Estes são padrões, não bloqueios permanentes; escolhas em nível de tarefa podem
+ainda mudar mais tarde.
+
+<ManualScreenshot
+  caseId="categories/automation"
+  alt="Configurações avançadas do Penguin Operations com vocabulário de fala do Project Waddle e correções de lista de verificação aprendidas para Sir Flaps-a-Lot"
+  caption="Os termos de fala são separados por ponto e vírgula. As correções da lista de verificação são aprendidas nas edições e podem ser revisadas ou excluídas aqui."
+/>
+
+O dicionário **Reconhecimento de fala** é útil para nomes, locais, siglas,
+e vocabulário de domínio que a transcrição muitas vezes perde. Operações Penguin, para
+exemplo, ensina Lotti `Project Waddle`, `Sir Flaps-a-Lot`, `sardine` e
+`Europa`.
+
+Quando você corrige manualmente os títulos das listas de verificação geradas, Lotti pode reter os
+exemplos de antes e depois para sugestões futuras de IA. Revise os exemplos aqui
+e remova qualquer correção que não deva orientar a saída posterior.
+
+## Categorias versus rótulos
+
+Use uma categoria para a residência principal de trabalho e um [rótulo](./labels.mdx) para um
+propriedade transversal. **Operações Penguin** é uma categoria; **Habitat
+crítico** é um rótulo que também pode ser aplicado ao trabalho de Controle da Missão.
+
+Mantenha o sistema de categorias pequeno o suficiente para que a escolha de uma seja óbvia. Adicione um novo
+categoria quando altera o planejamento, a filtragem, a privacidade ou a automação - não apenas
+porque um novo substantivo apareceu.

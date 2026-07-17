@@ -1,0 +1,40 @@
+---
+title: Manutenção de sincronização
+description: Use ações de reparo e limpeza de sincronização da Matrix deliberadamente, desde o reenvio de registros até a reconstrução do histórico de sequência.
+---
+
+# Manutenção de sincronização
+
+Abra **Configurações → Sincronização → Manutenção** para reparo e limpeza no nível do banco de dados.
+Essas ações não fazem parte do emparelhamento de rotina ou da sincronização diária.
+Antes de usá-los, deixe as gravações ativas terminarem e mantenha um backup atual dos dados
+você não pode recriar.
+
+<ManualScreenshot
+  caseId="sync/maintenance"
+  alt="Lotti Matrix Sync Maintenance com exclusão de banco de dados de sincronização, sincronização de definição, ressincronização de mensagens, preenchimento de log de sequência e limpeza de caixa de saída enviada"
+  caption="A manutenção agrupa ações destrutivas, de repetição e de limpeza em uma página. O texto de confirmação define o escopo de cada operação."
+/>
+
+## Escolha o reparo mais estreito
+
+- **Excluir banco de dados de sincronização** remove o banco de dados de sincronização local. Isso é destrutivo
+  recuperação local, não uma maneira normal de desconectar um dispositivo.
+- **Sincronizar definições** envia novamente os registros de definição atuais, como
+  categorias e outras configurações compartilhadas.
+- **Ressincronizar mensagens** reproduz mensagens selecionadas quando o estado remoto está ausente
+  ou uma entrega anterior precisa ser repetida.
+- **Popular log de sequência** reconstrói o histórico de sequência local usado para
+  detectar lacunas e impulsionar o preenchimento.
+- **Limpar itens antigos da caixa de saída enviados** exclui o histórico da fila de diagnóstico já enviado
+  após o seu período de retenção. Ele não remove trabalhos pendentes ou com falha.
+
+Comece com a menor operação que corresponda ao sintoma. Um anexo preso
+pertence à [Caixa de saída](./sync.mdx#inspecione-a-caixa-de-saída); lacunas de sequência persistentes
+pertencem ao Backfill; duas edições simultâneas válidas pertencem a
+[Conflitos](./conflicts.mdx). A exclusão do banco de dados de sincronização deve ser o último recurso
+redefinição local realizada com um par em bom estado e backup disponível.
+
+Após um reparo, retorne para **Sincronizar estatísticas**, confirme se o trabalho processado foi
+avançando sem uma contagem crescente de falhas e verifique se a Caixa de saída e
+Aterramento de liquidação de contagem faltante.

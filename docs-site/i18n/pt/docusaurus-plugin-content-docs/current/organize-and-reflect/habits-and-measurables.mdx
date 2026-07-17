@@ -1,0 +1,160 @@
+---
+title: Rastreie hábitos e medições
+description: Configure comportamentos recorrentes e observações numéricas e registre cada um honestamente.
+---
+
+# Rastreie hábitos e medições
+
+Um hábito responde **este comportamento recorrente aconteceu?** Uma resposta mensurável
+**que valor numérico observei?** Eles podem apoiar o mesmo objetivo sem
+sendo intercambiáveis: “Chamada do pinguim imperador” é um hábito, enquanto “Pinguins
+contabilizado” é um valor mensurável.
+
+## Trabalhe com hábitos
+
+A página Hábitos organiza as definições ativas no que é devido agora, agendado
+para mais tarde e concluído. Seu resumo diário, histórico de consistência, sequências e
+O gráfico de taxa de conclusão ajuda você a perceber padrões sem tratar um dia perdido
+como toda a história.
+
+<ManualScreenshot
+  caseId="habits/today"
+  alt="Painel de hábitos de operações de pinguins mostrando verificações de habitat, lista de pinguins, inventário de sardinhas, estado de conclusão, listras e histórico recente"
+/>
+
+### Crie e encontre definições de hábitos
+
+1. Abra **Configurações → Hábitos**.
+2. Selecione **Criar hábito**.
+3. Dê ao comportamento um nome concreto e repetível e uma descrição útil.
+4. Escolha sua categoria, opções e programação.
+5. Salve.
+
+<ManualScreenshot
+  caseId="habits/settings-list"
+  alt="Configurações de hábitos contendo chamada de pinguim-imperador, revisão da previsão de sardinhas e caminhada pelas focas de habitat com estados favoritos, inativos e privados"
+  caption="Pesquise definições aqui. A estrela, o olho oculto e o cadeado identificam hábitos favoritos, inativos e privados."
+/>
+
+<ManualScreenshot
+  caseId="habits/settings-detail"
+  alt="Editor de hábitos de chamada do pinguim-imperador com descrição da expedição, categoria de operações do pinguim e opções favoritas, privadas e ativas"
+/>
+
+O editor de definição inclui:
+
+- **Categoria** para filtragem e contexto visual.
+- **Painel** quando o hábito deve aparecer como um gráfico em um painel selecionado.
+- **Favorito** para maior destaque.
+- **Privado** para ocultá-lo, a menos que entradas privadas sejam mostradas.
+- **Ativo** para controlar se ele aparece na página de Hábitos sem excluir
+  sua história.
+
+### Programe um hábito diário
+
+<ManualScreenshot
+  caseId="habits/schedule"
+  alt="Programação da chamada do pinguim-imperador a partir de 1º de julho, exibida a partir das 06h com alerta às 06h30"
+/>
+
+O editor atual prioriza diariamente. Defina uma **data de início** e, opcionalmente, adie quando
+o hábito é **mostrado a partir de** e, opcionalmente, escolha quando Lotti deve **mostrar um
+alerta**. O modelo de dados também compreende programações semanais e mensais, mas o
+O presente editor expõe os controles de tempo mais ricos para hábitos diários.
+
+### Registre o que realmente aconteceu
+
+Abra um hábito devido ou use sua ação rápida. O formulário de preenchimento detalhado suporta
+três resultados:
+
+- **Sucesso** — o comportamento aconteceu.
+- **Perdido** — era esperado e possível, mas não aconteceu.
+- **Pular** — não se aplicava razoavelmente naquele dia.
+
+<ManualScreenshot
+  caseId="habits/record"
+  alt="Formulário de preenchimento de hábito para inspecionar as focas do habitat dos pinguins, com resultados de Sucesso, Pular e Perdido, além de data e notas"
+/>
+
+Use o estado que preserva a realidade. Uma história sincera é mais útil do que uma
+gráfico de aparência perfeita. Os registros de conclusão são lançamentos contábeis manuais, portanto, visualizações posteriores
+pode reconstruir o resultado efetivo para cada hábito e dia.
+
+## Trabalhe com mensuráveis
+
+Uma definição mensurável descreve o número antes de você registrá-lo: seu nome,
+unidade, privacidade e como múltiplas observações se combinam nos gráficos.
+
+<ManualScreenshot
+  caseId="measurables/settings-list"
+  alt="Configurações mensuráveis contendo pressão do habitat, pinguins contabilizados e sardinhas consumidas"
+/>
+
+### Crie um tipo de dados mensurável
+
+1. Abra **Configurações → Tipos de dados mensuráveis**.
+2. Selecione a ação adicionar.
+3. Adicione um nome, uma descrição opcional e uma abreviatura concisa da unidade.
+4. Escolha a agregação padrão usada pelos gráficos.
+5. Decida se deve ser favorito ou privado e salve.
+
+<ManualScreenshot
+  caseId="measurables/settings-detail"
+  alt="Editor mensurável de pressão de habitat usando kPa e agregação média diária"
+/>
+
+Escolha a agregação com base no significado das leituras repetidas:
+
+| Agregação | Use-o quando |
+| --- | --- |
+| Sem agregação | Cada observação individual é importante |
+| Soma diária | Acumulam-se leituras, como sardinhas consumidas |
+| Máximo diário | O pico do dia é o sinal importante |
+| Média diária | As leituras mostram um valor variável, como a pressão do habitat |
+| Soma horária | A acumulação precisa de intervalos horários mais precisos |
+
+A unidade é um contexto de exibição, não um conversor. Se você definir a pressão do habitat como
+`kPa`, registre valores em kPa de forma consistente. Crie um mensurável separado se um
+unidade diferente representa uma série genuinamente diferente.
+
+### Registrar uma medição
+
+Abra um painel que contém o mensurável e selecione a ação adicionar em seu
+gráfico. Insira o valor observado; Lotti mantém a unidade ao lado do número para que
+está claro o que será salvo. Valores distintos recentes aparecem como **Log rápido**
+ações quando repetir uma delas é útil.
+
+<ManualScreenshot
+  caseId="measurements/capture"
+  alt="Editor de medição de consumo de sardinhas aberto em seu gráfico de painel preenchido, com 84 sardinhas, sugestões de registro rápido, tempo observado, comentário e ação para salvar"
+/>
+
+Use **Observado em** para o momento em que a leitura foi realmente realizada, em vez de
+a hora em que você entrou nele. A primeira página seleciona a data do calendário.
+**Hoje** retorna diretamente para a data atual.
+
+<ManualScreenshot
+  caseId="measurements/date"
+  alt="Observado no calendário selecionando sexta-feira, 17 de julho de 2026 para a medição da sardinha"
+/>
+
+Role até a seção de hora para definir a hora e os minutos. **Agora** restaura o
+hora atual. Selecione **Concluído** para retornar ao rascunho de medição ainda preenchido,
+em seguida, **Salvar** para criar o lançamento contábil manual.
+
+<ManualScreenshot
+  caseId="measurements/time"
+  alt="Observado no horário ajustado às 10h30 para medição da sardinha"
+/>
+
+O comentário é opcional, mas é útil quando um número necessita de
+contexto - por exemplo, uma entrega, uma mudança incomum ou uma medição alterada
+método. Salvar uma medição não altera a definição mensurável ou sua
+regra de agregação.
+
+## Conecte os dois sem confundi-los
+
+Uma chamada pode ser concluída com sucesso mesmo que apenas 36 pinguins tenham sido
+contado – o hábito registra se o procedimento aconteceu, enquanto o mensurável
+registra o resultado. Coloque ambos em um [dashboard](./dashboards.mdx) quando seus
+relacionamento responde a uma questão operacional recorrente.

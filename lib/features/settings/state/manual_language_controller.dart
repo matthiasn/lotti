@@ -18,7 +18,8 @@ enum ManualLanguage {
   german('de'),
   french('fr'),
   czech('cs'),
-  romanian('ro');
+  romanian('ro'),
+  portuguese('pt');
 
   const ManualLanguage(this.languageCode);
 

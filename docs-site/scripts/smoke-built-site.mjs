@@ -52,6 +52,16 @@ const localeExpectations = {
     mobile: 'Mobil',
     openViewer: 'Deschideți vizualizatorul capturilor de ecran',
   },
+  pt: {
+    allScreenshots: 'Todas as capturas de tela',
+    desktop: 'Computador',
+    firstTaskTitle: 'Crie sua primeira tarefa',
+    layoutLabel: 'Layout das capturas de tela para todas as imagens',
+    mobile: 'Celular',
+    openViewer: 'Abrir visualizador de capturas de tela',
+    translationDisclosure:
+      'Esta tradução foi gerada automaticamente e ainda não foi revisada.',
+  },
 };
 const translatedLocales = screenshotRegistry.locales.filter(
   (locale) => locale !== screenshotRegistry.defaultLocale,
@@ -134,7 +144,14 @@ for (const locale of translatedLocales) {
     translatedSettingsHtml,
     new RegExp(`data-translation-notice=["']?${locale}["']?`),
   );
-  assert.match(translatedSettingsHtml, /GPT 5\.6 Sol xHigh/);
+  if (expected.translationDisclosure) {
+    assert.ok(
+      translatedSettingsHtml.includes(expected.translationDisclosure),
+      `The ${locale} manual must include its translation disclosure.`,
+    );
+  } else {
+    assert.match(translatedSettingsHtml, /GPT 5\.6 Sol xHigh/);
+  }
   assert.match(
     translatedSettingsHtml,
     new RegExp(`aria-label="${expected.layoutLabel}"`),

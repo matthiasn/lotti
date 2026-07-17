@@ -1,0 +1,228 @@
+---
+title: Trabalhar com tarefas
+description: Use status, prioridade, listas de verificação e contexto anexado para avançar os resultados.
+---
+
+#Trabalhe com tarefas
+
+As tarefas agrupam um resultado com o contexto e as etapas necessárias para concluí-lo. Mantenha
+títulos orientados para resultados e colocam notas de apoio, imagens, gravações e tempo
+registros dentro da tarefa.
+
+<ManualScreenshot
+  caseId="tasks/workspace"
+  alt="Espaço de trabalho de tarefas de produção mostrando linhas de tarefas reais com miniaturas de capas dos dados de demonstração da Interplanetary Penguin Logistics"
+/>
+
+No desktop, a lista de tarefas permanece visível ao lado da tarefa selecionada para que você possa
+avançar no trabalho sem perder o contexto. No celular, selecionar uma tarefa abre seu
+visualização detalhada em tela cheia. A arte da capa segue a tarefa onde quer que ela apareça,
+incluindo a lista de tarefas e os itens vinculados da agenda do sistema operacional diário.
+
+A arte da capa é opcional, mas pode tornar um espaço de trabalho denso muito mais fácil de digitalizar.
+Use-o como uma dica visual útil, uma referência de produto ou uma metáfora memorável
+para o trabalho. As ilustrações do Projeto Waddle neste manual são apenas uma
+exemplo: uma capa pode ser tão prática, divertida ou maravilhosamente estranha quanto você
+quero.
+
+<ManualScreenshot
+  caseId="tasks/detail"
+  alt="Página de detalhes da tarefa de produção para inspecionar o habitat orbital dos pinguins, com a mesma capa usada pelas miniaturas das tarefas"
+/>
+
+A mesma tarefa pode conter uma descrição, categoria, rótulos, data de vencimento, registros de tempo,
+itens da lista de verificação, imagens, links e gravações de áudio.
+
+## Atribuir um agente de tarefa
+
+Uma tarefa pode ter um agente de tarefa. Atribuir um dá a essa tarefa uma IA persistente
+assistente com sua própria configuração de inferência, relatório, estado de ativação e proposta
+história. O agente lê a tarefa e seu contexto vinculado, destila o atual
+situação em um breve relatório e pode apresentar tarefas propostas ou lista de verificação
+alterações para você confirmar ou rejeitar.
+
+O agente atribuído aparece abaixo das listas de verificação e das tarefas vinculadas da tarefa. É
+o cartão recolhido mantém o resumo mais recente, controle de atualização automática, **Wake
+ação do agente ** e rota do modelo ativo visíveis sem tornar a página da tarefa
+sinta-se como um console de IA.
+
+<ManualScreenshot
+  caseId="tasks/agent-card"
+  alt="Agente de tarefa Habitat Watcher atribuído na tarefa de habitat do pinguim orbital, mostrando seu resumo atual, atualizações automáticas, ação de despertar e rota do modelo do Projeto Waddle"
+  caption="O Habitat Watcher é designado para esta tarefa; atribuição e atualizações automáticas são opções separadas."
+/>
+
+Escolha **Leia mais** para expandir o relatório completo. O cartão expandido
+mantém a tarefa visível, adiciona a avaliação de apoio do relatório e recomenda
+próxima etapa e oferece **Abertos internos do agente** quando você precisar de relatórios,
+conversas, observações ou detalhes do tempo de execução.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-expanded"
+  alt="Cartão expandido do agente de tarefas do Habitat Watcher com a avaliação completa do habitat do Projeto Waddle e a próxima etapa recomendada"
+  caption="O relatório completo se expande dentro da tarefa em vez de enviar você para uma página separada."
+/>
+
+### Revise as alterações propostas
+
+Uma ativação concluída pode atualizar o relatório e adicionar alterações propostas. Automático
+as atualizações decidem *quando o agente acorda*; eles não dão permissão ao agente para
+edite a tarefa. As propostas permanecem pendentes até que você tome providências.
+
+<ManualScreenshot
+  caseId="tasks/agent-suggestions"
+  alt="Cartão de agente de tarefas do Habitat Watcher com duas propostas pendentes do Projeto Waddle, ações individuais de dispensa e confirmação e uma ação Confirmar todas"
+  caption="O agente propõe um item da lista de verificação de teste do alimentador e uma estimativa revisada; nenhuma das alterações foi aplicada ainda."
+/>
+
+Use a cruz para **Rejeitar** uma proposta ou o cheque para **Confirmar** e aplicar
+isso. Você também pode deslizar uma proposta para a esquerda para descartar ou para a direita para confirmar. Quando
+várias propostas estão pendentes, **Confirme todas** aplica-se a lista atualmente listada
+muda juntos. Revise as propostas em massa com cuidado, especialmente status, data,
+e alterações na lista de verificação.
+
+Abra o **Histórico** para revisitar os resultados recentes. Distingue confirmado
+mudanças dos demitidos. Uma entrada rejeitada pode representar tanto o seu
+decisão ou uma proposta que o agente retirou depois que o contexto da tarefa mais recente a fez
+obsoleto.
+
+Um **Agente de despertar** manual pode produzir os mesmos tipos de relatórios e propostas que
+um despertar automático. Desativar as atualizações automáticas interrompe o histórico futuro
+acorda; não aplica, descarta ou de outra forma resolve propostas que sejam
+já estou aguardando sua decisão.
+
+### Escolha atualizações automáticas ou manuais
+
+Novos agentes de tarefas começam com **Atualizações automáticas desativadas**. A atribuição por si só não
+gastar tokens em segundo plano. Enquanto as atualizações estão desativadas, Lotti continua a
+notar alterações relevantes na tarefa e suas entradas vinculadas, marca um antigo
+resumo como desatualizado e espera que você escolha **Ativar agente**. Um manual
+wake permanece disponível sempre que o agente tiver uma configuração de IA funcionando.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-manual"
+  alt="Cartão de agente de tarefas do Habitat Watcher com atualizações automáticas desativadas, um aviso de relatório desatualizado e uma ação manual do agente Wake"
+  caption="O modo manual observa alterações e relata a desatualização sem iniciar a inferência."
+/>
+
+Quando **Atualizações automáticas** estão ativadas, Lotti agrupa alterações de tarefas correspondentes paracerca de dois minutos antes de agendar uma atualização. Essa coalescência evita um agente
+acorde para cada pequena edição. **Agente de ativação** ainda está disponível por um período imediato,
+atualização solicitada pelo usuário.
+
+Desativar as atualizações automáticas limpa a contagem regressiva pendente e a fila
+atualizações automáticas, mas não cancela uma ativação que você solicitou explicitamente.
+Ativá-lo novamente se aplica a alterações futuras; ele não reproduz alterações que
+chegou enquanto a automação estava desligada.
+
+## Prioridade
+
+Lotti usa quatro níveis de prioridade compactos:
+
+| Prioridade | Significado | Use-o para |
+| --- | --- | --- |
+| P0 | Urgente | Trabalho que realmente precisa de atenção em seguida |
+| P1 | Alto | Obra importante que deve acontecer em breve |
+| P2 | Médio | O padrão normal |
+| P3 | Baixo | Trabalho que pode esperar |
+
+Abra uma tarefa e use o controle de prioridade em seu cabeçalho para alterar o nível.
+As tarefas existentes sem uma prioridade explícita comportam-se como P2.
+
+## Filtre e ordene a lista de tarefas
+
+Abra os filtros de tarefas e selecione uma ou mais prioridades. Limpe essa seleção para
+retornar a todas as prioridades. A prioridade é um dos vários filtros que podem ser
+combinado com categorias e outras propriedades da tarefa.
+
+<ManualScreenshot
+  caseId="tasks/filters"
+  alt="Folha de filtro de tarefas com controles de classificação, status, prioridade, categoria e rótulo"
+/>
+
+A ordem de prioridade padrão é P0 a P3. Dentro de uma prioridade, tarefas mais recentes
+aparecem primeiro, a menos que outra visualização ou classificação ativa altere o resultado.
+
+## Use listas de verificação para a próxima camada abaixo
+
+Um item da lista de verificação deve ser menor e mais concreto do que a sua tarefa. “Publicar
+o manual” é uma tarefa; “verificar todos os links de navegação” é um item da lista de verificação.
+As listas de verificação podem ser editadas diretamente e também podem ser propostas pela IA configurada
+habilidades do contexto da tarefa.
+
+## Adicionar contexto de tarefa
+
+Use a ação **Adicionar** da tarefa para anexar uma lista de verificação, outra tarefa, um áudio
+gravação, um cronômetro, uma entrada de texto ou uma imagem sem sair da tarefa. O
+as ações disponíveis dependem da plataforma e do contexto atuais.
+
+<ManualScreenshot
+  caseId="entries/create-menu"
+  alt="Adicionar menu sobre a tarefa do habitat orbital com ações de captura com reconhecimento de tarefa"
+/>
+
+Consulte [Adicionar entradas e contexto](../plan-and-capture/entries.mdx) para saber quando usar
+cada tipo de entrada.
+
+## Gere arte de capa a partir de imagens de tarefas reais
+
+Se uma habilidade de geração de imagem estiver configurada, abra o menu de geração da tarefa
+e escolha sua ação de capa. Lotti primeiro mostra imagens já anexadas a
+a tarefa, além de imagens de capa disponíveis de tarefas vinculadas. Selecione até cinco
+referências para orientar o resultado ou continuar sem referência.
+
+A capa gerada é criada no Lotti a partir do contexto da tarefa e de qualquer
+referências que você selecionar. É um auxílio visual, não um campo obrigatório: use-o quando um
+imagem distinta torna o trabalho mais fácil ou mais agradável de reconhecer. O
+rota de geração de imagem atual usa o provedor configurado, então trate o
+prompt de geração e referências selecionadas como dados que você está enviando intencionalmente
+para esse provedor; um pensamento local ou uma rota de transcrição não oferece cobertura
+geração local.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Gere uma folha de capa mostrando cinco imagens de referência distintas do Projeto Waddle a partir do contexto da tarefa"
+  caption="O seletor usa as mesmas imagens de tarefa visíveis em toda a demonstração do Projeto Waddle."
+/>
+
+Depois de continuar, a geração da imagem será executada em segundo plano. O progresso
+view usa o visualizador de pensamento de produção do Lotti e pode ser fechado sem
+cancelando o trabalho.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Geração de arte de capa de tarefa em andamento com o visualizador de shader de produção de Lotti"
+/>
+
+A imagem gerada torna-se a capa da tarefa e segue a tarefa na lista,
+detalhes, projetos e visualizações diárias do sistema operacional. Uma cobertura forte deve permanecer reconhecível
+quando a imagem de origem ampla é cortada em uma miniatura compacta de tarefa. Pode ser
+evidência literal, uma metáfora contida, ou tão estranha quanto a obra merece;
+o único teste útil é se você consegue reconhecer a tarefa mais rapidamente mais tarde.
+
+## Tarefas relacionadas ao link
+
+Abra a seção **Vinculada** da tarefa e opte por vincular uma tarefa existente. Pesquisar
+o seletor e selecione o resultado relacionado. Lotti exclui a tarefa atual
+e tarefas que já estão vinculadas nessa direção.
+
+<ManualScreenshot
+  caseId="tasks/link-picker"
+  alt="Seletor de links de tarefas de produção listando tarefas relacionadas do Project Waddle e seu status, prioridade, categoria e contexto de data de vencimento"
+/>
+
+Os links de tarefas são direcionais: a tarefa atual aponta para a tarefa que você escolher.Ambos os lados permanecem acessíveis através de suas seções de entrada vinculada, enquanto cada
+tarefa mantém seu próprio status, agendamento e anexos.
+
+## Use a voz sem perder o controle
+
+Registre uma nota dentro da tarefa quando for mais rápido explicar a situação em voz alta.
+Com a transcrição e as habilidades de tarefa configuradas, Lotti pode transformar esse contexto em
+texto e alterações propostas na lista de verificação. Revise o resultado, especialmente os nomes,
+datas e mudanças destrutivas. Consulte [Gravar áudio](../plan-and-capture/recordings.mdx)
+para os controles de gravação e opções de processamento.
+
+:::tip
+
+Use P0 com moderação. Se tudo for urgente, a etiqueta deixa de levar informações.
+
+:::

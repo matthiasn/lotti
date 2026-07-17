@@ -41,6 +41,7 @@
     </release>
     <release version="0.9.1051" date="2026-07-17">
       <description>
+          <p>Portuguese is now available throughout Lotti and its Manual. The app follows Portuguese system locales, and Settings → Advanced → Language can open the matching Portuguese manual explicitly.</p>
           <p>French, Spanish, and Romanian now read more naturally throughout the app. Agent controls, AI and Sync setup, dashboards, health import, and task actions keep the selected language's own register and terminology instead of exposing literal or mixed-language copy.</p>
           <p>The Manual link now opens English, German, French, Czech, or Romanian documentation to match your system language. You can choose a different language from Settings → Advanced → Language at any time.</p>
           <p>Manual is now a distinct final entry in Settings and is also available from the desktop Help menu, keeping the navigation sidebar focused on the app.</p>

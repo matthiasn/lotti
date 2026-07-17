@@ -75,7 +75,7 @@ void main() {
       final messages = context.messages;
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
-      expect(find.byType(DesignSystemRadioButton), findsNWidgets(6));
+      expect(find.byType(DesignSystemRadioButton), findsNWidgets(7));
       expect(
         find.text(messages.settingsManualLanguageFollowSystemSubtitle),
         findsOneWidget,
@@ -93,6 +93,7 @@ void main() {
         messages.settingsManualLanguageFrenchTitle,
         messages.settingsManualLanguageCzechTitle,
         messages.settingsManualLanguageRomanianTitle,
+        messages.settingsManualLanguagePortugueseTitle,
       ]) {
         expect(rowFor(tester, title).selected, isFalse);
       }
@@ -138,7 +139,7 @@ void main() {
     final context = tester.element(find.byType(ManualLanguageSettingsBody));
     final messages = context.messages;
 
-    await tester.tap(find.text(messages.settingsManualLanguageRomanianTitle));
+    await tester.tap(find.text(messages.settingsManualLanguagePortugueseTitle));
     await tester.pump();
     await tester.tap(
       find.text(messages.settingsManualLanguageFollowSystemTitle),
