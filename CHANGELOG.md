@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1050]
+### Changed
+- **The desktop sidebar is navigation-first again.** Saved task views now live
+  beside the task list, recording/timer/agent status collapses into one compact
+  activity row with details on demand, and healthy sync stays quiet until work
+  needs attention.
+
 ## [0.9.1049]
 ### Added
 - **Lotti now guides first-time setup through one onboarding welcome.** The
@@ -30,10 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Completed Daily OS tasks keep their cover thumbnails.** Finished agenda
   rows now retain the same task artwork as open and in-progress work, making a
   busy day easier to scan without losing task identity after completion.
-- **The desktop sidebar is navigation-first again.** Saved task views now live
-  beside the task list, recording/timer/agent status collapses into one compact
-  activity row with details on demand, and healthy sync stays quiet until work
-  needs attention.
 - **Task agents now update only when you ask by default.** New agents keep
   watching their task without automatically spending inference tokens after
   every change. An outdated summary stays visible with a clear **Wake agent**
