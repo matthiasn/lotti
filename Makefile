@@ -166,6 +166,9 @@ manual_screenshots: manual_deps
 	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/settings/ui/settings_home_screenshots_test.dart
 	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/daily_os_next/ui/pages/day_planning_modal_screenshots_test.dart --name '^(mini|desktop) (capture captured|captured|reconcile) — (dark|light)$$'
 	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart --name '^((mini|desktop) (agenda|timeline)|(pro|desktop) timeline arrange mode) — (dark|light)$$'
+	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/tasks/ui/widgets/task_manual_screenshots_test.dart
+	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/habits/ui/habits_manual_screenshots_test.dart
+	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/speech/ui/widgets/recording/audio_recording_manual_screenshots_test.dart
 	npm --prefix docs-site run manifest -- --capture-dir "$(MANUAL_CAPTURE_DIR)" --output-root "$(MANUAL_MEDIA_DIR)" --version "$(MANUAL_VERSION)"
 	$(MAKE) manual_check_media MANUAL_VERSION="$(MANUAL_VERSION)" LOTTI_DOCS_DIR="$(LOTTI_DOCS_DIR)"
 

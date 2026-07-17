@@ -85,13 +85,29 @@ if (releases.schemaVersion !== 1 || !Array.isArray(releases.versions)) {
   }
 }
 
+const checkedScreenshotSources = new Set();
 for (const screenshotCase of screenshotRegistry.cases) {
+  const sourcePath = resolve(repositoryDirectory, screenshotCase.sourceTest);
   try {
-    await access(resolve(repositoryDirectory, screenshotCase.sourceTest));
+    await access(sourcePath);
   } catch {
     errors.push(
       `${screenshotCase.id} points to missing test ${screenshotCase.sourceTest}.`,
     );
+    continue;
+  }
+  if (!checkedScreenshotSources.has(sourcePath)) {
+    checkedScreenshotSources.add(sourcePath);
+    const source = await readFile(sourcePath, 'utf8');
+    const legacyManualImport = source.match(
+      /import\s+['"]package:lotti\/[^'"]*(?:\/widgetbook\/|showcase)[^'"]*['"]/i,
+    );
+    if (legacyManualImport) {
+      errors.push(
+        `${screenshotCase.sourceTest} imports a Widgetbook/showcase surface. ` +
+          'Manual screenshots must render production application pages.',
+      );
+    }
   }
 }
 

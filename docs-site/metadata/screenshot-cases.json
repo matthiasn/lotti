@@ -66,6 +66,72 @@
         "desktop-light": "desktop_settings_root_light.png",
         "desktop-dark": "desktop_settings_root_dark.png"
       }
+    },
+    {
+      "id": "tasks/workspace",
+      "title": "Production task workspace",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "task_workspace_mobile_light.png",
+        "mobile-dark": "task_workspace_mobile_dark.png",
+        "desktop-light": "task_workspace_desktop_light.png",
+        "desktop-dark": "task_workspace_desktop_dark.png"
+      }
+    },
+    {
+      "id": "tasks/detail",
+      "title": "Task detail",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "task_detail_mobile_light.png",
+        "mobile-dark": "task_detail_mobile_dark.png",
+        "desktop-light": "task_detail_desktop_light.png",
+        "desktop-dark": "task_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "tasks/filters",
+      "title": "Task filters",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "task_filters_mobile_light.png",
+        "mobile-dark": "task_filters_mobile_dark.png",
+        "desktop-light": "task_filters_desktop_light.png",
+        "desktop-dark": "task_filters_desktop_dark.png"
+      }
+    },
+    {
+      "id": "habits/today",
+      "title": "Habits dashboard",
+      "sourceTest": "test/features/habits/ui/habits_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "habits_today_mobile_light.png",
+        "mobile-dark": "habits_today_mobile_dark.png",
+        "desktop-light": "habits_today_desktop_light.png",
+        "desktop-dark": "habits_today_desktop_dark.png"
+      }
+    },
+    {
+      "id": "habits/record",
+      "title": "Habit completion",
+      "sourceTest": "test/features/habits/ui/habits_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "habits_record_mobile_light.png",
+        "mobile-dark": "habits_record_mobile_dark.png",
+        "desktop-light": "habits_record_desktop_light.png",
+        "desktop-dark": "habits_record_desktop_dark.png"
+      }
+    },
+    {
+      "id": "recordings/active",
+      "title": "Active audio recording",
+      "sourceTest": "test/features/speech/ui/widgets/recording/audio_recording_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "recording_active_mobile_light.png",
+        "mobile-dark": "recording_active_mobile_dark.png",
+        "desktop-light": "recording_active_desktop_light.png",
+        "desktop-dark": "recording_active_desktop_dark.png"
+      }
     }
   ]
 }

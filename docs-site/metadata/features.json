@@ -18,8 +18,12 @@
       "id": "tasks",
       "title": "Tasks",
       "page": "organize-and-reflect/tasks",
-      "status": "migrated",
-      "screenshotCases": []
+      "status": "verified",
+      "screenshotCases": [
+        "tasks/workspace",
+        "tasks/detail",
+        "tasks/filters"
+      ]
     },
     {
       "id": "settings",
@@ -42,7 +46,10 @@
       "title": "Habits and measurables",
       "page": "organize-and-reflect/habits-and-measurables",
       "status": "needs-screenshot-refresh",
-      "screenshotCases": []
+      "screenshotCases": [
+        "habits/today",
+        "habits/record"
+      ]
     },
     {
       "id": "dashboards",
@@ -57,6 +64,15 @@
       "page": "ai-and-automation/provider-setup",
       "status": "migrated",
       "screenshotCases": []
+    },
+    {
+      "id": "recordings",
+      "title": "Audio recordings",
+      "page": "plan-and-capture/recordings",
+      "status": "verified",
+      "screenshotCases": [
+        "recordings/active"
+      ]
     },
     {
       "id": "sync",
