@@ -322,7 +322,47 @@ flowchart TD
 landing page now exposes five runtime views (`Stats` is the default landing
 tab):
 
-- `Stats`: token usage and recent activity
+- `Stats`: token usage and recent activity, drawn as a card-on-canvas page
+  on the design-system surfaces (`dsPageSurface`/`dsCardSurface`). Sections
+  run answer-first — a Usage hero (period total, Average/Today comparison,
+  interactive daily chart), compact per-model echoes, the per-source
+  breakdown, and the 24h wake-activity chart — each under one shared
+  `StatsSectionHeading` (ellipsizing title + quiet scope caption or
+  trailing control). The tab owns a page-wide day selection shared by
+  EVERY section: the hero, the per-model cards, and the Agent Activity
+  breakdown, whose provider is a `DateTime` family
+  (`tokenSourceBreakdownProvider(day)`) that filters the already-warmed
+  7/30-day record caches, and whose caption echoes the selected day
+  (`Today · % of tokens` / `Mon, Mar 11 · % of tokens`). A tap retargets,
+  never deselects; the selection is preserved by date across the 7D/30D
+  toggle, and a teal `Today` reset link in the selected-day header snaps
+  the whole page back. One semantic accent: amber fires only while today
+  runs above the time-of-day average, resolved from a single expression
+  (`todayAccentColor`) and threaded into every compact chart, so the
+  sentence, stat pair, hero bar, and per-model bars can never disagree.
+  When any source runs unusually hot today, the hero carries an amber
+  notice naming it (visible before any scrolling, even without a
+  baseline), while the source row itself is marked by a compact amber
+  dot+caption chip in today or day-neutral register. The selected day's
+  breakdown is one stacked segmented bar with swatch-keyed caption values
+  (step4 swatches) on the interactive token ramp (enabled → hover →
+  pressed for Input/Output/Thoughts, quiet decorative step for the named
+  Other remainder) — the same grammar in the hero and every per-model
+  echo, where the bar additionally length-encodes the model's share of
+  the selected day over a quiet track. Both charts share one extracted
+  grammar (`chartHistoryBarColor`, `chartSelectionBorder`,
+  `ChartScrubArea`, `chartContentMaxWidth`, plus named width/height
+  constants): ring = selection everywhere, teal/amber = today only, bars
+  a fixed column fraction with a height-aware cap, visible keyboard-focus
+  ring, and a card-surface casing under the dashed average line. On wide
+  panes every section's card hugs its chart's content width
+  (`chartContentMaxWidth + 2 · cardPadding`, start-anchored), so headings,
+  captions, and cards end on one rail instead of stretching into
+  full-width slabs. The wake-activity histogram defaults its ring to the
+  most recent active hour with tap / horizontal scrub / arrow-key
+  selection and a localized reason detail line. The 7D/30D switch and day
+  retargets keep the previous data on screen while the new value resolves
+  (stale-while-revalidate), so the page never collapses mid-interaction
 - `Templates`: reusable agent definitions and version heads
 - `Instances`: persisted agent identities and evolution sessions
 - `Souls`: pluggable personality documents with version history and template

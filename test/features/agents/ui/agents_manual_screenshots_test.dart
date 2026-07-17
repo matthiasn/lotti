@@ -986,7 +986,7 @@ void main() {
         },
       ),
       tokenSourceBreakdownProvider.overrideWith(
-        (ref) async => [
+        (ref, day) async => [
           TokenSourceBreakdown(
             templateId: _habitatTemplateId,
             displayName: _t(

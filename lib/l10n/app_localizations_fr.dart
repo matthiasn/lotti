@@ -529,7 +529,18 @@ class AppLocalizationsFr extends AppLocalizations {
       other: '$count réveils',
       one: '1 réveil',
     );
-    return '$hour : $_temp0 ($reasons)';
+    return '$hour · $_temp0 · $reasons';
+  }
+
+  @override
+  String agentPendingWakesActivityHourDetailEmpty(String hour, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count réveils',
+      one: '1 réveil',
+    );
+    return '$hour · $_temp0';
   }
 
   @override
@@ -540,8 +551,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count réveils au total',
-      one: '1 réveil au total',
+      other: '$count réveils',
+      one: '1 réveil',
     );
     return '$_temp0';
   }
@@ -846,28 +857,46 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentStateWakeCount => 'Nombre de réveils';
 
   @override
-  String get agentStatsAllDayLegend => 'Toute la journée';
-
-  @override
   String get agentStatsAverageLabel => 'Moyenne';
 
   @override
-  String agentStatsByTimeLegend(String time) {
-    return 'Quotidien jusqu\'à $time';
-  }
+  String get agentStatsByModelHeading => 'Par modèle';
 
   @override
   String get agentStatsCacheRateLabel => 'Taux de cache';
 
   @override
-  String get agentStatsDailyUsageHeading => 'Utilisation quotidienne';
+  String get agentStatsDailyUsageHeading => 'Utilisation';
+
+  @override
+  String agentStatsDayRangeLabel(int days) {
+    return '${days}j';
+  }
+
+  @override
+  String agentStatsHeroHighUsage(String name) {
+    return '$name utilise une part inhabituellement élevée des jetons aujourd\'hui.';
+  }
 
   @override
   String get agentStatsInputLabel => 'Entrée';
 
   @override
+  String agentStatsLastNDays(int days) {
+    return 'les $days derniers jours';
+  }
+
+  @override
+  String agentStatsModelDayShare(int percentage) {
+    return '$percentage % de ce jour';
+  }
+
+  @override
   String get agentStatsNoUsage =>
       'Aucune utilisation de jetons enregistrée au cours des 7 derniers jours.';
+
+  @override
+  String get agentStatsOtherLabel => 'Autre';
 
   @override
   String get agentStatsOutputLabel => 'Sortie';
@@ -879,6 +908,25 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentStatsSourceActivityHeading => 'Activité des agents';
+
+  @override
+  String get agentStatsSourceEmptyDay => 'Aucune activité d\'agent ce jour-là.';
+
+  @override
+  String get agentStatsSourceHighUsage =>
+      'Utilisation de jetons inhabituellement élevée aujourd\'hui';
+
+  @override
+  String get agentStatsSourceHighUsageDay =>
+      'Utilisation de jetons inhabituellement élevée ce jour-là';
+
+  @override
+  String agentStatsSourceScopeDayLabel(String day) {
+    return '$day · % des jetons';
+  }
+
+  @override
+  String get agentStatsSourceScopeLabel => 'Aujourd\'hui · % des jetons';
 
   @override
   String agentStatsSourceWakes(int count) {
@@ -901,19 +949,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentStatsTodayLabel => 'Aujourd\'hui';
 
   @override
-  String get agentStatsTokensPerWakeLabel => 'Jetons / réveil';
+  String get agentStatsTokensPerWakeLabel => 'Jetons/réveil';
 
   @override
   String get agentStatsTokensUnit => 'jetons';
 
   @override
   String agentStatsUsageAboveAverage(String time) {
-    return 'Tu as utilisé plus de jetons que d\'habitude aujourd\'hui, à $time.';
+    return 'À $time, tu utilises plus de jetons que d\'habitude aujourd\'hui.';
   }
 
   @override
   String agentStatsUsageBelowAverage(String time) {
-    return 'Tu as utilisé moins de jetons que d\'habitude aujourd\'hui, à $time.';
+    return 'À $time, tu utilises moins de jetons que d\'habitude aujourd\'hui.';
   }
 
   @override
@@ -1129,6 +1177,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Réveils';
+
+  @override
+  String get agentWakeReasonCreation => 'Création';
+
+  @override
+  String get agentWakeReasonReanalysis => 'Réanalyse';
+
+  @override
+  String get agentWakeReasonScheduled => 'Planifié';
+
+  @override
+  String get agentWakeReasonSubscription => 'Événement';
+
+  @override
+  String get agentWakeReasonTranscription => 'Transcription';
 
   @override
   String get aggregationDailyAvg => 'Moyenne quotidienne';

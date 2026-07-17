@@ -279,9 +279,20 @@
     }
   },
   "agentObservationsEmpty": "Aucune observation enregistrée pour le moment.",
-  "agentPendingWakesActivityHourDetail": "{hour} : {count, plural, =1{1 réveil} other{{count} réveils}} ({reasons})",
+  "agentPendingWakesActivityHourDetail": "{hour} · {count, plural, =1{1 réveil} other{{count} réveils}} · {reasons}",
+  "agentPendingWakesActivityHourDetailEmpty": "{hour} · {count, plural, =1{1 réveil} other{{count} réveils}}",
+  "@agentPendingWakesActivityHourDetailEmpty": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentPendingWakesActivityTitle": "Activité de réveil (24h)",
-  "agentPendingWakesActivityTotal": "{count, plural, =1{1 réveil au total} other{{count} réveils au total}}",
+  "agentPendingWakesActivityTotal": "{count, plural, =1{1 réveil} other{{count} réveils}}",
   "agentPendingWakesDeleteTooltip": "Supprimer le réveil",
   "agentPendingWakesEmptyFiltered": "Aucun réveil ne correspond à tes filtres.",
   "agentPendingWakesFilterSectionType": "Type",
@@ -396,24 +407,68 @@
   "agentStateRevision": "Révision",
   "agentStateSleepingUntil": "En sommeil jusqu'à",
   "agentStateWakeCount": "Nombre de réveils",
-  "agentStatsAllDayLegend": "Toute la journée",
   "agentStatsAverageLabel": "Moyenne",
-  "agentStatsByTimeLegend": "Quotidien jusqu'à {time}",
+  "agentStatsByModelHeading": "Par modèle",
   "agentStatsCacheRateLabel": "Taux de cache",
-  "agentStatsDailyUsageHeading": "Utilisation quotidienne",
+  "agentStatsDailyUsageHeading": "Utilisation",
+  "agentStatsDayRangeLabel": "{days}j",
+  "@agentStatsDayRangeLabel": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatsHeroHighUsage": "{name} utilise une part inhabituellement élevée des jetons aujourd'hui.",
+  "@agentStatsHeroHighUsage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "agentStatsInputLabel": "Entrée",
+  "agentStatsLastNDays": "les {days} derniers jours",
+  "@agentStatsLastNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatsModelDayShare": "{percentage} % de ce jour",
+  "@agentStatsModelDayShare": {
+    "placeholders": {
+      "percentage": {
+        "type": "int"
+      }
+    }
+  },
   "agentStatsNoUsage": "Aucune utilisation de jetons enregistrée au cours des 7 derniers jours.",
+  "agentStatsOtherLabel": "Autre",
   "agentStatsOutputLabel": "Sortie",
   "agentStatsSourceActiveFor": "Actif depuis {duration}",
   "agentStatsSourceActivityHeading": "Activité des agents",
+  "agentStatsSourceEmptyDay": "Aucune activité d'agent ce jour-là.",
+  "agentStatsSourceHighUsage": "Utilisation de jetons inhabituellement élevée aujourd'hui",
+  "agentStatsSourceHighUsageDay": "Utilisation de jetons inhabituellement élevée ce jour-là",
+  "agentStatsSourceScopeDayLabel": "{day} · % des jetons",
+  "@agentStatsSourceScopeDayLabel": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatsSourceScopeLabel": "Aujourd'hui · % des jetons",
   "agentStatsSourceWakes": "{count, plural, =1{1 réveil} other{{count} réveils}}",
   "agentStatsTabTitle": "Statistiques",
   "agentStatsThoughtsLabel": "Réflexions",
   "agentStatsTodayLabel": "Aujourd'hui",
-  "agentStatsTokensPerWakeLabel": "Jetons / réveil",
+  "agentStatsTokensPerWakeLabel": "Jetons/réveil",
   "agentStatsTokensUnit": "jetons",
-  "agentStatsUsageAboveAverage": "Tu as utilisé plus de jetons que d'habitude aujourd'hui, à {time}.",
-  "agentStatsUsageBelowAverage": "Tu as utilisé moins de jetons que d'habitude aujourd'hui, à {time}.",
+  "agentStatsUsageAboveAverage": "À {time}, tu utilises plus de jetons que d'habitude aujourd'hui.",
+  "agentStatsUsageBelowAverage": "À {time}, tu utilises moins de jetons que d'habitude aujourd'hui.",
   "agentStatsWakesLabel": "Réveils",
   "agentSuggestionTimeEntryUpdateCurrent": "Actuel",
   "agentSuggestionTimeEntryUpdateNoChange": "(inchangé)",
@@ -501,6 +556,11 @@
   "agentTokenUsageThoughtsTokens": "Pensées",
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Réveils",
+  "agentWakeReasonCreation": "Création",
+  "agentWakeReasonReanalysis": "Réanalyse",
+  "agentWakeReasonScheduled": "Planifié",
+  "agentWakeReasonSubscription": "Événement",
+  "agentWakeReasonTranscription": "Transcription",
   "aggregationDailyAvg": "Moyenne quotidienne",
   "aggregationDailyMax": "Maximum quotidien",
   "aggregationDailySum": "Somme quotidienne",

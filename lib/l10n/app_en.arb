@@ -285,7 +285,7 @@
     }
   },
   "agentObservationsEmpty": "No observations recorded yet.",
-  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 wake} other{{count} wakes}} ({reasons})",
+  "agentPendingWakesActivityHourDetail": "{hour} · {count, plural, =1{1 wake} other{{count} wakes}} · {reasons}",
   "@agentPendingWakesActivityHourDetail": {
     "placeholders": {
       "hour": {
@@ -299,8 +299,19 @@
       }
     }
   },
+  "agentPendingWakesActivityHourDetailEmpty": "{hour} · {count, plural, =1{1 wake} other{{count} wakes}}",
+  "@agentPendingWakesActivityHourDetailEmpty": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentPendingWakesActivityTitle": "Wake Activity (24h)",
-  "agentPendingWakesActivityTotal": "{count, plural, =1{1 total wake} other{{count} total wakes}}",
+  "agentPendingWakesActivityTotal": "{count, plural, =1{1 wake} other{{count} wakes}}",
   "@agentPendingWakesActivityTotal": {
     "placeholders": {
       "count": {
@@ -429,20 +440,45 @@
   "agentStateRevision": "Revision",
   "agentStateSleepingUntil": "Sleeping until",
   "agentStateWakeCount": "Wake count",
-  "agentStatsAllDayLegend": "All Day",
   "agentStatsAverageLabel": "Average",
-  "agentStatsByTimeLegend": "Daily by {time}",
-  "@agentStatsByTimeLegend": {
+  "agentStatsByModelHeading": "By Model",
+  "agentStatsCacheRateLabel": "Cache Rate",
+  "agentStatsDailyUsageHeading": "Usage",
+  "agentStatsDayRangeLabel": "{days}D",
+  "@agentStatsDayRangeLabel": {
     "placeholders": {
-      "time": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatsHeroHighUsage": "{name} is using an unusually large share of today's tokens.",
+  "@agentStatsHeroHighUsage": {
+    "placeholders": {
+      "name": {
         "type": "String"
       }
     }
   },
-  "agentStatsCacheRateLabel": "Cache Rate",
-  "agentStatsDailyUsageHeading": "Daily Usage",
   "agentStatsInputLabel": "Input",
+  "agentStatsLastNDays": "last {days} days",
+  "@agentStatsLastNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatsModelDayShare": "{percentage}% of this day",
+  "@agentStatsModelDayShare": {
+    "placeholders": {
+      "percentage": {
+        "type": "int"
+      }
+    }
+  },
   "agentStatsNoUsage": "No token usage recorded in the past 7 days.",
+  "agentStatsOtherLabel": "Other",
   "agentStatsOutputLabel": "Output",
   "agentStatsSourceActiveFor": "Active for {duration}",
   "@agentStatsSourceActiveFor": {
@@ -453,6 +489,18 @@
     }
   },
   "agentStatsSourceActivityHeading": "Agent Activity",
+  "agentStatsSourceEmptyDay": "No agent activity on this day.",
+  "agentStatsSourceHighUsage": "Unusually heavy token use today",
+  "agentStatsSourceHighUsageDay": "Unusually heavy token use this day",
+  "agentStatsSourceScopeDayLabel": "{day} · % of tokens",
+  "@agentStatsSourceScopeDayLabel": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatsSourceScopeLabel": "Today · % of tokens",
   "agentStatsSourceWakes": "{count, plural, =1{1 wake} other{{count} wakes}}",
   "@agentStatsSourceWakes": {
     "placeholders": {
@@ -464,9 +512,9 @@
   "agentStatsTabTitle": "Stats",
   "agentStatsThoughtsLabel": "Thoughts",
   "agentStatsTodayLabel": "Today",
-  "agentStatsTokensPerWakeLabel": "Tokens / Wake",
+  "agentStatsTokensPerWakeLabel": "Tokens/Wake",
   "agentStatsTokensUnit": "tokens",
-  "agentStatsUsageAboveAverage": "You're using more tokens today than you usually do by {time}.",
+  "agentStatsUsageAboveAverage": "As of {time}, you're using more tokens than usual today.",
   "@agentStatsUsageAboveAverage": {
     "placeholders": {
       "time": {
@@ -474,7 +522,7 @@
       }
     }
   },
-  "agentStatsUsageBelowAverage": "You're using fewer tokens today than you usually do by {time}.",
+  "agentStatsUsageBelowAverage": "As of {time}, you're using fewer tokens than usual today.",
   "@agentStatsUsageBelowAverage": {
     "placeholders": {
       "time": {
@@ -689,6 +737,11 @@
   "agentTokenUsageThoughtsTokens": "Thoughts",
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Wakes",
+  "agentWakeReasonCreation": "Creation",
+  "agentWakeReasonReanalysis": "Re-analysis",
+  "agentWakeReasonScheduled": "Scheduled",
+  "agentWakeReasonSubscription": "Event",
+  "agentWakeReasonTranscription": "Transcription",
   "aggregationDailyAvg": "Daily average",
   "aggregationDailyMax": "Daily maximum",
   "aggregationDailySum": "Daily sum",

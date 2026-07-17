@@ -520,7 +520,18 @@ class AppLocalizationsEn extends AppLocalizations {
       other: '$count wakes',
       one: '1 wake',
     );
-    return '$hour: $_temp0 ($reasons)';
+    return '$hour · $_temp0 · $reasons';
+  }
+
+  @override
+  String agentPendingWakesActivityHourDetailEmpty(String hour, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count wakes',
+      one: '1 wake',
+    );
+    return '$hour · $_temp0';
   }
 
   @override
@@ -531,8 +542,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count total wakes',
-      one: '1 total wake',
+      other: '$count wakes',
+      one: '1 wake',
     );
     return '$_temp0';
   }
@@ -829,27 +840,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentStateWakeCount => 'Wake count';
 
   @override
-  String get agentStatsAllDayLegend => 'All Day';
-
-  @override
   String get agentStatsAverageLabel => 'Average';
 
   @override
-  String agentStatsByTimeLegend(String time) {
-    return 'Daily by $time';
-  }
+  String get agentStatsByModelHeading => 'By Model';
 
   @override
   String get agentStatsCacheRateLabel => 'Cache Rate';
 
   @override
-  String get agentStatsDailyUsageHeading => 'Daily Usage';
+  String get agentStatsDailyUsageHeading => 'Usage';
+
+  @override
+  String agentStatsDayRangeLabel(int days) {
+    return '${days}D';
+  }
+
+  @override
+  String agentStatsHeroHighUsage(String name) {
+    return '$name is using an unusually large share of today\'s tokens.';
+  }
 
   @override
   String get agentStatsInputLabel => 'Input';
 
   @override
+  String agentStatsLastNDays(int days) {
+    return 'last $days days';
+  }
+
+  @override
+  String agentStatsModelDayShare(int percentage) {
+    return '$percentage% of this day';
+  }
+
+  @override
   String get agentStatsNoUsage => 'No token usage recorded in the past 7 days.';
+
+  @override
+  String get agentStatsOtherLabel => 'Other';
 
   @override
   String get agentStatsOutputLabel => 'Output';
@@ -861,6 +890,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentStatsSourceActivityHeading => 'Agent Activity';
+
+  @override
+  String get agentStatsSourceEmptyDay => 'No agent activity on this day.';
+
+  @override
+  String get agentStatsSourceHighUsage => 'Unusually heavy token use today';
+
+  @override
+  String get agentStatsSourceHighUsageDay =>
+      'Unusually heavy token use this day';
+
+  @override
+  String agentStatsSourceScopeDayLabel(String day) {
+    return '$day · % of tokens';
+  }
+
+  @override
+  String get agentStatsSourceScopeLabel => 'Today · % of tokens';
 
   @override
   String agentStatsSourceWakes(int count) {
@@ -883,19 +930,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentStatsTodayLabel => 'Today';
 
   @override
-  String get agentStatsTokensPerWakeLabel => 'Tokens / Wake';
+  String get agentStatsTokensPerWakeLabel => 'Tokens/Wake';
 
   @override
   String get agentStatsTokensUnit => 'tokens';
 
   @override
   String agentStatsUsageAboveAverage(String time) {
-    return 'You\'re using more tokens today than you usually do by $time.';
+    return 'As of $time, you\'re using more tokens than usual today.';
   }
 
   @override
   String agentStatsUsageBelowAverage(String time) {
-    return 'You\'re using fewer tokens today than you usually do by $time.';
+    return 'As of $time, you\'re using fewer tokens than usual today.';
   }
 
   @override
@@ -1108,6 +1155,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Wakes';
+
+  @override
+  String get agentWakeReasonCreation => 'Creation';
+
+  @override
+  String get agentWakeReasonReanalysis => 'Re-analysis';
+
+  @override
+  String get agentWakeReasonScheduled => 'Scheduled';
+
+  @override
+  String get agentWakeReasonSubscription => 'Event';
+
+  @override
+  String get agentWakeReasonTranscription => 'Transcription';
 
   @override
   String get aggregationDailyAvg => 'Daily average';

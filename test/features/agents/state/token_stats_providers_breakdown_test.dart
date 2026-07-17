@@ -253,7 +253,7 @@ void main() {
               wakeRuns: wakeRuns,
             );
             final result = await container.read(
-              tokenSourceBreakdownProvider.future,
+              tokenSourceBreakdownProvider(DateTime(2024, 3, 15)).future,
             );
 
             expect(result, hasLength(1));
@@ -298,7 +298,7 @@ void main() {
             wakeRuns: wakeRuns,
           );
           final result = await container.read(
-            tokenSourceBreakdownProvider.future,
+            tokenSourceBreakdownProvider(DateTime(2024, 3, 15)).future,
           );
 
           expect(result, hasLength(1));
@@ -338,7 +338,7 @@ void main() {
 
             final container = createContainer(tokenRecords: [record]);
             final result = await container.read(
-              tokenSourceBreakdownProvider.future,
+              tokenSourceBreakdownProvider(DateTime(2024, 3, 15)).future,
             );
 
             expect(result, hasLength(1));
@@ -377,7 +377,7 @@ void main() {
 
           final container = createContainer(tokenRecords: [record]);
           final result = await container.read(
-            tokenSourceBreakdownProvider.future,
+            tokenSourceBreakdownProvider(DateTime(2024, 3, 15)).future,
           );
 
           expect(result, hasLength(1));
@@ -409,7 +409,7 @@ void main() {
 
           final container = createContainer(tokenRecords: records);
           final result = await container.read(
-            tokenSourceBreakdownProvider.future,
+            tokenSourceBreakdownProvider(DateTime(2024, 3, 15)).future,
           );
 
           expect(result, hasLength(1));

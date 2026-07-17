@@ -286,9 +286,20 @@
     }
   },
   "agentObservationsEmpty": "Zatím žádná zaznamenaná pozorování.",
-  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 probuzení} other{{count} probuzení}} ({reasons})",
+  "agentPendingWakesActivityHourDetail": "{hour} · {count, plural, =1{1 probuzení} other{{count} probuzení}} · {reasons}",
+  "agentPendingWakesActivityHourDetailEmpty": "{hour} · {count, plural, =1{1 probuzení} other{{count} probuzení}}",
+  "@agentPendingWakesActivityHourDetailEmpty": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentPendingWakesActivityTitle": "Aktivita probuzení (24h)",
-  "agentPendingWakesActivityTotal": "{count, plural, =1{1 probuzení celkem} other{{count} probuzení celkem}}",
+  "agentPendingWakesActivityTotal": "{count, plural, =1{1 probuzení} other{{count} probuzení}}",
   "agentPendingWakesDeleteTooltip": "Odstranit probuzení",
   "agentPendingWakesEmptyFiltered": "Žádná probuzení neodpovídají tvým filtrům.",
   "agentPendingWakesFilterSectionType": "Typ",
@@ -403,24 +414,68 @@
   "agentStateRevision": "Revize",
   "agentStateSleepingUntil": "Spí do",
   "agentStateWakeCount": "Počet probuzení",
-  "agentStatsAllDayLegend": "Celý den",
   "agentStatsAverageLabel": "Průměr",
-  "agentStatsByTimeLegend": "Denně do {time}",
+  "agentStatsByModelHeading": "Podle modelu",
   "agentStatsCacheRateLabel": "Míra cache",
-  "agentStatsDailyUsageHeading": "Denní využití",
+  "agentStatsDailyUsageHeading": "Využití",
+  "agentStatsDayRangeLabel": "{days}d",
+  "@agentStatsDayRangeLabel": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatsHeroHighUsage": "{name} dnes spotřebovává neobvykle velký podíl tokenů.",
+  "@agentStatsHeroHighUsage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "agentStatsInputLabel": "Vstup",
+  "agentStatsLastNDays": "posledních {days} dní",
+  "@agentStatsLastNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatsModelDayShare": "{percentage} % tohoto dne",
+  "@agentStatsModelDayShare": {
+    "placeholders": {
+      "percentage": {
+        "type": "int"
+      }
+    }
+  },
   "agentStatsNoUsage": "Za posledních 7 dní nebyla zaznamenána žádná spotřeba tokenů.",
+  "agentStatsOtherLabel": "Ostatní",
   "agentStatsOutputLabel": "Výstup",
   "agentStatsSourceActiveFor": "Aktivní po dobu {duration}",
   "agentStatsSourceActivityHeading": "Aktivita agentů",
+  "agentStatsSourceEmptyDay": "V tento den žádná aktivita agentů.",
+  "agentStatsSourceHighUsage": "Neobvykle vysoká spotřeba tokenů dnes",
+  "agentStatsSourceHighUsageDay": "Neobvykle vysoká spotřeba tokenů v tento den",
+  "agentStatsSourceScopeDayLabel": "{day} · % tokenů",
+  "@agentStatsSourceScopeDayLabel": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatsSourceScopeLabel": "Dnes · % tokenů",
   "agentStatsSourceWakes": "{count, plural, =1{1 probuzení} few{{count} probuzení} other{{count} probuzení}}",
   "agentStatsTabTitle": "Statistiky",
   "agentStatsThoughtsLabel": "Myšlenky",
   "agentStatsTodayLabel": "Dnes",
-  "agentStatsTokensPerWakeLabel": "Tokeny / probuzení",
+  "agentStatsTokensPerWakeLabel": "Tokeny/probuzení",
   "agentStatsTokensUnit": "tokeny",
-  "agentStatsUsageAboveAverage": "Dnes používáš více tokenů, než je obvyklé v {time}.",
-  "agentStatsUsageBelowAverage": "Dnes používáš méně tokenů, než je obvyklé v {time}.",
+  "agentStatsUsageAboveAverage": "K {time} dnes používáš více tokenů než obvykle.",
+  "agentStatsUsageBelowAverage": "K {time} dnes používáš méně tokenů než obvykle.",
   "agentStatsWakesLabel": "Probuzení",
   "agentSuggestionTimeEntryUpdateCurrent": "Aktuální",
   "agentSuggestionTimeEntryUpdateNoChange": "(beze změny)",
@@ -508,6 +563,11 @@
   "agentTokenUsageThoughtsTokens": "Úvahy",
   "agentTokenUsageTotalTokens": "Celkem",
   "agentTokenUsageWakeCount": "Probuzení",
+  "agentWakeReasonCreation": "Vytvoření",
+  "agentWakeReasonReanalysis": "Nová analýza",
+  "agentWakeReasonScheduled": "Plánované",
+  "agentWakeReasonSubscription": "Událost",
+  "agentWakeReasonTranscription": "Přepis",
   "aggregationDailyAvg": "Denní průměr",
   "aggregationDailyMax": "Denní maximum",
   "aggregationDailySum": "Denní součet",

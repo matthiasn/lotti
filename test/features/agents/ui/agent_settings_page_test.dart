@@ -148,7 +148,7 @@ void main() {
         (ref, days) async => const <String, List<DailyTokenUsage>>{},
       ),
       tokenSourceBreakdownProvider.overrideWith(
-        (ref) async => const <TokenSourceBreakdown>[],
+        (ref, day) async => const <TokenSourceBreakdown>[],
       ),
       ...extraOverrides,
     ];
@@ -514,7 +514,7 @@ void main() {
               (ref, days) async => const <String, List<DailyTokenUsage>>{},
             ),
             tokenSourceBreakdownProvider.overrideWith(
-              (ref) async => const <TokenSourceBreakdown>[],
+              (ref, day) async => const <TokenSourceBreakdown>[],
             ),
           ],
         ),
@@ -586,7 +586,7 @@ void main() {
               (ref, days) async => const <String, List<DailyTokenUsage>>{},
             ),
             tokenSourceBreakdownProvider.overrideWith(
-              (ref) async => const <TokenSourceBreakdown>[],
+              (ref, day) async => const <TokenSourceBreakdown>[],
             ),
           ],
         ),
@@ -846,7 +846,7 @@ void main() {
               (ref, days) async => const <String, List<DailyTokenUsage>>{},
             ),
             tokenSourceBreakdownProvider.overrideWith(
-              (ref) async => const <TokenSourceBreakdown>[],
+              (ref, day) async => const <TokenSourceBreakdown>[],
             ),
           ],
         ),
@@ -1094,7 +1094,7 @@ void main() {
                 (ref, days) async => const <String, List<DailyTokenUsage>>{},
               ),
               tokenSourceBreakdownProvider.overrideWith(
-                (ref) async => const <TokenSourceBreakdown>[],
+                (ref, day) async => const <TokenSourceBreakdown>[],
               ),
             ],
           ),

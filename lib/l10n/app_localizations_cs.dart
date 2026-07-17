@@ -525,7 +525,18 @@ class AppLocalizationsCs extends AppLocalizations {
       other: '$count probuzení',
       one: '1 probuzení',
     );
-    return '$hour: $_temp0 ($reasons)';
+    return '$hour · $_temp0 · $reasons';
+  }
+
+  @override
+  String agentPendingWakesActivityHourDetailEmpty(String hour, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count probuzení',
+      one: '1 probuzení',
+    );
+    return '$hour · $_temp0';
   }
 
   @override
@@ -536,8 +547,8 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count probuzení celkem',
-      one: '1 probuzení celkem',
+      other: '$count probuzení',
+      one: '1 probuzení',
     );
     return '$_temp0';
   }
@@ -836,28 +847,46 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentStateWakeCount => 'Počet probuzení';
 
   @override
-  String get agentStatsAllDayLegend => 'Celý den';
-
-  @override
   String get agentStatsAverageLabel => 'Průměr';
 
   @override
-  String agentStatsByTimeLegend(String time) {
-    return 'Denně do $time';
-  }
+  String get agentStatsByModelHeading => 'Podle modelu';
 
   @override
   String get agentStatsCacheRateLabel => 'Míra cache';
 
   @override
-  String get agentStatsDailyUsageHeading => 'Denní využití';
+  String get agentStatsDailyUsageHeading => 'Využití';
+
+  @override
+  String agentStatsDayRangeLabel(int days) {
+    return '${days}d';
+  }
+
+  @override
+  String agentStatsHeroHighUsage(String name) {
+    return '$name dnes spotřebovává neobvykle velký podíl tokenů.';
+  }
 
   @override
   String get agentStatsInputLabel => 'Vstup';
 
   @override
+  String agentStatsLastNDays(int days) {
+    return 'posledních $days dní';
+  }
+
+  @override
+  String agentStatsModelDayShare(int percentage) {
+    return '$percentage % tohoto dne';
+  }
+
+  @override
   String get agentStatsNoUsage =>
       'Za posledních 7 dní nebyla zaznamenána žádná spotřeba tokenů.';
+
+  @override
+  String get agentStatsOtherLabel => 'Ostatní';
 
   @override
   String get agentStatsOutputLabel => 'Výstup';
@@ -869,6 +898,25 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentStatsSourceActivityHeading => 'Aktivita agentů';
+
+  @override
+  String get agentStatsSourceEmptyDay => 'V tento den žádná aktivita agentů.';
+
+  @override
+  String get agentStatsSourceHighUsage =>
+      'Neobvykle vysoká spotřeba tokenů dnes';
+
+  @override
+  String get agentStatsSourceHighUsageDay =>
+      'Neobvykle vysoká spotřeba tokenů v tento den';
+
+  @override
+  String agentStatsSourceScopeDayLabel(String day) {
+    return '$day · % tokenů';
+  }
+
+  @override
+  String get agentStatsSourceScopeLabel => 'Dnes · % tokenů';
 
   @override
   String agentStatsSourceWakes(int count) {
@@ -892,19 +940,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentStatsTodayLabel => 'Dnes';
 
   @override
-  String get agentStatsTokensPerWakeLabel => 'Tokeny / probuzení';
+  String get agentStatsTokensPerWakeLabel => 'Tokeny/probuzení';
 
   @override
   String get agentStatsTokensUnit => 'tokeny';
 
   @override
   String agentStatsUsageAboveAverage(String time) {
-    return 'Dnes používáš více tokenů, než je obvyklé v $time.';
+    return 'K $time dnes používáš více tokenů než obvykle.';
   }
 
   @override
   String agentStatsUsageBelowAverage(String time) {
-    return 'Dnes používáš méně tokenů, než je obvyklé v $time.';
+    return 'K $time dnes používáš méně tokenů než obvykle.';
   }
 
   @override
@@ -1121,6 +1169,21 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Probuzení';
+
+  @override
+  String get agentWakeReasonCreation => 'Vytvoření';
+
+  @override
+  String get agentWakeReasonReanalysis => 'Nová analýza';
+
+  @override
+  String get agentWakeReasonScheduled => 'Plánované';
+
+  @override
+  String get agentWakeReasonSubscription => 'Událost';
+
+  @override
+  String get agentWakeReasonTranscription => 'Přepis';
 
   @override
   String get aggregationDailyAvg => 'Denní průměr';

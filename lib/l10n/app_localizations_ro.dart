@@ -529,7 +529,18 @@ class AppLocalizationsRo extends AppLocalizations {
       other: '$count treziri',
       one: '1 trezire',
     );
-    return '$hour: $_temp0 ($reasons)';
+    return '$hour · $_temp0 · $reasons';
+  }
+
+  @override
+  String agentPendingWakesActivityHourDetailEmpty(String hour, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count treziri',
+      one: '1 trezire',
+    );
+    return '$hour · $_temp0';
   }
 
   @override
@@ -540,8 +551,8 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count treziri în total',
-      one: '1 trezire în total',
+      other: '$count treziri',
+      one: '1 trezire',
     );
     return '$_temp0';
   }
@@ -844,28 +855,46 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentStateWakeCount => 'Număr de treziri';
 
   @override
-  String get agentStatsAllDayLegend => 'Toată ziua';
-
-  @override
   String get agentStatsAverageLabel => 'Medie';
 
   @override
-  String agentStatsByTimeLegend(String time) {
-    return 'Zilnic până la $time';
-  }
+  String get agentStatsByModelHeading => 'După model';
 
   @override
   String get agentStatsCacheRateLabel => 'Rată cache';
 
   @override
-  String get agentStatsDailyUsageHeading => 'Utilizare zilnică';
+  String get agentStatsDailyUsageHeading => 'Utilizare';
+
+  @override
+  String agentStatsDayRangeLabel(int days) {
+    return '${days}z';
+  }
+
+  @override
+  String agentStatsHeroHighUsage(String name) {
+    return '$name folosește astăzi o parte neobișnuit de mare din tokenuri.';
+  }
 
   @override
   String get agentStatsInputLabel => 'Intrare';
 
   @override
+  String agentStatsLastNDays(int days) {
+    return 'ultimele $days zile';
+  }
+
+  @override
+  String agentStatsModelDayShare(int percentage) {
+    return '$percentage % din această zi';
+  }
+
+  @override
   String get agentStatsNoUsage =>
       'Nu s-a înregistrat nicio utilizare de tokenuri în ultimele 7 zile.';
+
+  @override
+  String get agentStatsOtherLabel => 'Altele';
 
   @override
   String get agentStatsOutputLabel => 'Ieșire';
@@ -877,6 +906,26 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentStatsSourceActivityHeading => 'Activitatea agenților';
+
+  @override
+  String get agentStatsSourceEmptyDay =>
+      'Nicio activitate a agenților în această zi.';
+
+  @override
+  String get agentStatsSourceHighUsage =>
+      'Utilizare neobișnuit de ridicată a tokenurilor astăzi';
+
+  @override
+  String get agentStatsSourceHighUsageDay =>
+      'Utilizare neobișnuit de ridicată a tokenurilor în această zi';
+
+  @override
+  String agentStatsSourceScopeDayLabel(String day) {
+    return '$day · % din tokenuri';
+  }
+
+  @override
+  String get agentStatsSourceScopeLabel => 'Astăzi · % din tokenuri';
 
   @override
   String agentStatsSourceWakes(int count) {
@@ -900,19 +949,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentStatsTodayLabel => 'Astăzi';
 
   @override
-  String get agentStatsTokensPerWakeLabel => 'Tokenuri / trezire';
+  String get agentStatsTokensPerWakeLabel => 'Tokenuri/trezire';
 
   @override
   String get agentStatsTokensUnit => 'tokenuri';
 
   @override
   String agentStatsUsageAboveAverage(String time) {
-    return 'Utilizați mai multe tokenuri astăzi decât de obicei la $time.';
+    return 'La $time, utilizați mai multe tokenuri decât de obicei astăzi.';
   }
 
   @override
   String agentStatsUsageBelowAverage(String time) {
-    return 'Utilizați mai puține tokenuri astăzi decât de obicei la $time.';
+    return 'La $time, utilizați mai puține tokenuri decât de obicei astăzi.';
   }
 
   @override
@@ -1128,6 +1177,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Treziri';
+
+  @override
+  String get agentWakeReasonCreation => 'Creare';
+
+  @override
+  String get agentWakeReasonReanalysis => 'Reanaliză';
+
+  @override
+  String get agentWakeReasonScheduled => 'Programat';
+
+  @override
+  String get agentWakeReasonSubscription => 'Eveniment';
+
+  @override
+  String get agentWakeReasonTranscription => 'Transcriere';
 
   @override
   String get aggregationDailyAvg => 'Medie zilnică';

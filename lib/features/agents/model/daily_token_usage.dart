@@ -2,10 +2,11 @@ import 'package:meta/meta.dart';
 
 /// Token usage aggregated for a single calendar day.
 ///
-/// Supports the iOS battery-style chart by tracking both the full-day total
-/// and the tokens consumed up to a specific cutoff time (typically the current
-/// hour of day), enabling two-tone bar rendering. Also carries the
-/// input/output/thoughts/cached breakdown and wake count for detail panels.
+/// Tracks both the full-day total (what the chart bars render) and the
+/// tokens consumed up to a cutoff time of day (what the Average/Today
+/// comparison uses, so today's partial day is compared against past days
+/// at the same hour). Also carries the input/output/thoughts/cached
+/// breakdown and wake count for detail panels.
 @immutable
 class DailyTokenUsage {
   const DailyTokenUsage({

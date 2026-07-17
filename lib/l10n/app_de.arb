@@ -279,9 +279,20 @@
     }
   },
   "agentObservationsEmpty": "Noch keine Beobachtungen aufgezeichnet.",
-  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 Weckvorgang} other{{count} Weckvorgänge}} ({reasons})",
+  "agentPendingWakesActivityHourDetail": "{hour} · {count, plural, =1{1 Weckvorgang} other{{count} Weckvorgänge}} · {reasons}",
+  "agentPendingWakesActivityHourDetailEmpty": "{hour} · {count, plural, =1{1 Weckvorgang} other{{count} Weckvorgänge}}",
+  "@agentPendingWakesActivityHourDetailEmpty": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentPendingWakesActivityTitle": "Weckaktivität (24h)",
-  "agentPendingWakesActivityTotal": "{count, plural, =1{1 Weckvorgang insgesamt} other{{count} Weckvorgänge insgesamt}}",
+  "agentPendingWakesActivityTotal": "{count, plural, =1{1 Weckvorgang} other{{count} Weckvorgänge}}",
   "agentPendingWakesDeleteTooltip": "Weckvorgang entfernen",
   "agentPendingWakesEmptyFiltered": "Keine Weckvorgänge passen zu deinen Filtern.",
   "agentPendingWakesFilterSectionType": "Typ",
@@ -396,24 +407,68 @@
   "agentStateRevision": "Überarbeitung",
   "agentStateSleepingUntil": "Schlafend bis",
   "agentStateWakeCount": "Aufwachzähler",
-  "agentStatsAllDayLegend": "Ganzer Tag",
   "agentStatsAverageLabel": "Durchschnitt",
-  "agentStatsByTimeLegend": "Täglich bis {time}",
+  "agentStatsByModelHeading": "Nach Modell",
   "agentStatsCacheRateLabel": "Cache-Rate",
-  "agentStatsDailyUsageHeading": "Tägliche Nutzung",
+  "agentStatsDailyUsageHeading": "Verbrauch",
+  "agentStatsDayRangeLabel": "{days}T",
+  "@agentStatsDayRangeLabel": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatsHeroHighUsage": "{name} verbraucht heute einen ungewöhnlich großen Anteil der Tokens.",
+  "@agentStatsHeroHighUsage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "agentStatsInputLabel": "Eingabe",
+  "agentStatsLastNDays": "letzte {days} Tage",
+  "@agentStatsLastNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatsModelDayShare": "{percentage} % dieses Tages",
+  "@agentStatsModelDayShare": {
+    "placeholders": {
+      "percentage": {
+        "type": "int"
+      }
+    }
+  },
   "agentStatsNoUsage": "Keine Token-Nutzung in den letzten 7 Tagen erfasst.",
+  "agentStatsOtherLabel": "Sonstige",
   "agentStatsOutputLabel": "Ausgabe",
   "agentStatsSourceActiveFor": "Aktiv seit {duration}",
   "agentStatsSourceActivityHeading": "Agentenaktivität",
+  "agentStatsSourceEmptyDay": "Keine Agenten-Aktivität an diesem Tag.",
+  "agentStatsSourceHighUsage": "Ungewöhnlich hoher Token-Verbrauch heute",
+  "agentStatsSourceHighUsageDay": "Ungewöhnlich hoher Token-Verbrauch an diesem Tag",
+  "agentStatsSourceScopeDayLabel": "{day} · % der Tokens",
+  "@agentStatsSourceScopeDayLabel": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatsSourceScopeLabel": "Heute · % der Tokens",
   "agentStatsSourceWakes": "{count, plural, =1{1 Aufwachvorgang} other{{count} Aufwachvorgänge}}",
   "agentStatsTabTitle": "Statistiken",
   "agentStatsThoughtsLabel": "Gedanken",
   "agentStatsTodayLabel": "Heute",
-  "agentStatsTokensPerWakeLabel": "Tokens / Aufwachen",
+  "agentStatsTokensPerWakeLabel": "Tokens/Aufwachen",
   "agentStatsTokensUnit": "Tokens",
-  "agentStatsUsageAboveAverage": "Du verwendest heute mehr Tokens als gewöhnlich um {time}.",
-  "agentStatsUsageBelowAverage": "Du verwendest heute weniger Tokens als gewöhnlich um {time}.",
+  "agentStatsUsageAboveAverage": "Stand {time}: Du verwendest heute mehr Tokens als gewöhnlich.",
+  "agentStatsUsageBelowAverage": "Stand {time}: Du verwendest heute weniger Tokens als gewöhnlich.",
   "agentStatsWakesLabel": "Aufwachvorgänge",
   "agentSuggestionTimeEntryUpdateCurrent": "Aktuell",
   "agentSuggestionTimeEntryUpdateNoChange": "(unverändert)",
@@ -501,6 +556,11 @@
   "agentTokenUsageThoughtsTokens": "Denken",
   "agentTokenUsageTotalTokens": "Gesamt",
   "agentTokenUsageWakeCount": "Aufwachvorgänge",
+  "agentWakeReasonCreation": "Erstellung",
+  "agentWakeReasonReanalysis": "Neuanalyse",
+  "agentWakeReasonScheduled": "Geplant",
+  "agentWakeReasonSubscription": "Ereignis",
+  "agentWakeReasonTranscription": "Transkription",
   "aggregationDailyAvg": "Tagesdurchschnitt",
   "aggregationDailyMax": "Tagesmaximum",
   "aggregationDailySum": "Tagessumme",

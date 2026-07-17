@@ -289,7 +289,7 @@ void main() {
 
         final container = createContainer(tokenRecords: records);
         final result = await container.read(
-          tokenSourceBreakdownProvider.future,
+          tokenSourceBreakdownProvider(DateTime(2024, 3, 15)).future,
         );
 
         expect(result, hasLength(2));
@@ -331,7 +331,7 @@ void main() {
 
         final container = createContainer(tokenRecords: records);
         final result = await container.read(
-          tokenSourceBreakdownProvider.future,
+          tokenSourceBreakdownProvider(DateTime(2024, 3, 15)).future,
         );
 
         // Fair share = 100/3 = 33.3%. Threshold = 33.3 * 2.5 = 83.3%.
@@ -395,7 +395,7 @@ void main() {
             tokenRecords: recordsWithHeavy(625),
           );
           var result = await container.read(
-            tokenSourceBreakdownProvider.future,
+            tokenSourceBreakdownProvider(DateTime(2024, 3, 15)).future,
           );
           expect(
             result.firstWhere((s) => s.templateId == 'tpl-heavy').isHighUsage,
@@ -405,7 +405,9 @@ void main() {
 
           // Just above: 626/1000 = 62.6% > 62.5%.
           container = createContainer(tokenRecords: recordsWithHeavy(626));
-          result = await container.read(tokenSourceBreakdownProvider.future);
+          result = await container.read(
+            tokenSourceBreakdownProvider(DateTime(2024, 3, 15)).future,
+          );
           expect(
             result.firstWhere((s) => s.templateId == 'tpl-heavy').isHighUsage,
             isTrue,
@@ -419,10 +421,59 @@ void main() {
       await withClock(Clock.fixed(now), () async {
         final container = createContainer();
         final result = await container.read(
-          tokenSourceBreakdownProvider.future,
+          tokenSourceBreakdownProvider(DateTime(2024, 3, 15)).future,
         );
 
         expect(result, isEmpty);
+      });
+    });
+
+    test('scopes the breakdown to the requested past day only', () async {
+      final now = DateTime(2024, 3, 15, 14, 30);
+      await withClock(Clock.fixed(now), () async {
+        final records = [
+          // Wednesday: the day under review.
+          makeTokenRecord(
+            createdAt: DateTime(2024, 3, 13, 9),
+            inputTokens: 6000,
+            templateId: 'tpl-a',
+          ),
+          // Today and Tuesday: adjacent days that must not leak in.
+          makeTokenRecord(
+            createdAt: DateTime(2024, 3, 15, 10),
+            inputTokens: 4000,
+            templateId: 'tpl-a',
+          ),
+          makeTokenRecord(
+            createdAt: DateTime(2024, 3, 12, 23, 59),
+            inputTokens: 1000,
+            templateId: 'tpl-b',
+          ),
+        ];
+        stubEntitiesById({
+          'tpl-a': makeTestTemplate(
+            id: 'tpl-a',
+            agentId: 'tpl-a',
+            displayName: 'Agent Alpha',
+          ),
+          'tpl-b': makeTestTemplate(
+            id: 'tpl-b',
+            agentId: 'tpl-b',
+            displayName: 'Agent Beta',
+          ),
+        });
+
+        final container = createContainer(tokenRecords: records);
+        final result = await container.read(
+          tokenSourceBreakdownProvider(DateTime(2024, 3, 13)).future,
+        );
+
+        // Only Wednesday's record counts — today's 4K for the same
+        // template and Tuesday's 23:59 record both fall outside the day.
+        expect(result, hasLength(1));
+        expect(result.single.displayName, 'Agent Alpha');
+        expect(result.single.totalTokens, 6000);
+        expect(result.single.percentage, 100);
       });
     });
   });

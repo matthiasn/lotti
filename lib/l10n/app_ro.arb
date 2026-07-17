@@ -279,9 +279,20 @@
     }
   },
   "agentObservationsEmpty": "Nu au fost înregistrate observații încă.",
-  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 trezire} other{{count} treziri}} ({reasons})",
+  "agentPendingWakesActivityHourDetail": "{hour} · {count, plural, =1{1 trezire} other{{count} treziri}} · {reasons}",
+  "agentPendingWakesActivityHourDetailEmpty": "{hour} · {count, plural, =1{1 trezire} other{{count} treziri}}",
+  "@agentPendingWakesActivityHourDetailEmpty": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentPendingWakesActivityTitle": "Activitate treziri (24h)",
-  "agentPendingWakesActivityTotal": "{count, plural, =1{1 trezire în total} other{{count} treziri în total}}",
+  "agentPendingWakesActivityTotal": "{count, plural, =1{1 trezire} other{{count} treziri}}",
   "agentPendingWakesDeleteTooltip": "Eliminați trezirea",
   "agentPendingWakesEmptyFiltered": "Nicio trezire nu se potrivește cu filtrele dvs.",
   "agentPendingWakesFilterSectionType": "Tip",
@@ -396,24 +407,68 @@
   "agentStateRevision": "Revizie",
   "agentStateSleepingUntil": "Doarme până la",
   "agentStateWakeCount": "Număr de treziri",
-  "agentStatsAllDayLegend": "Toată ziua",
   "agentStatsAverageLabel": "Medie",
-  "agentStatsByTimeLegend": "Zilnic până la {time}",
+  "agentStatsByModelHeading": "După model",
   "agentStatsCacheRateLabel": "Rată cache",
-  "agentStatsDailyUsageHeading": "Utilizare zilnică",
+  "agentStatsDailyUsageHeading": "Utilizare",
+  "agentStatsDayRangeLabel": "{days}z",
+  "@agentStatsDayRangeLabel": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatsHeroHighUsage": "{name} folosește astăzi o parte neobișnuit de mare din tokenuri.",
+  "@agentStatsHeroHighUsage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "agentStatsInputLabel": "Intrare",
+  "agentStatsLastNDays": "ultimele {days} zile",
+  "@agentStatsLastNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatsModelDayShare": "{percentage} % din această zi",
+  "@agentStatsModelDayShare": {
+    "placeholders": {
+      "percentage": {
+        "type": "int"
+      }
+    }
+  },
   "agentStatsNoUsage": "Nu s-a înregistrat nicio utilizare de tokenuri în ultimele 7 zile.",
+  "agentStatsOtherLabel": "Altele",
   "agentStatsOutputLabel": "Ieșire",
   "agentStatsSourceActiveFor": "Activ de {duration}",
   "agentStatsSourceActivityHeading": "Activitatea agenților",
+  "agentStatsSourceEmptyDay": "Nicio activitate a agenților în această zi.",
+  "agentStatsSourceHighUsage": "Utilizare neobișnuit de ridicată a tokenurilor astăzi",
+  "agentStatsSourceHighUsageDay": "Utilizare neobișnuit de ridicată a tokenurilor în această zi",
+  "agentStatsSourceScopeDayLabel": "{day} · % din tokenuri",
+  "@agentStatsSourceScopeDayLabel": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatsSourceScopeLabel": "Astăzi · % din tokenuri",
   "agentStatsSourceWakes": "{count, plural, =1{1 trezire} few{{count} treziri} other{{count} de treziri}}",
   "agentStatsTabTitle": "Statistici",
   "agentStatsThoughtsLabel": "Gânduri",
   "agentStatsTodayLabel": "Astăzi",
-  "agentStatsTokensPerWakeLabel": "Tokenuri / trezire",
+  "agentStatsTokensPerWakeLabel": "Tokenuri/trezire",
   "agentStatsTokensUnit": "tokenuri",
-  "agentStatsUsageAboveAverage": "Utilizați mai multe tokenuri astăzi decât de obicei la {time}.",
-  "agentStatsUsageBelowAverage": "Utilizați mai puține tokenuri astăzi decât de obicei la {time}.",
+  "agentStatsUsageAboveAverage": "La {time}, utilizați mai multe tokenuri decât de obicei astăzi.",
+  "agentStatsUsageBelowAverage": "La {time}, utilizați mai puține tokenuri decât de obicei astăzi.",
   "agentStatsWakesLabel": "Treziri",
   "agentSuggestionTimeEntryUpdateCurrent": "Curent",
   "agentSuggestionTimeEntryUpdateNoChange": "(neschimbat)",
@@ -501,6 +556,11 @@
   "agentTokenUsageThoughtsTokens": "Gânduri",
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Treziri",
+  "agentWakeReasonCreation": "Creare",
+  "agentWakeReasonReanalysis": "Reanaliză",
+  "agentWakeReasonScheduled": "Programat",
+  "agentWakeReasonSubscription": "Eveniment",
+  "agentWakeReasonTranscription": "Transcriere",
   "aggregationDailyAvg": "Medie zilnică",
   "aggregationDailyMax": "Maxim zilnic",
   "aggregationDailySum": "Sumă zilnică",

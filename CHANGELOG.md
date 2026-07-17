@@ -29,6 +29,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   opens entries as their own page, restyled to match.
 
 ## [0.9.1055]
+### Changed
+- **The agent Stats page explains itself and reads as one system.** Tapping a
+  day now truly focuses the whole page on it: the Agent Activity list
+  re-scopes to the selected day, its caption names that day, and a teal
+  "Today" link beside the selected date snaps everything back. When an agent
+  is burning an unusually large share of today's tokens, the page says so at
+  the very top — an amber notice naming the agent right under the usage
+  sentence — while the agent's own row carries a compact amber marker in
+  words ("Unusually heavy token use today") instead of a bare triangle. The
+  selected day's token breakdown is one stacked bar with colour-swatched
+  values (including a named "Other" share, so the parts always sum to the
+  total) in both the daily hero and the per-model cards, and today's bar can
+  no longer show amber in one chart and teal in another. Per-model cards
+  length-encode each model's share of the selected day, agent rows show
+  absolute token counts next to their percentages, and the activity line
+  leads with the wake count so it survives narrow screens. On desktop, cards
+  now hug their content on one left rail instead of stretching into
+  half-empty slabs. The wake-activity histogram adopts the same grammar —
+  quiet grey history, a ring on the selected hour (anchored to the most
+  recent activity by default), scrub and arrow-key selection — and its
+  detail line speaks localized reason names instead of internal identifiers.
+  Chart bars keep a readable width at every window size, keyboard focus is
+  visible on both charts, the average line stays legible where it crosses
+  bars, and neither the 7D/30D switch nor a day tap collapses the page
+  while data loads. Each day's bar announces its full date and token count
+  to screen readers.
+
 ### Fixed
 - **Lotti now closes cleanly on Linux and macOS.** Desktop shutdown uses one
   ordered teardown that stops background services and releases every SQLite
@@ -175,6 +202,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   balanced on both light and dark surfaces. Provider, category, recording, and
   task-handoff controls are keyboard operable, and scaled text switches work
   areas to a readable single-column layout.
+- **The agent Stats page now matches the rest of the app and reads at a
+  glance.** The page sits on the shared settings canvas instead of a black
+  backdrop, with every section a card under a quiet heading in answer-first
+  order: the usage total leads as the page's focal number (scoped to the
+  selected 7- or 30-day range), followed by compact per-model charts, the
+  per-agent breakdown, and the 24-hour wake chart. Amber appears exactly
+  once — only while today runs above your usual pace — while charts share
+  one teal accent, one average line, and one page-wide day selection:
+  tapping any bar focuses every section on that day, with full-height tap
+  targets, hover feedback, and screen-reader labels on every bar.
 - **The desktop sidebar is navigation-first and keeps important task filters
   visible.** Saved task filters now appear directly under Tasks with live
   counts. The first five follow the order you set, More expands the complete

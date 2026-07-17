@@ -125,86 +125,106 @@ tokenUsageComparisonProvider = FutureProvider.family<TokenUsageComparison, int>(
   },
 );
 
-/// Provides a per-template breakdown of today's token usage.
+/// Provides a per-template breakdown of one calendar day's token usage.
+///
+/// Parameter: the day (any time-of-day; normalized to local midnight), so
+/// the section rides the page-wide day selection. Records derive from the
+/// shared window caches — the 7-day cache when the day is within a week,
+/// the 30-day cache otherwise — so day taps reuse data the charts already
+/// fetched instead of issuing a per-tap DB query.
 ///
 /// Each entry shows the template name, token count, percentage share,
 /// wake count, total wake duration, and a high-usage flag.
-final tokenSourceBreakdownProvider = FutureProvider<List<TokenSourceBreakdown>>(
-  (ref) async {
-    // Derive today's token records from the shared 7-day cache to avoid a
-    // duplicate DB query.
-    final allRecords = await ref.watch(_globalTokenRecordsProvider(7).future);
-    final repository = ref.watch(agentRepositoryProvider);
-    final now = clock.now().toLocal();
-    final todayMidnight = DateTime(now.year, now.month, now.day);
+final FutureProviderFamily<List<TokenSourceBreakdown>, DateTime>
+tokenSourceBreakdownProvider =
+    FutureProvider.family<List<TokenSourceBreakdown>, DateTime>(
+      (
+        ref,
+        day,
+      ) async {
+        final now = clock.now().toLocal();
+        final todayMidnight = DateTime(now.year, now.month, now.day);
+        final dayMidnight = DateTime(day.year, day.month, day.day);
+        final dayEnd = dayMidnight.add(const Duration(days: 1));
+        final daysBack = todayMidnight.difference(dayMidnight).inDays + 1;
 
-    final records = allRecords
-        .where((r) => !r.createdAt.toLocal().isBefore(todayMidnight))
-        .toList();
+        // Snap to the chart windows (7, then 30) so a day tap hits a cache
+        // the page has already warmed; only a day older than both windows
+        // (not reachable from the charts) would fetch its own.
+        final window = daysBack <= 7 ? 7 : (daysBack <= 30 ? 30 : daysBack);
+        final allRecords = await ref.watch(
+          _globalTokenRecordsProvider(window).future,
+        );
+        final repository = ref.watch(agentRepositoryProvider);
 
-    final wakeRuns = await repository.getWakeRunsInWindow(
-      since: todayMidnight,
-      until: now,
+        final records = allRecords.where((r) {
+          final created = r.createdAt.toLocal();
+          return !created.isBefore(dayMidnight) && created.isBefore(dayEnd);
+        }).toList();
+
+        final wakeRuns = await repository.getWakeRunsInWindow(
+          since: dayMidnight,
+          until: dayEnd.isAfter(now) ? now : dayEnd,
+        );
+
+        // Group tokens by templateId.
+        final tokensByTemplate = <String, int>{};
+        for (final record in records) {
+          final key = record.templateId ?? record.agentId;
+          tokensByTemplate[key] =
+              (tokensByTemplate[key] ?? 0) + _recordTotalTokens(record);
+        }
+
+        // Group wake runs by templateId for count and duration.
+        final wakeCountByTemplate = <String, int>{};
+        final durationByTemplate = <String, Duration>{};
+        for (final run in wakeRuns) {
+          final key = run.templateId ?? run.agentId;
+          wakeCountByTemplate[key] = (wakeCountByTemplate[key] ?? 0) + 1;
+          if (run.startedAt != null && run.completedAt != null) {
+            final duration = run.completedAt!.difference(run.startedAt!);
+            durationByTemplate[key] =
+                (durationByTemplate[key] ?? Duration.zero) + duration;
+          }
+        }
+
+        final sourceInfo = await _resolveSourceInfo(repository, {
+          ...tokensByTemplate.keys,
+          ...wakeCountByTemplate.keys,
+        });
+
+        final totalTokens = tokensByTemplate.values.fold<int>(
+          0,
+          (sum, t) => sum + t,
+        );
+        final sourceCount = tokensByTemplate.length;
+
+        final breakdowns = <TokenSourceBreakdown>[];
+        for (final entry in tokensByTemplate.entries) {
+          final percentage = totalTokens > 0
+              ? (entry.value / totalTokens) * 100
+              : 0.0;
+          final fairShare = sourceCount > 0 ? 100.0 / sourceCount : 100.0;
+          final info = sourceInfo[entry.key];
+
+          breakdowns.add(
+            TokenSourceBreakdown(
+              templateId: entry.key,
+              displayName: info?.name ?? entry.key,
+              totalTokens: entry.value,
+              percentage: percentage,
+              wakeCount: wakeCountByTemplate[entry.key] ?? 0,
+              totalDuration: durationByTemplate[entry.key] ?? Duration.zero,
+              isHighUsage: percentage > fairShare * _highUsageMultiplier,
+              isTemplate: info?.isTemplate ?? true,
+            ),
+          );
+        }
+
+        breakdowns.sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
+        return breakdowns;
+      },
     );
-
-    // Group tokens by templateId.
-    final tokensByTemplate = <String, int>{};
-    for (final record in records) {
-      final key = record.templateId ?? record.agentId;
-      tokensByTemplate[key] =
-          (tokensByTemplate[key] ?? 0) + _recordTotalTokens(record);
-    }
-
-    // Group wake runs by templateId for count and duration.
-    final wakeCountByTemplate = <String, int>{};
-    final durationByTemplate = <String, Duration>{};
-    for (final run in wakeRuns) {
-      final key = run.templateId ?? run.agentId;
-      wakeCountByTemplate[key] = (wakeCountByTemplate[key] ?? 0) + 1;
-      if (run.startedAt != null && run.completedAt != null) {
-        final duration = run.completedAt!.difference(run.startedAt!);
-        durationByTemplate[key] =
-            (durationByTemplate[key] ?? Duration.zero) + duration;
-      }
-    }
-
-    final sourceInfo = await _resolveSourceInfo(repository, {
-      ...tokensByTemplate.keys,
-      ...wakeCountByTemplate.keys,
-    });
-
-    final totalTokens = tokensByTemplate.values.fold<int>(
-      0,
-      (sum, t) => sum + t,
-    );
-    final sourceCount = tokensByTemplate.length;
-
-    final breakdowns = <TokenSourceBreakdown>[];
-    for (final entry in tokensByTemplate.entries) {
-      final percentage = totalTokens > 0
-          ? (entry.value / totalTokens) * 100
-          : 0.0;
-      final fairShare = sourceCount > 0 ? 100.0 / sourceCount : 100.0;
-      final info = sourceInfo[entry.key];
-
-      breakdowns.add(
-        TokenSourceBreakdown(
-          templateId: entry.key,
-          displayName: info?.name ?? entry.key,
-          totalTokens: entry.value,
-          percentage: percentage,
-          wakeCount: wakeCountByTemplate[entry.key] ?? 0,
-          totalDuration: durationByTemplate[entry.key] ?? Duration.zero,
-          isHighUsage: percentage > fairShare * _highUsageMultiplier,
-          isTemplate: info?.isTemplate ?? true,
-        ),
-      );
-    }
-
-    breakdowns.sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
-    return breakdowns;
-  },
-);
 
 /// Resolved source info: display name and whether it's a template.
 typedef _SourceInfo = ({String name, bool isTemplate});

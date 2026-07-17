@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/ui/token_stats_tab.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/tabs/design_system_tab.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -178,6 +179,11 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
       _ => context.messages.agentSettingsTitle,
     };
     return Scaffold(
+      // The theme's default scaffold colour is `colorScheme.surface` — a
+      // near-black that reads as a hole punched in the Settings V2 shell,
+      // which paints the design-system `level01` canvas. Speak the same
+      // card-on-canvas language as the rest of the app instead.
+      backgroundColor: dsPageSurface(context),
       // Desktop V2 already names the page via the breadcrumb in the
       // shell header; an AppBar here would just stack a second darker
       // chrome strip on top of it. Mobile / push-stack contexts keep

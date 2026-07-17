@@ -525,6 +525,17 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String agentPendingWakesActivityHourDetailEmpty(String hour, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count wakes',
+      one: '1 wake',
+    );
+    return '$hour · $_temp0';
+  }
+
+  @override
   String get agentPendingWakesActivityTitle => 'Wake Activity (24u)';
 
   @override
@@ -836,15 +847,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentStateWakeCount => 'Wakker worden';
 
   @override
-  String get agentStatsAllDayLegend => 'De hele dag';
-
-  @override
   String get agentStatsAverageLabel => 'Gemiddelde';
 
   @override
-  String agentStatsByTimeLegend(String time) {
-    return 'Dagelijks per $time';
-  }
+  String get agentStatsByModelHeading => 'By Model';
 
   @override
   String get agentStatsCacheRateLabel => 'Cache rate';
@@ -853,11 +859,34 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentStatsDailyUsageHeading => 'Dagelijks gebruik';
 
   @override
+  String agentStatsDayRangeLabel(int days) {
+    return '${days}D';
+  }
+
+  @override
+  String agentStatsHeroHighUsage(String name) {
+    return '$name is using an unusually large share of today\'s tokens.';
+  }
+
+  @override
   String get agentStatsInputLabel => 'Invoer';
+
+  @override
+  String agentStatsLastNDays(int days) {
+    return 'last $days days';
+  }
+
+  @override
+  String agentStatsModelDayShare(int percentage) {
+    return '$percentage% of this day';
+  }
 
   @override
   String get agentStatsNoUsage =>
       'Geen gebruik van token geregistreerd in de afgelopen 7 dagen.';
+
+  @override
+  String get agentStatsOtherLabel => 'Other';
 
   @override
   String get agentStatsOutputLabel => 'Uitvoer';
@@ -869,6 +898,24 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentStatsSourceActivityHeading => 'Agentactiviteit';
+
+  @override
+  String get agentStatsSourceEmptyDay => 'No agent activity on this day.';
+
+  @override
+  String get agentStatsSourceHighUsage => 'Unusually heavy token use today';
+
+  @override
+  String get agentStatsSourceHighUsageDay =>
+      'Unusually heavy token use this day';
+
+  @override
+  String agentStatsSourceScopeDayLabel(String day) {
+    return '$day · % of tokens';
+  }
+
+  @override
+  String get agentStatsSourceScopeLabel => 'Today · % of tokens';
 
   @override
   String agentStatsSourceWakes(int count) {
@@ -1120,6 +1167,21 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Wakker worden';
+
+  @override
+  String get agentWakeReasonCreation => 'Creation';
+
+  @override
+  String get agentWakeReasonReanalysis => 'Re-analysis';
+
+  @override
+  String get agentWakeReasonScheduled => 'Scheduled';
+
+  @override
+  String get agentWakeReasonSubscription => 'Event';
+
+  @override
+  String get agentWakeReasonTranscription => 'Transcription';
 
   @override
   String get aggregationDailyAvg => 'Daggemiddelde';
