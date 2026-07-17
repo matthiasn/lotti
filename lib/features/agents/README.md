@@ -1338,20 +1338,18 @@ The `AiSummaryCard` presentation is tuned for both quick action and a sense of
 craft. The surface carries a directional accent gradient + glow anchored on the
 sparkle badge so it reads as a distinct "assistant" zone, and it renders *below*
 the task's checklists so the user's own work comes first. Each proposal is a
-neutral hairline row whose change kind (add / update / priority / estimate /
-status / label / due) is named by a quiet wash chip — the accent family is
-reserved for actions, so taxonomy never pre-reads as "confirmed". Rows lead
-with their content: on narrow viewports the full-width proposal text comes
-first, then one slim meta/action line (kind chip left, ghost ✕ / ✓ icons
-right); on wide surfaces chip, text, and actions share one vertically
-centered line capped at the summary's reading measure. The whole row stays
-swipeable (right = confirm, left = dismiss). The per-row ✕ (reject) and ✓
-(accept) each sit in a 40×40 hit zone, and a `step4` dead band separates the
-two zones so the destructive reject is never flush against accept — a
-near-miss between adjacent zones is the failure users with reduced motor
-precision fear, and the gap removes it. List-level operations share one
-bottom rail (History disclosure left, "Confirm all" as a neutral secondary
-button right); pressing Confirm all cascades a
+neutral hairline row that leads with its content: the change kind (add /
+update / priority / estimate / status / label / due) renders as an inline
+meta-toned prefix of the row text ("Update · …") at the body's own size —
+color alone separates it, taxonomy never gets a chip or the accent family,
+and every summary starts on one axis. One anatomy at every width: text
+leads, the verdict actions trail vertically centered, capped at the
+summary's reading measure. The whole row stays swipeable (right = confirm,
+left = dismiss). The per-row ✕ (reject, neutral wash disc) and ✓ (accept,
+accent wash disc) are a matched pair in weight and asymmetric in hue; each
+sits in a 40×40 hit zone with a `step2` dead band between them. List-level
+operations share one bottom rail (History disclosure left, "Confirm all" as
+an outlined hairline button right); pressing Confirm all cascades a
 top-to-bottom pop across the rows (per-row 45 ms stagger + a throttled selection
 haptic) so a batch confirm reads as a satisfying sweep. At gesture time the
 shell synchronously adds every batch fingerprint to `_exitingFingerprints`

@@ -922,17 +922,17 @@ class ProposalRowContent extends StatelessWidget {
     // quiet inline prefix ("Update · …"), the verdict actions sit trailing
     // and vertically centered. Every summary starts on the same axis (no
     // variable-width leading chip) and the kind never owns a line of its
-    // own. The whole row stays swipeable (right = confirm, left = dismiss) —
-    // the buttons are an additional, visible affordance so the action isn't
-    // swipe-only-and-hidden.
+    // own. The prefix keeps the body's size and metrics — color alone
+    // separates it, so the line reads as one run of text instead of two
+    // sizes patched together. The whole row stays swipeable (right =
+    // confirm, left = dismiss) — the buttons are an additional, visible
+    // affordance so the action isn't swipe-only-and-hidden.
     final textWidget = Text.rich(
       TextSpan(
         children: [
           TextSpan(
             text: '${meta.label} · ',
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: ai.metaText,
-            ),
+            style: TextStyle(color: ai.metaText),
           ),
           TextSpan(text: text),
         ],
