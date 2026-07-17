@@ -8,10 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **The entry date stays readable on narrow phones.** When an entry header's
   action buttons (AI assistant, flag, star, overflow menu) would leave the
-  timestamp squeezed into an ellipsis, the gaps between the buttons now
-  compress so the date and time remain visible. Wider screens keep the
-  original comfortable spacing, and every button keeps its full-size tap
-  target.
+  timestamp squeezed into an ellipsis, the action rail now uses tighter 4px
+  gaps so the date and time remain visible while every button keeps its
+  full-size tap target.
 
 ### Added
 - **The desktop sidebar now opens the Lotti Manual directly.** A localized

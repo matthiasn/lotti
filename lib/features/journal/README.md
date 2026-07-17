@@ -114,6 +114,26 @@ It composes:
 
 That is the real boundary: the journal feature owns the page frame and the switching logic, while other features supply some of the per-type payload UI.
 
+### Detail Header Action Rail
+
+[`EntryDetailHeader`](ui/widgets/entry_details/header/entry_detail_header.dart)
+keeps the editable date/time cluster on the leading edge and assembles the
+right-side controls from the current entry: optional collapse, AI, rating-edit,
+and flagged controls, then the consistently anchored favorite and overflow
+controls. AI is included only when an applicable skill is available, so a
+zero-width AI placeholder cannot consume layout space.
+
+Every action keeps its 48px-wide tap target. The inter-control gap always uses
+the design-system `spacing.step2` (4px), so the timestamp gets the maximum
+available width without hiding or clipping an action.
+
+```mermaid
+flowchart LR
+  Entry["Entry state"] --> Actions["Build available actions"]
+  Actions --> Rail["48px action targets\nstep2 (4px) gaps"]
+  Rail --> Render["Render timestamp + action rail"]
+```
+
 ### Image Viewer
 
 [`EntryImageWidget`](ui/widgets/entry_image_widget.dart) renders a downsampled inline `JournalImage` preview and pushes `HeroPhotoViewRouteWrapper` on tap. The route is non-opaque with a scrim barrier, so the detail page remains visible but darkened behind the viewer. `PhotoView` still owns pinch-zoom and panning; the viewer chrome drives the same `PhotoViewController` and `PhotoViewScaleStateController` for button zoom, reset, and the visible scale readout.

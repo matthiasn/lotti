@@ -38,7 +38,7 @@ DsSpacing _headerSpacing(WidgetTester tester) =>
     tester.element(find.byType(EntryDetailHeader)).designTokens.spacing;
 
 /// The widths of the spacer boxes between the header's trailing action
-/// controls (step2 when compact, step5 when comfortable).
+/// controls (step2 at every width).
 ///
 /// Inspects only the direct children of the header's outer Row (the one whose
 /// leading child is the Expanded timestamp cluster), so same-width SizedBoxes
@@ -56,9 +56,7 @@ List<double> _trailingGapWidths(WidgetTester tester) {
   return headerRow.children
       .whereType<SizedBox>()
       .where(
-        (s) =>
-            s.child == null &&
-            (s.width == spacing.step2 || s.width == spacing.step5),
+        (s) => s.child == null && s.width == spacing.step2,
       )
       .map((s) => s.width!)
       .toList();
@@ -231,7 +229,7 @@ void main() {
     );
 
     testWidgets(
-      'compresses trailing gaps at narrow widths so the timestamp keeps room',
+      'uses compact trailing gaps so the timestamp keeps room at narrow width',
       (WidgetTester tester) async {
         // Flag + AI skill maximize the trailing rail (AI + flag + star +
         // overflow, four full 48px controls) — the worst case that squeezed
@@ -255,7 +253,7 @@ void main() {
                 )
                 as AiConfigSkill;
 
-        const headerWidth = 330.0;
+        const headerWidth = 300.0;
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             Align(
@@ -282,14 +280,13 @@ void main() {
         expect(find.byIcon(Icons.flag), findsOneWidget);
         expect(find.byIcon(Icons.star_rounded), findsOneWidget);
         expect(find.byIcon(Icons.more_horiz), findsOneWidget);
-        // ...separated by compact step2 gaps, not the wide step5.
+        // ...separated by compact step2 gaps.
         final spacing = _headerSpacing(tester);
         expect(_trailingGapWidths(tester), List.filled(3, spacing.step2));
         // The reclaimed width goes to the timestamp: the rail is
         // 4 × 48 + 3 × step2 = 204px, so the leading cluster keeps
-        // 330 − 204 = 126px (with step5 gaps it got only 90px, ellipsizing
-        // the date). The AI control is the first trailing slot, so its left
-        // edge marks the leading cluster's width.
+        // 300 − 204 = 96px for the leading cluster. The AI control is the
+        // first trailing slot, so its left edge marks that width.
         final compactRail = 4 * AppTheme.headerActionWidth + 3 * spacing.step2;
         final aiButton = find.ancestor(
           of: find.byIcon(Icons.assistant_outlined),
@@ -303,8 +300,8 @@ void main() {
     );
 
     testWidgets(
-      'keeps the comfortable step5 gaps between trailing actions when the '
-      'header is wide',
+      'uses compact step2 gaps between trailing actions when the header is '
+      'wide',
       (WidgetTester tester) async {
         final flaggedTextEntry = testTextEntry.copyWith(
           meta: testTextEntry.meta.copyWith(flag: EntryFlag.import),
@@ -325,8 +322,7 @@ void main() {
                 )
                 as AiConfigSkill;
 
-        // Full test-surface width (800px): plenty of room, so the wide
-        // mis-tap-guard gaps are preserved.
+        // Full test-surface width (800px): the compact gaps remain uniform.
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             EntryDetailHeader(
@@ -344,19 +340,18 @@ void main() {
         expect(find.byIcon(Icons.assistant_outlined), findsOneWidget);
         expect(
           _trailingGapWidths(tester),
-          List.filled(3, _headerSpacing(tester).step5),
+          List.filled(3, _headerSpacing(tester).step2),
         );
       },
     );
 
     testWidgets(
-      'keeps comfortable gaps at narrow width when the AI slot has no skills',
+      'uses compact gaps without an invisible AI slot at narrow width',
       (WidgetTester tester) async {
         // Same flagged entry and 330px width as the compression test above,
         // but with no AI skills the assistant slot must not render — and must
         // not be counted: three real controls (flag + star + overflow) leave
-        // the timestamp 176px even with step5 gaps, so compressing here would
-        // needlessly shrink the mis-tap guard between the controls.
+        // the timestamp 178px with the compact gaps.
         final flaggedTextEntry = testTextEntry.copyWith(
           meta: testTextEntry.meta.copyWith(flag: EntryFlag.import),
         );
@@ -392,13 +387,13 @@ void main() {
         expect(find.byIcon(Icons.more_horiz), findsOneWidget);
         expect(
           _trailingGapWidths(tester),
-          List.filled(2, _headerSpacing(tester).step5),
+          List.filled(2, _headerSpacing(tester).step2),
         );
       },
     );
 
     testWidgets(
-      'collapsible expanded header also compresses its five-control rail at '
+      'collapsible expanded header also uses its five-control compact rail at '
       'phone width',
       (WidgetTester tester) async {
         // Chevron + AI + flag + star + overflow: the five-control rail from

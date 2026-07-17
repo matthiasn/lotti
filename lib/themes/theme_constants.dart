@@ -32,12 +32,6 @@ class AppTheme {
   // than its content (see EntryDetailHeader's IconButtonTheme).
   static const double headerActionWidth = 48;
   static const double headerActionHeight = 40;
-  // Minimum width the header keeps clear for the leading timestamp cluster.
-  // When the wide (step5) inter-action gaps would leave less than this, the
-  // gaps compress (step2) so the date stays legible instead of ellipsizing
-  // to `20…` behind the action rail on narrow phones.
-  static const double headerTimestampMinWidth = 96;
-
   // Spacing constants
   static const double spacingXSmall = 4;
   static const double spacingSmall = 8;
