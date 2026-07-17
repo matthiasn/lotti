@@ -45,6 +45,11 @@ const capturedCases = new Set(
   ),
 );
 const skipManifest = options['skip-manifest'] === true;
+const manifestOnly = options['manifest-only'] === true;
+
+if (skipManifest && manifestOnly) {
+  throw new Error('Use either --skip-manifest or --manifest-only, not both.');
+}
 
 if (version !== 'development' && options['allow-release-overwrite'] !== true) {
   try {
@@ -72,27 +77,29 @@ const generatedAt =
       }).trim();
 const manifestCases = [];
 
-for (const screenshotCase of registry.cases) {
-  if (!capturedCases.has(screenshotCase.id)) continue;
-  for (const locale of captureLocales) {
-    for (const variant of requiredVariants) {
-      const inputPath = resolve(
-        captureDirectory,
-        locale,
-        screenshotCase.variants[variant],
-      );
-      const relativeOutputPath = canonicalVariantPath(
-        screenshotCase.id,
-        variant,
-        locale,
-        registry.defaultLocale,
-      );
-      const outputPath = resolve(outputDirectory, relativeOutputPath);
-      await mkdir(resolve(outputPath, '..'), {recursive: true});
-      const input = await readFile(inputPath);
-      await sharp(input)
-        .webp({quality: 88, effort: 5, smartSubsample: true})
-        .toFile(outputPath);
+if (!manifestOnly) {
+  for (const screenshotCase of registry.cases) {
+    if (!capturedCases.has(screenshotCase.id)) continue;
+    for (const locale of captureLocales) {
+      for (const variant of requiredVariants) {
+        const inputPath = resolve(
+          captureDirectory,
+          locale,
+          screenshotCase.variants[variant],
+        );
+        const relativeOutputPath = canonicalVariantPath(
+          screenshotCase.id,
+          variant,
+          locale,
+          registry.defaultLocale,
+        );
+        const outputPath = resolve(outputDirectory, relativeOutputPath);
+        await mkdir(resolve(outputPath, '..'), {recursive: true});
+        const input = await readFile(inputPath);
+        await sharp(input)
+          .webp({quality: 88, effort: 5, smartSubsample: true})
+          .toFile(outputPath);
+      }
     }
   }
 }
@@ -155,6 +162,5 @@ await writeFile(
 
 console.log(
   `Wrote ${manifestCases.length} screenshot case(s) to ${outputDirectory}; ` +
-    `captured locales: ${captureLocales.join(', ')}; ` +
-    `captured cases: ${capturedCases.size}.`,
+    `${manifestOnly ? 'media unchanged' : `captured locales: ${captureLocales.join(', ')}; captured cases: ${capturedCases.size}`}.`,
 );

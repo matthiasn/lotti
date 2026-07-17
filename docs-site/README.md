@@ -100,6 +100,9 @@ Use `--skip-manifest` only to prepare an incomplete locale catalog before a
 subsequent complete manifest run; it converts the selected cases but deliberately
 does not write a partial manifest.
 
+Use `--manifest-only` after a complete catalog already exists when metadata must
+be refreshed without recompressing any image files.
+
 English media keeps the established
 `development/<case>/<viewport>-<theme>.webp` path. Localized media lives at
 `development/<locale>/<case>/<viewport>-<theme>.webp`. Visible deterministic
