@@ -28,6 +28,7 @@
     <name>Matthias Nehlsen</name>
   </developer>
   <url type="homepage">https://github.com/matthiasn/lotti</url>
+  <url type="help">https://matthiasn.github.io/lotti/manual/development/</url>
   <url type="bugtracker">https://github.com/matthiasn/lotti/issues</url>
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
