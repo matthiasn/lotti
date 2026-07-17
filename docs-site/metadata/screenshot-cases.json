@@ -374,6 +374,61 @@
         "desktop-light": "celebrations_playground_desktop_light.png",
         "desktop-dark": "celebrations_playground_desktop_dark.png"
       }
+    },
+    {
+      "id": "projects/list",
+      "title": "Projects list",
+      "sourceTest": "test/features/projects/ui/pages/projects_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "projects_list_mobile_light.png",
+        "mobile-dark": "projects_list_mobile_dark.png",
+        "desktop-light": "projects_list_desktop_light.png",
+        "desktop-dark": "projects_list_desktop_dark.png"
+      }
+    },
+    {
+      "id": "projects/detail",
+      "title": "Project detail",
+      "sourceTest": "test/features/projects/ui/pages/projects_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "projects_detail_mobile_light.png",
+        "mobile-dark": "projects_detail_mobile_dark.png",
+        "desktop-light": "projects_detail_desktop_light.png",
+        "desktop-dark": "projects_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "projects/tasks",
+      "title": "Project tasks",
+      "sourceTest": "test/features/projects/ui/pages/projects_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "projects_tasks_mobile_light.png",
+        "mobile-dark": "projects_tasks_mobile_dark.png",
+        "desktop-light": "projects_tasks_desktop_light.png",
+        "desktop-dark": "projects_tasks_desktop_dark.png"
+      }
+    },
+    {
+      "id": "projects/filters",
+      "title": "Project filters",
+      "sourceTest": "test/features/projects/ui/pages/projects_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "projects_filters_mobile_light.png",
+        "mobile-dark": "projects_filters_mobile_dark.png",
+        "desktop-light": "projects_filters_desktop_light.png",
+        "desktop-dark": "projects_filters_desktop_dark.png"
+      }
+    },
+    {
+      "id": "projects/create",
+      "title": "Create project",
+      "sourceTest": "test/features/projects/ui/pages/projects_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "projects_create_mobile_light.png",
+        "mobile-dark": "projects_create_mobile_dark.png",
+        "desktop-light": "projects_create_desktop_light.png",
+        "desktop-dark": "projects_create_desktop_dark.png"
+      }
     }
   ]
 }

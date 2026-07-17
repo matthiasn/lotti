@@ -26,6 +26,19 @@
       ]
     },
     {
+      "id": "projects",
+      "title": "Projects",
+      "page": "organize-and-reflect/projects",
+      "status": "verified",
+      "screenshotCases": [
+        "projects/list",
+        "projects/detail",
+        "projects/tasks",
+        "projects/filters",
+        "projects/create"
+      ]
+    },
+    {
       "id": "settings",
       "title": "Settings",
       "page": "reference/settings",

@@ -1,0 +1,119 @@
+---
+title: Run work as projects
+description: Group related tasks, follow project health, and keep a useful operational report beside the work.
+---
+
+# Run work as projects
+
+Projects sit between categories and tasks. A category such as **Penguin
+Operations** defines a broad area of responsibility; **Project Waddle** groups
+the concrete tasks required to prepare the orbital penguin habitat.
+
+<ManualScreenshot
+  caseId="projects/list"
+  alt="Projects grouped under Penguin Operations, Mission Control, Fish Diplomacy, and Human Maintenance, including Project Waddle and the Europa sardine cold chain"
+  caption="Each row combines status, task progress, target date, and a short purpose statement. Desktop keeps space for a selected project on the right; mobile uses the full width for the list."
+/>
+
+## Find the project you need
+
+Search matches project titles, stored project text, and category names. The
+filter control narrows the list by project status or category. A filter stays
+inactive until you select **Apply**.
+
+<ManualScreenshot
+  caseId="projects/filters"
+  alt="Project filter dialog with status and category controls over the Intergalactic Penguin Logistics project list"
+/>
+
+Projects remain grouped by category after filtering. This makes similarly
+named efforts easier to distinguish and keeps each operational area visible.
+
+## Create a project
+
+Select the **+** button in Projects, then enter:
+
+- a required title;
+- an optional category; and
+- an optional target date.
+
+<ManualScreenshot
+  caseId="projects/create"
+  alt="Create project form for Establish the lunar sardine reserve in the Penguin Operations category"
+  caption="The creation form is a bottom sheet on mobile and a centered dialog on desktop."
+/>
+
+A new project starts **Open**. If its category has a project-agent template,
+Lotti also provisions that agent after the project is saved. The project still
+works normally when no matching template exists.
+
+Use a title that describes the outcome or enduring mission. “Establish the
+lunar sardine reserve” says more than “Sardines.”
+
+## Understand project status
+
+| Status | Use it when |
+| --- | --- |
+| Open | The project exists but active execution has not started. |
+| Active | Work is currently moving and belongs in day planning. |
+| Monitoring | No work is scheduled, but the outcome still needs observation. |
+| On Hold | Work is paused for a known reason. |
+| Completed | The intended outcome has been reached. |
+| Archived | The project is retained for history but no longer operational. |
+
+Select the status pill on the project detail page to change it. Status changes,
+category changes, and target-date changes save immediately; there is no separate
+save button on this read-first detail surface.
+
+## Read project health and its report
+
+<ManualScreenshot
+  caseId="projects/detail"
+  alt="Project Waddle detail showing an 82 health score, five of eight tasks completed, one blocker, and an AI report updated two hours ago"
+  caption="Desktop keeps the project list and detail side by side. Mobile opens the same detail as a full page."
+/>
+
+The health panel summarizes the current project-agent assessment:
+
+- the health score is a compact signal, not a substitute for the underlying
+  work;
+- task progress shows completed and blocked counts;
+- the report gives a current summary and can expand to its full content; and
+- recommendations call attention to concrete next actions.
+
+In Project Waddle, a score of 82 and five completed tasks are encouraging, but
+the zero-gravity fish feeder is still a launch blocker. Read the explanation
+before treating a score as a verdict.
+
+When a project agent is configured, the report menu can request a fresh report
+or cancel a scheduled wake. Without an agent, the project still shows its tasks
+and any stored project text.
+
+## Keep project work in tasks
+
+<ManualScreenshot
+  caseId="projects/tasks"
+  alt="Project Waddle task panel listing habitat inspection, zero-gravity fish-feeder calibration, and sardine cargo-pod confirmation with estimates and statuses"
+/>
+
+Project task rows show each task's title, short summary, estimate, and current
+status. Select a row to open the task itself. Task details remain the source of
+truth for descriptions, recordings, checklists, images, time records, and
+cover art.
+
+Assign a task to a project from the project control in the task header. Projects
+are scoped by category, so give the task a category before choosing a project.
+A task belongs to at most one project at a time; assigning another project
+moves the link instead of duplicating it.
+
+## Projects, categories, and tasks
+
+Use the three levels deliberately:
+
+- **Category:** a durable operational area such as Penguin Operations.
+- **Project:** a multi-task outcome such as Project Waddle.
+- **Task:** an executable unit such as recalibrating the zero-gravity fish
+  feeder.
+
+Avoid creating a project for a single simple action. Use one when multiple
+tasks need a shared target date, status, progress rollup, or operational report.
