@@ -142,10 +142,17 @@ Widget buildOnboardingHeroVisual(
   final accent = tokens.colors.interactive.enabled;
   switch (style) {
     case OnboardingHeroStyle.constellation:
+      final monochromeLight = brightness == Brightness.light;
       return NeuralConstellation(
-        nodeColor: tokens.colors.aiProvider.ollama.color,
-        lineColor: tokens.colors.aiProvider.anthropic.color,
-        pulseColor: tokens.colors.aiCard.accent,
+        nodeColor: monochromeLight
+            ? tokens.colors.text.highEmphasis
+            : tokens.colors.aiProvider.ollama.color,
+        lineColor: monochromeLight
+            ? tokens.colors.text.highEmphasis
+            : tokens.colors.aiProvider.anthropic.color,
+        pulseColor: monochromeLight
+            ? tokens.colors.alert.error.defaultColor
+            : tokens.colors.aiCard.accent,
         nodeCount: 62,
         // The welcome page is the only place where the organism should own the
         // opening beat. Later FTUE pages use OnboardingBackdrop's smaller,
@@ -186,8 +193,8 @@ Widget buildOnboardingHeroVisual(
 BlendMode _onboardingAuroraBlendMode(Brightness brightness) =>
     brightness == Brightness.dark ? BlendMode.plus : BlendMode.srcOver;
 
-/// Composes the hero artwork on the semantic AI-card surface, then fades it
-/// into the panel instead of ending as a hard strip above the copy.
+/// Composes the hero artwork on its theme-selected surface, then fades it into
+/// the panel instead of ending as a hard strip above the copy.
 ///
 /// Transparent stops retain [backgroundColor]'s RGB channels. Using
 /// `Colors.transparent` would interpolate transparent black into a light panel
@@ -276,7 +283,9 @@ class OnboardingHeroPanel extends StatelessWidget {
                   width: double.infinity,
                   child: _HeroArtworkFrame(
                     backgroundColor: panelBg,
-                    artworkColor: tokens.colors.aiCard.background,
+                    artworkColor: brightness == Brightness.light
+                        ? panelBg
+                        : tokens.colors.aiCard.background,
                     child: buildOnboardingHeroVisual(
                       heroStyle,
                       tokens: tokens,

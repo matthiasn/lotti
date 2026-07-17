@@ -180,17 +180,26 @@ void main() {
                   brightness: theme.brightness,
                 )
                 as NeuralConstellation;
+        final expectedNodeColor = theme.brightness == Brightness.light
+            ? theme.tokens.colors.text.highEmphasis
+            : theme.tokens.colors.aiProvider.ollama.color;
+        final expectedLineColor = theme.brightness == Brightness.light
+            ? theme.tokens.colors.text.highEmphasis
+            : theme.tokens.colors.aiProvider.anthropic.color;
+        final expectedPulseColor = theme.brightness == Brightness.light
+            ? theme.tokens.colors.alert.error.defaultColor
+            : theme.tokens.colors.aiCard.accent;
         expect(
           constellation.nodeColor,
-          theme.tokens.colors.aiProvider.ollama.color,
+          expectedNodeColor,
         );
         expect(
           constellation.lineColor,
-          theme.tokens.colors.aiProvider.anthropic.color,
+          expectedLineColor,
         );
         expect(
           constellation.pulseColor,
-          theme.tokens.colors.aiCard.accent,
+          expectedPulseColor,
         );
 
         final crystallize =
@@ -275,12 +284,24 @@ void main() {
           find.text(messages.onboardingWelcomeTitle),
         );
 
+        expect(surfaces.first.color, theme.tokens.colors.background.level01);
+        final heroBox = find
+            .descendant(
+              of: find.byType(OnboardingHeroPanel),
+              matching: find.byType(SizedBox),
+            )
+            .first;
+        final artworkSurface = tester.widget<ColoredBox>(
+          find.descendant(
+            of: heroBox,
+            matching: find.byType(ColoredBox),
+          ),
+        );
         expect(
-          surfaces.map((surface) => surface.color),
-          containsAll([
-            theme.tokens.colors.background.level01,
-            theme.tokens.colors.aiCard.background,
-          ]),
+          artworkSurface.color,
+          theme.name == 'light'
+              ? theme.tokens.colors.background.level01
+              : theme.tokens.colors.aiCard.background,
         );
         expect(title.style?.color, theme.tokens.colors.text.highEmphasis);
         expect(

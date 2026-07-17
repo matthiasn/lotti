@@ -191,7 +191,9 @@ void main() {
       );
       expect(
         welcomeConstellation.nodeColor,
-        theme.tokens.colors.aiProvider.ollama.color,
+        theme.name == 'light'
+            ? theme.tokens.colors.text.highEmphasis
+            : theme.tokens.colors.aiProvider.ollama.color,
       );
 
       await tester.tap(find.text('Choose your AI brain'));
