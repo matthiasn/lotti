@@ -36,10 +36,17 @@ for (const feature of features.features) {
   );
   const renderedControls =
     html.match(/aria-label="Screenshot layout for all images"/g)?.length ?? 0;
+  const renderedViewers =
+    html.match(/aria-label="Open screenshot viewer"/g)?.length ?? 0;
   assert.equal(
     renderedControls,
     feature.screenshotCases.length,
     `Every ${feature.title} screenshot case must render its viewport control.`,
+  );
+  assert.equal(
+    renderedViewers,
+    feature.screenshotCases.length,
+    `Every ${feature.title} screenshot case must render its expandable viewer.`,
   );
   screenshotControlCount += renderedControls;
   for (const caseId of feature.screenshotCases) {
