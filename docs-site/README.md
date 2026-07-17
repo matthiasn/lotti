@@ -89,6 +89,11 @@ mobile/desktop and light/dark PNG inputs into an ignored staging directory,
 converts them to canonical WebP paths, and writes a checksum/dimension manifest under
 `../lotti-docs/manual/screenshots/development/`.
 
+CI runs this same full pipeline on every manual-relevant push to `main`, nightly
+at 02:23 UTC, and on demand. Main-branch captures fast-forward a normal commit
+to `lotti-docs/main`; pull requests only validate the site and never publish
+generated media.
+
 When only a new or changed case needs publishing, pass its IDs to the manifest
 builder so the existing catalog remains untouched. For example:
 
@@ -118,7 +123,8 @@ manual locale.
 
 ## Release model
 
-For app version `1.0.0`, CI checks out the app's `1.0.0` tag and builds with:
+For app version `1.0.0`, a release build must check out the app's `1.0.0` tag and
+build with:
 
 ```bash
 MANUAL_VERSION=1.0.0 \
@@ -128,7 +134,9 @@ MANUAL_BASE_URL=/lotti/manual/1.0.0/ \
 npm run build
 ```
 
-The result is published as an immutable directory. `metadata/releases.json`
-drives cross-version links and records which publicly distributed App Store
-version should receive the `latest` alias. No `versioned_docs` directory is
+`metadata/releases.json` drives cross-version links and records which publicly
+distributed App Store version should receive the `latest` alias. The current
+GitHub Pages workflow publishes the development snapshot; the first App Store
+release needs the companion tagged-release job to assemble the immutable
+versioned Pages snapshot and media catalog. No `versioned_docs` directory is
 allowed.
