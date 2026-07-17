@@ -142,7 +142,9 @@
       "page": "plan-and-capture/recordings",
       "status": "verified",
       "screenshotCases": [
-        "recordings/active"
+        "recordings/active",
+        "recordings/transcripts",
+        "recordings/transcript-expanded"
       ]
     },
     {
@@ -162,6 +164,16 @@
       "status": "verified",
       "screenshotCases": [
         "recording-style/preview"
+      ]
+    },
+    {
+      "id": "speech",
+      "title": "Speech and reading aloud",
+      "page": "reference/speech",
+      "status": "verified",
+      "screenshotCases": [
+        "speech/settings",
+        "speech/voice-options"
       ]
     },
     {

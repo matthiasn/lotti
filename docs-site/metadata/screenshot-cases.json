@@ -288,6 +288,28 @@
       }
     },
     {
+      "id": "recordings/transcripts",
+      "title": "Saved transcription history",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "recording_transcripts_mobile_light.png",
+        "mobile-dark": "recording_transcripts_mobile_dark.png",
+        "desktop-light": "recording_transcripts_desktop_light.png",
+        "desktop-dark": "recording_transcripts_desktop_dark.png"
+      }
+    },
+    {
+      "id": "recordings/transcript-expanded",
+      "title": "Expanded Project Waddle transcript",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "recording_transcript_expanded_mobile_light.png",
+        "mobile-dark": "recording_transcript_expanded_mobile_dark.png",
+        "desktop-light": "recording_transcript_expanded_desktop_light.png",
+        "desktop-dark": "recording_transcript_expanded_desktop_dark.png"
+      }
+    },
+    {
       "id": "theming/preferences",
       "title": "Appearance preferences",
       "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
@@ -318,6 +340,28 @@
         "mobile-dark": "recording_style_preview_mobile_dark.png",
         "desktop-light": "recording_style_preview_desktop_light.png",
         "desktop-dark": "recording_style_preview_desktop_dark.png"
+      }
+    },
+    {
+      "id": "speech/settings",
+      "title": "Speech voice, model, and reading speed",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "speech_voice_mobile_light.png",
+        "mobile-dark": "speech_voice_mobile_dark.png",
+        "desktop-light": "speech_voice_desktop_light.png",
+        "desktop-dark": "speech_voice_desktop_dark.png"
+      }
+    },
+    {
+      "id": "speech/voice-options",
+      "title": "Alternate speech voice options",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "speech_voice_options_mobile_light.png",
+        "mobile-dark": "speech_voice_options_mobile_dark.png",
+        "desktop-light": "speech_voice_options_desktop_light.png",
+        "desktop-dark": "speech_voice_options_desktop_dark.png"
       }
     },
     {

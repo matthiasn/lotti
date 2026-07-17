@@ -1,6 +1,6 @@
 /// Screenshot harness for settings that shape Lotti's appearance and
-/// interaction: theming, recording style, keyboard shortcuts, and completion
-/// celebrations.
+/// interaction: theming, recording style, speech, keyboard shortcuts, and
+/// completion celebrations.
 ///
 /// Desktop captures render the production Settings V2 tree/detail shell.
 /// Mobile captures render the production drill-down page wrapper for the same
@@ -29,11 +29,14 @@ import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_p
 import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
+import 'package:lotti/features/tts/model/tts_settings.dart';
+import 'package:lotti/features/tts/ui/speech_settings_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/target_platform.dart';
@@ -46,6 +49,7 @@ const String _subdir = 'settings_preferences';
 enum _PreferenceSurface {
   theming('/settings/theming'),
   recordingStyle('/settings/recording-style'),
+  speech('/settings/speech'),
   keyboardShortcuts('/settings/keyboard-shortcuts'),
   celebrations('/settings/advanced/animations');
 
@@ -71,6 +75,7 @@ class _FakeNavService implements NavService {
 Widget _mobilePage(_PreferenceSurface surface) => switch (surface) {
   _PreferenceSurface.theming => const ThemingPage(),
   _PreferenceSurface.recordingStyle => const RecordingStyleSettingsPage(),
+  _PreferenceSurface.speech => const SpeechSettingsPage(),
   _PreferenceSurface.keyboardShortcuts => const KeyboardShortcutsPage(),
   _PreferenceSurface.celebrations => const CelebrationSettingsPage(),
 };
@@ -186,9 +191,11 @@ void main() {
   late TestGetItMocks mocks;
   late _FakeNavService navService;
   late Map<String, String> recordingPrefs;
+  late bool speechEnabled;
 
   setUp(() async {
     navService = _FakeNavService();
+    speechEnabled = false;
     recordingPrefs = <String, String>{
       recordingStylePrefsKey: RecordingStyle.modern.name,
     };
@@ -201,7 +208,10 @@ void main() {
     );
 
     when(() => mocks.journalDb.watchConfigFlag(any())).thenAnswer(
-      (_) => Stream.value(false),
+      (invocation) => Stream.value(
+        speechEnabled &&
+            invocation.positionalArguments.single == enableAiSummaryTtsFlag,
+      ),
     );
     when(() => mocks.settingsDb.itemsByKeys(any())).thenAnswer((invocation) {
       final keys = invocation.positionalArguments.first as Set<String>;
@@ -209,6 +219,8 @@ void main() {
         lightSchemeNameKey: 'Sakura',
         darkSchemeNameKey: 'Outer Space',
         themeModeKey: 'system',
+        ttsVoiceIdKey: 'M3',
+        ttsSpeedKey: '1.25',
       };
       return Future.value(<String, String?>{
         for (final key in keys) key: values[key],
@@ -291,6 +303,40 @@ void main() {
           await captureScreenshot(
             tester,
             'recording_style_preview_${viewport}_$theme',
+            subdir: _subdir,
+          );
+        }),
+      );
+
+      testWidgets(
+        '$viewport speech controls — $theme',
+        (tester) => _withDevicePlatform(device, () async {
+          speechEnabled = true;
+          await _pumpSurface(
+            tester,
+            surface: _PreferenceSurface.speech,
+            device: device,
+            brightness: brightness,
+            navService: navService,
+            overrides: overrides(),
+          );
+          expect(find.text('Speech'), findsWidgets);
+          expect(find.text('Male 3'), findsOneWidget);
+          expect(find.text('Voice'), findsOneWidget);
+          await captureScreenshot(
+            tester,
+            'speech_voice_${viewport}_$theme',
+            subdir: _subdir,
+          );
+
+          await tester.tap(find.text('Female').last);
+          await settleFrames(tester, 4);
+          expect(find.text('Female 1'), findsOneWidget);
+          expect(find.text('Female 5'), findsOneWidget);
+          expect(find.text('Male 3'), findsNothing);
+          await captureScreenshot(
+            tester,
+            'speech_voice_options_${viewport}_$theme',
             subdir: _subdir,
           );
         }),

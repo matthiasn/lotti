@@ -30,6 +30,34 @@ When an inference profile and transcription skill are configured, Lotti can
 transcribe the recording after capture. Task recordings may also offer
 task-aware processing such as checklist or summary updates.
 
+## Review saved transcripts
+
+Open an audio entry, use its **…** menu, and choose **Speech Recognition**.
+The review sheet keeps every saved transcript with the recording instead of
+replacing an earlier result. Each row shows when processing ran, how long it
+took, the detected language, and the provider and model that produced it.
+
+<ManualScreenshot
+  caseId="recordings/transcripts"
+  alt="Speech Recognition sheet over a Project Waddle audio entry with English selected and two saved transcript results from Mistral and Whisper"
+  caption="The source recording remains visible behind the sheet, while each recognition result keeps its own provenance."
+/>
+
+The language selector currently offers **Auto**, **English**, and **Deutsch**.
+Use **Auto** when the provider should detect the language, or select a language
+before running recognition when you already know it. The choice is stored on
+the audio entry.
+
+Select the double-chevron on a result to reveal the complete, selectable text.
+Expanding a row also reveals its delete action. Deleting a transcript removes
+that recognition result, not the source recording or the other transcripts.
+
+<ManualScreenshot
+  caseId="recordings/transcript-expanded"
+  alt="Expanded Project Waddle transcript describing Europa sardine cargo, 37 emperor penguins, and the zero-gravity fish feeder"
+  caption="Review the full wording and provider provenance before using generated text as task context."
+/>
+
 ## Choose automation deliberately
 
 Processing options are requests to configured AI skills. The selected provider

@@ -11,6 +11,7 @@
 ///   test/features/journal/ui/pages/journal_manual_screenshots_test.dart`
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
@@ -44,9 +45,12 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
+import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list_item.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -54,6 +58,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
+import 'package:lotti/widgets/modal/index.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
@@ -163,6 +168,7 @@ void main() {
   late JournalPageState pageState;
   late JournalEntry briefing;
   late JournalImage launchPhoto;
+  late JournalAudio audioMemo;
   late JournalEntry rehearsalTimer;
   late AiResponseEntry diagnosticPrompt;
   late List<EntryLink> links;
@@ -257,7 +263,7 @@ void main() {
       ),
     );
 
-    final audioMemo = JournalAudio(
+    audioMemo = JournalAudio(
       meta: metadata(
         'journal-sardine-cold-chain-voice-memo',
         DateTime(2026, 7, 17, 7, 52),
@@ -277,6 +283,31 @@ void main() {
         audioFile: 'europa-cold-chain.m4a',
         audioDirectory: '/manual_demo/',
         language: 'en',
+        transcripts: [
+          AudioTranscript(
+            created: DateTime(2026, 7, 17, 8, 2),
+            library: 'Mistral',
+            model: 'voxtral-mini-latest',
+            detectedLanguage: 'en',
+            processingTime: const Duration(seconds: 8),
+            transcript:
+                'Project Waddle voice memo. Europa sardine cargo is holding '
+                'at minus eighteen degrees. All 37 emperor penguins are '
+                'present. Recalibrate the zero-gravity fish feeder before '
+                'the launch review, and ask Sir Flaps-a-Lot to stop saluting '
+                'the pressure gauge.',
+          ),
+          AudioTranscript(
+            created: DateTime(2026, 7, 17, 8),
+            library: 'Whisper',
+            model: 'large-v3-turbo',
+            detectedLanguage: 'en',
+            processingTime: const Duration(seconds: 12),
+            transcript:
+                'Europa cold-chain check: sardines stable, emperor penguin '
+                'roll call complete, feeder calibration still pending.',
+          ),
+        ],
       ),
     );
 
@@ -457,6 +488,9 @@ void main() {
     entryControllerProvider(launchPhoto.id).overrideWith(
       () => _ManualEntryController(launchPhoto),
     ),
+    entryControllerProvider(audioMemo.id).overrideWith(
+      () => _ManualEntryController(audioMemo),
+    ),
     entryControllerProvider(rehearsalTimer.id).overrideWith(
       () => _ManualEntryController(rehearsalTimer),
     ),
@@ -470,6 +504,12 @@ void main() {
       () => MockLinkedFromEntriesController([
         world.taskById(manualLaunchReviewTaskId),
       ]),
+    ),
+    linkedEntriesControllerProvider(audioMemo.id).overrideWith(
+      () => MockLinkedEntriesController(const [], audioMemo.id),
+    ),
+    linkedFromEntriesControllerProvider(audioMemo.id).overrideWith(
+      () => MockLinkedFromEntriesController(const []),
     ),
   ];
 
@@ -675,6 +715,65 @@ void main() {
         await captureScreenshot(
           tester,
           'journal_activity_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport recording transcript review — $theme', (
+        tester,
+      ) async {
+        await pumpSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          home: EntryDetailsPage(itemId: audioMemo.id),
+        );
+        expect(find.text('00:00 / 07:42'), findsOneWidget);
+
+        final pageContext = tester.element(find.byType(EntryDetailsPage));
+        final providerContainer = ProviderScope.containerOf(pageContext);
+        unawaited(
+          ModalUtils.showMultiPageModal<void>(
+            context: pageContext,
+            pageListBuilder: (modalContext) => [
+              // This is the exact production transcript page from
+              // ExtendedHeaderModal. The shared provider container keeps the
+              // root-navigator overlay attached to this deterministic entry.
+              ModalUtils.modalSheetPage(
+                context: modalContext,
+                padding: const EdgeInsets.only(bottom: 20),
+                title: pageContext.messages.speechModalTitle,
+                child: UncontrolledProviderScope(
+                  container: providerContainer,
+                  child: SpeechModalContent(entryId: audioMemo.id),
+                ),
+                onTapBack: () => Navigator.of(modalContext).pop(),
+              ),
+            ],
+          ),
+        );
+        await settleFrames(tester, 6);
+
+        expect(find.byType(SpeechModalContent), findsOneWidget);
+        expect(find.byType(TranscriptListItem), findsNWidgets(2));
+        expect(
+          find.text('Model: Mistral, voxtral-mini-latest'),
+          findsOneWidget,
+        );
+        await captureScreenshot(
+          tester,
+          'recording_transcripts_${viewport}_$theme',
+          subdir: _subdir,
+        );
+
+        await tester.tap(
+          find.byIcon(Icons.keyboard_double_arrow_down_outlined).first,
+        );
+        await settleFrames(tester, 4);
+        expect(find.textContaining('All 37 emperor penguins'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'recording_transcript_expanded_${viewport}_$theme',
           subdir: _subdir,
         );
       });

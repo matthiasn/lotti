@@ -1,0 +1,51 @@
+---
+title: Choose the reading voice
+description: Configure the on-device voice, model, and playback speed used to read task summaries aloud.
+---
+
+# Choose the reading voice
+
+When reading aloud is available, open **Settings → Speech**. These controls
+apply to task AI summaries; they do not change microphone capture or which AI
+provider transcribes a recording.
+
+<ManualScreenshot
+  caseId="speech/settings"
+  alt="Lotti Speech settings with Male 3 selected, the Supertonic 3 on-device model, and 1.25 reading speed"
+  caption="The example mission-control setup uses Male 3 at 1.25× for brisk Project Waddle briefings."
+/>
+
+## Choose a voice
+
+Use the **Female / Male** switch to browse the two groups, then select one of
+the five numbered voices in that group. Switching groups only changes the
+visible list; select a numbered voice to make it active.
+
+<ManualScreenshot
+  caseId="speech/voice-options"
+  alt="Lotti Speech settings showing the five female on-device voice options"
+  caption="Ten bundled voice styles are available: Female 1–5 and Male 1–5."
+/>
+
+The selected voice is a device-local preference. That lets each device use a
+voice that suits its speakers and listening environment without changing the
+choice on your other devices.
+
+## Model download and privacy
+
+Lotti currently uses **Supertonic 3** for reading aloud. Synthesis runs on the
+device rather than sending the summary to a cloud speech service. The model is
+large and is downloaded the first time it is needed, so allow time, network
+bandwidth, and storage for that initial setup.
+
+## Set the reading speed
+
+Choose a speed from **0.5×** through **2×**. A setting of **1×** is the natural
+rate; lower values slow the briefing down and higher values shorten it. The
+selected speed is also stored only on the current device.
+
+The read-aloud button appears only when the feature is enabled, the platform
+supports the speech engine, and the task has a non-empty AI summary.
+
+For spoken input and saved recognition results, see
+[Record audio](../plan-and-capture/recordings.mdx).
