@@ -42,6 +42,14 @@ const _copy = <String, String>{
   "This summary is out of date": "Ce résumé n'est plus à jour",
   "The task changed after this summary was generated.":
       "La tâche a changé après la génération de ce résumé.",
+  "Pressure stable · 37 penguins accounted for":
+      "Pression stable · 37 manchots recensés",
+  "Feeder calibration blocks the habitat demo":
+      "Le calibrage du distributeur bloque la démonstration de l'habitat",
+  "Europa cold-chain manifest ready to reconcile":
+      "Le manifeste de la chaîne du froid d'Europe est prêt à être rapproché",
+  "Awaiting an answer from orbital transport counsel":
+      "En attente d'une réponse du conseil juridique du transport orbital",
   "Wake agent": "Réveiller l'agent",
   "Filter tasks": "Filtrer les tâches",
   "Filter projects": "Filtrer les projets",
