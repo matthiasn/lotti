@@ -9,6 +9,7 @@ void main() {
       const original = SavedTaskFilter(
         id: 'sv-abc',
         name: 'Blocked or on hold',
+        pinnedToSidebar: true,
         filter: TasksFilter(
           selectedCategoryIds: {'cat-1'},
           selectedTaskStatuses: {'BLOCKED', 'ON_HOLD'},
@@ -23,6 +24,7 @@ void main() {
       final restored = SavedTaskFilter.fromJson(original.toJson());
 
       expect(restored, original);
+      expect(restored.pinnedToSidebar, isTrue);
     });
 
     glados.Glados2(
@@ -85,6 +87,19 @@ void main() {
       expect(restored.name, 'In progress · P0–P1');
       expect(restored.filter.selectedPriorities, {'P0', 'P1'});
       expect(restored.filter.selectedTaskStatuses, {'IN_PROGRESS'});
+    });
+
+    test('defaults legacy JSON without pin state to unpinned', () {
+      const original = SavedTaskFilter(
+        id: 'legacy',
+        name: 'Legacy view',
+        filter: TasksFilter(selectedTaskStatuses: {'BLOCKED'}),
+      );
+      final json = original.toJson()..remove('pinnedToSidebar');
+
+      final restored = SavedTaskFilter.fromJson(json);
+
+      expect(restored.pinnedToSidebar, isFalse);
     });
   });
 }

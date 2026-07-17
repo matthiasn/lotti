@@ -15,6 +15,10 @@ part 'saved_task_filter.g.dart';
 /// saved-filter *matching* (`currentSavedTaskFilterIdProvider` compares the
 /// filter shape only), so a synced timestamp never changes which pill reads
 /// as active.
+///
+/// [pinnedToSidebar] is the explicit ambient-monitoring preference. Pin
+/// membership syncs with the saved view, while the persisted list order stays
+/// per-device and therefore also defines the local order of pinned rows.
 @Freezed(toJson: true, fromJson: true)
 abstract class SavedTaskFilter with _$SavedTaskFilter {
   @JsonSerializable(explicitToJson: true)
@@ -22,6 +26,7 @@ abstract class SavedTaskFilter with _$SavedTaskFilter {
     required String id,
     required String name,
     required TasksFilter filter,
+    @Default(false) bool pinnedToSidebar,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) = _SavedTaskFilter;
