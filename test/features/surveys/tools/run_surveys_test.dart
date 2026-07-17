@@ -14,6 +14,7 @@ import 'package:research_package/model.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 /// Builds a single-choice step result whose answer carries [value], matching
 /// the shape that `calculateScores` extracts (a `List<RPChoice>`).
@@ -33,7 +34,6 @@ void main() {
 
   setUp(() async {
     DevLogger.suppressOutput = true;
-    await getIt.reset();
     mockPersistence = MockPersistenceLogic();
     // The result callbacks built by the runners resolve PersistenceLogic and
     // invoke createSurveyEntry when the survey is submitted.
@@ -43,12 +43,16 @@ void main() {
         linkedId: any(named: 'linkedId'),
       ),
     ).thenAnswer((_) async => true);
-    getIt.registerSingleton<PersistenceLogic>(mockPersistence);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<PersistenceLogic>(mockPersistence);
+      },
+    );
   });
 
   tearDown(() async {
     DevLogger.suppressOutput = false;
-    await getIt.reset();
+    await tearDownTestGetIt();
   });
 
   Future<void> pumpRunner(
@@ -56,8 +60,8 @@ void main() {
     void Function(BuildContext) run,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
+      makeTestableWidgetNoScroll(
+        Scaffold(
           body: Builder(
             builder: (context) => ElevatedButton(
               onPressed: () => run(context),
