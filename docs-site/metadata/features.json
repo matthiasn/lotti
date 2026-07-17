@@ -46,6 +46,9 @@
       "screenshotCases": [
         "tasks/workspace",
         "tasks/detail",
+        "tasks/agent-card",
+        "tasks/agent-card-expanded",
+        "tasks/agent-card-manual",
         "tasks/filters",
         "entries/create-menu",
         "tasks/cover-references",
