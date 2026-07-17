@@ -21,6 +21,7 @@ const sidebars: SidebarsConfig = {
         'plan-and-capture/daily-os',
         'plan-and-capture/entries',
         'plan-and-capture/recordings',
+        'plan-and-capture/surveys',
       ],
     },
     {

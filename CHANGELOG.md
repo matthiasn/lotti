@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from Settings › Onboarding.
 
 ### Changed
+- **Survey questions now fit cleanly in their modal.** Bundled questionnaires
+  keep every answer choice and the Next action visible on both phones and
+  desktop instead of clipping the final controls in a fixed-height sheet.
 - **Inference profile model labels are readable again.** Capability names use
   normal caption spacing instead of widely tracked overline text, so labels
   such as Image Recognition no longer wrap character by character.

@@ -2,9 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/surveys/definitions/panas_survey.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:research_package/research_package.dart';
+
+import '../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -38,10 +41,8 @@ void main() {
     required void Function(RPTaskResult) resultCallback,
   }) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SurveyWidget(task, resultCallback),
-        ),
+      makeTestableWidgetNoScroll(
+        Scaffold(body: SurveyWidget(task, resultCallback)),
       ),
     );
     await tester.pump();
@@ -98,6 +99,25 @@ void main() {
       // so driving onSubmit must deliver the same result instance.
       expect(submitted, same(result));
       expect(submitted!.identifier, 'submit_result');
+    });
+
+    testWidgets('PANAS choices fit after advancing from instructions', (
+      tester,
+    ) async {
+      await pumpSurvey(
+        tester,
+        task: panasSurveyTask,
+        resultCallback: (_) {},
+      );
+
+      await tester.tap(find.text('NEXT'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Interested'), findsOneWidget);
+      expect(find.text('Very slightly or not at all'), findsOneWidget);
+      expect(find.text('Extremely'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets(

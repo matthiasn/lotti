@@ -2,10 +2,11 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:research_package/research_package.dart';
 
-/// Hosts a `research_package` `RPUITask` inside a constrained modal box.
+/// Hosts a `research_package` `RPUITask` inside the survey modal.
 ///
 /// On submit it invokes [resultCallback] (scoring + persistence). On cancel it
 /// only logs the partial result via `DevLogger` — cancelled surveys are never
@@ -30,9 +31,12 @@ class SurveyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(maxHeight: 500),
-      padding: const EdgeInsets.only(bottom: 20, left: 10, right: 10),
+    final spacing = context.designTokens.spacing;
+    final maxSurveyHeight =
+        spacing.step13 + spacing.step13 + spacing.step13 + spacing.step11;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxSurveyHeight),
       child: RPUITask(
         task: task,
         onSubmit: resultCallback,

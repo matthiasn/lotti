@@ -35,6 +35,7 @@
     <release version="0.9.1049" date="2026-07-16">
       <description>
           <p>Lotti now guides first-time setup through one onboarding welcome. The welcome walks through connecting an AI provider and creating a first task, replaces the older provider-selection prompt, and can always be replayed from Settings then Onboarding.</p>
+          <p>Survey questions now fit cleanly in their modal. Bundled questionnaires keep every answer choice and the Next action visible on both phones and desktop instead of clipping the final controls in a fixed-height sheet.</p>
           <p>Inference profile model labels are readable again. Capability names use normal caption spacing instead of widely tracked overline text, so labels such as Image Recognition no longer wrap character by character.</p>
           <p>Daily OS shutdown now stays usable on narrow phones. Its actions stack responsively, and wrapped metric labels keep enough height at both standard and larger accessibility text sizes instead of overflowing their cards.</p>
           <p>Mobile navigation remains stable at fractional accessibility text sizes. Bottom-bar labels now reserve the same rounded line height Flutter renders, avoiding tiny overflows at scales such as 1.3×.</p>

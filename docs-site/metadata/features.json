@@ -29,6 +29,16 @@
       ]
     },
     {
+      "id": "surveys",
+      "title": "Surveys",
+      "page": "plan-and-capture/surveys",
+      "status": "verified",
+      "screenshotCases": [
+        "surveys/panas-intro",
+        "surveys/panas-question"
+      ]
+    },
+    {
       "id": "tasks",
       "title": "Tasks",
       "page": "organize-and-reflect/tasks",

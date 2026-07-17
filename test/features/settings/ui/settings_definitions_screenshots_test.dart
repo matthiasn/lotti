@@ -34,6 +34,7 @@ import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -54,6 +55,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:research_package/research_package.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../helpers/manual_demo_world.dart';
@@ -337,6 +339,14 @@ final DashboardDefinition _colonyOperations = _dashboard(
       id: 'meas-penguins-accounted-for',
       aggregationType: AggregationType.dailySum,
     ),
+    DashboardSurveyItem(
+      surveyType: 'panasSurveyTask',
+      surveyName: 'PANAS',
+      colorsByScoreKey: {
+        'Positive Affect Score': '#00FF00',
+        'Negative Affect Score': '#FF0000',
+      },
+    ),
   ],
 );
 final DashboardDefinition _missionReadiness = _dashboard(
@@ -606,6 +616,13 @@ void main() {
         rangeEnd: invocation.namedArguments[#rangeEnd] as DateTime,
       );
     });
+    when(
+      () => mocks.journalDb.getSurveyCompletionsByType(
+        type: any(named: 'type'),
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => []);
 
     // Row taps and back affordances route through the top-level
     // `beamToNamed`; no NavService is registered here.
@@ -1036,7 +1053,7 @@ void main() {
         expect(find.text('Edit dashboard'), findsOneWidget);
         expect(find.text('Colony operations'), findsOneWidget);
         // The reorderable charts list renders one dismissible card per item.
-        expect(find.byType(Dismissible), findsNWidgets(3));
+        expect(find.byType(Dismissible), findsNWidgets(4));
         await captureScreenshot(
           tester,
           'dashboards_settings_detail_${viewport}_$theme',
@@ -1051,6 +1068,7 @@ void main() {
         expect(find.text('Habitat pressure — Daily average'), findsOneWidget);
         expect(find.text('Sardines consumed — Daily sum'), findsOneWidget);
         expect(find.text('Penguins accounted for — Daily sum'), findsOneWidget);
+        expect(find.text('PANAS'), findsOneWidget);
         await captureScreenshot(
           tester,
           'dashboards_charts_${viewport}_$theme',
@@ -1140,6 +1158,71 @@ void main() {
         await captureScreenshot(
           tester,
           'dashboard_view_crew_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport PANAS survey — $theme', (tester) async {
+        navService
+          ..isDesktopMode = !device.isPhone
+          ..desktopSelectedDashboardId.value = _colonyOperations.id;
+        await withClock(Clock.fixed(manualDemoNow), () async {
+          await _pumpScreen(
+            tester,
+            device: device,
+            brightness: brightness,
+            overrides: [
+              dashboardsProvider.overrideWith(
+                (ref) => Stream.value(_allDashboards),
+              ),
+              dashboardCategoriesProvider.overrideWith(
+                (ref) => Stream.value(_allCategories),
+              ),
+            ],
+            home: device.isPhone
+                ? const DashboardPage(dashboardId: 'dash-colony-operations')
+                : const DashboardsListPage(),
+          );
+          await settleFrames(tester, 12);
+        });
+
+        await tester.scrollUntilVisible(
+          find.text('PANAS'),
+          350,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await settleFrames(tester, 6);
+        final surveyChart = find.byType(DashboardSurveyChart);
+        expect(surveyChart, findsOneWidget);
+        await tester.tap(
+          find.descendant(
+            of: surveyChart,
+            matching: find.byIcon(Icons.add_rounded),
+          ),
+        );
+        await settleFrames(tester, 8);
+
+        final task = tester.widget<RPUITask>(find.byType(RPUITask));
+        expect(task.task.identifier, 'panasSurveyTask');
+        expect(
+          find.textContaining('Indicate to what extent you feel this way'),
+          findsOneWidget,
+        );
+        expect(find.text('NEXT'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'survey_panas_intro_${viewport}_$theme',
+          subdir: _subdir,
+        );
+
+        await tester.tap(find.text('NEXT'));
+        await settleFrames(tester, 8);
+        expect(find.text('Interested'), findsOneWidget);
+        expect(find.text('Very slightly or not at all'), findsOneWidget);
+        expect(find.text('Extremely'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'survey_panas_question_${viewport}_$theme',
           subdir: _subdir,
         );
       });
