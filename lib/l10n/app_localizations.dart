@@ -5245,18 +5245,6 @@ abstract class AppLocalizations {
   /// **'Enable this to automatically resend failed attachment uploads when the connection is restored.'**
   String get configFlagResendAttachmentsDescription;
 
-  /// No description provided for @configFlagShowSidebarWakeQueue.
-  ///
-  /// In en, this message translates to:
-  /// **'Show sidebar wake queue'**
-  String get configFlagShowSidebarWakeQueue;
-
-  /// No description provided for @configFlagShowSidebarWakeQueueDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Show agent activity in the compact sidebar summary; open it for active and queued wake details.'**
-  String get configFlagShowSidebarWakeQueueDescription;
-
   /// No description provided for @configFlagShowSyncActivityIndicator.
   ///
   /// In en, this message translates to:
@@ -15534,6 +15522,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Activity'**
   String get sidebarActiveSectionTitle;
+
+  /// No description provided for @sidebarActivityCollapseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse activity'**
+  String get sidebarActivityCollapseTooltip;
+
+  /// No description provided for @sidebarActivityExpandTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand activity'**
+  String get sidebarActivityExpandTooltip;
 
   /// No description provided for @sidebarAudioRecordingStatusLabel.
   ///

@@ -15,38 +15,41 @@ import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/widgets/misc/sidebar_audio_recording_section.dart';
 import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
 
-/// Stable keys for the compact desktop activity summary.
+/// Stable keys for the compact desktop activity disclosure.
 @visibleForTesting
 abstract final class SidebarActivitySummaryKeys {
   static const Key root = Key('sidebar-activity-summary');
   static const Key audio = Key('sidebar-activity-audio');
   static const Key timer = Key('sidebar-activity-timer');
   static const Key agents = Key('sidebar-activity-agents');
-  static const Key dialog = Key('sidebar-activity-dialog');
+  static const Key details = Key('sidebar-activity-details');
 }
 
-/// Consolidates every transient desktop-sidebar status into one compact row.
+/// Consolidates every transient desktop-sidebar status into one disclosure.
 ///
-/// Recording, timer, and agent details remain available in a single dialog,
-/// while the persistent sidebar pays only for one summary surface. The global
-/// bottom action bar remains the primary direct-control surface for recording
-/// and time tracking.
-class SidebarActivitySummary extends ConsumerWidget {
-  const SidebarActivitySummary({
-    required this.showAudio,
-    required this.showWakeQueue,
-    super.key,
-  });
+/// The collapsed row preserves the low idle footprint. Expanding it in place
+/// restores the full recording, timer, and agent context plus direct controls
+/// without moving the user into a modal surface.
+class SidebarActivitySummary extends ConsumerStatefulWidget {
+  const SidebarActivitySummary({required this.showAudio, super.key});
 
   final bool showAudio;
-  final bool showWakeQueue;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SidebarActivitySummary> createState() =>
+      _SidebarActivitySummaryState();
+}
+
+class _SidebarActivitySummaryState
+    extends ConsumerState<SidebarActivitySummary> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     final recorder = ref.watch(audioRecorderControllerProvider);
     final audioVisible =
-        showAudio && sidebarAudioRecordingHasVisibleContent(ref);
-    final agentCounts = showWakeQueue ? _agentCounts(ref) : null;
+        widget.showAudio && sidebarAudioRecordingHasVisibleContent(ref);
+    final agentCounts = _agentCounts();
     final timeService = getIt<TimeService>();
 
     return StreamBuilder<JournalEntity?>(
@@ -54,7 +57,7 @@ class SidebarActivitySummary extends ConsumerWidget {
       initialData: timeService.getCurrent(),
       builder: (context, snapshot) {
         final timer = snapshot.data;
-        final agentsVisible = agentCounts != null && agentCounts.total > 0;
+        final agentsVisible = agentCounts.total > 0;
         if (!audioVisible && timer == null && !agentsVisible) {
           return const SizedBox.shrink();
         }
@@ -95,13 +98,19 @@ class SidebarActivitySummary extends ConsumerWidget {
             agentCounts: agentsVisible ? agentCounts : null,
           ),
           liveRegion: audioVisible,
-          onTap: () => _showDetails(context),
+          expanded: _expanded,
+          onTap: () => setState(() => _expanded = !_expanded),
+          details: _ActivityDetails(
+            showAudio: audioVisible,
+            showTimer: timer != null,
+            showWakeQueue: agentsVisible,
+          ),
         );
       },
     );
   }
 
-  _AgentCounts _agentCounts(WidgetRef ref) {
+  _AgentCounts _agentCounts() {
     final scheduled =
         ref.watch(pendingWakeRecordsProvider).value ??
         const <PendingWakeRecord>[];
@@ -134,34 +143,6 @@ class SidebarActivitySummary extends ConsumerWidget {
         messages.sidebarWakesQueuedCount(agentCounts.queued),
     ].join(', ');
   }
-
-  Future<void> _showDetails(BuildContext context) {
-    return showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        final tokens = dialogContext.designTokens;
-        return AlertDialog(
-          key: SidebarActivitySummaryKeys.dialog,
-          title: Text(dialogContext.messages.sidebarActiveSectionTitle),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (showAudio) const SidebarAudioRecordingSection(),
-                if (showAudio) SizedBox(height: tokens.spacing.step4),
-                const SidebarTimerSection(),
-                if (showWakeQueue) ...[
-                  SizedBox(height: tokens.spacing.step4),
-                  const SidebarWakeQueue(),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 }
 
 /// Shortens sub-hour durations to `mm:ss`; longer sessions retain hours.
@@ -176,12 +157,16 @@ class _ActivitySurface extends StatelessWidget {
     required this.metrics,
     required this.semanticsLabel,
     required this.liveRegion,
+    required this.expanded,
+    required this.details,
     required this.onTap,
   });
 
   final List<_ActivityMetric> metrics;
   final String semanticsLabel;
   final bool liveRegion;
+  final bool expanded;
+  final Widget details;
   final VoidCallback onTap;
 
   @override
@@ -191,71 +176,144 @@ class _ActivitySurface extends StatelessWidget {
     final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
     final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.3;
 
-    return Semantics(
-      button: true,
-      liveRegion: liveRegion,
-      label: semanticsLabel,
-      child: Material(
-        key: SidebarActivitySummaryKeys.root,
-        color: tokens.colors.surface.enabled,
-        borderRadius: radius,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: radius,
-          hoverColor: tokens.colors.surface.hover,
-          focusColor: tokens.colors.surface.focusPressed,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: minTarget),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step4,
-                vertical: tokens.spacing.step3,
-              ),
-              child: largeText
-                  ? Wrap(
-                      spacing: tokens.spacing.step4,
-                      runSpacing: tokens.spacing.step2,
-                      children: [
-                        for (final metric in metrics)
-                          ExcludeSemantics(child: metric),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            context.messages.sidebarActiveSectionTitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(
-                                  color: tokens.colors.text.mediumEmphasis,
-                                  fontWeight: tokens.typography.weight.semiBold,
-                                ),
+    final label = Text(
+      context.messages.sidebarActiveSectionTitle,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: tokens.typography.styles.others.caption.copyWith(
+        color: tokens.colors.text.mediumEmphasis,
+        fontWeight: tokens.typography.weight.semiBold,
+      ),
+    );
+    final toggleTooltip = expanded
+        ? context.messages.sidebarActivityCollapseTooltip
+        : context.messages.sidebarActivityExpandTooltip;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          button: true,
+          liveRegion: liveRegion,
+          label: '$semanticsLabel, $toggleTooltip',
+          child: Material(
+            key: SidebarActivitySummaryKeys.root,
+            color: tokens.colors.surface.enabled,
+            borderRadius: radius,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: radius,
+              hoverColor: tokens.colors.surface.hover,
+              focusColor: tokens.colors.surface.focusPressed,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: minTarget),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.step4,
+                    vertical: tokens.spacing.step3,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: largeText
+                            ? Wrap(
+                                spacing: tokens.spacing.step4,
+                                runSpacing: tokens.spacing.step2,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  label,
+                                  for (final metric in metrics)
+                                    ExcludeSemantics(child: metric),
+                                ],
+                              )
+                            : Row(
+                                children: [
+                                  Expanded(child: label),
+                                  for (
+                                    var index = 0;
+                                    index < metrics.length;
+                                    index++
+                                  ) ...[
+                                    if (index > 0)
+                                      SizedBox(
+                                        height: tokens.spacing.step5,
+                                        child: VerticalDivider(
+                                          width: tokens.spacing.step4,
+                                          color:
+                                              tokens.colors.decorative.level01,
+                                        ),
+                                      ),
+                                    ExcludeSemantics(child: metrics[index]),
+                                  ],
+                                ],
+                              ),
+                      ),
+                      SizedBox(width: tokens.spacing.step3),
+                      Tooltip(
+                        message: toggleTooltip,
+                        child: ExcludeSemantics(
+                          child: Icon(
+                            expanded
+                                ? Icons.expand_more_rounded
+                                : Icons.chevron_right_rounded,
+                            size: tokens.spacing.step5,
+                            color: tokens.colors.text.mediumEmphasis,
                           ),
                         ),
-                        for (
-                          var index = 0;
-                          index < metrics.length;
-                          index++
-                        ) ...[
-                          if (index > 0)
-                            SizedBox(
-                              height: tokens.spacing.step5,
-                              child: VerticalDivider(
-                                width: tokens.spacing.step4,
-                                color: tokens.colors.decorative.level01,
-                              ),
-                            ),
-                          ExcludeSemantics(child: metrics[index]),
-                        ],
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ),
-      ),
+        AnimatedSize(
+          duration: SidebarWakeQueue.animationDuration,
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: expanded
+              ? Padding(
+                  key: SidebarActivitySummaryKeys.details,
+                  padding: EdgeInsets.only(top: tokens.spacing.step3),
+                  child: details,
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActivityDetails extends StatelessWidget {
+  const _ActivityDetails({
+    required this.showAudio,
+    required this.showTimer,
+    required this.showWakeQueue,
+  });
+
+  final bool showAudio;
+  final bool showTimer;
+  final bool showWakeQueue;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final sections = <Widget>[
+      if (showAudio) const SidebarAudioRecordingSection(),
+      if (showTimer) const SidebarTimerSection(),
+      if (showWakeQueue) const SidebarWakeQueue(),
+    ];
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < sections.length; index++) ...[
+          if (index > 0) SizedBox(height: tokens.spacing.step3),
+          sections[index],
+        ],
+      ],
     );
   }
 }

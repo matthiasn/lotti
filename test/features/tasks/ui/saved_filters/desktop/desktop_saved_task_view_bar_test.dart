@@ -93,6 +93,7 @@ _pumpBar(
   List<Override> extraOverrides = const [],
   Override? countsOverride,
   double width = 620,
+  int total = 214,
   TextScaler textScaler = TextScaler.noScaling,
 }) async {
   final page = FakeJournalPageController(pageState);
@@ -119,7 +120,7 @@ _pumpBar(
           savedTaskFilterCountsProvider.overrideWith(
             (ref) async => _counts,
           ),
-      allTasksTotalCountProvider.overrideWith((ref) async => 214),
+      allTasksTotalCountProvider.overrideWith((ref) async => total),
       currentTasksFilterCountProvider.overrideWith((ref) async => 4),
       ...extraOverrides,
     ],
@@ -171,7 +172,7 @@ void main() {
       expect(
         find.descendant(
           of: current,
-          matching: find.text('In progress'),
+          matching: find.text('Lotti · In progress'),
         ),
         findsOneWidget,
       );
@@ -187,19 +188,12 @@ void main() {
         find.descendant(of: current, matching: find.text('5')),
         findsOneWidget,
       );
+      final root = find.byKey(DesktopSavedTaskViewBarKeys.root);
+      expect(tester.getTopLeft(current).dx, tester.getTopLeft(root).dx);
       expect(
         tester.getSize(current).width,
-        greaterThan(
-          tester
-                  .getSize(
-                    find.byKey(
-                      DesktopSavedTaskViewBarKeys.monitor('blocked'),
-                    ),
-                  )
-                  .width *
-              1.8,
-        ),
-        reason: 'the selected task context gets priority over monitor width',
+        lessThan(tester.getSize(root).width / 2),
+        reason: 'the selected view stays compact instead of owning a flex cell',
       );
 
       await tester.tap(current);
@@ -262,9 +256,11 @@ void main() {
       );
       expect(
         tester.getCenter(blockedCount).dy,
-        lessThan(
-          tester.getCenter(blockedStatus).dy,
-        ),
+        tester.getCenter(blockedStatus).dy,
+      );
+      expect(
+        tester.getCenter(blockedCount).dx,
+        lessThan(tester.getCenter(blockedStatus).dx),
         reason: 'the task count leads each compact queue monitor',
       );
       expect(
@@ -339,34 +335,40 @@ void main() {
     );
   });
 
-  testWidgets('large text keeps the current view and reset without overflow', (
-    tester,
-  ) async {
-    await _pumpBar(
+  testWidgets(
+    'large text keeps the saved-view run scrollable without overflow',
+    (
       tester,
-      pageState: const JournalPageState(
-        selectedTaskStatuses: {'IN_PROGRESS'},
-      ),
-      width: 480,
-      textScaler: const TextScaler.linear(1.6),
-    );
+    ) async {
+      await _pumpBar(
+        tester,
+        pageState: const JournalPageState(
+          selectedTaskStatuses: {'IN_PROGRESS'},
+        ),
+        width: 480,
+        textScaler: const TextScaler.linear(1.6),
+      );
 
-    expect(find.byKey(DesktopSavedTaskViewBarKeys.currentView), findsOneWidget);
-    expect(find.byKey(DesktopSavedTaskViewBarKeys.allTasks), findsOneWidget);
-    expect(
-      find.byKey(DesktopSavedTaskViewBarKeys.monitor('blocked')),
-      findsNothing,
-    );
-    expect(
-      tester
-          .widget<SingleChildScrollView>(
-            find.byKey(DesktopSavedTaskViewBarKeys.root),
-          )
-          .scrollDirection,
-      Axis.horizontal,
-    );
-    expect(tester.takeException(), isNull);
-  });
+      expect(
+        find.byKey(DesktopSavedTaskViewBarKeys.currentView),
+        findsOneWidget,
+      );
+      expect(find.byKey(DesktopSavedTaskViewBarKeys.allTasks), findsOneWidget);
+      expect(
+        find.byKey(DesktopSavedTaskViewBarKeys.monitor('blocked')),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<SingleChildScrollView>(
+              find.byKey(DesktopSavedTaskViewBarKeys.root),
+            )
+            .scrollDirection,
+        Axis.horizontal,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'narrow desktop pane reduces monitors before labels become noise',
@@ -395,6 +397,45 @@ void main() {
           of: find.byKey(DesktopSavedTaskViewBarKeys.monitor('blocked')),
           matching: find.text('Blocked'),
         ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'real task-pane width keeps a single saved view and All compact and left aligned',
+    (tester) async {
+      const fooo = SavedTaskFilter(
+        id: 'fooo',
+        name: 'fooo',
+        filter: TasksFilter(selectedTaskStatuses: {'IN_PROGRESS'}),
+      );
+      await _pumpBar(
+        tester,
+        pageState: const JournalPageState(
+          selectedTaskStatuses: {'IN_PROGRESS'},
+        ),
+        saved: const [fooo],
+        countsOverride: savedTaskFilterCountsProvider.overrideWith(
+          (ref) async => const {'fooo': 2},
+        ),
+        total: 5,
+        width: 490,
+      );
+
+      final root = find.byKey(DesktopSavedTaskViewBarKeys.root);
+      final current = find.byKey(DesktopSavedTaskViewBarKeys.currentView);
+      final all = find.byKey(DesktopSavedTaskViewBarKeys.allTasks);
+      final rootRect = tester.getRect(root);
+      final currentRect = tester.getRect(current);
+      final allRect = tester.getRect(all);
+
+      expect(currentRect.left, rootRect.left);
+      expect(allRect.left, greaterThan(currentRect.right));
+      expect(allRect.right, lessThan(rootRect.center.dx));
+      expect(
+        find.descendant(of: all, matching: find.text('5')),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);

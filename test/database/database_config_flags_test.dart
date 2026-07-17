@@ -139,11 +139,6 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: showSidebarWakeQueueFlag,
-    description: 'Show agent activity in the sidebar summary.',
-    status: false,
-  ),
-  const ConfigFlag(
     name: enableForkHealingFlag,
     description: 'Enable agent fork healing?',
     status: false,

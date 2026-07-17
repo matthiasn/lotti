@@ -11,17 +11,17 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/misc/sidebar_live_card.dart';
 import 'package:lotti/widgets/misc/timer_navigation.dart';
 
-/// Detailed timer panel rendered from the desktop sidebar activity dialog
-/// whenever a time-recording session is active.
+/// Detailed timer panel rendered from the expanded desktop sidebar activity
+/// disclosure whenever a time-recording session is active.
 ///
 /// Tapping anywhere on the body navigates to the running task (or the
 /// timer's journal entry, if not linked to a task). Tapping the stop
 /// button stops the timer.
 ///
 /// Visibility is a pure function of whether a timer is running: while the
-/// activity dialog is open, the card collapses only when the session stops.
+/// activity disclosure is open, the card collapses only when the session stops.
 /// The persistent `SidebarActivitySummary` owns the always-available elapsed
-/// readout outside the dialog.
+/// readout while details are collapsed.
 ///
 /// Reactivity:
 ///

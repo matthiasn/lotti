@@ -3071,14 +3071,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolte toto nastavení pro automatické opětovné odeslání neúspěšného nahrávání příloh po obnovení připojení.';
 
   @override
-  String get configFlagShowSidebarWakeQueue =>
-      'Zobrazit frontu probuzení v postranním panelu';
-
-  @override
-  String get configFlagShowSidebarWakeQueueDescription =>
-      'Zobrazí aktivitu agentů v kompaktním souhrnu postranního panelu; po otevření uvidíš podrobnosti o aktivních a zařazených probuzeních.';
-
-  @override
   String get configFlagShowSyncActivityIndicator =>
       'Zobrazit indikátor aktivity synchronizace';
 
@@ -9154,6 +9146,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get sidebarActiveSectionTitle => 'Aktivita';
+
+  @override
+  String get sidebarActivityCollapseTooltip => 'Sbalit aktivitu';
+
+  @override
+  String get sidebarActivityExpandTooltip => 'Rozbalit aktivitu';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Nahrávání';

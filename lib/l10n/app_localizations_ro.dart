@@ -3091,14 +3091,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.';
 
   @override
-  String get configFlagShowSidebarWakeQueue =>
-      'Afișează coada de treziri în bara laterală';
-
-  @override
-  String get configFlagShowSidebarWakeQueueDescription =>
-      'Afișează activitatea agenților în rezumatul compact din bara laterală, cu detalii despre trezirile active și cele din coadă la deschidere.';
-
-  @override
   String get configFlagShowSyncActivityIndicator =>
       'Afișează indicatorul de activitate de sincronizare';
 
@@ -9214,6 +9206,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get sidebarActiveSectionTitle => 'Activitate';
+
+  @override
+  String get sidebarActivityCollapseTooltip => 'Restrânge activitatea';
+
+  @override
+  String get sidebarActivityExpandTooltip => 'Extinde activitatea';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Înregistrare';

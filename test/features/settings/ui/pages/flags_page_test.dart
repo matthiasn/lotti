@@ -24,7 +24,7 @@ import '../../../../widget_test_utils.dart';
 /// derived from `FlagsBody.defaultDisplayedItems`: these tests supply their own
 /// `displayedItems`, and asserting against the production list would make this
 /// a tautology.
-const _displayedFlagCount = 12;
+const _displayedFlagCount = 11;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -97,11 +97,6 @@ void main() {
           const ConfigFlag(
             name: showSyncActivityIndicatorFlag,
             description: 'Show sync status in the sidebar.',
-            status: false,
-          ),
-          const ConfigFlag(
-            name: showSidebarWakeQueueFlag,
-            description: 'Show agent activity in the sidebar summary.',
             status: false,
           ),
           const ConfigFlag(
@@ -342,17 +337,6 @@ void main() {
             expectedToggle: const ConfigFlag(
               name: showSyncActivityIndicatorFlag,
               description: 'Show sync status in the sidebar.',
-              status: true,
-            ),
-          ),
-          (
-            name: 'sidebar-wake-queue',
-            title: (m) => m.configFlagShowSidebarWakeQueue,
-            description: (m) => m.configFlagShowSidebarWakeQueueDescription,
-            icon: Icons.alarm_rounded,
-            expectedToggle: const ConfigFlag(
-              name: showSidebarWakeQueueFlag,
-              description: 'Show agent activity in the sidebar summary.',
               status: true,
             ),
           ),
@@ -805,11 +789,6 @@ void main() {
             const ConfigFlag(
               name: showSyncActivityIndicatorFlag,
               description: 'Show sync status in the sidebar.',
-              status: false,
-            ),
-            const ConfigFlag(
-              name: showSidebarWakeQueueFlag,
-              description: 'Show agent activity in the sidebar summary.',
               status: false,
             ),
             // Previously uncovered flags:

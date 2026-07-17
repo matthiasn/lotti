@@ -182,14 +182,6 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: showSidebarWakeQueueFlag,
-      description: 'Show agent activity in the sidebar summary.',
-      status: false,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: enableForkHealingFlag,
       description: 'Enable agent fork healing?',
       status: false,

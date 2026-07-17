@@ -641,9 +641,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     final showSyncIndicator =
         ref.watch(configFlagProvider(showSyncActivityIndicatorFlag)).value ??
         false;
-    final showSidebarWakeQueue =
-        ref.watch(configFlagProvider(showSidebarWakeQueueFlag)).value ?? false;
-
     return Scaffold(
       // Scaffold fills behind the outer ResizableDivider's 3 px reserved
       // SizedBox; without an explicit colour Flutter would paint the theme
@@ -690,9 +687,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               onToggleCollapsed: () => ref
                   .read(paneWidthControllerProvider.notifier)
                   .toggleSidebarCollapsed(),
-              aboveSettings: _DesktopSidebarAboveSettings(
-                showWakeQueue: showSidebarWakeQueue,
-              ),
+              aboveSettings: const _DesktopSidebarAboveSettings(),
               belowSettings: showSyncIndicator
                   ? const SyncActivityIndicator()
                   : SizedBox(height: context.designTokens.spacing.step3),
@@ -1418,19 +1413,14 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
 
 /// Composer for the desktop sidebar's `aboveSettings` slot.
 ///
-/// All transient systems share one compact summary surface. Selecting it opens
-/// the detailed recording, timer, and agent controls without letting those
-/// operational tools displace primary navigation.
+/// All transient systems share one compact summary surface. Selecting it
+/// expands the detailed recording, timer, and agent controls in place without
+/// permanently letting those operational tools displace primary navigation.
 class _DesktopSidebarAboveSettings extends StatelessWidget {
-  const _DesktopSidebarAboveSettings({required this.showWakeQueue});
-
-  final bool showWakeQueue;
+  const _DesktopSidebarAboveSettings();
 
   @override
   Widget build(BuildContext context) {
-    return SidebarActivitySummary(
-      showAudio: !_isRunningInFlatpak(),
-      showWakeQueue: showWakeQueue,
-    );
+    return SidebarActivitySummary(showAudio: !_isRunningInFlatpak());
   }
 }

@@ -182,7 +182,7 @@ Widget displaying multiple task count statistics.
 Individual task count display component.
 
 ### SidebarLiveCard
-Shared visual shell for the detailed running-timer and active-recording controls shown from `SidebarActivitySummary`. Each is an accent-tinted card (`Color.alphaBlend(accent.withValues(alpha: 0.14), background.level01)`, radius `m`) with an accent rail, a top row containing glyph, elapsed time, and trailing action, and a second row for the linked title. These cards live in the activity dialog rather than permanently occupying navigation height.
+Shared visual shell for the detailed running-timer and active-recording controls shown from `SidebarActivitySummary`. Each is an accent-tinted card (`Color.alphaBlend(accent.withValues(alpha: 0.14), background.level01)`, radius `m`) with an accent rail, a top row containing glyph, elapsed time, and trailing action, and a second row for the linked title. These cards live in the summary's inline expanded state rather than permanently occupying navigation height.
 
 - `pulse: true` overlays a small breathing record dot on the glyph (recording), and respects the platform reduce-motion setting (static when animations are disabled).
 - The card is announced as an actionable button. Its semantics label names the live state, and its value includes the linked title plus elapsed time.
@@ -191,13 +191,16 @@ Shared visual shell for the detailed running-timer and active-recording controls
 Persistent desktop-sidebar activity surface. It combines active recording,
 timer, and agent work into one token-backed row: a quiet `Activity` label plus
 compact icon/value metrics. Sub-hour durations use `mm:ss`; longer sessions
-retain hours. Selecting the row opens one dialog containing the detailed
-`SidebarAudioRecordingSection`, `SidebarTimerSection`, and `SidebarWakeQueue`.
-The whole summary is a minimum 48dp target. When every subsystem is idle, it
-collapses completely.
+retain hours. Selecting the row expands the live detail sections directly
+above Settings: `SidebarAudioRecordingSection`, `SidebarTimerSection`, and
+`SidebarWakeQueue`. Only sections with current activity are mounted, so one
+active subsystem does not create empty gaps. Selecting the summary again
+collapses the details without interrupting the work. Agent activity is always
+observed rather than hidden behind a configuration flag. The whole summary is
+a minimum 48dp target. When every subsystem is idle, it collapses completely.
 
 ### SidebarTimerSection
-Detailed timer card shown inside the activity dialog whenever a time-recording session is active (via `SidebarLiveCard`).
+Detailed timer card shown inside the expanded activity disclosure whenever a time-recording session is active (via `SidebarLiveCard`).
 
 - Layout: top row = teal `Icons.timer_outlined` glyph + a prominent teal tabular HH:MM:SS time + a 28px circular stop button (a teal-tinted chip + teal glyph, matching the audio card's red stop chip — same affordance, accent the only difference; red stays exclusive to the consequential recording stop); second row = the task title (two lines, full title via hover tooltip when truncated). A 3px teal accent rail runs the full height.
 - Typography: Inter with `numericBadgeFontFeatures` (tabular figures, slashed zero, `cv02`/`cv03`/`cv04` open digits) so 4/6/9 stay legible and digits do not breathe.
@@ -206,7 +209,7 @@ Detailed timer card shown inside the activity dialog whenever a time-recording s
 - Idle state: collapses to `SizedBox.shrink` so the slot consumes no vertical space.
 
 ### SidebarAudioRecordingSection
-Detailed recording card shown inside the activity dialog whenever an audio recording is active and its recording modal is not already visible.
+Detailed recording card shown inside the expanded activity disclosure whenever an audio recording is active and its recording modal is not already visible.
 
 - Layout: top row = `Icons.mic_rounded` glyph with a **gentle pulsing record dot** (record convention, reduce-motion aware) + a prominent red tabular HH:MM:SS time + a red 28px circular stop button (the consequential action keeps the destructive red); second row = the linked title (two lines, full title via tooltip). A 3px red accent rail runs the full height.
 - No `AudioRecordingOrb` and no dBFS-reactive frame/shadow in the sidebar — the red accent + pulsing dot carry "recording" without the reactive orb. (The live orb still drives the mobile recording pill and the modal's VU meter.)

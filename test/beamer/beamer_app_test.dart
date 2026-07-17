@@ -11,7 +11,6 @@ import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -52,7 +51,6 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/sidebar_activity_summary.dart';
 import 'package:lotti/widgets/misc/sidebar_audio_recording_section.dart';
@@ -2767,9 +2765,6 @@ void main() {
           navService: mockNavService,
           viewportSize: _desktopViewportSize,
           extraOverrides: [
-            configFlagProvider(showSidebarWakeQueueFlag).overrideWith(
-              (ref) => Stream<bool>.value(true),
-            ),
             ongoingWakeRecordsProvider.overrideWith(
               (ref) async => [
                 OngoingWakeRecord(
@@ -2814,8 +2809,8 @@ void main() {
         expect(find.byType(SidebarAudioRecordingSection), findsNothing);
 
         await tester.tap(find.byKey(SidebarActivitySummaryKeys.root));
-        await tester.pump();
-        expect(find.byKey(SidebarActivitySummaryKeys.dialog), findsOneWidget);
+        await tester.pump(SidebarTimerSection.animationDuration);
+        expect(find.byKey(SidebarActivitySummaryKeys.details), findsOneWidget);
         expect(find.byType(SidebarTimerSection), findsOneWidget);
         expect(find.byType(SidebarWakeQueue), findsOneWidget);
         expect(
@@ -2829,7 +2824,7 @@ void main() {
     );
 
     testWidgets(
-      'shows only the agent metric when agents are the sole activity',
+      'always shows the agent metric when agents are the sole activity',
       (tester) async {
         final mockNavService = MockNavService();
         await _stubNavService(
@@ -2848,9 +2843,6 @@ void main() {
           navService: mockNavService,
           viewportSize: _desktopViewportSize,
           extraOverrides: [
-            configFlagProvider(showSidebarWakeQueueFlag).overrideWith(
-              (ref) => Stream<bool>.value(true),
-            ),
             ongoingWakeRecordsProvider.overrideWith(
               (ref) async => [
                 OngoingWakeRecord(
@@ -2876,6 +2868,11 @@ void main() {
         );
         expect(find.byKey(SidebarActivitySummaryKeys.timer), findsNothing);
         expect(find.byKey(SidebarActivitySummaryKeys.audio), findsNothing);
+
+        await tester.tap(find.byKey(SidebarActivitySummaryKeys.root));
+        await tester.pump(SidebarTimerSection.animationDuration);
+        expect(find.byType(SidebarWakeQueue), findsOneWidget);
+        expect(find.text('Running wake'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();

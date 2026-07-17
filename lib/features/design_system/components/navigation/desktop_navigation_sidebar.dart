@@ -100,8 +100,9 @@ class DesktopNavigationSidebar extends StatelessWidget {
 
   /// Optional widget rendered between the scrollable nav and the
   /// Settings row in the expanded layout. The Lotti app uses this slot
-  /// for its compact activity summary. The slot is intentionally suppressed
-  /// in [collapsed] mode, where the metrics would not fit the icon-only rail.
+  /// for its compact, inline-expandable activity disclosure. The slot is
+  /// intentionally suppressed in [collapsed] mode, where the metrics and
+  /// detail cards would not fit the icon-only rail.
   final Widget? aboveSettings;
 
   /// Optional widget rendered immediately below the Settings row in the

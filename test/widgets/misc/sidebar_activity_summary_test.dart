@@ -64,7 +64,6 @@ void main() {
   Widget subject({
     required AudioRecorderState recorder,
     bool showAudio = true,
-    bool showWakeQueue = true,
     List<PendingWakeRecord> pending = const [],
     List<OngoingWakeRecord> ongoing = const [],
     MediaQueryData? mediaQueryData,
@@ -75,7 +74,6 @@ void main() {
         width: width,
         child: SidebarActivitySummary(
           showAudio: showAudio,
-          showWakeQueue: showWakeQueue,
         ),
       ),
       overrides: [
@@ -250,7 +248,7 @@ void main() {
     );
   });
 
-  testWidgets('opens the detailed activity controls from the summary', (
+  testWidgets('expands and collapses detailed controls in place', (
     tester,
   ) async {
     when(
@@ -258,35 +256,25 @@ void main() {
     ).thenReturn(timerEntry(const Duration(minutes: 2, seconds: 5)));
 
     await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        const SizedBox(
-          width: 320,
-          child: SidebarActivitySummary(
-            showAudio: false,
-            showWakeQueue: false,
-          ),
-        ),
-        overrides: [
-          audioRecorderControllerProvider.overrideWith(
-            () => StubAudioRecorderController(recorderState()),
-          ),
-        ],
-      ),
+      subject(recorder: recorderState(), showAudio: false),
     );
     await tester.pump();
+
+    expect(find.byKey(SidebarActivitySummaryKeys.details), findsNothing);
+    expect(find.byType(SidebarTimerSection), findsNothing);
 
     await tester.tap(find.byKey(SidebarActivitySummaryKeys.root));
-    await tester.pump();
+    await tester.pump(SidebarTimerSection.animationDuration);
 
-    expect(find.byKey(SidebarActivitySummaryKeys.dialog), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byKey(SidebarActivitySummaryKeys.dialog),
-        matching: find.text('Activity'),
-      ),
-      findsOneWidget,
-    );
+    expect(find.byKey(SidebarActivitySummaryKeys.details), findsOneWidget);
     expect(find.byType(SidebarTimerSection), findsOneWidget);
     expect(find.text('00:02:05'), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
+
+    await tester.tap(find.byKey(SidebarActivitySummaryKeys.root));
+    await tester.pump(SidebarTimerSection.animationDuration);
+
+    expect(find.byKey(SidebarActivitySummaryKeys.details), findsNothing);
+    expect(find.byType(SidebarTimerSection), findsNothing);
   });
 }

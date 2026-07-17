@@ -3088,14 +3088,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Active cette option pour renvoyer automatiquement les téléchargements de pièces jointes ayant échoué lorsque la connexion est rétablie.';
 
   @override
-  String get configFlagShowSidebarWakeQueue =>
-      'Afficher la file des réveils dans la barre latérale';
-
-  @override
-  String get configFlagShowSidebarWakeQueueDescription =>
-      'Affiche l’activité des agents dans le résumé compact de la barre latérale ; ouvre-le pour voir les réveils actifs et en attente.';
-
-  @override
   String get configFlagShowSyncActivityIndicator =>
       'Afficher l\'indicateur d\'activité de synchronisation';
 
@@ -9228,6 +9220,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get sidebarActiveSectionTitle => 'Activité';
+
+  @override
+  String get sidebarActivityCollapseTooltip => 'Réduire l’activité';
+
+  @override
+  String get sidebarActivityExpandTooltip => 'Développer l’activité';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Enregistrement';

@@ -371,8 +371,9 @@ This page is not just "show task fields." It is the task workspace where task me
 `lib/widgets/README.md`) and `TaskActionBar`'s running pill both read the same
 live `TimeService` session. The persistent sidebar representation is one
 compact timer metric shared with recording and agent activity. Selecting the
-summary opens the detailed `SidebarTimerSection`, where the linked title,
-navigation target, and stop action remain available.
+summary expands the detailed `SidebarTimerSection` in place, where the linked
+title, navigation target, and stop action remain available. A second selection
+collapses the details back to the compact metric row.
 
 Visibility is derived from the live systems:
 
@@ -748,8 +749,9 @@ stateDiagram-v2
 
 Saved task filters are presented as **Saved views** because the product-level
 object is a reusable task-list state, not a global navigation destination.
-`TasksTabPage` owns both responsive entry surfaces between its search/filter
-header and active-filter chips:
+`TasksTabPage` owns both responsive entry surfaces below its search/filter
+header. A matched saved view replaces its underlying removable clause chips;
+those chips remain visible only for an ad-hoc `Custom` filter:
 
 ```mermaid
 flowchart LR
@@ -769,24 +771,22 @@ flowchart LR
 ```
 
 - `DesktopSavedTaskViewBar` is the desktop information architecture. The
-  widest, selected control carries the current saved view, `All tasks`, or
-  `Custom`, its live result count, and the disclosure to the complete sheet.
-  It receives twice the width of a monitor tile. At standard task-pane widths,
-  category-scoped names keep the category dot and meaningful trailing segment
-  (`Lotti · In progress` becomes `In progress`); wider panes restore the full
-  visible name, while the tooltip and semantics always retain it. Beside it,
-  at most four compact monitor tiles surface queue magnitude above the view
-  name: `All` is the one-tap reset when necessary, then saved views follow
+  selected control carries the current saved view, `All tasks`, or `Custom`,
+  its live result count, and the disclosure to the complete sheet. It keeps
+  intrinsic width and anchors to the same left edge as search and list content
+  instead of expanding into an invisible flex cell. Beside it, at most four
+  compact, intrinsic-width monitors render queue magnitude before the view
+  name (`5 All`, `9 Blocked`): `All` is the one-tap reset when necessary, then
+  saved views follow
   their persisted order while the active view is excluded because it is
   already the primary control. The result is stable ambient monitoring; MRU
   activity never silently redefines what is important. The width-derived cap
   steps down from four monitors to two and then one as the task pane narrows.
   With an unsaved custom filter the bar reserves a `Save filter` action and
-  caps monitors at two. At text scale `>= 1.3`, secondary saved monitors
-  collapse and a horizontal run preserves the current view, `All` reset, and
-  save action without overflow.
+  caps monitors at two. The complete intrinsic run scrolls horizontally when
+  text scale or window width cannot accommodate it without overflow.
 - Desktop monitor counts use `SavedFilterCountText(prominent: true)`: tabular
-  `bodySmall`/`w700` numerals, centered above a caption label. `0` remains
+  `bodySmall`/`w700` numerals, leading a caption label. `0` remains
   visible at low emphasis, values cap at `999+`, and `AsyncValue.value` keeps
   the previous count during background refresh. Category colours remain a
   leading dot and category names are included in semantics. Compact names

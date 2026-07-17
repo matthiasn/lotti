@@ -25,17 +25,17 @@ abstract final class DesktopSavedTaskViewBarKeys {
 
 /// Desktop task-local saved-view switcher and queue monitor.
 ///
-/// The selected view is always the first, widest control and opens the complete
-/// saved-views sheet. The remaining slots are a stable watchlist: "All" as the
-/// one-tap reset (when it is not already selected), followed by saved views in
-/// their persisted order. Counts lead every watchlist control so queue
-/// magnitude remains scannable even when a long view name ellipsizes.
+/// The selected view is always the first control and opens the complete
+/// saved-views sheet. The remaining controls form a stable watchlist: "All" as
+/// the one-tap reset (when it is not already selected), followed by saved views
+/// in their persisted order. Every control keeps its intrinsic width instead
+/// of stretching across the task pane, while counts lead the watchlist labels
+/// so queue magnitude remains scannable.
 ///
 /// Saved order deliberately drives the watchlist instead of MRU order: recent
 /// use is not evidence that a queue is important. Users change the order in the
-/// sheet's Edit mode. At large text sizes secondary monitors collapse away;
-/// the selected view and reset remain readable and the sheet still exposes the
-/// complete list.
+/// sheet's Edit mode. The intrinsic control run scrolls horizontally when a
+/// narrow pane or large text scale cannot fit the current view and monitors.
 class DesktopSavedTaskViewBar extends ConsumerWidget {
   const DesktopSavedTaskViewBar({super.key});
 
@@ -107,11 +107,10 @@ class DesktopSavedTaskViewBar extends ConsumerWidget {
     ];
 
     final gap = SizedBox(width: tokens.spacing.step2);
-    final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.3;
 
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step3,
+        horizontal: tokens.spacing.step6,
         vertical: tokens.spacing.step2,
       ),
       child: Semantics(
@@ -127,58 +126,30 @@ class DesktopSavedTaskViewBar extends ConsumerWidget {
             final monitors = monitorCandidates
                 .take(monitorLimit)
                 .toList(growable: false);
-            if (largeText) {
-              return SingleChildScrollView(
-                key: DesktopSavedTaskViewBarKeys.root,
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: tokens.spacing.step13,
-                      ),
-                      child: _CurrentViewButton(current: current),
-                    ),
-                    if (!allSelected) ...[
-                      gap,
-                      _MonitorButton(monitor: monitors.first),
-                    ],
-                    if (hasUnsaved) ...[
-                      gap,
-                      _SaveFilterButton(
-                        onTap: () => promptSaveCurrentTaskFilter(context, ref),
-                      ),
-                    ],
-                  ],
-                ),
-              );
-            }
-            return Row(
+            return SingleChildScrollView(
               key: DesktopSavedTaskViewBarKeys.root,
-              children: [
-                Expanded(
-                  // The selected view carries the task pane's current
-                  // context, so it owns twice the width of each count-first
-                  // watch cell. At compact widths its category dot and
-                  // trailing view name preserve meaning without stealing
-                  // width from visible queue counts.
-                  flex: 2,
-                  child: _CurrentViewButton(current: current),
-                ),
-                for (final monitor in monitors) ...[
-                  gap,
-                  Expanded(child: _MonitorButton(monitor: monitor)),
-                ],
-                if (hasUnsaved) ...[
-                  gap,
-                  Flexible(
-                    child: _SaveFilterButton(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: tokens.spacing.step13 + tokens.spacing.step9,
+                    ),
+                    child: _CurrentViewButton(current: current),
+                  ),
+                  for (final monitor in monitors) ...[
+                    gap,
+                    _MonitorButton(monitor: monitor),
+                  ],
+                  if (hasUnsaved) ...[
+                    gap,
+                    _SaveFilterButton(
                       onTap: () => promptSaveCurrentTaskFilter(context, ref),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             );
           },
         ),
@@ -273,7 +244,8 @@ class _CurrentViewButton extends StatelessWidget {
                   onTap: () => showSavedTaskFiltersSheet(context),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minHeight: minTarget),
-                    child: Center(
+                    child: Align(
+                      widthFactor: 1,
                       child: DsPill(
                         variant: DsPillVariant.filled,
                         bordered: true,
@@ -344,7 +316,7 @@ class _MonitorButton extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
-    final radius = BorderRadius.circular(tokens.radii.m);
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
     final countClause = monitor.count == null
         ? null
         : messages.tasksSavedFiltersTaskCount(monitor.count!);
@@ -364,31 +336,25 @@ class _MonitorButton extends StatelessWidget {
           horizontal: tokens.spacing.step3,
           vertical: tokens.spacing.step2,
         ),
-        child: Column(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             SavedFilterCountText(
               count: monitor.count,
-              minWidth: tokens.spacing.step6,
+              minWidth: tokens.spacing.step5,
               prominent: true,
-              textAlign: TextAlign.center,
             ),
-            SizedBox(height: tokens.spacing.step1),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (monitor.categoryColor != null) ...[
-                  _CategoryDot(color: monitor.categoryColor),
-                  SizedBox(width: tokens.spacing.step2),
-                ],
-                Flexible(
-                  child: _TaskViewLabel(
-                    label: monitor.name,
-                    preferTrailingSegment: true,
-                  ),
-                ),
-              ],
+            SizedBox(width: tokens.spacing.step2),
+            if (monitor.categoryColor != null) ...[
+              _CategoryDot(color: monitor.categoryColor),
+              SizedBox(width: tokens.spacing.step2),
+            ],
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: tokens.spacing.step12),
+              child: _TaskViewLabel(
+                label: monitor.name,
+                preferTrailingSegment: true,
+              ),
             ),
           ],
         ),
@@ -410,13 +376,7 @@ class _MonitorButton extends StatelessWidget {
               onTap: monitor.onTap,
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: minTarget),
-                child: LayoutBuilder(
-                  builder: (context, constraints) => Center(
-                    child: constraints.hasBoundedWidth
-                        ? SizedBox(width: constraints.maxWidth, child: tile)
-                        : tile,
-                  ),
-                ),
+                child: Center(child: tile),
               ),
             ),
           ),

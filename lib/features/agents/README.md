@@ -335,7 +335,7 @@ owns the persistent desktop-sidebar representation. It watches
 wakes inside the one-hour lookahead, and contributes one compact
 `auto_awesome + total` metric beside recording and timer activity.
 
-Selecting that summary opens the detailed `SidebarWakeQueue`
+Selecting that summary expands the detailed `SidebarWakeQueue` in place
 (`lib/features/agents/ui/sidebar_wake_queue.dart`), which surfaces:
 
 - a quiet sentence-case `Agents` sublabel (Inter `caption`, low emphasis)
@@ -352,9 +352,10 @@ Selecting that summary opens the detailed `SidebarWakeQueue`
 
 The detailed widget renders as a quiet neutral card (`surface.enabled`, radius
 `m`, no accent rail or tint). It no longer reserves permanent sidebar height;
-the summary dialog is the operational detail surface. Type is the app's Inter
-family throughout, elapsed times use tabular figures, and truncated titles
-remain available through tooltips.
+the summary's inline expanded state is the operational detail surface. Agent
+activity is always observed, with no feature flag capable of hiding active or
+queued work. Type is the app's Inter family throughout, elapsed times use
+tabular figures, and truncated titles remain available through tooltips.
 
 Rows are actionable: task-linked wakes route directly to `/tasks/<taskId>` and
 show a small open-task glyph, while unlinked or project-only wakes fall back to
@@ -373,7 +374,7 @@ header and rows would not fit the narrow column.
 flowchart LR
   Provider[pendingWakeRecordsProvider]
   Provider --> Summary[SidebarActivitySummary<br/>one persistent metric]
-  Summary -->|tap| WakeBlock[SidebarWakeQueue<br/>activity dialog]
+  Summary -->|expand in place| WakeBlock[SidebarWakeQueue<br/>inline detail]
   Provider --> WakesPage[Pending Wakes page<br/>full list view]
   WakeBlock -->|tap task-linked row| TaskRoute[/tasks/taskId/]
   WakeBlock -->|tap unlinked row| InstanceRoute[/settings/agents/instances/agentId/]

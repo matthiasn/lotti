@@ -50,7 +50,7 @@ abstract final class SidebarWakeQueueTestHooks {
 ///
 /// When the pre-resolve / zero-wake state holds, `build` returns
 /// [SizedBox.shrink] so the card is hidden entirely rather than
-/// presenting an empty section in the activity dialog.
+/// presenting an empty section in the expanded activity disclosure.
 class SidebarWakeQueue extends ConsumerWidget {
   const SidebarWakeQueue({super.key});
 

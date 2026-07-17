@@ -3027,13 +3027,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable this to automatically resend failed attachment uploads when the connection is restored.';
 
   @override
-  String get configFlagShowSidebarWakeQueue => 'Show sidebar wake queue';
-
-  @override
-  String get configFlagShowSidebarWakeQueueDescription =>
-      'Show agent activity in the compact sidebar summary; open it for active and queued wake details.';
-
-  @override
   String get configFlagShowSyncActivityIndicator =>
       'Show sync activity indicator';
 
@@ -8984,6 +8977,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sidebarActiveSectionTitle => 'Activity';
+
+  @override
+  String get sidebarActivityCollapseTooltip => 'Collapse activity';
+
+  @override
+  String get sidebarActivityExpandTooltip => 'Expand activity';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Recording';

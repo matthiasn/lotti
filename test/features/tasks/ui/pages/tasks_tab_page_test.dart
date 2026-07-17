@@ -873,9 +873,11 @@ void main() {
     Widget buildSubjectWithSavedFilter({
       required String? activeId,
       required List<SavedTaskFilter> seed,
+      JournalPageState? pageState,
+      bool hasUnsaved = false,
       MediaQueryData? mediaQueryData,
     }) {
-      fakeController = FakeJournalPageController(state());
+      fakeController = FakeJournalPageController(pageState ?? state());
 
       return makeTestableWidgetNoScroll(
         const TasksTabPage(),
@@ -890,7 +892,9 @@ void main() {
             () => _StubSavedTaskFiltersController(seed),
           ),
           currentSavedTaskFilterIdProvider.overrideWith((ref) => activeId),
-          tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+          tasksFilterHasUnsavedClausesProvider.overrideWith(
+            (ref) => hasUnsaved,
+          ),
           // Keep counts off the GetIt-backed repository in this page-level test.
           savedTaskFilterCountsProvider.overrideWith(
             (ref) async => const {'sv-1': 3},
@@ -979,6 +983,77 @@ void main() {
           .dy;
       final taskListTop = tester.getTopLeft(find.byType(RefreshIndicator)).dy;
       expect(railTop, lessThan(taskListTop));
+    });
+
+    testWidgets(
+      'matched saved view replaces rather than duplicates its filter chips',
+      (tester) async {
+        final selectedTaskId = ValueNotifier<String?>(null);
+        addTearDown(selectedTaskId.dispose);
+        when(
+          () => mockNavService.desktopSelectedTaskId,
+        ).thenReturn(selectedTaskId);
+
+        await tester.pumpWidget(
+          buildSubjectWithSavedFilter(
+            activeId: 'sv-1',
+            seed: const [
+              SavedTaskFilter(
+                id: 'sv-1',
+                name: 'Urgent in progress',
+                filter: TasksFilter(
+                  selectedTaskStatuses: {'IN PROGRESS'},
+                  selectedPriorities: {'P0'},
+                ),
+              ),
+            ],
+            pageState: state(
+              selectedTaskStatuses: const {'IN PROGRESS'},
+              selectedCategoryIds: const {},
+              selectedPriorities: const {'P0'},
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Urgent in progress'), findsOneWidget);
+        expect(find.byType(ActiveFilterChip), findsNothing);
+      },
+    );
+
+    testWidgets('custom filter keeps removable chips and the save action', (
+      tester,
+    ) async {
+      final selectedTaskId = ValueNotifier<String?>(null);
+      addTearDown(selectedTaskId.dispose);
+      when(
+        () => mockNavService.desktopSelectedTaskId,
+      ).thenReturn(selectedTaskId);
+
+      await tester.pumpWidget(
+        buildSubjectWithSavedFilter(
+          activeId: null,
+          hasUnsaved: true,
+          seed: const [
+            SavedTaskFilter(
+              id: 'sv-1',
+              name: 'Saved baseline',
+              filter: TasksFilter(),
+            ),
+          ],
+          pageState: state(
+            selectedTaskStatuses: const {'OPEN'},
+            selectedCategoryIds: const {},
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(ActiveFilterChip), findsOneWidget);
+      expect(find.byKey(DesktopSavedTaskViewBarKeys.save), findsOneWidget);
+      expect(find.text('Custom'), findsOneWidget);
     });
 
     testWidgets(

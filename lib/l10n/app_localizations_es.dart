@@ -3083,14 +3083,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Activar para reenviar automáticamente las cargas de archivos adjuntos fallidas cuando se restablezca la conexión.';
 
   @override
-  String get configFlagShowSidebarWakeQueue =>
-      'Mostrar la cola de despertares en la barra lateral';
-
-  @override
-  String get configFlagShowSidebarWakeQueueDescription =>
-      'Muestra la actividad de los agentes en el resumen compacto de la barra lateral; ábrelo para ver los despertares activos y en cola.';
-
-  @override
   String get configFlagShowSyncActivityIndicator =>
       'Mostrar indicador de actividad de sincronización';
 
@@ -9188,6 +9180,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sidebarActiveSectionTitle => 'Actividad';
+
+  @override
+  String get sidebarActivityCollapseTooltip => 'Contraer actividad';
+
+  @override
+  String get sidebarActivityExpandTooltip => 'Ampliar actividad';
 
   @override
   String get sidebarAudioRecordingStatusLabel => 'Grabación';
