@@ -15148,11 +15148,23 @@ abstract class AppLocalizations {
   /// **'Follow system'**
   String get settingsManualLanguageFollowSystemTitle;
 
+  /// No description provided for @settingsManualLanguageFrenchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'French'**
+  String get settingsManualLanguageFrenchTitle;
+
   /// No description provided for @settingsManualLanguageGermanTitle.
   ///
   /// In en, this message translates to:
   /// **'German'**
   String get settingsManualLanguageGermanTitle;
+
+  /// No description provided for @settingsManualLanguageRomanianTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Romanian'**
+  String get settingsManualLanguageRomanianTitle;
 
   /// No description provided for @settingsManualLanguageTitle.
   ///

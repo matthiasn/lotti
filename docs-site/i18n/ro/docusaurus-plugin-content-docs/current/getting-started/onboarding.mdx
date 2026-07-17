@@ -1,0 +1,107 @@
+---
+title: Configurați Lotti prin ghidul inițial
+description: Conectați un furnizor AI, alegeți stilul de înregistrare și domeniile de lucru, apoi transformați primul gând într-o sarcină reală.
+---
+
+# Configurați Lotti prin ghidul inițial
+
+Configurarea inițială conectează elementele minime necesare pentru fluxul de lucru Lotti cu sarcini asistate de AI: un furnizor, un stil de înregistrare, cel puțin o categorie și o primă sarcină reală. Este o configurare ghidată, nu un mediu demonstrativ separat — furnizorii, categoriile și sarcinile create aici rămân în aplicația obișnuită.
+
+Deschideți **Setări → Configurare inițială** ori de câte ori doriți să începeți sau să reluați fluxul. Pagina arată și dacă profilul a creat deja prima sarcină structurată cu AI.
+
+<ManualScreenshot
+  caseId="onboarding/settings"
+  alt="Setările de configurare inițială Lotti, care arată starea activată și acțiunea de reluare a configurării"
+  caption="Acest profil Project Waddle a creat deja prima sarcină AI. Reluarea configurării rămâne disponibilă după activare."
+/>
+
+## Începeți cu promisiunea de bun venit
+
+<ManualScreenshot
+  caseId="onboarding/welcome"
+  alt="Panoul de bun venit al configurării inițiale Lotti, care invită utilizatorul să conecteze un creier AI și să transforme vorbirea într-o sarcină structurată"
+  caption="Panoul de bun venit se deschide peste aplicația curentă. Alegeți creierul AI pentru a continua sau părăsiți fluxul fără a modifica configurarea."
+/>
+
+Alegeți **Alegeți creierul AI** pentru a începe. **Explorați mai întâi**, zona estompată din afara panoului și acțiunea de întoarcere a sistemului închid configurarea inițială fără să conecteze nimic. Vă puteți întoarce ulterior din Setări.
+
+Lotti poate oferi automat acest mesaj de bun venit unui profil eligibil. Solicitarea automată are o cadență limitată de reîncercare; intrarea din Setări nu are această limită, deci veți avea întotdeauna o cale de întoarcere.
+
+## Alegeți unde rulează structurarea sarcinilor
+
+<ManualScreenshot
+  caseId="onboarding/providers"
+  alt="Selectorul de furnizori din configurarea inițială Lotti, cu Melious.ai, Mistral, Gemini, Qwen, OpenAI și Ollama"
+  caption="Furnizorii găzduiți principali apar primii. Extindeți Mai multe opțiuni pentru OpenAI și ruta locală Ollama."
+/>
+
+Pagina furnizorilor identifică opțiunile găzduite și locale disponibile:
+
+- **Melious.ai** este opțiunea implicită recomandată, găzduită în UE, cu rutare dinamică a modelelor.
+- **Mistral**, **Gemini** și **Qwen** oferă regiunile lor găzduite corespunzătoare.
+- **OpenAI** este disponibil în opțiunile extinse.
+- **Ollama** se conectează la un punct final local compatibil și nu necesită o cheie API găzduită.
+
+<ManualScreenshot
+  caseId="onboarding/api-key"
+  alt="Panoul de verificare a furnizorului din configurarea inițială Lotti, care arată o conexiune locală Ollama verificată"
+  caption="Lotti verifică furnizorul ales înainte de a activa Conectare. Furnizorii găzduiți folosesc același pas, cu un câmp pentru cheia API."
+/>
+
+Pentru un furnizor găzduit, lipiți cheia API a furnizorului. Lotti verifică conexiunea înainte de a activa **Conectare**. Ollama verifică punctul final local configurat și raportează modelele accesibile. O conexiune reușită păstrează furnizorul și inițializează modelele și profilul de inferență folosite în pașii următori.
+
+<ManualScreenshot
+  caseId="onboarding/success"
+  alt="Confirmarea configurării inițiale Lotti că furnizorul AI este conectat și pregătit"
+  caption="Confirmarea conexiunii este intenționat discretă; câștigul mai important este păstrat pentru prima sarcină reală."
+/>
+
+Textul capturat al sarcinii este trimis pentru structurare la furnizorul atribuit categoriei selectate. Alegeți un furnizor al cărui mod de implementare și de prelucrare a datelor se potrivește materialului pe care intenționați să îl capturați. Un punct final Ollama local accesibil menține această solicitare de structurare pe dispozitivul pe care rulează.
+
+## Alegeți stilul de înregistrare și domeniile de lucru
+
+<ManualScreenshot
+  caseId="onboarding/recording-style"
+  alt="Selectorul stilului de înregistrare din configurarea inițială Lotti, cu opțiunile orbul de energie Modern și vumetrul Analog"
+  caption="Alegeți vizualul care vi se pare cel mai clar. Ambele opțiuni folosesc același flux de capturare."
+/>
+
+După reușita conexiunii, alegeți stilul de înregistrare folosit de capturarea primei sarcini și, ulterior, de suprafețele de capturare vocală. Îl puteți modifica oricând în **Setări → Stil de înregistrare**.
+
+<ManualScreenshot
+  caseId="onboarding/categories"
+  alt="Selectorul de domenii de lucru din configurarea inițială Lotti, cu Muncă, Fitness, Familie, Prieteni și opțiunea de adăugare proprie"
+  caption="Alegeți unul sau mai multe domenii pentru noul furnizor. Textul mărit și ecranele înguste folosesc automat câte o opțiune pe toată lățimea fiecărui rând."
+/>
+
+În continuare, selectați unul sau mai multe domenii de lucru. Opțiunile prestabilite acoperă categorii uzuale precum Muncă, Fitness, Familie și Prieteni; **Adăugați propria categorie** creează o categorie cu un nume potrivit spațiului dvs. de lucru. Configurarea inițială reutilizează o categorie existentă cu același nume în loc să creeze un duplicat, o restaurează când este necesar și o conectează la profilul de inferență nou inițializat.
+
+Fixture-ul manualului creează două destinații reale — **Operațiuni cu pinguini** și **Centrul de comandă** — astfel încât pasul următor demonstrează aceeași alegere de categorie pe care o vede un cont de lucru.
+
+## Capturați prima sarcină reală
+
+<ManualScreenshot
+  caseId="onboarding/first-task"
+  alt="Panoul primei sarcini din configurarea inițială Lotti, cu capturare vocală, destinațiile Operațiuni cu pinguini și Centrul de comandă, sugestii și opțiunea Mai degrabă scrieți"
+  caption="Alegeți unde trebuie să ajungă sarcina, apoi vorbiți natural, folosiți o sugestie de început sau selectați Mai degrabă scrieți. Aici este selectată Operațiuni cu pinguini."
+/>
+
+Panoul primei sarcini folosește fluxul obișnuit de capturare al Lotti. Alegeți categoria-țintă, apoi una dintre cele trei căi:
+
+1. Selectați vizualul de înregistrare și rostiți sarcina într-o propoziție obișnuită.
+2. Alegeți o sugestie de început pentru a încerca imediat structurarea.
+3. Alegeți **Mai degrabă scrieți?** și introduceți gândul fără microfon.
+
+Lotti repetă cuvintele capturate în timp ce le structurează. Rezultatul este o sarcină reală în categoria aleasă, nu date demonstrative rezervate configurării inițiale. Când structurarea produce sugestii de listă de verificare, acestea ajung pe sarcină ca propuneri, astfel încât să le puteți confirma în loc ca sarcina să se modifice pe tăcute.
+
+<ManualScreenshot
+  caseId="onboarding/task-created"
+  alt="Panoul de reușită al configurării inițiale Lotti, care arată sarcina creată Inspectați releul de sardine Europa"
+  caption="Gândul tastat din Project Waddle devine „Inspectați releul de sardine Europa”. Sarcina rămâne în panou până când o alegeți."
+/>
+
+Alegeți cardul sarcinii create pentru a închide configurarea inițială și a deschide pagina sa obișnuită. De acolo puteți revizui propunerile pentru lista de verificare, adăuga o copertă sau dovezi, stabili un termen și o prioritate și aduce sarcina în Daily OS.
+
+Dacă închideți fluxul după conectarea unui furnizor, Lotti păstrează configurarea acelui furnizor și consideră mesajul de bun venit finalizat. Reluarea configurării ulterior rămâne sigură: este o acțiune explicită din Setări, nu o nouă solicitare automată.
+
+Continuați cu [crearea primei sarcini](./first-task.mdx), [administrarea categoriilor](../organize-and-reflect/categories.mdx) și [configurarea furnizorilor](../ai-and-automation/provider-setup.mdx).

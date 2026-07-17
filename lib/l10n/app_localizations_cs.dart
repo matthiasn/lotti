@@ -8935,7 +8935,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Používat jazyk systému';
 
   @override
+  String get settingsManualLanguageFrenchTitle => 'Francouzština';
+
+  @override
   String get settingsManualLanguageGermanTitle => 'Němčina';
+
+  @override
+  String get settingsManualLanguageRomanianTitle => 'Rumunština';
 
   @override
   String get settingsManualLanguageTitle => 'Jazyk';

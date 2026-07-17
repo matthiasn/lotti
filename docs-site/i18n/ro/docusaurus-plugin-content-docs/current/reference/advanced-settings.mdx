@@ -1,0 +1,72 @@
+---
+title: Folosiți în siguranță setările avansate
+description: Controlați indicatorii de funcții și jurnalizarea, rulați instrumente de întreținere, inspectați metricile configurării inițiale și verificați versiunea Lotti instalată.
+---
+
+# Folosiți în siguranță setările avansate
+
+Deschideți **Setări → Setări avansate** pentru controale pentru utilizatori avansați, diagnosticare și întreținere. Aceste pagini schimbă modul în care rulează Lotti sau operează direct asupra datelor locale, așadar personalizarea obișnuită are loc în alte zone ale Setărilor.
+
+Desktopul păstrează arborele de setări lângă pagina selectată. Mobilul deschide câte o pagină și oferă un buton de întoarcere. Ambele aranjamente folosesc aceleași controale și valori păstrate.
+
+<ManualScreenshot caseId="advanced-settings/hub" alt="Centrul Setări avansate Lotti, cu Indicatori de configurare, Animații, Limbă, Jurnalizare, Întreținere, Metrici configurare inițială și Despre Lotti" caption="Setările avansate grupează controalele operaționale departe de preferințele cotidiene. Unele intrări variază după platformă și capabilitățile activate." />
+
+## Alegeți limba manualului
+
+Deschideți **Limbă** pentru a decide ce manual publicat deschide aplicația. **Urmați sistemul** este valoarea implicită și alege manualul în engleză, germană, franceză, cehă sau română după limba dispozitivului. Selectați **Engleză**, **Germană**, **Franceză**, **Cehă** sau **Română** pentru a păstra o alegere diferită. Intrarea Manual din partea de jos a Setărilor și **Ajutor → Manual** pe macOS folosesc ambele această setare.
+
+## Controlați capabilitățile cu indicatori de configurare
+
+<ManualScreenshot caseId="advanced-settings/flags" alt="Pagina Indicatori de configurare Lotti, cu comutatoare căutabile pentru intrări private, notificări, înregistrarea locației, indicii și streaming AI" caption="Căutarea se potrivește atât cu numele, cât și cu descrierile indicatorilor. Fiecare comutator schimbă imediat capabilitatea sa de rulare păstrată." />
+
+**Indicatorii de configurare** reprezintă panoul de control al capabilităților. Include controale pentru vizibilitatea intrărilor private, notificări, capturarea locației și indicii; streamingul răspunsurilor AI și redarea rezumatului; jurnalizare și comportamentul sincronizării Matrix; pagini de funcții precum Obiceiuri, Tablouri de bord, Evenimente, Proiecte și Ce este nou; embeddings și căutare vectorială; precum și indicatori operaționali pentru activitatea de sincronizare, activările agenților în așteptare și repararea ramurilor.
+
+Folosiți **Căutați indicatori** pentru a restrânge lista după titlu sau descriere. Selectați un rând sau comutatorul său pentru a schimba indicatorul. Noua valoare este păstrată imediat; nu există acțiune separată Salvați.
+
+Indicatorii pot expune comportament experimental sau de diagnostic. Schimbați unul în mod deliberat, verificați fluxul afectat, apoi schimbați altul. Indicatorul **Afișați intrări private?** controlează includerea conținutului sensibil în liste și selectoare; nu criptează, exportă, șterge și nu modifică intimitatea unei intrări.
+
+## Alegeți ce înregistrează Lotti în jurnalul de diagnostic
+
+<ManualScreenshot caseId="advanced-settings/logging" alt="Setările de jurnalizare Lotti, cu comutator principal, domenii operaționale individuale și jurnalizare a interogărilor lente" caption="Comutatorul principal controlează domeniile individuale. Fixture-ul Project Waddle păstrează active Sincronizare, AI și Sarcini pentru diagnostic concentrat." />
+
+**Jurnalizare** începe cu comutatorul global **Activați jurnalizarea**. Când este activ, activați numai domeniile necesare unei investigații, de exemplu Sincronizare, AI, Sarcini, Etichete, Sănătate, Obiceiuri, Navigare, Notificări sau Daily OS. **Jurnalizați interogările lente** adaugă diagnostic de performanță pentru bazele de date.
+
+Dezactivarea comutatorului principal dezactivează controalele pe domenii. Erorile sunt totuși scrise în fișierul zilnic `error-*.log`; aceste comutatoare guvernează jurnalizarea suplimentară de diagnostic, nu evidența minimă a erorilor. Dezactivați domeniile zgomotoase după o investigație, pentru ca jurnalele să rămână concentrate și utilizarea stocării previzibilă.
+
+## Rulați acțiunile de întreținere în mod deliberat
+
+<ManualScreenshot caseId="advanced-settings/maintenance" alt="Pagina Întreținere Lotti, cu previzualizări pentru configurare inițială, resetări, ștergerea bazelor de date, curățare, index de căutare, embeddings și diagnosticare a redesenării" caption="Întreținerea combină previzualizări sigure cu acțiuni distructive și de diagnostic. Citiți confirmarea și domeniul de aplicare înainte de a continua." />
+
+**Întreținere** conține acțiuni de tipuri diferite:
+
+- **Afișați bun venit configurare inițială** și **Galeria animațiilor configurării inițiale** sunt previzualizări live pentru dezvoltare și QA.
+- **Resetați indiciile din aplicație** face ca sfaturile unice să poată apărea din nou.
+- **Resetați dialogul de configurare Gemini** șterge închiderea lui, astfel încât solicitarea furnizorului poate fi testată din nou.
+- **Ștergeți baza de date a editorului** elimină schițele editorului.
+- **Ștergeți baza de date a agenților** elimină baza de date a agenților și închide Lotti, pentru ca aplicația să repornească pe un spațiu curat.
+- **Curățați elementele șterse** elimină permanent înregistrările șterse logic printr-un flux dedicat de confirmare.
+- **Recreați indexul de text complet** reconstruiește datele locale de căutare fără a recrea intrări de jurnal.
+- **Generați embeddings** apare când este disponibilă stocarea de embeddings și completează retroactiv categorii selectate.
+- **Suprapunere curcubeu de redesenare** luminează zonele redesenate pentru diagnostic UI. Este păstrată în memorie și revine la oprit după relansare.
+
+Previzualizările și resetările nu au același risc ca ștergerea și curățarea permanentă. Pentru acțiuni distructive, confirmați că ținta este spațiul local intenționat și lăsați să se termine mai întâi orice operație curentă de sincronizare sau scriere.
+
+## Inspectați pâlnia configurării inițiale
+
+<ManualScreenshot caseId="advanced-settings/onboarding-metrics" alt="Pagina Metrici configurare inițială Lotti, cu ora instalării, patru zile active, starea activării și numărători de evenimente fără conținut" caption="Fixture-ul determinist al manualului a ajuns la momentul său real aha în patru zile active, după conectarea unui furnizor și înregistrarea mai multor capturi." />
+
+**Metrici configurare inițială** este o suprafață pentru dezvoltatori și QA. Ea derivă o pâlnie locală din evenimente fără conținut și arată momentul primei detectări în UTC, numărul total de zile active și cele active în primele șapte zile, dacă instalarea aparține cohortei de referință pre-FTUE, dacă a fost atins pragul de activare real și o numărătoare pentru fiecare eveniment de configurare.
+
+Pagina păstrează nume de evenimente și metadate cu cardinalitate redusă, nu textul jurnalului, titlurile sarcinilor, transcrierile sau detaliile sensibile despre sardinele Project Waddle.
+
+**Resetați starea de test a configurării inițiale** șterge cadența solicitării și metricile pâlniei locale după confirmare. Nu șterge date de jurnal, indicatori de configurare sau istoricul real al planurilor Daily OS. Un profil care a planificat deja o zi rămâne astfel neeligibil pentru ruta exactă de planificare inițială a unui profil curat.
+
+## Verificați versiunea și totalurile locale
+
+<ManualScreenshot caseId="advanced-settings/about" alt="Pagina Despre Lotti, cu versiune, platformă, tip de build, 2.604 intrări de jurnal, 11 intrări marcate și număr de sarcini" caption="Despre Lotti identifică versiunea rulată și rezumă datele locale. Fixture-ul Project Waddle conține 2.604 de intrări și 65 de sarcini în cinci stări." />
+
+**Despre Lotti** este cel mai rapid loc pentru a verifica versiunea care rulează efectiv. Arată versiunea și numărul buildului, platforma și tipul buildului. Includeți aceste valori într-un raport de diagnostic, astfel încât un comportament să poată fi asociat codului și lansării corecte.
+
+Cardul **Datele dvs.** rezumă intrările locale de jurnal, intrările marcate și numărul de sarcini împărțit între Deschise, În curs, În așteptare, Blocate și Finalizate. Spațiul Project Waddle consacrat al manualului demonstrează un cont nevid: 2.604 intrări de jurnal, 11 intrări marcate și 65 de sarcini, nu zerouri de substituție.
+
+Efectele de finalizare au propriul ghid: consultați **[Personalizați celebrările finalizării](./completion-celebrations.mdx)** pentru pagina Animații și spațiul de experimentare live.

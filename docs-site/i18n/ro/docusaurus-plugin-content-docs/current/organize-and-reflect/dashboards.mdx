@@ -1,0 +1,91 @@
+---
+title: Construiți tablouri de bord utile
+description: Combinați obiceiuri, măsurători, sănătate, chestionare și antrenamente într-o perspectivă operațională reutilizabilă.
+---
+
+# Construiți tablouri de bord utile
+
+Un tablou de bord grupează grafice care răspund unei întrebări recurente. **Operațiunile coloniei** reunește presiunea habitatului, cererea de sardine și numărul membrilor expediției; **Pregătirea misiunii** păstrează separată o revizuire privată a lansării. Construiți în jurul unei decizii, nu pentru a colecta fiecare număr disponibil.
+
+<ManualScreenshot
+  caseId="dashboards/settings-list"
+  alt="Setările tablourilor de bord, cu Operațiunile coloniei și tabloul privat Pregătirea misiunii"
+/>
+
+## Creați un tablou de bord
+
+1. Deschideți **Setări → Gestionare tablouri de bord**.
+2. Selectați **Creați tablou de bord**.
+3. Adăugați un nume clar și o descriere a întrebării la care trebuie să răspundă.
+4. Atribuiți opțional o categorie și o setare de confidențialitate.
+5. Adăugați și aranjați graficele, apoi salvați.
+
+<ManualScreenshot
+  caseId="dashboards/settings-detail"
+  alt="Editorul tabloului Operațiunile coloniei, atribuit categoriei Operațiuni cu pinguini, cu opțiunile privat și activ"
+/>
+
+- **Categorie** face tabloul disponibil pentru filtrarea bazată pe categorii.
+- **Privat** ascunde tabloul dacă nu sunt afișate înregistrările private.
+- **Activ** controlează dacă apare în lista Tablouri de bord fără a șterge definiția.
+
+## Compuneți și ordonați graficele
+
+<ManualScreenshot
+  caseId="dashboards/charts"
+  alt="Lista de grafice Operațiunile coloniei, cu Presiunea habitatului medie zilnică, Sardine consumate sumă zilnică și Pinguini numărați sumă zilnică"
+  caption="Trageți de mâner pentru a reordona. Selectați controlul de ajustare de pe un grafic de măsurătoare pentru a-i schimba agregarea sau eliminați-l cu ×."
+/>
+
+Ordinea graficelor este ordinea tabloului de bord. Puneți primul semnalul care încadrează restul. Pentru Operațiunile coloniei, presiunea habitatului este prima fiindcă un habitat nesigur schimbă interpretarea tuturor celorlalte numere.
+
+Graficele de măsurători își păstrează propria agregare în elementul tabloului de bord. Astfel, aceeași măsurătoare poate apărea cu un rezumat diferit într-un alt tablou de bord, fără a modifica observațiile de la bază.
+
+## Adăugați grafice din surse acceptate
+
+<ManualScreenshot
+  caseId="dashboards/sources"
+  alt="Editorul tabloului de bord oferă Obiceiuri, Măsurători, Sănătate, Chestionare și Antrenamente ca surse de grafice, precum și export JSON"
+/>
+
+Editorul poate adăuga:
+
+- **Obiceiuri** pentru istoricul finalizărilor;
+- **Măsurători** pentru observații numerice definite de utilizator;
+- date de **Sănătate** acceptate de platforma și permisiunile curente;
+- **Chestionare** pentru rezultate ale instrumentelor configurate; și
+- **Antrenamente** importate din surse de sănătate acceptate.
+
+Extindeți o sursă, selectați unul sau mai multe grafice și adăugați-le. Disponibilitatea depinde de definițiile și datele de platformă existente; solicitările de permisiuni pentru sănătate și tipurile acceptate diferă între dispozitive.
+
+## Deschideți și interpretați un tablou de bord
+
+Deschideți **Perspective** pentru a vedea tablourile de bord active. Lista arată pictograma categoriei, numele și scopul fiecărui tablou. Folosiți filtrul din antet pentru a vă concentra pe una sau mai multe categorii.
+
+<ManualScreenshot
+  caseId="dashboards/list"
+  alt="Lista de tablouri de bord Lotti Perspective, cu Operațiunile coloniei și tabloul privat Pregătirea misiunii"
+  caption="Desktopul rezervă panoul din dreapta pentru tabloul selectat; mobilul deschide tabloul selectat ca pagină separată."
+/>
+
+Selectați **Operațiunile coloniei** pentru a-i deschide graficele. Pe desktop, lista și tabloul selectat rămân alăturate. Pe mobil, tabloul se deschide ca pagină proprie cu buton de întoarcere.
+
+<ManualScreenshot
+  caseId="dashboards/view"
+  alt="Tabloul Operațiunile coloniei, cu 90 de zile de presiune a habitatului și sardine consumate, cu lista tablourilor alături pe desktop"
+  caption="Antetul fix păstrează vizibile controalele pentru intervalele de 30, 90, 180 și 365 de zile, în timp ce graficele derulează dedesubt."
+/>
+
+Intervalul selectat se aplică fiecărui grafic de pe pagină. Cardurile grafice își păstrează unitățile și agregarea: presiunea habitatului folosește o medie zilnică, iar consumul de sardine și numărul pinguinilor folosesc sume zilnice. Selectați **+** pe un card de măsurătoare pentru a înregistra o observație nouă de acel tip.
+
+<ManualScreenshot
+  caseId="dashboards/view-crew"
+  alt="Tabloul Operațiunile coloniei, derulat la graficele Sardine consumate și Pinguini numărați"
+  caption="O scădere scurtă la 36 de pinguini este vizibilă în istoricul echipajului pe 90 de zile; zilele din jur revin la cei 37 așteptați."
+/>
+
+Tratați un grafic ca pe o dovadă, nu ca pe un verdict. Verificați agregarea, unitățile, intervalul de date, observațiile lipsă și starea de confidențialitate înainte de a trage concluzii.
+
+## Exportați configurarea tabloului de bord
+
+**Salvați și copiați JSON** păstrează tabloul de bord, apoi copiază configurarea lui și definițiile măsurătorilor la care face referire. Este util pentru inspecție sau mutarea unei configurări, dar nu reprezintă o legătură de sincronizare live: editările ulterioare nu actualizează un conținut deja copiat.

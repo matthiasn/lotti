@@ -8297,7 +8297,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsAdvancedSubtitle => 'Setări avansate și întreținere';
 
   @override
-  String get settingsAdvancedTitle => 'Setari Avansate';
+  String get settingsAdvancedTitle => 'Setări avansate';
 
   @override
   String get settingsAgentsInstancesSubtitle => 'Agenți în execuție';
@@ -8963,7 +8963,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișați mesajul de bun venit pentru onboarding';
 
   @override
-  String get settingsMaintenanceTitle => 'Mentenanță';
+  String get settingsMaintenanceTitle => 'Întreținere';
 
   @override
   String get settingsManualLanguageCzechTitle => 'Cehă';
@@ -8976,10 +8976,16 @@ class AppLocalizationsRo extends AppLocalizations {
       'Folosiți limba dispozitivului dvs. dacă manualul o acceptă; altfel, engleza.';
 
   @override
-  String get settingsManualLanguageFollowSystemTitle => 'Urmează sistemul';
+  String get settingsManualLanguageFollowSystemTitle => 'Urmați sistemul';
+
+  @override
+  String get settingsManualLanguageFrenchTitle => 'Franceză';
 
   @override
   String get settingsManualLanguageGermanTitle => 'Germană';
+
+  @override
+  String get settingsManualLanguageRomanianTitle => 'Română';
 
   @override
   String get settingsManualLanguageTitle => 'Limbă';

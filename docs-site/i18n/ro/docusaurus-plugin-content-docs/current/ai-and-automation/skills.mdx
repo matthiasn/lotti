@@ -1,0 +1,35 @@
+---
+title: Rulați abilități AI contextuale
+description: Folosiți meniul Generați pentru a rula numai acțiunile AI care se aplică sarcinii, înregistrării, imaginii sau intrării curente.
+---
+
+# Rulați abilități AI contextuale
+
+Abilitățile AI sunt acțiuni denumite, cu instrucțiuni și cerințe de intrare. Lotti filtrează meniul **Generați…** după entitatea curentă, astfel încât o sarcină nu oferă o acțiune de transcriere numai audio, iar o imagine nu oferă o acțiune care necesită înregistrare.
+
+<ManualScreenshot caseId="ai/skills" alt="Imaginea habitatului Project Waddle, cu fereastra Generați care oferă Inspectați fotografia habitatului" caption="Pe o imagine a habitatului legată de sarcină, acțiunea aplicabilă caută anomalii ale manometrului și deteriorări vizibile ale etanșărilor." />
+
+## Rulați o abilitate
+
+1. Deschideți o sarcină sau o înregistrare de jurnal acceptată.
+2. Selectați acțiunea asistentului conturată din antetul înregistrării. Aceasta deschide **Generați…**.
+3. Citiți descrierea abilității și selectați acțiunea dorită.
+4. Dacă Lotti oferă un selector de model sau mod de raționament, confirmați valoarea implicită sau alegeți o suprascriere punctuală.
+5. Continuați munca în timp ce inferența rulează; rezultatul se atașează sarcinii sau înregistrării relevante când este gata.
+
+Meniul disponibil se schimbă odată cu contextul:
+
+- sarcinile pot oferi acțiuni de text și acțiuni cu contextul sarcinii;
+- înregistrările audio pot oferi transcriere și acțiuni conștiente de audio;
+- imaginile pot oferi analiză vizuală; iar
+- înregistrările text pot oferi acțiuni de prompt sau generare care acceptă text.
+
+Unele abilități au nevoie de o sarcină legată fiindcă citesc contextul mai larg al sarcinii sau scriu rezultatul înapoi în aceasta. Dacă lipsește o acțiune, verificați mai întâi tipul înregistrării și legătura cu sarcina, apoi verificați că profilul de inferență activ are un model pentru capabilitatea necesară.
+
+## Suprascrierile de model sunt temporare
+
+Când o abilitate oferă selector de model, alegerea se aplică invocării curente. Nu rescrie pe tăcute valoarea implicită a categoriei sau profilul de inferență. Pentru a schimba ruta normală, editați profilul din [Modele și profiluri de inferență](./models-and-profiles.mdx).
+
+## Tratați rezultatul generat ca pe o schiță
+
+Revizuiți prompturile, rezumatele, transcrierile, analiza imaginilor și ilustrațiile generate înainte de a vă baza pe ele. Contextul sarcinii poate fi incomplet, furnizorii pot produce rezultate greșite, iar un model capabil poate înțelege totuși greșit o urgență foarte serioasă legată de sardine.

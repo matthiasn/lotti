@@ -16,7 +16,9 @@ const manualLanguageSettingsKey = 'MANUAL_LANGUAGE';
 enum ManualLanguage {
   english('en'),
   german('de'),
-  czech('cs');
+  french('fr'),
+  czech('cs'),
+  romanian('ro');
 
   const ManualLanguage(this.languageCode);
 

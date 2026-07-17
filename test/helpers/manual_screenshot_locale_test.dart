@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'manual_screenshot_czech_text.dart';
 import 'manual_screenshot_french_text.dart';
 import 'manual_screenshot_locale.dart';
+import 'manual_screenshot_romanian_text.dart';
 
 void main() {
   group('manual screenshot locale', () {
@@ -30,6 +31,12 @@ void main() {
         ),
         const Locale('fr'),
       );
+      expect(
+        manualScreenshotLocaleFromEnvironment(
+          const {'LOTTI_MANUAL_LOCALE': 'ro'},
+        ),
+        const Locale('ro'),
+      );
     });
 
     test('rejects locales without a complete manual media catalog', () {
@@ -55,6 +62,14 @@ void main() {
         'Inspecter l’habitat orbital des manchots',
       );
       expect(manualScreenshotFrenchText('Unknown fixture'), isNull);
+    });
+
+    test('Romanian fixture catalog localizes representative demo copy', () {
+      expect(
+        manualScreenshotRomanianText('Inspect orbital penguin habitat'),
+        'Inspectați habitatul orbital al pinguinilor',
+      );
+      expect(manualScreenshotRomanianText('Unknown fixture'), isNull);
     });
 
     test(

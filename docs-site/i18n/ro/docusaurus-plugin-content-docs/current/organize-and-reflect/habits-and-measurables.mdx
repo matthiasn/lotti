@@ -1,0 +1,131 @@
+---
+title: Urmăriți obiceiuri și măsurători
+description: Configurați comportamente recurente și observații numerice, apoi înregistrați-le cu sinceritate.
+---
+
+# Urmăriți obiceiuri și măsurători
+
+Un obicei răspunde la întrebarea **s-a întâmplat acest comportament recurent?** O măsurătoare răspunde la întrebarea **ce valoare numerică am observat?** Ele pot susține același obiectiv fără a fi interschimbabile: „apelul nominal al pinguinilor imperiali” este un obicei, iar „pinguini numărați” este o valoare măsurabilă.
+
+## Lucrați cu obiceiuri
+
+Pagina Obiceiuri organizează definițiile active în ceea ce este scadent acum, programat mai târziu și finalizat. Rezumatul zilnic, istoricul consecvenței, seriile și graficul ratei de finalizare vă ajută să observați tipare, fără să tratați o singură zi ratată drept întreaga poveste.
+
+<ManualScreenshot
+  caseId="habits/today"
+  alt="Tabloul de bord al obiceiurilor Operațiuni cu pinguini, cu verificări ale habitatului, apel nominal, inventarul sardinelor, stare de finalizare, serii și istoric recent"
+/>
+
+### Creați și găsiți definiții de obiceiuri
+
+1. Deschideți **Setări → Obiceiuri**.
+2. Selectați **Creați obicei**.
+3. Dați comportamentului un nume concret, repetabil și o descriere utilă.
+4. Alegeți categoria, opțiunile și programul.
+5. Salvați.
+
+<ManualScreenshot
+  caseId="habits/settings-list"
+  alt="Setările obiceiurilor, cu Apel nominal al pinguinilor imperiali, Revizuiți prognoza sardinelor și Inspectați sigiliile habitatului, cu stări favorit, inactiv și privat"
+  caption="Căutați definițiile aici. Steaua, ochiul ascuns și lacătul identifică obiceiurile favorite, inactive și private."
+/>
+
+<ManualScreenshot
+  caseId="habits/settings-detail"
+  alt="Editorul obiceiului Apel nominal al pinguinilor imperiali, cu descrierea expediției, categoria Operațiuni cu pinguini și opțiunile favorit, privat și activ"
+/>
+
+Editorul definiției include:
+
+- **Categorie** pentru filtrare și context vizual.
+- **Tablou de bord** atunci când obiceiul trebuie să apară ca grafic într-un tablou de bord selectat.
+- **Favorit** pentru mai multă vizibilitate.
+- **Privat** pentru a-l ascunde dacă nu sunt afișate înregistrările private.
+- **Activ** pentru a controla dacă apare în pagina Obiceiuri fără a-i șterge istoricul.
+
+### Programați un obicei zilnic
+
+<ManualScreenshot
+  caseId="habits/schedule"
+  alt="Programul apelului nominal al pinguinilor imperiali, începând la 1 iulie, afișat de la 06:00, cu alertă la 06:30"
+/>
+
+Editorul actual este orientat în primul rând spre zile. Setați o **Dată de început**, întârziați opțional momentul de la care obiceiul este **afișat de la** și alegeți opțional când Lotti trebuie să **afișeze o alertă**. Modelul de date înțelege și programe săptămânale și lunare, însă editorul curent oferă controalele de timp mai bogate pentru obiceiurile zilnice.
+
+### Înregistrați ce s-a întâmplat de fapt
+
+Deschideți un obicei scadent sau folosiți acțiunea lui rapidă. Formularul detaliat de finalizare oferă trei rezultate:
+
+- **Reușită** — comportamentul s-a întâmplat.
+- **Ratată** — era așteptat și posibil, dar nu s-a întâmplat.
+- **Omitere** — nu s-a aplicat în mod rezonabil în acea zi.
+
+<ManualScreenshot
+  caseId="habits/record"
+  alt="Formularul de finalizare a obiceiului pentru inspectarea sigiliilor habitatului pinguinilor, cu rezultatele Reușită, Omitere și Ratată, plus dată și note"
+/>
+
+Folosiți starea care păstrează realitatea. Un istoric sincer este mai util decât un grafic cu aspect perfect. Înregistrările de finalizare sunt intrări de jurnal, astfel încât perspectivele ulterioare pot reconstrui rezultatul efectiv pentru fiecare obicei și zi.
+
+## Lucrați cu măsurători
+
+O definiție de măsurătoare descrie numărul înainte de a-l înregistra: numele, unitatea, confidențialitatea și modul în care observațiile multiple se combină în grafice.
+
+<ManualScreenshot
+  caseId="measurables/settings-list"
+  alt="Setările măsurătorilor, cu Presiunea habitatului, Pinguini numărați și Sardine consumate"
+/>
+
+### Creați un tip de date măsurabile
+
+1. Deschideți **Setări → Tipuri de date măsurabile**.
+2. Selectați acțiunea de adăugare.
+3. Adăugați un nume, o descriere opțională și abrevierea concisă a unității.
+4. Alegeți agregarea implicită folosită de grafice.
+5. Decideți dacă trebuie să fie favorită sau privată, apoi salvați.
+
+<ManualScreenshot
+  caseId="measurables/settings-detail"
+  alt="Editorul măsurătorii Presiunea habitatului, care folosește kPa și agregarea Medie zilnică"
+/>
+
+Alegeți agregarea pe baza sensului citirilor repetate:
+
+| Agregare | O folosiți când |
+| --- | --- |
+| Fără agregare | Contează fiecare observație individuală |
+| Sumă zilnică | Citirile se acumulează, de exemplu sardine consumate |
+| Maxim zilnic | Vârful zilei este semnalul important |
+| Medie zilnică | Citirile eșantionează o valoare care variază, cum ar fi presiunea habitatului |
+| Sumă orară | Acumularea are nevoie de intervale orare mai fine |
+
+Unitatea este context de afișare, nu convertor. Dacă definiți presiunea habitatului în `kPa`, înregistrați valorile consecvent în kPa. Creați o măsurătoare separată dacă altă unitate reprezintă o serie cu adevărat diferită.
+
+### Înregistrați o măsurătoare
+
+Deschideți un tablou de bord care conține măsurătoarea și selectați acțiunea de adăugare de pe grafic. Introduceți valoarea observată; Lotti păstrează unitatea lângă număr, astfel încât este clar ce va fi salvat. Valorile distincte recente apar ca acțiuni **Înregistrare rapidă** atunci când este util să repetați una dintre ele.
+
+<ManualScreenshot
+  caseId="measurements/capture"
+  alt="Editorul măsurătorii Sardine consumate, deschis din graficul său populat din tablou, cu 84 de sardine, sugestii de înregistrare rapidă, ora observării, comentariu și acțiunea Salvați"
+/>
+
+Folosiți **Observat la** pentru ora la care a fost făcută efectiv citirea, nu ora la care o introduceți. Prima pagină selectează data din calendar. **Astăzi** revine direct la data curentă.
+
+<ManualScreenshot
+  caseId="measurements/date"
+  alt="Calendarul Observat la, care selectează vineri, 17 iulie 2026, pentru măsurătoarea sardinelor"
+/>
+
+Derulați la secțiunea timp pentru a seta ora și minutul. **Acum** restaurează ora curentă. Selectați **Gata** pentru a reveni la schița de măsurătoare încă completată, apoi **Salvați** pentru a crea înregistrarea de jurnal.
+
+<ManualScreenshot
+  caseId="measurements/time"
+  alt="Selectorul de timp Observat la, setat la 10:30 pentru măsurătoarea sardinelor"
+/>
+
+Comentariul este opțional, însă util când un număr are nevoie de context operațional — de exemplu o livrare, o schimbare neobișnuită sau o metodă de măsurare modificată. Salvarea unei măsurători nu schimbă definiția ei sau regula de agregare.
+
+## Conectați-le fără să le confundați
+
+Un apel nominal poate fi finalizat cu succes chiar dacă au fost numărați doar 36 de pinguini: obiceiul consemnează dacă procedura a avut loc, iar măsurătoarea consemnează rezultatul. Puneți-le pe amândouă într-un [tablou de bord](./dashboards.mdx) atunci când relația lor răspunde unei întrebări operaționale recurente.

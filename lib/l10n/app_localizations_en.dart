@@ -8759,7 +8759,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsManualLanguageFollowSystemTitle => 'Follow system';
 
   @override
+  String get settingsManualLanguageFrenchTitle => 'French';
+
+  @override
   String get settingsManualLanguageGermanTitle => 'German';
+
+  @override
+  String get settingsManualLanguageRomanianTitle => 'Romanian';
 
   @override
   String get settingsManualLanguageTitle => 'Language';

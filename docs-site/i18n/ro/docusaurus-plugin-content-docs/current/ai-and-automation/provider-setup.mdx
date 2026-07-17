@@ -1,0 +1,50 @@
+---
+title: Conectați un furnizor AI
+description: Conectați inferență cloud sau locală, inspectați modelele și păstrați sub control acreditările și punctele finale.
+---
+
+# Conectați un furnizor AI
+
+Lotti separă configurarea AI în trei straturi: un **furnizor** este serviciul la care se conectează, un **model** este un model expus prin acel serviciu, iar un **profil de inferență** direcționează fiecare fel de muncă spre un model. Începeți cu furnizorul, apoi examinați modelele și profilurile create în jurul lui.
+
+<ManualScreenshot caseId="ai/providers" alt="Setările AI Lotti cu furnizorii Mission Control Router, Habitat Local Lab, Orbital Vision și Penguin Audio Bay" caption="Setările AI păstrează împreună conexiunile cloud și locale. Fiecare card arată starea conexiunii și câte modele salvate îl folosesc." />
+
+## Alegeți local sau la distanță
+
+- Un furnizor cloud este, de regulă, cea mai rapidă configurare și necesită frecvent o cheie API. Textul, audio sau imaginile trimise prin el părăsesc dispozitivul.
+- Un furnizor local poate păstra inferența pe propriul calculator sau pe un punct final local pe care îl controlați, însă serviciul trebuie să ruleze și să fie accesibil de pe dispozitivul unde Lotti îl invocă. O adresă LAN poate totuși muta un prompt între dispozitive; „local” înseamnă că nu este trimis unui furnizor găzduit de modele, nu că nu există niciun salt prin rețea.
+- Un URL de bază personalizat poate direcționa un tip de furnizor acceptat către un proxy sau gateway compatibil. Tipul furnizorului controlează în continuare comportamentul specific protocolului.
+
+## Conectați un furnizor
+
+1. Deschideți **Setări → Setări AI → Furnizori**.
+2. Selectați butonul **+**.
+3. Alegeți un furnizor acceptat.
+4. Introduceți numele afișat, punctul final și cheia API când este necesar.
+5. Adăugați modelele sugerate pe care le doriți, apoi salvați.
+
+Pentru furnizorii acceptați la prima rulare, Lotti inițializează modele utile și unul sau mai multe profiluri de inferență. Ecranul rezultat rezumă ce a fost creat.
+
+<ManualScreenshot caseId="ai/provider-editor" alt="Editorul furnizorului Lotti pentru Mission Control Router, cu OpenRouter selectat, URL de bază, cheie API mascată și modele sugerate" caption="Acreditările rămân mascate. Modelele sugerate sunt scurtături, nu o cerință; puteți adăuga ulterior ID-uri de modele specifice furnizorului." />
+
+## Inspectați și întrețineți conexiunea
+
+Deschideți un card de furnizor pentru a inspecta acreditarea mascată, URL-ul de bază, modelele salvate și orice profil activ care depinde de acestea. De aici puteți edita conexiunea, adăuga un alt model sau elimina furnizorul.
+
+<ManualScreenshot caseId="ai/provider-detail" alt="Detaliul furnizorului Mission Control Router, cu conexiunea, modelele Waddle Command și profilul Project Waddle activ" caption="Rezumatul dependențelor face vizibilă aria de impact înainte de modificarea sau eliminarea unui furnizor." />
+
+Schimbarea URL-ului de bază sau a cheii API afectează fiecare model atașat acelui furnizor. După schimbarea uneia dintre valori, verificați o acțiune AI reprezentativă înainte de a considera conexiunea sănătoasă. Eliminarea unui furnizor poate afecta și profilurile care direcționează munca prin modelele lui; examinați mai întâi informațiile despre dependențe.
+
+## Revizuiți rutarea profilului
+
+Deschideți [Modele și profiluri de inferență](./models-and-profiles.mdx) pentru a verifica ce expune furnizorul și cum direcționează Lotti fiecare capabilitate. Categoriile pot stabili un profil implicit pentru munca lor, iar automatizările individuale pot selecta sau suprascrie un model când fluxul oferă această alegere.
+
+## Limita de confidențialitate
+
+Înainte de a trimite text, audio sau imagini sensibile, confirmați dacă punctul final configurat este local sau la distanță. Un nume prietenos precum „Habitat Local Lab” nu este limita de securitate — URL-ul de bază, traseul de rețea și dispozitivul care deservește punctul final sunt. Lotti păstrează jurnalul local în ambele situații; această decizie controlează apelul de inferență în sine.
+
+:::warning Chei API
+
+Tratați cheile furnizorilor ca secrete. Nu le lipiți niciodată în documentație, probleme sau capturi de ecran.
+
+:::

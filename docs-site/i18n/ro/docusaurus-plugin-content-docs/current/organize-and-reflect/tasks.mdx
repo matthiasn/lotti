@@ -1,0 +1,155 @@
+---
+title: Lucrați cu sarcini
+description: Folosiți starea, prioritatea, listele de verificare și contextul atașat pentru a duce rezultatele mai departe.
+---
+
+# Lucrați cu sarcini
+
+Sarcinile grupează un rezultat cu contextul și pașii necesari pentru a-l finaliza. Păstrați titlurile orientate spre rezultat și puneți în sarcină notele, imaginile, înregistrările și timpul care o susțin.
+
+<ManualScreenshot
+  caseId="tasks/workspace"
+  alt="Spațiul de lucru al sarcinilor din producție, cu rânduri de sarcini reale și miniaturi de copertă din datele demonstrative Interplanetary Penguin Logistics"
+/>
+
+Pe desktop, lista sarcinilor rămâne vizibilă lângă sarcina selectată, astfel încât să puteți parcurge munca fără a pierde contextul. Pe mobil, selectarea unei sarcini deschide detaliul ei pe tot ecranul. Coperta urmează sarcina oriunde apare, inclusiv în lista de sarcini și în elementele legate din agenda Daily OS.
+
+Coperta este opțională, dar poate face un spațiu de lucru dens mult mai ușor de parcurs. Folosiți-o ca indiciu vizual util, referință de produs sau metaforă memorabilă pentru muncă. Ilustrațiile Project Waddle din acest manual sunt doar un exemplu: o copertă poate fi atât de practică, ludică sau minunat de ciudată pe cât doriți.
+
+<ManualScreenshot
+  caseId="tasks/detail"
+  alt="Pagina de detalii a sarcinii din producție pentru inspectarea habitatului orbital al pinguinilor, cu aceeași copertă folosită în miniaturile sarcinii"
+/>
+
+Aceeași sarcină poate conține descriere, categorie, etichete, termen, înregistrări de timp, elemente de listă de verificare, imagini, legături și înregistrări audio.
+
+## Atribuiți un agent sarcinii
+
+O sarcină poate avea un singur agent. Atribuirea îi oferă un asistent AI persistent, cu propria configurare de inferență, raport, stare de activare și istoric al propunerilor. Agentul citește sarcina și contextul legat, distilează situația curentă într-un raport scurt și poate afișa modificări propuse ale sarcinii sau listei de verificare, pe care dvs. le confirmați sau le respingeți.
+
+Agentul atribuit apare sub listele de verificare și sarcinile legate. Cardul pliat păstrează vizibile cel mai recent rezumat, controlul de actualizare automată, acțiunea **Activați agentul** și ruta modelului activ, fără să transforme pagina sarcinii într-o consolă AI.
+
+<ManualScreenshot
+  caseId="tasks/agent-card"
+  alt="Agentul de sarcină Habitat Watcher atribuit sarcinii habitatului orbital al pinguinilor, cu rezumat curent, actualizări automate, acțiunea de activare și ruta modelului Project Waddle"
+  caption="Habitat Watcher este atribuit acestei sarcini; atribuirea și actualizările automate sunt alegeri separate."
+/>
+
+Alegeți **Citiți mai mult** pentru a extinde raportul complet în același loc. Cardul extins păstrează sarcina vizibilă, adaugă evaluarea de sprijin și următorul pas recomandat și oferă **Deschideți componentele interne ale agentului** pentru rapoarte, conversații, observații și detalii de execuție.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-expanded"
+  alt="Cardul extins al agentului Habitat Watcher, cu evaluarea completă a habitatului Project Waddle și următorul pas recomandat"
+  caption="Raportul complet se extinde în sarcină, în loc să vă trimită pe o pagină separată."
+/>
+
+### Revizuiți modificările propuse
+
+O activare finalizată poate actualiza raportul și poate adăuga propuneri. Actualizările automate decid *când se activează agentul*; nu îi dau agentului permisiunea de a edita sarcina. Propunerile rămân în așteptare până acționați asupra lor.
+
+<ManualScreenshot
+  caseId="tasks/agent-suggestions"
+  alt="Cardul agentului Habitat Watcher cu două propuneri Project Waddle în așteptare, acțiuni individuale de respingere și confirmare și acțiunea Confirmați-le pe toate"
+  caption="Agentul propune un element pentru lista de verificare a testului alimentatorului și o estimare revizuită; niciuna dintre modificări nu a fost aplicată încă."
+/>
+
+Folosiți crucea pentru a **Respinge** o propunere sau bifa pentru a o **Confirma** și aplica. Puteți, de asemenea, glisa propunerea spre stânga pentru respingere sau spre dreapta pentru confirmare. Când sunt în așteptare mai multe propuneri, **Confirmați-le pe toate** aplică împreună modificările afișate. Revizuiți cu atenție propunerile în bloc, mai ales modificările de stare, dată și listă de verificare.
+
+Deschideți **Istoric** pentru a revedea rezultate recente. Acesta distinge modificările confirmate de cele respinse. O intrare respinsă poate reprezenta decizia dvs. sau o propunere retrasă de agent după ce un context mai nou a făcut-o depășită.
+
+O acțiune manuală **Activați agentul** poate produce același tip de raport și propuneri ca o activare automată. Dezactivarea actualizărilor automate oprește activările viitoare din fundal; nu aplică, nu respinge și nu rezolvă în alt fel propunerile care vă așteaptă deja decizia.
+
+### Alegeți actualizări automate sau manuale
+
+Agenții noi ai sarcinilor pornesc cu **Actualizări automate dezactivate**. Simplul fapt că ați atribuit agentul nu consumă tokenuri în fundal. Cât timp actualizările sunt oprite, Lotti observă schimbările relevante ale sarcinii și înregistrărilor legate, marchează un rezumat mai vechi ca depășit și așteaptă să alegeți **Activați agentul**. Activarea manuală rămâne disponibilă oricând agentul are o configurare AI funcțională.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-manual"
+  alt="Cardul agentului Habitat Watcher cu actualizările automate oprite, o notificare privind raportul depășit și acțiunea manuală Activați agentul"
+  caption="Modul manual observă schimbările și raportează învechirea fără a porni inferența."
+/>
+
+Când **Actualizări automate** sunt active, Lotti grupează schimbările potrivite ale sarcinii timp de aproximativ două minute înainte de a programa reîmprospătarea. Această coalescență evită o activare pentru fiecare editare mică. **Activați agentul** rămâne disponibil pentru o reîmprospătare imediată solicitată de dvs.
+
+Dezactivarea actualizărilor automate șterge numărătoarea inversă și reîmprospătările automate din coadă, dar nu anulează o activare solicitată explicit. Activarea lor din nou se aplică schimbărilor viitoare; nu redă schimbările sosite cât timp automatizarea a fost oprită.
+
+## Prioritate
+
+Lotti folosește patru niveluri compacte de prioritate:
+
+| Prioritate | Sens | O folosiți pentru |
+| --- | --- | --- |
+| P0 | Urgentă | Muncă ce are într-adevăr nevoie de atenție imediată |
+| P1 | Ridicată | Muncă importantă care ar trebui făcută curând |
+| P2 | Medie | Valoarea implicită normală |
+| P3 | Scăzută | Muncă ce poate aștepta |
+
+Deschideți o sarcină și folosiți controlul de prioritate din antet pentru a schimba nivelul. Sarcinile existente fără o prioritate explicită se comportă ca P2.
+
+## Filtrați și ordonați lista de sarcini
+
+Deschideți filtrele sarcinilor și selectați una sau mai multe priorități. Ștergeți selecția pentru a reveni la toate prioritățile. Prioritatea este unul dintre mai multe filtre care pot fi combinate cu categoriile și alte proprietăți ale sarcinilor.
+
+<ManualScreenshot
+  caseId="tasks/filters"
+  alt="Foaia de filtrare a sarcinilor, cu controale pentru sortare, stare, prioritate, categorie și etichetă"
+/>
+
+Ordinea implicită a priorităților este P0–P3. În cadrul aceleiași priorități, sarcinile mai noi apar primele, cu excepția cazului în care o perspectivă sau sortare activă schimbă rezultatul.
+
+## Folosiți liste de verificare pentru nivelul următor de detaliu
+
+Un element al listei de verificare trebuie să fie mai mic și mai concret decât sarcina. „Publicați manualul” este o sarcină; „verificați fiecare legătură de navigare” este un element de listă de verificare. Listele pot fi editate direct și pot fi propuse de abilități AI configurate pe baza contextului sarcinii.
+
+## Adăugați context sarcinii
+
+Folosiți acțiunea **Adăugați** a sarcinii pentru a atașa o listă de verificare, o altă sarcină, o înregistrare audio, un cronometru, o înregistrare text sau o imagine fără a părăsi sarcina. Acțiunile disponibile depind de platforma și contextul curente.
+
+<ManualScreenshot
+  caseId="entries/create-menu"
+  alt="Meniul Adăugați peste sarcina habitatului orbital, cu acțiuni de capturare adaptate sarcinii"
+/>
+
+Consultați [Adăugați înregistrări și context](../plan-and-capture/entries.mdx) pentru a afla când se potrivește fiecare tip de înregistrare.
+
+## Generați copertă din imagini reale ale sarcinii
+
+Dacă este configurată o abilitate de generare a imaginilor, deschideți meniul de generare al sarcinii și alegeți acțiunea pentru copertă. Lotti arată mai întâi imaginile atașate deja sarcinii, împreună cu imaginile de copertă disponibile din sarcinile legate. Selectați până la cinci referințe care să ghideze rezultatul sau continuați fără referință.
+
+Imaginea generată este creată în Lotti pe baza contextului sarcinii și a referințelor selectate. Este un ajutor vizual, nu un câmp obligatoriu: folosiți-o când o imagine distinctă face munca mai ușor sau mai plăcut de recunoscut. Ruta curentă de generare folosește furnizorul configurat, așadar tratați promptul și referințele selectate drept date pe care decideți intenționat să le trimiteți acelui furnizor; o rută locală de raționament sau transcriere nu face automat locală generarea copertei.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Foaia Generați copertă care arată cinci imagini de referință Project Waddle distincte din contextul sarcinii"
+  caption="Selectorul folosește aceleași imagini de sarcini vizibile în întregul demo Project Waddle."
+/>
+
+După ce continuați, generarea imaginii rulează în fundal. Vizualizarea progresului folosește vizualizatorul de raționament din producție al Lotti și poate fi închisă fără a anula sarcina.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Generarea în curs a copertei sarcinii, cu vizualizatorul shader din producție al Lotti"
+/>
+
+Imaginea generată devine coperta sarcinii și o urmează în perspectivele de listă, detaliu, proiect și Daily OS. O copertă bună trebuie să rămână recognoscibilă când imaginea sursă lată este decupată într-o miniatură compactă. Poate fi dovadă literală, o metaforă discretă sau ceva la fel de ciudat ca munca; singurul test util este dacă recunoașteți mai repede sarcina mai târziu.
+
+## Legați sarcini înrudite
+
+Deschideți secțiunea **Legate** a sarcinii și alegeți să legați o sarcină existentă. Căutați în selector, apoi selectați rezultatul înrudit. Lotti exclude sarcina curentă și sarcinile deja legate în acea direcție.
+
+<ManualScreenshot
+  caseId="tasks/link-picker"
+  alt="Selectorul de legături între sarcini din producție, cu sarcini Project Waddle înrudite și contextul lor de stare, prioritate, categorie și termen"
+/>
+
+Legăturile dintre sarcini sunt direcționale: sarcina curentă indică spre sarcina aleasă. Ambele părți rămân accesibile prin secțiunile lor de înregistrări legate, iar fiecare sarcină își păstrează starea, programul și atașamentele.
+
+## Folosiți vocea fără să pierdeți controlul
+
+Înregistrați o notă în sarcină atunci când este mai rapid să explicați situația cu voce tare. Cu transcrierea și abilitățile de sarcină configurate, Lotti poate transforma acel context în text și în modificări propuse ale listei de verificare. Revizuiți rezultatul, mai ales numele, datele și modificările distructive. Consultați [Înregistrați audio](../plan-and-capture/recordings.mdx) pentru controalele și opțiunile de procesare.
+
+:::tip
+
+Folosiți P0 cu moderație. Dacă totul este urgent, eticheta nu mai transmite informație.
+
+:::

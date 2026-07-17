@@ -1,0 +1,42 @@
+---
+title: Revizuiți utilizarea și impactul AI
+description: Comparați cererile AI după perioadă, categorie și model, inclusiv costul, energia, emisiile și utilizarea de tokenuri estimate.
+---
+
+# Revizuiți utilizarea și impactul AI
+
+Deschideți **Setări → Setări AI → Utilizare și impact** pentru a înțelege cum sunt folosite modelele cloud configurate. Aceeași analiză este accesibilă și din ruta tabloului de impact AI.
+
+<ManualScreenshot caseId="ai/usage" alt="Tabloul Lotti Impact AI pentru iulie 2026, cu cost, energie, echivalent dioxid de carbon, tokenuri, cereri și bare pe categorii" caption="Luna exemplu a Project Waddle separă Centrul de comandă și Operațiunile cu pinguini, păstrând vizibilă amprenta totală a cererilor." />
+
+## Citiți cardurile de sinteză
+
+Cardurile de sus rezumă perioada selectată:
+
+- **Cost** estimează cheltuiala la furnizor.
+- **Energie** estimează electricitatea atribuibilă inferenței cloud măsurate.
+- **CO₂e** exprimă estimarea emisiilor asociate.
+- **Tokenuri** numără tokenurile de model procesate.
+- **Cereri** numără apelurile de inferență.
+
+Indicatorul de comparație folosește perioada echivalentă anterioară când există. O creștere procentuală este context, nu automat o problemă: o săptămână de revizuire a lansării nu trebuie comparată orbește cu o săptămână liniștită a coloniei.
+
+Energia, CO₂e și costul sunt măsurate numai pentru modele cloud. Inferența locală poate consuma energie substanțială a dispozitivului fără să apară în aceste estimări cloud, deci pagina nu este un contor complet al consumului pentru întregul sistem.
+
+## Schimbați analiza
+
+Folosiți controlul perioadei și săgețile pentru a vă deplasa în timp sau săriți la **Luna aceasta** și **Anul acesta**. Apoi alegeți **Ambele**, **După categorie** sau **După model**. Într-un grafic, schimbați între valori pe zi, totaluri cumulative și pondere, unde sunt disponibile.
+
+Perspectivele pe categorii răspund la „care zonă de muncă a generat utilizarea?”, iar cele pe modele la „care model configurat a generat utilizarea?”. Folosiți-le pe ambele înainte de a modifica un profil: un model costisitor poate fi justificat într-o categorie de specialist, dar risipitor ca valoare implicită generală.
+
+## Acționați asupra unui rezultat surprinzător
+
+Dacă utilizarea crește neașteptat:
+
+1. restrângeți perioada la prima zi afectată;
+2. comparați defalcările pe categorii și modele;
+3. revizuiți automatizarea și concurența agenților;
+4. inspectați profilul de inferență atribuit categoriei afectate; și
+5. verificați facturarea la furnizor înainte de a trata estimarea Lotti ca pe o factură.
+
+Pentru a schimba ruta responsabilă de apelurile viitoare, reveniți la [Modele și profiluri de inferență](./models-and-profiles.mdx).

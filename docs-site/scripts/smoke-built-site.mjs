@@ -36,6 +36,14 @@ const localeExpectations = {
     mobile: 'Mobil',
     openViewer: 'Otevřít prohlížeč snímku',
   },
+  ro: {
+    allScreenshots: 'Toate capturile de ecran',
+    desktop: 'Desktop',
+    firstTaskTitle: 'Creați prima sarcină',
+    layoutLabel: 'Aspectul capturilor de ecran pentru toate imaginile',
+    mobile: 'Mobil',
+    openViewer: 'Deschideți vizualizatorul capturilor de ecran',
+  },
 };
 const translatedLocales = screenshotRegistry.locales.filter(
   (locale) => locale !== screenshotRegistry.defaultLocale,

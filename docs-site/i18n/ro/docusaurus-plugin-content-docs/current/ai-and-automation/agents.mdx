@@ -1,0 +1,53 @@
+---
+title: Rulați și monitorizați agenți
+description: Monitorizați activitatea agenților, inspectați instanțele active și controlați ciclurile de activare programate fără a pierde istoricul de audit.
+---
+
+# Rulați și monitorizați agenți
+
+Agenții îi permit lui Lotti să păstreze o responsabilitate definită de-a lungul mai multor cicluri de activare. Fiecare instanță activă provine dintr-un șablon de agent, folosește o configurare de inferență și își păstrează propria stare, rapoarte, observații și istoric de activitate. Deschideți **Setări → Agenți** pentru a vedea sistemul ca întreg.
+
+Rapoartele, observațiile și activările puse în coadă descriu starea de lucru a agentului; ele nu rescriu pe tăcute jurnalul personal. Când un agent de sarcină vrea să modifice datele sarcinii, Lotti prezintă o propunere pentru revizuire. Consultați [Revizuiți modificările propuse](../organize-and-reflect/tasks.mdx#revizuiți-modificările-propuse) pentru controalele de aprobare ale sarcinii și excepțiile lor înguste de titlu și limbă inițiale.
+
+## Citiți activitatea agenților înainte de a o modifica
+
+Pagina **Statistici** combină activitatea de activare și utilizarea tokenurilor. Primul grafic arată când s-au activat agenții în ultimele 24 de ore. Secțiunea zilnică compară ziua de astăzi cu aceeași oră din zilele recente, apoi defalcă utilizarea după model și sursă.
+
+<ManualScreenshot caseId="agents/stats" alt="Statisticile agenților Lotti, cu activitatea de activare Project Waddle, utilizarea zilnică de tokenuri și grafice pe modele" caption="Flota exemplu Project Waddle este cea mai activă în jurul verificărilor habitatului și planificării lansării; secțiunile model și sursă fac activitatea atribuibilă." />
+
+Folosiți pagina pentru trei întrebări diferite:
+
+- **Când au rulat agenții?** Citiți graficul de activări pe 24 de ore.
+- **Câtă inferență au folosit?** Comparați graficele zilnice și pe model.
+- **Ce responsabilitate a generat-o?** Revizuiți defalcarea șablon/sursă.
+
+Un vârf nu este automat o problemă. O zi de revizuire a lansării trebuie să fie mai activă decât o zi obișnuită a coloniei. Investigați activitatea neașteptată deschizând șablonul sau instanța sursă înainte de a schimba o limită globală de concurență.
+
+## Inspectați instanțele active
+
+Deschideți **Instanțe** pentru a vedea fiecare agent și sesiune de evoluție. Rândurile arată tipul agentului, ciclul de viață, șablonul atribuit și sufletul. Gruparea după suflet este utilă când mai multe responsabilități împart aceeași voce și același stil de decizie.
+
+<ManualScreenshot caseId="agents/instances" alt="Instanțele de agenți Lotti grupate după Admiral Pebble, Dr. Flipper, Captain Sardina și o sesiune de evoluție" caption="Habitat Seal Inspector, Project Waddle Planner și Sardine Cargo Coordinator rămân instanțe separate chiar când împart resurse la nivel de sistem." />
+
+Selectați o instanță pentru a-i inspecta componentele interne. Fila **Statistici** arată utilizarea modelelor, șablonul, ruta curentă de inferență, controalele ciclului de viață, numărul de activări și starea programării.
+
+<ManualScreenshot caseId="agents/instance-detail" alt="Detaliul instanței Habitat Seal Inspector, cu utilizare de tokenuri, șablonul Orbital Habitat Sentinel, rută de inferență, controale de ciclu de viață și stare de activare" caption="Instanța păstrează suficiente date de proveniență pentru a explica ce șablon și rută au produs munca înainte de a o pune pe pauză, reanaliza sau distruge." />
+
+Filele rămase ale instanței păstrează dovezi diferite:
+
+- **Rapoarte** conține instantaneele de raport salvate ale agentului.
+- **Conversații** grupează mesajele după ciclu de activare.
+- **Observații** expune constatările capturate fără a le amesteca în rapoarte.
+- **Activitate** arată urma cronologică de mesaje și instrumente.
+
+**Pauză** păstrează instanța, dar oprește munca obișnuită. **Reanalizați** îi cere unui agent de sarcină să reconsidere subiectul curent. **Distrugeți** este distructiv și trebuie folosit numai când instanța însăși nu mai este dorită; schimbarea șablonului pentru agenți viitori nu impune distrugerea instanțelor fără legătură.
+
+## Înțelegeți ciclurile de activare
+
+Deschideți **Cicluri de activare** pentru a vedea munca în curs și munca scadentă mai târziu. O activare **În așteptare** a fost solicitată de agent. Una **Programată** a fost plasată de sistem sau planificator. Fiecare rând păstrează vizibile sarcina, proiectul sau ziua legată, precum și agentul responsabil și o numărătoare inversă live.
+
+<ManualScreenshot caseId="agents/pending-wakes" alt="Ciclurile de activare Lotti, cu inspecția habitatului în curs și activări Project Waddle și de logistică a sardinelor programate" caption="Coada separă o continuare a habitatului solicitată de agent de programele pentru ziua lansării și marfă, astfel încât fiecare numărătoare are un motiv și un proprietar." />
+
+Ștergerea unei activări din coadă elimină acel cronometru; nu șterge agentul sau sarcina lui legată. Dacă activarea revine imediat, inspectați starea agentului sau automatizarea care a solicitat-o, în loc să ștergeți repetat simptomul.
+
+Continuați cu [Șabloane de agenți și suflete](./agent-blueprints.mdx) pentru a defini ce fac aceste instanțe și cum comunică.

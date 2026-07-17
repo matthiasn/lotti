@@ -1,0 +1,42 @@
+---
+title: Rezolvați conflicte de sincronizare
+description: Comparați editările concurente câmp cu câmp și păstrați sau combinați informațiile corecte.
+---
+
+# Rezolvați conflicte de sincronizare
+
+Un conflict apare când două dispozitive au modificat independent aceeași înregistrare și niciuna dintre versiuni nu este clar mai nouă. Lotti păstrează ambele versiuni, în loc să aleagă pe tăcute una dintre ele.
+
+Deschideți **Setări → Sincronizare → Conflicte**. Lista separă elementele nerezolvate de cele rezolvate și identifică tipul entității și momentul fiecărui conflict.
+
+<ManualScreenshot caseId="sync/conflicts" alt="Lista Conflicte de sincronizare Lotti, cu conflicte nerezolvate pentru o sarcină Project Waddle și un manifest de sardine, plus o sarcină rezolvată" caption="Rezolvați mai întâi elementele curente. Cele rezolvate rămân vizibile ca traseu de audit al deciziilor anterioare." />
+
+## Comparați ambele versiuni
+
+Deschideți un conflict pentru a vedea fiecare câmp diferit. Modificările de text includ evidențieri la nivel de cuvânt; câmpurile neschimbate sunt rezumate, astfel încât pagina nu ascunde cât de mult din înregistrare încă este de acord.
+
+<ManualScreenshot caseId="sync/conflict-detail" alt="Detaliul unui conflict Lotti, care compară câmp cu câmp titlurile și descrierile locale și sincronizate ale sarcinii Project Waddle" caption="Acest dispozitiv a păstrat ultimul pinguin imperial și cala de marfă; versiunea sincronizată a numărat toți cei 37 de pinguini și a programat eliberarea sardinelor. Ambele fapte contează." />
+
+Există trei căi de rezolvare:
+
+- **Folosiți acest dispozitiv** păstrează versiunea locală completă.
+- **Folosiți versiunea din sincronizare** păstrează versiunea primită completă.
+- **Combinați** vă permite să alegeți o parte de pornire și apoi câștigătorul pentru fiecare câmp ce poate fi îmbinat independent.
+
+Păstrarea unei părți complete este potrivită când cealaltă este pur și simplu depășită. **Combinați** este opțiunea mai sigură când câmpuri distincte conțin muncă validă de pe ambele dispozitive; Lotti o marchează ca recomandată când diferă mai multe câmpuri îmbinabile.
+
+## Combinați câmpuri fără a rescrie
+
+Selectați **Combinați**, alegeți versiunea de pornire, apoi comutați câmpurile individuale la cealaltă parte. Câmpurile care nu pot fi îmbinate independent urmează versiunea de pornire selectată.
+
+<ManualScreenshot caseId="sync/conflict-combine" alt="Editorul Lotti de combinare a conflictului, cu controlul versiunii de pornire și alegeri separate pentru titlul și corpul sarcinii" caption="Începeți cu o înregistrare structural completă, apoi luați titlul și corpul mai bune de pe acest dispozitiv sau din sincronizare." />
+
+Revizuiți fiecare câmp listat înainte de a selecta **Aplicați combinația**. Înregistrarea rezolvată primește un istoric de sincronizare combinat, astfel încât aceleași două editări să nu intre imediat din nou în conflict.
+
+:::caution O rezolvare schimbă rezultatul partajat
+
+Păstrarea unei părți sau aplicarea unei versiuni combinate scrie câștigătorul local și îi permite sincronizarea către celelalte dispozitive. Citiți diferența completă înainte de confirmare. Dacă o parte a șters înregistrarea în timp ce cealaltă a editat-o, Lotti arată alegerea mai sigură ștergere-contra-editare, în locul unei îmbinări normale pe câmpuri.
+
+:::
+
+Reveniți la [Sincronizați dispozitive](./sync.mdx) pentru a inspecta starea livrării și recuperării.

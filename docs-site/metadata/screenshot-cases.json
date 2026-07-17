@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "defaultLocale": "en",
-  "locales": ["en", "de", "fr", "cs"],
+  "locales": ["en", "de", "fr", "cs", "ro"],
   "cases": [
     {
       "id": "daily-os/agenda",

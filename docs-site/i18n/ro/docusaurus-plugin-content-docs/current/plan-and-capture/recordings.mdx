@@ -1,0 +1,50 @@
+---
+title: Înregistrați audio
+description: Capturați o notă vocală și decideți ce procesare automată urmează.
+---
+
+# Înregistrați audio
+
+Sunetul este util când vorbirea este mai rapidă decât tastarea sau când tonul și detaliile contează. O înregistrare poate sta singură sau poate exista într-o sarcină.
+
+## Capturați o înregistrare
+
+1. Deschideți jurnalul sau sarcina care trebuie să dețină înregistrarea.
+2. Folosiți acțiunea **+** și alegeți **Înregistrare audio**.
+3. Examinați opțiunile de procesare disponibile.
+4. Începeți înregistrarea, vorbiți clar, apoi opriți când ați terminat.
+
+<ManualScreenshot
+  caseId="recordings/active"
+  alt="Foaia de înregistrare audio activă, cu vizualizatorul în timp real, timpul scurs, comenzile de pauză, renunțare, oprire și recunoaștere vocală"
+/>
+
+În timpul capturării, foaia păstrează la vedere timpul scurs și vizualizatorul intrării în timp real. Puteți pune pe pauză și relua fără a încheia înregistrarea, puteți renunța la aceasta sau puteți alege **Opriți** pentru a o salva. Când este disponibilă transcrierea dependentă de sarcină, opțiunea **Recunoaștere vocală** stabilește dacă procesarea începe după salvarea înregistrării.
+
+Când sunt configurate un profil de inferență și abilitatea de transcriere, Lotti poate transcrie înregistrarea după capturare. Înregistrările din sarcini pot oferi și procesare conștientă de sarcină, cum ar fi actualizări propuse pentru listele de verificare sau rezumate.
+
+## Revizuiți transcrierile salvate
+
+Deschideți o înregistrare audio, folosiți meniul **…** și alegeți **Recunoaștere vocală**. Foaia de revizuire păstrează fiecare transcriere salvată împreună cu înregistrarea, în loc să înlocuiască un rezultat anterior. Fiecare rând arată momentul procesării, durata acesteia, limba detectată, furnizorul și modelul care l-au produs.
+
+<ManualScreenshot
+  caseId="recordings/transcripts"
+  alt="Foaia Recunoaștere vocală peste o înregistrare audio Project Waddle, cu engleza selectată și două rezultate de transcriere salvate de la Mistral și Whisper"
+  caption="Înregistrarea sursă rămâne vizibilă în spatele foii, iar fiecare rezultat de recunoaștere își păstrează propria proveniență."
+/>
+
+Selectorul de limbă oferă în prezent **Automat**, **Engleză** și **Deutsch**. Folosiți **Automat** când furnizorul trebuie să detecteze limba sau selectați o limbă înainte de recunoaștere atunci când o cunoașteți deja. Alegerea este stocată pe înregistrarea audio.
+
+Selectați dubla săgeată de pe un rezultat pentru a afișa textul complet, care poate fi selectat. Extinderea unui rând afișează și acțiunea de ștergere. Ștergerea unei transcrieri elimină doar rezultatul de recunoaștere, nu înregistrarea sursă ori celelalte transcrieri.
+
+<ManualScreenshot
+  caseId="recordings/transcript-expanded"
+  alt="Transcrierea Project Waddle extinsă, care descrie marfa de sardine Europa, 37 de pinguini imperiali și alimentatorul de pești în imponderabilitate"
+  caption="Examinați formularea completă și proveniența furnizorului înainte de a folosi textul generat drept context pentru sarcină."
+/>
+
+## Alegeți automatizarea în mod deliberat
+
+Opțiunile de procesare sunt solicitări către abilități AI configurate. Furnizorul selectat poate fi local sau la distanță, așadar verificați profilul de inferență activ înainte de a folosi materiale sensibile. Revizuiți textul generat și modificările propuse pentru sarcini, în loc să le tratați ca adevăr de sursă.
+
+Consultați [Configurarea furnizorului AI](../ai-and-automation/provider-setup.mdx) pentru a controla unde rulează inferența.

@@ -1,0 +1,70 @@
+---
+title: Proiectați șabloane de agenți și suflete
+description: Definiți responsabilități reutilizabile ale agenților, separați personalitatea de instrucțiuni și îmbunătățiți-le prin revizuiri individuale cu versiuni.
+---
+
+# Proiectați șabloane de agenți și suflete
+
+Un **șablon de agent** definește o responsabilitate reutilizabilă: tipul agentului, profilul de inferență, directivele de funcționare, formatul raportului și personalitatea opțională. Un **suflet** păstrează vocea reutilizabilă, limitele tonului, stilul de coaching și politica anti-lingușire. Separarea acestor concepte permite aceleiași personalități să se îmbunătățească consecvent în mai multe șabloane, fără copierea instrucțiunilor între ele.
+
+## Revizuiți catalogul de șabloane
+
+Deschideți **Setări → Agenți → Șabloane de agenți**. Catalogul arată tipul de șablon, identitatea modelului, versiunea activă și dacă o revizuire are nevoie de atenție.
+
+<ManualScreenshot caseId="agents/templates" alt="Șabloanele de agenți Lotti pentru siguranța habitatului orbital, planificarea zilei Project Waddle, monitorizarea aprovizionării cu sardine și coachingul diplomației peștilor" caption="Fiecare șablon Project Waddle are o responsabilitate îngustă și o versiune vizibilă, nu un singur agent universal cu un prompt imposibil de revizuit." />
+
+Tipurile încorporate servesc domenii diferite:
+
+- **Agent de sarcină** lucrează cu o sarcină și dovezile ei legate.
+- **Agent de zi** planifică și revizuiește o zi.
+- **Agent de proiect** urmărește un proiect în timp.
+- **Agent de eveniment** urmărește un spațiu de lucru pentru eveniment.
+- **Îmbunătățitor de șabloane** susține procesul de revizuire individuală cu versiuni.
+
+## Editați un șablon
+
+Selectați un șablon pentru a-i edita configurarea curentă. Alegeți un profil de inferență implicit cu instrumentele și modalitățile cerute de responsabilitate, apoi atribuiți opțional un suflet.
+
+<ManualScreenshot caseId="agents/template-editor" alt="Editorul șablonului Orbital Habitat Sentinel, care folosește Project Waddle Command și Admiral Pebble, cu directive pentru siguranța habitatului și raport" caption="Directiva operațională a santinelei descrie ce trebuie inspectat; Admiral Pebble contribuie cu stilul de comunicare și de contestare." />
+
+Folosiți deliberat cele două câmpuri de directive:
+
+- **Directivă generală** definește responsabilitatea, limitele și regulile de decizie.
+- **Directivă de raport** definește ce trebuie să conțină un raport salvat util.
+
+Salvarea unui șablon editat creează o versiune nouă. Istoricul existent rămâne disponibil pentru audit și revenire; evitați să ascundeți responsabilități fără legătură într-o directivă lungă numai ca să reduceți numărul de șabloane.
+
+## Revizuiți individual un șablon
+
+Pagina **1-la-1** a șablonului pune modificările propuse în contextul activității reale de activare, feedbackului, performanței și sesiunilor anterioare. O sesiune în așteptare este o propunere, nu o rescriere automată.
+
+<ManualScreenshot caseId="agents/template-review" alt="Revizuirea individuală Orbital Habitat Sentinel, cu o propunere despre evidențierea deciziei de lansare și indicatori recenți de performanță" caption="Propunerea exemplu răspunde unei deficiențe concrete: constatarea de siguranță era corectă, dar decizia de lansare sau oprire era ascunsă sub informații secundare despre pești." />
+
+Începeți conversația, inspectați dovezile și aprobați numai schimbările care îmbunătățesc responsabilitatea. Rezultatul aprobat devine o altă înregistrare de șablon cu versiune.
+
+## Păstrați personalitatea reutilizabilă prin suflete
+
+Deschideți **Suflete** pentru a vedea personalitățile pe care șabloanele le pot împărți. Un suflet nu este încă un prompt de sarcină; el controlează cum comunică, consiliază și se opune un agent.
+
+<ManualScreenshot caseId="agents/souls" alt="Catalogul de suflete Lotti, cu Admiral Pebble, Dr. Flipper și Captain Sardina" caption="Project Waddle separă un director de zbor calm, un om de știință curios și un coordonator practic de marfă de funcțiile care îi folosesc." />
+
+Editorul sufletului păstrează explicite patru preocupări:
+
+<ManualScreenshot caseId="agents/soul-editor" alt="Editorul sufletului Admiral Pebble, cu voce, limite de ton, stil de coaching și politică anti-lingușire" caption="Admiral Pebble poate rămâne cald și hotărât, contestând totodată presupunerile optimiste despre lansare cu dovezi." />
+
+- **Directiva vocală** descrie vocea recognoscibilă și prioritățile de comunicare.
+- **Limitele tonului** spun ce trebuie să evite vocea.
+- **Stilul de coaching** descrie cum ajută pe cineva să ajungă la o decizie.
+- **Politica anti-lingușire** explică când și cum trebuie să nu fie de acord.
+
+Folosiți limite comportamentale concrete. „Fiți de ajutor” este greu de revizuit; „contestați presupunerile optimiste despre lansare și citați observația care a schimbat concluzia” poate fi verificat în raport cu rezultatul real.
+
+## Evoluați cu atenție un suflet partajat
+
+Un **1-la-1** al sufletului extrage feedback din fiecare șablon care folosește acea personalitate. Aceasta face schimbarea puternică: aprobarea ei poate îmbunătăți mai mulți agenți, dar o modificare slabă îi poate afecta pe toți.
+
+<ManualScreenshot caseId="agents/soul-review" alt="Revizuirea individuală a sufletului Admiral Pebble, cu o propunere, un șablon care îl partajează și istoricul sesiunilor încheiate" caption="Numărul de partajări și istoricul sesiunilor fac vizibilă aria de impact înainte de aprobarea schimbărilor de personalitate." />
+
+Citiți numărul de partajări, rezumatul feedbackului propus și recapitularea anterioară înainte de a începe o revizuire a personalității. Dacă feedbackul se aplică unei singure responsabilități, modificați acel șablon în loc să învățați sufletul partajat o regulă specifică sarcinii.
+
+Reveniți la [Rulați și monitorizați agenți](./agents.mdx) pentru a inspecta instanțele și ciclurile de activare produse de aceste planuri.

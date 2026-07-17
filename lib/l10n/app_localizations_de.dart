@@ -8863,7 +8863,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Systemsprache verwenden';
 
   @override
+  String get settingsManualLanguageFrenchTitle => 'Französisch';
+
+  @override
   String get settingsManualLanguageGermanTitle => 'Deutsch';
+
+  @override
+  String get settingsManualLanguageRomanianTitle => 'Rumänisch';
 
   @override
   String get settingsManualLanguageTitle => 'Sprache';
