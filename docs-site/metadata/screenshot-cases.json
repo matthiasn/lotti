@@ -101,6 +101,61 @@
       }
     },
     {
+      "id": "categories/list",
+      "title": "Category definitions",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "categories_list_mobile_light.png",
+        "mobile-dark": "categories_list_mobile_dark.png",
+        "desktop-light": "categories_list_desktop_light.png",
+        "desktop-dark": "categories_list_desktop_dark.png"
+      }
+    },
+    {
+      "id": "categories/detail",
+      "title": "Category details",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "categories_detail_mobile_light.png",
+        "mobile-dark": "categories_detail_mobile_dark.png",
+        "desktop-light": "categories_detail_desktop_light.png",
+        "desktop-dark": "categories_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "categories/automation",
+      "title": "Category speech and automation context",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "categories_automation_mobile_light.png",
+        "mobile-dark": "categories_automation_mobile_dark.png",
+        "desktop-light": "categories_automation_desktop_light.png",
+        "desktop-dark": "categories_automation_desktop_dark.png"
+      }
+    },
+    {
+      "id": "labels/list",
+      "title": "Label definitions",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "labels_list_mobile_light.png",
+        "mobile-dark": "labels_list_mobile_dark.png",
+        "desktop-light": "labels_list_desktop_light.png",
+        "desktop-dark": "labels_list_desktop_dark.png"
+      }
+    },
+    {
+      "id": "labels/detail",
+      "title": "Label details",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "labels_detail_mobile_light.png",
+        "mobile-dark": "labels_detail_mobile_dark.png",
+        "desktop-light": "labels_detail_desktop_light.png",
+        "desktop-dark": "labels_detail_desktop_dark.png"
+      }
+    },
+    {
       "id": "habits/today",
       "title": "Habits dashboard",
       "sourceTest": "test/features/habits/ui/habits_manual_screenshots_test.dart",

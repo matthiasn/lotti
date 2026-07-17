@@ -1,39 +1,79 @@
 ---
-title: Create useful categories
-description: Use categories as meaningful boundaries for filtering, planning, and automation.
+title: Organize with categories
+description: Use categories as meaningful boundaries for filtering, planning, privacy, and automation.
 ---
 
-# Create useful categories
+# Organize with categories
 
-Categories represent areas you want to separate when planning or reviewing:
-Health, Family, Research, a client, or a long-running responsibility. They can
-color and filter tasks, entries, habits, and dashboards, and can control which
-content Daily OS or an AI profile may use.
+A category is the main structural home for an entry. Use one when a body of
+work needs its own planning rules, privacy boundary, visual identity, or AI
+context. In the demo workspace, **Penguin Operations**, **Mission Control**,
+**Fish Diplomacy**, and **Human Maintenance** separate genuinely different
+areas of the expedition.
+
+<ManualScreenshot
+  caseId="categories/list"
+  alt="Category settings containing Penguin Operations, Mission Control, Fish Diplomacy, and Human Maintenance with task counts and status icons"
+  caption="The list is searchable and shows task counts. Icons identify favorite, private, and inactive categories at a glance."
+/>
 
 ## Create a category
 
 1. Open **Settings → Categories**.
-2. Use the add action.
-3. Choose a clear name and a color you can recognize quickly.
-4. Configure planning or inference options only when the category needs them.
-5. Save.
+2. Select **Create category**.
+3. Enter a distinct name, color, and icon.
+4. Create it, then open the category again to configure its behavior.
 
-## Keep the category system small
+Creation intentionally starts with the identifying fields. Planning, privacy,
+language, and automation options live on the full editor after the category
+exists.
 
-Start with boundaries that change a decision. “Health” may be useful if you
-filter or review it separately; “Miscellaneous” usually hides information. Add
-categories later when a repeated need appears.
+## Configure category behavior
 
-## Daily OS access
+<ManualScreenshot
+  caseId="categories/detail"
+  alt="Penguin Operations category editor showing its name, purple flight identity, and favorite, private, active, and day-planning options"
+/>
 
-Enable **Day planning** only for categories whose tasks may enter the planning
-ritual. This makes the planning context more intentional and avoids sending
-unrelated category material to the selected inference endpoint.
+The editor controls more than appearance:
 
-:::note Screenshot refresh in progress
+- **Favorite** makes an important category easier to recognize and select.
+- **Private** hides its content unless private entries are being shown.
+- **Active** controls whether the category can be selected for new entries.
+  Deactivating it preserves existing data.
+- **Day planning** allows the category to participate in Daily OS planning.
+- **Language** provides the default language for new tasks in the category.
 
-The legacy category screenshots predate the current settings design. They are
-intentionally omitted until the automated light/dark, mobile/desktop case is
-added.
+Use **Day planning** selectively. Enabling it for every category broadens the
+planner's context and makes the daily ritual noisier.
 
-:::
+## Add category-specific automation context
+
+A category can provide defaults for new tasks: an inference profile and an
+agent template. These are defaults, not permanent locks; task-level choices can
+still change later.
+
+<ManualScreenshot
+  caseId="categories/automation"
+  alt="Penguin Operations advanced settings with Project Waddle speech vocabulary and learned checklist corrections for Sir Flaps-a-Lot"
+  caption="Speech terms are separated with semicolons. Checklist corrections are learned from edits and can be reviewed or deleted here."
+/>
+
+The **Speech recognition** dictionary is useful for names, locations, acronyms,
+and domain vocabulary that transcription often misses. Penguin Operations, for
+example, teaches Lotti `Project Waddle`, `Sir Flaps-a-Lot`, `sardine`, and
+`Europa`.
+
+When you manually correct generated checklist titles, Lotti can retain the
+before-and-after examples for future AI suggestions. Review the examples here
+and remove any correction that should not guide later output.
+
+## Categories versus labels
+
+Use a category for the primary home of work and a [label](./labels.mdx) for a
+cross-cutting property. **Penguin Operations** is a category; **Habitat
+critical** is a label that can also apply to Mission Control work.
+
+Keep the category system small enough that choosing one is obvious. Add a new
+category when it changes planning, filtering, privacy, or automation—not merely
+because a new noun appeared.

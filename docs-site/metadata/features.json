@@ -38,8 +38,22 @@
       "id": "categories",
       "title": "Categories",
       "page": "organize-and-reflect/categories",
-      "status": "needs-screenshot-refresh",
-      "screenshotCases": []
+      "status": "verified",
+      "screenshotCases": [
+        "categories/list",
+        "categories/detail",
+        "categories/automation"
+      ]
+    },
+    {
+      "id": "labels",
+      "title": "Labels",
+      "page": "organize-and-reflect/labels",
+      "status": "verified",
+      "screenshotCases": [
+        "labels/list",
+        "labels/detail"
+      ]
     },
     {
       "id": "habits-measurables",

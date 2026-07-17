@@ -3,9 +3,9 @@
 /// `DefinitionsListPage` / `SettingsDetailScaffold` kit (list, edit, and
 /// create surfaces, plus the empty and scrolled-behind-glass states).
 ///
-/// Renders a realistic personal productivity journal: categories for deep
-/// work, health, client work, and admin; triage labels; daily habits;
-/// body metrics; and two dashboards. PNGs land in
+/// Renders a coherent Intergalactic Penguin Logistics workspace: mission
+/// categories, operational labels, expedition habits, habitat metrics, and
+/// colony dashboards. PNGs land in
 /// `screenshots/settings_definitions/` (gitignored) for design review.
 /// Not a golden test — assertions only guard that each scenario renders.
 ///
@@ -45,6 +45,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/manual_demo_world.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
@@ -53,77 +54,131 @@ import '../../labels/test_utils.dart';
 
 const String _subdir = 'settings_definitions';
 
-final DateTime _created = DateTime(2024, 3, 15);
+final DateTime _created = manualDemoNow;
 
 // ---------------------------------------------------------------------------
-// Story data — a personal productivity journal.
+// Story data — Intergalactic Penguin Logistics.
 // ---------------------------------------------------------------------------
 
-final CategoryDefinition _deepWork = CategoryTestUtils.createTestCategory(
-  id: 'cat-deep',
-  name: 'Deep Work',
-  color: '#8B5CF6',
-  icon: CategoryIcon.brain,
-  defaultLanguageCode: 'en',
-  speechDictionary: ['Lotti', 'Pomodoro'],
-);
-final CategoryDefinition _health = CategoryTestUtils.createTestCategory(
-  id: 'cat-health',
-  name: 'Health',
-  color: '#34D399',
-);
-final CategoryDefinition _clientWork = CategoryTestUtils.createTestCategory(
-  id: 'cat-client',
-  name: 'Client Work',
+const _missionControlCategoryId = 'manual-mission-control';
+const _fishDiplomacyCategoryId = 'manual-fish-diplomacy';
+const _humanMaintenanceCategoryId = 'manual-human-maintenance';
+const _awaitingMissionControlLabelId = 'manual-awaiting-mission-control';
+const _sardineMarketLabelId = 'manual-sardine-market';
+
+final CategoryDefinition _penguinOperations =
+    CategoryTestUtils.createTestCategory(
+      id: manualDemoCategoryId,
+      name: 'Penguin Operations',
+      color: '#8B5CF6',
+      icon: CategoryIcon.airplane,
+      favorite: true,
+      isAvailableForDayPlan: true,
+      defaultLanguageCode: 'en',
+      speechDictionary: [
+        'Project Waddle',
+        'Sir Flaps-a-Lot',
+        'sardine',
+        'Europa',
+      ],
+      correctionExamples: [
+        ChecklistCorrectionExample(
+          before: 'sir flaps a lot',
+          after: 'Sir Flaps-a-Lot',
+          capturedAt: manualDemoNow.subtract(const Duration(days: 3)),
+        ),
+        ChecklistCorrectionExample(
+          before: 'project waddle habitat',
+          after: 'Project Waddle habitat',
+          capturedAt: manualDemoNow.subtract(const Duration(days: 1)),
+        ),
+      ],
+    );
+final CategoryDefinition _missionControl = CategoryTestUtils.createTestCategory(
+  id: _missionControlCategoryId,
+  name: 'Mission Control',
   color: '#4F9DDE',
+  icon: CategoryIcon.connectivity,
+  isAvailableForDayPlan: true,
   private: true,
 );
-final CategoryDefinition _admin = CategoryTestUtils.createTestCategory(
-  id: 'cat-admin',
-  name: 'Admin',
+final CategoryDefinition _fishDiplomacy = CategoryTestUtils.createTestCategory(
+  id: _fishDiplomacyCategoryId,
+  name: 'Fish Diplomacy',
   color: '#E8A33D',
-  active: false,
+  icon: CategoryIcon.meeting,
 );
+final CategoryDefinition _humanMaintenance =
+    CategoryTestUtils.createTestCategory(
+      id: _humanMaintenanceCategoryId,
+      name: 'Human Maintenance',
+      color: '#34D399',
+      icon: CategoryIcon.fitness,
+      active: false,
+    );
 
 final List<CategoryDefinition> _allCategories = [
-  _deepWork,
-  _health,
-  _clientWork,
-  _admin,
+  _penguinOperations,
+  _missionControl,
+  _fishDiplomacy,
+  _humanMaintenance,
 ];
 
 const Map<String, int> _taskCounts = {
-  'cat-deep': 12,
-  'cat-health': 4,
-  'cat-client': 7,
-  'cat-admin': 23,
+  manualDemoCategoryId: 37,
+  _missionControlCategoryId: 12,
+  _fishDiplomacyCategoryId: 8,
+  _humanMaintenanceCategoryId: 4,
 };
 
-final LabelDefinition _urgent = LabelTestUtils.createTestLabel(
-  id: 'label-urgent',
-  name: 'Urgent',
-  color: '#EF4444',
-  description: 'Needs attention today — blocks other work.',
-  applicableCategoryIds: ['cat-client', 'cat-deep'],
+final LabelDefinition _projectWaddle = LabelTestUtils.createTestLabel(
+  id: manualDemoProjectLabelId,
+  name: 'Project Waddle',
+  color: '#1F9CF5',
+  description:
+      'Launch-critical work for the first interplanetary penguin habitat.',
+  applicableCategoryIds: [
+    manualDemoCategoryId,
+    _missionControlCategoryId,
+    _fishDiplomacyCategoryId,
+  ],
 );
-final LabelDefinition _waiting = LabelTestUtils.createTestLabel(
-  id: 'label-waiting',
-  name: 'Waiting',
-  color: '#3B82F6',
+final LabelDefinition _habitatCritical = LabelTestUtils.createTestLabel(
+  id: manualDemoCriticalLabelId,
+  name: 'Habitat critical',
+  color: '#FBA337',
+  description:
+      'Must be resolved before emperor penguins enter the orbital habitat.',
+  applicableCategoryIds: [manualDemoCategoryId, _missionControlCategoryId],
 );
-final LabelDefinition _someday = LabelTestUtils.createTestLabel(
-  id: 'label-someday',
-  name: 'Someday',
-  color: '#9CA3AF',
+final LabelDefinition _awaitingMissionControl = LabelTestUtils.createTestLabel(
+  id: _awaitingMissionControlLabelId,
+  name: 'Awaiting Mission Control',
+  color: '#8B5CF6',
+  description: 'Blocked until the lunar shift sends clearance.',
+  applicableCategoryIds: [manualDemoCategoryId, _missionControlCategoryId],
+);
+final LabelDefinition _sardineMarket = LabelTestUtils.createTestLabel(
+  id: _sardineMarketLabelId,
+  name: 'Sardine market sensitive',
+  color: '#34D399',
+  description: 'Private negotiations with the Europa fish exchange.',
   private: true,
+  applicableCategoryIds: [_fishDiplomacyCategoryId],
 );
 
-final List<LabelDefinition> _allLabels = [_urgent, _waiting, _someday];
+final List<LabelDefinition> _allLabels = [
+  _projectWaddle,
+  _habitatCritical,
+  _awaitingMissionControl,
+  _sardineMarket,
+];
 
 const Map<String, int> _labelUsage = {
-  'label-urgent': 8,
-  'label-waiting': 3,
-  'label-someday': 12,
+  manualDemoProjectLabelId: 14,
+  manualDemoCriticalLabelId: 6,
+  _awaitingMissionControlLabelId: 5,
+  _sardineMarketLabelId: 3,
 };
 
 HabitDefinition _habit({
@@ -148,28 +203,33 @@ HabitDefinition _habit({
   categoryId: categoryId,
 );
 
-final HabitDefinition _meditation = _habit(
-  id: 'habit-meditation',
-  name: 'Meditation',
-  description: 'Ten quiet minutes before the first deep-work block.',
-  categoryId: 'cat-deep',
+final HabitDefinition _rollCall = _habit(
+  id: 'habit-emperor-roll-call',
+  name: 'Emperor penguin roll call',
+  description: 'Account for all 37 expedition penguins before launch.',
+  categoryId: manualDemoCategoryId,
   priority: true,
 );
-final HabitDefinition _run5k = _habit(
-  id: 'habit-run',
-  name: 'Run 5k',
-  description: 'Easy pace after work, three times a week.',
-  categoryId: 'cat-health',
+final HabitDefinition _habitatSealWalk = _habit(
+  id: 'habit-habitat-seals',
+  name: 'Walk the habitat seals',
+  description: 'Inspect every pressure seal after the artificial sunrise.',
+  categoryId: manualDemoCategoryId,
   private: true,
 );
-final HabitDefinition _journaling = _habit(
-  id: 'habit-journal',
-  name: 'Journaling',
-  description: 'Evening reflection — paused for now.',
+final HabitDefinition _sardineForecast = _habit(
+  id: 'habit-sardine-forecast',
+  name: 'Review sardine forecast',
+  description: 'Paused while the Europa exchange recalibrates its fish index.',
+  categoryId: _fishDiplomacyCategoryId,
   active: false,
 );
 
-final List<HabitDefinition> _allHabits = [_meditation, _run5k, _journaling];
+final List<HabitDefinition> _allHabits = [
+  _rollCall,
+  _habitatSealWalk,
+  _sardineForecast,
+];
 
 MeasurableDataType _measurable({
   required String id,
@@ -191,26 +251,30 @@ MeasurableDataType _measurable({
   favorite: favorite,
 );
 
-final MeasurableDataType _weight = _measurable(
-  id: 'meas-weight',
-  displayName: 'Weight',
-  unitName: 'kg',
-  description: 'Morning weight, same scale every day.',
+final MeasurableDataType _habitatPressure = _measurable(
+  id: 'meas-habitat-pressure',
+  displayName: 'Habitat pressure',
+  unitName: 'kPa',
+  description: 'Average pressure across the orbital habitat.',
   aggregationType: AggregationType.dailyAvg,
 );
-final MeasurableDataType _water = _measurable(
-  id: 'meas-water',
-  displayName: 'Water',
-  unitName: 'ml',
+final MeasurableDataType _sardinesConsumed = _measurable(
+  id: 'meas-sardines-consumed',
+  displayName: 'Sardines consumed',
+  unitName: 'sardines',
 );
-final MeasurableDataType _steps = _measurable(
-  id: 'meas-steps',
-  displayName: 'Steps',
-  unitName: 'steps',
+final MeasurableDataType _penguinsAccountedFor = _measurable(
+  id: 'meas-penguins-accounted-for',
+  displayName: 'Penguins accounted for',
+  unitName: 'penguins',
   favorite: true,
 );
 
-final List<MeasurableDataType> _allMeasurables = [_weight, _water, _steps];
+final List<MeasurableDataType> _allMeasurables = [
+  _habitatPressure,
+  _sardinesConsumed,
+  _penguinsAccountedFor,
+];
 
 DashboardDefinition _dashboard({
   required String id,
@@ -234,38 +298,38 @@ DashboardDefinition _dashboard({
   categoryId: categoryId,
 );
 
-final DashboardDefinition _healthOverview = _dashboard(
-  id: 'dash-health',
-  name: 'Health overview',
-  description: 'Weight, water, and steps at a glance.',
-  categoryId: 'cat-health',
+final DashboardDefinition _colonyOperations = _dashboard(
+  id: 'dash-colony-operations',
+  name: 'Colony operations',
+  description: 'Habitat pressure, sardine demand, and crew headcount.',
+  categoryId: manualDemoCategoryId,
   items: const [
-    DashboardHealthItem(
-      color: '#34D399',
-      healthType: 'HealthDataType.WEIGHT',
+    DashboardMeasurementItem(
+      id: 'meas-habitat-pressure',
+      aggregationType: AggregationType.dailyAvg,
     ),
     DashboardMeasurementItem(
-      id: 'meas-water',
+      id: 'meas-sardines-consumed',
       aggregationType: AggregationType.dailySum,
     ),
     DashboardMeasurementItem(
-      id: 'meas-steps',
+      id: 'meas-penguins-accounted-for',
       aggregationType: AggregationType.dailySum,
     ),
   ],
 );
-final DashboardDefinition _productivity = _dashboard(
-  id: 'dash-prod',
-  name: 'Productivity',
-  description: '',
-  categoryId: 'cat-deep',
+final DashboardDefinition _missionReadiness = _dashboard(
+  id: 'dash-mission-readiness',
+  name: 'Mission readiness',
+  description: 'Private launch review for Project Waddle.',
+  categoryId: _missionControlCategoryId,
   private: true,
   items: const [],
 );
 
 final List<DashboardDefinition> _allDashboards = [
-  _healthOverview,
-  _productivity,
+  _colonyOperations,
+  _missionReadiness,
 ];
 
 // ---------------------------------------------------------------------------
@@ -379,13 +443,13 @@ void main() {
     when(categoryRepo.watchCategories).thenAnswer(
       (_) => Stream.value(_allCategories),
     );
-    when(() => categoryRepo.watchCategory(_deepWork.id)).thenAnswer(
-      (_) => Stream.value(_deepWork),
+    when(() => categoryRepo.watchCategory(_penguinOperations.id)).thenAnswer(
+      (_) => Stream.value(_penguinOperations),
     );
 
     when(labelsRepo.watchLabels).thenAnswer((_) => Stream.value(_allLabels));
-    when(() => labelsRepo.watchLabel(_urgent.id)).thenAnswer(
-      (_) => Stream.value(_urgent),
+    when(() => labelsRepo.watchLabel(_projectWaddle.id)).thenAnswer(
+      (_) => Stream.value(_projectWaddle),
     );
 
     // The habit editor loads via habitsRepositoryProvider → getIt
@@ -394,8 +458,8 @@ void main() {
     when(() => mocks.journalDb.getHabitById(any())).thenAnswer(
       (_) async => null,
     );
-    when(() => mocks.journalDb.getHabitById(_meditation.id)).thenAnswer(
-      (_) async => _meditation,
+    when(() => mocks.journalDb.getHabitById(_rollCall.id)).thenAnswer(
+      (_) async => _rollCall,
     );
     when(mocks.journalDb.getAllDashboards).thenAnswer(
       (_) async => _allDashboards,
@@ -454,99 +518,68 @@ void main() {
   // Categories.
   // -------------------------------------------------------------------------
 
-  testWidgets('mini categories list — dark', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: miniDevice,
-      overrides: categoriesListOverrides(),
-      home: const CategoriesListPage(),
-    );
-    expect(find.text('Deep Work'), findsOneWidget);
-    expect(find.text('Client Work'), findsOneWidget);
-    await captureScreenshot(
-      tester,
-      'mini_categories_list_dark',
-      subdir: _subdir,
-    );
-  });
+  for (final device in [miniDevice, desktopDevice]) {
+    final viewport = device.isPhone ? 'mobile' : 'desktop';
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      final theme = brightness.name;
 
-  testWidgets('mini categories list — light', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: miniDevice,
-      brightness: Brightness.light,
-      overrides: categoriesListOverrides(),
-      home: const CategoriesListPage(),
-    );
-    expect(find.text('Deep Work'), findsOneWidget);
-    await captureScreenshot(
-      tester,
-      'mini_categories_list_light',
-      subdir: _subdir,
-    );
-  });
+      testWidgets('$viewport categories list — $theme', (tester) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          overrides: categoriesListOverrides(),
+          home: const CategoriesListPage(),
+        );
+        expect(find.text('Penguin Operations'), findsOneWidget);
+        expect(find.text('Mission Control'), findsOneWidget);
+        expect(find.text('37 tasks'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'categories_list_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
 
-  testWidgets('desktop categories list — dark', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: desktopDevice,
-      overrides: categoriesListOverrides(),
-      home: const CategoriesListPage(),
-    );
-    expect(find.text('Deep Work'), findsOneWidget);
-    await captureScreenshot(
-      tester,
-      'desktop_categories_list_dark',
-      subdir: _subdir,
-    );
-  });
+      testWidgets('$viewport categories detail — $theme', (tester) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          overrides: categoriesDetailOverrides(),
+          home: CategoryDetailsPage(categoryId: _penguinOperations.id),
+        );
+        expect(find.text('Edit category'), findsOneWidget);
+        expect(find.text('Penguin Operations'), findsOneWidget);
+        expect(
+          tester
+              .widget<TextField>(find.byType(TextField).first)
+              .controller
+              ?.text,
+          'Penguin Operations',
+        );
+        await captureScreenshot(
+          tester,
+          'categories_detail_${viewport}_$theme',
+          subdir: _subdir,
+        );
 
-  testWidgets('mini categories detail (edit) — dark', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: miniDevice,
-      overrides: categoriesDetailOverrides(),
-      home: CategoryDetailsPage(categoryId: _deepWork.id),
-    );
-    expect(find.text('Edit category'), findsOneWidget);
-    expect(find.text('Deep Work'), findsOneWidget);
-    await captureScreenshot(
-      tester,
-      'mini_categories_detail_dark',
-      subdir: _subdir,
-    );
-  });
-
-  testWidgets('mini categories detail (edit) — light', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: miniDevice,
-      brightness: Brightness.light,
-      overrides: categoriesDetailOverrides(),
-      home: CategoryDetailsPage(categoryId: _deepWork.id),
-    );
-    expect(find.text('Edit category'), findsOneWidget);
-    await captureScreenshot(
-      tester,
-      'mini_categories_detail_light',
-      subdir: _subdir,
-    );
-  });
-
-  testWidgets('desktop categories detail (edit) — dark', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: desktopDevice,
-      overrides: categoriesDetailOverrides(),
-      home: CategoryDetailsPage(categoryId: _deepWork.id),
-    );
-    expect(find.text('Edit category'), findsOneWidget);
-    await captureScreenshot(
-      tester,
-      'desktop_categories_detail_dark',
-      subdir: _subdir,
-    );
-  });
+        await tester.scrollUntilVisible(
+          find.text('Checklist correction examples'),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await settleFrames(tester);
+        expect(find.text('Speech recognition'), findsOneWidget);
+        expect(find.textContaining('Project Waddle'), findsWidgets);
+        await captureScreenshot(
+          tester,
+          'categories_automation_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+    }
+  }
 
   testWidgets('mini categories create — dark', (tester) async {
     await _pumpScreen(
@@ -588,7 +621,7 @@ void main() {
       tester,
       device: miniDevice,
       overrides: categoriesDetailOverrides(),
-      home: CategoryDetailsPage(categoryId: _deepWork.id),
+      home: CategoryDetailsPage(categoryId: _penguinOperations.id),
     );
     // Scroll the form to its end so content visibly slides behind the
     // glass action bar.
@@ -609,53 +642,54 @@ void main() {
   // Labels.
   // -------------------------------------------------------------------------
 
-  testWidgets('mini labels list — dark', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: miniDevice,
-      overrides: labelsListOverrides(),
-      home: const LabelsListPage(),
-    );
-    expect(find.text('Urgent'), findsOneWidget);
-    expect(find.text('Someday'), findsOneWidget);
-    await captureScreenshot(tester, 'mini_labels_list_dark', subdir: _subdir);
-  });
+  for (final device in [miniDevice, desktopDevice]) {
+    final viewport = device.isPhone ? 'mobile' : 'desktop';
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      final theme = brightness.name;
 
-  testWidgets('mini labels detail (edit) — dark', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: miniDevice,
-      overrides: labelsDetailOverrides(),
-      home: LabelDetailsPage(labelId: _urgent.id),
-    );
-    expect(find.text('Edit label'), findsOneWidget);
-    expect(find.text('Urgent'), findsOneWidget);
-    // Edit the name so this capture demonstrates the ARMED state: the
-    // vivid primary Save against the ghost Cancel. The pristine
-    // (disabled-Save) state is covered by the other editor captures.
-    await tester.enterText(find.byType(TextField).first, 'Urgent!');
-    await settleFrames(tester, 4);
-    await captureScreenshot(tester, 'mini_labels_detail_dark', subdir: _subdir);
-  });
+      testWidgets('$viewport labels list — $theme', (tester) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          overrides: labelsListOverrides(),
+          home: const LabelsListPage(),
+        );
+        expect(find.text('Project Waddle'), findsOneWidget);
+        expect(find.text('Habitat critical'), findsOneWidget);
+        expect(find.text('14 tasks'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'labels_list_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
 
-  testWidgets('mini labels detail (edit) — light', (tester) async {
-    await _pumpScreen(
-      tester,
-      device: miniDevice,
-      brightness: Brightness.light,
-      overrides: labelsDetailOverrides(),
-      home: LabelDetailsPage(labelId: _urgent.id),
-    );
-    expect(find.text('Edit label'), findsOneWidget);
-    // Armed state in light mode too (see the dark variant above).
-    await tester.enterText(find.byType(TextField).first, 'Urgent!');
-    await settleFrames(tester, 4);
-    await captureScreenshot(
-      tester,
-      'mini_labels_detail_light',
-      subdir: _subdir,
-    );
-  });
+      testWidgets('$viewport labels detail — $theme', (tester) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          overrides: labelsDetailOverrides(),
+          home: LabelDetailsPage(labelId: _projectWaddle.id),
+        );
+        expect(find.text('Edit label'), findsOneWidget);
+        expect(find.text('Project Waddle'), findsOneWidget);
+        // Demonstrate the armed action state while preserving the story.
+        await tester.enterText(
+          find.byType(TextField).first,
+          'Project Waddle — launch',
+        );
+        await settleFrames(tester, 4);
+        expect(find.text('Project Waddle — launch'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'labels_detail_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+    }
+  }
 
   // 2.0x — the upper end of common accessibility text sizes; the action
   // bar stacks its pills vertically at this scale.
@@ -665,7 +699,7 @@ void main() {
       device: miniDevice,
       textScale: 2,
       overrides: labelsDetailOverrides(),
-      home: LabelDetailsPage(labelId: _urgent.id),
+      home: LabelDetailsPage(labelId: _projectWaddle.id),
     );
     expect(find.text('Edit label'), findsOneWidget);
     await captureScreenshot(
@@ -690,8 +724,8 @@ void main() {
       ],
       home: const HabitsPage(),
     );
-    expect(find.text('Meditation'), findsOneWidget);
-    expect(find.text('Run 5k'), findsOneWidget);
+    expect(find.text('Emperor penguin roll call'), findsOneWidget);
+    expect(find.text('Walk the habitat seals'), findsOneWidget);
     await captureScreenshot(tester, 'mini_habits_list_dark', subdir: _subdir);
   });
 
@@ -699,10 +733,10 @@ void main() {
     await _pumpScreen(
       tester,
       device: miniDevice,
-      home: EditHabitPage(habitId: _meditation.id),
+      home: EditHabitPage(habitId: _rollCall.id),
     );
     expect(find.text('Edit habit'), findsOneWidget);
-    expect(find.text('Meditation'), findsOneWidget);
+    expect(find.text('Emperor penguin roll call'), findsOneWidget);
     await captureScreenshot(tester, 'mini_habits_detail_dark', subdir: _subdir);
   });
 
@@ -721,8 +755,8 @@ void main() {
       ],
       home: const MeasurablesPage(),
     );
-    expect(find.text('Weight'), findsOneWidget);
-    expect(find.text('Steps'), findsOneWidget);
+    expect(find.text('Habitat pressure'), findsOneWidget);
+    expect(find.text('Penguins accounted for'), findsOneWidget);
     await captureScreenshot(
       tester,
       'mini_measurables_list_dark',
@@ -734,10 +768,10 @@ void main() {
     await _pumpScreen(
       tester,
       device: miniDevice,
-      home: MeasurableDetailsPage(dataType: _weight),
+      home: MeasurableDetailsPage(dataType: _habitatPressure),
     );
     expect(find.text('Edit measurable'), findsOneWidget);
-    expect(find.text('Weight'), findsOneWidget);
+    expect(find.text('Habitat pressure'), findsOneWidget);
     await captureScreenshot(
       tester,
       'mini_measurables_detail_dark',
@@ -760,8 +794,8 @@ void main() {
       ],
       home: const DashboardSettingsPage(),
     );
-    expect(find.text('Health overview'), findsOneWidget);
-    expect(find.text('Productivity'), findsOneWidget);
+    expect(find.text('Colony operations'), findsOneWidget);
+    expect(find.text('Mission readiness'), findsOneWidget);
     await captureScreenshot(
       tester,
       'mini_dashboards_list_dark',
@@ -775,10 +809,10 @@ void main() {
     await _pumpScreen(
       tester,
       device: miniDevice,
-      home: DashboardDefinitionPage(dashboard: _healthOverview),
+      home: DashboardDefinitionPage(dashboard: _colonyOperations),
     );
     expect(find.text('Edit dashboard'), findsOneWidget);
-    expect(find.text('Health overview'), findsOneWidget);
+    expect(find.text('Colony operations'), findsOneWidget);
     // The reorderable charts list renders one dismissible card per item.
     expect(find.byType(Dismissible), findsNWidgets(3));
     await captureScreenshot(
