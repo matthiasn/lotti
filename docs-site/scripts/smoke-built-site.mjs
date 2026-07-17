@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
-import {access, readFile} from 'node:fs/promises';
+import {access, readFile, readdir} from 'node:fs/promises';
 import {resolve} from 'node:path';
 
 import {readJson, siteDirectory} from './manual-lib.mjs';
@@ -10,6 +10,15 @@ const buildDirectory = resolve(siteDirectory, 'build');
 const features = await readJson(resolve(siteDirectory, 'metadata/features.json'));
 
 await access(resolve(buildDirectory, 'index.html'));
+const buildFiles = await readdir(buildDirectory, {recursive: true});
+assert.ok(
+  buildFiles.some((path) => /Inter-VariableFont.*\.ttf$/.test(path)),
+  'The manual build must bundle Lotti\'s Inter variable font.',
+);
+assert.ok(
+  buildFiles.some((path) => /Inconsolata-Regular.*\.ttf$/.test(path)),
+  'The manual build must bundle Lotti\'s Inconsolata code font.',
+);
 for (const feature of features.features) {
   await access(resolve(buildDirectory, feature.page, 'index.html'));
 }
