@@ -9,6 +9,7 @@ import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -26,7 +27,9 @@ import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
+import '../helpers/fallbacks.dart';
 import '../helpers/stub_audio_recorder_controller.dart';
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
@@ -34,6 +37,8 @@ import '../widget_test_utils.dart';
 import '_beamer_test_utils.dart';
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   group('MyBeamerApp theming', () {
     test('loading state has null darkTheme initially', () {
       // Test the loading screen condition directly
@@ -342,6 +347,12 @@ void main() {
         // throws, so a failure can't leak the override into later files in a
         // bundled `very_good test` run.
         debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        final originalUrlLauncher = UrlLauncherPlatform.instance;
+        final manualLauncher = MockUrlLauncher();
+        UrlLauncherPlatform.instance = manualLauncher;
+        when(
+          () => manualLauncher.launchUrl(any(), any()),
+        ).thenAnswer((_) async => true);
 
         try {
           final mockMatrix = MockMatrixService();
@@ -368,6 +379,9 @@ void main() {
                 ),
                 zoomControllerProvider.overrideWith(
                   TestZoomController.new,
+                ),
+                manualLanguageControllerProvider.overrideWith(
+                  _GermanManualLanguageController.new,
                 ),
                 agentInitializationProvider.overrideWith((ref) async {}),
                 matrixServiceProvider.overrideWithValue(mockMatrix),
@@ -408,6 +422,16 @@ void main() {
           expect(wrapper.onZoomIn, isNotNull);
           expect(wrapper.onZoomOut, isNotNull);
           expect(wrapper.onZoomReset, isNotNull);
+          expect(wrapper.onOpenManual, isNotNull);
+
+          wrapper.onOpenManual!();
+          await tester.pump();
+          verify(
+            () => manualLauncher.launchUrl(
+              'https://matthiasn.github.io/lotti/manual/development/de/',
+              any(),
+            ),
+          ).called(1);
 
           // Verify ZoomWrapper receives the scale from the controller
           final zoomWrapper = tester.widget<ZoomWrapper>(
@@ -419,6 +443,7 @@ void main() {
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pumpAndSettle();
         } finally {
+          UrlLauncherPlatform.instance = originalUrlLauncher;
           debugDefaultTargetPlatformOverride = null;
         }
       },
@@ -429,4 +454,9 @@ void main() {
 class _LoadingThemingController extends ThemingController {
   @override
   ThemingState build() => const ThemingState();
+}
+
+class _GermanManualLanguageController extends ManualLanguageController {
+  @override
+  ManualLanguage? build() => ManualLanguage.german;
 }

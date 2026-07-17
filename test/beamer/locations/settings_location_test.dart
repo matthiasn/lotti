@@ -27,6 +27,7 @@ import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/manual_language_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
@@ -170,6 +171,7 @@ void main() {
         '/settings/definitions',
         '/settings/advanced',
         '/settings/advanced/animations',
+        '/settings/advanced/manual-language',
         '/settings/advanced/logging_domains',
         '/settings/advanced/conflicts/:conflictId',
         '/settings/advanced/conflicts',
@@ -1214,6 +1216,23 @@ void main() {
         'advanced',
       );
       expect(pages[2].child, isA<LoggingSettingsPage>());
+    });
+
+    test('buildPages builds ManualLanguageSettingsPage', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/advanced/manual-language'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(mockBuildContext, beamState);
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'advanced',
+      );
+      expect(pages[2].child, isA<ManualLanguageSettingsPage>());
     });
 
     test('buildPages builds AboutPage', () {

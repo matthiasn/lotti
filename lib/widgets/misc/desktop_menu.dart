@@ -16,6 +16,7 @@ class DesktopMenuWrapper extends StatelessWidget {
     this.onZoomIn,
     this.onZoomOut,
     this.onZoomReset,
+    this.onOpenManual,
     super.key,
   });
 
@@ -23,6 +24,7 @@ class DesktopMenuWrapper extends StatelessWidget {
   final VoidCallback? onZoomIn;
   final VoidCallback? onZoomOut;
   final VoidCallback? onZoomReset;
+  final VoidCallback? onOpenManual;
 
   @override
   Widget build(BuildContext context) {
@@ -161,6 +163,10 @@ class DesktopMenuWrapper extends StatelessWidget {
               PlatformMenu(
                 label: context.messages.helpMenuTitle,
                 menus: [
+                  PlatformMenuItem(
+                    label: context.messages.navSidebarManualLabel,
+                    onSelected: onOpenManual,
+                  ),
                   commandItem(AppCommandId.openCommandPalette),
                   commandItem(AppCommandId.openShortcutHelp),
                 ],

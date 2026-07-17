@@ -13924,6 +13924,12 @@ abstract class AppLocalizations {
   /// **'Perform maintenance tasks to optimize application performance'**
   String get settingsAdvancedMaintenanceSubtitle;
 
+  /// No description provided for @settingsAdvancedManualLanguageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which language to open the Lotti Manual in'**
+  String get settingsAdvancedManualLanguageSubtitle;
+
   /// No description provided for @settingsAdvancedOutboxSubtitle.
   ///
   /// In en, this message translates to:
@@ -15117,6 +15123,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Maintenance'**
   String get settingsMaintenanceTitle;
+
+  /// No description provided for @settingsManualLanguageCzechTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Czech'**
+  String get settingsManualLanguageCzechTitle;
+
+  /// No description provided for @settingsManualLanguageEnglishTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get settingsManualLanguageEnglishTitle;
+
+  /// No description provided for @settingsManualLanguageFollowSystemSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your device language when the manual supports it; otherwise use English.'**
+  String get settingsManualLanguageFollowSystemSubtitle;
+
+  /// No description provided for @settingsManualLanguageFollowSystemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow system'**
+  String get settingsManualLanguageFollowSystemTitle;
+
+  /// No description provided for @settingsManualLanguageGermanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'German'**
+  String get settingsManualLanguageGermanTitle;
+
+  /// No description provided for @settingsManualLanguageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsManualLanguageTitle;
 
   /// No description provided for @settingsMatrixAccept.
   ///

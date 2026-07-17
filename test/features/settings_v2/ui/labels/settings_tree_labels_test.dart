@@ -145,6 +145,17 @@ void main() {
       expect(resolve('sync/conflicts').title, 'Sync Conflicts');
       expect(resolve('advanced/about').title, 'About Lotti');
     });
+
+    testWidgets('advanced/manual-language uses its dedicated arb keys', (
+      tester,
+    ) async {
+      final resolve = await _buildResolver(tester);
+      expect(resolve('advanced/manual-language').title, 'Language');
+      expect(
+        resolve('advanced/manual-language').desc,
+        'Choose which language to open the Lotti Manual in',
+      );
+    });
   });
 
   group('settingsTreeLabelsFor — unknown ids', () {

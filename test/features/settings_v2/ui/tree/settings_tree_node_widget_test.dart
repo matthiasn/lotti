@@ -8,7 +8,11 @@ import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_node_widget.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
+import '../../../../helpers/fallbacks.dart';
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 SettingsNode _syncBranch() => const SettingsNode(
@@ -33,6 +37,14 @@ SettingsNode _flagsLeaf() => const SettingsNode(
   title: 'Flags',
   desc: 'Feature flags',
   panel: 'flags',
+);
+
+SettingsNode _manualAction() => const SettingsNode(
+  id: 'manual',
+  icon: Icons.menu_book_outlined,
+  title: 'Manual',
+  desc: 'Opens in your browser',
+  action: SettingsNodeAction.openManual,
 );
 
 SettingsNode _branchWithHiddenChildren() => const SettingsNode(
@@ -97,6 +109,8 @@ ProviderContainer _containerOf(WidgetTester tester) {
 }
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   group('SettingsTreeNodeWidget — rendering', () {
     testWidgets('renders a single row for a leaf with no children slot', (
       tester,
@@ -146,6 +160,30 @@ void main() {
       await tester.pump();
       final path = _containerOf(tester).read(settingsTreePathProvider);
       expect(path, ['flags']);
+    });
+
+    testWidgets('tapping the Manual action opens it without selecting a row', (
+      tester,
+    ) async {
+      final originalLauncher = UrlLauncherPlatform.instance;
+      final launcher = MockUrlLauncher();
+      UrlLauncherPlatform.instance = launcher;
+      addTearDown(() => UrlLauncherPlatform.instance = originalLauncher);
+      when(
+        () => launcher.launchUrl(any(), any()),
+      ).thenAnswer((_) async => true);
+
+      await _pumpNode(tester, node: _manualAction());
+      await tester.tap(find.byType(SettingsTreeRow));
+      await tester.pump();
+
+      verify(
+        () => launcher.launchUrl(
+          'https://matthiasn.github.io/lotti/manual/development/',
+          any(),
+        ),
+      ).called(1);
+      expect(_containerOf(tester).read(settingsTreePathProvider), isEmpty);
     });
 
     testWidgets('tapping a re-tapped open branch collapses it', (tester) async {

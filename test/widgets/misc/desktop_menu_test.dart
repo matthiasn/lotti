@@ -163,6 +163,38 @@ void main() {
         }
       });
 
+      testWidgets('Help menu invokes the Manual callback', (tester) async {
+        var manualOpenings = 0;
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        try {
+          await tester.pumpWidget(
+            makeTestableWidget(
+              DesktopMenuWrapper(
+                onOpenManual: () => manualOpenings++,
+                child: const Text('Menu Child'),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final menuBar = tester.widget<PlatformMenuBar>(
+            find.byType(PlatformMenuBar),
+          );
+          final helpMenu = menuBar.menus.whereType<PlatformMenu>().singleWhere(
+            (menu) => menu.label == 'Help',
+          );
+          final manualItem = helpMenu.menus
+              .whereType<PlatformMenuItem>()
+              .singleWhere((item) => item.label == 'Manual');
+
+          expect(manualItem.onSelected, isNotNull);
+          manualItem.onSelected!();
+          expect(manualOpenings, 1);
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
+
       testWidgets('unavailable shared commands do not use direct fallbacks', (
         tester,
       ) async {

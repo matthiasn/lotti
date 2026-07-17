@@ -44,6 +44,7 @@ exist, how they are grouped, or which flags gate them.
   - [`ui/pages/theming_page.dart`](ui/pages/theming_page.dart)
   - [`ui/pages/flags_page.dart`](ui/pages/flags_page.dart)
   - [`ui/pages/advanced/logging_settings_page.dart`](ui/pages/advanced/logging_settings_page.dart)
+  - [`ui/pages/advanced/manual_language_settings_page.dart`](ui/pages/advanced/manual_language_settings_page.dart)
   - [`ui/pages/advanced/maintenance_page.dart`](ui/pages/advanced/maintenance_page.dart)
   - [`ui/pages/advanced/about_page.dart`](ui/pages/advanced/about_page.dart)
   - [`ui/pages/health_import_page.dart`](ui/pages/health_import_page.dart)
@@ -89,6 +90,7 @@ lib/features/settings/
     │   ├── advanced/
     │   │   ├── about_page.dart
     │   │   ├── logging_settings_page.dart
+    │   │   ├── manual_language_settings_page.dart
     │   │   └── maintenance_page.dart
     │   ├── dashboards/
     │   ├── habits/
@@ -251,6 +253,7 @@ flowchart LR
   Landing --> Definitions["Definitions"]
   Landing --> Theming["Theming"]
   Landing --> Advanced["Advanced"]
+  Landing --> Manual["Manual (opens browser)"]
 
   AI --> Providers["Providers"]
   AI --> Models["Models"]
@@ -277,6 +280,7 @@ flowchart LR
   Sync --> Conflicts["Conflicts (URL /settings/advanced/conflicts)"]
   Sync --> MatrixMaint["Matrix maintenance"]
   Advanced --> Flags["Config flags (/settings/flags)"]
+  Advanced --> ManualLanguage["Language"]
   Advanced --> Logging["Logging domains"]
   Advanced --> Maint["Maintenance"]
   Advanced --> About["About"]
@@ -549,6 +553,7 @@ leaves and is a true drill-down.
 The branch currently exposes:
 
 - config flags (URL `/settings/flags`, kept here rather than at the root)
+- manual language
 - logging domains
 - maintenance
 - about
@@ -557,6 +562,45 @@ Sync-specific repair tools live under the Sync branch in the tree, not here —
 even though Conflict resolution still wears the legacy
 `/settings/advanced/conflicts` URL for deep-link compatibility (the tree maps
 the `sync/conflicts` node to that path via `settingsNodeUrls`).
+
+### Manual
+
+`Manual` is the final top-level Settings row on desktop and mobile. Its
+`SettingsNodeAction.openManual` action opens the external browser directly;
+it is not a Beamer route or a detail-panel leaf. The shared tree inserts a
+design-system section gap before the row, separating this support resource
+from configuration entries. On macOS, the same action is also available from
+the desktop **Help** menu. The desktop navigation sidebar deliberately has no
+Manual row.
+
+### Language
+
+[`ui/pages/advanced/manual_language_settings_page.dart`](ui/pages/advanced/manual_language_settings_page.dart)
+controls the language used when Lotti opens the external Manual.
+It is an Advanced leaf on both settings surfaces (`advanced/manual-language` →
+`/settings/advanced/manual-language`), and its body is embedded in the desktop
+detail pane through the `advanced-manual-language` panel registration.
+
+The manual currently publishes English, German, and Czech. `Follow system` is
+the default: [`ManualLanguageController`](state/manual_language_controller.dart)
+matches the device locale to that catalog and falls back to English when no
+manual translation exists. Selecting a language persists only that explicit
+override in `SettingsDb`; returning to `Follow system` removes the key, so a
+later device-language change is reflected the next time the user opens Manual.
+
+```mermaid
+flowchart LR
+  Choice["Advanced → Language"] --> Preference{"Explicit override?"}
+  Preference -->|yes| Override["English / German / Czech"]
+  Preference -->|no| System["Platform system locale"]
+  System --> Catalog{"Published manual locale?"}
+  Catalog -->|yes| Matched["Matching manual route"]
+  Catalog -->|no| English["English manual route"]
+  Override --> ManualLink["Settings Manual / Help menu"]
+  Matched --> ManualLink
+  English --> ManualLink
+  ManualLink --> Browser["External browser"]
+```
 
 ### Health import
 
@@ -666,6 +710,7 @@ This is the route shape that currently matters in practice:
 - `/settings/flags`
 - `/settings/health_import`
 - `/settings/advanced`
+- `/settings/advanced/manual-language`
 - `/settings/advanced/logging_domains`
 - `/settings/advanced/about`
 - `/settings/advanced/conflicts/...`

@@ -23,6 +23,7 @@ import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/manual_language_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
@@ -72,6 +73,7 @@ void main() {
       'advanced-maintenance',
       'advanced-logging',
       'advanced-animations',
+      'advanced-manual-language',
       'advanced-onboarding-metrics',
       'sync-provisioned',
       'sync-node-profile',
@@ -242,6 +244,10 @@ void main() {
           isA<OnboardingMetricsBody>(),
         );
         expect(build('advanced-logging'), isA<LoggingSettingsBody>());
+        expect(
+          build('advanced-manual-language'),
+          isA<ManualLanguageSettingsBody>(),
+        );
         // Backfill is wrapped in a desktop-only horizontal inset so its
         // content doesn't run edge-to-edge (matching the Stats card margin).
         final backfill = build('sync-backfill');

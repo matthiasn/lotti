@@ -6,6 +6,7 @@ import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
+import 'package:lotti/features/settings_v2/ui/settings_node_action_handler.dart';
 import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_node_indicators.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
@@ -72,6 +73,7 @@ class _SettingsTreeNodeWidgetState
     final isExpanded = selection.isExpanded;
 
     void handleTap() {
+      if (handleSettingsNodeAction(ref, node)) return;
       ref
           .read(settingsTreePathProvider.notifier)
           .onNodeTap(
@@ -123,7 +125,12 @@ class _SettingsTreeNodeWidgetState
             focusNode: _focusNode,
             onActivePath: onActivePath,
             isExpanded: isExpanded,
-            trailing: settingsNodeIndicatorFor(node.id),
+            trailing: node.action == SettingsNodeAction.openManual
+                ? Icon(
+                    Icons.open_in_new_rounded,
+                    color: tokens.colors.text.lowEmphasis,
+                  )
+                : settingsNodeIndicatorFor(node.id),
             onTap: handleTap,
           ),
         ),

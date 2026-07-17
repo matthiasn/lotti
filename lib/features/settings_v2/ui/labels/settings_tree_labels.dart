@@ -155,12 +155,22 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.settingsSpeechTitle,
           desc: m.settingsSpeechSubtitle,
         );
+      case 'manual':
+        return (
+          title: m.navSidebarManualLabel,
+          desc: m.navSidebarManualBrowserHint,
+        );
       case 'advanced/flags':
         return (title: m.settingsFlagsTitle, desc: m.settingsFlagsSubtitle);
       case 'advanced/animations':
         return (
           title: m.settingsCelebrationsTitle,
           desc: m.settingsCelebrationsSubtitle,
+        );
+      case 'advanced/manual-language':
+        return (
+          title: m.settingsManualLanguageTitle,
+          desc: m.settingsAdvancedManualLanguageSubtitle,
         );
       case 'advanced':
         return (

@@ -64,6 +64,7 @@ lib/features/settings_v2/
 │   └── settings_tree_width_controller.dart  # settingsTreeNavWidthProvider (persisted)
 └── ui/
     ├── settings_tree_builder.dart    # watchSettingsTree() Riverpod wrapper
+    ├── settings_node_action_handler.dart # shared immediate tree actions
     ├── settings_tree_scope.dart      # SettingsTreeScope(Host) shared snapshot
     ├── settings_v2_constants.dart    # SettingsV2Constants (dp/ms/alpha literals)
     ├── labels/settings_tree_labels.dart      # localized (title, desc) resolver
@@ -102,6 +103,10 @@ A `SettingsNode` (`domain/settings_node.dart`) carries:
 - `children` — `null` ⇒ **leaf**; non-null ⇒ **branch** (even if empty)
 - `panel` — the registry id of the detail body to render (a branch with
   `panel == null` is a pure-navigation hub)
+- `action` — an immediate behavior for a support row that has no panel (the
+  top-level Manual opens the browser)
+- `sectionBreakBefore` — inserts a design-system gap before a top-level
+  support/action row, keeping it visually separate from configuration entries
 - optional `badge` (`NodeBadge` + `NodeTone {info, teal, error}`) — the type and
   render path exist but the tree does not currently emit badges
 

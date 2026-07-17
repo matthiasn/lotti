@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_node_widget.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
@@ -57,6 +58,7 @@ void main() {
         expect(find.text('Definitions'), findsOneWidget);
         expect(find.text('Theming'), findsOneWidget);
         expect(find.text('Advanced Settings'), findsOneWidget);
+        expect(find.text('Manual'), findsOneWidget);
         // Categories / Labels / Measurables / Config Flags moved off
         // the root list — they now hang off the Definitions / Advanced
         // branches. The branches are collapsed by default but the
@@ -119,7 +121,7 @@ void main() {
         // With every flag off the root list is the always-on set
         // declared in `buildSettingsTree`: onboarding, ai, agents, daily-os,
         // definitions, recording-style, theming, keyboard-shortcuts,
-        // advanced. Sync is gated on enableMatrix so it drops out when the
+        // advanced, manual. Sync is gated on enableMatrix so it drops out when the
         // flag is off; onboarding is unconditional (the welcome has no flag).
         // A depth-0 `SettingsTreeNodeWidget` per root proves every entry
         // rendered through the widget, not a raw row.
@@ -127,7 +129,7 @@ void main() {
         final rootNodeFinder = find.byWidgetPredicate(
           (w) => w is SettingsTreeNodeWidget && w.depth == 0,
         );
-        expect(rootNodeFinder, findsNWidgets(9));
+        expect(rootNodeFinder, findsNWidgets(10));
         for (final title in const [
           'AI Settings',
           'Agents',
@@ -137,6 +139,7 @@ void main() {
           'Theming',
           'Keyboard shortcuts',
           'Advanced Settings',
+          'Manual',
         ]) {
           expect(
             find.descendant(of: rootNodeFinder, matching: find.text(title)),
@@ -168,5 +171,26 @@ void main() {
         expect(container.read(settingsTreePathProvider), ['theming']);
       },
     );
+
+    testWidgets('separates the final Manual action with a tokenized gap', (
+      tester,
+    ) async {
+      await _pumpView(tester);
+
+      final advancedRow = find.ancestor(
+        of: find.text('Advanced Settings'),
+        matching: find.byType(SettingsTreeRow),
+      );
+      final manualRow = find.ancestor(
+        of: find.text('Manual'),
+        matching: find.byType(SettingsTreeRow),
+      );
+      final gap =
+          tester.getTopLeft(manualRow).dy -
+          tester.getBottomLeft(advancedRow).dy;
+      final context = tester.element(find.byType(SettingsTreeView));
+
+      expect(gap, context.designTokens.spacing.step6);
+    });
   });
 }

@@ -5,6 +5,10 @@ import 'package:flutter/widgets.dart';
 /// text pair in the design-system palette when the badge renders.
 enum NodeTone { info, teal, error }
 
+/// An immediate action a Settings tree row can perform without opening a
+/// settings detail panel.
+enum SettingsNodeAction { openManual }
+
 /// Small pill rendered to the right of a tree-row title — used for the
 /// "v2.4" (info), "Live" (teal) and "Retry" (error) cases seen in the
 /// Figma reference.
@@ -24,9 +28,9 @@ class NodeBadge {
   int get hashCode => Object.hash(label, tone);
 }
 
-/// One node in the Settings tree. Branch nodes carry [children]; leaf
-/// nodes carry [panel] (the id of the widget to render in the detail
-/// pane) and have `children == null`.
+/// One node in the Settings tree. Branch nodes carry [children]; internal
+/// leaves carry [panel] (the id of the widget to render in the detail pane),
+/// while immediate action leaves carry [action].
 ///
 /// Every node has a stable [id] so [children] and ancestor lookups
 /// can address nodes without relying on object identity (tree data
@@ -42,6 +46,8 @@ class SettingsNode {
     this.children,
     this.panel,
     this.badge,
+    this.action,
+    this.sectionBreakBefore = false,
   });
 
   /// Stable slash-delimited path id (e.g. `sync`, `sync/backfill`).
@@ -63,13 +69,20 @@ class SettingsNode {
   /// will render it as a leaf).
   final List<SettingsNode>? children;
 
-  /// Registry id for the widget shown in the detail pane. Leaves
-  /// should always set this; branches usually leave it `null` and
-  /// render the branch empty-state.
+  /// Registry id for the widget shown in the detail pane. Internal leaves
+  /// should set this; action leaves and most branches leave it `null`.
   final String? panel;
 
   /// Optional trailing pill.
   final NodeBadge? badge;
+
+  /// Immediate behavior for a non-navigational leaf, such as opening an
+  /// external support resource. Action leaves intentionally have no panel.
+  final SettingsNodeAction? action;
+
+  /// Whether the containing settings level inserts a design-system section
+  /// gap immediately before this node.
+  final bool sectionBreakBefore;
 
   /// Branch convenience: a node is a branch iff it has a non-null
   /// [children] list. Emptiness does not downgrade it to a leaf —
@@ -87,6 +100,8 @@ class SettingsNode {
           other.desc == desc &&
           other.panel == panel &&
           other.badge == badge &&
+          other.action == action &&
+          other.sectionBreakBefore == sectionBreakBefore &&
           listEquals(other.children, children);
 
   @override
@@ -97,6 +112,8 @@ class SettingsNode {
     desc,
     panel,
     badge,
+    action,
+    sectionBreakBefore,
     children == null ? null : Object.hashAll(children!),
   );
 }

@@ -26,6 +26,7 @@ import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/manual_language_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
@@ -125,6 +126,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/definitions',
     '/settings/advanced',
     '/settings/advanced/animations',
+    '/settings/advanced/manual-language',
     '/settings/advanced/logging_domains',
     '/settings/advanced/conflicts/:conflictId',
     '/settings/advanced/conflicts',
@@ -630,6 +632,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-animations'),
           child: CelebrationSettingsPage(),
+        ),
+
+      if (pathContains('advanced/manual-language'))
+        const BeamPage(
+          key: ValueKey('settings-manual-language'),
+          child: ManualLanguageSettingsPage(),
         ),
 
       if (pathContains('advanced/logging_domains'))

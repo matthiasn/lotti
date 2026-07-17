@@ -33,8 +33,10 @@ List<SettingsNode> buildSettingsTree({
   SettingsNode leaf(
     String id,
     IconData icon, {
-    required String panel,
+    String? panel,
     NodeBadge? badge,
+    SettingsNodeAction? action,
+    bool sectionBreakBefore = false,
   }) {
     final l = labels(id);
     return SettingsNode(
@@ -44,6 +46,8 @@ List<SettingsNode> buildSettingsTree({
       desc: l.desc,
       panel: panel,
       badge: badge,
+      action: action,
+      sectionBreakBefore: sectionBreakBefore,
     );
   }
 
@@ -271,6 +275,11 @@ List<SettingsNode> buildSettingsTree({
           panel: 'advanced-animations',
         ),
         leaf(
+          'advanced/manual-language',
+          Icons.language_rounded,
+          panel: 'advanced-manual-language',
+        ),
+        leaf(
           'advanced/logging',
           Icons.bug_report_outlined,
           panel: 'advanced-logging',
@@ -303,6 +312,15 @@ List<SettingsNode> buildSettingsTree({
           panel: 'advanced-about',
         ),
       ],
+    ),
+    // The Manual is a support resource rather than a configuration surface.
+    // Keep it at the bottom of the root Settings level, visually separated
+    // from configuration entries while still available on every platform.
+    leaf(
+      'manual',
+      Icons.menu_book_outlined,
+      action: SettingsNodeAction.openManual,
+      sectionBreakBefore: true,
     ),
   ];
 }

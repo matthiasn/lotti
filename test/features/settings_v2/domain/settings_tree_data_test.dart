@@ -99,6 +99,7 @@ void main() {
         'theming',
         'keyboard-shortcuts',
         'advanced',
+        'manual',
       ]);
     });
   });
@@ -128,7 +129,7 @@ void main() {
       // / measurables) collapse into the single `definitions` branch;
       // config flags reparent under `advanced`. Root reads as
       // Onboarding · AI · Agents · Daily OS · Sync · Definitions · Theming ·
-      // Keyboard shortcuts · Advanced.
+      // Keyboard shortcuts · Advanced · Manual.
       final rootIds = _tree().map((n) => n.id).toList();
       expect(rootIds, [
         'whats-new',
@@ -142,6 +143,7 @@ void main() {
         'theming',
         'keyboard-shortcuts',
         'advanced',
+        'manual',
       ]);
     });
 
@@ -190,6 +192,7 @@ void main() {
           'advanced/logging',
           'advanced/maintenance',
           'advanced/about',
+          'manual',
         ]),
       );
     });
@@ -335,6 +338,7 @@ void main() {
       expect(advanced.children!.map((n) => n.id).toList(), [
         'advanced/flags',
         'advanced/animations',
+        'advanced/manual-language',
         'advanced/logging',
         'advanced/maintenance',
         'advanced/onboarding-metrics',
@@ -386,12 +390,20 @@ void main() {
   });
 
   group('buildSettingsTree — panel assignments', () {
-    test('every leaf registered with the expected panel id', () {
+    test('every internal leaf registers the expected panel id', () {
       final leafPanels = <String, String>{};
       void walk(List<SettingsNode> nodes) {
         for (final n in nodes) {
           final c = n.children;
           if (c == null) {
+            if (n.action != null) {
+              expect(
+                n.panel,
+                isNull,
+                reason: '${n.id} action leaf must not create a detail panel',
+              );
+              continue;
+            }
             expect(n.panel, isNotNull, reason: '${n.id} leaf needs a panel');
             leafPanels[n.id] = n.panel!;
           } else {
@@ -435,6 +447,7 @@ void main() {
         'keyboard-shortcuts': 'keyboard-shortcuts',
         'advanced/flags': 'flags',
         'advanced/animations': 'advanced-animations',
+        'advanced/manual-language': 'advanced-manual-language',
         'advanced/logging': 'advanced-logging',
         'advanced/maintenance': 'advanced-maintenance',
         'advanced/onboarding-metrics': 'advanced-onboarding-metrics',
@@ -487,7 +500,7 @@ void main() {
     });
 
     test(
-      'Advanced has flags / animations / logging / maintenance / about in order',
+      'Advanced has flags / animations / manual language / logging / maintenance / about in order',
       () {
         // Conflicts moved out of Advanced and into Sync; flags moved
         // in from the root list; animations (the celebration toggles) sits
@@ -496,6 +509,7 @@ void main() {
         expect(advanced.children!.map((n) => n.id).toList(), [
           'advanced/flags',
           'advanced/animations',
+          'advanced/manual-language',
           'advanced/logging',
           'advanced/maintenance',
           'advanced/onboarding-metrics',
@@ -544,6 +558,7 @@ void main() {
         'theming',
         'keyboard-shortcuts',
         'advanced',
+        'manual',
       ]);
     });
 
@@ -560,6 +575,17 @@ void main() {
         expect(off, on.where((id) => id != 'sync').toList());
       },
     );
+  });
+
+  group('buildSettingsTree — Manual action', () {
+    test('is the separated final root action with no detail panel', () {
+      final manual = _tree().last;
+
+      expect(manual.id, 'manual');
+      expect(manual.action, SettingsNodeAction.openManual);
+      expect(manual.panel, isNull);
+      expect(manual.sectionBreakBefore, isTrue);
+    });
   });
 }
 

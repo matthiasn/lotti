@@ -8170,6 +8170,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wartungsaufgaben durchführen, um die Anwendungsleistung zu optimieren';
 
   @override
+  String get settingsAdvancedManualLanguageSubtitle =>
+      'Wähle die Sprache, in der das Lotti-Handbuch geöffnet wird';
+
+  @override
   String get settingsAdvancedOutboxSubtitle =>
       'Elemente anzeigen und verwalten, die auf Synchronisierung warten';
 
@@ -8843,6 +8847,26 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsMaintenanceTitle => 'Wartung';
+
+  @override
+  String get settingsManualLanguageCzechTitle => 'Tschechisch';
+
+  @override
+  String get settingsManualLanguageEnglishTitle => 'Englisch';
+
+  @override
+  String get settingsManualLanguageFollowSystemSubtitle =>
+      'Verwende die Sprache deines Geräts, sofern das Handbuch sie unterstützt; andernfalls Englisch.';
+
+  @override
+  String get settingsManualLanguageFollowSystemTitle =>
+      'Systemsprache verwenden';
+
+  @override
+  String get settingsManualLanguageGermanTitle => 'Deutsch';
+
+  @override
+  String get settingsManualLanguageTitle => 'Sprache';
 
   @override
   String get settingsMatrixAccept => 'Akzeptieren';
