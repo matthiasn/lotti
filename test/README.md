@@ -39,6 +39,14 @@ It happens when the widget's `await for` is still attached to the controller's s
 - If you must use a controller, `await controller.close()` **inside** the test body (before it returns) so the consumer drains before teardown — don't defer the close to `addTearDown`.
 - A test that asserts a transient mid-stream UI state ("…while an event is in flight") is inherently racy; assert the settled state after a finite stream completes instead.
 
+## Native drag-and-drop wrappers
+
+Production pages may include `MediaDropTarget`, which registers
+`super_drag_and_drop` native channels even when a widget test never performs a
+drop. `test/flutter_test_config.dart` installs the shared engine, `DropManager`,
+and `DragManager` handlers before tests run. Keep production drop wrappers in
+page tests and screenshot harnesses; do not replace them with test-only UI.
+
 For broader test conventions — centralized mocks/fallbacks (`test/mocks/mocks.dart`, `test/helpers/fallbacks.dart`), `setUpTestGetIt()` / `makeTestableWidget()`, the "every test must assert something meaningful" rule, and one-test-file-per-source-file — see the **Testing Guidelines** section of `AGENTS.md`.
 
 ## Hover-divider tests: `test_utils/hover_divider_harness.dart`

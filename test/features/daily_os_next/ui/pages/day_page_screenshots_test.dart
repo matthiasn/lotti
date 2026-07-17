@@ -27,6 +27,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
@@ -36,19 +37,27 @@ import 'package:lotti/features/design_system/components/navigation/design_system
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fake_entry_controller.dart';
+import '../../../../helpers/manual_demo_world.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
 import '../../screenshot_harness.dart';
 
 /// Mid-afternoon so the now-line sits inside the day and one recorded
 /// session can be in progress.
 final DateTime _now = DateTime(2026, 6, 8, 15, 55);
 final DateTime _day = DateTime(2026, 6, 8);
+late ManualDemoWorld _manualWorld;
+late Directory _manualDocumentsDirectory;
 
 const _deepWork = DayAgentCategory(
   id: 'cat-penguin',
@@ -172,6 +181,7 @@ DraftPlan _plan() {
       sessionIndex: 1,
       sessionTotal: 2,
       reason: 'The fish are least suspicious immediately after lunch',
+      taskId: manualFishFeederTaskId,
     ),
     _planned(
       'blk-email',
@@ -179,6 +189,7 @@ DraftPlan _plan() {
       _at(16, 15),
       _at(17),
       _admin,
+      taskId: manualPenguinPassengerTaskId,
     ),
     _planned(
       'blk-run',
@@ -268,6 +279,7 @@ DraftPlan _plan() {
       ),
       AgendaItem(
         id: 'ag-slides',
+        taskId: manualFishFeederTaskId,
         title: 'Zero-gravity fish feeder',
         category: _deepWork,
         linkedBlockIds: ['blk-slides'],
@@ -278,6 +290,7 @@ DraftPlan _plan() {
       ),
       AgendaItem(
         id: 'ag-email',
+        taskId: manualPenguinPassengerTaskId,
         title: 'Legal: Is a penguin a passenger?',
         category: _admin,
         linkedBlockIds: ['blk-email'],
@@ -419,6 +432,17 @@ CaptureController _stubCapture() {
   );
 }
 
+class _ScreenshotPreferencesController extends DailyOsPreferencesController {
+  _ScreenshotPreferencesController({required this.retireDayFooterHint});
+
+  final bool retireDayFooterHint;
+
+  @override
+  DailyOsPreferences build() => DailyOsPreferences(
+    dayFooterHintRetired: retireDayFooterHint,
+  );
+}
+
 Widget _app({
   required Widget home,
   required Brightness brightness,
@@ -454,8 +478,8 @@ Widget _app({
   );
 }
 
-Widget _dayShell(ScreenshotDevice device) {
-  final dayPage = DayPage(draft: _plan());
+Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
+  final dayPage = DayPage(draft: draft);
   if (!device.isPhone) {
     DesktopSidebarDestination destination(
       String label,
@@ -536,9 +560,18 @@ Future<void> _pumpDayPage(
   required ScreenshotDevice device,
   Brightness brightness = Brightness.dark,
   double textScale = 1.0,
+  bool showPlannerReview = true,
 }) async {
   applyScreenshotDevice(tester, device);
   await withClock(Clock.fixed(_now), () async {
+    final draft = showPlannerReview
+        ? _plan()
+        : _plan().copyWith(state: DayState.committed);
+    await primeManualDemoCoverArt(
+      tester,
+      documentsDirectory: _manualDocumentsDirectory,
+      world: _manualWorld,
+    );
     await tester.pumpWidget(
       _app(
         brightness: brightness,
@@ -551,13 +584,37 @@ Future<void> _pumpDayPage(
           ),
           captureControllerProvider.overrideWith(_stubCapture),
           plannerKnowledgeProvider.overrideWith(
-            (ref) async => _knowledgeView(),
+            (ref) async {
+              final view = _knowledgeView();
+              return showPlannerReview
+                  ? view
+                  : PlannerKnowledgeView(
+                      proposed: const [],
+                      confirmed: view.confirmed,
+                    );
+            },
           ),
+          dailyOsPreferencesControllerProvider.overrideWith(
+            () => _ScreenshotPreferencesController(
+              retireDayFooterHint: !showPlannerReview,
+            ),
+          ),
+          for (final coverImage in _manualWorld.coverImages)
+            createEntryControllerOverride(coverImage),
         ],
         // DayPage lives inside the app shell in production. Reuse the real
         // design-system mobile bar / desktop sidebar so the captures reflect
         // each breakpoint instead of showing a hollow reserved band.
-        home: _dayShell(device),
+        home: _dayShell(device, draft: draft),
+      ),
+    );
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(DayPage)),
+    );
+    await Future.wait(
+      _manualWorld.coverImages.map(
+        (image) =>
+            container.read(entryControllerProvider(image.meta.id).future),
       ),
     );
     await settleFrames(tester);
@@ -619,6 +676,36 @@ Future<void> _openBlockEditor(
   );
 }
 
+void _expectAgendaThumbnails(WidgetTester tester) {
+  expect(find.byType(CoverArtThumbnail), findsAtLeastNWidgets(2));
+  final thumbnails = tester
+      .widgetList<CoverArtThumbnail>(find.byType(CoverArtThumbnail))
+      .toList();
+  expect(
+    thumbnails.map((thumbnail) => thumbnail.imageId).toSet(),
+    containsAll(<String>{
+      manualFishFeederCoverImageId,
+      manualPenguinPassengerCoverImageId,
+    }),
+  );
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(CoverArtThumbnail).first),
+  );
+  for (final thumbnail in thumbnails) {
+    expect(
+      container.read(entryControllerProvider(thumbnail.imageId)).value?.entry,
+      _manualWorld.coverImageById(thumbnail.imageId),
+    );
+  }
+  expect(
+    find.descendant(
+      of: find.byType(CoverArtThumbnail),
+      matching: find.byType(Image),
+    ),
+    findsAtLeastNWidgets(2),
+  );
+}
+
 void main() {
   if (!screenshotCaptureEnabled) {
     test(
@@ -634,10 +721,46 @@ void main() {
 
   setUpAll(loadScreenshotFonts);
 
+  setUp(() async {
+    _manualWorld = ManualDemoWorld.penguinLogistics();
+    _manualDocumentsDirectory = Directory.systemTemp.createTempSync(
+      'lotti-manual-daily-os-',
+    );
+    await _manualWorld.installMedia(_manualDocumentsDirectory);
+    final mocks = await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<Directory>(_manualDocumentsDirectory)
+          ..registerSingleton<EditorStateService>(MockEditorStateService());
+      },
+    );
+    when(
+      () => mocks.journalDb.journalEntityById(any()),
+    ).thenAnswer((invocation) async {
+      final id = invocation.positionalArguments.first as String;
+      return _manualWorld.entityById(id);
+    });
+    when(
+      () => mocks.journalDb.getCategoryById(manualDemoCategoryId),
+    ).thenAnswer((_) async => _manualWorld.category);
+  });
+
+  tearDown(() async {
+    await tearDownTestGetIt();
+    if (_manualDocumentsDirectory.existsSync()) {
+      _manualDocumentsDirectory.deleteSync(recursive: true);
+    }
+  });
+
   for (final device in [miniDevice, proDevice, desktopDevice]) {
     testWidgets('${device.name} agenda — dark', (tester) async {
-      await _pumpDayPage(tester, device: device);
+      await _pumpDayPage(
+        tester,
+        device: device,
+        showPlannerReview: false,
+      );
       expect(find.byType(AgendaView), findsOneWidget);
+      _expectAgendaThumbnails(tester);
       await captureScreenshot(tester, 'day_${device.name}_01_agenda_dark');
     });
 
@@ -716,8 +839,10 @@ void main() {
       tester,
       device: miniDevice,
       brightness: Brightness.light,
+      showPlannerReview: false,
     );
     expect(find.byType(AgendaView), findsOneWidget);
+    _expectAgendaThumbnails(tester);
     await captureScreenshot(tester, 'day_mini_04_agenda_light');
   });
 
@@ -726,8 +851,10 @@ void main() {
       tester,
       device: desktopDevice,
       brightness: Brightness.light,
+      showPlannerReview: false,
     );
     expect(find.byType(AgendaView), findsOneWidget);
+    _expectAgendaThumbnails(tester);
     await captureScreenshot(tester, 'day_desktop_03_agenda_light');
   });
 
