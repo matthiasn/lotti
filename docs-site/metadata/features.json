@@ -53,7 +53,8 @@
         "projects/detail",
         "projects/tasks",
         "projects/filters",
-        "projects/create"
+        "projects/create",
+        "projects/editor"
       ]
     },
     {

@@ -651,6 +651,17 @@
       }
     },
     {
+      "id": "projects/editor",
+      "title": "Project settings editor",
+      "sourceTest": "test/features/projects/ui/pages/projects_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "projects_editor_mobile_light.png",
+        "mobile-dark": "projects_editor_mobile_dark.png",
+        "desktop-light": "projects_editor_desktop_light.png",
+        "desktop-dark": "projects_editor_desktop_dark.png"
+      }
+    },
+    {
       "id": "events/overview",
       "title": "Events overview",
       "sourceTest": "test/features/events/ui/pages/events_manual_screenshots_test.dart",
