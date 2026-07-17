@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Blurred sticky footer for the What's New modal.
@@ -120,8 +121,9 @@ class NavigationFooter extends StatelessWidget {
     required FontWeight fontWeight,
     required bool isVisible,
   }) {
+    final tokens = context.designTokens;
     return SizedBox(
-      width: 64,
+      width: isVisible ? tokens.spacing.step12 : tokens.spacing.step10,
       child: isVisible
           ? TextButton(
               onPressed: onMarkAllSeen,

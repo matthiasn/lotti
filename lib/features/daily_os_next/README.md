@@ -533,7 +533,9 @@ sequenceDiagram
   the interpreted task title is primary, the spoken phrase is secondary, linked
   tasks render as compact inline chips with a break-link affordance, and the
   footer carries kind/category/estimate/time-anchor metadata. Confidence is
-  shown only when the parse is not high confidence.
+  shown only when the parse is not high confidence. Time anchors wrap inside
+  their metadata row instead of forcing a horizontal overflow, including at
+  200% accessibility text scaling.
 - `ReconcileController` watches capture-id update notifications, so the
   "heard" column re-reads parsed items when the asynchronous parsing wake
   persists them.

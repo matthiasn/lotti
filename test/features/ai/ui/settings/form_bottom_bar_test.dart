@@ -50,6 +50,32 @@ void main() {
       expect(saveButton, findsOneWidget);
     });
 
+    testWidgets('fits German status and actions on a phone width', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          Builder(
+            builder: (context) => Localizations.override(
+              context: context,
+              locale: const Locale('de'),
+              child: FormBottomBar(
+                onSave: () {},
+                onCancel: () {},
+                isFormValid: true,
+                isDirty: false,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Keine ungespeicherten Änderungen'), findsOneWidget);
+      expect(find.text('Abbrechen'), findsOneWidget);
+      expect(find.text('Speichern'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('shows error state when form is invalid', (tester) async {
       await tester.pumpWidget(
         buildTestWidget(
