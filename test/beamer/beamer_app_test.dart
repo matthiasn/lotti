@@ -1859,12 +1859,6 @@ void main() {
           '/settings/advanced/conflicts/some-conflict-id',
         ], hides: true);
       });
-
-      test('the manual-merge entry editor keeps the bar (owns its inset)', () {
-        expectHides([
-          '/settings/advanced/conflicts/some-conflict-id/edit',
-        ], hides: false);
-      });
     });
 
     group('top-level leaf pages hide the bar', () {

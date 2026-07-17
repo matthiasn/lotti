@@ -17,7 +17,6 @@ import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.d
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
-import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
@@ -173,7 +172,6 @@ void main() {
         '/settings/advanced/animations',
         '/settings/advanced/logging_domains',
         '/settings/advanced/conflicts/:conflictId',
-        '/settings/advanced/conflicts/:conflictId/edit',
         '/settings/advanced/conflicts',
         '/settings/advanced/maintenance',
         '/settings/advanced/onboarding_metrics',
@@ -1280,31 +1278,6 @@ void main() {
       );
       expect(pages[2].child, isA<ConflictsPage>());
       expect(pages[3].child, isA<ConflictDetailRoute>());
-    });
-
-    test('buildPages builds EntryDetailsPage for conflict edit', () {
-      final routeInformation = RouteInformation(
-        uri: Uri.parse('/settings/advanced/conflicts/conflict-123/edit'),
-      );
-      final location = SettingsLocation(routeInformation);
-      var beamState = BeamState.fromRouteInformation(routeInformation);
-      beamState = beamState.copyWith(
-        pathParameters: {'conflictId': 'conflict-123'},
-      );
-      final pages = location.buildPages(
-        mockBuildContext,
-        beamState,
-      );
-      expect(pages.length, 5);
-      expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<SettingsMobileBranchPage>());
-      expect(
-        (pages[1].child as SettingsMobileBranchPage).branchId,
-        'advanced',
-      );
-      expect(pages[2].child, isA<ConflictsPage>());
-      expect(pages[3].child, isA<ConflictDetailRoute>());
-      expect(pages[4].child, isA<EntryDetailsPage>());
     });
 
     test('buildPages builds MaintenancePage', () {

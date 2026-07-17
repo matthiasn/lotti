@@ -113,9 +113,7 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
 ///   * the entity **list** pages `/settings/{categories,labels,dashboards,
 ///     measurables,habits}` (incl. the habits `search`/bare-`by_id` list
 ///     variants)
-///   * the sync **conflicts list** `/settings/advanced/conflicts`, and the
-///     manual-merge entry editor `/edit` (the journal editor manages its own
-///     bottom inset)
+///   * the sync **conflicts list** `/settings/advanced/conflicts`
 ///
 /// Hides the bar (terminal destinations):
 ///   * the whole **AI** and **Agents** sections — they are real settings
@@ -152,12 +150,10 @@ bool settingsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
     // matrix/maintenance) that hides the bar.
     'sync' => segments.length >= 3,
     // Advanced is a menu hub (kept). Its leaves hide, except the conflicts
-    // *list* — only the conflict *detail* hides, and the manual-merge entry
-    // editor (`/edit`) keeps the bar (it manages its own bottom inset).
+    // *list* — only a conflict detail hides the bar.
     'advanced' =>
       segments.length >= 3 &&
-          (segments[2] != 'conflicts' ||
-              (segments.length >= 4 && segments.last != 'edit')),
+          (segments[2] != 'conflicts' || segments.length >= 4),
     // Entity-definition **list** pages are browse surfaces (kept); only the
     // per-entity editor / `create` route hides.
     'categories' ||
