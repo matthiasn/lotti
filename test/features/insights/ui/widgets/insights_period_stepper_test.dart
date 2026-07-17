@@ -20,6 +20,7 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     required InsightsPeriodSelection selection,
+    MediaQueryData? mediaQueryData,
     ValueChanged<InsightsPeriodUnit>? onSelectUnit,
     ValueChanged<int>? onStep,
     VoidCallback? onOpenCalendar,
@@ -30,6 +31,7 @@ void main() {
       Clock.fixed(now),
       () => tester.pumpWidget(
         makeTestableWidgetWithScaffold(
+          mediaQueryData: mediaQueryData,
           InsightsPeriodStepper(
             selection: selection,
             onSelectUnit: onSelectUnit ?? (_) {},
@@ -243,4 +245,42 @@ void main() {
     await tester.pump();
     expect(selected, InsightsPeriodUnit.month);
   });
+
+  testWidgets(
+    'mobile stacks range shortcuts below navigation and keeps them usable',
+    (tester) async {
+      var compareToggles = 0;
+      final requestedRanges = <InsightsPeriodUnit>[];
+      final selection = InsightsPeriodSelection(
+        unit: InsightsPeriodUnit.month,
+        range: periodToDate(InsightsPeriodUnit.month, now),
+      );
+
+      await pump(
+        tester,
+        selection: selection,
+        mediaQueryData: const MediaQueryData(size: Size(402, 874)),
+        onToggleCompare: () => compareToggles++,
+        onSelectToDate: requestedRanges.add,
+      );
+
+      final periodLabel = find.text('June 2026 (so far)');
+      final monthShortcut = find.text('This month');
+      expect(
+        tester.getTopLeft(monthShortcut).dy,
+        greaterThan(tester.getBottomLeft(periodLabel).dy),
+      );
+
+      await tester.tap(monthShortcut);
+      await tester.tap(find.text('This year'));
+      await tester.tap(find.text('Compare'));
+
+      expect(
+        requestedRanges,
+        [InsightsPeriodUnit.month, InsightsPeriodUnit.year],
+      );
+      expect(compareToggles, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

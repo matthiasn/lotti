@@ -1,0 +1,67 @@
+---
+title: Browse What's New
+description: Review the latest Lotti release, move through older release notes, and control which updates remain unseen.
+---
+
+# Browse What's New
+
+What's New presents release notes inside Lotti, matched to the version you are
+running. It can open automatically after an eligible first launch or version
+change, and it is also available from the **What's New** entry in Settings when
+that capability is enabled.
+
+Release notes are ordered newest first. Each page combines a release-specific
+hero image, its exact app version, and a short account of the user-visible
+changes.
+
+<ManualScreenshot
+  caseId="whats-new/latest"
+  alt="Lotti What's New modal for version 0.9.1049 with a Project Waddle mission-control banner and release notes"
+  caption="The latest unseen release carries a NEW badge. This fixture explains the Daily OS and task-workspace improvements behind Project Waddle's orbital launch."
+/>
+
+## Read the current release
+
+The version badge identifies the release whose notes are on screen. **NEW**
+marks the newest release in the current set; it does not mean every item on the
+page is unfinished or experimental.
+
+The body scrolls independently when the release is longer than the available
+height. Links use the normal Lotti link handler, and images are loaded ahead of
+page changes when available so moving between releases stays smooth.
+
+## Move through release history
+
+<ManualScreenshot
+  caseId="whats-new/past-release"
+  alt="Lotti What's New modal for version 0.9.1048 with penguin sardine-market cover art and older release navigation"
+  caption="Use the footer chevrons or position markers to move between releases. The older Project Waddle note covers time comparison and dashboard-ready sardine telemetry."
+/>
+
+Use the footer controls to navigate:
+
+- the right chevron opens the next older release;
+- the left chevron returns to a newer release;
+- the position markers show where the current page sits in the loaded set;
+- **Skip** closes a multi-release set before the last page and marks the whole
+  loaded set as seen; and
+- **Done** appears on the oldest page and also marks the whole set as seen.
+
+Closing the modal by dragging it away or dismissing the surrounding barrier is
+more conservative: Lotti marks only the releases you actually reached, through
+the furthest page viewed. Releases you did not reach can therefore appear the
+next time What's New opens.
+
+## Revisit notes you already dismissed
+
+When no unseen releases remain, opening What's New shows a **You're all caught
+up** state. Choose **View past releases** to clear the local seen markers and
+browse the available release set again. This changes only the local release-note
+history; it does not alter the installed app version or download another build.
+
+What's New never shows notes for a release newer than the installed Lotti
+version. If release content cannot be loaded, the app falls back to an empty
+state rather than presenting notes for the wrong build.
+
+For the exact build number, platform, local entry totals, and task counts, see
+[About Lotti](./advanced-settings.mdx#verify-the-build-and-local-totals).

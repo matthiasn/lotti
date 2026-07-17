@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
-import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -24,6 +24,12 @@ class MetricsCard extends StatelessWidget {
     final focus = m == 0 ? '${h}h' : '${h}h ${m}m';
     final energyDelta = metrics.energyDeltaVsWeek;
     final deltaSign = energyDelta >= 0 ? '⬆' : '⬇';
+    final textScaler = MediaQuery.textScalerOf(context);
+    final metricTileHeight =
+        textScaler.scale(tokens.typography.lineHeight.overline) * 2 +
+        textScaler.scale(tokens.typography.lineHeight.heading3) +
+        textScaler.scale(tokens.typography.lineHeight.caption) * 2 +
+        tokens.spacing.step1;
     return Container(
       padding: EdgeInsets.all(tokens.spacing.step5),
       decoration: BoxDecoration(
@@ -32,11 +38,11 @@ class MetricsCard extends StatelessWidget {
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
       child: GridView(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 2.4,
+          mainAxisSpacing: tokens.spacing.step5,
+          crossAxisSpacing: tokens.spacing.step5,
+          mainAxisExtent: metricTileHeight,
         ),
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
@@ -273,49 +279,45 @@ class ShutdownFooter extends StatelessWidget {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
     final messages = context.messages;
-    return DesignSystemGlassStrip(
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step6,
-          vertical: tokens.spacing.step4,
+    return DesignSystemModalActionBar(
+      glass: true,
+      layout: DesignSystemModalActionBarLayout.compactPrimary,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step6,
+        vertical: tokens.spacing.step4,
+      ),
+      secondary: [
+        TextButton.icon(
+          icon: const Icon(Icons.arrow_back_rounded, size: 16),
+          label: Text(messages.dailyOsNextDayBack),
+          style: TextButton.styleFrom(
+            foregroundColor: tokens.colors.text.mediumEmphasis,
+          ),
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
-        child: Row(
-          children: [
-            TextButton.icon(
-              icon: const Icon(Icons.arrow_back_rounded, size: 16),
-              label: Text(messages.dailyOsNextDayBack),
-              style: TextButton.styleFrom(
-                foregroundColor: tokens.colors.text.mediumEmphasis,
-              ),
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
-            const Spacer(),
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: tokens.colors.text.mediumEmphasis,
-              ),
-              onPressed: () => Navigator.of(context).maybePop(),
-              child: Text(messages.dailyOsNextShutdownSaveAndClose),
-            ),
-            SizedBox(width: tokens.spacing.step3),
-            FilledButton.icon(
-              icon: const Icon(Icons.check_rounded, size: 14),
-              label: Text(messages.dailyOsNextShutdownCloseDay),
-              style: FilledButton.styleFrom(
-                backgroundColor: teal,
-                foregroundColor: tokens.colors.text.onInteractiveAlert,
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step5,
-                  vertical: tokens.spacing.step3,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(tokens.radii.m),
-                ),
-              ),
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
-          ],
+        TextButton(
+          style: TextButton.styleFrom(
+            foregroundColor: tokens.colors.text.mediumEmphasis,
+          ),
+          onPressed: () => Navigator.of(context).maybePop(),
+          child: Text(messages.dailyOsNextShutdownSaveAndClose),
         ),
+      ],
+      primary: FilledButton.icon(
+        icon: const Icon(Icons.check_rounded, size: 14),
+        label: Text(messages.dailyOsNextShutdownCloseDay),
+        style: FilledButton.styleFrom(
+          backgroundColor: teal,
+          foregroundColor: tokens.colors.text.onInteractiveAlert,
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step5,
+            vertical: tokens.spacing.step3,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+          ),
+        ),
+        onPressed: () => Navigator.of(context).maybePop(),
       ),
     );
   }

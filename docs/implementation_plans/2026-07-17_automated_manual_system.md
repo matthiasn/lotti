@@ -201,6 +201,7 @@ lotti/
 │   │   └── ro/docusaurus-plugin-content-docs/current/
 │   ├── metadata/
 │   │   ├── features.json
+│   │   ├── surface-inventory.json
 │   │   └── releases.json
 │   ├── src/
 │   │   ├── components/ManualScreenshot/
@@ -609,6 +610,11 @@ Secrets must not be exposed to pull requests from forks.
 - Every sidebar item resolves to a page.
 - Every feature in `metadata/features.json` has at least one owned page or an
   explicit `planned` status.
+- Every Beamer path pattern and Settings V2 leaf has exactly one entry in
+  `metadata/surface-inventory.json`; source anchors fail when the owning UI is
+  renamed or removed.
+- The release-completeness gate fails until every inventoried route page,
+  settings page, and major workflow is `verified`.
 - Every automated screenshot reference has meaningful alt text.
 - Every referenced case has the complete four-variant matrix.
 - Manifest version and commit match the requested app ref.
@@ -702,6 +708,14 @@ Exit criteria:
 - Run a page-by-page product review against the release candidate.
 - Remove or redirect the legacy monolithic manual after the new manual is the
   canonical destination.
+
+Exit criteria:
+
+- route and Settings-leaf discovery report no un-inventoried surfaces;
+- `npm --prefix docs-site run coverage:complete` succeeds with every inventory
+  entry marked `verified`;
+- each verified surface maps to a verified feature page backed by registered
+  production screenshots.
 
 ### Phase 5 — Multilingual manual, after English completion
 
@@ -827,8 +841,8 @@ The MVP is complete when:
 - the goal-oriented navigation, breadcrumbs, local search, theme toggle, and
   version UI work;
 - every reachable app page, dialog, and major workflow appears in the English
-  coverage inventory and is documented by a verified page or documented parent
-  guide;
+  coverage inventory and maps to a verified English page backed by registered
+  production screenshots;
 - `docs/MANUAL.md` has been split into useful, navigable pages without
   pretending its empty sections are complete;
 - every app image uses `ManualScreenshot`, switches theme automatically, and

@@ -32,6 +32,11 @@ flowchart LR
 
 The generated token file is the spine. Components and feature UI are supposed to consume typed tokens, not freelance their own palette and spacing system on a Friday afternoon.
 
+Typography `letterSpacing` values in `tokens.json` are stored as Flutter
+logical-pixel values. Percentage tracking from Figma must therefore be
+normalized against the font size before import; for example, 8% tracking on a
+12px overline is stored as `0.96`, not `8`.
+
 ## Directory Shape
 
 ```text
@@ -344,6 +349,10 @@ exercised through the DS widgetbook. The current contract is:
   `DesignSystemBottomNavigationOverlayHeight`
 - `DesignSystemBottomNavigationFabPadding` is the default wrapper for
   screen-level FABs that need to stay visually above that shell
+- `DesignSystemFiveSlotNavBar.contentHeight(context)` owns the slot-row height
+  contract. It scales caption line height with `MediaQuery.textScalerOf` and
+  rounds fractional line boxes up to the logical pixel Flutter renders, so
+  accessibility scales such as 1.3× cannot overflow the fixed row
 - feature pages should use that wrapper rather than inventing local bottom
   offsets
 

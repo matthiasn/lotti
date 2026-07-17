@@ -28,7 +28,15 @@ const double kSettingsV2HeaderHeight = SettingsV2Constants.headerHeight;
 /// snapshot are wired in by [SettingsTreeScopeHost] and
 /// [SettingsTreeUrlSync].
 class SettingsV2Page extends ConsumerWidget {
-  const SettingsV2Page({super.key});
+  const SettingsV2Page({this.beamToReplacementNamed, super.key});
+
+  /// Test-only override for the layout-neutral URL-sync bridge.
+  ///
+  /// Production leaves this null so [SettingsTreeUrlSync] uses Beamer. Widget
+  /// tests and screenshot harnesses can provide a no-op or spy while still
+  /// rendering this complete production shell.
+  @visibleForTesting
+  final BeamToReplacementNamed? beamToReplacementNamed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,7 +58,12 @@ class SettingsV2Page extends ConsumerWidget {
             // renders, so placement inside the Column is purely a
             // matter of where in the widget tree the `ref.listen`
             // hook needs to live.
-            const SettingsTreeUrlSync(),
+            if (beamToReplacementNamed == null)
+              const SettingsTreeUrlSync()
+            else
+              SettingsTreeUrlSync(
+                beamToReplacementNamed: beamToReplacementNamed!,
+              ),
             _SettingsV2Header(dividerColor: dividerColor, tokens: tokens),
             Expanded(
               child: Row(

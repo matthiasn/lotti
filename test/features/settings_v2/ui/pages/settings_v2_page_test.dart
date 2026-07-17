@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_width_controller.dart';
 import 'package:lotti/features/settings_v2/ui/detail/settings_detail_pane.dart';
 import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
@@ -27,6 +28,7 @@ class _FakeNavService implements NavService {
 Future<void> _pumpPage(
   WidgetTester tester, {
   Size size = const Size(1440, 900),
+  SettingsV2Page page = const SettingsV2Page(),
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -51,7 +53,7 @@ Future<void> _pumpPage(
 
   await tester.pumpWidget(
     makeTestableWidgetNoScroll(
-      const SettingsV2Page(),
+      page,
       overrides: [journalDbProvider.overrideWithValue(mocks.journalDb)],
     ),
   );
@@ -107,6 +109,28 @@ void main() {
     ) async {
       await _pumpPage(tester);
       expect(find.byType(SettingsTreeResizeHandle), findsOneWidget);
+    });
+
+    testWidgets('forwards tree navigation through the injected URL bridge', (
+      tester,
+    ) async {
+      final locations = <String>[];
+      await _pumpPage(
+        tester,
+        page: SettingsV2Page(
+          beamToReplacementNamed: (_, uri) => locations.add(uri),
+        ),
+      );
+      await tester.pump();
+
+      final element = tester.element(find.byType(SettingsV2Page));
+      final container = ProviderScope.containerOf(element, listen: false);
+      container
+          .read(settingsTreePathProvider.notifier)
+          .onNodeTap('theming', depth: 0, hasChildren: false);
+      await tester.pump();
+
+      expect(locations, ['/settings/theming']);
     });
   });
 

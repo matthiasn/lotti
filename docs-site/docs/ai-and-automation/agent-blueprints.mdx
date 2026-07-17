@@ -1,0 +1,119 @@
+---
+title: Design agent templates and souls
+description: Define reusable agent responsibilities, separate personality from instructions, and improve both through versioned one-on-one reviews.
+---
+
+# Design agent templates and souls
+
+An **agent template** defines a reusable responsibility: the kind of agent,
+its inference profile, operating directives, report format, and optional
+personality. A **soul** holds the reusable voice, tone boundaries, coaching
+style, and anti-sycophancy policy. Keeping those concepts separate lets one
+personality improve consistently across several templates without copying
+instructions between them.
+
+## Review the template catalog
+
+Open **Settings → Agents → Agent Templates**. The catalog shows the template
+kind, model identity, active version, and whether a review needs attention.
+
+<ManualScreenshot
+  caseId="agents/templates"
+  alt="Lotti agent templates for orbital habitat safety, Project Waddle day planning, sardine supply monitoring, and fish diplomacy coaching"
+  caption="Each Project Waddle template has a narrow responsibility and visible version instead of one all-purpose agent with an unreviewable prompt."
+/>
+
+The built-in kinds serve different scopes:
+
+- **Task Agent** works against one task and its linked evidence.
+- **Day Agent** plans and revises a day.
+- **Project Agent** follows a project over time.
+- **Event Agent** follows an event workspace.
+- **Template Improver** supports the versioned one-on-one review process.
+
+## Edit a template
+
+Select a template to edit its current configuration. Choose a default
+inference profile with the tools and modalities the responsibility requires,
+then optionally assign a soul.
+
+<ManualScreenshot
+  caseId="agents/template-editor"
+  alt="Orbital Habitat Sentinel template editor using Project Waddle Command and Admiral Pebble with habitat safety and report directives"
+  caption="The sentinel's operational directive describes what to inspect; Admiral Pebble contributes the communication and challenge style."
+/>
+
+Use the two directive fields deliberately:
+
+- **General Directive** defines the responsibility, boundaries, and decision
+  rules.
+- **Report Directive** defines what a useful saved report must contain.
+
+Saving an edited template creates a new version. Existing history remains
+available for audit and rollback; avoid hiding unrelated responsibilities in
+one long directive just to reduce the number of templates.
+
+## Run a template one-on-one
+
+The template **1-on-1** page frames proposed changes against real wake
+activity, feedback, performance, and previous sessions. A pending session is a
+proposal, not an automatic rewrite.
+
+<ManualScreenshot
+  caseId="agents/template-review"
+  alt="Orbital Habitat Sentinel one-on-one showing a proposal about surfacing the launch decision and recent performance metrics"
+  caption="The example proposal responds to a concrete failure: the safety finding was correct, but the go/no-go decision was buried under fish trivia."
+/>
+
+Start the conversation, inspect the evidence, and approve only the changes
+that improve the responsibility. The approved result becomes another
+versioned template record.
+
+## Keep personality reusable with souls
+
+Open **Souls** to see the personalities that templates can share. A soul is
+not another task prompt; it controls how an agent communicates, coaches, and
+pushes back.
+
+<ManualScreenshot
+  caseId="agents/souls"
+  alt="Lotti soul catalog containing Admiral Pebble, Dr. Flipper, and Captain Sardina"
+  caption="Project Waddle separates a calm flight director, a curious scientist, and a practical cargo coordinator from the jobs that use them."
+/>
+
+The soul editor keeps four concerns explicit:
+
+<ManualScreenshot
+  caseId="agents/soul-editor"
+  alt="Admiral Pebble soul editor with voice, tone bounds, coaching style, and anti-sycophancy policy"
+  caption="Admiral Pebble can stay warm and decisive while still challenging optimistic launch assumptions with evidence."
+/>
+
+- **Voice Directive** describes the recognizable voice and communication
+  priorities.
+- **Tone Bounds** state what the voice must avoid.
+- **Coaching Style** describes how it helps someone reach a decision.
+- **Anti-Sycophancy Policy** explains when and how it should disagree.
+
+Use concrete behavioral boundaries. “Be helpful” is hard to review; “challenge
+optimistic launch assumptions and cite the observation that changed your
+conclusion” can be checked against actual output.
+
+## Evolve a shared soul carefully
+
+A soul **1-on-1** draws feedback from every template using that personality.
+That makes the change powerful: approving it can improve several agents, but a
+poor change can also affect all of them.
+
+<ManualScreenshot
+  caseId="agents/soul-review"
+  alt="Admiral Pebble soul one-on-one with a proposal, one sharing template, and completed session history"
+  caption="The sharing count and session history make the blast radius visible before personality changes are approved."
+/>
+
+Read the sharing count, proposed feedback summary, and previous recap before
+starting a personality review. If feedback applies only to one responsibility,
+change that template instead of teaching the shared soul a task-specific rule.
+
+Return to [Run and monitor agents](./agents.mdx) to inspect the instances and
+wake cycles produced from these blueprints.

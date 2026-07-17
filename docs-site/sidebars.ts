@@ -9,6 +9,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'getting-started/mental-model',
+        'getting-started/onboarding',
         'getting-started/first-task',
       ],
     },
@@ -27,6 +28,10 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'organize-and-reflect/tasks',
+        'organize-and-reflect/projects',
+        'organize-and-reflect/events',
+        'organize-and-reflect/journal',
+        'organize-and-reflect/time-analysis',
         'organize-and-reflect/categories',
         'organize-and-reflect/labels',
         'organize-and-reflect/habits-and-measurables',
@@ -36,7 +41,14 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'AI & automation',
-      items: ['ai-and-automation/provider-setup'],
+      items: [
+        'ai-and-automation/provider-setup',
+        'ai-and-automation/models-and-profiles',
+        'ai-and-automation/agents',
+        'ai-and-automation/agent-blueprints',
+        'ai-and-automation/skills',
+        'ai-and-automation/usage',
+      ],
     },
     {
       type: 'category',
@@ -46,7 +58,17 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Reference',
-      items: ['reference/settings', 'reference/manual-maintenance'],
+      items: [
+        'reference/settings',
+        'reference/whats-new',
+        'reference/appearance',
+        'reference/recording-style',
+        'reference/speech',
+        'reference/keyboard-shortcuts',
+        'reference/completion-celebrations',
+        'reference/advanced-settings',
+        'reference/manual-maintenance',
+      ],
     },
   ],
 };

@@ -12,6 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from Settings › Onboarding.
 
 ### Changed
+- **Inference profile model labels are readable again.** Capability names use
+  normal caption spacing instead of widely tracked overline text, so labels
+  such as Image Recognition no longer wrap character by character.
+- **Daily OS shutdown now stays usable on narrow phones.** Its actions stack
+  responsively, and wrapped metric labels keep enough height at both standard
+  and larger accessibility text sizes instead of overflowing their cards.
+- **Mobile navigation remains stable at fractional accessibility text sizes.**
+  Bottom-bar labels now reserve the same rounded line height Flutter renders,
+  avoiding tiny overflows at scales such as 1.3×.
+- **Time Analysis now stays usable in narrow windows.** Period shortcuts wrap
+  below the navigator, headline cards stack in reading order, and chart controls
+  move below their heading instead of overflowing or clipping.
 - **Completed Daily OS tasks keep their cover thumbnails.** Finished agenda
   rows now retain the same task artwork as open and in-progress work, making a
   busy day easier to scan without losing task identity after completion.

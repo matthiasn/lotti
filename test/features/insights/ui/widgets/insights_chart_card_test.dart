@@ -12,6 +12,7 @@ import '../../../categories/test_utils.dart';
 
 void main() {
   const desktopMq = MediaQueryData(size: Size(1280, 900));
+  const mobileMq = MediaQueryData(size: Size(402, 874));
 
   final resolver = InsightsCategoryResolver(
     categoriesById: {
@@ -55,10 +56,11 @@ void main() {
     WidgetTester tester, {
     InsightsChartData? data,
     bool comparing = false,
+    MediaQueryData mediaQueryData = desktopMq,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
-        mediaQueryData: desktopMq,
+        mediaQueryData: mediaQueryData,
         InsightsChartCard(
           chartData: data ?? chartData(),
           resolver: resolver,
@@ -102,6 +104,27 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.byType(BarChart), findsOneWidget);
+  });
+
+  testWidgets('mobile stacks the mode toggle below the chart heading', (
+    tester,
+  ) async {
+    await pumpCard(tester, mediaQueryData: mobileMq);
+
+    final heading = find.text('Time by category');
+    final perDay = toggle('Per day');
+    expect(
+      tester.getTopLeft(perDay).dy,
+      greaterThan(tester.getBottomLeft(heading).dy),
+    );
+    expect(find.byType(BarChart), findsOneWidget);
+
+    await tester.tap(toggle('Running total'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byType(LineChart), findsOneWidget);
+    expect(find.text('Running total over the range'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   group('elapsedBucketCount', () {

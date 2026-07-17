@@ -57,6 +57,61 @@
       }
     },
     {
+      "id": "daily-os/settings",
+      "title": "Daily OS settings",
+      "sourceTest": "test/features/daily_os_next/ui/pages/daily_os_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "daily_os_settings_mobile_light.png",
+        "mobile-dark": "daily_os_settings_mobile_dark.png",
+        "desktop-light": "daily_os_settings_desktop_light.png",
+        "desktop-dark": "daily_os_settings_desktop_dark.png"
+      }
+    },
+    {
+      "id": "daily-os/refine",
+      "title": "Daily OS plan refinement",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "daily_os_refine_mobile_light.png",
+        "mobile-dark": "daily_os_refine_mobile_dark.png",
+        "desktop-light": "daily_os_refine_desktop_light.png",
+        "desktop-dark": "daily_os_refine_desktop_dark.png"
+      }
+    },
+    {
+      "id": "daily-os/commit",
+      "title": "Daily OS plan commitment",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "daily_os_commit_mobile_light.png",
+        "mobile-dark": "daily_os_commit_mobile_dark.png",
+        "desktop-light": "daily_os_commit_desktop_light.png",
+        "desktop-dark": "daily_os_commit_desktop_dark.png"
+      }
+    },
+    {
+      "id": "daily-os/block-editor",
+      "title": "Daily OS block editor",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "daily_os_block_editor_mobile_light.png",
+        "mobile-dark": "daily_os_block_editor_mobile_dark.png",
+        "desktop-light": "daily_os_block_editor_desktop_light.png",
+        "desktop-dark": "daily_os_block_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "daily-os/shutdown",
+      "title": "Daily OS end-of-day shutdown",
+      "sourceTest": "test/features/daily_os_next/ui/pages/day_page_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "daily_os_shutdown_mobile_light.png",
+        "mobile-dark": "daily_os_shutdown_mobile_dark.png",
+        "desktop-light": "daily_os_shutdown_desktop_light.png",
+        "desktop-dark": "daily_os_shutdown_desktop_dark.png"
+      }
+    },
+    {
       "id": "settings/home",
       "title": "Settings home",
       "sourceTest": "test/features/settings/ui/settings_home_screenshots_test.dart",
@@ -285,6 +340,699 @@
         "mobile-dark": "recording_active_mobile_dark.png",
         "desktop-light": "recording_active_desktop_light.png",
         "desktop-dark": "recording_active_desktop_dark.png"
+      }
+    },
+    {
+      "id": "recordings/transcripts",
+      "title": "Saved transcription history",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "recording_transcripts_mobile_light.png",
+        "mobile-dark": "recording_transcripts_mobile_dark.png",
+        "desktop-light": "recording_transcripts_desktop_light.png",
+        "desktop-dark": "recording_transcripts_desktop_dark.png"
+      }
+    },
+    {
+      "id": "recordings/transcript-expanded",
+      "title": "Expanded Project Waddle transcript",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "recording_transcript_expanded_mobile_light.png",
+        "mobile-dark": "recording_transcript_expanded_mobile_dark.png",
+        "desktop-light": "recording_transcript_expanded_desktop_light.png",
+        "desktop-dark": "recording_transcript_expanded_desktop_dark.png"
+      }
+    },
+    {
+      "id": "theming/preferences",
+      "title": "Appearance preferences",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "theming_preferences_mobile_light.png",
+        "mobile-dark": "theming_preferences_mobile_dark.png",
+        "desktop-light": "theming_preferences_desktop_light.png",
+        "desktop-dark": "theming_preferences_desktop_dark.png"
+      }
+    },
+    {
+      "id": "theming/picker",
+      "title": "Theme picker",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "theming_picker_mobile_light.png",
+        "mobile-dark": "theming_picker_mobile_dark.png",
+        "desktop-light": "theming_picker_desktop_light.png",
+        "desktop-dark": "theming_picker_desktop_dark.png"
+      }
+    },
+    {
+      "id": "recording-style/preview",
+      "title": "Recording style preview",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "recording_style_preview_mobile_light.png",
+        "mobile-dark": "recording_style_preview_mobile_dark.png",
+        "desktop-light": "recording_style_preview_desktop_light.png",
+        "desktop-dark": "recording_style_preview_desktop_dark.png"
+      }
+    },
+    {
+      "id": "speech/settings",
+      "title": "Speech voice, model, and reading speed",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "speech_voice_mobile_light.png",
+        "mobile-dark": "speech_voice_mobile_dark.png",
+        "desktop-light": "speech_voice_desktop_light.png",
+        "desktop-dark": "speech_voice_desktop_dark.png"
+      }
+    },
+    {
+      "id": "speech/voice-options",
+      "title": "Alternate speech voice options",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "speech_voice_options_mobile_light.png",
+        "mobile-dark": "speech_voice_options_mobile_dark.png",
+        "desktop-light": "speech_voice_options_desktop_light.png",
+        "desktop-dark": "speech_voice_options_desktop_dark.png"
+      }
+    },
+    {
+      "id": "keyboard-shortcuts/catalog",
+      "title": "Keyboard shortcut catalog",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "keyboard_shortcuts_catalog_mobile_light.png",
+        "mobile-dark": "keyboard_shortcuts_catalog_mobile_dark.png",
+        "desktop-light": "keyboard_shortcuts_catalog_desktop_light.png",
+        "desktop-dark": "keyboard_shortcuts_catalog_desktop_dark.png"
+      }
+    },
+    {
+      "id": "keyboard-shortcuts/search",
+      "title": "Keyboard shortcut search",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "keyboard_shortcuts_search_mobile_light.png",
+        "mobile-dark": "keyboard_shortcuts_search_mobile_dark.png",
+        "desktop-light": "keyboard_shortcuts_search_desktop_light.png",
+        "desktop-dark": "keyboard_shortcuts_search_desktop_dark.png"
+      }
+    },
+    {
+      "id": "celebrations/controls",
+      "title": "Completion celebration controls",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "celebrations_controls_mobile_light.png",
+        "mobile-dark": "celebrations_controls_mobile_dark.png",
+        "desktop-light": "celebrations_controls_desktop_light.png",
+        "desktop-dark": "celebrations_controls_desktop_dark.png"
+      }
+    },
+    {
+      "id": "celebrations/styles",
+      "title": "Completion celebration styles",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "celebrations_styles_mobile_light.png",
+        "mobile-dark": "celebrations_styles_mobile_dark.png",
+        "desktop-light": "celebrations_styles_desktop_light.png",
+        "desktop-dark": "celebrations_styles_desktop_dark.png"
+      }
+    },
+    {
+      "id": "celebrations/playground",
+      "title": "Completion celebration playground",
+      "sourceTest": "test/features/settings/ui/settings_preferences_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "celebrations_playground_mobile_light.png",
+        "mobile-dark": "celebrations_playground_mobile_dark.png",
+        "desktop-light": "celebrations_playground_desktop_light.png",
+        "desktop-dark": "celebrations_playground_desktop_dark.png"
+      }
+    },
+    {
+      "id": "projects/list",
+      "title": "Projects list",
+      "sourceTest": "test/features/projects/ui/pages/projects_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "projects_list_mobile_light.png",
+        "mobile-dark": "projects_list_mobile_dark.png",
+        "desktop-light": "projects_list_desktop_light.png",
+        "desktop-dark": "projects_list_desktop_dark.png"
+      }
+    },
+    {
+      "id": "projects/detail",
+      "title": "Project detail",
+      "sourceTest": "test/features/projects/ui/pages/projects_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "projects_detail_mobile_light.png",
+        "mobile-dark": "projects_detail_mobile_dark.png",
+        "desktop-light": "projects_detail_desktop_light.png",
+        "desktop-dark": "projects_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "projects/tasks",
+      "title": "Project tasks",
+      "sourceTest": "test/features/projects/ui/pages/projects_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "projects_tasks_mobile_light.png",
+        "mobile-dark": "projects_tasks_mobile_dark.png",
+        "desktop-light": "projects_tasks_desktop_light.png",
+        "desktop-dark": "projects_tasks_desktop_dark.png"
+      }
+    },
+    {
+      "id": "projects/filters",
+      "title": "Project filters",
+      "sourceTest": "test/features/projects/ui/pages/projects_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "projects_filters_mobile_light.png",
+        "mobile-dark": "projects_filters_mobile_dark.png",
+        "desktop-light": "projects_filters_desktop_light.png",
+        "desktop-dark": "projects_filters_desktop_dark.png"
+      }
+    },
+    {
+      "id": "projects/create",
+      "title": "Create project",
+      "sourceTest": "test/features/projects/ui/pages/projects_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "projects_create_mobile_light.png",
+        "mobile-dark": "projects_create_mobile_dark.png",
+        "desktop-light": "projects_create_desktop_light.png",
+        "desktop-dark": "projects_create_desktop_dark.png"
+      }
+    },
+    {
+      "id": "events/overview",
+      "title": "Events overview",
+      "sourceTest": "test/features/events/ui/pages/events_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "events_overview_mobile_light.png",
+        "mobile-dark": "events_overview_mobile_dark.png",
+        "desktop-light": "events_overview_desktop_light.png",
+        "desktop-dark": "events_overview_desktop_dark.png"
+      }
+    },
+    {
+      "id": "events/detail",
+      "title": "Event detail",
+      "sourceTest": "test/features/events/ui/pages/events_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "events_detail_mobile_light.png",
+        "mobile-dark": "events_detail_mobile_dark.png",
+        "desktop-light": "events_detail_desktop_light.png",
+        "desktop-dark": "events_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "events/timeline",
+      "title": "Event timeline and tasks",
+      "sourceTest": "test/features/events/ui/pages/events_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "events_timeline_mobile_light.png",
+        "mobile-dark": "events_timeline_mobile_dark.png",
+        "desktop-light": "events_timeline_desktop_light.png",
+        "desktop-dark": "events_timeline_desktop_dark.png"
+      }
+    },
+    {
+      "id": "journal/overview",
+      "title": "Journal overview",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_overview_mobile_light.png",
+        "mobile-dark": "journal_overview_mobile_dark.png",
+        "desktop-light": "journal_overview_desktop_light.png",
+        "desktop-dark": "journal_overview_desktop_dark.png"
+      }
+    },
+    {
+      "id": "journal/filters",
+      "title": "Journal filters",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_filters_mobile_light.png",
+        "mobile-dark": "journal_filters_mobile_dark.png",
+        "desktop-light": "journal_filters_desktop_light.png",
+        "desktop-dark": "journal_filters_desktop_dark.png"
+      }
+    },
+    {
+      "id": "journal/create",
+      "title": "Journal create menu",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_create_mobile_light.png",
+        "mobile-dark": "journal_create_mobile_dark.png",
+        "desktop-light": "journal_create_desktop_light.png",
+        "desktop-dark": "journal_create_desktop_dark.png"
+      }
+    },
+    {
+      "id": "journal/detail",
+      "title": "Journal entry detail",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_detail_mobile_light.png",
+        "mobile-dark": "journal_detail_mobile_dark.png",
+        "desktop-light": "journal_detail_desktop_light.png",
+        "desktop-dark": "journal_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "journal/activity",
+      "title": "Journal linked activity",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_activity_mobile_light.png",
+        "mobile-dark": "journal_activity_mobile_dark.png",
+        "desktop-light": "journal_activity_desktop_light.png",
+        "desktop-dark": "journal_activity_desktop_dark.png"
+      }
+    },
+    {
+      "id": "time-analysis/overview",
+      "title": "Time Analysis overview",
+      "sourceTest": "test/features/insights/ui/time_analysis_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "time_analysis_overview_mobile_light.png",
+        "mobile-dark": "time_analysis_overview_mobile_dark.png",
+        "desktop-light": "time_analysis_overview_desktop_light.png",
+        "desktop-dark": "time_analysis_overview_desktop_dark.png"
+      }
+    },
+    {
+      "id": "time-analysis/compare",
+      "title": "Time Analysis comparison",
+      "sourceTest": "test/features/insights/ui/time_analysis_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "time_analysis_compare_mobile_light.png",
+        "mobile-dark": "time_analysis_compare_mobile_dark.png",
+        "desktop-light": "time_analysis_compare_desktop_light.png",
+        "desktop-dark": "time_analysis_compare_desktop_dark.png"
+      }
+    },
+    {
+      "id": "time-analysis/running-total",
+      "title": "Time Analysis running total",
+      "sourceTest": "test/features/insights/ui/time_analysis_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "time_analysis_running_total_mobile_light.png",
+        "mobile-dark": "time_analysis_running_total_mobile_dark.png",
+        "desktop-light": "time_analysis_running_total_desktop_light.png",
+        "desktop-dark": "time_analysis_running_total_desktop_dark.png"
+      }
+    },
+    {
+      "id": "advanced-settings/hub",
+      "title": "Advanced Settings hub",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_hub_mobile_light.png",
+        "mobile-dark": "advanced_settings_hub_mobile_dark.png",
+        "desktop-light": "advanced_settings_hub_desktop_light.png",
+        "desktop-dark": "advanced_settings_hub_desktop_dark.png"
+      }
+    },
+    {
+      "id": "advanced-settings/flags",
+      "title": "Configuration flags",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_flags_mobile_light.png",
+        "mobile-dark": "advanced_settings_flags_mobile_dark.png",
+        "desktop-light": "advanced_settings_flags_desktop_light.png",
+        "desktop-dark": "advanced_settings_flags_desktop_dark.png"
+      }
+    },
+    {
+      "id": "advanced-settings/logging",
+      "title": "Logging domains",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_logging_mobile_light.png",
+        "mobile-dark": "advanced_settings_logging_mobile_dark.png",
+        "desktop-light": "advanced_settings_logging_desktop_light.png",
+        "desktop-dark": "advanced_settings_logging_desktop_dark.png"
+      }
+    },
+    {
+      "id": "advanced-settings/maintenance",
+      "title": "Maintenance actions",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_maintenance_mobile_light.png",
+        "mobile-dark": "advanced_settings_maintenance_mobile_dark.png",
+        "desktop-light": "advanced_settings_maintenance_desktop_light.png",
+        "desktop-dark": "advanced_settings_maintenance_desktop_dark.png"
+      }
+    },
+    {
+      "id": "advanced-settings/onboarding-metrics",
+      "title": "Onboarding metrics",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_onboarding_metrics_mobile_light.png",
+        "mobile-dark": "advanced_settings_onboarding_metrics_mobile_dark.png",
+        "desktop-light": "advanced_settings_onboarding_metrics_desktop_light.png",
+        "desktop-dark": "advanced_settings_onboarding_metrics_desktop_dark.png"
+      }
+    },
+    {
+      "id": "advanced-settings/about",
+      "title": "About Lotti",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_about_mobile_light.png",
+        "mobile-dark": "advanced_settings_about_mobile_dark.png",
+        "desktop-light": "advanced_settings_about_desktop_light.png",
+        "desktop-dark": "advanced_settings_about_desktop_dark.png"
+      }
+    },
+    {
+      "id": "onboarding/settings",
+      "title": "Onboarding settings",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_settings_mobile_light.png",
+        "mobile-dark": "onboarding_settings_mobile_dark.png",
+        "desktop-light": "onboarding_settings_desktop_light.png",
+        "desktop-dark": "onboarding_settings_desktop_dark.png"
+      }
+    },
+    {
+      "id": "onboarding/welcome",
+      "title": "Onboarding welcome",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_welcome_mobile_light.png",
+        "mobile-dark": "onboarding_welcome_mobile_dark.png",
+        "desktop-light": "onboarding_welcome_desktop_light.png",
+        "desktop-dark": "onboarding_welcome_desktop_dark.png"
+      }
+    },
+    {
+      "id": "onboarding/providers",
+      "title": "Onboarding provider selection",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_providers_mobile_light.png",
+        "mobile-dark": "onboarding_providers_mobile_dark.png",
+        "desktop-light": "onboarding_providers_desktop_light.png",
+        "desktop-dark": "onboarding_providers_desktop_dark.png"
+      }
+    },
+    {
+      "id": "onboarding/first-task",
+      "title": "Onboarding first-task capture",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_first_task_mobile_light.png",
+        "mobile-dark": "onboarding_first_task_mobile_dark.png",
+        "desktop-light": "onboarding_first_task_desktop_light.png",
+        "desktop-dark": "onboarding_first_task_desktop_dark.png"
+      }
+    },
+    {
+      "id": "onboarding/task-created",
+      "title": "Onboarding task created",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_task_created_mobile_light.png",
+        "mobile-dark": "onboarding_task_created_mobile_dark.png",
+        "desktop-light": "onboarding_task_created_desktop_light.png",
+        "desktop-dark": "onboarding_task_created_desktop_dark.png"
+      }
+    },
+    {
+      "id": "whats-new/latest",
+      "title": "Latest What's New release",
+      "sourceTest": "test/features/whats_new/ui/whats_new_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "whats_new_latest_mobile_light.png",
+        "mobile-dark": "whats_new_latest_mobile_dark.png",
+        "desktop-light": "whats_new_latest_desktop_light.png",
+        "desktop-dark": "whats_new_latest_desktop_dark.png"
+      }
+    },
+    {
+      "id": "whats-new/past-release",
+      "title": "Past What's New release",
+      "sourceTest": "test/features/whats_new/ui/whats_new_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "whats_new_past_release_mobile_light.png",
+        "mobile-dark": "whats_new_past_release_mobile_dark.png",
+        "desktop-light": "whats_new_past_release_desktop_light.png",
+        "desktop-dark": "whats_new_past_release_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/providers",
+      "title": "AI providers",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_providers_mobile_light.png",
+        "mobile-dark": "ai_providers_mobile_dark.png",
+        "desktop-light": "ai_providers_desktop_light.png",
+        "desktop-dark": "ai_providers_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/provider-detail",
+      "title": "AI provider detail",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_provider_detail_mobile_light.png",
+        "mobile-dark": "ai_provider_detail_mobile_dark.png",
+        "desktop-light": "ai_provider_detail_desktop_light.png",
+        "desktop-dark": "ai_provider_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/provider-editor",
+      "title": "AI provider editor",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_provider_editor_mobile_light.png",
+        "mobile-dark": "ai_provider_editor_mobile_dark.png",
+        "desktop-light": "ai_provider_editor_desktop_light.png",
+        "desktop-dark": "ai_provider_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/models",
+      "title": "AI models",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_models_mobile_light.png",
+        "mobile-dark": "ai_models_mobile_dark.png",
+        "desktop-light": "ai_models_desktop_light.png",
+        "desktop-dark": "ai_models_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/model-editor",
+      "title": "AI model editor",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_model_editor_mobile_light.png",
+        "mobile-dark": "ai_model_editor_mobile_dark.png",
+        "desktop-light": "ai_model_editor_desktop_light.png",
+        "desktop-dark": "ai_model_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/profiles",
+      "title": "Inference profiles",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_profiles_mobile_light.png",
+        "mobile-dark": "ai_profiles_mobile_dark.png",
+        "desktop-light": "ai_profiles_desktop_light.png",
+        "desktop-dark": "ai_profiles_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/profile-editor",
+      "title": "Inference profile editor",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_profile_editor_mobile_light.png",
+        "mobile-dark": "ai_profile_editor_mobile_dark.png",
+        "desktop-light": "ai_profile_editor_desktop_light.png",
+        "desktop-dark": "ai_profile_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/model-picker",
+      "title": "AI model picker",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_model_picker_mobile_light.png",
+        "mobile-dark": "ai_model_picker_mobile_dark.png",
+        "desktop-light": "ai_model_picker_desktop_light.png",
+        "desktop-dark": "ai_model_picker_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/profile-picker",
+      "title": "Inference profile picker",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_profile_picker_mobile_light.png",
+        "mobile-dark": "ai_profile_picker_mobile_dark.png",
+        "desktop-light": "ai_profile_picker_desktop_light.png",
+        "desktop-dark": "ai_profile_picker_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/legacy-profiles",
+      "title": "Legacy inference profiles",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_legacy_profiles_mobile_light.png",
+        "mobile-dark": "ai_legacy_profiles_mobile_dark.png",
+        "desktop-light": "ai_legacy_profiles_desktop_light.png",
+        "desktop-dark": "ai_legacy_profiles_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/skills",
+      "title": "Contextual AI skills",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_skills_mobile_light.png",
+        "mobile-dark": "ai_skills_mobile_dark.png",
+        "desktop-light": "ai_skills_desktop_light.png",
+        "desktop-dark": "ai_skills_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/usage",
+      "title": "AI usage and impact",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_usage_mobile_light.png",
+        "mobile-dark": "ai_usage_mobile_dark.png",
+        "desktop-light": "ai_usage_desktop_light.png",
+        "desktop-dark": "ai_usage_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/stats",
+      "title": "Agent statistics",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_stats_mobile_light.png",
+        "mobile-dark": "agents_stats_mobile_dark.png",
+        "desktop-light": "agents_stats_desktop_light.png",
+        "desktop-dark": "agents_stats_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/templates",
+      "title": "Agent templates",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_templates_mobile_light.png",
+        "mobile-dark": "agents_templates_mobile_dark.png",
+        "desktop-light": "agents_templates_desktop_light.png",
+        "desktop-dark": "agents_templates_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/instances",
+      "title": "Agent instances",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_instances_mobile_light.png",
+        "mobile-dark": "agents_instances_mobile_dark.png",
+        "desktop-light": "agents_instances_desktop_light.png",
+        "desktop-dark": "agents_instances_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/souls",
+      "title": "Agent souls",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_souls_mobile_light.png",
+        "mobile-dark": "agents_souls_mobile_dark.png",
+        "desktop-light": "agents_souls_desktop_light.png",
+        "desktop-dark": "agents_souls_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/pending-wakes",
+      "title": "Agent wake cycles",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_pending_wakes_mobile_light.png",
+        "mobile-dark": "agents_pending_wakes_mobile_dark.png",
+        "desktop-light": "agents_pending_wakes_desktop_light.png",
+        "desktop-dark": "agents_pending_wakes_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/template-editor",
+      "title": "Agent template editor",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_template_editor_mobile_light.png",
+        "mobile-dark": "agents_template_editor_mobile_dark.png",
+        "desktop-light": "agents_template_editor_desktop_light.png",
+        "desktop-dark": "agents_template_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/template-review",
+      "title": "Agent template evolution review",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_template_review_mobile_light.png",
+        "mobile-dark": "agents_template_review_mobile_dark.png",
+        "desktop-light": "agents_template_review_desktop_light.png",
+        "desktop-dark": "agents_template_review_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/soul-editor",
+      "title": "Agent soul editor",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_soul_editor_mobile_light.png",
+        "mobile-dark": "agents_soul_editor_mobile_dark.png",
+        "desktop-light": "agents_soul_editor_desktop_light.png",
+        "desktop-dark": "agents_soul_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/soul-review",
+      "title": "Agent soul evolution review",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_soul_review_mobile_light.png",
+        "mobile-dark": "agents_soul_review_mobile_dark.png",
+        "desktop-light": "agents_soul_review_desktop_light.png",
+        "desktop-dark": "agents_soul_review_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/instance-detail",
+      "title": "Agent instance detail",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_instance_detail_mobile_light.png",
+        "mobile-dark": "agents_instance_detail_mobile_dark.png",
+        "desktop-light": "agents_instance_detail_desktop_light.png",
+        "desktop-dark": "agents_instance_detail_desktop_dark.png"
       }
     }
   ]

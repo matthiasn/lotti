@@ -5,13 +5,18 @@
       "id": "daily-os",
       "title": "Daily OS",
       "page": "plan-and-capture/daily-os",
-      "status": "migrated",
+      "status": "verified",
       "screenshotCases": [
+        "daily-os/settings",
         "daily-os/capture-review",
         "daily-os/reconcile",
         "daily-os/agenda",
+        "daily-os/refine",
+        "daily-os/commit",
         "daily-os/timeline",
-        "daily-os/arrange"
+        "daily-os/arrange",
+        "daily-os/block-editor",
+        "daily-os/shutdown"
       ]
     },
     {
@@ -23,6 +28,54 @@
         "tasks/workspace",
         "tasks/detail",
         "tasks/filters"
+      ]
+    },
+    {
+      "id": "projects",
+      "title": "Projects",
+      "page": "organize-and-reflect/projects",
+      "status": "verified",
+      "screenshotCases": [
+        "projects/list",
+        "projects/detail",
+        "projects/tasks",
+        "projects/filters",
+        "projects/create"
+      ]
+    },
+    {
+      "id": "events",
+      "title": "Events",
+      "page": "organize-and-reflect/events",
+      "status": "verified",
+      "screenshotCases": [
+        "events/overview",
+        "events/detail",
+        "events/timeline"
+      ]
+    },
+    {
+      "id": "journal",
+      "title": "Journal",
+      "page": "organize-and-reflect/journal",
+      "status": "verified",
+      "screenshotCases": [
+        "journal/overview",
+        "journal/filters",
+        "journal/create",
+        "journal/detail",
+        "journal/activity"
+      ]
+    },
+    {
+      "id": "time-analysis",
+      "title": "Time Analysis",
+      "page": "organize-and-reflect/time-analysis",
+      "status": "verified",
+      "screenshotCases": [
+        "time-analysis/overview",
+        "time-analysis/running-total",
+        "time-analysis/compare"
       ]
     },
     {
@@ -86,8 +139,45 @@
       "id": "ai-provider-setup",
       "title": "AI provider setup",
       "page": "ai-and-automation/provider-setup",
-      "status": "migrated",
-      "screenshotCases": []
+      "status": "verified",
+      "screenshotCases": [
+        "ai/providers",
+        "ai/provider-detail",
+        "ai/provider-editor"
+      ]
+    },
+    {
+      "id": "ai-models-profiles",
+      "title": "AI models and inference profiles",
+      "page": "ai-and-automation/models-and-profiles",
+      "status": "verified",
+      "screenshotCases": [
+        "ai/models",
+        "ai/model-editor",
+        "ai/profiles",
+        "ai/profile-editor",
+        "ai/model-picker",
+        "ai/profile-picker",
+        "ai/legacy-profiles"
+      ]
+    },
+    {
+      "id": "ai-skills",
+      "title": "AI skills",
+      "page": "ai-and-automation/skills",
+      "status": "verified",
+      "screenshotCases": [
+        "ai/skills"
+      ]
+    },
+    {
+      "id": "ai-usage",
+      "title": "AI usage and impact",
+      "page": "ai-and-automation/usage",
+      "status": "verified",
+      "screenshotCases": [
+        "ai/usage"
+      ]
     },
     {
       "id": "recordings",
@@ -95,7 +185,122 @@
       "page": "plan-and-capture/recordings",
       "status": "verified",
       "screenshotCases": [
-        "recordings/active"
+        "recordings/active",
+        "recordings/transcripts",
+        "recordings/transcript-expanded"
+      ]
+    },
+    {
+      "id": "appearance",
+      "title": "Appearance",
+      "page": "reference/appearance",
+      "status": "verified",
+      "screenshotCases": [
+        "theming/preferences",
+        "theming/picker"
+      ]
+    },
+    {
+      "id": "recording-style",
+      "title": "Recording style",
+      "page": "reference/recording-style",
+      "status": "verified",
+      "screenshotCases": [
+        "recording-style/preview"
+      ]
+    },
+    {
+      "id": "speech",
+      "title": "Speech and reading aloud",
+      "page": "reference/speech",
+      "status": "verified",
+      "screenshotCases": [
+        "speech/settings",
+        "speech/voice-options"
+      ]
+    },
+    {
+      "id": "keyboard-shortcuts",
+      "title": "Keyboard shortcuts",
+      "page": "reference/keyboard-shortcuts",
+      "status": "verified",
+      "screenshotCases": [
+        "keyboard-shortcuts/catalog",
+        "keyboard-shortcuts/search"
+      ]
+    },
+    {
+      "id": "completion-celebrations",
+      "title": "Completion celebrations",
+      "page": "reference/completion-celebrations",
+      "status": "verified",
+      "screenshotCases": [
+        "celebrations/controls",
+        "celebrations/styles",
+        "celebrations/playground"
+      ]
+    },
+    {
+      "id": "advanced-settings",
+      "title": "Advanced Settings",
+      "page": "reference/advanced-settings",
+      "status": "verified",
+      "screenshotCases": [
+        "advanced-settings/hub",
+        "advanced-settings/flags",
+        "advanced-settings/logging",
+        "advanced-settings/maintenance",
+        "advanced-settings/onboarding-metrics",
+        "advanced-settings/about"
+      ]
+    },
+    {
+      "id": "onboarding",
+      "title": "Onboarding",
+      "page": "getting-started/onboarding",
+      "status": "verified",
+      "screenshotCases": [
+        "onboarding/settings",
+        "onboarding/welcome",
+        "onboarding/providers",
+        "onboarding/first-task",
+        "onboarding/task-created"
+      ]
+    },
+    {
+      "id": "whats-new",
+      "title": "What's New",
+      "page": "reference/whats-new",
+      "status": "verified",
+      "screenshotCases": [
+        "whats-new/latest",
+        "whats-new/past-release"
+      ]
+    },
+    {
+      "id": "agent-operations",
+      "title": "Agent operations",
+      "page": "ai-and-automation/agents",
+      "status": "verified",
+      "screenshotCases": [
+        "agents/stats",
+        "agents/instances",
+        "agents/instance-detail",
+        "agents/pending-wakes"
+      ]
+    },
+    {
+      "id": "agent-blueprints",
+      "title": "Agent templates and souls",
+      "page": "ai-and-automation/agent-blueprints",
+      "status": "verified",
+      "screenshotCases": [
+        "agents/templates",
+        "agents/template-editor",
+        "agents/template-review",
+        "agents/souls",
+        "agents/soul-editor",
+        "agents/soul-review"
       ]
     },
     {

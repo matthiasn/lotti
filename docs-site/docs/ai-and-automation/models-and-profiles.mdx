@@ -1,0 +1,123 @@
+---
+title: Route work with models and profiles
+description: Describe model capabilities once, then use inference profiles to route thinking, vision, audio, and image generation.
+---
+
+# Route work with models and profiles
+
+A provider tells Lotti where to connect. A model records one provider model ID
+and its capabilities. An inference profile then assigns those models to the
+jobs Lotti understands. This keeps “which model handles audio?” out of every
+individual task and automation rule.
+
+## Review saved models
+
+Open **Settings → AI Settings → Models**. The list groups models by provider
+and exposes capability filters for text, vision, audio, and reasoning.
+
+<ManualScreenshot
+  caseId="ai/models"
+  alt="Lotti AI model list with Project Waddle text, reasoning, vision, transcription, and image-generation models"
+  caption="The Project Waddle workspace mixes cloud and local models while keeping every model's capabilities explicit."
+/>
+
+The **Concurrent agent wakes** control at the top of AI Settings limits how
+many different agents may run inference at once. A higher value can improve
+throughput, but it also increases simultaneous provider requests and local
+device load. Keep it conservative when a provider has strict rate limits or a
+local model server has limited memory.
+
+## Add or edit a model
+
+Select a model card, or use **+** to add one. A model definition includes:
+
+- the provider connection;
+- a friendly display name and optional description;
+- the provider's exact model ID;
+- the maximum completion-token limit;
+- input and output modalities; and
+- capability flags such as reasoning or function calling.
+
+<ManualScreenshot
+  caseId="ai/model-editor"
+  alt="Lotti model editor for Waddle Command 70B showing provider, provider model ID, completion limit, modalities, and reasoning capability"
+  caption="Capability metadata matters: Lotti uses it to decide which models are eligible for each profile slot and one-off picker."
+/>
+
+Use the exact identifier expected by the provider. The display name is only for
+people; changing it does not change what the provider runs. Do not claim image,
+audio, tool, or reasoning support unless that model and endpoint actually
+provide it.
+
+## Build an inference profile
+
+Open **Settings → AI Settings → Inference Profiles**. Each profile is a reusable
+routing policy. The overview shows which model serves each configured slot.
+
+<ManualScreenshot
+  caseId="ai/profiles"
+  alt="Lotti inference profiles for Project Waddle Command, Habitat Local-First, and Fish Diplomacy with their routed models"
+  caption="Profiles can optimize for different boundaries: a broad cloud profile, a desktop-only local profile, or a specialist reasoning profile."
+/>
+
+Edit a profile to assign models for the capabilities you use:
+
+- **Thinking** is the required general text model.
+- **Thinking (High-End)** can handle work that explicitly requests the more
+  capable reasoning path.
+- **Image Recognition** analyzes images.
+- **Transcription** converts audio to text.
+- **Image Generation** creates task artwork and other generated images.
+
+<ManualScreenshot
+  caseId="ai/profile-editor"
+  alt="Project Waddle Command profile editor assigning thinking, high-end reasoning, image-recognition, transcription, and image-generation models"
+  caption="One profile routes every Project Waddle modality without repeating model choices across tasks."
+/>
+
+**Desktop Only** hides a profile on mobile platforms, which is useful when it
+depends on a model reachable only from a workstation. Device pinning is for
+automated synced-audio processing: pin only when the selected device advertises
+the providers needed by the profile. With no pinned device, synced audio is not
+automatically transcribed by that profile.
+
+## Choose a model without memorizing IDs
+
+Model pickers start with the provider and show only compatible saved models.
+The picker in a profile slot, for example, will not offer an audio-only model
+for text reasoning.
+
+<ManualScreenshot
+  caseId="ai/model-picker"
+  alt="Lotti Choose a model modal listing OpenRouter, Ollama, and Google Gemini providers over the Project Waddle profile editor"
+  caption="Choose the provider first; Lotti then narrows the next page to eligible models from that connection."
+/>
+
+## Set a category default
+
+A category can choose a default inference profile under **Settings →
+Definitions → Categories**. New work in that category can then inherit a
+coherent routing policy. Select the profile whose privacy and capability mix
+matches the category rather than choosing solely by speed.
+
+<ManualScreenshot
+  caseId="ai/profile-picker"
+  alt="Penguin Operations category editor with a modal offering Project Waddle Command, Habitat Local-First, and Fish Diplomacy profiles"
+  caption="The desktop-only badge makes platform restrictions visible before a category default is selected."
+/>
+
+## Legacy profile route
+
+The older standalone **Inference Profiles** route remains available for
+compatibility and edits the same stored profile records. It exposes internal
+model IDs and provides less dependency context than AI Settings, so prefer the
+current **AI Settings → Inference Profiles** page for normal maintenance.
+
+<ManualScreenshot
+  caseId="ai/legacy-profiles"
+  alt="Legacy Lotti Inference Profiles page showing Project Waddle profile slots as internal model identifiers"
+  caption="Use this compatibility screen only when an older link takes you there; the current AI Settings profile cards are easier to audit."
+/>
+
+Continue with [AI skills](./skills.mdx) to see how the selected profile becomes
+an action on a task or entry.

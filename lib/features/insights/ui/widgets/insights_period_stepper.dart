@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
@@ -58,43 +59,83 @@ class InsightsPeriodStepper extends StatelessWidget {
     bool toDateActive(InsightsPeriodUnit unit) =>
         selection.unit == unit && selection.range == periodToDate(unit, now);
 
-    // IntrinsicHeight + stretch so every control (cluster, pills, dividers) is
-    // the same height and the group divider spans it fully.
+    final navCluster = _NavCluster(
+      unit: selection.unit,
+      label: _periodLabel(context, selection),
+      onSelectUnit: onSelectUnit,
+      onStepBack: () => onStep(-1),
+      onStepForward: canStepForward ? () => onStep(1) : null,
+      onOpenCalendar: onOpenCalendar,
+    );
+    final monthToDate = onSelectToDate == null
+        ? null
+        : InsightsPillButton(
+            label: messages.insightsRangeMtd,
+            outlined: true,
+            active: toDateActive(InsightsPeriodUnit.month),
+            onTap: () => onSelectToDate!(InsightsPeriodUnit.month),
+            semanticsLabel: messages.insightsRangeMonthToDate,
+            tooltip: messages.insightsRangeMonthToDate,
+          );
+    final yearToDate = onSelectToDate == null
+        ? null
+        : InsightsPillButton(
+            label: messages.insightsRangeYtd,
+            outlined: true,
+            active: toDateActive(InsightsPeriodUnit.year),
+            onTap: () => onSelectToDate!(InsightsPeriodUnit.year),
+            semanticsLabel: messages.insightsRangeYearToDate,
+            tooltip: messages.insightsRangeYearToDate,
+          );
+    final compare = onToggleCompare == null
+        ? null
+        : InsightsPillButton(
+            label: messages.insightsCompare,
+            icon: Icons.compare_arrows_rounded,
+            outlined: true,
+            active: selection.compareEnabled,
+            onTap: onToggleCompare!,
+            tooltip: messages.insightsCompareTooltip,
+          );
+
+    if (!isDesktopLayout(context)) {
+      final secondaryControls = <Widget>[
+        ?monthToDate,
+        ?yearToDate,
+        ?compare,
+      ];
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          navCluster,
+          if (secondaryControls.isNotEmpty) ...[
+            SizedBox(height: tokens.spacing.step3),
+            Wrap(
+              spacing: tokens.spacing.step3,
+              runSpacing: tokens.spacing.step3,
+              children: secondaryControls,
+            ),
+          ],
+        ],
+      );
+    }
+
+    // IntrinsicHeight + stretch keeps every desktop control (cluster, pills,
+    // dividers) at the same height and lets the group divider span it fully.
     return IntrinsicHeight(
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _NavCluster(
-            unit: selection.unit,
-            label: _periodLabel(context, selection),
-            onSelectUnit: onSelectUnit,
-            onStepBack: () => onStep(-1),
-            onStepForward: canStepForward ? () => onStep(1) : null,
-            onOpenCalendar: onOpenCalendar,
-          ),
-          if (onSelectToDate != null) ...[
+          navCluster,
+          if (monthToDate != null && yearToDate != null) ...[
             SizedBox(width: tokens.spacing.step3),
-            InsightsPillButton(
-              label: messages.insightsRangeMtd,
-              outlined: true,
-              active: toDateActive(InsightsPeriodUnit.month),
-              onTap: () => onSelectToDate!(InsightsPeriodUnit.month),
-              semanticsLabel: messages.insightsRangeMonthToDate,
-              tooltip: messages.insightsRangeMonthToDate,
-            ),
+            monthToDate,
             // A touch more room between the two to-date shortcuts.
             SizedBox(width: tokens.spacing.step3),
-            InsightsPillButton(
-              label: messages.insightsRangeYtd,
-              outlined: true,
-              active: toDateActive(InsightsPeriodUnit.year),
-              onTap: () => onSelectToDate!(InsightsPeriodUnit.year),
-              semanticsLabel: messages.insightsRangeYearToDate,
-              tooltip: messages.insightsRangeYearToDate,
-            ),
+            yearToDate,
           ],
-          if (onToggleCompare != null) ...[
+          if (compare != null) ...[
             // A divider (not just a gap) groups the period controls — stepper
             // plus the to-date shortcuts — apart from Compare, which is an
             // independent mode toggle rather than a navigation control.
@@ -107,14 +148,7 @@ class InsightsPeriodStepper extends StatelessWidget {
               color: tokens.colors.decorative.level02,
             ),
             SizedBox(width: tokens.spacing.step4),
-            InsightsPillButton(
-              label: messages.insightsCompare,
-              icon: Icons.compare_arrows_rounded,
-              outlined: true,
-              active: selection.compareEnabled,
-              onTap: onToggleCompare!,
-              tooltip: messages.insightsCompareTooltip,
-            ),
+            compare,
           ],
         ],
       ),

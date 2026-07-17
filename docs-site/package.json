@@ -6,6 +6,7 @@
     "build": "docusaurus build",
     "check": "npm run typecheck && npm run validate && npm run test && npm run build && npm run smoke",
     "clear": "docusaurus clear",
+    "coverage:complete": "node scripts/validate-manual.mjs --require-complete",
     "docusaurus": "docusaurus",
     "manifest": "node scripts/build-screenshot-manifest.mjs",
     "pages:assemble": "node scripts/assemble-pages-site.mjs",

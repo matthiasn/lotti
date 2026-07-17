@@ -1,0 +1,59 @@
+---
+title: Review AI usage and impact
+description: Compare AI requests by period, category, and model, including estimated cost, energy, emissions, and token use.
+---
+
+# Review AI usage and impact
+
+Open **Settings → AI Settings → Usage & Impact** to understand how configured
+cloud models are being used. The same analysis is also reachable from the AI
+impact dashboard route.
+
+<ManualScreenshot
+  caseId="ai/usage"
+  alt="Lotti AI Impact dashboard for July 2026 showing cost, energy, carbon dioxide equivalent, tokens, requests, and category bars"
+  caption="Project Waddle's example month separates Mission Control and Penguin Operations while keeping the total request footprint visible."
+/>
+
+## Read the summary cards
+
+The top cards summarize the selected period:
+
+- **Cost** estimates provider spend.
+- **Energy** estimates electricity attributable to measured cloud inference.
+- **CO₂e** expresses the associated emissions estimate.
+- **Tokens** counts processed model tokens.
+- **Requests** counts inference calls.
+
+The comparison indicator uses the previous equivalent period when one is
+available. A percentage increase is context, not automatically a problem: a
+launch-review week should not be compared blindly with an idle colony week.
+
+Energy, CO₂e, and cost are measured for cloud models only. Local inference can
+consume substantial device energy without appearing in those cloud estimates,
+so this page is not a complete power meter for the entire system.
+
+## Change the analysis
+
+Use the period control and arrow buttons to move through time, or jump to
+**This month** and **This year**. Then choose **Both**, **By category**, or **By
+model**. Within a chart, switch between per-day values, running totals, and
+share where available.
+
+Category views answer “which area of work drove usage?” Model views answer
+“which configured model drove usage?” Use both before changing a profile: a
+high-cost model may be justified for one specialist category but wasteful as a
+general default.
+
+## Act on a surprising result
+
+If usage jumps unexpectedly:
+
+1. narrow the period to the first affected day;
+2. compare category and model breakdowns;
+3. review automation and agent concurrency;
+4. inspect the inference profile assigned to the affected category; and
+5. verify provider-side billing before treating Lotti's estimate as an invoice.
+
+To change the route responsible for future calls, return to
+[Models and inference profiles](./models-and-profiles.mdx).

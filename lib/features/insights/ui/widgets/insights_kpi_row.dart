@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -88,34 +89,84 @@ class InsightsKpiRow extends StatelessWidget {
     // will fill), so an empty CTA never claims tile-equal weight next to the
     // one real number on screen.
     if (!configured) {
+      final totalTile = _KpiTile(
+        label: messages.insightsKpiTotal,
+        seconds: kpis.totalSeconds,
+        previousSeconds: previousKpis?.totalSeconds,
+        headline: topCaption,
+        inProgress: comparisonInProgress,
+      );
+      final picker = Align(
+        alignment: Alignment.centerLeft,
+        child: InsightsPillButton(
+          label: messages.insightsChooseFocusCategories,
+          icon: Icons.center_focus_strong_outlined,
+          active: false,
+          outlined: true,
+          onTap: () => _editFocusCategories(context),
+        ),
+      );
+      if (!isDesktopLayout(context)) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            totalTile,
+            SizedBox(height: tokens.spacing.cardItemSpacing),
+            picker,
+          ],
+        );
+      }
       return Row(
         children: [
           // Expanded (tight), not Flexible (loose), so the Total tile is
           // exactly 1/3 of the row — the same width it keeps once FOCUS/OTHER
           // join it — rather than shrinking toward its content.
           Expanded(
-            child: _KpiTile(
-              label: messages.insightsKpiTotal,
-              seconds: kpis.totalSeconds,
-              previousSeconds: previousKpis?.totalSeconds,
-              headline: topCaption,
-              inProgress: comparisonInProgress,
-            ),
+            child: totalTile,
           ),
           SizedBox(width: tokens.spacing.cardItemSpacing),
           Expanded(
             flex: 2,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: InsightsPillButton(
-                label: messages.insightsChooseFocusCategories,
-                icon: Icons.center_focus_strong_outlined,
-                active: false,
-                outlined: true,
-                onTap: () => _editFocusCategories(context),
-              ),
-            ),
+            child: picker,
           ),
+        ],
+      );
+    }
+
+    final totalTile = _KpiTile(
+      label: messages.insightsKpiTotal,
+      seconds: kpis.totalSeconds,
+      previousSeconds: previousKpis?.totalSeconds,
+      headline: topCaption,
+      inProgress: comparisonInProgress,
+    );
+    final focusTile = _KpiTile(
+      label: messages.insightsKpiFocus,
+      seconds: kpis.focusSeconds!,
+      previousSeconds: previousKpis?.focusSeconds,
+      // Plain-language gloss so FOCUS/OTHER aren't opaque jargon to a
+      // first-time user; the category names follow as the detail.
+      helper: messages.insightsKpiFocusHelp,
+      caption: focusNames,
+      onEdit: () => _editFocusCategories(context),
+      inProgress: comparisonInProgress,
+    );
+    final otherTile = _KpiTile(
+      label: messages.insightsKpiOther,
+      seconds: kpis.otherSeconds!,
+      previousSeconds: previousKpis?.otherSeconds,
+      helper: messages.insightsKpiOtherHelp,
+      inProgress: comparisonInProgress,
+    );
+    if (!isDesktopLayout(context)) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          totalTile,
+          SizedBox(height: tokens.spacing.cardItemSpacing),
+          focusTile,
+          SizedBox(height: tokens.spacing.cardItemSpacing),
+          otherTile,
         ],
       );
     }
@@ -127,37 +178,15 @@ class InsightsKpiRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            child: _KpiTile(
-              label: messages.insightsKpiTotal,
-              seconds: kpis.totalSeconds,
-              previousSeconds: previousKpis?.totalSeconds,
-              headline: topCaption,
-              inProgress: comparisonInProgress,
-            ),
+            child: totalTile,
           ),
           SizedBox(width: tokens.spacing.cardItemSpacing),
           Expanded(
-            child: _KpiTile(
-              label: messages.insightsKpiFocus,
-              seconds: kpis.focusSeconds!,
-              previousSeconds: previousKpis?.focusSeconds,
-              // Plain-language gloss so FOCUS/OTHER aren't opaque jargon to a
-              // first-time user; the category names follow as the detail.
-              helper: messages.insightsKpiFocusHelp,
-              caption: focusNames,
-              onEdit: () => _editFocusCategories(context),
-              inProgress: comparisonInProgress,
-            ),
+            child: focusTile,
           ),
           SizedBox(width: tokens.spacing.cardItemSpacing),
           Expanded(
-            child: _KpiTile(
-              label: messages.insightsKpiOther,
-              seconds: kpis.otherSeconds!,
-              previousSeconds: previousKpis?.otherSeconds,
-              helper: messages.insightsKpiOtherHelp,
-              inProgress: comparisonInProgress,
-            ),
+            child: otherTile,
           ),
         ],
       ),
