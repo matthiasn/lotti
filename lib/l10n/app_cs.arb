@@ -2677,6 +2677,8 @@
     }
   },
   "multiSelectNoItemsFound": "Žádné položky nenalezeny",
+  "navSidebarManualBrowserHint": "Otevře se v prohlížeči",
+  "navSidebarManualLabel": "Příručka",
   "navTabMoreSemanticsLabel": "{count, plural, =1{Více, 1 další sekce} few{Více, {count} další sekce} other{Více, {count} dalších sekcí}}",
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleEvents": "Události",

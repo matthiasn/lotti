@@ -6971,6 +6971,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get multiSelectNoItemsFound => 'Nu s-au găsit elemente';
 
   @override
+  String get navSidebarManualBrowserHint => 'Se deschide în browserul dvs.';
+
+  @override
+  String get navSidebarManualLabel => 'Manual';
+
+  @override
   String navTabMoreSemanticsLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

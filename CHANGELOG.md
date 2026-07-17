@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1051]
+### Added
+- **The desktop sidebar now opens the Lotti Manual directly.** A localized
+  Manual link sits immediately above Settings, remains available when the
+  sidebar is collapsed, and opens the current published manual in the default
+  browser.
+
 ### Changed
 - **The desktop sidebar is navigation-first and keeps important task filters
   visible.** Saved task filters now appear directly under Tasks with live

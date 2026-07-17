@@ -69,6 +69,11 @@ import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_nav_more_sheet.dart';
 import 'package:matrix/matrix.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+final Uri _lottiManualUri = Uri.parse(
+  'https://matthiasn.github.io/lotti/manual/',
+);
 
 /// Check if the app is running inside Flatpak sandbox
 bool _isRunningInFlatpak() {
@@ -312,6 +317,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   /// Guards against the Daily OS onboarding walkthrough being armed more than
   /// once per [AppScreen] lifetime, mirroring [_onboardingWelcomeShown].
   bool _dailyOsOnboardingShown = false;
+
+  Future<void> _openManual() async {
+    await launchUrl(_lottiManualUri, mode: LaunchMode.externalApplication);
+  }
 
   void _showNotLoggedInToast(BuildContext context) {
     if (!mounted) return;
@@ -685,6 +694,17 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                   .read(paneWidthControllerProvider.notifier)
                   .toggleSidebarCollapsed(),
               aboveSettings: const _DesktopSidebarAboveSettings(),
+              utilityDestination: DesktopSidebarDestination(
+                label: context.messages.navSidebarManualLabel,
+                iconBuilder: ({required active}) =>
+                    const Icon(Icons.help_outline_rounded),
+                trailingBuilder: ({required active}) => const ExcludeSemantics(
+                  child: Icon(Icons.open_in_new_rounded),
+                ),
+                isLink: true,
+                semanticsHint: context.messages.navSidebarManualBrowserHint,
+              ),
+              onUtilitySelected: _openManual,
               belowSettings: showSyncIndicator
                   ? const SyncActivityIndicator()
                   : SizedBox(height: context.designTokens.spacing.step3),
