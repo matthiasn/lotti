@@ -102,6 +102,7 @@ EventDetailData eventDetailDataFromEntities({
   required JournalEvent event,
   required List<JournalEntity> linked,
   required DateTime now,
+  required String locale,
   required Color categoryColor,
   required String fallbackTitle,
   required ImageProvider Function(JournalImage image) imageProviderFor,
@@ -126,7 +127,7 @@ EventDetailData eventDetailDataFromEntities({
 
   final card = eventCardDataFromEvent(
     event,
-    dateLabel: eventDateLabel(event.meta.dateFrom, now),
+    dateLabel: eventDateLabel(event.meta.dateFrom, now, locale: locale),
     categoryColor: categoryColor,
     categoryName: categoryName,
     fallbackTitle: fallbackTitle,
@@ -153,7 +154,7 @@ EventDetailData eventDetailDataFromEntities({
     final due = entity is Task ? entity.data.due : null;
     final task = eventTaskRefFor(
       entity,
-      dueLabel: due == null ? null : DateFormat('d MMM').format(due),
+      dueLabel: due == null ? null : DateFormat('d MMM', locale).format(due),
     );
     if (task != null) tasks.add(task);
   }
@@ -176,6 +177,7 @@ EventDetailData eventDetailDataFromEntities({
     card: card,
     whenLabel: DateFormat(
       'EEE, d MMM yyyy · HH:mm',
+      locale,
     ).format(event.meta.dateFrom),
     summary: summary,
     timeline: timeline,

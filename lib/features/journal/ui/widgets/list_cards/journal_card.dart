@@ -441,11 +441,10 @@ class _EntryCardContent extends StatelessWidget {
   }
 
   Widget _eventStatusChip(BuildContext context, EventStatus status) {
-    final lower = status.label.toLowerCase();
-    final cased = lower.isEmpty
-        ? lower
-        : '${lower[0].toUpperCase()}${lower.substring(1)}';
-    return ModernStatusChip(label: cased, color: status.color);
+    return ModernStatusChip(
+      label: status.localizedLabel(context),
+      color: status.color,
+    );
   }
 
   String _surveyName(BuildContext context, SurveyEntry survey) {

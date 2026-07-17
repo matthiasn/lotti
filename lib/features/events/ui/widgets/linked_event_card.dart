@@ -36,6 +36,7 @@ class LinkedEventCard extends ConsumerWidget {
       event: event,
       linked: linked,
       now: DateTime.now(),
+      locale: Localizations.localeOf(context).toString(),
       categoryColor: colorFromCssHex(category?.color),
       categoryName: category?.name,
       fallbackTitle: context.messages.entryTypeLabelJournalEvent,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/surveys/definitions/panas_survey.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:research_package/research_package.dart';
 
@@ -39,12 +40,15 @@ void main() {
     WidgetTester tester, {
     required RPOrderedTask task,
     required void Function(RPTaskResult) resultCallback,
+    Locale? locale,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Scaffold(body: SurveyWidget(task, resultCallback)),
+        locale: locale,
       ),
     );
+    await tester.pump(const Duration(milliseconds: 100));
     await tester.pump();
     return tester.widget<RPUITask>(find.byType(RPUITask));
   }
@@ -106,11 +110,16 @@ void main() {
     ) async {
       await pumpSurvey(
         tester,
-        task: panasSurveyTask,
+        task: createPanasSurveyTask(
+          await AppLocalizations.delegate.load(const Locale('en')),
+        ),
         resultCallback: (_) {},
       );
 
-      await tester.tap(find.text('NEXT'));
+      final messages = await AppLocalizations.delegate.load(
+        const Locale('en'),
+      );
+      await tester.tap(find.text(messages.surveyNextButton));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
@@ -118,6 +127,28 @@ void main() {
       expect(find.text('Very slightly or not at all'), findsOneWidget);
       expect(find.text('Extremely'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('uses the active locale for Research Package controls', (
+      tester,
+    ) async {
+      await pumpSurvey(
+        tester,
+        task: createPanasSurveyTask(
+          await AppLocalizations.delegate.load(const Locale('de')),
+        ),
+        resultCallback: (_) {},
+        locale: const Locale('de'),
+      );
+
+      expect(find.text('Weiter'), findsOneWidget);
+      expect(find.text('1 von 22'), findsOneWidget);
+
+      await tester.tap(find.text('Weiter'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Interessiert'), findsOneWidget);
     });
 
     testWidgets(

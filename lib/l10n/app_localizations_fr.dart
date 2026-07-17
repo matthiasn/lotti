@@ -7504,6 +7504,100 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get panasCompletionText =>
+      'Merci d’avoir rempli le questionnaire PANAS !';
+
+  @override
+  String get panasCompletionTitle => 'Terminé';
+
+  @override
+  String get panasEmotionActive => 'Actif·ve';
+
+  @override
+  String get panasEmotionAfraid => 'Effrayé·e';
+
+  @override
+  String get panasEmotionAlert => 'Alerte';
+
+  @override
+  String get panasEmotionAshamed => 'Honteux·se';
+
+  @override
+  String get panasEmotionAttentive => 'Attentif·ve';
+
+  @override
+  String get panasEmotionDetermined => 'Déterminé·e';
+
+  @override
+  String get panasEmotionDistressed => 'En détresse';
+
+  @override
+  String get panasEmotionEnthusiastic => 'Enthousiaste';
+
+  @override
+  String get panasEmotionExcited => 'Excité·e';
+
+  @override
+  String get panasEmotionGuilty => 'Coupable';
+
+  @override
+  String get panasEmotionHostile => 'Hostile';
+
+  @override
+  String get panasEmotionInspired => 'Inspiré·e';
+
+  @override
+  String get panasEmotionInterested => 'Intéressé·e';
+
+  @override
+  String get panasEmotionIrritable => 'Irritable';
+
+  @override
+  String get panasEmotionJittery => 'Nerveux·se';
+
+  @override
+  String get panasEmotionNervous => 'Anxieux·se';
+
+  @override
+  String get panasEmotionProud => 'Fier·ère';
+
+  @override
+  String get panasEmotionScared => 'Effrayé·e';
+
+  @override
+  String get panasEmotionStrong => 'Fort·e';
+
+  @override
+  String get panasEmotionUpset => 'Contrarié·e';
+
+  @override
+  String get panasInstructionFootnote =>
+      'Watson, D., Clark, L. A., & Tellegen, A. (1988). Development and validation of brief measures of positive and negative affect: The PANAS scales. Journal of Personality and Social Psychology, 54(6), 1063–1070.';
+
+  @override
+  String get panasInstructionText =>
+      'Indique dans quelle mesure tu ressens cela en ce moment, à l’instant présent.\n\n1—Pas du tout ou très peu,\n2—Un peu,\n3—Modérément,\n4—Beaucoup,\n5—Extrêmement';
+
+  @override
+  String get panasInstructionTitle =>
+      'Échelle des affects positifs et négatifs (PANAS ; Watson et al., 1988)';
+
+  @override
+  String get panasScaleALittle => 'Un peu';
+
+  @override
+  String get panasScaleExtremely => 'Extrêmement';
+
+  @override
+  String get panasScaleModerately => 'Modérément';
+
+  @override
+  String get panasScaleQuiteABit => 'Beaucoup';
+
+  @override
+  String get panasScaleVerySlightlyOrNotAtAll => 'Pas du tout ou très peu';
+
+  @override
   String get privateLabel => 'Privé';
 
   @override
@@ -9399,6 +9493,46 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get speechVoicePreviewTooltip => 'Écouter la voix';
+
+  @override
+  String get surveyBackButton => 'Retour';
+
+  @override
+  String get surveyCancelConfirmation => 'Annuler le questionnaire ?';
+
+  @override
+  String get surveyChooseOneOption => 'Choisis une option';
+
+  @override
+  String get surveyChooseOneOrMoreOptions => 'Choisis une ou plusieurs options';
+
+  @override
+  String get surveyDiscardConfirmation =>
+      'Abandonner les réponses et quitter ?';
+
+  @override
+  String get surveyInputNumberValidation => 'Saisis un nombre';
+
+  @override
+  String get surveyNextButton => 'Suivant';
+
+  @override
+  String get surveyNoButton => 'Non';
+
+  @override
+  String get surveyProgressOf => 'sur';
+
+  @override
+  String get surveyTapToAnswer => 'Appuie pour répondre';
+
+  @override
+  String get surveyValueAnd => 'et';
+
+  @override
+  String get surveyValueBetween => 'Doit être compris entre';
+
+  @override
+  String get surveyYesButton => 'Oui';
 
   @override
   String get syncActivityIdle => 'inactive';

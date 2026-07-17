@@ -37,6 +37,12 @@ apply the locale-dependent labelling/grouping the view models can't, and feed
 the result to the widgets. The pure mapping/grouping logic lives in
 `state/event_view_mapping.dart` and is unit-tested in isolation.
 
+Event status and relative/date labels are resolved at the presentation boundary
+from the active `AppLocalizations` and locale-aware date formatter. Persistence
+continues to store only stable status enum values and timestamps, never rendered
+copy, so changing the app language immediately updates both overview and detail
+surfaces without migrating an event.
+
 ```mermaid
 flowchart TD
     DB[(JournalDb + EntitiesCacheService)]

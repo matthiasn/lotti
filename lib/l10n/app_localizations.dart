@@ -12730,6 +12730,186 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{Tried once} other{Tried {count} times}}'**
   String outboxTriedTimes(int count);
 
+  /// No description provided for @panasCompletionText.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for filling out the PANAS!'**
+  String get panasCompletionText;
+
+  /// No description provided for @panasCompletionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished'**
+  String get panasCompletionTitle;
+
+  /// No description provided for @panasEmotionActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get panasEmotionActive;
+
+  /// No description provided for @panasEmotionAfraid.
+  ///
+  /// In en, this message translates to:
+  /// **'Afraid'**
+  String get panasEmotionAfraid;
+
+  /// No description provided for @panasEmotionAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert'**
+  String get panasEmotionAlert;
+
+  /// No description provided for @panasEmotionAshamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Ashamed'**
+  String get panasEmotionAshamed;
+
+  /// No description provided for @panasEmotionAttentive.
+  ///
+  /// In en, this message translates to:
+  /// **'Attentive'**
+  String get panasEmotionAttentive;
+
+  /// No description provided for @panasEmotionDetermined.
+  ///
+  /// In en, this message translates to:
+  /// **'Determined'**
+  String get panasEmotionDetermined;
+
+  /// No description provided for @panasEmotionDistressed.
+  ///
+  /// In en, this message translates to:
+  /// **'Distressed'**
+  String get panasEmotionDistressed;
+
+  /// No description provided for @panasEmotionEnthusiastic.
+  ///
+  /// In en, this message translates to:
+  /// **'Enthusiastic'**
+  String get panasEmotionEnthusiastic;
+
+  /// No description provided for @panasEmotionExcited.
+  ///
+  /// In en, this message translates to:
+  /// **'Excited'**
+  String get panasEmotionExcited;
+
+  /// No description provided for @panasEmotionGuilty.
+  ///
+  /// In en, this message translates to:
+  /// **'Guilty'**
+  String get panasEmotionGuilty;
+
+  /// No description provided for @panasEmotionHostile.
+  ///
+  /// In en, this message translates to:
+  /// **'Hostile'**
+  String get panasEmotionHostile;
+
+  /// No description provided for @panasEmotionInspired.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspired'**
+  String get panasEmotionInspired;
+
+  /// No description provided for @panasEmotionInterested.
+  ///
+  /// In en, this message translates to:
+  /// **'Interested'**
+  String get panasEmotionInterested;
+
+  /// No description provided for @panasEmotionIrritable.
+  ///
+  /// In en, this message translates to:
+  /// **'Irritable'**
+  String get panasEmotionIrritable;
+
+  /// No description provided for @panasEmotionJittery.
+  ///
+  /// In en, this message translates to:
+  /// **'Jittery'**
+  String get panasEmotionJittery;
+
+  /// No description provided for @panasEmotionNervous.
+  ///
+  /// In en, this message translates to:
+  /// **'Nervous'**
+  String get panasEmotionNervous;
+
+  /// No description provided for @panasEmotionProud.
+  ///
+  /// In en, this message translates to:
+  /// **'Proud'**
+  String get panasEmotionProud;
+
+  /// No description provided for @panasEmotionScared.
+  ///
+  /// In en, this message translates to:
+  /// **'Scared'**
+  String get panasEmotionScared;
+
+  /// No description provided for @panasEmotionStrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong'**
+  String get panasEmotionStrong;
+
+  /// No description provided for @panasEmotionUpset.
+  ///
+  /// In en, this message translates to:
+  /// **'Upset'**
+  String get panasEmotionUpset;
+
+  /// No description provided for @panasInstructionFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Watson, D., Clark, L. A., & Tellegen, A. (1988). Development and validation of brief measures of positive and negative affect: The PANAS scales. Journal of Personality and Social Psychology, 54(6), 1063–1070.'**
+  String get panasInstructionFootnote;
+
+  /// No description provided for @panasInstructionText.
+  ///
+  /// In en, this message translates to:
+  /// **'Indicate to what extent you feel this way right now, that is, at the present moment.\n\n1—Very slightly or not at all,\n2—A little,\n3—Moderately,\n4—Quite a bit,\n5—Extremely'**
+  String get panasInstructionText;
+
+  /// No description provided for @panasInstructionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The Positive and Negative Affect Schedule (PANAS; Watson et al., 1988)'**
+  String get panasInstructionTitle;
+
+  /// No description provided for @panasScaleALittle.
+  ///
+  /// In en, this message translates to:
+  /// **'A little'**
+  String get panasScaleALittle;
+
+  /// No description provided for @panasScaleExtremely.
+  ///
+  /// In en, this message translates to:
+  /// **'Extremely'**
+  String get panasScaleExtremely;
+
+  /// No description provided for @panasScaleModerately.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderately'**
+  String get panasScaleModerately;
+
+  /// No description provided for @panasScaleQuiteABit.
+  ///
+  /// In en, this message translates to:
+  /// **'Quite a bit'**
+  String get panasScaleQuiteABit;
+
+  /// No description provided for @panasScaleVerySlightlyOrNotAtAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Very slightly or not at all'**
+  String get panasScaleVerySlightlyOrNotAtAll;
+
   /// No description provided for @privateLabel.
   ///
   /// In en, this message translates to:
@@ -15822,6 +16002,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preview voice'**
   String get speechVoicePreviewTooltip;
+
+  /// No description provided for @surveyBackButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get surveyBackButton;
+
+  /// No description provided for @surveyCancelConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel survey?'**
+  String get surveyCancelConfirmation;
+
+  /// No description provided for @surveyChooseOneOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose one option'**
+  String get surveyChooseOneOption;
+
+  /// No description provided for @surveyChooseOneOrMoreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose one or more options'**
+  String get surveyChooseOneOrMoreOptions;
+
+  /// No description provided for @surveyDiscardConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard results and quit?'**
+  String get surveyDiscardConfirmation;
+
+  /// No description provided for @surveyInputNumberValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number'**
+  String get surveyInputNumberValidation;
+
+  /// No description provided for @surveyNextButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get surveyNextButton;
+
+  /// No description provided for @surveyNoButton.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get surveyNoButton;
+
+  /// No description provided for @surveyProgressOf.
+  ///
+  /// In en, this message translates to:
+  /// **'of'**
+  String get surveyProgressOf;
+
+  /// No description provided for @surveyTapToAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to answer'**
+  String get surveyTapToAnswer;
+
+  /// No description provided for @surveyValueAnd.
+  ///
+  /// In en, this message translates to:
+  /// **'and'**
+  String get surveyValueAnd;
+
+  /// No description provided for @surveyValueBetween.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be between'**
+  String get surveyValueBetween;
+
+  /// No description provided for @surveyYesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get surveyYesButton;
 
   /// No description provided for @syncActivityIdle.
   ///

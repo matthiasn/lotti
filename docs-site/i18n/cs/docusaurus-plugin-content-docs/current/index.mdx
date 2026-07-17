@@ -6,58 +6,95 @@ sidebar_label: Vítej
 description: Nauč se s Lotti plánovat, zaznamenávat, organizovat a vyhodnocovat svůj čas.
 ---
 
-<div className="manual-hero">
-  <h1>Udělej si v dni jasno.</h1>
-  <div className="manual-hero-copy">Lotti spojuje plány, úkoly, časové záznamy, návyky, měření a soukromou AI asistenci na jednom klidném místě. Tato příručka začíná výsledky a potom ukazuje ovládací prvky, které tě k nim dovedou.</div>
+<div className="manual-hero manual-hero--welcome">
+  <div className="manual-eyebrow">Soukromý deník, ne panoptikum produktivity</div>
+  <h1>Nech si fakta. Udělej si den po svém.</h1>
+  <div className="manual-hero-copy">Úkoly, čas, hlasové poznámky, návyky, zdravotní data i občasná podivně užitečná myšlenka si zaslouží lepší osud než očistec v otevřených kartách. Lotti uchová záznam; o dalším kroku rozhoduješ ty.</div>
+  <div className="manual-hero-principles">
+    <div><strong>Tvoje historie zůstává tvoje.</strong><span>Je v tvém místním deníku, ne v cloudovém účtu Lotti.</span></div>
+    <div><strong>AI se ptá; ty rozhoduješ.</strong><span>Agenti mohou všímat, přemýšlet a navrhovat. Klíče od tvého života ale nedostanou.</span></div>
+    <div><strong>Udělej si ho zapamatovatelný.</strong><span>Užitečný, vážný i rozkošně podivný: pracovní prostor může znít jako ty.</span></div>
+  </div>
 </div>
 
-:::note O tučňácích
+<ManualScreenshot
+  caseId="tasks/detail"
+  alt="Stránka úkolu Lotti pro orbitální tučňáčí habitat Project Waddle s kontextem, titulním obrázkem, kontrolním seznamem a časovými záznamy"
+  caption="Úkol je živý záznam: výsledek, jeho souvislosti, další kroky i doklady o práci cestují spolu."
+/>
+
+## Ne další stroj, který předstírá, že všechno šlo podle plánu
+
+Lotti záměrně rozlišuje mezi tím, co jsi chtěl udělat, a tím, co se opravdu
+stalo. Úkol může být důležitý, aniž by vlastnil celý den. Plán můžeš přeskládat,
+aniž bys přepisoval historii. A časový záznam může poctivě říct, že se schůzka
+protáhla a dobrý nápad přišel až cestou domů.
+
+Právě toto oddělení je smysl, ne papírování. V hlučném týdnu díky němu zůstane
+tvůj záznam důvěryhodný.
+
+:::note O tučňácích (a jiném prvotřídním nesmyslu)
 
 Tučňáci, orbitální obydlí, sardinky i **Project Waddle** patří jen do
 fiktivního ukázkového prostoru **Intergalactic Penguin Logistics** v této
 příručce. Díky nim snímky vyprávějí jeden souvislý příběh; zobrazené ovládání,
 postupy i chování produktu jsou ale skutečná aplikace Lotti. Tvůj vlastní
-prostor může být úplně všední — nebo stejně příjemně podivný.
+prostor může být úplně všední — nebo stejně příjemně podivný. Titulní obrázek
+úkolu je volitelný; dobrá vizuální metafora může přeplněný týden výrazně lépe
+zpřehlednit.
 
 :::
 
-## Vyber si cestu
+## Začni tam, kde to teď drhne
 
 <div className="manual-cards">
   <a className="manual-card" href="getting-started/mental-model/">
-    <strong>Pochop Lotti</strong>
-    Zjisti, jak do sebe zapadají plány, úkoly, záznamy a skutečně odpracovaný čas.
+    <strong>Tvůj život není backlog</strong>
+    Zjisti, jak záměr, plány, skutečný čas, podklady a ohlédnutí zůstávají oddělené — a právě proto užitečné.
   </a>
   <a className="manual-card" href="plan-and-capture/daily-os/">
-    <strong>Naplánuj dnešek</strong>
-    Proměň mluvený nebo napsaný přehled v upravitelný plán dne.
+    <strong>Naplánuj den, který může dýchat</strong>
+    Proměň mluvený nebo napsaný check-in v upravitelný plán dne, který počítá se skutečností.
   </a>
   <a className="manual-card" href="organize-and-reflect/tasks/">
-    <strong>Posouvej práci kupředu</strong>
-    Vytvářej úkoly, nastavuj priority a měň souvislosti v kontrolní seznamy.
+    <strong>Dej práci domov</strong>
+    Vytvářej úkoly, připojuj souvislosti, nastavuj priority a měň nejasnost v další kroky.
   </a>
   <a className="manual-card" href="ai-and-automation/provider-setup/">
-    <strong>Připoj AI</strong>
-    Vyber cloudového nebo místního poskytovatele a určuj, které modely Lotti používá.
+    <strong>Vyber AI mozek zodpovědně</strong>
+    Vol místní nebo cloudovou inferenci vědomě — soukromí, uchovávání dat, umístění i energie jsou součástí volby.
   </a>
 </div>
 
-## Co Lotti udržuje oddělené
+## AI je volitelná. Její důsledky ne.
 
-- **Úkoly** popisují práci a její stav.
-- **Plány** popisují, co a kdy chceš udělat.
-- **Záznamy** uchovávají poznámky, nahrávky, obrázky, měření a další
-  podklady.
-- **Časové záznamy** popisují, co se skutečně stalo.
-- **Kategorie** vytvářejí hranice pro filtrování, automatizaci a ohlédnutí.
+Lotti neprovozuje inferenční backend a nedostává kopii toho, co posíláš modelu.
+Při místní inferenci mohou tvé materiály zůstat na zařízení. U cloudového
+poskytovatele jde tebou vybraný kontext přímo přes **tvůj** účet a API klíč k
+němu. Rozhodnutí je tedy na tobě — a bohužel také prověření.
 
-Toto oddělení je záměrné: plán se může změnit bez přepisování historie a
-skutečný čas se může od plánu lišit, aniž bys musel předstírat, že den proběhl
-jinak.
+<div className="manual-responsibility-grid">
+  <div className="manual-responsibility-card">
+    <strong>Soukromí je rozhodnutí o směrování.</strong>
+    <p>Pro citlivý obsah použij schopný místní model nebo si poskytovatele vyber až po ověření uchovávání dat, trénování, právního prostředí a nastavení účtu. „Cloud“ nikdy automaticky neznamená „nic se neukládá“.</p>
+  </div>
+  <div className="manual-responsibility-card">
+    <strong>Energie je také rozhodnutí o směrování.</strong>
+    <p>AI běží na skutečných fyzických místech. Upřednostni místní sestavu nebo poskytovatele, u něhož můžeš opravdu ověřit elektřinu, umístění a tvrzení o uhlíku. Věrohodně obnovitelně napájená cesta může zabránit přenášení zdravotních a klimatických nákladů fosilního výpočtu — zvlášť výroby z plynových turbín — na komunity s menší možností se bránit.</p>
+  </div>
+  <div className="manual-responsibility-card">
+    <strong>Lidské schválení je pravidlo produktu.</strong>
+    <p>Agenti mohou analyzovat kontext a navrhovat změny, ale návrhy čekají na tebe. Lotti nemění „užitečné“ na „bez odpovědnosti“.</p>
+  </div>
+</div>
+
+Praktické pravidlo: když nenajdeš cestu pro data a energii, za kterou si můžeš
+stát, AI vypni. Lotti zůstane užitečné i bez ní.
 
 :::tip Začni jednoduše
 
 Vytvoř několik smysluplných kategorií, jeden skutečný úkol a jeden přehled v
-Daily OS. Další strukturu přidávej teprve tehdy, když si své místo zaslouží.
+Daily OS. Další strukturu přidávej teprve tehdy, když si své místo zaslouží;
+buduješ záznam života, ne krmivo pro stroj na produktivitu.
 
 :::

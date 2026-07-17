@@ -7505,6 +7505,100 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get panasCompletionText =>
+      'Vă mulțumim că ați completat chestionarul PANAS!';
+
+  @override
+  String get panasCompletionTitle => 'Finalizat';
+
+  @override
+  String get panasEmotionActive => 'Activ(ă)';
+
+  @override
+  String get panasEmotionAfraid => 'Temător(oare)';
+
+  @override
+  String get panasEmotionAlert => 'Alert(ă)';
+
+  @override
+  String get panasEmotionAshamed => 'Rușinat(ă)';
+
+  @override
+  String get panasEmotionAttentive => 'Atent(ă)';
+
+  @override
+  String get panasEmotionDetermined => 'Hotărât(ă)';
+
+  @override
+  String get panasEmotionDistressed => 'Tulburat(ă)';
+
+  @override
+  String get panasEmotionEnthusiastic => 'Entuziast(ă)';
+
+  @override
+  String get panasEmotionExcited => 'Entuziasmat(ă)';
+
+  @override
+  String get panasEmotionGuilty => 'Vinovat(ă)';
+
+  @override
+  String get panasEmotionHostile => 'Ostil(ă)';
+
+  @override
+  String get panasEmotionInspired => 'Inspirat(ă)';
+
+  @override
+  String get panasEmotionInterested => 'Interesat(ă)';
+
+  @override
+  String get panasEmotionIrritable => 'Iritabil(ă)';
+
+  @override
+  String get panasEmotionJittery => 'Agitat(ă)';
+
+  @override
+  String get panasEmotionNervous => 'Nervos/Nervoasă';
+
+  @override
+  String get panasEmotionProud => 'Mândru(ă)';
+
+  @override
+  String get panasEmotionScared => 'Speriat(ă)';
+
+  @override
+  String get panasEmotionStrong => 'Puternic(ă)';
+
+  @override
+  String get panasEmotionUpset => 'Supărat(ă)';
+
+  @override
+  String get panasInstructionFootnote =>
+      'Watson, D., Clark, L. A., & Tellegen, A. (1988). Development and validation of brief measures of positive and negative affect: The PANAS scales. Journal of Personality and Social Psychology, 54(6), 1063–1070.';
+
+  @override
+  String get panasInstructionText =>
+      'Indicați în ce măsură vă simțiți astfel chiar acum, în acest moment.\n\n1—Deloc sau foarte puțin,\n2—Puțin,\n3—Moderat,\n4—Destul de mult,\n5—Extrem de mult';
+
+  @override
+  String get panasInstructionTitle =>
+      'Scala afectelor pozitive și negative (PANAS; Watson et al., 1988)';
+
+  @override
+  String get panasScaleALittle => 'Puțin';
+
+  @override
+  String get panasScaleExtremely => 'Extrem de mult';
+
+  @override
+  String get panasScaleModerately => 'Moderat';
+
+  @override
+  String get panasScaleQuiteABit => 'Destul de mult';
+
+  @override
+  String get panasScaleVerySlightlyOrNotAtAll => 'Deloc sau foarte puțin';
+
+  @override
   String get privateLabel => 'Privat';
 
   @override
@@ -9388,6 +9482,46 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get speechVoicePreviewTooltip => 'Ascultați vocea';
+
+  @override
+  String get surveyBackButton => 'Înapoi';
+
+  @override
+  String get surveyCancelConfirmation => 'Anulați chestionarul?';
+
+  @override
+  String get surveyChooseOneOption => 'Alegeți o opțiune';
+
+  @override
+  String get surveyChooseOneOrMoreOptions =>
+      'Alegeți una sau mai multe opțiuni';
+
+  @override
+  String get surveyDiscardConfirmation => 'Renunțați la rezultate și ieșiți?';
+
+  @override
+  String get surveyInputNumberValidation => 'Introduceți un număr';
+
+  @override
+  String get surveyNextButton => 'Înainte';
+
+  @override
+  String get surveyNoButton => 'Nu';
+
+  @override
+  String get surveyProgressOf => 'din';
+
+  @override
+  String get surveyTapToAnswer => 'Atingeți pentru a răspunde';
+
+  @override
+  String get surveyValueAnd => 'și';
+
+  @override
+  String get surveyValueBetween => 'Trebuie să fie între';
+
+  @override
+  String get surveyYesButton => 'Da';
 
   @override
   String get syncActivityIdle => 'inactivă';

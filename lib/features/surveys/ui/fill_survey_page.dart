@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/surveys/ui/survey_localizations.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:research_package/research_package.dart';
 
@@ -37,16 +38,20 @@ class SurveyWidget extends StatelessWidget {
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxSurveyHeight),
-      child: RPUITask(
-        task: task,
-        onSubmit: resultCallback,
-        onCancel: (RPTaskResult? result) {
-          if (result == null) {
-            DevLogger.log(name: 'SurveyWidget', message: 'No result');
-          } else {
-            cancelCallBack(result);
-          }
-        },
+      child: Localizations.override(
+        context: context,
+        delegates: surveyLocalizationsDelegates,
+        child: RPUITask(
+          task: task,
+          onSubmit: resultCallback,
+          onCancel: (RPTaskResult? result) {
+            if (result == null) {
+              DevLogger.log(name: 'SurveyWidget', message: 'No result');
+            } else {
+              cancelCallBack(result);
+            }
+          },
+        ),
       ),
     );
   }

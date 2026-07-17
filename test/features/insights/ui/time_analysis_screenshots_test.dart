@@ -22,6 +22,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
@@ -86,6 +87,30 @@ final _manualCategories = <CategoryDefinition>[
     '#3CB371',
   ),
 ];
+
+/// The general Insights scenarios predate the manual's localized fixture
+/// contract. Keep their stable IDs and time rows, but provide German demo
+/// category names when the German manual is captured.
+final _scenarioGermanNames = <String, String>{
+  'cat-client': 'Kundenarbeit',
+  'cat-deep': 'Fokusarbeit',
+  'cat-meetings': 'Besprechungen',
+  'cat-admin': 'Verwaltung',
+  'cat-learning': 'Lernen',
+  'cat-side': 'Nebenprojekt',
+  'cat-health': 'Gesundheit',
+  'cat-writing': 'Schreiben',
+  'cat-reading': 'Lesen',
+  'cat-errands': 'Erledigungen',
+};
+
+final _scenarioCategories = insightsScenarioCategories
+    .map(
+      (category) => category.copyWith(
+        name: _t(category.name, _scenarioGermanNames[category.id]!),
+      ),
+    )
+    .toList(growable: false);
 
 InsightsTimeRow _manualRow(
   DateTime start,
@@ -288,6 +313,18 @@ Future<void> _selectGranularity(
   await _tap(tester, find.text(target).last);
 }
 
+AppLocalizations _messages(WidgetTester tester) {
+  final context = tester.element(find.byType(TimeAnalysisPage));
+  return AppLocalizations.of(context)!;
+}
+
+String _currentMonthLabel(AppLocalizations messages) {
+  final month = DateFormat.yMMMM(
+    manualScreenshotLocale.toString(),
+  ).format(_now);
+  return '$month (${messages.insightsPeriodToDateSuffix})';
+}
+
 void main() {
   // OPT-IN ONLY. The harness loads real fonts via FontLoader, which
   // registers them process-wide with no way to unload. Under very_good's
@@ -358,12 +395,16 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
     );
-    expect(find.text('Time Analysis'), findsOneWidget);
-    expect(find.text('Time per day'), findsOneWidget); // daily mode default
+    final messages = _messages(tester);
+    expect(find.text(messages.insightsTimeAnalysisTitle), findsOneWidget);
+    expect(
+      find.text(messages.insightsChartDailyCaption),
+      findsOneWidget,
+    ); // daily mode default
     // KPI tile label + table column header.
-    expect(find.text('TOTAL'), findsNWidgets(2));
+    expect(find.text(messages.insightsKpiTotal), findsNWidgets(2));
     await _capture(tester, '01_week_default_dark');
   });
 
@@ -371,11 +412,12 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
       brightness: Brightness.light,
     );
-    expect(find.text('Time Analysis'), findsOneWidget);
-    expect(find.text('Choose focus categories'), findsOneWidget);
+    final messages = _messages(tester);
+    expect(find.text(messages.insightsTimeAnalysisTitle), findsOneWidget);
+    expect(find.text(messages.insightsChooseFocusCategories), findsOneWidget);
     await _capture(tester, '02_week_default_light');
   });
 
@@ -383,10 +425,10 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
       focusCategoryIds: const {'cat-client', 'cat-deep'},
     );
-    expect(find.text('FOCUS'), findsOneWidget);
+    expect(find.text(_messages(tester).insightsKpiFocus), findsOneWidget);
     await _capture(tester, '03_week_focus_dark');
   });
 
@@ -394,10 +436,15 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
     );
-    await _selectGranularity(tester, 'Month', 'Month');
-    expect(find.text('June 2026 (so far)'), findsOneWidget);
+    final messages = _messages(tester);
+    await _selectGranularity(
+      tester,
+      messages.insightsPeriodMonth,
+      messages.insightsPeriodMonth,
+    );
+    expect(find.text(_currentMonthLabel(messages)), findsOneWidget);
     await _capture(tester, '04_month_dark');
   });
 
@@ -407,10 +454,15 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now, manyCategories: true),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
     );
-    await _selectGranularity(tester, 'Month', 'Year');
-    expect(find.textContaining('Other'), findsWidgets);
+    final messages = _messages(tester);
+    await _selectGranularity(
+      tester,
+      messages.insightsPeriodMonth,
+      messages.insightsPeriodYear,
+    );
+    expect(find.textContaining(messages.insightsOtherCategories), findsWidgets);
     await _capture(tester, '05_year_weekly_other_dark');
   });
 
@@ -418,12 +470,17 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
     );
-    await _selectGranularity(tester, 'Month', 'Month');
-    await _tap(tester, find.text('Running total').last);
-    expect(find.text('Running total over the range'), findsOneWidget);
-    expect(find.text('Time per day'), findsNothing);
+    final messages = _messages(tester);
+    await _selectGranularity(
+      tester,
+      messages.insightsPeriodMonth,
+      messages.insightsPeriodMonth,
+    );
+    await _tap(tester, find.text(messages.insightsChartRunningTotal).last);
+    expect(find.text(messages.insightsChartCumulativeCaption), findsOneWidget);
+    expect(find.text(messages.insightsChartDailyCaption), findsNothing);
     await _capture(tester, '06_month_cumulative_dark');
   });
 
@@ -431,11 +488,16 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
     );
-    await _selectGranularity(tester, 'Month', 'Day');
+    final messages = _messages(tester);
+    await _selectGranularity(
+      tester,
+      messages.insightsPeriodMonth,
+      messages.insightsPeriodDay,
+    );
     // Single-day period: avg/day would repeat the total, so it is hidden.
-    expect(find.text('AVG/DAY'), findsNothing);
+    expect(find.text(messages.insightsTableAvgPerDay), findsNothing);
     await _capture(tester, '07_day_hourly_dark');
   });
 
@@ -443,9 +505,9 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: const [],
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
     );
-    expect(find.text('No tracked time in this range'), findsOneWidget);
+    expect(find.text(_messages(tester).insightsEmptyTitle), findsOneWidget);
     await _capture(tester, '08_empty_dark');
   });
 
@@ -453,12 +515,17 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsSparseRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
     );
-    await _selectGranularity(tester, 'Month', 'Month');
+    final messages = _messages(tester);
+    await _selectGranularity(
+      tester,
+      messages.insightsPeriodMonth,
+      messages.insightsPeriodMonth,
+    );
     // Sparse data: sub-minute averages render the <0:01 guard.
     expect(find.text('<0:01'), findsWidgets);
-    expect(find.text('Uncategorized'), findsWidgets);
+    expect(find.text(messages.insightsUncategorized), findsWidgets);
     await _capture(tester, '09_sparse_month_dark');
   });
 
@@ -466,10 +533,17 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsSingleCategoryRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
     );
+    final messages = _messages(tester);
     // Single series: caption names it, the one-item legend is suppressed.
-    expect(find.text('Time per day · Client Work'), findsOneWidget);
+    expect(
+      find.text(
+        '${messages.insightsChartDailyCaption} · '
+        '${_scenarioCategories.first.name}',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('100%'), findsOneWidget);
     await _capture(tester, '10_single_category_dark');
   });
@@ -478,11 +552,16 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
     );
-    await _selectGranularity(tester, 'Month', 'Week');
-    await _tap(tester, find.text('Running total').last);
-    expect(find.text('Running total over the range'), findsOneWidget);
+    final messages = _messages(tester);
+    await _selectGranularity(
+      tester,
+      messages.insightsPeriodMonth,
+      messages.insightsPeriodWeek,
+    );
+    await _tap(tester, find.text(messages.insightsChartRunningTotal).last);
+    expect(find.text(messages.insightsChartCumulativeCaption), findsOneWidget);
     await _capture(tester, '11_week_cumulative_dark');
   });
 
@@ -490,11 +569,16 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now, manyCategories: true),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
     );
-    await _selectGranularity(tester, 'Month', 'Year');
-    await _tap(tester, find.text('Running total').last);
-    expect(find.text('Running total over the range'), findsOneWidget);
+    final messages = _messages(tester);
+    await _selectGranularity(
+      tester,
+      messages.insightsPeriodMonth,
+      messages.insightsPeriodYear,
+    );
+    await _tap(tester, find.text(messages.insightsChartRunningTotal).last);
+    expect(find.text(messages.insightsChartCumulativeCaption), findsOneWidget);
     await _capture(tester, '12_year_cumulative_dark');
   });
 
@@ -502,12 +586,17 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
       brightness: Brightness.light,
     );
-    await _selectGranularity(tester, 'Month', 'Month');
-    await _tap(tester, find.text('Running total').last);
-    expect(find.text('Running total over the range'), findsOneWidget);
+    final messages = _messages(tester);
+    await _selectGranularity(
+      tester,
+      messages.insightsPeriodMonth,
+      messages.insightsPeriodMonth,
+    );
+    await _tap(tester, find.text(messages.insightsChartRunningTotal).last);
+    expect(find.text(messages.insightsChartCumulativeCaption), findsOneWidget);
     await _capture(tester, '13_month_cumulative_light');
   });
 
@@ -515,12 +604,17 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
     );
-    await _selectGranularity(tester, 'Month', 'Week');
-    await _tap(tester, find.text('Compare'));
+    final messages = _messages(tester);
+    await _selectGranularity(
+      tester,
+      messages.insightsPeriodMonth,
+      messages.insightsPeriodWeek,
+    );
+    await _tap(tester, find.text(messages.insightsCompare));
     // Comparison is numeric only: the table gains a Δ% and a Previous column.
-    expect(find.text('PREVIOUS'), findsOneWidget);
+    expect(find.text(messages.insightsTablePrevious), findsOneWidget);
     await _capture(tester, '14_week_compare_dark');
   });
 
@@ -528,11 +622,16 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
     );
-    await _selectGranularity(tester, 'Month', 'Month');
-    await _tap(tester, find.text('Compare'));
-    expect(find.text('PREVIOUS'), findsOneWidget);
+    final messages = _messages(tester);
+    await _selectGranularity(
+      tester,
+      messages.insightsPeriodMonth,
+      messages.insightsPeriodMonth,
+    );
+    await _tap(tester, find.text(messages.insightsCompare));
+    expect(find.text(messages.insightsTablePrevious), findsOneWidget);
     await _capture(tester, '15_month_compare_dark');
   });
 
@@ -540,12 +639,17 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
       brightness: Brightness.light,
     );
-    await _selectGranularity(tester, 'Month', 'Month');
-    await _tap(tester, find.text('Compare'));
-    expect(find.text('PREVIOUS'), findsOneWidget);
+    final messages = _messages(tester);
+    await _selectGranularity(
+      tester,
+      messages.insightsPeriodMonth,
+      messages.insightsPeriodMonth,
+    );
+    await _tap(tester, find.text(messages.insightsCompare));
+    expect(find.text(messages.insightsTablePrevious), findsOneWidget);
     await _capture(tester, '16_month_compare_light');
   });
 
@@ -553,9 +657,14 @@ void main() {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
-      categories: insightsScenarioCategories,
+      categories: _scenarioCategories,
     );
-    await _selectGranularity(tester, 'Month', 'Month');
+    final messages = _messages(tester);
+    await _selectGranularity(
+      tester,
+      messages.insightsPeriodMonth,
+      messages.insightsPeriodMonth,
+    );
     // Hold a touch on a bar so its per-category tooltip is on screen for the
     // capture (the hover/tap value readout is otherwise invisible in a PNG).
     await withClock(Clock.fixed(_now), () async {

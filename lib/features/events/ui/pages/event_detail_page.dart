@@ -77,6 +77,7 @@ class EventDetailPage extends ConsumerWidget {
       event: entry,
       linked: linked,
       now: DateTime.now(),
+      locale: Localizations.localeOf(context).toString(),
       categoryColor: colorFromCssHex(category?.color),
       categoryName: category?.name,
       fallbackTitle: context.messages.entryTypeLabelJournalEvent,

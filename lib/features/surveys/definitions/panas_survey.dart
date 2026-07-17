@@ -1,150 +1,76 @@
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:research_package/model.dart';
 
-final panasInstructionStep = RPInstructionStep(
-  identifier: 'panasInstructions',
-  title:
-      'The Positive and Negative Affect Schedule (PANAS; Watson et al., 1988)',
-  text:
-      'Indicate to what extent you feel this way right now, that is, at the '
-      'present moment.\n\n'
-      '1-Very Slightly or Not at All,\n'
-      '2-A Little,\n'
-      '3-Moderately,\n'
-      '4-Quite a Bit,\n'
-      '5-Extremely',
-  footnote:
-      'Watson, D., Clark, L. A., & Tellegan, A. (1988). Development and '
-      'validation of brief measures of positive and negative affect: The PANAS '
-      'scales. Journal of Personality and Social Psychology, 54(6), 1063–1070.',
-);
+/// Creates the localized five-point PANAS response scale.
+///
+/// The numerical values are the scoring contract; only their visible labels
+/// vary with the app locale.
+RPChoiceAnswerFormat createPanasAnswerFormat(AppLocalizations messages) =>
+    RPChoiceAnswerFormat(
+      answerStyle: RPChoiceAnswerStyle.SingleChoice,
+      choices: [
+        RPChoice(text: messages.panasScaleVerySlightlyOrNotAtAll, value: 1),
+        RPChoice(text: messages.panasScaleALittle, value: 2),
+        RPChoice(text: messages.panasScaleModerately, value: 3),
+        RPChoice(text: messages.panasScaleQuiteABit, value: 4),
+        RPChoice(text: messages.panasScaleExtremely, value: 5),
+      ],
+    );
 
-final panasAnswerFormat = RPChoiceAnswerFormat(
-  answerStyle: RPChoiceAnswerStyle.SingleChoice,
-  choices: [
-    RPChoice(text: 'Very slightly or not at all', value: 1),
-    RPChoice(text: 'A little', value: 2),
-    RPChoice(text: 'Moderately', value: 3),
-    RPChoice(text: 'Quite a bit', value: 4),
-    RPChoice(text: 'Extremely', value: 5),
-  ],
-);
+/// Creates the localized PANAS questionnaire.
+///
+/// Question identifiers stay stable because persisted answers and
+/// [panasScoreDefinitions] use them to calculate the positive and negative
+/// affect totals. The response labels and all user-visible copy come from the
+/// active [AppLocalizations].
+RPOrderedTask createPanasSurveyTask(AppLocalizations messages) {
+  final answerFormat = createPanasAnswerFormat(messages);
+  final questionTitles = [
+    messages.panasEmotionInterested,
+    messages.panasEmotionDistressed,
+    messages.panasEmotionExcited,
+    messages.panasEmotionUpset,
+    messages.panasEmotionStrong,
+    messages.panasEmotionGuilty,
+    messages.panasEmotionScared,
+    messages.panasEmotionHostile,
+    messages.panasEmotionEnthusiastic,
+    messages.panasEmotionProud,
+    messages.panasEmotionIrritable,
+    messages.panasEmotionAlert,
+    messages.panasEmotionAshamed,
+    messages.panasEmotionInspired,
+    messages.panasEmotionNervous,
+    messages.panasEmotionDetermined,
+    messages.panasEmotionAttentive,
+    messages.panasEmotionJittery,
+    messages.panasEmotionActive,
+    messages.panasEmotionAfraid,
+  ];
 
-final panasCompletionStep = RPCompletionStep(
-  identifier: 'panasCompletion',
-  title: 'Finished',
-  text: 'Thank you for filling out the PANAS!',
-);
-
-/// The full PANAS questionnaire: instructions, 20 single-choice mood items
-/// (each scored 1–5 via [panasAnswerFormat]), then a completion step. Passed to
-/// `runPanas`.
-final panasSurveyTask = RPOrderedTask(
-  identifier: 'panasSurveyTask',
-  steps: [
-    panasInstructionStep,
-    RPQuestionStep(
-      identifier: 'panasQuestion1',
-      title: 'Interested',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion2',
-      title: 'Distressed',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion3',
-      title: 'Excited',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion4',
-      title: 'Upset',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion5',
-      title: 'Strong',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion6',
-      title: 'Guilty',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion7',
-      title: 'Scared',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion8',
-      title: 'Hostile',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion9',
-      title: 'Enthusiastic',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion10',
-      title: 'Proud',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion11',
-      title: 'Irritable',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion12',
-      title: 'Alert',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion13',
-      title: 'Ashamed',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion14',
-      title: 'Inspired',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion15',
-      title: 'Nervous',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion16',
-      title: 'Determined',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion17',
-      title: 'Attentive',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion18',
-      title: 'Jittery',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion19',
-      title: 'Active',
-      answerFormat: panasAnswerFormat,
-    ),
-    RPQuestionStep(
-      identifier: 'panasQuestion20',
-      title: 'Afraid',
-      answerFormat: panasAnswerFormat,
-    ),
-    panasCompletionStep,
-  ],
-);
+  return RPOrderedTask(
+    identifier: 'panasSurveyTask',
+    steps: [
+      RPInstructionStep(
+        identifier: 'panasInstructions',
+        title: messages.panasInstructionTitle,
+        text: messages.panasInstructionText,
+        footnote: messages.panasInstructionFootnote,
+      ),
+      for (var index = 0; index < questionTitles.length; index++)
+        RPQuestionStep(
+          identifier: 'panasQuestion${index + 1}',
+          title: questionTitles[index],
+          answerFormat: answerFormat,
+        ),
+      RPCompletionStep(
+        identifier: 'panasCompletion',
+        title: messages.panasCompletionTitle,
+        text: messages.panasCompletionText,
+      ),
+    ],
+  );
+}
 
 /// Score buckets for PANAS: two totals, `Positive Affect Score` (10 items) and
 /// `Negative Affect Score` (the other 10), each summing Likert 1–5 answers

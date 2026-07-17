@@ -7474,6 +7474,99 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get panasCompletionText => 'Děkujeme za vyplnění dotazníku PANAS!';
+
+  @override
+  String get panasCompletionTitle => 'Hotovo';
+
+  @override
+  String get panasEmotionActive => 'Aktivní';
+
+  @override
+  String get panasEmotionAfraid => 'Bojácný';
+
+  @override
+  String get panasEmotionAlert => 'Pozorný';
+
+  @override
+  String get panasEmotionAshamed => 'Zahanbený';
+
+  @override
+  String get panasEmotionAttentive => 'Soustředěný';
+
+  @override
+  String get panasEmotionDetermined => 'Odhodlaný';
+
+  @override
+  String get panasEmotionDistressed => 'V tísni';
+
+  @override
+  String get panasEmotionEnthusiastic => 'Plný nadšení';
+
+  @override
+  String get panasEmotionExcited => 'Vzrušený';
+
+  @override
+  String get panasEmotionGuilty => 'Provinilý';
+
+  @override
+  String get panasEmotionHostile => 'Nepřátelský';
+
+  @override
+  String get panasEmotionInspired => 'Inspirovaný';
+
+  @override
+  String get panasEmotionInterested => 'Zaujatý';
+
+  @override
+  String get panasEmotionIrritable => 'Podrážděný';
+
+  @override
+  String get panasEmotionJittery => 'Roztěkaný';
+
+  @override
+  String get panasEmotionNervous => 'Nervózní';
+
+  @override
+  String get panasEmotionProud => 'Hrdý';
+
+  @override
+  String get panasEmotionScared => 'Vystrašený';
+
+  @override
+  String get panasEmotionStrong => 'Silný';
+
+  @override
+  String get panasEmotionUpset => 'Rozčilený';
+
+  @override
+  String get panasInstructionFootnote =>
+      'Watson, D., Clark, L. A., & Tellegen, A. (1988). Development and validation of brief measures of positive and negative affect: The PANAS scales. Journal of Personality and Social Psychology, 54(6), 1063–1070.';
+
+  @override
+  String get panasInstructionText =>
+      'Uveď, do jaké míry se takto cítíš právě teď, v tomto okamžiku.\n\n1—Vůbec nebo jen velmi málo,\n2—Trochu,\n3—Středně,\n4—Docela hodně,\n5—Extrémně';
+
+  @override
+  String get panasInstructionTitle =>
+      'Škála pozitivních a negativních emocí (PANAS; Watson et al., 1988)';
+
+  @override
+  String get panasScaleALittle => 'Trochu';
+
+  @override
+  String get panasScaleExtremely => 'Extrémně';
+
+  @override
+  String get panasScaleModerately => 'Středně';
+
+  @override
+  String get panasScaleQuiteABit => 'Docela hodně';
+
+  @override
+  String get panasScaleVerySlightlyOrNotAtAll => 'Vůbec nebo jen velmi málo';
+
+  @override
   String get privateLabel => 'Soukromé';
 
   @override
@@ -9341,6 +9434,45 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechVoicePreviewTooltip => 'Přehrát ukázku hlasu';
+
+  @override
+  String get surveyBackButton => 'Zpět';
+
+  @override
+  String get surveyCancelConfirmation => 'Zrušit dotazník?';
+
+  @override
+  String get surveyChooseOneOption => 'Vyber jednu možnost';
+
+  @override
+  String get surveyChooseOneOrMoreOptions => 'Vyber jednu nebo více možností';
+
+  @override
+  String get surveyDiscardConfirmation => 'Zahodit výsledky a ukončit?';
+
+  @override
+  String get surveyInputNumberValidation => 'Zadej číslo';
+
+  @override
+  String get surveyNextButton => 'Další';
+
+  @override
+  String get surveyNoButton => 'Ne';
+
+  @override
+  String get surveyProgressOf => 'z';
+
+  @override
+  String get surveyTapToAnswer => 'Klepni pro odpověď';
+
+  @override
+  String get surveyValueAnd => 'a';
+
+  @override
+  String get surveyValueBetween => 'Musí být mezi';
+
+  @override
+  String get surveyYesButton => 'Ano';
 
   @override
   String get syncActivityIdle => 'nečinné';

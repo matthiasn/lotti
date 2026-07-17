@@ -4,6 +4,7 @@ import 'package:lotti/features/surveys/definitions/ghq12_survey.dart';
 import 'package:lotti/features/surveys/definitions/panas_survey.dart';
 import 'package:lotti/features/surveys/tools/calculate.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:research_package/research_package.dart';
 
@@ -89,7 +90,7 @@ void runPanas({
 }) {
   runSurvey(
     context: context,
-    task: panasSurveyTask,
+    task: createPanasSurveyTask(context.messages),
     themeData: themeData,
     resultCallback: createResultCallback(
       scoreDefinitions: panasScoreDefinitions,

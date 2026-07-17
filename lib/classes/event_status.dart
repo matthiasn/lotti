@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 enum EventStatus {
   tentative,
@@ -12,26 +13,17 @@ enum EventStatus {
 }
 
 extension EventStatusX on EventStatus {
-  String get label {
-    switch (this) {
-      case EventStatus.tentative:
-        return 'TENTATIVE';
-      case EventStatus.planned:
-        return 'PLANNED';
-      case EventStatus.ongoing:
-        return 'ONGOING';
-      case EventStatus.completed:
-        return 'COMPLETED';
-      case EventStatus.cancelled:
-        return 'CANCELLED';
-      case EventStatus.postponed:
-        return 'POSTPONED';
-      case EventStatus.rescheduled:
-        return 'RESCHEDULED';
-      case EventStatus.missed:
-        return 'MISSED';
-    }
-  }
+  /// Human-readable, localized status label for UI surfaces.
+  String localizedLabel(BuildContext context) => switch (this) {
+    EventStatus.tentative => context.messages.eventsStatusTentative,
+    EventStatus.planned => context.messages.eventsStatusPlanned,
+    EventStatus.ongoing => context.messages.eventsStatusOngoing,
+    EventStatus.completed => context.messages.eventsStatusCompleted,
+    EventStatus.cancelled => context.messages.eventsStatusCancelled,
+    EventStatus.postponed => context.messages.eventsStatusPostponed,
+    EventStatus.rescheduled => context.messages.eventsStatusRescheduled,
+    EventStatus.missed => context.messages.eventsStatusMissed,
+  };
 
   Color get color {
     switch (this) {

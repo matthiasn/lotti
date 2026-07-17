@@ -40,7 +40,8 @@ lib/features/surveys/
 │   ├── calculate.dart
 │   └── run_surveys.dart
 ├── ui/
-│   └── fill_survey_page.dart
+│   ├── fill_survey_page.dart
+│   └── survey_localizations.dart
 └── README.md
 ```
 
@@ -71,6 +72,15 @@ The architecture is deliberately simple:
 bound is large enough for the bundled five-choice questions while keeping the
 complete task, its progress bar, and its navigation inside both the mobile
 sheet and desktop dialog.
+
+`research_package` supplies its own navigation chrome, but does not ship every
+language Lotti supports. `survey_localizations.dart` bridges the active
+`AppLocalizations` instance into its `RPLocalizationsDelegate` before mounting
+`RPUITask`. The package therefore receives the same localized next/back,
+progress, validation, choice, and cancellation copy as the surrounding modal;
+question definitions such as PANAS read the same locale source. Survey IDs,
+answer values, and score buckets remain language-neutral so stored results and
+calculations do not change with the display language.
 
 There is no surveys-specific controller, repository, or state machine in this feature today.
 
