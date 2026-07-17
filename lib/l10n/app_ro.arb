@@ -4098,13 +4098,14 @@
   "tasksSavedFiltersDeleteNamed": "Șterge {name}",
   "tasksSavedFiltersDone": "Gata",
   "tasksSavedFiltersEdit": "Editează",
-  "tasksSavedFiltersGroupSemantics": "Filtre salvate",
-  "tasksSavedFiltersRailButton": "Salvate",
+  "tasksSavedFiltersGroupSemantics": "Vizualizări de sarcini salvate",
+  "tasksSavedFiltersRailButton": "Vizualizări",
   "tasksSavedFiltersRenameNamed": "Redenumește {name}",
+  "tasksSavedFiltersReorderHelper": "Trageți sus vizualizările pe care doriți să le păstrați vizibile deasupra listei de sarcini.",
   "tasksSavedFiltersSaveButtonLabel": "Salvați filtrul",
   "tasksSavedFiltersSaveCurrentAs": "Salvați filtrul curent ca…",
   "tasksSavedFiltersSavePopupCancel": "Anulați",
-  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtru activ. Salvat în bara laterală, sub Sarcini.} few{{count} filtre active. Salvate în bara laterală, sub Sarcini.} other{{count} de filtre active. Salvate în bara laterală, sub Sarcini.}}",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtru activ. Salvat în vizualizările Sarcini.} few{{count} filtre active. Salvate în vizualizările Sarcini.} other{{count} de filtre active. Salvate în vizualizările Sarcini.}}",
   "@tasksSavedFiltersSavePopupHelper": {
     "placeholders": {
       "count": {
@@ -4115,7 +4116,7 @@
   "tasksSavedFiltersSavePopupHint": "ex.: Blocate sau în așteptare",
   "tasksSavedFiltersSavePopupSave": "Salvați",
   "tasksSavedFiltersSavePopupTitle": "Denumiți acest filtru",
-  "tasksSavedFiltersSheetTitle": "Filtre salvate",
+  "tasksSavedFiltersSheetTitle": "Vizualizări salvate",
   "tasksSavedFiltersShowLess": "Afișați mai puțin",
   "tasksSavedFiltersShowMore": "{count, plural, =1{încă 1 filtru salvat} few{încă {count} filtre salvate} other{încă {count} de filtre salvate}}",
   "tasksSavedFiltersTaskCount": "{count, plural, =1{1 sarcină} few{{count} sarcini} other{{count} de sarcini}}",

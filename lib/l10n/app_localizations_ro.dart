@@ -10124,15 +10124,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksSavedFiltersEdit => 'Editează';
 
   @override
-  String get tasksSavedFiltersGroupSemantics => 'Filtre salvate';
+  String get tasksSavedFiltersGroupSemantics =>
+      'Vizualizări de sarcini salvate';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Salvate';
+  String get tasksSavedFiltersRailButton => 'Vizualizări';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {
     return 'Redenumește $name';
   }
+
+  @override
+  String get tasksSavedFiltersReorderHelper =>
+      'Trageți sus vizualizările pe care doriți să le păstrați vizibile deasupra listei de sarcini.';
 
   @override
   String get tasksSavedFiltersSaveButtonLabel => 'Salvați filtrul';
@@ -10148,9 +10153,9 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count de filtre active. Salvate în bara laterală, sub Sarcini.',
-      few: '$count filtre active. Salvate în bara laterală, sub Sarcini.',
-      one: '1 filtru activ. Salvat în bara laterală, sub Sarcini.',
+      other: '$count de filtre active. Salvate în vizualizările Sarcini.',
+      few: '$count filtre active. Salvate în vizualizările Sarcini.',
+      one: '1 filtru activ. Salvat în vizualizările Sarcini.',
     );
     return '$_temp0';
   }
@@ -10165,7 +10170,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksSavedFiltersSavePopupTitle => 'Denumiți acest filtru';
 
   @override
-  String get tasksSavedFiltersSheetTitle => 'Filtre salvate';
+  String get tasksSavedFiltersSheetTitle => 'Vizualizări salvate';
 
   @override
   String get tasksSavedFiltersShowLess => 'Afișați mai puțin';

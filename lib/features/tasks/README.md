@@ -728,7 +728,7 @@ Saved-view counts: `savedTaskFilterCountsProvider` computes `{savedFilterId → 
 
 Surfaces:
 
-1. Task-pane saved-filter rail + sheet (`lib/features/tasks/ui/saved_filters/mobile/`, shared by mobile and desktop) — see "Saved-filter rail" below. The rail replaces the old header `· {savedFilterName}` suffix and keeps the current view beside the content it changes.
+1. Task-pane saved-view controls (`lib/features/tasks/ui/saved_filters/`) — the desktop monitor bar, mobile rail, and shared management sheet described below keep the current task view beside the list it changes.
 2. Filter modal save flow — `DesignSystemTaskFilterActionBar` exposes the localized **Save filter** action next to Apply. Tapping it opens an inline name popup (`MenuAnchor`-anchored) with autofocus, Enter-to-commit, Escape-to-cancel, click-outside dismiss. The name is passed to `showTaskFilterModal`'s `onSavePressed` handler, which calls `create()` for new saves and `updateFilter()` when the user edits and re-saves the currently active filter under the same name.
 3. Save / update / delete confirmation toasts via the design-system toast (`context.showToast`, in `saved_task_filter_toast.dart`).
 
@@ -744,30 +744,72 @@ stateDiagram-v2
   Saved --> Saved: Save with same name →\nupdateFilter (no rename)
 ```
 
-### Saved-filter rail
+### Saved task views
 
-`TasksTabPage` renders `SavedTaskFilterRail` between the header and the
-active-filter chips on every form factor. The widgets retain their historical
-`lib/features/tasks/ui/saved_filters/mobile/` path but are shared by desktop and
-mobile. They reuse the common state (`savedTaskFiltersControllerProvider`,
-`currentSavedTaskFilterIdProvider`, `tasksFilterHasUnsavedClausesProvider`,
-`savedTaskFilterCountsProvider`, `SavedTaskFilterActivator`) and do not depend
-on global navigation.
+Saved task filters are presented as **Saved views** because the product-level
+object is a reusable task-list state, not a global navigation destination.
+`TasksTabPage` owns both responsive entry surfaces between its search/filter
+header and active-filter chips:
 
-- `SavedTaskFilterRail` — a conditional band rendered only when ≥1 saved filter exists (otherwise `SizedBox.shrink`, so the layout is unchanged for users without saved filters). The normal layout is a non-scrolling `Row`, left→right: the band-leading "Saved" button, then an "All" pill (clears to the default view), then the active saved pill (or a "Custom" pill carrying the live filtered count for an ad-hoc filter that matches no saved filter — sourced from `currentTasksFilterCountProvider`, which mirrors the live list's empty-status→all-statuses expansion so the number agrees with the list), then as many most-recently-used quick-jump pills as fit, and a trailing "+ Save" call-to-action shown only when `tasksFilterHasUnsavedClausesProvider` is true.
-  - **"Saved" button** (`_SavedButton`) — the rail's single explicit sheet opener, and deliberately distinct from the filter pills: a **borderless** filled `DsPill` (the All / active pills are filled **and** bordered), so the menu-opener never reads as just another selectable filter value. It is led by a `bookmarks_outlined` glyph, carries the **saved-filter count** (`saved.length`) in the SAME shared `SavedFilterCountText` slot the rail pills use — so it reads "Saved 6" peer to "All 214", not a subordinate parenthetical numeral — and is closed by an `unfold_more` glyph rather than a down-chevron: a down-chevron implied a dropdown, but the manager rises from the bottom as a sheet, so the bidirectional unfold glyph signals "opens a panel that rises". Label word and glyphs use `text.highEmphasis` so they stay legible over the light-theme pill fill. One tap opens the sheet.
-  - **"+ Save" CTA** (`_SaveChip`) — a teal-`tinted` `DsPill` (`DsPillVariant.tinted`, `color: interactive.enabled`: a filled mint wash, no border) with a leading `+`, so it reads as a distinct call-to-action — NOT the teal-`outline` vocabulary the bordered active / "Custom" pills use, and NOT the muted dashed `DsGhostChip` skin (reserved for true empty/placeholder states). Wrapped in a ≥48dp tap target.
-  - **No chevron on the pills:** only the "Saved" button carries a disclosure affordance. The active and "Custom" pills carry none — the whole pill body opens the sheet on a tap, while an inactive quick-jump pill applies/switches its filter — so each pill is one predictable whole-pill tap target.
-  - The pill run is hard-capped and never scrolls — overflow lives in the sheet; MRU fit is computed deterministically in `LayoutBuilder` from token-derived width heuristics (capped at `maxMruPills`). The selection is tri-state (a saved pill, "All", or "Custom") so exactly one anchor always reads.
-  - **Large text** (`MediaQuery.textScalerOf(context).scale(1) ≥ 1.3`): the rail collapses to a **SINGLE** horizontal `SingleChildScrollView` holding `[active anchor (leads), "All", "Saved", "+ Save"?]` separated by the SAME token gap as the normal rail (so chips never overlap), with a right-edge `ShaderMask` alpha fade (`BlendMode.dstIn`) as the scroll affordance. There is **no** "Saved pinned outside the scroll" split — everything lives in the one scroll view. The active anchor leads and stays fully readable (capped at the viewport width so a long name ellipsizes rather than pushing the row arbitrarily wide); "All" follows because return-to-unfiltered is the most common escape hatch, and when "All" *is* the active selection it doubles as the anchor rather than rendering twice; the MRU quick-jumps are dropped.
-  - Counts use stale-while-revalidate (`AsyncValue.value`) so a background sync never flashes pills back to `–`.
-- `SavedTaskFilterPill` — a `DsPill(filled, bordered)` pill (optional leading category dot, ellipsizing name, shared tabular count slot capped at `999+`, dimmed `0`, `–` on cold start) wrapped in a ≥48dp tap target. There is deliberately **no** in-pill selection check and **no** chevron: the active state is already encoded by the teal `interactive.enabled` border + `surface.selected` tint + bold name (and the category dot), so each pill stays a single unambiguous tap target and the freed width goes to the name. The leading category dot carries a thin background-toned ring (`Border.all(background.level01)`) so a teal category colour never melts into the teal selection accent. A name that still overflows truncates its leading "Category · " prefix *before* its trailing "· Status" segment (`_PillLabel` lays the prefix out in a `Flexible` so it ellipsizes first while the `·`-led status segment is pinned beside it; names without a `·` fall back to ordinary trailing ellipsis) — the dot already conveys the category, so the status is the higher-value half to keep. In the normal rail the active pill is the `Flexible` (priority-width) element while "All" stays content-sized. The count is rendered by the shared `SavedFilterCountText` widget (see below); selection draws on the orthogonal `DsPill.selected` flag.
-- `SavedFilterCountText` (`saved_task_filter_pill.dart`) — the **single** count renderer shared by the rail pill, the "Saved" button, and the sheet rows, so the same number never changes type, weight, or sizing between surfaces. One type token (`others.caption`), tabular figures, fixed `w600` weight. Emphasis is gated on `selected`: a non-zero count on the active/tinted pill or row reads `text.highEmphasis` (so it stays legible on the mint fill), an unselected non-zero count reads `text.mediumEmphasis`, and a dimmed `0` or a cold-start / loading `–` (a null count) drops to `text.lowEmphasis`. `minWidth` reserves a stable column start (rail pill `step7`, sheet `step8`) but is only a MIN — the slot grows so at large text the name ellipsizes while the full count is never width-clipped.
-- `SavedTaskFiltersSheet` (`showSavedTaskFiltersSheet`) — the complete switcher + manager: full-width ≥48dp single-select rows whose **active** row carries a token-backed `colors.surface.selected` background tint (the same mint the rail's selected pill uses) so selection is multi-channel (tinted surface + indicator + bold name) rather than leaning on the indicator alone, plus a right-aligned `SavedFilterCountText` column (the same shared renderer + min-width-but-growable slot as the rail pill). The leading indicator (`_SelectionIndicator`) depends on the mode: **outside Edit** it is a single-select **radio** — a filled teal `interactive.enabled` dot when selected, an empty `text.mediumEmphasis` ring (not the near-invisible `lowEmphasis`) otherwise; **in Edit mode** selection is disabled, so the radio degrades to a **non-interactive status dot** (a filled accent dot marks the currently-applied filter; non-active rows show an empty slot of the same footprint so the name column never shifts on toggle). An "All tasks" row shows `allTasksTotalCountProvider`. An Edit toggle (teal `interactive.enabled` foreground — the sheet's one accent) reveals per-row Rename (→ text modal) / Delete (→ `showConfirmationModal`), each a ≥48dp target separated by a clear gap. Edit-mode rows keep the **same 48dp row height** as normal rows (the ≥48dp action targets define the height; no extra vertical padding is added) so toggling Edit swaps the count column for the action pair without the list jumping, and "All tasks" drops its count in Edit mode so a lone count is never mixed against the other rows' action-pairs. Deleting the *currently-active* saved filter falls back to the default "All" view (`SavedTaskFilterActivator.clearToDefault()`) so the live filter is never left on an orphaned shape; "All tasks" itself is non-deletable. A bottom "Save current filter as…" create row closes the sheet. Tapping a row applies + closes.
-- `promptSaveCurrentTaskFilter` / `promptTaskFilterName` (`save_current_task_filter.dart`) — the one create verb shared by the rail "+ Save" chip and the sheet create row: snapshot the live filter via `liveTasksFilterFor`, prompt for a name, then `create()` and promote the new id in the per-device MRU order.
-- `savedTaskFilterMruProvider` (`saved_task_filter_mru_controller.dart`) — an in-memory, per-device most-recently-used order (never persisted or synced) feeding the rail's quick-jump pills; `touch(id)` promotes an id to the front on activation/create.
+```mermaid
+flowchart LR
+  State[SavedTaskFiltersController<br/>ordered saved filters]
+  Counts[Live count providers]
+  Desktop[DesktopSavedTaskViewBar<br/>current view + stable monitors]
+  Mobile[SavedTaskFilterRail<br/>compact MRU quick jumps]
+  Sheet[SavedTaskFiltersSheet<br/>switch + create + rename + reorder + delete]
 
-Every number in the rail and sheet flows through the one `SavedFilterCountText` renderer — the "Saved" button's saved-*definitions* count and the per-pill / per-row task counts all share the same tabular, `selected`-gated treatment, so the same value never changes type or weight between surfaces.
+  State --> Desktop
+  Counts --> Desktop
+  State --> Mobile
+  Counts --> Mobile
+  Desktop -->|open current view| Sheet
+  Mobile -->|open Views| Sheet
+  Sheet -->|reorder changes desktop priority| State
+```
+
+- `DesktopSavedTaskViewBar` is the desktop information architecture. The
+  widest, selected control always names the current saved view, `All tasks`, or
+  `Custom`, carries its live result count, and opens the complete sheet. Beside
+  it, at most four compact monitor tiles surface queue magnitude above the view
+  name: `All` is the one-tap reset when necessary, then saved views follow their
+  persisted order while the active view is excluded because it is already the
+  primary control. The result is stable ambient monitoring; MRU activity never
+  silently redefines what is important. The width-derived cap steps down from
+  four monitors to two and then one as the task pane narrows. With an unsaved
+  custom filter the bar reserves a `Save filter` action and caps monitors at
+  two. At text scale `>= 1.3`, secondary saved monitors collapse and a
+  horizontal run preserves the current view, `All` reset, and save action
+  without overflow.
+- Desktop monitor counts use `SavedFilterCountText(prominent: true)`: tabular
+  `bodySmall`/`w700` numerals, centered above a caption label. `0` remains
+  visible at low emphasis, values cap at `999+`, and `AsyncValue.value` keeps
+  the previous count during background refresh. Category colours remain a
+  leading dot and category names are included in semantics. Compact names
+  containing `·` or `:` drop the leading prefix in the tile so a constrained
+  `Lotti · Blocked` monitor reads simply `Blocked`; the primary selector,
+  tooltip, and semantics retain the full name.
+- `SavedTaskFilterRail` remains the compact mobile entry surface. It shows the
+  `Views` disclosure, `All`, the current saved/custom view, width-permitting MRU
+  quick jumps, and `Save filter` for an ad-hoc filter. Large text keeps the
+  current anchor and reset in one horizontally scrollable run. Mobile MRU state
+  is intentionally in-memory and per-device; it does not set desktop monitor
+  priority.
+- `SavedTaskFiltersSheet` is the complete switcher and manager. Normal rows are
+  single-select ≥48dp targets with live counts and multi-channel selection
+  (selected surface, radio, bold name). Edit mode replaces selection controls
+  with a ≥48dp drag handle plus rename/delete actions while retaining a small
+  active-status dot. Its helper text explains that order controls which views
+  remain visible above the desktop task list. Reorder writes the controller's
+  per-device order; rename/delete keep their existing persistence and sync
+  behavior. Deleting the active view resets the live query to `All`.
+- `SavedTaskFilterPill` and `SavedFilterCountText` remain the shared compact
+  primitives for mobile and sheet rows. Default counts use the caption token;
+  the desktop monitor opts into the prominent body-small variant without
+  changing loading, cap, tabular-figure, or emphasis behavior.
+- `promptSaveCurrentTaskFilter` / `promptTaskFilterName` remain the shared
+  create flow. A new view is persisted through
+  `SavedTaskFiltersController.create()` and promoted in mobile MRU state.
 
 The redesigned browse page also preserves the existing non-filter runtime behavior:
 

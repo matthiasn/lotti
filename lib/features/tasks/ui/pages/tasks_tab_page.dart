@@ -23,6 +23,7 @@ import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/desktop/desktop_saved_task_view_bar.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
@@ -233,9 +234,13 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                   showTaskFilterModal(context, showTasks: true),
             ),
             // Saved views are task-scoped controls, so they stay beside the
-            // task list on every form factor instead of displacing global
-            // desktop navigation. The rail self-collapses when no views exist.
-            const SavedTaskFilterRail(),
+            // task list instead of displacing global desktop navigation.
+            // Desktop gets stable, count-first queue monitors; mobile keeps the
+            // compact switcher. Both collapse when no saved views exist.
+            if (isDesktopLayout(context))
+              const DesktopSavedTaskViewBar()
+            else
+              const SavedTaskFilterRail(),
             const _TasksTabActiveFilters(),
             Expanded(
               child: RefreshIndicator(

@@ -4849,8 +4849,8 @@
   },
   "tasksSavedFiltersDone": "Done",
   "tasksSavedFiltersEdit": "Edit",
-  "tasksSavedFiltersGroupSemantics": "Saved filters",
-  "tasksSavedFiltersRailButton": "Saved",
+  "tasksSavedFiltersGroupSemantics": "Saved task views",
+  "tasksSavedFiltersRailButton": "Views",
   "tasksSavedFiltersRenameNamed": "Rename {name}",
   "@tasksSavedFiltersRenameNamed": {
     "placeholders": {
@@ -4859,10 +4859,11 @@
       }
     }
   },
+  "tasksSavedFiltersReorderHelper": "Drag to choose which views stay visible above the task list.",
   "tasksSavedFiltersSaveButtonLabel": "Save filter",
   "tasksSavedFiltersSaveCurrentAs": "Save current filter as…",
   "tasksSavedFiltersSavePopupCancel": "Cancel",
-  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filter active. Saved to sidebar under Tasks.} other{{count} filters active. Saved to sidebar under Tasks.}}",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filter active. Saved in Task views.} other{{count} filters active. Saved in Task views.}}",
   "@tasksSavedFiltersSavePopupHelper": {
     "placeholders": {
       "count": {
@@ -4873,7 +4874,7 @@
   "tasksSavedFiltersSavePopupHint": "e.g. Blocked or on hold",
   "tasksSavedFiltersSavePopupSave": "Save",
   "tasksSavedFiltersSavePopupTitle": "Name this filter",
-  "tasksSavedFiltersSheetTitle": "Saved filters",
+  "tasksSavedFiltersSheetTitle": "Saved views",
   "tasksSavedFiltersShowLess": "Show fewer",
   "tasksSavedFiltersShowMore": "{count, plural, =1{1 more saved filter} other{{count} more saved filters}}",
   "@tasksSavedFiltersShowMore": {

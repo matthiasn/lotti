@@ -25,6 +25,8 @@ abstract final class SavedTaskFiltersSheetKeys {
   static const Key allRow = Key('saved-filters-sheet-all-row');
   static const Key createRow = Key('saved-filters-sheet-create-row');
   static Key row(String id) => Key('saved-filters-sheet-row-$id');
+  static Key dragHandle(String id) =>
+      Key('saved-filters-sheet-drag-handle-$id');
   static Key rename(String id) => Key('saved-filters-sheet-rename-$id');
   static Key delete(String id) => Key('saved-filters-sheet-delete-$id');
 }
@@ -129,6 +131,21 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
     if (created != null && mounted) await Navigator.of(context).maybePop();
   }
 
+  void _reorder(
+    List<SavedTaskFilter> saved,
+    int oldIndex,
+    int newIndex,
+  ) {
+    if (newIndex == oldIndex) return;
+    final dragId = saved[oldIndex].id;
+    final targetId = saved[newIndex].id;
+    unawaited(
+      ref
+          .read(savedTaskFiltersControllerProvider.notifier)
+          .reorder(dragId, targetId),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -176,18 +193,64 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
           editing: _editing,
           onTap: _applyAll,
         ),
-        for (final f in saved)
-          _SavedFilterRow(
-            key: SavedTaskFiltersSheetKeys.row(f.id),
-            rowKey: f.id == activeId ? _activeRowKey : null,
-            filter: f,
-            selected: f.id == activeId,
-            count: counts?[f.id],
-            editing: _editing,
-            onTap: () => _applySaved(f),
-            onRename: () => _rename(f),
-            onDelete: () => _delete(f),
+        if (_editing) ...[
+          Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(
+              tokens.spacing.step3,
+              tokens.spacing.step2,
+              tokens.spacing.step3,
+              tokens.spacing.step3,
+            ),
+            child: Text(
+              messages.tasksSavedFiltersReorderHelper,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
           ),
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            itemCount: saved.length,
+            onReorderItem: (oldIndex, newIndex) =>
+                _reorder(saved, oldIndex, newIndex),
+            proxyDecorator: (child, index, animation) => Material(
+              type: MaterialType.transparency,
+              child: child,
+            ),
+            itemBuilder: (context, index) {
+              final f = saved[index];
+              return KeyedSubtree(
+                key: ValueKey('saved-filter-sheet-item-${f.id}'),
+                child: _SavedFilterRow(
+                  key: SavedTaskFiltersSheetKeys.row(f.id),
+                  rowKey: f.id == activeId ? _activeRowKey : null,
+                  filter: f,
+                  selected: f.id == activeId,
+                  count: counts?[f.id],
+                  editing: true,
+                  reorderIndex: index,
+                  onTap: () => _applySaved(f),
+                  onRename: () => _rename(f),
+                  onDelete: () => _delete(f),
+                ),
+              );
+            },
+          ),
+        ] else
+          for (final f in saved)
+            _SavedFilterRow(
+              key: SavedTaskFiltersSheetKeys.row(f.id),
+              rowKey: f.id == activeId ? _activeRowKey : null,
+              filter: f,
+              selected: f.id == activeId,
+              count: counts?[f.id],
+              editing: false,
+              onTap: () => _applySaved(f),
+              onRename: () => _rename(f),
+              onDelete: () => _delete(f),
+            ),
         Divider(
           height: tokens.spacing.step6,
           color: tokens.colors.decorative.level01,
@@ -381,6 +444,7 @@ class _SavedFilterRow extends StatelessWidget {
     required this.onTap,
     required this.onRename,
     required this.onDelete,
+    this.reorderIndex,
     this.rowKey,
     super.key,
   });
@@ -392,6 +456,7 @@ class _SavedFilterRow extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onRename;
   final VoidCallback onDelete;
+  final int? reorderIndex;
   final Key? rowKey;
 
   @override
@@ -462,8 +527,11 @@ class _SavedFilterRow extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
             child: Row(
               children: [
-                _SelectionIndicator(selected: selected, editing: true),
-                SizedBox(width: tokens.spacing.step3),
+                _EditDragHandle(
+                  filterId: filter.id,
+                  index: reorderIndex!,
+                  selected: selected,
+                ),
                 nameWidget,
                 _EditAction(
                   buttonKey: SavedTaskFiltersSheetKeys.rename(filter.id),
@@ -509,6 +577,63 @@ class _SavedFilterRow extends StatelessWidget {
             minWidth: tokens.spacing.step8,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EditDragHandle extends StatelessWidget {
+  const _EditDragHandle({
+    required this.filterId,
+    required this.index,
+    required this.selected,
+  });
+
+  final String filterId;
+  final int index;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final label = context.messages.tasksSavedFilterDragHandleSemantics;
+    final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        label: label,
+        child: ReorderableDragStartListener(
+          key: SavedTaskFiltersSheetKeys.dragHandle(filterId),
+          index: index,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: minTarget,
+              minHeight: minTarget,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.drag_indicator_rounded,
+                  size: tokens.spacing.step5,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+                if (selected) ...[
+                  SizedBox(width: tokens.spacing.step1),
+                  Container(
+                    width: tokens.spacing.step3,
+                    height: tokens.spacing.step3,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: tokens.colors.interactive.enabled,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

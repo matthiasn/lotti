@@ -4,7 +4,7 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 part 'saved_task_filter.freezed.dart';
 part 'saved_task_filter.g.dart';
 
-/// A user-saved Tasks filter pinned to the sidebar under Tasks.
+/// A user-saved Tasks filter surfaced as a task-local Saved view.
 ///
 /// Position in the persisted list is the sort order. The ephemeral
 /// search query is intentionally NOT part of [filter] — it stays on

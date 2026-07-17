@@ -4098,13 +4098,14 @@
   "tasksSavedFiltersDeleteNamed": "{name} löschen",
   "tasksSavedFiltersDone": "Fertig",
   "tasksSavedFiltersEdit": "Bearbeiten",
-  "tasksSavedFiltersGroupSemantics": "Gespeicherte Filter",
-  "tasksSavedFiltersRailButton": "Gespeichert",
+  "tasksSavedFiltersGroupSemantics": "Gespeicherte Aufgabenansichten",
+  "tasksSavedFiltersRailButton": "Ansichten",
   "tasksSavedFiltersRenameNamed": "{name} umbenennen",
+  "tasksSavedFiltersReorderHelper": "Zieh die Ansichten nach oben, die über der Aufgabenliste sichtbar bleiben sollen.",
   "tasksSavedFiltersSaveButtonLabel": "Filter speichern",
   "tasksSavedFiltersSaveCurrentAs": "Aktuellen Filter speichern als…",
   "tasksSavedFiltersSavePopupCancel": "Abbrechen",
-  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 Filter aktiv. In der Seitenleiste unter „Aufgaben“ gespeichert.} other{{count} Filter aktiv. In der Seitenleiste unter „Aufgaben“ gespeichert.}}",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 Filter aktiv. In den Aufgabenansichten gespeichert.} other{{count} Filter aktiv. In den Aufgabenansichten gespeichert.}}",
   "@tasksSavedFiltersSavePopupHelper": {
     "placeholders": {
       "count": {
@@ -4115,7 +4116,7 @@
   "tasksSavedFiltersSavePopupHint": "z. B. Blockiert oder pausiert",
   "tasksSavedFiltersSavePopupSave": "Speichern",
   "tasksSavedFiltersSavePopupTitle": "Diesen Filter benennen",
-  "tasksSavedFiltersSheetTitle": "Gespeicherte Filter",
+  "tasksSavedFiltersSheetTitle": "Gespeicherte Ansichten",
   "tasksSavedFiltersShowLess": "Weniger anzeigen",
   "tasksSavedFiltersShowMore": "{count, plural, =1{1 weiterer gespeicherter Filter} other{{count} weitere gespeicherte Filter}}",
   "tasksSavedFiltersTaskCount": "{count, plural, =1{1 Aufgabe} other{{count} Aufgaben}}",

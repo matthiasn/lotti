@@ -158,7 +158,7 @@ Future<int> currentTasksFilterCount(Ref ref) async {
 
 /// Convenience family — reads a single saved filter's count from the
 /// aggregated map. Returns 0 when the id no longer resolves (concurrent
-/// delete) so the sidebar doesn't show a stale number.
+/// delete) so task-view surfaces don't show a stale number.
 final FutureProviderFamily<int, String> savedTaskFilterCountProvider =
     FutureProvider.autoDispose.family<int, String>(
       savedTaskFilterCount,

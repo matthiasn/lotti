@@ -9875,15 +9875,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksSavedFiltersEdit => 'Edit';
 
   @override
-  String get tasksSavedFiltersGroupSemantics => 'Saved filters';
+  String get tasksSavedFiltersGroupSemantics => 'Saved task views';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Saved';
+  String get tasksSavedFiltersRailButton => 'Views';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {
     return 'Rename $name';
   }
+
+  @override
+  String get tasksSavedFiltersReorderHelper =>
+      'Drag to choose which views stay visible above the task list.';
 
   @override
   String get tasksSavedFiltersSaveButtonLabel => 'Save filter';
@@ -9899,8 +9903,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count filters active. Saved to sidebar under Tasks.',
-      one: '1 filter active. Saved to sidebar under Tasks.',
+      other: '$count filters active. Saved in Task views.',
+      one: '1 filter active. Saved in Task views.',
     );
     return '$_temp0';
   }
@@ -9915,7 +9919,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksSavedFiltersSavePopupTitle => 'Name this filter';
 
   @override
-  String get tasksSavedFiltersSheetTitle => 'Saved filters';
+  String get tasksSavedFiltersSheetTitle => 'Saved views';
 
   @override
   String get tasksSavedFiltersShowLess => 'Show fewer';

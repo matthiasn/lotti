@@ -37,6 +37,7 @@ class _RecordingSavedController extends SavedTaskFiltersController {
   final List<(String id, String name)> renameCalls = [];
   final List<String> deleteCalls = [];
   final List<String> createCalls = [];
+  final List<(String dragId, String targetId)> reorderCalls = [];
 
   @override
   Future<List<SavedTaskFilter>> build() async => _seed;
@@ -58,6 +59,11 @@ class _RecordingSavedController extends SavedTaskFiltersController {
   }) async {
     createCalls.add(name);
     return SavedTaskFilter(id: 'new', name: name, filter: filter);
+  }
+
+  @override
+  Future<void> reorder(String dragId, String targetId) async {
+    reorderCalls.add((dragId, targetId));
   }
 }
 
@@ -428,6 +434,45 @@ void main() {
     await tester.pump();
     expect(find.byKey(SavedTaskFiltersSheetKeys.rename('f1')), findsNothing);
   });
+
+  testWidgets(
+    'Edit mode explains watchlist priority and reorders saved views',
+    (tester) async {
+      final bench = await _pumpSheet(tester);
+
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+      await tester.pump();
+
+      expect(
+        find.text(
+          'Drag to choose which views stay visible above the task list.',
+        ),
+        findsOneWidget,
+      );
+      for (final id in ['f1', 'f2']) {
+        final handle = find.byKey(
+          SavedTaskFiltersSheetKeys.dragHandle(id),
+        );
+        expect(handle, findsOneWidget);
+        expect(tester.getSize(handle).width, greaterThanOrEqualTo(48));
+        expect(tester.getSize(handle).height, greaterThanOrEqualTo(48));
+      }
+
+      final list = tester.widget<ReorderableListView>(
+        find.byType(ReorderableListView),
+      );
+      list.onReorderItem!(1, 0);
+      await tester.pump();
+
+      list.onReorderItem!(0, 1);
+      await tester.pump();
+
+      expect(bench.saved.reorderCalls, [
+        ('f2', 'f1'),
+        ('f1', 'f2'),
+      ]);
+    },
+  );
 
   testWidgets('Rename opens the name modal and renames via the controller', (
     tester,

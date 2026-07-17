@@ -34,7 +34,7 @@
   <releases>
     <release version="0.9.1050" date="2026-07-17">
       <description>
-          <p>The desktop sidebar is navigation-first again. Saved task views now stay beside the task list, recording, timer, and agent status share one compact activity row with details on demand, and healthy sync remains quiet until work needs attention.</p>
+          <p>The desktop sidebar is navigation-first again. Saved task views now stay beside the task list: the current view remains prominent while ordered, count-first queue monitors keep important work visible at a glance, and the full Saved views panel handles switching, reordering, renaming, and deleting. Recording, timer, and agent status share one compact activity row with details on demand, and healthy sync remains quiet until work needs attention.</p>
       </description>
     </release>
     <release version="0.9.1049" date="2026-07-16">

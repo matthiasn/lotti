@@ -4098,13 +4098,14 @@
   "tasksSavedFiltersDeleteNamed": "Eliminar {name}",
   "tasksSavedFiltersDone": "Listo",
   "tasksSavedFiltersEdit": "Editar",
-  "tasksSavedFiltersGroupSemantics": "Filtros guardados",
-  "tasksSavedFiltersRailButton": "Guardados",
+  "tasksSavedFiltersGroupSemantics": "Vistas de tareas guardadas",
+  "tasksSavedFiltersRailButton": "Vistas",
   "tasksSavedFiltersRenameNamed": "Renombrar {name}",
+  "tasksSavedFiltersReorderHelper": "Arrastra arriba las vistas que quieras mantener visibles sobre la lista de tareas.",
   "tasksSavedFiltersSaveButtonLabel": "Guardar filtro",
   "tasksSavedFiltersSaveCurrentAs": "Guardar el filtro actual como…",
   "tasksSavedFiltersSavePopupCancel": "Cancelar",
-  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtro activo. Guardado en la barra lateral, bajo Tareas.} other{{count} filtros activos. Guardados en la barra lateral, bajo Tareas.}}",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtro activo. Guardado en las vistas de Tareas.} other{{count} filtros activos. Guardados en las vistas de Tareas.}}",
   "@tasksSavedFiltersSavePopupHelper": {
     "placeholders": {
       "count": {
@@ -4115,7 +4116,7 @@
   "tasksSavedFiltersSavePopupHint": "p. ej. Bloqueadas o en pausa",
   "tasksSavedFiltersSavePopupSave": "Guardar",
   "tasksSavedFiltersSavePopupTitle": "Asigna un nombre a este filtro",
-  "tasksSavedFiltersSheetTitle": "Filtros guardados",
+  "tasksSavedFiltersSheetTitle": "Vistas guardadas",
   "tasksSavedFiltersShowLess": "Mostrar menos",
   "tasksSavedFiltersShowMore": "{count, plural, =1{1 filtro guardado más} other{{count} filtros guardados más}}",
   "tasksSavedFiltersTaskCount": "{count, plural, =1{1 tarea} other{{count} tareas}}",

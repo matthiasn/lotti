@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.1050]
 ### Changed
 - **The desktop sidebar is navigation-first again.** Saved task views now live
-  beside the task list, recording/timer/agent status collapses into one compact
-  activity row with details on demand, and healthy sync stays quiet until work
-  needs attention.
+  beside the task list: the current view stays prominent while ordered,
+  count-first queue monitors keep important work visible at a glance, and the
+  full Saved views panel handles switching, reordering, renaming, and deleting.
+  Recording/timer/agent status collapses into one compact activity row with
+  details on demand, and healthy sync stays quiet until work needs attention.
 
 ## [0.9.1049]
 ### Added

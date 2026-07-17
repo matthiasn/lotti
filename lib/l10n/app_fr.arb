@@ -4098,13 +4098,14 @@
   "tasksSavedFiltersDeleteNamed": "Supprimer {name}",
   "tasksSavedFiltersDone": "Terminé",
   "tasksSavedFiltersEdit": "Modifier",
-  "tasksSavedFiltersGroupSemantics": "Filtres enregistrés",
-  "tasksSavedFiltersRailButton": "Enregistrés",
+  "tasksSavedFiltersGroupSemantics": "Vues de tâches enregistrées",
+  "tasksSavedFiltersRailButton": "Vues",
   "tasksSavedFiltersRenameNamed": "Renommer {name}",
+  "tasksSavedFiltersReorderHelper": "Fais glisser en haut les vues à garder visibles au-dessus de la liste des tâches.",
   "tasksSavedFiltersSaveButtonLabel": "Enregistrer le filtre",
   "tasksSavedFiltersSaveCurrentAs": "Enregistrer le filtre actuel sous…",
   "tasksSavedFiltersSavePopupCancel": "Annuler",
-  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtre actif. Enregistré dans la barre latérale, sous Tâches.} other{{count} filtres actifs. Enregistrés dans la barre latérale, sous Tâches.}}",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtre actif. Enregistré dans les vues Tâches.} other{{count} filtres actifs. Enregistrés dans les vues Tâches.}}",
   "@tasksSavedFiltersSavePopupHelper": {
     "placeholders": {
       "count": {
@@ -4115,7 +4116,7 @@
   "tasksSavedFiltersSavePopupHint": "ex. : Bloquées ou en pause",
   "tasksSavedFiltersSavePopupSave": "Enregistrer",
   "tasksSavedFiltersSavePopupTitle": "Nomme ce filtre",
-  "tasksSavedFiltersSheetTitle": "Filtres enregistrés",
+  "tasksSavedFiltersSheetTitle": "Vues enregistrées",
   "tasksSavedFiltersShowLess": "Afficher moins",
   "tasksSavedFiltersShowMore": "{count, plural, =1{1 filtre enregistré de plus} other{{count} filtres enregistrés de plus}}",
   "tasksSavedFiltersTaskCount": "{count, plural, =1{1 tâche} other{{count} tâches}}",

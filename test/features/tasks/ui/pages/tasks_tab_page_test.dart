@@ -21,6 +21,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activ
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/desktop/desktop_saved_task_view_bar.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -865,10 +866,10 @@ void main() {
     );
   });
 
-  group('Tasks saved-filter rail', () {
-    // The header no longer carries a "· {name}" suffix; the mobile rail surfaces
-    // the active saved filter instead. These tests exercise the page-level
-    // wiring (rail visible only when ≥1 saved filter exists, active name shown).
+  group('Tasks saved-view controls', () {
+    // The header no longer carries a "· {name}" suffix; task-local controls
+    // surface the active saved view instead. These tests exercise page-level
+    // responsive wiring, collapse behavior, and the active view name.
     Widget buildSubjectWithSavedFilter({
       required String? activeId,
       required List<SavedTaskFilter> seed,
@@ -911,7 +912,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // The rail collapses to nothing — no Saved button — and the old
+      // The mobile rail collapses to nothing — no Views button — and the old
       // "· {name}" header suffix is gone for good.
       expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsNothing);
       expect(find.textContaining('· '), findsNothing);
@@ -936,9 +937,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
-      // The Saved button keeps the plain "Saved" label (its saved-count rides a
+      // The Views button keeps the plain "Views" label (its saved-count rides a
       // separate slot, not a parenthetical).
-      expect(find.text('Saved'), findsOneWidget);
+      expect(find.text('Views'), findsOneWidget);
       // The active pill shows the saved filter's name.
       expect(find.text('In Progress P0'), findsOneWidget);
     });
@@ -967,11 +968,14 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byKey(SavedTaskFilterRailKeys.savedButton), findsOneWidget);
+      expect(
+        find.byKey(DesktopSavedTaskViewBarKeys.currentView),
+        findsOneWidget,
+      );
       expect(find.text('Desktop focus'), findsOneWidget);
 
       final railTop = tester
-          .getTopLeft(find.byKey(SavedTaskFilterRailKeys.root))
+          .getTopLeft(find.byKey(DesktopSavedTaskViewBarKeys.root))
           .dy;
       final taskListTop = tester.getTopLeft(find.byType(RefreshIndicator)).dy;
       expect(railTop, lessThan(taskListTop));

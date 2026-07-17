@@ -10001,15 +10001,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksSavedFiltersEdit => 'Bearbeiten';
 
   @override
-  String get tasksSavedFiltersGroupSemantics => 'Gespeicherte Filter';
+  String get tasksSavedFiltersGroupSemantics =>
+      'Gespeicherte Aufgabenansichten';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Gespeichert';
+  String get tasksSavedFiltersRailButton => 'Ansichten';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {
     return '$name umbenennen';
   }
+
+  @override
+  String get tasksSavedFiltersReorderHelper =>
+      'Zieh die Ansichten nach oben, die über der Aufgabenliste sichtbar bleiben sollen.';
 
   @override
   String get tasksSavedFiltersSaveButtonLabel => 'Filter speichern';
@@ -10026,9 +10031,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other:
-          '$count Filter aktiv. In der Seitenleiste unter „Aufgaben“ gespeichert.',
-      one: '1 Filter aktiv. In der Seitenleiste unter „Aufgaben“ gespeichert.',
+      other: '$count Filter aktiv. In den Aufgabenansichten gespeichert.',
+      one: '1 Filter aktiv. In den Aufgabenansichten gespeichert.',
     );
     return '$_temp0';
   }
@@ -10043,7 +10047,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksSavedFiltersSavePopupTitle => 'Diesen Filter benennen';
 
   @override
-  String get tasksSavedFiltersSheetTitle => 'Gespeicherte Filter';
+  String get tasksSavedFiltersSheetTitle => 'Gespeicherte Ansichten';
 
   @override
   String get tasksSavedFiltersShowLess => 'Weniger anzeigen';

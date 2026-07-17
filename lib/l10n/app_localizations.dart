@@ -17098,13 +17098,13 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFiltersGroupSemantics.
   ///
   /// In en, this message translates to:
-  /// **'Saved filters'**
+  /// **'Saved task views'**
   String get tasksSavedFiltersGroupSemantics;
 
   /// No description provided for @tasksSavedFiltersRailButton.
   ///
   /// In en, this message translates to:
-  /// **'Saved'**
+  /// **'Views'**
   String get tasksSavedFiltersRailButton;
 
   /// No description provided for @tasksSavedFiltersRenameNamed.
@@ -17112,6 +17112,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rename {name}'**
   String tasksSavedFiltersRenameNamed(String name);
+
+  /// No description provided for @tasksSavedFiltersReorderHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to choose which views stay visible above the task list.'**
+  String get tasksSavedFiltersReorderHelper;
 
   /// No description provided for @tasksSavedFiltersSaveButtonLabel.
   ///
@@ -17134,7 +17140,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFiltersSavePopupHelper.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 filter active. Saved to sidebar under Tasks.} other{{count} filters active. Saved to sidebar under Tasks.}}'**
+  /// **'{count, plural, =1{1 filter active. Saved in Task views.} other{{count} filters active. Saved in Task views.}}'**
   String tasksSavedFiltersSavePopupHelper(int count);
 
   /// No description provided for @tasksSavedFiltersSavePopupHint.
@@ -17158,7 +17164,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksSavedFiltersSheetTitle.
   ///
   /// In en, this message translates to:
-  /// **'Saved filters'**
+  /// **'Saved views'**
   String get tasksSavedFiltersSheetTitle;
 
   /// No description provided for @tasksSavedFiltersShowLess.

@@ -10138,15 +10138,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksSavedFiltersEdit => 'Modifier';
 
   @override
-  String get tasksSavedFiltersGroupSemantics => 'Filtres enregistrés';
+  String get tasksSavedFiltersGroupSemantics => 'Vues de tâches enregistrées';
 
   @override
-  String get tasksSavedFiltersRailButton => 'Enregistrés';
+  String get tasksSavedFiltersRailButton => 'Vues';
 
   @override
   String tasksSavedFiltersRenameNamed(String name) {
     return 'Renommer $name';
   }
+
+  @override
+  String get tasksSavedFiltersReorderHelper =>
+      'Fais glisser en haut les vues à garder visibles au-dessus de la liste des tâches.';
 
   @override
   String get tasksSavedFiltersSaveButtonLabel => 'Enregistrer le filtre';
@@ -10163,9 +10167,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other:
-          '$count filtres actifs. Enregistrés dans la barre latérale, sous Tâches.',
-      one: '1 filtre actif. Enregistré dans la barre latérale, sous Tâches.',
+      other: '$count filtres actifs. Enregistrés dans les vues Tâches.',
+      one: '1 filtre actif. Enregistré dans les vues Tâches.',
     );
     return '$_temp0';
   }
@@ -10180,7 +10183,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksSavedFiltersSavePopupTitle => 'Nomme ce filtre';
 
   @override
-  String get tasksSavedFiltersSheetTitle => 'Filtres enregistrés';
+  String get tasksSavedFiltersSheetTitle => 'Vues enregistrées';
 
   @override
   String get tasksSavedFiltersShowLess => 'Afficher moins';

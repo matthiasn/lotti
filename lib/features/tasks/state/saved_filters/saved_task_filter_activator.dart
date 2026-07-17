@@ -130,8 +130,8 @@ String? currentSavedTaskFilterId(Ref ref) {
 }
 
 /// True when the live filter has clauses that don't match any saved filter
-/// — the sidebar `+` and the modal Save button use this to decide whether
-/// they're enabled.
+/// — the task-view bars and the modal Save button use this to decide whether
+/// their Save action is enabled.
 final Provider<bool> tasksFilterHasUnsavedClausesProvider =
     Provider.autoDispose<bool>(
       tasksFilterHasUnsavedClauses,

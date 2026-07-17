@@ -3883,13 +3883,14 @@
   "tasksSavedFiltersDeleteNamed": "Smazat {name}",
   "tasksSavedFiltersDone": "Hotovo",
   "tasksSavedFiltersEdit": "Upravit",
-  "tasksSavedFiltersGroupSemantics": "Uložené filtry",
-  "tasksSavedFiltersRailButton": "Uložené",
+  "tasksSavedFiltersGroupSemantics": "Uložená zobrazení úkolů",
+  "tasksSavedFiltersRailButton": "Zobrazení",
   "tasksSavedFiltersRenameNamed": "Přejmenovat {name}",
+  "tasksSavedFiltersReorderHelper": "Přetažením zvolíš, která zobrazení zůstanou viditelná nad seznamem úkolů.",
   "tasksSavedFiltersSaveButtonLabel": "Uložit filtr",
   "tasksSavedFiltersSaveCurrentAs": "Uložit aktuální filtr jako…",
   "tasksSavedFiltersSavePopupCancel": "Zrušit",
-  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{Aktivní 1 filtr. Uloženo na boční panel pod Úkoly.} few{Aktivní {count} filtry. Uloženo na boční panel pod Úkoly.} other{Aktivních {count} filtrů. Uloženo na boční panel pod Úkoly.}}",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{Aktivní 1 filtr. Uloženo do zobrazení úkolů.} few{Aktivní {count} filtry. Uloženo do zobrazení úkolů.} other{Aktivních {count} filtrů. Uloženo do zobrazení úkolů.}}",
   "@tasksSavedFiltersSavePopupHelper": {
     "placeholders": {
       "count": {
@@ -3900,7 +3901,7 @@
   "tasksSavedFiltersSavePopupHint": "např. Blokované nebo pozastavené",
   "tasksSavedFiltersSavePopupSave": "Uložit",
   "tasksSavedFiltersSavePopupTitle": "Pojmenuj tento filtr",
-  "tasksSavedFiltersSheetTitle": "Uložené filtry",
+  "tasksSavedFiltersSheetTitle": "Uložená zobrazení",
   "tasksSavedFiltersShowLess": "Zobrazit méně",
   "tasksSavedFiltersShowMore": "{count, plural, =1{1 další uložený filtr} few{{count} další uložené filtry} other{{count} dalších uložených filtrů}}",
   "tasksSavedFiltersTaskCount": "{count, plural, =1{1 úkol} few{{count} úkoly} other{{count} úkolů}}",
