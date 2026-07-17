@@ -4424,6 +4424,14 @@
   },
   "settingsMatrixRoomInviteTitle": "Room invite",
   "settingsMatrixSentMessagesLabel": "Sent messages:",
+  "settingsMatrixSentMessageType": "Sent ({eventType})",
+  "@settingsMatrixSentMessageType": {
+    "placeholders": {
+      "eventType": {
+        "type": "String"
+      }
+    }
+  },
   "settingsMatrixStartVerificationLabel": "Start Verification",
   "settingsMatrixStatsTitle": "Matrix Stats",
   "settingsMatrixTitle": "Sync Settings",

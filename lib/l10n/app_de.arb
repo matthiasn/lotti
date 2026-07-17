@@ -3686,6 +3686,14 @@
   },
   "settingsMatrixRoomInviteTitle": "Raumeinladung",
   "settingsMatrixSentMessagesLabel": "Gesendete Nachrichten:",
+  "settingsMatrixSentMessageType": "Gesendet ({eventType})",
+  "@settingsMatrixSentMessageType": {
+    "placeholders": {
+      "eventType": {
+        "type": "String"
+      }
+    }
+  },
   "settingsMatrixStartVerificationLabel": "Verifizierung starten",
   "settingsMatrixStatsTitle": "Matrix-Statistiken",
   "settingsMatrixTitle": "Matrix-Synchronisierungseinstellungen",

@@ -3693,6 +3693,14 @@
   },
   "settingsMatrixRoomInviteTitle": "Pozvánka do místnosti",
   "settingsMatrixSentMessagesLabel": "Odeslané zprávy:",
+  "settingsMatrixSentMessageType": "Odesláno ({eventType})",
+  "@settingsMatrixSentMessageType": {
+    "placeholders": {
+      "eventType": {
+        "type": "String"
+      }
+    }
+  },
   "settingsMatrixStartVerificationLabel": "Spustit ověření",
   "settingsMatrixStatsTitle": "Statistiky Matrix",
   "settingsMatrixTitle": "Nastavení synchronizace",

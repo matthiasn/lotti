@@ -9125,6 +9125,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMatrixRoomInviteTitle => 'Pozvánka do místnosti';
 
   @override
+  String settingsMatrixSentMessageType(String eventType) {
+    return 'Odesláno ($eventType)';
+  }
+
+  @override
   String get settingsMatrixSentMessagesLabel => 'Odeslané zprávy:';
 
   @override

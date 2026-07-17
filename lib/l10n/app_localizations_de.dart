@@ -9053,6 +9053,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixRoomInviteTitle => 'Raumeinladung';
 
   @override
+  String settingsMatrixSentMessageType(String eventType) {
+    return 'Gesendet ($eventType)';
+  }
+
+  @override
   String get settingsMatrixSentMessagesLabel => 'Gesendete Nachrichten:';
 
   @override

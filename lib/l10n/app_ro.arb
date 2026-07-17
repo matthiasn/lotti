@@ -3686,6 +3686,14 @@
   },
   "settingsMatrixRoomInviteTitle": "Invitație la cameră",
   "settingsMatrixSentMessagesLabel": "Mesaje trimise:",
+  "settingsMatrixSentMessageType": "Trimis ({eventType})",
+  "@settingsMatrixSentMessageType": {
+    "placeholders": {
+      "eventType": {
+        "type": "String"
+      }
+    }
+  },
   "settingsMatrixStartVerificationLabel": "Începeți verificarea",
   "settingsMatrixStatsTitle": "Statistici Matrix",
   "settingsMatrixTitle": "Setări sincronizare Matrix",

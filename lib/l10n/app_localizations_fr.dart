@@ -9182,6 +9182,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMatrixRoomInviteTitle => 'Invitation au salon';
 
   @override
+  String settingsMatrixSentMessageType(String eventType) {
+    return 'Envoyé ($eventType)';
+  }
+
+  @override
   String get settingsMatrixSentMessagesLabel => 'Messages envoyés :';
 
   @override
