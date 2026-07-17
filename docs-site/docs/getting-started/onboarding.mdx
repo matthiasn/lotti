@@ -1,0 +1,120 @@
+---
+title: Set up Lotti with onboarding
+description: Connect an AI provider, choose recording style and work areas, and turn a first thought into a real task.
+---
+
+# Set up Lotti with onboarding
+
+Onboarding connects the minimum pieces needed for Lotti's AI-assisted task
+workflow: one provider, a recording style, at least one category, and a first
+real task. It is a guided setup, not a separate demo environment—providers,
+categories, and tasks created here remain in the normal app.
+
+Open **Settings → Onboarding** whenever you want to start or replay the flow.
+The page also shows whether this profile has already created its first
+AI-structured task.
+
+<ManualScreenshot
+  caseId="onboarding/settings"
+  alt="Lotti Onboarding settings showing an activated status and the Replay onboarding action"
+  caption="This Project Waddle profile has already created its first AI task. Replay onboarding remains available after activation."
+/>
+
+## Start with the welcome promise
+
+<ManualScreenshot
+  caseId="onboarding/welcome"
+  alt="Lotti onboarding welcome panel inviting the user to connect an AI brain and turn speech into a structured task"
+  caption="The welcome panel opens over the current app. Choose your AI brain to continue, or leave the flow without changing setup."
+/>
+
+Choose **Choose your AI brain** to begin. **Look around first**, the dimmed
+area outside the panel, and the system back action all leave onboarding without
+connecting anything. You can return from Settings later.
+
+Lotti may also offer this welcome automatically to an eligible profile. The
+automatic prompt has a limited retry cadence; the Settings entry does not, so
+you always retain a way back.
+
+## Choose where task structuring runs
+
+<ManualScreenshot
+  caseId="onboarding/providers"
+  alt="Lotti onboarding provider chooser with Melious.ai, Mistral, Gemini, Qwen, OpenAI, and Ollama"
+  caption="Primary hosted providers appear first. Expand More options for OpenAI and the local Ollama path."
+/>
+
+The provider page identifies the available hosted and local choices:
+
+- **Melious.ai** is the recommended EU-hosted default with dynamic model
+  routing.
+- **Mistral**, **Gemini**, and **Qwen** expose their corresponding hosted
+  regions.
+- **OpenAI** is available under the expanded options.
+- **Ollama** connects to a compatible local endpoint and does not require a
+  hosted API key.
+
+For a hosted provider, paste the provider API key. Lotti verifies the
+connection before enabling **Connect**. Ollama verifies the configured local
+endpoint and reports reachable models. A successful connection persists the
+provider and seeds the models and inference profile used by the remaining
+steps.
+
+Captured task text is sent to the provider assigned to the selected category
+for structuring. Choose a provider whose deployment and data-handling model
+fits the material you plan to capture. A reachable local Ollama endpoint keeps
+that structuring request on the machine running it.
+
+## Pick the recording feel and work areas
+
+After connection succeeds, choose the recording style used by the first-task
+capture and later voice-capture surfaces. You can change it again under
+**Settings → Recording Style**.
+
+Next, select one or more work areas. Presets cover common categories such as
+Work, Fitness, Family, and Friends; **Add your own** creates a category with a
+name that matches your workspace. Onboarding reuses an existing category with
+the same name instead of creating a duplicate, restores it when necessary, and
+connects it to the newly seeded inference profile.
+
+The manual fixture creates two real destinations—**Penguin Operations** and
+**Mission Control**—so the next step demonstrates the same category choice a
+working account sees.
+
+## Capture the first real task
+
+<ManualScreenshot
+  caseId="onboarding/first-task"
+  alt="Lotti first-task onboarding panel with voice capture, Penguin Operations and Mission Control destinations, suggestions, and Rather type"
+  caption="Choose where the task should land, then speak naturally, use a starter suggestion, or select Rather type. Penguin Operations is selected here."
+/>
+
+The first-task panel uses Lotti's normal capture pipeline. Choose the target
+category, then use one of three paths:
+
+1. Select the recording visual and speak the task in a normal sentence.
+2. Choose a starter suggestion to try the structuring path immediately.
+3. Choose **Rather type?** and enter the thought without using the microphone.
+
+Lotti echoes the captured words while it structures them. The result is a real
+task in the chosen category, not onboarding-only sample data. When structuring
+produces checklist suggestions, they arrive on the task as proposals so you
+can confirm them rather than silently changing the task.
+
+<ManualScreenshot
+  caseId="onboarding/task-created"
+  alt="Lotti onboarding success panel showing the created task Inspect the Europa sardine relay"
+  caption="The typed Project Waddle thought becomes “Inspect the Europa sardine relay.” The task stays in the panel until you choose it."
+/>
+
+Choose the created task card to close onboarding and open its normal task page.
+From there you can review checklist proposals, add cover art or evidence, set a
+due date and priority, and bring the task into Daily OS.
+
+If you close the flow after connecting a provider, Lotti keeps that provider
+setup and treats the welcome as completed. Replaying onboarding later remains
+safe: it is an explicit Settings action rather than another automatic prompt.
+
+Continue with [create your first task](./first-task.mdx),
+[manage categories](../organize-and-reflect/categories.mdx), and
+[configure providers](../ai-and-automation/provider-setup.mdx).

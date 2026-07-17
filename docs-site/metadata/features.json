@@ -200,6 +200,29 @@
       ]
     },
     {
+      "id": "onboarding",
+      "title": "Onboarding",
+      "page": "getting-started/onboarding",
+      "status": "verified",
+      "screenshotCases": [
+        "onboarding/settings",
+        "onboarding/welcome",
+        "onboarding/providers",
+        "onboarding/first-task",
+        "onboarding/task-created"
+      ]
+    },
+    {
+      "id": "whats-new",
+      "title": "What's New",
+      "page": "reference/whats-new",
+      "status": "verified",
+      "screenshotCases": [
+        "whats-new/latest",
+        "whats-new/past-release"
+      ]
+    },
+    {
       "id": "sync",
       "title": "Sync",
       "page": "sync-and-data/sync",

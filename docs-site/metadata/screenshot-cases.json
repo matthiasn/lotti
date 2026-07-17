@@ -605,6 +605,83 @@
         "desktop-light": "advanced_settings_about_desktop_light.png",
         "desktop-dark": "advanced_settings_about_desktop_dark.png"
       }
+    },
+    {
+      "id": "onboarding/settings",
+      "title": "Onboarding settings",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_settings_mobile_light.png",
+        "mobile-dark": "onboarding_settings_mobile_dark.png",
+        "desktop-light": "onboarding_settings_desktop_light.png",
+        "desktop-dark": "onboarding_settings_desktop_dark.png"
+      }
+    },
+    {
+      "id": "onboarding/welcome",
+      "title": "Onboarding welcome",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_welcome_mobile_light.png",
+        "mobile-dark": "onboarding_welcome_mobile_dark.png",
+        "desktop-light": "onboarding_welcome_desktop_light.png",
+        "desktop-dark": "onboarding_welcome_desktop_dark.png"
+      }
+    },
+    {
+      "id": "onboarding/providers",
+      "title": "Onboarding provider selection",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_providers_mobile_light.png",
+        "mobile-dark": "onboarding_providers_mobile_dark.png",
+        "desktop-light": "onboarding_providers_desktop_light.png",
+        "desktop-dark": "onboarding_providers_desktop_dark.png"
+      }
+    },
+    {
+      "id": "onboarding/first-task",
+      "title": "Onboarding first-task capture",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_first_task_mobile_light.png",
+        "mobile-dark": "onboarding_first_task_mobile_dark.png",
+        "desktop-light": "onboarding_first_task_desktop_light.png",
+        "desktop-dark": "onboarding_first_task_desktop_dark.png"
+      }
+    },
+    {
+      "id": "onboarding/task-created",
+      "title": "Onboarding task created",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_task_created_mobile_light.png",
+        "mobile-dark": "onboarding_task_created_mobile_dark.png",
+        "desktop-light": "onboarding_task_created_desktop_light.png",
+        "desktop-dark": "onboarding_task_created_desktop_dark.png"
+      }
+    },
+    {
+      "id": "whats-new/latest",
+      "title": "Latest What's New release",
+      "sourceTest": "test/features/whats_new/ui/whats_new_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "whats_new_latest_mobile_light.png",
+        "mobile-dark": "whats_new_latest_mobile_dark.png",
+        "desktop-light": "whats_new_latest_desktop_light.png",
+        "desktop-dark": "whats_new_latest_desktop_dark.png"
+      }
+    },
+    {
+      "id": "whats-new/past-release",
+      "title": "Past What's New release",
+      "sourceTest": "test/features/whats_new/ui/whats_new_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "whats_new_past_release_mobile_light.png",
+        "mobile-dark": "whats_new_past_release_mobile_dark.png",
+        "desktop-light": "whats_new_past_release_desktop_light.png",
+        "desktop-dark": "whats_new_past_release_desktop_dark.png"
+      }
     }
   ]
 }

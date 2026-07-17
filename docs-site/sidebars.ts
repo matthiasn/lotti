@@ -9,6 +9,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'getting-started/mental-model',
+        'getting-started/onboarding',
         'getting-started/first-task',
       ],
     },
@@ -52,6 +53,7 @@ const sidebars: SidebarsConfig = {
       label: 'Reference',
       items: [
         'reference/settings',
+        'reference/whats-new',
         'reference/appearance',
         'reference/recording-style',
         'reference/keyboard-shortcuts',
