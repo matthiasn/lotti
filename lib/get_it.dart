@@ -217,10 +217,10 @@ Future<void> registerSingletons() async {
     }
   }());
 
-  // Prepared rollout migration. The single lever in `onboarding_rollout.dart`
-  // is false during production testing, making this a read/write-free no-op.
-  // Once armed, awaiting it before `runApp` prevents the legacy AI setup prompt
-  // from racing the one-time flag overwrite.
+  // Prepared Daily OS rollout migration. The lever in
+  // `onboarding_rollout.dart` is false during production testing, making this
+  // a read/write-free no-op. Once armed, awaiting it before `runApp` prevents
+  // the Daily OS gate from racing the one-time flag overwrite.
   await applyOnboardingRolloutFlags(
     journalDb: journalDb,
     settingsDb: settingsDb,

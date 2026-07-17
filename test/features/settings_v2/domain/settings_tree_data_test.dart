@@ -14,7 +14,6 @@ List<SettingsNode> _tree({
   bool enableWhatsNew = true,
   bool enableSpeechTts = false,
   bool enableHealthImport = false,
-  bool enableOnboardingFtue = false,
 }) => buildSettingsTree(
   labels: _labels,
   enableHabits: enableHabits,
@@ -23,7 +22,6 @@ List<SettingsNode> _tree({
   enableWhatsNew: enableWhatsNew,
   enableSpeechTts: enableSpeechTts,
   enableHealthImport: enableHealthImport,
-  enableOnboardingFtue: enableOnboardingFtue,
 );
 
 SettingsNode? _find(List<SettingsNode> nodes, String id) {
@@ -63,25 +61,33 @@ void main() {
     });
   });
 
-  group('buildSettingsTree — enableOnboardingFtue', () {
-    test('omits the onboarding leaf when off (default)', () {
-      expect(_ids(_tree()), isNot(contains('onboarding')));
-    });
-
-    test('adds a top-level onboarding leaf (panel: onboarding) when on', () {
-      final enabled = _tree(enableOnboardingFtue: true);
-      expect(_ids(enabled), contains('onboarding'));
-      final node = _find(enabled, 'onboarding');
+  group('buildSettingsTree — onboarding', () {
+    // The onboarding replay entry is unconditional: it is the only way back
+    // to the welcome once the auto-show budget is spent or the rollout
+    // retired it for an already-configured install, so no flag may hide it.
+    test('always exposes a top-level onboarding leaf (panel: onboarding)', () {
+      final node = _find(_tree(), 'onboarding');
       expect(node, isNotNull);
       expect(node!.hasChildren, isFalse);
       expect(node.panel, 'onboarding');
     });
 
+    test('survives every other feature flag being off', () {
+      expect(
+        _ids(
+          _tree(
+            enableHabits: false,
+            enableDashboards: false,
+            enableMatrix: false,
+            enableWhatsNew: false,
+          ),
+        ),
+        contains('onboarding'),
+      );
+    });
+
     test('sits at the root, right after whats-new and before ai', () {
-      final rootIds = _tree(
-        enableOnboardingFtue: true,
-      ).map((n) => n.id).toList();
-      expect(rootIds, [
+      expect(_tree().map((n) => n.id).toList(), [
         'whats-new',
         'onboarding',
         'ai',
@@ -121,11 +127,12 @@ void main() {
       // Entity definitions (habits / categories / labels / dashboards
       // / measurables) collapse into the single `definitions` branch;
       // config flags reparent under `advanced`. Root reads as
-      // AI · Agents · Daily OS · Sync · Definitions · Theming · Keyboard
-      // shortcuts · Advanced.
+      // Onboarding · AI · Agents · Daily OS · Sync · Definitions · Theming ·
+      // Keyboard shortcuts · Advanced.
       final rootIds = _tree().map((n) => n.id).toList();
       expect(rootIds, [
         'whats-new',
+        'onboarding',
         'ai',
         'agents',
         'daily-os',
@@ -396,6 +403,7 @@ void main() {
       walk(_tree());
       expect(leafPanels, {
         'whats-new': 'whats-new',
+        'onboarding': 'onboarding',
         // AI Settings v4 added per-tab leaves under `ai` so the
         // sidebar exposes Providers / Models / Profiles directly
         // instead of forcing the user to drill into the AI landing
@@ -524,6 +532,8 @@ void main() {
       ).map((n) => n.id).toList();
 
       expect(ids, [
+        // Onboarding has no flag: it is always in the minimal tree.
+        'onboarding',
         'ai',
         'agents',
         'daily-os',

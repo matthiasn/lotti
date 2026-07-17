@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:collection/collection.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 
@@ -105,16 +103,6 @@ const ftueMeliousCategoryColor = '#14B8A6'; // Melious Teal
 const ftueOllamaCategoryColor = '#0F172A'; // Ollama Charcoal
 const ftueOpenAiCategoryColor = '#10A37F'; // OpenAI Green
 const ftueMistralCategoryColor = '#FF7000'; // Mistral Orange
-
-/// Brand colors as Color constants for UI usage.
-///
-/// New UI surfaces should prefer `tokens.colors.aiProvider.*` from the
-/// design-system tokens. These constants remain only because
-/// `ai_provider_selection_modal.dart` has not migrated yet.
-const ftueGeminiColor = Color(0xFF4285F4);
-const ftueMlxAudioColor = Color(0xFF00BCD4);
-const ftueOpenAiColor = Color(0xFF10A37F);
-const ftueMistralColor = Color(0xFFFF7000);
 
 // =============================================================================
 // Alibaba FTUE (First Time User Experience) Model Constants

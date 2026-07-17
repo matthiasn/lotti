@@ -189,12 +189,12 @@ void main() {
       expect(FlagsBody.defaultDisplayedItems, contains('enable_whats_new'));
     });
 
-    test('includes the onboarding FTUE flag', () {
-      // The FTUE gate must be toggleable from settings so it can be
-      // flipped on once the flow is complete.
+    test('does not carry the retired onboarding FTUE flag', () {
+      // The FTUE welcome is unconditionally on and no longer has a flag; a
+      // row here would render a toggle backed by nothing.
       expect(
         FlagsBody.defaultDisplayedItems,
-        contains('enable_onboarding_ftue'),
+        isNot(contains('enable_onboarding_ftue')),
       );
     });
 

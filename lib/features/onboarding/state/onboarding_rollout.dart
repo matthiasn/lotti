@@ -4,34 +4,36 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 
-/// The single release lever for the onboarding rollout.
+/// Release lever for force-enabling the Daily OS walkthrough.
 ///
-/// Keep this `false` throughout production testing. Testers opt in with the two
-/// public config flags instead. Flipping this to `true` activates both one-shot
-/// migrations below: startup force-enables the flags for every install, then
-/// the welcome gate retires FTUE for installs that already have a working
-/// planner route.
+/// Keep this `false` throughout production testing. Testers opt in to the Daily
+/// OS walkthrough with its public config flag instead. Flipping this to `true`
+/// activates the startup migration that force-enables that flag for every
+/// install. The Welcome backfill is intentionally independent: retiring the
+/// FTUE flag must classify configured existing installs even while this lever
+/// remains off.
 const onboardingRolloutEnabled = false;
 
-/// Marker written after the rollout force-enables both master flags.
+/// Marker written after the rollout force-enables its remaining master flag.
 const onboardingRolloutFlagsAppliedKey = 'onboarding_rollout_v1_flags_applied';
 
 /// Marker written after rollout backfill classifies an existing install.
 const onboardingRolloutBackfillAppliedKey =
     'onboarding_rollout_v1_backfill_applied';
 
-/// The two interruptive flows activated together when the lever is pulled.
-const onboardingRolloutFlags = <String>[
-  enableOnboardingFtueFlag,
-  dailyOsOnboardingEnabledFlag,
-];
+/// The remaining interruptive flow activated when the lever is pulled.
+///
+/// The welcome no longer has a config flag; its cadence and completion state
+/// are the only gates. Daily OS remains separately switchable while its
+/// walkthrough completes production testing.
+const onboardingRolloutFlags = <String>[dailyOsOnboardingEnabledFlag];
 
-/// Force-enables both onboarding master flags exactly once per install.
+/// Force-enables the remaining onboarding master flag exactly once per install.
 ///
 /// [initConfigFlags] is insert-only, so merely changing a seed default cannot
 /// reach installs that already carry a `false` row. This overwrite migration
-/// runs after seeding and before `runApp`, avoiding a race with the legacy AI
-/// setup prompt. The marker makes later user opt-outs permanent.
+/// runs after seeding and before `runApp`, avoiding a race with the Daily OS
+/// gate. The marker makes later user opt-outs permanent.
 ///
 /// When [rolloutEnabled] is false the method performs no reads or writes. The
 /// optional parameter keeps the production lever compile-time explicit while
@@ -74,18 +76,15 @@ Future<void> applyOnboardingRolloutFlags({
 /// initialization, so its one-shot answer cannot race template/version seeding.
 /// Failures leave the marker absent for a later retry.
 ///
-/// When [rolloutEnabled] is false this returns before reading the marker or
-/// invoking [readProviderReady], so manual production testing cannot silently
-/// retire the welcome.
+/// This runs independently of [onboardingRolloutEnabled] now that the Welcome
+/// has no master flag. The one-shot marker preserves deliberate QA resets and
+/// prevents a later provider connection from reclassifying an install.
 Future<void> applyOnboardingRolloutBackfill({
   required Future<bool> Function() readProviderReady,
   required Future<void> Function() retireWelcome,
   required SettingsDb settingsDb,
   required DomainLogger logger,
-  bool rolloutEnabled = onboardingRolloutEnabled,
 }) async {
-  if (!rolloutEnabled) return;
-
   try {
     final alreadyApplied = await settingsDb.itemByKey(
       onboardingRolloutBackfillAppliedKey,

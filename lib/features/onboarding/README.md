@@ -9,19 +9,20 @@ D3/D7/D30 retention. The full design and phased build plan live in
 > connect-your-brain front door), **Phase 2** (the live voice→task aha), the
 > **auto-show trigger + re-show cadence**, and the top-level **Settings ›
 > Onboarding** replay entry described below are implemented. The **D1 return
-> loop** is forthcoming. The flow is in a **dark launch**: both master config
-> flags seed **off**, and the prepared one-shot rollout lever remains `false`
-> while production testing runs (see [Rollout and production testing](#rollout-and-production-testing)).
-> Testers opt in through Settings › Advanced › Flags. While the FTUE flag is
-> on, `_showAiSetupPrompt` early-returns so the pre-FTUE
-> `AiProviderSelectionModal` and the welcome cannot stack.
+> loop** is forthcoming. The welcome is **released to everyone and has no
+> config flag**: cadence and completion state are its only gates. It is the
+> sole first-run setup path; the pre-FTUE `AiProviderSelectionModal` and
+> `AiSetupPromptService` have been deleted. The Daily OS walkthrough remains
+> in a dark launch: its flag seeds off and the prepared all-install rollout
+> lever remains `false` while production testing continues (see
+> [Daily OS rollout and production testing](#daily-os-rollout-and-production-testing)).
 
 ## End-to-end flow
 
 ```mermaid
 flowchart TD
-    L[First launch · no provider configured] -->|enableOnboardingFtueFlag OFF by default| LEGACY[AiProviderSelectionModal · pre-FTUE]
-    L -->|tester enables flag · eligible| W[OnboardingWelcomeModal]
+    L[First launch · no provider configured] -->|eligible| W[OnboardingWelcomeModal]
+    L -->|budget spent / already completed| NONE[no auto-show · replay via Settings › Onboarding]
     W --> WL[welcome · hero + promise + CTA]
     WL -->|Choose your AI brain| CN[connect · provider tiles]
     WL -->|Look around first| SK[skip → onDismiss · no persistence, grace period preserved]
@@ -55,12 +56,11 @@ independent of the "connect your brain" front door's own step logic above.
 | `OnboardingWelcomeCadence` | `AsyncNotifier<void>` — the mutation side: `recordShown()` and `markCompleted()`, persisted to `SettingsDb` under a private `welcome_*` key prefix (deliberately **not** a `ConfigFlags` row — those are public, user-toggleable; this is per-install bookkeeping the user never edits directly). |
 
 **Eligibility** (all must hold):
-- the prepared rollout backfill provider has resolved; it is a read/write-free
-  no-op while the release lever is off,
-- `enableOnboardingFtueFlag` is on,
-- What's New has nothing unseen left to show (sequenced behind it, exactly
-  like `AiSetupPromptService`'s own gating — the two auto-shown overlays never
-  race for the screen),
+- the one-shot existing-install backfill has resolved; configured installs are
+  marked complete before cadence is read, independently of the Daily OS rollout
+  lever,
+- What's New has nothing unseen left to show (sequenced behind it so the two
+  auto-shown overlays never race for the screen),
 - the welcome has not been marked `completed`,
 - the user has not yet reached the real "aha" — `OnboardingFunnelState.
   reachedRealAha`, a structured task actually landing. This graduates on real
@@ -70,17 +70,15 @@ independent of the "connect your brain" front door's own step logic above.
 - once shown at least once, it is still within a 14-day grace window of the
   first show.
 
-`BeamerApp`'s `AppScreen` sequences this after What's New, mirroring the
-`aiSetupPromptServiceProvider` chain — `whatsNewControllerProvider`'s
-unseen→seen transition invalidates *both* `aiSetupPromptServiceProvider` and
-`shouldAutoShowOnboardingProvider` so each gets a fresh eligibility check once
-the What's New modal is out of the way. `_showAiSetupPrompt` (the legacy AI
-setup path) returns early whenever the FTUE flag is on — the dedicated
-listener below owns showing the welcome instead, so the two can never stack.
-When the flag is on the legacy `AiProviderSelectionModal` is **fully
-superseded**: even once the welcome's re-show budget is exhausted it does not
-fall back to that modal — a user who never connects recovers via the top-level
-**Settings › Onboarding** replay entry (and ordinary AI settings):
+`BeamerApp`'s `AppScreen` sequences this after What's New:
+`whatsNewControllerProvider`'s unseen→seen transition invalidates the welcome
+and Daily OS gates so each gets a fresh eligibility check once the What's New
+modal is out of the way.
+
+There is **no fallback prompt**. The welcome owns first-run provider setup, so
+once its re-show budget is exhausted nothing auto-shows. A user who never
+connects recovers via the unconditional top-level **Settings › Onboarding**
+replay entry (and ordinary AI settings):
 
 ```mermaid
 stateDiagram-v2
@@ -92,8 +90,8 @@ stateDiagram-v2
     shown --> retiredWindow: 14 days since first show elapse
     shown --> completed: provider connected → markCompleted() (welcome_completed)
     shown --> activated: OnboardingFunnelState.reachedRealAha
-    retiredBudget --> [*]: gate false; no legacy fallback while flag on
-    retiredWindow --> [*]: gate false; no legacy fallback while flag on
+    retiredBudget --> [*]: gate false; replay via Settings › Onboarding
+    retiredWindow --> [*]: gate false; replay via Settings › Onboarding
     completed --> [*]: gate permanently false (welcome_completed)
     activated --> [*]: gate permanently false (reachedRealAha)
 ```
@@ -108,37 +106,49 @@ persists nothing and does **not** retire the gate: the shown-count/window
 budget already implements the "show again for a while, then stop" grace
 period, and a hard block on first skip would defeat that.
 
-## Rollout and production testing
+## Daily OS rollout and production testing
 
-`state/onboarding_rollout.dart` keeps the future all-install rollout prepared
-without activating it. `onboardingRolloutEnabled` is the single release lever
-and is currently `false`. Both config flags also seed `false`.
+`state/onboarding_rollout.dart` keeps the future all-install Daily OS rollout
+prepared without activating it. `onboardingRolloutEnabled` controls only that
+Daily OS force-enable migration and is currently `false`. The Daily OS config
+flag also seeds `false`; the welcome has no flag.
 
 | Piece | Lever off (current release) | Lever on (future rollout) |
 |---|---|---|
-| `applyOnboardingRolloutFlags` | Returns before any database read or write. | Overwrites both master flags to `true` once, before `runApp`, then writes `onboarding_rollout_v1_flags_applied`. |
-| `applyOnboardingRolloutBackfill` | Returns before reading readiness, cadence, or its marker. | Classifies an install once; a provider-ready install gets `welcome_completed`, then `onboarding_rollout_v1_backfill_applied` is written. |
-| Failure behavior | No operation exists to fail. | Logs, leaves the relevant marker absent, and retries next launch. |
+| `applyOnboardingRolloutFlags` | Returns before any database read or write. | Overwrites the Daily OS walkthrough flag to `true` once, before `runApp`, then writes `onboarding_rollout_v1_flags_applied`. |
+| `applyOnboardingRolloutBackfill` | Classifies an install once; a provider-ready install gets `welcome_completed`, then `onboarding_rollout_v1_backfill_applied` is written. | Same behavior — the Welcome cleanup is independent of this lever. |
+| Failure behavior | The flag migration is a no-op. A backfill failure is logged and leaves its marker absent for the next evaluation. | Either migration logs its failure, leaves the relevant marker absent, and retries later. |
 
 The force-enable remains necessary because `initConfigFlags` uses
 `insertFlagIfNotExists`: changing a seed cannot update an existing `false` row.
 The startup half therefore remains awaited from `registerSingletons()` after
-seeding. The backfill remains awaited by `shouldAutoShowOnboarding`, where a
-Riverpod container exists. Its readiness signal waits for agent initialization
-before resolving so template/version seeding cannot produce a false one-shot
-classification.
+seeding. The independent backfill is awaited by `shouldAutoShowOnboarding`,
+where a Riverpod container exists. Its readiness signal waits for agent
+initialization before resolving so template/version seeding cannot produce a
+false one-shot classification. The marker is deliberately outside the QA reset
+set: resetting Welcome completion can expose the flow again without a connected
+provider immediately retiring it a second time.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> DarkLaunch: onboardingRolloutEnabled = false
-    DarkLaunch --> ManualTest: tester enables both config flags
-    ManualTest --> DarkLaunch: tester disables both config flags
-    DarkLaunch --> RolloutArmed: release changes the lever to true
-    RolloutArmed --> FlagsForced: startup force-enables both flags once
-    FlagsForced --> WelcomeRetired: existing install has a resolvable planner route
-    FlagsForced --> WelcomeEligible: install is not yet configured
-    WelcomeRetired --> [*]
-    WelcomeEligible --> [*]
+    state "Welcome cleanup" as WelcomeCleanup {
+        [*] --> BackfillPending
+        BackfillPending --> WelcomeRetired: existing install has a resolvable planner route
+        BackfillPending --> WelcomeEligible: install is not yet configured
+        WelcomeRetired --> BackfillApplied: write marker
+        WelcomeEligible --> BackfillApplied: write marker
+        BackfillApplied --> [*]
+    }
+    state "Daily OS release" as DailyOsRelease {
+        [*] --> DarkLaunch: onboardingRolloutEnabled = false
+        DarkLaunch --> ManualTest: tester enables config flag
+        ManualTest --> DarkLaunch: tester disables config flag
+        DarkLaunch --> RolloutArmed: release changes lever to true
+        RolloutArmed --> FlagForced: startup force-enables Daily OS once
+        FlagForced --> [*]
+    }
+    [*] --> WelcomeCleanup: FTUE flag removed
+    [*] --> DailyOsRelease: independent rollout track
 ```
 
 ### Resetting test state
@@ -146,8 +156,8 @@ stateDiagram-v2
 Settings › Advanced › Onboarding Metrics exposes **Reset onboarding test
 state**. After confirmation it removes all six `welcome_*` and
 `daily_os_onboarding_*` cadence keys and clears the content-free onboarding
-event log. It deliberately leaves both config flags unchanged, so a tester's
-opt-in remains explicit, and it never deletes real user data.
+event log. It deliberately leaves the Daily OS config flag unchanged, so a
+tester opt-in remains explicit, and it never deletes real user data.
 
 Daily OS eligibility also checks whether the planner has **ever** had a plan,
 including a soft-deleted plan. The reset cannot safely erase that history. Use

@@ -41,7 +41,7 @@ void main() {
     });
 
     test(
-      'armed lever force-enables both rows and records its marker',
+      'armed lever force-enables the walkthrough row and records its marker',
       () async {
         when(
           () => settingsDb.itemByKey(onboardingRolloutFlagsAppliedKey),
@@ -105,44 +105,47 @@ void main() {
       verifyNever(() => journalDb.upsertConfigFlag(any()));
     });
 
-    test('armed lever skips absent and already-enabled rows', () async {
-      when(
-        () => settingsDb.itemByKey(onboardingRolloutFlagsAppliedKey),
-      ).thenAnswer((_) async => null);
-      when(
-        () => journalDb.getConfigFlagByName(enableOnboardingFtueFlag),
-      ).thenAnswer((_) async => null);
-      when(
-        () => journalDb.getConfigFlagByName(dailyOsOnboardingEnabledFlag),
-      ).thenAnswer(
-        (_) async => const ConfigFlag(
+    for (final scenario in <(String, ConfigFlag?)>[
+      ('absent', null),
+      (
+        'already-enabled',
+        const ConfigFlag(
           name: dailyOsOnboardingEnabledFlag,
           description: 'Enable the Daily OS onboarding walkthrough?',
           status: true,
         ),
-      );
-      when(
-        () => settingsDb.saveSettingsItem(
-          onboardingRolloutFlagsAppliedKey,
-          'true',
-        ),
-      ).thenAnswer((_) async => 1);
+      ),
+    ]) {
+      test('armed lever skips an ${scenario.$1} row', () async {
+        when(
+          () => settingsDb.itemByKey(onboardingRolloutFlagsAppliedKey),
+        ).thenAnswer((_) async => null);
+        when(
+          () => journalDb.getConfigFlagByName(dailyOsOnboardingEnabledFlag),
+        ).thenAnswer((_) async => scenario.$2);
+        when(
+          () => settingsDb.saveSettingsItem(
+            onboardingRolloutFlagsAppliedKey,
+            'true',
+          ),
+        ).thenAnswer((_) async => 1);
 
-      await applyOnboardingRolloutFlags(
-        journalDb: journalDb,
-        settingsDb: settingsDb,
-        logger: logger,
-        rolloutEnabled: true,
-      );
+        await applyOnboardingRolloutFlags(
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          logger: logger,
+          rolloutEnabled: true,
+        );
 
-      verifyNever(() => journalDb.upsertConfigFlag(any()));
-      verify(
-        () => settingsDb.saveSettingsItem(
-          onboardingRolloutFlagsAppliedKey,
-          'true',
-        ),
-      ).called(1);
-    });
+        verifyNever(() => journalDb.upsertConfigFlag(any()));
+        verify(
+          () => settingsDb.saveSettingsItem(
+            onboardingRolloutFlagsAppliedKey,
+            'true',
+          ),
+        ).called(1);
+      });
+    }
 
     test('armed lever logs failures without burning the marker', () async {
       when(
@@ -183,34 +186,7 @@ void main() {
     tearDown(() => settingsDb.close());
 
     test(
-      'disabled lever does not inspect readiness or persist state',
-      () async {
-        var readinessReads = 0;
-        var retireWrites = 0;
-
-        await applyOnboardingRolloutBackfill(
-          readProviderReady: () async {
-            readinessReads++;
-            return true;
-          },
-          retireWelcome: () async {
-            retireWrites++;
-          },
-          settingsDb: settingsDb,
-          logger: logger,
-        );
-
-        expect(readinessReads, 0);
-        expect(retireWrites, 0);
-        expect(
-          await settingsDb.itemByKey(onboardingRolloutBackfillAppliedKey),
-          isNull,
-        );
-      },
-    );
-
-    test(
-      'armed lever retires a ready install and records its marker',
+      'retires a ready install and records its marker',
       () async {
         await applyOnboardingRolloutBackfill(
           readProviderReady: () async => true,
@@ -220,7 +196,6 @@ void main() {
           ),
           settingsDb: settingsDb,
           logger: logger,
-          rolloutEnabled: true,
         );
 
         expect(
@@ -235,7 +210,7 @@ void main() {
     );
 
     test(
-      'armed lever leaves an unconfigured install welcome-eligible',
+      'leaves an unconfigured install welcome-eligible',
       () async {
         var retireWrites = 0;
 
@@ -246,7 +221,6 @@ void main() {
           },
           settingsDb: settingsDb,
           logger: logger,
-          rolloutEnabled: true,
         );
 
         expect(retireWrites, 0);
@@ -258,7 +232,7 @@ void main() {
     );
 
     test(
-      'armed lever does not reclassify an install after its marker',
+      'does not reclassify an install after its marker',
       () async {
         await settingsDb.saveSettingsItem(
           onboardingRolloutBackfillAppliedKey,
@@ -274,7 +248,6 @@ void main() {
           retireWelcome: () async {},
           settingsDb: settingsDb,
           logger: logger,
-          rolloutEnabled: true,
         );
 
         expect(readinessReads, 0);
@@ -288,7 +261,6 @@ void main() {
           retireWelcome: () async => throw Exception('write failed'),
           settingsDb: settingsDb,
           logger: logger,
-          rolloutEnabled: true,
         ),
         completes,
       );

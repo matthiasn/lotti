@@ -48,11 +48,10 @@ class _UnseenWhatsNewController extends WhatsNewController {
 
 void main() {
   group('isOnboardingWelcomeEligible', () {
-    // Baseline args representing a fresh install: flag on, no unseen
-    // What's New, nothing persisted yet. Each test overrides exactly the
-    // input(s) relevant to the branch under test.
+    // Baseline args representing a fresh install: no unseen What's New and
+    // nothing persisted yet. There is no flag input; cadence and completion
+    // state are the only ways to retire the welcome.
     bool eligible({
-      bool ftueFlagEnabled = true,
       bool hasUnseenWhatsNew = false,
       bool completed = false,
       bool reachedRealAha = false,
@@ -60,7 +59,6 @@ void main() {
       DateTime? firstShownAt,
       DateTime? now,
     }) => isOnboardingWelcomeEligible(
-      ftueFlagEnabled: ftueFlagEnabled,
       hasUnseenWhatsNew: hasUnseenWhatsNew,
       completed: completed,
       reachedRealAha: reachedRealAha,
@@ -71,10 +69,6 @@ void main() {
 
     test('is eligible on a fresh install (all defaults)', () {
       expect(eligible(), isTrue);
-    });
-
-    test('is not eligible when the FTUE flag is disabled', () {
-      expect(eligible(ftueFlagEnabled: false), isFalse);
     });
 
     test("is not eligible while What's New has unseen content", () {
@@ -182,14 +176,11 @@ void main() {
     });
 
     ProviderContainer createContainer({
-      required bool ftueEnabled,
       bool whatsNewHasUnseen = false,
       bool whatsNewFeatureEnabled = true,
+      bool providerReady = false,
     }) {
       final mockJournalDb = MockJournalDb();
-      when(
-        () => mockJournalDb.getConfigFlag(enableOnboardingFtueFlag),
-      ).thenAnswer((_) async => ftueEnabled);
       when(
         () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
       ).thenAnswer((_) async => whatsNewFeatureEnabled);
@@ -202,25 +193,49 @@ void main() {
                 ? _UnseenWhatsNewController.new
                 : _NoUnseenWhatsNewController.new,
           ),
+          dailyOsOnboardingProviderReadyProvider.overrideWith(
+            (ref) async => providerReady,
+          ),
         ],
       );
       addTearDown(container.dispose);
       return container;
     }
 
-    test('returns false when the FTUE flag is disabled', () async {
-      final container = createContainer(ftueEnabled: false);
+    test(
+      "reads no config flag but What's New because the welcome has no "
+      'master switch',
+      () async {
+        final mockJournalDb = MockJournalDb();
+        when(
+          () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
+        ).thenAnswer((_) async => false);
+        final container = ProviderContainer(
+          overrides: [
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            whatsNewControllerProvider.overrideWith(
+              _NoUnseenWhatsNewController.new,
+            ),
+            dailyOsOnboardingProviderReadyProvider.overrideWith(
+              (ref) async => false,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final result = await container.read(
-        shouldAutoShowOnboardingProvider.future,
-      );
-
-      expect(result, isFalse);
-    });
+        expect(
+          await container.read(shouldAutoShowOnboardingProvider.future),
+          isTrue,
+        );
+        verify(
+          () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
+        ).called(1);
+        verifyNoMoreInteractions(mockJournalDb);
+      },
+    );
 
     test("returns false while What's New has unseen content", () async {
       final container = createContainer(
-        ftueEnabled: true,
         whatsNewHasUnseen: true,
       );
 
@@ -238,7 +253,6 @@ void main() {
       'welcome forever',
       () async {
         final container = createContainer(
-          ftueEnabled: true,
           whatsNewHasUnseen: true,
           whatsNewFeatureEnabled: false,
         );
@@ -252,7 +266,7 @@ void main() {
     );
 
     test('returns true on a fresh install with nothing persisted', () async {
-      final container = createContainer(ftueEnabled: true);
+      final container = createContainer();
 
       final result = await container.read(
         shouldAutoShowOnboardingProvider.future,
@@ -261,9 +275,30 @@ void main() {
       expect(result, isTrue);
     });
 
+    test(
+      'returns false for a configured pre-FTUE install after backfill',
+      () async {
+        final container = createContainer(providerReady: true);
+
+        final result = await container.read(
+          shouldAutoShowOnboardingProvider.future,
+        );
+
+        expect(result, isFalse);
+        expect(
+          await settingsDb.itemByKey(onboardingWelcomeCompletedKey),
+          'true',
+        );
+        expect(
+          await settingsDb.itemByKey(onboardingRolloutBackfillAppliedKey),
+          'true',
+        );
+      },
+    );
+
     test('returns false once marked completed', () async {
       await settingsDb.saveSettingsItem(onboardingWelcomeCompletedKey, 'true');
-      final container = createContainer(ftueEnabled: true);
+      final container = createContainer();
 
       final result = await container.read(
         shouldAutoShowOnboardingProvider.future,
@@ -279,7 +314,7 @@ void main() {
           onboardingWelcomeShownCountKey,
           '$onboardingWelcomeMaxShows',
         );
-        final container = createContainer(ftueEnabled: true);
+        final container = createContainer();
 
         final result = await container.read(
           shouldAutoShowOnboardingProvider.future,
@@ -301,7 +336,7 @@ void main() {
           onboardingWelcomeFirstShownAtKey,
           DateTime.now().toUtc().toIso8601String(),
         );
-        final container = createContainer(ftueEnabled: true);
+        final container = createContainer();
 
         final result = await container.read(
           shouldAutoShowOnboardingProvider.future,
@@ -319,7 +354,7 @@ void main() {
           onboardingWelcomeFirstShownAtKey,
           DateTime.utc(2000).toIso8601String(),
         );
-        final container = createContainer(ftueEnabled: true);
+        final container = createContainer();
 
         final result = await container.read(
           shouldAutoShowOnboardingProvider.future,
@@ -337,7 +372,7 @@ void main() {
           getIt.isRegistered<OnboardingMetricsRepository>(),
           isFalse,
         );
-        final container = createContainer(ftueEnabled: true);
+        final container = createContainer();
 
         final result = await container.read(
           shouldAutoShowOnboardingProvider.future,
@@ -356,7 +391,7 @@ void main() {
           (_) async => const OnboardingFunnelState.empty(),
         );
         getIt.registerSingleton<OnboardingMetricsRepository>(mockRepo);
-        final container = createContainer(ftueEnabled: true);
+        final container = createContainer();
 
         final result = await container.read(
           shouldAutoShowOnboardingProvider.future,
@@ -380,7 +415,7 @@ void main() {
           ),
         );
         getIt.registerSingleton<OnboardingMetricsRepository>(mockRepo);
-        final container = createContainer(ftueEnabled: true);
+        final container = createContainer();
 
         final result = await container.read(
           shouldAutoShowOnboardingProvider.future,
@@ -397,7 +432,7 @@ void main() {
         final mockRepo = MockOnboardingMetricsRepository();
         when(mockRepo.funnelState).thenThrow(Exception('boom'));
         getIt.registerSingleton<OnboardingMetricsRepository>(mockRepo);
-        final container = createContainer(ftueEnabled: true);
+        final container = createContainer();
 
         final result = await container.read(
           shouldAutoShowOnboardingProvider.future,
@@ -499,9 +534,6 @@ void main() {
       () async {
         final mockJournalDb = MockJournalDb();
         when(
-          () => mockJournalDb.getConfigFlag(enableOnboardingFtueFlag),
-        ).thenAnswer((_) async => true);
-        when(
           () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
         ).thenAnswer((_) async => false);
         final container = ProviderContainer(
@@ -509,6 +541,9 @@ void main() {
             journalDbProvider.overrideWithValue(mockJournalDb),
             whatsNewControllerProvider.overrideWith(
               _NoUnseenWhatsNewController.new,
+            ),
+            dailyOsOnboardingProviderReadyProvider.overrideWith(
+              (ref) async => false,
             ),
           ],
         );
@@ -555,7 +590,7 @@ void main() {
       await tearDownTestGetIt();
     });
 
-    test('wires readiness and retirement when explicitly armed', () async {
+    test('wires readiness and retirement by default', () async {
       final container = ProviderContainer(
         overrides: [
           dailyOsOnboardingProviderReadyProvider.overrideWith(
@@ -565,7 +600,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      await container.read(onboardingRolloutBackfillProvider(true).future);
+      await container.read(onboardingRolloutBackfillProvider.future);
 
       expect(
         await settingsDb.itemByKey(onboardingWelcomeCompletedKey),

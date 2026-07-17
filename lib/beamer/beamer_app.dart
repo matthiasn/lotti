@@ -15,9 +15,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
-import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
-import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
@@ -333,62 +330,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     });
   }
 
-  Future<void> _showAiSetupPrompt() async {
-    if (!mounted) return;
-    void dismiss() =>
-        ref.read(aiSetupPromptServiceProvider.notifier).dismissPrompt();
-
-    // The onboarding (FTUE) flow is dark-launched behind a config flag while it
-    // is tested in production. Until the flag is enabled, first-run AI setup
-    // falls back to the provider-selection modal. A one-shot DB read (not the
-    // stream provider) avoids a load-state race on this single check. This
-    // method is fire-and-forget, so a read failure must default to the fallback
-    // rather than surfacing as an uncaught async error.
-    var ftueEnabled = false;
-    try {
-      ftueEnabled = await ref
-          .read(journalDbProvider)
-          .getConfigFlag(enableOnboardingFtueFlag);
-    } catch (error, stackTrace) {
-      getIt<DomainLogger>().error(
-        LogDomain.onboarding,
-        error,
-        stackTrace: stackTrace,
-        subDomain: 'aiSetupPromptFtueFlag',
-      );
-    }
-    if (!mounted) return;
-
-    if (ftueEnabled) {
-      // The dedicated `shouldAutoShowOnboardingProvider` listener now owns
-      // showing the FTUE welcome (with its own persisted re-show cadence) --
-      // returning here (rather than opening it inline) avoids stacking that
-      // welcome on top of this legacy modal on the same cold start.
-      //
-      // Deliberate: when the FTUE flag is on, this legacy provider-selection
-      // modal is fully superseded -- even once the welcome's re-show budget is
-      // exhausted (max shows / window elapsed) it does NOT fall back to this
-      // prompt. A user who never connects a provider recovers via the
-      // top-level Settings > Onboarding replay entry (and ordinary AI
-      // settings), so onboarding is a single, coherent front door rather than
-      // two prompts competing for the first run.
-      return;
-    }
-
-    unawaited(
-      AiProviderSelectionModal.show(
-        context,
-        onProviderSelected: (providerType) {
-          const AiSettingsNavigationService().navigateToCreateProvider(
-            context,
-            preselectedType: providerType,
-          );
-        },
-        onDismiss: dismiss,
-      ),
-    );
-  }
-
   /// Shows the FTUE welcome and records the show in its persisted cadence
   /// (see `onboarding_trigger_service.dart`) so the auto-show gate can bound
   /// how many times -- and for how long -- it keeps re-appearing.
@@ -513,50 +454,26 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           },
         );
       })
-      // When What's New is dismissed, re-check if AI setup prompt / the FTUE
-      // welcome should show
+      // When What's New is dismissed, re-check whether either onboarding
+      // surface should show.
       ..listen(whatsNewControllerProvider, (prev, next) {
         final prevHasUnseen = prev?.asData?.value.hasUnseenRelease ?? true;
         final nextHasUnseen = next.asData?.value.hasUnseenRelease ?? true;
 
-        // If What's New transitioned from unseen to seen, re-check both --
-        // they are otherwise independent gates, but both sequence behind
-        // What's New the same way.
+        // If What's New transitioned from unseen to seen, re-check both
+        // onboarding gates; both sequence behind What's New.
         if (prevHasUnseen && !nextHasUnseen) {
           ref
-            ..invalidate(aiSetupPromptServiceProvider)
             ..invalidate(shouldAutoShowOnboardingProvider)
             ..invalidate(shouldAutoShowDailyOsOnboardingProvider);
         }
       })
-      // Auto-show AI setup prompt for new users without AI providers
-      ..listen(aiSetupPromptServiceProvider, (prev, next) {
-        next.when(
-          data: (shouldShow) {
-            if (shouldShow && mounted) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  unawaited(_showAiSetupPrompt());
-                }
-              });
-            }
-          },
-          loading: () {},
-          error: (error, stack) {
-            getIt<DomainLogger>().error(
-              LogDomain.ai,
-              error,
-              stackTrace: stack,
-              subDomain: 'aiSetupPromptService',
-            );
-          },
-        );
-      })
       // Auto-show the FTUE welcome on first launch (and, within its
       // persisted grace budget, subsequent launches) once What's New is out
-      // of the way. Independent of `aiSetupPromptServiceProvider` -- see
-      // `_showAiSetupPrompt`'s early return when the FTUE flag is on, which
-      // keeps the two mutually exclusive.
+      // of the way. This is the only first-run setup path: the welcome owns
+      // connecting a provider, and a user who never connects recovers via the
+      // top-level Settings > Onboarding replay entry (and ordinary AI
+      // settings).
       ..listen(shouldAutoShowOnboardingProvider, (prev, next) {
         next.when(
           data: (shouldShow) {

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
+import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
 import 'package:lotti/features/onboarding/state/onboarding_test_reset_service.dart';
 
 void main() {
@@ -22,11 +23,15 @@ void main() {
   });
 
   test(
-    'clears both cadences and metrics without touching other settings',
+    'clears cadences and metrics without touching the backfill marker',
     () async {
       for (final key in onboardingTestCadenceKeys) {
         await settingsDb.saveSettingsItem(key, 'seeded');
       }
+      await settingsDb.saveSettingsItem(
+        onboardingRolloutBackfillAppliedKey,
+        'true',
+      );
       await settingsDb.saveSettingsItem('unrelated_setting', 'keep');
       await metricsDb.insertOnboardingEvent(
         id: 'event-1',
@@ -45,6 +50,10 @@ void main() {
         {for (final key in onboardingTestCadenceKeys) key: null},
       );
       expect(await metricsDb.getAllEvents(), isEmpty);
+      expect(
+        await settingsDb.itemByKey(onboardingRolloutBackfillAppliedKey),
+        'true',
+      );
       expect(await settingsDb.itemByKey('unrelated_setting'), 'keep');
     },
   );

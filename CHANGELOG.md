@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1049]
+### Added
+- **Lotti now guides first-time setup through one onboarding welcome.** The
+  welcome walks through connecting an AI provider and creating a first task,
+  replaces the older provider-selection prompt, and can always be replayed
+  from Settings › Onboarding.
+
 ### Changed
 - **Task agents now update only when you ask by default.** New agents keep
   watching their task without automatically spending inference tokens after

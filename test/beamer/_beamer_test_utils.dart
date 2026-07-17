@@ -1,6 +1,5 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 
@@ -47,10 +46,4 @@ class ReadyThemingController extends ThemingController {
 class TestZoomController extends ZoomController {
   @override
   double build() => defaultZoomScale;
-}
-
-/// An [AiSetupPromptService] that never wants to show the setup prompt.
-class MockAiSetupPromptService extends AiSetupPromptService {
-  @override
-  Future<bool> build() async => false;
 }

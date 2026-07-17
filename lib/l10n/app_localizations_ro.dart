@@ -1958,24 +1958,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
-  String get aiProviderSelectContinue => 'Continuați';
-
-  @override
-  String get aiProviderSelectDontShowAgain => 'Nu mai afișați';
-
-  @override
-  String get aiProviderSetupOptionGeminiDescription =>
-      'Modele multimodale cu transcriere audio. Necesită cheie API.';
-
-  @override
-  String get aiProviderSetupOptionMistralDescription =>
-      'AI europeană cu raționament (Magistral) și audio (Voxtral).';
-
-  @override
-  String get aiProviderSetupOptionOpenAiDescription =>
-      'Modele GPT pentru chat și raționament. Necesită cheie API cu credit.';
-
-  @override
   String get aiProviderTaglineAlibaba =>
       'Modele Qwen · multimodal · context lung';
 
@@ -3050,13 +3032,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get configFlagEnableNotificationsDescription =>
       'Primiți notificări pentru mementouri, actualizări și evenimente importante.';
-
-  @override
-  String get configFlagEnableOnboardingFtue => 'Onboarding nou (FTUE)';
-
-  @override
-  String get configFlagEnableOnboardingFtueDescription =>
-      'Folosiți noul flux de onboarding pentru configurarea inițială AI în loc de selectorul de furnizor.';
 
   @override
   String get configFlagEnableProjects => 'Activează proiectele';

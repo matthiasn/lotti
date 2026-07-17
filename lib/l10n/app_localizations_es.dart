@@ -1948,24 +1948,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
-  String get aiProviderSelectContinue => 'Continuar';
-
-  @override
-  String get aiProviderSelectDontShowAgain => 'No mostrar de nuevo';
-
-  @override
-  String get aiProviderSetupOptionGeminiDescription =>
-      'Modelos multimodales con transcripción de audio. Requiere clave API.';
-
-  @override
-  String get aiProviderSetupOptionMistralDescription =>
-      'IA europea con razonamiento (Magistral) y audio (Voxtral).';
-
-  @override
-  String get aiProviderSetupOptionOpenAiDescription =>
-      'Modelos GPT para chat y razonamiento. Requiere clave API con créditos.';
-
-  @override
   String get aiProviderTaglineAlibaba =>
       'Modelos Qwen · multimodal · contexto largo';
 
@@ -3041,13 +3023,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get configFlagEnableNotificationsDescription =>
       'Recibir notificaciones de recordatorios, actualizaciones y eventos importantes.';
-
-  @override
-  String get configFlagEnableOnboardingFtue => 'Nuevo onboarding (FTUE)';
-
-  @override
-  String get configFlagEnableOnboardingFtueDescription =>
-      'Usa el nuevo flujo de onboarding para la configuración inicial de IA en vez del selector de proveedor.';
 
   @override
   String get configFlagEnableProjects => 'Activar proyectos';

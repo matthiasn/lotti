@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
@@ -16,8 +15,7 @@ import 'package:lotti/utils/consts.dart';
 /// Prefix for every private [SettingsDb] key backing the onboarding welcome's
 /// auto-show cadence. Deliberately *not* a `ConfigFlags` row -- `ConfigFlags`
 /// is for public, user-toggleable flags (Settings > Advanced > Flags); this
-/// is per-install bookkeeping the user never edits directly, mirroring the
-/// `ai_setup_prompt_dismissed` key in `AiSetupPromptService`.
+/// is per-install bookkeeping the user never edits directly.
 const _welcomeKeyPrefix = 'welcome_';
 
 /// Set once the user completes the essential setup (a provider is connected)
@@ -53,9 +51,7 @@ const onboardingWelcomeWindow = Duration(days: 14);
 /// without any async/DB/Riverpod plumbing.
 ///
 /// Eligible while:
-/// - the FTUE flag is on,
-/// - no unseen What's New content is blocking it (mirrors
-///   `AiSetupPromptService`'s own sequencing, so the welcome never races
+/// - no unseen What's New content is blocking it (so the welcome never races
 ///   the What's New modal for the screen),
 /// - the flow has not been marked complete,
 /// - the user has not yet reached the real "aha" -- a structured task
@@ -68,7 +64,6 @@ const onboardingWelcomeWindow = Duration(days: 14);
 /// - once it has shown at least once, [now] is still within
 ///   [onboardingWelcomeWindow] of the first auto-show.
 bool isOnboardingWelcomeEligible({
-  required bool ftueFlagEnabled,
   required bool hasUnseenWhatsNew,
   required bool completed,
   required bool reachedRealAha,
@@ -76,7 +71,6 @@ bool isOnboardingWelcomeEligible({
   required DateTime? firstShownAt,
   required DateTime now,
 }) {
-  if (!ftueFlagEnabled) return false;
   if (hasUnseenWhatsNew) return false;
   if (completed) return false;
   if (reachedRealAha) return false;
@@ -101,14 +95,14 @@ final FutureProvider<bool> shouldAutoShowOnboardingProvider =
       name: 'shouldAutoShowOnboardingProvider',
     );
 
-/// Readiness-dependent second half of the prepared rollout migration.
+/// One-shot classification for installs that predate the Welcome flow.
 ///
-/// Cached for the container lifetime. With [onboardingRolloutEnabled] false,
-/// [applyOnboardingRolloutBackfill] returns before reading readiness, cadence,
-/// or its marker, which keeps manual production testing isolated.
-final FutureProviderFamily<void, bool> onboardingRolloutBackfillProvider =
-    FutureProvider.family<void, bool>(
-      (ref, rolloutEnabled) {
+/// Cached for the container lifetime. This is deliberately independent of the
+/// Daily OS force-enable lever: configured existing installs must be retired
+/// from Welcome as soon as its former FTUE flag is removed.
+final FutureProvider<void> onboardingRolloutBackfillProvider =
+    FutureProvider<void>(
+      (ref) {
         final settingsDb = getIt<SettingsDb>();
         return applyOnboardingRolloutBackfill(
           readProviderReady: () =>
@@ -119,7 +113,6 @@ final FutureProviderFamily<void, bool> onboardingRolloutBackfillProvider =
           ),
           settingsDb: settingsDb,
           logger: getIt<DomainLogger>(),
-          rolloutEnabled: rolloutEnabled,
         );
       },
       name: 'onboardingRolloutBackfillProvider',
@@ -129,19 +122,16 @@ Future<bool> shouldAutoShowOnboarding(Ref ref) async {
   final db = ref.watch(journalDbProvider);
   // Establish dependencies synchronously, before the first await, so the
   // provider stays reactive to What's New changes (watching after an async gap
-  // would not register the dependency). The rollout provider is a read/write-
-  // free no-op while its release lever is off.
+  // would not register the dependency). The one-shot backfill must complete
+  // before cadence is read so configured existing installs stay retired.
   final whatsNewFuture = ref.watch(whatsNewControllerProvider.future);
   final rolloutBackfillFuture = ref.watch(
-    onboardingRolloutBackfillProvider(onboardingRolloutEnabled).future,
+    onboardingRolloutBackfillProvider.future,
   );
 
-  final ftueFlagEnabled = await db.getConfigFlag(enableOnboardingFtueFlag);
-  if (!ftueFlagEnabled) return false;
-
   // Sequenced after What's New -- an unseen release still owns the first
-  // overlay slot, matching `AiSetupPromptService`'s own gating so the two
-  // auto-shown surfaces never race each other for the screen. Gated on
+  // overlay slot, so the two auto-shown surfaces never race each other for the
+  // screen. Gated on
   // `enableWhatsNewFlag` too: `whatsNewControllerProvider` reports unseen
   // remote content regardless of whether the What's New *feature* is turned
   // on, so without this check a disabled What's New (its default) would
@@ -163,7 +153,6 @@ Future<bool> shouldAutoShowOnboarding(Ref ref) async {
   final firstShownAtRaw = stored[onboardingWelcomeFirstShownAtKey];
 
   return isOnboardingWelcomeEligible(
-    ftueFlagEnabled: ftueFlagEnabled,
     hasUnseenWhatsNew: hasUnseenWhatsNew,
     completed: stored[onboardingWelcomeCompletedKey] == 'true',
     reachedRealAha: await _reachedRealAha(),

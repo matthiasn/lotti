@@ -84,9 +84,8 @@ void main() {
         enableVectorSearchFlag: false,
         enableWhatsNewFlag: false,
         // Dark-launched until production testing concludes. The prepared
-        // rollout migration force-enables both when its release lever is
+        // rollout migration force-enables it when its release lever is
         // intentionally pulled.
-        enableOnboardingFtueFlag: false,
         dailyOsOnboardingEnabledFlag: false,
         showSyncActivityIndicatorFlag: false,
         showSidebarWakeQueueFlag: false,

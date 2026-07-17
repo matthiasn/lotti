@@ -20,7 +20,6 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show AiConfigRepository, aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
-import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -346,7 +345,6 @@ List<Override> _providerOverrides(_InMemoryFullAppHarness harness) {
   return [
     agentInitializationProvider.overrideWith((ref) async {}),
     aiConfigRepositoryProvider.overrideWithValue(harness.aiConfigRepository),
-    aiSetupPromptServiceProvider.overrideWith(_ManualAiSetupPromptService.new),
     audioRecorderControllerProvider.overrideWith(
       () => _ManualAudioRecorderController(
         AudioRecorderState(
@@ -370,11 +368,6 @@ List<Override> _providerOverrides(_InMemoryFullAppHarness harness) {
     shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
     syncDatabaseProvider.overrideWithValue(harness.syncDatabase),
   ];
-}
-
-class _ManualAiSetupPromptService extends AiSetupPromptService {
-  @override
-  Future<bool> build() async => false;
 }
 
 class _ManualAudioRecorderController extends AudioRecorderController {

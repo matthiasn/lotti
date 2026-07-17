@@ -3379,36 +3379,6 @@ abstract class AppLocalizations {
   /// **'OpenRouter'**
   String get aiProviderOpenRouterName;
 
-  /// No description provided for @aiProviderSelectContinue.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue'**
-  String get aiProviderSelectContinue;
-
-  /// No description provided for @aiProviderSelectDontShowAgain.
-  ///
-  /// In en, this message translates to:
-  /// **'Don\'t Show Again'**
-  String get aiProviderSelectDontShowAgain;
-
-  /// No description provided for @aiProviderSetupOptionGeminiDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Multimodal models with audio transcription. Requires API key.'**
-  String get aiProviderSetupOptionGeminiDescription;
-
-  /// No description provided for @aiProviderSetupOptionMistralDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'European AI with reasoning (Magistral) and audio (Voxtral) models.'**
-  String get aiProviderSetupOptionMistralDescription;
-
-  /// No description provided for @aiProviderSetupOptionOpenAiDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'GPT models for chat and reasoning. Requires API key with credits.'**
-  String get aiProviderSetupOptionOpenAiDescription;
-
   /// No description provided for @aiProviderTaglineAlibaba.
   ///
   /// In en, this message translates to:
@@ -5178,18 +5148,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Receive notifications for reminders, updates, and important events.'**
   String get configFlagEnableNotificationsDescription;
-
-  /// No description provided for @configFlagEnableOnboardingFtue.
-  ///
-  /// In en, this message translates to:
-  /// **'New onboarding (FTUE)'**
-  String get configFlagEnableOnboardingFtue;
-
-  /// No description provided for @configFlagEnableOnboardingFtueDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Use the new onboarding flow for first-run AI setup instead of the provider picker.'**
-  String get configFlagEnableOnboardingFtueDescription;
 
   /// No description provided for @configFlagEnableProjects.
   ///

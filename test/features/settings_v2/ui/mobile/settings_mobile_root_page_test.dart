@@ -47,17 +47,18 @@ void main() {
 
   testWidgets('renders the top-level settings sections', (tester) async {
     await _pump(tester, overrides: _flags());
+    // Onboarding is unconditional — it has no flag of its own.
+    expect(find.text('Onboarding'), findsOneWidget);
     expect(find.text('AI Settings'), findsOneWidget);
     expect(find.text('Agents'), findsOneWidget);
     expect(find.text('Sync Settings'), findsOneWidget);
     expect(find.text('Definitions'), findsOneWidget);
     expect(find.text('Theming'), findsOneWidget);
-    expect(find.text('Keyboard shortcuts'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Advanced Settings'),
-      200,
-    );
-    expect(find.text('Advanced Settings'), findsOneWidget);
+    // The list outgrows the viewport, so the tail needs scrolling into view.
+    for (final title in const ['Keyboard shortcuts', 'Advanced Settings']) {
+      await tester.scrollUntilVisible(find.text(title), 200);
+      expect(find.text(title), findsOneWidget);
+    }
   });
 
   testWidgets('hides Sync when the matrix flag is off', (tester) async {
@@ -69,6 +70,11 @@ void main() {
 
   testWidgets('tapping a section beams to its settings route', (tester) async {
     await _pump(tester, overrides: _flags());
+    // Theming sits near the bottom of a list that outgrows the viewport.
+    // `ensureVisible` scrolls it in without leaving drag momentum that would
+    // swallow the tap.
+    await tester.ensureVisible(find.text('Theming'));
+    await tester.pump();
     await tester.tap(find.text('Theming'));
     await tester.pump();
     expect(beamed, '/settings/theming');

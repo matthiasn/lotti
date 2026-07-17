@@ -28,8 +28,8 @@ contains the inference edit pages (`inference_model_edit_page.dart`,
 detail page + sections), the `util/` subtree (`active_profile.dart`,
 `ai_provider_status.dart`, `ai_provider_visual.dart`,
 `ai_settings_back_nav.dart`), and additional `services/` entries
-(per-provider `*_ftue_setup.dart`, `ai_setup_prompt_service.dart`,
-`gemini_setup_prompt_service.dart`, `ftue_helpers.dart`).
+(per-provider `*_ftue_setup.dart`, `gemini_setup_prompt_service.dart`,
+`ftue_helpers.dart`).
 
 ```
 lib/features/ai/ui/settings/
@@ -55,7 +55,6 @@ lib/features/ai/ui/settings/
 │   ├── connection_verifier_service.dart    # Live API-key verification
 │   ├── ftue_trigger_service.dart           # First-time UX gating
 │   ├── provider_prompt_setup_service.dart  # Provider FTUE prompt setup
-│   ├── ai_setup_prompt_service.dart        # Setup-prompt service
 │   ├── gemini_setup_prompt_service.dart    # Gemini setup-prompt service
 │   ├── ftue_helpers.dart                   # Shared FTUE helpers
 │   └── *_ftue_setup.dart                   # Per-provider FTUE setup
