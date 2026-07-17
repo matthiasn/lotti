@@ -62,10 +62,41 @@ These ranges end today rather than adding empty future days. The label includes
 ## Read the chart and table together
 
 The stacked bars show how each category contributed to every hour, day, or
-week in the range. Select **Running total** to replace the bars with cumulative
-category areas; select **Per day**, **Per week**, or **Per hour** to return to
-the bucket view. Hover or press a bar to see the category values behind that
+week in the range. Hover or press a bar to see the category values behind that
 bucket.
+
+### Follow the running total
+
+Select **Running total** when the question changes from “what happened in this
+bucket?” to “how much have I accumulated since this range began?” Lotti turns
+each category into a cumulative area:
+
+- the thickness of a coloured band at a date is that category's tracked time
+  from the start of the selected range through that date;
+- the top edge of the complete stack is all tracked time accumulated over the
+  same interval; and
+- the bands can only hold or rise. A flat section means no time was added in
+  that category during those buckets; it does not subtract earlier work.
+
+<ManualScreenshot
+  caseId="time-analysis/running-total"
+  alt="Time Analysis running-total chart accumulating Project Waddle categories across the selected month"
+  caption="Running total accumulates each category from the beginning of the range. The top edge is total tracked time so far; each band shows how much its category contributed to that total."
+/>
+
+The selected range determines where the count starts. Moving to another
+period restarts the total at that period's first bucket. **Day** uses hourly
+buckets, shorter multi-day ranges use daily buckets, and long ranges use
+weekly buckets, but the cumulative meaning stays the same. In a current,
+unfinished period, Lotti stops the area at the latest elapsed bucket instead
+of drawing a misleading flat line through future dates.
+
+Running total changes only the chart projection. **TOTAL**, **FOCUS**,
+**OTHER**, and the category table continue to describe the whole selected
+range. Hover or press the area to see the running value for every category at
+that point. Select **Per day**, **Per week**, or **Per hour** to return to
+individual bucket values. If only one bucket has elapsed, Lotti keeps the bars
+because a one-point running line would not communicate a trend.
 
 The table is the precise lookup. It orders categories by tracked time and
 shows their total, share, average per day, and a relative data bar. A gray

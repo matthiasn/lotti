@@ -640,6 +640,17 @@
       }
     },
     {
+      "id": "time-analysis/running-total",
+      "title": "Time Analysis running total",
+      "sourceTest": "test/features/insights/ui/time_analysis_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "time_analysis_running_total_mobile_light.png",
+        "mobile-dark": "time_analysis_running_total_mobile_dark.png",
+        "desktop-light": "time_analysis_running_total_desktop_light.png",
+        "desktop-dark": "time_analysis_running_total_desktop_dark.png"
+      }
+    },
+    {
       "id": "advanced-settings/hub",
       "title": "Advanced Settings hub",
       "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",

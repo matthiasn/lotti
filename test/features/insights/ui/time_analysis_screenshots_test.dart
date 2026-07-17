@@ -571,6 +571,38 @@ void main() {
         await _capture(tester, 'time_analysis_overview_${viewport}_$theme');
       });
 
+      testWidgets('$viewport manual running total — $theme', (tester) async {
+        await _pumpDashboard(
+          tester,
+          rows: _manualRows(),
+          categories: _manualCategories,
+          focusCategoryIds: const {
+            _penguinOperationsId,
+            _missionControlId,
+          },
+          brightness: brightness,
+          size: size,
+        );
+
+        final runningTotal = find.text('Running total').last;
+        await tester.ensureVisible(runningTotal);
+        await tester.pump(const Duration(milliseconds: 300));
+        await _tap(tester, runningTotal);
+
+        expect(find.text('Running total over the range'), findsOneWidget);
+        expect(find.byType(LineChart), findsOneWidget);
+        await tester.ensureVisible(find.byType(LineChart));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final chartRect = tester.getRect(find.byType(LineChart));
+        expect(chartRect.top, greaterThanOrEqualTo(0));
+        expect(chartRect.bottom, lessThanOrEqualTo(size.height));
+        await _capture(
+          tester,
+          'time_analysis_running_total_${viewport}_$theme',
+        );
+      });
+
       testWidgets('$viewport manual comparison — $theme', (tester) async {
         await _pumpDashboard(
           tester,

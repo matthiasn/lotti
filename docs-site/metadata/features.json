@@ -74,6 +74,7 @@
       "status": "verified",
       "screenshotCases": [
         "time-analysis/overview",
+        "time-analysis/running-total",
         "time-analysis/compare"
       ]
     },
