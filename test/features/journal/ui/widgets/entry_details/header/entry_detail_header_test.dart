@@ -10,6 +10,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -30,6 +31,36 @@ import '../../../../../../helpers/path_provider.dart';
 import '../../../../../../mocks/mocks.dart';
 import '../../../../../../test_data/test_data.dart';
 import '../../../../../../widget_test_utils.dart';
+
+/// The spacing tokens as resolved inside the pumped header, so gap assertions
+/// track the design system instead of duplicating token values.
+DsSpacing _headerSpacing(WidgetTester tester) =>
+    tester.element(find.byType(EntryDetailHeader)).designTokens.spacing;
+
+/// The widths of the spacer boxes between the header's trailing action
+/// controls (step2 at every width).
+///
+/// Inspects only the direct children of the header's outer Row (the one whose
+/// leading child is the Expanded timestamp cluster), so same-width SizedBoxes
+/// nested inside other header widgets can never pollute the result.
+List<double> _trailingGapWidths(WidgetTester tester) {
+  final spacing = _headerSpacing(tester);
+  final headerRow = tester
+      .widgetList<Row>(
+        find.descendant(
+          of: find.byType(EntryDetailHeader),
+          matching: find.byType(Row),
+        ),
+      )
+      .firstWhere((r) => r.children.isNotEmpty && r.children.first is Expanded);
+  return headerRow.children
+      .whereType<SizedBox>()
+      .where(
+        (s) => s.child == null && s.width == spacing.step2,
+      )
+      .map((s) => s.width!)
+      .toList();
+}
 
 void main() {
   group('EntryDetailHeader', () {
@@ -194,6 +225,238 @@ void main() {
         final overflow = find.byIcon(Icons.more_horiz);
         expect(overflow, findsOneWidget);
         expect(tester.getTopRight(overflow).dx, lessThanOrEqualTo(280));
+      },
+    );
+
+    testWidgets(
+      'uses compact trailing gaps so the timestamp keeps room at narrow width',
+      (WidgetTester tester) async {
+        // Flag + AI skill maximize the trailing rail (AI + flag + star +
+        // overflow, four full 48px controls) — the worst case that squeezed
+        // the timestamp to `20…` on phones.
+        final flaggedTextEntry = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(flag: EntryFlag.import),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => flaggedTextEntry);
+
+        final textSkill =
+            AiConfig.skill(
+                  id: 'skill-narrow-header',
+                  name: 'Narrow Header Skill',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.promptGeneration,
+                  requiredInputModalities: const [Modality.text],
+                  systemInstructions: 'sys',
+                  userInstructions: 'usr',
+                )
+                as AiConfigSkill;
+
+        const headerWidth = 300.0;
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: headerWidth,
+                child: EntryDetailHeader(
+                  entryId: testTextEntry.meta.id,
+                  inLinkedEntries: true,
+                ),
+              ),
+            ),
+            overrides: [
+              skillRegistryProvider.overrideWithValue([textSkill]),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(tester.takeException(), isNull);
+        // All four trailing controls render...
+        expect(find.byIcon(Icons.assistant_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.flag), findsOneWidget);
+        expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+        // ...separated by compact step2 gaps.
+        final spacing = _headerSpacing(tester);
+        expect(_trailingGapWidths(tester), List.filled(3, spacing.step2));
+        // The reclaimed width goes to the timestamp: the rail is
+        // 4 × 48 + 3 × step2 = 204px, so the leading cluster keeps
+        // 300 − 204 = 96px for the leading cluster. The AI control is the
+        // first trailing slot, so its left edge marks that width.
+        final compactRail = 4 * AppTheme.headerActionWidth + 3 * spacing.step2;
+        final aiButton = find.ancestor(
+          of: find.byIcon(Icons.assistant_outlined),
+          matching: find.byType(IconButton),
+        );
+        expect(
+          tester.getTopLeft(aiButton).dx,
+          moreOrLessEquals(headerWidth - compactRail),
+        );
+      },
+    );
+
+    testWidgets(
+      'uses compact step2 gaps between trailing actions when the header is '
+      'wide',
+      (WidgetTester tester) async {
+        final flaggedTextEntry = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(flag: EntryFlag.import),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => flaggedTextEntry);
+
+        final textSkill =
+            AiConfig.skill(
+                  id: 'skill-wide-header',
+                  name: 'Wide Header Skill',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.promptGeneration,
+                  requiredInputModalities: const [Modality.text],
+                  systemInstructions: 'sys',
+                  userInstructions: 'usr',
+                )
+                as AiConfigSkill;
+
+        // Full test-surface width (800px): the compact gaps remain uniform.
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailHeader(
+              entryId: testTextEntry.meta.id,
+              inLinkedEntries: true,
+            ),
+            overrides: [
+              skillRegistryProvider.overrideWithValue([textSkill]),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byIcon(Icons.assistant_outlined), findsOneWidget);
+        expect(
+          _trailingGapWidths(tester),
+          List.filled(3, _headerSpacing(tester).step2),
+        );
+      },
+    );
+
+    testWidgets(
+      'uses compact gaps without an invisible AI slot at narrow width',
+      (WidgetTester tester) async {
+        // Same flagged entry and 330px width as the compression test above,
+        // but with no AI skills the assistant slot must not render — and must
+        // not be counted: three real controls (flag + star + overflow) leave
+        // the timestamp 178px with the compact gaps.
+        final flaggedTextEntry = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(flag: EntryFlag.import),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => flaggedTextEntry);
+
+        const headerWidth = 330.0;
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: headerWidth,
+                child: EntryDetailHeader(
+                  entryId: testTextEntry.meta.id,
+                  inLinkedEntries: true,
+                ),
+              ),
+            ),
+            overrides: [
+              skillRegistryProvider.overrideWithValue(const <AiConfigSkill>[]),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(tester.takeException(), isNull);
+        expect(find.byIcon(Icons.assistant_outlined), findsNothing);
+        expect(find.byIcon(Icons.flag), findsOneWidget);
+        expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+        expect(
+          _trailingGapWidths(tester),
+          List.filled(2, _headerSpacing(tester).step2),
+        );
+      },
+    );
+
+    testWidgets(
+      'collapsible expanded header also uses its five-control compact rail at '
+      'phone width',
+      (WidgetTester tester) async {
+        // Chevron + AI + flag + star + overflow: the five-control rail from
+        // the linked-entries screenshot that left the date only `20…`.
+        final flaggedTextEntry = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(flag: EntryFlag.import),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => flaggedTextEntry);
+
+        final textSkill =
+            AiConfig.skill(
+                  id: 'skill-collapsible-header',
+                  name: 'Collapsible Header Skill',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.promptGeneration,
+                  requiredInputModalities: const [Modality.text],
+                  systemInstructions: 'sys',
+                  userInstructions: 'usr',
+                )
+                as AiConfigSkill;
+
+        const headerWidth = 360.0;
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: headerWidth,
+                child: EntryDetailHeader(
+                  entryId: testTextEntry.meta.id,
+                  inLinkedEntries: true,
+                  isCollapsible: true,
+                  onToggleCollapse: () {},
+                ),
+              ),
+            ),
+            overrides: [
+              skillRegistryProvider.overrideWithValue([textSkill]),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(tester.takeException(), isNull);
+        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byIcon(Icons.assistant_outlined), findsOneWidget);
+        // Four compact gaps between the five controls.
+        final spacing = _headerSpacing(tester);
+        expect(_trailingGapWidths(tester), List.filled(4, spacing.step2));
+        // Rail: 5 × 48 + 4 × step2 = 256px, leaving the timestamp 104px. The
+        // chevron is the first trailing slot, so its left edge marks it.
+        final compactRail = 5 * AppTheme.headerActionWidth + 4 * spacing.step2;
+        final chevronButton = find.ancestor(
+          of: find.byIcon(Icons.expand_more),
+          matching: find.byType(IconButton),
+        );
+        expect(
+          tester.getTopLeft(chevronButton).dx,
+          moreOrLessEquals(headerWidth - compactRail),
+        );
       },
     );
 

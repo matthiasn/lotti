@@ -27,7 +27,11 @@ class AppTheme {
   // glyph than the default body icon so the thin outline controls (esp. the
   // unfavorited star) stay perceptible for low-vision users on the dark card.
   static const double headerActionIconSize = 28;
-
+  // Entry-card header action tap targets: full 48px wide for accessible
+  // horizontal separation, but only 40px tall so the header row is not taller
+  // than its content (see EntryDetailHeader's IconButtonTheme).
+  static const double headerActionWidth = 48;
+  static const double headerActionHeight = 40;
   // Spacing constants
   static const double spacingXSmall = 4;
   static const double spacingSmall = 8;
