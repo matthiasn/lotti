@@ -338,16 +338,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     void dismiss() =>
         ref.read(aiSetupPromptServiceProvider.notifier).dismissPrompt();
 
-    // The onboarding (FTUE) flow owns first-run setup: `enableOnboardingFtueFlag`
-    // is seeded on and force-enabled on upgrade by `applyOnboardingRolloutFlags`
-    // (awaited in `registerSingletons()` before `runApp`, so this read cannot
-    // race the flip). This provider-selection modal is now the exception path --
-    // reached only on an install where the flag was deliberately turned off in
-    // Settings > Advanced > Flags. A one-shot DB read (not the stream provider)
-    // avoids a load-state race on this single check. This method is
-    // fire-and-forget, so a read failure must default to this modal rather than
-    // surfacing as an uncaught async error: showing a superseded prompt once
-    // beats leaving a provider-less user with no setup path at all.
+    // The onboarding (FTUE) flow is dark-launched behind a config flag while it
+    // is tested in production. Until the flag is enabled, first-run AI setup
+    // falls back to the provider-selection modal. A one-shot DB read (not the
+    // stream provider) avoids a load-state race on this single check. This
+    // method is fire-and-forget, so a read failure must default to the fallback
+    // rather than surfacing as an uncaught async error.
     var ftueEnabled = false;
     try {
       ftueEnabled = await ref

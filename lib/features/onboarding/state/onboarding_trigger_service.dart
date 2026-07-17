@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
@@ -99,19 +101,39 @@ final FutureProvider<bool> shouldAutoShowOnboardingProvider =
       name: 'shouldAutoShowOnboardingProvider',
     );
 
+/// Readiness-dependent second half of the prepared rollout migration.
+///
+/// Cached for the container lifetime. With [onboardingRolloutEnabled] false,
+/// [applyOnboardingRolloutBackfill] returns before reading readiness, cadence,
+/// or its marker, which keeps manual production testing isolated.
+final FutureProviderFamily<void, bool> onboardingRolloutBackfillProvider =
+    FutureProvider.family<void, bool>(
+      (ref, rolloutEnabled) {
+        final settingsDb = getIt<SettingsDb>();
+        return applyOnboardingRolloutBackfill(
+          readProviderReady: () =>
+              ref.read(dailyOsOnboardingProviderReadyProvider.future),
+          retireWelcome: () => settingsDb.saveSettingsItem(
+            onboardingWelcomeCompletedKey,
+            'true',
+          ),
+          settingsDb: settingsDb,
+          logger: getIt<DomainLogger>(),
+          rolloutEnabled: rolloutEnabled,
+        );
+      },
+      name: 'onboardingRolloutBackfillProvider',
+    );
+
 Future<bool> shouldAutoShowOnboarding(Ref ref) async {
   final db = ref.watch(journalDbProvider);
-  // Establish the dependencies synchronously, before the first await, so the
+  // Establish dependencies synchronously, before the first await, so the
   // provider stays reactive to What's New changes (watching after an async gap
-  // would not register the dependency). The futures are awaited further down.
+  // would not register the dependency). The rollout provider is a read/write-
+  // free no-op while its release lever is off.
   final whatsNewFuture = ref.watch(whatsNewControllerProvider.future);
-  // The rollout backfill may retire the welcome for installs that were already
-  // set up before the rollout reached them (see [applyOnboardingRolloutBackfill]).
-  // Awaiting it below -- before the cadence keys are read -- is what keeps this
-  // gate from observing pre-migration state and flashing the welcome at a
-  // configured user on the upgrade launch.
   final rolloutBackfillFuture = ref.watch(
-    onboardingRolloutBackfillProvider.future,
+    onboardingRolloutBackfillProvider(onboardingRolloutEnabled).future,
   );
 
   final ftueFlagEnabled = await db.getConfigFlag(enableOnboardingFtueFlag);
@@ -246,22 +268,6 @@ class OnboardingWelcomeCadence extends AsyncNotifier<void> {
 }
 
 /// Persists the onboarding welcome's "completed" flag, permanently retiring
-/// the auto-show gate. **Throws** on a `SettingsDb` failure.
-///
-/// The throwing half of [markOnboardingWelcomeCompleted]. Callers that treat a
-/// failed retire as a real failure -- one they must not record as success --
-/// use this directly; today that is the rollout backfill
-/// (`applyOnboardingRolloutBackfill`), whose one-time marker must stay
-/// unwritten if the retire never landed, so the next launch retries rather than
-/// flashing the welcome at a configured user forever. Fire-and-forget callers
-/// use the swallowing wrapper below instead.
-Future<void> writeOnboardingWelcomeCompleted({SettingsDb? settingsDb}) =>
-    (settingsDb ?? getIt<SettingsDb>()).saveSettingsItem(
-      onboardingWelcomeCompletedKey,
-      'true',
-    );
-
-/// Persists the onboarding welcome's "completed" flag, permanently retiring
 /// the auto-show gate. Shared by [OnboardingWelcomeCadence.markCompleted]
 /// (the auto-show path, via `BeamerApp`) and the Settings replay entry
 /// (`OnboardingSettingsBody`), so both retire the gate the same way when the
@@ -270,11 +276,13 @@ Future<void> writeOnboardingWelcomeCompleted({SettingsDb? settingsDb}) =>
 ///
 /// Like [OnboardingWelcomeCadence.recordShown], a `SettingsDb` failure is
 /// logged and swallowed: both call sites invoke this fire-and-forget from a
-/// modal completion callback, where a thrown error would be unhandled. A caller
-/// that needs the failure instead should use [writeOnboardingWelcomeCompleted].
+/// modal completion callback, where a thrown error would be unhandled.
 Future<void> markOnboardingWelcomeCompleted() async {
   try {
-    await writeOnboardingWelcomeCompleted();
+    await getIt<SettingsDb>().saveSettingsItem(
+      onboardingWelcomeCompletedKey,
+      'true',
+    );
   } catch (error, stackTrace) {
     getIt<DomainLogger>().error(
       LogDomain.onboarding,

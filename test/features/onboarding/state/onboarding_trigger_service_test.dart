@@ -202,10 +202,6 @@ void main() {
                 ? _UnseenWhatsNewController.new
                 : _NoUnseenWhatsNewController.new,
           ),
-          // Stand in for an install the rollout has already passed through, so
-          // these cases exercise the cadence branches alone. The gate's
-          // dependency on the backfill has its own group below.
-          onboardingRolloutBackfillProvider.overrideWith((ref) async {}),
         ],
       );
       addTearDown(container.dispose);
@@ -540,11 +536,7 @@ void main() {
     );
   });
 
-  // The gate must resolve the rollout backfill before it reads the cadence
-  // keys: the backfill is what retires the welcome for installs that were
-  // already set up when the rollout arrived, so a gate that raced it would
-  // flash a provider-setup flow at a configured user on the upgrade launch.
-  group('shouldAutoShowOnboarding — rollout backfill sequencing', () {
+  group('onboardingRolloutBackfillProvider', () {
     late SettingsDb settingsDb;
 
     setUp(() async {
@@ -563,49 +555,26 @@ void main() {
       await tearDownTestGetIt();
     });
 
-    /// Wires the *real* backfill (no override) on top of a stubbed readiness
-    /// signal, so the gate resolves exactly as it does at runtime.
-    Future<bool> readGate({required bool providerReady}) {
-      final mockJournalDb = MockJournalDb();
-      when(
-        () => mockJournalDb.getConfigFlag(enableOnboardingFtueFlag),
-      ).thenAnswer((_) async => true);
-      when(
-        () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
-      ).thenAnswer((_) async => false);
-
+    test('wires readiness and retirement when explicitly armed', () async {
       final container = ProviderContainer(
         overrides: [
-          journalDbProvider.overrideWithValue(mockJournalDb),
-          whatsNewControllerProvider.overrideWith(
-            _NoUnseenWhatsNewController.new,
-          ),
           dailyOsOnboardingProviderReadyProvider.overrideWith(
-            (ref) async => providerReady,
+            (ref) async => true,
           ),
         ],
       );
       addTearDown(container.dispose);
-      return container.read(shouldAutoShowOnboardingProvider.future);
-    }
 
-    test(
-      'an already-configured install never sees the welcome, even on the very '
-      'first gate read after the rollout',
-      () async {
-        expect(await readGate(providerReady: true), isFalse);
-        // The gate observed the backfill's write rather than the empty
-        // pre-migration cadence.
-        expect(
-          await settingsDb.itemByKey(onboardingWelcomeCompletedKey),
-          'true',
-        );
-      },
-    );
+      await container.read(onboardingRolloutBackfillProvider(true).future);
 
-    test('an un-set-up install still gets the welcome', () async {
-      expect(await readGate(providerReady: false), isTrue);
-      expect(await settingsDb.itemByKey(onboardingWelcomeCompletedKey), isNull);
+      expect(
+        await settingsDb.itemByKey(onboardingWelcomeCompletedKey),
+        'true',
+      );
+      expect(
+        await settingsDb.itemByKey(onboardingRolloutBackfillAppliedKey),
+        'true',
+      );
     });
   });
 

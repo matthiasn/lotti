@@ -217,11 +217,10 @@ Future<void> registerSingletons() async {
     }
   }());
 
-  // One-time force-enable of the onboarding master flags. Must run after
-  // `initConfigFlags` above (it needs the seeded rows to exist) and is awaited
-  // rather than fired-and-forgotten so no UI can read a stale `false` — see
-  // `applyOnboardingRolloutFlags`. It swallows its own failures, so awaiting it
-  // cannot fail startup.
+  // Prepared rollout migration. The single lever in `onboarding_rollout.dart`
+  // is false during production testing, making this a read/write-free no-op.
+  // Once armed, awaiting it before `runApp` prevents the legacy AI setup prompt
+  // from racing the one-time flag overwrite.
   await applyOnboardingRolloutFlags(
     journalDb: journalDb,
     settingsDb: settingsDb,

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/state/onboarding_test_reset_service.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/get_it.dart';
@@ -26,14 +28,14 @@ class OnboardingMetricsPage extends StatelessWidget {
   }
 }
 
-/// Read-only developer surface that renders the FTUE funnel derived from
+/// Developer surface that renders the FTUE funnel derived from
 /// [OnboardingMetricsDb]: a summary (install date, active days, baseline
-/// cohort, real-aha reached) plus per-event counts, with a debug "clear"
-/// action.
+/// cohort, real-aha reached) plus per-event counts, with a confirmed QA reset
+/// for both prompt cadence and metrics.
 ///
-/// Body copy is intentionally plain English diagnostic text (matching the
-/// repaint-rainbow tile in the Maintenance page) — only the navigable tree
-/// leaf title is localized.
+/// Read-only diagnostic rows stay in plain English (matching the repaint-
+/// rainbow tile in Maintenance); the navigable title and interactive reset
+/// action are localized.
 class OnboardingMetricsBody extends StatefulWidget {
   const OnboardingMetricsBody({super.key});
 
@@ -52,22 +54,24 @@ class _OnboardingMetricsBodyState extends State<OnboardingMetricsBody> {
 
   Future<_FunnelReport> _load() async {
     final state = await getIt<OnboardingMetricsRepository>().funnelState();
-    final events = await getIt<OnboardingMetricsDb>().getAllEvents();
-    return _FunnelReport(state: state, eventCount: events.length);
+    return _FunnelReport(state: state);
   }
 
   void _refresh() => setState(() {
     _future = _load();
   });
 
-  Future<void> _clearAll() async {
+  Future<void> _resetTestState() async {
     final confirmed = await showConfirmationModal(
       context: context,
-      message: 'Clear all stored onboarding metrics events?',
-      confirmLabel: 'Clear',
+      message: context.messages.settingsOnboardingTestResetConfirmQuestion,
+      confirmLabel: context.messages.settingsOnboardingTestResetConfirm,
     );
     if (!confirmed) return;
-    await getIt<OnboardingMetricsDb>().clearAll();
+    await resetOnboardingTestState(
+      settingsDb: getIt<SettingsDb>(),
+      metricsDb: getIt<OnboardingMetricsDb>(),
+    );
     if (!mounted) return;
     _refresh();
   }
@@ -146,12 +150,12 @@ class _OnboardingMetricsBodyState extends State<OnboardingMetricsBody> {
                   dividerIndent: SettingsIcon.dividerIndent(tokens),
                 ),
               DesignSystemListItem(
-                title: 'Clear all events',
-                subtitle: '${report.eventCount} stored — remove all (debug)',
+                title: context.messages.settingsOnboardingTestResetTitle,
+                subtitle: context.messages.settingsOnboardingTestResetSubtitle,
                 leading: const SettingsIcon(icon: Icons.delete_outline_rounded),
                 trailing: SettingsIcon.trailingChevron(tokens),
                 dividerIndent: SettingsIcon.dividerIndent(tokens),
-                onTap: _clearAll,
+                onTap: _resetTestState,
               ),
             ],
           );
@@ -162,8 +166,7 @@ class _OnboardingMetricsBodyState extends State<OnboardingMetricsBody> {
 }
 
 class _FunnelReport {
-  const _FunnelReport({required this.state, required this.eventCount});
+  const _FunnelReport({required this.state});
 
   final OnboardingFunnelState state;
-  final int eventCount;
 }

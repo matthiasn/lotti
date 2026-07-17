@@ -34,7 +34,6 @@
   <releases>
     <release version="0.9.1049" date="2026-07-16">
       <description>
-          <p>Lotti now guides you through setup on first run. A welcome flow walks you through connecting an AI provider and capturing your first task by voice, and a short walkthrough introduces the Daily OS check-in ritual once a provider is ready. Long-time users who never set up a provider see it too. Already configured installs skip the provider welcome, and those that have never planned a day in Daily OS get the short walkthrough instead; the welcome can be replayed any time from Settings then Onboarding.</p>
           <p>Task agents now update only when you ask by default. New agents keep watching their task without automatically spending inference tokens after every change. An outdated summary stays visible with a clear Wake agent action, while automatic two-minute updates remain available as an explicit top-level opt-in. The redesigned card separates report reading from automation and model setup, and places Read more after the content it expands.</p>
       </description>
     </release>

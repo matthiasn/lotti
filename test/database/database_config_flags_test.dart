@@ -131,12 +131,12 @@ final expectedFlags = <ConfigFlag>{
   const ConfigFlag(
     name: enableOnboardingFtueFlag,
     description: 'Enable the new onboarding (FTUE) flow?',
-    status: true,
+    status: false,
   ),
   const ConfigFlag(
     name: dailyOsOnboardingEnabledFlag,
     description: 'Enable the Daily OS onboarding walkthrough?',
-    status: true,
+    status: false,
   ),
   const ConfigFlag(
     name: showSyncActivityIndicatorFlag,

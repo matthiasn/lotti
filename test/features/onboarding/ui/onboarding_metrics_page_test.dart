@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/state/onboarding_test_reset_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -13,6 +15,7 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   late OnboardingMetricsDb db;
+  late SettingsDb settingsDb;
   late OnboardingMetricsRepository repo;
   var idSeq = 0;
 
@@ -20,6 +23,7 @@ void main() {
     await getIt.reset();
     idSeq = 0;
     db = OnboardingMetricsDb(inMemoryDatabase: true);
+    settingsDb = SettingsDb(inMemoryDatabase: true);
     repo = OnboardingMetricsRepository(
       db: db,
       clock: () => DateTime.utc(2026, 7, 1, 9),
@@ -28,11 +32,13 @@ void main() {
     );
     getIt
       ..registerSingleton<OnboardingMetricsDb>(db)
+      ..registerSingleton<SettingsDb>(settingsDb)
       ..registerSingleton<OnboardingMetricsRepository>(repo);
   });
 
   tearDown(() async {
     await getIt.reset();
+    await settingsDb.close();
     await db.close();
   });
 
@@ -107,28 +113,60 @@ void main() {
     expect(find.text('Reached real aha'), findsOneWidget);
   });
 
-  testWidgets('Clear all events wipes the stored metrics and refreshes', (
+  testWidgets('reset clears prompt cadence and metrics, then refreshes', (
     tester,
   ) async {
     await repo.recordAppFirstSeenIfAbsent();
     await repo.recordEvent(OnboardingEventName.realAha);
-    await pumpUntilLoaded(tester, find.text('Clear all events'));
+    for (final key in onboardingTestCadenceKeys) {
+      await settingsDb.saveSettingsItem(key, 'seeded');
+    }
+    await pumpUntilLoaded(tester, find.text('Reset onboarding test state'));
     expect(find.text(OnboardingEventName.realAha.wireName), findsOneWidget);
 
-    await tester.ensureVisible(find.text('Clear all events'));
+    await tester.ensureVisible(find.text('Reset onboarding test state'));
     await tester.pump();
-    await tester.tap(find.text('Clear all events'));
+    await tester.tap(find.text('Reset onboarding test state'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     // Confirmation modal opened.
-    expect(find.text('CLEAR'), findsOneWidget);
+    expect(
+      find.textContaining('Existing Daily OS plans remain'),
+      findsOneWidget,
+    );
+    expect(find.text('RESET'), findsOneWidget);
 
-    await tester.tap(find.text('CLEAR'));
+    await tester.tap(find.text('RESET'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    // The confirm path cleared the store and the page refreshed.
+    // The confirm path cleared both stores and the page refreshed.
     expect(await db.getAllEvents(), isEmpty);
+    expect(
+      await settingsDb.itemsByKeys(onboardingTestCadenceKeys),
+      {for (final key in onboardingTestCadenceKeys) key: null},
+    );
+  });
+
+  testWidgets('cancelling the reset preserves cadence and metrics', (
+    tester,
+  ) async {
+    await repo.recordEvent(OnboardingEventName.welcomeSkipped);
+    final cadenceKey = onboardingTestCadenceKeys.first;
+    await settingsDb.saveSettingsItem(cadenceKey, 'true');
+    await pumpUntilLoaded(tester, find.text('Reset onboarding test state'));
+
+    await tester.ensureVisible(find.text('Reset onboarding test state'));
+    await tester.pump();
+    await tester.tap(find.text('Reset onboarding test state'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('CANCEL'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(await db.getAllEvents(), hasLength(1));
+    expect(await settingsDb.itemByKey(cadenceKey), 'true');
   });
 
   testWidgets('surfaces a load error instead of spinning forever', (

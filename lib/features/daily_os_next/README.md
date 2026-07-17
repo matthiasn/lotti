@@ -851,7 +851,8 @@ teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 [`docs/implementation_plans/2026-07-09_daily_os_onboarding.md`](../../../docs/implementation_plans/2026-07-09_daily_os_onboarding.md).
 
 > **Status.** Phases **0–2c** are implemented end-to-end and the walkthrough is
-> **rolled out**: a session coordinates it, `AppScreen` auto-arms it (sequenced
+> in a **dark launch**: a session coordinates it, `AppScreen` auto-arms it
+> (sequenced
 > behind What's New and the FTUE welcome) by starting a date-bound session +
 > switching to the Daily OS tab, the spotlight mounts over the empty-Day CTA,
 > the coach strips render inside the create modal (recording stage events), and
@@ -860,10 +861,11 @@ teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 > drafting flow needs — the exact planner template, model/profile, and provider
 > chain must resolve a thinking route — so the walkthrough auto-shows to a
 > genuinely new Daily OS user on today's unplanned surface once a suitable
-> provider is connected. `dailyOsOnboardingEnabledFlag` now seeds **on** and is
-> force-enabled once on pre-rollout installs (see
-> [Onboarding › Rollout](../onboarding/README.md#rollout)); it is kept as a
-> field kill-switch. Still **deferred**: the completion **celebration** beat and
+> provider is connected and a tester enables `dailyOsOnboardingEnabledFlag`.
+> The flag seeds **off**, and the prepared all-install rollout lever also stays
+> off until production testing concludes (see
+> [Onboarding › Rollout and production testing](../onboarding/README.md#rollout-and-production-testing)).
+> Still **deferred**: the completion **celebration** beat and
 > the Settings **replay** entry (Phase 3). This section documents what exists in
 > code today.
 
@@ -871,7 +873,7 @@ teaches that real `DayPlanningCreate` ritual in place; the full design lives in
 |---|---|---|
 | `isDailyOsOnboardingEligible` | `state/daily_os_onboarding_trigger_service.dart` | Pure candidate-eligibility predicate over already-resolved inputs — fully unit-testable across every branch. |
 | `shouldAutoShowDailyOsOnboardingProvider` | same | Read-only async check that resolves the predicate's inputs (both flags, selected-date-is-today, today's/ever plan existence, readiness seam, cadence bookkeeping). |
-| `dailyOsOnboardingProviderReadyProvider` + `hasResolvableDailyOsPlannerThinkingRoute` | `state/daily_os_planner_readiness.dart` | The readiness seam: waits for agent initialization so the default template/version are seeded, then resolves the exact thinking route a drafting wake would use (read-only — never creates the planner; before the first capture it mirrors `DayAgentService.getOrCreatePlannerAgent` with a transient config from the seeded template). Its own library because the onboarding rollout backfill reads it too, which would otherwise make the two gates import each other in a cycle. |
+| `dailyOsOnboardingProviderReadyProvider` + `hasResolvableDailyOsPlannerThinkingRoute` | `state/daily_os_planner_readiness.dart` | The readiness seam: waits for agent initialization so the default template/version are seeded, then resolves the exact thinking route a drafting wake would use (read-only — never creates the planner; before the first capture it mirrors `DayAgentService.getOrCreatePlannerAgent` with a transient config from the seeded template). Its own library because both the Daily OS gate and the prepared onboarding rollout backfill consume it. |
 | `DailyOsOnboardingCadence` | `state/daily_os_onboarding_trigger_service.dart` | Mutation side: `recordShown()` / `markCompleted()`, persisted under a private `daily_os_onboarding_` `SettingsDb` key prefix (four shows within fourteen days), mirroring the general FTUE cadence. |
 | `AgentRepository.countEntitiesByAgentAndType` | `features/agents/database/agent_repo_evolution.dart` | The "has a plan ever existed for `daily_os_planner`" query. Deliberately **includes soft-deleted tombstones** (unlike `getEntitiesByIds`), so a returning user who deleted their only plan is not mistaken for a new user. |
 | Daily OS event vocabulary + `DailyOsOnboardingFunnelState` | `features/onboarding/model/onboarding_event.dart` | Six `dailyOs*` events reuse the shared `OnboardingMetricsDb`, but the two funnel derivations are **partitioned by vocabulary** so Daily OS events never shift the general FTUE active-day or activation metrics. |
@@ -895,6 +897,11 @@ other two auto-shown surfaces; `AppScreen`'s `ref.listen` on
 `shouldAutoShowDailyOsOnboardingProvider` grants the actual slot, and the
 welcome's `markCompleted`/`onDismiss` invalidate this gate so it re-evaluates in
 the same session.
+
+The QA reset under Settings › Advanced › Onboarding Metrics clears the Daily OS
+cadence and metrics but deliberately leaves plan entities untouched. Because
+eligibility counts soft-deleted plans too, use a clean profile/device to retest
+the complete first-run walkthrough after any plan has existed.
 
 ## Testing Strategy
 

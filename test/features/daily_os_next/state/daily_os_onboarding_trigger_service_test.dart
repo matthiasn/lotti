@@ -8,7 +8,6 @@ import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_s
 import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
-import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
@@ -219,13 +218,6 @@ void main() {
                 ? _UnseenWhatsNewController.new
                 : _NoUnseenWhatsNewController.new,
           ),
-          // Stand in for an install the onboarding rollout has already passed
-          // through. The real welcome gate awaits this backfill, which would
-          // otherwise retire the welcome here (these containers are `ready` by
-          // default) and mask the welcome-then-Daily-OS sequencing under test.
-          // The backfill's own cohort behaviour is covered in
-          // `onboarding_rollout_test.dart`.
-          onboardingRolloutBackfillProvider.overrideWith((ref) async {}),
           // The general FTUE welcome's own gate, resolved directly so this
           // test does not re-plumb the welcome's dependencies.
           if (!useRealWelcomeGate)

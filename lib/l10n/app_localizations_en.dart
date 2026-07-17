@@ -8829,6 +8829,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsOnboardingSubtitle => 'Replay the welcome flow anytime';
 
   @override
+  String get settingsOnboardingTestResetConfirm => 'Reset';
+
+  @override
+  String get settingsOnboardingTestResetConfirmQuestion =>
+      'Clear onboarding prompt history and metrics? Existing Daily OS plans remain, so use a clean profile to test the complete first-run Daily OS walkthrough.';
+
+  @override
+  String get settingsOnboardingTestResetSubtitle =>
+      'Clear prompt history and metrics; existing Daily OS plans remain (debug)';
+
+  @override
+  String get settingsOnboardingTestResetTitle => 'Reset onboarding test state';
+
+  @override
   String get settingsOnboardingTitle => 'Onboarding';
 
   @override

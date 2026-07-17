@@ -164,28 +164,23 @@ Future<void> initConfigFlags(
   await db.insertFlagIfNotExists(
     const ConfigFlag(
       name: enableOnboardingFtueFlag,
-      // On by default: the FTUE is the new-user front door, and turning it on
-      // is what retires the legacy provider-selection modal (`_showAiSetupPrompt`
-      // early-returns while this is on, so the two are mutually exclusive).
-      // Seeding `true` only reaches installs without a row -- existing installs
-      // are covered by `applyOnboardingRolloutFlags`. Kept as a flag rather
-      // than hardcoded so an interruptive flow stays switchable in the field.
+      // Dark launch: keep the interruptive FTUE off until production testing
+      // concludes. Testers can opt in from Settings > Advanced > Flags; while
+      // this is on, `_showAiSetupPrompt` defers to the FTUE so the welcome and
+      // legacy provider-selection modal remain mutually exclusive.
       description: 'Enable the new onboarding (FTUE) flow?',
-      status: true,
+      status: false,
     ),
   );
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
       name: dailyOsOnboardingEnabledFlag,
-      // On by default. The Daily OS surface itself is always available, so this
-      // flag only controls whether a new user gets the coaching walkthrough.
-      // Its own gate keeps it sequenced behind the FTUE welcome and requires a
-      // resolvable planner route, so turning it on cannot strand a user in a
-      // flow that would fail. Seeding `true` only reaches installs without a
-      // row -- existing installs are covered by `applyOnboardingRolloutFlags`.
+      // Dark launch: the Daily OS surface remains available, but its coaching
+      // walkthrough stays opt-in until production testing concludes. Its gate
+      // still sequences behind FTUE and requires a resolvable planner route.
       description: 'Enable the Daily OS onboarding walkthrough?',
-      status: true,
+      status: false,
     ),
   );
 

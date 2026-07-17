@@ -8993,6 +8993,21 @@ class AppLocalizationsCs extends AppLocalizations {
       'Kdykoli si znovu spusť uvítací postup';
 
   @override
+  String get settingsOnboardingTestResetConfirm => 'Resetovat';
+
+  @override
+  String get settingsOnboardingTestResetConfirmQuestion =>
+      'Vymazat historii onboardingových výzev a metriky? Existující plány Daily OS zůstanou, takže pro otestování celého prvního průchodu Daily OS použij čistý profil.';
+
+  @override
+  String get settingsOnboardingTestResetSubtitle =>
+      'Vymaže historii výzev a metriky; existující plány Daily OS zůstanou (ladění)';
+
+  @override
+  String get settingsOnboardingTestResetTitle =>
+      'Resetovat testovací stav onboardingu';
+
+  @override
   String get settingsOnboardingTitle => 'Onboarding';
 
   @override

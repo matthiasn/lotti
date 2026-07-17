@@ -1,22 +1,25 @@
 # Wiring onboarding to auto-show on new *and* existing installs
 
-_2026-07-15 · plan · **implemented 2026-07-16**_
+_2026-07-15 · plan · **rollout prepared; activation deferred 2026-07-17**_
 
-> **Decisions taken at implementation.** **A: keep both flags** as field
-> kill-switches (recommended option). **B: B1** — backfill `welcome_completed`
-> for already-configured installs (recommended option). Both flows ship
-> together (question 3), and the local flag is sufficient for now (question 4).
+> **Current decision.** Keep both flags as field kill-switches and keep the B1
+> `welcome_completed` backfill prepared, but do **not** activate either during
+> production testing. Both flags seed `false`; the single
+> `onboardingRolloutEnabled` release lever also remains `false`. Testers opt in
+> through Config Flags and can clear cadence + metrics from Onboarding Metrics.
 >
 > One deviation from the checklist below: wiring the B1 backfill as written
 > would have made `onboarding_trigger_service` and
 > `daily_os_onboarding_trigger_service` import each other in a cycle, so the
 > readiness signal was extracted to its own leaf library
-> (`daily_os_next/state/daily_os_planner_readiness.dart`). The backfill is
-> awaited by `shouldAutoShowOnboarding` rather than run from a startup widget —
-> a widget would race the gate and flash the welcome at a configured user.
+> (`daily_os_next/state/daily_os_planner_readiness.dart`). The prepared backfill
+> is awaited by `shouldAutoShowOnboarding` rather than run from a startup widget;
+> while the release lever is off it returns before reading readiness or writing
+> any state.
 >
-> Shipped code lives in `lib/features/onboarding/state/onboarding_rollout.dart`;
-> see `lib/features/onboarding/README.md#rollout` for the current behaviour.
+> Prepared code lives in `lib/features/onboarding/state/onboarding_rollout.dart`;
+> see `lib/features/onboarding/README.md#rollout-and-production-testing` for the
+> current behavior.
 
 ## TL;DR
 

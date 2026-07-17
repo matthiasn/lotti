@@ -83,12 +83,11 @@ void main() {
         enableEmbeddingsFlag: false,
         enableVectorSearchFlag: false,
         enableWhatsNewFlag: false,
-        // Rolled out on by default: the FTUE is the new-user front door and
-        // the Daily OS walkthrough follows it. Seeding `true` only reaches
-        // installs without a row -- existing installs are force-enabled by
-        // `applyOnboardingRolloutFlags` (see `onboarding_rollout_test.dart`).
-        enableOnboardingFtueFlag: true,
-        dailyOsOnboardingEnabledFlag: true,
+        // Dark-launched until production testing concludes. The prepared
+        // rollout migration force-enables both when its release lever is
+        // intentionally pulled.
+        enableOnboardingFtueFlag: false,
+        dailyOsOnboardingEnabledFlag: false,
         showSyncActivityIndicatorFlag: false,
         showSidebarWakeQueueFlag: false,
       };

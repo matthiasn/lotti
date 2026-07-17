@@ -9,22 +9,19 @@ D3/D7/D30 retention. The full design and phased build plan live in
 > connect-your-brain front door), **Phase 2** (the live voice→task aha), the
 > **auto-show trigger + re-show cadence**, and the top-level **Settings ›
 > Onboarding** replay entry described below are implemented. The **D1 return
-> loop** is forthcoming. The flow is **rolled out**: `enableOnboardingFtueFlag`
-> seeds **on**, and `applyOnboardingRolloutFlags` force-enables it once on
-> installs that still carry a pre-rollout `false` row (see
-> [Rollout](#rollout)). The flag is kept — rather than deleted and hardcoded —
-> as a field kill-switch for an interruptive flow; while it is on,
-> `_showAiSetupPrompt` early-returns, so the pre-FTUE
-> `AiProviderSelectionModal` is only reachable by turning the flag back off.
-> This README documents what exists in code today and is updated as each phase
-> lands.
+> loop** is forthcoming. The flow is in a **dark launch**: both master config
+> flags seed **off**, and the prepared one-shot rollout lever remains `false`
+> while production testing runs (see [Rollout and production testing](#rollout-and-production-testing)).
+> Testers opt in through Settings › Advanced › Flags. While the FTUE flag is
+> on, `_showAiSetupPrompt` early-returns so the pre-FTUE
+> `AiProviderSelectionModal` and the welcome cannot stack.
 
 ## End-to-end flow
 
 ```mermaid
 flowchart TD
-    L[First launch · no provider configured] -->|enableOnboardingFtueFlag ON (default), eligible| W[OnboardingWelcomeModal]
-    L -->|flag turned OFF in Settings › Advanced › Flags| LEGACY[AiProviderSelectionModal · pre-FTUE]
+    L[First launch · no provider configured] -->|enableOnboardingFtueFlag OFF by default| LEGACY[AiProviderSelectionModal · pre-FTUE]
+    L -->|tester enables flag · eligible| W[OnboardingWelcomeModal]
     W --> WL[welcome · hero + promise + CTA]
     WL -->|Choose your AI brain| CN[connect · provider tiles]
     WL -->|Look around first| SK[skip → onDismiss · no persistence, grace period preserved]
@@ -58,8 +55,8 @@ independent of the "connect your brain" front door's own step logic above.
 | `OnboardingWelcomeCadence` | `AsyncNotifier<void>` — the mutation side: `recordShown()` and `markCompleted()`, persisted to `SettingsDb` under a private `welcome_*` key prefix (deliberately **not** a `ConfigFlags` row — those are public, user-toggleable; this is per-install bookkeeping the user never edits directly). |
 
 **Eligibility** (all must hold):
-- the rollout backfill has resolved (see [Rollout](#rollout) — the gate awaits
-  it before reading any cadence key),
+- the prepared rollout backfill provider has resolved; it is a read/write-free
+  no-op while the release lever is off,
 - `enableOnboardingFtueFlag` is on,
 - What's New has nothing unseen left to show (sequenced behind it, exactly
   like `AiSetupPromptService`'s own gating — the two auto-shown overlays never
@@ -111,95 +108,51 @@ persists nothing and does **not** retire the gate: the shown-count/window
 budget already implements the "show again for a while, then stop" grace
 period, and a hard block on first skip would defeat that.
 
-## Rollout
+## Rollout and production testing
 
-`state/onboarding_rollout.dart` turns the flow on for every cohort. It exists
-because the two levers above are not enough on their own: `initConfigFlags`
-seeds through `insertFlagIfNotExists`, which **never overwrites an existing
-row**, so flipping the seed default to `true` reaches fresh installs but leaves
-any install that already ran a build carrying these flags pinned at its `false`
-row.
+`state/onboarding_rollout.dart` keeps the future all-install rollout prepared
+without activating it. `onboardingRolloutEnabled` is the single release lever
+and is currently `false`. Both config flags also seed `false`.
 
-| Piece | Role |
-|---|---|
-| `applyOnboardingRolloutFlags` | Force-enables `enableOnboardingFtueFlag` and `dailyOsOnboardingEnabledFlag` via `upsertConfigFlag` (overwrite), guarded by the `onboarding_rollout_v1_flags_applied` marker. Awaited from `registerSingletons()` after `initConfigFlags`. |
-| `applyOnboardingRolloutBackfill` | Retires the welcome (`welcome_completed`) for installs that already had a working setup when the rollout arrived, guarded by the `onboarding_rollout_v1_backfill_applied` marker. Takes its `SettingsDb`/`DomainLogger` as parameters (`onboardingRolloutBackfillProvider` resolves them), mirroring `applyOnboardingRolloutFlags`. |
-| `onboardingRolloutBackfillProvider` | Non-`autoDispose` `FutureProvider<void>` wiring the backfill to `dailyOsOnboardingProviderReadyProvider`; awaited by `shouldAutoShowOnboarding`. |
+| Piece | Lever off (current release) | Lever on (future rollout) |
+|---|---|---|
+| `applyOnboardingRolloutFlags` | Returns before any database read or write. | Overwrites both master flags to `true` once, before `runApp`, then writes `onboarding_rollout_v1_flags_applied`. |
+| `applyOnboardingRolloutBackfill` | Returns before reading readiness, cadence, or its marker. | Classifies an install once; a provider-ready install gets `welcome_completed`, then `onboarding_rollout_v1_backfill_applied` is written. |
+| Failure behavior | No operation exists to fail. | Logs, leaves the relevant marker absent, and retries next launch. |
 
-**Why the two halves run in different places.** The flag flip needs only
-`JournalDb`/`SettingsDb`, so it runs in `get_it` **before `runApp`** — that
-ordering is load-bearing, because `_showAiSetupPrompt` reads
-`enableOnboardingFtueFlag` directly and would otherwise race the flip and open
-the legacy modal once on the upgrade launch. The backfill cannot run there: it
-resolves readiness through Riverpod providers, and no container exists before
-`runApp`. It is instead awaited by the welcome gate, which is what stops the
-gate from observing pre-migration state.
-
-**Why the marker, not the flag value, is the guard.** Re-forcing on every launch
-would override a user who turns the flag back off. The marker means the rollout
-touches each install exactly once; any opt-out made afterward is permanent. A
-deliberate opt-out made *before* the rollout is indistinguishable from the
-beta/dev cohort's untouched `false` row and is overridden once — an accepted
-trade-off, since these flags only ever shipped in builds whose own comments read
-"still being built". The `_v1` suffix leaves room for a future re-rollout.
-
-**Why already-configured users are skipped.** The welcome is a
-*connect-your-brain* flow. Turning the flag on would otherwise drop a long-time
-user who already has a working provider into a redundant provider-setup flow.
-The backfill reuses `dailyOsOnboardingProviderReadyProvider` — deliberately
-*stricter* than "has any provider", so a half-configured install errs toward
-showing the welcome rather than being left with no onboarding at all. Those users
-get the Daily OS walkthrough instead, which fits them: they have a provider, they
-just never planned a day. They can still replay the welcome from
-**Settings › Onboarding**. The readiness provider waits for agent initialization
-before resolving, so the one-shot marker cannot capture a transient missing
-template/version while startup seeding is still in flight.
-
-Every failure path logs and swallows (this is the startup path) and leaves its
-marker unwritten so the next launch retries — a hiccup must never suppress
-onboarding.
+The force-enable remains necessary because `initConfigFlags` uses
+`insertFlagIfNotExists`: changing a seed cannot update an existing `false` row.
+The startup half therefore remains awaited from `registerSingletons()` after
+seeding. The backfill remains awaited by `shouldAutoShowOnboarding`, where a
+Riverpod container exists. Its readiness signal waits for agent initialization
+before resolving so template/version seeding cannot produce a false one-shot
+classification.
 
 ```mermaid
-flowchart TD
-    S[registerSingletons] --> IC[initConfigFlags · insert-only seed, default true]
-    IC --> AF{onboarding_rollout_v1_flags_applied?}
-    AF -->|present| RUN[runApp]
-    AF -->|absent| UP[upsertConfigFlag status: true for any false row] --> MK[write marker] --> RUN
-    RUN --> G[shouldAutoShowOnboarding]
-    G --> AB{onboarding_rollout_v1_backfill_applied?}
-    AB -->|present| CAD[read welcome_* cadence]
-    AB -->|absent| PR{providerReady?}
-    PR -->|yes · already set up| MC[writeOnboardingWelcomeCompleted] --> MK2[write marker] --> CAD
-    PR -->|no · un-set-up cohort| MK2
-    PR -->|read failed| LOG[log · no marker · retry next launch] --> CAD
-    MC -->|write failed| LOG
+stateDiagram-v2
+    [*] --> DarkLaunch: onboardingRolloutEnabled = false
+    DarkLaunch --> ManualTest: tester enables both config flags
+    ManualTest --> DarkLaunch: tester disables both config flags
+    DarkLaunch --> RolloutArmed: release changes the lever to true
+    RolloutArmed --> FlagsForced: startup force-enables both flags once
+    FlagsForced --> WelcomeRetired: existing install has a resolvable planner route
+    FlagsForced --> WelcomeEligible: install is not yet configured
+    WelcomeRetired --> [*]
+    WelcomeEligible --> [*]
 ```
 
-The retire uses the **throwing** `writeOnboardingWelcomeCompleted`, not the
-swallowing `markOnboardingWelcomeCompleted` the modal call sites use: a failed
-write has to reach the backfill's own catch so the marker stays unwritten and
-the next launch retries. Recording a migration that never landed would leave a
-configured install permanently owed a welcome it does not need.
+### Resetting test state
 
-Cohort outcomes (asserted end-to-end in
-`test/features/onboarding/state/onboarding_rollout_test.dart`):
+Settings › Advanced › Onboarding Metrics exposes **Reset onboarding test
+state**. After confirmation it removes all six `welcome_*` and
+`daily_os_onboarding_*` cadence keys and clears the content-free onboarding
+event log. It deliberately leaves both config flags unchanged, so a tester's
+opt-in remains explicit, and it never deletes real user data.
 
-The flag row and readiness are independent axes: the flag row decides what the
-force-enable does, readiness alone decides whether the backfill retires the
-welcome. "Provider-ready" throughout means
-`dailyOsOnboardingProviderReadyProvider` resolves a full thinking route —
-strictly more than having a provider configured. Rows below are not-ready unless
-stated, since that is the state the flag-row cohorts describe.
-
-| Cohort | Flag row before | Provider-ready | After rollout | Welcome |
-|---|---|---|---|---|
-| Fresh install | none | no | `true` (seed) | shown |
-| Existing user, never ran an FTUE-flag build | none | no | `true` (seed) | shown |
-| Beta/dev install | `false` | no | `true` (forced) | shown |
-| Existing user, provider-ready | any | **yes** | `true` | retired — Daily OS takes the beat |
-| Existing user, half-configured (no route resolves) | any | no | `true` | shown |
-| Opt-out before the rollout | `false` | no | `true` (forced once) | shown |
-| Opt-out after the rollout | `false` | any | `false` (honored forever) | not shown |
+Daily OS eligibility also checks whether the planner has **ever** had a plan,
+including a soft-deleted plan. The reset cannot safely erase that history. Use
+a clean profile/device to retest the complete first-run Daily OS walkthrough
+after any day plan has existed.
 
 ## Phase 0 — measurement substrate
 
@@ -222,7 +175,7 @@ other small single-purpose DBs (`NotificationsDb`, `EditorDb`).
 | `OnboardingMetricsDb` | `lib/database/onboarding_metrics_db.dart` (+ `.drift`) | Append-only `onboarding_events` table + queries. **Source of truth.** |
 | `OnboardingEventName` / `OnboardingFunnelState` | `model/onboarding_event.dart` | Event vocabulary + derived-state model + `onboardingDayBucket` helper. |
 | `OnboardingMetricsRepository` | `repository/onboarding_metrics_repository.dart` | Records events (injected clock/id/platform) and derives funnel state. |
-| `OnboardingMetricsPage` / `OnboardingMetricsBody` | `ui/onboarding_metrics_page.dart` | Read-only debug surface under Settings → Advanced → Onboarding Metrics. |
+| `OnboardingMetricsPage` / `OnboardingMetricsBody` | `ui/onboarding_metrics_page.dart` | Debug surface under Settings → Advanced → Onboarding Metrics; renders the funnel and exposes the confirmed cadence + metrics QA reset. |
 
 ### Privacy
 
