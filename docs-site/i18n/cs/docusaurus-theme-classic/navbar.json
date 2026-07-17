@@ -1,0 +1,14 @@
+{
+  "title": {
+    "message": "Příručka Lotti",
+    "description": "The title in the navbar"
+  },
+  "item.label.Guide": {
+    "message": "Průvodce",
+    "description": "Navbar item with label Guide"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  }
+}

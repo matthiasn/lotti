@@ -8,6 +8,30 @@ import {readJson, siteDirectory} from './manual-lib.mjs';
 
 const buildDirectory = resolve(siteDirectory, 'build');
 const features = await readJson(resolve(siteDirectory, 'metadata/features.json'));
+const screenshotRegistry = await readJson(
+  resolve(siteDirectory, 'metadata/screenshot-cases.json'),
+);
+const localeExpectations = {
+  de: {
+    allScreenshots: 'Alle Screenshots',
+    desktop: 'Desktop',
+    firstTaskTitle: 'Deine erste Aufgabe erstellen',
+    layoutLabel: 'Screenshot-Layout für alle Bilder',
+    mobile: 'Mobil',
+    openViewer: 'Screenshot-Ansicht öffnen',
+  },
+  cs: {
+    allScreenshots: 'Všechny snímky',
+    desktop: 'Počítač',
+    firstTaskTitle: 'Vytvoření prvního úkolu',
+    layoutLabel: 'Rozvržení snímků pro všechny obrázky',
+    mobile: 'Mobil',
+    openViewer: 'Otevřít prohlížeč snímku',
+  },
+};
+const translatedLocales = screenshotRegistry.locales.filter(
+  (locale) => locale !== screenshotRegistry.defaultLocale,
+);
 
 await access(resolve(buildDirectory, 'index.html'));
 const buildFiles = await readdir(buildDirectory, {recursive: true});
@@ -21,7 +45,9 @@ assert.ok(
 );
 for (const feature of features.features) {
   await access(resolve(buildDirectory, feature.page, 'index.html'));
-  await access(resolve(buildDirectory, 'de', feature.page, 'index.html'));
+  for (const locale of translatedLocales) {
+    await access(resolve(buildDirectory, locale, feature.page, 'index.html'));
+  }
 }
 
 const settingsHtml = await readFile(
@@ -37,26 +63,38 @@ assert.match(
   /manual\/screenshots\/development\/settings\/home\/mobile-dark\.webp/,
 );
 
-const germanSettingsHtml = await readFile(
-  resolve(buildDirectory, 'de', 'reference/settings/index.html'),
-  'utf8',
-);
 assert.doesNotMatch(settingsHtml, /data-translation-notice=/);
-assert.match(germanSettingsHtml, /data-translation-notice=["']?de["']?/);
-assert.match(germanSettingsHtml, /GPT 5\.6 Sol xHigh/);
-assert.match(germanSettingsHtml, />Pull Request</);
-assert.match(germanSettingsHtml, />GitHub-Issue</);
-assert.match(germanSettingsHtml, /aria-label="Screenshot-Layout für alle Bilder"/);
-assert.match(germanSettingsHtml, />Alle Screenshots</);
-assert.match(germanSettingsHtml, />Mobil</);
-assert.match(germanSettingsHtml, />Desktop</);
-assert.match(
-  germanSettingsHtml,
-  /manual\/screenshots\/development\/de\/settings\/home\/mobile-dark\.webp/,
-);
+for (const locale of translatedLocales) {
+  const expected = localeExpectations[locale];
+  assert.ok(expected, `Smoke expectations are missing for locale ${locale}.`);
+  const translatedSettingsHtml = await readFile(
+    resolve(buildDirectory, locale, 'reference/settings/index.html'),
+    'utf8',
+  );
+  assert.match(
+    translatedSettingsHtml,
+    new RegExp(`data-translation-notice=["']?${locale}["']?`),
+  );
+  assert.match(translatedSettingsHtml, /GPT 5\.6 Sol xHigh/);
+  assert.match(
+    translatedSettingsHtml,
+    new RegExp(`aria-label="${expected.layoutLabel}"`),
+  );
+  assert.match(translatedSettingsHtml, new RegExp(`>${expected.allScreenshots}<`));
+  assert.match(translatedSettingsHtml, new RegExp(`>${expected.mobile}<`));
+  assert.match(translatedSettingsHtml, new RegExp(`>${expected.desktop}<`));
+  assert.match(
+    translatedSettingsHtml,
+    new RegExp(
+      `manual/screenshots/development/${locale}/settings/home/mobile-dark\\.webp`,
+    ),
+  );
+}
 
 let screenshotControlCount = 0;
-let germanScreenshotControlCount = 0;
+const translatedScreenshotControlCounts = Object.fromEntries(
+  translatedLocales.map((locale) => [locale, 0]),
+);
 for (const feature of features.features) {
   if (feature.screenshotCases.length === 0) continue;
   const html = await readFile(
@@ -78,42 +116,63 @@ for (const feature of features.features) {
     `Every ${feature.title} screenshot case must render its expandable viewer.`,
   );
   screenshotControlCount += renderedControls;
-  const germanHtml = await readFile(
-    resolve(buildDirectory, 'de', feature.page, 'index.html'),
-    'utf8',
-  );
-  const germanRenderedControls =
-    germanHtml.match(/aria-label="Screenshot-Layout für alle Bilder"/g)?.length ?? 0;
-  assert.equal(
-    germanRenderedControls,
-    feature.screenshotCases.length,
-    `Every translated ${feature.title} screenshot case must render its viewport control.`,
-  );
-  germanScreenshotControlCount += germanRenderedControls;
   for (const caseId of feature.screenshotCases) {
     assert.match(html, new RegExp(`data-case-id=["']?${caseId}`));
-    assert.match(germanHtml, new RegExp(`data-case-id=["']?${caseId}`));
+  }
+  for (const locale of translatedLocales) {
+    const expected = localeExpectations[locale];
+    const translatedHtml = await readFile(
+      resolve(buildDirectory, locale, feature.page, 'index.html'),
+      'utf8',
+    );
+    const renderedControls =
+      translatedHtml.match(
+        new RegExp(`aria-label="${expected.layoutLabel}"`, 'g'),
+      )?.length ?? 0;
+    const renderedViewers =
+      translatedHtml.match(
+        new RegExp(`aria-label="${expected.openViewer}"`, 'g'),
+      )?.length ?? 0;
+    assert.equal(
+      renderedControls,
+      feature.screenshotCases.length,
+      `Every ${locale} ${feature.title} screenshot case must render its viewport control.`,
+    );
+    assert.equal(
+      renderedViewers,
+      feature.screenshotCases.length,
+      `Every ${locale} ${feature.title} screenshot case must render its expandable viewer.`,
+    );
+    translatedScreenshotControlCounts[locale] += renderedControls;
+    for (const caseId of feature.screenshotCases) {
+      assert.match(translatedHtml, new RegExp(`data-case-id=["']?${caseId}`));
+    }
   }
 }
 
-let translatedDocCount = 0;
-for (const path of buildFiles) {
-  if (!path.startsWith('de/') || !path.endsWith('/index.html')) continue;
-  const html = await readFile(resolve(buildDirectory, path), 'utf8');
-  if (!html.includes('theme-doc-markdown')) continue;
-  assert.equal(
-    html.match(/data-translation-notice=["']?de["']?/g)?.length ?? 0,
-    1,
-    `Translated document ${path} must render exactly one translation notice.`,
-  );
-  translatedDocCount += 1;
-}
-
-assert.equal(
-  translatedDocCount,
-  37,
-  'The translation notice audit must cover every German manual document.',
+const translatedDocCounts = Object.fromEntries(
+  translatedLocales.map((locale) => [locale, 0]),
 );
+for (const locale of translatedLocales) {
+  for (const path of buildFiles) {
+    if (!path.startsWith(`${locale}/`) || !path.endsWith('/index.html')) continue;
+    const html = await readFile(resolve(buildDirectory, path), 'utf8');
+    if (!html.includes('theme-doc-markdown')) continue;
+    assert.equal(
+      html.match(
+        new RegExp(`data-translation-notice=["']?${locale}["']?`, 'g'),
+      )?.length ?? 0,
+      1,
+      `Translated document ${path} must render exactly one translation notice.`,
+    );
+    translatedDocCounts[locale] += 1;
+  }
+  assert.equal(
+    translatedDocCounts[locale],
+    37,
+    `The translation notice audit must cover every ${locale} manual document.`,
+  );
+}
 
 const searchIndex = await readFile(
   resolve(buildDirectory, 'search-index.json'),
@@ -121,16 +180,21 @@ const searchIndex = await readFile(
 );
 assert.match(searchIndex, /Daily OS/);
 assert.match(searchIndex, /Create your first task/);
-const germanSearchIndex = await readFile(
-  resolve(buildDirectory, 'de', 'search-index.json'),
-  'utf8',
-);
-assert.match(germanSearchIndex, /Daily OS/);
-assert.match(germanSearchIndex, /Deine erste Aufgabe erstellen/);
+for (const locale of translatedLocales) {
+  const translatedSearchIndex = await readFile(
+    resolve(buildDirectory, locale, 'search-index.json'),
+    'utf8',
+  );
+  assert.match(translatedSearchIndex, /Daily OS/);
+  assert.match(
+    translatedSearchIndex,
+    new RegExp(localeExpectations[locale].firstTaskTitle),
+  );
+}
 
 console.log(
   `Built-site smoke test passed for ${features.features.length} feature routes, ` +
-    `${screenshotControlCount} English and ${germanScreenshotControlCount} German ` +
-    `global screenshot controls, ${translatedDocCount} translation notices, ` +
-    'the interactive screenshot shell, and both local search indexes.',
+    `${screenshotControlCount} English and ${JSON.stringify(translatedScreenshotControlCounts)} translated ` +
+    `global screenshot controls, ${JSON.stringify(translatedDocCounts)} translation notices, ` +
+    'the interactive screenshot shell, and every local search index.',
 );

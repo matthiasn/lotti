@@ -6,6 +6,7 @@ import {
   findLegacyManualImport,
   findUnmanagedScreenshotReferences,
   requiredVariants,
+  resolveCaptureLocales,
   validateCaseId,
   validateManualVersion,
   validateScreenshotRegistry,
@@ -99,6 +100,26 @@ test('the screenshot registry requires a valid default and unique locales', () =
       'screenshot-cases.json defaultLocale must be listed in locales.',
       'screenshot-cases.json contains duplicate locale de.',
     ],
+  );
+});
+
+test('incremental captures select only registered locales', () => {
+  assert.deepEqual(resolveCaptureLocales(undefined, ['en', 'de', 'cs']), [
+    'en',
+    'de',
+    'cs',
+  ]);
+  assert.deepEqual(resolveCaptureLocales('cs, de', ['en', 'de', 'cs']), [
+    'cs',
+    'de',
+  ]);
+  assert.throws(
+    () => resolveCaptureLocales('fr', ['en', 'de', 'cs']),
+    /Unsupported manual screenshot locale/,
+  );
+  assert.throws(
+    () => resolveCaptureLocales('cs cs', ['en', 'de', 'cs']),
+    /contains duplicates/,
   );
 });
 

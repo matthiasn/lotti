@@ -1,0 +1,113 @@
+---
+title: Tvorba užitečných přehledů
+description: Spoj návyky, měření, zdraví, dotazníky a tréninky do opakovaně použitelného provozního pohledu.
+---
+
+# Tvorba užitečných přehledů
+
+Přehled sdružuje grafy odpovídající na opakovanou otázku. **Provoz kolonie**
+spojuje tlak obydlí, spotřebu sardinek a počet členů expedice; **Připravenost
+mise** udržuje soukromou kontrolu spuštění oddělenou. Sestav ji kolem rozhodnutí,
+ne jako sbírku všech dostupných čísel.
+
+V nastavení najdeš přehledy pod názvem **Panely**; v hlavní navigaci se
+zobrazují jako **Přehledy**.
+
+<ManualScreenshot
+  caseId="dashboards/settings-list"
+  alt="Nastavení panelů s Provozem kolonie a soukromým přehledem Připravenost mise"
+/>
+
+## Vytvoř přehled
+
+1. Otevři **Nastavení → Definice → Panely**.
+2. Vyber **Vytvořit panel**.
+3. Přidej jasný název a popis otázky, na kterou má odpovídat.
+4. Volitelně přiřaď kategorii a soukromí.
+5. Přidej a uspořádej grafy a ulož.
+
+<ManualScreenshot
+  caseId="dashboards/settings-detail"
+  alt="Editor panelu Provoz kolonie přiřazeného k Tučňáčímu provozu s volbami soukromý a aktivní"
+/>
+
+- **Kategorie** umožní přehled filtrovat spolu s ostatním obsahem dané
+  kategorie.
+- **Soukromá** ji skrývá, pokud nejsou zobrazené soukromé záznamy.
+- **Aktivní** určuje zobrazení v seznamu přehledů bez smazání definice.
+
+## Skládej a řaď grafy
+
+<ManualScreenshot
+  caseId="dashboards/charts"
+  alt="Seznam grafů Provozu kolonie s denním průměrem Tlaku obydlí, denním součtem Spotřebovaných sardinek a Počtu tučňáků"
+  caption="Pořadí změň tažením za úchyt. Ovládáním úprav u grafu měření změň agregaci nebo ho odeber pomocí ×."
+/>
+
+Pořadí grafů je pořadím přehledu. Signál, který rámuje ostatní, dej první. V
+Provozu kolonie vede tlak obydlí, protože nebezpečné obydlí mění výklad každého
+dalšího čísla.
+
+Grafy měření uchovávají vlastní agregaci na položce přehledu. Stejná veličina
+tak může mít v jiném přehledu jiné shrnutí bez změny základních pozorování.
+
+## Přidej grafy z podporovaných zdrojů
+
+<ManualScreenshot
+  caseId="dashboards/sources"
+  alt="Editor panelu nabízející jako zdroje grafů Návyky, Měření, Zdraví, Průzkumy a Cvičení a také export JSON"
+/>
+
+Editor může přidat:
+
+- **Návyky** pro historii dokončení.
+- **Měření** pro uživatelské číselné veličiny.
+- Data **Zdraví** podporovaná aktuální platformou a oprávněními.
+- **Průzkumy** pro výsledky vestavěných dotazníků.
+- **Cvičení** importovaná z podporovaných zdrojů zdraví.
+
+Rozbal zdroj, vyber jeden či více grafů a přidej je. Dostupnost závisí na
+existujících definicích a platformních datech; výzvy k oprávnění zdraví a
+podporované typy se liší podle zařízení.
+
+## Otevři a vykládej přehled
+
+Aktivní přehledy najdeš v **Přehledech**. Seznam ukazuje ikonu kategorie, název
+a účel. Filtrem v záhlaví se zaměř na jednu nebo více kategorií.
+
+<ManualScreenshot
+  caseId="dashboards/list"
+  alt="Seznam Přehledů s Provozem kolonie a soukromou Připraveností mise"
+  caption="Počítač vyhrazuje pravý panel pro vybraný přehled; mobil ho otevírá jako samostatnou stránku."
+/>
+
+Vyber **Provoz kolonie** a otevři jeho grafy. Na počítači zůstanou seznam a vybraný
+přehled vedle sebe. Na mobilu se přehled otevře jako vlastní stránka s
+tlačítkem zpět.
+
+<ManualScreenshot
+  caseId="dashboards/view"
+  alt="Přehled Provoz kolonie zobrazující 90 dní tlaku obydlí a spotřebovaných sardinek, na počítači vedle seznamu přehledů"
+  caption="Pevné záhlaví udržuje volby rozsahu 30, 90, 180 a 365 dní viditelné, zatímco grafy se posouvají pod ním."
+/>
+
+Vybraný rozsah platí pro každý graf stránky. Karty si zachovávají vlastní
+jednotky a agregaci: tlak obydlí používá denní průměr, spotřeba sardinek a počet
+tučňáků denní součty. Akcí **+** na kartě měření zaznamenej nové pozorování
+daného typu.
+
+<ManualScreenshot
+  caseId="dashboards/view-crew"
+  alt="Přehled Provoz kolonie posunutý ke grafům Spotřebované sardinky a Počet tučňáků"
+  caption="V 90denní historii posádky je viditelný krátký pokles na 36 tučňáků; okolní dny se vracejí k očekávaným 37."
+/>
+
+Graf ber jako podklad, ne verdikt. Před závěrem zkontroluj agregaci, jednotky,
+rozsah dat, chybějící pozorování a stav soukromí.
+
+## Exportuj nastavení přehledu
+
+**Uložit a zkopírovat JSON** uloží panel a potom zkopíruje jeho nastavení a
+odkazované definice měření. Hodí se pro kontrolu nebo přesun nastavení, ale
+nejde o živé synchronizované propojení: pozdější úpravy už zkopírovaný obsah
+neaktualizují.

@@ -1,0 +1,147 @@
+---
+title: Synchronizace zařízení
+description: Páruj zařízení, ověřuj jejich identitu, sleduj doručení a obnovuj chybějící data bez hádání.
+---
+
+# Synchronizace zařízení
+
+Lotti Sync udržuje podporovaná data sladěná mezi tvými zařízeními. Každé
+zařízení má vlastní místní databázi; Sync přenáší změny přes nastavený účet a
+doplní zařízení poté, co bylo offline.
+
+Otevři **Nastavení → Sync** a zobraz dostupné stránky nastavení, zdraví a
+obnovy. Číslo vedle **Odchozí fronty** označuje práci, která ještě nedorazila k
+synchronizační službě.
+
+<ManualScreenshot
+  caseId="sync/hub"
+  alt="Nastavení Lotti Sync s Připravenou synchronizací, identitou zařízení, doplněním, statistikami, odchozí frontou, konflikty a údržbou"
+  caption="Centrum Sync drží běžný stav vedle diagnostiky a nástrojů obnovy. Project Waddle má právě tři položky odchozí fronty ke kontrole."
+/>
+
+## Spáruj další zařízení
+
+Začni na zařízení, které už je připojené:
+
+1. Otevři **Nastavení → Sync → Připravená synchronizace**.
+2. Na počítači zobraz předávací QR kód. Udržuj tuto obrazovku soukromou: balíček
+   uděluje přístup k synchronizačnímu účtu a místnosti.
+3. Na novém zařízení otevři stejnou stránku a QR kód naskenuj nebo vlož celý
+   balíček nastavení.
+4. Před volbou **Importovat** zkontroluj dekódovaný server, uživatele a
+   místnost.
+5. Nech dokončit první synchronizaci, než některou aplikaci zavřeš.
+
+<ManualScreenshot
+  caseId="sync/status"
+  alt="Stav Připravené synchronizace na mobilu a bezpečný předávací QR kód zařízení na počítači"
+  caption="Počítač může zobrazit předávací QR kód; mobil ukazuje připojený účet a stav ověření. S QR kódem zacházej jako s heslem."
+/>
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Kontrola importu nastavení Lotti se synchronizačním serverem, uživatelem a místností Project Waddle"
+  caption="Importuj jen tehdy, když všechny dekódované hodnoty patří k účtu, který jsi chtěl připojit."
+/>
+
+Pokud import hlásí chybu, ponech původní zařízení připojené, vytvoř nový
+předávací balíček a zopakuj postup s celou hodnotou. Zakódovaný balíček ručně
+neupravuj.
+
+## Ověř nové zařízení
+
+Párování zařízení připojí; ověření potvrzuje, že obě zařízení komunikují bez
+neznámého prostředníka.
+
+<ManualScreenshot
+  caseId="sync/verification"
+  alt="Ověření zařízení Lotti porovnávající posloupnost emoji tučňáka, ryby, rakety, ledu, Země, měsíce, hvězdy a dalekohledu"
+  caption="Porovnej celou posloupnost emoji na obou zařízeních. Přijmi ji jen tehdy, když přesně odpovídá každý obrázek i pořadí."
+/>
+
+Emoji porovnej osobně nebo přes důvěryhodný hovor. **Přijmout** vyber na obou
+zařízeních jen při shodě celé posloupnosti. Pokud se liší jediné emoji, ověření
+zruš a před dalším pokusem zkontroluj účet a názvy zařízení.
+
+## Pojmenuj zařízení a zveřejni schopnosti
+
+**Profil synchronizačního uzlu** identifikuje aktuální zařízení zbytku skupiny.
+Použij název odlišující fyzický počítač, například „Mission Control Mac“ místo
+„Počítač“.
+
+<ManualScreenshot
+  caseId="sync/node-profile"
+  alt="Profil synchronizačního uzlu Lotti pro Mission Control Mac s místními schopnostmi inference a známými zařízeními Project Waddle"
+  caption="Jasné názvy zařízení výrazně usnadňují audit ověření, diagnostiky a místní inference připnuté k zařízení."
+/>
+
+Stránka také uvádí schopnosti, které může zařízení poskytnout, například místní
+přepis zvuku nebo inferenci jazykového modelu. Známá zařízení ukazují, co
+ostatní uzly naposledy oznámily. Dostupnost schopnosti je popisná; příslušný
+profil AI musí být stále nastavený, aby ji používal.
+
+## Rozuměj doplnění a dohánění
+
+Běžná synchronizace zpracovává změny při příchodu. **Doplnění** hledá mezery v
+posloupnosti přijaté od známých zařízení a znovu žádá o chybějící záznamy.
+
+<ManualScreenshot
+  caseId="sync/backfill"
+  alt="Stránka Doplnění Lotti Sync s příchozím, chybějícím a přeskočeným stavem, statistikami posloupnosti a automatickým doplněním"
+  caption="Project Waddle přijal 2 868 záznamů posloupnosti a nyní zná čtyři chybějící záznamy ze dvou ID zařízení."
+/>
+
+- **Příchozí** je práce čekající ve vstupní frontě.
+- **Chybějící** je počet známých mezer posloupnosti.
+- **Přeskočené** je práce, kterou vstupní fronta opustila, protože ji nedokázala
+  běžně zpracovat.
+- **Automatické doplnění** průběžně žádá o obnovitelné mezery a je správnou
+  výchozí hodnotou.
+- **Pokročilá obnova** obsahuje ruční ovládání pro vyšetřování. Použij ho až
+  poté, co se běžná synchronizace a automatické doplnění měly čas ustálit.
+
+Nenulový počet chybějících neznamená automaticky ztrátu dat: jiné zařízení může
+být offline nebo už může běžet požadavek. Vyšetřuj, pokud se počet nemění a
+všechna očekávaná zařízení jsou online.
+
+## Čti statistiky synchronizace
+
+**Statistiky synchronizace** oddělují objem zpráv od zdraví zpracování. Hodí se,
+když data vypadají zastarale, ale účet stále hlásí připojení.
+
+<ManualScreenshot
+  caseId="sync/stats"
+  alt="Statistiky Matrix Sync v Lotti s počty odeslaných zpráv, hlavními KPI zpracování, typy zpráv, chybami, opakováními a součty entit"
+  caption="Počty ukazují, zda se zprávy pohybují; chyby a naplánovaná opakování ukazují, zda proces postupuje čistě."
+/>
+
+Karta odeslaných zpráv seskupuje typy událostí Matrix. **Hlavní KPI** shrnují
+zpracované zprávy, chyby a naplánovaná opakování a součty entit ukazují, které
+rodiny dat Lotti k práci přispěly. Rostoucí počet zpracovaných se stabilními
+chybami je zdravý. Opakované chyby nebo opakování, která nemizí, vyžadují
+kontrolu odchozí fronty a připojení druhého zařízení.
+
+## Kontroluj odchozí frontu
+
+**Odchozí fronta** je místní fronta změn čekajících na odeslání. Filtruj ji
+podle stavu a odděl aktivní práci od chyb.
+
+<ManualScreenshot
+  caseId="sync/outbox"
+  alt="Odchozí fronta Lotti Sync filtrovaná na chybnou fotografii tlakového těsnění obydlí Project Waddle s akcemi opakování a odebrání"
+  caption="Chybné položky uchovávají předmět, podrobnosti dat, historii opakování a místní cestu přílohy, takže obnova je konkrétní, ne slepá."
+/>
+
+- **Čekající** položky čekají na řadu.
+- **Odesílání** právě probíhá.
+- **Chybné** položky vyčerpaly aktuální pokus a zůstávají ke kontrole.
+- **Odeslané** položky byly doručeny a dočasně se uchovávají pro diagnostiku.
+
+Po opravě připojení nebo účtu použij **Opakovat vše**. Chybnou položku odeber
+jen tehdy, když záměrně nechceš, aby změna dorazila k ostatním zařízením.
+Odebrání z fronty nenahrazuje opravu odpovídajícího místního záznamu nebo
+přílohy.
+
+Pokračuj na [Řešení konfliktů](./conflicts.mdx), když dvě zařízení nezávisle
+upravila stejný záznam, nebo na [Údržbu synchronizace](./maintenance.mdx) pro
+nástroje obnovy databáze.

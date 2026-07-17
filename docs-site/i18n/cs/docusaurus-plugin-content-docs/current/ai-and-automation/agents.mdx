@@ -1,0 +1,89 @@
+---
+title: Spouštění a sledování agentů
+description: Sleduj aktivitu agentů, kontroluj běžící instance a řiď naplánovaná probuzení bez ztráty auditní historie.
+---
+
+# Spouštění a sledování agentů
+
+Agenti umožňují Lotti nést vymezenou odpovědnost přes více cyklů probuzení.
+Každá běžící instance pochází ze šablony agenta, používá nastavení inference a
+uchovává vlastní stav, zprávy, pozorování a historii aktivity. Celý systém
+zobrazíš v **Nastavení → Agenti**.
+
+## Než něco změníš, přečti aktivitu
+
+Stránka **Statistiky** spojuje aktivitu probuzení a využití tokenů. První graf
+ukazuje, kdy se agenti probudili během posledních 24 hodin. Denní část porovnává
+dnešek se stejným časem nedávných dní a potom rozděluje využití podle modelu a
+zdroje.
+
+<ManualScreenshot
+  caseId="agents/stats"
+  alt="Statistiky agentů Lotti s aktivitou probuzení Project Waddle, denním využitím tokenů a grafy modelů"
+  caption="Ukázková flotila Project Waddle je nejvytíženější kolem kontrol obydlí a plánování spuštění; sekce modelů a zdrojů umožňují aktivitu přiřadit."
+/>
+
+Stránka odpovídá na tři různé otázky:
+
+- **Kdy agenti běželi?** Čti graf probuzení za 24 hodin.
+- **Kolik inference použili?** Porovnej denní grafy a grafy podle modelu.
+- **Která odpovědnost ji vyvolala?** Zkontroluj rozdělení podle šablony a
+  zdroje.
+
+Špička není automaticky chyba. Den kontroly spuštění má být rušnější než běžný
+den v kolonii. Nečekanou aktivitu vyšetři otevřením zdrojové šablony nebo
+instance, než změníš globální limit souběhu.
+
+## Kontroluj běžící instance
+
+V **Instancích** najdeš každého agenta a relaci vývoje. Řádky ukazují druh
+agenta, životní cyklus, přiřazenou šablonu a duši. Seskupení podle duše se hodí,
+když více odpovědností sdílí jeden hlas a rozhodovací styl.
+
+<ManualScreenshot
+  caseId="agents/instances"
+  alt="Instance agentů Lotti seskupené podle Admiral Pebble, Dr. Flipper, Captain Sardina a relace vývoje"
+  caption="Inspektor těsnění obydlí, Plánovač Project Waddle a Koordinátor sardinkového nákladu zůstávají samostatnými instancemi, i když sdílejí systémové prostředky."
+/>
+
+Výběrem instance otevři její vnitřní údaje. Karta **Statistiky** ukazuje využití
+modelu, šablonu, aktuální trasu inference, ovládání životního cyklu, počet
+probuzení a stav plánování.
+
+<ManualScreenshot
+  caseId="agents/instance-detail"
+  alt="Podrobnosti instance Inspektor těsnění obydlí s využitím tokenů, šablonou Strážce orbitálního obydlí, trasou inference, ovládáním životního cyklu a stavem probuzení"
+  caption="Instance uchovává dostatek původu pro vysvětlení, která šablona a trasa vytvořila její práci, ještě před pozastavením, opětovnou analýzou nebo zničením."
+/>
+
+Zbývající karty instance uchovávají různé podklady:
+
+- **Zprávy** obsahují uložené snímky zpráv agenta.
+- **Konverzace** seskupují zprávy podle cyklu probuzení.
+- **Pozorování** ukazují zachycená zjištění bez míchání do zpráv.
+- **Aktivita** ukazuje chronologickou stopu zpráv a nástrojů.
+
+**Pozastavit** uchová instanci, ale zastaví běžnou práci. **Znovu analyzovat**
+požádá agenta úkolu, aby znovu posoudil aktuální předmět. **Zničit** je
+destruktivní a používej ho jen tehdy, když už nechceš samotnou instanci; změna
+šablony pro budoucí agenty nevyžaduje ničit nesouvisející instance.
+
+## Rozuměj cyklům probuzení
+
+V **Cyklech probuzení** uvidíš práci probíhající nyní i práci naplánovanou na
+později. **Čekající** probuzení vyžádal agent. **Naplánované** vložil systém nebo
+plánovač. Každý řádek drží propojený úkol, projekt nebo den vedle odpovědného
+agenta a živého odpočtu.
+
+<ManualScreenshot
+  caseId="agents/pending-wakes"
+  alt="Cykly probuzení Lotti s probíhající kontrolou obydlí a naplánovanými probuzeními Project Waddle a sardinkové logistiky"
+  caption="Fronta rozlišuje následnou kontrolu obydlí vyžádanou agentem od rozvrhu dne spuštění a nákladu, takže odpočet má vždy důvod a vlastníka."
+/>
+
+Smazání probuzení z fronty odstraní jeho časovač; nesmaže agenta ani propojený
+úkol. Pokud se probuzení okamžitě vrátí, zkontroluj stav agenta nebo
+automatizaci, která ho vyžádala, místo opakovaného mazání příznaku.
+
+Pokračuj na [Šablony agentů a duše](./agent-blueprints.mdx), kde určíš, co
+instance dělají a jak komunikují.

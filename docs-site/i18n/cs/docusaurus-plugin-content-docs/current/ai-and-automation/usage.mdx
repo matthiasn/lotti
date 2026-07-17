@@ -1,0 +1,59 @@
+---
+title: Kontrola využití a dopadu AI
+description: Porovnávej požadavky AI podle období, kategorie a modelu včetně odhadované ceny, energie, emisí a tokenů.
+---
+
+# Kontrola využití a dopadu AI
+
+Otevři **Nastavení → Nastavení AI → Využití a dopad** a zjisti, jak se
+používají nastavené cloudové modely. Stejná analýza je dostupná také z cesty
+nástěnky dopadu AI.
+
+<ManualScreenshot
+  caseId="ai/usage"
+  alt="Nástěnka dopadu AI v Lotti pro červenec 2026 s cenou, energií, ekvivalentem oxidu uhličitého, tokeny, požadavky a pruhy kategorií"
+  caption="Ukázkový měsíc Project Waddle odděluje Mission Control a Penguin Operations a udržuje viditelnou celkovou stopu požadavků."
+/>
+
+## Čti souhrnné karty
+
+Horní karty shrnují vybrané období:
+
+- **Cena** odhaduje výdaje u poskytovatele.
+- **Energie** odhaduje elektřinu připadající na měřenou cloudovou inferenci.
+- **CO₂e** vyjadřuje související odhad emisí.
+- **Tokeny** počítají zpracované tokeny modelů.
+- **Požadavky** počítají volání inference.
+
+Ukazatel porovnání používá předchozí odpovídající období, pokud je dostupné.
+Procentní nárůst je kontext, ne automaticky problém: týden kontroly spuštění
+nelze slepě porovnat s nečinným týdnem kolonie.
+
+Energie, CO₂e a cena se měří jen pro cloudové modely. Místní inference může
+spotřebovat značnou energii zařízení bez zobrazení v těchto odhadech, takže
+stránka není úplným elektroměrem celého systému.
+
+## Změň analýzu
+
+Pomocí období a šipek se pohybuj v čase nebo přejdi na **Tento měsíc** a **Tento
+rok**. Potom vyber **Obojí**, **Podle kategorie** nebo **Podle modelu**. Uvnitř
+grafu přepínej mezi hodnotami za den, průběžnými součty a podíly, pokud jsou
+dostupné.
+
+Pohled kategorií odpovídá „která oblast práce vyvolala využití?“. Pohled modelů
+odpovídá „který nastavený model ho vyvolal?“. Před změnou profilu použij oba:
+drahý model může být oprávněný pro jednu odbornou kategorii, ale nehospodárný
+jako obecná výchozí hodnota.
+
+## Reaguj na překvapivý výsledek
+
+Když využití nečekaně vyskočí:
+
+1. zúž období na první dotčený den;
+2. porovnej rozdělení podle kategorie a modelu;
+3. zkontroluj automatizaci a souběh agentů;
+4. prohlédni profil inference přiřazený dotčené kategorii; a
+5. ověř účtování u poskytovatele, než budeš odhad Lotti považovat za fakturu.
+
+Trasu budoucích volání změň v
+[Modelech a profilech inference](./models-and-profiles.mdx).

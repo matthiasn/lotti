@@ -1,0 +1,81 @@
+---
+title: Připojení poskytovatele AI
+description: Připoj cloudovou nebo místní inferenci, prohlédni její modely a udržuj přihlašovací údaje a koncové body pod kontrolou.
+---
+
+# Připojení poskytovatele AI
+
+Lotti odděluje nastavení AI do tří vrstev: **poskytovatel** je služba, ke které
+se připojuje, **model** je jeden model zpřístupněný touto službou a **profil
+inference** směruje jednotlivé druhy práce na modely. Začni poskytovatelem a
+potom zkontroluj modely a profily vytvořené kolem něj.
+
+<ManualScreenshot
+  caseId="ai/providers"
+  alt="Nastavení AI v Lotti s poskytovateli Mission Control Router, Habitat Local Lab, Orbital Vision a Penguin Audio Bay"
+  caption="Nastavení AI drží cloudová a místní připojení pohromadě. Každá karta ukazuje stav připojení a počet uložených modelů, které ho používají."
+/>
+
+## Vyber místní nebo vzdálený provoz
+
+- Cloudový poskytovatel je obvykle nejrychlejší na nastavení a běžně vyžaduje
+  API klíč. Text, zvuk nebo obrázky odeslané přes něj opouštějí zařízení.
+- Místní poskytovatel může ponechat inferenci na tvém počítači, ale jeho služba
+  musí běžet a být dostupná ze zařízení, kde ji Lotti volá.
+- Vlastní základní URL může nasměrovat podporovaný typ poskytovatele na
+  kompatibilní proxy nebo bránu. Typ poskytovatele stále řídí chování
+  specifické pro protokol.
+
+## Připoj poskytovatele
+
+1. Otevři **Nastavení → Nastavení AI → Poskytovatelé**.
+2. Vyber tlačítko **+**.
+3. Zvol podporovaného poskytovatele.
+4. Zadej zobrazovaný název, koncový bod a případně API klíč.
+5. Přidej požadované navržené modely a ulož.
+
+U podporovaných poskytovatelů prvního spuštění Lotti připraví užitečné modely a
+jeden či více profilů inference. Výsledná stránka shrne, co bylo vytvořeno.
+
+<ManualScreenshot
+  caseId="ai/provider-editor"
+  alt="Editor poskytovatele Lotti pro Mission Control Router s vybraným OpenRouterem, základní URL, skrytým API klíčem a navrženými modely"
+  caption="Přihlašovací údaje zůstávají skryté. Navržené modely jsou zkratky, ne povinnost — konkrétní ID modelu můžeš přidat později."
+/>
+
+## Kontroluj a udržuj připojení
+
+Otevři kartu poskytovatele a prohlédni skryté přihlašovací údaje, základní URL,
+uložené modely a aktivní profily, které na těchto modelech závisí. Odtud můžeš
+připojení upravit, přidat další model nebo poskytovatele odebrat.
+
+<ManualScreenshot
+  caseId="ai/provider-detail"
+  alt="Podrobnosti poskytovatele Mission Control Router s připojením, modely Waddle Command a aktivním profilem Project Waddle"
+  caption="Souhrn závislostí ukazuje rozsah dopadu ještě před změnou nebo odebráním poskytovatele."
+/>
+
+Změna základní URL nebo API klíče ovlivní každý model připojený k poskytovateli.
+Po změně některé hodnoty ověř reprezentativní akci AI, než budeš připojení
+považovat za funkční. Odebrání poskytovatele může také ovlivnit profily
+směrující práci přes jeho modely; nejdřív zkontroluj závislosti.
+
+## Zkontroluj směrování profilů
+
+V části [Modely a profily inference](./models-and-profiles.mdx) ověř, co
+poskytovatel nabízí a jak Lotti směruje jednotlivé schopnosti. Kategorie může
+nastavit výchozí profil pro svou práci a jednotlivé automatizace mohou vybrat
+nebo přepsat model tam, kde to postup umožňuje.
+
+## Hranice soukromí
+
+Před odesláním citlivého textu, zvuku nebo obrázků ověř, zda je nastavený
+koncový bod místní, nebo vzdálený. Přátelský název jako „Habitat Local Lab“
+není bezpečnostní hranice — tou je základní URL a počítač, který ji obsluhuje.
+
+:::warning API klíče
+
+S klíči poskytovatelů zacházej jako s tajemstvím. Nikdy je nevkládej do
+dokumentace, hlášení ani snímků obrazovky.
+
+:::

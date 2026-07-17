@@ -94,6 +94,28 @@ export function validateScreenshotRegistry(registry) {
   return errors;
 }
 
+/** Resolve a whitespace- or comma-separated incremental capture selection. */
+export function resolveCaptureLocales(value, registryLocales) {
+  const requested = value
+    ? String(value).split(/[\s,]+/).filter(Boolean)
+    : [...registryLocales];
+  if (requested.length === 0) {
+    throw new Error('At least one manual screenshot locale must be selected.');
+  }
+  if (new Set(requested).size !== requested.length) {
+    throw new Error('Manual screenshot locale selection contains duplicates.');
+  }
+  const unsupported = requested.filter(
+    (locale) => !registryLocales.includes(locale),
+  );
+  if (unsupported.length > 0) {
+    throw new Error(
+      `Unsupported manual screenshot locale(s): ${unsupported.join(', ')}.`,
+    );
+  }
+  return requested;
+}
+
 export function findUnmanagedScreenshotReferences(source) {
   const authoringMarkup = source
     .replace(/```[\s\S]*?```/g, '')

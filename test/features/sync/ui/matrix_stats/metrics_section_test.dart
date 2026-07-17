@@ -75,6 +75,36 @@ void main() {
       // _formatTime takes the ISO time substring [11, 19) → "12:34:56".
       expect(find.text('Last updated: 12:34:56'), findsOneWidget);
     });
+
+    testWidgets('wraps long localized header copy on a narrow screen', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: 301,
+            child: SingleChildScrollView(
+              child: SyncMetricsSection(
+                metrics: {},
+                lastUpdated: null,
+                title: 'Metriky synchronizace',
+                lastUpdatedLabel: 'Naposledy aktualizováno:',
+                onForceRescan: _noop,
+                onRetryNow: _noop,
+                onCopyDiagnostics: _noop,
+                onRefresh: _noop,
+                fetchDiagnostics: _emptyDiagnostics,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Metriky synchronizace'), findsOneWidget);
+      expect(find.text('Naposledy aktualizováno: —'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('SyncMetricsSection KPIs', () {
@@ -245,3 +275,7 @@ void main() {
     },
   );
 }
+
+void _noop() {}
+
+Future<String> _emptyDiagnostics() async => '';

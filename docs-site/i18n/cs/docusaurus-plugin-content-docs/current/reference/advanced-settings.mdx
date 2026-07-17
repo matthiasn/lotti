@@ -1,0 +1,143 @@
+---
+title: Bezpečné používání Pokročilého nastavení
+description: Řiď přepínače funkcí a protokolování, spouštěj údržbu, kontroluj metriky průvodce a ověřuj nainstalované sestavení Lotti.
+---
+
+# Bezpečné používání Pokročilého nastavení
+
+Otevři **Nastavení → Pokročilé nastavení** pro ovládání zkušených uživatelů,
+diagnostiku a údržbu. Tyto stránky mění běh Lotti nebo pracují přímo s místními
+daty, takže běžné přizpůsobení patří jinam do Nastavení.
+
+Počítač drží strom nastavení vedle vybrané stránky. Mobil otevírá vždy jednu
+stránku a nabízí tlačítko zpět. Obě rozvržení používají stejná ovládání a
+uložené hodnoty.
+
+<ManualScreenshot
+  caseId="advanced-settings/hub"
+  alt="Centrum Pokročilého nastavení Lotti s Přepínači, Animacemi, Protokolováním, Údržbou, Metrikami průvodce a O Lotti"
+  caption="Pokročilé nastavení odděluje provozní ovládání od každodenních předvoleb. Některé položky se liší podle platformy a zapnutých schopností."
+/>
+
+## Řiď schopnosti pomocí přepínačů
+
+<ManualScreenshot
+  caseId="advanced-settings/flags"
+  alt="Stránka Přepínače Lotti s prohledávatelnými volbami soukromých záznamů, oznámení, polohy, tipů a streamování AI"
+  caption="Vyhledávání porovnává názvy i popisy přepínačů. Každý přepínač okamžitě mění uloženou schopnost běhu."
+/>
+
+**Přepínače** jsou rozvaděčem schopností. Obsahují ovládání pro:
+
+- viditelnost soukromých záznamů, oznámení, polohu a tipy;
+- streamování odpovědí AI a přehrávání shrnutí;
+- protokolování a chování Matrix Sync;
+- stránky funkcí jako Návyky, Nástěnky, Události, Projekty a Co je nového;
+- embeddings a vektorové vyhledávání; a
+- provozní ukazatele jako aktivita synchronizace, čekající probuzení agentů a
+  opravy rozvětvení.
+
+Pomocí **Hledat přepínače** zúž seznam podle názvu nebo popisu. Volbu změň
+výběrem řádku nebo přepínače. Nová hodnota se uloží okamžitě; není zde
+samostatná akce Uložit.
+
+Přepínače mohou zpřístupnit experimentální nebo diagnostické chování. Změň
+jeden záměrně a ověř dotčený postup, než změníš další. **Zobrazit soukromé
+záznamy?** řídí zahrnutí citlivého obsahu v seznamech a výběrech; záznam
+nešifruje, neexportuje, nemaže ani nemění jeho soukromí.
+
+## Vyber, co Lotti protokoluje
+
+<ManualScreenshot
+  caseId="advanced-settings/logging"
+  alt="Nastavení protokolování Lotti s hlavním přepínačem, jednotlivými provozními oblastmi a protokolováním pomalých dotazů"
+  caption="Hlavní přepínač řídí ovládání jednotlivých oblastí. Ukázka Project Waddle nechává Sync, AI a Úkoly zapnuté pro cílenou diagnostiku."
+/>
+
+**Protokolování** začíná globálním přepínačem **Povolit protokolování**. Když
+je zapnutý, povol jen oblasti potřebné pro vyšetřování, například Sync, AI,
+Úkoly, Štítky, Zdraví, Návyky, Navigaci, Oznámení nebo Daily OS. **Protokolovat
+pomalé dotazy** přidává diagnostiku výkonu databáze.
+
+Vypnutí hlavního přepínače znepřístupní ovládání oblastí. Chyby se stále
+zapisují do denního `error-*.log`; tyto přepínače řídí další diagnostiku, ne
+minimální záznam chyb. Po vyšetřování hlučné oblasti vypni, aby protokoly
+zůstaly soustředěné a využití úložiště předvídatelné.
+
+## Spouštěj údržbu záměrně
+
+<ManualScreenshot
+  caseId="advanced-settings/maintenance"
+  alt="Stránka Údržba Lotti s náhledy průvodce, resetováním, mazáním databází, čištěním, indexem vyhledávání, embeddings a diagnostikou překreslování"
+  caption="Údržba kombinuje bezpečné náhledy s destruktivními a diagnostickými akcemi. Před pokračováním přečti potvrzení a rozsah."
+/>
+
+**Údržba** obsahuje různé druhy akcí:
+
+- **Zobrazit uvítání průvodce** a **Galerie animací průvodce** jsou živé náhledy
+  pro vývoj a QA.
+- **Resetovat nápovědu v aplikaci** umožní jednorázovým tipům znovu se zobrazit.
+- **Resetovat dialog nastavení Gemini** zruší jeho odmítnutí pro další test.
+- **Smazat databázi editoru** odstraní koncepty editoru.
+- **Smazat databázi agentů** odstraní databázi a ukončí Lotti, aby aplikace
+  mohla nastartovat s čistým úložištěm.
+- **Vyčistit smazané položky** trvale odstraní měkce smazané záznamy přes
+  zvláštní potvrzení.
+- **Obnovit fulltextový index** znovu vytvoří místní vyhledávací data bez
+  obnovy záznamů deníku.
+- **Vygenerovat embeddings** se zobrazí, když je úložiště dostupné, a doplní
+  vybrané kategorie.
+- **Duhové překreslování** blikáním ukazuje překreslené oblasti pro diagnostiku
+  UI. Hodnota je jen v paměti a po restartu se vypne.
+
+Náhledy a resetování nemají stejné riziko jako mazání a čištění. U
+destruktivních akcí ověř zamýšlené místní úložiště a nech nejdřív dokončit
+aktuální synchronizaci nebo zápis.
+
+## Kontroluj cestu průvodcem
+
+<ManualScreenshot
+  caseId="advanced-settings/onboarding-metrics"
+  alt="Metriky průvodce Lotti s časem instalace, čtyřmi aktivními dny, stavem aktivace a počty událostí bez obsahu"
+  caption="Deterministická ukázka příručky dosáhla skutečného aha momentu během čtyř aktivních dní po připojení poskytovatele a několika zachyceních."
+/>
+
+**Metriky průvodce** jsou vývojová a QA stránka. Odvozují místní cestu z
+událostí bez obsahu a ukazují:
+
+- čas prvního výskytu v UTC;
+- celkový počet aktivních dní a aktivní dny v prvních sedmi dnech;
+- zda instalace patří do základní kohorty před prvním uživatelským zážitkem;
+- zda bylo dosaženo skutečného aktivačního milníku; a
+- počet každé události průvodce.
+
+Stránka zaznamenává názvy událostí a metadata s nízkou kardinalitou, ne text
+deníku, názvy úkolů, přepisy nebo citlivé sardinkové podrobnosti Project
+Waddle.
+
+**Resetovat testovací stav průvodce** po potvrzení vymaže rytmus výzev a místní
+metriky. Nesmaže deník, přepínače ani skutečnou historii plánů Daily OS. Profil,
+který už naplánoval den, proto zůstane nezpůsobilý pro přesnou cestu prvního
+plánu čistého profilu.
+
+## Ověř sestavení a místní součty
+
+<ManualScreenshot
+  caseId="advanced-settings/about"
+  alt="Stránka O Lotti s verzí, platformou, typem sestavení, 2 604 záznamy deníku, 11 označenými záznamy a počty úkolů"
+  caption="O Lotti identifikuje běžící sestavení a shrnuje místní data. Ukázka Project Waddle obsahuje 2 604 záznamů a 65 úkolů v pěti stavech."
+/>
+
+**O Lotti** je nejrychlejší místo k ověření běžícího sestavení. Ukazuje verzi a
+číslo sestavení aplikace, platformu a typ sestavení. Tyto hodnoty přidej do
+diagnostického hlášení, aby bylo možné chování spojit se správným kódem a
+vydáním.
+
+Karta **Tvoje data** shrnuje místní záznamy deníku, označené záznamy a počty
+úkolů ve stavech Otevřené, Probíhá, Pozastavené, Blokované a Hotové. Zavedený
+prostor Project Waddle ukazuje neprázdný účet: 2 604 záznamů, 11 označených a
+65 úkolů místo nulových zástupných hodnot.
+
+Efekty dokončení mají vlastní návod:
+**[Přizpůsobení oslav dokončení](./completion-celebrations.mdx)** popisuje
+stránku Animace a její živé zkušební prostředí.

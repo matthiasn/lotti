@@ -928,7 +928,10 @@ void main() {
           overrides: labelsDetailOverrides(),
           home: LabelDetailsPage(labelId: _projectWaddle.id),
         );
-        expect(find.text('Edit label'), findsOneWidget);
+        expect(
+          find.text(_t('Edit label', 'Label bearbeiten')),
+          findsOneWidget,
+        );
         expect(find.text('Project Waddle'), findsOneWidget);
         // Demonstrate the armed action state while preserving the story.
         await tester.enterText(
@@ -959,7 +962,10 @@ void main() {
       overrides: labelsDetailOverrides(),
       home: LabelDetailsPage(labelId: _projectWaddle.id),
     );
-    expect(find.text('Edit label'), findsOneWidget);
+    expect(
+      find.text(_t('Edit label', 'Label bearbeiten')),
+      findsOneWidget,
+    );
     await captureScreenshot(
       tester,
       'mini_labels_detail_dark_2x',
@@ -1177,8 +1183,11 @@ void main() {
           brightness: brightness,
           home: DashboardDefinitionPage(dashboard: _colonyOperations),
         );
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(DashboardDefinitionPage)),
+        )!;
         expect(
-          find.text(_t('Edit dashboard', 'Dashboard bearbeiten')),
+          find.text(messages.settingsDashboardDetailsLabel),
           findsOneWidget,
         );
         expect(
@@ -1195,9 +1204,7 @@ void main() {
 
         _alignInOuterScrollView(
           tester,
-          find.text(
-            _t('Charts on this dashboard', 'Diagramme auf diesem Dashboard'),
-          ),
+          find.text(messages.dashboardCurrentChartsTitle),
         );
         await settleFrames(tester);
         expect(

@@ -1,0 +1,67 @@
+---
+title: Procházení Co je nového
+description: Prohlížej nejnovější vydání Lotti, přecházej starší poznámky a řiď, které aktualizace zůstávají nepřečtené.
+---
+
+# Procházení Co je nového
+
+Co je nového zobrazuje poznámky k vydání uvnitř Lotti podle právě používané
+verze. Může se otevřít automaticky po vhodném prvním spuštění nebo změně verze
+a je dostupné také z položky **Co je nového** v Nastavení, pokud je funkce
+zapnutá.
+
+Poznámky jsou seřazené od nejnovějších. Každá stránka kombinuje titulní obrázek
+vydání, přesnou verzi aplikace a krátký popis viditelných změn.
+
+<ManualScreenshot
+  caseId="whats-new/latest"
+  alt="Dialog Co je nového v Lotti pro verzi 0.9.1049 s bannerem Mission Control Project Waddle a poznámkami k vydání"
+  caption="Nejnovější nepřečtené vydání má štítek NOVÉ. Tato ukázka vysvětluje vylepšení Daily OS a pracovního prostoru úkolů pro orbitální spuštění Project Waddle."
+/>
+
+## Čti aktuální vydání
+
+Štítek verze určuje vydání zobrazené na obrazovce. **NOVÉ** označuje nejnovější
+vydání v aktuální sadě; neznamená, že je každá položka nedokončená nebo
+experimentální.
+
+Tělo se posouvá samostatně, pokud je poznámka delší než dostupná výška. Odkazy
+používají běžné zpracování Lotti a obrázky se podle dostupnosti načítají před
+změnou stránky, aby byl přechod hladký.
+
+## Procházej historii vydání
+
+<ManualScreenshot
+  caseId="whats-new/past-release"
+  alt="Dialog Co je nového v Lotti pro verzi 0.9.1048 s obrázkem sardinkového trhu a navigací staršího vydání"
+  caption="Mezi vydáními přecházej šipkami v zápatí nebo ukazateli pozice. Starší poznámka Project Waddle popisuje porovnání času a telemetrii sardinek připravenou pro nástěnky."
+/>
+
+Používej ovládání v zápatí:
+
+- pravá šipka otevře další starší vydání;
+- levá se vrátí k novějšímu;
+- ukazatele pozice ukazují umístění stránky v načtené sadě;
+- **Přeskočit** zavře vícestránkovou sadu před poslední stránkou a označí celou
+  načtenou sadu jako přečtenou; a
+- **Hotovo** se zobrazí na nejstarší stránce a také označí celou sadu jako
+  přečtenou.
+
+Zavření dialogu odtažením nebo klepnutím na okolní bariéru je opatrnější: Lotti
+označí jen vydání, ke kterým ses skutečně dostal, až po nejvzdálenější
+zobrazenou stránku. Nenavštívená vydání se proto mohou objevit při příštím
+otevření.
+
+## Vrať se k dříve zavřeným poznámkám
+
+Když nezůstane žádné nepřečtené vydání, Co je nového zobrazí stav **Všechno máš
+přečtené**. Volbou **Zobrazit minulá vydání** vymaž místní značky přečtení a
+procházej dostupnou sadu znovu. Mění se jen místní historie poznámek; aplikace
+se neaktualizuje ani nestahuje jiné sestavení.
+
+Co je nového nikdy nezobrazuje poznámky k vydání novějšímu než nainstalovaná
+verze Lotti. Pokud se obsah nepodaří načíst, aplikace použije prázdný stav,
+místo aby zobrazila poznámky pro nesprávné sestavení.
+
+Přesné číslo sestavení, platformu, místní součty záznamů a úkolů najdeš v
+[O Lotti](./advanced-settings.mdx#ověř-sestavení-a-místní-součty).

@@ -1,0 +1,173 @@
+---
+title: Vedení užitečného deníku
+description: Najdi poznámky, fotografie, nahrávky, události a výsledky AI v jednom toku a propoj podpůrnou aktivitu za každým záznamem.
+---
+
+# Vedení užitečného deníku
+
+Deník je smíšený tok záznamů v Lotti. Spojuje poznámky, fotografie, nahrávky,
+události, kontrolní seznamy, měření a odpovědi AI, aniž by z nich dělal úkoly.
+Použij ho, když si chceš připomenout, prohlédnout nebo propojit, co se stalo;
+**Úkoly** použij, když je samotný záznam prací, kterou ještě musíš udělat.
+
+<ManualScreenshot
+  caseId="journal/overview"
+  alt="Tok deníku s fotografií spuštění Project Waddle, záznamem mise, hlasovou poznámkou o sardinkách u Europy, událostí summitu a shrnutím telemetrie nákladu"
+  caption="Symboly typů usnadňují procházení smíšeného toku a barvy kategorií, štítky, hvězdy, příznaky, délky a stavové značky drží užitečný kontext u záznamu."
+/>
+
+## Čti smíšený tok
+
+Každá karta začíná obsahem a typ záznamu označuje barevným symbolem. Barva
+pochází z kategorie záznamu, takže **Tučňáčí provoz**, **Řízení mise**
+a **Rybí diplomacie** zůstávají rozpoznatelné i při více typech záznamů vedle
+sebe.
+
+Karty přidávají metadata důležitá pro svůj typ. Například:
+
+- zvuková poznámka ukazuje délku a příznak;
+- událost ukazuje stav, datum, hodnocení a poznámku;
+- kontrolní seznam ukazuje průběh dokončení;
+- měření ukazuje hodnotu a jednotku; a
+- odpověď AI je označena jako vygenerovaná AI.
+
+Tok se načítá po stránkách, takže dlouhý deník nemusí vykreslit celou historii
+najednou.
+
+## Hledej podle slov nebo významu
+
+Pomocí **Celý text** najdi slova uložená v záznamu. Když je zapnuté vektorové
+vyhledávání, přepni na **Vektor** a hledej záznamy s podobným významem, i když
+používají jiná slova. Vektorové výsledky se vracejí jako jedna seřazená sada,
+ne jako nekonečně stránkovaný tok.
+
+Pokud vektorové vyhledávání není dostupné nebo se později vypne, Lotti vrátí
+Deník do režimu celého textu, místo aby vyhledávání nechalo nepoužitelné.
+
+## Filtruj zobrazený obsah
+
+<ManualScreenshot
+  caseId="journal/filters"
+  alt="Dialog filtru deníku s ovládáním oblíbených, označených, soukromých, typů záznamu a kategorií nad tokem tučňáčí logistiky"
+  caption="Kombinuj vlastnosti, typy a kategorie a proměň smíšený tok ve výřez, který potřebuješ."
+/>
+
+Otevři tlačítko filtru vedle Vyhledávání. Deník můžeš zúžit na:
+
+- oblíbené, označené nebo soukromé záznamy;
+- jeden či více typů včetně Textu, Události, Zvuku, Fotografie, Kontrolního
+  seznamu, Úkolu a Odpovědi AI; a
+- jednu či více kategorií.
+
+Tyto volby se pro Deník uchovávají. Filtry úkolů se ukládají samostatně, takže
+změna pohledu Deníku neočekávaně nepřeskupí stránku Úkoly.
+
+## Přidej záznam
+
+<ManualScreenshot
+  caseId="journal/create"
+  alt="Nabídka Přidat s událostí, úkolem, zvukovou nahrávkou, textovým záznamem, importem obrázku a snímkem obrazovky nad deníkem Project Waddle"
+  caption="Nabídka ukazuje jen akce podporované aktuální platformou a kontextem."
+/>
+
+Výběrem **+** otevři nabídku Přidat. Z hlavního Deníku můžeš vytvořit textový
+záznam, úkol, událost nebo zvukovou nahrávku, importovat fotografii či pořídit
+snímek obrazovky. Vložení obrázku ze schránky se může zobrazit, když je obrázek
+dostupný. Vytvoření události se zobrazí při zapnuté funkci Události.
+
+Stejná nabídka se přizpůsobuje uvnitř existujícího záznamu. Může tam vytvořit
+také časovač už propojený se záznamem a podrobnosti úkolu mohou nabídnout
+propojený kontrolní seznam. Importované, vložené, přetažené a zachycené obrázky
+se mohou účastnit automatické analýzy obrázků, pokud je tato automatizace
+nastavená.
+
+## Čti a upravuj záznam
+
+<ManualScreenshot
+  caseId="journal/detail"
+  alt="Podrobnosti záznamu mise Project Waddle s kategorií, štítky, hvězdou, délkou, formátovaným textem, filtry aktivity a propojenou fotografií spuštění"
+  caption="Záznam je hlavním místem pro jeho obsah; podpůrné fotografie, časovače, výzvy a příchozí propojení zůstávají připojené pod ním."
+/>
+
+Záhlaví podrobností drží datum, kategorii, štítky, hvězdu, příznak, soukromí a
+rozšířené akce pohromadě. Výběrem těla uprav formátovaný text. Ulož ho ovládáním
+editoru nebo pomocí **Ctrl+S** ve Windows a Linuxu a **Command+S** v macOS.
+Neuložený text se uchová jako koncept; zahození obnoví poslední uložený obsah.
+
+Rozšířená nabídka obsahuje akce platné pro aktuální typ záznamu, včetně
+kopírování, smazání a práce s médii. Na počítači mohou obrázkové a zvukové
+záznamy také zobrazit svůj zdrojový soubor ve správci souborů.
+
+### Změň datum a délku záznamu
+
+Výběrem data nebo délky v záhlaví otevři **Datum a čas**. U záznamu v jednom
+dni vyber jedno datum a nastav začátek a konec samostatně. Souhrn délky se
+aktualizuje při pohybu voličů. Pro záznam přes noc nebo více dní zapni
+**Vybrat samostatné datum konce** a pomocí akce **Nyní** nastav příslušný konec
+na aktuální datum a čas.
+
+<ManualScreenshot
+  caseId="journal/date-time"
+  alt="Editor data a času záznamu mise Project Waddle s datem 17. července, začátkem 8:10, koncem 8:40 a délkou 30 minut"
+/>
+
+Tlačítkem data otevři kalendář. **Dnes** se vrátí k aktuálnímu dni, **Hotovo**
+zpět do editoru rozsahu a **Uložit** použije celý rozsah začátku a konce.
+
+<ManualScreenshot
+  caseId="journal/date-picker"
+  alt="Kalendář data začátku s vybraným pátkem 17. července 2026 pro záznam mise Project Waddle"
+/>
+
+Změna časového razítka ovlivní umístění záznamu v chronologických pohledech.
+Nepřepíše jeho text ani neodpojí propojenou aktivitu.
+
+## Sleduj propojenou aktivitu
+
+<ManualScreenshot
+  caseId="journal/activity"
+  alt="Propojená aktivita Project Waddle s výzvou AI pro kód, 23minutovou zkouškou nástupu a příchozím úkolem kontroly spuštění"
+  caption="Odchozí aktivita odpovídá na otázku, co tento záznam obsahuje; Propojeno z ukazuje, který jiný záznam na něj odkazuje."
+/>
+
+Záznamy se mohou propojovat s fotografiemi, časovači, zvukem, výsledky AI,
+poznámkami a dalšími podpůrnými záznamy. Štítky aktivity umožňují zobrazit nebo
+skrýt záznamy **Časovač**, **Zvuk**, **Obrázky** a **Kód**. Otevři ovládání
+řazení a přepni mezi nejnovějšími a nejstaršími, zahrň skrytá propojení nebo
+zobraz jen označenou aktivitu.
+
+Dva směry znamenají různé věci:
+
+- aktivita pod záznamem je propojená **z tohoto záznamu**; a
+- **Propojeno z** uvádí záznamy, které ukazují **na tento záznam**.
+
+Záznam mise Project Waddle například obsahuje fotografii spuštění,
+diagnostickou výzvu a časovač zkoušky nástupu, zatímco úkol kontroly spuštění
+se objeví pod **Propojeno z**, protože na záznam také odkazuje.
+
+Otevřením štítku řazení připrav několik změn viditelnosti společně. Zvol pořadí,
+zahrnutí skrytých záznamů a případné omezení na označenou aktivitu. Seznam se
+změní po dokončení panelu zaškrtnutím; jiné zavření připravené volby zahodí.
+
+<ManualScreenshot
+  caseId="journal/linked-filter"
+  alt="Panel Filtrovat a řadit nad propojenou aktivitou Project Waddle s volbami Nejstarší první a Zobrazit skryté záznamy"
+/>
+
+## Otevři a ulož fotografii
+
+Výběrem fotografie v textu otevři zobrazení přes celou obrazovku. Gesty nebo
+ovládáním ji přibližuj a posouvej a podle potřeby obnov původní pohled. Uložení
+používá původní soubor, ne menší náhled: mobil zapisuje po udělení oprávnění do
+knihovny fotografií, počítač otevře systémový dialog pro výběr cíle.
+
+## Deník, nebo úkol?
+
+| Deník použij pro… | Úkoly použij pro… |
+| --- | --- |
+| Záznam mise, fotografii, hlasovou poznámku, měření, vzpomínku na událost nebo výsledek AI | Akci se stavem, prioritou, odhadem, kontrolním seznamem nebo pracovním sezením |
+| „Sardinky u Europy jsou chladnější, než vyžaduje diplomatický protokol“ | „Kalibrovat krmítko pro ryby v beztíži“ |
+| Podklady a kontext, ke kterým se chceš vrátit | Práci, kterou musíš naplánovat, provést a dokončit |
+
+Propoj je, když úkol potřebuje podklad z Deníku. Akce zůstane soustředěná a
+bohatší provozní záznam za ní se uchová.

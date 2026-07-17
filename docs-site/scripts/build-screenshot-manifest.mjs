@@ -12,6 +12,7 @@ import {
   readJson,
   repositoryDirectory,
   requiredVariants,
+  resolveCaptureLocales,
   sha256,
   siteDirectory,
   validateManualVersion,
@@ -36,6 +37,7 @@ const registryErrors = validateScreenshotRegistry(registry);
 if (registryErrors.length > 0) {
   throw new Error(registryErrors.join('\n'));
 }
+const captureLocales = resolveCaptureLocales(options.locales, registry.locales);
 
 if (version !== 'development' && options['allow-release-overwrite'] !== true) {
   try {
@@ -80,12 +82,13 @@ for (const screenshotCase of registry.cases) {
         registry.defaultLocale,
       );
       const outputPath = resolve(outputDirectory, relativeOutputPath);
-      await mkdir(resolve(outputPath, '..'), {recursive: true});
-
-      const input = await readFile(inputPath);
-      await sharp(input)
-        .webp({quality: 88, effort: 5, smartSubsample: true})
-        .toFile(outputPath);
+      if (captureLocales.includes(locale)) {
+        await mkdir(resolve(outputPath, '..'), {recursive: true});
+        const input = await readFile(inputPath);
+        await sharp(input)
+          .webp({quality: 88, effort: 5, smartSubsample: true})
+          .toFile(outputPath);
+      }
       const output = await readFile(outputPath);
       const metadata = await sharp(output).metadata();
 
@@ -123,5 +126,6 @@ await writeFile(
 );
 
 console.log(
-  `Wrote ${manifestCases.length} screenshot case(s) to ${outputDirectory}.`,
+  `Wrote ${manifestCases.length} screenshot case(s) to ${outputDirectory}; ` +
+    `captured locales: ${captureLocales.join(', ')}.`,
 );

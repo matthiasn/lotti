@@ -1,0 +1,68 @@
+---
+title: Nahrávání zvuku
+description: Zachyť hlasovou poznámku a rozhodni, jaké automatické zpracování má následovat.
+---
+
+# Nahrávání zvuku
+
+Zvuk se hodí, když je mluvení rychlejší než psaní nebo když záleží na tónu a
+podrobnostech. Nahrávka může stát samostatně nebo být součástí úkolu.
+
+## Zachyť nahrávku
+
+1. Otevři deník nebo úkol, který má nahrávku vlastnit.
+2. Použij akci **+** a zvol **Zvuková nahrávka**.
+3. Zkontroluj dostupné možnosti zpracování.
+4. Spusť nahrávání, mluv zřetelně a po dokončení ho zastav.
+
+<ManualScreenshot
+  caseId="recordings/active"
+  alt="Aktivní panel zvukového nahrávání s živou vizualizací, uplynulým časem a ovládáním pozastavení, zahození, zastavení a volbou Speech Recognition"
+/>
+
+Během zachycení zůstává vidět uplynulý čas i živá vizualizace vstupu. Nahrávku
+můžeš pozastavit a obnovit bez ukončení, zahodit nebo uložit pomocí **Zastavit**.
+Pokud je dostupný přepis s kontextem úkolu, možnost **Speech Recognition**
+(rozpoznání řeči) určuje, zda má zpracování začít po uložení nahrávky.
+
+Když je nastaven profil inference a dovednost přepisu, Lotti může nahrávku po
+zachycení přepsat. Nahrávky uvnitř úkolu mohou nabídnout také zpracování s jeho
+kontextem, například návrhy kontrolního seznamu nebo aktualizaci shrnutí.
+
+## Kontroluj uložené přepisy
+
+Otevři zvukový záznam, použij nabídku **…** a zvol **Rozpoznání řeči**. Panel
+kontroly uchovává u nahrávky každý uložený přepis, místo aby starší výsledek
+nahradil. Každý řádek ukazuje dobu zpracování, jeho délku, rozpoznaný jazyk a
+poskytovatele i model, které ho vytvořily.
+
+<ManualScreenshot
+  caseId="recordings/transcripts"
+  alt="Panel Rozpoznání řeči nad zvukovým záznamem Project Waddle s vybranou angličtinou a dvěma výsledky přepisu od Mistralu a Whisperu"
+  caption="Zdrojová nahrávka zůstává vidět za panelem a každý výsledek rozpoznání si uchovává vlastní původ."
+/>
+
+Výběr jazyka v současnosti nabízí **Automaticky**, **Angličtina** a
+**Němčina**. Volbu **Automaticky** použij, když má jazyk určit poskytovatel, nebo
+před spuštěním rozpoznání vyber známý jazyk. Volba se ukládá ke zvukovému
+záznamu.
+
+Výběrem dvojité šipky u výsledku zobrazíš úplný text, který lze označit.
+Rozbalením řádku se zobrazí také akce smazání. Smazání přepisu odstraní jen
+daný výsledek rozpoznání, ne zdrojovou nahrávku ani ostatní přepisy.
+
+<ManualScreenshot
+  caseId="recordings/transcript-expanded"
+  alt="Rozbalený přepis Project Waddle popisující sardinkový náklad u Europy, 37 tučňáků císařských a krmítko pro ryby v beztíži"
+  caption="Než vygenerovaný text použiješ jako kontext úkolu, zkontroluj celé znění i to, který poskytovatel a model ho vytvořily."
+/>
+
+## Automatizaci vybírej záměrně
+
+Možnosti zpracování jsou požadavky na nastavené dovednosti AI. Vybraný
+poskytovatel může být místní nebo vzdálený, proto před použitím citlivého
+materiálu ověř aktivní profil inference. Vygenerovaný text i navržené změny
+úkolu kontroluj a nepovažuj je automaticky za spolehlivý podklad.
+
+V části [Nastavení poskytovatele AI](../ai-and-automation/provider-setup.mdx)
+určíš, kde inference probíhá.

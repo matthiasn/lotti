@@ -304,7 +304,10 @@ void main() {
         duration: const Duration(minutes: 7, seconds: 42),
         audioFile: 'europa-cold-chain.m4a',
         audioDirectory: '/manual_demo/',
-        language: manualScreenshotLocale.languageCode,
+        // The production language picker currently offers English and German
+        // only. Keep translated app chrome independent from the selected
+        // transcription model language for the other manual locales.
+        language: manualScreenshotLocale.languageCode == 'de' ? 'de' : 'en',
         transcripts: [
           AudioTranscript(
             created: DateTime(2026, 7, 17, 8, 2),
@@ -861,9 +864,9 @@ void main() {
           scrollable: scrollable.first,
         );
         await settleFrames(tester, 4);
-        expect(find.text('Timer'), findsOneWidget);
+        expect(find.text(_t('Timer', 'Timer')), findsOneWidget);
         expect(find.text(_t('Images', 'Bilder')), findsOneWidget);
-        expect(find.text('Code'), findsOneWidget);
+        expect(find.text(_t('Code', 'Code')), findsOneWidget);
         expect(
           find.textContaining(
             _t(

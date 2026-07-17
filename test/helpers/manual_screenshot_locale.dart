@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import 'manual_screenshot_czech_text.dart';
+
 /// Locale requested for the current manual capture process.
 ///
 /// Manual suites run once per locale, so both production localization and
@@ -9,11 +11,11 @@ import 'package:flutter/material.dart';
 /// contract without changing screenshot case IDs or filenames.
 Locale manualScreenshotLocaleFromEnvironment(Map<String, String> environment) {
   final languageCode = environment['LOTTI_MANUAL_LOCALE'] ?? 'en';
-  if (languageCode != 'en' && languageCode != 'de') {
+  if (languageCode != 'en' && languageCode != 'de' && languageCode != 'cs') {
     throw ArgumentError.value(
       languageCode,
       'LOTTI_MANUAL_LOCALE',
-      'Supported manual screenshot locales are en and de.',
+      'Supported manual screenshot locales are en, de, and cs.',
     );
   }
   return Locale(languageCode);
@@ -23,5 +25,12 @@ Locale get manualScreenshotLocale =>
     manualScreenshotLocaleFromEnvironment(Platform.environment);
 
 /// Select deterministic fixture copy for the active manual locale.
-String manualScreenshotText({required String en, required String de}) =>
-    manualScreenshotLocale.languageCode == 'de' ? de : en;
+String manualScreenshotText({
+  required String en,
+  required String de,
+  String? cs,
+}) => switch (manualScreenshotLocale.languageCode) {
+  'de' => de,
+  'cs' => cs ?? manualScreenshotCzechText(en) ?? en,
+  _ => en,
+};

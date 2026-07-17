@@ -749,7 +749,7 @@ void main() {
         await tester.tap(find.byIcon(Icons.assistant_outlined));
         await settleFrames(tester, 6);
         expect(find.text(_t('Generate…', 'Generieren…')), findsOneWidget);
-        expect(find.text('Skills'), findsOneWidget);
+        expect(find.text(_t('Skills', 'Skills')), findsOneWidget);
         expect(
           find.text(_t('Inspect habitat photo', 'Habitatfoto prüfen')),
           findsOneWidget,
@@ -795,7 +795,7 @@ void main() {
           find.text(_t('Audio Recording', 'Audioaufnahme')),
           findsOneWidget,
         );
-        expect(find.text('Timer'), findsOneWidget);
+        expect(find.text(_t('Timer', 'Timer')), findsOneWidget);
         await captureScreenshot(
           tester,
           'create_entry_task_${viewport}_$theme',

@@ -1,0 +1,69 @@
+---
+title: Řešení konfliktů synchronizace
+description: Porovnávej souběžné úpravy po jednotlivých polích a zachovej nebo spoj správné informace.
+---
+
+# Řešení konfliktů synchronizace
+
+Konflikt vznikne, když dvě zařízení nezávisle změní stejný záznam a žádná verze
+není jednoznačně novější. Lotti místo tichého výběru jedné zachová obě.
+
+Otevři **Nastavení → Sync → Konflikty**. Seznam odděluje nevyřešené a vyřešené
+položky a určuje typ entity a čas každého konfliktu.
+
+<ManualScreenshot
+  caseId="sync/conflicts"
+  alt="Seznam konfliktů Lotti Sync s nevyřešeným úkolem Project Waddle, konfliktem sardinkového manifestu a jedním vyřešeným úkolem"
+  caption="Nejdřív vyřeš aktuální položky. Vyřešené zůstávají viditelné jako auditní historie dřívějších rozhodnutí."
+/>
+
+## Porovnej obě verze
+
+Otevři konflikt a zobraz každé rozdílné pole. Textové změny obsahují zvýraznění
+po slovech; nezměněná pole jsou shrnuta, takže stránka neskrývá, v čem záznamy
+stále souhlasí.
+
+<ManualScreenshot
+  caseId="sync/conflict-detail"
+  alt="Podrobnosti konfliktu Lotti porovnávající místní a synchronizovaný název a popis úkolu Project Waddle po polích"
+  caption="Toto zařízení zachovalo posledního tučňáka a nákladový prostor; synchronizovaná verze odbavila všech 37 tučňáků a naplánovala vydání sardinek. Obě skutečnosti jsou důležité."
+/>
+
+Tři cesty řešení jsou:
+
+- **Použít toto zařízení** zachová úplnou místní verzi.
+- **Použít ze synchronizace** zachová úplnou příchozí verzi.
+- **Spojit** umožní vybrat výchozí stranu a potom vítěze každého samostatně
+  slučitelného pole.
+
+Zachování jedné úplné strany je vhodné, když je druhá jednoduše zastaralá.
+**Spojit** je bezpečnější, když samostatná pole obsahují platnou práci z obou
+zařízení; Lotti ho označí jako doporučené, pokud se liší více slučitelných polí.
+
+## Spoj pole bez přepisování
+
+Vyber **Spojit**, zvol výchozí verzi a potom přepínej jednotlivá pole na druhou
+stranu. Pole, která nelze slučovat samostatně, následují vybranou výchozí
+verzi.
+
+<ManualScreenshot
+  caseId="sync/conflict-combine"
+  alt="Editor spojení konfliktu Lotti s ovládáním výchozí verze a samostatnými volbami pro název a tělo úkolu"
+  caption="Začni jedním strukturálně úplným záznamem a potom převezmi lepší název a tělo z tohoto zařízení nebo synchronizace."
+/>
+
+Před volbou **Použít spojené** zkontroluj každé uvedené pole. Vyřešený záznam
+získá sloučenou historii synchronizace, aby se stejné dvě úpravy okamžitě
+nestřetly znovu.
+
+:::caution Řešení mění sdílený výsledek
+
+Zachování strany nebo použití spojené verze zapíše vítěze místně a umožní mu
+synchronizovat se na ostatní zařízení. Před potvrzením přečti celý rozdíl. Pokud
+jedna strana záznam smazala a druhá upravila, Lotti zobrazí bezpečnější volbu
+smazání proti úpravě místo běžného slučování polí.
+
+:::
+
+Vrať se na [Synchronizaci zařízení](./sync.mdx) a zkontroluj zdraví doručení a
+doplnění.
