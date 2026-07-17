@@ -67,6 +67,27 @@ assert.ok(
   buildFiles.some((path) => /Inconsolata-Regular.*\.ttf$/.test(path)),
   'The manual build must bundle Lotti\'s Inconsolata code font.',
 );
+const indexHtml = await readFile(resolve(buildDirectory, 'index.html'), 'utf8');
+assert.doesNotMatch(
+  indexHtml,
+  /:::note/,
+  'Admonition fences must not be rendered as manual text.',
+);
+assert.match(
+  indexHtml,
+  /theme-admonition/,
+  'The manual start page must render its penguin-world note as an admonition.',
+);
+for (const path of buildFiles) {
+  if (!path.endsWith('index.html')) continue;
+  const html = await readFile(resolve(buildDirectory, path), 'utf8');
+  if (!html.includes('theme-doc-markdown')) continue;
+  assert.doesNotMatch(
+    html,
+    /:::(?:note|tip|warning|caution|danger|info)\b/,
+    `Manual page ${path} must not render an admonition fence as text.`,
+  );
+}
 for (const feature of features.features) {
   await access(resolve(buildDirectory, feature.page, 'index.html'));
   for (const locale of translatedLocales) {
@@ -91,6 +112,20 @@ assert.doesNotMatch(settingsHtml, /data-translation-notice=/);
 for (const locale of translatedLocales) {
   const expected = localeExpectations[locale];
   assert.ok(expected, `Smoke expectations are missing for locale ${locale}.`);
+  const translatedIndexHtml = await readFile(
+    resolve(buildDirectory, locale, 'index.html'),
+    'utf8',
+  );
+  assert.doesNotMatch(
+    translatedIndexHtml,
+    /:::note/,
+    `${locale} admonition fences must not be rendered as manual text.`,
+  );
+  assert.match(
+    translatedIndexHtml,
+    /theme-admonition/,
+    `${locale} manual start page must render its penguin-world note as an admonition.`,
+  );
   const translatedSettingsHtml = await readFile(
     resolve(buildDirectory, locale, 'reference/settings/index.html'),
     'utf8',
