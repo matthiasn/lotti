@@ -81,6 +81,7 @@ void main() {
         'theming',
         'keyboard-shortcuts',
         'advanced',
+        'manual',
       ],
     );
   });
