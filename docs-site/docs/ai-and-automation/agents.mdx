@@ -1,0 +1,88 @@
+---
+title: Run and monitor agents
+description: Monitor agent activity, inspect running instances, and control scheduled wake cycles without losing the audit trail.
+---
+
+# Run and monitor agents
+
+Agents let Lotti carry a defined responsibility across multiple wake cycles.
+Each running instance comes from an agent template, uses an inference setup,
+and keeps its own state, reports, observations, and activity history. Open
+**Settings → Agents** to see the system as a whole.
+
+## Read agent activity before changing it
+
+The **Stats** page combines wake activity and token usage. The first chart
+shows when agents woke during the last 24 hours. The daily section compares
+today with the same time on recent days, then breaks usage down by model and
+source.
+
+<ManualScreenshot
+  caseId="agents/stats"
+  alt="Lotti agent statistics showing Project Waddle wake activity, daily token usage, and model charts"
+  caption="Project Waddle's example fleet is busiest around habitat checks and launch planning; the model and source sections make that activity attributable."
+/>
+
+Use this page to answer three different questions:
+
+- **When did agents run?** Read the 24-hour wake chart.
+- **How much inference did they use?** Compare the daily and per-model charts.
+- **Which responsibility drove it?** Review the template/source breakdown.
+
+A spike is not automatically a fault. A launch-review day should be busier
+than an ordinary colony day. Investigate unexpected activity by opening the
+source template or instance before changing a global concurrency limit.
+
+## Inspect the running instances
+
+Open **Instances** to see every agent and evolution session. Rows expose the
+agent kind, lifecycle, assigned template, and soul. Grouping by soul is useful
+when several responsibilities share one voice and decision style.
+
+<ManualScreenshot
+  caseId="agents/instances"
+  alt="Lotti agent instances grouped by Admiral Pebble, Dr. Flipper, Captain Sardina, and an evolution session"
+  caption="The Habitat Seal Inspector, Project Waddle Planner, and Sardine Cargo Coordinator remain separate instances even when they share system-level resources."
+/>
+
+Select an instance to inspect its internals. The **Stats** tab shows model
+usage, its template, current inference route, lifecycle controls, wake count,
+and scheduling state.
+
+<ManualScreenshot
+  caseId="agents/instance-detail"
+  alt="Habitat Seal Inspector instance detail with token usage, Orbital Habitat Sentinel template, inference route, lifecycle controls, and wake state"
+  caption="The instance keeps enough provenance to explain which template and route produced its work before you pause, re-analyze, or destroy it."
+/>
+
+The remaining instance tabs preserve different evidence:
+
+- **Reports** contains the agent's saved report snapshots.
+- **Conversations** groups messages by wake cycle.
+- **Observations** exposes captured findings without mixing them into reports.
+- **Activity** shows the chronological message and tool trail.
+
+**Pause** keeps the instance but stops normal work. **Re-analyze** asks a task
+agent to reconsider its current subject. **Destroy** is destructive and should
+only be used when the instance itself is no longer wanted; changing the
+template for future agents does not require destroying unrelated instances.
+
+## Understand wake cycles
+
+Open **Wake Cycles** to see work that is running now and work due later. A
+**Pending** wake was requested by the agent. A **Scheduled** wake was placed by
+the system or planner. Each row keeps the linked task, project, or day visible
+alongside the responsible agent and a live countdown.
+
+<ManualScreenshot
+  caseId="agents/pending-wakes"
+  alt="Lotti Wake Cycles showing the running habitat inspection and scheduled Project Waddle and sardine logistics wakes"
+  caption="The queue distinguishes an agent-requested habitat follow-up from launch-day and cargo schedules, so a countdown always has a reason and owner."
+/>
+
+Deleting a queued wake removes that timer; it does not delete the agent or its
+linked task. If a wake immediately returns, inspect the agent state or the
+automation that requested it instead of repeatedly deleting the symptom.
+
+Continue with [Agent templates and souls](./agent-blueprints.mdx) to define
+what these instances do and how they communicate.

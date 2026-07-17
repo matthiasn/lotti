@@ -178,6 +178,8 @@ manual_screenshots: manual_deps
 	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/settings/ui/settings_advanced_manual_screenshots_test.dart
 	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/whats_new/ui/whats_new_manual_screenshots_test.dart
 	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/onboarding/ui/onboarding_manual_screenshots_test.dart
+	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart
+	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/agents/ui/agents_manual_screenshots_test.dart
 	npm --prefix docs-site run manifest -- --capture-dir "$(MANUAL_CAPTURE_DIR)" --output-root "$(MANUAL_MEDIA_DIR)" --version "$(MANUAL_VERSION)"
 	$(MAKE) manual_check_media MANUAL_VERSION="$(MANUAL_VERSION)" LOTTI_DOCS_DIR="$(LOTTI_DOCS_DIR)"
 

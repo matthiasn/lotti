@@ -272,6 +272,32 @@
       ]
     },
     {
+      "id": "agent-operations",
+      "title": "Agent operations",
+      "page": "ai-and-automation/agents",
+      "status": "verified",
+      "screenshotCases": [
+        "agents/stats",
+        "agents/instances",
+        "agents/instance-detail",
+        "agents/pending-wakes"
+      ]
+    },
+    {
+      "id": "agent-blueprints",
+      "title": "Agent templates and souls",
+      "page": "ai-and-automation/agent-blueprints",
+      "status": "verified",
+      "screenshotCases": [
+        "agents/templates",
+        "agents/template-editor",
+        "agents/template-review",
+        "agents/souls",
+        "agents/soul-editor",
+        "agents/soul-review"
+      ]
+    },
+    {
       "id": "sync",
       "title": "Sync",
       "page": "sync-and-data/sync",

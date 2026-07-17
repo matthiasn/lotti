@@ -858,6 +858,116 @@
         "desktop-light": "ai_usage_desktop_light.png",
         "desktop-dark": "ai_usage_desktop_dark.png"
       }
+    },
+    {
+      "id": "agents/stats",
+      "title": "Agent statistics",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_stats_mobile_light.png",
+        "mobile-dark": "agents_stats_mobile_dark.png",
+        "desktop-light": "agents_stats_desktop_light.png",
+        "desktop-dark": "agents_stats_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/templates",
+      "title": "Agent templates",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_templates_mobile_light.png",
+        "mobile-dark": "agents_templates_mobile_dark.png",
+        "desktop-light": "agents_templates_desktop_light.png",
+        "desktop-dark": "agents_templates_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/instances",
+      "title": "Agent instances",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_instances_mobile_light.png",
+        "mobile-dark": "agents_instances_mobile_dark.png",
+        "desktop-light": "agents_instances_desktop_light.png",
+        "desktop-dark": "agents_instances_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/souls",
+      "title": "Agent souls",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_souls_mobile_light.png",
+        "mobile-dark": "agents_souls_mobile_dark.png",
+        "desktop-light": "agents_souls_desktop_light.png",
+        "desktop-dark": "agents_souls_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/pending-wakes",
+      "title": "Agent wake cycles",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_pending_wakes_mobile_light.png",
+        "mobile-dark": "agents_pending_wakes_mobile_dark.png",
+        "desktop-light": "agents_pending_wakes_desktop_light.png",
+        "desktop-dark": "agents_pending_wakes_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/template-editor",
+      "title": "Agent template editor",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_template_editor_mobile_light.png",
+        "mobile-dark": "agents_template_editor_mobile_dark.png",
+        "desktop-light": "agents_template_editor_desktop_light.png",
+        "desktop-dark": "agents_template_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/template-review",
+      "title": "Agent template evolution review",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_template_review_mobile_light.png",
+        "mobile-dark": "agents_template_review_mobile_dark.png",
+        "desktop-light": "agents_template_review_desktop_light.png",
+        "desktop-dark": "agents_template_review_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/soul-editor",
+      "title": "Agent soul editor",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_soul_editor_mobile_light.png",
+        "mobile-dark": "agents_soul_editor_mobile_dark.png",
+        "desktop-light": "agents_soul_editor_desktop_light.png",
+        "desktop-dark": "agents_soul_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/soul-review",
+      "title": "Agent soul evolution review",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_soul_review_mobile_light.png",
+        "mobile-dark": "agents_soul_review_mobile_dark.png",
+        "desktop-light": "agents_soul_review_desktop_light.png",
+        "desktop-dark": "agents_soul_review_desktop_dark.png"
+      }
+    },
+    {
+      "id": "agents/instance-detail",
+      "title": "Agent instance detail",
+      "sourceTest": "test/features/agents/ui/agents_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "agents_instance_detail_mobile_light.png",
+        "mobile-dark": "agents_instance_detail_mobile_dark.png",
+        "desktop-light": "agents_instance_detail_desktop_light.png",
+        "desktop-dark": "agents_instance_detail_desktop_dark.png"
+      }
     }
   ]
 }

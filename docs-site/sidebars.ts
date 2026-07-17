@@ -44,6 +44,8 @@ const sidebars: SidebarsConfig = {
       items: [
         'ai-and-automation/provider-setup',
         'ai-and-automation/models-and-profiles',
+        'ai-and-automation/agents',
+        'ai-and-automation/agent-blueprints',
         'ai-and-automation/skills',
         'ai-and-automation/usage',
       ],
