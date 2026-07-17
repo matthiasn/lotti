@@ -44,14 +44,24 @@ class EntryDetailFooter extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (hasDuration)
+        if (hasDuration) ...[
+          // A hairline seam separates the reading surface from its metadata
+          // footer, so the duration line reads as chrome rather than as one
+          // more sentence of the entry.
           Padding(
-            // The read-only duration value line shares the body rhythm step so
-            // the card reads evenly top to bottom.
+            padding: EdgeInsets.only(top: tokens.spacing.cardItemSpacing),
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: tokens.colors.decorative.level01,
+            ),
+          ),
+          Padding(
             padding: EdgeInsets.only(top: tokens.spacing.cardItemSpacing),
             // Duration sits left under the content gutter.
             child: DurationWidget(item: entry, linkedFrom: linkedFrom),
           ),
+        ],
         if (showMap)
           Padding(
             padding: EdgeInsets.only(

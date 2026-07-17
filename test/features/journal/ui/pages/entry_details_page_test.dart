@@ -6,16 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -41,6 +43,14 @@ import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+
+/// The humanized detail-header timestamp as EntryDatetimeWidget renders it
+/// (en_US under the test harness).
+String entryDetailDateLabel(DateTime date) {
+  final local = date.toLocal();
+  return '${DateFormat.yMMMd('en_US').format(local)} '
+      '${DateFormat.jm('en_US').format(local)}';
+}
 
 void main() {
   // setUpTestGetIt pre-registers core services (JournalDb,
@@ -173,14 +183,14 @@ void main() {
 
       // test entry displays expected date
       expect(
-        find.text(dfShorter.format(testTextEntry.meta.dateFrom)),
+        find.text(entryDetailDateLabel(testTextEntry.meta.dateFrom)),
         findsOneWidget,
       );
 
       // test entry displays duration of one hour (rendered as the labeled
-      // value line "Duration: 01:00:00")
+      // humanized value line "Duration: 1h")
       expect(
-        find.textContaining('01:00:00'),
+        find.textContaining('1h'),
         findsOneWidget,
       );
 
@@ -288,7 +298,7 @@ void main() {
 
       // test entry displays expected date
       expect(
-        find.text(dfShorter.format(testWeightEntry.meta.dateFrom)),
+        find.text(entryDetailDateLabel(testWeightEntry.meta.dateFrom)),
         findsOneWidget,
       );
 
@@ -1056,6 +1066,74 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'split-pane embedding (showFloatingActionButton false) drops the FAB',
+      (tester) async {
+        when(
+          () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailsPage(
+              itemId: testTextEntry.meta.id,
+              showFloatingActionButton: false,
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The list pane owns the only create FAB in the desktop split.
+        expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'paints the unified logbook canvas and caps content at the shared '
+      'reading measure',
+      (tester) async {
+        when(
+          () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailsPage(itemId: testTextEntry.meta.id),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final scaffold = tester.widget<Scaffold>(
+          find
+              .descendant(
+                of: find.byType(EntryDetailsPage),
+                matching: find.byType(Scaffold),
+              )
+              .first,
+        );
+        final context = tester.element(find.byType(EntryDetailsPage));
+        // The detail canvas matches the list column: one unified logbook
+        // surface, with the entry body carded on top of it.
+        expect(scaffold.backgroundColor, dsPageSurface(context));
+
+        // Content is centered under the 760px measure so wide split panes do
+        // not produce unreadably long lines (same cap as the tasks detail).
+        final constrained = tester.widget<ConstrainedBox>(
+          find
+              .ancestor(
+                of: find.byType(EntryDetailsWidget),
+                matching: find.byType(ConstrainedBox),
+              )
+              .first,
+        );
+        expect(constrained.constraints.maxWidth, 760);
+      },
+    );
 
     testWidgets('scroll controller listeners are set up in initState', (
       tester,

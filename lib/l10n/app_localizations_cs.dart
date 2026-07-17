@@ -48,6 +48,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get addHabitDateLabel => 'Dokončeno dne';
 
   @override
+  String get addLinkedEntryLabel => 'Přidat propojený záznam';
+
+  @override
   String get addMeasurementCommentLabel => 'Komentář';
 
   @override
@@ -6522,6 +6525,23 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Propojit existující úkol...';
+
+  @override
+  String get logbookEmptyHint =>
+      'Vytvoř svůj první záznam a začni si psát deník.';
+
+  @override
+  String get logbookEmptyTitle => 'Tvůj deník je prázdný';
+
+  @override
+  String get logbookNewEntriesHint => 'Nové záznamy se otevřou tady.';
+
+  @override
+  String get logbookNoMatchesHint =>
+      'Uprav hledání nebo filtry, abys viděl víc.';
+
+  @override
+  String get logbookNoMatchesTitle => 'Žádné záznamy neodpovídají';
 
   @override
   String get loggingDomainAgentRuntime => 'Běh agentů';

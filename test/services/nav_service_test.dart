@@ -498,6 +498,41 @@ void main() {
       expect(id, '123e4567-e89b-12d3-a456-426614174000');
     });
 
+    group('desktop selected entry id', () {
+      test('starts unselected and notifies logbook listeners on change', () {
+        final navService = getIt<NavService>();
+        addTearDown(() => navService.desktopSelectedEntryId.value = null);
+        expect(navService.desktopSelectedEntryId.value, isNull);
+
+        final seen = <String?>[];
+        void listener() => seen.add(navService.desktopSelectedEntryId.value);
+        navService.desktopSelectedEntryId.addListener(listener);
+        addTearDown(
+          () => navService.desktopSelectedEntryId.removeListener(listener),
+        );
+
+        navService.desktopSelectedEntryId.value = 'entry-1';
+        navService.desktopSelectedEntryId.value = null;
+        expect(seen, ['entry-1', null]);
+      });
+
+      test('is independent of the task detail selection', () {
+        final navService = getIt<NavService>()
+          ..resetDesktopTaskDetail('task-a');
+        addTearDown(() {
+          navService
+            ..resetDesktopTaskDetail(null)
+            ..desktopSelectedEntryId.value = null;
+        });
+
+        navService.desktopSelectedEntryId.value = 'entry-1';
+        expect(navService.desktopSelectedTaskId.value, 'task-a');
+
+        navService.resetDesktopTaskDetail(null);
+        expect(navService.desktopSelectedEntryId.value, 'entry-1');
+      });
+    });
+
     group('desktop task detail stack', () {
       setUp(() {
         // The NavService singleton is shared across tests. Clear the

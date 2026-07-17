@@ -11,12 +11,15 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/logbook_filter_modal.dart';
+import 'package:lotti/features/journal/ui/widgets/logbook_search_mode_row.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
@@ -38,6 +41,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
+import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../utils/utils.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -385,6 +389,22 @@ void main() {
 
       // Verify no entries are displayed
       expect(find.byType(CardWrapperWidget), findsNothing);
+
+      // A genuinely empty logbook (no search, no filters) shows the localized
+      // first-run zero-state with an inline create action — never the
+      // pagination package's stock "No items found".
+      expect(find.text('Your logbook is empty'), findsOneWidget);
+      expect(
+        find.text('Create your first entry to start journaling.'),
+        findsOneWidget,
+      );
+      expect(find.text('No items found'), findsNothing);
+
+      // The inline CTA opens the same create modal as the FAB ("Add" sheet).
+      await tester.tap(find.text('Create new entry'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Add'), findsOneWidget);
     });
 
     testWidgets('pull to refresh works correctly', (tester) async {
@@ -513,6 +533,11 @@ void main() {
           when(
             () => entitiesCacheService.getCategoryById(any()),
           ).thenReturn(null);
+          // The logbook filter modal's category section reads the sorted
+          // categories from the cache service.
+          when(
+            () => entitiesCacheService.sortedCategories,
+          ).thenReturn(const []);
           getIt
             ..registerSingleton<UserActivityService>(UserActivityService())
             ..registerSingleton<EntitiesCacheService>(entitiesCacheService);
@@ -522,7 +547,101 @@ void main() {
 
     tearDown(tearDownTestGetIt);
 
-    testWidgets('adds 100px bottom spacer sliver', (tester) async {
+    /// Pumps [InfiniteJournalPage] with the page controller pinned to
+    /// [state] and returns the fake controller for call-tracking assertions.
+    Future<FakeJournalPageController> pumpPage(
+      WidgetTester tester, {
+      JournalPageState state = const JournalPageState(showTasks: false),
+    }) async {
+      final fakeController = FakeJournalPageController(state);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const InfiniteJournalPage(),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+      return fakeController;
+    }
+
+    testWidgets(
+      'a search/filter-narrowed empty feed shows the no-matches variant '
+      'without a create CTA',
+      (tester) async {
+        final pagingController =
+            PagingController<int, JournalEntity>(
+                getNextPageKey: (_) => null,
+                fetchPage: (_) async => const <JournalEntity>[],
+              )
+              ..value = PagingState(
+                pages: const [<JournalEntity>[]],
+                keys: const [0],
+                hasNextPage: false,
+              );
+        addTearDown(pagingController.dispose);
+
+        await pumpPage(
+          tester,
+          state: JournalPageState(
+            showTasks: false,
+            match: 'no such entry',
+            pagingController: pagingController,
+          ),
+        );
+
+        // Emptiness caused by the user's search reads as a query result with
+        // a recovery hint — not as an empty logbook inviting a first entry.
+        expect(find.text('No entries match'), findsOneWidget);
+        expect(
+          find.text('Adjust your search or filters to see more.'),
+          findsOneWidget,
+        );
+        expect(find.text('Your logbook is empty'), findsNothing);
+        expect(find.text('Create new entry'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'deselecting an allowed entry type narrows the feed (no first-run CTA)',
+      (tester) async {
+        final pagingController =
+            PagingController<int, JournalEntity>(
+                getNextPageKey: (_) => null,
+                fetchPage: (_) async => const <JournalEntity>[],
+              )
+              ..value = PagingState(
+                pages: const [<JournalEntity>[]],
+                keys: const [0],
+                hasNextPage: false,
+              );
+        addTearDown(pagingController.dispose);
+
+        // Events are flag-enabled (in the allowed baseline) but the user
+        // deselected them: the feed is user-narrowed even though every ungated
+        // type is still selected, so the empty result is a query result — not a
+        // first-run empty logbook.
+        await pumpPage(
+          tester,
+          state: JournalPageState(
+            showTasks: false,
+            allowedEntryTypes: const ['JournalEntry', 'JournalEvent'],
+            selectedEntryTypes: const ['JournalEntry'],
+            pagingController: pagingController,
+          ),
+        );
+
+        expect(find.text('No entries match'), findsOneWidget);
+        expect(find.text('Your logbook is empty'), findsNothing);
+        expect(find.text('Create new entry'), findsNothing);
+      },
+    );
+
+    testWidgets('adds 104px bottom spacer sliver', (tester) async {
       const state = JournalPageState(
         match: '',
         filters: <DisplayFilter>{},
@@ -538,7 +657,7 @@ void main() {
         selectedPriorities: <String>{},
       );
 
-      final fakeController = _FakeJournalPageController(state);
+      final fakeController = FakeJournalPageController(state);
 
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -555,9 +674,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
       await tester.pump(const Duration(milliseconds: 600));
 
+      // spacing.step11 + spacing.step6 = 80 + 24 keeps the last card above
+      // the FAB / time indicator overlays.
       expect(
         find.byWidgetPredicate(
-          (w) => w is SizedBox && w.height == 100,
+          (w) => w is SizedBox && w.height == 104,
         ),
         findsOneWidget,
       );
@@ -566,6 +687,75 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byType(PagedSliverList<int, JournalEntity>), findsNothing);
     });
+
+    testWidgets('renders the shared header with Logbook title and search', (
+      tester,
+    ) async {
+      final fakeController = await pumpPage(tester);
+
+      // The old SliverAppBar chrome is gone — the page now renders the same
+      // TabSectionHeader Tasks and Projects use.
+      expect(find.byType(SliverAppBar), findsNothing);
+      expect(find.byType(TabSectionHeader), findsOneWidget);
+      expect(find.text('Logbook'), findsOneWidget);
+
+      // Typing into the header search field lands in the page controller.
+      await tester.enterText(find.byType(TextField), 'penguins');
+      await tester.pump();
+      expect(fakeController.searchStringCalls, ['penguins']);
+
+      // The search glyph re-submits the current text…
+      await tester.tap(find.byIcon(Icons.search_rounded));
+      await tester.pump();
+      expect(fakeController.searchStringCalls, ['penguins', 'penguins']);
+
+      // …and the clear affordance resets the query to the empty string —
+      // once via the clear callback and once via the field's change stream.
+      await tester.tap(find.byIcon(Icons.cancel_rounded));
+      await tester.pump();
+      expect(fakeController.searchStringCalls, [
+        'penguins',
+        'penguins',
+        '',
+        '',
+      ]);
+    });
+
+    testWidgets('header filter icon opens the logbook filter modal', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+
+      await tester.tap(find.byIcon(Icons.filter_list_rounded));
+      // Bounded pumps instead of pumpAndSettle: the page's loading spinner
+      // (null pagingController branch) animates forever and would time out.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.byType(LogbookFilterSheet), findsOneWidget);
+      expect(find.text('Filter journal'), findsOneWidget);
+    });
+
+    // The vector-search row only renders when the config flag is on.
+    for (final enabled in [true, false]) {
+      testWidgets(
+        'search-mode row is ${enabled ? 'shown' : 'hidden'} when vector '
+        'search is ${enabled ? 'enabled' : 'disabled'}',
+        (tester) async {
+          await pumpPage(
+            tester,
+            state: JournalPageState(
+              showTasks: false,
+              enableVectorSearch: enabled,
+            ),
+          );
+          expect(
+            find.byType(LogbookSearchModeRow),
+            enabled ? findsOneWidget : findsNothing,
+          );
+        },
+      );
+    }
 
     testWidgets('renders paged list branch when pagingController is present', (
       tester,
@@ -590,7 +780,7 @@ void main() {
         selectedPriorities: <String>{},
       );
 
-      final fakeController = _FakeJournalPageController(state);
+      final fakeController = FakeJournalPageController(state);
 
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -632,7 +822,7 @@ void main() {
           selectedPriorities: <String>{},
         );
 
-        final fakeController = _FakeJournalPageController(state);
+        final fakeController = FakeJournalPageController(state);
 
         await tester.pumpWidget(
           makeTestableWidgetNoScroll(
@@ -679,7 +869,7 @@ void main() {
           selectedPriorities: <String>{},
         );
 
-        final fakeController = _FakeJournalPageController(state);
+        final fakeController = FakeJournalPageController(state);
 
         await tester.pumpWidget(
           makeTestableWidgetNoScroll(
@@ -709,7 +899,7 @@ void main() {
         showTasks: false,
         selectedCategoryIds: {'journal-category'},
       );
-      final fakeController = _FakeJournalPageController(state);
+      final fakeController = FakeJournalPageController(state);
       String? createdCategoryId;
 
       await tester.pumpWidget(
@@ -733,7 +923,7 @@ void main() {
         ),
       );
       await tester.pump();
-      fakeController.refreshPreserveFlags.clear();
+      fakeController.refreshQueryPreserveFlags.clear();
 
       final commandContext = tester.element(find.byType(TextField));
       final commandController = AppCommandControllerProvider.of(
@@ -743,7 +933,7 @@ void main() {
         await commandController.invoke(commandContext, AppCommandId.refresh),
         isTrue,
       );
-      expect(fakeController.refreshPreserveFlags, [true]);
+      expect(fakeController.refreshQueryPreserveFlags, [true]);
 
       expect(
         await commandController.invoke(
@@ -784,7 +974,7 @@ void main() {
               hasNextPage: false,
             );
       addTearDown(pagingController.dispose);
-      final fakeController = _FakeJournalPageController(
+      final fakeController = FakeJournalPageController(
         JournalPageState(
           showTasks: false,
           pagingController: pagingController,
@@ -814,22 +1004,4 @@ void main() {
       );
     });
   });
-}
-
-class _FakeJournalPageController extends JournalPageController {
-  _FakeJournalPageController(this._testState);
-
-  final JournalPageState _testState;
-  final List<bool> refreshPreserveFlags = [];
-
-  @override
-  JournalPageState build() => _testState;
-
-  @override
-  JournalPageState get state => _testState;
-
-  @override
-  Future<void> refreshQuery({bool preserveVisibleItems = false}) async {
-    refreshPreserveFlags.add(preserveVisibleItems);
-  }
 }

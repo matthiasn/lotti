@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
-import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
 
 /// Compact header used by the Tasks and Projects tabs: a title row (with an
 /// optional trailing widget like a notification bell) and a search row with
 /// an optional trailing filter button.
 ///
-/// The two rows are wrapped in [ProjectsOverviewContentWidth] so they align
+/// The two rows are wrapped in [DetailContentWidth] so they align
 /// with the list content below — any full-bleed element (divider, chip row,
 /// etc.) is expected to be rendered outside this widget so it can span the
 /// full pane width.
@@ -22,6 +23,7 @@ class TabSectionHeader extends StatelessWidget {
     required this.onSearchPressed,
     required this.onFilterPressed,
     required this.filterTooltip,
+    this.filtersActive = false,
     this.titleTrailing,
     this.titleSuffix,
     this.searchFocusNode,
@@ -43,6 +45,13 @@ class TabSectionHeader extends StatelessWidget {
   /// "Tasks · {savedFilterName}" when a saved filter is active.
   final Widget? titleSuffix;
 
+  /// Whether any list filter is currently narrowing the results.
+  ///
+  /// Drives the filter affordance: neutral at rest, accent with a tonal fill
+  /// while active — so an invisibly filtered list can't masquerade as the
+  /// full feed. Accent is reserved for state, not decoration.
+  final bool filtersActive;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -60,7 +69,7 @@ class TabSectionHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ProjectsOverviewContentWidth(
+          DetailContentWidth(
             child: Row(
               children: [
                 Expanded(
@@ -87,7 +96,7 @@ class TabSectionHeader extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spacing.step5),
-          ProjectsOverviewContentWidth(
+          DetailContentWidth(
             child: Row(
               children: [
                 Expanded(
@@ -105,10 +114,18 @@ class TabSectionHeader extends StatelessWidget {
                 IconButton(
                   tooltip: filterTooltip,
                   onPressed: onFilterPressed,
+                  style: filtersActive
+                      ? IconButton.styleFrom(
+                          backgroundColor:
+                              DesignSystemListPalette.activatedFill(tokens),
+                        )
+                      : null,
                   icon: Icon(
                     Icons.filter_list_rounded,
                     size: 20,
-                    color: accent,
+                    color: filtersActive
+                        ? accent
+                        : tokens.colors.text.mediumEmphasis,
                   ),
                 ),
               ],

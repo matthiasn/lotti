@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -32,6 +34,8 @@ void main() {
       ValueChanged<String>? onSearchPressed,
       VoidCallback? onFilterPressed,
       Widget? titleTrailing,
+      Widget? titleSuffix,
+      bool filtersActive = false,
       String query = '',
     }) {
       return TabSectionHeader(
@@ -44,6 +48,8 @@ void main() {
         onSearchPressed: onSearchPressed ?? (_) {},
         onFilterPressed: onFilterPressed ?? () {},
         titleTrailing: titleTrailing,
+        titleSuffix: titleSuffix,
+        filtersActive: filtersActive,
       );
     }
 
@@ -147,6 +153,55 @@ void main() {
         expect(find.byKey(const ValueKey('custom-trailing')), findsOneWidget);
         // Default bell is replaced, not layered.
         expect(find.byIcon(Icons.notifications_none_rounded), findsNothing);
+      },
+    );
+
+    testWidgets('renders the inline titleSuffix after the title', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        header: buildHeader(
+          titleSuffix: const Text(
+            '· My filter',
+            key: ValueKey('title-suffix'),
+          ),
+        ),
+      );
+
+      expect(find.byKey(const ValueKey('title-suffix')), findsOneWidget);
+    });
+
+    testWidgets(
+      'filter affordance is neutral at rest and accent-with-fill when '
+      'filters are active',
+      (tester) async {
+        Icon filterIcon() => tester.widget<Icon>(
+          find.byIcon(Icons.filter_list_rounded),
+        );
+        IconButton filterButton() => tester.widget<IconButton>(
+          find.ancestor(
+            of: find.byIcon(Icons.filter_list_rounded),
+            matching: find.byType(IconButton),
+          ),
+        );
+
+        await pump(tester, header: buildHeader());
+        final context = tester.element(find.byType(TabSectionHeader));
+        final tokens = context.designTokens;
+        // At rest: quiet neutral, no tonal fill — accent is reserved for
+        // state.
+        expect(filterIcon().color, tokens.colors.text.mediumEmphasis);
+        expect(filterButton().style, isNull);
+
+        await pump(tester, header: buildHeader(filtersActive: true));
+        // Active: accent glyph on the activated tonal fill, so a narrowed
+        // list can't masquerade as the full feed.
+        expect(filterIcon().color, tokens.colors.interactive.enabled);
+        expect(
+          filterButton().style?.backgroundColor?.resolve(const {}),
+          DesignSystemListPalette.activatedFill(tokens),
+        );
       },
     );
   });

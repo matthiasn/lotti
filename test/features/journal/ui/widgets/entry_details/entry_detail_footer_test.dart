@@ -197,8 +197,8 @@ void main() {
       expect(recordIconFinder, findsOneWidget);
       expect(stopIconFinder, findsNothing);
 
-      // Rendered as the labeled value line "Duration: 00:00:00".
-      final durationZeroFinder = find.textContaining('00:00:00');
+      // At rest the duration renders humanized: "Duration: 0m".
+      final durationZeroFinder = find.textContaining('0m');
       expect(durationZeroFinder, findsOneWidget);
 
       await tester.tap(recordIconFinder);

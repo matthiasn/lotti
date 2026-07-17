@@ -143,6 +143,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   balanced on both light and dark surfaces. Provider, category, recording, and
   task-handoff controls are keyboard operable, and scaled text switches work
   areas to a readable single-column layout.
+- **The logbook now matches the rest of the app.** On desktop it uses the same
+  split layout as Tasks: the entry list stays on the left, and opening an entry
+  fills a reading panel on the right instead of navigating away — with its own
+  resizable divider, a highlighted selected row, and no duplicate back button
+  or add button in the panel. The list got the same titled header as Tasks and
+  Projects (Logbook title, compact search, filter), denser cards with the same
+  font sizes as task rows, and the entry details page now shares one unified
+  background with the list, presenting the entry as a card with text capped at
+  a comfortable reading width on wide windows. On phones the logbook still
+  opens entries as their own page, restyled to match.
 - **The desktop sidebar is navigation-first and keeps important task filters
   visible.** Saved task filters now appear directly under Tasks with live
   counts. The first five follow the order you set, More expands the complete

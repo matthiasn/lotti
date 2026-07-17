@@ -13,6 +13,7 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/state/journal_page_subscriptions.dart';
 import 'package:lotti/features/journal/state/journal_paging_controller.dart';
 import 'package:lotti/features/journal/state/journal_query_runner.dart';
+import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -107,7 +108,7 @@ class JournalPageController extends Notifier<JournalPageState>
   AgentAssignmentFilter _agentAssignmentFilter = AgentAssignmentFilter.all;
   int? _postFilterNextRawOffset;
   @override
-  Set<String> _selectedTaskStatuses = {'OPEN', 'GROOMED', 'IN PROGRESS'};
+  Set<String> _selectedTaskStatuses = {...defaultSelectedTaskStatuses};
 
   @override
   JournalPageState build() {
@@ -180,6 +181,7 @@ class JournalPageController extends Notifier<JournalPageState>
       showTasks: _showTasks,
       pagingController: controller,
       selectedEntryTypes: _selectedEntryTypes.toList(),
+      allowedEntryTypes: _allowedEntryTypes(),
       selectedCategoryIds: _selectedCategoryIds,
       selectedProjectIds: _selectedProjectIds,
       selectedLabelIds: _selectedLabelIds,
@@ -323,6 +325,7 @@ class JournalPageController extends Notifier<JournalPageState>
       showPrivateEntries: _showPrivateEntries,
       showTasks: _showTasks,
       selectedEntryTypes: _selectedEntryTypes.toList(),
+      allowedEntryTypes: _allowedEntryTypes(),
       fullTextMatches: _fullTextMatches,
       selectedTaskStatuses: _selectedTaskStatuses,
       selectedCategoryIds: _selectedCategoryIds,
@@ -490,6 +493,15 @@ class JournalPageController extends Notifier<JournalPageState>
     );
     return result.entities;
   }
+
+  /// The entry types active feature flags currently permit — the baseline the
+  /// un-narrowed selection matches. Mirrors the reconciliation in
+  /// [JournalPageSubscriptions.applyJournalConfigFlags].
+  List<String> _allowedEntryTypes() => computeAllowedEntryTypes(
+    events: _enableEvents,
+    habits: _enableHabits,
+    dashboards: _enableDashboards,
+  );
 
   JournalQueryParams _buildQueryParams() {
     // An empty selection means "no status filter" → query across all statuses

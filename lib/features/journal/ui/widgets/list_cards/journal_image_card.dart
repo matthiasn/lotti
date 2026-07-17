@@ -19,6 +19,7 @@ import 'package:lotti/widgets/cards/index.dart';
 class ModernJournalImageCard extends StatelessWidget {
   const ModernJournalImageCard({
     required this.item,
+    this.selected = false,
     super.key,
   });
 
@@ -26,6 +27,9 @@ class ModernJournalImageCard extends StatelessWidget {
   static const double _thumbnailSize = 104;
 
   final JournalImage item;
+
+  /// Whether this entry is the one open in the desktop detail pane.
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -39,10 +43,17 @@ class ModernJournalImageCard extends StatelessWidget {
 
     return ModernBaseCard(
       onTap: onTap,
+      selected: selected,
       backgroundColor: dsCardSurface(context),
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingLarge,
-        vertical: AppTheme.cardSpacing / 2,
+      // Same flat material and seam as ModernJournalCard so image rows sit on
+      // one surface recipe with the rest of the feed: hairline decorative
+      // border, no drop shadow, and the step2 (8px) vertical gap between
+      // neighbours rather than a hairline stripe.
+      borderColor: tokens.colors.decorative.level01,
+      customShadows: const [],
+      margin: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step5,
+        vertical: tokens.spacing.step2,
       ),
       padding: EdgeInsets.zero,
       child: Row(

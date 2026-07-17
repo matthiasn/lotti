@@ -9,6 +9,7 @@ class ModernStatusChip extends StatelessWidget {
   const ModernStatusChip({
     required this.label,
     required this.color,
+    this.labelColor,
     this.icon,
     this.isDark,
     this.borderWidth,
@@ -17,6 +18,12 @@ class ModernStatusChip extends StatelessWidget {
 
   final String label;
   final Color color;
+
+  /// Overrides the label/icon ink while [color] keeps carrying the tint —
+  /// used where a colored chip must match the luminance tier of its neutral
+  /// neighbours (hue-only differentiation).
+  final Color? labelColor;
+
   final IconData? icon;
   final bool? isDark;
   final double? borderWidth;
@@ -36,9 +43,11 @@ class ModernStatusChip extends StatelessWidget {
       alpha: AppTheme.alphaStatusIndicatorBorder,
     );
 
-    final contentColor = color.withValues(
-      alpha: effectiveIsDark ? 0.9 : 0.8,
-    );
+    final contentColor =
+        labelColor ??
+        color.withValues(
+          alpha: effectiveIsDark ? 0.9 : 0.8,
+        );
 
     return Container(
       padding: const EdgeInsets.symmetric(

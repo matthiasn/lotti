@@ -19,6 +19,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -296,6 +297,33 @@ void main() {
       expect(_byPrivateType('PulsingBorder'), findsNothing);
       expect(_byPrivateType('TimerBorder'), findsNothing);
     });
+
+    testWidgets(
+      'wraps the entry body in a section card on the shared canvas',
+      (tester) async {
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              child: EntryDetailsWidget(
+                itemId: testTextEntry.meta.id,
+                showAiEntry: false,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // The entry body always renders as a level02 section card — the same
+        // card-on-canvas recipe as the logbook list rows.
+        expect(find.byType(DesignSystemSectionCard), findsOneWidget);
+        expect(find.byType(EntryDetailsContent), findsOneWidget);
+      },
+    );
 
     testWidgets('renders with highlight when isHighlighted=true', (
       tester,

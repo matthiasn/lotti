@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -27,14 +28,21 @@ void main() {
         const DesktopDetailEmptyState(message: 'Select a task'),
       );
 
+      // Delegates to the shared DesignSystemEmptyState grammar: step9 glyph,
+      // subtitle1/highEmphasis title.
+      expect(find.byType(DesignSystemEmptyState), findsOneWidget);
       final icon = tester.widget<Icon>(
         find.byIcon(Icons.touch_app_outlined),
       );
-      expect(icon.size, 48);
+      expect(icon.size, dsTokensDark.spacing.step9);
       expect(icon.color, dsTokensDark.colors.text.lowEmphasis);
 
       final message = tester.widget<Text>(find.text('Select a task'));
-      expect(message.style?.color, dsTokensDark.colors.text.mediumEmphasis);
+      expect(message.style?.color, dsTokensDark.colors.text.highEmphasis);
+      expect(
+        message.style?.fontSize,
+        dsTokensDark.typography.styles.subtitle.subtitle1.fontSize,
+      );
       expect(message.textAlign, TextAlign.center);
     });
 

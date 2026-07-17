@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
+import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
@@ -20,7 +22,6 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
-import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
@@ -223,6 +224,17 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
               query: state.match,
               searchHint: context.messages.searchTasksHint,
               filterTooltip: context.messages.tasksFilterTitle,
+              // A status selection differing from the default open-work set is
+              // itself a narrowing, alongside the optional facets.
+              filtersActive:
+                  state.selectedCategoryIds.isNotEmpty ||
+                  state.selectedLabelIds.isNotEmpty ||
+                  state.selectedPriorities.isNotEmpty ||
+                  state.selectedProjectIds.isNotEmpty ||
+                  !setEquals(
+                    state.selectedTaskStatuses,
+                    defaultSelectedTaskStatuses,
+                  ),
               onSearchChanged: (value) {
                 unawaited(controller.setSearchString(value));
               },
@@ -316,7 +328,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
 
                                 return KeyedSubtree(
                                   key: ValueKey(item.meta.id),
-                                  child: ProjectsOverviewContentWidth(
+                                  child: DetailContentWidth(
                                     child: TaskBrowseListItem(
                                       entry: entry,
                                       sortOption: state.sortOption,
@@ -530,7 +542,7 @@ class _TasksTabActiveFilters extends ConsumerWidget {
     if (chips.isEmpty) return const SizedBox.shrink();
 
     final tokens = context.designTokens;
-    return ProjectsOverviewContentWidth(
+    return DetailContentWidth(
       child: Padding(
         padding: EdgeInsets.only(bottom: tokens.spacing.step5),
         child: SizedBox(

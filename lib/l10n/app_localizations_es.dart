@@ -48,6 +48,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get addHabitDateLabel => 'Completado a las';
 
   @override
+  String get addLinkedEntryLabel => 'Añadir entrada vinculada';
+
+  @override
   String get addMeasurementCommentLabel => 'Comentario';
 
   @override
@@ -6528,6 +6531,23 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get linkExistingTask => 'Vincular tarea existente...';
+
+  @override
+  String get logbookEmptyHint =>
+      'Crea tu primera entrada para empezar tu diario.';
+
+  @override
+  String get logbookEmptyTitle => 'Tu diario está vacío';
+
+  @override
+  String get logbookNewEntriesHint => 'Las nuevas entradas se abrirán aquí.';
+
+  @override
+  String get logbookNoMatchesHint =>
+      'Ajusta tu búsqueda o tus filtros para ver más.';
+
+  @override
+  String get logbookNoMatchesTitle => 'Ninguna entrada coincide';
 
   @override
   String get loggingDomainAgentRuntime => 'Runtime de agentes';

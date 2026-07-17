@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -30,7 +31,6 @@ import 'package:lotti/features/ratings/ui/rating_summary.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -46,7 +46,7 @@ import 'package:lotti/utils/consts.dart';
 /// This is the outer shell: it hides deleted/AI-suppressed entries, renders a
 /// task as a [ModernJournalCard] when `showTaskDetails` is false (so a linked
 /// task collapses to a compact card), and otherwise wraps
-/// [EntryDetailsContent] in a [TaskDetailSectionCard]. It also paints the two
+/// [EntryDetailsContent] in a [DesignSystemSectionCard]. It also paints the two
 /// mutually exclusive border decorations: a persistent [TimerBorder] for the
 /// actively-recording entry (`isActiveTimer`) and a temporary [PulsingBorder]
 /// in the entry's category color for scroll-to highlights (`isHighlighted`).
@@ -109,11 +109,12 @@ class EntryDetailsWidget extends ConsumerWidget {
     final isAudio = item is JournalAudio;
 
     if (isTask && !showTaskDetails) {
+      final tokens = context.designTokens;
       return Padding(
-        padding: const EdgeInsets.only(
-          left: AppTheme.spacingXSmall,
-          right: AppTheme.spacingXSmall,
-          bottom: AppTheme.spacingXSmall,
+        padding: EdgeInsets.only(
+          left: tokens.spacing.step2,
+          right: tokens.spacing.step2,
+          bottom: tokens.spacing.step2,
         ),
         child: ModernJournalCard(
           item: item,
@@ -124,9 +125,16 @@ class EntryDetailsWidget extends ConsumerWidget {
     }
 
     final tokens = context.designTokens;
+    // Standalone detail pages share the list's step5 canvas gutter so the
+    // list -> detail transition keeps one content rail; embedded in a
+    // parent's linked-entries column the tighter step2 inset stays, since the
+    // parent already supplies the outer gutter.
+    final horizontalInset = linkedFrom == null
+        ? tokens.spacing.step5
+        : tokens.spacing.step2;
     final cardMargin = EdgeInsets.only(
-      left: tokens.spacing.step2,
-      right: tokens.spacing.step2,
+      left: horizontalInset,
+      right: horizontalInset,
       bottom: tokens.spacing.step4,
     );
 
@@ -147,29 +155,35 @@ class EntryDetailsWidget extends ConsumerWidget {
       );
     }
 
-    final card = TaskDetailSectionCard(
-      key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
+    // One shared shell inset: a consistent left/right gutter so every card
+    // type aligns to a single content edge. The top is tighter (step3) because
+    // the header's tap targets already supply visual air; the bottom takes the
+    // full gutter (step4) so the last content line does not crowd the edge.
+    final shellPadding = EdgeInsets.fromLTRB(
+      tokens.spacing.step4,
+      tokens.spacing.step3,
+      tokens.spacing.step4,
+      tokens.spacing.step4,
+    );
+    final cardKey = isAudio
+        ? Key('$itemId-${item.meta.vectorClock}')
+        : Key(itemId);
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        EntryDetailsContent(
+          itemId,
+          linkedFrom: linkedFrom,
+          link: link,
+        ),
+      ],
+    );
+
+    final card = DesignSystemSectionCard(
+      key: cardKey,
       margin: cardMargin,
-      // One shared shell inset: a consistent left/right gutter so every card
-      // type aligns to a single content edge. The top is tighter (step3) because
-      // the header's tap targets already supply visual air; the bottom takes the
-      // full gutter (step4) so the last content line does not crowd the edge.
-      padding: EdgeInsets.fromLTRB(
-        tokens.spacing.step4,
-        tokens.spacing.step3,
-        tokens.spacing.step4,
-        tokens.spacing.step4,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          EntryDetailsContent(
-            itemId,
-            linkedFrom: linkedFrom,
-            link: link,
-          ),
-        ],
-      ),
+      padding: shellPadding,
+      child: body,
     );
 
     // Timer highlight takes precedence (persistent, border-centric glow)
@@ -201,7 +215,7 @@ class EntryDetailsWidget extends ConsumerWidget {
       final category = getIt<EntitiesCacheService>().getCategoryById(
         categoryId,
       );
-      const fallback = Colors.pink;
+      final fallback = context.designTokens.colors.interactive.enabled;
       final categoryColor = category != null
           ? colorFromCssHex(category.color)
           : fallback;
@@ -439,6 +453,10 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
         mainAxisSize: MainAxisSize.min,
         children: [
           header,
+          // Explicit header→body boundary. The header's action buttons carry
+          // tap-target overhang, but overhang is not rhythm — without a real
+          // gap the first body line crowds the header on phones.
+          SizedBox(height: context.designTokens.spacing.step3),
           ..._withRhythm(context, body),
           if (item is JournalAudio)
             NestedAiResponsesWidget(

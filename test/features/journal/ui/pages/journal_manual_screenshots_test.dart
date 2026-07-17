@@ -64,7 +64,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:lotti/widgets/modal/index.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -713,12 +712,9 @@ void main() {
           brightness: brightness,
           home: const InfiniteJournalPage(),
         );
-        await tester.tap(
-          find.descendant(
-            of: find.byType(JournalFilterIcon),
-            matching: find.byType(IconButton),
-          ),
-        );
+        // The logbook filter now opens from the TabSectionHeader's trailing
+        // filter icon instead of the old sliver-appbar filter button.
+        await tester.tap(find.byIcon(Icons.filter_list_rounded));
         await settleFrames(tester, 6);
         final messages = _messages(tester);
         expect(

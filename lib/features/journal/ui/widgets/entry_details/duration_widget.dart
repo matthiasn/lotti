@@ -223,15 +223,24 @@ class FormattedTime extends StatelessWidget {
     // (tabular + open four/six/nine + slashed zero) so the running counter keeps
     // a constant digit width and stays legible, instead of a bare unlabelled
     // time + glyph.
-    final labelStyle = tokens.typography.styles.body.bodySmall.copyWith(
-      color: labelColor,
+    // Caption tier: the footer is metadata and must not read as one more
+    // body sentence; only the value keeps weight. While recording, the label
+    // inherits the caller's live color (error red) so the running state
+    // stays unmistakable.
+    final labelStyle = tokens.typography.styles.others.caption.copyWith(
+      color: isRecording ? labelColor : tokens.colors.text.mediumEmphasis,
     );
     final valueStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: isRecording ? labelColor : tokens.colors.text.highEmphasis,
       fontWeight: FontWeight.w600,
       fontFeatures: numericBadgeFontFeatures,
     );
-    final text = formatDuration(entryDuration(displayed));
+    // While recording, a ticking HH:MM:SS counter (seconds are the point);
+    // at rest, the humanized day-aware form ("48m", "1h 5m") — the frozen
+    // "00:48:00" read as log output rather than a duration.
+    final text = isRecording
+        ? formatDuration(entryDuration(displayed))
+        : formatRangeDuration(entryDuration(displayed));
     return Text.rich(
       TextSpan(
         children: [

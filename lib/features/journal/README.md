@@ -93,6 +93,34 @@ That includes, among others:
 
 That breadth is why this feature feels large. It is not "the text note feature". It is the shared create/edit/browse substrate for a whole family of entry types.
 
+## Split Layout and Routing
+
+[`journal_root_page.dart`](ui/pages/journal_root_page.dart) is the responsive entry point mounted at `/journal`. Below the shared `kDesktopBreakpoint` (960px) it is just the full-width `InfiniteJournalPage`, and `JournalLocation` pushes `EntryDetailsPage` as its own route on entry taps — the mobile behavior. On desktop it renders the same list beside a resizable detail pane, mirroring `TasksRootPage`/`ProjectsTabPage`: `ListDetailFocusTraversal(list + ResizableDivider + detail)`, with the pane width coming from `paneWidthControllerProvider.journalListPaneWidth` (its own persisted `PANE_WIDTH_JOURNAL_LIST` key, independent of the tasks/projects list width).
+
+Selection is URL-driven: journal-entry rows `beamToNamed('/journal/<id>')`, while task and event rows route to their home tabs instead (`/tasks/<id>`, `/events/<id>`); `JournalLocation` branches on `NavService.isDesktopMode` and either pushes the details route (mobile) or writes `NavService.desktopSelectedEntryId` in a microtask (desktop). `CardWrapperWidget` listens to the same notifier to highlight the selected row, and the detail pane cross-fades between entries with an `AnimatedSwitcher` (480ms, matching tasks).
+
+There is one non-URL write: `_AutoSelectNewestEntry` (in `journal_root_page.dart`) watches the feed's paging controller and, whenever the selection is null and the feed has loaded, selects the newest non-task/non-event entry post-frame — so the desktop split opens on "read the latest entry" with zero taps. Tasks and events are skipped because they open in their own tabs; their rows carry a small trailing `open_in_new` glyph (medium emphasis, destination tooltip) to signal that.
+
+Empty states share one grammar via `DesignSystemEmptyState` (design-system component: glyph, `subtitle1` title, `caption` hint, optional action). The list's zero-state (`_LogbookEmptyState`) distinguishes a genuinely empty logbook — first-run copy plus an inline "Create new entry" button wired to the same `CreateEntryModal` as the FAB, while the corner FAB hides so there is a single create affordance — from a search/filter-narrowed feed ("No entries match" + recovery hint, no CTA). The desktop detail pane's empty state shows whenever no eligible entry is selected — a genuinely empty feed, but also one whose loaded entries are all tasks/events, since those are never auto-selected — and defers with a caption-tier "New entries will open here." hint instead of echoing the list's title.
+
+```mermaid
+stateDiagram-v2
+    [*] --> ListOnly: /journal
+    state "mobile (&lt;960px)" as m {
+        ListOnly --> PushedDetails: tap row → beam /journal/id
+        PushedDetails --> ListOnly: back
+    }
+    state "desktop (≥960px)" as d {
+        EmptyPane: split, no selection
+        SelectedPane: split, entry in right pane
+        EmptyPane --> SelectedPane: beam /journal/id → notifier = id
+        SelectedPane --> SelectedPane: tap another row (crossfade)
+        SelectedPane --> EmptyPane: beam /journal → notifier = null
+    }
+```
+
+In the desktop split the detail page is embedded with `showBackButton: false` and `showFloatingActionButton: false` — the list pane provides both the way back and the create FAB, so the pane renders neither.
+
 ## Detail Surface
 
 [`entry_details_page.dart`](ui/pages/entry_details_page.dart) is the outer detail-page shell.
@@ -106,9 +134,12 @@ It composes:
 - media entry Actions menu items for images and audio, including
   file-manager reveal actions on desktop platforms
 - a floating add action button scoped to the current entry and category and
-  lifted above the shared bottom-navigation shell
+  lifted above the shared bottom-navigation shell (suppressed in the desktop
+  split, where the list pane owns the FAB)
 - a drag-and-drop target for media import
 - an AI-running overlay card at the bottom of the page
+
+The page paints `dsPageSurface` (`#181818` in dark) as its scaffold and pinned-app-bar background — one unified canvas shared with the logbook list column — and `EntryDetailsWidget` wraps the entry body in a `DesignSystemSectionCard` (`#222222`), the same card-on-canvas recipe the list rows use. Content is centered under `kDetailContentMaxWidth` (760px), the shared reading measure also used by the tasks detail pane. The duration footer sits under a hairline `decorative.level01` divider inside the card so it reads as chrome, not as another sentence of the entry.
 
 `EntryDetailsWidget` is the central type dispatcher. It renders the shared header, labels, editor, footer, and then switches into the right feature-specific summary or form for the current `JournalEntity`.
 
@@ -297,6 +328,8 @@ stateDiagram-v2
 
 [`infinite_journal_page.dart`](ui/pages/infinite_journal_page.dart) is the journal-tab browse page. It is hardcoded to `journalPageControllerProvider(false)` (`showTasks=false`) and is wired only into the journal route. The tasks tab has its own page widget, `TasksTabPage` in the tasks feature (`lib/features/tasks/ui/pages/tasks_tab_page.dart`), which watches `journalPageControllerProvider(true)`. What is shared between the two tabs is the controller (`JournalPageController`, keyed by `showTasks`), not the page widget.
 
+The page body is a `Column`: the shared `TabSectionHeader` (the same titled header Tasks and Projects use — "Logbook" title, notification bell, compact search field, accent filter icon), an optional [`LogbookSearchModeRow`](ui/widgets/logbook_search_mode_row.dart) when the vector-search flag is on, and the paged feed in an `Expanded` scroll view. The filter icon opens the two-page Wolt filter modal via [`showLogbookFilterModal`](ui/widgets/logbook_filter_modal.dart), which also hosts `JournalFilter` (the starred/flagged/private pills) and `LogbookFilterSheet`. There is no sliver app bar on this page anymore.
+
 Its job is mostly composition. The heavy lifting sits in [`journal_page_controller.dart`](state/journal_page_controller.dart).
 
 The controller owns:
@@ -313,7 +346,7 @@ The controller owns:
 
 ### List Row Cards
 
-Each browse row is rendered by [`CardWrapperWidget`](ui/widgets/list_cards/card_wrapper_widget.dart), the per-row dispatcher: images go to `ModernJournalImageCard`, tasks to `ModernTaskCard`, and every other entry type to `ModernJournalCard`. All three share one visual anatomy so the feed reads as a single system:
+Each browse row is rendered by [`CardWrapperWidget`](ui/widgets/list_cards/card_wrapper_widget.dart), the per-row dispatcher: images go to `ModernJournalImageCard`, every other entry type — including tasks — to `ModernJournalCard`, so the feed keeps one card anatomy. On desktop the wrapper also listens to `NavService.desktopSelectedEntryId` and passes `selected` down, so the row whose entry fills the split-pane details renders `ModernBaseCard`'s activated fill + accent border (tasks and events are excluded — they open in their own tabs). Row typography sits on the tasks list scale: titles/previews at `subtitle2` (14px), secondary lines at `others.caption` (12px), with token-based card padding (`step4`) and margins. Both cards share one visual anatomy so the feed reads as a single system:
 
 - a leading ~40dp **glyph tile** (`TintedTypeGlyph`) — the icon identifies the entry type, and the tile is tinted by the entry's **category** color (via `_categoryColor`), so the feed's left rail also colour-codes life-area at a glance;
 - a **content-first title** — the entry's own content (note preview, task/event title, humanized metric name) as the brightest element;

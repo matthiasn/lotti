@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
@@ -332,7 +333,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                     // Cap the content measure on wide windows so the task reads
                     // as a centered column rather than full-bleed text; this is
                     // non-binding at phone / narrow-pane widths.
-                    constraints: const BoxConstraints(maxWidth: 760),
+                    constraints: const BoxConstraints(
+                      maxWidth: kDetailContentMaxWidth,
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.only(
                         left: 15,
@@ -352,7 +355,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                 child: Center(
                   key: _belowCardKey,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 760),
+                    constraints: const BoxConstraints(
+                      maxWidth: kDetailContentMaxWidth,
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.only(
                         top: 8,
