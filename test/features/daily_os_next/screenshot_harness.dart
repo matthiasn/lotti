@@ -57,10 +57,10 @@ bool get screenshotCaptureEnabled =>
     Platform.environment['LOTTI_CAPTURE_SCREENSHOTS'] == 'true' ||
     Platform.environment.containsKey('LOTTI_SCREENSHOT_DIR');
 
-/// Loads the real app fonts (Inter, Inconsolata), Material icons, and the
-/// Material Design Icons webfont so captures render production glyphs instead
-/// of Ahem boxes/tofu. [captureScreenshot] loads the runtime fragment programs
-/// inside each active test render context. Call this from `setUpAll`.
+/// Loads the real app fonts (Inter, Inconsolata), color emoji, Material icons,
+/// and the Material Design Icons webfont so captures render production glyphs
+/// instead of Ahem boxes/tofu. [captureScreenshot] loads the runtime fragment
+/// programs inside each active test render context. Call this from `setUpAll`.
 Future<void> loadScreenshotFonts() async {
   TestWidgetsFlutterBinding.ensureInitialized();
   Future<ByteData> fontBytes(String path) async {
@@ -85,6 +85,18 @@ Future<void> loadScreenshotFonts() async {
   await inter.load();
   await inconsolata.load();
   await genericMonospace.load();
+
+  // Device builds resolve emoji through the platform font fallback. The
+  // headless Linux test engine does not discover that font by itself, so SAS
+  // verification rows otherwise publish literal "NO GLYPH" boxes. Register
+  // the installed Noto face under the same family used by the design-system
+  // fallback list.
+  final emojiFont = findEmojiFont();
+  if (emojiFont != null) {
+    final emoji = FontLoader('Noto Color Emoji')
+      ..addFont(fontBytes(emojiFont.path));
+    await emoji.load();
+  }
 
   final flutterRoot =
       Platform.environment['FLUTTER_ROOT'] ?? '.fvm/flutter_sdk';
@@ -122,6 +134,21 @@ Future<void> loadScreenshotFonts() async {
     )..addFont(fontBytes(mdiFont.path));
     await mdi.load();
   }
+}
+
+/// Finds the standard Noto Color Emoji installation used by Linux capture
+/// runners. Other platforms already provide their native emoji fallback.
+@visibleForTesting
+File? findEmojiFont() {
+  const candidates = [
+    '/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf',
+    '/usr/share/fonts/noto-color-emoji/NotoColorEmoji.ttf',
+  ];
+  for (final path in candidates) {
+    final file = File(path);
+    if (file.existsSync()) return file;
+  }
+  return null;
 }
 
 /// Locates the Material Design Icons webfont inside the pub cache without

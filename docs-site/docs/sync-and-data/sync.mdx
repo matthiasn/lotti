@@ -1,31 +1,149 @@
 ---
 title: Sync devices
-description: Keep Lotti data aligned across devices while preserving local ownership.
+description: Pair devices, verify their identity, monitor delivery, and recover missing data without guessing.
 ---
 
 # Sync devices
 
-Lotti can synchronize supported data between devices through its configured
-sync service. Setup and recovery are consequential operations, so the manual
-keeps this page deliberately conservative until the V1 onboarding flow is
-captured end to end.
+Lotti Sync keeps supported data aligned between your devices. Each device has
+its own local database; Sync moves changes through the configured sync account
+and catches a device up after it has been offline.
 
-## Before setup
+Open **Settings → Sync** to see the available setup, health, and recovery
+pages. The number beside **Outbox** is work that has not reached the sync
+service yet.
 
-- Make sure each device uses the intended sync account or node identity.
-- Keep a current backup before changing an established configuration.
-- Allow an initial synchronization to finish before judging missing content.
-- Avoid performing competing recovery or reset actions on multiple devices at
-  once.
+<ManualScreenshot
+  caseId="sync/hub"
+  alt="Lotti Sync settings with Provisioned Sync, device identity, backfill, statistics, outbox, conflicts, and maintenance"
+  caption="The Sync hub keeps everyday status near diagnostics and recovery tools. Project Waddle currently has three outbox items to inspect."
+/>
 
-Open **Settings → Sync** to inspect connection and activity state. Follow the
-in-app setup for the current platform rather than copying credentials from a
-screenshot.
+## Pair another device
 
-:::caution Draft coverage
+Start on a device that is already connected:
 
-This is a safe placeholder, not the finished V1 sync guide. The release gate
-tracks sync as incomplete until setup, second-device import, progress, offline
-catch-up, and recovery are documented with deterministic cases.
+1. Open **Settings → Sync → Provisioned Sync**.
+2. On desktop, show the handover QR code. Keep this screen private: the bundle
+   grants access to your sync account and room.
+3. On the new device, open the same page and scan the QR code or paste the
+   complete provisioning bundle.
+4. Review the decoded server, user, and room before selecting **Import**.
+5. Let the first synchronization finish before closing either app.
 
-:::
+<ManualScreenshot
+  caseId="sync/status"
+  alt="Provisioned Sync status on mobile and the secure device handover QR code on desktop"
+  caption="Desktop can present the handover QR code; mobile shows the connected account and verification state. Treat the QR code like a password."
+/>
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Lotti provisioning import review showing the Project Waddle sync server, user, and room"
+  caption="Import only when every decoded value belongs to the sync account you intended to join."
+/>
+
+If the import reports an error, keep the original device connected, generate a
+fresh handover bundle, and retry with the full value. Do not manually edit the
+encoded bundle.
+
+## Verify the new device
+
+Pairing connects the device; verification confirms that both devices are
+talking to each other without an unknown device in the middle.
+
+<ManualScreenshot
+  caseId="sync/verification"
+  alt="Lotti device verification comparing a sequence of penguin, fish, rocket, ice, Earth, moon, star, and telescope emoji"
+  caption="Compare the entire emoji sequence on both devices. Accept only when every image and its order match exactly."
+/>
+
+Compare the emoji in person or over a trusted call. Select **Accept** on both
+devices only when the complete sequence matches. If even one emoji differs,
+cancel verification and investigate the account and device names before
+trying again.
+
+## Name devices and advertise capabilities
+
+**Sync node profile** identifies the current device to the rest of the sync
+group. Give it a name that distinguishes the physical machine, such as
+“Mission Control Mac” rather than “Desktop.”
+
+<ManualScreenshot
+  caseId="sync/node-profile"
+  alt="Lotti Sync node profile for Mission Control Mac with local inference capabilities and known Project Waddle devices"
+  caption="Clear device names make verification, diagnostics, and device-pinned local inference much easier to audit."
+/>
+
+The page also lists capabilities the device can provide, such as local audio
+transcription or local language-model inference. Known devices show what the
+other nodes most recently advertised. Capability availability is descriptive;
+the relevant AI profile must still be configured to use it.
+
+## Understand catch-up and backfill
+
+Normal sync processes changes as they arrive. **Backfill** detects gaps in the
+sequence received from known devices and requests missing records again.
+
+<ManualScreenshot
+  caseId="sync/backfill"
+  alt="Lotti Sync Backfill page showing inbound, missing, and skipped status plus sequence statistics and automatic backfill"
+  caption="Project Waddle has received 2,868 sequence records and currently knows about four missing records across two device IDs."
+/>
+
+- **Inbound** is work currently waiting in the incoming queue.
+- **Missing** is the number of known sequence gaps.
+- **Skipped** is work the inbound queue abandoned after it could not be
+  processed normally.
+- **Automatic backfill** continuously requests recoverable gaps and is the
+  right default for normal use.
+- **Advanced recovery** contains manual controls for an investigation. Use it
+  only after ordinary sync and automatic backfill have had time to settle.
+
+A non-zero missing count is not automatically data loss: another device may
+still be offline, or the request may already be in flight. Investigate when the
+count remains unchanged while all expected devices are online.
+
+## Read Sync Statistics
+
+**Sync Statistics** separates message volume from processing health. It is
+useful when data looks stale but the account still reports as connected.
+
+<ManualScreenshot
+  caseId="sync/stats"
+  alt="Lotti Matrix Sync Statistics with sent message counts, top processing KPIs, message types, failures, retries, and entity totals"
+  caption="Counts establish whether messages are moving; failures and scheduled retries show whether the pipeline is moving cleanly."
+/>
+
+The sent-message card groups Matrix event types. **Top KPIs** summarizes
+processed messages, failures, and scheduled retries, while the entity totals
+show which Lotti payload families contributed to that work. A rising processed
+count with stable failures is healthy. Repeated failures or retries that never
+clear call for checking the outbox and the connectivity of the other device.
+
+## Inspect the Outbox
+
+The **Outbox** is the local queue of changes waiting to be sent. Filter it by
+state to separate active work from failures.
+
+<ManualScreenshot
+  caseId="sync/outbox"
+  alt="Lotti Sync Outbox filtered to a failed Project Waddle habitat pressure-seal photo with retry and removal actions"
+  caption="Failed items keep their subject, payload details, retry history, and local attachment path so recovery is specific rather than blind."
+/>
+
+- **Pending** items are waiting for their turn.
+- **Sending** items are currently in flight.
+- **Failed** items exhausted their current attempt and remain available for
+  inspection.
+- **Sent** items have been delivered and are retained temporarily for
+  diagnostics.
+
+Use **Retry all** after the underlying connection or account problem is fixed.
+Remove a failed item only when you intentionally do not want that change to
+reach other devices. Removing it from the outbox is not a substitute for
+repairing the corresponding local entry or attachment.
+
+Continue with [Resolve sync conflicts](./conflicts.mdx) when two devices edited
+the same entry independently, or [Sync maintenance](./maintenance.mdx) for
+database-level recovery tools.

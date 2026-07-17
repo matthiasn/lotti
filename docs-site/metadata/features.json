@@ -317,10 +317,39 @@
     },
     {
       "id": "sync",
-      "title": "Sync",
+      "title": "Sync and recovery",
       "page": "sync-and-data/sync",
-      "status": "draft",
-      "screenshotCases": []
+      "status": "verified",
+      "screenshotCases": [
+        "sync/hub",
+        "sync/provisioned",
+        "sync/status",
+        "sync/verification",
+        "sync/node-profile",
+        "sync/backfill",
+        "sync/stats",
+        "sync/outbox"
+      ]
+    },
+    {
+      "id": "sync-conflicts",
+      "title": "Sync conflict resolution",
+      "page": "sync-and-data/conflicts",
+      "status": "verified",
+      "screenshotCases": [
+        "sync/conflicts",
+        "sync/conflict-detail",
+        "sync/conflict-combine"
+      ]
+    },
+    {
+      "id": "sync-maintenance",
+      "title": "Sync maintenance",
+      "page": "sync-and-data/maintenance",
+      "status": "verified",
+      "screenshotCases": [
+        "sync/maintenance"
+      ]
     }
   ]
 }

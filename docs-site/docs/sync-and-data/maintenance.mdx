@@ -1,0 +1,40 @@
+---
+title: Sync maintenance
+description: Use Matrix sync repair and cleanup actions deliberately, from re-sending records to rebuilding sequence history.
+---
+
+# Sync maintenance
+
+Open **Settings → Sync → Maintenance** for database-level repair and cleanup.
+These actions are not part of routine pairing or day-to-day synchronization.
+Before using them, let active writes finish and keep a current backup of data
+you cannot recreate.
+
+<ManualScreenshot
+  caseId="sync/maintenance"
+  alt="Lotti Matrix Sync Maintenance with sync database deletion, definition sync, message re-sync, sequence-log population, and sent-outbox purge"
+  caption="Maintenance groups destructive, replay, and cleanup actions on one page. The confirmation text defines the scope of each operation."
+/>
+
+## Choose the narrowest repair
+
+- **Delete Sync Database** removes the local sync database. This is destructive
+  local recovery, not a normal way to disconnect a device.
+- **Sync definitions** sends the current definition records again, such as
+  categories and other shared configuration.
+- **Re-sync messages** replays selected messages when remote state is missing
+  or an earlier delivery needs to be repeated.
+- **Populate sequence log** reconstructs the local sequence history used to
+  detect gaps and drive backfill.
+- **Purge old sent outbox items** deletes already-sent diagnostic queue history
+  after its retention period. It does not remove pending or failed work.
+
+Start with the smallest operation that matches the symptom. A stuck attachment
+belongs in the [Outbox](./sync.mdx#inspect-the-outbox); persistent sequence gaps
+belong in Backfill; two valid concurrent edits belong in
+[Conflicts](./conflicts.mdx). Deleting the sync database should be a last-resort
+local reset performed with a known-good peer and backup available.
+
+After a repair, return to **Sync Statistics**, confirm that processed work is
+advancing without a growing failure count, and check that the Outbox and
+Backfill missing count settle.

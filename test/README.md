@@ -564,6 +564,11 @@ shared `test/features/daily_os_next/screenshot_harness.dart` helper:
 must show the same bundled runtime effects as the app, not simplified test
 stand-ins.
 
+`loadScreenshotFonts` also registers the Linux runner's Noto Color Emoji face.
+Without that explicit registration, device-verification SAS rows render
+literal `NO GLYPH` boxes even though production devices resolve the same emoji
+through their platform font fallback.
+
 ## Migration Status
 
 This codebase is in the process of migrating all tests to fake time. See:

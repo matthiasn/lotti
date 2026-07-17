@@ -1034,6 +1034,138 @@
         "desktop-light": "agents_instance_detail_desktop_light.png",
         "desktop-dark": "agents_instance_detail_desktop_dark.png"
       }
+    },
+    {
+      "id": "sync/hub",
+      "title": "Sync settings hub",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_hub_mobile_light.png",
+        "mobile-dark": "sync_hub_mobile_dark.png",
+        "desktop-light": "sync_hub_desktop_light.png",
+        "desktop-dark": "sync_hub_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/provisioned",
+      "title": "Provisioning bundle import",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_provisioned_mobile_light.png",
+        "mobile-dark": "sync_provisioned_mobile_dark.png",
+        "desktop-light": "sync_provisioned_desktop_light.png",
+        "desktop-dark": "sync_provisioned_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/status",
+      "title": "Provisioned sync status",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_status_mobile_light.png",
+        "mobile-dark": "sync_status_mobile_dark.png",
+        "desktop-light": "sync_status_desktop_light.png",
+        "desktop-dark": "sync_status_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/verification",
+      "title": "Sync device verification",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_verification_mobile_light.png",
+        "mobile-dark": "sync_verification_mobile_dark.png",
+        "desktop-light": "sync_verification_desktop_light.png",
+        "desktop-dark": "sync_verification_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/node-profile",
+      "title": "Sync node profile",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_node_profile_mobile_light.png",
+        "mobile-dark": "sync_node_profile_mobile_dark.png",
+        "desktop-light": "sync_node_profile_desktop_light.png",
+        "desktop-dark": "sync_node_profile_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/backfill",
+      "title": "Sync backfill",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_backfill_mobile_light.png",
+        "mobile-dark": "sync_backfill_mobile_dark.png",
+        "desktop-light": "sync_backfill_desktop_light.png",
+        "desktop-dark": "sync_backfill_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/stats",
+      "title": "Matrix sync metrics",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_stats_mobile_light.png",
+        "mobile-dark": "sync_stats_mobile_dark.png",
+        "desktop-light": "sync_stats_desktop_light.png",
+        "desktop-dark": "sync_stats_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/outbox",
+      "title": "Sync outbox",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_outbox_mobile_light.png",
+        "mobile-dark": "sync_outbox_mobile_dark.png",
+        "desktop-light": "sync_outbox_desktop_light.png",
+        "desktop-dark": "sync_outbox_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/conflicts",
+      "title": "Sync conflicts",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_conflicts_mobile_light.png",
+        "mobile-dark": "sync_conflicts_mobile_dark.png",
+        "desktop-light": "sync_conflicts_desktop_light.png",
+        "desktop-dark": "sync_conflicts_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/conflict-detail",
+      "title": "Sync conflict resolution",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_conflict_detail_mobile_light.png",
+        "mobile-dark": "sync_conflict_detail_mobile_dark.png",
+        "desktop-light": "sync_conflict_detail_desktop_light.png",
+        "desktop-dark": "sync_conflict_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/conflict-combine",
+      "title": "Sync conflict field combination",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_conflict_combine_mobile_light.png",
+        "mobile-dark": "sync_conflict_combine_mobile_dark.png",
+        "desktop-light": "sync_conflict_combine_desktop_light.png",
+        "desktop-dark": "sync_conflict_combine_desktop_dark.png"
+      }
+    },
+    {
+      "id": "sync/maintenance",
+      "title": "Matrix sync maintenance",
+      "sourceTest": "test/features/sync/ui/sync_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "sync_maintenance_mobile_light.png",
+        "mobile-dark": "sync_maintenance_mobile_dark.png",
+        "desktop-light": "sync_maintenance_desktop_light.png",
+        "desktop-dark": "sync_maintenance_desktop_dark.png"
+      }
     }
   ]
 }
