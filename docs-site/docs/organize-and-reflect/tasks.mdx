@@ -27,6 +27,60 @@ including the task list and linked Daily OS agenda items.
 The same task can hold a description, category, labels, due date, time records,
 checklist items, images, links, and audio recordings.
 
+## Assign a task agent
+
+A task can have one task agent. Assigning one gives that task a persistent AI
+assistant with its own inference setup, report, wake state, and proposal
+history. The agent reads the task and its linked context, distils the current
+situation into a short report, and can surface proposed task or checklist
+changes for you to confirm or reject.
+
+The assigned agent appears below the task's checklists and linked tasks. Its
+collapsed card keeps the latest summary, automatic-update control, **Wake
+agent** action, and active model route visible without making the task page
+feel like an AI console.
+
+<ManualScreenshot
+  caseId="tasks/agent-card"
+  alt="Assigned Habitat Watcher task agent on the orbital penguin habitat task, showing its current summary, automatic updates, wake action, and Project Waddle model route"
+  caption="Habitat Watcher is assigned to this task; assignment and automatic updates are separate choices."
+/>
+
+Choose **Read more** to expand the complete report in place. The expanded card
+keeps the task visible, adds the report's supporting assessment and recommended
+next step, and offers **Open agent internals** when you need reports,
+conversations, observations, or runtime details.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-expanded"
+  alt="Expanded Habitat Watcher task-agent card with the full Project Waddle habitat assessment and recommended next step"
+  caption="The full report expands inside the task instead of sending you to a separate page."
+/>
+
+### Choose automatic or manual updates
+
+New task agents start with **Automatic updates off**. Assignment alone does not
+spend tokens in the background. While updates are off, Lotti continues to
+notice relevant changes to the task and its linked entries, marks an older
+summary as out of date, and waits for you to choose **Wake agent**. A manual
+wake remains available whenever the agent has a working AI setup.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-manual"
+  alt="Habitat Watcher task-agent card with automatic updates off, an out-of-date report notice, and a manual Wake agent action"
+  caption="Manual mode observes changes and reports staleness without starting inference."
+/>
+
+When **Automatic updates** are on, Lotti bundles matching task changes for
+about two minutes before scheduling a refresh. This coalescing avoids an agent
+wake for every small edit. **Wake agent** is still available for an immediate,
+user-requested refresh.
+
+Turning automatic updates off clears its pending countdown and queued
+automatic refreshes, but does not cancel a wake you explicitly requested.
+Turning it on again applies to future changes; it does not replay changes that
+arrived while automation was off.
+
 ## Priority
 
 Lotti uses four compact priority levels:

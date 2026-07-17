@@ -16,8 +16,17 @@ import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
@@ -54,6 +63,7 @@ import '../../../../helpers/manual_demo_world.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../agents/test_data/entity_factories.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
 import '../pages/task_details_page_test_helpers.dart';
 
@@ -61,6 +71,110 @@ class _ManualRunningInferenceController extends InferenceStatusController {
   @override
   InferenceStatus build() => InferenceStatus.running;
 }
+
+const _manualTaskAgentId = 'agent-habitat-watcher';
+const _manualTaskAgentStateId = 'state-habitat-watcher';
+const _manualTaskAgentName = 'Habitat Watcher';
+const _manualTaskAgentTldr =
+    'All 37 emperor penguins are accounted for. Habitat pressure held at '
+    '101.3 kPa overnight; the remaining launch risk is the zero-gravity '
+    'sardine feeder calibration.';
+const _manualTaskAgentReport = '''
+## Latest assessment
+
+- Pressure seals A–F stayed stable across the night shift.
+- 840 sardines are loaded; feeder calibration still blocks sign-off.
+- Mission Control clearance is due before the 06:30 roll call.
+
+## Recommended next step
+
+Run the feeder test, attach the telemetry image, then request launch approval.
+''';
+
+final AiConfigModel _manualThinkingModel = manualDemoAiModels.firstWhere(
+  (model) => model.id == manualWaddleCommandModelId,
+);
+final AiConfigInferenceProvider _manualThinkingProvider = manualDemoAiProviders
+    .firstWhere(
+      (provider) => provider.id == manualMissionControlProviderId,
+    );
+final _manualResolvedProfile = ResolvedProfile(
+  thinkingModelId: _manualThinkingModel.providerModelId,
+  thinkingProvider: _manualThinkingProvider,
+  thinkingModel: _manualThinkingModel,
+);
+final _manualResolvedAgentSetup = ResolvedAgentSetup(
+  status: AgentSetupResolutionStatus.resolved,
+  profile: _manualResolvedProfile,
+  source: AgentSetupResolutionSource.baseProfile,
+  setupOrigin: AgentInferenceSetupOrigin.user,
+  routeFingerprint: InferenceRouteFingerprint.fromProfile(
+    _manualResolvedProfile,
+  ),
+);
+final AgentTemplateEntity _manualTaskAgentTemplate =
+    AgentDomainEntity.agentTemplate(
+          id: 'template-habitat-watcher',
+          agentId: 'template-habitat-watcher',
+          displayName: _manualTaskAgentName,
+          kind: AgentTemplateKind.taskAgent,
+          modelId: manualWaddleCommandModelId,
+          categoryIds: const {manualDemoCategoryId},
+          createdAt: manualDemoNow.subtract(const Duration(days: 14)),
+          updatedAt: manualDemoNow.subtract(const Duration(days: 2)),
+          vectorClock: null,
+        )
+        as AgentTemplateEntity;
+final AgentReportEntity _manualAgentReport = makeTestReport(
+  id: 'report-habitat-watcher',
+  agentId: _manualTaskAgentId,
+  createdAt: manualDemoNow.subtract(const Duration(minutes: 4)),
+  tldr: _manualTaskAgentTldr,
+  content: _manualTaskAgentReport,
+  oneLiner: 'Habitat stable; zero-gravity sardine feeder blocks sign-off.',
+  provenance: ReportInferenceProvenance(
+    runKey: 'run-habitat-night-watch',
+    threadId: 'thread-project-waddle-habitat',
+    executor: InferenceRouteSnapshot.fromResolvedProfile(
+      _manualResolvedProfile,
+    ),
+    finalContentAuthor: ReportContentAuthor.executor,
+  ).toReportMap(),
+);
+
+AgentIdentityEntity _manualTaskAgentIdentity({
+  required bool automaticUpdates,
+}) => makeTestIdentity(
+  id: _manualTaskAgentId,
+  agentId: _manualTaskAgentId,
+  displayName: _manualTaskAgentName,
+  currentStateId: _manualTaskAgentStateId,
+  createdAt: manualDemoNow.subtract(const Duration(days: 14)),
+  updatedAt: manualDemoNow.subtract(const Duration(minutes: 3)),
+  config: AgentConfig(
+    automaticUpdatesEnabled: automaticUpdates,
+    inferenceSetup: const AgentInferenceSetup(
+      mode: AgentInferenceSetupMode.configured,
+      origin: AgentInferenceSetupOrigin.user,
+      baseProfileId: manualProjectWaddleProfileId,
+    ),
+  ),
+);
+
+AgentStateEntity _manualTaskAgentState({required bool automaticUpdates}) =>
+    makeTestState(
+      id: _manualTaskAgentStateId,
+      agentId: _manualTaskAgentId,
+      updatedAt: manualDemoNow,
+      lastWakeAt: manualDemoNow.subtract(const Duration(minutes: 4)),
+    ).copyWith(
+      reportStaleAt: automaticUpdates
+          ? null
+          : manualDemoNow.subtract(const Duration(minutes: 1)),
+      reportFreshAt: automaticUpdates
+          ? manualDemoNow.subtract(const Duration(minutes: 4))
+          : manualDemoNow.subtract(const Duration(minutes: 5)),
+    );
 
 void main() {
   if (!screenshotCaptureEnabled) {
@@ -302,9 +416,108 @@ void main() {
 
         expect(find.byType(TaskDetailsPage), findsOneWidget);
         expect(find.text('Inspect orbital penguin habitat'), findsWidgets);
+        expect(find.text(_manualTaskAgentName), findsOneWidget);
         await captureScreenshot(
           tester,
           'task_detail_${viewport}_$theme',
+          subdir: 'manual',
+        );
+      });
+
+      testWidgets('$viewport task agent collapsed — $theme', (tester) async {
+        await _pumpTaskSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          world: world,
+          pageController: pageController,
+          journalRepository: journalRepository,
+          surface: TaskDetailsPage(
+            taskId: world.orbitalHabitatTask.meta.id,
+          ),
+        );
+
+        await _focusTaskAgentCard(tester, device: device);
+        expect(find.text('AI summary'), findsOneWidget);
+        expect(find.text(_manualTaskAgentName), findsOneWidget);
+        expect(find.text(_manualTaskAgentTldr), findsOneWidget);
+        expect(find.text('Automatic updates'), findsOneWidget);
+        expect(
+          find.text('Bundle task changes and update after two minutes.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Waddle Command 70B'), findsOneWidget);
+        expect(find.text('Read more'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'task_agent_collapsed_${viewport}_$theme',
+          subdir: 'manual',
+        );
+      });
+
+      testWidgets('$viewport task agent expanded — $theme', (tester) async {
+        await _pumpTaskSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          world: world,
+          pageController: pageController,
+          journalRepository: journalRepository,
+          surface: TaskDetailsPage(
+            taskId: world.orbitalHabitatTask.meta.id,
+          ),
+        );
+
+        await _focusTaskAgentCard(tester, device: device);
+        await tester.tap(
+          find.byKey(const ValueKey('taskAgentReportDisclosure')),
+        );
+        await settleFrames(tester, 8);
+        await _focusTaskAgentCard(tester, device: device);
+        expect(find.text('Latest assessment'), findsOneWidget);
+        expect(find.text('Recommended next step'), findsOneWidget);
+        expect(find.text('Open agent internals'), findsOneWidget);
+        expect(find.text('Show less'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'task_agent_expanded_${viewport}_$theme',
+          subdir: 'manual',
+        );
+      });
+
+      testWidgets('$viewport task agent manual updates — $theme', (
+        tester,
+      ) async {
+        await _pumpTaskSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          world: world,
+          pageController: pageController,
+          journalRepository: journalRepository,
+          automaticUpdates: false,
+          surface: TaskDetailsPage(
+            taskId: world.orbitalHabitatTask.meta.id,
+          ),
+        );
+
+        await _focusTaskAgentCard(tester, device: device);
+        expect(
+          find.text(
+            'Automatic updates are off. Wake the agent when you want a fresh '
+            'report.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('This summary is out of date'), findsOneWidget);
+        expect(
+          find.text('The task changed after this summary was generated.'),
+          findsOneWidget,
+        );
+        expect(find.text('Wake agent'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'task_agent_manual_${viewport}_$theme',
           subdir: 'manual',
         );
       });
@@ -521,11 +734,18 @@ Future<void> _pumpTaskSurface(
   required FakeJournalPageController pageController,
   required JournalRepository journalRepository,
   required Widget surface,
+  bool automaticUpdates = true,
 }) async {
   applyScreenshotDevice(tester, device);
   final tasksById = {
     for (final task in world.taskBrowseTasks) task.meta.id: task,
   };
+  final taskAgentIdentity = _manualTaskAgentIdentity(
+    automaticUpdates: automaticUpdates,
+  );
+  final taskAgentState = _manualTaskAgentState(
+    automaticUpdates: automaticUpdates,
+  );
 
   await withClock(Clock.fixed(manualDemoNow), () async {
     await primeManualDemoCoverArt(
@@ -557,6 +777,9 @@ Future<void> _pumpTaskSurface(
               true,
             ).overrideWith(() => pageController),
             taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(false),
+            ),
             taskLiveDataProvider.overrideWith(
               (ref, taskId) async => tasksById[taskId],
             ),
@@ -584,7 +807,43 @@ Future<void> _pumpTaskSurface(
             agentUpdateStreamProvider.overrideWith(
               (ref, agentId) => const Stream<Set<String>>.empty(),
             ),
-            taskAgentProvider.overrideWith((ref, taskId) async => null),
+            taskAgentProvider.overrideWith(
+              (ref, taskId) async => taskId == manualOrbitalHabitatTaskId
+                  ? taskAgentIdentity
+                  : null,
+            ),
+            agentIdentityProvider.overrideWith(
+              (ref, agentId) async =>
+                  agentId == _manualTaskAgentId ? taskAgentIdentity : null,
+            ),
+            taskAgentResolvedSetupProvider.overrideWith(
+              (ref, agentId) async => agentId == _manualTaskAgentId
+                  ? _manualResolvedAgentSetup
+                  : null,
+            ),
+            agentReportProvider.overrideWith(
+              (ref, agentId) async =>
+                  agentId == _manualTaskAgentId ? _manualAgentReport : null,
+            ),
+            templateForAgentProvider.overrideWith(
+              (ref, agentId) async => agentId == _manualTaskAgentId
+                  ? _manualTaskAgentTemplate
+                  : null,
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+            agentStateProvider.overrideWith(
+              (ref, agentId) async =>
+                  agentId == _manualTaskAgentId ? taskAgentState : null,
+            ),
+            unifiedSuggestionListProvider.overrideWith(
+              (ref, taskId) async => const UnifiedSuggestionList(
+                open: [],
+                activity: [],
+                agentName: _manualTaskAgentName,
+              ),
+            ),
             triggerSkillProvider((
               entityId: world.orbitalHabitatTask.id,
               skillId: 'skill-waddle-cover-art',
@@ -622,4 +881,29 @@ Future<void> _pumpTaskSurface(
     );
     await settleFrames(tester, 8);
   });
+}
+
+Future<void> _focusTaskAgentCard(
+  WidgetTester tester, {
+  required ScreenshotDevice device,
+}) async {
+  final summary = find.text('AI summary');
+  final scrollable = find.byType(Scrollable).first;
+  await tester.scrollUntilVisible(
+    summary,
+    420,
+    scrollable: scrollable,
+  );
+  await settleFrames(tester, 6);
+
+  final position = tester.state<ScrollableState>(scrollable).position;
+  final targetTop = tester.getTopLeft(summary).dy;
+  final desiredTop = device.isPhone ? 112.0 : 24.0;
+  position.jumpTo(
+    (position.pixels + targetTop - desiredTop).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    ),
+  );
+  await settleFrames(tester, 4);
 }
