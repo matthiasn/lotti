@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Absolute task due dates now use the selected app language.** The desktop
   task header and reusable due-date label format calendar dates in the active
   locale instead of falling back to English month names.
+- **French, Spanish, and Romanian now read more naturally throughout the app.**
+  The selected language keeps its own register and terminology across agent
+  controls, AI and Sync setup, dashboards, health import, and task actions,
+  instead of exposing literal or mixed-language copy.
 - **Events and built-in surveys now follow the app language end to end.** Event
   status and date labels, the PANAS questionnaire, and its embedded navigation,
   progress, validation, and dismissal controls no longer fall back to English
