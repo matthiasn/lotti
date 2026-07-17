@@ -1090,7 +1090,13 @@ void main() {
       testWidgets('$viewport dashboards route list — $theme', (tester) async {
         navService
           ..isDesktopMode = !device.isPhone
-          ..desktopSelectedDashboardId.value = null;
+          // Desktop is a master/detail surface, so keep the coherent Colony
+          // operations example selected instead of publishing an empty detail
+          // pane beside the populated list. Mobile remains the list-only
+          // route and opens a dashboard on navigation.
+          ..desktopSelectedDashboardId.value = device.isPhone
+              ? null
+              : _colonyOperations.id;
         await withClock(Clock.fixed(manualDemoNow), () async {
           await _pumpScreen(
             tester,
@@ -1107,8 +1113,15 @@ void main() {
             home: const DashboardsListPage(),
           );
         });
-        expect(find.text('Colony operations'), findsOneWidget);
+        expect(
+          find.text('Colony operations'),
+          device.isPhone ? findsOneWidget : findsNWidgets(2),
+        );
         expect(find.text('Mission readiness'), findsOneWidget);
+        if (!device.isPhone) {
+          expect(find.text('Habitat pressure'), findsOneWidget);
+          expect(find.text('Sardines consumed'), findsOneWidget);
+        }
         await captureScreenshot(
           tester,
           'dashboard_list_${viewport}_$theme',
