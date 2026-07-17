@@ -1,0 +1,159 @@
+---
+title: Utiliser les paramètres avancés avec précaution
+description: Contrôle les flags et la journalisation, exécute les outils de maintenance, examine les métriques d’intégration et vérifie la version installée de Lotti.
+---
+
+# Utiliser les paramètres avancés avec précaution
+
+Ouvre **Réglages → Paramètres avancés** pour les contrôles avancés, les
+diagnostics et la maintenance. Ces pages modifient le fonctionnement de Lotti
+ou agissent directement sur des données locales ; la personnalisation ordinaire
+a donc sa place ailleurs dans les Réglages.
+
+Sur ordinateur, l’arborescence des réglages reste à côté de la page
+sélectionnée. Sur mobile, une page s’ouvre à la fois avec un bouton retour. Les
+mêmes contrôles et valeurs enregistrées sont utilisés dans les deux présentations.
+
+<ManualScreenshot
+  caseId="advanced-settings/hub"
+  alt="Centre des paramètres avancés Lotti avec Flags, Animations, Journalisation, Maintenance, Métriques d’intégration et À propos de Lotti"
+  caption="Les paramètres avancés séparent les contrôles opérationnels des préférences quotidiennes. Certaines entrées varient selon la plateforme et les capacités activées."
+/>
+
+## Contrôler les fonctionnalités avec les flags
+
+<ManualScreenshot
+  caseId="advanced-settings/flags"
+  alt="Page Flags de Lotti avec des interrupteurs recherchables pour les entrées privées, les notifications, l’enregistrement de la localisation, les info-bulles et le streaming IA"
+  caption="La recherche porte sur le nom et la description des flags. Chaque interrupteur modifie immédiatement le réglage enregistré."
+/>
+
+Les **flags** servent d’interrupteurs pour les fonctionnalités. Ils contrôlent :
+
+- la visibilité des entrées privées, les notifications, la capture de position
+  et les info-bulles ;
+- le streaming des réponses IA et la lecture des résumés ;
+- la journalisation et le comportement de synchronisation Matrix ;
+- des pages comme Habitudes, Tableaux de bord, Événements, Projets et Quoi de
+  neuf ;
+- les embeddings et la recherche vectorielle ;
+- l’activité de synchronisation, les activations d’agents en attente et la
+  réparation de bifurcations.
+
+Utilise **Rechercher des indicateurs** pour limiter la liste par titre ou
+description. Sélectionne une ligne ou son interrupteur pour modifier le flag.
+La nouvelle valeur est enregistrée immédiatement ; il n’y a pas d’action
+Enregistrer séparée.
+
+Les flags peuvent exposer des comportements expérimentaux ou de
+diagnostic. Modifie-en un délibérément, vérifie le flux concerné, puis seulement
+ensuite un autre. **Afficher les entrées privées ?** contrôle l’inclusion du
+contenu sensible dans les listes et sélecteurs ; il ne chiffre, n’exporte, ne
+supprime ni ne modifie le niveau de confidentialité d’une entrée.
+
+## Choisir ce que Lotti journalise
+
+<ManualScreenshot
+  caseId="advanced-settings/logging"
+  alt="Réglages de journalisation Lotti avec un interrupteur maître, des domaines opérationnels individuels et la journalisation des requêtes lentes"
+  caption="L’interrupteur maître contrôle les domaines individuels. Le jeu de données Project Waddle laisse la synchronisation, l’IA et les tâches activées pour des diagnostics ciblés."
+/>
+
+La **journalisation** commence avec **Activer la journalisation**. Lorsqu’il est
+actif, n’active que les domaines nécessaires à ton enquête : synchronisation,
+IA, tâches, étiquettes, santé, habitudes, navigation, notifications ou Daily OS.
+**Requêtes lentes de la base** ajoute des diagnostics de performance de la
+base de données.
+
+Désactiver l’interrupteur maître désactive les contrôles par domaine. Les erreurs
+continuent d’être écrites dans le journal quotidien `error-*.log` ; ces
+interrupteurs gouvernent la journalisation diagnostique supplémentaire, pas le
+minimum d’enregistrement des erreurs. Désactive les domaines bruyants après
+l’enquête pour garder des journaux ciblés et un usage de stockage prévisible.
+
+## Exécuter les actions de maintenance délibérément
+
+<ManualScreenshot
+  caseId="advanced-settings/maintenance"
+  alt="Page Maintenance Lotti avec aperçus d’intégration, actions de réinitialisation, suppression de base de données, purge, index de recherche, embeddings et diagnostic de repeint"
+  caption="La maintenance combine aperçus sûrs, actions destructives et diagnostics. Lis la confirmation et la portée avant de continuer."
+/>
+
+La **maintenance** contient plusieurs types d’actions :
+
+- **Afficher l’accueil d’intégration** et **Galerie d’animations d’intégration**
+  sont des aperçus en direct pour le développement et l’assurance qualité.
+- **Réinitialiser les astuces de l’application** rend les conseils ponctuels
+  de nouveau éligibles à l’affichage.
+- **Réinitialiser le dialogue de configuration Gemini** annule sa
+  fermeture afin de pouvoir tester à nouveau l’invite du fournisseur.
+- **Supprimer la base de données des brouillons** supprime les brouillons de
+  l’éditeur.
+- **Supprimer la base de données des agents** supprime cette base et quitte
+  Lotti, afin que l’app redémarre avec un stockage propre.
+- **Purger les éléments supprimés** efface définitivement les enregistrements
+  supprimés logiquement à travers un flux de confirmation dédié.
+- **Recréer l’index de texte intégral** reconstruit les données de recherche
+  locales sans recréer les entrées du journal.
+- **Générer les embeddings** apparaît lorsque le stockage d’embeddings est
+  disponible et remplit les catégories sélectionnées.
+- **Superposition arc-en-ciel de repeint** fait clignoter les régions repeintes
+  pour les diagnostics d’interface. Elle est conservée en mémoire et revient à
+  désactivée après le redémarrage.
+
+Les aperçus et réinitialisations n’ont pas le même risque qu’une suppression ou
+une purge. Pour les actions destructives, confirme que la cible est bien le
+stockage local voulu et laisse d’abord se terminer toute synchronisation ou
+écriture en cours.
+
+## Examiner le parcours d’intégration
+
+<ManualScreenshot
+  caseId="advanced-settings/onboarding-metrics"
+  alt="Page Métriques d’intégration Lotti affichant l’heure d’installation, quatre jours actifs, l’état d’activation et des nombres d’événements sans contenu"
+  caption="Le jeu de données déterministe du manuel a atteint son véritable déclic en quatre jours actifs après la connexion d’un fournisseur et l’enregistrement de plusieurs captures."
+/>
+
+Les **métriques d’intégration** sont une surface pour le développement et
+l’assurance qualité. Elles dérivent localement un parcours à partir
+d’événements sans contenu et indiquent :
+
+- l’horodatage de première détection en UTC ;
+- le total de jours actifs et ceux des sept premiers jours ;
+- si l’installation appartient à la cohorte de référence pré-FTUE ;
+- si l’étape réelle d’activation a été atteinte ;
+- le nombre de chaque événement d’intégration.
+
+La page enregistre des noms d’événements et des métadonnées à faible
+cardinalité, pas le texte du journal, les titres des tâches, les transcriptions
+ni les détails sensibles aux sardines de Project Waddle.
+
+**Réinitialiser l’état de test d’intégration** efface la cadence des invites
+d’intégration et les métriques locales du parcours après confirmation. Cela ne
+supprime pas les données du journal, les flags ou
+l’historique réel des plans Daily OS. Un profil ayant déjà planifié une journée
+reste donc inéligible au chemin exact du premier plan sur un profil propre.
+
+## Vérifier la version et les totaux locaux
+
+<ManualScreenshot
+  caseId="advanced-settings/about"
+  alt="Page À propos de Lotti affichant la version, la plateforme, le type de build, 2 604 entrées de journal, 11 entrées signalées et le nombre de tâches"
+  caption="À propos de Lotti identifie la version en cours et résume les données locales. Le jeu de données Project Waddle contient 2 604 entrées et 65 tâches réparties sur cinq états."
+/>
+
+**À propos de Lotti** est l’endroit le plus rapide pour vérifier la version qui
+tourne réellement. Il affiche la version et le numéro de build de l’app, la
+plateforme et le type de build. Inclus ces valeurs dans un rapport de
+diagnostic afin qu’un comportement puisse être relié au bon code et à la bonne
+version.
+
+La carte **Tes données** résume les entrées de journal locales, les entrées
+signalées et le nombre de tâches réparties entre Ouvertes, En cours, En pause,
+Bloquées et Terminées. L’espace Project Waddle établi dans le manuel montre un
+compte non vide : 2 604 entrées de journal, 11 entrées signalées et 65 tâches
+plutôt que des zéros de remplacement.
+
+Les effets de fin ont leur propre guide : consulte
+**[Personnaliser les célébrations de fin](./completion-celebrations.mdx)** pour
+la page Animations et son terrain de jeu en direct.

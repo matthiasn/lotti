@@ -139,8 +139,8 @@ typedef _AdvancedCase = ({
   String id,
   String route,
   Widget Function() mobilePage,
-  String expectedText,
-  String? desktopExpectedText,
+  String Function(AppLocalizations messages) expectedText,
+  String Function(AppLocalizations messages)? desktopExpectedText,
   String? scrollTo,
 });
 
@@ -149,7 +149,7 @@ final List<_AdvancedCase> _cases = [
     id: 'hub',
     route: '/settings/advanced',
     mobilePage: () => const SettingsMobileBranchPage(branchId: 'advanced'),
-    expectedText: _t('Config Flags', 'Konfigurationsflags'),
+    expectedText: (messages) => messages.settingsFlagsTitle,
     desktopExpectedText: null,
     scrollTo: null,
   ),
@@ -157,10 +157,7 @@ final List<_AdvancedCase> _cases = [
     id: 'flags',
     route: '/settings/flags',
     mobilePage: FlagsPage.new,
-    expectedText: _t(
-      'Show private entries?',
-      'Private Einträge anzeigen?',
-    ),
+    expectedText: (messages) => messages.configFlagPrivate,
     desktopExpectedText: null,
     scrollTo: null,
   ),
@@ -168,7 +165,7 @@ final List<_AdvancedCase> _cases = [
     id: 'logging',
     route: '/settings/advanced/logging_domains',
     mobilePage: LoggingSettingsPage.new,
-    expectedText: _t('Enable Logging', 'Protokollierung aktivieren'),
+    expectedText: (messages) => messages.settingsLoggingGlobalToggle,
     desktopExpectedText: null,
     scrollTo: null,
   ),
@@ -176,21 +173,15 @@ final List<_AdvancedCase> _cases = [
     id: 'health_import',
     route: '/settings/advanced',
     mobilePage: HealthImportPage.new,
-    expectedText: _t(
-      'Import Activity Data',
-      'Aktivitätsdaten importieren',
-    ),
-    desktopExpectedText: _t('Config Flags', 'Konfigurationsflags'),
+    expectedText: (messages) => messages.settingsHealthImportActivity,
+    desktopExpectedText: (messages) => messages.settingsFlagsTitle,
     scrollTo: null,
   ),
   (
     id: 'maintenance',
     route: '/settings/advanced/maintenance',
     mobilePage: MaintenancePage.new,
-    expectedText: _t(
-      'Purge deleted items',
-      'Gelöschte Elemente löschen',
-    ),
+    expectedText: (messages) => messages.maintenancePurgeDeleted,
     desktopExpectedText: null,
     scrollTo: null,
   ),
@@ -198,7 +189,7 @@ final List<_AdvancedCase> _cases = [
     id: 'onboarding_metrics',
     route: '/settings/advanced/onboarding_metrics',
     mobilePage: OnboardingMetricsPage.new,
-    expectedText: 'Reached real aha',
+    expectedText: (messages) => messages.onboardingMetricsReachedRealAha,
     desktopExpectedText: null,
     scrollTo: null,
   ),
@@ -206,7 +197,7 @@ final List<_AdvancedCase> _cases = [
     id: 'about',
     route: '/settings/advanced/about',
     mobilePage: AboutPage.new,
-    expectedText: '2604',
+    expectedText: (_) => '2604',
     desktopExpectedText: null,
     scrollTo: null,
   ),
@@ -379,9 +370,13 @@ void main() {
               brightness: brightness,
             );
 
-            final expectedText = device.isPhone
+            final messages = AppLocalizations.of(
+              tester.element(find.byType(Scaffold).first),
+            )!;
+            final expectedText = (device.isPhone
                 ? scenario.expectedText
-                : scenario.desktopExpectedText ?? scenario.expectedText;
+                : scenario.desktopExpectedText ??
+                      scenario.expectedText)(messages);
             expect(find.text(expectedText), findsWidgets);
             expect(tester.takeException(), isNull);
             await captureScreenshot(

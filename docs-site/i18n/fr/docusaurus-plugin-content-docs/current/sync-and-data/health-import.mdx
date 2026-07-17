@@ -1,0 +1,39 @@
+---
+title: Importer des données de santé
+description: Importe une plage de dates choisie depuis le dépôt de données de santé du téléphone.
+---
+
+# Importer des données de santé
+
+L’import de données de santé est disponible sur iOS et Android. Ouvre
+**Réglages → Avancé → Import de données de santé**, choisis une date de début
+et de fin, puis sélectionne la famille de données que tu souhaites faire lire
+à Lotti depuis le dépôt de données de santé du téléphone.
+
+<ManualScreenshot
+  caseId="health-import/overview"
+  alt="Import de données de santé avec une date de début, une date de fin et des actions d’import séparées pour l’activité, le sommeil, la fréquence cardiaque, la pression artérielle, les mensurations et les entraînements"
+  caption="La vue mobile montre l’écran d’import. L’import de données de santé est volontairement absent de l’arborescence Avancé sur ordinateur, comme le montre la vue ordinateur."
+/>
+
+Les imports disponibles sont :
+
+- **Activité** pour les totaux d’activité ;
+- **Sommeil** pour les échantillons de sommeil ;
+- **Fréquence cardiaque** pour les observations de pouls ;
+- **Pression artérielle** pour les mesures de tension ;
+- **Mensuration corporelle** pour les mesures comme les données corporelles ;
+- **Entraînement** pour les entraînements enregistrés.
+
+Chaque bouton n’importe que sa propre famille de données pour la plage de dates
+affichée. Modifier la plage ne lance pas un import à lui seul.
+
+Le système d’exploitation peut demander l’autorisation d’accéder aux données de
+santé. Lotti ne peut lire que les types que tu autorises. Si une famille de
+données attendue manque, vérifie les autorisations de santé de l’app dans les
+réglages système du téléphone, puis réessaie cet import.
+
+L’import de données de santé n’apparaît pas sur ordinateur, car les dépôts de
+santé mobiles sous-jacents n’y sont pas disponibles. Les observations importées
+restent visibles dans les tableaux de bord Lotti pertinents après leur
+synchronisation vers un autre appareil.

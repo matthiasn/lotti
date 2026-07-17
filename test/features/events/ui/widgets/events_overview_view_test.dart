@@ -73,6 +73,21 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'New event'), findsOneWidget);
     });
 
+    testWidgets('keeps the create action available in the compact header', (
+      tester,
+    ) async {
+      await pumpEventScreen(
+        tester,
+        EventsOverviewView(
+          sections: _sections(),
+          onCreate: () {},
+        ),
+      );
+
+      expect(find.text('Events'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'New event'), findsOneWidget);
+    });
+
     testWidgets('renders section headers, featured banner and grid cards', (
       tester,
     ) async {

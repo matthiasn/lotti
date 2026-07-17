@@ -1,0 +1,55 @@
+---
+title: Exécuter des compétences IA contextuelles
+description: Utilise le menu Générer pour n’exécuter que les actions IA adaptées à la tâche, à l’enregistrement, à l’image ou à l’entrée en cours.
+---
+
+# Exécuter des compétences IA contextuelles
+
+Les compétences IA sont des actions nommées, avec des instructions et des
+préconditions d’entrée. Lotti filtre le menu **Générer…** selon l’élément
+actuel : une tâche ne propose donc pas une transcription réservée à l’audio, et
+une image ne propose pas une action qui exige un enregistrement.
+
+<ManualScreenshot
+  caseId="ai/skills"
+  alt="Image de l’habitat du Projet Waddle avec la fenêtre Générer proposant Inspecter la photo de l’habitat"
+  caption="Sur une image de l’habitat liée à la tâche, l’action disponible recherche les anomalies du manomètre et les dégâts visibles sur les joints."
+/>
+
+## Exécuter une compétence
+
+1. Ouvre une tâche ou une entrée de journal compatible.
+2. Sélectionne l’action d’assistant encadrée dans l’en-tête de l’entrée. Elle
+   ouvre **Générer…**.
+3. Lis la description de la compétence et sélectionne l’action souhaitée.
+4. Si Lotti propose un sélecteur de modèle ou de mode de raisonnement, confirme
+   la valeur par défaut ou choisis un remplacement ponctuel.
+5. Continue à travailler pendant l’inférence ; le résultat est joint à la
+   tâche ou à l’entrée concernée une fois terminé.
+
+Le menu disponible change selon le contexte :
+
+- les tâches peuvent proposer des actions de texte et de contexte de tâche ;
+- les entrées audio peuvent proposer la transcription et des actions sensibles à l’audio ;
+- les images peuvent proposer une analyse visuelle ;
+- les entrées texte peuvent proposer des prompts ou des actions de génération
+  acceptant du texte.
+
+Certaines compétences nécessitent une tâche liée, car elles lisent un contexte
+de tâche plus large ou écrivent leur résultat dans cette tâche. Si une action
+est absente, vérifie d’abord le type d’entrée et le lien vers la tâche, puis que
+le profil d’inférence actif contient un modèle doté de la capacité requise.
+
+## Les remplacements de modèle sont temporaires
+
+Lorsqu’une compétence propose un sélecteur de modèle, ce choix ne s’applique
+qu’à l’invocation en cours. Il ne réécrit pas silencieusement la valeur par
+défaut de la catégorie ni le profil d’inférence. Pour changer la route normale,
+modifie le profil dans [Modèles et profils d’inférence](./models-and-profiles.mdx).
+
+## Considérer le résultat généré comme un brouillon
+
+Examine les prompts, résumés, transcriptions, analyses d’images et illustrations
+générés avant de t’y fier. Le contexte de la tâche peut être incomplet, un
+fournisseur peut renvoyer une sortie incorrecte, et même un modèle compétent
+peut mal comprendre une urgence très sérieuse de sardines.

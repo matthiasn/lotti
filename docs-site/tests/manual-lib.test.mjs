@@ -104,17 +104,18 @@ test('the screenshot registry requires a valid default and unique locales', () =
 });
 
 test('incremental captures select only registered locales', () => {
-  assert.deepEqual(resolveCaptureLocales(undefined, ['en', 'de', 'cs']), [
+  assert.deepEqual(resolveCaptureLocales(undefined, ['en', 'de', 'fr', 'cs']), [
     'en',
     'de',
+    'fr',
     'cs',
   ]);
-  assert.deepEqual(resolveCaptureLocales('cs, de', ['en', 'de', 'cs']), [
+  assert.deepEqual(resolveCaptureLocales('cs, fr', ['en', 'de', 'fr', 'cs']), [
     'cs',
-    'de',
+    'fr',
   ]);
   assert.throws(
-    () => resolveCaptureLocales('fr', ['en', 'de', 'cs']),
+    () => resolveCaptureLocales('es', ['en', 'de', 'fr', 'cs']),
     /Unsupported manual screenshot locale/,
   );
   assert.throws(

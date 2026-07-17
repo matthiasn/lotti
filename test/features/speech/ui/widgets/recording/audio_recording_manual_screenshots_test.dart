@@ -24,6 +24,8 @@ import '../../../../daily_os_next/screenshot_harness.dart';
 const _linkedTaskId = 'payment-confirmation';
 const _categoryId = 'focused-work';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+AppLocalizations _messages(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(Scaffold).first))!;
 const ValueKey<String> _openRecordingKey = ValueKey<String>(
   'open-audio-recording',
 );
@@ -60,14 +62,15 @@ void main() {
           device: device,
           brightness: brightness,
         );
+        final messages = _messages(tester);
 
         expect(find.byType(AudioRecordingModalContent), findsOneWidget);
         expect(find.text('0:00:42'), findsOneWidget);
-        expect(find.text(_t('STOP', 'STOPP')), findsOneWidget);
+        expect(find.text(messages.audioRecordingStop), findsOneWidget);
         expect(
           find.widgetWithText(
             LottiAnimatedCheckbox,
-            'Speech Recognition',
+            messages.speechModalTitle,
           ),
           findsOneWidget,
         );

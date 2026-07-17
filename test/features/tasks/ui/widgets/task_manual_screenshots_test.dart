@@ -87,8 +87,8 @@ final String _manualTaskAgentTldr = _t(
       'bei 101,3 kPa; als einziges Startrisiko bleibt die Kalibrierung des '
       'Schwerelos-Futterautomaten.',
 );
-final String _manualTaskAgentReport = _t(
-  '''
+final String _manualTaskAgentReport = manualScreenshotText(
+  en: '''
 ## Latest assessment
 
 - Pressure seals A–F stayed stable across the night shift.
@@ -99,7 +99,7 @@ final String _manualTaskAgentReport = _t(
 
 Run the feeder test, attach the telemetry image, then request launch approval.
 ''',
-  '''
+  de: '''
 ## Aktuelle Einschätzung
 
 - Die Druckdichtungen A–F blieben während der Nachtschicht stabil.
@@ -109,6 +109,17 @@ Run the feeder test, attach the telemetry image, then request launch approval.
 ## Empfohlener nächster Schritt
 
 Führe den Automatentest aus, hänge das Telemetriebild an und fordere dann die Startfreigabe an.
+''',
+  fr: '''
+## Dernière évaluation
+
+- Les joints de pression A–F sont restés stables pendant l'équipe de nuit.
+- 840 sardines sont chargées ; le calibrage du distributeur bloque toujours la validation.
+- L'autorisation de Mission Control est attendue avant l'appel de 6 h 30.
+
+## Prochaine étape recommandée
+
+Lance le test du distributeur, joins l'image de télémétrie puis demande l'autorisation de lancement.
 ''',
 );
 
@@ -519,34 +530,28 @@ void main() {
         );
 
         await _focusTaskAgentCard(tester, device: device);
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(TaskDetailsPage)),
+        )!;
         expect(
-          find.text(_t('AI summary', 'KI-Zusammenfassung')),
+          find.text(messages.aiCardTitle),
           findsOneWidget,
         );
         expect(find.text(_manualTaskAgentName), findsOneWidget);
         expect(find.text(_manualTaskAgentTldr), findsOneWidget);
-        final messages = AppLocalizations.of(
-          tester.element(find.byType(TaskDetailsPage)),
-        )!;
         expect(
           find.text(messages.taskAgentAutomaticUpdatesLabel),
           findsOneWidget,
         );
         expect(
-          find.text(
-            _t(
-              'Bundle task changes and update after two minutes.',
-              'Aufgabenänderungen werden gebündelt und nach zwei Minuten '
-                  'aktualisiert.',
-            ),
-          ),
+          find.text(messages.taskAgentAutomaticUpdatesSummary),
           findsOneWidget,
         );
         expect(
           find.textContaining(_t('Waddle Command 70B', 'Watschelkommando 70B')),
           findsOneWidget,
         );
-        expect(find.text(_t('Read more', 'Mehr lesen')), findsOneWidget);
+        expect(find.text(messages.aiCardReadMore), findsOneWidget);
         await captureScreenshot(
           tester,
           'task_agent_collapsed_${viewport}_$theme',
@@ -568,6 +573,9 @@ void main() {
         );
 
         await _focusTaskAgentCard(tester, device: device);
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(TaskDetailsPage)),
+        )!;
         await tester.tap(
           find.byKey(const ValueKey('taskAgentReportDisclosure')),
         );
@@ -584,10 +592,10 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.text(_t('Open agent internals', 'Agent-Internes öffnen')),
+          find.text(messages.aiCardOpenAgentInternals),
           findsOneWidget,
         );
-        expect(find.text(_t('Show less', 'Weniger anzeigen')), findsOneWidget);
+        expect(find.text(messages.aiCardShowLess), findsOneWidget);
         await captureScreenshot(
           tester,
           'task_agent_expanded_${viewport}_$theme',
@@ -666,28 +674,14 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.text(
-            _t(
-              'This summary is out of date',
-              'Diese Zusammenfassung ist veraltet',
-            ),
-          ),
+          find.text(messages.taskAgentReportOutdatedTitle),
           findsOneWidget,
         );
         expect(
-          find.text(
-            _t(
-              'The task changed after this summary was generated.',
-              'Die Aufgabe hat sich geändert, nachdem diese Zusammenfassung '
-                  'erstellt wurde.',
-            ),
-          ),
+          find.text(messages.taskAgentReportOutdatedDescription),
           findsOneWidget,
         );
-        expect(
-          find.text(_t('Wake agent', 'Agenten aufwecken')),
-          findsOneWidget,
-        );
+        expect(find.text(messages.taskAgentWakeAgent), findsOneWidget);
         await captureScreenshot(
           tester,
           'task_agent_manual_${viewport}_$theme',
@@ -708,8 +702,11 @@ void main() {
 
         await tester.tap(find.byIcon(Icons.filter_list_rounded).first);
         await settleFrames(tester, 6);
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(TasksRootPage)),
+        )!;
         expect(
-          find.text(_t('Filter tasks', 'Aufgaben filtern')),
+          find.text(messages.tasksFilterTitle),
           findsOneWidget,
         );
         expect(
@@ -750,8 +747,11 @@ void main() {
 
         await tester.tap(find.byIcon(Icons.assistant_outlined));
         await settleFrames(tester, 6);
-        expect(find.text(_t('Generate…', 'Generieren…')), findsOneWidget);
-        expect(find.text(_t('Skills', 'Skills')), findsOneWidget);
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(EntryDetailsWidget)),
+        )!;
+        expect(find.text(messages.aiAssistantTitle), findsOneWidget);
+        expect(find.text(messages.skillsSectionTitle), findsOneWidget);
         expect(
           find.text(_t('Inspect habitat photo', 'Habitatfoto prüfen')),
           findsOneWidget,
@@ -791,13 +791,11 @@ void main() {
           ),
         );
         await settleFrames(tester, 8);
-        expect(find.text(_t('Add', 'Hinzufügen')), findsOneWidget);
-        expect(find.text(_t('Checklist', 'Checkliste')), findsOneWidget);
-        expect(
-          find.text(_t('Audio Recording', 'Audioaufnahme')),
-          findsOneWidget,
-        );
-        expect(find.text(_t('Timer', 'Timer')), findsOneWidget);
+        final messages = AppLocalizations.of(context)!;
+        expect(find.text(messages.createEntryTitle), findsOneWidget);
+        expect(find.text(messages.addActionAddChecklist), findsOneWidget);
+        expect(find.text(messages.addActionAddAudioRecording), findsOneWidget);
+        expect(find.text(messages.addActionAddTimer), findsOneWidget);
         await captureScreenshot(
           tester,
           'create_entry_task_${viewport}_$theme',
@@ -867,11 +865,11 @@ void main() {
           subdir: 'manual',
         );
 
-        await tester.tap(find.text(_t('Continue', 'Weiter')));
+        await tester.tap(find.text(messages.referenceImageContinue));
         await settleFrames(tester, 8);
         await tester.pump(const Duration(milliseconds: 720));
         expect(
-          find.text(_t('Generating image...', 'Bild wird generiert...')),
+          find.text(messages.imageGenerationGenerating),
           findsOneWidget,
         );
         await captureScreenshot(
@@ -903,13 +901,11 @@ void main() {
           ),
         );
         await settleFrames(tester, 30);
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(TaskDetailsPage)),
+        )!;
         expect(
-          find.text(
-            _t(
-              'Link existing task...',
-              'Vorhandene Aufgabe verknüpfen...',
-            ),
-          ),
+          find.text(messages.linkExistingTask),
           findsOneWidget,
         );
         expect(
@@ -1114,7 +1110,10 @@ Future<void> _focusTaskAgentCard(
   WidgetTester tester, {
   required ScreenshotDevice device,
 }) async {
-  final summary = find.text(_t('AI summary', 'KI-Zusammenfassung'));
+  final messages = AppLocalizations.of(
+    tester.element(find.byType(TaskDetailsPage)),
+  )!;
+  final summary = find.text(messages.aiCardTitle);
   final scrollable = find.byType(Scrollable).first;
   await tester.scrollUntilVisible(
     summary,

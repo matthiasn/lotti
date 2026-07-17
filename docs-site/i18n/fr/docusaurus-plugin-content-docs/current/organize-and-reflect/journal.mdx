@@ -1,0 +1,130 @@
+---
+title: Tenir un journal utile
+description: Retrouvez notes, photos, enregistrements, événements et résultats IA dans un même flux, puis reliez-les à l’activité qui les documente.
+---
+
+# Tenir un journal utile
+
+Le Journal est le flux d’entrées mixtes de Lotti. Il rassemble notes, photos, enregistrements, événements, listes de contrôle, mesures et réponses IA sans les transformer en tâches. Utilise-le pour mémoriser, examiner ou relier ce qui s’est passé ; utilise **Tâches** lorsque l’entrée représente un travail qu’il reste à faire.
+
+<ManualScreenshot
+  caseId="journal/overview"
+  alt="Flux du Journal avec une photo de lancement de Project Waddle, un journal de mission, un mémo vocal sur les sardines d’Europe, un événement de sommet et un récapitulatif de télémétrie cargo"
+  caption="Les glyphes de type rendent le flux mixte facile à parcourir ; couleurs de catégorie, étiquettes, étoiles, drapeaux, durées et pastilles d’état conservent le contexte utile près de chaque entrée."
+/>
+
+## Lire le flux mixte
+
+Chaque carte commence par son contenu et utilise un glyphe coloré pour identifier le type d’entrée. La couleur vient de la catégorie de l’entrée : **Opérations pingouins**, **Contrôle de mission** et **Diplomatie des poissons** restent ainsi reconnaissables même lorsque plusieurs types se côtoient.
+
+Les cartes ajoutent les métadonnées qui comptent pour leur type. Par exemple :
+
+- un mémo audio affiche sa durée et son drapeau ;
+- un événement affiche son état, sa date, son évaluation et sa note ;
+- une liste de contrôle affiche son avancement ;
+- une mesure affiche sa valeur et son unité ; et
+- une réponse IA est signalée comme générée par IA.
+
+Le flux se charge par pages : un journal conséquent n’a donc pas besoin d’afficher tout son historique d’un coup.
+
+## Chercher par mots ou par sens
+
+Utilise **Texte intégral** pour retrouver les mots enregistrés dans une entrée. Lorsque la recherche vectorielle est activée, passe à **Vectoriel** pour trouver des entrées de sens voisin, même avec des formulations différentes. Les résultats vectoriels forment un classement unique plutôt qu’un flux paginé sans fin.
+
+Si la recherche vectorielle devient indisponible ou est désactivée, Lotti revient à la recherche plein texte au lieu de laisser la recherche dans un état inutilisable.
+
+## Filtrer ce qui apparaît
+
+<ManualScreenshot
+  caseId="journal/filters"
+  alt="Fenêtre de filtres du Journal avec commandes pour les entrées étoilées, signalées, privées, les types d’entrée et les catégories au-dessus du flux de logistique des pingouins"
+  caption="Combine propriétés, types et catégories pour transformer le flux mixte en vue précise dont tu as besoin."
+/>
+
+Ouvre le bouton de filtre près de la recherche. Tu peux limiter le Journal à :
+
+- des entrées étoilées, signalées ou privées ;
+- un ou plusieurs types d’entrée, notamment Texte, Événement, Audio, Photo, Liste de contrôle, À faire et Réponse IA ; et
+- une ou plusieurs catégories.
+
+Ces choix sont conservés pour le Journal. Les filtres des tâches sont enregistrés séparément : modifier la vue du Journal ne réorganise donc pas la page Tâches par surprise.
+
+## Ajouter une entrée
+
+<ManualScreenshot
+  caseId="journal/create"
+  alt="Menu Ajouter proposant Événement, Tâche, Enregistrement audio, Entrée de texte, Importer une image et Capture d’écran au-dessus du Journal de Project Waddle"
+  caption="Le menu ne propose que les actions prises en charge par la plateforme et le contexte actuels."
+/>
+
+Sélectionne **+** pour ouvrir le menu Ajouter. Depuis le Journal principal, tu peux créer une entrée de texte, une tâche, un événement ou un enregistrement audio, importer une photo ou prendre une capture d’écran. Le collage d’une image depuis le presse-papiers peut apparaître lorsqu’une image est disponible. La création d’événement est proposée lorsque la fonctionnalité Événements est activée.
+
+Le même menu s’adapte dans une entrée existante. Il peut alors créer un minuteur déjà relié à l’entrée, et les détails d’une tâche peuvent proposer une liste de contrôle liée. Les images importées, collées, déposées ou capturées peuvent participer à l’analyse d’images automatique lorsque cette automatisation est configurée.
+
+## Lire et modifier une entrée
+
+<ManualScreenshot
+  caseId="journal/detail"
+  alt="Détail du journal de mission de Project Waddle avec catégorie, étiquettes, étoile, durée, texte enrichi, filtres d’activité et photo de lancement liée"
+  caption="L’entrée reste la source de vérité ; les photos, minuteurs, requêtes et liens entrants qui l’accompagnent restent attachés en dessous."
+/>
+
+L’en-tête de détail regroupe date, catégorie, étiquettes, étoile, drapeau, confidentialité et actions supplémentaires. Sélectionne le corps pour modifier le texte enrichi. Enregistre depuis les commandes de l’éditeur, ou utilise **Ctrl+S** sous Windows et Linux et **Command+S** sous macOS. Le texte non enregistré est conservé comme brouillon ; l’abandon rétablit le dernier contenu enregistré.
+
+Le menu d’actions supplémentaires contient les actions qui s’appliquent au type d’entrée actuel, notamment copier, supprimer et les actions de média. Sur ordinateur, les entrées image et audio peuvent aussi révéler leur fichier source dans le gestionnaire de fichiers.
+
+### Modifier la date et la durée d’une entrée
+
+Sélectionne la date ou la durée dans l’en-tête de l’entrée pour ouvrir **Date et heure**. Pour une entrée du même jour, choisis une date et définis séparément l’heure de début et de fin. Le récapitulatif de durée se met à jour au fil des molettes. Active **Choisir une date de fin distincte** pour une entrée nocturne ou sur plusieurs jours, et utilise l’une ou l’autre action **Maintenant** pour placer cette borne à la date et à l’heure actuelles.
+
+<ManualScreenshot
+  caseId="journal/date-time"
+  alt="Éditeur Date et heure du journal de mission de Project Waddle avec le 17 juillet, un début à 8 h 10, une fin à 8 h 40 et une durée de 30 minutes"
+/>
+
+Sélectionne le bouton de date pour ouvrir le calendrier. **Aujourd’hui** revient au jour courant, **Terminé** revient à l’éditeur de plage et **Enregistrer** applique toute la plage début/fin à l’entrée.
+
+<ManualScreenshot
+  caseId="journal/date-picker"
+  alt="Calendrier de date de début sélectionnant le vendredi 17 juillet 2026 pour le journal de mission de Project Waddle"
+/>
+
+La modification de l’horodatage change l’emplacement de l’entrée dans les vues chronologiques. Elle ne réécrit pas son texte et ne détache pas son activité liée.
+
+## Suivre l’activité liée
+
+<ManualScreenshot
+  caseId="journal/activity"
+  alt="Activité liée à Project Waddle avec une requête de programmation IA, une répétition d’appel de 23 minutes et la tâche entrante de revue du lancement"
+  caption="L’activité sortante répond à la question de ce que contient l’entrée ; Lié depuis indique quelles autres entrées pointent vers elle."
+/>
+
+Les entrées peuvent être reliées à des photos, minuteurs, audios, résultats IA, notes et autres éléments de contexte. Les pastilles d’activité permettent d’afficher ou de masquer les entrées **Minuteur**, **Audio**, **Images** et **Code**. Ouvre le contrôle de tri pour choisir l’ordre du plus récent au plus ancien ou l’inverse, inclure les liens masqués ou n’afficher que l’activité signalée.
+
+Les deux directions n’ont pas le même sens :
+
+- l’activité sous l’entrée est liée **depuis cette entrée** ; et
+- **Lié depuis** liste les entrées qui pointent **vers cette entrée**.
+
+Par exemple, le journal de mission de Project Waddle contient sa photo de lancement, sa requête de diagnostic et son minuteur d’appel, tandis que la tâche de revue du lancement apparaît sous **Lié depuis** parce qu’elle référence également le journal.
+
+Ouvre la pastille de tri pour préparer plusieurs changements de visibilité. Choisis l’ordre, l’inclusion des entrées masquées et l’affichage des seules entrées signalées. La liste change lorsque tu sélectionnes la coche pour terminer la feuille ; la fermer autrement annule les choix préparés.
+
+<ManualScreenshot
+  caseId="journal/linked-filter"
+  alt="Feuille Filtrer et trier au-dessus de l’activité liée à Project Waddle avec Du plus ancien au plus récent et Afficher les entrées masquées sélectionnés"
+/>
+
+## Ouvrir et enregistrer une photo
+
+Sélectionne une photo intégrée pour ouvrir la visionneuse plein écran. Pince ou utilise ses commandes pour zoomer et te déplacer, puis réinitialise l’image si nécessaire. L’enregistrement utilise le fichier d’origine plutôt que l’aperçu réduit : sur mobile, l’image est écrite dans la photothèque après autorisation ; sur ordinateur, la boîte de dialogue du système te laisse choisir l’emplacement.
+
+## Journal ou tâche ?
+
+| Utilise le Journal pour… | Utilise les tâches pour… |
+| --- | --- |
+| Un journal de mission, une photo, un mémo vocal, une mesure, le souvenir d’un événement ou un résultat IA | Une action avec un état, une priorité, une estimation, une liste de contrôle ou une session de travail |
+| « Les sardines d’Europe sont plus froides que ne l’exige le protocole diplomatique » | « Recalibrer le distributeur de poissons en apesanteur » |
+| Des preuves et du contexte que tu voudras peut-être consulter à nouveau | Un travail à planifier, exécuter et terminer |
+
+Relie-les lorsqu’une tâche a besoin des preuves du Journal. L’action reste ainsi ciblée tout en conservant l’historique opérationnel plus riche qui l’étaye.

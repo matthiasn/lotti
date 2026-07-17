@@ -33,6 +33,7 @@ import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
@@ -77,6 +78,10 @@ import '../../../daily_os_next/screenshot_harness.dart';
 
 const _subdir = 'journal';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+
+AppLocalizations _messages(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(AppCommandHost)))!;
+
 const _briefingId = 'journal-project-waddle-briefing';
 
 class _ManualJournalPageController extends JournalPageController {
@@ -718,15 +723,19 @@ void main() {
           ),
         );
         await settleFrames(tester, 6);
+        final messages = _messages(tester);
         expect(
-          find.text(_t('Filter journal', 'Tagebuch filtern')),
+          find.text(messages.journalFilterTitle),
           findsOneWidget,
         );
         expect(
-          find.text(_t('Entry types', 'Eintragstypen')),
+          find.text(messages.journalFilterEntryTypesTitle),
           findsOneWidget,
         );
-        expect(find.text(_t('Category', 'Kategorie')), findsWidgets);
+        expect(
+          find.text(stripTrailingColon(messages.taskCategoryLabel)),
+          findsWidgets,
+        );
         await captureScreenshot(
           tester,
           'journal_filters_${viewport}_$theme',
@@ -743,14 +752,15 @@ void main() {
         );
         await tester.tap(find.byType(DesignSystemFloatingActionButton));
         await settleFrames(tester, 6);
-        expect(find.text(_t('Add', 'Hinzufügen')), findsOneWidget);
-        expect(find.text(_t('Event', 'Ereignis')), findsOneWidget);
-        expect(find.text(_t('Task', 'Aufgabe')), findsOneWidget);
+        final messages = _messages(tester);
+        expect(find.text(messages.createEntryTitle), findsOneWidget);
+        expect(find.text(messages.addActionAddEvent), findsOneWidget);
+        expect(find.text(messages.addActionAddTask), findsOneWidget);
         expect(
-          find.text(_t('Audio Recording', 'Audioaufnahme')),
+          find.text(messages.addActionAddAudioRecording),
           findsOneWidget,
         );
-        expect(find.text(_t('Text Entry', 'Texteingabe')), findsOneWidget);
+        expect(find.text(messages.addActionAddText), findsOneWidget);
         await captureScreenshot(
           tester,
           'journal_create_${viewport}_$theme',
@@ -809,12 +819,13 @@ void main() {
         await settleFrames(tester, 8);
 
         expect(find.byType(EntryDateTimeEditor), findsOneWidget);
+        final messages = _messages(tester);
         expect(
-          find.text(_t('Date & Time', 'Datum & Uhrzeit')),
+          find.text(messages.journalDateTimeRangeTitle),
           findsOneWidget,
         );
-        expect(find.text(_t('Start time', 'Startzeit')), findsOneWidget);
-        expect(find.text(_t('End time', 'Endzeit')), findsOneWidget);
+        expect(find.text(messages.journalStartTimeLabel), findsOneWidget);
+        expect(find.text(messages.journalEndTimeLabel), findsOneWidget);
         await captureScreenshot(
           tester,
           'journal_date_time_editor_${viewport}_$theme',
@@ -832,7 +843,7 @@ void main() {
               .first,
         );
         await settleFrames(tester, 8);
-        expect(find.text(_t('Start date', 'Startdatum')), findsOneWidget);
+        expect(find.text(messages.journalStartDateLabel), findsOneWidget);
         expect(find.text(_t('July 2026', 'Juli 2026')), findsOneWidget);
         await captureScreenshot(
           tester,
@@ -864,9 +875,19 @@ void main() {
           scrollable: scrollable.first,
         );
         await settleFrames(tester, 4);
-        expect(find.text(_t('Timer', 'Timer')), findsOneWidget);
-        expect(find.text(_t('Images', 'Bilder')), findsOneWidget);
-        expect(find.text(_t('Code', 'Code')), findsOneWidget);
+        final messages = _messages(tester);
+        expect(
+          find.text(messages.journalLinkedEntriesActivityFilterTimer),
+          findsOneWidget,
+        );
+        expect(
+          find.text(messages.journalLinkedEntriesActivityFilterImages),
+          findsOneWidget,
+        );
+        expect(
+          find.text(messages.journalLinkedEntriesActivityFilterCode),
+          findsOneWidget,
+        );
         expect(
           find.textContaining(
             _t(
@@ -907,24 +928,25 @@ void main() {
         expect(find.byType(LinkedEntriesActivityFilterBar), findsOneWidget);
         await tester.tap(filterTrigger);
         await settleFrames(tester, 6);
+        final messages = _messages(tester);
 
         expect(
-          find.text(_t('Filter & Sort', 'Filtern & Sortieren')),
+          find.text(messages.journalLinkedEntriesFilterModalTitle),
           findsOneWidget,
         );
         expect(
-          find.text(_t('Newest first', 'Neueste zuerst')),
+          find.text(messages.journalLinkedEntriesSortNewestFirst),
           findsWidgets,
         );
         expect(
-          find.text(_t('Oldest first', 'Älteste zuerst')),
+          find.text(messages.journalLinkedEntriesSortOldestFirst),
           findsOneWidget,
         );
-        await tester.tap(find.text(_t('Oldest first', 'Älteste zuerst')));
         await tester.tap(
-          find.text(
-            _t('Show hidden entries', 'Versteckte Einträge anzeigen'),
-          ),
+          find.text(messages.journalLinkedEntriesSortOldestFirst),
+        );
+        await tester.tap(
+          find.text(messages.journalLinkedEntriesShowHidden),
         );
         await settleFrames(tester, 3);
         await captureScreenshot(
@@ -1009,41 +1031,27 @@ void main() {
         final pageContext = tester.element(find.byType(EntryDetailsPage));
         unawaited(RatingModal.show(pageContext, rehearsalTimer.id));
         await settleFrames(tester, 8);
+        final messages = _messages(tester);
 
         expect(find.byType(RatingModal), findsOneWidget);
         expect(
-          find.text(_t('Rate this session', 'Sitzung bewerten')),
+          find.text(messages.sessionRatingTitle),
           findsOneWidget,
         );
         expect(
-          find.text(
-            _t(
-              'How productive was this session?',
-              'Wie produktiv war diese Sitzung?',
-            ),
-          ),
+          find.text(messages.sessionRatingProductivityQuestion),
           findsOneWidget,
         );
         expect(
-          find.text(
-            _t(
-              'How energized did you feel?',
-              'Wie energiegeladen hast du dich gefühlt?',
-            ),
-          ),
+          find.text(messages.sessionRatingEnergyQuestion),
           findsOneWidget,
         );
         expect(
-          find.text(
-            _t(
-              'How focused were you?',
-              'Wie fokussiert warst du?',
-            ),
-          ),
+          find.text(messages.sessionRatingFocusQuestion),
           findsOneWidget,
         );
         expect(
-          find.text(_t('Just right', 'Genau richtig')),
+          find.text(messages.sessionRatingChallengeJustRight),
           findsOneWidget,
         );
         expect(
@@ -1057,7 +1065,7 @@ void main() {
           findsOneWidget,
         );
         final saveButton = tester.widget<FilledButton>(
-          find.widgetWithText(FilledButton, _t('Save', 'Speichern')),
+          find.widgetWithText(FilledButton, messages.sessionRatingSaveButton),
         );
         expect(saveButton.onPressed, isNotNull);
 

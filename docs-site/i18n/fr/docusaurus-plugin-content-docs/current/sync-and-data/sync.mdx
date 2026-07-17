@@ -1,0 +1,164 @@
+---
+title: Synchroniser des appareils
+description: Appaire tes appareils, vérifie leur identité, surveille la livraison et récupère les données manquantes sans deviner.
+---
+
+# Synchroniser des appareils
+
+Lotti Sync maintient les données prises en charge alignées entre tes appareils.
+Chaque appareil a sa propre base de données locale ; la synchronisation fait
+passer les changements par le compte configuré et rattrape un appareil après
+une période hors ligne. La synchronisation ne déplace pas la source de vérité
+dans un cloud Lotti : le service Matrix configuré relaie des charges utiles
+chiffrées de bout en bout entre tes appareils, tandis que chacun conserve sa
+propre copie locale.
+
+Ouvre **Réglages → Synchronisation** pour accéder aux pages de configuration,
+d’état et de récupération. Le nombre affiché à côté de **Boîte d’envoi**
+correspond au travail qui n’a pas encore atteint le service de synchronisation.
+
+<ManualScreenshot
+  caseId="sync/hub"
+  alt="Réglages Lotti Sync avec synchronisation provisionnée, identité de l’appareil, rattrapage, statistiques, boîte d’envoi, conflits et maintenance"
+  caption="Le centre de synchronisation maintient l’état courant près des outils de diagnostic et de récupération. Project Waddle contient actuellement trois éléments de boîte d’envoi à examiner."
+/>
+
+## Appairer un autre appareil
+
+Commence sur un appareil déjà connecté :
+
+1. Ouvre **Réglages → Synchronisation → Synchronisation provisionnée**.
+2. Sur ordinateur, affiche le code QR de transfert. Garde cet écran privé : le
+   lot donne accès à ton compte et à ton salon de synchronisation.
+3. Sur le nouvel appareil, ouvre la même page et scanne le code QR ou colle le
+   lot de provisionnement complet.
+4. Examine le serveur, l’utilisateur et le salon décodés avant de sélectionner
+   **Importer**.
+5. Laisse la première synchronisation se terminer avant de fermer l’une ou
+   l’autre application.
+
+<ManualScreenshot
+  caseId="sync/status"
+  alt="État de synchronisation provisionnée sur mobile et code QR de transfert sécurisé d’appareil sur ordinateur"
+  caption="L’ordinateur peut présenter le code QR de transfert ; le mobile indique le compte connecté et l’état de vérification. Traite ce code QR comme un mot de passe."
+/>
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Revue d’import de provisionnement Lotti affichant le serveur de synchronisation, l’utilisateur et le salon Project Waddle"
+  caption="N’importe que lorsque chaque valeur décodée appartient au compte de synchronisation que tu voulais rejoindre."
+/>
+
+Si l’import signale une erreur, garde l’appareil d’origine connecté, génère un
+nouveau lot de transfert et réessaie avec la valeur complète. Ne modifie pas
+manuellement le lot encodé.
+
+## Vérifier le nouvel appareil
+
+L’appairage connecte l’appareil ; la vérification confirme que les deux
+appareils communiquent sans appareil inconnu entre eux.
+
+<ManualScreenshot
+  caseId="sync/verification"
+  alt="Vérification d’appareil Lotti comparant une séquence d’emoji manchot, poisson, fusée, glace, Terre, lune, étoile et télescope"
+  caption="Compare toute la séquence d’emoji sur les deux appareils. Accepte uniquement si chaque image et son ordre correspondent exactement."
+/>
+
+Compare les emoji en personne ou lors d’un appel de confiance. Sélectionne
+**Accepter** sur les deux appareils seulement lorsque la séquence complète est
+identique. Si un seul emoji diffère, annule la vérification et examine le compte
+et les noms d’appareils avant de recommencer.
+
+## Nommer les appareils et annoncer leurs capacités
+
+Le **profil de nœud de synchronisation** identifie l’appareil actuel auprès du
+reste du groupe de synchronisation. Donne-lui un nom qui distingue la machine
+physique, comme « Mission Control Mac » plutôt que « Ordinateur ».
+
+<ManualScreenshot
+  caseId="sync/node-profile"
+  alt="Profil de nœud Lotti Sync pour Mission Control Mac avec des capacités d’inférence locale et des appareils Project Waddle connus"
+  caption="Des noms d’appareils clairs facilitent beaucoup l’audit de la vérification, des diagnostics et de l’inférence locale épinglée à un appareil."
+/>
+
+La page liste aussi les capacités que l’appareil peut fournir, comme la
+transcription audio locale ou l’inférence locale de modèles de langage. Les
+appareils connus indiquent ce que les autres nœuds ont annoncé le plus
+récemment. La disponibilité de capacité est descriptive : le profil IA concerné
+doit encore être configuré pour l’utiliser.
+
+## Comprendre le rattrapage et le remplissage
+
+La synchronisation normale traite les changements à leur arrivée. Le
+**rattrapage** détecte les écarts dans la séquence reçue des appareils connus et
+redemande les enregistrements manquants.
+
+<ManualScreenshot
+  caseId="sync/backfill"
+  alt="Page Rattrapage Lotti Sync affichant les états entrants, manquants et ignorés, les statistiques de séquence et le rattrapage automatique"
+  caption="Project Waddle a reçu 2 868 enregistrements de séquence et connaît actuellement quatre enregistrements manquants répartis sur deux identifiants d’appareil."
+/>
+
+- **Entrant** est le travail actuellement en attente dans la file entrante.
+- **Manquant** est le nombre d’écarts de séquence connus.
+- **Ignoré** est le travail abandonné par la file entrante après avoir échoué à
+  être traité normalement.
+- **Rattrapage automatique** redemande continuellement les écarts récupérables
+  et est le bon réglage par défaut pour un usage normal.
+- **Récupération avancée** contient des contrôles manuels pour une enquête. Ne
+  l’utilise qu’après avoir laissé le temps à la synchronisation ordinaire et au
+  rattrapage automatique de se stabiliser.
+
+Un nombre non nul d’éléments manquants ne signifie pas automatiquement une
+perte de données : un autre appareil peut encore être hors ligne ou la demande
+être déjà en cours. Enquête lorsque ce nombre reste inchangé alors que tous les
+appareils attendus sont en ligne.
+
+## Lire les statistiques de synchronisation
+
+Les **Statistiques de synchronisation** séparent le volume de messages de la
+santé du traitement. Elles sont utiles lorsque les données semblent obsolètes
+mais que le compte paraît toujours connecté.
+
+<ManualScreenshot
+  caseId="sync/stats"
+  alt="Statistiques Matrix Sync Lotti avec le nombre de messages envoyés, les principaux KPI de traitement, les types de messages, les échecs, les nouvelles tentatives et les totaux d’entités"
+  caption="Les nombres établissent si les messages circulent ; les échecs et nouvelles tentatives planifiées indiquent si le pipeline avance correctement."
+/>
+
+La carte des messages envoyés regroupe les types d’événements Matrix. **Top
+KPI** résume les messages traités, les échecs et les nouvelles tentatives
+planifiées, tandis que les totaux d’entités montrent quelles familles de
+charges utiles Lotti ont contribué à ce travail. Un nombre de messages traités
+qui augmente avec des échecs stables est sain. Des échecs répétés ou des
+nouvelles tentatives qui ne se résorbent jamais demandent de vérifier la boîte
+d’envoi et la connectivité de l’autre appareil.
+
+## Examiner la boîte d’envoi
+
+La **boîte d’envoi** est la file locale des changements qui attendent d’être
+envoyés. Filtre-la par état pour séparer le travail actif des échecs.
+
+<ManualScreenshot
+  caseId="sync/outbox"
+  alt="Boîte d’envoi Lotti Sync filtrée sur une photo échouée du joint de pression de l’habitat Project Waddle, avec des actions de nouvelle tentative et de suppression"
+  caption="Les éléments échoués conservent leur sujet, le détail de leur charge utile, leur historique de tentatives et le chemin local de la pièce jointe afin que la récupération soit précise plutôt qu’aveugle."
+/>
+
+- Les éléments **En attente** attendent leur tour.
+- Les éléments **Envoi** sont en cours de transmission.
+- Les éléments **Échoués** ont épuisé leur tentative actuelle et restent
+  disponibles pour examen.
+- Les éléments **Envoyés** ont été livrés et sont conservés temporairement
+  pour le diagnostic.
+
+Utilise **Réessayer tout** après avoir corrigé le problème de connexion ou de
+compte sous-jacent. Retire un élément échoué seulement lorsque tu ne veux
+intentionnellement pas que ce changement atteigne les autres appareils. Le
+retirer de la boîte d’envoi ne remplace pas la réparation de l’entrée ou de la
+pièce jointe locale correspondante.
+
+Poursuis avec [Résoudre les conflits de synchronisation](./conflicts.mdx)
+lorsque deux appareils ont modifié indépendamment la même entrée, ou avec
+[Maintenance de la synchronisation](./maintenance.mdx) pour les outils de
+récupération au niveau de la base de données.

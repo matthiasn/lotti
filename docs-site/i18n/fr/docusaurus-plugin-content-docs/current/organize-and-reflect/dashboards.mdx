@@ -1,0 +1,119 @@
+---
+title: Crée des tableaux de bord utiles
+description: Combine habitudes, mesures, santé, questionnaires et entraînements dans une vue opérationnelle réutilisable.
+---
+
+# Crée des tableaux de bord utiles
+
+Un tableau de bord rassemble des graphiques qui répondent à une question
+récurrente. **Opérations de la colonie** réunit la pression de l’habitat, la
+demande de sardines et l’effectif de l’expédition ; **État de préparation de la
+mission** isole un examen de lancement privé. Construis-le autour d’une décision
+plutôt que d’accumuler tous les nombres disponibles.
+
+<ManualScreenshot
+  caseId="dashboards/settings-list"
+  alt="Réglages des tableaux de bord contenant Opérations de la colonie et le tableau de bord privé État de préparation de la mission"
+/>
+
+## Crée un tableau de bord
+
+1. Ouvre **Réglages → Gestion des tableaux de bord**.
+2. Sélectionne **Créer un tableau de bord**.
+3. Ajoute un nom clair et une description de la question à laquelle il doit répondre.
+4. Attribue éventuellement une catégorie et un réglage de confidentialité.
+5. Ajoute et ordonne les graphiques, puis enregistre.
+
+<ManualScreenshot
+  caseId="dashboards/settings-detail"
+  alt="Éditeur du tableau de bord Opérations de la colonie, attribué à Opérations Pingouins, avec options de confidentialité et d’activité"
+/>
+
+- **Catégorie** rend le tableau de bord disponible pour le filtrage par catégorie.
+- **Privé** masque le tableau de bord tant que les entrées privées ne sont pas affichées.
+- **Actif** détermine s’il apparaît dans la liste des tableaux de bord sans
+  supprimer sa définition.
+
+## Compose et ordonne les graphiques
+
+<ManualScreenshot
+  caseId="dashboards/charts"
+  alt="Liste de graphiques Opérations de la colonie avec Pression de l’habitat — moyenne quotidienne, Sardines consommées — somme quotidienne et Pingouins recensés — somme quotidienne"
+  caption="Fais glisser la poignée pour réordonner. Sélectionne le contrôle d’ajustement d’un graphique de mesure pour modifier son agrégation, ou retire-le avec ×."
+/>
+
+L’ordre des graphiques est celui du tableau de bord. Place d’abord le signal qui
+donne le cadre aux autres. Pour Opérations de la colonie, la pression de
+l’habitat ouvre la marche, car un habitat dangereux change la façon
+d’interpréter tous les autres nombres.
+
+Les graphiques de mesure conservent leur propre agrégation dans l’élément du
+tableau de bord. Ainsi, une même mesure peut apparaître avec un résumé différent
+dans un autre tableau de bord sans modifier les observations sous-jacentes.
+
+## Ajoute des graphiques depuis les sources prises en charge
+
+<ManualScreenshot
+  caseId="dashboards/sources"
+  alt="Éditeur de tableau de bord proposant Habitudes, Mesures, Santé, Questionnaires et Entraînements comme sources de graphiques, ainsi que l’export JSON"
+/>
+
+L’éditeur peut ajouter :
+
+- **Habitudes** pour l’historique de réalisation.
+- **Mesures** pour les observations numériques définies par l’utilisateur.
+- **Santé** pour les données prises en charge par la plateforme et ses autorisations.
+- **Questionnaires** pour les résultats des questionnaires configurés.
+- **Entraînements** importés depuis les sources de santé prises en charge.
+
+Déplie une source, sélectionne un ou plusieurs graphiques, puis ajoute-les. Leur
+disponibilité dépend des définitions et données de plateforme présentes ; les
+demandes d’autorisation de santé et les types pris en charge varient selon
+l’appareil.
+
+## Ouvre et interprète un tableau de bord
+
+Ouvre **Aperçus** pour voir les tableaux de bord actifs. La liste montre
+l’icône de catégorie, le nom et le rôle de chacun. Utilise le filtre de l’en-tête
+pour te concentrer sur une ou plusieurs catégories.
+
+<ManualScreenshot
+  caseId="dashboards/list"
+  alt="Liste de tableaux de bord Aperçus de Lotti, avec Opérations de la colonie et le tableau de bord privé État de préparation de la mission"
+  caption="Sur ordinateur, le panneau droit est réservé au tableau de bord sélectionné ; sur mobile, le tableau de bord sélectionné s’ouvre sur une page distincte."
+/>
+
+Sélectionne **Opérations de la colonie** pour ouvrir ses graphiques. Sur
+ordinateur, la liste et le tableau de bord sélectionné restent côte à côte. Sur
+mobile, le tableau de bord s’ouvre sur sa propre page, avec un bouton retour.
+
+<ManualScreenshot
+  caseId="dashboards/view"
+  alt="Tableau de bord Opérations de la colonie affichant 90 jours de pression de l’habitat et de sardines consommées, avec la liste des tableaux de bord à côté sur ordinateur"
+  caption="L’en-tête fixe laisse visibles les commandes de période 30, 90, 180 et 365 jours pendant que les graphiques défilent dessous."
+/>
+
+La période sélectionnée s’applique à tous les graphiques de la page. Les cartes
+de graphique conservent leurs propres unités et agrégations : la pression de
+l’habitat utilise une moyenne quotidienne, tandis que la consommation de
+sardines et l’effectif de manchots utilisent des sommes quotidiennes.
+Sélectionne le **+** d’une carte de mesure pour enregistrer une nouvelle
+observation de ce type.
+
+<ManualScreenshot
+  caseId="dashboards/view-crew"
+  alt="Tableau de bord Opérations de la colonie, défilé jusqu’aux graphiques Sardines consommées et Pingouins recensés"
+  caption="Une brève baisse à 36 manchots apparaît dans l’historique de l’équipage sur 90 jours ; les jours alentours reviennent aux 37 attendus."
+/>
+
+Considère un graphique comme une preuve, pas comme un verdict. Vérifie
+l’agrégation, les unités, la plage de dates, les observations manquantes et
+l’état de confidentialité avant d’en tirer des conclusions.
+
+## Exporte la configuration d’un tableau de bord
+
+**Enregistrer et copier le JSON** enregistre le tableau de bord, puis copie sa
+configuration et les définitions de mesures référencées. C’est utile pour
+inspecter ou déplacer une configuration, mais ce n’est pas un lien de
+synchronisation en direct : des modifications ultérieures ne mettent pas à jour
+une charge déjà copiée.

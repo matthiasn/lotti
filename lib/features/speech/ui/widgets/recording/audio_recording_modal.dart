@@ -634,7 +634,7 @@ class _AudioRecordingModalContentState
           if (visibility.speech)
             LottiAnimatedCheckbox(
               key: const Key('speech_recognition_checkbox'),
-              label: 'Speech Recognition',
+              label: context.messages.speechModalTitle,
               value: state.enableSpeechRecognition ?? true,
               onChanged: (value) {
                 controller.setEnableSpeechRecognition(enable: value);

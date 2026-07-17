@@ -53,6 +53,9 @@ import '../../onboarding/state/recording_style_test_utils.dart';
 const String _subdir = 'settings_preferences';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
+AppLocalizations _messages(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(Scaffold).first))!;
+
 enum _PreferenceSurface {
   theming('/settings/theming'),
   recordingStyle('/settings/recording-style'),
@@ -288,7 +291,8 @@ void main() {
             navService: navService,
             overrides: overrides(),
           );
-          expect(find.text(_t('Theming', 'Farbschema')), findsWidgets);
+          final messages = _messages(tester);
+          expect(find.text(messages.settingsThemingTitle), findsWidgets);
           expect(find.text('Sakura'), findsOneWidget);
           expect(find.text('Outer Space'), findsOneWidget);
           await captureScreenshot(
@@ -330,11 +334,11 @@ void main() {
             findsWidgets,
           );
           expect(
-            find.text(_t('Modern — energy orb', 'Modern — Energie-Orb')),
+            find.text(messages.onboardingRecordingStyleModern),
             findsOneWidget,
           );
           expect(
-            find.text(_t('Analogue — VU meter', 'Analog — VU-Meter')),
+            find.text(messages.onboardingRecordingStyleAnalogue),
             findsOneWidget,
           );
           expect(
@@ -361,20 +365,33 @@ void main() {
             navService: navService,
             overrides: overrides(),
           );
-          expect(find.text(_t('Speech', 'Sprache')), findsWidgets);
-          expect(find.text(_t('Male 3', 'Männlich 3')), findsOneWidget);
-          expect(find.text(_t('Voice', 'Stimme')), findsOneWidget);
+          final messages = _messages(tester);
+          expect(find.text(messages.settingsSpeechTitle), findsWidgets);
+          expect(
+            find.text('${messages.speechVoiceGenderMale} 3'),
+            findsOneWidget,
+          );
+          expect(find.text(messages.speechSettingsVoiceLabel), findsOneWidget);
           await captureScreenshot(
             tester,
             'speech_voice_${viewport}_$theme',
             subdir: _subdir,
           );
 
-          await tester.tap(find.text(_t('Female', 'Weiblich')).last);
+          await tester.tap(find.text(messages.speechVoiceGenderFemale).last);
           await settleFrames(tester, 4);
-          expect(find.text(_t('Female 1', 'Weiblich 1')), findsOneWidget);
-          expect(find.text(_t('Female 5', 'Weiblich 5')), findsOneWidget);
-          expect(find.text(_t('Male 3', 'Männlich 3')), findsNothing);
+          expect(
+            find.text('${messages.speechVoiceGenderFemale} 1'),
+            findsOneWidget,
+          );
+          expect(
+            find.text('${messages.speechVoiceGenderFemale} 5'),
+            findsOneWidget,
+          );
+          expect(
+            find.text('${messages.speechVoiceGenderMale} 3'),
+            findsNothing,
+          );
           await captureScreenshot(
             tester,
             'speech_voice_options_${viewport}_$theme',
@@ -394,17 +411,19 @@ void main() {
             navService: navService,
             overrides: overrides(),
           );
+          final messages = _messages(tester);
           expect(
-            find.text(_t('Keyboard shortcuts', 'Tastaturkurzbefehle')),
+            find.text(messages.keyboardShortcutsTitle),
             findsWidgets,
           );
           expect(
-            find.text(
-              _t('Open command palette', 'Befehlspalette öffnen'),
-            ),
+            find.text(messages.keyboardCommandOpenPalette),
             findsOneWidget,
           );
-          expect(find.text(_t('General', 'Allgemein')), findsOneWidget);
+          expect(
+            find.text(messages.keyboardCommandCategoryGeneral),
+            findsOneWidget,
+          );
           await captureScreenshot(
             tester,
             'keyboard_shortcuts_catalog_${viewport}_$theme',
@@ -416,12 +435,14 @@ void main() {
           await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
           await settleFrames(tester, 4);
           expect(
-            find.text(_t('Command palette', 'Befehlspalette')),
+            find.text(messages.commandPaletteTitle),
             findsOneWidget,
           );
-          expect(find.text(_t('Task', 'Aufgabe')), findsWidgets);
+          expect(find.text(messages.fileMenuNewTask), findsWidgets);
           expect(
-            find.text(_t('Go to Tasks', 'Zu Aufgaben wechseln')),
+            find.text(
+              messages.keyboardCommandNavigate(messages.navTabTitleTasks),
+            ),
             findsWidgets,
           );
           await captureScreenshot(
@@ -431,29 +452,24 @@ void main() {
           );
 
           Navigator.of(
-            tester.element(find.text(_t('Command palette', 'Befehlspalette'))),
+            tester.element(find.text(messages.commandPaletteTitle)),
           ).pop();
           await settleFrames(tester, 4);
           expect(
-            find.text(_t('Command palette', 'Befehlspalette')),
+            find.text(messages.commandPaletteTitle),
             findsNothing,
           );
 
           await tester.enterText(
             find.byType(TextField),
-            _t('rename', 'umbenennen'),
+            messages.keyboardCommandRename,
           );
           await settleFrames(tester, 4);
           expect(
-            find.text(
-              _t(
-                'Rename focused item',
-                'Fokussiertes Element umbenennen',
-              ),
-            ),
+            find.text(messages.keyboardCommandRename).last,
             findsOneWidget,
           );
-          expect(find.text(_t('Task', 'Aufgabe')), findsNothing);
+          expect(find.text(messages.fileMenuNewTask), findsNothing);
           await captureScreenshot(
             tester,
             'keyboard_shortcuts_search_${viewport}_$theme',
@@ -473,15 +489,14 @@ void main() {
             navService: navService,
             overrides: overrides(),
           );
-          expect(find.text(_t('Animations', 'Animationen')), findsWidgets);
+          final messages = _messages(tester);
+          expect(find.text(messages.settingsCelebrationsTitle), findsWidgets);
           expect(
-            find.text(
-              _t('Celebration animations', 'Abschluss-Animationen'),
-            ),
+            find.text(messages.settingsCelebrationsEnabledTitle),
             findsOneWidget,
           );
           expect(
-            find.text(_t('Completion haptics', 'Abschluss-Haptik')),
+            find.text(messages.settingsCelebrationsHapticsTitle),
             findsOneWidget,
           );
           await captureScreenshot(
@@ -490,16 +505,22 @@ void main() {
             subdir: _subdir,
           );
 
-          final style = find.text(_t('Style', 'Stil'));
+          final style = find.text(messages.settingsCelebrationsStyleTitle);
           expect(style, findsOneWidget);
           _alignInOuterScrollView(tester, style);
           await settleFrames(tester, 4);
-          expect(find.text(_t('Sparks', 'Funken')), findsOneWidget);
           expect(
-            find.text(_t('Combine two', 'Zwei kombinieren')),
+            find.text(messages.settingsCelebrationsVariantSparks),
             findsOneWidget,
           );
-          expect(find.text(_t('Try it', 'Ausprobieren')), findsOneWidget);
+          expect(
+            find.text(messages.settingsCelebrationsVariantCombine),
+            findsOneWidget,
+          );
+          expect(
+            find.text(messages.settingsCelebrationsPreviewTitle),
+            findsOneWidget,
+          );
           await captureScreenshot(
             tester,
             'celebrations_styles_${viewport}_$theme',
@@ -528,17 +549,19 @@ void main() {
             ),
           );
           await settleFrames(tester, 6);
-          expect(find.text(_t('Sparks', 'Funken')), findsOneWidget);
+          final messages = _messages(tester);
           expect(
-            find.text(
-              _t(
-                'Changes save and apply everywhere instantly',
-                'Änderungen werden sofort überall gespeichert und angewendet',
-              ),
-            ),
+            find.text(messages.settingsCelebrationsVariantSparks),
             findsOneWidget,
           );
-          expect(find.text(_t('Shape', 'Form')), findsOneWidget);
+          expect(
+            find.text(messages.settingsCelebrationsPlaygroundLiveNote),
+            findsOneWidget,
+          );
+          expect(
+            find.text(messages.settingsCelebrationsGroupShape),
+            findsOneWidget,
+          );
           await captureScreenshot(
             tester,
             'celebrations_playground_${viewport}_$theme',

@@ -52,6 +52,9 @@ import '../../daily_os_next/screenshot_harness.dart';
 
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
+AppLocalizations _messages(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(Scaffold).first))!;
+
 final String _typedMission = _t(
   'Inspect the Europa sardine relay before the emperor penguin roll call',
   'Europa-Sardinenrelais vor dem Zählappell der Kaiserpinguine inspizieren',
@@ -332,8 +335,9 @@ void main() {
   }
 
   Future<void> driveToProviders(WidgetTester tester) async {
-    await tapText(tester, _t('Choose your AI brain', 'KI-Gehirn wählen'));
-    await tapText(tester, _t('More options', 'Mehr Optionen'));
+    final messages = _messages(tester);
+    await tapText(tester, messages.onboardingWelcomeConnectButton);
+    await tapText(tester, messages.onboardingConnectMoreOptions);
     expect(find.text('Ollama'), findsOneWidget);
   }
 
@@ -344,42 +348,42 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1100));
     await settleFrames(tester, 4);
     expect(
-      find.text(_t('Connection verified', 'Verbindung bestätigt')),
+      find.text(_messages(tester).aiProviderConnectionVerifiedTitle),
       findsOneWidget,
     );
   }
 
   Future<void> driveToSuccess(WidgetTester tester) async {
     await driveToApiKey(tester);
-    await tapText(tester, _t('Connect', 'Verbinden'));
-    expect(find.text(_t("You're all set", 'Alles bereit')), findsOneWidget);
+    final messages = _messages(tester);
+    await tapText(tester, messages.onboardingApiKeyConnect);
+    expect(find.text(messages.onboardingSuccessTitle), findsOneWidget);
   }
 
   Future<void> driveToRecordingStyle(WidgetTester tester) async {
     await driveToSuccess(tester);
-    await tapText(tester, _t('Get started', "Los geht's"));
+    final messages = _messages(tester);
+    await tapText(tester, messages.onboardingSuccessContinue);
     expect(
-      find.text(
-        _t('How should recording feel?', 'Wie soll die Aufnahme wirken?'),
-      ),
+      find.text(messages.onboardingRecordingStyleTitle),
       findsOneWidget,
     );
   }
 
   Future<void> driveToCategories(WidgetTester tester) async {
     await driveToRecordingStyle(tester);
-    await tapText(tester, _t('Continue', 'Weiter'));
+    final messages = _messages(tester);
+    await tapText(tester, messages.onboardingRecordingStyleContinue);
     expect(
-      find.text(
-        _t('Where should your AI work?', 'Wo soll deine KI arbeiten?'),
-      ),
+      find.text(messages.onboardingCategoryTitle),
       findsOneWidget,
     );
   }
 
   Future<void> driveToFirstTaskPrompt(WidgetTester tester) async {
     await driveToCategories(tester);
-    await tapText(tester, _t('Add your own', 'Eigene hinzufügen'), frames: 4);
+    final messages = _messages(tester);
+    await tapText(tester, messages.onboardingCategoryAddOwn, frames: 4);
     await tester.enterText(
       find.byType(TextField).last,
       _t('Penguin Operations', 'Pinguinbetrieb'),
@@ -390,7 +394,7 @@ void main() {
       findsOneWidget,
     );
 
-    await tapText(tester, _t('Add your own', 'Eigene hinzufügen'), frames: 4);
+    await tapText(tester, messages.onboardingCategoryAddOwn, frames: 4);
     await tester.enterText(
       find.byType(TextField).last,
       _t('Mission Control', 'Missionskontrolle'),
@@ -400,10 +404,10 @@ void main() {
       find.text(_t('Mission Control', 'Missionskontrolle')),
       findsOneWidget,
     );
-    await tapText(tester, _t('Continue', 'Weiter'), frames: 12);
+    await tapText(tester, messages.onboardingCategoryContinue, frames: 12);
 
     expect(
-      find.text(_t('Create your first task', 'Erstelle deine erste Aufgabe')),
+      find.text(messages.onboardingFirstTaskTitle),
       findsOneWidget,
     );
     expect(
@@ -420,17 +424,12 @@ void main() {
     await driveToFirstTaskPrompt(tester);
     await tester.tap(
       find.bySemanticsLabel(
-        _t('Record your thought', 'Deinen Gedanken aufnehmen'),
+        _messages(tester).onboardingCaptureOrbLabel,
       ),
     );
     await settleFrames(tester, 6);
     expect(
-      find.text(
-        _t(
-          "Listening… tap when you're done",
-          'Ich höre zu … tippe, wenn du fertig bist',
-        ),
-      ),
+      find.text(_messages(tester).onboardingCaptureListening),
       findsOneWidget,
     );
     expect(find.byType(AiVoiceInputShader), findsOneWidget);
@@ -438,14 +437,16 @@ void main() {
 
   Future<void> driveToCreatedTask(WidgetTester tester) async {
     await driveToFirstTaskPrompt(tester);
-    await tapText(tester, _t('Rather type?', 'Lieber tippen?'), frames: 4);
+    await tapText(
+      tester,
+      _messages(tester).onboardingCaptureRatherType,
+      frames: 4,
+    );
     await tester.enterText(find.byType(TextField).last, _typedMission);
     await tapText(tester, 'OK', frames: 10);
     await settleFrames(tester, 6);
     expect(
-      find.text(
-        _t('Your first task is ready', 'Deine erste Aufgabe ist fertig'),
-      ),
+      find.text(_messages(tester).onboardingFirstTaskCreatedTitle),
       findsOneWidget,
     );
     expect(find.text(_createdTaskTitle), findsOneWidget);
@@ -489,22 +490,12 @@ void main() {
       switch (scenario) {
         case _OnboardingCase.settings:
           expect(
-            find.text(
-              _t(
-                "You've created your first AI task",
-                'Du hast deine erste KI-Aufgabe erstellt',
-              ),
-            ),
+            find.text(_messages(tester).settingsOnboardingStatusActivated),
             findsOneWidget,
           );
         case _OnboardingCase.welcome:
           expect(
-            find.text(
-              _t(
-                'Talk. Lotti turns it into a plan.',
-                'Sprich. Lotti macht einen Plan daraus.',
-              ),
-            ),
+            find.text(_messages(tester).onboardingWelcomeTitle),
             findsOneWidget,
           );
         case _OnboardingCase.providers:

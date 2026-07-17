@@ -53,6 +53,10 @@ import '../../../daily_os_next/screenshot_harness.dart';
 const _subdir = 'events';
 const _detailEventId = 'event-project-waddle-launch-gala';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+
+AppLocalizations _messages(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(EventDetailView)))!;
+
 const ValueKey<String> _precacheKey = ValueKey<String>(
   'events-manual-precache-host',
 );
@@ -521,7 +525,10 @@ void main() {
           find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
           findsOneWidget,
         );
-        expect(find.text(_t('Summary', 'Zusammenfassung')), findsOneWidget);
+        expect(
+          find.text(_messages(tester).eventsSummaryTitle),
+          findsOneWidget,
+        );
         final galleryImages = find.descendant(
           of: find.byType(EventPhotoGrid),
           matching: find.byType(RawImage),
@@ -564,8 +571,14 @@ void main() {
           scrollable: scrollable.first,
         );
         await settleFrames(tester, 4);
-        expect(find.text(_t('Photos', 'Fotos')), findsOneWidget);
-        expect(find.text(_t('Timeline', 'Zeitleiste')), findsOneWidget);
+        expect(
+          find.text(_messages(tester).eventsPhotosSection),
+          findsOneWidget,
+        );
+        expect(
+          find.text(_messages(tester).eventsTimelineSection),
+          findsOneWidget,
+        );
         expect(
           find.text(
             _t(

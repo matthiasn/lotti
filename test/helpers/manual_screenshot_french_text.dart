@@ -477,7 +477,8 @@ const _copy = <String, String>{
       "Les 37 manchots empereurs sont recensés. La pression de l'habitat est restée à 101,3 kPa pendant la nuit ; le risque restant pour le lancement est le calibrage du distributeur de sardines en apesanteur.",
   "Habitat stable; zero-gravity sardine feeder blocks sign-off.":
       "Habitat stable ; le distributeur de sardines en apesanteur bloque la validation.",
-  """## Latest assessment
+  """
+## Latest assessment
 
 - Pressure seals A–F stayed stable across the night shift.
 - 840 sardines are loaded; feeder calibration still blocks sign-off.
@@ -486,7 +487,8 @@ const _copy = <String, String>{
 ## Recommended next step
 
 Run the feeder test, attach the telemetry image, then request launch approval.""":
-      """## Dernière évaluation
+      """
+## Dernière évaluation
 
 - Les joints de pression A–F sont restés stables pendant l'équipe de nuit.
 - 840 sardines sont chargées ; le calibrage du distributeur bloque toujours la validation.

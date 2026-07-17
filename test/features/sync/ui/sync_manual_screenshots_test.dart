@@ -804,8 +804,6 @@ void main() {
           find.textContaining(messages.settingsMatrixMetrics),
           findsOneWidget,
         );
-        expect(find.text('Top KPIs'), findsOneWidget);
-        expect(find.text('Processed'), findsWidgets);
       case _SyncSurface.outbox:
         expect(
           find.text(
@@ -826,7 +824,7 @@ void main() {
           find.text(messages.syncListCountSummary(label, 2)),
           findsOneWidget,
         );
-        expect(find.text(_t('Task', 'Aufgabe')), findsOneWidget);
+        expect(find.text(messages.entryTypeLabelTask), findsOneWidget);
       case _SyncSurface.conflictDetail:
         expect(find.text(messages.conflictFieldTitle), findsOneWidget);
         expect(find.text(messages.conflictFieldBody), findsOneWidget);

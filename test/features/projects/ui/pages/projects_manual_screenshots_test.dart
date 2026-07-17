@@ -24,6 +24,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
@@ -56,6 +57,9 @@ import '../../test_utils.dart';
 const _subdir = 'projects';
 const _projectWaddleId = 'project-waddle';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+
+AppLocalizations _messages(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(AppCommandHost)))!;
 
 class _ManualProjectDetailController extends ProjectDetailController {
   _ManualProjectDetailController(this._record) : super(_record.project.meta.id);
@@ -580,12 +584,19 @@ void main() {
         );
         await tester.tap(find.byIcon(Icons.filter_list_rounded));
         await settleFrames(tester, 6);
+        final messages = _messages(tester);
         expect(
-          find.text(_t('Filter projects', 'Projekte filtern')),
+          find.text(messages.projectsFilterTooltip),
           findsOneWidget,
         );
-        expect(find.text(_t('Status', 'Status')), findsOneWidget);
-        expect(find.text(_t('Category', 'Kategorie')), findsOneWidget);
+        expect(
+          find.text(stripTrailingColon(messages.projectsFilterStatusLabel)),
+          findsOneWidget,
+        );
+        expect(
+          find.text(stripTrailingColon(messages.taskCategoryLabel)),
+          findsOneWidget,
+        );
         await captureScreenshot(
           tester,
           'projects_filters_${viewport}_$theme',
@@ -651,15 +662,13 @@ void main() {
           mobile: const ProjectDetailPage(projectId: _projectWaddleId),
           desktop: const ProjectDetailPage(projectId: _projectWaddleId),
         );
-        expect(
-          find.text(_t('Project Details', 'Projektdetails')),
-          findsOneWidget,
-        );
-        expect(find.text(_t('Change status', 'Status ändern')), findsOneWidget);
+        final messages = _messages(tester);
+        expect(find.text(messages.projectDetailTitle), findsOneWidget);
+        expect(find.text(messages.projectStatusChangeTitle), findsOneWidget);
         expect(find.text('Project Waddle'), findsOneWidget);
-        expect(find.text(_t('Target Date', 'Zieldatum')), findsOneWidget);
+        expect(find.text(messages.projectTargetDateLabel), findsOneWidget);
         expect(
-          find.text(_t('Project health', 'Projektgesundheit')),
+          find.text(messages.projectHealthSectionTitle),
           findsOneWidget,
         );
         await captureScreenshot(

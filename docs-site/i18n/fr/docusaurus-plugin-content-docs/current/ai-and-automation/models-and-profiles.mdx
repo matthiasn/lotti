@@ -1,0 +1,136 @@
+---
+title: Orienter le travail avec des modèles et profils
+description: Décris une fois les capacités des modèles, puis utilise les profils d’inférence pour orienter le raisonnement, la vision, l’audio et la génération d’images.
+---
+
+# Orienter le travail avec des modèles et profils
+
+Un fournisseur indique à Lotti où se connecter. Un modèle enregistre un
+identifiant de modèle chez ce fournisseur et ses capacités. Un profil
+d’inférence assigne ensuite ces modèles aux types de travail que Lotti connaît.
+Tu n’as ainsi pas à décider quel modèle traite l’audio dans chaque tâche ou
+règle d’automatisation.
+
+## Examiner les modèles enregistrés
+
+Ouvre **Paramètres → Paramètres IA → Modèles**. La liste regroupe les modèles par
+fournisseur et propose des filtres de capacité pour le texte, la vision,
+l’audio et le raisonnement.
+
+<ManualScreenshot
+  caseId="ai/models"
+  alt="Liste des modèles IA Lotti avec les modèles du Projet Waddle de texte, réflexion, vision, transcription et génération d’images"
+  caption="L’espace du Projet Waddle mélange des modèles cloud et locaux tout en rendant explicites les capacités de chaque modèle."
+/>
+
+Le contrôle **Réveils d’agents simultanés**, en haut des Paramètres IA,
+limite le nombre d’agents différents qui peuvent lancer une inférence en même
+temps. Une valeur élevée peut améliorer le débit, mais augmente aussi les
+requêtes simultanées au fournisseur et la charge sur l’appareil local. Reste
+prudent lorsqu’un fournisseur a des limites de débit strictes ou qu’un serveur
+de modèles local a peu de mémoire.
+
+## Ajouter ou modifier un modèle
+
+Sélectionne une carte de modèle ou utilise **+** pour en ajouter un. Une
+définition de modèle comprend :
+
+- la connexion au fournisseur ;
+- un nom d’affichage compréhensible et une description facultative ;
+- l’identifiant exact du modèle chez le fournisseur ;
+- la limite maximale de jetons de complétion ;
+- les modalités d’entrée et de sortie ;
+- des indicateurs de capacité, comme le raisonnement ou l’appel de fonctions.
+
+<ManualScreenshot
+  caseId="ai/model-editor"
+  alt="Éditeur de modèle Lotti pour Waddle Command 70B affichant le fournisseur, l’identifiant du modèle fournisseur, la limite de complétion, les modalités et la capacité de raisonnement"
+  caption="Les métadonnées de capacité comptent : Lotti s’en sert pour déterminer les modèles éligibles à chaque emplacement de profil et sélecteur ponctuel."
+/>
+
+Utilise l’identifiant exact attendu par le fournisseur. Le nom d’affichage est
+réservé aux personnes ; le modifier ne change pas le modèle exécuté par le
+fournisseur. N’annonce pas la prise en charge des images, de l’audio, des
+outils ou du raisonnement si le modèle et le point de terminaison ne la
+proposent pas réellement.
+
+## Créer un profil d’inférence
+
+Ouvre **Paramètres → Paramètres IA → Profils d’inférence**. Chaque profil est une
+politique d’orientation réutilisable. La vue d’ensemble indique quel modèle
+occupe chaque emplacement configuré.
+
+<ManualScreenshot
+  caseId="ai/profiles"
+  alt="Profils d’inférence Lotti pour Commandement Projet Waddle, Habitat d’abord local et Diplomatie du poisson avec leurs modèles orientés"
+  caption="Les profils peuvent optimiser des contraintes différentes : un profil cloud généraliste, un profil local réservé au bureau ou un profil de raisonnement spécialisé."
+/>
+
+Modifie un profil pour assigner les modèles aux capacités que tu utilises :
+
+- **Réflexion** est le modèle de texte général obligatoire.
+- **Réflexion (haut de gamme)** peut traiter le travail qui demande
+  explicitement le chemin de raisonnement plus puissant.
+- **Reconnaissance d’images** analyse les images.
+- **Transcription** transforme l’audio en texte.
+- **Génération d’images** crée les illustrations des tâches et d’autres images
+  générées. Le chemin intégré actuel de génération d’images utilise un
+  fournisseur distant configuré : choisis donc ce fournisseur et les
+  références envoyées avec le même soin que pour toute autre inférence cloud.
+
+<ManualScreenshot
+  caseId="ai/profile-editor"
+  alt="Éditeur du profil Commandement Projet Waddle assignant les modèles de réflexion, réflexion haut de gamme, reconnaissance d’images, transcription et génération d’images"
+  caption="Un seul profil oriente chaque modalité du Projet Waddle sans répéter les choix de modèles dans les tâches."
+/>
+
+**Bureau uniquement** masque un profil sur les plateformes mobiles, ce qui est
+utile lorsqu’il dépend d’un modèle accessible uniquement depuis un poste de
+travail. L’épinglage d’appareil concerne le traitement automatique de l’audio
+synchronisé : n’épingle un appareil que s’il annonce les fournisseurs requis
+par le profil. Sans appareil épinglé, l’audio synchronisé n’est pas transcrit
+automatiquement par ce profil.
+
+## Choisir un modèle sans mémoriser les identifiants
+
+Les sélecteurs de modèles commencent par le fournisseur et n’affichent que les
+modèles enregistrés compatibles. Le sélecteur d’un emplacement de profil, par
+exemple, ne proposera pas un modèle audio uniquement pour le raisonnement
+textuel.
+
+<ManualScreenshot
+  caseId="ai/model-picker"
+  alt="Fenêtre Lotti Choisir un modèle listant les fournisseurs OpenRouter, Ollama et Google Gemini au-dessus de l’éditeur de profil du Projet Waddle"
+  caption="Choisis d’abord le fournisseur ; Lotti limite ensuite la page suivante aux modèles éligibles de cette connexion."
+/>
+
+## Définir une valeur par défaut de catégorie
+
+Une catégorie peut choisir un profil d’inférence par défaut dans **Paramètres →
+Définitions → Catégories**. Les nouveaux éléments de cette catégorie peuvent
+alors hériter d’une politique d’orientation cohérente. Choisis le profil dont
+l’équilibre entre confidentialité et capacités convient à la catégorie, plutôt
+que de te baser uniquement sur la vitesse.
+
+<ManualScreenshot
+  caseId="ai/profile-picker"
+  alt="Éditeur de la catégorie Opérations pingouins avec une fenêtre proposant les profils Commandement Projet Waddle, Habitat d’abord local et Diplomatie du poisson"
+  caption="Le badge bureau uniquement rend les limites de plateforme visibles avant de choisir une valeur par défaut de catégorie."
+/>
+
+## Ancien chemin des profils
+
+L’ancien chemin autonome **Profils d’inférence** reste disponible par
+compatibilité et modifie les mêmes enregistrements de profils. Il expose les
+identifiants internes des modèles et donne moins de contexte sur les
+dépendances que les Paramètres IA ; préfère la page actuelle **Paramètres IA →
+Profils d’inférence** pour l’entretien habituel.
+
+<ManualScreenshot
+  caseId="ai/legacy-profiles"
+  alt="Ancienne page Profils d’inférence de Lotti affichant les emplacements du profil Projet Waddle comme identifiants internes de modèles"
+  caption="Utilise cet écran de compatibilité seulement lorsqu’un ancien lien t’y mène ; les cartes de profils des Paramètres IA actuels sont plus faciles à auditer."
+/>
+
+Poursuis avec les [compétences IA](./skills.mdx) pour voir comment le profil
+sélectionné devient une action sur une tâche ou une entrée.

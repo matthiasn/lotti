@@ -696,9 +696,10 @@ void main() {
           brightness: brightness,
           size: size,
         );
-        expect(find.text(_t('Time Analysis', 'Zeitanalyse')), findsOneWidget);
-        expect(find.text(_t('TOTAL', 'GESAMT')), findsWidgets);
-        expect(find.text(_t('FOCUS', 'FOKUS')), findsOneWidget);
+        final messages = _messages(tester);
+        expect(find.text(messages.insightsTimeAnalysisTitle), findsOneWidget);
+        expect(find.text(messages.insightsKpiTotal), findsWidgets);
+        expect(find.text(messages.insightsKpiFocus), findsOneWidget);
         expect(
           find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
           findsWidgets,
@@ -718,23 +719,15 @@ void main() {
           brightness: brightness,
           size: size,
         );
+        final messages = _messages(tester);
 
-        final runningTotal = find
-            .text(
-              _t('Running total', 'Laufende Summe'),
-            )
-            .last;
+        final runningTotal = find.text(messages.insightsChartRunningTotal).last;
         await tester.ensureVisible(runningTotal);
         await tester.pump(const Duration(milliseconds: 300));
         await _tap(tester, runningTotal);
 
         expect(
-          find.text(
-            _t(
-              'Running total over the range',
-              'Laufende Summe im Zeitraum',
-            ),
-          ),
+          find.text(messages.insightsChartCumulativeCaption),
           findsOneWidget,
         );
         expect(find.byType(LineChart), findsOneWidget);
@@ -762,10 +755,11 @@ void main() {
           brightness: brightness,
           size: size,
         );
-        await _tap(tester, find.text(_t('Compare', 'Vergleichen')));
+        final messages = _messages(tester);
+        await _tap(tester, find.text(messages.insightsCompare));
         final comparisonHeader = size == _mobileSize
-            ? find.text(_t('Change', 'Änderung'))
-            : find.text(_t('PREVIOUS', 'VORHER'));
+            ? find.text(messages.insightsTableDelta)
+            : find.text(messages.insightsTablePrevious);
         if (size == _mobileSize) {
           final list = find.byType(ListView);
           for (

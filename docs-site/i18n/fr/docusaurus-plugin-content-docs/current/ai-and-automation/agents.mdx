@@ -1,0 +1,103 @@
+---
+title: Exécuter et surveiller les agents
+description: Surveille l’activité des agents, examine les instances en cours et contrôle les cycles de réveil planifiés sans perdre la trace d’audit.
+---
+
+# Exécuter et surveiller les agents
+
+Les agents permettent à Lotti d’assurer une responsabilité définie au fil de
+plusieurs cycles de réveil. Chaque instance en cours provient d’un modèle
+d’agent, utilise une configuration d’inférence et conserve son propre état, ses
+rapports, observations et historique d’activité. Ouvre **Paramètres → Agents**
+pour voir l’ensemble du système.
+
+Les rapports, observations et réveils en attente décrivent l’état de travail
+de l’agent ; ils ne réécrivent pas silencieusement ton journal personnel.
+Lorsqu’un agent de tâche souhaite modifier les données d’une tâche, Lotti te
+présente une proposition à examiner. Consulte
+[Examiner les changements proposés](../organize-and-reflect/tasks.mdx#examiner-les-modifications-proposées)
+pour les contrôles d’approbation de chaque tâche et leurs exceptions limitées
+de titre initial et de langue.
+
+## Lire l’activité avant de la modifier
+
+La page **Statistiques** rassemble l’activité des réveils et l’usage des
+jetons. Le premier graphique indique quand les agents se sont activés au cours
+des dernières 24 heures. La section quotidienne compare aujourd’hui au même
+moment des jours récents, puis répartit l’usage par modèle et par source.
+
+<ManualScreenshot
+  caseId="agents/stats"
+  alt="Statistiques d’agents Lotti montrant l’activité du Projet Waddle, l’usage quotidien des jetons et des graphiques par modèle"
+  caption="La flotte d’exemple du Projet Waddle est particulièrement active autour des vérifications de l’habitat et de la planification du lancement ; les sections par modèle et par source permettent d’attribuer cette activité."
+/>
+
+Utilise cette page pour répondre à trois questions distinctes :
+
+- **Quand les agents ont-ils travaillé ?** Lis le graphique des réveils sur 24 heures.
+- **Quelle quantité d’inférence ont-ils utilisée ?** Compare les graphiques quotidiens et par modèle.
+- **Quelle responsabilité l’a provoquée ?** Examine la répartition par modèle ou source.
+
+Un pic n’est pas automatiquement un problème. Une journée de revue de
+lancement devrait être plus chargée qu’une journée ordinaire dans la colonie.
+Pour examiner une activité inattendue, ouvre le modèle ou l’instance source
+avant de modifier une limite globale de concurrence.
+
+## Examiner les instances en cours
+
+Ouvre **Instances** pour voir chaque agent et chaque séance d’évolution. Les
+lignes indiquent le type d’agent, son cycle de vie, le modèle assigné et son
+âme. Le regroupement par âme est utile lorsque plusieurs responsabilités
+partagent une même voix et un même style de décision.
+
+<ManualScreenshot
+  caseId="agents/instances"
+  alt="Instances d’agents Lotti regroupées par l’amiral Pebble, Dr Flipper, Captain Sardina et une séance d’évolution"
+  caption="Inspecteur des joints de l’habitat, Planificateur du Projet Waddle et Coordinateur du fret de sardines restent des instances distinctes, même lorsqu’ils partagent des ressources système."
+/>
+
+Sélectionne une instance pour examiner son fonctionnement interne. L’onglet
+**Statistiques** montre l’usage des modèles, le modèle d’agent, la route
+d’inférence actuelle, les contrôles de cycle de vie, le nombre de réveils et
+l’état de planification.
+
+<ManualScreenshot
+  caseId="agents/instance-detail"
+  alt="Détail de l’instance Inspecteur des joints de l’habitat avec l’usage des jetons, le modèle Sentinelle de l’habitat orbital, la route d’inférence, les contrôles de cycle de vie et l’état des réveils"
+  caption="L’instance conserve assez de provenance pour expliquer quel modèle et quelle route ont produit son travail avant que tu la mettes en pause, la réanalyses ou la détruises."
+/>
+
+Les autres onglets conservent des éléments différents :
+
+- **Rapports** contient les instantanés de rapports enregistrés par l’agent.
+- **Conversations** regroupe les messages par cycle de réveil.
+- **Observations** expose les constats capturés sans les mélanger aux rapports.
+- **Activité** montre la trace chronologique des messages et des outils.
+
+**Mettre en pause** conserve l’instance mais arrête le travail normal.
+**Réanalyser** demande à un agent de tâche de reconsidérer son sujet actuel.
+**Détruire** est irréversible et ne devrait être utilisé que si tu ne veux plus
+de l’instance elle-même ; modifier le modèle pour les futurs agents ne demande
+pas de détruire des instances sans rapport.
+
+## Comprendre les cycles de réveil
+
+Ouvre **Cycles de réveil** pour voir le travail en cours et celui prévu pour
+plus tard. Un réveil **En attente** a été demandé par l’agent. Un réveil
+**Planifié** a été placé par le système ou le planificateur.
+Chaque ligne conserve la tâche, le projet ou la journée liés à côté de l’agent
+responsable et d’un compte à rebours en direct.
+
+<ManualScreenshot
+  caseId="agents/pending-wakes"
+  alt="Cycles de réveil Lotti montrant l’inspection d’habitat en cours ainsi que des réveils du Projet Waddle et de logistique des sardines planifiés"
+  caption="La file distingue un suivi de l’habitat demandé par l’agent des réveils planifiés du jour de lancement et de la cargaison : chaque compte à rebours a ainsi une raison et un responsable."
+/>
+
+Supprimer un réveil en file retire ce minuteur ; cela ne supprime ni
+l’agent ni sa tâche liée. Si un réveil réapparaît immédiatement, examine
+l’état de l’agent ou l’automatisation qui l’a demandée, plutôt que de supprimer
+sans cesse le symptôme.
+
+Poursuis avec [Modèles et âmes d’agents](./agent-blueprints.mdx) pour définir
+ce que font ces instances et leur manière de communiquer.

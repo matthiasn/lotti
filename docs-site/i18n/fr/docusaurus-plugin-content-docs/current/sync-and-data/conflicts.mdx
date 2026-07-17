@@ -1,0 +1,74 @@
+---
+title: Résoudre les conflits de synchronisation
+description: Compare les modifications concurrentes champ par champ et conserve ou combine les bonnes informations.
+---
+
+# Résoudre les conflits de synchronisation
+
+Un conflit apparaît lorsque deux appareils ont modifié la même entrée
+indépendamment et qu’aucune version n’est clairement plus récente. Lotti
+préserve les deux versions au lieu d’en choisir une silencieusement.
+
+Ouvre **Réglages → Synchronisation → Conflits**. La liste sépare les éléments
+non résolus et résolus, et indique le type d’entité ainsi que l’heure de chaque
+conflit.
+
+<ManualScreenshot
+  caseId="sync/conflicts"
+  alt="Liste Conflits de synchronisation de Lotti avec des conflits non résolus sur une tâche Project Waddle et un manifeste de sardines, ainsi qu’une tâche résolue"
+  caption="Résous d’abord les éléments actuels. Les éléments résolus restent visibles comme piste d’audit des décisions précédentes."
+/>
+
+## Comparer les deux versions
+
+Ouvre un conflit pour voir chaque champ différent. Les changements de texte
+comportent une mise en évidence mot par mot ; les champs inchangés sont
+résumés pour que la page ne masque pas la part de l’entrée qui reste identique.
+
+<ManualScreenshot
+  caseId="sync/conflict-detail"
+  alt="Détail de conflit Lotti comparant champ par champ les titres et descriptions locaux et synchronisés d’une tâche Project Waddle"
+  caption="Cet appareil a conservé le dernier empereur et la retenue de cargaison ; la version synchronisée a autorisé les 37 manchots et programmé la libération des sardines. Les deux faits comptent."
+/>
+
+Les trois voies de résolution sont :
+
+- **Utiliser cet appareil** conserve l’intégralité de la version locale.
+- **Utiliser depuis la synchronisation** conserve l’intégralité de la version
+  entrante.
+- **Combiner** te laisse choisir une version de départ, puis le gagnant pour
+  chaque champ pouvant être fusionné indépendamment.
+
+Conserver un côté complet convient lorsque l’autre est simplement obsolète.
+**Combiner** est plus sûr lorsque des champs distincts contiennent du travail
+valide provenant des deux appareils ; Lotti le recommande lorsque plusieurs
+champs fusionnables diffèrent.
+
+## Combiner des champs sans tout retaper
+
+Sélectionne **Combiner**, choisis la version de départ, puis bascule les champs
+individuels vers l’autre côté. Les champs qui ne peuvent pas être fusionnés
+indépendamment suivent la version de départ sélectionnée.
+
+<ManualScreenshot
+  caseId="sync/conflict-combine"
+  alt="Éditeur de conflit Combiner de Lotti avec le contrôle de version de départ et des choix distincts pour le titre et le corps de la tâche"
+  caption="Pars d’une entrée structurellement complète, puis prends le meilleur titre et le meilleur corps depuis cet appareil ou depuis la synchronisation."
+/>
+
+Examine chaque champ listé avant de sélectionner **Appliquer la combinaison**.
+L’entrée résolue reçoit un historique de synchronisation fusionné, pour éviter
+que les deux mêmes modifications ne se heurtent de nouveau immédiatement.
+
+:::caution Une résolution modifie le résultat partagé
+
+Conserver un côté ou appliquer une version combinée écrit le résultat retenu
+localement et lui permet de se synchroniser avec les autres appareils. Lis la
+différence complète avant de confirmer. Si un côté a supprimé l’entrée tandis
+que l’autre l’a modifiée, Lotti propose le choix plus sûr suppression contre
+modification au lieu d’une fusion de champs ordinaire.
+
+:::
+
+Reviens à [Synchroniser les appareils](./sync.mdx) pour examiner la livraison
+et l’état de rattrapage.

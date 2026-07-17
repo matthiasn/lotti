@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
@@ -246,7 +247,7 @@ class _Header extends StatelessWidget {
   final ValueChanged<String?>? onSelectCategory;
   final VoidCallback? onSearch;
 
-  /// When non-null (wide layouts), shows a "New event" button in the header.
+  /// When non-null, shows a responsive "New event" action in the header.
   final VoidCallback? onCreateInHeader;
 
   @override
@@ -255,41 +256,28 @@ class _Header extends StatelessWidget {
     final cs = context.colorScheme;
     final styles = tokens.typography.styles;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              context.messages.eventsPageTitle,
-              style: styles.heading.heading1.copyWith(color: cs.onSurface),
+    final title = Text(
+      context.messages.eventsPageTitle,
+      style: styles.heading.heading1.copyWith(color: cs.onSurface),
+    );
+    final subtitleText = subtitle == null
+        ? null
+        : Text(
+            subtitle!,
+            style: styles.body.bodyMedium.copyWith(
+              color: cs.onSurfaceVariant,
             ),
-            if (subtitle != null) ...[
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Text(
-                  subtitle!,
-                  style: styles.body.bodyMedium.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ] else
-              const Spacer(),
-            if (onCreateInHeader != null)
-              FilledButton.icon(
-                onPressed: onCreateInHeader,
-                icon: const Icon(Icons.add),
-                label: Text(context.messages.eventsNewEvent),
-              ),
-          ],
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        _SearchField(onTap: onSearch),
-        if (categories.isNotEmpty) ...[
-          SizedBox(height: tokens.spacing.step3),
-          SingleChildScrollView(
+          );
+    final createButton = onCreateInHeader == null
+        ? null
+        : FilledButton.icon(
+            onPressed: onCreateInHeader,
+            icon: const Icon(Icons.add),
+            label: Text(context.messages.eventsNewEvent),
+          );
+    final categoryChips = categories.isEmpty
+        ? null
+        : SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
@@ -305,9 +293,58 @@ class _Header extends StatelessWidget {
                 ],
               ],
             ),
-          ),
-        ],
-      ],
+          );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < kDesktopBreakpoint) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              title,
+              if (subtitleText != null) ...[
+                SizedBox(height: tokens.spacing.step1),
+                subtitleText,
+              ],
+              if (createButton != null) ...[
+                SizedBox(height: tokens.spacing.step3),
+                SizedBox(width: double.infinity, child: createButton),
+              ],
+              SizedBox(height: tokens.spacing.step4),
+              _SearchField(onTap: onSearch),
+              if (categoryChips != null) ...[
+                SizedBox(height: tokens.spacing.step3),
+                categoryChips,
+              ],
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                title,
+                if (subtitleText != null) ...[
+                  SizedBox(width: tokens.spacing.step3),
+                  Expanded(child: subtitleText),
+                ] else
+                  const Spacer(),
+                if (createButton case final FilledButton createButton)
+                  createButton,
+              ],
+            ),
+            SizedBox(height: tokens.spacing.step4),
+            _SearchField(onTap: onSearch),
+            if (categoryChips != null) ...[
+              SizedBox(height: tokens.spacing.step3),
+              categoryChips,
+            ],
+          ],
+        );
+      },
     );
   }
 }

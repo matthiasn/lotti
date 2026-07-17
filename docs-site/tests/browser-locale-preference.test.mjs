@@ -13,14 +13,18 @@ test('browser locale matching uses the first supported language', () => {
   assert.equal(
     preferredSupportedLocale(
       ['fr-FR', 'cs-CZ', 'de-DE', 'en-US'],
-      ['en', 'de', 'cs'],
+      ['en', 'de', 'fr', 'cs'],
       'en',
     ),
-    'cs',
+    'fr',
   );
   assert.equal(
-    preferredSupportedLocale(['fr-FR', 'de-DE', 'en-US'], ['en', 'de', 'cs'], 'en'),
-    'de',
+    preferredSupportedLocale(
+      ['fr-FR', 'de-DE', 'en-US'],
+      ['en', 'de', 'fr', 'cs'],
+      'en',
+    ),
+    'fr',
   );
   assert.equal(
     preferredSupportedLocale(['fr-FR'], ['en', 'de'], 'en'),
@@ -74,6 +78,10 @@ test('locale root URLs preserve the default route and add alternatives', () => {
     localeRootUrl('/lotti/manual/development/', 'cs', 'en'),
     '/lotti/manual/development/cs/',
   );
+  assert.equal(
+    localeRootUrl('/lotti/manual/development/', 'fr', 'en'),
+    '/lotti/manual/development/fr/',
+  );
 });
 
 test('an explicit locale dropdown choice is persisted', () => {
@@ -90,14 +98,15 @@ test('an explicit locale dropdown choice is persisted', () => {
     localeConfigs: {
       en: {htmlLang: 'en-US'},
       de: {htmlLang: 'de-DE'},
+      fr: {htmlLang: 'fr-FR'},
       cs: {htmlLang: 'cs-CZ'},
     },
     storage: {setItem: (key, value) => stored.set(key, value)},
   });
 
   clickListener({
-    target: {closest: () => ({lang: 'de-DE'})},
+    target: {closest: () => ({lang: 'fr-FR'})},
   });
 
-  assert.equal(stored.get(manualLocaleStorageKey), 'de');
+  assert.equal(stored.get(manualLocaleStorageKey), 'fr');
 });
