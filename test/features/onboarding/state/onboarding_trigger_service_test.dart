@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
@@ -534,7 +536,48 @@ void main() {
     );
   });
 
-  // Both cadence writes run fire-and-forget from a modal callback, so a
+  group('onboardingRolloutBackfillProvider', () {
+    late SettingsDb settingsDb;
+
+    setUp(() async {
+      settingsDb = SettingsDb(inMemoryDatabase: true);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<SettingsDb>()
+            ..registerSingleton<SettingsDb>(settingsDb);
+        },
+      );
+    });
+
+    tearDown(() async {
+      await settingsDb.close();
+      await tearDownTestGetIt();
+    });
+
+    test('wires readiness and retirement when explicitly armed', () async {
+      final container = ProviderContainer(
+        overrides: [
+          dailyOsOnboardingProviderReadyProvider.overrideWith(
+            (ref) async => true,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(onboardingRolloutBackfillProvider(true).future);
+
+      expect(
+        await settingsDb.itemByKey(onboardingWelcomeCompletedKey),
+        'true',
+      );
+      expect(
+        await settingsDb.itemByKey(onboardingRolloutBackfillAppliedKey),
+        'true',
+      );
+    });
+  });
+
   // SettingsDb failure must be logged and swallowed rather than thrown (an
   // unhandled async error would otherwise abort the flow).
   group('OnboardingWelcomeCadence — SettingsDb failures are swallowed', () {

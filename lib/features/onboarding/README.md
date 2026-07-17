@@ -9,19 +9,19 @@ D3/D7/D30 retention. The full design and phased build plan live in
 > connect-your-brain front door), **Phase 2** (the live voice→task aha), the
 > **auto-show trigger + re-show cadence**, and the top-level **Settings ›
 > Onboarding** replay entry described below are implemented. The **D1 return
-> loop** is forthcoming. The whole flow is gated behind the
-> `enableOnboardingFtueFlag` config flag (default **off**) while it is
-> finished — until that flag is enabled, first-run AI setup falls back to the
-> pre-FTUE `AiProviderSelectionModal`, so end users see no change yet. This
-> README documents what exists in code today and is updated as each phase
-> lands.
+> loop** is forthcoming. The flow is in a **dark launch**: both master config
+> flags seed **off**, and the prepared one-shot rollout lever remains `false`
+> while production testing runs (see [Rollout and production testing](#rollout-and-production-testing)).
+> Testers opt in through Settings › Advanced › Flags. While the FTUE flag is
+> on, `_showAiSetupPrompt` early-returns so the pre-FTUE
+> `AiProviderSelectionModal` and the welcome cannot stack.
 
 ## End-to-end flow
 
 ```mermaid
 flowchart TD
-    L[First launch · no provider configured] -->|enableOnboardingFtueFlag ON, eligible| W[OnboardingWelcomeModal]
-    L -->|flag OFF| LEGACY[AiProviderSelectionModal · pre-FTUE]
+    L[First launch · no provider configured] -->|enableOnboardingFtueFlag OFF by default| LEGACY[AiProviderSelectionModal · pre-FTUE]
+    L -->|tester enables flag · eligible| W[OnboardingWelcomeModal]
     W --> WL[welcome · hero + promise + CTA]
     WL -->|Choose your AI brain| CN[connect · provider tiles]
     WL -->|Look around first| SK[skip → onDismiss · no persistence, grace period preserved]
@@ -55,6 +55,8 @@ independent of the "connect your brain" front door's own step logic above.
 | `OnboardingWelcomeCadence` | `AsyncNotifier<void>` — the mutation side: `recordShown()` and `markCompleted()`, persisted to `SettingsDb` under a private `welcome_*` key prefix (deliberately **not** a `ConfigFlags` row — those are public, user-toggleable; this is per-install bookkeeping the user never edits directly). |
 
 **Eligibility** (all must hold):
+- the prepared rollout backfill provider has resolved; it is a read/write-free
+  no-op while the release lever is off,
 - `enableOnboardingFtueFlag` is on,
 - What's New has nothing unseen left to show (sequenced behind it, exactly
   like `AiSetupPromptService`'s own gating — the two auto-shown overlays never
@@ -106,6 +108,52 @@ persists nothing and does **not** retire the gate: the shown-count/window
 budget already implements the "show again for a while, then stop" grace
 period, and a hard block on first skip would defeat that.
 
+## Rollout and production testing
+
+`state/onboarding_rollout.dart` keeps the future all-install rollout prepared
+without activating it. `onboardingRolloutEnabled` is the single release lever
+and is currently `false`. Both config flags also seed `false`.
+
+| Piece | Lever off (current release) | Lever on (future rollout) |
+|---|---|---|
+| `applyOnboardingRolloutFlags` | Returns before any database read or write. | Overwrites both master flags to `true` once, before `runApp`, then writes `onboarding_rollout_v1_flags_applied`. |
+| `applyOnboardingRolloutBackfill` | Returns before reading readiness, cadence, or its marker. | Classifies an install once; a provider-ready install gets `welcome_completed`, then `onboarding_rollout_v1_backfill_applied` is written. |
+| Failure behavior | No operation exists to fail. | Logs, leaves the relevant marker absent, and retries next launch. |
+
+The force-enable remains necessary because `initConfigFlags` uses
+`insertFlagIfNotExists`: changing a seed cannot update an existing `false` row.
+The startup half therefore remains awaited from `registerSingletons()` after
+seeding. The backfill remains awaited by `shouldAutoShowOnboarding`, where a
+Riverpod container exists. Its readiness signal waits for agent initialization
+before resolving so template/version seeding cannot produce a false one-shot
+classification.
+
+```mermaid
+stateDiagram-v2
+    [*] --> DarkLaunch: onboardingRolloutEnabled = false
+    DarkLaunch --> ManualTest: tester enables both config flags
+    ManualTest --> DarkLaunch: tester disables both config flags
+    DarkLaunch --> RolloutArmed: release changes the lever to true
+    RolloutArmed --> FlagsForced: startup force-enables both flags once
+    FlagsForced --> WelcomeRetired: existing install has a resolvable planner route
+    FlagsForced --> WelcomeEligible: install is not yet configured
+    WelcomeRetired --> [*]
+    WelcomeEligible --> [*]
+```
+
+### Resetting test state
+
+Settings › Advanced › Onboarding Metrics exposes **Reset onboarding test
+state**. After confirmation it removes all six `welcome_*` and
+`daily_os_onboarding_*` cadence keys and clears the content-free onboarding
+event log. It deliberately leaves both config flags unchanged, so a tester's
+opt-in remains explicit, and it never deletes real user data.
+
+Daily OS eligibility also checks whether the planner has **ever** had a plan,
+including a soft-deleted plan. The reset cannot safely erase that history. Use
+a clean profile/device to retest the complete first-run Daily OS walkthrough
+after any day plan has existed.
+
 ## Phase 0 — measurement substrate
 
 The substrate is built **before** any onboarding UI so the funnel is queryable and
@@ -127,7 +175,7 @@ other small single-purpose DBs (`NotificationsDb`, `EditorDb`).
 | `OnboardingMetricsDb` | `lib/database/onboarding_metrics_db.dart` (+ `.drift`) | Append-only `onboarding_events` table + queries. **Source of truth.** |
 | `OnboardingEventName` / `OnboardingFunnelState` | `model/onboarding_event.dart` | Event vocabulary + derived-state model + `onboardingDayBucket` helper. |
 | `OnboardingMetricsRepository` | `repository/onboarding_metrics_repository.dart` | Records events (injected clock/id/platform) and derives funnel state. |
-| `OnboardingMetricsPage` / `OnboardingMetricsBody` | `ui/onboarding_metrics_page.dart` | Read-only debug surface under Settings → Advanced → Onboarding Metrics. |
+| `OnboardingMetricsPage` / `OnboardingMetricsBody` | `ui/onboarding_metrics_page.dart` | Debug surface under Settings → Advanced → Onboarding Metrics; renders the funnel and exposes the confirmed cadence + metrics QA reset. |
 
 ### Privacy
 

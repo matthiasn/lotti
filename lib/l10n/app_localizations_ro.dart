@@ -9049,6 +9049,21 @@ class AppLocalizationsRo extends AppLocalizations {
       'Reafișați fluxul de bun venit oricând doriți';
 
   @override
+  String get settingsOnboardingTestResetConfirm => 'Resetați';
+
+  @override
+  String get settingsOnboardingTestResetConfirmQuestion =>
+      'Doriți să ștergeți istoricul solicitărilor și metricile de onboarding? Planurile Daily OS existente se păstrează, așadar utilizați un profil nou pentru a testa întregul parcurs Daily OS de la prima utilizare.';
+
+  @override
+  String get settingsOnboardingTestResetSubtitle =>
+      'Șterge istoricul solicitărilor și metricile; planurile Daily OS existente se păstrează (depanare)';
+
+  @override
+  String get settingsOnboardingTestResetTitle =>
+      'Resetați starea de test pentru onboarding';
+
+  @override
   String get settingsOnboardingTitle => 'Onboarding';
 
   @override

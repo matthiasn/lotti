@@ -1,21 +1,11 @@
-import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/model/resolved_profile.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart'
-    show AiConfigRepository;
-import 'package:lotti/features/ai/state/profile_automation_providers.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
@@ -32,9 +22,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
-import '../../agents/test_data/ai_config_factories.dart';
-import '../../agents/test_data/entity_factories.dart';
-import '../../agents/test_data/template_factories.dart';
 
 /// Fake [WhatsNewController] reporting no unseen release — the "clear to show
 /// the next auto-shown overlay" state.
@@ -164,185 +151,6 @@ void main() {
       final now = DateTime(2026, 7, 10, 12);
       final firstShown = now.subtract(const Duration(days: 30));
       expect(eligible(firstShownAt: firstShown, now: now), isFalse);
-    });
-  });
-
-  group('dailyOsOnboardingProviderReadyProvider', () {
-    late MockAiConfigRepository aiConfigRepository;
-    late MockAgentRepository agentRepository;
-    late MockAgentTemplateService templateService;
-    late MockProfileResolver profileResolver;
-    late AgentTemplateEntity template;
-    late AgentTemplateVersionEntity version;
-
-    setUp(() async {
-      aiConfigRepository = MockAiConfigRepository();
-      agentRepository = MockAgentRepository();
-      templateService = MockAgentTemplateService();
-      profileResolver = MockProfileResolver();
-      template = makeTestTemplate(
-        id: dayAgentTemplateId,
-        agentId: dayAgentTemplateId,
-        kind: AgentTemplateKind.dayAgent,
-      );
-      version = makeTestTemplateVersion(agentId: dayAgentTemplateId);
-
-      await setUpTestGetIt(
-        additionalSetup: () {
-          getIt.registerSingleton<AiConfigRepository>(aiConfigRepository);
-        },
-      );
-
-      when(
-        () => agentRepository.getEntity(dailyOsPlannerAgentId),
-      ).thenAnswer((_) async => null);
-      when(
-        () => templateService.getTemplate(dayAgentTemplateId),
-      ).thenAnswer((_) async => template);
-      when(
-        () => templateService.getActiveVersion(dayAgentTemplateId),
-      ).thenAnswer((_) async => version);
-    });
-
-    tearDown(tearDownTestGetIt);
-
-    Future<bool> readReady({required ResolvedProfile? resolvedProfile}) {
-      when(
-        () => aiConfigRepository.watchConfigsByType(
-          AiConfigType.inferenceProvider,
-        ),
-      ).thenAnswer((_) => Stream.value([testLocalInferenceProvider()]));
-      when(
-        () => aiConfigRepository.watchConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) => Stream.value(const []));
-      when(
-        () => aiConfigRepository.watchConfigsByType(
-          AiConfigType.inferenceProfile,
-        ),
-      ).thenAnswer((_) => Stream.value(const []));
-      when(
-        () => profileResolver.resolve(
-          agentConfig: any(named: 'agentConfig'),
-          template: template,
-          version: version,
-        ),
-      ).thenAnswer((_) async => resolvedProfile);
-
-      final container = ProviderContainer(
-        overrides: [
-          agentRepositoryProvider.overrideWithValue(agentRepository),
-          agentTemplateServiceProvider.overrideWithValue(templateService),
-          profileResolverProvider.overrideWithValue(profileResolver),
-        ],
-      );
-      addTearDown(container.dispose);
-      container.listen(
-        dailyOsOnboardingProviderReadyProvider,
-        (_, _) {},
-      );
-      return container.read(dailyOsOnboardingProviderReadyProvider.future);
-    }
-
-    test('true when the exact planner thinking route resolves', () async {
-      final resolvedProfile = ResolvedProfile(
-        thinkingModelId: 'models/gemini-3-flash-preview',
-        thinkingProvider: testInferenceProvider(),
-      );
-
-      expect(
-        await readReady(resolvedProfile: resolvedProfile),
-        isTrue,
-      );
-      verify(
-        () => profileResolver.resolve(
-          agentConfig: AgentConfig(modelId: template.modelId),
-          template: template,
-          version: version,
-        ),
-      ).called(1);
-    });
-
-    test('false when a configured provider cannot serve the planner', () async {
-      expect(await readReady(resolvedProfile: null), isFalse);
-    });
-
-    test(
-      'existing planner resolves its assigned template and config',
-      () async {
-        const plannerConfig = AgentConfig(profileId: 'planner-profile');
-        final planner = makeTestIdentity(
-          id: dailyOsPlannerAgentId,
-          agentId: dailyOsPlannerAgentId,
-          kind: 'day_agent',
-          config: plannerConfig,
-        );
-        final assignedTemplate = makeTestTemplate(
-          id: 'assigned-day-template',
-          agentId: 'assigned-day-template',
-          kind: AgentTemplateKind.dayAgent,
-        );
-        final assignedVersion = makeTestTemplateVersion(
-          agentId: assignedTemplate.id,
-        );
-        final resolvedProfile = ResolvedProfile(
-          thinkingModelId: 'models/gemini-3-flash-preview',
-          thinkingProvider: testInferenceProvider(),
-        );
-        when(
-          () => agentRepository.getEntity(dailyOsPlannerAgentId),
-        ).thenAnswer((_) async => planner);
-        when(
-          () => templateService.getTemplateForAgent(dailyOsPlannerAgentId),
-        ).thenAnswer((_) async => assignedTemplate);
-        when(
-          () => templateService.getActiveVersion(assignedTemplate.id),
-        ).thenAnswer((_) async => assignedVersion);
-        when(
-          () => profileResolver.resolve(
-            agentConfig: plannerConfig,
-            template: assignedTemplate,
-            version: assignedVersion,
-          ),
-        ).thenAnswer((_) async => resolvedProfile);
-
-        expect(
-          await hasResolvableDailyOsPlannerThinkingRoute(
-            agentRepository: agentRepository,
-            templateService: templateService,
-            profileResolver: profileResolver,
-          ),
-          isTrue,
-        );
-        verify(
-          () => profileResolver.resolve(
-            agentConfig: plannerConfig,
-            template: assignedTemplate,
-            version: assignedVersion,
-          ),
-        ).called(1);
-      },
-    );
-
-    test('false when the seeded day-agent template is unavailable', () async {
-      when(
-        () => templateService.getTemplate(dayAgentTemplateId),
-      ).thenAnswer((_) async => null);
-
-      expect(
-        await hasResolvableDailyOsPlannerThinkingRoute(
-          agentRepository: agentRepository,
-          templateService: templateService,
-          profileResolver: profileResolver,
-        ),
-        isFalse,
-      );
-      verifyNever(
-        () => profileResolver.resolve(
-          agentConfig: any(named: 'agentConfig'),
-          template: any(named: 'template'),
-          version: any(named: 'version'),
-        ),
-      );
     });
   });
 

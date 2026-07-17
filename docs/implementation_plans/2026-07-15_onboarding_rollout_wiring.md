@@ -1,6 +1,25 @@
 # Wiring onboarding to auto-show on new *and* existing installs
 
-_2026-07-15 · plan for review_
+_2026-07-15 · plan · **rollout prepared; activation deferred 2026-07-17**_
+
+> **Current decision.** Keep both flags as field kill-switches and keep the B1
+> `welcome_completed` backfill prepared, but do **not** activate either during
+> production testing. Both flags seed `false`; the single
+> `onboardingRolloutEnabled` release lever also remains `false`. Testers opt in
+> through Config Flags and can clear cadence + metrics from Onboarding Metrics.
+>
+> One deviation from the checklist below: wiring the B1 backfill as written
+> would have made `onboarding_trigger_service` and
+> `daily_os_onboarding_trigger_service` import each other in a cycle, so the
+> readiness signal was extracted to its own leaf library
+> (`daily_os_next/state/daily_os_planner_readiness.dart`). The prepared backfill
+> is awaited by `shouldAutoShowOnboarding` rather than run from a startup widget;
+> while the release lever is off it returns before reading readiness or writing
+> any state.
+>
+> Prepared code lives in `lib/features/onboarding/state/onboarding_rollout.dart`;
+> see `lib/features/onboarding/README.md#rollout-and-production-testing` for the
+> current behavior.
 
 ## TL;DR
 

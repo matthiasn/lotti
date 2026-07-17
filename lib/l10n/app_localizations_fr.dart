@@ -9063,6 +9063,21 @@ class AppLocalizationsFr extends AppLocalizations {
       'Revois le parcours de bienvenue quand tu veux';
 
   @override
+  String get settingsOnboardingTestResetConfirm => 'Réinitialiser';
+
+  @override
+  String get settingsOnboardingTestResetConfirmQuestion =>
+      'Effacer l’historique des invites et les métriques de l’intégration ? Les plans Daily OS existants sont conservés, alors utilise un profil vierge pour tester tout le premier parcours Daily OS.';
+
+  @override
+  String get settingsOnboardingTestResetSubtitle =>
+      'Efface l’historique des invites et les métriques ; les plans Daily OS existants sont conservés (débogage)';
+
+  @override
+  String get settingsOnboardingTestResetTitle =>
+      'Réinitialiser l’état de test de l’intégration';
+
+  @override
   String get settingsOnboardingTitle => 'Intégration';
 
   @override

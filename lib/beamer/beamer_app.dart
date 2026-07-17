@@ -338,12 +338,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     void dismiss() =>
         ref.read(aiSetupPromptServiceProvider.notifier).dismissPrompt();
 
-    // The new onboarding (FTUE) flow is gated behind a config flag while it's
-    // still being built. Until it's enabled, first-run AI setup falls back to
-    // the provider-selection modal (the pre-FTUE behaviour). A one-shot DB read
-    // (not the stream provider) avoids a load-state race on this single check.
-    // This method is fire-and-forget, so a read failure must default to the
-    // fallback rather than surfacing as an uncaught async error.
+    // The onboarding (FTUE) flow is dark-launched behind a config flag while it
+    // is tested in production. Until the flag is enabled, first-run AI setup
+    // falls back to the provider-selection modal. A one-shot DB read (not the
+    // stream provider) avoids a load-state race on this single check. This
+    // method is fire-and-forget, so a read failure must default to the fallback
+    // rather than surfacing as an uncaught async error.
     var ftueEnabled = false;
     try {
       ftueEnabled = await ref

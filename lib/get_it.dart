@@ -32,6 +32,7 @@ import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -215,6 +216,16 @@ Future<void> registerSingletons() async {
       );
     }
   }());
+
+  // Prepared rollout migration. The single lever in `onboarding_rollout.dart`
+  // is false during production testing, making this a read/write-free no-op.
+  // Once armed, awaiting it before `runApp` prevents the legacy AI setup prompt
+  // from racing the one-time flag overwrite.
+  await applyOnboardingRolloutFlags(
+    journalDb: journalDb,
+    settingsDb: settingsDb,
+    logger: domainLogger,
+  );
 
   final sentEventRegistry = SentEventRegistry();
   final matrixGateway = MatrixSdkGateway(

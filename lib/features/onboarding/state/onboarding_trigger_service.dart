@@ -1,9 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
+import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -98,12 +101,40 @@ final FutureProvider<bool> shouldAutoShowOnboardingProvider =
       name: 'shouldAutoShowOnboardingProvider',
     );
 
+/// Readiness-dependent second half of the prepared rollout migration.
+///
+/// Cached for the container lifetime. With [onboardingRolloutEnabled] false,
+/// [applyOnboardingRolloutBackfill] returns before reading readiness, cadence,
+/// or its marker, which keeps manual production testing isolated.
+final FutureProviderFamily<void, bool> onboardingRolloutBackfillProvider =
+    FutureProvider.family<void, bool>(
+      (ref, rolloutEnabled) {
+        final settingsDb = getIt<SettingsDb>();
+        return applyOnboardingRolloutBackfill(
+          readProviderReady: () =>
+              ref.read(dailyOsOnboardingProviderReadyProvider.future),
+          retireWelcome: () => settingsDb.saveSettingsItem(
+            onboardingWelcomeCompletedKey,
+            'true',
+          ),
+          settingsDb: settingsDb,
+          logger: getIt<DomainLogger>(),
+          rolloutEnabled: rolloutEnabled,
+        );
+      },
+      name: 'onboardingRolloutBackfillProvider',
+    );
+
 Future<bool> shouldAutoShowOnboarding(Ref ref) async {
   final db = ref.watch(journalDbProvider);
-  // Establish the dependency synchronously, before the first await, so the
+  // Establish dependencies synchronously, before the first await, so the
   // provider stays reactive to What's New changes (watching after an async gap
-  // would not register the dependency). The future is awaited further down.
+  // would not register the dependency). The rollout provider is a read/write-
+  // free no-op while its release lever is off.
   final whatsNewFuture = ref.watch(whatsNewControllerProvider.future);
+  final rolloutBackfillFuture = ref.watch(
+    onboardingRolloutBackfillProvider(onboardingRolloutEnabled).future,
+  );
 
   final ftueFlagEnabled = await db.getConfigFlag(enableOnboardingFtueFlag);
   if (!ftueFlagEnabled) return false;
@@ -119,6 +150,8 @@ Future<bool> shouldAutoShowOnboarding(Ref ref) async {
   final whatsNewEnabled = await db.getConfigFlag(enableWhatsNewFlag);
   final whatsNewState = await whatsNewFuture;
   final hasUnseenWhatsNew = whatsNewEnabled && whatsNewState.hasUnseenRelease;
+
+  await rolloutBackfillFuture;
 
   final settingsDb = getIt<SettingsDb>();
   final stored = await settingsDb.itemsByKeys(const [

@@ -9022,6 +9022,21 @@ class AppLocalizationsEs extends AppLocalizations {
       'Vuelve a mostrar el flujo de bienvenida cuando quieras';
 
   @override
+  String get settingsOnboardingTestResetConfirm => 'Restablecer';
+
+  @override
+  String get settingsOnboardingTestResetConfirmQuestion =>
+      '¿Quieres borrar el historial de avisos y las métricas del onboarding? Los planes existentes de Daily OS se conservarán, así que usa un perfil limpio para probar el recorrido inicial completo de Daily OS.';
+
+  @override
+  String get settingsOnboardingTestResetSubtitle =>
+      'Borra el historial de avisos y las métricas; los planes existentes de Daily OS se conservan (depuración)';
+
+  @override
+  String get settingsOnboardingTestResetTitle =>
+      'Restablecer el estado de prueba del onboarding';
+
+  @override
   String get settingsOnboardingTitle => 'Onboarding';
 
   @override

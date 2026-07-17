@@ -8931,6 +8931,21 @@ class AppLocalizationsDe extends AppLocalizations {
       'Den Willkommens-Ablauf jederzeit erneut anzeigen';
 
   @override
+  String get settingsOnboardingTestResetConfirm => 'Zurücksetzen';
+
+  @override
+  String get settingsOnboardingTestResetConfirmQuestion =>
+      'Onboarding-Hinweisverlauf und Metriken löschen? Bestehende Daily-OS-Pläne bleiben erhalten. Nutze daher ein neues Profil, um den vollständigen ersten Daily-OS-Durchlauf zu testen.';
+
+  @override
+  String get settingsOnboardingTestResetSubtitle =>
+      'Löscht Hinweisverlauf und Metriken; bestehende Daily-OS-Pläne bleiben erhalten (Debug)';
+
+  @override
+  String get settingsOnboardingTestResetTitle =>
+      'Onboarding-Teststatus zurücksetzen';
+
+  @override
   String get settingsOnboardingTitle => 'Onboarding';
 
   @override

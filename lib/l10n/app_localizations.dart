@@ -15259,6 +15259,30 @@ abstract class AppLocalizations {
   /// **'Replay the welcome flow anytime'**
   String get settingsOnboardingSubtitle;
 
+  /// No description provided for @settingsOnboardingTestResetConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get settingsOnboardingTestResetConfirm;
+
+  /// No description provided for @settingsOnboardingTestResetConfirmQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear onboarding prompt history and metrics? Existing Daily OS plans remain, so use a clean profile to test the complete first-run Daily OS walkthrough.'**
+  String get settingsOnboardingTestResetConfirmQuestion;
+
+  /// No description provided for @settingsOnboardingTestResetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear prompt history and metrics; existing Daily OS plans remain (debug)'**
+  String get settingsOnboardingTestResetSubtitle;
+
+  /// No description provided for @settingsOnboardingTestResetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset onboarding test state'**
+  String get settingsOnboardingTestResetTitle;
+
   /// No description provided for @settingsOnboardingTitle.
   ///
   /// In en, this message translates to:
