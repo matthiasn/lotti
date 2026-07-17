@@ -539,6 +539,72 @@
         "desktop-light": "time_analysis_compare_desktop_light.png",
         "desktop-dark": "time_analysis_compare_desktop_dark.png"
       }
+    },
+    {
+      "id": "advanced-settings/hub",
+      "title": "Advanced Settings hub",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_hub_mobile_light.png",
+        "mobile-dark": "advanced_settings_hub_mobile_dark.png",
+        "desktop-light": "advanced_settings_hub_desktop_light.png",
+        "desktop-dark": "advanced_settings_hub_desktop_dark.png"
+      }
+    },
+    {
+      "id": "advanced-settings/flags",
+      "title": "Configuration flags",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_flags_mobile_light.png",
+        "mobile-dark": "advanced_settings_flags_mobile_dark.png",
+        "desktop-light": "advanced_settings_flags_desktop_light.png",
+        "desktop-dark": "advanced_settings_flags_desktop_dark.png"
+      }
+    },
+    {
+      "id": "advanced-settings/logging",
+      "title": "Logging domains",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_logging_mobile_light.png",
+        "mobile-dark": "advanced_settings_logging_mobile_dark.png",
+        "desktop-light": "advanced_settings_logging_desktop_light.png",
+        "desktop-dark": "advanced_settings_logging_desktop_dark.png"
+      }
+    },
+    {
+      "id": "advanced-settings/maintenance",
+      "title": "Maintenance actions",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_maintenance_mobile_light.png",
+        "mobile-dark": "advanced_settings_maintenance_mobile_dark.png",
+        "desktop-light": "advanced_settings_maintenance_desktop_light.png",
+        "desktop-dark": "advanced_settings_maintenance_desktop_dark.png"
+      }
+    },
+    {
+      "id": "advanced-settings/onboarding-metrics",
+      "title": "Onboarding metrics",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_onboarding_metrics_mobile_light.png",
+        "mobile-dark": "advanced_settings_onboarding_metrics_mobile_dark.png",
+        "desktop-light": "advanced_settings_onboarding_metrics_desktop_light.png",
+        "desktop-dark": "advanced_settings_onboarding_metrics_desktop_dark.png"
+      }
+    },
+    {
+      "id": "advanced-settings/about",
+      "title": "About Lotti",
+      "sourceTest": "test/features/settings/ui/settings_advanced_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "advanced_settings_about_mobile_light.png",
+        "mobile-dark": "advanced_settings_about_mobile_dark.png",
+        "desktop-light": "advanced_settings_about_desktop_light.png",
+        "desktop-dark": "advanced_settings_about_desktop_dark.png"
+      }
     }
   ]
 }

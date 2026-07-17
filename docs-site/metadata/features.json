@@ -186,6 +186,20 @@
       ]
     },
     {
+      "id": "advanced-settings",
+      "title": "Advanced Settings",
+      "page": "reference/advanced-settings",
+      "status": "verified",
+      "screenshotCases": [
+        "advanced-settings/hub",
+        "advanced-settings/flags",
+        "advanced-settings/logging",
+        "advanced-settings/maintenance",
+        "advanced-settings/onboarding-metrics",
+        "advanced-settings/about"
+      ]
+    },
+    {
       "id": "sync",
       "title": "Sync",
       "page": "sync-and-data/sync",

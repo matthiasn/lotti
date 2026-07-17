@@ -56,6 +56,7 @@ const sidebars: SidebarsConfig = {
         'reference/recording-style',
         'reference/keyboard-shortcuts',
         'reference/completion-celebrations',
+        'reference/advanced-settings',
         'reference/manual-maintenance',
       ],
     },

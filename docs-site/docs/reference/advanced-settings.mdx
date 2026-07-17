@@ -1,0 +1,145 @@
+---
+title: Use Advanced Settings safely
+description: Control feature flags and logging, run maintenance tools, inspect onboarding metrics, and verify the installed Lotti build.
+---
+
+# Use Advanced Settings safely
+
+Open **Settings → Advanced Settings** for power-user controls, diagnostics, and
+maintenance. These pages change how Lotti runs or operate directly on local
+data, so ordinary personalization belongs elsewhere in Settings.
+
+Desktop keeps the settings tree beside the selected page. Mobile opens one
+page at a time and provides a back button. The same controls and persisted
+values are used in both layouts.
+
+<ManualScreenshot
+  caseId="advanced-settings/hub"
+  alt="Lotti Advanced Settings hub with Config Flags, Animations, Logging, Maintenance, Onboarding Metrics, and About Lotti"
+  caption="Advanced Settings groups operational controls away from everyday preferences. Some entries vary by platform and enabled capabilities."
+/>
+
+## Control capabilities with Config Flags
+
+<ManualScreenshot
+  caseId="advanced-settings/flags"
+  alt="Lotti Config Flags page with searchable switches for private entries, notifications, location recording, tooltips, and AI streaming"
+  caption="Search matches both flag names and descriptions. Each switch changes its stored runtime capability immediately."
+/>
+
+**Config Flags** is the capability switchboard. It includes controls for:
+
+- private-entry visibility, notifications, location capture, and tooltips;
+- AI response streaming and summary playback;
+- logging and Matrix sync behavior;
+- feature pages such as Habits, Dashboards, Events, Projects, and What's New;
+- embeddings and vector search; and
+- operational indicators such as sync activity, pending agent wakes, and fork
+  healing.
+
+Use **Search flags** to narrow the list by title or description. Select a row
+or its switch to change the flag. The new value is persisted immediately; there
+is no separate Save action.
+
+Flags can expose experimental or diagnostic behavior. Change one deliberately,
+then verify the affected workflow before changing another. The **Show private
+entries?** flag controls whether sensitive content is included across lists and
+selectors; it does not encrypt, export, delete, or change the privacy of an
+entry.
+
+## Choose what Lotti logs
+
+<ManualScreenshot
+  caseId="advanced-settings/logging"
+  alt="Lotti Logging settings with a master logging switch, individual operational domains, and slow-query logging"
+  caption="The master switch gates the per-domain controls. The Project Waddle fixture keeps Sync, AI, and Tasks enabled for focused diagnostics."
+/>
+
+**Logging** starts with the global **Enable Logging** switch. When it is on,
+enable only the domains needed for an investigation, such as Sync, AI, Tasks,
+Labels, Health, Habits, Navigation, Notifications, or Daily OS. **Log slow
+queries** adds database performance diagnostics.
+
+Turning off the master switch disables the domain controls. Errors are still
+written to the daily `error-*.log`; these switches govern additional diagnostic
+logging, not the minimum error record. Disable noisy domains after an
+investigation so logs stay focused and storage use remains predictable.
+
+## Run maintenance actions deliberately
+
+<ManualScreenshot
+  caseId="advanced-settings/maintenance"
+  alt="Lotti Maintenance page with onboarding previews, reset actions, database deletion, purge, search index, embeddings, and repaint diagnostics"
+  caption="Maintenance combines safe previews with destructive and diagnostic actions. Read the confirmation and scope before continuing."
+/>
+
+**Maintenance** contains several different kinds of action:
+
+- **Show onboarding welcome** and **Onboarding animation gallery** are live
+  previews for development and QA.
+- **Reset In-App Hints** makes one-time tips eligible to appear again.
+- **Reset Gemini Setup Dialog** clears its dismissal so the provider prompt can
+  be tested again.
+- **Delete Editor Database** removes editor drafts.
+- **Delete Agents Database** removes the agents database and exits Lotti so the
+  app can restart against a clean store.
+- **Purge deleted items** permanently clears soft-deleted records through a
+  dedicated confirmation flow.
+- **Recreate full-text index** rebuilds local search data without recreating
+  journal entries.
+- **Generate Embeddings** appears when the embedding store is available and
+  backfills selected categories.
+- **Repaint rainbow overlay** flashes repainting regions for UI diagnostics. It
+  is held in memory and returns to off after relaunch.
+
+Preview and reset actions do not share the same risk as deletion and purge.
+For destructive actions, confirm that the target is the intended local store
+and let any current sync or write operation finish first.
+
+## Inspect the onboarding funnel
+
+<ManualScreenshot
+  caseId="advanced-settings/onboarding-metrics"
+  alt="Lotti Onboarding Metrics page showing install time, four active days, activation status, and content-free event counts"
+  caption="The deterministic manual fixture reached its real aha across four active days after connecting a provider and recording several captures."
+/>
+
+**Onboarding Metrics** is a developer and QA surface. It derives a local funnel
+from content-free events and shows:
+
+- the first-seen timestamp in UTC;
+- total active days and active days during the first seven days;
+- whether the install belongs to the pre-FTUE baseline cohort;
+- whether the real activation milestone was reached; and
+- a count for every onboarding event.
+
+The page records event names and low-cardinality metadata, not journal text,
+task titles, transcripts, or the sardine-sensitive details of Project Waddle.
+
+**Reset onboarding test state** clears onboarding prompt cadence and the local
+funnel metrics after confirmation. It does not delete journal data, config
+flags, or real Daily OS plan history. A profile that has already planned a day
+therefore remains ineligible for the exact clean-profile first-plan path.
+
+## Verify the build and local totals
+
+<ManualScreenshot
+  caseId="advanced-settings/about"
+  alt="Lotti About page showing version, platform, build type, 2604 journal entries, 11 flagged entries, and task counts"
+  caption="About Lotti identifies the running build and summarizes local data. The Project Waddle fixture contains 2,604 entries and 65 tasks across five states."
+/>
+
+**About Lotti** is the fastest place to verify which build is actually running.
+It shows the app version and build number, platform, and build type. Include
+those values in a diagnostic report so a behavior can be matched to the right
+code and release.
+
+The **Your Data** card summarizes local journal entries, flagged entries, and
+task counts split into Open, In Progress, On Hold, Blocked, and Done. The
+manual's established Project Waddle workspace demonstrates a non-empty account:
+2,604 journal entries, 11 flagged entries, and 65 tasks rather than placeholder
+zeros.
+
+Completion effects have their own guide: see
+**[Customize completion celebrations](./completion-celebrations.mdx)** for the
+Animations page and its live playground.
