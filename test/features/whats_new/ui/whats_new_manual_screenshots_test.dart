@@ -34,6 +34,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 
+import '../../../helpers/target_platform.dart';
 import '../../../widget_test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
 
@@ -243,26 +244,29 @@ void main() {
     required ScreenshotDevice device,
     required Brightness brightness,
     required bool pastRelease,
-  }) async {
-    applyScreenshotDevice(tester, device);
-    navService.isDesktopMode = !device.isPhone;
+  }) => withTargetPlatform(
+    device.isPhone ? TargetPlatform.android : TargetPlatform.linux,
+    () async {
+      applyScreenshotDevice(tester, device);
+      navService.isDesktopMode = !device.isPhone;
 
-    await tester.pumpWidget(
-      _app(
-        brightness: brightness,
-        size: device.size,
-        overrides: overrides(),
-      ),
-    );
-    await settleFrames(tester, 18);
+      await tester.pumpWidget(
+        _app(
+          brightness: brightness,
+          size: device.size,
+          overrides: overrides(),
+        ),
+      );
+      await settleFrames(tester, 18);
 
-    expect(find.text('v0.9.1049'), findsOneWidget);
-    if (pastRelease) {
-      await tester.tap(find.byIcon(Icons.chevron_right));
-      await settleFrames(tester, 10);
-      expect(find.text('v0.9.1048'), findsOneWidget);
-    }
-  }
+      expect(find.text('v0.9.1049'), findsOneWidget);
+      if (pastRelease) {
+        await tester.tap(find.byIcon(Icons.chevron_right));
+        await settleFrames(tester, 10);
+        expect(find.text('v0.9.1048'), findsOneWidget);
+      }
+    },
+  );
 
   for (final (viewport, device) in [
     ('mobile', miniDevice),

@@ -349,6 +349,10 @@ exercised through the DS widgetbook. The current contract is:
   `DesignSystemBottomNavigationOverlayHeight`
 - `DesignSystemBottomNavigationFabPadding` is the default wrapper for
   screen-level FABs that need to stay visually above that shell
+- `DesignSystemFiveSlotNavBar.contentHeight(context)` owns the slot-row height
+  contract. It scales caption line height with `MediaQuery.textScalerOf` and
+  rounds fractional line boxes up to the logical pixel Flutter renders, so
+  accessibility scales such as 1.3× cannot overflow the fixed row
 - feature pages should use that wrapper rather than inventing local bottom
   offsets
 

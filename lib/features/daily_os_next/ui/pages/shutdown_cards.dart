@@ -24,10 +24,11 @@ class MetricsCard extends StatelessWidget {
     final focus = m == 0 ? '${h}h' : '${h}h ${m}m';
     final energyDelta = metrics.energyDeltaVsWeek;
     final deltaSign = energyDelta >= 0 ? '⬆' : '⬇';
+    final textScaler = MediaQuery.textScalerOf(context);
     final metricTileHeight =
-        tokens.typography.lineHeight.overline * 2 +
-        tokens.typography.lineHeight.heading3 +
-        tokens.typography.lineHeight.caption * 2 +
+        textScaler.scale(tokens.typography.lineHeight.overline) * 2 +
+        textScaler.scale(tokens.typography.lineHeight.heading3) +
+        textScaler.scale(tokens.typography.lineHeight.caption) * 2 +
         tokens.spacing.step1;
     return Container(
       padding: EdgeInsets.all(tokens.spacing.step5),

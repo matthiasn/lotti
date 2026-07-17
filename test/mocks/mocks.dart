@@ -658,6 +658,19 @@ class MockRealtimeTranscriptionService extends Mock
 
 class MockNavService extends Mock implements NavService {}
 
+/// Minimal settings navigation fake for tests that render the desktop
+/// settings master/detail shell without constructing Beamer delegates.
+class FakeSettingsNavService implements NavService {
+  @override
+  final ValueNotifier<DesktopSettingsRoute?> desktopSelectedSettingsRoute =
+      ValueNotifier<DesktopSettingsRoute?>(null);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
+    'Unexpected NavService call: ${invocation.memberName}',
+  );
+}
+
 /// Fake [CaptureController] that lets a test push [CaptureState]s directly,
 /// bypassing the real mic / realtime pipeline. `toggle()` is wired to a
 /// test-supplied callback so a record-tap is observable; the rest of the

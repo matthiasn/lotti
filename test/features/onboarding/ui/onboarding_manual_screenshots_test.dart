@@ -43,6 +43,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/target_platform.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
@@ -341,50 +342,56 @@ void main() {
     required _OnboardingCase scenario,
     required ScreenshotDevice device,
     required Brightness brightness,
-  }) async {
-    applyScreenshotDevice(tester, device);
-    navService.isDesktopMode = !device.isPhone;
-    navService.desktopSelectedSettingsRoute.value =
-        scenario == _OnboardingCase.settings && !device.isPhone
-        ? (
-            path: '/settings/onboarding',
-            pathParameters: const <String, String>{},
-            queryParameters: const <String, String>{},
-          )
-        : null;
+  }) => withTargetPlatform(
+    device.isPhone ? TargetPlatform.android : TargetPlatform.linux,
+    () async {
+      applyScreenshotDevice(tester, device);
+      navService.isDesktopMode = !device.isPhone;
+      navService.desktopSelectedSettingsRoute.value =
+          scenario == _OnboardingCase.settings && !device.isPhone
+          ? (
+              path: '/settings/onboarding',
+              pathParameters: const <String, String>{},
+              queryParameters: const <String, String>{},
+            )
+          : null;
 
-    final home = scenario == _OnboardingCase.settings
-        ? (device.isPhone
-              ? const OnboardingSettingsPage()
-              : const SettingsRootPage())
-        : const _OnboardingLaunchHost();
+      final home = scenario == _OnboardingCase.settings
+          ? (device.isPhone
+                ? const OnboardingSettingsPage()
+                : const SettingsRootPage())
+          : const _OnboardingLaunchHost();
 
-    await tester.pumpWidget(
-      _app(
-        home: home,
-        brightness: brightness,
-        size: device.size,
-        overrides: overrides(),
-      ),
-    );
-    await settleFrames(tester, 18);
+      await tester.pumpWidget(
+        _app(
+          home: home,
+          brightness: brightness,
+          size: device.size,
+          overrides: overrides(),
+        ),
+      );
+      await settleFrames(tester, 18);
 
-    switch (scenario) {
-      case _OnboardingCase.settings:
-        expect(find.text("You've created your first AI task"), findsOneWidget);
-      case _OnboardingCase.welcome:
-        expect(
-          find.text('Talk. Lotti turns it into a plan.'),
-          findsOneWidget,
-        );
-      case _OnboardingCase.providers:
-        await driveToProviders(tester);
-      case _OnboardingCase.firstTask:
-        await driveToFirstTask(tester);
-      case _OnboardingCase.taskCreated:
-        await driveToCreatedTask(tester);
-    }
-  }
+      switch (scenario) {
+        case _OnboardingCase.settings:
+          expect(
+            find.text("You've created your first AI task"),
+            findsOneWidget,
+          );
+        case _OnboardingCase.welcome:
+          expect(
+            find.text('Talk. Lotti turns it into a plan.'),
+            findsOneWidget,
+          );
+        case _OnboardingCase.providers:
+          await driveToProviders(tester);
+        case _OnboardingCase.firstTask:
+          await driveToFirstTask(tester);
+        case _OnboardingCase.taskCreated:
+          await driveToCreatedTask(tester);
+      }
+    },
+  );
 
   for (final (viewport, device) in [
     ('mobile', miniDevice),

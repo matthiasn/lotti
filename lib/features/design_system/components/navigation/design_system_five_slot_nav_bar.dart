@@ -83,12 +83,14 @@ class DesignSystemFiveSlotNavBar extends StatelessWidget {
   /// surface's padding and the safe-area inset). Scales with the system
   /// text size: the label line grows under [MediaQuery.textScalerOf], so
   /// the fixed-height row must grow with it or large-font users get
-  /// clipped captions.
+  /// clipped captions. Fractional scaled line heights are rounded up because
+  /// Flutter's paragraph layout snaps the rendered line to a full logical
+  /// pixel as well.
   static double contentHeight(BuildContext context) {
     final tokens = context.designTokens;
     final scaledCaptionHeight = MediaQuery.textScalerOf(
       context,
-    ).scale(tokens.typography.lineHeight.caption);
+    ).scale(tokens.typography.lineHeight.caption).ceilToDouble();
     return math.max(
       minTapTarget,
       iconSize + tokens.spacing.step1 + scaledCaptionHeight,

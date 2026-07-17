@@ -194,29 +194,35 @@ void main() {
       );
     });
 
-    testWidgets('grows with the system text scale instead of clipping', (
+    testWidgets('grows with integer and fractional text scales', (
       tester,
     ) async {
-      await pumpBar(
-        tester,
-        items: barItems(),
-        mediaQueryData: const MediaQueryData(
-          size: Size(390, 844),
-          textScaler: TextScaler.linear(1.5),
-        ),
-      );
+      for (final textScale in [1.3, 1.5]) {
+        await pumpBar(
+          tester,
+          items: barItems(),
+          mediaQueryData: MediaQueryData(
+            size: const Size(390, 844),
+            textScaler: TextScaler.linear(textScale),
+          ),
+        );
 
-      // No RenderFlex overflow at 1.5× font scale (an overflow would fail
-      // the test via the exception handler), and the rendered bar still
-      // matches the shared height contract, which now exceeds the
-      // unscaled minimum row height.
-      final context = tester.element(find.byType(DesignSystemFiveSlotNavBar));
-      final barRect = tester.getRect(find.byType(DesignSystemFiveSlotNavBar));
-      expect(barRect.height, DesignSystemFiveSlotNavBar.barHeight(context));
-      expect(
-        DesignSystemFiveSlotNavBar.contentHeight(context),
-        greaterThan(DesignSystemFiveSlotNavBar.minTapTarget),
-      );
+        // Fractional paragraph line heights are rounded up by Flutter. The
+        // bar's shared height contract must reserve the same space so the
+        // labels neither clip nor emit a RenderFlex overflow.
+        final context = tester.element(
+          find.byType(DesignSystemFiveSlotNavBar),
+        );
+        final barRect = tester.getRect(
+          find.byType(DesignSystemFiveSlotNavBar),
+        );
+        expect(barRect.height, DesignSystemFiveSlotNavBar.barHeight(context));
+        expect(
+          DesignSystemFiveSlotNavBar.contentHeight(context),
+          greaterThan(DesignSystemFiveSlotNavBar.minTapTarget),
+        );
+        expect(tester.takeException(), isNull);
+      }
     });
 
     testWidgets('keeps slots clear of horizontal safe-area insets', (

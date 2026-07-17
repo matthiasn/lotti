@@ -6,6 +6,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/shutdown_cards.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -30,12 +31,13 @@ Widget _wrap(
   Widget child, {
   List<Override> overrides = const [],
   Size size = const Size(1280, 1100),
+  TextScaler textScaler = TextScaler.noScaling,
 }) {
   return ProviderScope(
     overrides: overrides,
     child: makeTestableWidget2(
       child,
-      mediaQueryData: MediaQueryData(size: size),
+      mediaQueryData: MediaQueryData(size: size, textScaler: textScaler),
     ),
   );
 }
@@ -126,6 +128,41 @@ void main() {
         final bounds = tester.getRect(action);
         expect(bounds.left, greaterThanOrEqualTo(0));
         expect(bounds.right, lessThanOrEqualTo(size.width));
+      }
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('keeps scaled metric text inside the metrics card', (
+      tester,
+    ) async {
+      const size = Size(600, 1200);
+      _setView(tester, size: size);
+
+      await tester.pumpWidget(
+        _wrap(
+          ShutdownPage(forDate: DateTime(2026, 5, 25)),
+          overrides: [dayAgentProvider.overrideWithValue(_fastAgent())],
+          size: size,
+          textScaler: const TextScaler.linear(2),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final metricsCard = find.byType(MetricsCard);
+      expect(metricsCard, findsOneWidget);
+      final metricsBounds = tester.getRect(metricsCard);
+      final messages = tester.element(metricsCard).messages;
+      for (final label in [
+        messages.dailyOsNextShutdownMetricFocus,
+        messages.dailyOsNextShutdownMetricFlow,
+        messages.dailyOsNextShutdownMetricSwitches,
+        messages.dailyOsNextShutdownMetricEnergy,
+      ]) {
+        final labelFinder = find.text(label);
+        expect(labelFinder, findsOneWidget);
+        final labelBounds = tester.getRect(labelFinder);
+        expect(labelBounds.top, greaterThanOrEqualTo(metricsBounds.top));
+        expect(labelBounds.bottom, lessThanOrEqualTo(metricsBounds.bottom));
       }
       expect(tester.takeException(), isNull);
     });

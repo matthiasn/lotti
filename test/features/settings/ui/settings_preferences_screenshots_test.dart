@@ -40,6 +40,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/target_platform.dart';
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
 import '../../onboarding/state/recording_style_test_utils.dart';
@@ -56,20 +57,6 @@ enum _PreferenceSurface {
   const _PreferenceSurface(this.route);
 
   final String route;
-}
-
-/// Settings V2 only reads the selected-settings route from [NavService].
-/// Keeping this fake deliberately tiny avoids standing up the application-wide
-/// Beamer delegates for a screenshot of one production page.
-class _FakeNavService implements NavService {
-  @override
-  final ValueNotifier<DesktopSettingsRoute?> desktopSelectedSettingsRoute =
-      ValueNotifier<DesktopSettingsRoute?>(null);
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
-    'Unexpected NavService call: ${invocation.memberName}',
-  );
 }
 
 Widget _mobilePage(_PreferenceSurface surface) => switch (surface) {
@@ -118,7 +105,7 @@ Future<void> _pumpSurface(
   required _PreferenceSurface surface,
   required ScreenshotDevice device,
   required Brightness brightness,
-  required _FakeNavService navService,
+  required FakeSettingsNavService navService,
   required List<Override> overrides,
 }) async {
   applyScreenshotDevice(tester, device);
@@ -155,16 +142,18 @@ void _alignInOuterScrollView(
   Finder target, {
   double top = 72,
 }) {
-  final position = tester
+  final scrollablePositions = tester
       .stateList<ScrollableState>(find.byType(Scrollable))
       .map((state) => state.position)
       .where((position) => position.maxScrollExtent > 0)
-      .reduce(
-        (largest, candidate) =>
-            candidate.maxScrollExtent > largest.maxScrollExtent
-            ? candidate
-            : largest,
-      );
+      .toList();
+  if (scrollablePositions.isEmpty) return;
+
+  final position = scrollablePositions.reduce(
+    (largest, candidate) => candidate.maxScrollExtent > largest.maxScrollExtent
+        ? candidate
+        : largest,
+  );
   final targetTop = tester.getTopLeft(target).dy;
   position.jumpTo(
     (position.pixels + targetTop - top).clamp(
@@ -189,12 +178,12 @@ void main() {
   setUpAll(loadScreenshotFonts);
 
   late TestGetItMocks mocks;
-  late _FakeNavService navService;
+  late FakeSettingsNavService navService;
   late Map<String, String> recordingPrefs;
   late bool speechEnabled;
 
   setUp(() async {
-    navService = _FakeNavService();
+    navService = FakeSettingsNavService();
     speechEnabled = false;
     recordingPrefs = <String, String>{
       recordingStylePrefsKey: RecordingStyle.modern.name,

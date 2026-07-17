@@ -484,6 +484,8 @@ class _ManualDailyOsAgent extends MockDayAgent {
       for (final block in currentPlan.blocks)
         if (block.id == 'blk-followup')
           block.copyWith(start: _at(13, 30), end: _at(15))
+        else if (block.id == 'blk-slides')
+          block.copyWith(start: _at(15), end: _at(16, 30))
         else
           block,
     ];

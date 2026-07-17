@@ -40,6 +40,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../../helpers/target_platform.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
@@ -286,33 +287,38 @@ void main() {
     required _AdvancedCase scenario,
     required ScreenshotDevice device,
     required Brightness brightness,
-  }) async {
-    applyScreenshotDevice(tester, device);
-    navService.isDesktopMode = !device.isPhone;
-    navService.desktopSelectedSettingsRoute.value = device.isPhone
-        ? null
-        : (
-            path: scenario.route,
-            pathParameters: const <String, String>{},
-            queryParameters: const <String, String>{},
-          );
+  }) => withTargetPlatform(
+    device.isPhone ? TargetPlatform.android : TargetPlatform.linux,
+    () async {
+      applyScreenshotDevice(tester, device);
+      navService.isDesktopMode = !device.isPhone;
+      navService.desktopSelectedSettingsRoute.value = device.isPhone
+          ? null
+          : (
+              path: scenario.route,
+              pathParameters: const <String, String>{},
+              queryParameters: const <String, String>{},
+            );
 
-    await tester.pumpWidget(
-      _app(
-        home: device.isPhone ? scenario.mobilePage() : const SettingsRootPage(),
-        brightness: brightness,
-        size: device.size,
-        overrides: overrides(),
-      ),
-    );
-    await settleFrames(tester, 18);
+      await tester.pumpWidget(
+        _app(
+          home: device.isPhone
+              ? scenario.mobilePage()
+              : const SettingsRootPage(),
+          brightness: brightness,
+          size: device.size,
+          overrides: overrides(),
+        ),
+      );
+      await settleFrames(tester, 18);
 
-    final target = scenario.scrollTo;
-    if (target != null) {
-      await tester.ensureVisible(find.text(target).last);
-      await tester.pump(const Duration(milliseconds: 300));
-    }
-  }
+      final target = scenario.scrollTo;
+      if (target != null) {
+        await tester.ensureVisible(find.text(target).last);
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+    },
+  );
 
   for (final (viewport, device) in [
     ('mobile', miniDevice),

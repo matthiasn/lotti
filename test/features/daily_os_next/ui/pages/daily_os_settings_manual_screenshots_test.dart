@@ -41,17 +41,6 @@ import '../../screenshot_harness.dart';
 
 const String _subdir = 'daily_os_settings';
 
-class _FakeNavService implements NavService {
-  @override
-  final ValueNotifier<DesktopSettingsRoute?> desktopSelectedSettingsRoute =
-      ValueNotifier<DesktopSettingsRoute?>(null);
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
-    'Unexpected NavService call: ${invocation.memberName}',
-  );
-}
-
 class _PreferencesController extends DailyOsPreferencesController {
   @override
   DailyOsPreferences build() => DailyOsPreferences(
@@ -114,11 +103,11 @@ void main() {
   setUpAll(loadScreenshotFonts);
 
   late TestGetItMocks mocks;
-  late _FakeNavService navService;
+  late FakeSettingsNavService navService;
   late MockDayAgentService dayAgentService;
 
   setUp(() async {
-    navService = _FakeNavService();
+    navService = FakeSettingsNavService();
     dayAgentService = MockDayAgentService();
     when(
       () => dayAgentService.updateDefaultInferenceProfile(any()),

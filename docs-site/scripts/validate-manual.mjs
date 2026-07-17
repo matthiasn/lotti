@@ -58,11 +58,12 @@ if (features.schemaVersion !== 1 || !Array.isArray(features.features)) {
         errors.push(`${feature.id} references unknown screenshot case ${caseId}.`);
       }
     }
-    if (feature.status === 'verified' && feature.screenshotCases.length === 0) {
-      errors.push(`${feature.id} is verified but has no screenshot coverage.`);
-    }
     if (feature.status === 'verified') {
-      verifiedFeaturePages.add(feature.page);
+      if (feature.screenshotCases.length === 0) {
+        errors.push(`${feature.id} is verified but has no screenshot coverage.`);
+      } else {
+        verifiedFeaturePages.add(feature.page);
+      }
     }
   }
 }
