@@ -132,7 +132,10 @@
         "dashboards/settings-list",
         "dashboards/settings-detail",
         "dashboards/charts",
-        "dashboards/sources"
+        "dashboards/sources",
+        "dashboards/list",
+        "dashboards/view",
+        "dashboards/view-crew"
       ]
     },
     {

@@ -332,6 +332,39 @@
       }
     },
     {
+      "id": "dashboards/list",
+      "title": "Dashboards list",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "dashboard_list_mobile_light.png",
+        "mobile-dark": "dashboard_list_mobile_dark.png",
+        "desktop-light": "dashboard_list_desktop_light.png",
+        "desktop-dark": "dashboard_list_desktop_dark.png"
+      }
+    },
+    {
+      "id": "dashboards/view",
+      "title": "Colony operations dashboard",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "dashboard_view_mobile_light.png",
+        "mobile-dark": "dashboard_view_mobile_dark.png",
+        "desktop-light": "dashboard_view_desktop_light.png",
+        "desktop-dark": "dashboard_view_desktop_dark.png"
+      }
+    },
+    {
+      "id": "dashboards/view-crew",
+      "title": "Colony operations crew charts",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "dashboard_view_crew_mobile_light.png",
+        "mobile-dark": "dashboard_view_crew_mobile_dark.png",
+        "desktop-light": "dashboard_view_crew_desktop_light.png",
+        "desktop-dark": "dashboard_view_crew_desktop_dark.png"
+      }
+    },
+    {
       "id": "recordings/active",
       "title": "Active audio recording",
       "sourceTest": "test/features/speech/ui/widgets/recording/audio_recording_manual_screenshots_test.dart",

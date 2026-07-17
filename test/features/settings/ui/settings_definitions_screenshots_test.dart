@@ -14,6 +14,9 @@
 ///   test/features/settings/ui/settings_definitions_screenshots_test.dart`
 library;
 
+import 'dart:math' as math;
+
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,12 +24,16 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_task_count_provider.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
+import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
+import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
+import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -38,14 +45,17 @@ import 'package:lotti/features/settings/ui/pages/habits/habit_details_page.dart'
 import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../helpers/manual_demo_world.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -343,6 +353,45 @@ final List<DashboardDefinition> _allDashboards = [
   _missionReadiness,
 ];
 
+List<JournalEntity> _dashboardMeasurements({
+  required String type,
+  required DateTime rangeStart,
+  required DateTime rangeEnd,
+}) {
+  final start = DateTime(rangeStart.year, rangeStart.month, rangeStart.day);
+  final days = rangeEnd.difference(start).inDays;
+  return [
+    for (var day = 0; day <= days; day++)
+      () {
+        final at = start.add(Duration(days: day));
+        final value = switch (type) {
+          'meas-habitat-pressure' =>
+            101.2 + math.sin(day / 7) * 0.7 + (day % 5) * 0.08,
+          'meas-sardines-consumed' =>
+            680 + math.sin(day / 4) * 95 + (day % 6) * 21,
+          'meas-penguins-accounted-for' => day % 19 == 0 ? 36 : 37,
+          _ => 0,
+        };
+        return MeasurementEntry(
+          meta: Metadata(
+            id: '$type-$day',
+            createdAt: at,
+            updatedAt: at,
+            dateFrom: at,
+            dateTo: at,
+            private: false,
+          ),
+          data: MeasurementData(
+            value: value.toDouble(),
+            dataTypeId: type,
+            dateFrom: at,
+            dateTo: at,
+          ),
+        );
+      }(),
+  ];
+}
+
 // ---------------------------------------------------------------------------
 // Harness plumbing.
 // ---------------------------------------------------------------------------
@@ -443,29 +492,39 @@ void main() {
   // token (it previously used a null-family style that painted as
   // FlutterTest blocks), so every title renders with real glyphs in
   // these captures.
-  setUpAll(loadScreenshotFonts);
+  setUpAll(() async {
+    registerAllFallbackValues();
+    await loadScreenshotFonts();
+  });
 
   late TestGetItMocks mocks;
   late MockCategoryRepository categoryRepo;
   late MockLabelsRepository labelsRepo;
   late MockAiConfigRepository aiConfigRepo;
   late MockEntitiesCacheService cache;
+  late MockTimeService timeService;
+  late NavService navService;
 
   setUp(() async {
     categoryRepo = MockCategoryRepository();
     labelsRepo = MockLabelsRepository();
     aiConfigRepo = MockAiConfigRepository();
     cache = MockEntitiesCacheService();
+    timeService = MockTimeService();
 
     mocks = await setUpTestGetIt(
       additionalSetup: () {
+        navService = NavService();
         getIt
           // CategoryIconCompact (habits/dashboards rows), the habit
           // editor's category field, and label category chips all resolve
           // categories through the entities cache.
           ..registerSingleton<EntitiesCacheService>(cache)
           ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-          ..registerSingleton<NotificationService>(MockNotificationService());
+          ..registerSingleton<NotificationService>(MockNotificationService())
+          ..registerSingleton<UserActivityService>(UserActivityService())
+          ..registerSingleton<TimeService>(timeService)
+          ..registerSingleton<NavService>(navService);
       },
     );
 
@@ -474,6 +533,19 @@ void main() {
       when(() => cache.getCategoryById(category.id)).thenReturn(category);
     }
     when(() => cache.sortedCategories).thenReturn(_allCategories);
+    when(() => cache.getDashboardById(any())).thenReturn(null);
+    when(
+      () => cache.getDashboardById(_colonyOperations.id),
+    ).thenReturn(_colonyOperations);
+    when(() => cache.getDataTypeById(any())).thenReturn(null);
+    for (final measurable in _allMeasurables) {
+      when(
+        () => cache.getDataTypeById(measurable.id),
+      ).thenReturn(measurable);
+    }
+    when(timeService.getStream).thenAnswer(
+      (_) => const Stream<JournalEntity>.empty(),
+    );
 
     when(categoryRepo.watchCategories).thenAnswer(
       (_) => Stream.value(_allCategories),
@@ -521,6 +593,19 @@ void main() {
         () => mocks.journalDb.getMeasurableDataTypeById(measurable.id),
       ).thenAnswer((_) async => measurable);
     }
+    when(
+      () => mocks.journalDb.getMeasurementsByType(
+        type: any(named: 'type'),
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((invocation) async {
+      return _dashboardMeasurements(
+        type: invocation.namedArguments[#type] as String,
+        rangeStart: invocation.namedArguments[#rangeStart] as DateTime,
+        rangeEnd: invocation.namedArguments[#rangeEnd] as DateTime,
+      );
+    });
 
     // Row taps and back affordances route through the top-level
     // `beamToNamed`; no NavService is registered here.
@@ -529,6 +614,7 @@ void main() {
 
   tearDown(() async {
     beamToNamedOverride = null;
+    await navService.dispose();
     await tearDownTestGetIt();
   });
 
@@ -979,6 +1065,81 @@ void main() {
         await captureScreenshot(
           tester,
           'dashboards_sources_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport dashboards route list — $theme', (tester) async {
+        navService
+          ..isDesktopMode = !device.isPhone
+          ..desktopSelectedDashboardId.value = null;
+        await withClock(Clock.fixed(manualDemoNow), () async {
+          await _pumpScreen(
+            tester,
+            device: device,
+            brightness: brightness,
+            overrides: [
+              dashboardsProvider.overrideWith(
+                (ref) => Stream.value(_allDashboards),
+              ),
+              dashboardCategoriesProvider.overrideWith(
+                (ref) => Stream.value(_allCategories),
+              ),
+            ],
+            home: const DashboardsListPage(),
+          );
+        });
+        expect(find.text('Colony operations'), findsOneWidget);
+        expect(find.text('Mission readiness'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'dashboard_list_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport dashboard route view — $theme', (tester) async {
+        navService
+          ..isDesktopMode = !device.isPhone
+          ..desktopSelectedDashboardId.value = _colonyOperations.id;
+        await withClock(Clock.fixed(manualDemoNow), () async {
+          await _pumpScreen(
+            tester,
+            device: device,
+            brightness: brightness,
+            overrides: [
+              dashboardsProvider.overrideWith(
+                (ref) => Stream.value(_allDashboards),
+              ),
+              dashboardCategoriesProvider.overrideWith(
+                (ref) => Stream.value(_allCategories),
+              ),
+            ],
+            home: device.isPhone
+                ? const DashboardPage(dashboardId: 'dash-colony-operations')
+                : const DashboardsListPage(),
+          );
+          await settleFrames(tester, 12);
+        });
+        expect(find.text('Colony operations'), findsWidgets);
+        expect(find.text('Habitat pressure'), findsOneWidget);
+        expect(find.text('Sardines consumed'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'dashboard_view_${viewport}_$theme',
+          subdir: _subdir,
+        );
+
+        await tester.scrollUntilVisible(
+          find.text('Penguins accounted for'),
+          350,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await settleFrames(tester, 8);
+        expect(find.text('Penguins accounted for'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'dashboard_view_crew_${viewport}_$theme',
           subdir: _subdir,
         );
       });
