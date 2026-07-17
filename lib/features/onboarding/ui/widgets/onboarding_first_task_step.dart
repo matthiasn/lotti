@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
@@ -108,9 +107,6 @@ class _OnboardingFirstTaskStepState
   /// picker until structuring starts.
   late String _selectedCategoryId;
 
-  /// Dark scheme for the analog VU meter on the dark onboarding surface.
-  late final ColorScheme _darkScheme = DesignSystemTheme.dark().colorScheme;
-
   @override
   void initState() {
     super.initState();
@@ -155,8 +151,8 @@ class _OnboardingFirstTaskStepState
     return OnboardingFirstTaskView(
       phase: _viewPhase(captureState.phase),
       style: style,
-      accent: dsTokensDark.colors.interactive.enabled,
-      colorScheme: _darkScheme,
+      accent: context.designTokens.colors.interactive.enabled,
+      colorScheme: Theme.of(context).colorScheme,
       title: messages.onboardingFirstTaskTitle,
       guidance: messages.onboardingFirstTaskGuidance,
       suggestionsLabel: messages.onboardingFirstTaskSuggestionsLabel,

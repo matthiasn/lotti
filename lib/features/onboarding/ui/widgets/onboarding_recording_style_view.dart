@@ -35,8 +35,7 @@ class OnboardingRecordingStyleView extends StatelessWidget {
 
   final Color accent;
 
-  /// Colour scheme handed to the analog VU meter (a dark scheme on the dark
-  /// onboarding surface).
+  /// Colour scheme handed to the theme-adaptive analog VU meter.
   final ColorScheme colorScheme;
 
   final String title;
@@ -65,9 +64,9 @@ class OnboardingRecordingStyleView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final textHigh = dsTokensDark.colors.text.highEmphasis;
-    final textMedium = dsTokensDark.colors.text.mediumEmphasis;
-    final panelBg = dsTokensDark.colors.background.level01;
+    final textHigh = tokens.colors.text.highEmphasis;
+    final textMedium = tokens.colors.text.mediumEmphasis;
+    final panelBg = tokens.colors.background.level01;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.l),
@@ -116,7 +115,7 @@ class OnboardingRecordingStyleView extends StatelessWidget {
                 RecordingStylePicker(
                   accent: accent,
                   colorScheme: colorScheme,
-                  surfaceTokens: dsTokensDark,
+                  surfaceTokens: tokens,
                   analogueLabel: analogueLabel,
                   modernLabel: modernLabel,
                   tryWithVoiceLabel: tryWithVoiceLabel,

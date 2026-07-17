@@ -29,7 +29,7 @@ const double _kChipTintBottomAlpha = 0.18;
 const double _kAddOwnTintTopAlpha = 0.14;
 const double _kAddOwnTintBottomAlpha = 0.05;
 
-/// Crisp white hairline that defines the glass edge and catches light — bright
+/// Crisp high-emphasis hairline that defines the glass edge and catches light —
 /// enough that the unselected chips' tap-target boundary is unmistakable
 /// against the dark gradient — and against the busy constellation backdrop —
 /// even for low-vision users. The add-own chip uses a quieter hairline to match
@@ -110,16 +110,16 @@ class OnboardingCategoryView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final panelBg = dsTokensDark.colors.background.level01;
-    final textHigh = dsTokensDark.colors.text.highEmphasis;
-    final textMedium = dsTokensDark.colors.text.mediumEmphasis;
+    final panelBg = tokens.colors.background.level01;
+    final textHigh = tokens.colors.text.highEmphasis;
+    final textMedium = tokens.colors.text.mediumEmphasis;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.l),
       child: Stack(
         children: [
           const Positioned.fill(child: OnboardingBackdrop()),
-          // Ambient colour wash, painted above the (sparse, near-black)
+          // Ambient colour wash, painted above the sparse themed
           // constellation backdrop but below the scrim + content. The frosted
           // chips blur whatever sits behind them; without this the blur had
           // only near-black to frost, so the glass read milky. These soft
@@ -169,19 +169,25 @@ class OnboardingCategoryView extends StatelessWidget {
                 ),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: GestureDetector(
-                    onTap: onWhy,
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        vertical: tokens.spacing.step2,
-                      ),
-                      child: Text(
-                        whyLabel,
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: accent,
-                          decoration: TextDecoration.underline,
-                          decorationColor: accent,
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: InkWell(
+                      onTap: onWhy,
+                      borderRadius: BorderRadius.circular(tokens.radii.s),
+                      focusColor: tokens.colors.surface.focusPressed,
+                      hoverColor: tokens.colors.surface.hover,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          vertical: tokens.spacing.step2,
+                        ),
+                        child: Text(
+                          whyLabel,
+                          style: tokens.typography.styles.body.bodySmall
+                              .copyWith(
+                                color: accent,
+                                decoration: TextDecoration.underline,
+                                decorationColor: accent,
+                              ),
                         ),
                       ),
                     ),
@@ -278,11 +284,10 @@ class _AmbientGlow extends StatelessWidget {
   }
 }
 
-/// A tidy uniform grid of selectable area chips: the options laid out in rows
-/// of two equal-width cells (`Expanded`), with the "+ Add your own" chip on its
-/// own full-width row below. Every chip shares the same height + padding so the
-/// grid never looks ragged (the review-panel blocker). An odd final option pairs
-/// with an empty spacer so the column edges stay aligned.
+/// A responsive grid of selectable area chips. At the standard text scale and
+/// comfortable widths it uses two equal columns; scaled text or narrow panels
+/// collapse to one column so labels remain complete instead of ellipsizing.
+/// The "+ Add your own" chip always occupies its own full-width row below.
 class _CategoryGrid extends StatelessWidget {
   const _CategoryGrid({
     required this.tokens,
@@ -305,52 +310,78 @@ class _CategoryGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gap = tokens.spacing.step3;
-    final rows = <Widget>[];
-    for (var i = 0; i < options.length; i += 2) {
-      if (i > 0) rows.add(SizedBox(height: gap));
-      final left = options[i];
-      final right = i + 1 < options.length ? options[i + 1] : null;
-      rows.add(
-        Row(
-          children: [
-            Expanded(
-              child: _CategoryChip(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textIsScaled = MediaQuery.textScalerOf(context).scale(1) > 1;
+        final panelIsNarrow = constraints.maxWidth < tokens.spacing.step13 * 2;
+        final singleColumn = textIsScaled || panelIsNarrow;
+        final rows = <Widget>[];
+
+        if (singleColumn) {
+          for (final option in options) {
+            if (rows.isNotEmpty) rows.add(SizedBox(height: gap));
+            rows.add(
+              _CategoryChip(
                 tokens: tokens,
                 accent: accent,
-                option: left,
-                selected: selected.contains(left.label),
-                onTap: () => onToggle(left.label),
+                option: option,
+                selected: selected.contains(option.label),
+                allowLabelWrap: true,
+                onTap: () => onToggle(option.label),
               ),
-            ),
-            SizedBox(width: gap),
-            Expanded(
-              child: right == null
-                  ? const SizedBox.shrink()
-                  : _CategoryChip(
+            );
+          }
+        } else {
+          for (var i = 0; i < options.length; i += 2) {
+            if (i > 0) rows.add(SizedBox(height: gap));
+            final left = options[i];
+            final right = i + 1 < options.length ? options[i + 1] : null;
+            rows.add(
+              Row(
+                children: [
+                  Expanded(
+                    child: _CategoryChip(
                       tokens: tokens,
                       accent: accent,
-                      option: right,
-                      selected: selected.contains(right.label),
-                      onTap: () => onToggle(right.label),
+                      option: left,
+                      selected: selected.contains(left.label),
+                      allowLabelWrap: false,
+                      onTap: () => onToggle(left.label),
                     ),
-            ),
-          ],
-        ),
-      );
-    }
-    if (rows.isNotEmpty) rows.add(SizedBox(height: gap));
-    rows.add(
-      _AddOwnChip(
-        tokens: tokens,
-        accent: accent,
-        label: addOwnLabel,
-        onTap: onAddOwn,
-      ),
-    );
+                  ),
+                  SizedBox(width: gap),
+                  Expanded(
+                    child: right == null
+                        ? const SizedBox.shrink()
+                        : _CategoryChip(
+                            tokens: tokens,
+                            accent: accent,
+                            option: right,
+                            selected: selected.contains(right.label),
+                            allowLabelWrap: false,
+                            onTap: () => onToggle(right.label),
+                          ),
+                  ),
+                ],
+              ),
+            );
+          }
+        }
+        if (rows.isNotEmpty) rows.add(SizedBox(height: gap));
+        rows.add(
+          _AddOwnChip(
+            tokens: tokens,
+            accent: accent,
+            label: addOwnLabel,
+            onTap: onAddOwn,
+          ),
+        );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: rows,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: rows,
+        );
+      },
     );
   }
 }
@@ -359,7 +390,7 @@ class _CategoryGrid extends StatelessWidget {
 /// teal [tint] that lives in the material as a vertical gradient ([topAlpha] →
 /// [bottomAlpha], brighter at the top so the glass reads as catching light) and
 /// a crisp hairline ([borderColor]). The tint is what makes the chip read as
-/// *colour-tinted* glass over the dark backdrop rather than flat neutral grey;
+/// *colour-tinted* glass over the themed backdrop rather than flat neutral grey;
 /// it stays translucent so the blurred ambient glow + constellation still show
 /// through. Shared by the option chips and the "+ Add your own" chip so they
 /// read as one glass family (only the tint strength + content differ).
@@ -417,18 +448,19 @@ class _FrostedGlass extends StatelessWidget {
 }
 
 /// One uniform area chip. Unselected reads as *available* teal-tinted glass — a
-/// backdrop-blurred surface under a translucent teal gradient + crisp white
+/// backdrop-blurred surface under a translucent teal gradient + crisp themed
 /// hairline, so it reads as coloured frosted glass (the brand teal lives in the
 /// material) while the enriched backdrop still shows through. A bright-mint
-/// leading icon and a full-white label sit on top. Selected fills solid brand
-/// (no blur — the chosen state should pop) and gains a trailing check with a
-/// dark icon + label.
+/// leading icon and high-emphasis label sit on top. Selected fills solid brand
+/// (no blur — the chosen state should pop) and gains a trailing check with an
+/// on-interactive icon + label.
 class _CategoryChip extends StatelessWidget {
   const _CategoryChip({
     required this.tokens,
     required this.accent,
     required this.option,
     required this.selected,
+    required this.allowLabelWrap,
     required this.onTap,
   });
 
@@ -436,13 +468,13 @@ class _CategoryChip extends StatelessWidget {
   final Color accent;
   final OnboardingCategoryOption option;
   final bool selected;
+  final bool allowLabelWrap;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final textHigh = dsTokensDark.colors.text.highEmphasis;
-    final panelBg = dsTokensDark.colors.background.level01;
-    final fg = selected ? panelBg : textHigh;
+    final textHigh = tokens.colors.text.highEmphasis;
+    final fg = selected ? tokens.colors.text.onInteractiveAlert : textHigh;
     final radius = BorderRadius.circular(tokens.radii.m);
     final padding = EdgeInsets.symmetric(
       horizontal: tokens.spacing.step4,
@@ -456,15 +488,13 @@ class _CategoryChip extends StatelessWidget {
         Icon(
           option.icon,
           size: tokens.spacing.step5,
-          color: selected
-              ? fg
-              : Color.lerp(accent, const Color(0xFFFFFFFF), 0.5),
+          color: selected ? fg : Color.lerp(accent, textHigh, 0.5),
         ),
         SizedBox(width: tokens.spacing.step3),
         Expanded(
           child: Text(
             option.label,
-            overflow: TextOverflow.ellipsis,
+            overflow: allowLabelWrap ? null : TextOverflow.ellipsis,
             style: tokens.typography.styles.body.bodyLarge.copyWith(color: fg),
           ),
         ),
@@ -481,8 +511,8 @@ class _CategoryChip extends StatelessWidget {
     // (ambient glow + constellation) read through, and the teal tint in the
     // material is what makes it read as *coloured* frosted glass rather than
     // the flat neutral grey an earlier neutral fill produced. The chip sits
-    // dark over the dark backdrop, so the full-white label stays AA-legible
-    // with no extra wash.
+    // themed over the active backdrop, so the high-emphasis label stays
+    // legible with no extra wash.
     final body = selected
         ? DecoratedBox(
             decoration: BoxDecoration(
@@ -506,7 +536,16 @@ class _CategoryChip extends StatelessWidget {
       button: true,
       selected: selected,
       label: option.label,
-      child: GestureDetector(onTap: onTap, child: body),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          focusColor: tokens.colors.surface.focusPressed,
+          hoverColor: tokens.colors.surface.hover,
+          child: body,
+        ),
+      ),
     );
   }
 }
@@ -531,46 +570,51 @@ class _AddOwnChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textHigh = dsTokensDark.colors.text.highEmphasis;
-    final textMedium = dsTokensDark.colors.text.mediumEmphasis;
+    final textHigh = tokens.colors.text.highEmphasis;
+    final textMedium = tokens.colors.text.mediumEmphasis;
     final radius = BorderRadius.circular(tokens.radii.m);
     return Semantics(
       button: true,
       label: label,
-      child: GestureDetector(
-        onTap: onTap,
-        child: _FrostedGlass(
-          tint: accent,
-          topAlpha: _kAddOwnTintTopAlpha,
-          bottomAlpha: _kAddOwnTintBottomAlpha,
-          borderColor: textHigh.withValues(alpha: _kAddOwnBorderAlpha),
-          radius: radius,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step4,
-              vertical: tokens.spacing.step4,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.add_rounded,
-                  size: tokens.spacing.step5,
-                  color: textMedium,
-                ),
-                SizedBox(width: tokens.spacing.step2),
-                Flexible(
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.body.bodyLarge.copyWith(
-                      color: textMedium,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          focusColor: tokens.colors.surface.focusPressed,
+          hoverColor: tokens.colors.surface.hover,
+          child: _FrostedGlass(
+            tint: accent,
+            topAlpha: _kAddOwnTintTopAlpha,
+            bottomAlpha: _kAddOwnTintBottomAlpha,
+            borderColor: textHigh.withValues(alpha: _kAddOwnBorderAlpha),
+            radius: radius,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+                vertical: tokens.spacing.step4,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add_rounded,
+                    size: tokens.spacing.step5,
+                    color: textMedium,
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  Flexible(
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: tokens.typography.styles.body.bodyLarge.copyWith(
+                        color: textMedium,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

@@ -37,6 +37,7 @@ class VoiceButton extends StatefulWidget {
     this.size = 96,
     this.dbfs = CaptureState.defaultDbfs,
     this.dbfsFloor = CaptureState.defaultDbfs,
+    this.listeningCoreColor,
     super.key,
   });
 
@@ -138,6 +139,13 @@ class VoiceButton extends StatefulWidget {
 
   /// Floor used to normalize [dbfs] inside the shader.
   final double dbfsFloor;
+
+  /// Optional host surface behind the inverted stop mark while listening.
+  ///
+  /// Capture and Refine leave the center transparent so the surrounding page
+  /// shows through. The light onboarding panel supplies its raised surface
+  /// token so the otherwise-white center remains visibly button-shaped.
+  final Color? listeningCoreColor;
 
   @override
   State<VoiceButton> createState() => _VoiceButtonState();
@@ -255,7 +263,10 @@ class _VoiceButtonState extends State<VoiceButton>
             border: Border.all(color: teal.withValues(alpha: 0.55), width: 1.5),
           )
         : listening
-        ? const BoxDecoration(shape: BoxShape.circle)
+        ? BoxDecoration(
+            shape: BoxShape.circle,
+            color: widget.listeningCoreColor,
+          )
         : BoxDecoration(
             shape: BoxShape.circle,
             // Flat brand disc — the one gradient in the system read as a

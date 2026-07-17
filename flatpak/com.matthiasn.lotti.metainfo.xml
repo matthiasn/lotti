@@ -37,6 +37,7 @@
       <description>
           <p>The desktop sidebar now opens the Lotti Manual directly. A localized Manual link sits immediately above Settings, remains available when the sidebar is collapsed, and opens the current published manual in the default browser.</p>
           <p>German and large-text layouts stay usable in key setup flows. AI form status text no longer pushes actions off-screen, Daily OS time anchors wrap at accessibility text sizes, and the What's New footer gives translated actions enough room on phones.</p>
+          <p>Onboarding now follows the active light or dark theme throughout setup. Panels, text, controls, provider tiles, recording previews, task handoff states, and the animated neural and aurora artwork all adapt to the matching design-system palette. Critical setup actions support keyboard activation, and scaled text switches work areas to a readable single-column layout.</p>
           <p>The desktop sidebar is navigation-first and keeps important task filters visible. Saved task filters now appear directly under Tasks with live counts. The first five follow the order you set, More expands the complete list without a limit, and the manager handles reordering, renaming, and deleting. Recording, timer, and agent status share one compact expandable activity row, while healthy sync stays quiet until work needs attention.</p>
           <p>Saving a task filter now stays inside the filter flow, with explicit Update filter and Save as new choices instead of a separate popup.</p>
       </description>

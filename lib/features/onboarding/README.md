@@ -44,6 +44,12 @@ task lands it is revealed *inside* the panel as a glowing tappable card, and
 only the user's tap on that card leaves the modal — landing on the **real**
 `TaskDetailsPage`.
 
+Every panel follows the active app theme. The route itself stays transparent;
+the step widgets resolve surface, text, alert, interactive, spacing, radius,
+and typography values from `context.designTokens`. The animation palette uses
+the same active token set, so theme changes do not leave a dark island inside a
+light app.
+
 ## Auto-show trigger & re-show cadence
 
 `state/onboarding_trigger_service.dart` decides *when* the welcome auto-shows,
@@ -266,15 +272,40 @@ stateDiagram-v2
   scale-in + glow) acknowledges the connection; the celebration burst is reserved
   for the task payoff alone (one owner of the peak).
 - **Step widgets** (`ui/widgets/`): `OnboardingHeroPanel` + `NeuralConstellation`
-  (the always-dark cinematic welcome and its animated hero), `OnboardingConnectPanel`
-  (provider tiles), `OnboardingApiKeyPanel` (key paste + verify), `OnboardingSuccessView`
-  (connect beat), `OnboardingCategoryView` (the category step's presentational view).
+  (the theme-aware cinematic welcome and its animated hero),
+  `OnboardingConnectPanel` (provider tiles), `OnboardingApiKeyPanel` (key paste
+  + verify), `OnboardingSuccessView` (connect beat), and
+  `OnboardingCategoryView` (the category step's presentational view).
 - **Providers** — Melious.ai first, then Mistral, Gemini, and Qwen, with
   OpenAI / Ollama behind "More options". MLX is excluded from the FTUE
   (multi-GB download); it stays available in Settings. Visuals reuse
   `ai_provider_visual.dart`.
 - **Funnel events** — `welcomeShown`, `providerModalShown`, `providerConnected`,
   `welcomeSkipped`.
+
+### Theme and animation rendering
+
+The route never installs a private light or dark theme. Ambient `ThemeData`
+provides the active `DsTokens` extension, and every onboarding step consumes
+that same set. `OnboardingBackdrop` also reads the Material brightness to select
+the aurora compositor: additive `BlendMode.plus` keeps blooms luminous on dark
+surfaces, while `BlendMode.srcOver` preserves their colour and contrast on a
+light surface instead of adding them into white. `NeuralConstellation` uses the
+theme's interactive colour for nodes and blends its pulse toward the theme's
+high-emphasis text colour.
+
+```mermaid
+flowchart LR
+    TM[App ThemeData<br/>light or dark] --> DS[context.designTokens]
+    DS --> SF[panel surfaces + text + controls]
+    DS --> NP[neural node / line / pulse palette]
+    TM --> BR[Theme brightness]
+    BR -->|dark| ADD[Aurora BlendMode.plus]
+    BR -->|light| SRC[Aurora BlendMode.srcOver]
+    ADD --> BG[OnboardingBackdrop]
+    SRC --> BG
+    NP --> BG
+```
 
 ### The category step
 
@@ -296,11 +327,15 @@ run; Laura is bound only when the row carries no template of its own, and its
 `private` flag is deliberately left untouched. A residual write failure
 surfaces as an error toast instead of a silently dead Continue button.
 
-`OnboardingCategoryView` renders the areas as a uniform two-column grid of chips
-over the shared alive backdrop. Unselected chips are **teal-tinted frosted glass**
+`OnboardingCategoryView` renders the areas as a responsive grid of chips over
+the shared alive backdrop. It uses two equal columns at the standard text scale
+and comfortable widths, then collapses to one column for scaled text or narrow
+panels so labels remain complete instead of ellipsizing. Unselected chips are
+**teal-tinted frosted glass**
 (a translucent brand-teal gradient painted over a `BackdropFilter`, under a crisp
-hairline) so the colour lives in the chip material and the enriched backdrop reads
-through; the selected chip fills solid brand with a trailing check. The shared
+theme-token hairline) so the colour lives in the chip material and the enriched
+backdrop reads through; the selected chip fills solid brand with a trailing check
+using the theme's on-interactive foreground. The shared
 `_FrostedGlass` surface is reused by the quieter "+ Add your own" chip so the grid
 reads as one glass family.
 
@@ -345,10 +380,9 @@ stateDiagram-v2
   **Modern** (the `AiVoiceInputShader` orb + a brand-tinted `LiveWaveform`) and
   **Analogue** (the skeuomorphic `AnalogVuMeter` + a neutral `LiveWaveform`).
   Only the selected card animates; the other rests on a calm static waveform.
-  Its card colors come from an injected `surfaceTokens` (`dsTokensDark` for
-  onboarding, which always sits over its own dark backdrop; the ambient
-  `context.designTokens` for Settings, which has no such backdrop and follows
-  the host theme) — the picker itself never assumes which theme it's on.
+  Its card colours come from the injected ambient `context.designTokens` in
+  both onboarding and Settings; the matching ambient `ColorScheme` drives the
+  analogue meter, so neither surface can drift to a different theme.
 - **`OnboardingRecordingStyleStep`** (`ui/widgets/`, ConsumerStatefulWidget)
   composes `RecordingStyleLivePreview` + the presentational
   **`OnboardingRecordingStyleView`** (title/explanation/Continue chrome around
@@ -391,10 +425,10 @@ then calls the orchestrator **exactly once per capture** (guarded against
 double-fire), passing along the capture's `CaptureState.audioId` so the spoken
 recording is linked under the task. When
 a real task lands the step reveals the **created beat** inside the panel — the
-task title + checklist as a glowing tappable card ("Your first task is
-ready"); tapping the card (or its "Tap your task to open it" hint) hands the
-id to `onTaskCreated`, and the host pops the modal and deep-links to the
-**real `TaskDetailsPage`**.
+task title as a glowing tappable card ("Your first task is ready"); checklist
+proposals remain on the real task page where they can be confirmed. Tapping the
+card (or its "Tap your task to open it" hint) hands the id to `onTaskCreated`,
+and the host pops the modal and deep-links to the **real `TaskDetailsPage`**.
 
 - **The style pick pays off here.** The active band renders the recording
   visual chosen in the style step: `VoiceOrbZone` (the shared Daily OS orb) for
@@ -441,9 +475,11 @@ id to `onTaskCreated`, and the host pops the modal and deep-links to the
   views instead of sitting orphaned and uncategorized in the journal. The
   typed path has no recording and creates no link.
 - **Created beat + real-task payoff** — when the task lands, the panel shows
-  it as a tappable card (title + checklist preview) breathing a soft accent
-  glow, with "Tap your task to open it" underneath. The tap pops the modal and
-  deep-links via the canonical `/tasks/:id` route (`openOnboardingCreatedTask`),
+  its title as a tappable card breathing a soft accent glow, with "Tap your
+  task to open it" underneath. Checklist proposals are deliberately not
+  previewed here; they remain confirmable on the task page. The tap pops the
+  modal and deep-links via the canonical `/tasks/:id` route
+  (`openOnboardingCreatedTask`),
   which also switches to the Tasks destination — necessary because the flow
   may have been launched from another tab (e.g. the Settings → Maintenance
   debug entry). (`CrystallizeHero` lives on only as the hero-gallery
@@ -459,7 +495,18 @@ id to `onTaskCreated`, and the host pops the modal and deep-links to the
   total structuring failure finishes onboarding via `onDone` rather than
   stranding the user on the thinking frame.
 
-## Accessibility — reduced motion
+## Accessibility
+
+Every critical action participates in keyboard focus traversal and activates
+through the platform `ActivateIntent` (Enter/Space): provider tiles, category
+chips, the analogue recorder, destination pills, starter suggestions, recording
+style cards, and the created-task handoff. Focus feedback uses the design
+system's `surface.focusPressed` or active interactive token. Back controls are
+real `IconButton`s with the localized Material Back tooltip and an explicit
+button semantics node. Category choices expose selected state to assistive
+technology, and their responsive grid is covered at 200% and 320% text scale.
+
+### Reduced motion
 
 The shared voice visuals honor the OS "reduce motion" setting. The governing
 principle is **kill the clock-driven looping animation, keep direct voice-level
@@ -475,8 +522,9 @@ feedback** (a volume response is information, not decoration):
   frame under reduced motion — shared by the onboarding step and the
   Settings › Recording Style page.
 
-The welcome hero (`NeuralConstellation`) and `CompletionCelebration` already
-carry their own reduced-motion fallbacks.
+The welcome and backdrop animations (`NeuralConstellation`, `AuroraHero`,
+`CrystallizeHero`, and `WaveformTextHero`) carry their own reduced-motion
+fallbacks.
 
 `NeuralConstellation` paints a seeded, deterministic branching organism rather
 than a proximity graph. The default topology is one root-like soma and spine:

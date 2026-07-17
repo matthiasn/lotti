@@ -46,9 +46,10 @@ List<Color> onboardingAuroraColors(Color accent) {
   ];
 }
 
-/// The shared alive dark backdrop for the connect + API-key pages: a toned-down
-/// aurora wash layered under the neural constellation, on the dark panel
-/// background. Keeps the post-welcome steps as alive as the welcome itself.
+/// The shared alive backdrop for the connect + API-key pages: a toned-down
+/// aurora wash layered under the neural constellation on the active themed
+/// panel background. Keeps the post-welcome steps as alive as the welcome
+/// itself.
 ///
 /// [accent] tints the aurora + constellation; it defaults to the brand teal but
 /// the API-key step passes the chosen provider's brand colour so the backdrop
@@ -61,19 +62,22 @@ class OnboardingBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = accent ?? dsTokensDark.colors.interactive.enabled;
+    final tokens = context.designTokens;
+    final brightness = Theme.of(context).brightness;
+    final accentColor = accent ?? tokens.colors.interactive.enabled;
     // The motion stays (it carries the welcome's "alive" thread forward) but is
     // toned down behind the working steps so it never competes with the tiles
     // / key field the user is reading and typing into — the review panels'
     // dominant note. Lower aurora wash + dimmer nodes/lines + a calmer pulse.
     return ColoredBox(
-      color: dsTokensDark.colors.background.level01,
+      color: tokens.colors.background.level01,
       child: Stack(
         fit: StackFit.expand,
         children: [
           AuroraHero(
             colors: onboardingAuroraColors(accentColor),
             maxAlpha: 0.09,
+            blendMode: _onboardingAuroraBlendMode(brightness),
           ),
           NeuralConstellation(
             nodeColor: accentColor.withValues(alpha: 0.30),
@@ -83,7 +87,7 @@ class OnboardingBackdrop extends StatelessWidget {
             // fewer travelling activations than the welcome hero.
             pulseColor: Color.lerp(
               accentColor,
-              dsTokensDark.colors.text.highEmphasis,
+              tokens.colors.text.highEmphasis,
               0.42,
             )!.withValues(alpha: 0.36),
             nodeCount: nodeCount,
@@ -93,7 +97,7 @@ class OnboardingBackdrop extends StatelessWidget {
             compositionOffset: const Offset(0, -0.18),
             loop: const Duration(seconds: 14),
           ),
-          const _BackdropContentScrim(),
+          _BackdropContentScrim(tokens: tokens),
         ],
       ),
     );
@@ -103,7 +107,9 @@ class OnboardingBackdrop extends StatelessWidget {
 /// Keeps later onboarding steps quiet enough for form controls: the organism is
 /// still alive, but it fades before it sits under titles, cards, and text fields.
 class _BackdropContentScrim extends StatelessWidget {
-  const _BackdropContentScrim();
+  const _BackdropContentScrim({required this.tokens});
+
+  final DsTokens tokens;
 
   @override
   Widget build(BuildContext context) {
@@ -115,9 +121,9 @@ class _BackdropContentScrim extends StatelessWidget {
             end: Alignment.bottomCenter,
             colors: [
               Colors.transparent,
-              dsTokensDark.colors.background.level01.withValues(alpha: 0.42),
-              dsTokensDark.colors.background.level01.withValues(alpha: 0.86),
-              dsTokensDark.colors.background.level01.withValues(alpha: 0.92),
+              tokens.colors.background.level01.withValues(alpha: 0.42),
+              tokens.colors.background.level01.withValues(alpha: 0.86),
+              tokens.colors.background.level01.withValues(alpha: 0.92),
             ],
             stops: const [0, 0.14, 0.34, 1],
           ),
@@ -127,10 +133,13 @@ class _BackdropContentScrim extends StatelessWidget {
   }
 }
 
-/// Builds the animated visual for [style], coloured from the dark token set so
-/// it reads on the cinematic dark panel regardless of the app's theme.
-Widget buildOnboardingHeroVisual(OnboardingHeroStyle style) {
-  final accent = dsTokensDark.colors.interactive.enabled;
+/// Builds the animated visual for [style] from the active theme tokens.
+Widget buildOnboardingHeroVisual(
+  OnboardingHeroStyle style, {
+  required DsTokens tokens,
+  required Brightness brightness,
+}) {
+  final accent = tokens.colors.interactive.enabled;
   switch (style) {
     case OnboardingHeroStyle.constellation:
       return NeuralConstellation(
@@ -138,7 +147,7 @@ Widget buildOnboardingHeroVisual(OnboardingHeroStyle style) {
         lineColor: accent.withValues(alpha: 0.6),
         pulseColor: Color.lerp(
           accent,
-          dsTokensDark.colors.text.highEmphasis,
+          tokens.colors.text.highEmphasis,
           0.45,
         )!,
         nodeCount: 62,
@@ -154,9 +163,9 @@ Widget buildOnboardingHeroVisual(OnboardingHeroStyle style) {
     case OnboardingHeroStyle.crystallize:
       return CrystallizeHero(
         accent: accent,
-        cardColor: dsTokensLight.colors.background.level01,
-        onCardColor: dsTokensLight.colors.text.highEmphasis,
-        ghostColor: dsTokensDark.colors.text.mediumEmphasis,
+        cardColor: tokens.colors.background.level02,
+        onCardColor: tokens.colors.text.highEmphasis,
+        ghostColor: tokens.colors.text.mediumEmphasis,
         title: 'Car & health errands',
         items: const ['Call the dentist', 'Book the car service'],
         spokenLines: const [
@@ -166,14 +175,20 @@ Widget buildOnboardingHeroVisual(OnboardingHeroStyle style) {
         loop: true,
       );
     case OnboardingHeroStyle.aurora:
-      return AuroraHero(colors: onboardingAuroraColors(accent));
+      return AuroraHero(
+        colors: onboardingAuroraColors(accent),
+        blendMode: _onboardingAuroraBlendMode(brightness),
+      );
     case OnboardingHeroStyle.waveform:
       return WaveformTextHero(
         waveColor: accent,
-        textColor: dsTokensDark.colors.text.highEmphasis,
+        textColor: tokens.colors.text.highEmphasis,
       );
   }
 }
+
+BlendMode _onboardingAuroraBlendMode(Brightness brightness) =>
+    brightness == Brightness.dark ? BlendMode.plus : BlendMode.srcOver;
 
 /// Composes the hero artwork into the modal instead of letting it end as a hard
 /// strip above the copy. The overlays are panel-coloured fades, so the underlying
@@ -238,12 +253,12 @@ class _HeroCloudWash extends StatelessWidget {
   Widget build(BuildContext context) {
     final lifted = Color.lerp(
       backgroundColor,
-      dsTokensDark.colors.background.level02,
+      context.designTokens.colors.background.level02,
       0.78,
     )!;
     final softLifted = Color.lerp(
       backgroundColor,
-      dsTokensDark.colors.background.level02,
+      context.designTokens.colors.background.level02,
       0.38,
     )!;
 
@@ -266,10 +281,10 @@ class _HeroCloudWash extends StatelessWidget {
   }
 }
 
-/// The cinematic welcome content: an always-dark rounded panel with the
+/// The cinematic welcome content: a theme-aware rounded panel with the
 /// animated [heroStyle] hero filling the upper region and the promise + CTA +
-/// skip below. Always dark (uses the dark token set) so the intro feels like a
-/// deliberate, premium takeover in both light and dark app themes.
+/// skip below. Surface, text, controls, and hero palette all resolve from the
+/// active design-system theme.
 class OnboardingHeroPanel extends StatelessWidget {
   const OnboardingHeroPanel({
     required this.onConnect,
@@ -287,9 +302,10 @@ class OnboardingHeroPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final panelBg = dsTokensDark.colors.background.level01;
-    final textHigh = dsTokensDark.colors.text.highEmphasis;
-    final textMed = dsTokensDark.colors.text.mediumEmphasis;
+    final panelBg = tokens.colors.background.level01;
+    final textHigh = tokens.colors.text.highEmphasis;
+    final textMed = tokens.colors.text.mediumEmphasis;
+    final brightness = Theme.of(context).brightness;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.l),
@@ -309,7 +325,11 @@ class OnboardingHeroPanel extends StatelessWidget {
                   width: double.infinity,
                   child: _HeroArtworkFrame(
                     backgroundColor: panelBg,
-                    child: buildOnboardingHeroVisual(heroStyle),
+                    child: buildOnboardingHeroVisual(
+                      heroStyle,
+                      tokens: tokens,
+                      brightness: brightness,
+                    ),
                   ),
                 ),
               ),

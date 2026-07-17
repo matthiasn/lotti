@@ -210,9 +210,12 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
     final tokens = context.designTokens;
     final messages = context.messages;
     final brand = onboardingProviderBrandColor(widget.type);
-    final textHigh = dsTokensDark.colors.text.highEmphasis;
-    final textMed = dsTokensDark.colors.text.mediumEmphasis;
-    final panelBg = dsTokensDark.colors.background.level01;
+    final textHigh = tokens.colors.text.highEmphasis;
+    final textMed = tokens.colors.text.mediumEmphasis;
+    final panelBg = tokens.colors.background.level01;
+    final errorColor = Theme.of(context).brightness == Brightness.dark
+        ? tokens.colors.alert.error.hover
+        : tokens.colors.alert.error.defaultColor;
     final console = aiProviderKeyConsoleUrl(widget.type);
     // Listen (not watch) keeps the verifier alive and feeds the local display
     // state machine, which holds "checking" visible for [_minCheckingVisible].
@@ -292,15 +295,21 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
               children: [
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: InkWell(
+                  child: Semantics(
+                    button: true,
+                    label: MaterialLocalizations.of(
+                      context,
+                    ).backButtonTooltip,
                     onTap: _busy ? null : widget.onBack,
-                    borderRadius: BorderRadius.circular(tokens.radii.s),
-                    child: Padding(
-                      padding: EdgeInsets.all(tokens.spacing.step2),
-                      child: Icon(
-                        Icons.arrow_back_rounded,
+                    child: ExcludeSemantics(
+                      child: IconButton(
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).backButtonTooltip,
+                        onPressed: _busy ? null : widget.onBack,
+                        iconSize: tokens.spacing.step5,
                         color: textHigh,
-                        size: tokens.spacing.step5,
+                        icon: const Icon(Icons.arrow_back_rounded),
                       ),
                     ),
                   ),
@@ -432,7 +441,7 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                     child: Text(
                       _error!,
                       style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: dsTokensDark.colors.alert.error.defaultColor,
+                        color: errorColor,
                       ),
                     ),
                   ),
@@ -504,7 +513,7 @@ class _GetKeyHelp extends StatelessWidget {
         Text(
           context.messages.onboardingApiKeyNoKeyHelp,
           style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: dsTokensDark.colors.text.mediumEmphasis,
+            color: tokens.colors.text.mediumEmphasis,
           ),
         ),
       ],
@@ -525,12 +534,12 @@ class _GetKeyLink extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final textMed = dsTokensDark.colors.text.mediumEmphasis;
+    final textMed = tokens.colors.text.mediumEmphasis;
     final bodySmall = tokens.typography.styles.body.bodySmall;
     // Teal (the app's single structural accent), not the provider brand: a
     // "open this URL" link is an app action, so it matches the Connect CTA and
     // "More options" rather than the provider-identity surfaces.
-    final accent = dsTokensDark.colors.interactive.enabled;
+    final accent = tokens.colors.interactive.enabled;
 
     return InkWell(
       onTap: () => unawaited(handleMarkdownLinkTap('https://$console', '')),
@@ -575,7 +584,7 @@ class _GetKeyLink extends StatelessWidget {
   }
 }
 
-/// Compact, dark-themed live verification line for the key step. Mirrors the
+/// Compact, theme-aware live verification line for the key step. Mirrors the
 /// settings `ConnectionStatusStrip` semantics (checking / verified / failed)
 /// but as a single inline row that fits the cinematic panel. Idle renders
 /// nothing — the caller shows the "get a key" link in that slot instead.
@@ -593,12 +602,14 @@ class _VerifyStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final textMed = dsTokensDark.colors.text.mediumEmphasis;
-    final success = dsTokensDark.colors.alert.success.defaultColor;
+    final textMed = tokens.colors.text.mediumEmphasis;
+    final success = tokens.colors.alert.success.defaultColor;
     // The lighter error tint (the `hover` ramp step) clears WCAG AA on the dark
     // panel where the base `defaultColor` sits ~3:1; the failure line is the
     // most anxious moment, so it must be the most readable.
-    final danger = dsTokensDark.colors.alert.error.hover;
+    final danger = Theme.of(context).brightness == Brightness.dark
+        ? tokens.colors.alert.error.hover
+        : tokens.colors.alert.error.defaultColor;
 
     switch (state) {
       case ConnectionCheckIdle():

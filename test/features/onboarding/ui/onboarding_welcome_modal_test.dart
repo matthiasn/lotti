@@ -12,10 +12,14 @@ import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
+import 'package:lotti/features/onboarding/ui/widgets/neural_constellation.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -108,7 +112,11 @@ void main() {
     expect(onboardingSeededProfileId(InferenceProviderType.whisper), isNull);
   });
 
-  Future<void> openWelcome(WidgetTester tester, {Widget? child}) async {
+  Future<void> openWelcome(
+    WidgetTester tester, {
+    Widget? child,
+    ThemeData? theme,
+  }) async {
     // The fixed-height modal panel (~680) is taller than the default 800x600
     // render surface; size the surface to the 844-tall MediaQuery so the lower
     // controls are on-screen and hit-testable.
@@ -117,8 +125,15 @@ void main() {
       ..devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    final launchHost = child ?? host();
     await tester.pumpWidget(
-      makeTestableWidget(child ?? host(), mediaQueryData: mq),
+      theme == null
+          ? makeTestableWidget(launchHost, mediaQueryData: mq)
+          : makeTestableWidgetNoScroll(
+              launchHost,
+              mediaQueryData: mq,
+              theme: theme,
+            ),
     );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
@@ -135,6 +150,73 @@ void main() {
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.welcomeShown), isTrue);
   });
+
+  for (final theme in [
+    (
+      name: 'light',
+      data: DesignSystemTheme.light(),
+      tokens: dsTokensLight,
+    ),
+    (
+      name: 'dark',
+      data: DesignSystemTheme.dark(),
+      tokens: dsTokensDark,
+    ),
+  ]) {
+    testWidgets('welcome and provider steps follow the ${theme.name} theme', (
+      tester,
+    ) async {
+      await openWelcome(tester, theme: theme.data);
+
+      final welcomeTitle = tester.widget<Text>(
+        find.text('Talk. Lotti turns it into a plan.'),
+      );
+      final welcomeSurface = tester.widget<ColoredBox>(
+        find.ancestor(
+          of: find.text('Talk. Lotti turns it into a plan.'),
+          matching: find.byType(ColoredBox),
+        ),
+      );
+      final welcomeConstellation = tester.widget<NeuralConstellation>(
+        find.byType(NeuralConstellation),
+      );
+
+      expect(
+        welcomeSurface.color,
+        theme.tokens.colors.background.level01,
+      );
+      expect(
+        welcomeTitle.style?.color,
+        theme.tokens.colors.text.highEmphasis,
+      );
+      expect(
+        welcomeConstellation.nodeColor,
+        theme.tokens.colors.interactive.enabled,
+      );
+
+      await tester.tap(find.text('Choose your AI brain'));
+      await tester.pumpAndSettle();
+
+      final providerTitle = tester.widget<Text>(
+        find.text('Choose the AI brain for your tasks'),
+      );
+      final providerBackdrop = tester.widget<ColoredBox>(
+        find.descendant(
+          of: find.byType(OnboardingBackdrop),
+          matching: find.byType(ColoredBox),
+        ),
+      );
+
+      expect(
+        providerTitle.style?.color,
+        theme.tokens.colors.text.highEmphasis,
+      );
+      expect(
+        providerBackdrop.color,
+        theme.tokens.colors.background.level01,
+      );
+    });
+  }
 
   testWidgets('advancing to connect reveals the primary providers and records '
       'providerModalShown', (tester) async {

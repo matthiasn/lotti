@@ -1016,6 +1016,50 @@
       }
     },
     {
+      "id": "onboarding/api-key",
+      "title": "Onboarding provider verification",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_api_key_mobile_light.png",
+        "mobile-dark": "onboarding_api_key_mobile_dark.png",
+        "desktop-light": "onboarding_api_key_desktop_light.png",
+        "desktop-dark": "onboarding_api_key_desktop_dark.png"
+      }
+    },
+    {
+      "id": "onboarding/success",
+      "title": "Onboarding provider connected",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_success_mobile_light.png",
+        "mobile-dark": "onboarding_success_mobile_dark.png",
+        "desktop-light": "onboarding_success_desktop_light.png",
+        "desktop-dark": "onboarding_success_desktop_dark.png"
+      }
+    },
+    {
+      "id": "onboarding/recording-style",
+      "title": "Onboarding recording style",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_recording_style_mobile_light.png",
+        "mobile-dark": "onboarding_recording_style_mobile_dark.png",
+        "desktop-light": "onboarding_recording_style_desktop_light.png",
+        "desktop-dark": "onboarding_recording_style_desktop_dark.png"
+      }
+    },
+    {
+      "id": "onboarding/categories",
+      "title": "Onboarding work areas",
+      "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "onboarding_categories_mobile_light.png",
+        "mobile-dark": "onboarding_categories_mobile_dark.png",
+        "desktop-light": "onboarding_categories_desktop_light.png",
+        "desktop-dark": "onboarding_categories_desktop_dark.png"
+      }
+    },
+    {
       "id": "onboarding/first-task",
       "title": "Onboarding first-task voice capture",
       "sourceTest": "test/features/onboarding/ui/onboarding_manual_screenshots_test.dart",

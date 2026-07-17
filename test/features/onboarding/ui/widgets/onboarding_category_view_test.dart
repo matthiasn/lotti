@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.dart';
@@ -22,6 +23,7 @@ void main() {
   Future<void> pumpView(
     WidgetTester tester, {
     required Set<String> selected,
+    TextScaler textScaler = TextScaler.noScaling,
     void Function(String)? onToggle,
     VoidCallback? onWhy,
     VoidCallback? onAddOwn,
@@ -50,7 +52,7 @@ void main() {
         mediaQueryData: const MediaQueryData(
           size: Size(390, 844),
           disableAnimations: true,
-        ),
+        ).copyWith(textScaler: textScaler),
       ),
     );
     await tester.pump();
@@ -269,6 +271,67 @@ void main() {
     await tester.tap(find.text('Work'));
     await tester.tap(find.text('Fitness'));
     expect(toggled, ['Work', 'Fitness']);
+  });
+
+  testWidgets('option and add-own actions activate via keyboard', (
+    tester,
+  ) async {
+    final toggled = <String>[];
+    var added = 0;
+    await pumpView(
+      tester,
+      selected: const {},
+      onToggle: toggled.add,
+      onAddOwn: () => added++,
+    );
+
+    final work = find.text('Work');
+    final workFocus = Focus.of(tester.element(work))..requestFocus();
+    await tester.pump();
+    expect(workFocus.hasPrimaryFocus, isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(toggled, ['Work']);
+
+    final addOwn = find.text('Add your own');
+    final addFocus = Focus.of(tester.element(addOwn))..requestFocus();
+    await tester.pump();
+    expect(addFocus.hasPrimaryFocus, isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(added, 1);
+
+    for (final finder in [work, addOwn]) {
+      expect(
+        tester
+            .getSemantics(finder)
+            .getSemanticsData()
+            .hasAction(ui.SemanticsAction.tap),
+        isTrue,
+      );
+    }
+  });
+
+  testWidgets('large text collapses category choices to one readable column', (
+    tester,
+  ) async {
+    for (final scale in [2.0, 3.2]) {
+      await pumpView(
+        tester,
+        selected: const {},
+        textScaler: TextScaler.linear(scale),
+      );
+
+      final workRect = tester.getRect(find.text('Work'));
+      final fitnessRect = tester.getRect(find.text('Fitness'));
+      expect(
+        fitnessRect.top,
+        greaterThan(workRect.bottom),
+        reason: 'text scale $scale should use a single-column layout',
+      );
+      expect(tester.widget<Text>(find.text('Work')).overflow, isNull);
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets('add-your-own reports its tap', (tester) async {

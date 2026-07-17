@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:ui' show SemanticsAction;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -464,6 +466,35 @@ void main() {
     );
 
     await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pump();
+
+    expect(backed, isTrue);
+  });
+
+  testWidgets('back control is localized and keyboard operable', (
+    tester,
+  ) async {
+    var backed = false;
+    await pumpPanel(
+      tester,
+      type: InferenceProviderType.gemini,
+      onBack: () => backed = true,
+    );
+
+    final back = find.byTooltip('Back');
+    expect(back, findsOneWidget);
+    final semantics = tester.getSemantics(find.bySemanticsLabel('Back'));
+    expect(semantics.label, 'Back');
+    expect(
+      semantics.getSemanticsData().hasAction(SemanticsAction.tap),
+      isTrue,
+    );
+
+    Focus.of(
+      tester.element(find.byIcon(Icons.arrow_back_rounded)),
+    ).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
 
     expect(backed, isTrue);

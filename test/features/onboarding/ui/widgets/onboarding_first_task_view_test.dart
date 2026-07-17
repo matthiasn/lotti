@@ -1,7 +1,11 @@
+import 'dart:ui' show SemanticsAction;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_view.dart';
@@ -152,6 +156,30 @@ void main() {
       expect(recordTaps, 1);
     });
 
+    testWidgets('analogue recorder activates via keyboard', (tester) async {
+      await pumpView(
+        tester,
+        OnboardingFirstTaskPhase.prompt,
+        style: RecordingStyle.analogue,
+      );
+
+      final meter = find.byType(AnalogVuMeter);
+      final focus = Focus.of(tester.element(meter))..requestFocus();
+      await tester.pump();
+      expect(focus.hasPrimaryFocus, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(recordTaps, 1);
+      expect(
+        tester
+            .getSemantics(meter)
+            .getSemanticsData()
+            .hasAction(SemanticsAction.tap),
+        isTrue,
+      );
+    });
+
     testWidgets(
       'the analogue meter also rides the live level while listening',
       (
@@ -182,6 +210,22 @@ void main() {
       expect(find.text('Or start with one of these:'), findsNothing);
       // Still composing, so the escape hatch remains.
       expect(find.text('Rather type?'), findsOneWidget);
+    });
+
+    testWidgets('light themed orb keeps a defined center surface', (
+      tester,
+    ) async {
+      await pumpView(tester, OnboardingFirstTaskPhase.listening);
+
+      final core = find.byKey(VoiceButton.coreButtonKey);
+      final ink = tester.widget<Ink>(
+        find.ancestor(of: core, matching: find.byType(Ink)),
+      );
+      final decoration = ink.decoration! as BoxDecoration;
+      expect(
+        decoration.color,
+        tester.element(core).designTokens.colors.background.level02,
+      );
     });
   });
 
@@ -261,6 +305,23 @@ void main() {
       expect(openTaskTaps, 1);
     });
 
+    testWidgets('created task card activates via keyboard', (tester) async {
+      await pumpView(
+        tester,
+        OnboardingFirstTaskPhase.created,
+        createdTaskTitle: title,
+      );
+
+      final task = find.text(title);
+      final focus = Focus.of(tester.element(task))..requestFocus();
+      await tester.pump();
+      expect(focus.hasPrimaryFocus, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(openTaskTaps, 1);
+    });
+
     testWidgets('the invite glow loops when motion is enabled', (
       tester,
     ) async {
@@ -312,6 +373,23 @@ void main() {
       );
 
       await tester.tap(find.text('Family'), warnIfMissed: false);
+      expect(categoryPicks, ['c2']);
+    });
+
+    testWidgets('an area activates via keyboard', (tester) async {
+      await pumpView(
+        tester,
+        OnboardingFirstTaskPhase.prompt,
+        categories: twoCategories,
+      );
+
+      final family = find.text('Family');
+      final focus = Focus.of(tester.element(family))..requestFocus();
+      await tester.pump();
+      expect(focus.hasPrimaryFocus, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pump();
+
       expect(categoryPicks, ['c2']);
     });
 

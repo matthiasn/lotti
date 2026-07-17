@@ -69,7 +69,7 @@ void main() {
     });
 
     testWidgets(
-      'shouldRepaint: rebuild with different colors and maxAlpha repaints',
+      'shouldRepaint: changed colors, alpha, and blend mode repaint',
       (tester) async {
         await tester.pumpWidget(
           makeTestableWidget(
@@ -95,6 +95,7 @@ void main() {
               const AuroraHero(
                 colors: [Colors.red, Colors.orange],
                 maxAlpha: 0.7,
+                blendMode: BlendMode.srcOver,
               ),
             ),
             mediaQueryData: const MediaQueryData(size: Size(390, 844)),
@@ -117,7 +118,7 @@ void main() {
           makeTestableWidget(
             bounded(
               // Reduced motion so t stays constant: the only way the painter
-              // changes is through colors/maxAlpha, isolating the listEquals
+              // changes is through colors/maxAlpha/blendMode, isolating the listEquals
               // equal-values comparison.
               const AuroraHero(colors: colors, maxAlpha: 0.4),
             ),

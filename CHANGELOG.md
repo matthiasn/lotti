@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   status text truncates without pushing its actions off-screen, Daily OS time
   anchors wrap at accessibility text sizes, and the What's New footer gives
   translated actions enough room on phones.
+- **Onboarding now follows the active light or dark theme throughout setup.**
+  Panels, text, controls, provider tiles, recording previews, and task handoff
+  states use the matching design-system tokens. The neural and aurora artwork
+  also adapts its palette and compositing so the motion remains visible and
+  balanced on both light and dark surfaces. Provider, category, recording, and
+  task-handoff controls are keyboard operable, and scaled text switches work
+  areas to a readable single-column layout.
 - **The desktop sidebar is navigation-first and keeps important task filters
   visible.** Saved task filters now appear directly under Tasks with live
   counts. The first five follow the order you set, More expands the complete

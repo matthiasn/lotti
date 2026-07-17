@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/onboarding/ui/widgets/aurora_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/crystallize_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/neural_constellation.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/waveform_text_hero.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -110,6 +115,8 @@ void main() {
     test('constellation welcome uses the entangled multi-vine variant', () {
       final visual = buildOnboardingHeroVisual(
         OnboardingHeroStyle.constellation,
+        tokens: dsTokensLight,
+        brightness: Brightness.light,
       );
 
       final constellation = visual as NeuralConstellation;
@@ -123,7 +130,11 @@ void main() {
       testWidgets('builds a non-null visual for ${style.label}', (
         tester,
       ) async {
-        final visual = buildOnboardingHeroVisual(style);
+        final visual = buildOnboardingHeroVisual(
+          style,
+          tokens: dsTokensLight,
+          brightness: Brightness.light,
+        );
         expect(visual, isNotNull);
         expect(visual, isA<Widget>());
 
@@ -148,9 +159,119 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+
+    test('uses theme-specific visual colours and aurora blending', () {
+      for (final theme in [
+        (
+          tokens: dsTokensLight,
+          brightness: Brightness.light,
+          blendMode: BlendMode.srcOver,
+        ),
+        (
+          tokens: dsTokensDark,
+          brightness: Brightness.dark,
+          blendMode: BlendMode.plus,
+        ),
+      ]) {
+        final constellation =
+            buildOnboardingHeroVisual(
+                  OnboardingHeroStyle.constellation,
+                  tokens: theme.tokens,
+                  brightness: theme.brightness,
+                )
+                as NeuralConstellation;
+        expect(
+          constellation.nodeColor,
+          theme.tokens.colors.interactive.enabled,
+        );
+
+        final crystallize =
+            buildOnboardingHeroVisual(
+                  OnboardingHeroStyle.crystallize,
+                  tokens: theme.tokens,
+                  brightness: theme.brightness,
+                )
+                as CrystallizeHero;
+        expect(
+          crystallize.cardColor,
+          theme.tokens.colors.background.level02,
+        );
+        expect(
+          crystallize.onCardColor,
+          theme.tokens.colors.text.highEmphasis,
+        );
+
+        final aurora =
+            buildOnboardingHeroVisual(
+                  OnboardingHeroStyle.aurora,
+                  tokens: theme.tokens,
+                  brightness: theme.brightness,
+                )
+                as AuroraHero;
+        expect(aurora.blendMode, theme.blendMode);
+
+        final waveform =
+            buildOnboardingHeroVisual(
+                  OnboardingHeroStyle.waveform,
+                  tokens: theme.tokens,
+                  brightness: theme.brightness,
+                )
+                as WaveformTextHero;
+        expect(
+          waveform.textColor,
+          theme.tokens.colors.text.highEmphasis,
+        );
+      }
+    });
   });
 
   group('OnboardingHeroPanel', () {
+    for (final theme in [
+      (
+        name: 'light',
+        data: DesignSystemTheme.light(),
+        tokens: dsTokensLight,
+      ),
+      (
+        name: 'dark',
+        data: DesignSystemTheme.dark(),
+        tokens: dsTokensDark,
+      ),
+    ]) {
+      testWidgets('uses the ${theme.name} surface and text tokens', (
+        tester,
+      ) async {
+        tester.view
+          ..physicalSize = const Size(390, 1000)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            boundedPanel(
+              OnboardingHeroPanel(onConnect: () {}, onSkip: () {}),
+            ),
+            mediaQueryData: reducedMotionMq,
+            theme: theme.data,
+          ),
+        );
+        await tester.pump();
+
+        final panelSurface = tester.widget<ColoredBox>(
+          find.descendant(
+            of: find.byType(OnboardingHeroPanel),
+            matching: find.byType(ColoredBox),
+          ),
+        );
+        final title = tester.widget<Text>(
+          find.text(messages.onboardingWelcomeTitle),
+        );
+
+        expect(panelSurface.color, theme.tokens.colors.background.level01);
+        expect(title.style?.color, theme.tokens.colors.text.highEmphasis);
+      });
+    }
+
     for (final style in OnboardingHeroStyle.values) {
       testWidgets('renders promise text, connect + skip for ${style.label}', (
         tester,

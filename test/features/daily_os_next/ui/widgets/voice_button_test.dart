@@ -15,6 +15,7 @@ void main() {
     double size = 132,
     double dbfs = CaptureState.defaultDbfs,
     double dbfsFloor = CaptureState.defaultDbfs,
+    Color? listeningCoreColor,
     VoidCallback? onTap,
   }) async {
     await tester.pumpWidget(
@@ -26,6 +27,7 @@ void main() {
             dbfsFloor: dbfsFloor,
             size: size,
             semanticLabel: 'Record voice',
+            listeningCoreColor: listeningCoreColor,
             onTap: onTap ?? () {},
           ),
         ),
@@ -118,6 +120,25 @@ void main() {
         buttonSize * VoiceButton.listeningIdleBreath + 0.01,
       ),
     );
+  });
+
+  testWidgets('listening state accepts a host-provided center surface', (
+    tester,
+  ) async {
+    const surface = Color(0xFFF1F4F3);
+    await pumpVoiceButton(
+      tester,
+      phase: CapturePhase.listening,
+      listeningCoreColor: surface,
+    );
+
+    final ink = tester.widget<Ink>(
+      find.ancestor(
+        of: find.byKey(VoiceButton.coreButtonKey),
+        matching: find.byType(Ink),
+      ),
+    );
+    expect((ink.decoration! as BoxDecoration).color, surface);
   });
 
   testWidgets(
