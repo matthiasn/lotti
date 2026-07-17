@@ -8963,7 +8963,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișați mesajul de bun venit pentru onboarding';
 
   @override
-  String get settingsMaintenanceTitle => 'Mentenanță';
+  String get settingsMaintenanceTitle => 'Întreținere';
 
   @override
   String get settingsManualLanguageCzechTitle => 'Cehă';
