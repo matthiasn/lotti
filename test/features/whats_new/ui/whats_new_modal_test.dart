@@ -7,13 +7,13 @@ import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   late MockLoggingService mockLoggingService;
@@ -62,24 +62,22 @@ void main() {
   Widget createTestWidget({
     required WhatsNewController Function() controllerBuilder,
     ThemeData? theme,
+    MediaQueryData? mediaQueryData,
   }) {
-    return ProviderScope(
-      overrides: [
-        whatsNewControllerProvider.overrideWith(controllerBuilder),
-      ],
-      child: MaterialApp(
-        theme: theme,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: Consumer(
-            builder: (context, ref, _) => ElevatedButton(
-              onPressed: () => WhatsNewModal.show(context, ref),
-              child: const Text('Show Modal'),
-            ),
+    return makeTestableWidgetNoScroll(
+      Scaffold(
+        body: Consumer(
+          builder: (context, ref, _) => ElevatedButton(
+            onPressed: () => WhatsNewModal.show(context, ref),
+            child: const Text('Show Modal'),
           ),
         ),
       ),
+      overrides: [
+        whatsNewControllerProvider.overrideWith(controllerBuilder),
+      ],
+      theme: theme,
+      mediaQueryData: mediaQueryData,
     );
   }
 
@@ -407,16 +405,12 @@ void main() {
     testWidgets(
       'narrow screen (< pageBreakpoint) uses bottomSheet modal type',
       (tester) async {
-        // Set screen width below the 560 breakpoint to trigger bottomSheet path
-        tester.view.physicalSize = const Size(400, 800);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
-
         await tester.pumpWidget(
           createTestWidget(
             controllerBuilder: () => _TestWhatsNewController(
               WhatsNewState(unseenContent: [testContent1]),
             ),
+            mediaQueryData: const MediaQueryData(size: Size(400, 800)),
           ),
         );
 
@@ -430,16 +424,12 @@ void main() {
 
     testWidgets('wide screen (>= pageBreakpoint) uses tall dialog modal type '
         'and routeLabel is reachable', (tester) async {
-      // Set screen width above the 560 breakpoint to trigger _TallDialogType
-      tester.view.physicalSize = const Size(1200, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-
       await tester.pumpWidget(
         createTestWidget(
           controllerBuilder: () => _TestWhatsNewController(
             WhatsNewState(unseenContent: [testContent1]),
           ),
+          mediaQueryData: const MediaQueryData(size: Size(1200, 900)),
         ),
       );
 
