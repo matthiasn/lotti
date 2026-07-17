@@ -818,12 +818,10 @@ void main() {
           findsOneWidget,
         );
       case _SyncSurface.conflicts:
-        final label =
-            toBeginningOfSentenceCase(
-              messages.conflictsUnresolved,
-              Localizations.localeOf(context).toString(),
-            ) ??
-            messages.conflictsUnresolved;
+        final label = toBeginningOfSentenceCase(
+          messages.conflictsUnresolved,
+          Localizations.localeOf(context).toString(),
+        );
         expect(
           find.text(messages.syncListCountSummary(label, 2)),
           findsOneWidget,

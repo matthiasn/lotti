@@ -91,7 +91,7 @@ final _manualCategories = <CategoryDefinition>[
 /// The general Insights scenarios predate the manual's localized fixture
 /// contract. Keep their stable IDs and time rows, but provide German demo
 /// category names when the German manual is captured.
-final _scenarioGermanNames = <String, String>{
+const Map<String, String> _scenarioGermanNames = <String, String>{
   'cat-client': 'Kundenarbeit',
   'cat-deep': 'Fokusarbeit',
   'cat-meetings': 'Besprechungen',
@@ -104,7 +104,7 @@ final _scenarioGermanNames = <String, String>{
   'cat-errands': 'Erledigungen',
 };
 
-final _scenarioCategories = insightsScenarioCategories
+final List<CategoryDefinition> _scenarioCategories = insightsScenarioCategories
     .map(
       (category) => category.copyWith(
         name: _t(category.name, _scenarioGermanNames[category.id]!),

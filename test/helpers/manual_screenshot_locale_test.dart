@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'manual_screenshot_locale.dart';
 import 'manual_screenshot_czech_text.dart';
+import 'manual_screenshot_locale.dart';
 
 void main() {
   group('manual screenshot locale', () {

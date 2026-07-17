@@ -803,7 +803,7 @@ Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
         bottom: 0,
         child: DesignSystemBottomNavigationBar(
           items: [
-            DesignSystemFiveSlotNavBarItem(
+            const DesignSystemFiveSlotNavBarItem(
               label: 'Daily OS',
               icon: Icon(Icons.today_outlined),
               activeIcon: Icon(Icons.today_rounded),
@@ -811,15 +811,15 @@ Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
             ),
             DesignSystemFiveSlotNavBarItem(
               label: _t('Tasks', 'Aufgaben'),
-              icon: Icon(Icons.check_circle_outline_rounded),
+              icon: const Icon(Icons.check_circle_outline_rounded),
             ),
             DesignSystemFiveSlotNavBarItem(
               label: _t('Calendar', 'Kalender'),
-              icon: Icon(Icons.calendar_month_outlined),
+              icon: const Icon(Icons.calendar_month_outlined),
             ),
             DesignSystemFiveSlotNavBarItem(
               label: _t('Settings', 'Einstellungen'),
-              icon: Icon(Icons.settings_outlined),
+              icon: const Icon(Icons.settings_outlined),
             ),
           ],
         ),
