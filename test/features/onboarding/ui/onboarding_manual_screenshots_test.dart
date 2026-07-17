@@ -347,7 +347,6 @@ void main() {
       find.text(_t('Connection verified', 'Verbindung bestätigt')),
       findsOneWidget,
     );
-
   }
 
   Future<void> driveToSuccess(WidgetTester tester) async {
