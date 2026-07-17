@@ -52,8 +52,8 @@ const Map<String, String> settingsNodeUrls = {
   // Conflict resolution lives under the Sync branch in the Settings
   // V2 tree, but its Beamer URL still wears the legacy
   // `/settings/advanced/conflicts` path so existing deep links and
-  // the `conflictId` / `edit` subroutes (still declared in
-  // `settings_location.dart`) keep working unchanged. The URL → id
+  // the `conflictId` detail subroute (still declared in
+  // `settings_location.dart`) keeps working unchanged. The URL → id
   // resolver picks this entry up via the greedy longest-prefix walk
   // regardless of which tree branch the leaf hangs from.
   'sync/conflicts': '/settings/advanced/conflicts',

@@ -666,6 +666,16 @@ Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
             Icons.settings_rounded,
           ),
           onSettingsSelected: () {},
+          utilityDestination: DesktopSidebarDestination(
+            label: 'Manual',
+            iconBuilder: ({required active}) =>
+                const Icon(Icons.help_outline_rounded),
+            trailingBuilder: ({required active}) =>
+                const Icon(Icons.open_in_new_rounded),
+            isLink: true,
+            semanticsHint: 'Opens in your browser',
+          ),
+          onUtilitySelected: () {},
           onToggleCollapsed: () {},
         ),
         Expanded(child: dayPage),

@@ -28,12 +28,14 @@
     <name>Matthias Nehlsen</name>
   </developer>
   <url type="homepage">https://github.com/matthiasn/lotti</url>
+  <url type="help">https://matthiasn.github.io/lotti/manual/</url>
   <url type="bugtracker">https://github.com/matthiasn/lotti/issues</url>
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
     <release version="0.9.1051" date="2026-07-17">
       <description>
+          <p>The desktop sidebar now opens the Lotti Manual directly. A localized Manual link sits immediately above Settings, remains available when the sidebar is collapsed, and opens the current published manual in the default browser.</p>
           <p>The desktop sidebar is navigation-first and keeps important task filters visible. Saved task filters now appear directly under Tasks with live counts. The first five follow the order you set, More expands the complete list without a limit, and the manager handles reordering, renaming, and deleting. Recording, timer, and agent status share one compact expandable activity row, while healthy sync stays quiet until work needs attention.</p>
           <p>Saving a task filter now stays inside the filter flow, with explicit Update filter and Save as new choices instead of a separate popup.</p>
       </description>

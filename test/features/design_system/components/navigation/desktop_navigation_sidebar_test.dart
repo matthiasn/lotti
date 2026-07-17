@@ -146,6 +146,68 @@ void main() {
     });
 
     testWidgets(
+      'utility link stays above Settings and remains available when collapsed',
+      (tester) async {
+        var utilityTaps = 0;
+        final semanticsHandle = tester.ensureSemantics();
+        final utility = DesktopSidebarDestination(
+          label: 'Manual',
+          iconBuilder: ({required bool active}) =>
+              const Icon(Icons.help_outline_rounded),
+          trailingBuilder: ({required bool active}) =>
+              const Icon(Icons.open_in_new_rounded),
+          isLink: true,
+          semanticsHint: 'Opens in your browser',
+        );
+
+        Future<void> pumpSidebar({required bool collapsed}) async {
+          await tester.pumpWidget(
+            wrap(
+              DesktopNavigationSidebar(
+                destinations: buildDestinations(),
+                activeIndex: 0,
+                onDestinationSelected: (_) {},
+                settingsDestination: buildSettingsDestination(),
+                onSettingsSelected: () {},
+                utilityDestination: utility,
+                onUtilitySelected: () => utilityTaps++,
+                collapsed: collapsed,
+              ),
+            ),
+          );
+          await tester.pump();
+        }
+
+        await pumpSidebar(collapsed: false);
+
+        expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+        expect(
+          tester.getCenter(find.text('Manual')).dy,
+          lessThan(tester.getCenter(find.text('Settings')).dy),
+        );
+        final semantics = tester.getSemantics(
+          find.bySemanticsLabel(RegExp('Manual')),
+        );
+        expect(semantics.hint, 'Opens in your browser');
+        expect(semantics.flagsCollection.isLink, isTrue);
+        expect(semantics.flagsCollection.isButton, isFalse);
+
+        await tester.tap(find.text('Manual'));
+        await tester.pump();
+        expect(utilityTaps, 1);
+
+        await pumpSidebar(collapsed: true);
+
+        expect(find.text('Manual'), findsNothing);
+        expect(find.byIcon(Icons.help_outline_rounded), findsOneWidget);
+        await tester.tap(find.byIcon(Icons.help_outline_rounded));
+        await tester.pump();
+        expect(utilityTaps, 2);
+        semanticsHandle.dispose();
+      },
+    );
+
+    testWidgets(
       'renders the active-variant icon for the active destination',
       (tester) async {
         await tester.pumpWidget(

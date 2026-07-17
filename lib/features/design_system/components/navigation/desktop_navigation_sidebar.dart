@@ -16,6 +16,8 @@ class DesktopSidebarDestination {
     required this.iconBuilder,
     this.trailingBuilder,
     this.expandedChildBuilder,
+    this.isLink = false,
+    this.semanticsHint,
   });
 
   /// Display label for this destination.
@@ -37,6 +39,13 @@ class DesktopSidebarDestination {
   /// benefits from persistent visibility without becoming a global
   /// destination, such as Tasks' saved filters.
   final Widget Function()? expandedChildBuilder;
+
+  /// Whether assistive technologies should announce this row as a link
+  /// instead of an in-app navigation button.
+  final bool isLink;
+
+  /// Optional accessibility hint describing what activating the row does.
+  final String? semanticsHint;
 }
 
 /// Persistent left-hand navigation sidebar for the desktop layout.
@@ -59,6 +68,8 @@ class DesktopNavigationSidebar extends StatelessWidget {
     this.settingsDestination,
     this.onSettingsSelected,
     this.isSettingsActive = false,
+    this.utilityDestination,
+    this.onUtilitySelected,
     this.width = 320,
     this.collapsed = false,
     this.collapsedWidth = 72,
@@ -85,6 +96,16 @@ class DesktopNavigationSidebar extends StatelessWidget {
 
   /// Whether the Settings destination is currently active.
   final bool isSettingsActive;
+
+  /// Optional utility action rendered immediately above Settings.
+  ///
+  /// Unlike [aboveSettings], this row remains available in collapsed mode.
+  /// It is intended for occasional actions that are not app destinations,
+  /// such as opening external documentation.
+  final DesktopSidebarDestination? utilityDestination;
+
+  /// Called when the utility action is tapped.
+  final VoidCallback? onUtilitySelected;
 
   /// Width of the sidebar when expanded. Defaults to 320.
   final double width;
@@ -182,6 +203,17 @@ class DesktopNavigationSidebar extends StatelessWidget {
             SizedBox(height: tokens.spacing.step5),
             aboveSettings!,
             SizedBox(height: tokens.spacing.step5),
+          ],
+
+          if (utilityDestination != null) ...[
+            _DesktopSidebarNavItem(
+              destination: utilityDestination!,
+              active: false,
+              collapsed: collapsed,
+              onTap: onUtilitySelected,
+            ),
+            if (settingsDestination != null)
+              SizedBox(height: tokens.spacing.step4),
           ],
 
           // Settings at the bottom
@@ -403,9 +435,11 @@ class _DesktopSidebarNavItem extends StatelessWidget {
     final tokens = context.designTokens;
 
     final semantics = Semantics(
-      button: true,
-      selected: active,
+      button: !destination.isLink,
+      link: destination.isLink,
+      selected: destination.isLink ? null : active,
       label: destination.label,
+      hint: destination.semanticsHint,
       child: Material(
         color: Colors.transparent,
         child: InkWell(

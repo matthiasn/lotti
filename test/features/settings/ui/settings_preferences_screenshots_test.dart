@@ -462,8 +462,13 @@ void main() {
           applyScreenshotDevice(tester, device);
           await tester.pumpWidget(
             _app(
-              home: const CelebrationPlaygroundPage(
+              home: CelebrationPlaygroundPage(
                 variant: CelebrationVariant.sparks,
+                previewSampleTitles: const [
+                  'Count emperor penguins',
+                  'Route sardine cargo',
+                  'Brief Mission Control',
+                ],
               ),
               brightness: brightness,
               size: device.size,

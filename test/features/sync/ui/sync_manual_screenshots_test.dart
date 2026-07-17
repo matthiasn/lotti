@@ -83,7 +83,7 @@ import '../../../widget_test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
 
 const String _subdir = 'sync';
-const String _conflictId = 'waddle-habitat-7f3a';
+const String _conflictId = 'habitat';
 
 final ManualDemoWorld _world = ManualDemoWorld.penguinLogistics();
 final DateTime _syncTime = DateTime(2026, 7, 17, 10, 22);
@@ -212,7 +212,7 @@ final JournalEntry _cargoNote = JournalEntry(
 final List<Conflict> _unresolvedConflicts = [
   _taskConflict,
   _conflictFor(
-    id: 'sardine-manifest-91c2',
+    id: 'sardines',
     remote: _cargoNote,
     status: ConflictStatus.unresolved,
     createdAt: _syncTime.subtract(const Duration(minutes: 25)),

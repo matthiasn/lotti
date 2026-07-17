@@ -6931,6 +6931,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get multiSelectNoItemsFound => 'Žádné položky nenalezeny';
 
   @override
+  String get navSidebarManualBrowserHint => 'Otevře se v prohlížeči';
+
+  @override
+  String get navSidebarManualLabel => 'Příručka';
+
+  @override
   String navTabMoreSemanticsLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -11890,6 +11890,18 @@ abstract class AppLocalizations {
   /// **'No items found'**
   String get multiSelectNoItemsFound;
 
+  /// No description provided for @navSidebarManualBrowserHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens in your browser'**
+  String get navSidebarManualBrowserHint;
+
+  /// No description provided for @navSidebarManualLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get navSidebarManualLabel;
+
   /// No description provided for @navTabMoreSemanticsLabel.
   ///
   /// In en, this message translates to:

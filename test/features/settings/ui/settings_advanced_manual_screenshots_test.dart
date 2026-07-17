@@ -178,7 +178,7 @@ final List<_AdvancedCase> _cases = [
     mobilePage: MaintenancePage.new,
     expectedText: 'Purge deleted items',
     desktopExpectedText: null,
-    scrollTo: 'Purge deleted items',
+    scrollTo: null,
   ),
   (
     id: 'onboarding_metrics',

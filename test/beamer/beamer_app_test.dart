@@ -62,6 +62,7 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:uuid/uuid.dart';
 
 import '../helpers/stub_audio_recorder_controller.dart';
@@ -528,6 +529,7 @@ void main() {
     // The AI provider FTUE path stubs AiConfigRepository.getConfigsByType,
     // whose argument is an AiConfigType — mocktail needs a fallback for `any()`.
     registerFallbackValue(AiConfigType.inferenceProvider);
+    registerFallbackValue(FakeLaunchOptions());
   });
 
   group('Navigation Index Clamping Logic Tests', () {
@@ -1525,6 +1527,59 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets(
+      'Manual sits above Settings and opens the stable manual URL externally',
+      (tester) async {
+        final originalLauncher = UrlLauncherPlatform.instance;
+        final launcher = MockUrlLauncher();
+        UrlLauncherPlatform.instance = launcher;
+        addTearDown(() => UrlLauncherPlatform.instance = originalLauncher);
+        when(
+          () => launcher.launchUrl(any(), any()),
+        ).thenAnswer((_) async => true);
+
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: _desktopViewportSize,
+        );
+
+        final manual = find.text('Manual');
+        final settings = find.text('Settings');
+        expect(manual, findsOneWidget);
+        expect(
+          tester.getCenter(manual).dy,
+          lessThan(tester.getCenter(settings).dy),
+        );
+
+        await tester.tap(manual);
+        await tester.pump();
+
+        verify(
+          () => launcher.launchUrl(
+            'https://matthiasn.github.io/lotti/manual/',
+            any(),
+          ),
+        ).called(1);
+        verifyNever(() => mockNavService.tapIndex(any()));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
     testWidgets('tapping sidebar destination calls tapIndex', (tester) async {
       final mockNavService = MockNavService();
       await _stubNavService(
@@ -1858,12 +1913,6 @@ void main() {
         expectHides([
           '/settings/advanced/conflicts/some-conflict-id',
         ], hides: true);
-      });
-
-      test('the manual-merge entry editor keeps the bar (owns its inset)', () {
-        expectHides([
-          '/settings/advanced/conflicts/some-conflict-id/edit',
-        ], hides: false);
       });
     });
 

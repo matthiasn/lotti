@@ -6,7 +6,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
-enum _Mode { first, second }
+enum _Mode { first, second, third }
 
 Widget _wrap(Widget child) => makeTestableWidget2(
   Scaffold(body: Center(child: child)),
@@ -203,6 +203,48 @@ void main() {
       expect(tester.getSize(find.byType(DsSegmentedToggle<_Mode>)).width, 360);
       expect(_visible('Per day'), findsOneWidget);
       expect(_visible('Running total'), findsOneWidget);
+    });
+
+    testWidgets('expand mode scales a long label instead of clipping it', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            width: 280,
+            child: DsSegmentedToggle<_Mode>(
+              expand: true,
+              selected: _Mode.first,
+              onChanged: (_) {},
+              segments: const [
+                DsSegment(_Mode.first, 'Tasks'),
+                DsSegment(_Mode.second, 'Habits'),
+                DsSegment(_Mode.third, 'Checklist items'),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      final label = _visible('Checklist items');
+      final fitted = find.ancestor(
+        of: label,
+        matching: find.byType(FittedBox),
+      );
+      expect(fitted, findsOneWidget);
+      expect(
+        tester.getSize(fitted).width,
+        lessThan(tester.getSize(label).width),
+      );
+      expect(
+        tester.getSemantics(label),
+        isSemantics(
+          isButton: true,
+          hasSelectedState: true,
+          label: 'Checklist items',
+        ),
+      );
     });
 
     testWidgets(

@@ -8,12 +8,14 @@ import 'package:lotti/features/settings/ui/widgets/celebration_preview_hero.dart
 import '../../../../widget_test_utils.dart';
 
 void main() {
-  Widget hero({int neighbours = 2}) => makeTestableWidget(
-    CelebrationPreviewHero(
-      params: CelebrationParams.defaultsFor(CelebrationVariant.confetti),
-      neighbours: neighbours,
-    ),
-  );
+  Widget hero({int neighbours = 2, List<String>? sampleTitles}) =>
+      makeTestableWidget(
+        CelebrationPreviewHero(
+          params: CelebrationParams.defaultsFor(CelebrationVariant.confetti),
+          neighbours: neighbours,
+          sampleTitles: sampleTitles,
+        ),
+      );
 
   testWidgets('shows the live row plus inert neighbours for context', (
     tester,
@@ -24,6 +26,22 @@ void main() {
     // Neighbours stay unchecked so the only teal/check on screen marks the live
     // row (avoids a salience inversion) — nothing is checked before any tap.
     expect(find.byIcon(Icons.check_rounded), findsNothing);
+  });
+
+  testWidgets('uses supplied demo titles for the contextual checklist', (
+    tester,
+  ) async {
+    const samples = [
+      'Count emperor penguins',
+      'Route sardine cargo',
+      'Brief Mission Control',
+    ];
+    await tester.pumpWidget(hero(neighbours: 1, sampleTitles: samples));
+
+    for (final sample in samples) {
+      expect(find.text(sample), findsOneWidget, reason: sample);
+    }
+    expect(find.text('Morning walk'), findsNothing);
   });
 
   testWidgets('tapping the live row checks it and fires a burst', (

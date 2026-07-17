@@ -136,9 +136,20 @@ String _groupTitle(BuildContext context, _KnobGroup group) => switch (group) {
 /// globally wherever the variant plays; the live preview reflects the working
 /// values as you drag and re-fires the burst when you release a slider.
 class CelebrationPlaygroundPage extends ConsumerStatefulWidget {
-  const CelebrationPlaygroundPage({required this.variant, super.key});
+  const CelebrationPlaygroundPage({
+    required this.variant,
+    this.previewSampleTitles,
+    super.key,
+  }) : assert(
+         previewSampleTitles == null || previewSampleTitles.length >= 3,
+         'The celebration playground needs at least three preview titles.',
+       );
 
   final CelebrationVariant variant;
+
+  /// Optional sample checklist content used by embedded/demo surfaces. The
+  /// normal settings route leaves this null and uses localized app examples.
+  final List<String>? previewSampleTitles;
 
   @override
   ConsumerState<CelebrationPlaygroundPage> createState() =>
@@ -292,6 +303,7 @@ class _CelebrationPlaygroundPageState
                         child: CelebrationPreviewHero(
                           params: _params,
                           replayTick: _replayTick,
+                          sampleTitles: widget.previewSampleTitles,
                           // On a phone, drop the context rows so the pinned
                           // preview stays small and more knobs are reachable
                           // (and the page is obviously scrollable); desktop has

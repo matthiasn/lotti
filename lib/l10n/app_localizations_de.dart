@@ -6882,6 +6882,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get multiSelectNoItemsFound => 'Keine Einträge gefunden';
 
   @override
+  String get navSidebarManualBrowserHint => 'Wird in deinem Browser geöffnet';
+
+  @override
+  String get navSidebarManualLabel => 'Handbuch';
+
+  @override
   String navTabMoreSemanticsLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

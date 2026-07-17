@@ -16,7 +16,6 @@ import 'package:lotti/features/categories/ui/pages/categories_list_page.dart'
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart'
     as new_category_details;
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
-import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
@@ -128,7 +127,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/advanced/animations',
     '/settings/advanced/logging_domains',
     '/settings/advanced/conflicts/:conflictId',
-    '/settings/advanced/conflicts/:conflictId/edit',
     '/settings/advanced/conflicts',
     '/settings/advanced/maintenance',
     '/settings/advanced/onboarding_metrics',
@@ -660,16 +658,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: ConflictDetailRoute(
             conflictId: state.pathParameters['conflictId']!,
           ),
-        ),
-
-      if (pathContains('advanced/conflicts/') &&
-          pathContainsKey('conflictId') &&
-          pathContains('/edit'))
-        BeamPage(
-          key: ValueKey(
-            'settings-conflict-edit-${state.pathParameters['conflictId']}',
-          ),
-          child: EntryDetailsPage(itemId: state.pathParameters['conflictId']!),
         ),
 
       if (pathContains('advanced/maintenance') ||

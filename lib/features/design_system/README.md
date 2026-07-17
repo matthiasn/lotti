@@ -224,7 +224,11 @@ Representative composite or feature-shaped components:
   instances are focusable: Left/Right resize by the token spacing step,
   Shift uses the larger step, and adjustable slider semantics expose the same
   operation to accessibility actions. Focus joins hover and drag as an active,
-  token-colored visual state
+  token-colored visual state. The bottom cluster keeps transient activity
+  above a link-capable utility row, Settings as the final navigation
+  destination, and ambient sync status below it. Utility links remain
+  available in collapsed mode and expose link semantics plus an optional
+  action hint
 - reusable mobile detail back control and header chrome
 - celebration primitives (`components/celebration/`) — `CompletionGlow` (a soft
   accent halo that blooms then fades, with a static opacity-only variant for

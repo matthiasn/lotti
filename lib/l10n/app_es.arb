@@ -2884,6 +2884,8 @@
     }
   },
   "multiSelectNoItemsFound": "No se encontraron elementos",
+  "navSidebarManualBrowserHint": "Se abre en tu navegador",
+  "navSidebarManualLabel": "Manual",
   "navTabMoreSemanticsLabel": "{count, plural, =1{Más, 1 destino adicional} other{Más, {count} destinos adicionales}}",
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleEvents": "Eventos",
