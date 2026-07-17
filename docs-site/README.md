@@ -23,6 +23,43 @@ The production build defaults to `/manual/development/`. Override
 `MANUAL_SITE_URL`, `MANUAL_ROOT_PATH`, `MANUAL_BASE_URL`, and `MANUAL_VERSION`
 when composing a release deployment.
 
+## GitHub Pages
+
+The published development manual lives at:
+
+`https://matthiasn.github.io/lotti/manual/development/`
+
+The repository root and `/lotti/manual/` redirect to that version. On every
+matching push to `main`, GitHub Actions validates and builds the site, assembles
+the repo-prefixed Pages tree, uploads it as a Pages artifact, and deploys it.
+Generated Docusaurus output is never committed: it exists only in the Actions
+runner and the immutable Pages deployment artifact.
+
+The initial Pages deployment publishes `development`. Version promotion will
+assemble immutable release artifacts into the same Pages snapshot; manually
+building another version already works, but it does not replace the live
+development snapshot during this first publishing phase.
+
+Run the same production build locally with:
+
+```bash
+MANUAL_SITE_URL=https://matthiasn.github.io \
+MANUAL_ROOT_PATH=/lotti/manual \
+MANUAL_BASE_URL=/lotti/manual/development/ \
+MANUAL_VERSION=development \
+npm run check
+```
+
+Then assemble the exact Pages directory shape into a disposable folder:
+
+```bash
+npm run pages:assemble -- \
+  --build-root build \
+  --output-root /tmp/lotti-manual-pages \
+  --pages-prefix lotti \
+  --version development
+```
+
 ## Screenshot workflow
 
 Generated screenshots belong in the sibling `../lotti-docs` repository. The
@@ -48,7 +85,9 @@ For app version `1.0.0`, CI checks out the app's `1.0.0` tag and builds with:
 
 ```bash
 MANUAL_VERSION=1.0.0 \
-MANUAL_BASE_URL=/manual/1.0.0/ \
+MANUAL_SITE_URL=https://matthiasn.github.io \
+MANUAL_ROOT_PATH=/lotti/manual \
+MANUAL_BASE_URL=/lotti/manual/1.0.0/ \
 npm run build
 ```
 

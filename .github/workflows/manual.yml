@@ -45,9 +45,9 @@ on:
         default: false
         type: boolean
       deploy:
-        description: 'Deploy the static build to the configured server directory'
+        description: 'Publish the static build to GitHub Pages'
         required: true
-        default: false
+        default: true
         type: boolean
 
 concurrency:
@@ -83,6 +83,10 @@ jobs:
     needs: metadata
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     steps:
       - name: Checkout Lotti
         uses: actions/checkout@v5
@@ -109,7 +113,9 @@ jobs:
         working-directory: lotti/docs-site
         env:
           MANUAL_VERSION: ${{ needs.metadata.outputs.version }}
-          MANUAL_BASE_URL: /manual/${{ needs.metadata.outputs.version }}/
+          MANUAL_SITE_URL: https://${{ github.repository_owner }}.github.io
+          MANUAL_ROOT_PATH: /${{ github.event.repository.name }}/manual
+          MANUAL_BASE_URL: /${{ github.event.repository.name }}/manual/${{ needs.metadata.outputs.version }}/
         run: npm run check
 
       - name: Upload static manual
@@ -119,6 +125,35 @@ jobs:
           path: lotti/docs-site/build
           if-no-files-found: error
           retention-days: 14
+
+      - name: Configure GitHub Pages
+        if: >-
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.deploy &&
+           needs.metadata.outputs.version == 'development')
+        uses: actions/configure-pages@v5
+
+      - name: Assemble versioned GitHub Pages snapshot
+        if: >-
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.deploy &&
+           needs.metadata.outputs.version == 'development')
+        working-directory: lotti/docs-site
+        run: >-
+          npm run pages:assemble --
+          --build-root build
+          --output-root "${RUNNER_TEMP}/lotti-manual-pages"
+          --pages-prefix "${{ github.event.repository.name }}"
+          --version "${{ needs.metadata.outputs.version }}"
+
+      - name: Upload GitHub Pages artifact
+        if: >-
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.deploy &&
+           needs.metadata.outputs.version == 'development')
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ runner.temp }}/lotti-manual-pages
 
   screenshots:
     name: Capture screenshot catalog
@@ -207,49 +242,26 @@ jobs:
           git push origin HEAD:main
 
   deploy:
-    name: Deploy static manual
+    name: Publish GitHub Pages
     needs: [metadata, build]
     if: >-
-      always() && needs.build.result == 'success' &&
-      (
-        (github.event_name == 'workflow_dispatch' && inputs.deploy) ||
-        ((github.event_name == 'push' || github.event_name == 'schedule') &&
-         vars.MANUAL_DEPLOY_ENABLED == 'true')
-      )
+      needs.build.result == 'success' &&
+      (github.event_name == 'push' ||
+       (github.event_name == 'workflow_dispatch' && inputs.deploy &&
+        needs.metadata.outputs.version == 'development'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment: manual-production
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Download static manual
-        uses: actions/download-artifact@v4
-        with:
-          name: lotti-manual-${{ needs.metadata.outputs.version }}
-          path: site
-
-      - name: Configure SSH
-        env:
-          DEPLOY_HOST: ${{ vars.MANUAL_DEPLOY_HOST }}
-          DEPLOY_KEY: ${{ secrets.MANUAL_DEPLOY_SSH_KEY }}
-        run: |
-          set -euo pipefail
-          test -n "$DEPLOY_HOST"
-          test -n "$DEPLOY_KEY"
-          install -d -m 700 ~/.ssh
-          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/manual_deploy_key
-          chmod 600 ~/.ssh/manual_deploy_key
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
-
-      - name: Publish immutable version directory
-        env:
-          DEPLOY_HOST: ${{ vars.MANUAL_DEPLOY_HOST }}
-          DEPLOY_USER: ${{ vars.MANUAL_DEPLOY_USER }}
-          DEPLOY_PATH: ${{ vars.MANUAL_DEPLOY_PATH }}
-          MANUAL_VERSION: ${{ needs.metadata.outputs.version }}
-        run: |
-          set -euo pipefail
-          test -n "$DEPLOY_USER"
-          test -n "$DEPLOY_PATH"
-          rsync -az --delete \
-            -e 'ssh -i ~/.ssh/manual_deploy_key' \
-            site/ \
-            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/$MANUAL_VERSION/"
+      - name: Deploy artifact to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

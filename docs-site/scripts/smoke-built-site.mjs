@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
-import {access, readFile} from 'node:fs/promises';
+import {access, readFile, readdir} from 'node:fs/promises';
 import {resolve} from 'node:path';
 
 import {readJson, siteDirectory} from './manual-lib.mjs';
@@ -10,6 +10,15 @@ const buildDirectory = resolve(siteDirectory, 'build');
 const features = await readJson(resolve(siteDirectory, 'metadata/features.json'));
 
 await access(resolve(buildDirectory, 'index.html'));
+const buildFiles = await readdir(buildDirectory, {recursive: true});
+assert.ok(
+  buildFiles.some((path) => /Inter-VariableFont.*\.ttf$/.test(path)),
+  'The manual build must bundle Lotti\'s Inter variable font.',
+);
+assert.ok(
+  buildFiles.some((path) => /Inconsolata-Regular.*\.ttf$/.test(path)),
+  'The manual build must bundle Lotti\'s Inconsolata code font.',
+);
 for (const feature of features.features) {
   await access(resolve(buildDirectory, feature.page, 'index.html'));
 }
@@ -27,19 +36,31 @@ assert.match(
   /manual\/screenshots\/development\/settings\/home\/mobile-dark\.webp/,
 );
 
-const dailyOsFeature = features.features.find((feature) => feature.id === 'daily-os');
-assert.ok(dailyOsFeature, 'Daily OS must remain in the feature coverage catalog.');
-const dailyOsHtml = await readFile(
-  resolve(buildDirectory, 'plan-and-capture/daily-os/index.html'),
-  'utf8',
-);
-assert.equal(
-  dailyOsHtml.match(/aria-label="Screenshot layout for all images"/g)?.length,
-  dailyOsFeature.screenshotCases.length,
-  'Every Daily OS screenshot case must render its global viewport control.',
-);
-for (const caseId of dailyOsFeature.screenshotCases) {
-  assert.match(dailyOsHtml, new RegExp(`data-case-id=["']?${caseId}`));
+let screenshotControlCount = 0;
+for (const feature of features.features) {
+  if (feature.screenshotCases.length === 0) continue;
+  const html = await readFile(
+    resolve(buildDirectory, feature.page, 'index.html'),
+    'utf8',
+  );
+  const renderedControls =
+    html.match(/aria-label="Screenshot layout for all images"/g)?.length ?? 0;
+  const renderedViewers =
+    html.match(/aria-label="Open screenshot viewer"/g)?.length ?? 0;
+  assert.equal(
+    renderedControls,
+    feature.screenshotCases.length,
+    `Every ${feature.title} screenshot case must render its viewport control.`,
+  );
+  assert.equal(
+    renderedViewers,
+    feature.screenshotCases.length,
+    `Every ${feature.title} screenshot case must render its expandable viewer.`,
+  );
+  screenshotControlCount += renderedControls;
+  for (const caseId of feature.screenshotCases) {
+    assert.match(html, new RegExp(`data-case-id=["']?${caseId}`));
+  }
 }
 
 const searchIndex = await readFile(
@@ -51,6 +72,6 @@ assert.match(searchIndex, /Create your first task/);
 
 console.log(
   `Built-site smoke test passed for ${features.features.length} feature routes, ` +
-    `${dailyOsFeature.screenshotCases.length} Daily OS screenshot controls, ` +
+    `${screenshotControlCount} global screenshot controls, ` +
     'the interactive screenshot shell, and local search.',
 );

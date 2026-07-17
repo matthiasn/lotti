@@ -8,6 +8,7 @@
     "clear": "docusaurus clear",
     "docusaurus": "docusaurus",
     "manifest": "node scripts/build-screenshot-manifest.mjs",
+    "pages:assemble": "node scripts/assemble-pages-site.mjs",
     "serve": "docusaurus serve",
     "smoke": "node scripts/smoke-built-site.mjs",
     "start": "docusaurus start",

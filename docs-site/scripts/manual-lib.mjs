@@ -84,6 +84,22 @@ export function findUnmanagedScreenshotReferences(source) {
   return [...new Set(authoringMarkup.match(lottiDocsMediaUrl) ?? [])];
 }
 
+/** Find an import that points at a Widgetbook or showcase-only surface. */
+export function findLegacyManualImport(source) {
+  const importPattern = /import\s+['"]([^'"]+)['"]/gi;
+  for (const match of source.matchAll(importPattern)) {
+    const importPath = match[1];
+    if (
+      /(?:^package:widgetbook\/|(?:^|\/)widgetbook\/|showcase)/i.test(
+        importPath,
+      )
+    ) {
+      return match[0];
+    }
+  }
+  return null;
+}
+
 export function canonicalVariantPath(caseId, variant) {
   validateCaseId(caseId);
   if (!requiredVariants.includes(variant)) {

@@ -8,6 +8,7 @@ import 'package:lotti/services/dev_logger.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'test_utils/clipboard_test_context.dart';
+import 'test_utils/native_drag_drop_test_context.dart';
 
 /// Runs before every test file. Use this to set global test configuration
 /// that keeps tests fast and deterministic across runners (flutter test,
@@ -31,6 +32,7 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // handler-less context from whichever test happens to write first. See
   // installSharedClipboardTestContext for the full rationale.
   installSharedClipboardTestContext();
+  installSharedNativeDragDropTestContext();
 
   // Mocktail keeps argument matchers (`any`, `captureAny`) in PROCESS-GLOBAL
   // state between `when`/`verify` registration and the mock invocation that
