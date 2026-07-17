@@ -78,6 +78,16 @@ assert.match(
   /theme-admonition/,
   'The manual start page must render its penguin-world note as an admonition.',
 );
+for (const path of buildFiles) {
+  if (!path.endsWith('index.html')) continue;
+  const html = await readFile(resolve(buildDirectory, path), 'utf8');
+  if (!html.includes('theme-doc-markdown')) continue;
+  assert.doesNotMatch(
+    html,
+    /:::(?:note|tip|warning|caution|danger|info)\b/,
+    `Manual page ${path} must not render an admonition fence as text.`,
+  );
+}
 for (const feature of features.features) {
   await access(resolve(buildDirectory, feature.page, 'index.html'));
   for (const locale of translatedLocales) {
