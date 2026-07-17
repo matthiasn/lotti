@@ -12,7 +12,6 @@
 library;
 
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -56,17 +55,6 @@ const _detailEventId = 'event-project-waddle-launch-gala';
 const ValueKey<String> _precacheKey = ValueKey<String>(
   'events-manual-precache-host',
 );
-
-Future<void> _transcodeInstalledMediaToPng(List<File> files) async {
-  for (final file in files) {
-    final codec = await ui.instantiateImageCodec(await file.readAsBytes());
-    final frame = await codec.getNextFrame();
-    final png = await frame.image.toByteData(format: ui.ImageByteFormat.png);
-    await file.writeAsBytes(png!.buffer.asUint8List(), flush: true);
-    frame.image.dispose();
-    codec.dispose();
-  }
-}
 
 class _ManualEventsOverviewController extends EventsOverviewController {
   _ManualEventsOverviewController(this._events);
@@ -152,7 +140,7 @@ void main() {
       'lotti-manual-events-',
     );
     final installedMedia = await world.installMedia(documentsDirectory);
-    await _transcodeInstalledMediaToPng(installedMedia);
+    await transcodeManualDemoMediaToPng(installedMedia);
 
     final missionControl = CategoryTestUtils.createTestCategory(
       id: 'manual-mission-control',

@@ -462,6 +462,61 @@
         "desktop-light": "events_timeline_desktop_light.png",
         "desktop-dark": "events_timeline_desktop_dark.png"
       }
+    },
+    {
+      "id": "journal/overview",
+      "title": "Journal overview",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_overview_mobile_light.png",
+        "mobile-dark": "journal_overview_mobile_dark.png",
+        "desktop-light": "journal_overview_desktop_light.png",
+        "desktop-dark": "journal_overview_desktop_dark.png"
+      }
+    },
+    {
+      "id": "journal/filters",
+      "title": "Journal filters",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_filters_mobile_light.png",
+        "mobile-dark": "journal_filters_mobile_dark.png",
+        "desktop-light": "journal_filters_desktop_light.png",
+        "desktop-dark": "journal_filters_desktop_dark.png"
+      }
+    },
+    {
+      "id": "journal/create",
+      "title": "Journal create menu",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_create_mobile_light.png",
+        "mobile-dark": "journal_create_mobile_dark.png",
+        "desktop-light": "journal_create_desktop_light.png",
+        "desktop-dark": "journal_create_desktop_dark.png"
+      }
+    },
+    {
+      "id": "journal/detail",
+      "title": "Journal entry detail",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_detail_mobile_light.png",
+        "mobile-dark": "journal_detail_mobile_dark.png",
+        "desktop-light": "journal_detail_desktop_light.png",
+        "desktop-dark": "journal_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "journal/activity",
+      "title": "Journal linked activity",
+      "sourceTest": "test/features/journal/ui/pages/journal_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "journal_activity_mobile_light.png",
+        "mobile-dark": "journal_activity_mobile_dark.png",
+        "desktop-light": "journal_activity_desktop_light.png",
+        "desktop-dark": "journal_activity_desktop_dark.png"
+      }
     }
   ]
 }

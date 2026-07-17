@@ -57,6 +57,23 @@ const manualDemoCoverAssets = <String, String>{
       'assets/design_system/manual_task_cover_headset_walk.webp',
 };
 
+/// Re-encodes installed manual artwork as PNG bytes in place.
+///
+/// The headless Flutter test engine can leave resized WebP decoding pending,
+/// while production widgets correctly resolve the same files on devices. PNG
+/// bytes keep screenshot captures deterministic; image codecs detect the bytes
+/// rather than relying on the retained `.webp` filenames.
+Future<void> transcodeManualDemoMediaToPng(List<File> files) async {
+  for (final file in files) {
+    final codec = await ui.instantiateImageCodec(await file.readAsBytes());
+    final frame = await codec.getNextFrame();
+    final png = await frame.image.toByteData(format: ui.ImageByteFormat.png);
+    await file.writeAsBytes(png!.buffer.asUint8List(), flush: true);
+    frame.image.dispose();
+    codec.dispose();
+  }
+}
+
 /// One deterministic, production-shaped data set reused across manual pages.
 ///
 /// Keeping tasks, categories, labels, and cover images here prevents the task

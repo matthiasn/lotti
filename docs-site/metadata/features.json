@@ -50,6 +50,19 @@
       ]
     },
     {
+      "id": "journal",
+      "title": "Journal",
+      "page": "organize-and-reflect/journal",
+      "status": "verified",
+      "screenshotCases": [
+        "journal/overview",
+        "journal/filters",
+        "journal/create",
+        "journal/detail",
+        "journal/activity"
+      ]
+    },
+    {
       "id": "settings",
       "title": "Settings",
       "page": "reference/settings",

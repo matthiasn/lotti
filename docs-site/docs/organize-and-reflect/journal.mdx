@@ -1,0 +1,142 @@
+---
+title: Keep a useful journal
+description: Find notes, photos, recordings, events, and AI results in one feed, then connect the supporting activity behind each entry.
+---
+
+# Keep a useful journal
+
+The Journal is Lotti's mixed entry feed. It brings notes, photos, recordings,
+events, checklists, measurements, and AI responses together without turning
+them into tasks. Use it when you want to remember, inspect, or connect what
+happened; use **Tasks** when the entry itself is work you still need to do.
+
+<ManualScreenshot
+  caseId="journal/overview"
+  alt="Journal feed containing a Project Waddle launch photo, mission log, Europa sardine voice memo, summit event, and cargo telemetry summary"
+  caption="Type glyphs make the mixed feed scannable, while category colours, labels, stars, flags, durations, and status chips keep the useful context close to each entry."
+/>
+
+## Read the mixed feed
+
+Every card leads with its content and uses a coloured glyph to identify the
+entry type. The colour comes from the entry's category, so **Penguin
+Operations**, **Mission Control**, and **Fish Diplomacy** remain recognizable
+even when several entry types appear together.
+
+Cards add the metadata that matters for their type. For example:
+
+- an audio memo shows its duration and flag;
+- an event shows its status, date, rating, and note;
+- a checklist shows completion progress;
+- a measurement shows its value and unit; and
+- an AI response is marked as AI-generated.
+
+The feed loads in pages, so a long journal does not have to render its entire
+history at once.
+
+## Search by words or meaning
+
+Use **Full Text** to find the words stored in an entry. When vector search is
+enabled, switch to **Vector** to look for entries with a similar meaning even
+when they use different wording. Vector results are returned as one ranked set
+rather than as an endlessly paged feed.
+
+If vector search is unavailable or later disabled, Lotti returns the Journal
+to full-text mode instead of leaving search in an unusable state.
+
+## Filter what appears
+
+<ManualScreenshot
+  caseId="journal/filters"
+  alt="Journal filter dialog with starred, flagged, private, entry-type, and category controls over the penguin logistics feed"
+  caption="Combine entry properties, types, and categories to turn the mixed feed into the slice you need."
+/>
+
+Open the filter button beside Search. You can narrow the Journal to:
+
+- starred, flagged, or private entries;
+- one or more entry types, including Text, Event, Audio, Photo, Checklist,
+  To Do, and AI Response; and
+- one or more categories.
+
+These choices are persisted for the Journal. Task filters are stored
+separately, so changing the Journal view does not unexpectedly rearrange the
+Tasks page.
+
+## Add an entry
+
+<ManualScreenshot
+  caseId="journal/create"
+  alt="Add menu offering Event, Task, Audio Recording, Text Entry, Import Image, and Screenshot over the Project Waddle journal"
+  caption="The menu only offers actions supported by the current platform and context."
+/>
+
+Select **+** to open the Add menu. From the main Journal you can create a text
+entry, task, event, or audio recording, import a photo, or take a screenshot.
+Clipboard image paste can appear when an image is available. Event creation is
+shown when the Events feature is enabled.
+
+The same menu adapts inside an existing entry. There it can also create a timer
+already linked to the entry, and task details can offer a linked checklist.
+Imported, pasted, dropped, and captured images can participate in automatic
+image analysis when that automation is configured.
+
+## Read and edit an entry
+
+<ManualScreenshot
+  caseId="journal/detail"
+  alt="Project Waddle mission log detail with category, labels, star, duration, rich text, activity filters, and a linked launch photo"
+  caption="The entry remains the source of truth; supporting photos, timers, prompts, and incoming links stay attached below it."
+/>
+
+The detail header keeps the entry date, category, labels, star, flag, privacy,
+and overflow actions together. Select the body to edit rich text. Save from the
+editor controls, or use **Ctrl+S** on Windows and Linux and **Command+S** on
+macOS. Unsaved text is kept as a draft; discarding restores the last saved
+content.
+
+The overflow menu contains the actions that apply to the current entry type,
+including copy, delete, and media actions. On desktop, image and audio entries
+can also reveal their source file in the file manager.
+
+## Follow linked activity
+
+<ManualScreenshot
+  caseId="journal/activity"
+  alt="Linked Project Waddle activity with an AI coding prompt, a 23-minute roll-call rehearsal, and the incoming launch-review task"
+  caption="Outgoing activity answers what this entry contains; Linked from shows which other entry points back to it."
+/>
+
+Entries can link to photos, timers, audio, AI results, notes, and other
+supporting records. The activity pills let you show or hide **Timer**,
+**Audio**, **Images**, and **Code** entries. Open the sort control to switch
+between newest-first and oldest-first ordering, include hidden links, or show
+only flagged activity.
+
+The two directions mean different things:
+
+- activity below the entry is linked **from this entry**; and
+- **Linked from** lists entries that point **to this entry**.
+
+For example, the Project Waddle mission log contains its launch photo,
+diagnostic prompt, and roll-call timer, while the launch-review task appears
+under **Linked from** because that task also references the log.
+
+## Open and save a photo
+
+Select an inline photo to open the full-screen viewer. Pinch or use the viewer
+controls to zoom and pan, then reset the image when needed. Saving uses the
+original file rather than the smaller preview: mobile writes to the photo
+library after permission is granted, while desktop opens the system save
+dialog so you choose the destination.
+
+## Journal or task?
+
+| Use the Journal for… | Use Tasks for… |
+| --- | --- |
+| A mission log, photo, voice memo, measurement, event memory, or AI result | An action with a status, priority, estimate, checklist, or work session |
+| “Europa sardines are colder than diplomatic protocol requires” | “Recalibrate the zero-gravity fish feeder” |
+| Evidence and context you may want to revisit | Work you need to plan, execute, and complete |
+
+Link them when a task needs evidence from the Journal. This keeps the action
+focused while preserving the richer operational record behind it.
