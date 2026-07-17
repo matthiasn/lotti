@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
+import 'package:lotti/features/settings_v2/ui/settings_node_action_handler.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -19,6 +20,7 @@ void handleSettingsNodeTap(
   WidgetRef ref,
   SettingsNode node,
 ) {
+  if (handleSettingsNodeAction(ref, node)) return;
   if (node.id == 'whats-new') {
     WhatsNewModal.show(context, ref);
     return;

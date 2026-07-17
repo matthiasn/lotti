@@ -8251,6 +8251,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Provádějte údržbové úkoly pro optimalizaci výkonu aplikace';
 
   @override
+  String get settingsAdvancedManualLanguageSubtitle =>
+      'Vyber jazyk, ve kterém se má otevřít příručka Lotti';
+
+  @override
   String get settingsAdvancedOutboxSubtitle =>
       'Spravujte položky synchronizace';
 
@@ -8915,6 +8919,26 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMaintenanceTitle => 'Údržba';
+
+  @override
+  String get settingsManualLanguageCzechTitle => 'Čeština';
+
+  @override
+  String get settingsManualLanguageEnglishTitle => 'Angličtina';
+
+  @override
+  String get settingsManualLanguageFollowSystemSubtitle =>
+      'Použij jazyk zařízení, pokud ho příručka podporuje; jinak angličtinu.';
+
+  @override
+  String get settingsManualLanguageFollowSystemTitle =>
+      'Používat jazyk systému';
+
+  @override
+  String get settingsManualLanguageGermanTitle => 'Němčina';
+
+  @override
+  String get settingsManualLanguageTitle => 'Jazyk';
 
   @override
   String get settingsMatrixAccept => 'Přijmout';

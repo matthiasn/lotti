@@ -62,7 +62,6 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:uuid/uuid.dart';
 
 import '../helpers/stub_audio_recorder_controller.dart';
@@ -1528,16 +1527,8 @@ void main() {
     });
 
     testWidgets(
-      'Manual sits above Settings and opens the stable manual URL externally',
+      'desktop sidebar keeps Settings navigation without a Manual utility link',
       (tester) async {
-        final originalLauncher = UrlLauncherPlatform.instance;
-        final launcher = MockUrlLauncher();
-        UrlLauncherPlatform.instance = launcher;
-        addTearDown(() => UrlLauncherPlatform.instance = originalLauncher);
-        when(
-          () => launcher.launchUrl(any(), any()),
-        ).thenAnswer((_) async => true);
-
         final mockNavService = MockNavService();
         await _stubNavService(
           mockNavService,
@@ -1556,24 +1547,9 @@ void main() {
           viewportSize: _desktopViewportSize,
         );
 
-        final manual = find.text('Manual');
         final settings = find.text('Settings');
-        expect(manual, findsOneWidget);
-        expect(
-          tester.getCenter(manual).dy,
-          lessThan(tester.getCenter(settings).dy),
-        );
-
-        await tester.tap(manual);
-        await tester.pump();
-
-        verify(
-          () => launcher.launchUrl(
-            'https://matthiasn.github.io/lotti/manual/',
-            any(),
-          ),
-        ).called(1);
-        verifyNever(() => mockNavService.tapIndex(any()));
+        expect(settings, findsOneWidget);
+        expect(find.text('Manual'), findsNothing);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -1901,6 +1877,7 @@ void main() {
       test('non-conflict advanced leaves hide the bar', () {
         expectHides([
           '/settings/advanced/animations',
+          '/settings/advanced/manual-language',
           '/settings/advanced/logging_domains',
           '/settings/advanced/maintenance',
           '/settings/advanced/onboarding_metrics',

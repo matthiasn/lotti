@@ -13,10 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   full-size tap target.
 
 ### Added
-- **The desktop sidebar now opens the Lotti Manual directly.** A localized
-  Manual link sits immediately above Settings, remains available when the
-  sidebar is collapsed, and opens the current published manual in the default
-  browser.
+- **Manual links now follow your language.** Lotti opens the published Manual
+  in English, German, or Czech based on your system language, and Settings →
+  Advanced → Language lets you choose one explicitly.
+- **Manual is easier to find without crowding the sidebar.** It now sits in a
+  distinct final section of Settings and in the desktop Help menu, opening the
+  current published manual in your default browser.
 
 ### Changed
 - **Czech now reads consistently across Lotti and its manual.** Category,

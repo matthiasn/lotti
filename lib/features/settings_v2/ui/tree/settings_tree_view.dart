@@ -39,12 +39,14 @@ class SettingsTreeView extends ConsumerWidget {
           vertical: tokens.spacing.step5,
         ),
         children: [
-          for (final SettingsNode node in tree)
+          for (final SettingsNode node in tree) ...[
+            if (node.sectionBreakBefore) SizedBox(height: tokens.spacing.step6),
             SettingsTreeNodeWidget(
               key: ValueKey(node.id),
               node: node,
               depth: 0,
             ),
+          ],
         ],
       ),
     );

@@ -408,6 +408,7 @@ void main() {
           expect(wrapper.onZoomIn, isNotNull);
           expect(wrapper.onZoomOut, isNotNull);
           expect(wrapper.onZoomReset, isNotNull);
+          expect(wrapper.onOpenManual, isNotNull);
 
           // Verify ZoomWrapper receives the scale from the controller
           final zoomWrapper = tester.widget<ZoomWrapper>(

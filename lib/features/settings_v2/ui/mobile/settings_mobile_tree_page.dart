@@ -63,17 +63,24 @@ class SettingsMobileTreePage extends StatelessWidget {
           padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
           children: [
             ?header,
-            for (final node in nodes)
+            for (final node in nodes) ...[
+              if (node.sectionBreakBefore)
+                SizedBox(height: tokens.spacing.step6),
               SettingsTreeRow(
                 key: ValueKey(node.id),
                 node: node,
                 depth: 0,
                 onActivePath: false,
                 isExpanded: false,
-                trailing: settingsNodeIndicatorFor(node.id),
+                trailing: node.action == SettingsNodeAction.openManual
+                    ? Icon(
+                        Icons.open_in_new_rounded,
+                        color: tokens.colors.text.lowEmphasis,
+                      )
+                    : settingsNodeIndicatorFor(node.id),
                 accentIcon: accentIcons,
                 showActiveRail: false,
-                showLeafChevron: true,
+                showLeafChevron: node.action == null,
                 // 3 lines so even the longest section summary stays fully
                 // legible at large OS text sizes (at 1x descriptions fit in
                 // 1–2 lines, so this is just a higher ceiling, not extra
@@ -81,6 +88,7 @@ class SettingsMobileTreePage extends StatelessWidget {
                 descMaxLines: 3,
                 onTap: () => onNodeTap(node),
               ),
+            ],
           ],
         ),
       ),

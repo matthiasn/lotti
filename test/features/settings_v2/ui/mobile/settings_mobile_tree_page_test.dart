@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_shell.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_tree_page.dart';
@@ -29,6 +30,15 @@ const _leaf = SettingsNode(
   title: 'Theming',
   desc: 'Customize app appearance',
   panel: 'theming',
+);
+
+const _manual = SettingsNode(
+  id: 'manual',
+  icon: Icons.menu_book_outlined,
+  title: 'Manual',
+  desc: 'Opens in your browser',
+  action: SettingsNodeAction.openManual,
+  sectionBreakBefore: true,
 );
 
 Future<void> pump(
@@ -117,5 +127,22 @@ void main() {
     await pump(tester, onNodeTap: (_) {});
     expect(find.text('landing-panel-header'), findsNothing);
     expect(find.byType(SettingsTreeRow), findsNWidgets(2));
+  });
+
+  testWidgets('separates the Manual action with a tokenized gap', (
+    tester,
+  ) async {
+    await pump(tester, onNodeTap: (_) {}, nodes: const [_leaf, _manual]);
+
+    final rows = find.byType(SettingsTreeRow);
+    final gap =
+        tester.getTopLeft(rows.at(1)).dy - tester.getBottomLeft(rows.first).dy;
+    final BuildContext context = tester.element(
+      find.byType(SettingsMobileTreePage),
+    );
+
+    expect(gap, context.designTokens.spacing.step6);
+    expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
   });
 }
