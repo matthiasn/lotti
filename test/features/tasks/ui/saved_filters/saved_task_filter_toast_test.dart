@@ -83,7 +83,7 @@ void main() {
     await tester.tap(find.text('fire'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Filter deleted'), findsOneWidget);
+    expect(find.text('View deleted'), findsOneWidget);
   });
 
   testWidgets(
