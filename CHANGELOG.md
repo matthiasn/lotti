@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from Settings › Onboarding.
 
 ### Changed
+- **Daily OS shutdown now stays usable on narrow phones.** Its actions stack
+  responsively, and wrapped metric labels keep enough height instead of
+  overflowing their cards.
 - **Time Analysis now stays usable in narrow windows.** Period shortcuts wrap
   below the navigator, headline cards stack in reading order, and chart controls
   move below their heading instead of overflowing or clipping.

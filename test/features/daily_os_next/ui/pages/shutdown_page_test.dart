@@ -16,19 +16,26 @@ import '../../../../widget_test_utils.dart';
 
 /// Applies the standard tall-desktop view geometry every test needs and
 /// registers its reset.
-void _setView(WidgetTester tester) {
+void _setView(
+  WidgetTester tester, {
+  Size size = const Size(1280, 1100),
+}) {
   tester.view
-    ..physicalSize = const Size(1280, 1100)
+    ..physicalSize = size
     ..devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 }
 
-Widget _wrap(Widget child, {List<Override> overrides = const []}) {
+Widget _wrap(
+  Widget child, {
+  List<Override> overrides = const [],
+  Size size = const Size(1280, 1100),
+}) {
   return ProviderScope(
     overrides: overrides,
     child: makeTestableWidget2(
       child,
-      mediaQueryData: const MediaQueryData(size: Size(1280, 1100)),
+      mediaQueryData: MediaQueryData(size: size),
     ),
   );
 }
@@ -85,6 +92,42 @@ void main() {
       expect(find.byType(DesignSystemGlassStrip), findsOneWidget);
       // For-tomorrow note body — the mock generates a paragraph.
       expect(find.textContaining('Onboarding doc'), findsWidgets);
+    });
+
+    testWidgets('keeps every footer action inside a 402dp phone viewport', (
+      tester,
+    ) async {
+      const size = Size(402, 874);
+      _setView(tester, size: size);
+
+      await tester.pumpWidget(
+        _wrap(
+          ShutdownPage(forDate: DateTime(2026, 5, 25)),
+          overrides: [dayAgentProvider.overrideWithValue(_fastAgent())],
+          size: size,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final messages = tester.element(find.byType(ShutdownPage)).messages;
+      final actions = [
+        find.widgetWithText(TextButton, messages.dailyOsNextDayBack),
+        find.widgetWithText(
+          TextButton,
+          messages.dailyOsNextShutdownSaveAndClose,
+        ),
+        find.widgetWithText(
+          FilledButton,
+          messages.dailyOsNextShutdownCloseDay,
+        ),
+      ];
+      for (final action in actions) {
+        expect(action, findsOneWidget);
+        final bounds = tester.getRect(action);
+        expect(bounds.left, greaterThanOrEqualTo(0));
+        expect(bounds.right, lessThanOrEqualTo(size.width));
+      }
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('keeps shutdown content during provider refreshes', (
