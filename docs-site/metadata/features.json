@@ -63,6 +63,16 @@
       ]
     },
     {
+      "id": "time-analysis",
+      "title": "Time Analysis",
+      "page": "organize-and-reflect/time-analysis",
+      "status": "verified",
+      "screenshotCases": [
+        "time-analysis/overview",
+        "time-analysis/compare"
+      ]
+    },
+    {
       "id": "settings",
       "title": "Settings",
       "page": "reference/settings",

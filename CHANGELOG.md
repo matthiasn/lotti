@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from Settings › Onboarding.
 
 ### Changed
+- **Time Analysis now stays usable in narrow windows.** Period shortcuts wrap
+  below the navigator, headline cards stack in reading order, and chart controls
+  move below their heading instead of overflowing or clipping.
 - **Completed Daily OS tasks keep their cover thumbnails.** Finished agenda
   rows now retain the same task artwork as open and in-progress work, making a
   busy day easier to scan without losing task identity after completion.

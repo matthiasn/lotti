@@ -35,6 +35,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../mocks/mocks.dart';
+import '../../categories/test_utils.dart';
 import 'insights_test_scenarios.dart';
 
 // Deliberately LOCAL, matching app reality (`clock.now()` is always
@@ -44,7 +45,107 @@ import 'insights_test_scenarios.dart';
 // locally-constructed rows) without changing the output.
 final DateTime _now = DateTime(2026, 6, 7, 16, 30);
 const Size _desktopSize = Size(1400, 900);
+const Size _mobileSize = Size(402, 874);
 const ValueKey<String> _boundaryKey = ValueKey<String>('insights-screenshot');
+
+const _penguinOperationsId = 'manual-penguin-operations';
+const _missionControlId = 'manual-mission-control';
+const _fishDiplomacyId = 'manual-fish-diplomacy';
+const _orbitalResearchId = 'manual-orbital-research';
+const _humanMaintenanceId = 'manual-human-maintenance';
+
+CategoryDefinition _manualCategory(String id, String name, String color) =>
+    CategoryTestUtils.createTestCategory(id: id, name: name, color: color);
+
+final _manualCategories = <CategoryDefinition>[
+  _manualCategory(_penguinOperationsId, 'Penguin Operations', '#40B5E8'),
+  _manualCategory(_missionControlId, 'Mission Control', '#6750A4'),
+  _manualCategory(_fishDiplomacyId, 'Fish Diplomacy', '#FBA337'),
+  _manualCategory(_orbitalResearchId, 'Orbital Research', '#1F7963'),
+  _manualCategory(_humanMaintenanceId, 'Human Maintenance', '#3CB371'),
+];
+
+InsightsTimeRow _manualRow(
+  DateTime start,
+  int minutes,
+  String? categoryId,
+) => InsightsTimeRow(
+  dateFrom: start,
+  dateTo: start.add(Duration(minutes: minutes)),
+  categoryId: categoryId,
+);
+
+/// Ninety days of deterministic Project Waddle operations. The mix gives the
+/// production chart enough variation to exercise category ranking, focus
+/// totals, daily stacks, comparison deltas, and uncategorized time.
+List<InsightsTimeRow> _manualRows() {
+  final rows = <InsightsTimeRow>[];
+  for (var offset = 0; offset < 90; offset++) {
+    final day = DateTime(_now.year, _now.month, _now.day - offset);
+    final seed = (offset * 37 + 11) % 97;
+    final weekend =
+        day.weekday == DateTime.saturday || day.weekday == DateTime.sunday;
+
+    if (weekend) {
+      rows
+        ..add(
+          _manualRow(
+            DateTime(day.year, day.month, day.day, 9),
+            45 + seed % 35,
+            _humanMaintenanceId,
+          ),
+        )
+        ..add(
+          _manualRow(
+            DateTime(day.year, day.month, day.day, 11),
+            70 + seed % 50,
+            _orbitalResearchId,
+          ),
+        );
+    } else {
+      rows
+        ..add(
+          _manualRow(
+            DateTime(day.year, day.month, day.day, 8, 15),
+            110 + seed % 70,
+            _penguinOperationsId,
+          ),
+        )
+        ..add(
+          _manualRow(
+            DateTime(day.year, day.month, day.day, 11, 30),
+            45 + seed % 35,
+            _missionControlId,
+          ),
+        )
+        ..add(
+          _manualRow(
+            DateTime(day.year, day.month, day.day, 14),
+            35 + seed % 40,
+            _fishDiplomacyId,
+          ),
+        )
+        ..add(
+          _manualRow(
+            DateTime(day.year, day.month, day.day, 15, 30),
+            55 + seed % 65,
+            _orbitalResearchId,
+          ),
+        );
+    }
+
+    if (seed % 4 == 0) {
+      rows.add(
+        _manualRow(
+          DateTime(day.year, day.month, day.day, 18),
+          15 + seed % 20,
+          null,
+        ),
+      );
+    }
+  }
+  return rows;
+}
 
 class _FixedPreferencesController extends InsightsPreferencesController {
   _FixedPreferencesController(this._ids);
@@ -84,9 +185,10 @@ Future<void> _pumpDashboard(
   required List<CategoryDefinition> categories,
   Set<String> focusCategoryIds = const {},
   Brightness brightness = Brightness.dark,
+  Size size = _desktopSize,
 }) async {
   tester.view
-    ..physicalSize = _desktopSize * 2
+    ..physicalSize = size * 2
     ..devicePixelRatio = 2;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -442,4 +544,66 @@ void main() {
       await gesture.up();
     });
   });
+
+  for (final (viewport, size) in [
+    ('mobile', _mobileSize),
+    ('desktop', _desktopSize),
+  ]) {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      final theme = brightness.name;
+
+      testWidgets('$viewport manual overview — $theme', (tester) async {
+        await _pumpDashboard(
+          tester,
+          rows: _manualRows(),
+          categories: _manualCategories,
+          focusCategoryIds: const {
+            _penguinOperationsId,
+            _missionControlId,
+          },
+          brightness: brightness,
+          size: size,
+        );
+        expect(find.text('Time Analysis'), findsOneWidget);
+        expect(find.text('TOTAL'), findsWidgets);
+        expect(find.text('FOCUS'), findsOneWidget);
+        expect(find.text('Penguin Operations'), findsWidgets);
+        await _capture(tester, 'time_analysis_overview_${viewport}_$theme');
+      });
+
+      testWidgets('$viewport manual comparison — $theme', (tester) async {
+        await _pumpDashboard(
+          tester,
+          rows: _manualRows(),
+          categories: _manualCategories,
+          focusCategoryIds: const {
+            _penguinOperationsId,
+            _missionControlId,
+          },
+          brightness: brightness,
+          size: size,
+        );
+        await _tap(tester, find.text('Compare'));
+        final comparisonHeader = size == _mobileSize
+            ? find.text('Change')
+            : find.text('PREVIOUS');
+        if (size == _mobileSize) {
+          final list = find.byType(ListView);
+          for (
+            var attempt = 0;
+            attempt < 8 && comparisonHeader.evaluate().isEmpty;
+            attempt++
+          ) {
+            await tester.drag(list, const Offset(0, -560));
+            await tester.pump(const Duration(milliseconds: 120));
+          }
+          await tester.ensureVisible(comparisonHeader);
+          await tester.pump(const Duration(milliseconds: 300));
+        }
+        expect(comparisonHeader, findsOneWidget);
+        expect(find.text('Penguin Operations'), findsWidgets);
+        await _capture(tester, 'time_analysis_compare_${viewport}_$theme');
+      });
+    }
+  }
 }

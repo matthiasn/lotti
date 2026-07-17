@@ -21,7 +21,10 @@ import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_table.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Desktop time-analysis dashboard under the Insights tab.
+/// Full-screen time-analysis dashboard under Daily OS.
+///
+/// Desktop navigation exposes the route beneath the sidebar calendar; the
+/// dashboard content itself also reflows for narrow windows.
 ///
 /// The page is the single provider consumer: it watches the bucket window,
 /// range, preferences, and categories, derives chart/table/KPI values via

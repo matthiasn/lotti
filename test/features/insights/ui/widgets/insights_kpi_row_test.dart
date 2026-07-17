@@ -8,6 +8,7 @@ import '../../../categories/test_utils.dart';
 
 void main() {
   const desktopMq = MediaQueryData(size: Size(1280, 900));
+  const mobileMq = MediaQueryData(size: Size(402, 874));
 
   final categories = [
     CategoryTestUtils.createTestCategory(id: 'cat-a', name: 'Client Work'),
@@ -17,12 +18,13 @@ void main() {
   Future<void> pumpRow(
     WidgetTester tester, {
     required InsightsKpis kpis,
+    MediaQueryData mediaQueryData = desktopMq,
     Set<String> focusIds = const {},
     ValueChanged<String>? onToggle,
   }) {
     return tester.pumpWidget(
       makeTestableWidget(
-        mediaQueryData: desktopMq,
+        mediaQueryData: mediaQueryData,
         InsightsKpiRow(
           kpis: kpis,
           categories: categories,
@@ -184,5 +186,64 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Focus categories'), findsOneWidget);
+  });
+
+  testWidgets('mobile stacks configured totals in their reading order', (
+    tester,
+  ) async {
+    await pumpRow(
+      tester,
+      mediaQueryData: mobileMq,
+      kpis: const InsightsKpis(
+        totalSeconds: 10 * 3600,
+        focusSeconds: 7 * 3600,
+        otherSeconds: 3 * 3600,
+      ),
+      focusIds: const {'cat-a'},
+    );
+
+    final total = find.text('TOTAL');
+    final focus = find.text('FOCUS');
+    final other = find.text('OTHER');
+    expect(
+      tester.getTopLeft(focus).dy,
+      greaterThan(tester.getBottomLeft(total).dy),
+    );
+    expect(
+      tester.getTopLeft(other).dy,
+      greaterThan(tester.getBottomLeft(focus).dy),
+    );
+    expect(find.text('10h'), findsOneWidget);
+    expect(find.text('7h'), findsOneWidget);
+    expect(find.text('3h'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('mobile puts the focus setup action below the total tile', (
+    tester,
+  ) async {
+    await pumpRow(
+      tester,
+      mediaQueryData: mobileMq,
+      kpis: const InsightsKpis(
+        totalSeconds: 9 * 3600 + 30 * 60,
+        focusSeconds: null,
+        otherSeconds: null,
+      ),
+    );
+
+    final total = find.text('TOTAL');
+    final action = find.text('Choose focus categories');
+    expect(
+      tester.getTopLeft(action).dy,
+      greaterThan(tester.getBottomLeft(total).dy),
+    );
+
+    await tester.tap(action);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Client Work'), findsOneWidget);
+    expect(find.text('Admin'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

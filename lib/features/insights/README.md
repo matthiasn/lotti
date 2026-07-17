@@ -1,8 +1,11 @@
 # Insights — Time Analysis
 
-A desktop-only, full-screen time-analysis dashboard under the Daily OS tab
-(route `/calendar/time`), opened from a sidebar sub-entry beneath the Daily
-OS month calendar. It answers three questions —
+A full-screen time-analysis dashboard under the Daily OS tab (route
+`/calendar/time`), opened from a sidebar sub-entry beneath the Daily OS month
+calendar. The sidebar entry is desktop navigation, while the dashboard itself
+reflows for narrow windows: period shortcuts wrap below the stepper, KPI cards
+stack vertically, and the chart-mode control moves below its heading. It
+answers three questions —
 *Where did my time go this week? How much time did I spend per category per
 day? What is the cumulative vs. non-cumulative time spent?* — over 10k+ time
 entries with instantaneous (sub-200ms, measured ~5ms) range switching.
@@ -60,6 +63,10 @@ period reaches today. A vertical divider groups the period controls (stepper
 plus the to-date shortcuts) apart from Compare, which is a mode toggle, not a
 navigation control. Every step is an in-memory slice within the year window
 (below), so the dashboard updates with no database round trip.
+Below the desktop breakpoint, the stepper remains a single navigation cluster
+and the two shortcuts plus Compare move into a wrapping row underneath. This
+preserves the same controls and semantics without clipping or horizontal
+scrolling.
 
 **To-date shortcuts.** Two pills on the stepper row jump straight to the
 current month-to-date / year-to-date via
@@ -259,6 +266,10 @@ stateDiagram-v2
   its member categories inline, and FOCUS/OTHER each carry a plain-language
   gloss ("Categories you're watching" / "Everything else") so the terse
   eyebrows aren't opaque to newcomers.
+- At narrow widths the KPI tiles form a vertical reading sequence (Total →
+  Focus → Other), and the chart-mode toggle sits below the chart title. The
+  category table drops lower-priority columns before truncating its category
+  labels; Compare retains Current and Change while Previous is omitted.
 - The header controls share one rounded idiom: the period-stepper cluster and
   the `InsightsPillButton`s (This month / This year, Compare) are all capsule
   (`radii.badgesPills`) at the same height — the cluster's chevrons are sized
@@ -305,7 +316,9 @@ by the Insights AI Impact link.
 - `test/database/insights_performance_test.dart` — 10k-entry benchmark for
   the cold fetch and the in-memory period-switch budget.
 - `test/features/insights/ui/time_analysis_screenshots_test.dart` — renders
-  ten scenarios at desktop size with real fonts for design review
+  the production dashboard across its design scenarios plus the Project
+  Waddle manual overview/comparison in mobile and desktop, light and dark,
+  with real fonts for design review
   (opt-in: `LOTTI_SCREENSHOT_DIR=<dir> fvm flutter test …` — the font
   loading leaks process-wide, so it never runs in normal suites).
 

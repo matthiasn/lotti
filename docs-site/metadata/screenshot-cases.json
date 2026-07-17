@@ -517,6 +517,28 @@
         "desktop-light": "journal_activity_desktop_light.png",
         "desktop-dark": "journal_activity_desktop_dark.png"
       }
+    },
+    {
+      "id": "time-analysis/overview",
+      "title": "Time Analysis overview",
+      "sourceTest": "test/features/insights/ui/time_analysis_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "time_analysis_overview_mobile_light.png",
+        "mobile-dark": "time_analysis_overview_mobile_dark.png",
+        "desktop-light": "time_analysis_overview_desktop_light.png",
+        "desktop-dark": "time_analysis_overview_desktop_dark.png"
+      }
+    },
+    {
+      "id": "time-analysis/compare",
+      "title": "Time Analysis comparison",
+      "sourceTest": "test/features/insights/ui/time_analysis_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "time_analysis_compare_mobile_light.png",
+        "mobile-dark": "time_analysis_compare_mobile_dark.png",
+        "desktop-light": "time_analysis_compare_desktop_light.png",
+        "desktop-dark": "time_analysis_compare_desktop_dark.png"
+      }
     }
   ]
 }

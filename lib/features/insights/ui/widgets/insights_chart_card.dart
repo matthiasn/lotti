@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
@@ -89,6 +90,69 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
     // Bars whenever the running-total line can't be drawn, so the cumulative
     // toggle never yields a blank or single-dot card.
     final showBars = _mode == InsightsChartMode.daily || _cumulativeFallsBack;
+    final heading = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Card title sits a full type tier above the in-tile eyebrow labels so
+        // the hierarchy reads correctly.
+        Text(
+          messages.insightsChartTitle,
+          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step1),
+        // The mode caption spells out what the chart shows so "Cumulative"
+        // never needs guessing. With one series it also names that category.
+        Text(
+          _captionText(messages),
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (widget.comparing) ...[
+          SizedBox(height: tokens.spacing.step1),
+          Text(
+            messages.insightsChartCompareHint,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
+    );
+    final modeToggle = DsSegmentedToggle<InsightsChartMode>(
+      selected: _mode,
+      onChanged: (mode) => setState(() => _mode = mode),
+      segments: [
+        DsSegment(
+          InsightsChartMode.daily,
+          _perBucketLabel(messages),
+        ),
+        DsSegment(
+          InsightsChartMode.cumulative,
+          messages.insightsChartRunningTotal,
+        ),
+      ],
+    );
+    final header = isDesktopLayout(context)
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: heading),
+              modeToggle,
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              heading,
+              SizedBox(height: tokens.spacing.step4),
+              modeToggle,
+            ],
+          );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -101,73 +165,7 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Card title sits a full type tier above the in-tile
-                      // eyebrow labels so the hierarchy reads correctly.
-                      Text(
-                        messages.insightsChartTitle,
-                        style: tokens.typography.styles.subtitle.subtitle1
-                            .copyWith(color: tokens.colors.text.highEmphasis),
-                      ),
-                      SizedBox(height: tokens.spacing.step1),
-                      // The mode caption spells out what the chart shows so
-                      // "Cumulative" never needs guessing. With a single
-                      // series (legend suppressed) it also names the sole
-                      // category so the mono-color bars read as intended.
-                      Text(
-                        _captionText(messages),
-                        // mediumEmphasis, not lowEmphasis: this caption names
-                        // what the bars represent (per hour/day/week) — it is
-                        // load-bearing and must stay legible at small size in
-                        // both themes.
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      // In compare mode the chart deliberately shows only the
-                      // current period; point the eye to the table where the
-                      // deltas live so "Compare" doesn't read as "no change".
-                      if (widget.comparing) ...[
-                        SizedBox(height: tokens.spacing.step1),
-                        Text(
-                          messages.insightsChartCompareHint,
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                // The shared segmented toggle (same control as the Daily OS
-                // plan-view switch) so the dashboard speaks one visual
-                // language. Labels are plain and granularity-accurate — "Per
-                // week" over weekly bars, never a wrong "Daily".
-                DsSegmentedToggle<InsightsChartMode>(
-                  selected: _mode,
-                  onChanged: (mode) => setState(() => _mode = mode),
-                  segments: [
-                    DsSegment(
-                      InsightsChartMode.daily,
-                      _perBucketLabel(messages),
-                    ),
-                    DsSegment(
-                      InsightsChartMode.cumulative,
-                      messages.insightsChartRunningTotal,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+            header,
             SizedBox(height: tokens.spacing.step5),
             SizedBox(
               height: _chartHeight,

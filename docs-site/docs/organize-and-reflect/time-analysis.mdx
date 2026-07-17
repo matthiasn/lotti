@@ -1,0 +1,132 @@
+---
+title: Understand where your time went
+description: Break tracked time down by category, follow focus areas, and compare equivalent periods without leaving Daily OS.
+---
+
+# Understand where your time went
+
+Time Analysis turns your recorded sessions into a category breakdown. Use it
+to answer how much time you tracked, where it went, and whether the mix changed
+from the previous period. The Project Waddle example separates **Penguin
+Operations**, **Mission Control**, **Fish Diplomacy**, **Orbital Research**, and
+**Human Maintenance**, while still exposing uncategorized time that needs
+attention.
+
+On desktop, open **Daily OS** and select **Time Analysis** below the sidebar
+calendar. The dashboard fills the content area so the chart and exact table can
+be read together. Its controls reflow at narrow widths without changing what
+they do.
+
+<ManualScreenshot
+  caseId="time-analysis/overview"
+  alt="Time Analysis dashboard showing Project Waddle time across five operational categories and uncategorized work"
+  caption="The overview combines headline totals, a seven-day stacked chart, and the exact category table. Switch the manual to mobile or desktop and light or dark to inspect every production layout."
+/>
+
+## Read the headline cards
+
+The first row summarizes the selected period:
+
+- **TOTAL** is all tracked time. Its caption names the largest category and its
+  share, so the card answers where most time went as well as how much was
+  recorded.
+- **FOCUS** adds the categories you chose to watch. In the example, Penguin
+  Operations and Mission Control form the focus set.
+- **OTHER** is everything outside that focus set.
+
+Before a focus set exists, Lotti shows **Choose focus categories** instead of
+two zero-value cards. Select it, choose one or more active categories, and
+finish with **Done**. Use the tune button on the Focus card whenever the set
+needs to change. This preference is local to Lotti and does not alter the
+categories on any entry.
+
+## Choose a useful period
+
+Select the period unit to switch between **Day**, **Week**, **Month**,
+**Quarter**, and **Year**. Use the chevrons to move one complete period at a
+time. The forward chevron stops at the current period, so the dashboard never
+navigates into an empty future range.
+
+Select the date label to open the calendar and jump directly to the period
+containing another day. Week boundaries follow the first weekday configured by
+the device region.
+
+Two shortcuts cover the most common questions:
+
+- **This month** shows month-to-date; and
+- **This year** shows year-to-date.
+
+These ranges end today rather than adding empty future days. The label includes
+**(so far)**, and averages use only elapsed days.
+
+## Read the chart and table together
+
+The stacked bars show how each category contributed to every hour, day, or
+week in the range. Select **Running total** to replace the bars with cumulative
+category areas; select **Per day**, **Per week**, or **Per hour** to return to
+the bucket view. Hover or press a bar to see the category values behind that
+bucket.
+
+The table is the precise lookup. It orders categories by tracked time and
+shows their total, share, average per day, and a relative data bar. A gray
+**Uncategorized** row is deliberate: it makes missing attribution visible
+instead of silently hiding it. Open the related entries or tasks and assign a
+category when that time should belong to an operational area.
+
+## Compare equivalent periods
+
+<ManualScreenshot
+  caseId="time-analysis/compare"
+  alt="Time Analysis comparison for Project Waddle showing current time, previous-period time, and percentage changes by category"
+  caption="Compare uses the same elapsed days in each period. Direction is communicated by an arrow, sign, and colour, while the chart remains focused on the current period."
+/>
+
+Select **Compare** to add the previous period. For an in-progress week, month,
+quarter, or year, Lotti compares the elapsed portion with the same number of
+days immediately before it. A Sunday month-to-date result is therefore not
+compared with a full prior month.
+
+The headline cards gain their percentage change and previous value. The table
+switches to **CURRENT**, **PREVIOUS**, and **Change**. At narrow widths the
+lower-priority Previous column is omitted, while Current and Change remain
+visible. An upward or downward result uses an arrow and explicit sign as well
+as colour; very small changes remain neutral, and a result with no previous
+baseline is shown as new.
+
+The chart continues to show only the current period. The note **Comparison
+shown in the table below** points to the exact values and prevents a second set
+of bars from obscuring the category mix.
+
+## What Lotti counts
+
+Time Analysis counts timed journal entries whose end is later than their
+start. Audio duration is not counted separately, because a recording made
+during a running timer would otherwise count twice.
+
+Category attribution follows the work:
+
+1. If the time entry is linked to a task with a category, the task category
+   wins.
+2. Otherwise, the time entry's own category is used.
+3. If neither exists, the time appears as Uncategorized.
+
+Overlapping timers in the same category are merged before the total is
+calculated. Overlaps in different categories remain in both categories,
+because they represent separate kinds of recorded activity. Entries spanning
+midnight are split into the correct local calendar days. Private entries obey
+the global private-data visibility setting, and the dashboard refreshes when
+entries, links, task categories, or that visibility setting changes.
+
+## Keep the picture trustworthy
+
+Use categories consistently on tasks that own recorded work. Review the
+Uncategorized row periodically, and choose focus categories that answer a
+real question rather than trying to include everything. For Project Waddle,
+watching Penguin Operations and Mission Control makes the Focus card an
+operational-readiness signal while Fish Diplomacy and Human Maintenance remain
+visible in the full breakdown.
+
+Time Analysis does not currently export CSV, group results by project, or draw
+the previous period as another chart series. The exact comparison values are
+kept in the table, where they are easier to read and less likely to distort the
+current-period picture.
