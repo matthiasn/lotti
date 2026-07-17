@@ -1,0 +1,54 @@
+---
+title: Run contextual AI skills
+description: Use the Generate menu to run only the AI actions that apply to the current task, recording, image, or entry.
+---
+
+# Run contextual AI skills
+
+AI skills are named actions with instructions and input requirements. Lotti
+filters the **Generate…** menu to the current entity, so a task does not offer
+an audio-only transcription action and an image does not offer an action that
+requires a recording.
+
+<ManualScreenshot
+  caseId="ai/skills"
+  alt="Project Waddle habitat image with the Generate modal offering Inspect habitat photo"
+  caption="On a habitat image linked to the task, the applicable action looks for pressure-gauge anomalies and visible seal damage."
+/>
+
+## Run a skill
+
+1. Open a task or supported journal entry.
+2. Select the outlined assistant action in the entry header. This opens
+   **Generate…**.
+3. Read the skill description and select the action you want.
+4. If Lotti offers a model or thinking-mode picker, confirm the default or
+   choose a one-off override.
+5. Keep working while the inference runs; the result is attached to the
+   relevant task or entry when complete.
+
+The available menu changes with context:
+
+- tasks can offer text and task-context actions;
+- audio entries can offer transcription and audio-aware actions;
+- images can offer visual analysis; and
+- text entries can offer prompt or generation actions that accept text.
+
+Some skills need a linked task because they read broader task context or write
+their result back to that task. If an action is absent, first check the entry
+type and task link, then check that the active inference profile has a model for
+the required capability.
+
+## Model overrides are temporary
+
+When a skill offers a model picker, that choice applies to the current
+invocation. It does not silently rewrite the category default or inference
+profile. To change the normal route, edit the profile under
+[Models and inference profiles](./models-and-profiles.mdx).
+
+## Treat generated output as a draft
+
+Review generated prompts, summaries, transcripts, image analysis, and artwork
+before relying on them. Task context can be incomplete, providers can return
+incorrect output, and a capable model can still misunderstand a very serious
+sardine emergency.

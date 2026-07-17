@@ -21,6 +21,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_task_count_provider.dart';
@@ -75,6 +76,7 @@ final CategoryDefinition _penguinOperations =
       favorite: true,
       isAvailableForDayPlan: true,
       defaultLanguageCode: 'en',
+      defaultProfileId: manualProjectWaddleProfileId,
       speechDictionary: [
         'Project Waddle',
         'Sir Flaps-a-Lot',
@@ -446,11 +448,13 @@ void main() {
   late TestGetItMocks mocks;
   late MockCategoryRepository categoryRepo;
   late MockLabelsRepository labelsRepo;
+  late MockAiConfigRepository aiConfigRepo;
   late MockEntitiesCacheService cache;
 
   setUp(() async {
     categoryRepo = MockCategoryRepository();
     labelsRepo = MockLabelsRepository();
+    aiConfigRepo = MockAiConfigRepository();
     cache = MockEntitiesCacheService();
 
     mocks = await setUpTestGetIt(
@@ -481,6 +485,9 @@ void main() {
     when(labelsRepo.watchLabels).thenAnswer((_) => Stream.value(_allLabels));
     when(() => labelsRepo.watchLabel(_projectWaddle.id)).thenAnswer(
       (_) => Stream.value(_projectWaddle),
+    );
+    when(aiConfigRepo.watchProfiles).thenAnswer(
+      (_) => Stream.value(manualDemoAiProfiles),
     );
 
     // The habit editor loads via habitsRepositoryProvider → getIt
@@ -534,6 +541,7 @@ void main() {
 
   List<Override> categoriesDetailOverrides() => [
     categoryRepositoryProvider.overrideWithValue(categoryRepo),
+    aiConfigRepositoryProvider.overrideWithValue(aiConfigRepo),
   ];
 
   List<Override> labelsListOverrides() => [
@@ -606,6 +614,44 @@ void main() {
         await captureScreenshot(
           tester,
           'categories_automation_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport category AI profile picker — $theme', (
+        tester,
+      ) async {
+        await _pumpScreen(
+          tester,
+          device: device,
+          brightness: brightness,
+          overrides: categoriesDetailOverrides(),
+          home: CategoryDetailsPage(categoryId: _penguinOperations.id),
+        );
+
+        final selectedProfile = find.text('Project Waddle Command');
+        if (device.isPhone) {
+          await tester.scrollUntilVisible(
+            selectedProfile,
+            300,
+            scrollable: find.byType(Scrollable).first,
+          );
+        } else {
+          _alignInOuterScrollView(tester, selectedProfile, top: 160);
+        }
+        await settleFrames(tester);
+        await tester.tap(selectedProfile);
+        await settleFrames(tester, 6);
+
+        expect(find.text('Choose an inference profile'), findsOneWidget);
+        expect(find.text('Project Waddle Command'), findsWidgets);
+        expect(find.text('Fish Diplomacy'), findsOneWidget);
+        if (!device.isPhone) {
+          expect(find.text('Habitat Local-First'), findsOneWidget);
+        }
+        await captureScreenshot(
+          tester,
+          'ai_profile_picker_${viewport}_$theme',
           subdir: _subdir,
         );
       });

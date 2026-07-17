@@ -7,6 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 
 import 'entity_factories.dart';
@@ -17,6 +21,22 @@ final manualDemoNow = DateTime(2026, 7, 17, 10, 30);
 const manualDemoCategoryId = 'manual-penguin-ops';
 const manualDemoProjectLabelId = 'manual-project-waddle';
 const manualDemoCriticalLabelId = 'manual-habitat-critical';
+
+const manualMissionControlProviderId = 'provider-mission-control-router';
+const manualHabitatLabProviderId = 'provider-habitat-local-lab';
+const manualOrbitalVisionProviderId = 'provider-orbital-vision';
+const manualAudioBayProviderId = 'provider-penguin-audio-bay';
+
+const manualWaddleCommandModelId = 'model-waddle-command-70b';
+const manualEmperorReasoningModelId = 'model-emperor-reasoning-xl';
+const manualSardineLogisticsModelId = 'model-sardine-logistics-14b';
+const manualHabitatVisionModelId = 'model-habitat-vision-pro';
+const manualPenguinBriefingsModelId = 'model-penguin-briefings';
+const manualCoverArtistModelId = 'model-project-waddle-cover-artist';
+
+const manualProjectWaddleProfileId = 'profile-project-waddle-command';
+const manualHabitatLocalProfileId = 'profile-habitat-local-first';
+const manualFishDiplomacyProfileId = 'profile-fish-diplomacy';
 
 const manualOrbitalHabitatTaskId = 'task-orbital-habitat';
 const manualRollCallTaskId = 'task-emperor-penguin-roll-call';
@@ -36,6 +56,244 @@ const manualFishFeederCoverImageId = 'manual-penguin-feeder-cover';
 const manualSardineCargoCoverImageId = 'manual-penguin-cargo-cover';
 const manualPenguinPassengerCoverImageId = 'manual-penguin-legal-cover';
 const manualHeadsetWalkCoverImageId = 'manual-penguin-headset-walk-cover';
+
+/// Provider rows shared by AI settings, profile pickers, and skill flows.
+///
+/// Names describe the role each endpoint plays in Project Waddle rather than
+/// pretending the manual is connected to a real account. API keys are inert
+/// demo strings and only ever render through the production masking widget.
+final List<AiConfigInferenceProvider>
+manualDemoAiProviders = List<AiConfigInferenceProvider>.unmodifiable([
+  AiConfigInferenceProvider(
+    id: manualMissionControlProviderId,
+    baseUrl: 'https://openrouter.ai/api/v1',
+    apiKey: 'sk-demo-project-waddle-7f3a',
+    name: 'Mission Control Router',
+    description: 'Cloud routing for launch planning and high-stakes reasoning.',
+    createdAt: manualDemoNow.subtract(const Duration(days: 90)),
+    inferenceProviderType: InferenceProviderType.openRouter,
+  ),
+  AiConfigInferenceProvider(
+    id: manualHabitatLabProviderId,
+    baseUrl: 'http://habitat-ai.local:11434',
+    apiKey: '',
+    name: 'Habitat Local Lab',
+    description: 'Local models for private colony notes and sardine logistics.',
+    createdAt: manualDemoNow.subtract(const Duration(days: 72)),
+    inferenceProviderType: InferenceProviderType.ollama,
+  ),
+  AiConfigInferenceProvider(
+    id: manualOrbitalVisionProviderId,
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    apiKey: 'demo-orbital-vision-91c2',
+    name: 'Orbital Vision',
+    description: 'Multimodal inspection for habitat imagery and cover art.',
+    createdAt: manualDemoNow.subtract(const Duration(days: 61)),
+    inferenceProviderType: InferenceProviderType.gemini,
+  ),
+  AiConfigInferenceProvider(
+    id: manualAudioBayProviderId,
+    baseUrl: 'http://audio-bay.local:11344',
+    apiKey: '',
+    name: 'Penguin Audio Bay',
+    description: 'Local transcription for mission briefings.',
+    createdAt: manualDemoNow.subtract(const Duration(days: 45)),
+    inferenceProviderType: InferenceProviderType.voxtral,
+  ),
+]);
+
+/// Saved model rows used throughout the manual's AI examples.
+final List<AiConfigModel>
+manualDemoAiModels = List<AiConfigModel>.unmodifiable([
+  AiConfigModel(
+    id: manualWaddleCommandModelId,
+    name: 'Waddle Command 70B',
+    description:
+        'Fast tool-calling model for routine Project Waddle operations.',
+    providerModelId: 'meta-llama/llama-3.3-70b-instruct',
+    inferenceProviderId: manualMissionControlProviderId,
+    createdAt: manualDemoNow.subtract(const Duration(days: 80)),
+    inputModalities: const [Modality.text],
+    outputModalities: const [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    maxCompletionTokens: 8192,
+  ),
+  AiConfigModel(
+    id: manualEmperorReasoningModelId,
+    name: 'Emperor Reasoning XL',
+    description:
+        'Deliberate model for launch reviews and unusually formal penguins.',
+    providerModelId: 'anthropic/claude-sonnet-4.5',
+    inferenceProviderId: manualMissionControlProviderId,
+    createdAt: manualDemoNow.subtract(const Duration(days: 76)),
+    inputModalities: const [Modality.text, Modality.image],
+    outputModalities: const [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    maxCompletionTokens: 16384,
+  ),
+  AiConfigModel(
+    id: manualSardineLogisticsModelId,
+    name: 'Sardine Logistics 14B',
+    description:
+        'Local planning model for cargo manifests and feeder calibration.',
+    providerModelId: 'qwen3:14b',
+    inferenceProviderId: manualHabitatLabProviderId,
+    createdAt: manualDemoNow.subtract(const Duration(days: 69)),
+    inputModalities: const [Modality.text],
+    outputModalities: const [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    maxCompletionTokens: 4096,
+  ),
+  AiConfigModel(
+    id: manualHabitatVisionModelId,
+    name: 'Habitat Vision Pro',
+    description:
+        'Checks pressure gauges, ice seals, and suspicious fish-shaped alerts.',
+    providerModelId: 'gemini-2.5-flash',
+    inferenceProviderId: manualOrbitalVisionProviderId,
+    createdAt: manualDemoNow.subtract(const Duration(days: 58)),
+    inputModalities: const [Modality.text, Modality.image],
+    outputModalities: const [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    maxCompletionTokens: 8192,
+  ),
+  AiConfigModel(
+    id: manualPenguinBriefingsModelId,
+    name: 'Voxtral Penguin Briefings',
+    description:
+        'Transcribes habitat voice memos with Project Waddle vocabulary.',
+    providerModelId: 'voxtral-mini-latest',
+    inferenceProviderId: manualAudioBayProviderId,
+    createdAt: manualDemoNow.subtract(const Duration(days: 42)),
+    inputModalities: const [Modality.audio],
+    outputModalities: const [Modality.text],
+    isReasoningModel: false,
+    maxCompletionTokens: 4096,
+  ),
+  AiConfigModel(
+    id: manualCoverArtistModelId,
+    name: 'Project Waddle Cover Artist',
+    description:
+        'Creates centered 16:9 mission art that survives square thumbnail crops.',
+    providerModelId: 'gemini-2.5-flash-image',
+    inferenceProviderId: manualOrbitalVisionProviderId,
+    createdAt: manualDemoNow.subtract(const Duration(days: 35)),
+    inputModalities: const [Modality.text, Modality.image],
+    outputModalities: const [Modality.image],
+    isReasoningModel: false,
+    maxCompletionTokens: 4096,
+  ),
+]);
+
+/// Inference profiles demonstrate cloud, local-first, and specialist routing.
+final List<AiConfigInferenceProfile>
+manualDemoAiProfiles = List<AiConfigInferenceProfile>.unmodifiable([
+  AiConfigInferenceProfile(
+    id: manualProjectWaddleProfileId,
+    name: 'Project Waddle Command',
+    description:
+        'Launch-critical planning, habitat vision, briefings, and cover art.',
+    createdAt: manualDemoNow.subtract(const Duration(days: 33)),
+    thinkingModelId: manualWaddleCommandModelId,
+    thinkingHighEndModelId: manualEmperorReasoningModelId,
+    imageRecognitionModelId: manualHabitatVisionModelId,
+    transcriptionModelId: manualPenguinBriefingsModelId,
+    imageGenerationModelId: manualCoverArtistModelId,
+    isDefault: true,
+    skillAssignments: const [
+      SkillAssignment(skillId: skillTranscribeContextId, automate: true),
+      SkillAssignment(
+        skillId: skillImageAnalysisContextId,
+        automate: true,
+      ),
+    ],
+  ),
+  AiConfigInferenceProfile(
+    id: manualHabitatLocalProfileId,
+    name: 'Habitat Local-First',
+    description:
+        'Keeps private colony notes and routine sardine logistics local.',
+    createdAt: manualDemoNow.subtract(const Duration(days: 27)),
+    thinkingModelId: manualSardineLogisticsModelId,
+    transcriptionModelId: manualPenguinBriefingsModelId,
+    desktopOnly: true,
+    skillAssignments: const [
+      SkillAssignment(skillId: skillTranscribeId, automate: true),
+    ],
+  ),
+  AiConfigInferenceProfile(
+    id: manualFishDiplomacyProfileId,
+    name: 'Fish Diplomacy',
+    description:
+        'Extra deliberation for Europa sardine markets and passenger law.',
+    createdAt: manualDemoNow.subtract(const Duration(days: 19)),
+    thinkingModelId: manualEmperorReasoningModelId,
+    imageRecognitionModelId: manualHabitatVisionModelId,
+  ),
+]);
+
+/// Available actions shown over the orbital-habitat task in the AI menu.
+final List<AiConfigSkill> manualDemoAiSkills = List<AiConfigSkill>.unmodifiable(
+  [
+    AiConfigSkill(
+      id: 'skill-habitat-briefing',
+      name: 'Transcribe habitat briefing',
+      description:
+          'Turn a Project Waddle voice memo into punctuated mission notes.',
+      createdAt: manualDemoNow,
+      skillType: SkillType.transcription,
+      requiredInputModalities: const [Modality.audio],
+      systemInstructions: 'Transcribe the mission briefing accurately.',
+      userInstructions: 'Preserve Project Waddle names and terminology.',
+      contextPolicy: ContextPolicy.fullTask,
+      isPreconfigured: true,
+    ),
+    AiConfigSkill(
+      id: 'skill-habitat-photo',
+      name: 'Inspect habitat photo',
+      description:
+          'Find pressure-gauge anomalies and task-relevant seal damage.',
+      createdAt: manualDemoNow,
+      skillType: SkillType.imageAnalysis,
+      requiredInputModalities: const [Modality.image],
+      systemInstructions: 'Inspect the habitat image for operational risks.',
+      userInstructions: 'Report only visible and actionable findings.',
+      contextPolicy: ContextPolicy.fullTask,
+      isPreconfigured: true,
+    ),
+    AiConfigSkill(
+      id: 'skill-waddle-cover-art',
+      name: 'Generate Project Waddle cover art',
+      description:
+          'Create centered 16:9 art for the task and its square thumbnail.',
+      createdAt: manualDemoNow,
+      skillType: SkillType.imageGeneration,
+      requiredInputModalities: const [Modality.text],
+      systemInstructions: 'Create memorable mission cover art.',
+      userInstructions: 'Keep the penguin subject inside the square-safe area.',
+      contextPolicy: ContextPolicy.fullTask,
+      isPreconfigured: true,
+    ),
+    AiConfigSkill(
+      id: 'skill-launch-prompt',
+      name: 'Draft launch-review prompt',
+      description:
+          'Prepare a complete AI prompt for the next Mission Control review.',
+      createdAt: manualDemoNow,
+      skillType: SkillType.promptGeneration,
+      requiredInputModalities: const [Modality.text],
+      systemInstructions: 'Write a precise operational prompt.',
+      userInstructions: 'Include the task context and outstanding risks.',
+      contextPolicy: ContextPolicy.fullTask,
+      isPreconfigured: true,
+      useReasoning: true,
+    ),
+  ],
+);
 
 const manualDemoCoverAssets = <String, String>{
   manualHabitatCoverImageId:

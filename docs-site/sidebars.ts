@@ -41,7 +41,12 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'AI & automation',
-      items: ['ai-and-automation/provider-setup'],
+      items: [
+        'ai-and-automation/provider-setup',
+        'ai-and-automation/models-and-profiles',
+        'ai-and-automation/skills',
+        'ai-and-automation/usage',
+      ],
     },
     {
       type: 'category',

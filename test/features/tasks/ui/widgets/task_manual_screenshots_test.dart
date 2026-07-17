@@ -16,10 +16,12 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
@@ -75,7 +77,8 @@ void main() {
       'lotti-manual-tasks-',
     );
     documentsDirectory = testDocumentsDirectory;
-    await world.installMedia(testDocumentsDirectory);
+    final installedMedia = await world.installMedia(testDocumentsDirectory);
+    await transcodeManualDemoMediaToPng(installedMedia);
 
     final entitiesCache = MockEntitiesCacheService();
     final navService = MockNavService();
@@ -290,6 +293,41 @@ void main() {
           subdir: 'manual',
         );
       });
+
+      testWidgets('$viewport task AI skills — $theme', (tester) async {
+        final habitatImage = world.coverImages.firstWhere(
+          (image) => image.id == manualHabitatCoverImageId,
+        );
+        await _pumpTaskSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          world: world,
+          pageController: pageController,
+          surface: Scaffold(
+            body: SingleChildScrollView(
+              child: EntryDetailsWidget(
+                itemId: habitatImage.id,
+                linkedFrom: world.orbitalHabitatTask,
+                showAiEntry: true,
+                showTaskDetails: true,
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await settleFrames(tester, 6);
+        expect(find.text('Generate…'), findsOneWidget);
+        expect(find.text('Skills'), findsOneWidget);
+        expect(find.text('Inspect habitat photo'), findsOneWidget);
+        expect(find.textContaining('pressure-gauge anomalies'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'ai_skills_${viewport}_$theme',
+          subdir: 'manual',
+        );
+      });
     }
   }
 }
@@ -318,7 +356,12 @@ Future<void> _pumpTaskSurface(
       tester,
       documentsDirectory: getIt<Directory>(),
       world: world,
-      extents: const [1280, 2048, 3072],
+      extents: [
+        (device.size.width * device.devicePixelRatio).round(),
+        1280,
+        2048,
+        3072,
+      ],
       imageIds: const {manualHabitatCoverImageId},
     );
     await tester.pumpWidget(
@@ -344,6 +387,16 @@ Future<void> _pumpTaskSurface(
                   'Europa cold-chain manifest ready to reconcile',
                 _ => 'Awaiting an answer from orbital transport counsel',
               },
+            ),
+            hasAvailableSkillsProvider((
+              entityId: manualHabitatCoverImageId,
+              linkedFromId: world.orbitalHabitatTask.id,
+            )).overrideWith((ref) => Future.value(true)),
+            availableSkillsForEntityProvider((
+              entityId: manualHabitatCoverImageId,
+              linkedFromId: world.orbitalHabitatTask.id,
+            )).overrideWith(
+              (ref) => Future.value([manualDemoAiSkills[1]]),
             ),
             agentUpdateStreamProvider.overrideWith(
               (ref, agentId) => const Stream<Set<String>>.empty(),

@@ -1,44 +1,76 @@
 ---
 title: Connect an AI provider
-description: Choose where inference runs and let Lotti seed the models, profiles, and skills it needs.
+description: Connect cloud or local inference, inspect its models, and keep credentials and endpoints under control.
 ---
 
 # Connect an AI provider
 
-Lotti's AI features run through an inference profile. The profile selects
-models exposed by a provider, while built-in skills describe jobs such as
-transcribing audio, analyzing an image, or producing task-aware suggestions.
+Lotti separates an AI setup into three layers: a **provider** is the service it
+connects to, a **model** is one model exposed through that service, and an
+**inference profile** routes each kind of work to a model. Start with the
+provider, then review the models and profiles created around it.
+
+<ManualScreenshot
+  caseId="ai/providers"
+  alt="Lotti AI Settings showing Mission Control Router, Habitat Local Lab, Orbital Vision, and Penguin Audio Bay providers"
+  caption="AI Settings keeps cloud and local connections together. Each card shows connection state and how many saved models use it."
+/>
 
 ## Choose local or remote
 
-- A cloud provider is usually the quickest setup and requires an API key.
-- A local provider can keep inference on your own machine but needs compatible
-  hardware and a running model service.
-- The provider verification step shows whether Lotti can reach the endpoint and
-  discover models before you save it.
+- A cloud provider is usually the quickest setup and commonly requires an API
+  key. Text, audio, or images sent through it leave the device.
+- A local provider can keep inference on your own machine, but its service must
+  be running and reachable from the device where Lotti invokes it.
+- A custom base URL can point a supported provider type at a compatible proxy
+  or gateway. The provider type still controls protocol-specific behavior.
 
 ## Connect a provider
 
-1. Open **Settings → AI settings**.
-2. Choose **Add provider**.
+1. Open **Settings → AI Settings → Providers**.
+2. Select the **+** button.
 3. Pick a supported provider.
 4. Enter its display name, endpoint, and API key when required.
-5. Wait for the connection check, then save.
+5. Add any suggested models you want, then save.
 
 For supported first-run providers, Lotti seeds useful models and one or more
 inference profiles. The result screen summarizes what was created.
 
+<ManualScreenshot
+  caseId="ai/provider-editor"
+  alt="Lotti provider editor for Mission Control Router with OpenRouter selected, a base URL, masked API key, and suggested models"
+  caption="Credentials stay masked. Suggested models are shortcuts, not a requirement—you can add provider-specific model IDs later."
+/>
+
+## Inspect and maintain a connection
+
+Open a provider card to inspect its masked credential, base URL, saved models,
+and any active profile that depends on those models. From here you can edit the
+connection, add another model, or remove the provider.
+
+<ManualScreenshot
+  caseId="ai/provider-detail"
+  alt="Mission Control Router provider detail showing its connection, Waddle Command models, and active Project Waddle profile"
+  caption="The dependency summary makes the blast radius visible before you change or remove a provider."
+/>
+
+Changing a base URL or API key affects every model attached to that provider.
+After changing either value, verify a representative AI action before assuming
+the connection is healthy. Removing a provider can also affect profiles that
+route work through its models; review the dependency information first.
+
 ## Review profile routing
 
-Open the Profiles area in AI settings to see which model each skill uses.
-Categories can select a default inference profile; content without a task can
-fall back to that category setting.
+Open [Models and inference profiles](./models-and-profiles.mdx) to verify what
+the provider exposes and how Lotti routes each capability. Categories can set a
+default profile for their work, while individual automation can select or
+override a model where the workflow offers that choice.
 
 ## Privacy boundary
 
-Before sending sensitive text, audio, or images, confirm whether the selected
-endpoint is local or remote. A local-looking profile name is not the security
-boundary—the configured endpoint is.
+Before sending sensitive text, audio, or images, confirm whether the configured
+endpoint is local or remote. A friendly name such as “Habitat Local Lab” is not
+the security boundary—the base URL and the machine serving it are.
 
 :::warning API keys
 

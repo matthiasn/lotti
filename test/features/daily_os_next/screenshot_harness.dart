@@ -73,8 +73,16 @@ Future<void> loadScreenshotFonts() async {
   final inconsolata = FontLoader('Inconsolata')
     ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Regular.ttf'))
     ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Medium.ttf'));
+  // Flutter's headless test engine does not resolve the platform-generic
+  // `monospace` family. Register the same bundled face under that alias so
+  // production widgets that intentionally request a generic mono font render
+  // actual text instead of Ahem bars in manual captures.
+  final genericMonospace = FontLoader('monospace')
+    ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Regular.ttf'))
+    ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Medium.ttf'));
   await inter.load();
   await inconsolata.load();
+  await genericMonospace.load();
 
   final flutterRoot =
       Platform.environment['FLUTTER_ROOT'] ?? '.fvm/flutter_sdk';

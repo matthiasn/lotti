@@ -133,8 +133,45 @@
       "id": "ai-provider-setup",
       "title": "AI provider setup",
       "page": "ai-and-automation/provider-setup",
-      "status": "migrated",
-      "screenshotCases": []
+      "status": "verified",
+      "screenshotCases": [
+        "ai/providers",
+        "ai/provider-detail",
+        "ai/provider-editor"
+      ]
+    },
+    {
+      "id": "ai-models-profiles",
+      "title": "AI models and inference profiles",
+      "page": "ai-and-automation/models-and-profiles",
+      "status": "verified",
+      "screenshotCases": [
+        "ai/models",
+        "ai/model-editor",
+        "ai/profiles",
+        "ai/profile-editor",
+        "ai/model-picker",
+        "ai/profile-picker",
+        "ai/legacy-profiles"
+      ]
+    },
+    {
+      "id": "ai-skills",
+      "title": "AI skills",
+      "page": "ai-and-automation/skills",
+      "status": "verified",
+      "screenshotCases": [
+        "ai/skills"
+      ]
+    },
+    {
+      "id": "ai-usage",
+      "title": "AI usage and impact",
+      "page": "ai-and-automation/usage",
+      "status": "verified",
+      "screenshotCases": [
+        "ai/usage"
+      ]
     },
     {
       "id": "recordings",

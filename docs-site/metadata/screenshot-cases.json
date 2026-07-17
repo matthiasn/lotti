@@ -726,6 +726,138 @@
         "desktop-light": "whats_new_past_release_desktop_light.png",
         "desktop-dark": "whats_new_past_release_desktop_dark.png"
       }
+    },
+    {
+      "id": "ai/providers",
+      "title": "AI providers",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_providers_mobile_light.png",
+        "mobile-dark": "ai_providers_mobile_dark.png",
+        "desktop-light": "ai_providers_desktop_light.png",
+        "desktop-dark": "ai_providers_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/provider-detail",
+      "title": "AI provider detail",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_provider_detail_mobile_light.png",
+        "mobile-dark": "ai_provider_detail_mobile_dark.png",
+        "desktop-light": "ai_provider_detail_desktop_light.png",
+        "desktop-dark": "ai_provider_detail_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/provider-editor",
+      "title": "AI provider editor",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_provider_editor_mobile_light.png",
+        "mobile-dark": "ai_provider_editor_mobile_dark.png",
+        "desktop-light": "ai_provider_editor_desktop_light.png",
+        "desktop-dark": "ai_provider_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/models",
+      "title": "AI models",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_models_mobile_light.png",
+        "mobile-dark": "ai_models_mobile_dark.png",
+        "desktop-light": "ai_models_desktop_light.png",
+        "desktop-dark": "ai_models_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/model-editor",
+      "title": "AI model editor",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_model_editor_mobile_light.png",
+        "mobile-dark": "ai_model_editor_mobile_dark.png",
+        "desktop-light": "ai_model_editor_desktop_light.png",
+        "desktop-dark": "ai_model_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/profiles",
+      "title": "Inference profiles",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_profiles_mobile_light.png",
+        "mobile-dark": "ai_profiles_mobile_dark.png",
+        "desktop-light": "ai_profiles_desktop_light.png",
+        "desktop-dark": "ai_profiles_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/profile-editor",
+      "title": "Inference profile editor",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_profile_editor_mobile_light.png",
+        "mobile-dark": "ai_profile_editor_mobile_dark.png",
+        "desktop-light": "ai_profile_editor_desktop_light.png",
+        "desktop-dark": "ai_profile_editor_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/model-picker",
+      "title": "AI model picker",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_model_picker_mobile_light.png",
+        "mobile-dark": "ai_model_picker_mobile_dark.png",
+        "desktop-light": "ai_model_picker_desktop_light.png",
+        "desktop-dark": "ai_model_picker_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/profile-picker",
+      "title": "Inference profile picker",
+      "sourceTest": "test/features/settings/ui/settings_definitions_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_profile_picker_mobile_light.png",
+        "mobile-dark": "ai_profile_picker_mobile_dark.png",
+        "desktop-light": "ai_profile_picker_desktop_light.png",
+        "desktop-dark": "ai_profile_picker_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/legacy-profiles",
+      "title": "Legacy inference profiles",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_legacy_profiles_mobile_light.png",
+        "mobile-dark": "ai_legacy_profiles_mobile_dark.png",
+        "desktop-light": "ai_legacy_profiles_desktop_light.png",
+        "desktop-dark": "ai_legacy_profiles_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/skills",
+      "title": "Contextual AI skills",
+      "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_skills_mobile_light.png",
+        "mobile-dark": "ai_skills_mobile_dark.png",
+        "desktop-light": "ai_skills_desktop_light.png",
+        "desktop-dark": "ai_skills_desktop_dark.png"
+      }
+    },
+    {
+      "id": "ai/usage",
+      "title": "AI usage and impact",
+      "sourceTest": "test/features/ai/ui/settings/ai_settings_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "ai_usage_mobile_light.png",
+        "mobile-dark": "ai_usage_mobile_dark.png",
+        "desktop-light": "ai_usage_desktop_light.png",
+        "desktop-dark": "ai_usage_desktop_dark.png"
+      }
     }
   ]
 }
