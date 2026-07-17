@@ -36,7 +36,7 @@
     <release version="0.9.1051" date="2026-07-17">
       <description>
           <p>French, Spanish, and Romanian now read more naturally throughout the app. Agent controls, AI and Sync setup, dashboards, health import, and task actions keep the selected language's own register and terminology instead of exposing literal or mixed-language copy.</p>
-          <p>The Manual link now opens English, German, or Czech documentation to match your system language. You can choose a different language from Settings → Advanced at any time.</p>
+          <p>The Manual link now opens English, German, or Czech documentation to match your system language. You can choose a different language from Settings → Advanced → Language at any time.</p>
           <p>Manual is now a distinct final entry in Settings and is also available from the desktop Help menu, keeping the navigation sidebar focused on the app.</p>
           <p>Czech now reads consistently across Lotti and its manual. Category, dashboard, habit, time-analysis, session-rating, reference-image, and sync labels use one informal Czech voice, with the accompanying manual and screenshots using the same terms.</p>
           <p>Absolute task due dates now use the selected app language. The desktop task header and reusable due-date label format calendar dates in the active locale instead of falling back to English month names.</p>

@@ -8287,7 +8287,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsAdvancedManualLanguageSubtitle =>
-      'Alege limba în care se deschide manualul Lotti';
+      'Alegeți limba în care se deschide manualul Lotti';
 
   @override
   String get settingsAdvancedOutboxSubtitle =>
@@ -8973,7 +8973,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsManualLanguageFollowSystemSubtitle =>
-      'Folosește limba dispozitivului dvs. dacă manualul o acceptă; altfel, engleza.';
+      'Folosiți limba dispozitivului dvs. dacă manualul o acceptă; altfel, engleza.';
 
   @override
   String get settingsManualLanguageFollowSystemTitle => 'Urmează sistemul';
