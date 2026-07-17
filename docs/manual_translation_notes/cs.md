@@ -17,6 +17,7 @@ aplikace bez samostatné lokalizační změny.
 | Obrazovka | Aktuální text | Pozorování |
 | --- | --- | --- |
 | Nahrávání zvuku | `Speech Recognition` | Text zaškrtávacího pole je ve widgetu pevně anglicky, a proto zůstává anglický také v české variantě aplikace. |
+| Nahrávání zvuku | `STOP` | Popisek akce zastavení nahrávání je ve widgetu pevně anglicky, a proto se v české variantě aplikace nepřeloží. |
 | Co je nového | `NEW` | Označení nejnovější verze v hlavním banneru je pevně anglicky. |
 | Metriky Sync | `Top KPIs`, `Processed` | Oba popisky grafů jsou v metrickém widgetu pevně anglicky. |
 | Metriky průvodce | `Reached real aha` | Interní název události zůstává v českém pohledu anglicky. |
