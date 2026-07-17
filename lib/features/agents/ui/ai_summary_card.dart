@@ -563,8 +563,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     // Without any report content the strip has nothing to describe, so the
     // footer keeps the wake button instead.
     final hasReportContent = tldr.isNotEmpty || additionalReport != null;
-    final showFreshnessStrip =
-        !automaticUpdatesEnabled && (hasReportContent || reportIsStale);
+    final showFreshnessStrip = !automaticUpdatesEnabled && hasReportContent;
 
     final controlsFooter = TaskAgentControlsFooter(
       automaticUpdatesEnabled: automaticUpdatesEnabled,

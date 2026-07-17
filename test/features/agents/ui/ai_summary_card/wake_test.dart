@@ -173,6 +173,33 @@ void main() {
       verify(() => taskAgentService.triggerReanalysis(any())).called(1);
     });
 
+    testWidgets(
+      'stale without any report keeps the footer wake button — the strip '
+      'has nothing to describe',
+      (tester) async {
+        final identity = makeTestIdentity().copyWith(
+          config: const AgentConfig(automaticUpdatesEnabled: false),
+        );
+        final state = makeTestState().copyWith(
+          reportStaleAt: DateTime(2026, 5, 4, 12),
+        );
+        final bench = AgentTestBench(identity: identity, state: state);
+
+        await tester.pumpWidget(bench.build());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('taskAgentStaleNotice')),
+          findsNothing,
+        );
+        expect(find.text('This summary is out of date'), findsNothing);
+        expect(
+          find.byKey(const ValueKey('taskAgentWakeButton')),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('auto-wake toggle persists the opt-in from the card', (
       tester,
     ) async {

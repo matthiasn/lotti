@@ -910,7 +910,7 @@ class ProposalRowContent extends StatelessWidget {
   /// buttons. The fixed slot keeps the text from reflowing on resolve.
   Widget _trailing() {
     if (isResolved) return ResolvedTag(status: resolvedStatus);
-    if (resolving) return const SizedBox(width: 40, height: 40);
+    if (resolving) return const SizedBox(width: 48, height: 48);
     return RowActions(busy: busy, onReject: onReject, onConfirm: onConfirm);
   }
 

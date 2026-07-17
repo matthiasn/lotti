@@ -18,11 +18,11 @@ class RowActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (busy) {
-      // Match the 40×40 footprint of a single non-busy
+      // Match the 48×48 footprint of a single non-busy
       // [_SquareIconButton] so the row doesn't reflow when toggling.
       return SizedBox(
-        width: 40,
-        height: 40,
+        width: 48,
+        height: 48,
         child: Center(
           child: SizedBox(
             width: 14,
@@ -83,9 +83,9 @@ class _SquareIconButton extends StatelessWidget {
     final isAccent = variant == _SquareIconVariant.accent;
     // A matched pair in weight, asymmetric in hue: confirm wears the accent
     // wash circle, reject the neutral wash circle — both read as buttons of
-    // one component class while the color still ranks confirm first. Both
-    // center in a 40×40 hit target so reduced-motor-control users get a
-    // compliant tap zone without the slot inflating the row.
+    // one component class while the color still ranks confirm first. The
+    // compact discs center in full 48×48 hit targets so reduced-motor-control
+    // users keep a Material-compliant tap zone.
     // Explicit button role + label, merged into one node, so screen readers
     // announce "Confirm, button" / "Reject, button" and rotor "next button"
     // navigation finds them — rather than leaning on the tooltip surfacing as
@@ -104,8 +104,8 @@ class _SquareIconButton extends StatelessWidget {
               onTap: onPressed.call,
               borderRadius: BorderRadius.circular(tokens.radii.s),
               child: SizedBox(
-                width: 40,
-                height: 40,
+                width: 48,
+                height: 48,
                 child: Center(
                   child: Container(
                     width: tokens.spacing.step7,

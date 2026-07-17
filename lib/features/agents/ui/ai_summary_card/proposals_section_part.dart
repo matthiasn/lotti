@@ -160,15 +160,23 @@ class ProposalsSection extends StatelessWidget {
               // list needs one here.
               if (resolved.isNotEmpty || onConfirmAll != null) ...[
                 if (open.isEmpty) SizedBox(height: tokens.spacing.step3),
-                Row(
+                // Wrap, not Row: long translations or large text scales
+                // drop the batch action to its own line instead of
+                // overflowing the constrained card.
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: tokens.spacing.step3,
+                  runSpacing: tokens.spacing.step2,
                   children: [
                     if (resolved.isNotEmpty)
                       _HistoryToggle(
                         open: historyOpen,
                         count: resolved.length,
                         onPressed: onToggleHistory,
-                      ),
-                    const Spacer(),
+                      )
+                    else
+                      const SizedBox.shrink(),
                     if (onConfirmAll != null)
                       DesignSystemButton(
                         label: messages.changeSetConfirmAll,
