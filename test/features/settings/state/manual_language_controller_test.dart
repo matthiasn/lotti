@@ -12,6 +12,8 @@ void main() {
       expect(ManualLanguage.fromStoredValue('en'), ManualLanguage.english);
       expect(ManualLanguage.fromStoredValue('de'), ManualLanguage.german);
       expect(ManualLanguage.fromStoredValue('fr'), ManualLanguage.french);
+      expect(ManualLanguage.fromStoredValue('it'), ManualLanguage.italian);
+      expect(ManualLanguage.fromStoredValue('es'), ManualLanguage.spanish);
       expect(ManualLanguage.fromStoredValue('cs'), ManualLanguage.czech);
       expect(ManualLanguage.fromStoredValue('ro'), ManualLanguage.romanian);
       expect(
@@ -37,6 +39,14 @@ void main() {
         ManualLanguage.french,
       );
       expect(
+        manualLanguageForSystemLocale(const Locale('it', 'IT')),
+        ManualLanguage.italian,
+      );
+      expect(
+        manualLanguageForSystemLocale(const Locale('es', 'ES')),
+        ManualLanguage.spanish,
+      );
+      expect(
         manualLanguageForSystemLocale(const Locale('ro', 'RO')),
         ManualLanguage.romanian,
       );
@@ -48,7 +58,7 @@ void main() {
 
     test('falls back to English for an unsupported system language', () {
       expect(
-        manualLanguageForSystemLocale(const Locale('es', 'ES')),
+        manualLanguageForSystemLocale(const Locale('nl', 'NL')),
         ManualLanguage.english,
       );
     });
@@ -69,6 +79,14 @@ void main() {
         '${lottiManualBaseUrl}fr/',
       );
       expect(
+        manualUriFor(systemLocale: const Locale('it')).toString(),
+        '${lottiManualBaseUrl}it/',
+      );
+      expect(
+        manualUriFor(systemLocale: const Locale('es')).toString(),
+        '${lottiManualBaseUrl}es/',
+      );
+      expect(
         manualUriFor(systemLocale: const Locale('ro')).toString(),
         '${lottiManualBaseUrl}ro/',
       );
@@ -80,7 +98,7 @@ void main() {
 
     test('uses English for unsupported system languages', () {
       expect(
-        manualUriFor(systemLocale: const Locale('es')).toString(),
+        manualUriFor(systemLocale: const Locale('nl')).toString(),
         lottiManualBaseUrl,
       );
     });

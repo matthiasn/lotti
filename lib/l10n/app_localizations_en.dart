@@ -8876,10 +8876,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsManualLanguageGermanTitle => 'German';
 
   @override
+  String get settingsManualLanguageItalianTitle => 'Italian';
+
+  @override
   String get settingsManualLanguagePortugueseTitle => 'Portuguese';
 
   @override
   String get settingsManualLanguageRomanianTitle => 'Romanian';
+
+  @override
+  String get settingsManualLanguageSpanishTitle => 'Spanish';
 
   @override
   String get settingsManualLanguageTitle => 'Language';

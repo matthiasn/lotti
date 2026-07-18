@@ -75,7 +75,7 @@ void main() {
       final messages = context.messages;
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
-      expect(find.byType(DesignSystemRadioButton), findsNWidgets(7));
+      expect(find.byType(DesignSystemRadioButton), findsNWidgets(9));
       expect(
         find.text(messages.settingsManualLanguageFollowSystemSubtitle),
         findsOneWidget,
@@ -91,6 +91,8 @@ void main() {
         messages.settingsManualLanguageEnglishTitle,
         messages.settingsManualLanguageGermanTitle,
         messages.settingsManualLanguageFrenchTitle,
+        messages.settingsManualLanguageItalianTitle,
+        messages.settingsManualLanguageSpanishTitle,
         messages.settingsManualLanguageCzechTitle,
         messages.settingsManualLanguageRomanianTitle,
         messages.settingsManualLanguagePortugueseTitle,
@@ -132,6 +134,33 @@ void main() {
     verify(
       () => mocks.settingsDb.saveSettingsItem(manualLanguageSettingsKey, 'fr'),
     ).called(1);
+  });
+
+  testWidgets('Italian and Spanish choices persist their overrides', (
+    tester,
+  ) async {
+    for (final language in [ManualLanguage.italian, ManualLanguage.spanish]) {
+      await pumpPage(tester);
+      final context = tester.element(find.byType(ManualLanguageSettingsBody));
+      final title = switch (language) {
+        ManualLanguage.italian =>
+          context.messages.settingsManualLanguageItalianTitle,
+        ManualLanguage.spanish =>
+          context.messages.settingsManualLanguageSpanishTitle,
+        _ => throw StateError('Unexpected Manual language: $language'),
+      };
+
+      await tester.tap(find.text(title));
+      await tester.pump();
+
+      expect(rowFor(tester, title).selected, isTrue);
+      verify(
+        () => mocks.settingsDb.saveSettingsItem(
+          manualLanguageSettingsKey,
+          language.languageCode,
+        ),
+      ).called(1);
+    }
   });
 
   testWidgets('Follow system clears a selected override', (tester) async {

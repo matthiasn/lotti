@@ -1,0 +1,40 @@
+---
+title: Manutenzione Sync
+description: Utilizzare Matrix sincronizzare le azioni di riparazione e pulizia deliberatamente, da re-sending record per ricostruire la cronologia delle sequenze.
+---
+
+# Manutenzione Sync
+
+Aprire **Impostazioni → Sincronizza → Manutenzione** per la riparazione e la pulizia a livello di database.
+Queste azioni non fanno parte dell'accoppiamento di routine o della sincronizzazione giorno per giorno.
+Prima di utilizzarli, lasciare che le scritture attive finiscano e mantengano un backup corrente dei dati
+non si può ricreare.
+
+<ManualScreenshot
+  caseId="sync/maintenance"
+  alt="Lotti Matrix Sync Manutenzione con cancellazione del database di sincronizzazione, sincronizzazione delle definizioni, ri-sincronizzazione dei messaggi, sequenziamento del registro delle sequenze e purge di send-outbox"
+  caption="Gruppi di manutenzione azioni distruttive, replay e pulizia in una pagina. Il testo di conferma definisce la portata di ogni operazione."
+/>
+
+## Scegli la riparazione più stretta
+
+- **Delete Sync Database** rimuove il database locale di sincronizzazione.
+  recupero locale, non un modo normale per scollegare un dispositivo.
+- **Sync definizioni** invia nuovamente i record di definizione attuali, come ad esempio
+  categorie e altre configurazioni condivise.
+- **I messaggi ri-sincroni** riproducono i messaggi selezionati quando manca lo stato remoto
+  o una consegna precedente deve essere ripetuta.
+- **Il registro di sequenza del popolamento** ricostruisce la storia della sequenza locale utilizzata per
+  rilevare le lacune e il backfill del drive.
+- **Purge vecchio inviato outbox elementi** cancella già-sent cronologia della coda diagnostica
+  dopo il suo periodo di conservazione. Non rimuove il lavoro in sospeso o fallito.
+
+Iniziare con l'operazione più piccola che corrisponde al sintomo.
+appartiene alla [Posta in uscita](./sync.mdx#ispezione-della-casella-di-posta); lacune di sequenza persistenti
+appartenere a Backfill; due modifiche concorrenti valide appartengono a
+[Conflicts](./conflicts.mdx). Eliminare il database di sincronizzazione dovrebbe essere un'ultima risorsa
+reset locale eseguito con un coetaneo noto-buono e backup disponibile.
+
+Dopo una riparazione, ritorno a **Sync Statistics**, confermare che il lavoro elaborato è
+avanzare senza un numero crescente di guasti, e controllare che la casella di posta e
+Il conteggio mancante si calma.

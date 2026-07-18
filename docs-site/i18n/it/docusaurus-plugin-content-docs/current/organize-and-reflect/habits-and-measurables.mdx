@@ -1,0 +1,161 @@
+---
+title: Tracciare abitudini e misure
+description: Configurare i comportamenti ricorrenti e le osservazioni numeriche, quindi registrare ciascuno onestamente.
+---
+
+# Tracciare abitudini e misure
+
+Un'abitudine risponde ** ha causato questo comportamento ricorrente?** Una risposta misurabile
+**Che valore numerico ho osservato?** Possono sostenere lo stesso obiettivo senza
+essere intercambiabile: “Emperor pinguin roll call” è un’abitudine, mentre “Penguins
+è un valore misurabile.
+
+## Lavorare con le abitudini
+
+La pagina Habits organizza definizioni attive in ciò che è dovuto ora, programmato
+per più tardi, e completato. Il suo riepilogo giornaliero, la storia della consistenza, le striature, e
+grafico a tasso di completamento ti aiutano a notare i modelli senza trattare un giorno perso
+come tutta la storia.
+
+<ManualScreenshot
+  caseId="habits/today"
+  alt="Penguin Operazioni abitudini cruscotto che mostra i controlli dell'habitat, chiamata del rotolo del pinguino, inventario della sardina, stato di completamento, striature e storia recente"
+/>
+
+### Creare e trovare definizioni di abitudine
+
+1. Aprire ** Impostazioni → Abitudini**.
+2. Selezionare **Crea abitudine**.
+3. Dare al comportamento un nome concreto, ripetibile e descrizione utile.
+4. Scegli la sua categoria, le opzioni e il calendario.
+5. Salva.
+
+<ManualScreenshot
+  caseId="habits/settings-list"
+  alt="Impostazioni di abitudine contenenti Imperatore pinguino chiamata, Review sardine previsione, e Camminare i sigilli di habitat con favoriti, inattivi, e stati privati"
+  caption="Definizioni di ricerca qui. La stella, occhi nascosti, e blocco identificare le abitudini preferite, inattive e private."
+/>
+
+<ManualScreenshot
+  caseId="habits/settings-detail"
+  alt="Imperatore pinguino roll chiamata abitudine editor con descrizione di spedizione, Pinguino Operazioni categoria, e opzioni preferite, private e attive"
+/>
+
+L'editor di definizione include:
+
+- **Category** per il filtraggio e il contesto visivo.
+- **Dashboard** quando l'abitudine dovrebbe apparire come un grafico su un cruscotto selezionato.
+- Per una maggiore prominenza.
+- **Private** per nasconderlo a meno che non vengano mostrate le voci private.
+- **Active** per controllare se appare nella pagina Habits senza cancellare
+  la sua storia.
+
+### Pianificare un'abitudine quotidiana
+
+<ManualScreenshot
+  caseId="habits/schedule"
+  alt="Imperatore pinguino roll orario di chiamata a partire dal 1 luglio, indicato dalle 06:00 con un allarme 06:30"
+/>
+
+L'editor corrente è al primo giorno. Impostare una data **Start**, in caso di ritardo facoltativo quando
+l'abitudine è **domandata da**, e facoltativamente scegliere quando Lotti dovrebbe mostrare un
+alert**. Il modello di dati comprende anche orari settimanali e mensili, ma
+presente editor espone i controlli più ricchi di tempo per le abitudini quotidiane.
+
+### Registrare ciò che è successo
+
+Aprire un'abitudine dovuta o utilizzare la sua azione rapida. Il modulo di completamento dettagliato supporta
+tre risultati:
+
+- **Success** — il comportamento è accaduto.
+- **Missed** — era previsto e possibile, ma non è successo.
+- **Skip** — non ha ragionevolmente applicato quel giorno.
+
+<ManualScreenshot
+  caseId="habits/record"
+  alt="Modulo di completamento dell'abitudine per ispezionare i foche dell'habitat del pinguino, con successo, Skip, e risultati mancati più data e note"
+/>
+
+Utilizzare lo stato che preserva la realtà. Una storia candida è più utile di una
+grafico dall'aspetto perfetto. I record di completamento sono voci di giornale, quindi le viste successive
+può ricostruire il risultato efficace per ogni abitudine e giorno.
+
+## Lavorare con i misurabili
+
+Una definizione misurabile descrive il numero prima di registrarlo: il suo nome,
+unità, privacy e come molteplici osservazioni si combinano sui grafici.
+
+<ManualScreenshot
+  caseId="measurables/settings-list"
+  alt="Impostazioni misurabili contenenti pressione Habitat, pinguini rappresentati e Sardine consumati"
+/>
+
+### Creare un tipo di dati misurabile
+
+1. Apri **Impostazioni → Tipi di dati misurabili**.
+2. Seleziona l'azione di aggiunta.
+3. Aggiungi un nome, una descrizione facoltativa e un'abbreviazione concisa
+   dell'unità.
+4. Scegli l'aggregazione predefinita utilizzata dai grafici.
+5. Decidi se deve essere preferito o privato, quindi salva.
+
+<ManualScreenshot
+  caseId="measurables/settings-detail"
+  alt="Curatore misurabile della pressione Habitat utilizzando kPa e aggregazione media giornaliera"
+/>
+
+Scegliere l'aggregazione in base a ciò che le letture ripetute significano:
+
+| Aggregazione | Usalo quando |
+| --- | --- |
+| Nessuna aggregazione | Ogni singola osservazione conta |
+| Somma giornaliera | Le letture si accumulano, come le sardine consumate |
+| Massimo giornaliero | Il picco della giornata è il segnale importante |
+| Media giornaliera | Le letture provano un valore mutevole, come la pressione dell'habitat |
+| Somma oraria | L'accumulazione ha bisogno di benne orali più sottili |
+
+L'unità è il contesto di visualizzazione, non un convertitore. Se si definisce la pressione dell'habitat come
+`kPa`, valori record in kPa coerentemente. Creare un misurabile separato se un
+unità differente rappresenta una serie autenticamente diversa.
+
+### Registrare una misura
+
+Aprire un cruscotto che contiene il misurabile e selezionare l'azione aggiunta sulla sua
+grafico. Inserisci il valore osservato; Lotti tiene l'unità accanto al numero in modo che
+è chiaro che cosa sarà salvato. I valori recenti distinti appaiono come ** log rapido**
+azioni quando si ripete uno di loro è utile.
+
+<ManualScreenshot
+  caseId="measurements/capture"
+  alt="Sardines ha consumato l'editor di misura aperto dal suo grafico di cruscotto popolato, con 84 sardine, suggerimenti di registro rapido, tempo osservato, commento e Salva azione"
+/>
+
+Utilizzare **Observed at** per il momento in cui la lettura è stata effettivamente presa, piuttosto che
+la prima pagina seleziona la data del calendario.
+**Oggi** ritorna direttamente alla data corrente.
+
+<ManualScreenshot
+  caseId="measurements/date"
+  alt="Osservato al calendario selezionando venerdì 17 luglio 2026 per la misura della sardina"
+/>
+
+Scorrere alla sezione tempo per impostare l'ora e il minuto. **Ora** ripristina il
+Ora corrente. Selezionare **Done** per tornare alla bozza di misura ancora riempita,
+poi **Save** per creare l'ingresso del diario.
+
+<ManualScreenshot
+  caseId="measurements/time"
+  alt="Osservato al momento della ruota impostata alle ore 10:30 per la misura della sardina"
+/>
+
+Il commento è facoltativo, ma è utile quando un numero ha bisogno di funzionamento
+contesto — ad esempio, una consegna, uno spostamento insolito, o una misura modificata
+metodo. Salvare una misura non altera la definizione misurabile o la sua
+regola di aggregazione.
+
+## Collegare i due senza confonderli
+
+Un roll call può essere completato con successo anche se solo 36 pinguini erano
+contato—l'abitudine registra se la procedura è avvenuta, mentre la misurabile
+registra il risultato. Mettere entrambi su un [dashboard](./dashboards.mdx) quando il loro
+rapporto risponde a una domanda operativa ricorrente.

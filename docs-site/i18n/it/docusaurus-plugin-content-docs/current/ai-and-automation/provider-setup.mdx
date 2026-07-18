@@ -1,0 +1,86 @@
+---
+title: Collegare un fornitore di AI
+description: Collegare cloud o inferenza locale, ispezionare i suoi modelli e mantenere sotto controllo le credenziali e gli endpoint.
+---
+
+# Collegare un fornitore di AI
+
+Lotti separa una configurazione AI in tre livelli: un **provider** è il servizio
+a cui ci si collega, un **modello** è un modello esposto attraverso quel
+servizio e un **profilo di inferenza** indirizza ogni tipo di lavoro a un
+modello. Configura prima un provider, poi rivedi i modelli e i profili creati
+attorno a esso.
+
+<ManualScreenshot
+  caseId="ai/providers"
+  alt="Impostazioni dell'AI di Lotti che mostrano Router di Controllo Missione, Laboratorio Locale Habitat, Visione Orbitale e Fornitori della Baia di Penguin Audio"
+  caption="Impostazioni AI mantiene le connessioni cloud e locali insieme. Ogni scheda mostra lo stato di connessione e quanti modelli salvati lo utilizzano."
+/>
+
+## Scegli locale o remoto
+
+- Un provider cloud è solitamente la configurazione più rapida e richiede comunemente un'API
+  Il testo, l'audio o le immagini inviate attraverso di esso lasciano il dispositivo.
+- Un fornitore locale può mantenere l'inferenza sulla propria macchina o un endpoint locale
+  si controlla, ma il suo servizio deve essere in esecuzione e raggiungibile dal dispositivo
+  dove Lotti lo invoca. Un indirizzo LAN può ancora spostare un prompt tra il vostro
+  dispositivi; “locale” significa che non viene inviato a un fornitore di modelli ospitato, non che non
+  rete hop esiste.
+- Un URL di base personalizzato può indicare un tipo di provider supportato in un proxy compatibile
+  Il tipo di provider controlla ancora il comportamento specifico del protocollo.
+
+## Collegare un fornitore
+
+1. Aprire ** Impostazioni → Impostazioni AI → Provider**.
+2. Selezionare il pulsante **+**.
+3. Scegli un fornitore supportato.
+4. Inserisci il nome del display, l'endpoint e la chiave API quando necessario.
+5. Aggiungere qualsiasi modello suggerito che si desidera, quindi salvare.
+
+Per i fornitori di prima generazione supportati, i semi Lotti sono modelli utili e uno o più
+Profili di inferenza. La schermata di risultato riassume ciò che è stato creato.
+
+<ManualScreenshot
+  caseId="ai/provider-editor"
+  alt="Editor di provider Lotti per Mission Control Router con OpenRouter selezionato, un URL base, chiave API mascherata, e modelli suggeriti"
+  caption="I modelli consigliati sono scorciatoie, non un requisito, è possibile aggiungere ID modello specifici del fornitore più tardi."
+/>
+
+## Ispezionare e mantenere una connessione
+
+Aprire una carta del fornitore per ispezionare le credenziali mascherate, l'URL di base, i modelli salvati,
+e qualsiasi profilo attivo che dipende da quei modelli. Da qui è possibile modificare
+connessione, aggiungere un altro modello, o rimuovere il fornitore.
+
+<ManualScreenshot
+  caseId="ai/provider-detail"
+  alt="Dettaglio del provider Router di controllo missione che mostra la sua connessione, i modelli di Waddle Command e il profilo attivo di Project Waddle"
+  caption="Il riepilogo della dipendenza rende visibile il raggio di esplosione prima di cambiare o rimuovere un fornitore."
+/>
+
+Cambiare un URL di base o chiave API influisce su ogni modello allegato a quel provider.
+Dopo aver cambiato entrambi i valori, verificare un'azione AI rappresentativa prima di assumere
+la connessione è sana. La rimozione di un fornitore può anche influenzare i profili che
+il lavoro di percorso attraverso i suoi modelli; rivedere le informazioni di dipendenza prima.
+
+## Profilo di recensione routing
+
+Aprire [Modelli e profili di inferenza](./models-and-profiles.mdx) per verificare cosa
+il fornitore espone e come Lotti percorsi ogni capacità. Categorie può impostare un
+profilo predefinito per il loro lavoro, mentre l'automazione individuale può selezionare o
+superare un modello in cui il flusso di lavoro offre quella scelta.
+
+## Limiti di privacy
+
+Per inviare testo, audio o immagini sensibili, confermare se configurato
+un nome amichevole come “Habitat Local Lab” non è locale o remoto.
+il limite di sicurezza — l'URL di base, il percorso di rete, e la macchina che serve
+Lotti memorizza il logbook in entrambi i modi; questa decisione controlla
+l'inferenza si chiama.
+
+:::warning[chiavi API]
+
+Trattare le chiavi del fornitore come segreti. Mai incollarle in documentazione, problemi, o
+schermate.
+
+:::

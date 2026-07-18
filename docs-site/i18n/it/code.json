@@ -1,0 +1,44 @@
+{
+  "manual.screenshot.allScreenshots": {
+    "message": "Tutti gli screenshot",
+    "description": "Label for the global screenshot viewport preference"
+  },
+  "manual.screenshot.close": {"message": "Chiudi"},
+  "manual.screenshot.desktop": {"message": "Desktop"},
+  "manual.screenshot.desktopView": {"message": "Visualizzazione desktop"},
+  "manual.screenshot.expand": {"message": "Ingrandisci"},
+  "manual.screenshot.expandedViewer": {"message": "Visualizzatore screenshot ingrandito"},
+  "manual.screenshot.fullscreen": {"message": "Schermo intero"},
+  "manual.screenshot.layoutLabel": {"message": "Layout degli screenshot per tutte le immagini"},
+  "manual.screenshot.mobile": {"message": "Dispositivo mobile"},
+  "manual.screenshot.mobileView": {"message": "Visualizzazione mobile"},
+  "manual.screenshot.openViewer": {"message": "Apri il visualizzatore degli screenshot"},
+  "manual.screenshot.screenshot": {"message": "Screenshot"},
+  "manual.translationNotice.disclosure": {
+    "message": "Questa traduzione è stata generata automaticamente e non è ancora stata revisionata."
+  },
+  "manual.translationNotice.invitation": {
+    "message": "Correzioni e miglioramenti sono benvenuti tramite una"
+  },
+  "manual.translationNotice.issue": {"message": "issue su GitHub"},
+  "manual.translationNotice.or": {"message": "o una"},
+  "manual.translationNotice.pullRequest": {"message": "pull request"},
+  "manual.translationNotice.title": {
+    "message": "Traduzione automatica — i tuoi suggerimenti sono benvenuti"
+  },
+  "manual.version.development": {"message": "Sviluppo"},
+  "theme.colorToggle.ariaLabel.mode.system": {"message": "modalità di sistema"},
+  "theme.docs.sidebar.navAriaLabel": {"message": "Navigazione laterale della documentazione"},
+  "theme.IconExternalLink.ariaLabel": {"message": "(si apre in una nuova scheda)"},
+  "theme.NavBar.navAriaLabel": {"message": "Navigazione principale"},
+  "theme.SearchBar.label": {"message": "Cerca"},
+  "theme.SearchBar.noResultsText": {"message": "Nessun risultato"},
+  "theme.SearchBar.searchInContext": {"message": "Vedi tutti i risultati in “{context}”"},
+  "theme.SearchBar.seeAllOutsideContext": {"message": "Vedi tutti i risultati fuori da “{context}”"},
+  "theme.SearchBar.seeAll": {"message": "Vedi tutti i risultati"},
+  "theme.SearchPage.existingResultsTitle": {"message": "Risultati della ricerca per “{query}”"},
+  "theme.SearchPage.emptyResultsTitle": {"message": "Cerca nella documentazione"},
+  "theme.SearchPage.documentsFound.plurals": {"message": "Un documento trovato|{count} documenti trovati"},
+  "theme.SearchPage.noResultsText": {"message": "Nessun risultato trovato"},
+  "theme.SearchPage.searchContext.everywhere": {"message": "Ovunque"}
+}

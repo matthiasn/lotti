@@ -1,0 +1,120 @@
+---
+title: Modelli e anime dell'agente di progettazione
+description: Definire le responsabilità dell'agente riutilizzabile, la personalità separata dalle istruzioni, e migliorare sia attraverso le recensioni versioned one-on-one.
+---
+
+# Modelli e anime dell'agente di progettazione
+
+Un modello di **agente** definisce una responsabilità riutilizzabile: il tipo di
+agente, il suo profilo di inferenza, le direttive operative, il formato del
+rapporto e un'anima facoltativa. Un'anima contiene la voce riutilizzabile, i
+limiti di tono, lo stile di coaching e la politica anti-adulazione. Mantenere
+separati questi concetti consente alla stessa personalità di evolvere attraverso
+più modelli senza duplicare le istruzioni.
+
+## Rivedere il catalogo dei modelli
+
+Aprire **Impostazioni → Agenti → Modelli Agenti**. Il catalogo mostra il modello
+tipo, identità modello, versione attiva, e se una recensione ha bisogno di attenzione.
+
+<ManualScreenshot
+  caseId="agents/templates"
+  alt="Modelli di agente Lotti per la sicurezza dell'habitat orbitale, la pianificazione del giorno del progetto Waddle, il monitoraggio della fornitura di sardine e la diplomazia del pesce coaching"
+  caption="Ogni modello Project Waddle ha una stretta responsabilità e una versione visibile invece di un agente all-purpose con un prompt non visibile."
+/>
+
+I tipi incorporati servono diversi ambiti:
+
+- **Task Agent** lavora contro un compito e le sue prove collegate.
+- L'agente del giorno ha piani e revisioni al giorno.
+- **Project Agent** segue un progetto nel tempo.
+- **Event Agent** segue uno spazio di lavoro per eventi.
+- **Template Enhancer** supporta il processo di revisione a uno su uno.
+
+## Modificare un modello
+
+Selezionare un modello per modificare la configurazione corrente.
+profilo di inferenza con gli strumenti e le modalità di cui la responsabilità richiede,
+poi assegnare facoltativamente un'anima.
+
+<ManualScreenshot
+  caseId="agents/template-editor"
+  alt="Editor di modelli Orbital Habitat Sentinel utilizzando il Project Waddle Command e l'ammiraglio Pebble con la sicurezza degli habitat e le direttive di relazione"
+  caption="La direttiva operativa del sentinel descrive cosa ispezionare; l'ammiraglio Pebble contribuisce allo stile di comunicazione e di sfida."
+/>
+
+Utilizzare deliberatamente i due settori di direttiva:
+
+- **Direttiva generale** definisce la responsabilità, i confini e la decisione
+  regole.
+- **Direttiva di rapporto** definisce ciò che un utile rapporto salvato deve contenere.
+
+Salvare un modello modificato crea una nuova versione.
+disponibile per l'audit e il rollback; evitare di nascondere le responsabilità non correlate
+una lunga direttiva solo per ridurre il numero di modelli.
+
+## Eseguire un modello uno su uno
+
+Il modello **1-on-1** pagina frames proposto modifiche contro la reale sveglia
+attività, feedback, performance e sessioni precedenti. Una sessione in attesa è una
+proposta, non una riscrittura automatica.
+
+<ManualScreenshot
+  caseId="agents/template-review"
+  alt="Orbital Habitat Sentinel one-on-one che mostra una proposta di surfare la decisione di lancio e le metriche recenti di performance"
+  caption="La proposta di esempio risponde a un fallimento concreto: il ritrovamento di sicurezza è stato corretto, ma la decisione di go/no-go è stata sepolta sotto la trivia di pesce."
+/>
+
+Avviare la conversazione, ispezionare le prove e approvare solo i cambiamenti
+che migliorano la responsabilità. Il risultato approvato diventa un altro
+versioned modello record.
+
+## Mantenere la personalità riutilizzabile con le anime
+
+Aprire **Souls** per vedere le personalità che i modelli possono condividere.
+non un altro task prompt; controlla come un agente comunica, allenatori, e
+spinge indietro.
+
+<ManualScreenshot
+  caseId="agents/souls"
+  alt="Catalogo anima Lotti contenente Ammiraglio Pebble, Dr. Flipper e Capitan Sardina"
+  caption="Progetto Waddle separa un direttore di volo calmo, uno scienziato curioso, e un coordinatore di carico pratico dai lavori che li utilizzano."
+/>
+
+L'editor dell'anima mantiene quattro preoccupazioni esplicite:
+
+<ManualScreenshot
+  caseId="agents/soul-editor"
+  alt="Ammiraglio Pebble anima redattore con voce, limiti di tono, stile di coaching, e politica anti-sicofancy"
+  caption="L'ammiraglio Pebble può rimanere caldo e decisivo, mentre ancora sfidando ipotesi di lancio ottimistiche con le prove."
+/>
+
+- **Voice Directive** descrive la voce e la comunicazione riconoscibili
+  priorità.
+- "Tone Bounds" indica cosa deve evitare la voce.
+- **Coaching Style** descrive come aiuta qualcuno a raggiungere una decisione.
+- **Anti-Sycophancy Policy** spiega quando e come dovrebbe essere in disaccordo.
+
+Usa limiti comportamentali concreti. “Sii utile” è difficile da verificare;
+“metti in discussione le ipotesi di lancio ottimistiche e cita l'osservazione
+che ha cambiato la tua conclusione” può essere confrontato con il risultato
+reale.
+
+## Coinvolgere con attenzione un'anima condivisa
+
+Un'anima **1-on-1** disegna feedback da ogni modello utilizzando quella personalità.
+Questo rende il cambiamento potente: approvarlo può migliorare diversi agenti, ma un
+poveri cambiamenti possono anche influenzare tutti loro.
+
+<ManualScreenshot
+  caseId="agents/soul-review"
+  alt="Ammiraglio Pebble soul one-on-one con una proposta, un modello di condivisione e cronologia sessione completata"
+  caption="La storia del conteggio e della sessione di condivisione rendono visibile il raggio di esplosione prima che i cambiamenti della personalità siano approvati."
+/>
+
+Leggi il conteggio di condivisione, il sommario di feedback proposto, e il ricapitolo precedente prima
+avviare una recensione della personalità. Se il feedback si applica solo a una responsabilità,
+cambiare quel modello invece di insegnare all'anima condivisa una regola specifica del compito.
+
+Ritorno a [Agenzie di revisione e monitoraggio](./agents.mdx) per ispezionare le istanze e
+cicli di sveglia prodotti da questi progetti.

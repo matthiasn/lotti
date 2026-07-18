@@ -1,0 +1,53 @@
+---
+title: Eseguire competenze AI contestuali
+description: Utilizzare il menu Generare per eseguire solo le azioni AI che si applicano all'attività corrente, alla registrazione, all'immagine o all'ingresso.
+---
+
+# Eseguire competenze AI contestuali
+
+Le competenze dell'IA sono chiamate azioni con le istruzioni e i requisiti di input. Lotti
+filtra il menu **Generate...** all'ente corrente, quindi un compito non offre
+un'azione di trascrizione solo audio e un'immagine non offre un'azione che
+richiede una registrazione.
+
+<ManualScreenshot
+  caseId="ai/skills"
+  alt="Progetto Waddle immagine dell'habitat con l'offerta modale Generate Ispezione foto habitat"
+  caption="Su un'immagine dell'habitat collegata al compito, l'azione applicabile cerca anomalie di carico della pressione e danni di tenuta visibili."
+/>
+
+## Esegui un'abilità
+
+1. Aprire un compito o la voce di giornale supportata.
+2. Selezionare l'azione di assistente delineata nell'intestazione di ingresso.
+   Generate...
+3. Leggi la descrizione dell'abilità e seleziona l'azione che vuoi.
+4. Se Lotti offre un modello o un raccoglitore think-mode, confermare il default o
+   scegliere un override one-off.
+5. Continuare a lavorare mentre l'inferenza corre; il risultato è attaccato al
+   pertinente compito o voce quando completata.
+
+Il menu disponibile cambia con contesto:
+
+- le attività possono offrire azioni di testo e di contestazione delle attività;
+- voci audio possono offrire trascrizione e audio-consapevole azioni;
+- le immagini possono offrire analisi visive; e
+- le voci di testo possono offrire azioni rapide o di generazione che accettano il testo.
+
+Alcune competenze hanno bisogno di un compito collegato perché leggono più ampio contesto di attività o scrivere
+se un'azione è assente, prima controlla l'ingresso
+tipo e collegamento di attività, quindi verificare che il profilo di inferenza attiva abbia un modello per
+la capacità necessaria.
+
+## I sovrascritti del modello sono temporanei
+
+Quando un'abilità offre un modello picker, quella scelta si applica alla corrente
+invocazione. Non riscrive silenziosamente la categoria di default o inferenza
+per cambiare il percorso normale, modificare il profilo sotto
+[Modelli e profili di inferenza](./models-and-profiles.mdx).
+
+## Trattare l'output generato come un progetto
+
+Rivedi i suggerimenti, i riassunti, le trascrizioni, le analisi delle immagini e le opere d'arte
+generati prima di affidarti a loro. Il contesto dell'attività può essere incompleto, i fornitori possono
+restituire output errati e persino un modello capace può fraintendere una grave emergenza sardina.

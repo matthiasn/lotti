@@ -28,6 +28,16 @@ const localeExpectations = {
     mobile: 'Mobile',
     openViewer: 'Ouvrir la visionneuse de captures',
   },
+  it: {
+    allScreenshots: 'Tutti gli screenshot',
+    desktop: 'Desktop',
+    firstTaskTitle: 'Crea la tua prima attività',
+    layoutLabel: 'Layout degli screenshot per tutte le immagini',
+    mobile: 'Dispositivo mobile',
+    openViewer: 'Apri il visualizzatore degli screenshot',
+    translationDisclosure:
+      'Questa traduzione è stata generata automaticamente e non è ancora stata revisionata.',
+  },
   es: {
     allScreenshots: 'Todas las capturas',
     desktop: 'Escritorio',

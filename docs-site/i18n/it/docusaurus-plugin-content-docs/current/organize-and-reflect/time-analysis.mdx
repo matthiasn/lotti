@@ -1,0 +1,163 @@
+---
+title: Capire dove è andato il vostro tempo
+description: Interrompere il tempo tracciato giù per categoria, seguire le aree di messa a fuoco, e confrontare i periodi equivalenti senza lasciare il sistema operativo giornaliero.
+---
+
+# Capire dove è andato il vostro tempo
+
+Time Analysis trasforma le tue sessioni registrate in una suddivisione di categoria.
+per rispondere a quanto tempo hai rintracciato, dove è andato, e se il mix è cambiato
+dal periodo precedente. L'esempio del progetto Waddle separa **Penguin
+Operazioni**, **Mission Control**, **Fish Diplomacy**, ** Orbital Research**, and
+** Manutenzione Umana**, pur esponendo ancora il tempo non categorizzato che ha bisogno
+attenzione.
+
+Sul desktop, aprire **Daily OS** e selezionare **Time Analysis** sotto la barra laterale
+calendario. Il cruscotto riempie l'area del contenuto in modo che il grafico e la tabella esatta possono
+essere letto insieme. I suoi controlli riflusso a larghezze strette senza cambiare cosa
+Si'.
+
+<ManualScreenshot
+  caseId="time-analysis/overview"
+  alt="Analisi del tempo cruscotto che mostra Project Tempo di pausa in cinque categorie operative e lavoro non categorizzato"
+  caption="La panoramica combina i totali delle testate, un grafico a pila di sette giorni, e la tabella di categoria esatta."
+/>
+
+## Leggi le carte intestazioni
+
+La prima riga riassume il periodo selezionato:
+
+- **TOTAL** è tutto il tempo tracciato. La sua didascalia nomina la categoria più grande e la sua
+  condividere, quindi la scheda risponde dove la maggior parte del tempo è andato così come quanto era
+  registrato.
+- **FOCUS** aggiunge le categorie che hai scelto di guardare. Nell'esempio, Pinguino
+  Operazioni e Controllo Missione formano il set di messa a fuoco.
+- E' tutto fuori da quel set di messa a fuoco.
+
+Prima che esista un set di focus, Lotti mostra **Scegli le categorie di focus**
+invece di due schede con valore zero. Selezionalo, scegli una o più categorie
+attive e conferma con **Fine**. Usa il pulsante di regolazione sulla scheda
+Focus ogni volta che il set deve cambiare. Questa preferenza è locale a Lotti e
+non altera le categorie di alcuna voce.
+
+## Scegli un periodo utile
+
+Seleziona l'unità di intervallo tra **Giorno**, **Settimana**, **Mese**,
+**Trimestre** e **Anno**. Usa i chevron per spostarti di un periodo completo.
+Il chevron in avanti si ferma al periodo corrente, così il cruscotto non
+naviga verso un intervallo futuro vuoto.
+
+Selezionare l'etichetta data per aprire il calendario e saltare direttamente al periodo
+i confini settimanali seguono il primo giorno della settimana configurato da
+la regione del dispositivo.
+
+Due scorciatoie coprono le domande più comuni:
+
+- **Questo mese** mostra mese per giorno; e
+- ** Quest'anno** mostra tutto l'anno.
+
+Queste gamme finiscono oggi piuttosto che aggiungere i giorni futuri vuoti. L'etichetta include
+**(finora)**, e le medie usano solo giorni trascorsi.
+
+## Leggi il grafico e la tabella insieme
+
+Le barre impilate mostrano come ogni categoria ha contribuito ad ogni ora, giorno, o
+Hover o premere un bar per vedere i valori di categoria dietro quello
+Secchio.
+
+### Seguire il totale in esecuzione
+
+Selezionare **Regolazione totale** quando la domanda cambia da “cosa è successo in questo
+“Quanto mi sono accumulato fin dall’inizio di questa gamma?” Lotti gira
+ogni categoria in un'area cumulativa:
+
+- lo spessore di una banda colorata ad una data è il tempo tracciato della categoria
+  dall'inizio dell'intervallo selezionato fino a quella data;
+- il bordo superiore dello stack completo è tutto il tempo tracciato accumulato sopra
+  stesso intervallo; e
+- le bande possono solo tenere o salire. Una sezione piana significa che non è stato aggiunto alcun tempo in
+  quella categoria durante quei secchi; non sottrae il lavoro precedente.
+
+<ManualScreenshot
+  caseId="time-analysis/running-total"
+  alt="Analisi del tempo grafico in esecuzione-totale che accumula le categorie Project Waddle in tutto il mese selezionato"
+  caption="La corsa totale accumula ogni categoria dall'inizio della gamma. Il bordo superiore è il tempo totale tracciato fino ad ora; ogni banda mostra quanto la sua categoria ha contribuito a questo totale."
+/>
+
+L'intervallo selezionato determina l'avvio del conteggio.
+periodo riavvia il totale al primo secchio di quel periodo.
+secchi, gamme più corte utilizzano secchi giornalieri, e gamme lunghe usano
+secchi settimanali, ma il significato cumulativo rimane lo stesso. In una corrente,
+periodo incompiuto, Lotti ferma l'area all'ultimo secchio trascorso invece
+disegnare una linea piana fuorviante attraverso le date future.
+
+L'esecuzione cambia solo la proiezione del grafico.
+** ALTRE **, e la tabella di categoria continua a descrivere l'intero selezionato
+Hover o premere l'area per vedere il valore in esecuzione per ogni categoria a
+a quel punto. Selezionare ** Per giorno**, ** Per settimana **, o ** Per ora** per tornare a
+Valori del secchio individuale. Se solo un secchio è trascorso, Lotti mantiene le barre
+perché una linea di corsa a un punto non comunicherebbe una tendenza.
+
+La tabella è la ricerca precisa. Ordina le categorie per tempo tracciato e
+mostra il loro totale, la quota, la media al giorno, e una relativa barra dei dati.
+**La fila non categorizzata** è deliberata: rende visibile l'attribuzione mancante
+invece di nasconderlo silenziosamente. Aprire le relative voci o compiti e assegnare un
+categoria quando quel tempo dovrebbe appartenere a un'area operativa.
+
+## Confronta i periodi equivalenti
+
+<ManualScreenshot
+  caseId="time-analysis/compare"
+  alt="Confronto dell'analisi del tempo per Project Waddle che mostra l'ora corrente, il tempo precedente e le variazioni percentuali per categoria"
+  caption="La direzione viene comunicata da una freccia, un segno e un colore, mentre il grafico rimane concentrato sul periodo attuale."
+/>
+
+Seleziona **Compare** per aggiungere il periodo precedente. Per una settimana in corso, mese,
+trimestre, o anno, Lotti confronta la parte trascorso con lo stesso numero di
+giorni immediatamente prima di esso. Un risultato di domenica mese a data non è quindi
+rispetto a un mese intero prima.
+
+Le carte intestazioni guadagnano il loro cambio percentuale e il valore precedente.
+passa a **CURRENT**, **PREVIOUS**, e **Change**. A larghezze strette
+colonna precedente è omessa, mentre Corrente e Cambia rimangono
+visibile. Un risultato verso l'alto o verso il basso utilizza una freccia e un segno esplicito e
+come colore; cambiamenti molto piccoli rimangono neutri, e un risultato senza precedenti
+la linea di base è mostrata come nuova.
+
+Il grafico continua a mostrare solo il periodo attuale. La nota **Comparison
+mostrato nella tabella sottostante** indica i valori esatti e previene un secondo set
+di barre da oscurare la miscela di categoria.
+
+## Cosa conta Lotti
+
+L'analisi del tempo conta le voci del diario del tempo la cui fine è più tardi della loro
+inizio. La durata dell'audio non viene conteggiata separatamente, perché una registrazione fatta
+durante un timer in esecuzione sarebbe altrimenti contare due volte.
+
+L'attribuzione della categoria segue il lavoro:
+
+1. Se l'indicazione del tempo è collegata ad un'attività con una categoria, la categoria di attività
+   vince.
+2. In caso contrario, la categoria di ingresso del tempo viene utilizzata.
+3. Se non esiste, il tempo appare come Uncategorized.
+
+I timer overlapping nella stessa categoria vengono fusi prima che il totale sia
+calcolato. Le sovrapposte in diverse categorie rimangono in entrambe le categorie,
+perché rappresentano diversi tipi di attività registrate.
+mezzanotte sono divise nei giorni del calendario locale corretti. Le voci private obbediscono
+l'impostazione globale di visibilità dei dati privati e il cruscotto si aggiorna quando
+voci, link, categorie di attività, o che l'impostazione di visibilità cambia.
+
+## Tenere l'immagine affidabile
+
+Utilizzare le categorie in modo coerente sui compiti che possiedono il lavoro registrato.
+riga non categorizzata periodicamente, e scegliere categorie di messa a fuoco che rispondono a
+vera domanda piuttosto che cercare di includere tutto. Per il progetto Waddle,
+guardare Operazioni Pinguino e Controllo Missione rende la scheda Focus un
+segnale di prontezza operativa mentre la Diplomazia del pesce e la Manutenzione umana rimangono
+visibile nella completa ripartizione.
+
+Analisi del tempo non esporta attualmente CSV, risultati di gruppo per progetto, o disegnare
+il periodo precedente come un'altra serie di grafici.
+tenuto in tavola, dove sono più facili da leggere e meno propensi a distorcere
+immagine attuale-periodo.

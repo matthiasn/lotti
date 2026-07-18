@@ -9110,10 +9110,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsManualLanguageGermanTitle => 'Allemand';
 
   @override
+  String get settingsManualLanguageItalianTitle => 'Italien';
+
+  @override
   String get settingsManualLanguagePortugueseTitle => 'Portugais';
 
   @override
   String get settingsManualLanguageRomanianTitle => 'Roumain';
+
+  @override
+  String get settingsManualLanguageSpanishTitle => 'Espagnol';
 
   @override
   String get settingsManualLanguageTitle => 'Langue';

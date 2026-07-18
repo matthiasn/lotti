@@ -1,0 +1,97 @@
+---
+title: Eseguire e monitorare gli agenti
+description: Monitorare l'attività dell'agente, ispezionare le istanze in esecuzione e controllare i cicli di sveglia programmati senza perdere il percorso di audit.
+---
+
+# Eseguire e monitorare gli agenti
+
+Gli agenti consentono a Lotti di eseguire responsabilità definite in diversi
+cicli di risveglio. Ogni istanza in esecuzione deriva da un modello di agente,
+usa una configurazione di inferenza e mantiene il proprio stato, rapporti,
+osservazioni e cronologia dell'attività. Apri **Impostazioni → Agenti** per
+vedere il sistema nel suo complesso.
+
+Rapporti, osservazioni e sveglia in coda descrivono il lavoro dell'agente.
+stato; non riscrivere silenziosamente il registro personale. Quando un agente di compito
+vuole cambiare i dati delle attività, Lotti presenta una proposta per la tua recensione.
+[Revisione delle modifiche proposte](../organize-and-reflect/tasks.mdx#revisione-delle-modifiche-proposte)
+per i controlli di approvazione per-task e il loro stretto legame iniziale e la lingua
+eccezioni.
+
+## Leggi l'attività dell'agente prima di cambiarlo
+
+La pagina **Stats** combina l'attività della sveglia e l'utilizzo del token.
+mostra quando gli agenti si sono svegliati durante le ultime 24 ore.
+oggi con lo stesso tempo nei giorni scorsi, poi rompe l'uso giù per modello e
+fonte.
+
+<ManualScreenshot
+  caseId="agents/stats"
+  alt="Statistiche agente Lotti che mostrano Project Waddle attività sveglia, utilizzo quotidiano dei token e grafici dei modelli"
+  caption="La flotta di esempio del progetto Waddle è più trafficata rispetto ai controlli sull'habitat e alla pianificazione del lancio; le sezioni del modello e della sorgente rendono tale attività attribuibile."
+/>
+
+Utilizzare questa pagina per rispondere a tre diverse domande:
+
+- **Quando sono scappati gli agenti?** Leggi il grafico della sveglia di 24 ore.
+- **Quanto inferenza hanno usato?** Confrontare i grafici giornalieri e per modello.
+- **Quale responsabilità l'ha guidata?** Rivedere il modello/la ripartizione delle risorse.
+
+Un picco non è automaticamente un difetto. Un giorno di lancio dovrebbe essere più affollato
+che un giorno di colonia ordinaria. Investigare attività inaspettate aprendo
+modello di origine o istanza prima di cambiare un limite di convalutazione globale.
+
+## Ispezionare le istanze in esecuzione
+
+Apri **Istanze** per vedere tutti gli agenti e le sessioni di evoluzione,
+insieme al tipo di agente, al ciclo di vita, al modello assegnato e all'anima.
+Raggruppare per anima è utile quando responsabilità diverse condividono una
+voce e uno stile decisionale.
+
+<ManualScreenshot
+  caseId="agents/instances"
+  alt="Le istanze dell'agente Lotti raggruppate dall'ammiraglio Pebble, dal dottor Flipper, dal capitano Sardina, e da una sessione di evoluzione"
+  caption="L'Ispettore del Sigillo Habitat, il Progetto Waddle Planner e il Coordinatore Sardine Cargo rimangono istanze separate anche quando condividono risorse di livello di sistema."
+/>
+
+Seleziona un'istanza per ispezionare gli interni. La scheda **Stats** mostra il modello
+uso, il suo modello, il percorso di inferenza corrente, i controlli del ciclo di vita, il conteggio della veglia,
+e lo stato di pianificazione.
+
+<ManualScreenshot
+  caseId="agents/instance-detail"
+  alt="Dettaglio istanza Habitat Seal Inspector con uso token, modello Orbital Habitat Sentinel, percorso di inferenza, controlli del ciclo di vita e sveglia stato"
+  caption="L'istanza mantiene abbastanza provenienza per spiegare quale modello e percorso ha prodotto il suo lavoro prima di fermarsi, ri-analisi, o distruggerlo."
+/>
+
+Le schede di istanza rimanenti conservano prove diverse:
+
+- **Reports** contiene le istantanee salvate dell'agente.
+- **Conversazioni ** gruppi di messaggi per ciclo di veglia.
+- **Observations** espone i risultati catturati senza mescolarli in rapporti.
+- **Attività** mostra il messaggio cronologico e la traccia degli strumenti.
+
+**Pause** mantiene l'istanza ma ferma il lavoro normale. **Ri-analyze** chiede un compito
+l'agente per riconsiderare il suo soggetto attuale. **La distruzione** è distruttiva e dovrebbe
+solo essere usato quando l'istanza stessa non è più ricercata; cambiare il
+modello per gli agenti futuri non richiede la distruzione di istanze non correlate.
+
+## Capire i cicli di veglia
+
+Aprire **Wake Cycles** per vedere il lavoro che sta correndo ora e lavorare per più tardi.
+L'agente ha richiesto una sveglia.
+il sistema o il pianificatore. Ogni riga mantiene l'attività collegata, il progetto o il giorno visibile
+accanto all'agente responsabile e al conto alla rovescia.
+
+<ManualScreenshot
+  caseId="agents/pending-wakes"
+  alt="Lotti Wake Cicli che mostrano l'ispezione dell'habitat in esecuzione e il progetto programmato Waddle e logistica sardine si sveglia"
+  caption="La coda distingue un follow-up dell'habitat recuperato dall'agente dai programmi di lancio e di carico, quindi un conto alla rovescia ha sempre una ragione e un proprietario."
+/>
+
+Cancellare una scia in coda rimuove quel timer; non elimina l'agente o la sua
+Se una sveglia ritorna immediatamente, ispezionare lo stato dell'agente o il
+automazione che lo richiedeva invece di eliminare ripetutamente il sintomo.
+
+Continuare con [Agent modelli e anime](./agent-blueprints.mdx) per definire
+cosa fanno queste istanze e come comunicano.

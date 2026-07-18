@@ -9024,10 +9024,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsManualLanguageGermanTitle => 'Alemão';
 
   @override
+  String get settingsManualLanguageItalianTitle => 'Italiano';
+
+  @override
   String get settingsManualLanguagePortugueseTitle => 'Português';
 
   @override
   String get settingsManualLanguageRomanianTitle => 'Romeno';
+
+  @override
+  String get settingsManualLanguageSpanishTitle => 'Espanhol';
 
   @override
   String get settingsManualLanguageTitle => 'Idioma';
