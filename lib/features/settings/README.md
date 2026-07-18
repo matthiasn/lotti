@@ -582,7 +582,7 @@ It is an Advanced leaf on both settings surfaces (`advanced/manual-language` →
 detail pane through the `advanced-manual-language` panel registration.
 
 The manual currently publishes English, German, French, Italian, Spanish,
-Czech, Romanian, and Portuguese. `Follow system` is the default:
+Czech, Dutch, Romanian, and Portuguese. `Follow system` is the default:
 [`ManualLanguageController`](state/manual_language_controller.dart) matches the
 device locale to that catalog and falls back to English when no manual
 translation exists. Selecting a language persists only that explicit override
@@ -592,7 +592,7 @@ device-language change is reflected the next time the user opens Manual.
 ```mermaid
 flowchart LR
   Choice["Advanced → Language"] --> Preference{"Explicit override?"}
-  Preference -->|yes| Override["English / German / French / Italian / Spanish / Czech / Romanian / Portuguese"]
+  Preference -->|yes| Override["English / German / French / Italian / Spanish / Czech / Dutch / Romanian / Portuguese"]
   Preference -->|no| System["Platform system locale"]
   System --> Catalog{"Published manual locale?"}
   Catalog -->|yes| Matched["Matching manual route"]

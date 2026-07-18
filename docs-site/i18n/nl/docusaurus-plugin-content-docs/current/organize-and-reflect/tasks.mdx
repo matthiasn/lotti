@@ -1,0 +1,271 @@
+---
+title: Werken met taken
+description: Gebruik status, prioriteit, checklists en bijgevoegde context om de resultaten vooruit te helpen.
+---
+
+# Werk met taken
+
+Taken groeperen een uitkomst met de context en de stappen die nodig zijn om deze te voltooien. Houd
+titels resultaatgericht en zet ondersteunende aantekeningen, afbeeldingen, opnames en tijd
+records binnen de taak.
+
+<ManualScreenshot
+  caseId="tasks/workspace"
+  alt="Productie taak werkruimte met echte taak rijen met cover-art miniaturen van de Intergalactic Penguin Logistics demo gegevens"
+/>
+
+Op het bureaublad blijft de takenlijst zichtbaar naast de geselecteerde taak, zodat u dat kunt doen
+door het werk bewegen zonder de context te verliezen. Op mobiel opent het selecteren van een taak de bijbehorende taak
+detailweergave op volledig scherm. Cover art volgt de taak overal waar deze verschijnt,
+inclusief de takenlijst en gekoppelde Daily OS-agendapunten.
+
+Omslagafbeeldingen zijn optioneel, maar kunnen een compacte werkruimte veel gemakkelijker scannen.
+Gebruik het voor een nuttig visueel signaal, een productreferentie of een gedenkwaardige metafoor
+voor het werk. De Project Waddle-illustraties in deze handleiding zijn slechts een indicatie
+voorbeeld: een hoes kan net zo praktisch, speels of heerlijk raar zijn als jij
+willen.
+
+<ManualScreenshot
+  caseId="tasks/detail"
+  alt="Productie taak detail pagina voor het inspecteren van de orbitale pinguïn habitat, met dezelfde cover kunst gebruikt door taak miniaturen"
+/>
+
+Dezelfde taak kan een beschrijving, categorie, labels, vervaldatum, tijdregistraties,
+checklistitems, afbeeldingen, links en audio-opnamen.
+
+## Wijs een taakagent toe
+
+Een taak kan één taakagent hebben. Door er één toe te wijzen, krijgt die taak een persistente AI
+assistent met zijn eigen gevolgtrekkingsopstelling, rapport, wekstatus en voorstel
+geschiedenis. De agent leest de taak en de daaraan gekoppelde context en distilleert de huidige situatie
+situatie in een kort rapport, en kan de voorgestelde taak of checklist naar voren brengen
+wijzigingen die u kunt bevestigen of afwijzen.
+
+De toegewezen agent wordt weergegeven onder de checklists en gekoppelde taken van de taak. Het is
+samengevouwen kaart houdt het laatste overzicht bij, automatische updatecontrole, ** Wakker worden
+agent**-actie en actieve modelroute zichtbaar zonder de taakpagina te maken
+voel je als een AI-console.
+
+<ManualScreenshot
+  caseId="tasks/agent-card"
+  alt="Toegewezen Habitat Watcher taak agent op de baan pinguïn habitat taak, met de huidige samenvatting, automatische updates, wake actie, en Project Waddle model route"
+  caption="Habitat Watcher is toegewezen aan deze taak; opdracht en automatische updates zijn aparte keuzes."
+/>
+
+Op een telefoon volgt de kaart één leesvolgorde: identiteit, updatecontroles,
+AI instellen, rapporteren, vervolgens voorgestelde wijzigingen en geschiedenis. Op desktop, het rapport en
+voorstellen vormen de leeskolom terwijl de compacte bedieningselementen dichtbij blijven.
+
+Kies **Lees meer** om het volledige rapport uit te vouwen. De uitgebreide kaart
+houdt de taak zichtbaar, voegt de ondersteunende beoordeling van het rapport toe en adviseert
+volgende stap, en biedt **Open agent internals** wanneer u rapporten nodig heeft,
+gesprekken, observaties of runtimedetails.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-expanded"
+  alt="Uitgebreide Habitat Watcher taak-agent kaart met de volledige Project Waddle habitat beoordeling en aanbevolen volgende stap"
+  caption="Het volledige rapport breidt zich uit binnen de taak in plaats van je naar een aparte pagina te sturen."
+/>
+
+### Kies de AI-instellingen van de agent
+
+De rij **Huidige configuratie** van de kaart identificeert het profiel, het model en de provider
+gebruikt voor de volgende wake. Selecteer het om een opgeslagen gevolgtrekkingsprofiel te kiezen, overschrijven
+alleen het denkmodel, keer terug naar de profielstandaard, kopieer die van de categorie
+huidige configuratie, of schakel AI uit voor deze ene agent. Daar blijft een keuze bij
+agent voor toekomstige updates; het kopiëren van een categorie-instelling is een momentopname, geen link
+dat verandert later stilletjes.
+
+Als een melding via een andere route tot stand is gekomen, houdt Lotti dit apart
+Toeschrijving van **Dit rapport** in plaats van de geschiedenis opnieuw te labelen met de huidige
+opstelling. Als u AI uitschakelt, blijft het bestaande rapport leesbaar, maar wordt verder voorkomen
+wordt wakker totdat u opnieuw een werkende opstelling selecteert. Automatische updates kunnen dat niet zijn
+ingeschakeld terwijl de agent geen werkende AI-installatie heeft.
+
+### Beoordeel voorgestelde wijzigingen
+
+Een voltooide wake kan het rapport bijwerken en voorgestelde wijzigingen toevoegen. Automatisch
+updates beslissen *wanneer de agent wakker wordt*; zij geven de agent daar geen toestemming voor
+bewerk de taak. Voorstellen blijven in behandeling totdat u er gevolg aan geeft.
+
+<ManualScreenshot
+  caseId="tasks/agent-suggestions"
+  alt="Habitat Watcher taak-agent kaart met twee hangende Project Waddle voorstellen, individuele afwijzing en bevestiging van acties, en een Bevestig alle actie"
+  caption="De agent stelt een checklist voor de feeder-test en een herziene schatting voor; er is nog geen wijziging toegepast."
+/>
+
+Gebruik het kruisje om een voorstel te **Afwijzen** of het vinkje om **Bevestigen** en te solliciteren
+het. U kunt een voorstel ook naar links vegen om het af te wijzen of naar rechts om het te bevestigen. Wanneer
+Er zijn verschillende voorstellen in behandeling. **Alles bevestigen** is van toepassing op de huidige lijst
+verandert samen. Beoordeel bulkvoorstellen zorgvuldig, vooral de status, datum,
+en checklistwijzigingen.
+
+Open **Geschiedenis** om recente resultaten opnieuw te bekijken. Het onderscheidt bevestigd
+wijzigingen ten opzichte van afgewezen wijzigingen. Een afgewezen inzending kan uw
+beslissing of een voorstel dat de agent heeft ingetrokken nadat een nieuwere taakcontext dit had gedaan
+muf.
+
+Een handmatige **Wake-agent** kan dezelfde soorten rapporten en voorstellen produceren als
+een automatische wake. Als u automatische updates uitschakelt, stopt de toekomstige achtergrond
+wordt wakker; voorstellen die dat wel zijn, worden niet toegepast, verworpen of anderszins opgelost
+wacht al op uw beslissing.
+
+### Kies automatische of handmatige updates
+
+Nieuwe taakagenten beginnen met **Automatische updates uitgeschakeld**. Alleen een opdracht is dat niet
+geef tokens op de achtergrond uit. Hoewel updates zijn uitgeschakeld, blijft Lotti dat doen
+relevante wijzigingen in de taak en de daaraan gekoppelde vermeldingen opmerken, markeert een oudere
+samenvatting als verouderd en wacht tot u **Wake agent** kiest. Een handleiding
+wake blijft beschikbaar wanneer de agent een werkende AI-installatie heeft.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-manual"
+  alt="Habitat Watcher taak-agent kaart met automatische updates uit, een verouderde melding van het rapport, en een handmatige Wake agent actie"
+  caption="Handmatige modus observeert veranderingen en rapporteert pluraliteit zonder gevolgtrekkingen te beginnen."
+/>
+
+De verouderde kennisgeving laat opzettelijk het laatste nuttige rapport staan. Als
+een relevante bewerking arriveert nadat een wake is begonnen; die nieuwere bewerking bewaart het rapport
+gemarkeerd als muf, zelfs als de eerdere wake eindigt. Wanneer je een rapport nodig hebt
+de laatste wijzigingen bevat, maakt u de agent opnieuw wakker nadat de taak is afgehandeld.
+
+Wanneer **Automatische updates** zijn ingeschakeld, bundelt Lotti overeenkomende taakwijzigingen voor
+ongeveer twee minuten voordat u een vernieuwing plant. Door deze samenvoeging wordt een agent vermeden
+wakker worden voor elke kleine bewerking. **Wake agent** is nog steeds beschikbaar voor een onmiddellijke,
+door de gebruiker gevraagde vernieuwing.
+
+Als u automatische updates uitschakelt, worden de lopende aftellingen en wachtrijen gewist
+wordt automatisch vernieuwd, maar annuleert een wake die u expliciet hebt aangevraagd niet.
+Het opnieuw inschakelen is van toepassing op toekomstige wijzigingen; het herhaalt de veranderingen niet
+arriveerde terwijl de automatisering uit stond.
+
+## Prioriteit
+
+Lotti hanteert vier compacte prioriteitsniveaus:
+
+| Prioriteit | Betekenis | Gebruik het voor |
+| --- | --- | --- |
+| P0 | Dringend | Volgende werkzaamheden die echt aandacht behoeven |
+| P1 | Hoog | Belangrijk werk dat binnenkort moet gebeuren |
+| P2 | Middel | De normale standaard |
+| P3 | Laag | Werk dat kan wachten |
+
+Open een taak en gebruik de prioriteitsbediening in de koptekst om het niveau te wijzigen.
+Bestaande taken zonder expliciete prioriteit gedragen zich als P2.
+
+De kiezer spelt de compacte codes uit, terwijl de prioriteitsglyphs een visueel element toevoegen
+cue in zowel lichte als donkere thema's. Behandel de P0-P3-codes als de betekenis; kleur
+helpt bij het scannen, maar mag nooit het enige signaal zijn waarop u vertrouwt.
+
+## Filter en bestel de takenlijst
+
+Gebruik het filterbesturingselement naast het taakzoekveld om de lijst scherper te maken. Kies
+een of meer statussen, prioriteiten, categorieën, labels en – wanneer projecten dat zijn
+ingeschakeld: projecten. Categorie- en labelkiezers bieden ook **Niet toegewezen** voor
+werk dat nog steeds dat organiserende detail nodig heeft. De **Agent**-keuze maakt onderscheid
+taken met een toegewezen agent uit taken zonder een toegewezen agent.
+
+<ManualScreenshot
+  caseId="tasks/filters"
+  alt="Taakfilterblad met type, status, prioriteit, categorie en labelbesturing"
+/>
+
+Keuzes binnen één filter zijn alternatieven: als u P0 en P1 selecteert, wordt geen van beide weergegeven
+prioriteit. Verschillende filters verfijnen het resultaat: selecteer P0 of P1
+*en* Penguin Operations toont alleen passend werk. Gebruik **Alles wissen** om terug te keren
+naar een onbeperkte visie in plaats van te proberen elke keuze afzonderlijk ongedaan te maken.
+
+Kies **Vervaldatum**, **Aangemaakt** of **Prioriteit** in hetzelfde blad om te wijzigen
+de bestelling. Prioriteitsvolgorde is P0 tot en met P3, met nieuwere taken eerst binnen a
+prioriteit, tenzij een andere sortering actief is. Op het bureaublad: een ingeschakelde vectorzoekopdracht
+setup kan naast normaal zoeken in volledige tekst ook semantisch zoeken aanbieden.
+
+Wanneer u regelmatig terugkeert naar dezelfde gerichte weergave, slaat u het actieve filter op
+van het blad en geef het een duidelijke naam. Open het vervolgens opnieuw vanuit de takenlijst
+update het opgeslagen filter wanneer de criteria veranderen.
+
+## Gebruik checklists voor de volgende laag
+
+Een checklistitem moet kleiner en concreter zijn dan zijn taak. “Publiceren
+de handleiding” is een taak; “verifieer elke navigatielink” is een checklistitem.
+Checklists kunnen direct worden bewerkt en kunnen ook worden voorgesteld door geconfigureerde AI
+vaardigheden uit de taakcontext.
+
+## Taakcontext toevoegen
+
+Gebruik de actie **Toevoegen** van de taak om een checklist, een andere taak of een audio bij te voegen
+opname, een timer, een tekstinvoer of een afbeelding zonder de taak te verlaten. De
+beschikbare acties zijn afhankelijk van het huidige platform en de huidige context.
+
+<ManualScreenshot
+  caseId="entries/create-menu"
+  alt="Menu toevoegen over de orbital habitat taak met taak-bewuste capture acties"
+/>
+
+Zie [Invoer en context toevoegen](../plan-and-capture/entries.mdx) voor wanneer te gebruiken
+elk invoertype.
+
+## Genereer albumhoezen op basis van echte taakafbeeldingen
+
+Als er een vaardigheid voor het genereren van afbeeldingen is geconfigureerd, opent u het generatiemenu van de taak
+en kies de cover-art-actie. Lotti laat eerst afbeeldingen zien die al zijn bijgevoegd
+de taak, plus beschikbare omslagafbeeldingen van gekoppelde taken. Selecteer er maximaal vijf
+referenties om het resultaat te begeleiden, of ga verder zonder referentie.
+
+De gegenereerde omslag wordt in Lotti gemaakt op basis van de context van de taak en eventuele andere contexten
+referenties die u selecteert. Het is een visueel hulpmiddel, geen verplicht veld: gebruik het als:
+Een duidelijk beeld maakt het werk makkelijker of leuker om te herkennen. De
+huidige route voor het genereren van afbeeldingen maakt gebruik van de geconfigureerde provider, dus behandel de
+generatieprompt en geselecteerde referenties als gegevens die u opzettelijk verzendt
+naar die aanbieder; een lokale denk- of transcriptieroute biedt geen dekking
+generatie lokaal.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Genereren van hoes Kunst vel met vijf verschillende Project Waddle referentie afbeeldingen uit de taak context"
+  caption="De picker gebruikt dezelfde taakafbeeldingen die zichtbaar zijn tijdens de project Waddle demo."
+/>
+
+Nadat u doorgaat, wordt het genereren van afbeeldingen op de achtergrond uitgevoerd. De vooruitgang
+view maakt gebruik van Lotti's productiedenken-visualizer en kan zonder worden gesloten
+het annuleren van de taak.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Taak cover-art generatie in uitvoering met Lotti's productie shader visualiser"
+/>
+
+De gegenereerde afbeelding wordt de taakomslag en volgt de taak in de lijst,
+detail-, project- en dagelijkse OS-weergaven. Een sterke cover moet herkenbaar blijven
+wanneer de brede bronafbeelding wordt bijgesneden tot een compacte taakminiatuur. Het kan zijn
+letterlijk bewijs, een ingetogen metafoor, of zo vreemd als het werk verdient;
+de enige bruikbare test is of je de taak later sneller kunt herkennen.
+
+## Koppel gerelateerde taken
+
+Open de sectie **Gekoppeld** van de taak en kies ervoor om een bestaande taak te koppelen. Zoeken
+de kiezer en selecteer vervolgens het bijbehorende resultaat. Lotti sluit de huidige taak uit
+en taken die al in die richting met elkaar verbonden zijn.
+
+<ManualScreenshot
+  caseId="tasks/link-picker"
+  alt="Productie taak-link picker lijst gerelateerde project Waddle taken en hun status, prioriteit, categorie, en de termijn context"
+/>
+
+Taaklinks zijn richtinggevend: de huidige taak verwijst naar de taak die u kiest.
+Beide partijen blijven bereikbaar via hun gekoppelde ingangssecties, terwijl elk
+taak behoudt zijn eigen status, planning en bijlagen.
+
+## Gebruik je stem zonder de controle te verliezen
+
+Neem een ​​notitie op in de taak wanneer het sneller is om de situatie hardop uit te leggen.
+Als de transcriptie- en taakvaardigheden zijn geconfigureerd, kan Lotti die context omzetten in
+tekst en voorgestelde wijzigingen in de checklist. Bekijk het resultaat, vooral de namen,
+data en destructieve veranderingen. Zie [Audio opnemen](../plan-and-capture/recordings.mdx)
+voor de opnamebedieningen en verwerkingsopties.
+
+:::tip
+
+Gebruik P0 spaarzaam. Als alles dringend is, stopt het etiket met het dragen van informatie.
+
+:::

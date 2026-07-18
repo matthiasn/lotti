@@ -15,11 +15,9 @@ void main() {
       expect(ManualLanguage.fromStoredValue('it'), ManualLanguage.italian);
       expect(ManualLanguage.fromStoredValue('es'), ManualLanguage.spanish);
       expect(ManualLanguage.fromStoredValue('cs'), ManualLanguage.czech);
+      expect(ManualLanguage.fromStoredValue('nl'), ManualLanguage.dutch);
       expect(ManualLanguage.fromStoredValue('ro'), ManualLanguage.romanian);
-      expect(
-        ManualLanguage.fromStoredValue('pt'),
-        ManualLanguage.portuguese,
-      );
+      expect(ManualLanguage.fromStoredValue('pt'), ManualLanguage.portuguese);
       expect(ManualLanguage.fromStoredValue(null), isNull);
     });
   });
@@ -51,6 +49,10 @@ void main() {
         ManualLanguage.romanian,
       );
       expect(
+        manualLanguageForSystemLocale(const Locale('nl', 'NL')),
+        ManualLanguage.dutch,
+      );
+      expect(
         manualLanguageForSystemLocale(const Locale('pt', 'BR')),
         ManualLanguage.portuguese,
       );
@@ -58,7 +60,7 @@ void main() {
 
     test('falls back to English for an unsupported system language', () {
       expect(
-        manualLanguageForSystemLocale(const Locale('nl', 'NL')),
+        manualLanguageForSystemLocale(const Locale('sv', 'SE')),
         ManualLanguage.english,
       );
     });
@@ -91,6 +93,10 @@ void main() {
         '${lottiManualBaseUrl}ro/',
       );
       expect(
+        manualUriFor(systemLocale: const Locale('nl')).toString(),
+        '${lottiManualBaseUrl}nl/',
+      );
+      expect(
         manualUriFor(systemLocale: const Locale('pt')).toString(),
         '${lottiManualBaseUrl}pt/',
       );
@@ -98,7 +104,7 @@ void main() {
 
     test('uses English for unsupported system languages', () {
       expect(
-        manualUriFor(systemLocale: const Locale('nl')).toString(),
+        manualUriFor(systemLocale: const Locale('sv')).toString(),
         lottiManualBaseUrl,
       );
     });
@@ -157,10 +163,8 @@ void main() {
         ManualLanguage.portuguese,
       );
       verify(
-        () => mocks.settingsDb.saveSettingsItem(
-          manualLanguageSettingsKey,
-          'pt',
-        ),
+        () =>
+            mocks.settingsDb.saveSettingsItem(manualLanguageSettingsKey, 'pt'),
       ).called(1);
 
       await controller.setOverride(null);

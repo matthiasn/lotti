@@ -54,6 +54,16 @@ const localeExpectations = {
     mobile: 'Mobil',
     openViewer: 'Otevřít prohlížeč snímku',
   },
+  nl: {
+    allScreenshots: 'Alle schermafbeeldingen',
+    desktop: 'Desktop',
+    firstTaskTitle: 'Maak je eerste taak',
+    layoutLabel: 'Schermafbeeldingsindeling voor alle afbeeldingen',
+    mobile: 'Mobiel',
+    openViewer: 'Schermafbeeldingsviewer openen',
+    translationDisclosure:
+      'Deze vertaling is automatisch gegenereerd en nog niet beoordeeld.',
+  },
   ro: {
     allScreenshots: 'Toate capturile de ecran',
     desktop: 'Desktop',

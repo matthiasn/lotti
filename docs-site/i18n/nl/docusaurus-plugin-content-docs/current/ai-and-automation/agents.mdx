@@ -1,0 +1,95 @@
+---
+title: Rennen en monitoren agenten
+description: Controleer de activiteit van de agent, inspecteer lopende instanties, en controle geplande wake cycli zonder verlies van de audit trail.
+---
+
+# Rennen en monitoren agenten
+
+Agenten lieten Lotti een bepaalde verantwoordelijkheid dragen tijdens meerdere wakkercycli.
+Elke lopende instantie komt van een agent template, gebruikt een gevolgtrekking setup,
+en houdt zijn eigen staat, rapporten, observaties en activiteiten geschiedenis. Open
+**Settings → Agents** to see the system as a whole.
+
+Agent rapporten, observaties, en wachtrijen beschrijven de agent werkt
+ze niet stil het persoonlijke logboek herschrijven. Wanneer een taakbeheerder
+Lotti wil de taakgegevens wijzigen, en presenteert een voorstel voor uw beoordeling.
+[Beoordeel voorgestelde wijzigingen](../organize-and-reflect/tasks.mdx#beoordeel-voorgestelde-wijzigingen)
+voor de controles van de goedkeuring per taken en de beperkte begintitel en taal ervan
+uitzonderingen.
+
+## Lees de activiteit van het middel voordat u deze wijzigt
+
+The **Stats** page combines wake activity and token usage. The first chart
+toont wanneer de agenten wakker werden gedurende de laatste 24 uur. De dagelijkse sectie vergelijkt
+vandaag met dezelfde tijd op de afgelopen dagen, dan breekt het gebruik naar model en
+bron.
+
+<ManualScreenshot
+  caseId="agents/stats"
+  alt="Lotti agent statistieken tonen Project Waddle wake activiteit, dagelijks token gebruik, en model grafieken"
+  caption="Project Waddle's voorbeeldvloot is druk bezig met habitatcontroles en lanceerplanning; de model- en bronsecties maken die activiteit toe te rekenen."
+/>
+
+Gebruik deze pagina om drie verschillende vragen te beantwoorden:
+
+- **When did agents run?** Read the 24-hour wake chart.
+- **How much inference did they use?** Compare the daily and per-model charts.
+- **Which responsibility drove it?** Review the template/source breakdown.
+
+Een spike is niet automatisch een fout. Een start-review dag moet drukker zijn
+dan een gewone kolonie dag. Onderzoek onverwachte activiteit door het openen van de
+bronsjabloon of -instance voordat een globale limiet voor concurrency wordt gewijzigd.
+
+## De lopende instanties controleren
+
+Open **Instances** to see every agent and evolution session. Rows expose the
+Agent soort, levenscyclus, toegewezen template, en ziel. Groeperen door ziel is nuttig
+wanneer meerdere verantwoordelijkheden één stem en een beslissingsstijl delen.
+
+<ManualScreenshot
+  caseId="agents/instances"
+  alt="Lotti agent gevallen gegroepeerd door Admiraal Pebble, Dr. Flipper, Kapitein Sardina, en een evolutie sessie"
+  caption="De Habitat Seal Inspector, Project Waddle Planner en Sardine Cargo Coördinator blijven gescheiden, zelfs wanneer ze de middelen op systeemniveau delen."
+/>
+
+Select an instance to inspect its internals. The **Stats** tab shows model
+gebruik, het sjabloon, de huidige route van de gevolgtrekking, de levenscycluscontroles, het aantal wake-ups;
+en planningstoestand.
+
+<ManualScreenshot
+  caseId="agents/instance-detail"
+  alt="Habitat Seal Inspector Instance detail met token gebruik, Orbital Habitat Sentinel template, gevolggeving route, levenscyclus controles, en wake state"
+  caption="De instantie houdt voldoende herkomst om uit te leggen welke sjabloon en route zijn werk produceerde voordat u pauzeert, opnieuw analyseert of het vernietigd."
+/>
+
+De overige instantietabbladen bewaren verschillende bewijzen:
+
+- **Reports** contains the agent's saved report snapshots.
+- **Conversations** groups messages by wake cycle.
+- **Observations** exposes captured findings without mixing them into reports.
+- **Activity** shows the chronological message and tool trail.
+
+**Pause** keeps the instance but stops normal work. **Re-analyze** asks a task
+agent to reconsider its current subject. **Destroy** is destructive and should
+worden alleen gebruikt wanneer de instantie zelf niet meer wordt gewenst; het wijzigen van de
+template voor toekomstige agenten vereist niet dat niet-gerelateerde gevallen worden vernietigd.
+
+## Begrijp wake cycles
+
+Open **Wake Cycles** to see work that is running now and work due later. A
+**Pending** wake was requested by the agent. A **Scheduled** wake was placed by
+het systeem of de planner. Elke rij houdt de gekoppelde taak, project of dag zichtbaar
+naast de verantwoordelijke agent en een live countdown.
+
+<ManualScreenshot
+  caseId="agents/pending-wakes"
+  alt="Lotti Wake Cycles toont de lopende habitat inspectie en gepland Project Waddle en sardine logistiek wakes"
+  caption="De wachtrij onderscheidt een op verzoek van een agent gevraagde habitat follow-up van lanceer-dag en vracht schema's, dus een aftelling heeft altijd een reden en eigenaar."
+/>
+
+Verwijdert die timer door een wake in de wachtrij te verwijderen; het verwijdert het apparaat of de make-up niet
+verbonden taak. Als een wake onmiddellijk terugkeert, inspecteer de agent staat of de
+automatisering die het gevraagd in plaats van herhaaldelijk verwijderen van het symptoom.
+
+Continue with [Agent templates and souls](./agent-blueprints.mdx) to define
+wat deze gevallen doen en hoe ze communiceren.

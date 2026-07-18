@@ -1,0 +1,112 @@
+---
+title: Bouw nuttige dashboards
+description: Combineer gewoonten, metingen, gezondheid, enquêtes en trainingen in een herbruikbare operationele weergave.
+---
+
+# Bouw nuttige dashboards
+
+Een dashboard groepeert grafieken die een terugkerende vraag beantwoorden. **Kolonie
+operaties** zorgen voor druk op het leefgebied, de vraag naar sardines en een groter aantal expeditieleden
+samen; **Missiegereedheid** houdt een privé-lanceringsbeoordeling apart. Bouw
+rond een beslissing in plaats van elk beschikbaar nummer te verzamelen.
+
+<ManualScreenshot
+  caseId="dashboards/settings-list"
+  alt="Dashboardinstellingen met koloniebewerkingen en het prive-klaardashboard van de missie"
+/>
+
+## Maak een dashboard
+
+1. Open **Instellingen → Dashboardbeheer**.
+2. Selecteer **Dashboard maken**.
+3. Voeg een duidelijke naam toe en een omschrijving van de vraag die beantwoord moet worden.
+4. Wijs optioneel een categorie en privacy-instelling toe.
+5. Voeg diagrammen toe, rangschik ze en sla ze vervolgens op.
+
+<ManualScreenshot
+  caseId="dashboards/settings-detail"
+  alt="Kolonie operaties dashboard editor toegewezen aan Penguin Operations met privacy en actieve opties"
+/>
+
+- **Categorie** maakt het dashboard beschikbaar voor filteren op basis van categorieën.
+- **Privé** verbergt het dashboard tenzij privé-items worden getoond.
+- **Actief** bepaalt of het zonder wordt weergegeven in de Dashboards-lijst
+  het verwijderen van de definitie.
+
+## Grafieken samenstellen en bestellen
+
+<ManualScreenshot
+  caseId="dashboards/charts"
+  alt="Kolonie operaties grafiek lijst met Habitat druk dagelijks gemiddelde, Sardines verbruikt dagelijks bedrag, en Pinguïns goed voor de dagelijkse som"
+  caption="Sleep met de handgreep om te herschikken. Selecteer de instelknop op een meetkaart om de aggregatie te wijzigen, of verwijder deze met ×."
+/>
+
+De grafiekvolgorde is de dashboardvolgorde. Plaats het signaal dat de rest als eerste omlijst. Voor
+Kolonieoperaties leiden tot habitatdruk omdat een onveilige habitat de manier waarop verandert
+elk ander getal moet worden geïnterpreteerd.
+
+Meetdiagrammen behouden hun eigen aggregatie op het dashboarditem. Dat laat
+hetzelfde meetbare verschijnt met een andere samenvatting in een ander dashboard
+zonder de onderliggende observaties te veranderen.
+
+## Voeg grafieken uit ondersteunde bronnen toe
+
+<ManualScreenshot
+  caseId="dashboards/sources"
+  alt="Dashboard editor biedt Habits, Metingen, Gezondheid, Enquêtes, en Workouts als grafiek bronnen plus JSON export"
+/>
+
+De redacteur kan toevoegen:
+
+- **Gewoonten** voor voltooiingsgeschiedenis.
+- **Metingen** voor door de gebruiker gedefinieerde numerieke waarnemingen.
+- **Gezondheids**-gegevens ondersteund door het huidige platform en machtigingen.
+- **Enquêtes** voor geconfigureerde vragenlijstresultaten.
+- **Workouts** geïmporteerd uit ondersteunde gezondheidsbronnen.
+
+Vouw een bron uit, selecteer een of meer diagrammen en voeg ze toe. Beschikbaarheid is afhankelijk
+over de bestaande definities en platformgegevens; prompts voor gezondheidstoestemming en
+ondersteunde typen variëren per apparaat.
+
+## Open en interpreteer een dashboard
+
+Open **Inzichten** om actieve dashboards te bekijken. De lijst toont de dashboards van elk dashboard
+categoriepictogram, naam en doel. Gebruik het filter in de kop om je op één ervan te concentreren
+of meer categorieën.
+
+<ManualScreenshot
+  caseId="dashboards/list"
+  alt="Lotti Insights dashboardlijst met kolonie operaties en privé Mission repareren dashboards"
+  caption="Desktop reserveert het rechterpaneel voor het geselecteerde dashboard; mobiel opent het geselecteerde dashboard als een aparte pagina."
+/>
+
+Selecteer **Kolonieoperaties** om de kaarten te openen. Op het bureaublad worden de lijst en
+geselecteerde dashboard blijven naast elkaar. Op mobiel wordt het dashboard geopend zoals het is
+eigen pagina met een terugknop.
+
+<ManualScreenshot
+  caseId="dashboards/view"
+  alt="Kolonie operaties dashboard toont 90 dagen van habitat druk en sardines verbruikt met de dashboards lijst naast het op het bureaublad"
+  caption="De vaste kop houdt de 30, 90, 180 en 365 dagen bereik controles zichtbaar terwijl de grafieken scrollen hieronder."
+/>
+
+Het geselecteerde bereik is van toepassing op elk diagram op de pagina. De kaartkaarten blijven behouden
+hun eigen eenheden en aggregatie: habitatdruk gebruikt een dagelijks gemiddelde while
+Voor de sardineconsumptie en het aantal pinguïns worden dagelijkse bedragen gebruikt. Selecteer de **+** op a
+meetkaart om een nieuwe waarneming van dat type vast te leggen.
+
+<ManualScreenshot
+  caseId="dashboards/view-crew"
+  alt="Kolonie operaties dashboard gescrolled naar Sardines verbruikt en Penguins rekening houdend met grafieken"
+  caption="Een korte dip naar 36 pinguïns is zichtbaar in de 90-daagse bemanning geschiedenis; de omliggende dagen keren terug naar de verwachte 37."
+/>
+
+Beschouw een grafiek als bewijs, niet als een oordeel. Controleer de aggregatie, eenheden, datum
+bereik, ontbrekende observaties en privacystatus voordat conclusies worden getrokken.
+
+## Dashboardconfiguratie exporteren
+
+**Opslaan en kopiëren JSON** slaat het dashboard op en kopieert vervolgens de configuratie
+en meetbare definities waarnaar wordt verwezen. Dit is handig bij inspectie of verhuizing
+een configuratie, maar het is geen live synchronisatielink: latere bewerkingen updaten an
+al gekopieerde payload.

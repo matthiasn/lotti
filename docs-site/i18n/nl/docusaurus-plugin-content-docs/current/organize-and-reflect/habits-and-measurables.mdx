@@ -1,0 +1,160 @@
+---
+title: Houd gewoonten en metingen bij
+description: Configureer terugkerend gedrag en numerieke observaties en leg ze allemaal eerlijk vast.
+---
+
+# Volg gewoonten en metingen
+
+Een gewoonte antwoordt **Is dit terugkerende gedrag gebeurd?** Een meetbaar antwoord
+**welke numerieke waarde heb ik waargenomen?** Ze kunnen hetzelfde doel ondersteunen zonder
+uitwisselbaar zijn: “Keizerspinguïn appèl” is een gewoonte, terwijl “Pinguïns
+waarvoor rekening wordt gehouden” is een meetbare waarde.
+
+## Werk met gewoonten
+
+De pagina Gewoonten organiseert actieve definities in wat er nu moet gebeuren, gepland
+voor later, en voltooid. De dagelijkse samenvatting, consistentiegeschiedenis, strepen en
+Het voltooiingspercentagediagram helpt u patronen op te merken zonder ook maar één gemiste dag te behandelen
+als het hele verhaal.
+
+<ManualScreenshot
+  caseId="habits/today"
+  alt="Penguin Operations gewoonten dashboard tonen habitat controles, pinguïn roll call, sardine inventaris, voltooiing staat, strepen, en recente geschiedenis"
+/>
+
+### Creëer en vind gewoontedefinities
+
+1. Open **Instellingen → Gewoonten**.
+2. Selecteer **Gewoonte creëren**.
+3. Geef het gedrag een concrete, herhaalbare naam en een bruikbare beschrijving.
+4. Kies de categorie, opties en planning.
+5. Opslaan.
+
+<ManualScreenshot
+  caseId="habits/settings-list"
+  alt="Gewoonte instellingen met Keizer pinguïn roll call, Review sardine voorspelling, en Walk de habitat zeehonden met favoriete, inactieve, en prive-staten"
+  caption="De ster, verborgen ogen en lock identificeren favoriete, inactieve en privé-gewoonten."
+/>
+
+<ManualScreenshot
+  caseId="habits/settings-detail"
+  alt="Keizer pinguïn roll call gewoonte editor met expeditie beschrijving, Penguin Operations categorie, en favoriete, privé, en actieve opties"
+/>
+
+De definitie-editor bevat:
+
+- **Categorie** voor filtering en visuele context.
+- **Dashboard** wanneer de gewoonte als een diagram op een geselecteerd dashboard moet verschijnen.
+- **Favoriet** voor meer bekendheid.
+- **Privé** om het te verbergen, tenzij privé-invoer wordt getoond.
+- **Actief** om te bepalen of het op de pagina Gewoonten verschijnt zonder te verwijderen
+  zijn geschiedenis.
+
+### Plan een dagelijkse gewoonte
+
+<ManualScreenshot
+  caseId="habits/schedule"
+  alt="Keizerpinguïn roll call schema vanaf 1 juli, vanaf 06:00 met een 06:30 alarm"
+/>
+
+De huidige redacteur staat dagelijks op de eerste plaats. Stel een **Startdatum** in, eventueel uitstellen wanneer
+de gewoonte wordt **getoond van**, en kies optioneel wanneer Lotti een **toont
+waarschuwing**. Het datamodel begrijpt ook wekelijkse en maandelijkse schema's, maar de
+De huidige editor legt de rijkere tijdcontroles voor dagelijkse gewoonten bloot.
+
+### Leg vast wat er werkelijk is gebeurd
+
+Open een goede gewoonte of gebruik de snelle actie ervan. Het gedetailleerde invulformulier ondersteunt
+drie uitkomsten:
+
+- **Succes** — het gedrag is gebeurd.
+- **Gemist** — het was verwacht en mogelijk, maar gebeurde niet.
+- **Overslaan** — het was die dag redelijkerwijs niet van toepassing.
+
+<ManualScreenshot
+  caseId="habits/record"
+  alt="Aanvullingsformulier voor inspectie van de pinguïnhabitatrobben, met succes, Skip, en gemiste resultaten plus datum en notities"
+/>
+
+Gebruik de staat die de werkelijkheid bewaart. Een openhartige geschiedenis is nuttiger dan een
+perfect uitziende grafiek. Opleveringsregistraties zijn journaalposten, dus latere weergaven
+kan voor elke gewoonte en dag het effectieve resultaat reconstrueren.
+
+## Werk met meetbare waarden
+
+Een meetbare definitie beschrijft het nummer voordat u het opslaat: de naam,
+eenheid, privacy en hoe meerdere waarnemingen in grafieken worden gecombineerd.
+
+<ManualScreenshot
+  caseId="measurables/settings-list"
+  alt="Measureable instellingen met Habitat druk, Penguins verantwoord, en Sardines geconsumeerd"
+/>
+
+### Creëer een meetbaar gegevenstype
+
+1. Open **Instellingen → Meetbare gegevenstypen**.
+2. Selecteer de toevoegactie.
+3. Voeg een naam, optionele beschrijving en een beknopte afkorting van de eenheid toe.
+4. Kies de standaardaggregatie die door diagrammen wordt gebruikt.
+5. Bepaal of het favoriet of privé moet zijn en sla het vervolgens op.
+
+<ManualScreenshot
+  caseId="measurables/settings-detail"
+  alt="Met behulp van kPa en dagelijkse gemiddelde aggregatie meetbare editor voor de habitatdruk"
+/>
+
+Kies aggregatie op basis van wat herhaalde metingen betekenen:
+
+| Aggregatie | Gebruik het wanneer |
+| --- | --- |
+| Geen aggregatie | Elke individuele observatie doet ertoe |
+| Dagbedrag | De metingen stapelen zich op, zoals geconsumeerde sardines |
+| Dagelijks maximum | De dagpiek is het belangrijke signaal |
+| Daggemiddelde | Metingen bemonsteren een veranderende waarde, zoals habitatdruk |
+| Uurbedrag | Accumulatie heeft fijnere emmers per uur nodig |
+
+De eenheid is weergavecontext, geen converter. Als je habitatdruk definieert als
+`kPa`, registreer waarden consistent in kPa. Maak een aparte meetbare waarde als a
+Een andere eenheid vertegenwoordigt een werkelijk andere serie.
+
+### Registreer een meting
+
+Open een dashboard dat het meetbare bevat en selecteer de toegevoegde actie erop
+grafiek. Voer de waargenomen waarde in; Lotti houdt het toestel naast het nummer, zodat het
+Het is duidelijk wat er bespaard zal worden. Recente afzonderlijke waarden worden weergegeven als **Snelle log**
+acties waarbij het herhalen van een ervan nuttig is.
+
+<ManualScreenshot
+  caseId="measurements/capture"
+  alt="Sardines verbruikt meting editor geopend uit de bevolkte dashboard grafiek, met 84 sardines, snellog suggesties, waargenomen tijd, commentaar, en Save actie"
+/>
+
+Gebruik **Waargenomen om** voor het tijdstip waarop de meting daadwerkelijk werd uitgevoerd, in plaats van
+het tijdstip waarop u het toevallig betreedt. De eerste pagina selecteert de kalenderdatum.
+**Vandaag** keert direct terug naar de huidige datum.
+
+<ManualScreenshot
+  caseId="measurements/date"
+  alt="Waargenomen op kalender selectie vrijdag 17 juli 2026 voor de sardine meting"
+/>
+
+Blader naar het tijdgedeelte om het uur en de minuut in te stellen. **Nu** herstelt de
+huidige tijd. Selecteer **Gereed** om terug te keren naar het nog gevulde meetconcept,
+en vervolgens **Opslaan** om de journaalboeking te maken.
+
+<ManualScreenshot
+  caseId="measurements/time"
+  alt="Waargenomen bij tijdwiel ingesteld op 10:30 AM voor de sardinemeting"
+/>
+
+De opmerking is optioneel, maar is nuttig wanneer een nummer operationeel moet zijn
+context, bijvoorbeeld een levering, een ongebruikelijke dienst of een gewijzigde meting
+methode. Het opslaan van een meting verandert niets aan de meetbare definitie of de definitie ervan
+aggregatieregel.
+
+## Verbind de twee zonder ze te verwarren
+
+Een appèl kan succesvol worden afgerond, zelfs als er maar 36 pinguïns zijn
+geteld – de gewoonte registreert of de procedure heeft plaatsgevonden, terwijl het meetbare is
+registreert het resultaat. Zet beide op een [dashboard](./dashboards.mdx) wanneer hun
+relatie beantwoordt een terugkerende operationele vraag.

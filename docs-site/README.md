@@ -117,7 +117,7 @@ English media keeps the established
 `development/<case>/<viewport>-<theme>.webp` path. Localized media lives at
 `development/<locale>/<case>/<viewport>-<theme>.webp`. Visible deterministic
 demo copy that does not come from the app ARB files must use
-`manualScreenshotText(en: …, de: …, fr: …, it: …, es: …, cs: …, ro: …, pt: …)`
+`manualScreenshotText(en: …, de: …, fr: …, it: …, es: …, cs: …, nl: …, ro: …, pt: …)`
 so all eight catalogs show the
 same scenario in the selected language.
 

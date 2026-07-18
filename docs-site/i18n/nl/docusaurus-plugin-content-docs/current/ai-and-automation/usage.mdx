@@ -1,0 +1,59 @@
+---
+title: Bekijk het gebruik en de impact van AI
+description: Vergelijk AI-verzoeken op periode, categorie en model, inclusief geschatte kosten, energie, emissies en tokengebruik.
+---
+
+# Bekijk AI-gebruik en impact
+
+Open **Instellingen → AI-instellingen → Gebruik en impact** om te begrijpen hoe dit is geconfigureerd
+Er wordt gebruik gemaakt van cloudmodellen. Dezelfde analyse is ook bereikbaar via de AI
+impactdashboardroute.
+
+<ManualScreenshot
+  caseId="ai/usage"
+  alt="Lotti AI Impact dashboard voor juli 2026 met kosten, energie, kooldioxide equivalent, tokens, verzoeken en categorie bars"
+  caption="Project Waddle's voorbeeldmaand scheidt Mission Control en Penguin Operations terwijl de totale aanvraag voetafdruk zichtbaar blijft."
+/>
+
+## Lees de samenvattingskaarten
+
+De bovenste kaarten vatten de geselecteerde periode samen:
+
+- **Kosten** schatten de uitgaven van de provider.
+- **Energie** schat de elektriciteit die kan worden toegeschreven aan gemeten wolkengevolgtrekkingen.
+- **CO₂e** geeft de bijbehorende schatting van de emissies weer.
+- **Tokens** telt verwerkte modeltokens.
+- **Verzoeken** tellen gevolgtrekkingsoproepen.
+
+De vergelijkingsindicator gebruikt de vorige equivalente periode wanneer dat het geval is
+beschikbaar. Een procentuele stijging is context, en niet automatisch een probleem:
+De lanceringsbeoordelingsweek mag niet blindelings worden vergeleken met een inactieve kolonieweek.
+
+Energie, CO₂e en kosten worden alleen voor cloudmodellen gemeten. Lokale gevolgtrekking kan
+aanzienlijke apparaatenergie verbruiken zonder in deze cloudschattingen te verschijnen,
+deze pagina is dus geen complete vermogensmeter voor het hele systeem.
+
+## Verander de analyse
+
+Gebruik de periodecontrole en de pijlknoppen om door de tijd te bewegen, of om naar te springen
+**Deze maand** en **Dit jaar**. Kies vervolgens **Beide**, **Op categorie** of **Op
+model**. Binnen een diagram kunt u schakelen tussen waarden per dag, lopende totalen en
+delen waar beschikbaar.
+
+Categorieweergaven geven het antwoord: "Welk werkgebied heeft het gebruik veroorzaakt?" Modelweergaven antwoord
+“Welk geconfigureerd model heeft het gebruik veroorzaakt?” Gebruik beide voordat u een profiel wijzigt:
+Een model met hoge kosten kan gerechtvaardigd zijn voor één specialistische categorie, maar als een verspilling
+algemene standaard.
+
+## Handel met een verrassend resultaat
+
+Als het gebruik onverwacht verspringt:
+
+1. beperk de periode tot de eerste getroffen dag;
+2. vergelijk de uitsplitsingen naar categorieën en modellen;
+3. automatisering en gelijktijdigheid van agenten beoordelen;
+4. inspecteer het gevolgtrekkingsprofiel dat is toegewezen aan de betreffende categorie; en
+5. Controleer de facturering aan de provider voordat u de schatting van Lotti als factuur behandelt.
+
+Als u de route wilt wijzigen die verantwoordelijk is voor toekomstige oproepen, keert u terug naar
+[Modellen en gevolgtrekkingsprofielen](./models-and-profiles.mdx).

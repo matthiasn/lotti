@@ -8860,6 +8860,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Czech';
 
   @override
+  String get settingsManualLanguageDutchTitle => 'Dutch';
+
+  @override
   String get settingsManualLanguageEnglishTitle => 'English';
 
   @override
