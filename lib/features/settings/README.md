@@ -597,8 +597,8 @@ flowchart LR
   Choice["Advanced → Language"] --> Preference{"Explicit override?"}
   Preference -->|yes| Override["English / German / French / Italian / Spanish / Czech / Dutch / Romanian / Portuguese"]
   Preference -->|no| System["Platform system locale"]
-  Override --> AppUi["Lotti UI in selected language"]
-  System --> AppUi["Lotti UI follows system language"]
+  Override --> OverrideAppUi["Lotti UI in selected language"]
+  System --> SystemAppUi["Lotti UI follows system language"]
   System --> Catalog{"Published manual locale?"}
   Catalog -->|yes| Matched["Matching manual route"]
   Catalog -->|no| English["English manual route"]

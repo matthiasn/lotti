@@ -16,7 +16,7 @@ bool handleSettingsNodeAction(WidgetRef ref, SettingsNode node) {
       unawaited(
         openManualInBrowser(
           systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
-          override: ref.read(manualLanguageControllerProvider),
+          override: ref.read(manualLanguageControllerProvider).value,
         ),
       );
       return true;

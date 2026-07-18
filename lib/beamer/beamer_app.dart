@@ -1249,9 +1249,9 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
 
     final themingState = ref.watch(themingControllerProvider);
     final enableTooltips = ref.watch(enableTooltipsProvider).value ?? true;
-    final languageOverride = ref.watch(manualLanguageControllerProvider);
+    final languagePreference = ref.watch(manualLanguageControllerProvider);
 
-    if (themingState.darkTheme == null) {
+    if (themingState.darkTheme == null || languagePreference.isLoading) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: ThemeData.dark().copyWith(
@@ -1262,6 +1262,8 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
         ),
       );
     }
+
+    final languageOverride = languagePreference.value;
 
     final updateActivity =
         (widget.userActivityService ?? getIt<UserActivityService>())

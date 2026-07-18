@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:async' show FutureOr;
 import 'dart:ui' show Locale;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,31 +82,33 @@ Future<void> openManualInBrowser({
 
 /// Persists the optional language override for Lotti and the external Manual.
 ///
-/// `null` represents the default *Follow system* choice. The controller
-/// hydrates lazily, while [_userChanged] prevents a late database read from
-/// replacing a selection made immediately after the settings page opens.
-class ManualLanguageController extends Notifier<ManualLanguage?> {
+/// `AsyncLoading` represents initial hydration; `AsyncData(null)` is the
+/// default *Follow system* choice. [_userChanged] prevents a late database
+/// read from replacing a selection made immediately after settings opens.
+class ManualLanguageController extends AsyncNotifier<ManualLanguage?> {
   bool _userChanged = false;
 
   @override
-  ManualLanguage? build() {
-    unawaited(_load());
-    return null;
-  }
+  FutureOr<ManualLanguage?> build() async {
+    if (!getIt.isRegistered<SettingsDb>()) return null;
 
-  Future<void> _load() async {
-    if (!getIt.isRegistered<SettingsDb>()) return;
-    final stored = await getIt<SettingsDb>().itemByKey(
-      manualLanguageSettingsKey,
-    );
-    if (!ref.mounted || _userChanged) return;
-    state = ManualLanguage.fromStoredValue(stored);
+    try {
+      final stored = await getIt<SettingsDb>().itemByKey(
+        manualLanguageSettingsKey,
+      );
+      return _userChanged
+          ? state.value
+          : ManualLanguage.fromStoredValue(stored);
+    } on Object {
+      // A settings read must not keep the app on its loading shell forever.
+      return state.value;
+    }
   }
 
   /// Selects a specific Lotti and Manual language, or clears the override.
   Future<void> setOverride(ManualLanguage? override) async {
     _userChanged = true;
-    state = override;
+    state = AsyncData(override);
 
     if (!getIt.isRegistered<SettingsDb>()) return;
     final settingsDb = getIt<SettingsDb>();
@@ -122,7 +124,7 @@ class ManualLanguageController extends Notifier<ManualLanguage?> {
 }
 
 final manualLanguageControllerProvider =
-    NotifierProvider<ManualLanguageController, ManualLanguage?>(
+    AsyncNotifierProvider<ManualLanguageController, ManualLanguage?>(
       ManualLanguageController.new,
       name: 'manualLanguageControllerProvider',
     );

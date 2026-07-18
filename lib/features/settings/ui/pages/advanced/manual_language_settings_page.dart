@@ -33,7 +33,7 @@ class ManualLanguageSettingsBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final selectedOverride = ref.watch(manualLanguageControllerProvider);
+    final selectedOverride = ref.watch(manualLanguageControllerProvider).value;
     final controller = ref.read(manualLanguageControllerProvider.notifier);
 
     return Padding(
