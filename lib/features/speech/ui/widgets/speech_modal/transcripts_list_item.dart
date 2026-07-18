@@ -73,6 +73,7 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
               maintainSize: true,
               maintainState: true,
               child: IconButton(
+                tooltip: context.messages.aiCardMenuActionDelete,
                 padding: EdgeInsets.zero,
                 constraints: BoxConstraints(
                   minWidth: tokens.spacing.step8,
@@ -91,6 +92,9 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
               ),
             ),
             IconButton(
+              tooltip: show
+                  ? context.messages.checklistCollapseTooltip
+                  : context.messages.checklistExpandTooltip,
               padding: EdgeInsets.zero,
               constraints: BoxConstraints(
                 minWidth: tokens.spacing.step8,

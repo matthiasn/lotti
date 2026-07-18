@@ -75,6 +75,16 @@ void main() {
         knownInteractionCount: 1,
         unknownInteractionCount: 0,
       ),
+      costAssessments: [
+        AiInteractionCost(
+          id: 'cost-1',
+          interactionId: 'call-1',
+          source: AiCostSource.providerReported,
+          assessedAt: DateTime(2026, 3, 15, 12),
+          reportingAmountMicros: 25000,
+          reportingCurrency: 'USD',
+        ),
+      ],
     );
 
     await pumpSummary(tester, envelope: envelope, details: details);
@@ -94,7 +104,11 @@ void main() {
     await tester.pump(MotionDurations.long2);
     expect(find.text('AI attribution'), findsOneWidget);
     expect(find.text('Interactions'), findsOneWidget);
-    expect(find.textContaining('Call 1: gpt-5 · 120 tokens'), findsOneWidget);
+    expect(find.text('1. gpt-5'), findsOneWidget);
+    await tester.tap(find.text('1. gpt-5'));
+    await tester.pump(MotionDurations.short2);
+    expect(find.text('120'), findsOneWidget);
+    expect(find.text('Provider reported'), findsOneWidget);
   });
 
   testWidgets('does not render when no attribution can be resolved', (
@@ -134,6 +148,7 @@ void main() {
     expect(find.text('…'), findsNWidgets(2));
     expect(find.textContaining('Unknown model'), findsNothing);
     expect(find.text('Cost unknown'), findsNothing);
+    expect(tester.widget<InkWell>(find.byType(InkWell)).onTap, isNull);
 
     completer.complete(
       AiAttributionDetails(
@@ -147,7 +162,44 @@ void main() {
 
     expect(find.text('…'), findsNothing);
     expect(find.textContaining('Unknown model'), findsOneWidget);
-    expect(find.text('No charge'), findsOneWidget);
+    expect(find.text('Cost unknown'), findsOneWidget);
+  });
+
+  testWidgets('remains readable at 200 percent text scaling', (tester) async {
+    final envelope = makeAiTerminalEnvelope();
+    final details = AiAttributionDetails(
+      attribution: envelope.attribution,
+      interactions: const [],
+      costTotals: const AiCostTotals(
+        reportingMicrosByCurrency: {'USD': 0},
+        knownInteractionCount: 1,
+        unknownInteractionCount: 0,
+      ),
+    );
+    await tester.pumpWidget(
+      makeTestableWidget(
+        SizedBox(
+          width: 320,
+          child: AiAttributionSummary(
+            artifact: makeAiArtifact(),
+            envelope: envelope,
+          ),
+        ),
+        mediaQueryData: phoneMediaQueryData.copyWith(
+          textScaler: const TextScaler.linear(2),
+        ),
+        overrides: [
+          aiAttributionDetailsProvider.overrideWith(
+            (ref, id) async => details,
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('Ada · Manual · Completed'), findsOneWidget);
+    expect(find.text(r'$0.00'), findsOneWidget);
   });
 
   testWidgets('narrow compact summary exposes zero cost and private details', (
@@ -172,7 +224,11 @@ void main() {
     final details = AiAttributionDetails(
       attribution: attribution,
       interactions: const [],
-      costTotals: AiCostTotals.empty,
+      costTotals: const AiCostTotals(
+        reportingMicrosByCurrency: {'USD': 0},
+        knownInteractionCount: 1,
+        unknownInteractionCount: 0,
+      ),
     );
 
     await pumpSummary(
@@ -185,7 +241,7 @@ void main() {
     );
 
     expect(find.textContaining('You · Scheduled · Failed'), findsOneWidget);
-    expect(find.text('No charge'), findsOneWidget);
+    expect(find.text(r'$0.00'), findsOneWidget);
     await tester.tap(find.byType(InkWell));
     await tester.pump();
     await tester.pump(MotionDurations.long2);
@@ -288,14 +344,10 @@ void main() {
     await tester.pump();
     await tester.pump(MotionDurations.long2);
     expect(find.text('Mixed'), findsOneWidget);
-    expect(
-      find.textContaining('Call 1: legacy-model · 0 tokens'),
-      findsOneWidget,
-    );
-    final renderedText = tester
-        .widgetList<Text>(find.byType(Text))
-        .map((widget) => widget.data)
-        .whereType<String>();
-    expect(renderedText, contains('Call 2: Unknown model · 0 tokens'));
+    expect(find.text('1. legacy-model'), findsOneWidget);
+    expect(find.text('2. Unknown model'), findsOneWidget);
+    await tester.tap(find.text('1. legacy-model'));
+    await tester.pump(MotionDurations.short2);
+    expect(find.text('Token usage unknown'), findsOneWidget);
   });
 }

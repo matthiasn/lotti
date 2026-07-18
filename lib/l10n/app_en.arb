@@ -695,10 +695,23 @@
   "aggregationHourlySum": "Hourly sum",
   "aggregationNone": "Raw values",
   "aiAssistantTitle": "Generate…",
+  "aiAttributionArtifactContext": "Context",
+  "aiAttributionArtifactOutput": "Output",
+  "aiAttributionArtifacts": "Linked items",
+  "aiAttributionArtifactSource": "Source",
+  "aiAttributionCompletedAt": "Completed at",
   "aiAttributionCost": "Cost",
+  "aiAttributionCostSource": "Cost source",
+  "aiAttributionCostSourceEstimated": "Estimated locally",
+  "aiAttributionCostSourceLegacy": "Legacy reported",
+  "aiAttributionCostSourceLocal": "Local compute",
+  "aiAttributionCostSourceProvider": "Provider reported",
+  "aiAttributionCostSourceReconciled": "Reconciled externally",
   "aiAttributionCostUnknown": "Cost unknown",
   "aiAttributionCostZero": "No charge",
   "aiAttributionCreator": "Creator",
+  "aiAttributionDiagnostics": "Diagnostics",
+  "aiAttributionDuration": "Duration",
   "aiAttributionExecutor": "Executed on",
   "aiAttributionInteractionLine": "Call {index}: {model} · {tokens} tokens",
   "@aiAttributionInteractionLine": {
@@ -715,11 +728,14 @@
     }
   },
   "aiAttributionInteractions": "Interactions",
+  "aiAttributionLoading": "Loading AI attribution…",
   "aiAttributionNoInteractionDetails": "No interaction details are available.",
   "aiAttributionPrivacy": "Privacy",
   "aiAttributionPrivacyMixed": "Mixed",
   "aiAttributionPrivacyPrivate": "Private",
   "aiAttributionPrivacyStandard": "Standard",
+  "aiAttributionRequestEvidence": "Request evidence",
+  "aiAttributionResponseEvidence": "Response evidence",
   "aiAttributionSecondary": "{model} · {time} · {callCount, plural, =0{no calls} =1{1 call} other{{callCount} calls}}",
   "@aiAttributionSecondary": {
     "placeholders": {
@@ -735,6 +751,8 @@
     }
   },
   "aiAttributionSensitiveContentNotice": "Request and response content is hidden because this work contains private data.",
+  "aiAttributionSomeCallsUnknown": "Some calls have unknown cost",
+  "aiAttributionStartedAt": "Started at",
   "aiAttributionStatus": "Status",
   "aiAttributionStatusAbandoned": "Interrupted",
   "aiAttributionStatusCancelled": "Cancelled",
@@ -756,12 +774,16 @@
     }
   },
   "aiAttributionTitle": "AI attribution",
+  "aiAttributionTokens": "Tokens",
+  "aiAttributionTokenUsageUnknown": "Token usage unknown",
+  "aiAttributionTrigger": "Trigger",
   "aiAttributionTriggerAgent": "Agent",
   "aiAttributionTriggerAutomatic": "Automatic",
   "aiAttributionTriggerImported": "Imported",
   "aiAttributionTriggerManual": "Manual",
   "aiAttributionTriggerScheduled": "Scheduled",
   "aiAttributionTriggerSynced": "From sync",
+  "aiAttributionUnavailable": "AI attribution is unavailable.",
   "aiAttributionUnknownCreator": "Unknown creator",
   "aiAttributionUnknownExecutor": "Unknown execution device",
   "aiAttributionUnknownModel": "Unknown model",
@@ -804,6 +826,14 @@
   "aiConfigSelectProviderModalTitle": "Select Inference Provider",
   "aiConfigSelectProviderTypeModalTitle": "Select Provider Type",
   "aiConfigUseReasoningFieldLabel": "Use Reasoning",
+  "aiConsumptionAttributionReference": "Attribution {id}",
+  "@aiConsumptionAttributionReference": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "aiConsumptionCallsLine": "AI calls: {count} · impact measured for {measured}",
   "@aiConsumptionCallsLine": {
     "placeholders": {
@@ -873,6 +903,14 @@
   "aiConsumptionTypeImageGeneration": "Image generation",
   "aiConsumptionTypePromptGeneration": "Prompt generation",
   "aiConsumptionTypeTextGeneration": "Text generation",
+  "aiConsumptionWorkGroup": "AI work · {callCount, plural, =1{1 call} other{{callCount} calls}}",
+  "@aiConsumptionWorkGroup": {
+    "placeholders": {
+      "callCount": {
+        "type": "int"
+      }
+    }
+  },
   "aiDeleteToastCascadeDescription": "{count, plural, =1{Also removed 1 model: {names}} other{Also removed {count} models: {names}}}",
   "@aiDeleteToastCascadeDescription": {
     "placeholders": {

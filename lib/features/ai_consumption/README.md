@@ -33,10 +33,19 @@ flowchart LR
 prompts, image generation, image analysis, and transcription. Agent turns share
 one deterministic attribution per wake and `WakeOutputWriter` embeds the
 terminal envelope in the final report. Direct batch/realtime transcript writers
-use `TranscriptAttributionCoordinator`: their provider call has already
-completed, but evidence must still cross the barrier before the transcript is
-written. Embedding indexing records reference-only evidence and a known-zero
-local-compute cost. The source-controlled inventory in
+use `TranscriptAttributionCoordinator`: a pending session is durable before the
+provider/native call, realtime usage is attached at completion, optional batch
+verification is recorded as another interaction in the same attribution, and
+the carrier cannot be written before the evidence barrier. Explicit failures
+and cancellations terminalize immediately; stale recovery is reserved for
+interrupted processes.
+
+`AiInteractionCapture` is the shared pre-call boundary for carrier-less funnels
+such as AI chat, onboarding structuring, chat audio input, and agent-log
+compaction. It records token usage and exact provider cost when available, then
+terminalizes the work as `partial` with `output_carrier_unavailable` rather
+than claiming an output link it cannot prove. Embedding indexing records
+reference-only evidence and a known-zero local-compute cost. The source-controlled inventory in
 `model/ai_inference_entrypoint_inventory.dart` classifies all product inference
 funnels and their guarantees.
 
@@ -158,7 +167,7 @@ carrier-less sibling.
 
 Costs belong to interactions and roll up once per effective interaction. The
 system keeps the provider's exact decimal amount/unit and an optional integer
-micro-unit reporting amount/currency. `effectiveAttributionCost` validates
+micro-unit reporting amount/currency. `effectiveInteractionCost` validates
 supersession chains, rejects cycles and authority downgrades, chooses the
 highest-authority concurrent evidence deterministically, keeps currencies
 separate, and reports the number of interactions whose cost is unknown.
@@ -170,6 +179,9 @@ locally estimated → local compute → unknown. Corrections append a new row wi
 Melious credits are retained as `meliousCredit` evidence and also normalized
 with the app's documented `1 credit ≈ 1 EUR` approximation, frozen in the
 pricing snapshot for attribution rollups.
+The raw JSON decimal lexeme is captured before decoding and converted to
+reporting micros with exact, half-even decimal rounding; binary floating-point
+values are not the audit source.
 
 ## Impact capture (Melious)
 
@@ -223,6 +235,11 @@ never look like gaps in journal/agent sync. Convergence is trivial: fresh id →
 applied; replayed id whose local clock dominates/equals → skipped. Rows never
 mutate, so there is no concurrent-merge case.
 
+Inline attribution evidence is bounded to 64 KiB. Oversized inline payloads
+drop request/response/provider metadata, retain deterministic SHA-256 evidence
+and an overflow marker, and fail closed if the metadata-only form still exceeds
+the cap.
+
 ## Aggregation
 
 - **Per-task lifetime totals** — `ConsumptionRepository.totalsForTask(taskId)`
@@ -272,6 +289,11 @@ backfilled records appear. It retains embedded data while the read-model query
 loads, so background refresh never replaces established attribution with a
 full loading/empty shell.
 
+The detail view shows lifecycle timestamps, executor, privacy, typed artifact
+links, each interaction's status/duration/token usage/effective cost and cost
+source, plus reference-only request/response digests and provider diagnostics.
+Unknown usage and cost remain visibly distinct from known zero.
+
 ## Impact dashboard (UI)
 
 `ui/impact_analysis_body.dart` (`ImpactAnalysisBody`) is the host-independent
@@ -316,6 +338,8 @@ model table; each chart isolates its own series independently. Drilling a bar on
 either chart scopes the ledger to that week (both charts share
 `ledgerBucketStart` and highlight the bucket), and the ledger below filters by
 the drilled week ∩ the category isolation ∩ the model isolation.
+Attributed ledger events are grouped under their top-level work id and expand
+to reveal the child provider calls; legacy events remain individual rows.
 
 The body is the single provider consumer; the children are dumb value widgets:
 

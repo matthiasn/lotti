@@ -29,7 +29,18 @@ void main() {
       expect(impact.renewablePercent, 100);
       expect(impact.pue, 1.1);
       expect(impact.costCredits, 0.002);
+      expect(impact.costCreditsDecimal, '0.002');
       expect(impact.hasData, isTrue);
+    });
+
+    test('extracts exact cost evidence before JSON number decoding', () {
+      const body =
+          '{"billing_cost":{"credits":0.1234567890123456789},"data":[]}';
+
+      expect(
+        MeliousCallImpact.costDecimalFromResponseBody(body),
+        '0.1234567890123456789',
+      );
     });
 
     test('returns all-null (hasData false) when impact blocks are absent', () {
@@ -91,6 +102,7 @@ void main() {
         'dataCenter': _makeImpact(dataCenter: 'DE'),
         'providerId': _makeImpact(providerId: 'other'),
         'costCredits': _makeImpact(costCredits: 9.9),
+        'costCreditsDecimal': _makeImpact(costCreditsDecimal: '9.9'),
       };
       for (final MapEntry(key: field, value: variant) in variants.entries) {
         expect(
@@ -108,7 +120,7 @@ void main() {
         'MeliousCallImpact(energyKwh: 0.25, carbonGCo2: null, '
         'waterLiters: null, renewablePercent: null, '
         'pue: null, dataCenter: FI, providerId: null, '
-        'costCredits: null)',
+        'costCredits: null, costCreditsDecimal: null)',
       );
     });
   });
@@ -188,6 +200,7 @@ MeliousCallImpact _makeImpact({
   String? dataCenter = 'FI',
   String? providerId = 'nebius',
   double? costCredits = 0.004,
+  String? costCreditsDecimal = '0.004',
 }) => MeliousCallImpact(
   energyKwh: energyKwh,
   carbonGCo2: carbonGCo2,
@@ -197,6 +210,7 @@ MeliousCallImpact _makeImpact({
   dataCenter: dataCenter,
   providerId: providerId,
   costCredits: costCredits,
+  costCreditsDecimal: costCreditsDecimal,
 );
 
 /// One generated Melious response shape: each field is either absent

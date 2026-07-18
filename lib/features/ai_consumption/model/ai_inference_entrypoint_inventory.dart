@@ -6,6 +6,11 @@ enum AiAttributionCoverage {
   /// is blocked until interaction evidence crossed the publication barrier.
   strictPublicationSaga,
 
+  /// Durable pending state and terminal evidence surround the backend call,
+  /// while the funnel explicitly records that no syncable output carrier is
+  /// available yet.
+  durablePartialCapture,
+
   /// The legacy funnel records a partial attribution after the call without
   /// claiming an output carrier that it cannot prove.
   compatibilityPartial,
@@ -60,6 +65,13 @@ const aiInferenceEntrypoints = <AiInferenceEntrypoint>[
     outputCarrier: 'AgentReportEntity.provenance',
   ),
   AiInferenceEntrypoint(
+    id: 'agent-log-compaction',
+    owner: 'lib/features/agents/service/agent_log_llm_summarizer.dart',
+    workTypes: {AiWorkType.internalInference},
+    coverage: AiAttributionCoverage.durablePartialCapture,
+    outputCarrier: null,
+  ),
+  AiInferenceEntrypoint(
     id: 'legacy-unified-inference',
     owner: 'lib/features/ai/repository/unified_ai_inference_repository.dart',
     workTypes: {
@@ -90,7 +102,7 @@ const aiInferenceEntrypoints = <AiInferenceEntrypoint>[
     owner:
         'lib/features/onboarding/services/onboarding_task_structuring_service.dart',
     workTypes: {AiWorkType.textGeneration},
-    coverage: AiAttributionCoverage.compatibilityPartial,
+    coverage: AiAttributionCoverage.durablePartialCapture,
     outputCarrier: null,
   ),
   AiInferenceEntrypoint(
@@ -100,7 +112,7 @@ const aiInferenceEntrypoints = <AiInferenceEntrypoint>[
       AiWorkType.textGeneration,
       AiWorkType.audioTranscription,
     },
-    coverage: AiAttributionCoverage.compatibilityPartial,
+    coverage: AiAttributionCoverage.durablePartialCapture,
     outputCarrier: null,
   ),
   AiInferenceEntrypoint(

@@ -223,4 +223,16 @@ void main() {
       'InvalidAiCostEvidence: bad',
     );
   });
+
+  test('converts exact decimals to micros with half-even rounding', () {
+    expect(decimalAmountToMicros('0.0000005'), 0);
+    expect(decimalAmountToMicros('0.0000015'), 2);
+    expect(decimalAmountToMicros('1.23456789'), 1234568);
+    expect(decimalAmountToMicros('-1.2345675'), -1234568);
+    expect(decimalAmountToMicros('1.25e-6'), 1);
+    expect(
+      () => decimalAmountToMicros('01.2'),
+      throwsA(isA<InvalidAiCostEvidence>()),
+    );
+  });
 }

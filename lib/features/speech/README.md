@@ -233,6 +233,7 @@ sequenceDiagram
   participant Modal as "AudioRecordingModal"
   participant Ctl as "AudioRecorderController"
   participant RT as "RealtimeTranscriptionService"
+  participant Attr as "TranscriptAttributionCoordinator"
   participant Speech as "SpeechRepository"
   participant Persist as "PersistenceLogic"
 
@@ -240,6 +241,7 @@ sequenceDiagram
   Modal->>Ctl: recordRealtime(linkedId)
   Ctl->>Ctl: pause active AudioPlayerController if needed
   Ctl->>RT: resolveRealtimeConfig()
+  Ctl->>Attr: begin(provider, model, task/category)
   Ctl->>RT: startRealtimeTranscription(pcmStream)
   RT-->>Ctl: amplitudeStream dBFS updates
   RT-->>Ctl: transcript deltas
@@ -248,6 +250,8 @@ sequenceDiagram
   Modal->>Ctl: stopRealtime()
   Ctl->>RT: stop(stopRecorder, outputPath)
   RT-->>Ctl: transcript + detectedLanguage + saved audio file path
+  Ctl->>Attr: complete(transcript digest, usage)
+  Attr-->>Ctl: published terminal envelope
   Ctl->>Speech: createAudioEntry(...)
   Ctl->>Ctl: save transcript onto JournalAudio and entryText
   Ctl->>Ctl: reset recorder state
@@ -259,9 +263,11 @@ Two important implementation details:
    actually produced an audio file. Very short recordings can still return
    transcript text from the service, but the controller does not persist
    anything unless an audio artifact exists.
-2. When a realtime transcript exists, the controller asks
-   `TranscriptAttributionCoordinator` to publish reference-only interaction and
-   unknown-cost evidence. Only after the publication barrier succeeds does it
+2. Before realtime inference starts, the controller asks
+   `TranscriptAttributionCoordinator` for a durable pending session. When a
+   transcript exists, the coordinator publishes reference-only interaction,
+   token-usage, and cost evidence (unknown when the provider reports none).
+   Only after the publication barrier succeeds does it
    append an `AudioTranscript` with a stable id and terminal attribution
    envelope to `JournalAudio.data.transcripts`; it also mirrors the transcript
    into `entryText`. Attribution inherits the audio entry's privacy flag and
@@ -270,8 +276,9 @@ Two important implementation details:
    transcript never advertises evidence that was not durable.
 
 `cancelRealtime()` is the realtime discard path (the ✕ button in realtime
-mode). It tears down the recorder and realtime service without creating or
-updating a `JournalAudio` entry. The standard-mode discard path is `cancel()`,
+mode). It records a terminal cancelled attribution, then tears down the recorder
+and realtime service without creating or updating a `JournalAudio` entry. The
+standard-mode discard path is `cancel()`,
 which mirrors this for file-based recordings (stop + delete the partial file,
 no entry).
 

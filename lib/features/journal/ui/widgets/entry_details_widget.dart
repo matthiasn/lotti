@@ -469,7 +469,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
           // gap the first body line crowds the header on phones.
           SizedBox(height: context.designTokens.spacing.step3),
           ..._withRhythm(context, body),
-          if (item is JournalAudio)
+          if (item is JournalAudio || item is JournalImage)
             NestedAiResponsesWidget(
               parentEntryId: itemId,
               linkedFromEntity: item,
@@ -507,7 +507,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       mainAxisSize: MainAxisSize.min,
       children: [
         ..._withRhythm(context, collapsibleBody),
-        if (item is JournalAudio)
+        if (item is JournalAudio || item is JournalImage)
           NestedAiResponsesWidget(
             parentEntryId: itemId,
             linkedFromEntity: item,

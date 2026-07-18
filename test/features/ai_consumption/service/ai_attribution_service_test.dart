@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart'
@@ -435,4 +437,45 @@ void main() {
       verifyNever(() => syncService.recordEventForPublication(any()));
     },
   );
+
+  test('reduces oversized inline evidence deterministically', () async {
+    final pending = await service.begin(makeAiAttributionStart());
+    final event = makeConsumptionEvent(id: 'large-event').copyWith(
+      payload: AiInteractionPayload(
+        id: 'large-payload',
+        interactionId: 'large-event',
+        request: const [],
+        response: const [],
+        parameters: {'large': 'x' * kAiAttributionInlineEvidenceMaxBytes},
+        requestDigest: 'request',
+        responseDigest: 'response',
+        capturePolicy: AiPayloadCapturePolicy.referenceOnly,
+        privacyClassification: AiPrivacyClassification.standard,
+        createdAt: DateTime(2026, 3, 15),
+      ),
+    );
+    when(() => syncService.recordEventForPublication(any())).thenAnswer((
+      invocation,
+    ) async {
+      final bounded =
+          invocation.positionalArguments.single as AiConsumptionEvent;
+      return ConsumptionPublicationResult(event: bounded, published: true);
+    });
+
+    final result = await service.recordInteraction(
+      attributionId: pending.id,
+      event: event,
+    );
+
+    expect(result.event.payload?.parameters['inlineEvidenceOverflow'], isTrue);
+    expect(result.event.payload?.request, isEmpty);
+    expect(
+      result.event.payload?.capturePolicy,
+      AiPayloadCapturePolicy.metadataOnly,
+    );
+    expect(
+      utf8.encode(jsonEncode(result.event.toJson())).length,
+      lessThanOrEqualTo(kAiAttributionInlineEvidenceMaxBytes),
+    );
+  });
 }

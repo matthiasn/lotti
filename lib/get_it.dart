@@ -29,6 +29,7 @@ import 'package:lotti/features/ai_consumption/repository/consumption_repository.
 import 'package:lotti/features/ai_consumption/service/ai_attribution_backfill_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
@@ -425,10 +426,17 @@ Future<void> registerSingletons() async {
       AiAttributionIdentityResolver(
         settingsDb,
         vectorClockService,
+        matrixUserId: () => client.userID,
       ),
     )
     ..registerSingleton<AiAttributionService>(
       AiAttributionService(consumptionRepository, consumptionSyncService),
+    )
+    ..registerSingleton<AiInteractionCapture>(
+      AiInteractionCapture(
+        getIt<AiAttributionService>(),
+        getIt<AiAttributionIdentityResolver>(),
+      ),
     )
     ..registerSingleton<TranscriptAttributionCoordinator>(
       TranscriptAttributionCoordinator(

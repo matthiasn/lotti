@@ -1141,7 +1141,40 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAssistantTitle => 'Generovat…';
 
   @override
+  String get aiAttributionArtifactContext => 'Kontext';
+
+  @override
+  String get aiAttributionArtifactOutput => 'Výstup';
+
+  @override
+  String get aiAttributionArtifacts => 'Propojené položky';
+
+  @override
+  String get aiAttributionArtifactSource => 'Zdroj';
+
+  @override
+  String get aiAttributionCompletedAt => 'Dokončeno';
+
+  @override
   String get aiAttributionCost => 'Cena';
+
+  @override
+  String get aiAttributionCostSource => 'Zdroj nákladů';
+
+  @override
+  String get aiAttributionCostSourceEstimated => 'Místní odhad';
+
+  @override
+  String get aiAttributionCostSourceLegacy => 'Starší vykázaná hodnota';
+
+  @override
+  String get aiAttributionCostSourceLocal => 'Místní zpracování';
+
+  @override
+  String get aiAttributionCostSourceProvider => 'Vykázáno poskytovatelem';
+
+  @override
+  String get aiAttributionCostSourceReconciled => 'Externě odsouhlaseno';
 
   @override
   String get aiAttributionCostUnknown => 'Cena neznámá';
@@ -1153,6 +1186,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAttributionCreator => 'Tvůrce';
 
   @override
+  String get aiAttributionDiagnostics => 'Diagnostika';
+
+  @override
+  String get aiAttributionDuration => 'Doba trvání';
+
+  @override
   String get aiAttributionExecutor => 'Spuštěno na';
 
   @override
@@ -1162,6 +1201,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiAttributionInteractions => 'Interakce';
+
+  @override
+  String get aiAttributionLoading => 'Načítá se přiřazení AI…';
 
   @override
   String get aiAttributionNoInteractionDetails =>
@@ -1180,6 +1222,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAttributionPrivacyStandard => 'Standardní';
 
   @override
+  String get aiAttributionRequestEvidence => 'Doklad požadavku';
+
+  @override
+  String get aiAttributionResponseEvidence => 'Doklad odpovědi';
+
+  @override
   String aiAttributionSecondary(String model, String time, int callCount) {
     String _temp0 = intl.Intl.pluralLogic(
       callCount,
@@ -1194,6 +1242,13 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get aiAttributionSensitiveContentNotice =>
       'Obsah požadavku a odpovědi je skrytý, protože tato práce obsahuje soukromá data.';
+
+  @override
+  String get aiAttributionSomeCallsUnknown =>
+      'Některá volání mají neznámé náklady';
+
+  @override
+  String get aiAttributionStartedAt => 'Zahájeno';
 
   @override
   String get aiAttributionStatus => 'Stav';
@@ -1222,6 +1277,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAttributionTitle => 'Přiřazení AI';
 
   @override
+  String get aiAttributionTokens => 'Tokeny';
+
+  @override
+  String get aiAttributionTokenUsageUnknown => 'Využití tokenů není známé';
+
+  @override
+  String get aiAttributionTrigger => 'Spouštěč';
+
+  @override
   String get aiAttributionTriggerAgent => 'Agent';
 
   @override
@@ -1238,6 +1302,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiAttributionTriggerSynced => 'Ze synchronizace';
+
+  @override
+  String get aiAttributionUnavailable => 'Přiřazení AI není dostupné.';
 
   @override
   String get aiAttributionUnknownCreator => 'Neznámý tvůrce';
@@ -1352,6 +1419,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiConfigUseReasoningFieldLabel => 'Použít uvažování';
 
   @override
+  String aiConsumptionAttributionReference(String id) {
+    return 'Atribuce $id';
+  }
+
+  @override
   String aiConsumptionCallsLine(int count, int measured) {
     return 'AI volání: $count · dopad změřen u $measured';
   }
@@ -1407,6 +1479,18 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiConsumptionTypeTextGeneration => 'Generování textu';
+
+  @override
+  String aiConsumptionWorkGroup(int callCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      callCount,
+      locale: localeName,
+      other: '$callCount volání',
+      few: '$callCount volání',
+      one: '1 volání',
+    );
+    return 'Práce AI · $_temp0';
+  }
 
   @override
   String aiDeleteToastCascadeDescription(int count, String names) {

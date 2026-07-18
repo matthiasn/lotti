@@ -50,10 +50,12 @@ void main() {
       const result = RealtimeStopResult(
         transcript: 'Hello world',
         audioFilePath: '/tmp/audio.m4a',
+        usage: {'total_tokens': 12},
       );
       expect(result.transcript, 'Hello world');
       expect(result.audioFilePath, '/tmp/audio.m4a');
       expect(result.usedTranscriptFallback, isFalse);
+      expect(result.usage, {'total_tokens': 12});
     });
 
     test('audioFilePath and detectedLanguage default to null', () {

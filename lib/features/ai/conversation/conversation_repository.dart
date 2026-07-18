@@ -393,6 +393,7 @@ class ConversationRepository extends Notifier<void> {
             error: e,
             stackTrace: stackTrace,
           );
+          if (consumptionWakeRunKey != null) rethrow;
         }
 
         // Add assistant message.
@@ -516,7 +517,11 @@ class ConversationRepository extends Notifier<void> {
   }) async {
     if (agentId == null) return;
     if (!getIt.isRegistered<AiConsumptionRecorder>()) return;
-    await getIt<AiConsumptionRecorder>().record(
+    final recorder = getIt<AiConsumptionRecorder>();
+    final record = wakeRunKey == null
+        ? recorder.record
+        : recorder.recordRequired;
+    await record(
       AiConsumptionEvent(
         // v4 (opaque random): the record id carries no timestamp/node info;
         // createdAt already captures the time explicitly.

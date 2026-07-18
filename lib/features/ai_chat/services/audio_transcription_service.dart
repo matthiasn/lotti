@@ -14,7 +14,12 @@ import 'package:lotti/features/ai/repository/mistral_transcription_repository.da
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
+import 'package:lotti/get_it.dart';
 import 'package:meta/meta.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 const _kDefaultAudioModel = 'gemini-2.5-flash';
 const _kTranscriptionPrompt = 'Transcribe the audio to natural text.';
@@ -35,9 +40,13 @@ class AudioTranscriptionService {
   Future<String> transcribe(
     String filePath, {
     List<String> speechDictionaryTerms = const [],
+    AiAttributionPendingSession? attributionSession,
+    bool terminalizeAttributionFailure = true,
   }) => transcribeStream(
     filePath,
     speechDictionaryTerms: speechDictionaryTerms,
+    attributionSession: attributionSession,
+    terminalizeAttributionFailure: terminalizeAttributionFailure,
   ).join();
 
   /// Transcribes audio from a local file at [filePath] with streaming output.
@@ -51,6 +60,8 @@ class AudioTranscriptionService {
   Stream<String> transcribeStream(
     String filePath, {
     List<String> speechDictionaryTerms = const [],
+    AiAttributionPendingSession? attributionSession,
+    bool terminalizeAttributionFailure = true,
   }) async* {
     final aiRepo = ref.read(aiConfigRepositoryProvider);
     // Fetch models and providers in parallel to reduce I/O latency
@@ -100,13 +111,29 @@ class AudioTranscriptionService {
         );
 
     if (provider.inferenceProviderType == InferenceProviderType.mlxAudio) {
-      final result = await ref
+      Future<MlxAudioTranscriptionResult> invoke() => ref
           .read(mlxAudioChannelProvider)
           .transcribeFile(
             filePath: filePath,
             modelId: model.providerModelId,
             speechDictionaryTerms: speechDictionaryTerms,
           );
+      final result = getIt.isRegistered<AiInteractionCapture>()
+          ? await getIt<AiInteractionCapture>().captureUnary(
+              workType: AiWorkType.audioTranscription,
+              interactionKind: AiInteractionKind.audioTranscription,
+              responseType: AiConsumptionResponseType.audioTranscription,
+              providerType: provider.inferenceProviderType,
+              modelId: model.providerModelId,
+              requestText: _kTranscriptionPrompt,
+              invoke: invoke,
+              responseText: (value) => value.text,
+              existingSession: attributionSession,
+              terminalizeSuccess: attributionSession == null,
+              terminalizeFailure: terminalizeAttributionFailure,
+              privacyClassification: AiPrivacyClassification.mixed,
+            )
+          : await invoke();
       if (result.text.isNotEmpty) {
         yield result.text;
       }
@@ -120,19 +147,48 @@ class AudioTranscriptionService {
     final useGeminiThinkingMode =
         provider.inferenceProviderType == InferenceProviderType.gemini &&
         GeminiThinkingConfig.isGemini3(model.providerModelId);
-    final stream = cloud.generateWithAudio(
-      _kTranscriptionPrompt,
-      model: model.providerModelId,
-      audioBase64: audioBase64,
-      baseUrl: provider.baseUrl,
-      apiKey: provider.apiKey,
-      provider: provider,
-      maxCompletionTokens: model.maxCompletionTokens,
-      speechDictionaryTerms: speechDictionaryTerms,
-      geminiThinkingMode: useGeminiThinkingMode
-          ? model.geminiThinkingMode
-          : null,
-    );
+    Stream<CreateChatCompletionStreamResponse> invoke() =>
+        cloud.generateWithAudio(
+          _kTranscriptionPrompt,
+          model: model.providerModelId,
+          audioBase64: audioBase64,
+          baseUrl: provider.baseUrl,
+          apiKey: provider.apiKey,
+          provider: provider,
+          maxCompletionTokens: model.maxCompletionTokens,
+          speechDictionaryTerms: speechDictionaryTerms,
+          geminiThinkingMode: useGeminiThinkingMode
+              ? model.geminiThinkingMode
+              : null,
+        );
+    final stream = getIt.isRegistered<AiInteractionCapture>()
+        ? getIt<AiInteractionCapture>().captureStream(
+            workType: AiWorkType.audioTranscription,
+            interactionKind: AiInteractionKind.audioTranscription,
+            responseType: AiConsumptionResponseType.audioTranscription,
+            providerType: provider.inferenceProviderType,
+            modelId: model.providerModelId,
+            requestText: '$_kTranscriptionPrompt|audioBytes:${bytes.length}',
+            invoke: invoke,
+            responseText: (chunk) =>
+                chunk.choices?.firstOrNull?.delta?.content ?? '',
+            usageForChunk: (chunk) {
+              final usage = chunk.usage;
+              if (usage == null) return null;
+              return AiCapturedUsage(
+                inputTokens: usage.promptTokens,
+                outputTokens: usage.completionTokens,
+                cachedInputTokens: usage.promptTokensDetails?.cachedTokens,
+                thoughtsTokens: usage.completionTokensDetails?.reasoningTokens,
+                totalTokens: usage.totalTokens,
+              );
+            },
+            existingSession: attributionSession,
+            terminalizeSuccess: attributionSession == null,
+            terminalizeFailure: terminalizeAttributionFailure,
+            privacyClassification: AiPrivacyClassification.mixed,
+          )
+        : invoke();
 
     var receivedTranscript = false;
     await for (final chunk in stream) {

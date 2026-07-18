@@ -179,4 +179,39 @@ int _authority(AiCostSource source) => switch (source) {
   AiCostSource.externallyReconciled => 5,
 };
 
-final RegExp _decimalPattern = RegExp(r'^-?(?:0|[1-9]\d*)(?:\.\d+)?$');
+final RegExp _decimalPattern = RegExp(
+  r'^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$',
+);
+
+/// Converts exact decimal evidence to reporting micros using half-even ties.
+int decimalAmountToMicros(String decimal) {
+  final match = _decimalWithExponentPattern.firstMatch(decimal);
+  if (match == null) {
+    throw InvalidAiCostEvidence('invalid decimal amount $decimal');
+  }
+  final negative = match.namedGroup('sign') == '-';
+  final integer = match.namedGroup('integer')!;
+  final fraction = match.namedGroup('fraction') ?? '';
+  final exponent = int.parse(match.namedGroup('exponent') ?? '0');
+  final unscaled = BigInt.parse('$integer$fraction');
+  final power = exponent - fraction.length + 6;
+  BigInt micros;
+  if (power >= 0) {
+    micros = unscaled * BigInt.from(10).pow(power);
+  } else {
+    final divisor = BigInt.from(10).pow(-power);
+    var quotient = unscaled ~/ divisor;
+    final remainder = unscaled.remainder(divisor);
+    final comparison = (remainder * BigInt.two).compareTo(divisor);
+    if (comparison > 0 || (comparison == 0 && quotient.isOdd)) {
+      quotient += BigInt.one;
+    }
+    micros = quotient;
+  }
+  return (negative ? -micros : micros).toInt();
+}
+
+final RegExp _decimalWithExponentPattern = RegExp(
+  r'^(?<sign>-?)(?<integer>0|[1-9]\d*)'
+  r'(?:\.(?<fraction>\d+))?(?:[eE](?<exponent>[+-]?\d+))?$',
+);

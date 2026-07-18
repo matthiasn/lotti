@@ -117,6 +117,15 @@ The structure is intentionally split:
 - task retrieval stays in `TaskSummaryRepository`
 - transcription paths are separated into batch and realtime services
 
+Every production provider call enters `AiInteractionCapture` before invocation.
+The boundary stores a durable creator/trigger/executor header, reference-only
+request and response digests, provider/model, terminal status, timing, token
+usage, and exact Melious cost/impact when reported. Chat sessions and input
+transcripts are currently memory-only rather than syncable output carriers, so
+these records terminalize honestly as partial with no fabricated artifact link.
+Batch transcription may instead join an existing transcript attribution session
+when a journal-writing caller owns the carrier.
+
 ## Runtime Model
 
 ### Session layer
@@ -415,6 +424,8 @@ The chat feature does not invent its own privacy policy. It inherits routing fro
 - task retrieval happens locally from Lotti's databases before any tool result is sent upstream
 
 That means the privacy posture depends on the chosen provider configuration, not on the chat UI.
+Attribution evidence is classified conservatively as mixed and synchronizes
+only digests and sanitized metadata, never chat text or audio bytes.
 
 ## Current Constraints
 

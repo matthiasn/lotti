@@ -1,6 +1,6 @@
 # AI Consumption Attribution System
 
-- Status: **Implemented and verified**
+- Status: **Implemented; final verification and independent re-review pending**
 - Date: **2026-07-18**
 - Scope: coding prompts, image generation, image analysis, audio transcription,
   agent-generated reports, and future AI work types
@@ -9,29 +9,28 @@
 
 ## Independent review gates
 
-- **Architecture panel: 8.8/10 — signed off.** Endorsed the existing-envelope
-  N/N−1 protocol, publication saga/recovery capsule, centralized capture
-  boundary, exact-decimal cost evidence, reference-only sync privacy,
-  work-type taxonomy, and actor-resolution matrix.
-- **UI/UX panel: 8.7/10 — signed off.** Endorsed the exact two-tier summary,
-  per-surface placement, adaptive Wolt details container, exceptional-state
-  matrix, sensitive-content disclosure, accessibility, localization, and
-  dashboard hierarchy.
-
-Both gates require implementation and tests to remain faithful to the approved
-contracts; a later implementation shortcut does not inherit this sign-off.
+The first implementation audit did **not** sign off the branch. It identified
+gaps in pre-call coverage, actor identity, exact cost capture, transcript
+lifecycle ownership, recovery invocation, payload bounds, strict agent output
+publication, dashboard hierarchy, detail completeness, and exceptional UI
+states. Those findings drove a remediation pass. Fresh architecture and UI/UX
+reviews must score the final commit; no previous score is carried forward.
 
 ## Implementation status
 
-The production implementation now includes the schema-v2 Drift migration,
+The production implementation includes the schema-v2 Drift migration,
 typed attribution/cost/payload/link models, durable publication saga and stale
 recovery, carrier projection, Matrix convergence, conservative legacy
 backfill, and the shared localized attribution summary/details surface. Strict
 carrier-backed integration covers skill-driven prompts, image generation,
 image analysis, transcription, and agent reports. Direct realtime/batch
-transcript writers use a publication-barrier bridge, while embeddings and the
-legacy unified inference path produce honest interaction-level records without
-inventing output lineage.
+transcript writers create durable pending state before the provider call,
+group verification calls under the same attribution, and terminalize success,
+failure, and cancellation explicitly. Carrier-less AI chat, onboarding,
+chat-audio, and agent-compaction calls use the shared pre-call capture boundary
+and report `partial` rather than inventing output lineage. Embeddings and the
+legacy unified inference path retain honest interaction-level compatibility
+records.
 
 The append-only cost model supports provider-reported, local-compute,
 legacy-reported, estimated, reconciled, and unknown evidence today. A remote
@@ -64,7 +63,7 @@ local-first and must retain the immutable evidence available at call time.
 External billing data may later supersede an estimate through an append-only
 cost assessment, but the audit trail remains local and syncable.
 
-## Current-state findings
+## Pre-implementation baseline findings
 
 The codebase already records one immutable `AiConsumptionEvent` per backend
 call in `ai_consumption.sqlite`, syncs it over Matrix, and projects token, cost,

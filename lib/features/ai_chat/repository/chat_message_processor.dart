@@ -1,12 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -53,6 +59,67 @@ class ChatMessageProcessor {
   final CloudInferenceRepository cloudInferenceRepository;
   final TaskSummaryRepository taskSummaryRepository;
   final DomainLogger loggingService;
+
+  /// Routes every AI-chat backend stream through the shared capture boundary.
+  Stream<CreateChatCompletionStreamResponse> generateCapturedStream({
+    required String prompt,
+    required AiInferenceConfig config,
+    required String systemMessage,
+    String? categoryId,
+    List<ChatCompletionTool>? tools,
+  }) {
+    final captureRegistered = getIt.isRegistered<AiInteractionCapture>();
+    final impactCollector = InferenceImpactCollector();
+    Stream<CreateChatCompletionStreamResponse> invoke() => captureRegistered
+        ? cloudInferenceRepository.generate(
+            prompt,
+            model: config.model.providerModelId,
+            temperature: 0.7,
+            baseUrl: config.provider.baseUrl,
+            apiKey: config.provider.apiKey,
+            systemMessage: systemMessage,
+            provider: config.provider,
+            tools: tools,
+            geminiThinkingMode: config.model.geminiThinkingMode,
+            impactCollector: impactCollector,
+          )
+        : cloudInferenceRepository.generate(
+            prompt,
+            model: config.model.providerModelId,
+            temperature: 0.7,
+            baseUrl: config.provider.baseUrl,
+            apiKey: config.provider.apiKey,
+            systemMessage: systemMessage,
+            provider: config.provider,
+            tools: tools,
+            geminiThinkingMode: config.model.geminiThinkingMode,
+          );
+    if (!captureRegistered) return invoke();
+    return getIt<AiInteractionCapture>().captureStream(
+      workType: AiWorkType.textGeneration,
+      interactionKind: AiInteractionKind.chatCompletion,
+      responseType: AiConsumptionResponseType.textGeneration,
+      providerType: config.provider.inferenceProviderType,
+      modelId: config.model.providerModelId,
+      requestText: prompt,
+      invoke: invoke,
+      responseText: (chunk) => chunk.choices?.firstOrNull?.delta?.content ?? '',
+      usageForChunk: (chunk) {
+        final usage = chunk.usage;
+        if (usage == null) return null;
+        return AiCapturedUsage(
+          inputTokens: usage.promptTokens,
+          outputTokens: usage.completionTokens,
+          cachedInputTokens: usage.promptTokensDetails?.cachedTokens,
+          thoughtsTokens: usage.completionTokensDetails?.reasoningTokens,
+          totalTokens: usage.totalTokens,
+        );
+      },
+      impact: () => impactCollector.impact,
+      privacyClassification: AiPrivacyClassification.mixed,
+      categoryId: categoryId,
+    );
+  }
 
   // Cache for AI configuration per model
   static const Duration configCacheDuration = Duration(minutes: 5);
@@ -419,15 +486,10 @@ class ChatMessageProcessor {
   }) async {
     final finalPrompt = buildFinalPromptFromMessages(messages);
 
-    final finalStream = cloudInferenceRepository.generate(
-      finalPrompt,
-      model: config.model.providerModelId,
-      temperature: 0.7,
-      baseUrl: config.provider.baseUrl,
-      apiKey: config.provider.apiKey,
+    final finalStream = generateCapturedStream(
+      prompt: finalPrompt,
+      config: config,
       systemMessage: systemMessage,
-      provider: config.provider,
-      geminiThinkingMode: config.model.geminiThinkingMode,
     );
 
     final finalResult = await processStreamResponse(finalStream);
@@ -443,15 +505,10 @@ class ChatMessageProcessor {
   }) async* {
     final finalPrompt = buildFinalPromptFromMessages(messages);
 
-    final finalStream = cloudInferenceRepository.generate(
-      finalPrompt,
-      model: config.model.providerModelId,
-      temperature: 0.7,
-      baseUrl: config.provider.baseUrl,
-      apiKey: config.provider.apiKey,
+    final finalStream = generateCapturedStream(
+      prompt: finalPrompt,
+      config: config,
       systemMessage: systemMessage,
-      provider: config.provider,
-      geminiThinkingMode: config.model.geminiThinkingMode,
     );
 
     await for (final chunk in finalStream) {

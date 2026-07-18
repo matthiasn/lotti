@@ -117,6 +117,9 @@ class AiAttributionBackfillService {
           type: AiArtifactType.journalAiResponse,
           id: entity.id,
         ),
+        privacyClassification: entity.meta.private == true
+            ? AiPrivacyClassification.private
+            : AiPrivacyClassification.standard,
         categoryId: entity.meta.categoryId,
       );
     }
@@ -142,6 +145,9 @@ class AiAttributionBackfillService {
         id: entity.id,
         subId: transcript.id,
       ),
+      privacyClassification: entity.meta.private == true
+          ? AiPrivacyClassification.private
+          : AiPrivacyClassification.standard,
       categoryId: entity.meta.categoryId,
     );
   }
@@ -158,12 +164,13 @@ class AiAttributionBackfillService {
       );
 
   AiWorkAttribution _legacyEventAttribution(AiConsumptionEvent event) {
-    final artifact = _eventArtifact(event);
     return _legacyAttribution(
       id: event.attributionId!,
       workType: _eventWorkType(event.responseType),
       createdAt: event.createdAt,
-      output: artifact,
+      // A legacy entry id identifies call context, not necessarily an output.
+      // Keep lineage unknown instead of fabricating a generated artifact.
+      output: null,
       categoryId: event.categoryId,
       taskId: event.taskId,
     );
@@ -174,6 +181,8 @@ class AiAttributionBackfillService {
     required AiWorkType workType,
     required DateTime createdAt,
     required AiArtifactReference? output,
+    AiPrivacyClassification privacyClassification =
+        AiPrivacyClassification.standard,
     String? taskId,
     String? categoryId,
   }) {
@@ -204,7 +213,7 @@ class AiAttributionBackfillService {
         hostId: 'legacy:unknown',
         displayName: '',
       ),
-      privacyClassification: AiPrivacyClassification.standard,
+      privacyClassification: privacyClassification,
       startedAt: createdAt.toUtc(),
       completedAt: createdAt.toUtc(),
       vectorClock: null,
@@ -254,22 +263,6 @@ class AiAttributionBackfillService {
               'formula': '1 meliousCredit ≈ 1 EUR',
             },
     );
-  }
-
-  AiArtifactReference? _eventArtifact(AiConsumptionEvent event) {
-    final entryId = event.entryId;
-    if (entryId == null) return null;
-    return switch (event.responseType) {
-      AiConsumptionResponseType.audioTranscription => AiArtifactReference(
-        type: AiArtifactType.journalAudio,
-        id: entryId,
-      ),
-      AiConsumptionResponseType.imageAnalysis => AiArtifactReference(
-        type: AiArtifactType.journalImage,
-        id: entryId,
-      ),
-      _ => null,
-    };
   }
 
   AiWorkType _responseWorkType(AiResponseType? type) => switch (type) {

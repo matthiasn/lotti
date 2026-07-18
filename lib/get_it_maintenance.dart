@@ -176,3 +176,27 @@ Future<void> _backfillAiAttribution() async {
 
 @visibleForTesting
 Future<void> backfillAiAttributionForTesting() => _backfillAiAttribution();
+
+/// Recovers interrupted attribution sagas after startup initialization.
+Future<void> _recoverAiAttribution() async {
+  try {
+    await getIt<AiAttributionService>().recoverStale(
+      threshold: const Duration(minutes: 15),
+    );
+  } catch (error, stackTrace) {
+    getIt<DomainLogger>().error(
+      LogDomain.ai,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'aiAttributionRecovery',
+    );
+  }
+}
+
+@visibleForTesting
+Future<void> recoverAiAttributionForTesting() => _recoverAiAttribution();
+
+Future<void> _maintainAiAttribution() async {
+  await _backfillAiAttribution();
+  await _recoverAiAttribution();
+}

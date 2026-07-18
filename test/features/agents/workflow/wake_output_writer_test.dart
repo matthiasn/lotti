@@ -269,7 +269,7 @@ void main() {
     );
 
     test(
-      'writes the report when attribution publication is unavailable',
+      'does not write the report when attribution publication is unavailable',
       () async {
         await setUpTestGetIt();
         addTearDown(tearDownTestGetIt);
@@ -285,14 +285,15 @@ void main() {
           () => repo.getReportHead(_agentId, AgentReportScopes.current),
         ).thenAnswer((_) async => null);
 
-        final result = await run(
-          reportContent: 'Still durable',
-          uuid: _SequentialUuid(['report-without-attribution', 'head-id']),
+        await expectLater(
+          run(
+            reportContent: 'Must remain attributed',
+            uuid: _SequentialUuid(['report-without-attribution', 'head-id']),
+          ),
+          throwsA(isA<AiAttributionPublicationException>()),
         );
 
-        expect(result?.reportId, 'report-without-attribution');
-        final report = capturedUpserts().whereType<AgentReportEntity>().single;
-        expect(report.provenance, isNot(contains(aiAttributionProvenanceKey)));
+        verifyNever(() => sync.upsertEntity(any()));
         verifyNever(() => attributionService.finalize(any()));
       },
     );

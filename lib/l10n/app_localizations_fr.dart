@@ -1149,7 +1149,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiAssistantTitle => 'Générer…';
 
   @override
+  String get aiAttributionArtifactContext => 'Contexte';
+
+  @override
+  String get aiAttributionArtifactOutput => 'Sortie';
+
+  @override
+  String get aiAttributionArtifacts => 'Éléments liés';
+
+  @override
+  String get aiAttributionArtifactSource => 'Source';
+
+  @override
+  String get aiAttributionCompletedAt => 'Terminé le';
+
+  @override
   String get aiAttributionCost => 'Coût';
+
+  @override
+  String get aiAttributionCostSource => 'Source du coût';
+
+  @override
+  String get aiAttributionCostSourceEstimated => 'Estimé localement';
+
+  @override
+  String get aiAttributionCostSourceLegacy => 'Valeur héritée';
+
+  @override
+  String get aiAttributionCostSourceLocal => 'Traitement local';
+
+  @override
+  String get aiAttributionCostSourceProvider => 'Indiqué par le fournisseur';
+
+  @override
+  String get aiAttributionCostSourceReconciled => 'Rapproché à l’extérieur';
 
   @override
   String get aiAttributionCostUnknown => 'Coût inconnu';
@@ -1161,6 +1194,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiAttributionCreator => 'Créateur';
 
   @override
+  String get aiAttributionDiagnostics => 'Diagnostic';
+
+  @override
+  String get aiAttributionDuration => 'Durée';
+
+  @override
   String get aiAttributionExecutor => 'Exécuté sur';
 
   @override
@@ -1170,6 +1209,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiAttributionInteractions => 'Interactions';
+
+  @override
+  String get aiAttributionLoading => 'Chargement de l’attribution IA…';
 
   @override
   String get aiAttributionNoInteractionDetails =>
@@ -1188,6 +1230,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiAttributionPrivacyStandard => 'Standard';
 
   @override
+  String get aiAttributionRequestEvidence => 'Preuve de la requête';
+
+  @override
+  String get aiAttributionResponseEvidence => 'Preuve de la réponse';
+
+  @override
   String aiAttributionSecondary(String model, String time, int callCount) {
     String _temp0 = intl.Intl.pluralLogic(
       callCount,
@@ -1202,6 +1250,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get aiAttributionSensitiveContentNotice =>
       'Le contenu de la requête et de la réponse est masqué, car ce travail contient des données privées.';
+
+  @override
+  String get aiAttributionSomeCallsUnknown =>
+      'Certains appels ont un coût inconnu';
+
+  @override
+  String get aiAttributionStartedAt => 'Démarré le';
 
   @override
   String get aiAttributionStatus => 'Statut';
@@ -1230,6 +1285,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiAttributionTitle => 'Attribution IA';
 
   @override
+  String get aiAttributionTokens => 'Jetons';
+
+  @override
+  String get aiAttributionTokenUsageUnknown =>
+      'Utilisation des jetons inconnue';
+
+  @override
+  String get aiAttributionTrigger => 'Déclencheur';
+
+  @override
   String get aiAttributionTriggerAgent => 'Agent';
 
   @override
@@ -1246,6 +1311,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiAttributionTriggerSynced => 'Depuis la synchro';
+
+  @override
+  String get aiAttributionUnavailable =>
+      'L’attribution IA n’est pas disponible.';
 
   @override
   String get aiAttributionUnknownCreator => 'Créateur inconnu';
@@ -1361,6 +1430,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiConfigUseReasoningFieldLabel => 'Utiliser le raisonnement';
 
   @override
+  String aiConsumptionAttributionReference(String id) {
+    return 'Attribution $id';
+  }
+
+  @override
   String aiConsumptionCallsLine(int count, int measured) {
     return 'Appels IA : $count · impact mesuré pour $measured';
   }
@@ -1416,6 +1490,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiConsumptionTypeTextGeneration => 'Génération de texte';
+
+  @override
+  String aiConsumptionWorkGroup(int callCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      callCount,
+      locale: localeName,
+      other: '$callCount appels',
+      one: '1 appel',
+    );
+    return 'Travail IA · $_temp0';
+  }
 
   @override
   String aiDeleteToastCascadeDescription(int count, String names) {

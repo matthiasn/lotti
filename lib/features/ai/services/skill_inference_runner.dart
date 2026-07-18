@@ -32,6 +32,7 @@ import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/logic/attribution_cost.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
@@ -480,20 +481,20 @@ class SkillInferenceRunner {
             );
           }
           await _finalizeAttribution(attributionEnvelope);
+        } else {
+          final originalText = currentImage.entryText?.markdown ?? '';
+          final amendedText = originalText.isEmpty
+              ? response
+              : '$originalText\n\n$response';
+
+          final updated = currentImage.copyWith(
+            entryText: EntryText(
+              plainText: amendedText,
+              markdown: amendedText,
+            ),
+          );
+          await _journalRepository.updateJournalEntity(updated);
         }
-
-        final originalText = currentImage.entryText?.markdown ?? '';
-        final amendedText = originalText.isEmpty
-            ? response
-            : '$originalText\n\n$response';
-
-        final updated = currentImage.copyWith(
-          entryText: EntryText(
-            plainText: amendedText,
-            markdown: amendedText,
-          ),
-        );
-        await _journalRepository.updateJournalEntity(updated);
 
         _loggingService.log(
           LogDomain.ai,
@@ -679,12 +680,10 @@ class SkillInferenceRunner {
                 linkedId: linkedId,
                 categoryId: entity.meta.categoryId,
               );
-        if (aiResponse == null && attributionEnvelope != null) {
+        if (aiResponse == null) {
           throw StateError('Failed to persist generated prompt for $entryId');
         }
-        if (aiResponse != null) {
-          await _finalizeAttribution(attributionEnvelope);
-        }
+        await _finalizeAttribution(attributionEnvelope);
 
         // Additionally link the coding prompt back to the source entry so it
         // shows in both the task's and the originating audio/text entry's
@@ -697,7 +696,7 @@ class SkillInferenceRunner {
         // `_withStatusTracking` and mark the whole run as `error` — that would
         // risk a user-triggered retry creating a duplicate prompt. Log and
         // move on instead.
-        if (aiResponse != null && linkedId != entryId) {
+        if (linkedId != entryId) {
           try {
             final linked = await _aiInputRepository.createLink(
               fromId: entryId,
@@ -990,9 +989,17 @@ class SkillInferenceRunner {
       return null;
     }
     final identity = getIt<AiAttributionIdentityResolver>();
-    final actor = await identity.humanInitiator();
+    final human = await identity.humanInitiator();
     final executor = await identity.executor();
     final automatic = automationResult.skillAssignment?.automate ?? false;
+    final actor = automatic
+        ? AiActorSnapshot(
+            type: AiActorType.automation,
+            id: 'automation:${skill.id}',
+            displayName: skill.name,
+            humanPrincipalId: human.humanPrincipalId,
+          )
+        : human;
     return getIt<AiAttributionService>().begin(
       AiAttributionStart(
         workType: workType,
@@ -1049,21 +1056,22 @@ class SkillInferenceRunner {
     final completedAt = DateTime.now();
     final requestDigest = sha256.convert(utf8.encode(requestText)).toString();
     final responseDigest = sha256.convert(utf8.encode(responseText)).toString();
+    final exactCost = impact?.costCreditsDecimal;
     final cost = AiInteractionCost(
       id: uuid.v4(),
       interactionId: interactionId,
-      source: impact?.costCredits == null
+      source: exactCost == null
           ? AiCostSource.unknown
           : AiCostSource.providerReported,
       assessedAt: completedAt,
-      originalAmountDecimal: impact?.costCredits?.toString(),
-      originalUnit: impact?.costCredits == null ? null : 'meliousCredit',
-      reportingAmountMicros: impact?.costCredits == null
+      originalAmountDecimal: exactCost,
+      originalUnit: exactCost == null ? null : 'meliousCredit',
+      reportingAmountMicros: exactCost == null
           ? null
-          : (impact!.costCredits! * 1000000).round(),
-      reportingCurrency: impact?.costCredits == null ? null : 'EUR',
+          : decimalAmountToMicros(exactCost),
+      reportingCurrency: exactCost == null ? null : 'EUR',
       providerType: provider.inferenceProviderType.name,
-      pricingSnapshot: impact?.costCredits == null
+      pricingSnapshot: exactCost == null
           ? null
           : const {
               'version': 'melious-credit-eur-v1',

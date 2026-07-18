@@ -276,6 +276,26 @@ void main() {
 
       expect(visibilityFinder, findsOneWidget);
       expect(tester.widget<Visibility>(visibilityFinder).visible, isTrue);
+      expect(
+        tester
+            .widget<IconButton>(
+              find.widgetWithIcon(IconButton, MdiIcons.trashCanOutline),
+            )
+            .tooltip,
+        'Delete',
+      );
+    });
+
+    testWidgets('expand and collapse controls expose accessible tooltips', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeTestableWidget(testTranscript));
+      await tester.pump();
+
+      expect(find.byTooltip('Expand'), findsOneWidget);
+      await tester.tap(find.byTooltip('Expand'));
+      await tester.pump();
+      expect(find.byTooltip('Collapse'), findsOneWidget);
     });
 
     testWidgets('icon buttons have zero padding and minimal constraints', (

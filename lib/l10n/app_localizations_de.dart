@@ -1146,7 +1146,40 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiAssistantTitle => 'Generieren…';
 
   @override
+  String get aiAttributionArtifactContext => 'Kontext';
+
+  @override
+  String get aiAttributionArtifactOutput => 'Ausgabe';
+
+  @override
+  String get aiAttributionArtifacts => 'Verknüpfte Einträge';
+
+  @override
+  String get aiAttributionArtifactSource => 'Quelle';
+
+  @override
+  String get aiAttributionCompletedAt => 'Abgeschlossen am';
+
+  @override
   String get aiAttributionCost => 'Kosten';
+
+  @override
+  String get aiAttributionCostSource => 'Kostenquelle';
+
+  @override
+  String get aiAttributionCostSourceEstimated => 'Lokal geschätzt';
+
+  @override
+  String get aiAttributionCostSourceLegacy => 'Altdaten-Angabe';
+
+  @override
+  String get aiAttributionCostSourceLocal => 'Lokale Verarbeitung';
+
+  @override
+  String get aiAttributionCostSourceProvider => 'Vom Anbieter gemeldet';
+
+  @override
+  String get aiAttributionCostSourceReconciled => 'Extern abgeglichen';
 
   @override
   String get aiAttributionCostUnknown => 'Kosten unbekannt';
@@ -1158,6 +1191,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiAttributionCreator => 'Erstellt von';
 
   @override
+  String get aiAttributionDiagnostics => 'Diagnose';
+
+  @override
+  String get aiAttributionDuration => 'Dauer';
+
+  @override
   String get aiAttributionExecutor => 'Ausgeführt auf';
 
   @override
@@ -1167,6 +1206,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiAttributionInteractions => 'Interaktionen';
+
+  @override
+  String get aiAttributionLoading => 'KI-Zuordnung wird geladen…';
 
   @override
   String get aiAttributionNoInteractionDetails =>
@@ -1185,6 +1227,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiAttributionPrivacyStandard => 'Standard';
 
   @override
+  String get aiAttributionRequestEvidence => 'Anfrage-Nachweis';
+
+  @override
+  String get aiAttributionResponseEvidence => 'Antwort-Nachweis';
+
+  @override
   String aiAttributionSecondary(String model, String time, int callCount) {
     String _temp0 = intl.Intl.pluralLogic(
       callCount,
@@ -1199,6 +1247,13 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get aiAttributionSensitiveContentNotice =>
       'Anfrage- und Antwortinhalte sind ausgeblendet, weil diese Arbeit private Daten enthält.';
+
+  @override
+  String get aiAttributionSomeCallsUnknown =>
+      'Einige Aufrufe haben unbekannte Kosten';
+
+  @override
+  String get aiAttributionStartedAt => 'Gestartet am';
 
   @override
   String get aiAttributionStatus => 'Status';
@@ -1227,6 +1282,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiAttributionTitle => 'KI-Zuordnung';
 
   @override
+  String get aiAttributionTokens => 'Tokens';
+
+  @override
+  String get aiAttributionTokenUsageUnknown => 'Token-Nutzung unbekannt';
+
+  @override
+  String get aiAttributionTrigger => 'Auslöser';
+
+  @override
   String get aiAttributionTriggerAgent => 'Agent';
 
   @override
@@ -1243,6 +1307,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiAttributionTriggerSynced => 'Aus Sync';
+
+  @override
+  String get aiAttributionUnavailable => 'KI-Zuordnung ist nicht verfügbar.';
 
   @override
   String get aiAttributionUnknownCreator => 'Unbekannte Person';
@@ -1355,6 +1422,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConfigUseReasoningFieldLabel => 'Schlussfolgerung verwenden';
 
   @override
+  String aiConsumptionAttributionReference(String id) {
+    return 'Zuordnung $id';
+  }
+
+  @override
   String aiConsumptionCallsLine(int count, int measured) {
     return 'KI-Aufrufe: $count · Impact gemessen bei $measured';
   }
@@ -1410,6 +1482,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiConsumptionTypeTextGeneration => 'Textgenerierung';
+
+  @override
+  String aiConsumptionWorkGroup(int callCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      callCount,
+      locale: localeName,
+      other: '$callCount Aufrufe',
+      one: '1 Aufruf',
+    );
+    return 'KI-Arbeit · $_temp0';
+  }
 
   @override
   String aiDeleteToastCascadeDescription(int count, String names) {

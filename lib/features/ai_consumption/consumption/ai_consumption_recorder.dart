@@ -8,10 +8,9 @@ import 'package:lotti/services/domain_logging.dart';
 
 /// Thin, safe facade that AI call sites use to record one consumption event.
 ///
-/// It **never throws**: recording is a diagnostics side-effect and must never
-/// fail an inference, so the whole body is guarded and failures are logged.
-/// Call sites can therefore `await recorder.record(event)` without their own
-/// try/catch.
+/// Compatibility callers use [record], which logs failures without changing
+/// their existing inference behavior. Output publication sagas use
+/// [recordRequired], which propagates a failed attribution barrier.
 class AiConsumptionRecorder {
   AiConsumptionRecorder({
     required this._syncService,
@@ -27,13 +26,7 @@ class AiConsumptionRecorder {
 
   Future<void> record(AiConsumptionEvent event) async {
     try {
-      if (event.attributionId != null ||
-          _attributionService == null ||
-          _identityResolver == null) {
-        await _syncService.recordEvent(event);
-        return;
-      }
-      await _recordCompatibilityAttribution(event);
+      await recordRequired(event);
     } on Object catch (exception, stackTrace) {
       _logger.error(
         LogDomain.ai,
@@ -42,6 +35,17 @@ class AiConsumptionRecorder {
         subDomain: 'aiConsumptionRecorder.record',
       );
     }
+  }
+
+  /// Records evidence and propagates failures to strict publication sagas.
+  Future<void> recordRequired(AiConsumptionEvent event) async {
+    if (event.attributionId != null ||
+        _attributionService == null ||
+        _identityResolver == null) {
+      await _syncService.recordEvent(event);
+      return;
+    }
+    await _recordCompatibilityAttribution(event);
   }
 
   /// Adapts older completed-call funnels to the new evidence envelope.

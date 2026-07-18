@@ -12,6 +12,7 @@ import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_backfill_service.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
@@ -596,5 +597,22 @@ void main() {
       ).called(1);
       verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
     });
+  });
+
+  test('recoverAiAttributionForTesting runs stale-saga recovery', () async {
+    final service = MockAiAttributionService();
+    final logger = MockDomainLogger();
+    when(
+      () => service.recoverStale(threshold: const Duration(minutes: 15)),
+    ).thenAnswer((_) async => const []);
+    getIt
+      ..registerSingleton<AiAttributionService>(service)
+      ..registerSingleton<DomainLogger>(logger);
+
+    await recoverAiAttributionForTesting();
+
+    verify(
+      () => service.recoverStale(threshold: const Duration(minutes: 15)),
+    ).called(1);
   });
 }

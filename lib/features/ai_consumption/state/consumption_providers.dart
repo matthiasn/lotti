@@ -33,11 +33,13 @@ class AiAttributionDetails {
     required this.attribution,
     required this.interactions,
     required this.costTotals,
+    this.costAssessments = const [],
   });
 
   final AiWorkAttribution attribution;
   final List<AiConsumptionEvent> interactions;
   final AiCostTotals costTotals;
+  final List<AiInteractionCost> costAssessments;
 }
 
 Future<AiAttributionDetails?> _fetchAttributionDetails(
@@ -53,6 +55,7 @@ Future<AiAttributionDetails?> _fetchAttributionDetails(
     attribution: attribution,
     interactions: interactions,
     costTotals: aggregateEffectiveCosts(costs),
+    costAssessments: costs,
   );
 }
 

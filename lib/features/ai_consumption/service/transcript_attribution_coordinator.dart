@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
@@ -20,11 +21,28 @@ class PreparedTranscriptAttribution {
   final AiTerminalAttributionEnvelope envelope;
 }
 
-/// Bridges transcript producers that predate the skill inference saga.
-///
-/// The provider call has already completed when these funnels receive text,
-/// but the interaction evidence still crosses the publication barrier before
-/// the transcript artifact is allowed into the journal database.
+/// Durable transcript capture created before provider/native inference starts.
+class TranscriptAttributionSession {
+  const TranscriptAttributionSession({
+    required this.transcriptId,
+    required this.pending,
+    required this.providerName,
+    required this.modelId,
+    required this.providerType,
+    required this.interactionKind,
+    required this.startedAt,
+  });
+
+  final String transcriptId;
+  final AiAttributionPendingSession pending;
+  final String providerName;
+  final String modelId;
+  final InferenceProviderType providerType;
+  final AiInteractionKind interactionKind;
+  final DateTime startedAt;
+}
+
+/// Coordinates pre-call transcript capture and carrier publication.
 class TranscriptAttributionCoordinator {
   const TranscriptAttributionCoordinator(
     this._attributionService,
@@ -33,6 +51,39 @@ class TranscriptAttributionCoordinator {
 
   final AiAttributionService _attributionService;
   final AiAttributionIdentityResolver _identityResolver;
+
+  Future<TranscriptAttributionSession> begin({
+    required String providerName,
+    required String modelId,
+    required InferenceProviderType providerType,
+    required AiInteractionKind interactionKind,
+    required AiPrivacyClassification privacyClassification,
+    String? taskId,
+    String? categoryId,
+  }) async {
+    final transcriptId = const Uuid().v4();
+    final startedAt = clock.now().toUtc();
+    final pending = await _attributionService.begin(
+      AiAttributionStart(
+        workType: AiWorkType.audioTranscription,
+        initiator: await _identityResolver.humanInitiator(),
+        trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+        executor: await _identityResolver.executor(),
+        privacyClassification: privacyClassification,
+        taskId: taskId,
+        categoryId: categoryId,
+      ),
+    );
+    return TranscriptAttributionSession(
+      transcriptId: transcriptId,
+      pending: pending,
+      providerName: providerName,
+      modelId: modelId,
+      providerType: providerType,
+      interactionKind: interactionKind,
+      startedAt: startedAt,
+    );
+  }
 
   Future<PreparedTranscriptAttribution> prepare({
     required String audioEntryId,
@@ -45,64 +96,71 @@ class TranscriptAttributionCoordinator {
     String? taskId,
     String? categoryId,
   }) async {
-    final transcriptId = const Uuid().v4();
+    final session = await begin(
+      providerName: providerName,
+      modelId: modelId,
+      providerType: providerType,
+      interactionKind: interactionKind,
+      privacyClassification: privacyClassification,
+      taskId: taskId,
+      categoryId: categoryId,
+    );
+    return complete(
+      session: session,
+      audioEntryId: audioEntryId,
+      transcript: transcript,
+    );
+  }
+
+  Future<PreparedTranscriptAttribution> complete({
+    required TranscriptAttributionSession session,
+    required String audioEntryId,
+    required String transcript,
+    Map<String, dynamic>? usage,
+  }) async {
     final eventId = const Uuid().v4();
-    final now = DateTime.now().toUtc();
+    final completedAt = clock.now().toUtc();
     final output = AiArtifactReference(
       type: AiArtifactType.journalAudio,
       id: audioEntryId,
-      subId: transcriptId,
-    );
-    final pending = await _attributionService.begin(
-      AiAttributionStart(
-        workType: AiWorkType.audioTranscription,
-        initiator: await _identityResolver.humanInitiator(),
-        trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
-        executor: await _identityResolver.executor(),
-        privacyClassification: privacyClassification,
-        intendedOutputs: [output],
-        sources: [
-          AiArtifactReference(
-            type: AiArtifactType.journalAudio,
-            id: audioEntryId,
-          ),
-        ],
-        taskId: taskId,
-        categoryId: categoryId,
-      ),
+      subId: session.transcriptId,
     );
     final evidence = await _attributionService.recordInteraction(
-      attributionId: pending.id,
+      attributionId: session.pending.id,
       event: AiConsumptionEvent(
         id: eventId,
-        createdAt: now,
-        providerType: providerType,
+        createdAt: session.startedAt,
+        providerType: session.providerType,
         responseType: AiConsumptionResponseType.audioTranscription,
         vectorClock: null,
-        interactionKind: interactionKind,
-        completedAt: now,
+        interactionKind: session.interactionKind,
+        completedAt: completedAt,
         entryId: audioEntryId,
-        taskId: taskId,
-        categoryId: categoryId,
-        providerModelId: modelId,
+        taskId: session.pending.taskId,
+        categoryId: session.pending.categoryId,
+        providerModelId: session.modelId,
+        durationMs: completedAt.difference(session.startedAt).inMilliseconds,
+        inputTokens: _usageInt(usage, const ['input_tokens', 'inputTokens']),
+        outputTokens: _usageInt(usage, const ['output_tokens', 'outputTokens']),
+        totalTokens: _usageInt(usage, const ['total_tokens', 'totalTokens']),
         payload: AiInteractionPayload(
           id: 'payload-$eventId',
           interactionId: eventId,
           request: const [],
           response: const [],
-          parameters: {'providerName': providerName},
-          requestDigest: 'journal-audio:$audioEntryId',
+          parameters: {'providerName': session.providerName},
+          requestDigest: sha256.convert(utf8.encode(audioEntryId)).toString(),
           responseDigest: sha256.convert(utf8.encode(transcript)).toString(),
           capturePolicy: AiPayloadCapturePolicy.referenceOnly,
-          privacyClassification: privacyClassification,
-          createdAt: now,
+          privacyClassification: session.pending.privacyClassification,
+          createdAt: completedAt,
         ),
         cost: AiInteractionCost(
           id: 'cost-$eventId',
           interactionId: eventId,
           source: AiCostSource.unknown,
-          assessedAt: now,
-          providerType: providerType.name,
+          assessedAt: completedAt,
+          providerType: session.providerType.name,
         ),
       ),
     );
@@ -112,15 +170,131 @@ class TranscriptAttributionCoordinator {
       );
     }
     final envelope = await _attributionService.prepareCompletion(
-      attributionId: pending.id,
+      attributionId: session.pending.id,
       outputs: [output],
     );
     return PreparedTranscriptAttribution(
-      transcriptId: transcriptId,
+      transcriptId: session.transcriptId,
       envelope: envelope,
     );
   }
 
+  /// Prepares the carrier envelope after the provider interaction was already
+  /// recorded through the shared interaction capture boundary under this
+  /// session's pending attribution.
+  Future<PreparedTranscriptAttribution> prepareOutput({
+    required TranscriptAttributionSession session,
+    required String audioEntryId,
+  }) async {
+    final envelope = await _attributionService.prepareCompletion(
+      attributionId: session.pending.id,
+      outputs: [
+        AiArtifactReference(
+          type: AiArtifactType.journalAudio,
+          id: audioEntryId,
+          subId: session.transcriptId,
+        ),
+      ],
+    );
+    return PreparedTranscriptAttribution(
+      transcriptId: session.transcriptId,
+      envelope: envelope,
+    );
+  }
+
+  /// Publishes a sanitized failed interaction and terminalizes work that never
+  /// produced a transcript carrier.
+  Future<void> fail({
+    required TranscriptAttributionSession session,
+    required Object error,
+  }) => _terminalizeWithoutCarrier(
+    session: session,
+    interactionStatus: AiInteractionStatus.failed,
+    workStatus: AiWorkStatus.failed,
+    errorCode: error.runtimeType.toString(),
+  );
+
+  /// Records an explicit user cancellation instead of leaving a pending saga
+  /// for stale-session recovery.
+  Future<void> cancel(TranscriptAttributionSession session) =>
+      _terminalizeWithoutCarrier(
+        session: session,
+        interactionStatus: AiInteractionStatus.cancelled,
+        workStatus: AiWorkStatus.cancelled,
+        errorCode: 'cancelled',
+      );
+
+  Future<void> _terminalizeWithoutCarrier({
+    required TranscriptAttributionSession session,
+    required AiInteractionStatus interactionStatus,
+    required AiWorkStatus workStatus,
+    required String errorCode,
+  }) async {
+    final eventId = const Uuid().v4();
+    final completedAt = clock.now().toUtc();
+    final evidence = await _attributionService.recordInteraction(
+      attributionId: session.pending.id,
+      event: AiConsumptionEvent(
+        id: eventId,
+        createdAt: session.startedAt,
+        providerType: session.providerType,
+        responseType: AiConsumptionResponseType.audioTranscription,
+        vectorClock: null,
+        interactionKind: session.interactionKind,
+        interactionStatus: interactionStatus,
+        completedAt: completedAt,
+        errorCode: errorCode,
+        taskId: session.pending.taskId,
+        categoryId: session.pending.categoryId,
+        providerModelId: session.modelId,
+        durationMs: completedAt.difference(session.startedAt).inMilliseconds,
+        payload: AiInteractionPayload(
+          id: 'payload-$eventId',
+          interactionId: eventId,
+          request: const [],
+          response: const [],
+          parameters: {'providerName': session.providerName},
+          requestDigest: sha256
+              .convert(utf8.encode(session.pending.id))
+              .toString(),
+          responseDigest: sha256.convert(const []).toString(),
+          capturePolicy: AiPayloadCapturePolicy.referenceOnly,
+          privacyClassification: session.pending.privacyClassification,
+          createdAt: completedAt,
+        ),
+        cost: AiInteractionCost(
+          id: 'cost-$eventId',
+          interactionId: eventId,
+          source: AiCostSource.unknown,
+          assessedAt: completedAt,
+          providerType: session.providerType.name,
+        ),
+      ),
+    );
+    if (!evidence.published) {
+      throw const AiAttributionPublicationException(
+        'transcript failure evidence did not cross the publication barrier',
+      );
+    }
+    final envelope = await _attributionService.prepareCompletion(
+      attributionId: session.pending.id,
+      outputs: const [],
+      status: workStatus,
+      errorCode: errorCode,
+    );
+    await _attributionService.finalize(envelope);
+  }
+
   Future<void> finalize(PreparedTranscriptAttribution attribution) =>
       _attributionService.finalize(attribution.envelope);
+
+  static int? _usageInt(Map<String, dynamic>? usage, List<String> keys) {
+    if (usage == null) return null;
+    for (final key in keys) {
+      final value = usage[key];
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+    }
+    return null;
+  }
 }

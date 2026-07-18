@@ -118,16 +118,12 @@ class ChatRepository {
       final tools = [TaskSummaryTool.toolDefinition];
 
       // Initial response stream
-      final stream = cloudInferenceRepository.generate(
-        fullPrompt,
-        model: config.model.providerModelId,
-        temperature: 0.7,
-        baseUrl: config.provider.baseUrl,
-        apiKey: config.provider.apiKey,
+      final stream = _messageProcessor.generateCapturedStream(
+        prompt: fullPrompt,
+        config: config,
         systemMessage: systemMessage,
-        provider: config.provider,
+        categoryId: categoryId,
         tools: tools,
-        geminiThinkingMode: config.model.geminiThinkingMode,
       );
 
       // Accumulate tool calls while streaming content to UI

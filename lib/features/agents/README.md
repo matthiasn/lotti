@@ -99,6 +99,12 @@ Startup does this:
   The wake run key deterministically groups turns into one attribution; the
   report is the terminal carrier. Historical reports are conservatively
   backfilled as partial instead of borrowing the current setup.
+- Agent turn recording uses the required publication path. A wake cannot write
+  a report if interaction evidence failed to cross the sync publication
+  barrier, and `WakeOutputWriter` never falls back to an unattributed report.
+  Log-compaction inference is a separate carrier-less AI operation captured
+  before each backend call and terminalized as partial because its checkpoint
+  format has no attribution envelope.
 - Linked task context for agents is built directly in
   `TaskAgentContextBuilder.buildLinkedTasksContextJson` (the wake's prompt/context
   collaborator, which `TaskAgentWorkflow` holds and delegates to; forked from

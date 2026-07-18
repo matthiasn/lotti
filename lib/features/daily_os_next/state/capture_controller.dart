@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/daily_os_next/state/capture_dbfs.dart';
 import 'package:lotti/features/daily_os_next/state/capture_state.dart';
@@ -99,6 +100,7 @@ class CaptureController extends Notifier<CaptureState> {
   AudioNote? _recordingNote;
   DateTime? _recordingStartedAt;
   bool _verifyRealtimeTranscript = true;
+  TranscriptAttributionSession? _transcriptAttribution;
 
   /// Marks whether the current session is using the realtime path.
   /// `null` outside of a session.
@@ -252,6 +254,18 @@ class CaptureController extends Notifier<CaptureState> {
     _realtimeOutputBasePath = '$absoluteDir$timestamp';
 
     try {
+      final config = _activeRealtimeConfig;
+      if (config != null &&
+          getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+        _transcriptAttribution = await getIt<TranscriptAttributionCoordinator>()
+            .begin(
+              providerName: config.provider.name,
+              modelId: config.model.providerModelId,
+              providerType: config.provider.inferenceProviderType,
+              interactionKind: AiInteractionKind.realtimeTranscription,
+              privacyClassification: AiPrivacyClassification.mixed,
+            );
+      }
       await _realtimeService.startRealtimeTranscription(
         pcmStream: pcmStream,
         onDelta: _onRealtimeDelta,
@@ -268,6 +282,7 @@ class CaptureController extends Notifier<CaptureState> {
           ),
         ),
       );
+      await _failTranscriptAttribution(error);
       await _cleanupRealtime(disposeRecorder: true);
       state = const CaptureState(
         phase: CapturePhase.error,
@@ -394,6 +409,7 @@ class CaptureController extends Notifier<CaptureState> {
           context: ErrorDescription('while stopping realtime transcription'),
         ),
       );
+      await _failTranscriptAttribution(error);
       await _cleanupRealtime(disposeRecorder: true);
       state = const CaptureState(
         phase: CapturePhase.error,
@@ -429,6 +445,7 @@ class CaptureController extends Notifier<CaptureState> {
     final finalTranscript = await _resolveRealtimeFinalTranscript(
       result: result,
       realtimeTranscript: realtimeTranscript,
+      attributionSession: _transcriptAttribution,
     );
     if (journalAudio != null && finalTranscript.isNotEmpty) {
       final config = _activeRealtimeConfig;
@@ -443,6 +460,8 @@ class CaptureController extends Notifier<CaptureState> {
                   InferenceProviderType.genericOpenAi
             : InferenceProviderType.genericOpenAi,
         interactionKind: AiInteractionKind.realtimeTranscription,
+        attributionSession: _transcriptAttribution,
+        usage: result.usage,
       );
     }
 
@@ -456,6 +475,7 @@ class CaptureController extends Notifier<CaptureState> {
     _recordingStartedAt = null;
     _activeIsRealtime = null;
     _activeRealtimeConfig = null;
+    _transcriptAttribution = null;
     _verifyRealtimeTranscript = true;
 
     state = CaptureState(
@@ -495,8 +515,29 @@ class CaptureController extends Notifier<CaptureState> {
 
     String transcript;
     try {
-      transcript = (await _transcriber.transcribe(fullPath)).trim();
+      final coordinator = getIt.isRegistered<TranscriptAttributionCoordinator>()
+          ? getIt<TranscriptAttributionCoordinator>()
+          : null;
+      if (coordinator != null && getIt.isRegistered<AiInteractionCapture>()) {
+        _transcriptAttribution = await coordinator.begin(
+          providerName: 'batch-transcribe',
+          modelId: 'cloud-inference',
+          providerType: InferenceProviderType.genericOpenAi,
+          interactionKind: AiInteractionKind.audioTranscription,
+          privacyClassification: AiPrivacyClassification.mixed,
+        );
+      }
+      final attributionSession = _transcriptAttribution;
+      transcript =
+          (await (attributionSession == null
+                  ? _transcriber.transcribe(fullPath)
+                  : _transcriber.transcribe(
+                      fullPath,
+                      attributionSession: attributionSession.pending,
+                    )))
+              .trim();
     } catch (e) {
+      _transcriptAttribution = null;
       state = const CaptureState(
         phase: CapturePhase.error,
         transcript: '',
@@ -525,6 +566,8 @@ class CaptureController extends Notifier<CaptureState> {
         detectedLanguage: '-',
         providerType: InferenceProviderType.genericOpenAi,
         interactionKind: AiInteractionKind.audioTranscription,
+        attributionSession: _transcriptAttribution,
+        interactionAlreadyRecorded: _transcriptAttribution != null,
       );
     }
 
@@ -532,6 +575,7 @@ class CaptureController extends Notifier<CaptureState> {
     _recordingStartedAt = null;
     _activeIsRealtime = null;
     _activeRealtimeConfig = null;
+    _transcriptAttribution = null;
     _verifyRealtimeTranscript = true;
     state = CaptureState(
       phase: CapturePhase.captured,
@@ -552,11 +596,19 @@ class CaptureController extends Notifier<CaptureState> {
     required String detectedLanguage,
     required InferenceProviderType providerType,
     required AiInteractionKind interactionKind,
+    TranscriptAttributionSession? attributionSession,
+    Map<String, dynamic>? usage,
+    bool interactionAlreadyRecorded = false,
   }) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
-      final prepared = getIt.isRegistered<TranscriptAttributionCoordinator>()
-          ? await getIt<TranscriptAttributionCoordinator>().prepare(
+      final coordinator = getIt.isRegistered<TranscriptAttributionCoordinator>()
+          ? getIt<TranscriptAttributionCoordinator>()
+          : null;
+      final prepared = coordinator == null
+          ? null
+          : attributionSession == null
+          ? await coordinator.prepare(
               audioEntryId: journalAudio.id,
               transcript: transcript,
               providerName: library,
@@ -568,7 +620,17 @@ class CaptureController extends Notifier<CaptureState> {
                   : AiPrivacyClassification.standard,
               categoryId: journalAudio.meta.categoryId,
             )
-          : null;
+          : interactionAlreadyRecorded
+          ? await coordinator.prepareOutput(
+              session: attributionSession,
+              audioEntryId: journalAudio.id,
+            )
+          : await coordinator.complete(
+              session: attributionSession,
+              audioEntryId: journalAudio.id,
+              transcript: transcript,
+              usage: usage,
+            );
       final audioTranscript = AudioTranscript(
         created: _now(),
         library: library,
@@ -588,7 +650,7 @@ class CaptureController extends Notifier<CaptureState> {
       );
       final persisted = await persistenceLogic.updateDbEntity(updated);
       if (persisted == true && prepared != null) {
-        await getIt<TranscriptAttributionCoordinator>().finalize(prepared);
+        await coordinator!.finalize(prepared);
       }
     } catch (_) {
       // Attaching the transcript is best-effort — the capture flow
@@ -618,9 +680,42 @@ class CaptureController extends Notifier<CaptureState> {
     _realtimeAudioFile = null;
     _recordingStartedAt = null;
     _activeIsRealtime = null;
+    _transcriptAttribution = null;
+  }
+
+  Future<void> _failTranscriptAttribution(Object error) async {
+    final attribution = _transcriptAttribution;
+    if (attribution == null ||
+        !getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+      return;
+    }
+    try {
+      await getIt<TranscriptAttributionCoordinator>().fail(
+        session: attribution,
+        error: error,
+      );
+    } catch (_) {
+      // The pending saga remains durable for startup recovery.
+    }
   }
 
   void _cleanupSync() {
+    final attribution = _transcriptAttribution;
+    _transcriptAttribution = null;
+    if (attribution != null &&
+        getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+      unawaited(
+        () async {
+          try {
+            await getIt<TranscriptAttributionCoordinator>().cancel(
+              attribution,
+            );
+          } catch (_) {
+            // A durable pending session remains eligible for stale recovery.
+          }
+        }(),
+      );
+    }
     final ampSub = _ampSub;
     _ampSub = null;
     if (ampSub != null) {
@@ -656,6 +751,7 @@ class CaptureController extends Notifier<CaptureState> {
     _realtimeAudioDirectory = null;
     _realtimeAudioFile = null;
     _activeIsRealtime = null;
+    _transcriptAttribution = null;
   }
 
   /// Runs the optional full-file verification pass over the realtime
@@ -665,6 +761,7 @@ class CaptureController extends Notifier<CaptureState> {
   Future<String> _resolveRealtimeFinalTranscript({
     required RealtimeStopResult result,
     required String realtimeTranscript,
+    TranscriptAttributionSession? attributionSession,
   }) async {
     if (!_verifyRealtimeTranscript) return realtimeTranscript;
 
@@ -674,9 +771,15 @@ class CaptureController extends Notifier<CaptureState> {
     }
 
     try {
-      final batchTranscript = (await _transcriber.transcribe(
-        audioFilePath,
-      )).trim();
+      final batchTranscript =
+          (await (attributionSession == null
+                  ? _transcriber.transcribe(audioFilePath)
+                  : _transcriber.transcribe(
+                      audioFilePath,
+                      attributionSession: attributionSession.pending,
+                      terminalizeAttributionFailure: false,
+                    )))
+              .trim();
       return selectFinalTranscript(
         realtimeTranscript: realtimeTranscript,
         batchTranscript: batchTranscript,

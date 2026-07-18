@@ -1763,6 +1763,7 @@ void main() {
                     as InferenceImpactCollector?)
                 ?.impact = const MeliousCallImpact(
               costCredits: 0.25,
+              costCreditsDecimal: '0.25',
             );
             return Stream.fromIterable([
               makeStreamChunk('Attributed image analysis'),
@@ -1801,6 +1802,18 @@ void main() {
           );
 
           expect(attribution.startCommand.workType, AiWorkType.imageAnalysis);
+          expect(
+            attribution.startCommand.initiator.type,
+            AiActorType.automation,
+          );
+          expect(
+            attribution.startCommand.initiator.id,
+            'automation:skill-vision',
+          );
+          expect(
+            attribution.startCommand.initiator.humanPrincipalId,
+            'user-1',
+          );
           expect(
             attribution.startCommand.sources.single.type,
             AiArtifactType.journalImage,
@@ -1843,6 +1856,9 @@ void main() {
           verify(
             () => attribution.service.finalize(attribution.terminal),
           ).called(1);
+          verifyNever(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          );
 
           when(
             () => mockCloudRepo.generateWithImages(
@@ -3552,7 +3568,24 @@ void main() {
                   linkedId: any(named: 'linkedId'),
                   categoryId: any(named: 'categoryId'),
                 ),
-              ).thenAnswer((_) async => null);
+              ).thenAnswer(
+                (_) async => AiResponseEntry(
+                  meta: Metadata(
+                    id: 'generated-response',
+                    createdAt: DateTime(2026, 3, 15),
+                    updatedAt: DateTime(2026, 3, 15),
+                    dateFrom: DateTime(2026, 3, 15),
+                    dateTo: DateTime(2026, 3, 15),
+                  ),
+                  data: const AiResponseData(
+                    model: 'model',
+                    systemMessage: 'system',
+                    prompt: 'prompt',
+                    thoughts: '',
+                    response: 'response',
+                  ),
+                ),
+              );
               stubLocalLoggingEvent();
             } else {
               stubLocalLoggingException();
@@ -3715,7 +3748,24 @@ void main() {
                   linkedId: any(named: 'linkedId'),
                   categoryId: any(named: 'categoryId'),
                 ),
-              ).thenAnswer((_) async => null);
+              ).thenAnswer(
+                (_) async => AiResponseEntry(
+                  meta: Metadata(
+                    id: 'generated-response',
+                    createdAt: DateTime(2026, 3, 15),
+                    updatedAt: DateTime(2026, 3, 15),
+                    dateFrom: DateTime(2026, 3, 15),
+                    dateTo: DateTime(2026, 3, 15),
+                  ),
+                  data: const AiResponseData(
+                    model: 'model',
+                    systemMessage: 'system',
+                    prompt: 'prompt',
+                    thoughts: '',
+                    response: 'response',
+                  ),
+                ),
+              );
               bench.stubLoggingEvent();
             } else {
               bench.stubLoggingException();
@@ -4719,6 +4769,7 @@ void main() {
                     as InferenceImpactCollector?)
                 ?.impact = const MeliousCallImpact(
               costCredits: 0.75,
+              costCreditsDecimal: '0.75',
               energyKwh: 0.01,
               carbonGCo2: 2.5,
               waterLiters: 0.6,

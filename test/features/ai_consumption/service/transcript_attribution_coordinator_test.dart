@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
@@ -98,4 +99,89 @@ void main() {
       );
     },
   );
+
+  test('pre-call sessions retain timing and realtime usage', () async {
+    final session = await withClock(
+      Clock.fixed(DateTime.utc(2026, 3, 15, 12)),
+      () => coordinator.begin(
+        providerName: 'Mistral',
+        modelId: 'voxtral',
+        providerType: InferenceProviderType.mistral,
+        interactionKind: AiInteractionKind.realtimeTranscription,
+        privacyClassification: AiPrivacyClassification.mixed,
+      ),
+    );
+
+    final prepared = await withClock(
+      Clock.fixed(DateTime.utc(2026, 3, 15, 12, 1)),
+      () => coordinator.complete(
+        session: session,
+        audioEntryId: 'audio-usage',
+        transcript: 'hello',
+        usage: const {
+          'input_tokens': 10,
+          'output_tokens': 4,
+          'total_tokens': 14,
+        },
+      ),
+    );
+
+    final interaction = (await repository.interactionsForAttribution(
+      prepared.envelope.attribution.id,
+    )).single;
+    expect(interaction.createdAt, DateTime.utc(2026, 3, 15, 12));
+    expect(interaction.completedAt, DateTime.utc(2026, 3, 15, 12, 1));
+    expect(interaction.durationMs, 60000);
+    expect(interaction.inputTokens, 10);
+    expect(interaction.outputTokens, 4);
+    expect(interaction.totalTokens, 14);
+  });
+
+  test('failure and cancellation terminalize without a carrier', () async {
+    final cases =
+        <
+          ({
+            AiWorkStatus workStatus,
+            AiInteractionStatus interactionStatus,
+            Future<void> Function(TranscriptAttributionSession) act,
+          })
+        >[
+          (
+            workStatus: AiWorkStatus.failed,
+            interactionStatus: AiInteractionStatus.failed,
+            act: (session) => coordinator.fail(
+              session: session,
+              error: StateError('provider failed'),
+            ),
+          ),
+          (
+            workStatus: AiWorkStatus.cancelled,
+            interactionStatus: AiInteractionStatus.cancelled,
+            act: coordinator.cancel,
+          ),
+        ];
+
+    for (final testCase in cases) {
+      final session = await coordinator.begin(
+        providerName: 'Mistral',
+        modelId: 'voxtral',
+        providerType: InferenceProviderType.mistral,
+        interactionKind: AiInteractionKind.realtimeTranscription,
+        privacyClassification: AiPrivacyClassification.private,
+      );
+
+      await testCase.act(session);
+
+      final attribution = await repository.getAttribution(session.pending.id);
+      final interaction = (await repository.interactionsForAttribution(
+        session.pending.id,
+      )).single;
+      expect(attribution?.status, testCase.workStatus);
+      expect(interaction.interactionStatus, testCase.interactionStatus);
+      expect(
+        await repository.getPendingAttribution(session.pending.id),
+        isNull,
+      );
+    }
+  });
 }

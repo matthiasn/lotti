@@ -22,11 +22,15 @@ class MeliousCallImpact {
     this.dataCenter,
     this.providerId,
     this.costCredits,
+    this.costCreditsDecimal,
   });
 
   /// Parses the impact from a decoded non-streaming response body. Tolerant of
   /// missing/oddly-typed fields — anything unparseable becomes null.
-  factory MeliousCallImpact.fromResponseJson(Map<String, dynamic> top) {
+  factory MeliousCallImpact.fromResponseJson(
+    Map<String, dynamic> top, {
+    String? costCreditsDecimal,
+  }) {
     final env = top['environment_impact'];
     final billing = top['billing_cost'];
     final envMap = env is Map<String, dynamic>
@@ -44,7 +48,19 @@ class MeliousCallImpact {
       dataCenter: _toStringOrNull(envMap['location']),
       providerId: _toStringOrNull(envMap['provider_id']),
       costCredits: _toDouble(billingMap['credits']),
+      costCreditsDecimal:
+          costCreditsDecimal ?? _toDecimalString(billingMap['credits']),
     );
+  }
+
+  /// Extracts the provider's unmodified JSON number/string representation.
+  ///
+  /// This runs before `jsonDecode` converts JSON numbers to binary doubles, so
+  /// billing evidence retains all provider-reported decimal digits.
+  static String? costDecimalFromResponseBody(String body) {
+    final match = _billingCreditsPattern.firstMatch(body);
+    if (match == null) return null;
+    return match.namedGroup('number') ?? match.namedGroup('string');
   }
 
   /// Energy in kilowatt-hours (`environment_impact.energy_kwh`).
@@ -74,6 +90,9 @@ class MeliousCallImpact {
   /// Billing cost in Melious credits, ≈ EUR (`billing_cost.credits`).
   final double? costCredits;
 
+  /// Exact provider-reported billing decimal, retained for audit evidence.
+  final String? costCreditsDecimal;
+
   /// Whether any field was reported — lets callers skip an all-null impact.
   bool get hasData =>
       energyKwh != null ||
@@ -83,7 +102,8 @@ class MeliousCallImpact {
       pue != null ||
       dataCenter != null ||
       providerId != null ||
-      costCredits != null;
+      costCredits != null ||
+      costCreditsDecimal != null;
 
   static double? _toDouble(Object? value) {
     if (value is num) return value.toDouble();
@@ -96,6 +116,12 @@ class MeliousCallImpact {
     return null;
   }
 
+  static String? _toDecimalString(Object? value) => switch (value) {
+    final String value when value.trim().isNotEmpty => value.trim(),
+    final num value => value.toString(),
+    _ => null,
+  };
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -107,7 +133,8 @@ class MeliousCallImpact {
           other.pue == pue &&
           other.dataCenter == dataCenter &&
           other.providerId == providerId &&
-          other.costCredits == costCredits;
+          other.costCredits == costCredits &&
+          other.costCreditsDecimal == costCreditsDecimal;
 
   @override
   int get hashCode => Object.hash(
@@ -119,6 +146,7 @@ class MeliousCallImpact {
     dataCenter,
     providerId,
     costCredits,
+    costCreditsDecimal,
   );
 
   @override
@@ -126,8 +154,14 @@ class MeliousCallImpact {
       'MeliousCallImpact(energyKwh: $energyKwh, carbonGCo2: $carbonGCo2, '
       'waterLiters: $waterLiters, renewablePercent: $renewablePercent, '
       'pue: $pue, dataCenter: $dataCenter, providerId: $providerId, '
-      'costCredits: $costCredits)';
+      'costCredits: $costCredits, costCreditsDecimal: $costCreditsDecimal)';
 }
+
+final RegExp _billingCreditsPattern = RegExp(
+  r'"billing_cost"\s*:\s*\{[^{}]*?"credits"\s*:\s*'
+  r'(?:(?<number>-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)|'
+  r'"(?<string>-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)")',
+);
 
 /// A mutable side-channel that carries a [MeliousCallImpact] up from the Melious
 /// adapter (which parses the non-streaming body) to the capture point, without

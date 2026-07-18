@@ -74,7 +74,11 @@ class ImpactCallLedger extends ConsumerWidget {
               ),
             ),
             SizedBox(height: tokens.spacing.cardItemSpacing),
-            for (final event in events) _LedgerRow(event: event),
+            for (final group in _groupEvents(events))
+              if (group.attributionId == null)
+                _LedgerRow(event: group.events.single)
+              else
+                _AttributionLedgerGroup(group: group),
             // Gate the truncation notice on the unfiltered fetch: a series
             // filter shrinks `events` but the cap was applied to `all`, so a
             // capped-then-filtered list must still disclose the truncation.
@@ -90,6 +94,125 @@ class ImpactCallLedger extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LedgerGroup {
+  const _LedgerGroup({required this.attributionId, required this.events});
+
+  final String? attributionId;
+  final List<AiConsumptionEvent> events;
+}
+
+List<_LedgerGroup> _groupEvents(List<AiConsumptionEvent> events) {
+  final groups = <String, List<AiConsumptionEvent>>{};
+  final orderedKeys = <String>[];
+  for (final event in events) {
+    final key = event.attributionId ?? 'legacy:${event.id}';
+    if (!groups.containsKey(key)) orderedKeys.add(key);
+    groups.putIfAbsent(key, () => []).add(event);
+  }
+  return [
+    for (final key in orderedKeys)
+      _LedgerGroup(
+        attributionId: key.startsWith('legacy:') ? null : key,
+        events: groups[key]!,
+      ),
+  ];
+}
+
+class _AttributionLedgerGroup extends StatelessWidget {
+  const _AttributionLedgerGroup({required this.group});
+
+  final _LedgerGroup group;
+
+  String _metrics(BuildContext context) {
+    final totalTokens = group.events.fold<int>(
+      0,
+      (sum, event) => sum + (event.totalTokens ?? 0),
+    );
+    final credits = group.events.fold<double>(
+      0,
+      (sum, event) => sum + (event.credits ?? 0),
+    );
+    final energy = group.events.fold<double>(
+      0,
+      (sum, event) => sum + (event.energyKwh ?? 0),
+    );
+    final parts = <String>[
+      if (group.events.any((event) => event.totalTokens != null))
+        context.messages.aiConsumptionTokensLabel(
+          formatTokenCount(totalTokens),
+        ),
+      if (group.events.any((event) => event.credits != null))
+        formatCredits(credits),
+      if (group.events.any((event) => event.energyKwh != null))
+        formatEnergyKwh(energy),
+    ];
+    return parts.isEmpty
+        ? context.messages.aiConsumptionMetricsNotReported
+        : parts.join(' · ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final attributionId = group.attributionId!;
+    final shortId = attributionId.length > 12
+        ? attributionId.substring(0, 12)
+        : attributionId;
+    final metrics = _metrics(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stacked = constraints.maxWidth < _kLedgerStackedMaxWidth;
+        return Material(
+          type: MaterialType.transparency,
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: EdgeInsets.only(left: tokens.spacing.step5),
+            leading: Icon(
+              Icons.auto_awesome_outlined,
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+            title: Text(
+              context.messages.aiConsumptionWorkGroup(group.events.length),
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.messages.aiConsumptionAttributionReference(shortId),
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+                if (stacked)
+                  Text(
+                    metrics,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+              ],
+            ),
+            trailing: stacked
+                ? null
+                : Text(
+                    metrics,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+            children: [
+              for (final event in group.events) _LedgerRow(event: event),
+            ],
+          ),
+        );
+      },
     );
   }
 }

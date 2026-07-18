@@ -95,20 +95,16 @@ class WakeOutputWriter {
     final reportId = sanitizedContent.isEmpty ? null : _idGen.v4();
     AiTerminalAttributionEnvelope? attributionEnvelope;
     if (reportId != null && getIt.isRegistered<AiAttributionService>()) {
-      try {
-        attributionEnvelope = await getIt<AiAttributionService>()
-            .prepareCompletion(
-              attributionId: agentWakeAttributionId(runKey),
-              outputs: [
-                AiArtifactReference(
-                  type: AiArtifactType.agentReport,
-                  id: reportId,
-                ),
-              ],
-            );
-      } on AiAttributionPublicationException {
-        attributionEnvelope = null;
-      }
+      attributionEnvelope = await getIt<AiAttributionService>()
+          .prepareCompletion(
+            attributionId: agentWakeAttributionId(runKey),
+            outputs: [
+              AiArtifactReference(
+                type: AiArtifactType.agentReport,
+                id: reportId,
+              ),
+            ],
+          );
     }
 
     await _sync.runInTransaction(() async {

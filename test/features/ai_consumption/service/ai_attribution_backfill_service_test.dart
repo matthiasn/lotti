@@ -92,7 +92,7 @@ void main() {
     expect(migrated.cost?.reportingAmountMicros, 250000);
     expect(migrated.cost?.reportingCurrency, 'EUR');
     expect(attribution?.workType, AiWorkType.audioTranscription);
-    expect(attribution?.primaryOutput?.id, 'audio-1');
+    expect(attribution?.primaryOutput, isNull);
   });
 
   test(

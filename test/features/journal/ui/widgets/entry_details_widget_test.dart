@@ -1432,6 +1432,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('Cost unknown'), findsOneWidget);
+      expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
     });
 
     testWidgets(

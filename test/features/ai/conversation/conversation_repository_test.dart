@@ -33,6 +33,7 @@ class FakeConversationManager extends Fake implements ConversationManager {}
 MockAiConsumptionRecorder _registerConsumptionRecorder() {
   final recorder = MockAiConsumptionRecorder();
   when(() => recorder.record(any())).thenAnswer((_) async {});
+  when(() => recorder.recordRequired(any())).thenAnswer((_) async {});
   if (getIt.isRegistered<AiConsumptionRecorder>()) {
     getIt.unregister<AiConsumptionRecorder>();
   }
@@ -1968,7 +1969,9 @@ void main() {
             );
 
             final event =
-                verify(() => recorder.record(captureAny())).captured.single
+                verify(
+                      () => recorder.recordRequired(captureAny()),
+                    ).captured.single
                     as AiConsumptionEvent;
             expect(event.responseType, AiConsumptionResponseType.agentTurn);
             // The wake run key doubles as the causal parent id.
@@ -2067,7 +2070,7 @@ void main() {
             );
 
             final events = verify(
-              () => recorder.record(captureAny()),
+              () => recorder.recordRequired(captureAny()),
             ).captured.cast<AiConsumptionEvent>();
             expect(events, hasLength(2));
             expect(events.map((event) => event.id).toSet(), hasLength(2));
@@ -2179,7 +2182,7 @@ void main() {
             );
 
             final events = verify(
-              () => recorder.record(captureAny()),
+              () => recorder.recordRequired(captureAny()),
             ).captured.cast<AiConsumptionEvent>();
             expect(events, hasLength(2));
             // turnIndex mirrors ConversationManager.turnCount (user-message

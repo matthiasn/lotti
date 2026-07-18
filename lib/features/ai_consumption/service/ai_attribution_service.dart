@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
+import 'package:crypto/crypto.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
@@ -129,11 +131,13 @@ class AiAttributionService {
     await _repository.upsertPendingAttribution(calling);
 
     _validateInteractionEvidence(event);
-    final attributed = event.copyWith(
-      attributionId: attributionId,
-      sequenceIndex: sequenceIndex,
-      completedAt: event.completedAt ?? now,
-      recoveryCapsule: _recoveryCapsule(calling),
+    final attributed = _boundInlineEvidence(
+      event.copyWith(
+        attributionId: attributionId,
+        sequenceIndex: sequenceIndex,
+        completedAt: event.completedAt ?? now,
+        recoveryCapsule: _recoveryCapsule(calling),
+      ),
     );
     final publication = await _syncService.recordEventForPublication(
       attributed,
@@ -341,5 +345,36 @@ class AiAttributionService {
         'full-text payloads are local-only and cannot enter sync evidence',
       );
     }
+  }
+
+  AiConsumptionEvent _boundInlineEvidence(AiConsumptionEvent event) {
+    final encoded = utf8.encode(jsonEncode(event.toJson()));
+    if (encoded.length <= kAiAttributionInlineEvidenceMaxBytes) return event;
+    final payload = event.payload;
+    if (payload == null) {
+      throw const AiAttributionPublicationException(
+        'interaction evidence exceeds the 64 KiB wire limit',
+      );
+    }
+    final reduced = event.copyWith(
+      payload: payload.copyWith(
+        request: const [],
+        response: const [],
+        parameters: {
+          'inlineEvidenceOverflow': true,
+          'originalByteLength': encoded.length,
+          'originalSha256': sha256.convert(encoded).toString(),
+        },
+        providerMetadata: null,
+        capturePolicy: AiPayloadCapturePolicy.metadataOnly,
+      ),
+    );
+    if (utf8.encode(jsonEncode(reduced.toJson())).length >
+        kAiAttributionInlineEvidenceMaxBytes) {
+      throw const AiAttributionPublicationException(
+        'reduced interaction evidence exceeds the 64 KiB wire limit',
+      );
+    }
+    return reduced;
   }
 }

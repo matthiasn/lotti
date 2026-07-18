@@ -1963,17 +1963,45 @@ void main() {
           transcriptId: 'realtime-transcript-id',
           envelope: envelope,
         );
+        final attributionSession = TranscriptAttributionSession(
+          transcriptId: 'realtime-transcript-id',
+          pending: AiAttributionPendingSession(
+            id: 'realtime-attribution',
+            attributionId: 'realtime-attribution',
+            workType: AiWorkType.audioTranscription,
+            initiator: makeAiActor(),
+            trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+            executor: makeAiExecutor(),
+            privacyClassification: AiPrivacyClassification.mixed,
+            phase: AiAttributionPendingPhase.prepared,
+            startedAt: DateTime(2026, 3, 15),
+            lastUpdatedAt: DateTime(2026, 3, 15),
+            intendedOutputs: const [],
+            taskId: 'task-id',
+            categoryId: 'test-category',
+          ),
+          providerName: 'Mistral',
+          modelId: 'voxtral-mini-transcribe-realtime-2602',
+          providerType: InferenceProviderType.genericOpenAi,
+          interactionKind: AiInteractionKind.realtimeTranscription,
+          startedAt: DateTime(2026, 3, 15),
+        );
         when(
-          () => attributionCoordinator.prepare(
-            audioEntryId: 'test-entry-id',
-            transcript: 'realtime transcript text',
+          () => attributionCoordinator.begin(
             providerName: 'Mistral',
             modelId: 'voxtral-mini-transcribe-realtime-2602',
             providerType: InferenceProviderType.genericOpenAi,
             interactionKind: AiInteractionKind.realtimeTranscription,
-            privacyClassification: AiPrivacyClassification.standard,
+            privacyClassification: AiPrivacyClassification.mixed,
             taskId: 'task-id',
             categoryId: 'test-category',
+          ),
+        ).thenAnswer((_) async => attributionSession);
+        when(
+          () => attributionCoordinator.complete(
+            session: attributionSession,
+            audioEntryId: 'test-entry-id',
+            transcript: 'realtime transcript text',
           ),
         ).thenAnswer((_) async => prepared);
         when(

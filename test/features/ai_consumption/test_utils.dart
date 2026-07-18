@@ -15,6 +15,7 @@ AiConsumptionEvent makeConsumptionEvent({
   InferenceProviderType providerType = InferenceProviderType.melious,
   AiConsumptionResponseType responseType = AiConsumptionResponseType.agentTurn,
   VectorClock? vectorClock,
+  String? attributionId,
   String? parentId,
   String? taskId = 'task-1',
   String? categoryId = 'cat-1',
@@ -49,6 +50,7 @@ AiConsumptionEvent makeConsumptionEvent({
     providerType: providerType,
     responseType: responseType,
     vectorClock: vectorClock,
+    attributionId: attributionId,
     parentId: parentId,
     taskId: taskId,
     categoryId: categoryId,
@@ -83,7 +85,12 @@ AiActorSnapshot makeAiActor({
   AiActorType type = AiActorType.human,
   String id = 'user-1',
   String displayName = 'Ada',
-}) => AiActorSnapshot(type: type, id: id, displayName: displayName);
+}) => AiActorSnapshot(
+  type: type,
+  id: id,
+  displayName: displayName,
+  humanPrincipalId: type == AiActorType.human ? id : null,
+);
 
 AiExecutorSnapshot makeAiExecutor({
   String hostId = 'host-a',
