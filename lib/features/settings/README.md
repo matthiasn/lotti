@@ -576,7 +576,8 @@ Manual row.
 ### Language
 
 [`ui/pages/advanced/manual_language_settings_page.dart`](ui/pages/advanced/manual_language_settings_page.dart)
-controls the language used when Lotti opens the external Manual.
+controls the language Lotti uses in its UI and when it opens the external
+Manual.
 It is an Advanced leaf on both settings surfaces (`advanced/manual-language` →
 `/settings/advanced/manual-language`), and its body is embedded in the desktop
 detail pane through the `advanced-manual-language` panel registration.
@@ -585,15 +586,19 @@ The manual currently publishes English, German, French, Italian, Spanish,
 Czech, Dutch, Romanian, and Portuguese. `Follow system` is the default:
 [`ManualLanguageController`](state/manual_language_controller.dart) matches the
 device locale to that catalog and falls back to English when no manual
-translation exists. Selecting a language persists only that explicit override
-in `SettingsDb`; returning to `Follow system` removes the key, so a later
-device-language change is reflected the next time the user opens Manual.
+translation exists. The same explicit override is passed to
+`MaterialApp.router.locale`, so selecting a language updates Lotti's UI and
+the Manual link together. Returning to `Follow system` removes the key, so a
+later device-language change is reflected by both Lotti and the next Manual
+link.
 
 ```mermaid
 flowchart LR
   Choice["Advanced → Language"] --> Preference{"Explicit override?"}
   Preference -->|yes| Override["English / German / French / Italian / Spanish / Czech / Dutch / Romanian / Portuguese"]
   Preference -->|no| System["Platform system locale"]
+  Override --> AppUi["Lotti UI in selected language"]
+  System --> AppUi["Lotti UI follows system language"]
   System --> Catalog{"Published manual locale?"}
   Catalog -->|yes| Matched["Matching manual route"]
   Catalog -->|no| English["English manual route"]

@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   matching localized screenshots. Settings → Advanced → Language can also
   select Dutch explicitly.
 
+### Changed
+- **Language now changes Lotti as well as the Manual.** Selecting a language
+  in Settings → Advanced → Language updates the app UI immediately and opens
+  the same Manual translation. Follow system restores your device language
+  for both.
+
 ### Fixed
 - **Audio transcripts respect the automatic-updates switch.** Finishing an
   audio transcription — locally or synced from another device — no longer
@@ -18,7 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   out of date instead, so the card shows the Wake agent action and no
   inference tokens are spent without consent.
 
-### Changed
 - **The task AI summary card is more compact and calmer.** The summary now
   leads directly under a tighter header, and all secondary controls moved
   into a quiet footer at the card bottom: the Wake agent button, a small

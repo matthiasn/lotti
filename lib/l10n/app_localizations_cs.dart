@@ -9044,7 +9044,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsManualLanguageFollowSystemSubtitle =>
-      'Použij jazyk zařízení, pokud ho příručka podporuje; jinak angličtinu.';
+      'Použij jazyk zařízení v Lotti i v příručce, pokud je podporován; jinak angličtinu.';
 
   @override
   String get settingsManualLanguageFollowSystemTitle =>

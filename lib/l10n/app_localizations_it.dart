@@ -9050,7 +9050,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsManualLanguageFollowSystemSubtitle =>
-      'Usa la lingua del dispositivo quando il Manuale la supporta; altrimenti usa l’inglese.';
+      'Usa la lingua del dispositivo in Lotti e nel Manuale quando è supportata; altrimenti usa l’inglese.';
 
   @override
   String get settingsManualLanguageFollowSystemTitle => 'Segui il sistema';

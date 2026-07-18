@@ -20,6 +20,11 @@ void main() {
       expect(ManualLanguage.fromStoredValue('pt'), ManualLanguage.portuguese);
       expect(ManualLanguage.fromStoredValue(null), isNull);
     });
+
+    test('exposes the locale used by the app', () {
+      expect(ManualLanguage.german.locale, const Locale('de'));
+      expect(ManualLanguage.portuguese.locale, const Locale('pt'));
+    });
   });
 
   group('manualLanguageForSystemLocale', () {
