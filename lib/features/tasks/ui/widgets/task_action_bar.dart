@@ -103,7 +103,7 @@ class TaskActionBar extends ConsumerStatefulWidget {
   /// affordance is included. Checklist is dropped second (after image)
   /// when the row would otherwise overflow.
   @visibleForTesting
-  static const double minWidthForChecklistButton = 340;
+  static const double minWidthForChecklistButton = 374;
 
   /// Minimum [LayoutBuilder] inner width at which the image affordance
   /// is included. Image is dropped first (before checklist) when the
@@ -305,10 +305,10 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                 // checklist; both stay reachable via the "..." (more) menu.
                 //
                 // Thresholds include the widest translated idle pill
-                // (French "Suivre le temps"), 48 px round buttons, and
+                // (Portuguese "Monitorar o tempo"), 48 px round buttons, and
                 // step4 (12 px) gaps. Adding each extra button costs ≈60 px,
                 // so the five-control row needs 416 px and the four-control
-                // row needs ≈340 px.
+                // row needs 374 px.
                 final showImage =
                     constraints.maxWidth >=
                     TaskActionBar.minWidthForImageButton;

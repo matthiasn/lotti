@@ -10,6 +10,7 @@ import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
 import 'app_localizations_fr.dart';
+import 'app_localizations_pt.dart';
 import 'app_localizations_ro.dart';
 
 // ignore_for_file: type=lint
@@ -104,6 +105,7 @@ abstract class AppLocalizations {
     Locale('en', 'GB'),
     Locale('es'),
     Locale('fr'),
+    Locale('pt'),
     Locale('ro'),
   ];
 
@@ -15370,6 +15372,12 @@ abstract class AppLocalizations {
   /// **'German'**
   String get settingsManualLanguageGermanTitle;
 
+  /// No description provided for @settingsManualLanguagePortugueseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Portuguese'**
+  String get settingsManualLanguagePortugueseTitle;
+
   /// No description provided for @settingsManualLanguageRomanianTitle.
   ///
   /// In en, this message translates to:
@@ -15496,17 +15504,17 @@ abstract class AppLocalizations {
   /// **'Room invite'**
   String get settingsMatrixRoomInviteTitle;
 
-  /// No description provided for @settingsMatrixSentMessageType.
-  ///
-  /// In en, this message translates to:
-  /// **'Sent ({eventType})'**
-  String settingsMatrixSentMessageType(String eventType);
-
   /// No description provided for @settingsMatrixSentMessagesLabel.
   ///
   /// In en, this message translates to:
   /// **'Sent messages:'**
   String get settingsMatrixSentMessagesLabel;
+
+  /// No description provided for @settingsMatrixSentMessageType.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent ({eventType})'**
+  String settingsMatrixSentMessageType(String eventType);
 
   /// No description provided for @settingsMatrixStartVerificationLabel.
   ///
@@ -18114,6 +18122,7 @@ class _AppLocalizationsDelegate
     'en',
     'es',
     'fr',
+    'pt',
     'ro',
   ].contains(locale.languageCode);
 
@@ -18146,6 +18155,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsEs();
     case 'fr':
       return AppLocalizationsFr();
+    case 'pt':
+      return AppLocalizationsPt();
     case 'ro':
       return AppLocalizationsRo();
   }

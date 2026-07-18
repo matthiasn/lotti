@@ -770,7 +770,7 @@ void main() {
     'checklist are hidden so the remaining three affordances fit on a row',
     (tester) async {
       // Outer 360 → inner ~328, which is below
-      // [TaskActionBar.minWidthForChecklistButton] (340).
+      // [TaskActionBar.minWidthForChecklistButton] (374).
       await tester.binding.setSurfaceSize(const Size(360, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -792,7 +792,7 @@ void main() {
     'image is hidden — checklist stays on the row',
     (tester) async {
       // Outer 420 → inner ~388, which is at-or-above
-      // [TaskActionBar.minWidthForChecklistButton] (340) and below
+      // [TaskActionBar.minWidthForChecklistButton] (374) and below
       // [TaskActionBar.minWidthForImageButton] (416).
       await tester.binding.setSurfaceSize(const Size(420, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -843,6 +843,27 @@ void main() {
         TaskActionBar.trackTimeKey,
         TaskActionBar.audioKey,
         TaskActionBar.checklistKey,
+        TaskActionBar.moreKey,
+      ]);
+    },
+  );
+
+  testWidgets(
+    'hides the checklist before Portuguese Track time text can overflow',
+    (tester) async {
+      // Outer 400 → inner ~370, below the Portuguese checklist threshold.
+      tester.binding.platformDispatcher.localeTestValue = const Locale('pt');
+      addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pumpBar(tester);
+
+      expect(find.byKey(TaskActionBar.imageKey), findsNothing);
+      expect(find.byKey(TaskActionBar.checklistKey), findsNothing);
+      expectSingleRowWithin(tester, const [
+        TaskActionBar.trackTimeKey,
+        TaskActionBar.audioKey,
         TaskActionBar.moreKey,
       ]);
     },

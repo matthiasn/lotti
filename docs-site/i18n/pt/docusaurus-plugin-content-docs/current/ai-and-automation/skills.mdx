@@ -1,0 +1,54 @@
+---
+title: Execute habilidades contextuais de IA
+description: Use o menu Gerar para executar apenas as ações de IA que se aplicam à tarefa, gravação, imagem ou entrada atual.
+---
+
+# Execute habilidades contextuais de IA
+
+As habilidades de IA são ações nomeadas com instruções e requisitos de entrada. Lotti
+filtra o menu **Gerar…** para a entidade atual, para que uma tarefa não ofereça
+uma ação de transcrição apenas de áudio e uma imagem não oferece uma ação que
+requer uma gravação.
+
+<ManualScreenshot
+  caseId="ai/skills"
+  alt="Imagem do habitat do projeto Waddle com a oferta modal Gerar foto do habitat Inspecionar"
+  caption="Numa imagem de habitat ligada à tarefa, a ação aplicável procura anomalias nos manómetros e danos visíveis nas vedações."
+/>
+
+## Execute uma habilidade
+
+1. Abra uma tarefa ou entrada de diário suportada.
+2. Selecione a ação do assistente descrita no cabeçalho da entrada. Isso abre
+   **Gerar…**.
+3. Leia a descrição da habilidade e selecione a ação desejada.
+4. Se Lotti oferecer um seletor de modelo ou modo de pensamento, confirme o padrão ou
+   escolha uma substituição única.
+5. Continue trabalhando enquanto a inferência é executada; o resultado está anexado ao
+   tarefa ou entrada relevante quando concluída.
+
+O menu disponível muda com o contexto:
+
+- as tarefas podem oferecer ações de texto e de contexto de tarefa;
+- as entradas de áudio podem oferecer transcrição e ações com reconhecimento de áudio;
+- as imagens podem oferecer análise visual; e
+- as entradas de texto podem oferecer ações de prompt ou de geração que aceitam texto.
+
+Algumas habilidades precisam de uma tarefa vinculada porque leem o contexto mais amplo da tarefa ou escrevem
+seu resultado de volta para essa tarefa. Se uma ação estiver ausente, primeiro verifique a entrada
+tipo e link de tarefa e, em seguida, verifique se o perfil de inferência ativo possui um modelo para
+a capacidade necessária.
+
+## As substituições de modelo são temporárias
+
+Quando uma habilidade oferece um seletor de modelo, essa escolha se aplica ao atual
+invocação. Ele não reescreve silenciosamente o padrão ou inferência da categoria
+perfil. Para alterar a rota normal, edite o perfil em
+[Modelos e perfis de inferência](./models-and-profiles.mdx).
+
+## Trate a saída gerada como um rascunho
+
+Revise prompts gerados, resumos, transcrições, análise de imagens e arte
+antes de confiar neles. O contexto da tarefa pode estar incompleto, os provedores podem retornar
+saída incorreta, e um modelo capaz ainda pode interpretar mal um problema muito sério
+emergência da sardinha.

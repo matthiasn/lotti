@@ -9054,6 +9054,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsManualLanguageGermanTitle => 'Němčina';
 
   @override
+  String get settingsManualLanguagePortugueseTitle => 'Portugalština';
+
+  @override
   String get settingsManualLanguageRomanianTitle => 'Rumunština';
 
   @override
@@ -9125,12 +9128,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMatrixRoomInviteTitle => 'Pozvánka do místnosti';
 
   @override
+  String get settingsMatrixSentMessagesLabel => 'Odeslané zprávy:';
+
+  @override
   String settingsMatrixSentMessageType(String eventType) {
     return 'Odesláno ($eventType)';
   }
-
-  @override
-  String get settingsMatrixSentMessagesLabel => 'Odeslané zprávy:';
 
   @override
   String get settingsMatrixStartVerificationLabel => 'Spustit ověření';

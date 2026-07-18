@@ -8876,6 +8876,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsManualLanguageGermanTitle => 'German';
 
   @override
+  String get settingsManualLanguagePortugueseTitle => 'Portuguese';
+
+  @override
   String get settingsManualLanguageRomanianTitle => 'Romanian';
 
   @override
@@ -8945,12 +8948,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMatrixRoomInviteTitle => 'Room invite';
 
   @override
+  String get settingsMatrixSentMessagesLabel => 'Sent messages:';
+
+  @override
   String settingsMatrixSentMessageType(String eventType) {
     return 'Sent ($eventType)';
   }
-
-  @override
-  String get settingsMatrixSentMessagesLabel => 'Sent messages:';
 
   @override
   String get settingsMatrixStartVerificationLabel => 'Start Verification';

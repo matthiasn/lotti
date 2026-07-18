@@ -1,0 +1,176 @@
+---
+title: Mantenha um diário útil
+description: Encontre notas, fotos, gravações, eventos e resultados de IA em um feed e conecte a atividade de suporte por trás de cada entrada.
+---
+
+# Mantenha um diário útil
+
+O Journal é o feed de entrada mista de Lotti. Traz notas, fotos, gravações,
+eventos, listas de verificação, medições e respostas de IA juntos sem virar
+em tarefas. Use-o quando quiser lembrar, inspecionar ou conectar o que
+aconteceu; use **Tarefas** quando a entrada em si for um trabalho que você ainda precisa fazer.
+
+<ManualScreenshot
+  caseId="journal/overview"
+  alt="Feed de diário contendo uma foto de lançamento do Projeto Waddle, registro de missão, mensagem de voz da sardinha Europa, evento de cúpula e resumo de telemetria de carga"
+  caption="Os glifos de tipo tornam o feed misto escaneável, enquanto as cores das categorias, rótulos, estrelas, sinalizadores, durações e chips de status mantêm o contexto útil próximo a cada entrada."
+/>
+
+## Leia o feed misto
+
+Cada cartão inicia com seu conteúdo e usa um glifo colorido para identificar o
+tipo de entrada. A cor vem da categoria da inscrição, então **Penguin
+Operações**, **Controle de Missão** e **Diplomacia de Pesca** permanecem reconhecíveis
+mesmo quando vários tipos de entrada aparecem juntos.
+
+Os cartões adicionam os metadados importantes para seu tipo. Por exemplo:
+
+- um memorando de áudio mostra sua duração e sinalizador;
+- um evento mostra seu status, data, classificação e nota;
+- uma lista de verificação mostra o progresso da conclusão;
+- uma medida mostra o seu valor e unidade; e
+- uma resposta de IA é marcada como gerada por IA.
+
+O feed é carregado em páginas, portanto, um diário longo não precisa renderizar todo o seu conteúdo.
+história de uma vez.
+
+## Pesquise por palavras ou significado
+
+Use **Texto Completo** para encontrar as palavras armazenadas em uma entrada. Quando a pesquisa vetorial é
+ativado, mude para **Vetor** para procurar entradas com significado semelhante, mesmo
+quando usam palavras diferentes. Os resultados do vetor são retornados como um conjunto classificado
+em vez de um feed com páginas infinitas.
+
+Se a pesquisa vetorial não estiver disponível ou for desativada posteriormente, Lotti retornará o Diário
+para o modo de texto completo em vez de deixar a pesquisa em um estado inutilizável.
+
+## Filtre o que aparece
+
+<ManualScreenshot
+  caseId="journal/filters"
+  alt="Caixa de diálogo de filtro de diário com controles com estrela, sinalizado, privado, tipo de entrada e categoria no feed de logística do pinguim"
+  caption="Combine propriedades, tipos e categorias de entrada para transformar o feed misto na fatia que você precisa."
+/>
+
+Abra o botão de filtro ao lado de Pesquisar. Você pode restringir o Diário para:
+
+- entradas marcadas com estrela, sinalizadas ou privadas;
+- um ou mais tipos de entrada, incluindo Texto, Evento, Áudio, Foto, Lista de Verificação,
+  Tarefas e Resposta de IA; e
+- uma ou mais categorias.
+
+Essas escolhas são mantidas para o Diário. Os filtros de tarefas são armazenados
+separadamente, portanto, alterar a visualização do Diário não reorganiza inesperadamente o
+Página de tarefas.
+
+## Adicione uma entrada
+
+<ManualScreenshot
+  caseId="journal/create"
+  alt="Adicionar menu oferecendo Evento, Tarefa, Gravação de Áudio, Entrada de Texto, Importar Imagem e Captura de Tela no diário do Projeto Waddle"
+  caption="O menu oferece apenas ações suportadas pela plataforma e contexto atuais."
+/>
+
+Selecione **+** para abrir o menu Adicionar. No Diário principal você pode criar um texto
+entrada, tarefa, evento ou gravação de áudio, importe uma foto ou faça uma captura de tela.
+A colagem de imagens da área de transferência pode aparecer quando uma imagem está disponível. A criação de eventos é
+mostrado quando o recurso Eventos está ativado.
+
+O mesmo menu se adapta dentro de uma entrada existente. Lá também pode criar um cronômetro
+já vinculado à entrada e os detalhes da tarefa podem oferecer uma lista de verificação vinculada.
+Imagens importadas, coladas, descartadas e capturadas podem participar do processo automático
+análise de imagem quando essa automação está configurada.
+
+## Ler e editar uma entrada
+
+<ManualScreenshot
+  caseId="journal/detail"
+  alt="Detalhe do registro da missão do Projeto Waddle com categoria, rótulos, estrela, duração, rich text, filtros de atividades e uma foto de lançamento vinculada"
+  caption="A entrada continua sendo a fonte da verdade; fotos de suporte, cronômetros, prompts e links de entrada permanecem anexados abaixo dele."
+/>
+
+O cabeçalho de detalhes mantém a data de entrada, categoria, rótulos, estrela, bandeira, privacidade,
+e transbordar ações juntas. Selecione o corpo para editar rich text. Salvar do
+controles do editor ou use **Ctrl+S** no Windows e Linux e **Command+S** em
+macOS. O texto não salvo é mantido como rascunho; descartar restaura o último salvo
+conteúdo.
+
+O menu flutuante contém as ações que se aplicam ao tipo de entrada atual,
+incluindo ações de cópia, exclusão e mídia. Na área de trabalho, entradas de imagem e áudio
+também pode revelar seu arquivo de origem no gerenciador de arquivos.
+
+### Alterar a data e a duração de uma entrada
+
+Selecione a data ou duração no cabeçalho da entrada para abrir **Data e hora**. Por um
+entrada no mesmo dia, escolha uma data e defina a hora de início e de término de forma independente.
+O resumo da duração é atualizado conforme as rodas se movem. Ative **Escolha um final separado
+data** para uma entrada noturna ou de vários dias e use a ação **Agora** paramova esse endpoint para a data e hora atuais.
+
+<ManualScreenshot
+  caseId="journal/date-time"
+  alt="Editor de data e hora para o registro da missão do Projeto Waddle com data de 17 de julho, início às 8h10, término às 8h40 e duração de 30 minutos"
+/>
+
+Selecione o botão de data para abrir a página do calendário. **Hoje** retorna ao
+dia atual, **Concluído** retorna ao editor de intervalo e **Salvar** aplica o
+intervalo inicial/final completo para a entrada.
+
+<ManualScreenshot
+  caseId="journal/date-picker"
+  alt="Calendário de data de início selecionando sexta-feira, 17 de julho de 2026 para o registro da missão do Projeto Waddle"
+/>
+
+A alteração do carimbo de data/hora afeta onde a entrada aparece em ordem cronológica
+visualizações. Ele não reescreve o texto de entrada nem desvincula sua atividade vinculada.
+
+## Siga a atividade vinculada
+
+<ManualScreenshot
+  caseId="journal/activity"
+  alt="Atividade vinculada do Projeto Waddle com um prompt de codificação de IA, um ensaio de chamada de 23 minutos e a tarefa de revisão de lançamento recebida"
+  caption="A atividade de saída responde ao que esta entrada contém; Vinculado de mostra quais outras entradas apontam para ele."
+/>
+
+As inscrições podem ser vinculadas a fotos, cronômetros, áudio, resultados de IA, notas e outros
+registros de apoio. As pílulas de atividade permitem mostrar ou ocultar o **Temporizador**,
+Entradas de **Áudio**, **Imagens** e **Código**. Abra o controle de classificação para alternar
+entre a ordem mais recente e a mais antiga, inclua links ocultos ou mostre
+apenas atividade sinalizada.
+
+As duas direções significam coisas diferentes:
+
+- a atividade abaixo da entrada está vinculada **a esta entrada**; e
+- **Linked from** lista entradas que apontam **para esta entrada**.
+
+Por exemplo, o registro da missão do Projeto Waddle contém sua foto de lançamento,
+prompt de diagnóstico e cronômetro de chamada, enquanto a tarefa de revisão de lançamento aparece
+em **Linked from** porque essa tarefa também faz referência ao log.
+
+Abra o painel de classificação para preparar várias alterações de visibilidade juntas. Escolha o
+ordem, se entradas ocultas devem ser incluídas e se apenas sinalizadas
+as entradas devem permanecer. A lista de atividades muda quando você seleciona a marca de seleção
+terminar a folha; fechá-lo de outra forma descarta as escolhas encenadas.
+
+<ManualScreenshot
+  caseId="journal/linked-filter"
+  alt="Filtrar e classificar planilha sobre a atividade vinculada do Projeto Waddle com a mais antiga primeiro e Mostrar entradas ocultas selecionadas"
+/>
+
+## Abra e salve uma foto
+
+Selecione uma foto embutida para abrir o visualizador em tela cheia. Aperte ou use o visualizador
+controles para zoom e panorâmica e, em seguida, redefina a imagem quando necessário. Salvar usa o
+arquivo original em vez da visualização menor: o celular grava na foto
+biblioteca após a permissão ser concedida, enquanto a área de trabalho abre o salvamento do sistema
+caixa de diálogo para que você escolha o destino.
+
+## Diário ou tarefa?
+
+| Use o Diário para… | Usar tarefas para… |
+| --- | --- |
+| Um registro de missão, foto, mensagem de voz, medição, memória de eventos ou resultado de IA | Uma ação com status, prioridade, estimativa, lista de verificação ou sessão de trabalho |
+| “As sardinhas da Europa estão mais frias do que o protocolo diplomático exige” | “Recalibrar o alimentador de peixes com gravidade zero” |
+| Evidências e contexto que você pode querer revisitar | Trabalho que você precisa planejar, executar e concluir |
+
+Vincule-os quando uma tarefa precisar de evidências do Diário. Isso mantém a ação
+focado enquanto preserva o histórico operacional mais rico por trás dele.

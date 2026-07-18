@@ -1,0 +1,36 @@
+---
+title: Importar dados de saúde
+description: Importe um intervalo de datas selecionado do armazenamento de dados de saúde do telefone.
+---
+
+# Importar dados de saúde
+
+A importação de saúde está disponível para iOS e Android. Abra **Configurações → Avançado →
+Health Import**, escolha uma data de início e término e selecione a família de dados que você
+quero que Lotti leia o armazenamento de dados de saúde do telefone.
+
+<ManualScreenshot
+  caseId="health-import/overview"
+  alt="Importação de saúde com data de início, data de término e ações de importação separadas para atividade, sono, frequência cardíaca, pressão arterial, medidas corporais e treinos"
+  caption="A visualização Mobile mostra a tela de importação. A importação de saúde está intencionalmente ausente da árvore de configurações avançadas da área de trabalho, demonstrada pela visualização da área de trabalho."
+/>
+
+As importações disponíveis são:
+
+- **Atividade** para totais de atividades;
+- **Sono** para amostras de sono;
+- **Frequência cardíaca** para observações de pulso;
+- **Pressão Arterial** para leituras de pressão arterial;
+- **Medida Corporal** para medidas como métricas corporais; e
+- **Treino** para treinos gravados.
+
+Cada botão importa apenas sua própria família de dados no intervalo de datas exibido.
+A alteração do intervalo não inicia uma importação por si só.
+
+Seu sistema operacional pode solicitar permissão para dados de saúde. Lotti só sabe ler
+os tipos que você concede. Se uma família de dados esperada estiver faltando, verifique o aplicativo
+permissões de saúde nas configurações do sistema do telefone e tente importar novamente.
+
+A importação de integridade não é exibida no desktop porque o status de integridade móvel subjacente
+lojas não estão disponíveis lá. As observações importadas ainda podem ser visualizadas em
+os painéis Lotti relevantes depois de sincronizados com outro dispositivo.

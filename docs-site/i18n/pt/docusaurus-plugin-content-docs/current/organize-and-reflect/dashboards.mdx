@@ -1,0 +1,112 @@
+---
+title: Crie painéis úteis
+description: Combine hábitos, medições, saúde, pesquisas e exercícios em uma visão operacional reutilizável.
+---
+
+# Crie painéis úteis
+
+Um painel agrupa gráficos que respondem a uma pergunta recorrente. ** Colônia
+operações** traz pressão de habitat, demanda de sardinha e número de expedições
+juntos; **A preparação da missão** mantém separada uma análise privada do lançamento. Construir
+em torno de uma decisão, em vez de coletar todos os números disponíveis.
+
+<ManualScreenshot
+  caseId="dashboards/settings-list"
+  alt="Configurações do painel contendo operações da Colônia e o painel privado de prontidão da missão"
+/>
+
+## Crie um painel
+
+1. Abra **Configurações → Gerenciamento do painel**.
+2. Selecione **Criar painel**.
+3. Adicione um nome claro e uma descrição da pergunta que deve ser respondida.
+4. Opcionalmente, atribua uma categoria e uma configuração de privacidade.
+5. Adicione e organize gráficos e salve.
+
+<ManualScreenshot
+  caseId="dashboards/settings-detail"
+  alt="Editor do painel de operações da colônia atribuído à Penguin Operations com privacidade e opções ativas"
+/>
+
+- **Categoria** disponibiliza o painel para filtragem baseada em categoria.
+- **Privado** oculta o painel, a menos que entradas privadas sejam mostradas.
+- **Ativo** controla se ele aparece na lista de Painéis sem
+  excluindo a definição.
+
+## Compor e ordenar gráficos
+
+<ManualScreenshot
+  caseId="dashboards/charts"
+  alt="Lista de gráficos de operações da colônia com média diária de pressão do habitat, sardinhas consumidas na soma diária e pinguins contabilizados na soma diária"
+  caption="Arraste com a alça para reordenar. Selecione o controle de ajuste em um gráfico de medição para alterar sua agregação ou remova-o com ×."
+/>
+
+A ordem do gráfico é a ordem do painel. Coloque primeiro o sinal que enquadra o resto. Para
+Operações de colônia, a pressão do habitat leva porque um habitat inseguro muda a forma como
+todos os outros números devem ser interpretados.
+
+Os gráficos de medição mantêm sua própria agregação no item do painel. Isso permite
+o mesmo mensurável aparece com um resumo diferente em outro painel
+sem alterar as observações subjacentes.
+
+## Adicione gráficos de fontes suportadas
+
+<ManualScreenshot
+  caseId="dashboards/sources"
+  alt="Editor de painel que oferece hábitos, medições, saúde, pesquisas e exercícios como fontes de gráficos, além de exportação JSON"
+/>
+
+O editor pode adicionar:
+
+- **Hábitos** para histórico de conclusão.
+- **Medições** para observações numéricas definidas pelo usuário.
+- Dados de **Saúde** suportados pela plataforma e permissões atuais.
+- **Pesquisas** para resultados de questionários configurados.
+- **Exercícios** importados de fontes de saúde suportadas.
+
+Expanda uma origem, selecione um ou mais gráficos e adicione-os. A disponibilidade depende
+nas definições e dados de plataforma existentes; solicitações de permissão de saúde e
+os tipos suportados variam de acordo com o dispositivo.
+
+## Abra e interprete um painel
+
+Abra o **Insights** para ver os painéis ativos. A lista mostra cada painel
+ícone, nome e finalidade da categoria. Use o filtro no cabeçalho para focar em um
+ou mais categorias.
+
+<ManualScreenshot
+  caseId="dashboards/list"
+  alt="Lista de painéis Lotti Insights com operações de colônia e painéis privados de prontidão para missões"
+  caption="Desktop reserva o painel direito para o painel selecionado; mobile abre o painel selecionado como uma página separada."
+/>
+
+Selecione **Operações de colônia** para abrir seus gráficos. No desktop, a lista e
+painel selecionado permanecem lado a lado. No celular, o painel é aberto conforme
+própria página com um botão Voltar.
+
+<ManualScreenshot
+  caseId="dashboards/view"
+  alt="Painel de operações da colônia mostrando 90 dias de pressão no habitat e sardinhas consumidas com a lista de painéis ao lado no desktop"
+  caption="O cabeçalho fixo mantém os controles de intervalo de 30, 90, 180 e 365 dias visíveis enquanto os gráficos rolam abaixo."
+/>
+
+O intervalo selecionado se aplica a todos os gráficos da página. Os cartões gráficos retêm
+suas próprias unidades e agregação: a pressão do habitat usa uma média diária enquanto
+o consumo de sardinha e o número de pinguins usam somas diárias. Selecione **+** em um
+cartão de medição para registrar uma nova observação desse tipo.
+
+<ManualScreenshot
+  caseId="dashboards/view-crew"
+  alt="Painel de operações da colônia rolado para sardinhas consumidas e pinguins contabilizados nos gráficos"
+  caption="Uma breve queda para 36 pinguins é visível nos 90 dias de história da tripulação; os dias circundantes voltam ao esperado 37."
+/>
+
+Trate um gráfico como evidência, não como um veredicto. Verifique a agregação, unidades, data
+alcance, observações faltantes e estado de privacidade antes de tirar conclusões.
+
+## Exportar configuração do painel
+
+**Salvar e copiar JSON** persiste no painel e depois copia sua configuração
+e definições mensuráveis referenciadas. Isto é útil para inspeção ou movimentação
+uma configuração, mas não é um link de sincronização ao vivo: edições posteriores não atualizam um
+carga útil já copiada.

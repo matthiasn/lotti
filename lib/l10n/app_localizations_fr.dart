@@ -9110,6 +9110,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsManualLanguageGermanTitle => 'Allemand';
 
   @override
+  String get settingsManualLanguagePortugueseTitle => 'Portugais';
+
+  @override
   String get settingsManualLanguageRomanianTitle => 'Roumain';
 
   @override
@@ -9182,12 +9185,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMatrixRoomInviteTitle => 'Invitation au salon';
 
   @override
+  String get settingsMatrixSentMessagesLabel => 'Messages envoyés :';
+
+  @override
   String settingsMatrixSentMessageType(String eventType) {
     return 'Envoyé ($eventType)';
   }
-
-  @override
-  String get settingsMatrixSentMessagesLabel => 'Messages envoyés :';
 
   @override
   String get settingsMatrixStartVerificationLabel => 'Démarrer la vérification';

@@ -1,0 +1,95 @@
+---
+title: Executar e monitorar agentes
+description: Monitore a atividade do agente, inspecione instâncias em execução e controle ciclos de ativação agendados sem perder a trilha de auditoria.
+---
+
+# Executar e monitorar agentes
+
+Os agentes permitem que Lotti carregue uma responsabilidade definida em vários ciclos de ativação.
+Cada instância em execução vem de um modelo de agente, usa uma configuração de inferência,
+e mantém seu próprio estado, relatórios, observações e histórico de atividades. Abrir
+**Configurações → Agentes** para ver o sistema como um todo.
+
+Relatórios do agente, observações e despertares na fila descrevem o trabalho do agente
+estado; eles não reescrevem silenciosamente o diário de bordo pessoal. Quando um agente de tarefa
+deseja alterar os dados da tarefa, Lotti apresenta uma proposta para sua revisão. Veja
+[Revise as alterações propostas](../organize-and-reflect/tasks.mdx#revise-as-alterações-propostas)
+para os controles de aprovação por tarefa e seu título inicial e idioma restritos
+exceções.
+
+## Leia a atividade do agente antes de alterá-la
+
+A página **Estatísticas** combina atividade de ativação e uso de token. O primeiro gráfico
+mostra quando os agentes acordaram durante as últimas 24 horas. A seção diária compara
+hoje com o mesmo horário dos últimos dias e, em seguida, divide o uso por modelo e
+fonte.
+
+<ManualScreenshot
+  caseId="agents/stats"
+  alt="Estatísticas do agente Lotti mostrando a atividade de ativação do Projeto Waddle, uso diário de token e gráficos de modelo"
+  caption="A frota de exemplo do Projeto Waddle está mais ocupada com verificações de habitat e planejamento de lançamento; as seções de modelo e origem tornam essa atividade atribuível."
+/>
+
+Use esta página para responder a três perguntas diferentes:
+
+- **Quando os agentes foram executados?** Leia o gráfico de atividade de 24 horas.
+- **Quanta inferência eles usaram?** Compare os gráficos diários e por modelo.
+- **Qual responsabilidade o motivou?** Revise o detalhamento do modelo/fonte.
+
+Um pico não é automaticamente uma falha. Um dia de revisão de lançamento deve ser mais movimentado
+do que um dia comum de colônia. Investigue atividades inesperadas abrindo o
+modelo ou instância de origem antes de alterar um limite de simultaneidade global.
+
+## Inspecione as instâncias em execução
+
+Abra **Instâncias** para ver todas as sessões de agente e evolução. As linhas expõem o
+tipo de agente, ciclo de vida, modelo atribuído e alma. Agrupar por alma é útil
+quando diversas responsabilidades compartilham uma voz e um estilo de decisão.
+
+<ManualScreenshot
+  caseId="agents/instances"
+  alt="Instâncias do agente Lotti agrupadas pelo Almirante Pebble, Dr. Flipper, Capitão Sardina e uma sessão de evolução"
+  caption="O Inspetor de Vedações do Habitat, o Planejador do Projeto Waddle e o Coordenador de Carga de Sardinha permanecem instâncias separadas, mesmo quando compartilham recursos no nível do sistema."
+/>
+
+Selecione uma instância para inspecionar seus componentes internos. A guia **Estatísticas** mostra o modelo
+uso, seu modelo, rota de inferência atual, controles de ciclo de vida, contagem de despertares,
+e estado de agendamento.
+
+<ManualScreenshot
+  caseId="agents/instance-detail"
+  alt="Detalhe da instância do Habitat Seal Inspector com uso de token, modelo Orbital Habitat Sentinel, rota de inferência, controles de ciclo de vida e estado de ativação"
+  caption="A instância mantém procedência suficiente para explicar qual modelo e rota produziu seu trabalho antes de você pausá-la, analisá-la novamente ou destruí-la."
+/>
+
+As guias de instância restantes preservam evidências diferentes:
+
+- **Relatórios** contém os instantâneos de relatórios salvos do agente.
+- **Conversas** agrupa mensagens por ciclo de ativação.
+- **Observações** expõe as descobertas capturadas sem misturá-las em relatórios.
+- **Atividade** mostra a mensagem cronológica e a trilha da ferramenta.
+
+**Pause** mantém a instância, mas interrompe o trabalho normal. **Reanalisar** solicita uma tarefa
+agente reconsidere seu assunto atual. **Destruir** é destrutivo e deve
+ser usado somente quando a própria instância não for mais desejada; mudando o
+modelo para agentes futuros não requer a destruição de instâncias não relacionadas.
+
+## Entenda os ciclos de despertar
+
+Abra **Ciclos de ativação** para ver o trabalho que está em execução agora e o trabalho a ser concluído mais tarde. Um
+despertar **Pendente** foi solicitado pelo agente. Um despertar **Programado** foi agendado pelo
+sistema ou planejador. Cada linha mantém visível a tarefa, o projeto ou o dia vinculado
+ao lado do agente responsável e uma contagem regressiva ao vivo.
+
+<ManualScreenshot
+  caseId="agents/pending-wakes"
+  alt="Lotti Wake Cycles mostrando a inspeção do habitat em execução e os despertares programados do Projeto Waddle e da logística da sardinha"
+  caption="A fila distingue um acompanhamento de habitat solicitado pelo agente do dia de lançamento e dos cronogramas de carga, de modo que uma contagem regressiva sempre tem um motivo e um proprietário."
+/>
+
+Excluir uma ativação na fila remove esse cronômetro; ele não exclui o agente ou seu
+tarefa vinculada. Se uma ativação retornar imediatamente, inspecione o estado do agente ou o
+automação que o solicitou, em vez de excluir repetidamente o sintoma.
+
+Continue com [Modelos de agente e almas](./agent-blueprints.mdx) para definir
+o que essas instâncias fazem e como elas se comunicam.

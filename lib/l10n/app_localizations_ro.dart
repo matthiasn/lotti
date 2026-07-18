@@ -9099,6 +9099,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsManualLanguageGermanTitle => 'Germană';
 
   @override
+  String get settingsManualLanguagePortugueseTitle => 'Portugheză';
+
+  @override
   String get settingsManualLanguageRomanianTitle => 'Română';
 
   @override
@@ -9170,12 +9173,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixRoomInviteTitle => 'Invitație la cameră';
 
   @override
+  String get settingsMatrixSentMessagesLabel => 'Mesaje trimise:';
+
+  @override
   String settingsMatrixSentMessageType(String eventType) {
     return 'Trimis ($eventType)';
   }
-
-  @override
-  String get settingsMatrixSentMessagesLabel => 'Mesaje trimise:';
 
   @override
   String get settingsMatrixStartVerificationLabel => 'Începeți verificarea';
