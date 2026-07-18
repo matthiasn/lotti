@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'manual_screenshot_czech_text.dart';
-import 'manual_screenshot_dutch_text.dart';
 import 'manual_screenshot_danish_text.dart';
+import 'manual_screenshot_dutch_text.dart';
 import 'manual_screenshot_french_text.dart';
 import 'manual_screenshot_italian_text.dart';
 import 'manual_screenshot_locale.dart';
@@ -162,10 +162,8 @@ void main() {
       expect(manualScreenshotSwedishText('Unknown fixture'), isNull);
     });
 
-    test(
-      'French fixture catalog localizes multiline agent reports',
-      () {
-        const report = '''
+    test('French fixture catalog localizes multiline agent reports', () {
+      const report = '''
 ## Latest assessment
 
 - Pressure seals A–F stayed stable across the night shift.

@@ -13,6 +13,11 @@ void main() {
       manualScreenshotDanishText('45m → 1h 15m'),
       '45 m → 1 time 15 min',
     );
+    expect(manualScreenshotDanishText('Timer'), 'Timer');
+    expect(
+      manualScreenshotDanishText('Count emperor penguins'),
+      'Tæl kejserpingviner',
+    );
   });
 
   test('localizes the Danish manual agent report with Markdown intact', () {

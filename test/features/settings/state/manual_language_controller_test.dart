@@ -80,7 +80,7 @@ void main() {
 
     test('falls back to English for an unsupported system language', () {
       expect(
-        manualLanguageForSystemLocale(const Locale('sv', 'SE')),
+        manualLanguageForSystemLocale(const Locale('fi', 'FI')),
         ManualLanguage.english,
       );
     });
@@ -132,7 +132,7 @@ void main() {
 
     test('uses English for unsupported system languages', () {
       expect(
-        manualUriFor(systemLocale: const Locale('sv')).toString(),
+        manualUriFor(systemLocale: const Locale('fi')).toString(),
         lottiManualBaseUrl,
       );
     });

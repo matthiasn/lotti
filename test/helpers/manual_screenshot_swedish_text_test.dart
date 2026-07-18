@@ -17,6 +17,18 @@ void main() {
       manualScreenshotSwedishText('45m → 1h 15m'),
       '45 m → 1 timme 15 min',
     );
+    expect(manualScreenshotSwedishText('Timer'), 'Timer');
+    expect(
+      manualScreenshotSwedishText('Count emperor penguins'),
+      'Räkna kejsarpingviner',
+    );
+    expect(
+      manualScreenshotSwedishText('Rather type?'),
+      'Vill du hellre skriva?',
+    );
+    expect(manualScreenshotSwedishText('Habits'), 'Vanor');
+    expect(manualScreenshotSwedishText('Edit habit'), 'Redigera vana');
+    expect(manualScreenshotSwedishText('Newest first'), 'Nyaste först');
   });
 
   test('localizes the Swedish manual agent report with Markdown intact', () {
