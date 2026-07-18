@@ -1734,7 +1734,7 @@ void main() {
       });
 
       test(
-        'persists attributed image analysis with provider-reported cost',
+        'persists attributed image analysis cost evidence without null text',
         () async {
           final attribution = _AttributionTestHarness()
             ..register(attributionId: 'image-attribution');
@@ -1840,6 +1840,43 @@ void main() {
                   ).captured.single
                   as AiResponseData;
           expect(saved.aiAttribution, attribution.terminal);
+          verify(
+            () => attribution.service.finalize(attribution.terminal),
+          ).called(1);
+
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer((invocation) {
+            (invocation.namedArguments[#impactCollector]
+                    as InferenceImpactCollector?)
+                ?.impact = const MeliousCallImpact(
+              energyKwh: 0.01,
+            );
+            return Stream.fromIterable([
+              makeStreamChunk('Energy-only image analysis'),
+            ]);
+          });
+
+          await runner.runImageAnalysis(
+            imageEntryId: imageEntity.id,
+            automationResult: makeImageAnalysisResult(),
+          );
+
+          expect(attribution.interaction.cost?.source, AiCostSource.unknown);
+          expect(attribution.interaction.cost?.originalAmountDecimal, isNull);
+          expect(attribution.interaction.cost?.originalUnit, isNull);
+          expect(attribution.interaction.cost?.reportingAmountMicros, isNull);
+          expect(attribution.interaction.cost?.reportingCurrency, isNull);
           verify(
             () => attribution.service.finalize(attribution.terminal),
           ).called(1);

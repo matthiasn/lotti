@@ -1056,7 +1056,7 @@ class SkillInferenceRunner {
           ? AiCostSource.unknown
           : AiCostSource.providerReported,
       assessedAt: completedAt,
-      originalAmountDecimal: impact?.costCredits.toString(),
+      originalAmountDecimal: impact?.costCredits?.toString(),
       originalUnit: impact?.costCredits == null ? null : 'meliousCredit',
       reportingAmountMicros: impact?.costCredits == null
           ? null
