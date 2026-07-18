@@ -170,12 +170,11 @@ void main() {
     testWidgets('search field has correct placeholder', (tester) async {
       await pumpHarness(tester);
 
-      final textField = tester.widget<TextField>(find.byType(TextField));
       final l10n = AppLocalizations.of(
         tester.element(find.byType(TextField)),
       )!;
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-      expect(textField.decoration?.hintText, l10n.searchHint);
+      expect(find.text(l10n.searchHint), findsOneWidget);
     });
 
     testWidgets('lists languages alphabetically by display name', (
