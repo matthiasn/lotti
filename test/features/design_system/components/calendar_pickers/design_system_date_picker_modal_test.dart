@@ -225,7 +225,7 @@ Future<void> _pumpLauncher(
       overrides: [
         if (firstDayOfWeekIndex != null)
           firstDayOfWeekIndexProvider.overrideWith(
-            (ref) async => firstDayOfWeekIndex,
+            (ref) => firstDayOfWeekIndex,
           ),
       ],
       child: Builder(
