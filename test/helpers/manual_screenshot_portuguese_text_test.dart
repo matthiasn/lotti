@@ -24,4 +24,16 @@ void main() {
       contains('## Última avaliação'),
     );
   });
+
+  test('uses Portuguese task and habitat terminology', () {
+    final expectedTranslations = <String, String>{
+      'Inspect habitat seals': 'Inspecione as vedações do habitat',
+      'The penguins are currently technically cargo':
+          'Os pinguins são, tecnicamente, carga',
+    };
+
+    for (final entry in expectedTranslations.entries) {
+      expect(manualScreenshotPortugueseText(entry.key), entry.value);
+    }
+  });
 }

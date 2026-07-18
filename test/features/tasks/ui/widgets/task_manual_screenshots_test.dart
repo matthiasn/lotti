@@ -680,14 +680,18 @@ void main() {
           find.text(messages.taskAgentReportOutdatedTitle),
           findsOneWidget,
         );
-        expect(
-          find.byKey(const ValueKey('taskAgentWakeIconButton')),
-          findsOneWidget,
-        );
-        expect(
-          find.bySemanticsLabel(messages.taskAgentWakeAgent),
-          findsOneWidget,
-        );
+        if (device.isPhone) {
+          expect(
+            find.byKey(const ValueKey('taskAgentWakeIconButton')),
+            findsOneWidget,
+          );
+          expect(
+            find.bySemanticsLabel(messages.taskAgentWakeAgent),
+            findsOneWidget,
+          );
+        } else {
+          expect(find.text(messages.taskAgentWakeAgent), findsOneWidget);
+        }
         await captureScreenshot(
           tester,
           'task_agent_manual_${viewport}_$theme',

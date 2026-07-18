@@ -48,7 +48,7 @@ const _copy = <String, String>{
   'Inspect orbital penguin habitat before launch':
       'Inspecione o habitat orbital dos pinguins antes do lançamento',
   'Launch orbital penguin habitat after seal inspection':
-      'Lançar habitat orbital de pinguins após inspeção de focas',
+      'Lançar o habitat orbital dos pinguins após a inspeção das vedações',
   'Mission Control cleared 36 penguins. Recheck pressure seal C and hold the sardine cargo pod until the final emperor arrives.':
       'O Controle da Missão eliminou 36 pinguins. Verifique novamente o selo de pressão C e segure a cápsula de carga de sardinha até que o último imperador chegue.',
   'Inspect orbital penguin habitat — before launch':
@@ -177,7 +177,7 @@ const _copy = <String, String>{
   'Categories': 'Categorias',
   'Labels': 'Etiquetas',
   'Habits': 'Hábitos',
-  'Inspect habitat seals': 'Inspecione focas de habitat',
+  'Inspect habitat seals': 'Inspecione as vedações do habitat',
   'Check the pressure seals before the colony wakes.':
       'Verifique os selos de pressão antes que a colônia acorde.',
   'Log penguin roll call': 'Registrar a chamada dos pinguins',
@@ -297,7 +297,7 @@ const _copy = <String, String>{
   'Emperor penguin roll call': 'Chamada do pinguim-imperador',
   'Account for all 37 expedition penguins before launch.':
       'Considere todos os 37 pinguins da expedição antes do lançamento.',
-  'Walk the habitat seals': 'Caminhe pelas focas habitat',
+  'Walk the habitat seals': 'Percorra as vedações do habitat',
   'Inspect every pressure seal after the artificial sunrise.':
       'Inspecione cada vedação de pressão após o nascer do sol artificial.',
   'Review sardine forecast': 'Revise a previsão da sardinha',
@@ -404,7 +404,7 @@ const _copy = <String, String>{
   'POST-LUNCH DIP': 'MERGULHO PÓS-ALMOÇO',
   'SECOND WIND': 'SEGUNDO VENTO',
   'Habitat seals green; tiny helmets still pending':
-      'As focas de habitat são verdes; capacetes minúsculos ainda pendentes',
+      'As vedações do habitat estão boas; capacetes minúsculos ainda pendentes',
   'Locked Q3 sardines below the emergency fish ceiling':
       'Sardinhas trancadas no terceiro trimestre abaixo do teto de emergência para peixes',
   'Prototype ready for the live habitat demo':
@@ -463,7 +463,7 @@ const _copy = <String, String>{
       'Começou sexta-feira, dignidade não incluída',
   'Renew orbital wildlife permit': 'Renovar licença de vida selvagem orbital',
   'The penguins are currently technically cargo':
-      'Os pinguins são atualmente tecnicamente carregados',
+      'Os pinguins são, tecnicamente, carga',
   'Practice calm during surprise flapping':
       'Pratique a calma durante as batidas surpresa',
   'Last skipped Thursday': 'Última quinta-feira ignorada',
@@ -482,7 +482,7 @@ const _copy = <String, String>{
   'Project Waddle Day Planner': 'Planejador do dia do projeto Waddle',
   'Sardine Supply Watch': 'Vigilância do Abastecimento de Sardinha',
   'Fish Diplomacy Coach': 'Treinador de Diplomacia de Peixe',
-  'Habitat Seal Inspector': 'Inspetor de focas de habitat',
+  'Habitat Seal Inspector': 'Inspetor de Vedações do Habitat',
   'Project Waddle Planner': 'Planejador de projeto Waddle',
   'Sardine Cargo Coordinator': 'Coordenador de Carga Sardinha',
   'Project Waddle Operations': 'Operações do Projeto Waddle',
