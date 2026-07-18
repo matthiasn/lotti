@@ -273,11 +273,14 @@ stateDiagram-v2
 
 - calendar and time pickers (`components/calendar_pickers/` and
   `components/time_pickers/`) — the shared calendar wraps Material's
-  locale-aware month grid with a full weekday date readout, a contextual
-  **Today** action, `DesignSystemPickerSection` framing, and the shared modal
-  action bar. Calendar inputs are clamped to their configured bounds, and
-  selections retain the caller's UTC/local timezone kind instead of silently
-  converting calendar days. The time-of-day picker uses fixed-extent
+  month grid with a full weekday date readout, a contextual **Today** action,
+  `DesignSystemPickerSection` framing, and the shared modal action bar. Its
+  weekday header and day grid use the device region's CLDR week start through
+  `firstDayOfWeekIndexProvider`, so European regions start on Monday while US
+  regions start on Sunday even when the UI language is English. Calendar
+  inputs are clamped to their configured bounds, and selections retain the
+  caller's UTC/local timezone kind instead of silently converting calendar
+  days. The time-of-day picker uses fixed-extent
   hour/minute wheels with cylindrical
   perspective, non-bouncing settle behavior, a token-selected row, 12/24-hour
   layouts, and adjustable semantics for each column. Desktop pointer-scroll

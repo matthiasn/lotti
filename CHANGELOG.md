@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1054]
 ### Fixed
+- **Date pickers now start the week according to your device region.** Entry
+  dates, entry ranges, due dates, and project target dates show Monday first in
+  European regions and Sunday first in the US, including matching weekday
+  headers and calendar-day positions.
 - **Screen-reader controls now consistently expose one actionable, localized
   announcement.** Back, overflow, chart-baseline, and entry-collapse controls
   retain their labels, actions, and state without duplicate speech; new

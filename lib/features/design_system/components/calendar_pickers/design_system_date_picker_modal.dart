@@ -1,11 +1,14 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:lotti/utils/device_region.dart';
+import 'package:lotti/utils/first_day_of_week_picker.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// The outcome of a design-system calendar modal.
@@ -100,7 +103,7 @@ class DesignSystemPickerSection extends StatelessWidget {
 
 /// The token-backed calendar content shared by standalone and multi-page
 /// date-picking sheets.
-class DesignSystemCalendarPicker extends StatelessWidget {
+class DesignSystemCalendarPicker extends ConsumerWidget {
   const DesignSystemCalendarPicker({
     required this.selectedDate,
     required this.firstDate,
@@ -115,8 +118,12 @@ class DesignSystemCalendarPicker extends StatelessWidget {
   final ValueChanged<DateTime> onDateChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+    final materialLocalizations = MaterialLocalizations.of(context);
+    final firstDayOfWeekIndex =
+        ref.watch(firstDayOfWeekIndexProvider).value ??
+        materialLocalizations.firstDayOfWeekIndex;
     final effectiveSelectedDate = _clampCalendarDate(
       selectedDate,
       firstDate,
@@ -143,14 +150,17 @@ class DesignSystemCalendarPicker extends StatelessWidget {
               toggleButtonTextStyle: tokens.typography.styles.subtitle.subtitle1
                   .copyWith(color: tokens.colors.text.highEmphasis),
             ),
-            child: CalendarDatePicker(
-              key: ValueKey(effectiveSelectedDate),
-              initialDate: effectiveSelectedDate,
-              currentDate: _today(),
-              firstDate: firstDate,
-              lastDate: lastDate,
-              onDateChanged: (value) => onDateChanged(
-                value.dateOnlyInZoneOf(effectiveSelectedDate),
+            child: firstDayOfWeekPickerBuilder(firstDayOfWeekIndex)(
+              context,
+              CalendarDatePicker(
+                key: ValueKey(effectiveSelectedDate),
+                initialDate: effectiveSelectedDate,
+                currentDate: _today(),
+                firstDate: firstDate,
+                lastDate: lastDate,
+                onDateChanged: (value) => onDateChanged(
+                  value.dateOnlyInZoneOf(effectiveSelectedDate),
+                ),
               ),
             ),
           ),
