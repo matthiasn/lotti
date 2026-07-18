@@ -9031,10 +9031,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Tcheco';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Holandês';
+  String get settingsManualLanguageDanishTitle => 'Dinamarquês';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Dinamarquês';
+  String get settingsManualLanguageDutchTitle => 'Holandês';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Inglês';

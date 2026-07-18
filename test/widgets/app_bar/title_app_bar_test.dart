@@ -162,10 +162,8 @@ void main() {
       final expectedLabel = MaterialLocalizations.of(
         tester.element(button),
       ).backButtonTooltip;
-      final semanticBackButton = find.byWidgetPredicate(
-        (widget) =>
-            widget is Semantics && widget.properties.label == expectedLabel,
-      );
+      final semanticBackButton = find.bySemanticsLabel(expectedLabel);
+      expect(semanticBackButton, findsOneWidget);
       expect(
         tester.getSemantics(semanticBackButton),
         matchesSemantics(

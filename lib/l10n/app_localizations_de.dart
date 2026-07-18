@@ -8989,10 +8989,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Tschechisch';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Niederländisch';
+  String get settingsManualLanguageDanishTitle => 'Dänisch';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Dänisch';
+  String get settingsManualLanguageDutchTitle => 'Niederländisch';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Englisch';

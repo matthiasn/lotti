@@ -86,26 +86,21 @@ class BackWidget extends StatelessWidget {
       children: [
         const SizedBox(width: 2),
         Semantics(
-          container: true,
-          button: true,
           label: tooltip,
+          button: true,
+          excludeSemantics: true,
           onTap: action,
-          child: ExcludeSemantics(
-            child: Tooltip(
-              message: tooltip,
-              excludeFromSemantics: true,
-              child: IconButton(
-                onPressed: action,
-                icon: Icon(
-                  Icons.chevron_left,
-                  size: 30,
-                  weight: 500,
-                  // onSurfaceVariant, not outline: the chevron is an
-                  // interactive control and must clear the 3:1 non-text
-                  // contrast minimum on both themes.
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
+          child: IconButton(
+            onPressed: action,
+            tooltip: tooltip,
+            icon: Icon(
+              Icons.chevron_left,
+              size: 30,
+              weight: 500,
+              // onSurfaceVariant, not outline: the chevron is an
+              // interactive control and must clear the 3:1 non-text
+              // contrast minimum on both themes.
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),

@@ -724,6 +724,7 @@
   "aiCardReadMore": "Lees meer",
   "aiCardShowLess": "Minder tonen",
   "aiCardTitle": "Samenvatting van de AI",
+  "aiChatAssistantResponding": "De assistent antwoordt",
   "aiChatMessageCopied": "Gekopieerd naar het klembord",
   "aiConfigFailedToLoadModelsGeneric": "Laden van modellen is mislukt. Probeer het opnieuw.",
   "aiConfigNoModelsAvailable": "Er zijn nog geen AI-modellen geconfigureerd. Voeg er een toe in instellingen.",
@@ -1504,6 +1505,8 @@
   "backfillToggleDescription": "Verzoek om ontbrekende gegevens van de laatste 24 uur.",
   "backfillToggleTitle": "Automatische backfill",
   "basicSettings": "Basisinstellingen",
+  "calendarHasPlanLabel": "Heeft een plan",
+  "calendarTodayLabel": "Vandaag",
   "cancelButton": "Annuleren",
   "categoryActiveDescription": "Inactieve categorieën zullen niet in selectielijsten verschijnen",
   "categoryActiveSwitchDescription": "Selecteerbaar voor nieuwe items",
@@ -2578,6 +2581,7 @@
   "designSystemProgressBarSampleLabel": "Voortgangsbalk-label",
   "designSystemRadioButtonLabel": "Radioknop",
   "designSystemScrollbarSizesTitle": "Schuifbalkgroottes",
+  "designSystemSearchClearLabel": "Zoekopdracht wissen",
   "designSystemSearchFilledText": "Lotti-zoekopdracht",
   "designSystemSearchHintLabel": "Type gebruiker",
   "designSystemSelectedLabel": "Geselecteerd",
@@ -2804,6 +2808,8 @@
     }
   },
   "habitsAllDoneToday": "Alles klaar vandaag",
+  "habitsChartUseDynamicBaseline": "Dynamische basislijn gebruiken",
+  "habitsChartUseZeroBaseline": "Nulbasislijn gebruiken",
   "habitsCompletedHeader": "Voltooid",
   "habitsCompletionRateTitle": "Afrondingspercentage",
   "habitsConsistencyTitle": "Samenhang",
@@ -3188,6 +3194,20 @@
   "keyboardKeyShift": "Shift",
   "keyboardKeySpace": "Ruimte",
   "keyboardResizeDividerLabel": "Pannen verkleinen",
+  "keyboardResizeDividerValue": "Panelen aanpassen, {value} pixels. Bereik {min} tot {max} pixels.",
+  "@keyboardResizeDividerValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "keyboardShortcutsNoResults": "Geen sneltoetsen gevonden voor uw zoekopdracht",
   "keyboardShortcutsSearchHint": "Sneltoetsen zoeken...",
   "keyboardShortcutsSubtitle": "Elke desktop commando en de huidige toetsenbord combinatie.",

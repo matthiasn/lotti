@@ -267,27 +267,24 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     final collapseLabel = widget.isCollapsed
         ? context.messages.checklistExpandTooltip
         : context.messages.checklistCollapseTooltip;
-    final chevron = AnimatedRotation(
-      turns: widget.isCollapsed ? -0.25 : 0.0,
-      duration: AppTheme.chevronRotationDuration,
-      child: Semantics(
-        button: true,
-        toggled: !widget.isCollapsed,
-        label: collapseLabel,
-        onTap: widget.onToggleCollapse,
-        child: ExcludeSemantics(
-          child: Tooltip(
-            message: collapseLabel,
-            excludeFromSemantics: true,
-            child: IconButton(
-              iconSize: AppTheme.headerActionIconSize,
-              icon: Icon(
-                Icons.expand_more,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-              onPressed: widget.onToggleCollapse,
-            ),
+    final chevron = Semantics(
+      label: collapseLabel,
+      button: true,
+      toggled: !widget.isCollapsed,
+      excludeSemantics: true,
+      onTap: widget.onToggleCollapse,
+      child: AnimatedRotation(
+        turns: widget.isCollapsed ? -0.25 : 0.0,
+        duration: AppTheme.chevronRotationDuration,
+        child: IconButton(
+          iconSize: AppTheme.headerActionIconSize,
+          tooltip: collapseLabel,
+          isSelected: !widget.isCollapsed,
+          icon: Icon(
+            Icons.expand_more,
+            color: tokens.colors.text.mediumEmphasis,
           ),
+          onPressed: widget.onToggleCollapse,
         ),
       ),
     );

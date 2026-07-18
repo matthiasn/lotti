@@ -1208,6 +1208,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiCardTitle => 'AI-sammanfattning';
 
   @override
+  String get aiChatAssistantResponding => 'Assistenten svarar';
+
+  @override
   String get aiChatMessageCopied => 'Kopierat till skrivplatta';
 
   @override
@@ -2611,6 +2614,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get basicSettings => 'Grundläggande miljöer';
+
+  @override
+  String get calendarHasPlanLabel => 'Har en plan';
+
+  @override
+  String get calendarTodayLabel => 'I dag';
 
   @override
   String get cancelButton => 'Avbryt';
@@ -4900,6 +4909,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get designSystemScrollbarSizesTitle => 'Scrollbar-storlekar';
 
   @override
+  String get designSystemSearchClearLabel => 'Rensa sökning';
+
+  @override
   String get designSystemSearchFilledText => 'Lotti-sökningen';
 
   @override
@@ -5409,6 +5421,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get habitsAllDoneToday => 'Allt klart idag';
+
+  @override
+  String get habitsChartUseDynamicBaseline => 'Använd dynamisk baslinje';
+
+  @override
+  String get habitsChartUseZeroBaseline => 'Använd nollbaslinje';
 
   @override
   String get habitsCompletedHeader => 'Färdigställd';
@@ -6243,6 +6261,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get keyboardResizeDividerLabel => 'Storleksjustera rutorna';
+
+  @override
+  String keyboardResizeDividerValue(int value, int min, int max) {
+    return 'Ändra paneler, $value pixlar. Intervall $min till $max pixlar.';
+  }
 
   @override
   String get keyboardShortcutsNoResults => 'Inga genvägar matchar din sökning';
@@ -8922,10 +8945,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Tjeckiska';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Nederländska';
+  String get settingsManualLanguageDanishTitle => 'Dansk';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Dansk';
+  String get settingsManualLanguageDutchTitle => 'Nederländska';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Engelska';

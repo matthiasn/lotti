@@ -9107,10 +9107,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Cehă';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Neerlandeză';
+  String get settingsManualLanguageDanishTitle => 'Daneză';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Daneză';
+  String get settingsManualLanguageDutchTitle => 'Neerlandeză';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Engleză';

@@ -1711,7 +1711,6 @@ void main() {
       await _pumpAppScreen(
         tester,
         navService: mockNavService,
-        viewportSize: const Size(390, 844),
       );
 
       final stack = tester.widget<IndexedStack>(find.byType(IndexedStack));

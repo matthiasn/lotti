@@ -1,4 +1,5 @@
 {
+  "@@locale": "da",
   "activeLabel": "Aktiv",
   "addActionAddAudioRecording": "Lydoptagelse",
   "addActionAddChecklist": "Tjekliste",
@@ -7,8 +8,8 @@
   "addActionAddScreenshot": "Skærmbillede",
   "addActionAddTask": "Opgave",
   "addActionAddText": "Tekstindtastning",
-  "addActionAddTimeRecording": "Timerindtastning",
   "addActionAddTimer": "Åbningstider",
+  "addActionAddTimeRecording": "Timerindtastning",
   "addActionImportImage": "Importbillede",
   "addHabitCommentLabel": "Kommentar",
   "addHabitDateLabel": "Færdiggjort i",
@@ -358,8 +359,8 @@
   "agentSoulAssignedTemplatesTitle": "Tildelte skabeloner",
   "agentSoulAssignmentLabel": "Sjæl",
   "agentSoulCoachingStyleLabel": "Trænerstil",
-  "agentSoulCreateTitle": "Skab Sjæl",
   "agentSoulCreatedSuccess": "Sjæl skabt",
+  "agentSoulCreateTitle": "Skab Sjæl",
   "agentSoulDeleteConfirmBody": "Dette vil fjerne sjælen og alle dens versioner.",
   "agentSoulDeleteConfirmTitle": "Slet Soul",
   "agentSoulDetailTitle": "Sjæledetalje",
@@ -397,7 +398,10 @@
     }
   },
   "agentSoulSelectTitle": "Vælg sjæl",
+  "agentSoulsEmptyFiltered": "Ingen sjæle matcher dine filtre.",
   "agentSoulSettingsTab": "Indstillinger",
+  "agentSoulsSearchPlaceholder": "Søg sjæle...",
+  "agentSoulsTitle": "Sjæle",
   "agentSoulToneBoundsLabel": "Tonegrænser",
   "agentSoulVersionHistoryTitle": "Versionshistorik",
   "agentSoulVersionLabel": "Version {version}",
@@ -410,9 +414,6 @@
   },
   "agentSoulVersionSaved": "Ny soul-version reddet",
   "agentSoulVoiceDirectiveLabel": "Taledirektivet",
-  "agentSoulsEmptyFiltered": "Ingen sjæle matcher dine filtre.",
-  "agentSoulsSearchPlaceholder": "Søg sjæle...",
-  "agentSoulsTitle": "Sjæle",
   "agentStateConsecutiveFailures": "På hinanden følgende fejl",
   "agentStateErrorLoading": "Fejlede i at indlæse tilstand: {error}",
   "@agentStateErrorLoading": {
@@ -511,13 +512,13 @@
   "@agentTemplateAssignedLabel": {
     "description": "Label shown next to the template assigned to an agent."
   },
-  "agentTemplateCreateTitle": "Opret skabelon",
-  "@agentTemplateCreateTitle": {
-    "description": "Page title for the create-template form."
-  },
   "agentTemplateCreatedSuccess": "Skabelon oprettet",
   "@agentTemplateCreatedSuccess": {
     "description": "Snackbar message after successfully creating a new template."
+  },
+  "agentTemplateCreateTitle": "Opret skabelon",
+  "@agentTemplateCreateTitle": {
+    "description": "Page title for the create-template form."
   },
   "agentTemplateDeleteConfirm": "Slette denne skabelon? Det kan ikke gøres om.",
   "@agentTemplateDeleteConfirm": {
@@ -576,21 +577,21 @@
   "@agentTemplateMetricsTotalWakes": {
     "description": "Metric label for the total number of agent wakes."
   },
-  "agentTemplateNoTemplates": "Ingen skabeloner tilgængelige. Opret først en i Indstillinger.",
-  "@agentTemplateNoTemplates": {
-    "description": "Message shown when no templates exist for agent creation."
-  },
-  "agentTemplateNoVersions": "Ingen versioner",
-  "@agentTemplateNoVersions": {
-    "description": "Placeholder shown when a template has no version history."
-  },
   "agentTemplateNoneAssigned": "Ingen skabelon tildelt",
   "@agentTemplateNoneAssigned": {
     "description": "Text shown when an agent has no template assigned."
   },
+  "agentTemplateNoTemplates": "Ingen skabeloner tilgængelige. Opret først en i Indstillinger.",
+  "@agentTemplateNoTemplates": {
+    "description": "Message shown when no templates exist for agent creation."
+  },
   "agentTemplateNotFound": "Skabelon ikke fundet",
   "@agentTemplateNotFound": {
     "description": "Error message when a referenced template cannot be found."
+  },
+  "agentTemplateNoVersions": "Ingen versioner",
+  "@agentTemplateNoVersions": {
+    "description": "Placeholder shown when a template has no version history."
   },
   "agentTemplateReportDirectiveHint": "Definer rapportstrukturen, de nødvendige sektioner og formateringsreglerne...",
   "@agentTemplateReportDirectiveHint": {
@@ -625,10 +626,15 @@
   "@agentTemplateSelectTitle": {
     "description": "Title for the template selection dialog when creating an agent."
   },
+  "agentTemplatesEmptyFiltered": "Ingen skabeloner matcher dine filtre.",
   "agentTemplateSettingsTab": "Indstillinger",
   "@agentTemplateSettingsTab": {
     "description": "Tab label for the settings tab in agent template detail."
   },
+  "agentTemplatesFilterSectionKind": "Venlig",
+  "agentTemplatesGroupByKind": "Venlig",
+  "agentTemplatesGroupNone": "Alle",
+  "agentTemplatesSearchPlaceholder": "Søg skabeloner...",
   "agentTemplateStatsTab": "Statistik",
   "@agentTemplateStatsTab": {
     "description": "Tab label for the stats tab in agent template detail."
@@ -640,6 +646,10 @@
   "agentTemplateStatusArchived": "Arkiveret",
   "@agentTemplateStatusArchived": {
     "description": "Label for the archived template status."
+  },
+  "agentTemplatesTitle": "Agent-skabeloner",
+  "@agentTemplatesTitle": {
+    "description": "Page title for the agent templates list."
   },
   "agentTemplateSwitchHint": "For at bruge en anden skabelon, ødelæg denne agent og lav en ny.",
   "@agentTemplateSwitchHint": {
@@ -660,15 +670,6 @@
   "agentTemplateVersionSaved": "Ny version gemt",
   "@agentTemplateVersionSaved": {
     "description": "Snackbar message after successfully saving a new template version."
-  },
-  "agentTemplatesEmptyFiltered": "Ingen skabeloner matcher dine filtre.",
-  "agentTemplatesFilterSectionKind": "Venlig",
-  "agentTemplatesGroupByKind": "Venlig",
-  "agentTemplatesGroupNone": "Alle",
-  "agentTemplatesSearchPlaceholder": "Søg skabeloner...",
-  "agentTemplatesTitle": "Agent-skabeloner",
-  "@agentTemplatesTitle": {
-    "description": "Page title for the agent templates list."
   },
   "agentThreadReportLabel": "Rapport udarbejdet under denne våge",
   "agentTokenUsageCachedTokens": "Cachet",
@@ -724,6 +725,7 @@
   "aiCardReadMore": "Læs mere",
   "aiCardShowLess": "Vis mindre",
   "aiCardTitle": "AI-oversigt",
+  "aiChatAssistantResponding": "Assistenten svarer",
   "aiChatMessageCopied": "Kopieret til clipboard",
   "aiConfigFailedToLoadModelsGeneric": "Kunne ikke indlæse modellerne. Prøv venligst igen.",
   "aiConfigNoModelsAvailable": "Der er endnu ikke konfigureret AI-modeller. Tilføj venligst en i indstillingerne.",
@@ -1032,30 +1034,6 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "Basis-URL (valgfrit)",
   "aiProviderConnectFieldBaseUrlPlaceholder": "https://api.example.com",
   "aiProviderConnectFieldDisplayNameHint": "Vist på din udbyderliste",
-  "aiProviderConnectKeyHelperLink": "Få en nøgle på {url}",
-  "@aiProviderConnectKeyHelperLink": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectKeyHiddenLabel": "Skjult",
-  "aiProviderConnectKeyPrivacyHint": "Din API-nøgle forlader aldrig din enhed.",
-  "aiProviderConnectPageTitle": "Forbind {providerName}",
-  "@aiProviderConnectPageTitle": {
-    "placeholders": {
-      "providerName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectSaveAndContinue": "Gem & Fortsæt",
-  "aiProviderConnectSaveAsDraft": "Gem som udkast",
-  "aiProviderConnectSavedAsDraftToast": "Gemt som udkast",
-  "aiProviderConnectStepChoose": "Vælg udbyder",
-  "aiProviderConnectStepConnect": "Forbind",
-  "aiProviderConnectStepReview": "Anmeldelse",
   "aiProviderConnectionCheckingLabel": "Tjekker nøglen, lister tilgængelige modeller...",
   "aiProviderConnectionFailedBadResponseDetail": "Uventet responsform: {type}",
   "@aiProviderConnectionFailedBadResponseDetail": {
@@ -1108,6 +1086,30 @@
     }
   },
   "aiProviderConnectionVerifiedTitle": "Forbindelse bekræftet",
+  "aiProviderConnectKeyHelperLink": "Få en nøgle på {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Skjult",
+  "aiProviderConnectKeyPrivacyHint": "Din API-nøgle forlader aldrig din enhed.",
+  "aiProviderConnectPageTitle": "Forbind {providerName}",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Gem & Fortsæt",
+  "aiProviderConnectSaveAsDraft": "Gem som udkast",
+  "aiProviderConnectSavedAsDraftToast": "Gemt som udkast",
+  "aiProviderConnectStepChoose": "Vælg udbyder",
+  "aiProviderConnectStepConnect": "Forbind",
+  "aiProviderConnectStepReview": "Anmeldelse",
   "aiProviderDetailActiveProfileTitle": "Aktiv profil",
   "aiProviderDetailAddModelButton": "Tilføj model",
   "aiProviderDetailApiKeyLabel": "API-nøgle",
@@ -1182,13 +1184,13 @@
   "aiResponseTypePromptGeneration": "Genereret prompt",
   "aiResponseTypeTaskSummary": "Opgaveoversigt",
   "aiRunningActivityOpenProgress": "Vis AI-fremskridt",
+  "aiSettingsAddedLabel": "Tilføjet",
   "aiSettingsAddModelButton": "Tilføj model",
   "aiSettingsAddModelErrorDescription": "Noget gik galt, da jeg tilføjede modellen. Prøv venligst igen.",
   "aiSettingsAddModelErrorTitle": "Kunne ikke tilføje model",
   "aiSettingsAddModelTooltip": "Tilføj denne model til din udbyder",
   "aiSettingsAddProfileButton": "Tilføj profil",
   "aiSettingsAddProviderButton": "Tilføj udbyder",
-  "aiSettingsAddedLabel": "Tilføjet",
   "aiSettingsAgentWakeConcurrencyDescription": "Vælg hvor mange forskellige agenter, der kan køre inferensen på én gang. Højere værdier reagerer hurtigere, men bruger mere kapacitet til udbyder og enhed.",
   "aiSettingsAgentWakeConcurrencyLabel": "Samtidig agent vågner",
   "aiSettingsClearAllFiltersTooltip": "Ryd alle filtre",
@@ -1410,9 +1412,9 @@
   "audioRecordingPause": "PAS",
   "audioRecordingRealtime": "Live transskription",
   "audioRecordingResume": "CV",
+  "audioRecordings": "Lydoptagelser",
   "audioRecordingStandard": "Standard",
   "audioRecordingStop": "STOP",
-  "audioRecordings": "Lydoptagelser",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 handling} other{{count} handlinger}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -1504,6 +1506,8 @@
   "backfillToggleDescription": "Anmodninger om manglende indtastninger fra de sidste 24 timer.",
   "backfillToggleTitle": "Automatisk tilbagefyldning",
   "basicSettings": "Grundlæggende indstillinger",
+  "calendarHasPlanLabel": "Har en plan",
+  "calendarTodayLabel": "I dag",
   "cancelButton": "Annuller",
   "categoryActiveDescription": "Inaktive kategorier vil ikke fremgå i udvælgelseslister",
   "categoryActiveSwitchDescription": "Kan vælges for nye bidrag",
@@ -1608,12 +1612,12 @@
   "checklistExpandTooltip": "Udvid",
   "checklistExportAsMarkdown": "Eksporttjekliste som Markdown",
   "checklistExportFailed": "Eksporten mislykkedes",
-  "checklistItemArchiveUndo": "Fortryd",
   "checklistItemArchived": "Arkiveret genstand",
+  "checklistItemArchiveUndo": "Fortryd",
   "checklistItemDeleteCancel": "Annuller",
   "checklistItemDeleteConfirm": "Bekræft",
-  "checklistItemDeleteWarning": "Denne handling kan ikke gøres om.",
   "checklistItemDeleted": "Genstanden slettet",
+  "checklistItemDeleteWarning": "Denne handling kan ikke gøres om.",
   "checklistMarkdownCopied": "Tjekliste kopieret som Markdown",
   "checklistMoreTooltip": "Mere",
   "checklistNoneDone": "Ingen færdige opgaver endnu.",
@@ -1836,8 +1840,12 @@
   "conflictPickerUseFromSync": "Brug fra sync",
   "conflictPickerUseThisDevice": "Brug denne enhed",
   "conflictResolvedToast": "Konflikten løst",
+  "conflictsEmptyDescription": "Alt er synkroniseret lige nu. Løste genstande forbliver tilgængelige i det andet filter.",
+  "conflictsEmptyTitle": "Ingen konflikter opdaget",
   "conflictSideFromSync": "FRA SYNC",
   "conflictSideThisDevice": "DENNE ENHED",
+  "conflictsResolved": "Løst",
+  "conflictsUnresolved": "Uafklaret",
   "conflictValueAbsent": "Ikke sat",
   "conflictValueNo": "Nej",
   "conflictValueYes": "Ja",
@@ -1851,10 +1859,6 @@
       }
     }
   },
-  "conflictsEmptyDescription": "Alt er synkroniseret lige nu. Løste genstande forbliver tilgængelige i det andet filter.",
-  "conflictsEmptyTitle": "Ingen konflikter opdaget",
-  "conflictsResolved": "Løst",
-  "conflictsUnresolved": "Uafklaret",
   "copyAsMarkdown": "Kopier som Markdown",
   "copyAsText": "Kopier som tekst",
   "correctionExampleCancel": "AFLYS",
@@ -2016,6 +2020,7 @@
     }
   },
   "dailyOsNextCaptureReconcileCta": "Anmeldelse",
+  "dailyOsNextCapturesPanelTitle": "Fangster",
   "dailyOsNextCaptureTranscribing": "Transskriberer...",
   "dailyOsNextCaptureTranscriptHint": "Ret alt forkert i karakterudskriften, før du planlægger.",
   "dailyOsNextCaptureTranscriptLabel": "Gennemgå transskription",
@@ -2023,7 +2028,6 @@
   "dailyOsNextCaptureVoiceButtonReset": "Start forfra",
   "dailyOsNextCaptureVoiceButtonStart": "Begynd at lytte",
   "dailyOsNextCaptureVoiceButtonStop": "Stop med at lytte",
-  "dailyOsNextCapturesPanelTitle": "Fangster",
   "dailyOsNextCategoryFilterAll": "Alle kategorier",
   "dailyOsNextCategoryFilterDescription": "Kun kategorier aktiveret til dagplanlægning vises for Daily OS automatiseret behandling.",
   "dailyOsNextCategoryFilterEmpty": "Ingen kategorier aktiveret til dagsplanlægning endnu.",
@@ -2270,29 +2274,6 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Tilbagevendende · Missede",
-  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 tidligere session} other{{count} tidligere sessioner}}",
-  "@dailyOsNextTimeSpentEarlierSessions": {
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
-  "dailyOsNextTimeSpentShowLess": "Vis mindre",
-  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} færdig",
-  "@dailyOsNextTimeSpentSummary": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      },
-      "completedCount": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsNextTimeSpentTitle": "I DAG INDTIL VIDERE",
-  "dailyOsNextTimeSpentTitlePast": "TID BRUGT",
   "dailyOsNextTimelineActual": "Nuværende",
   "dailyOsNextTimelineArrange": "Arranger blokke",
   "dailyOsNextTimelineBoth": "Plan og faktisk",
@@ -2316,14 +2297,37 @@
   "dailyOsNextTimelineShowPaged": "Vis swipebar plan og faktisk",
   "dailyOsNextTimelineSwipeHint": "Swipe for actual · klem lodret for at zoome ind",
   "dailyOsNextTimelineTracked": "sporet",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 tidligere session} other{{count} tidligere sessioner}}",
+  "@dailyOsNextTimeSpentEarlierSessions": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "dailyOsNextTimeSpentShowLess": "Vis mindre",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} færdig",
+  "@dailyOsNextTimeSpentSummary": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      },
+      "completedCount": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextTimeSpentTitle": "I DAG INDTIL VIDERE",
+  "dailyOsNextTimeSpentTitlePast": "TID BRUGT",
   "dailyOsNextTriageConfirmDefer": "Udskudt",
-  "dailyOsNextTriageConfirmDoNow": "Færdig nu",
   "dailyOsNextTriageConfirmDone": "Markeret som færdig",
+  "dailyOsNextTriageConfirmDoNow": "Færdig nu",
   "dailyOsNextTriageConfirmDrop": "Droppet",
   "dailyOsNextTriageConfirmToday": "Tilføjet til i dag",
   "dailyOsNextTriageDefer": "Udsættelse",
-  "dailyOsNextTriageDoNow": "Gør det nu",
   "dailyOsNextTriageDone": "Færdig",
+  "dailyOsNextTriageDoNow": "Gør det nu",
   "dailyOsNextTriageDrop": "Drop",
   "dailyOsNextTriageToday": "I dag",
   "dailyOsOnboardingCoachCapture": "Sig, hvad der fanger din opmærksomhed.",
@@ -2578,6 +2582,7 @@
   "designSystemProgressBarSampleLabel": "Fremgangsbar-etiket",
   "designSystemRadioButtonLabel": "Radioknap",
   "designSystemScrollbarSizesTitle": "Scrollbar-størrelser",
+  "designSystemSearchClearLabel": "Ryd søgning",
   "designSystemSearchFilledText": "Lotti-søgning",
   "designSystemSearchHintLabel": "Typebruger",
   "designSystemSelectedLabel": "Udvalgte",
@@ -2585,8 +2590,8 @@
   "designSystemSmallLabel": "Lille",
   "designSystemSpinnerPlainLabel": "Slette",
   "designSystemSpinnerSkeletonPulseLabel": "Pulse",
-  "designSystemSpinnerSkeletonWaveLabel": "Bølge",
   "designSystemSpinnerSkeletonsTitle": "Skeletter",
+  "designSystemSpinnerSkeletonWaveLabel": "Bølge",
   "designSystemSpinnerSpinnersTitle": "Spinnere",
   "designSystemSpinnerTrackLabel": "Med skinner",
   "designSystemSplitButtonDropdownSemantics": "Åbn {label}-muligheder",
@@ -2636,18 +2641,18 @@
   "desktopEmptyStateSelectDashboard": "Vælg et dashboard for at se detaljer",
   "desktopEmptyStateSelectProject": "Vælg et projekt for at se detaljer",
   "desktopEmptyStateSelectTask": "Vælg en opgave for at se detaljer",
-  "deviceDeleteFailed": "Manglende sletning af enhed: {error}",
-  "@deviceDeleteFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "deviceDeletedSuccess": "Enhed {deviceName} slettet med succes",
   "@deviceDeletedSuccess": {
     "placeholders": {
       "deviceName": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceDeleteFailed": "Manglende sletning af enhed: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {
         "type": "String"
       }
     }
@@ -2794,18 +2799,6 @@
   "habitLogOtherDayHint": "Hold for at logge en anden dag",
   "habitNotRecordedLabel": "Ikke registreret",
   "habitPriorityLabel": "Prioritet",
-  "habitSectionOptionsTitle": "Muligheder",
-  "habitSectionScheduleTitle": "Tidsplan",
-  "habitShowAlertAtLabel": "Vis alarm på",
-  "habitShowFromLabel": "Udsendelse fra",
-  "habitStreakDaysSemantic": "{count}-dagsstime",
-  "@habitStreakDaysSemantic": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "habitsAboveGoal": "På banen",
   "habitsActiveHabitsCount": "{count, plural, one{1 aktiv vane} other{{count} aktive vaner}}",
   "@habitsActiveHabitsCount": {
@@ -2816,6 +2809,8 @@
     }
   },
   "habitsAllDoneToday": "Alt færdigt i dag",
+  "habitsChartUseDynamicBaseline": "Brug dynamisk grundlinje",
+  "habitsChartUseZeroBaseline": "Brug nulgrundlinje",
   "habitsCompletedHeader": "Færdiggjort",
   "habitsCompletionRateTitle": "Gennemførelsesrate",
   "habitsConsistencyTitle": "Konsistens",
@@ -2844,6 +2839,8 @@
     }
   },
   "habitsDoneTodayLabel": "Udført i dag",
+  "habitSectionOptionsTitle": "Muligheder",
+  "habitSectionScheduleTitle": "Tidsplan",
   "habitsFilterAll": "Alle",
   "habitsFilterCompleted": "Færdig",
   "habitsFilterOpenNow": "To",
@@ -2852,6 +2849,8 @@
   "habitsHeatmapEmpty": "Tilføj en vane for at begynde at opbygge din konsistens",
   "habitsHeatmapLess": "Mindre",
   "habitsHeatmapMore": "Mere",
+  "habitShowAlertAtLabel": "Vis alarm på",
+  "habitShowFromLabel": "Udsendelse fra",
   "habitsLaggardHint": "{habit} — beholdt {kept} af {active}",
   "@habitsLaggardHint": {
     "placeholders": {
@@ -2904,6 +2903,14 @@
       }
     }
   },
+  "habitStreakDaysSemantic": "{count}-dagsstime",
+  "@habitStreakDaysSemantic": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "habitsVsPreviousWeek": "vs forrige uge",
   "helpMenuCommandPalette": "Kommandopalette...",
   "helpMenuKeyboardShortcuts": "Tastaturgenveje...",
@@ -2925,7 +2932,9 @@
   "imagePromptGenerationCopyTooltip": "Kopier billedprompten til udklipsholderen",
   "imagePromptGenerationExpandTooltip": "Vis fuld prompt",
   "imagePromptGenerationFullPromptLabel": "Fuld billedprompt:",
+  "images": "Billeder",
   "imageViewerDownloadFailed": "Kunne ikke gemme billedet",
+  "imageViewerDownloadingTooltip": "Gem billede",
   "imageViewerDownloadPermissionDenied": "Fotoadgang nægtet — aktiver det i Indstillinger",
   "imageViewerDownloadSaved": "Reddet {fileName}",
   "@imageViewerDownloadSaved": {
@@ -2937,8 +2946,6 @@
   },
   "imageViewerDownloadSavedToGallery": "Gemt som fotos",
   "imageViewerDownloadTooltip": "Download billede",
-  "imageViewerDownloadingTooltip": "Gem billede",
-  "images": "Billeder",
   "inactiveLabel": "Inaktiv",
   "inactiveSwitchDescription": "Kan vælges til nye indførsler, når den er på",
   "inferenceProfileChooseModelTitle": "Vælg en model",
@@ -2971,6 +2978,7 @@
   "inferenceProfileSaveButton": "Gem",
   "inferenceProfileSelectModel": "Vælg en model...",
   "inferenceProfileSelectProfile": "Vælg en profil...",
+  "inferenceProfilesEmpty": "Ingen slutningsprofiler endnu",
   "inferenceProfileSkillModelRequired": "Kræver at {slotName}-modellen sættes",
   "@inferenceProfileSkillModelRequired": {
     "placeholders": {
@@ -2979,6 +2987,7 @@
       }
     }
   },
+  "inferenceProfileSkillsSection": "Automatiserede færdigheder",
   "inferenceProfileSkillUsesModel": "Bruger {slotName}-modellen",
   "@inferenceProfileSkillUsesModel": {
     "placeholders": {
@@ -2987,14 +2996,12 @@
       }
     }
   },
-  "inferenceProfileSkillsSection": "Automatiserede færdigheder",
+  "inferenceProfilesTitle": "Inferensprofiler",
   "inferenceProfileThinking": "Tænkning",
   "inferenceProfileThinkingHighEnd": "Tænkning (High-End)",
   "inferenceProfileThinkingRequired": "En tænkemodel er nødvendig",
   "inferenceProfileTranscription": "Udskrift",
   "inferenceProfileUnavailable": "Inferensprofil ikke tilgængelig",
-  "inferenceProfilesEmpty": "Ingen slutningsprofiler endnu",
-  "inferenceProfilesTitle": "Inferensprofiler",
   "inputDataTypeAudioFilesDescription": "Brug lydfiler som input",
   "inputDataTypeAudioFilesName": "Lydfiler",
   "inputDataTypeImagesDescription": "Brug billeder som input",
@@ -3088,9 +3095,9 @@
   "journalDeleteQuestion": "Vil du slette denne dagbogspost?",
   "journalDurationLabel": "Varighed",
   "journalEndDateLabel": "Slutdato",
-  "journalEndTimeLabel": "Endetid",
   "journalEndsAnotherDayHint": "Vælg en separat slutdato",
   "journalEndsAnotherDayLabel": "Slutter på en anden dag",
+  "journalEndTimeLabel": "Endetid",
   "journalFilterEntryTypesTitle": "Deltagertyper",
   "journalFilterFlagged": "Flaget",
   "journalFilterPrivate": "Privat",
@@ -3099,8 +3106,6 @@
   "journalFilterTitle": "Filterjournal",
   "journalHideLinkHint": "Skjul link",
   "journalHideMapHint": "Skjul kort",
-  "journalLinkFromHint": "Link fra",
-  "journalLinkToHint": "Link til",
   "journalLinkedEntriesActivityFilterAudio": "Lyd",
   "journalLinkedEntriesActivityFilterCode": "Kode",
   "journalLinkedEntriesActivityFilterImages": "Billeder",
@@ -3112,6 +3117,8 @@
   "journalLinkedEntriesSortNewestFirst": "Nyeste første",
   "journalLinkedEntriesSortOldestFirst": "Ældste første",
   "journalLinkedFromLabel": "Linket fra:",
+  "journalLinkFromHint": "Link fra",
+  "journalLinkToHint": "Link til",
   "journalOvernightNextDay": "Slutter {date} (næste dag)",
   "@journalOvernightNextDay": {
     "description": "Chip shown when an entry's end time is earlier than its start time, indicating it ends on the next day.",
@@ -3188,6 +3195,20 @@
   "keyboardKeyShift": "Skift",
   "keyboardKeySpace": "Rum",
   "keyboardResizeDividerLabel": "Omsat størrelse på ruder",
+  "keyboardResizeDividerValue": "Tilpas paneler, {value} pixels. Område {min} til {max} pixels.",
+  "@keyboardResizeDividerValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "keyboardShortcutsNoResults": "Ingen genveje matcher din søgning",
   "keyboardShortcutsSearchHint": "Søgegenveje...",
   "keyboardShortcutsSubtitle": "Hver skrivebordskommando og dens nuværende tastaturkombination.",
@@ -3251,8 +3272,8 @@
   "knowledgeGraphNodeTypeRating": "Vurdering",
   "knowledgeGraphNodeTypeTask": "Opgave",
   "knowledgeGraphOpenDetails": "Åbne detaljer",
-  "knowledgeGraphRecentToOlder": "nylige → ældre",
   "knowledgeGraphRecenter": "Nyere",
+  "knowledgeGraphRecentToOlder": "nylige → ældre",
   "knowledgeGraphRelationAiSource": "AI-kilde",
   "knowledgeGraphRelationChecklist": "Tjekliste",
   "knowledgeGraphRelationInProject": "i projektet",
@@ -3270,12 +3291,12 @@
       }
     }
   },
-  "linkExistingTask": "Link eksisterende opgave...",
   "linkedFromCaption": "fra",
   "linkedTaskImageBadge": "Fra linket opgave",
   "linkedTasksMenuTooltip": "Muligheder for tilknyttede opgaver",
   "linkedTasksTitle": "Sammenkoblede opgaver",
   "linkedToCaption": "til",
+  "linkExistingTask": "Link eksisterende opgave...",
   "loggingDomainAgentRuntime": "Agentens runtime",
   "loggingDomainAgentWorkflow": "Agentarbejdsgang",
   "loggingDomainAi": "AI",
@@ -3357,6 +3378,10 @@
   "maintenancePurgeSentOutboxConfirm": "JA, UDRENSNING",
   "maintenancePurgeSentOutboxDescription": "Slet sendte udbakke-rækker, der er ældre end 7 dage, og genindvind disken",
   "maintenancePurgeSentOutboxQuestion": "Udfyldte udbakke-varer ældre end 7 dage? Dette sletter allerede sendte rækker i chunks og kører VACUUM for at genvinde disken. Ventende og fejlposter gemmes.",
+  "maintenanceRecreateFts5": "Genskab fuldtekstindeks",
+  "maintenanceRecreateFts5Confirm": "JA, GENSKAB INDEKSET",
+  "maintenanceRecreateFts5Description": "Genskab fuldtekst-søgeindeks",
+  "maintenanceRecreateFts5Message": "Er du sikker på, at du vil genskabe fuldtekstindekset? Det kan tage noget tid.",
   "maintenanceReSync": "Gensynkroniser beskeder",
   "maintenanceReSyncAgentEntities": "Agentenheder",
   "maintenanceReSyncDescription": "Gensynkroniser beskeder fra serveren",
@@ -3364,10 +3389,6 @@
   "maintenanceReSyncJournalEntities": "Tidsskriftsenheder",
   "maintenanceReSyncSelectAtLeastOne": "Vælg mindst én enhedstype",
   "maintenanceReSyncStart": "Start",
-  "maintenanceRecreateFts5": "Genskab fuldtekstindeks",
-  "maintenanceRecreateFts5Confirm": "JA, GENSKAB INDEKSET",
-  "maintenanceRecreateFts5Description": "Genskab fuldtekst-søgeindeks",
-  "maintenanceRecreateFts5Message": "Er du sikker på, at du vil genskabe fuldtekstindekset? Det kan tage noget tid.",
   "maintenanceSyncDefinitions": "Synkroniser målbare ting, dashboards, vaner, kategorier, AI-indstillinger",
   "maintenanceSyncDefinitionsDescription": "Synkroniser målbare ting, dashboards, vaner, kategorier og AI-indstillinger",
   "manageLinks": "Administrer links...",
@@ -3841,8 +3862,10 @@
   "projectPickerUnassigned": "Intet projekt",
   "projectRecommendationDismissTooltip": "Afvist",
   "projectRecommendationResolveTooltip": "Mark besluttede sig",
-  "projectRecommendationUpdateError": "Kunne ikke opdatere anbefalingen. Prøv venligst igen.",
   "projectRecommendationsTitle": "Anbefalede næste skridt",
+  "projectRecommendationUpdateError": "Kunne ikke opdatere anbefalingen. Prøv venligst igen.",
+  "projectsFilterStatusLabel": "Status:",
+  "projectsFilterTooltip": "Filterprojekter",
   "projectShowcaseAiReportTitle": "AI-rapport",
   "projectShowcaseBlockedLegend": "{count} Blokeret",
   "@projectShowcaseBlockedLegend": {
@@ -3943,8 +3966,6 @@
   "projectTargetDateLabel": "Måldato",
   "projectTitleLabel": "Projekttitel",
   "projectTitleRequired": "Projekttitel kan ikke være tom",
-  "projectsFilterStatusLabel": "Status:",
-  "projectsFilterTooltip": "Filterprojekter",
   "promptDefaultModelBadge": "Default",
   "promptGenerationCardTitle": "AI-kodningsprompt",
   "promptGenerationCopiedSnackbar": "Prompt kopieret til clipboard",
@@ -4111,8 +4132,6 @@
   "sessionRatingSkipButton": "Spring over",
   "sessionRatingTitle": "Bedøm denne session",
   "sessionRatingViewAction": "Visningsvurdering",
-  "settingThemingDark": "Mørkt tema",
-  "settingThemingLight": "Lystema",
   "settingsAboutAppInformation": "App-information",
   "settingsAboutAppTagline": "Din personlige dagbog",
   "settingsAboutBuildType": "Byggetype",
@@ -4241,8 +4260,8 @@
   "settingsCelebrationsPreviewSample3": "Vand planterne",
   "settingsCelebrationsPreviewTitle": "Prøv det",
   "settingsCelebrationsReplay": "Omkamp",
-  "settingsCelebrationsResetToDefault": "Nulstil til standard",
   "settingsCelebrationsResetToast": "Stilnulstilling til standard",
+  "settingsCelebrationsResetToDefault": "Nulstil til standard",
   "settingsCelebrationsResetUndo": "Fortryd",
   "settingsCelebrationsSectionDescription": "Spil et flourish, når du er færdig med noget. At slå én fra bevarer fuldførelsen, og den er haptisk — den springer bare animationen over.",
   "settingsCelebrationsSectionTitle": "Fejring af færdiggørelse",
@@ -4431,6 +4450,7 @@
     }
   },
   "settingsMatrixRoomInviteTitle": "Værelsesinvitation",
+  "settingsMatrixSentMessagesLabel": "Sendte beskeder:",
   "settingsMatrixSentMessageType": "Sendt ({eventType})",
   "@settingsMatrixSentMessageType": {
     "placeholders": {
@@ -4439,7 +4459,6 @@
       }
     }
   },
-  "settingsMatrixSentMessagesLabel": "Sendte beskeder:",
   "settingsMatrixStartVerificationLabel": "Start verifikation",
   "settingsMatrixStatsTitle": "Matrixstatistikker",
   "settingsMatrixTitle": "Synkroniseringsindstillinger",
@@ -4468,7 +4487,6 @@
   "settingsMeasurableNameLabel": "Målbart navn",
   "settingsMeasurablePrivateLabel": "Privat: ",
   "settingsMeasurableSaveLabel": "Gem",
-  "settingsMeasurableUnitLabel": "Enhedsforkortelse (valgfrit)",
   "settingsMeasurablesCreateTitle": "Skab målbar",
   "settingsMeasurablesEmptyState": "Ingen målbare ting endnu",
   "settingsMeasurablesEmptyStateHint": "Målbare tal er tal, du følger over tid — vægt, vand, skridt.",
@@ -4484,6 +4502,7 @@
   "settingsMeasurablesSearchHint": "Søgemål...",
   "settingsMeasurablesSubtitle": "Konfigurér målbare datatyper",
   "settingsMeasurablesTitle": "Målbare ting",
+  "settingsMeasurableUnitLabel": "Enhedsforkortelse (valgfrit)",
   "settingsOnboardingActionSubtitle": "Genopblæs velkomstflowet — forbind din AI-hjerne og skab en opgave",
   "settingsOnboardingMetricsSubtitle": "FTUE-tragt — installation, aktivering, fastholdelse (fejlsøgning)",
   "settingsOnboardingMetricsTitle": "Onboarding-målinger",
@@ -4551,6 +4570,8 @@
   "settingsV2UnimplementedTitle": "Panel endnu ikke implementeret",
   "settingsWhatsNewSubtitle": "Se de seneste opdateringer og funktioner",
   "settingsWhatsNewTitle": "Hvad er nyt",
+  "settingThemingDark": "Mørkt tema",
+  "settingThemingLight": "Lystema",
   "sidebarActiveSectionTitle": "Aktivitet",
   "sidebarActivityCollapseTooltip": "Kollapsaktivitet",
   "sidebarActivityExpandTooltip": "Udvid aktiviteten",
@@ -4733,9 +4754,9 @@
   "taskAgentNoAiSetup": "Ingen AI-opsætning",
   "taskAgentNoAiSetupDescription": "Pauser agentens slutning, indtil du vælger en profil eller model.",
   "taskAgentNoModelsAvailable": "Ingen kompatible tænkemodeller tilgængelige",
+  "taskAgentNoProfilesAvailable": "Ingen profiler tilgængelige på denne enhed",
   "taskAgentNoProfileSelected": "Ingen AI-opsætning",
   "taskAgentNoProfileSelectedDescription": "Vælg en gemt opsætning eller tænkemodel, før denne agent kan køre.",
-  "taskAgentNoProfilesAvailable": "Ingen profiler tilgængelige på denne enhed",
   "taskAgentProfileChangedToast": "Bruger {profile} til hver fremtidig agentopdatering, indtil du ændrer det.",
   "@taskAgentProfileChangedToast": {
     "placeholders": {
@@ -4909,6 +4930,14 @@
   "taskPriorityLow": "Lavt",
   "taskPriorityMedium": "Medium",
   "taskPriorityUrgent": "Hastende",
+  "tasksAddLabelButton": "Tilføj Label",
+  "tasksAgentFilterAll": "Alle",
+  "tasksAgentFilterHasAgent": "Har agent",
+  "tasksAgentFilterNoAgent": "Ingen agent",
+  "tasksAgentFilterTitle": "Agent",
+  "tasksFilterApplyTitle": "Påfør filter",
+  "tasksFilterClearAll": "Ryd alt",
+  "tasksFilterTitle": "Filteropgaver",
   "taskShowcaseAudio": "Lyd",
   "taskShowcaseCompletedCount": "{completed} / {total} færdig",
   "@taskShowcaseCompletedCount": {
@@ -4953,25 +4982,6 @@
   "taskShowcaseTimeTracker": "Tidssporer",
   "taskShowcaseTodo": "Alle",
   "taskShowcaseTodos": "Alle",
-  "taskStatusAll": "Alle",
-  "taskStatusBlocked": "Blokeret",
-  "taskStatusDone": "Færdig",
-  "taskStatusGroomed": "Plejet",
-  "taskStatusInProgress": "Under udvikling",
-  "taskStatusLabel": "Status:",
-  "taskStatusOnHold": "På pause",
-  "taskStatusOpen": "Åben",
-  "taskStatusRejected": "Afvist",
-  "taskTitleEmpty": "Ingen titel",
-  "taskUntitled": "(uden titel)",
-  "tasksAddLabelButton": "Tilføj Label",
-  "tasksAgentFilterAll": "Alle",
-  "tasksAgentFilterHasAgent": "Har agent",
-  "tasksAgentFilterNoAgent": "Ingen agent",
-  "tasksAgentFilterTitle": "Agent",
-  "tasksFilterApplyTitle": "Påfør filter",
-  "tasksFilterClearAll": "Ryd alt",
-  "tasksFilterTitle": "Filteropgaver",
   "tasksLabelFilterAll": "Alle",
   "tasksLabelFilterTitle": "Label",
   "tasksLabelFilterUnlabeled": "Umærket",
@@ -4995,23 +5005,6 @@
   "tasksSavedFilterDeleteTooltip": "Slet gemt filter",
   "tasksSavedFilterDragHandleSemantics": "Træk for at omorganisere",
   "tasksSavedFilterRenameSemantics": "Omdøb det gemte filter",
-  "tasksSavedFilterToastDeleted": "Filter slettet",
-  "tasksSavedFilterToastSaved": "Gemt '{name}'",
-  "@tasksSavedFilterToastSaved": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "tasksSavedFilterToastUpdated": "Opdateret '{name}'",
-  "@tasksSavedFilterToastUpdated": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "tasksSavedFiltersAllShort": "Alle",
   "tasksSavedFiltersAllTasks": "Alle opgaver",
   "tasksSavedFiltersCustom": "Skik",
@@ -5089,6 +5082,23 @@
   "tasksSavedFiltersUpdateButtonLabel": "Opdateringsfilter",
   "tasksSavedFiltersUpdateExistingDescription": "Erstat de gemte kriterier med den nuværende filterkonfiguration.",
   "tasksSavedFiltersUpdateExistingTitle": "Opdater eksisterende filter",
+  "tasksSavedFilterToastDeleted": "Filter slettet",
+  "tasksSavedFilterToastSaved": "Gemt '{name}'",
+  "@tasksSavedFilterToastSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFilterToastUpdated": "Opdateret '{name}'",
+  "@tasksSavedFilterToastUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSearchModeLabel": "Søgefunktion",
   "tasksShowCreationDate": "Vis oprettelsesdato på kortene",
   "tasksShowDueDate": "Vis afleveringsdato på kortene",
@@ -5096,6 +5106,17 @@
   "tasksSortByDueDate": "Forfaldsdato",
   "tasksSortByLabel": "Sorter efter",
   "tasksSortByPriority": "Prioritet",
+  "taskStatusAll": "Alle",
+  "taskStatusBlocked": "Blokeret",
+  "taskStatusDone": "Færdig",
+  "taskStatusGroomed": "Plejet",
+  "taskStatusInProgress": "Under udvikling",
+  "taskStatusLabel": "Status:",
+  "taskStatusOnHold": "På pause",
+  "taskStatusOpen": "Åben",
+  "taskStatusRejected": "Afvist",
+  "taskTitleEmpty": "Ingen titel",
+  "taskUntitled": "(uden titel)",
   "thinkingDisclosureCopied": "Begrundelse kopieret",
   "thinkingDisclosureCopy": "Kopiræsonnement",
   "thinkingDisclosureHide": "Skjul ræsonnement",
@@ -5128,6 +5149,5 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Færdig",
-  "whatsNewSkipButton": "Spring over",
-  "@@locale": "da"
+  "whatsNewSkipButton": "Spring over"
 }

@@ -9118,10 +9118,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Tchèque';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Néerlandais';
+  String get settingsManualLanguageDanishTitle => 'Danois';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Danois';
+  String get settingsManualLanguageDutchTitle => 'Néerlandais';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Anglais';

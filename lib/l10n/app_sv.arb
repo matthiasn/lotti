@@ -1,4 +1,5 @@
 {
+  "@@locale": "sv",
   "activeLabel": "Aktiv",
   "addActionAddAudioRecording": "Ljudinspelning",
   "addActionAddChecklist": "Checklista",
@@ -7,8 +8,8 @@
   "addActionAddScreenshot": "Skärmdump",
   "addActionAddTask": "Uppgift",
   "addActionAddText": "Textinmatning",
-  "addActionAddTimeRecording": "Lägg till tidsregistrering",
   "addActionAddTimer": "Lägg till timer",
+  "addActionAddTimeRecording": "Lägg till tidsregistrering",
   "addActionImportImage": "Importera bild",
   "addHabitCommentLabel": "Kommentar",
   "addHabitDateLabel": "Färdigställd i",
@@ -358,8 +359,8 @@
   "agentSoulAssignedTemplatesTitle": "Tilldelade mallar",
   "agentSoulAssignmentLabel": "Själ",
   "agentSoulCoachingStyleLabel": "Coachingstil",
-  "agentSoulCreateTitle": "Skapa själ",
   "agentSoulCreatedSuccess": "Själ skapad",
+  "agentSoulCreateTitle": "Skapa själ",
   "agentSoulDeleteConfirmBody": "Detta kommer att ta bort själen och alla dess versioner.",
   "agentSoulDeleteConfirmTitle": "Radera själen",
   "agentSoulDetailTitle": "Själsdetalj",
@@ -397,7 +398,10 @@
     }
   },
   "agentSoulSelectTitle": "Välj själ",
+  "agentSoulsEmptyFiltered": "Inga själar matchar dina filter.",
   "agentSoulSettingsTab": "Miljöer",
+  "agentSoulsSearchPlaceholder": "Söksjälar...",
+  "agentSoulsTitle": "Souls",
   "agentSoulToneBoundsLabel": "Tongränser",
   "agentSoulVersionHistoryTitle": "Versionshistorik",
   "agentSoulVersionLabel": "Version {version}",
@@ -410,9 +414,6 @@
   },
   "agentSoulVersionSaved": "Ny själversion räddad",
   "agentSoulVoiceDirectiveLabel": "Röstdirektivet",
-  "agentSoulsEmptyFiltered": "Inga själar matchar dina filter.",
-  "agentSoulsSearchPlaceholder": "Söksjälar...",
-  "agentSoulsTitle": "Souls",
   "agentStateConsecutiveFailures": "På varandra följande misslyckanden",
   "agentStateErrorLoading": "Misslyckades med att ladda tillstånd: {error}",
   "@agentStateErrorLoading": {
@@ -511,13 +512,13 @@
   "@agentTemplateAssignedLabel": {
     "description": "Label shown next to the template assigned to an agent."
   },
-  "agentTemplateCreateTitle": "Skapa mall",
-  "@agentTemplateCreateTitle": {
-    "description": "Page title for the create-template form."
-  },
   "agentTemplateCreatedSuccess": "Mall skapad",
   "@agentTemplateCreatedSuccess": {
     "description": "Snackbar message after successfully creating a new template."
+  },
+  "agentTemplateCreateTitle": "Skapa mall",
+  "@agentTemplateCreateTitle": {
+    "description": "Page title for the create-template form."
   },
   "agentTemplateDeleteConfirm": "Radera den här mallen? Detta kan inte göras ogjort.",
   "@agentTemplateDeleteConfirm": {
@@ -576,21 +577,21 @@
   "@agentTemplateMetricsTotalWakes": {
     "description": "Metric label for the total number of agent wakes."
   },
-  "agentTemplateNoTemplates": "Inga mallar tillgängliga. Skapa en i Inställningar först.",
-  "@agentTemplateNoTemplates": {
-    "description": "Message shown when no templates exist for agent creation."
-  },
-  "agentTemplateNoVersions": "Inga versioner",
-  "@agentTemplateNoVersions": {
-    "description": "Placeholder shown when a template has no version history."
-  },
   "agentTemplateNoneAssigned": "Ingen mall tilldelad",
   "@agentTemplateNoneAssigned": {
     "description": "Text shown when an agent has no template assigned."
   },
+  "agentTemplateNoTemplates": "Inga mallar tillgängliga. Skapa en i Inställningar först.",
+  "@agentTemplateNoTemplates": {
+    "description": "Message shown when no templates exist for agent creation."
+  },
   "agentTemplateNotFound": "Mall ej hittad",
   "@agentTemplateNotFound": {
     "description": "Error message when a referenced template cannot be found."
+  },
+  "agentTemplateNoVersions": "Inga versioner",
+  "@agentTemplateNoVersions": {
+    "description": "Placeholder shown when a template has no version history."
   },
   "agentTemplateReportDirectiveHint": "Definiera rapportstrukturen, nödvändiga avsnitt och formateringsregler...",
   "@agentTemplateReportDirectiveHint": {
@@ -625,10 +626,15 @@
   "@agentTemplateSelectTitle": {
     "description": "Title for the template selection dialog when creating an agent."
   },
+  "agentTemplatesEmptyFiltered": "Inga mallar matchar dina filter.",
   "agentTemplateSettingsTab": "Miljöer",
   "@agentTemplateSettingsTab": {
     "description": "Tab label for the settings tab in agent template detail."
   },
+  "agentTemplatesFilterSectionKind": "Snällt",
+  "agentTemplatesGroupByKind": "Snällt",
+  "agentTemplatesGroupNone": "Alla",
+  "agentTemplatesSearchPlaceholder": "Sök mallar...",
   "agentTemplateStatsTab": "Statistik",
   "@agentTemplateStatsTab": {
     "description": "Tab label for the stats tab in agent template detail."
@@ -640,6 +646,10 @@
   "agentTemplateStatusArchived": "Arkiverad",
   "@agentTemplateStatusArchived": {
     "description": "Label for the archived template status."
+  },
+  "agentTemplatesTitle": "Agentmallar",
+  "@agentTemplatesTitle": {
+    "description": "Page title for the agent templates list."
   },
   "agentTemplateSwitchHint": "För att använda en annan mall, förstör denna agent och skapa en ny.",
   "@agentTemplateSwitchHint": {
@@ -660,15 +670,6 @@
   "agentTemplateVersionSaved": "Ny version sparad",
   "@agentTemplateVersionSaved": {
     "description": "Snackbar message after successfully saving a new template version."
-  },
-  "agentTemplatesEmptyFiltered": "Inga mallar matchar dina filter.",
-  "agentTemplatesFilterSectionKind": "Snällt",
-  "agentTemplatesGroupByKind": "Snällt",
-  "agentTemplatesGroupNone": "Alla",
-  "agentTemplatesSearchPlaceholder": "Sök mallar...",
-  "agentTemplatesTitle": "Agentmallar",
-  "@agentTemplatesTitle": {
-    "description": "Page title for the agent templates list."
   },
   "agentThreadReportLabel": "Rapport producerad under denna vaka",
   "agentTokenUsageCachedTokens": "Cachad",
@@ -724,6 +725,7 @@
   "aiCardReadMore": "Läs mer",
   "aiCardShowLess": "Visa mindre",
   "aiCardTitle": "AI-sammanfattning",
+  "aiChatAssistantResponding": "Assistenten svarar",
   "aiChatMessageCopied": "Kopierat till skrivplatta",
   "aiConfigFailedToLoadModelsGeneric": "Misslyckades med att ladda modellerna. Försök igen, tack.",
   "aiConfigNoModelsAvailable": "Inga AI-modeller är konfigurerade än. Vänligen lägg till en i inställningarna.",
@@ -1032,30 +1034,6 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "Bas-URL (valfritt)",
   "aiProviderConnectFieldBaseUrlPlaceholder": "https://api.example.com",
   "aiProviderConnectFieldDisplayNameHint": "Visas i din leverantörslista",
-  "aiProviderConnectKeyHelperLink": "Skaffa en nyckel på {url}",
-  "@aiProviderConnectKeyHelperLink": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectKeyHiddenLabel": "Dold",
-  "aiProviderConnectKeyPrivacyHint": "Din API-nyckel lämnar aldrig din enhet.",
-  "aiProviderConnectPageTitle": "Koppla {providerName}",
-  "@aiProviderConnectPageTitle": {
-    "placeholders": {
-      "providerName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectSaveAndContinue": "Spara & Fortsätt",
-  "aiProviderConnectSaveAsDraft": "Spara som utkast",
-  "aiProviderConnectSavedAsDraftToast": "Sparad som utkast",
-  "aiProviderConnectStepChoose": "Välj leverantör",
-  "aiProviderConnectStepConnect": "Koppla upp",
-  "aiProviderConnectStepReview": "Recension",
   "aiProviderConnectionCheckingLabel": "Kryssar i nyckeln, listar tillgängliga modeller...",
   "aiProviderConnectionFailedBadResponseDetail": "Oväntad responsform: {type}",
   "@aiProviderConnectionFailedBadResponseDetail": {
@@ -1108,6 +1086,30 @@
     }
   },
   "aiProviderConnectionVerifiedTitle": "Anslutning verifierad",
+  "aiProviderConnectKeyHelperLink": "Skaffa en nyckel på {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Dold",
+  "aiProviderConnectKeyPrivacyHint": "Din API-nyckel lämnar aldrig din enhet.",
+  "aiProviderConnectPageTitle": "Koppla {providerName}",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Spara & Fortsätt",
+  "aiProviderConnectSaveAsDraft": "Spara som utkast",
+  "aiProviderConnectSavedAsDraftToast": "Sparad som utkast",
+  "aiProviderConnectStepChoose": "Välj leverantör",
+  "aiProviderConnectStepConnect": "Koppla upp",
+  "aiProviderConnectStepReview": "Recension",
   "aiProviderDetailActiveProfileTitle": "Aktiv profil",
   "aiProviderDetailAddModelButton": "Lägg till modell",
   "aiProviderDetailApiKeyLabel": "API-nyckel",
@@ -1182,13 +1184,13 @@
   "aiResponseTypePromptGeneration": "Genererad prompt",
   "aiResponseTypeTaskSummary": "Uppgiftssammanfattning",
   "aiRunningActivityOpenProgress": "Visa AI-framsteg",
+  "aiSettingsAddedLabel": "Tillagd",
   "aiSettingsAddModelButton": "Lägg till modell",
   "aiSettingsAddModelErrorDescription": "Något gick fel när jag lade till modellen. Försök igen, tack.",
   "aiSettingsAddModelErrorTitle": "Kunde inte lägga till modellen",
   "aiSettingsAddModelTooltip": "Lägg till denna modell i din leverantör",
   "aiSettingsAddProfileButton": "Lägg till profil",
   "aiSettingsAddProviderButton": "Lägg till leverantör",
-  "aiSettingsAddedLabel": "Tillagd",
   "aiSettingsAgentWakeConcurrencyDescription": "Välj hur många olika agenter som kan köra inferens samtidigt. Högre värden svarar snabbare men använder mer kapacitet för leverantörer och enheter.",
   "aiSettingsAgentWakeConcurrencyLabel": "Samtidigt agent vaknar",
   "aiSettingsClearAllFiltersTooltip": "Rensa alla filter",
@@ -1410,9 +1412,9 @@
   "audioRecordingPause": "PAUS",
   "audioRecordingRealtime": "Livetranskription",
   "audioRecordingResume": "CV",
+  "audioRecordings": "Ljudinspelningar",
   "audioRecordingStandard": "Standard",
   "audioRecordingStop": "STOPP",
-  "audioRecordings": "Ljudinspelningar",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 åtgärd} other{{count} handlingar}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -1504,6 +1506,8 @@
   "backfillToggleDescription": "Begär saknade poster från de senaste 24 timmarna.",
   "backfillToggleTitle": "Automatisk återfyllning",
   "basicSettings": "Grundläggande miljöer",
+  "calendarHasPlanLabel": "Har en plan",
+  "calendarTodayLabel": "I dag",
   "cancelButton": "Avbryt",
   "categoryActiveDescription": "Inaktiva kategorier kommer inte att synas i urvalslistor",
   "categoryActiveSwitchDescription": "Valbar för nya bidrag",
@@ -1608,12 +1612,12 @@
   "checklistExpandTooltip": "Utöka",
   "checklistExportAsMarkdown": "Exportchecklista som Markdown",
   "checklistExportFailed": "Exporten misslyckades",
-  "checklistItemArchiveUndo": "Ångra",
   "checklistItemArchived": "Föremål arkiverat",
+  "checklistItemArchiveUndo": "Ångra",
   "checklistItemDeleteCancel": "Avbryt",
   "checklistItemDeleteConfirm": "Bekräfta",
-  "checklistItemDeleteWarning": "Denna åtgärd kan inte göras ogjort.",
   "checklistItemDeleted": "Föremål borttaget",
+  "checklistItemDeleteWarning": "Denna åtgärd kan inte göras ogjort.",
   "checklistMarkdownCopied": "Checklista kopierad som Markdown",
   "checklistMoreTooltip": "Mer",
   "checklistNoneDone": "Inga färdiga föremål än.",
@@ -1836,8 +1840,12 @@
   "conflictPickerUseFromSync": "Använd från sync",
   "conflictPickerUseThisDevice": "Använd denna enhet",
   "conflictResolvedToast": "Konflikten löst",
+  "conflictsEmptyDescription": "Allt är i synk just nu. Lösta föremål förblir tillgängliga i det andra filtret.",
+  "conflictsEmptyTitle": "Inga konflikter upptäckta",
   "conflictSideFromSync": "FRÅN SYNC",
   "conflictSideThisDevice": "DENNA APPARAT",
+  "conflictsResolved": "Löst",
+  "conflictsUnresolved": "olöst",
   "conflictValueAbsent": "Inte inställt",
   "conflictValueNo": "Nej",
   "conflictValueYes": "Ja",
@@ -1851,10 +1859,6 @@
       }
     }
   },
-  "conflictsEmptyDescription": "Allt är i synk just nu. Lösta föremål förblir tillgängliga i det andra filtret.",
-  "conflictsEmptyTitle": "Inga konflikter upptäckta",
-  "conflictsResolved": "Löst",
-  "conflictsUnresolved": "olöst",
   "copyAsMarkdown": "Kopiera som Markdown",
   "copyAsText": "Kopierad som text",
   "correctionExampleCancel": "AVBRYT",
@@ -2016,6 +2020,7 @@
     }
   },
   "dailyOsNextCaptureReconcileCta": "Recension",
+  "dailyOsNextCapturesPanelTitle": "Fångster",
   "dailyOsNextCaptureTranscribing": "Transkriberar...",
   "dailyOsNextCaptureTranscriptHint": "Rätta till allt som transkriptet gjorde fel innan du planerar.",
   "dailyOsNextCaptureTranscriptLabel": "Recensionstranskription",
@@ -2023,7 +2028,6 @@
   "dailyOsNextCaptureVoiceButtonReset": "Börja om",
   "dailyOsNextCaptureVoiceButtonStart": "Börja lyssna",
   "dailyOsNextCaptureVoiceButtonStop": "Sluta lyssna",
-  "dailyOsNextCapturesPanelTitle": "Fångster",
   "dailyOsNextCategoryFilterAll": "Alla kategorier",
   "dailyOsNextCategoryFilterDescription": "Endast kategorier aktiverade för dagplanering visas för Daily OS automatiserad bearbetning.",
   "dailyOsNextCategoryFilterEmpty": "Inga kategorier aktiverade för dagplanering än.",
@@ -2270,29 +2274,6 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Återkommande · Missade",
-  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 tidigare session} other{{count} tidigare sessioner}}",
-  "@dailyOsNextTimeSpentEarlierSessions": {
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
-  "dailyOsNextTimeSpentShowLess": "Visa mindre",
-  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} klart",
-  "@dailyOsNextTimeSpentSummary": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      },
-      "completedCount": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsNextTimeSpentTitle": "IDAG HITTILLS",
-  "dailyOsNextTimeSpentTitlePast": "TID SPENDERAD",
   "dailyOsNextTimelineActual": "Nutid",
   "dailyOsNextTimelineArrange": "Arrangera block",
   "dailyOsNextTimelineBoth": "Plan och verklighet",
@@ -2316,14 +2297,37 @@
   "dailyOsNextTimelineShowPaged": "Visa swipebar plan och faktisk",
   "dailyOsNextTimelineSwipeHint": "Svep för faktiska · nyp vertikalt för att zooma in",
   "dailyOsNextTimelineTracked": "spårade",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 tidigare session} other{{count} tidigare sessioner}}",
+  "@dailyOsNextTimeSpentEarlierSessions": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "dailyOsNextTimeSpentShowLess": "Visa mindre",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} klart",
+  "@dailyOsNextTimeSpentSummary": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      },
+      "completedCount": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextTimeSpentTitle": "IDAG HITTILLS",
+  "dailyOsNextTimeSpentTitlePast": "TID SPENDERAD",
   "dailyOsNextTriageConfirmDefer": "Uppskjutet",
-  "dailyOsNextTriageConfirmDoNow": "Klart nu",
   "dailyOsNextTriageConfirmDone": "Markerat klart",
+  "dailyOsNextTriageConfirmDoNow": "Klart nu",
   "dailyOsNextTriageConfirmDrop": "Borttagen",
   "dailyOsNextTriageConfirmToday": "Tillagd till idag",
   "dailyOsNextTriageDefer": "Skjut upp",
-  "dailyOsNextTriageDoNow": "Gör det nu",
   "dailyOsNextTriageDone": "Klart",
+  "dailyOsNextTriageDoNow": "Gör det nu",
   "dailyOsNextTriageDrop": "Släpp",
   "dailyOsNextTriageToday": "Idag",
   "dailyOsOnboardingCoachCapture": "Säg vad som fångar din uppmärksamhet.",
@@ -2578,6 +2582,7 @@
   "designSystemProgressBarSampleLabel": "Förloppsmätaretikett",
   "designSystemRadioButtonLabel": "Radioknapp",
   "designSystemScrollbarSizesTitle": "Scrollbar-storlekar",
+  "designSystemSearchClearLabel": "Rensa sökning",
   "designSystemSearchFilledText": "Lotti-sökningen",
   "designSystemSearchHintLabel": "Typanvändare",
   "designSystemSelectedLabel": "Utvalda",
@@ -2585,8 +2590,8 @@
   "designSystemSmallLabel": "Liten",
   "designSystemSpinnerPlainLabel": "Plain",
   "designSystemSpinnerSkeletonPulseLabel": "Puls",
-  "designSystemSpinnerSkeletonWaveLabel": "Wave",
   "designSystemSpinnerSkeletonsTitle": "Skelett",
+  "designSystemSpinnerSkeletonWaveLabel": "Wave",
   "designSystemSpinnerSpinnersTitle": "Spinners",
   "designSystemSpinnerTrackLabel": "Med spår",
   "designSystemSplitButtonDropdownSemantics": "Öppna {label}-alternativ",
@@ -2636,18 +2641,18 @@
   "desktopEmptyStateSelectDashboard": "Välj en instrumentpanel för att visa detaljer",
   "desktopEmptyStateSelectProject": "Välj ett projekt för att se detaljer",
   "desktopEmptyStateSelectTask": "Välj en uppgift för att visa detaljer",
-  "deviceDeleteFailed": "Misslyckades med att ta bort enheten: {error}",
-  "@deviceDeleteFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "deviceDeletedSuccess": "Enhet {deviceName} raderad framgångsrikt",
   "@deviceDeletedSuccess": {
     "placeholders": {
       "deviceName": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceDeleteFailed": "Misslyckades med att ta bort enheten: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {
         "type": "String"
       }
     }
@@ -2794,18 +2799,6 @@
   "habitLogOtherDayHint": "Håll kvar för att logga en annan dag",
   "habitNotRecordedLabel": "Ej inspelat",
   "habitPriorityLabel": "Prioritet",
-  "habitSectionOptionsTitle": "Alternativ",
-  "habitSectionScheduleTitle": "Schema",
-  "habitShowAlertAtLabel": "Visa varning på",
-  "habitShowFromLabel": "Föreställning från",
-  "habitStreakDaysSemantic": "{count}-dagssvit",
-  "@habitStreakDaysSemantic": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "habitsAboveGoal": "På banan",
   "habitsActiveHabitsCount": "{count, plural, one{1 aktiv vana} other{{count} aktiva vanor}}",
   "@habitsActiveHabitsCount": {
@@ -2816,6 +2809,8 @@
     }
   },
   "habitsAllDoneToday": "Allt klart idag",
+  "habitsChartUseDynamicBaseline": "Använd dynamisk baslinje",
+  "habitsChartUseZeroBaseline": "Använd nollbaslinje",
   "habitsCompletedHeader": "Färdigställd",
   "habitsCompletionRateTitle": "Slutförandegrad",
   "habitsConsistencyTitle": "Konsekvens",
@@ -2844,6 +2839,8 @@
     }
   },
   "habitsDoneTodayLabel": "Gjort idag",
+  "habitSectionOptionsTitle": "Alternativ",
+  "habitSectionScheduleTitle": "Schema",
   "habitsFilterAll": "alla",
   "habitsFilterCompleted": "Klart",
   "habitsFilterOpenNow": "två",
@@ -2852,6 +2849,8 @@
   "habitsHeatmapEmpty": "Lägg till en vana för att börja bygga din konsekvens",
   "habitsHeatmapLess": "Mindre",
   "habitsHeatmapMore": "Mer",
+  "habitShowAlertAtLabel": "Visa varning på",
+  "habitShowFromLabel": "Föreställning från",
   "habitsLaggardHint": "{habit} — behöll {kept} av {active}",
   "@habitsLaggardHint": {
     "placeholders": {
@@ -2904,6 +2903,14 @@
       }
     }
   },
+  "habitStreakDaysSemantic": "{count}-dagssvit",
+  "@habitStreakDaysSemantic": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "habitsVsPreviousWeek": "Mot föregående vecka",
   "helpMenuCommandPalette": "Kommandopalett...",
   "helpMenuKeyboardShortcuts": "Tangentbordsgenvägar...",
@@ -2925,7 +2932,9 @@
   "imagePromptGenerationCopyTooltip": "Kopiera bildprompten till urklippstavlan",
   "imagePromptGenerationExpandTooltip": "Visa fullständig prompt",
   "imagePromptGenerationFullPromptLabel": "Fullständig bildprompt:",
+  "images": "Bilder",
   "imageViewerDownloadFailed": "Kunde inte spara bilden",
+  "imageViewerDownloadingTooltip": "Sparbild",
   "imageViewerDownloadPermissionDenied": "Fotoåtkomst nekad — aktivera det i Inställningar",
   "imageViewerDownloadSaved": "Räddad {fileName}",
   "@imageViewerDownloadSaved": {
@@ -2937,8 +2946,6 @@
   },
   "imageViewerDownloadSavedToGallery": "Sparat till foton",
   "imageViewerDownloadTooltip": "Ladda ner bild",
-  "imageViewerDownloadingTooltip": "Sparbild",
-  "images": "Bilder",
   "inactiveLabel": "Inaktiv",
   "inactiveSwitchDescription": "Kan väljas för nya poster när du är på",
   "inferenceProfileChooseModelTitle": "Välj en modell",
@@ -2971,6 +2978,7 @@
   "inferenceProfileSaveButton": "Spara",
   "inferenceProfileSelectModel": "Välj en modell...",
   "inferenceProfileSelectProfile": "Välj en profil...",
+  "inferenceProfilesEmpty": "Inga inferensprofiler än",
   "inferenceProfileSkillModelRequired": "Kräver att {slotName}-modellen sätts",
   "@inferenceProfileSkillModelRequired": {
     "placeholders": {
@@ -2979,6 +2987,7 @@
       }
     }
   },
+  "inferenceProfileSkillsSection": "Automatiserade färdigheter",
   "inferenceProfileSkillUsesModel": "Använder {slotName}-modellen",
   "@inferenceProfileSkillUsesModel": {
     "placeholders": {
@@ -2987,14 +2996,12 @@
       }
     }
   },
-  "inferenceProfileSkillsSection": "Automatiserade färdigheter",
+  "inferenceProfilesTitle": "Slutsatsprofiler",
   "inferenceProfileThinking": "Tänkande",
   "inferenceProfileThinkingHighEnd": "Tänkande (avancerat)",
   "inferenceProfileThinkingRequired": "En tänkande modell krävs",
   "inferenceProfileTranscription": "Transkription",
   "inferenceProfileUnavailable": "Inferensprofil ej tillgänglig",
-  "inferenceProfilesEmpty": "Inga inferensprofiler än",
-  "inferenceProfilesTitle": "Slutsatsprofiler",
   "inputDataTypeAudioFilesDescription": "Använd ljudfiler som indata",
   "inputDataTypeAudioFilesName": "Ljudfiler",
   "inputDataTypeImagesDescription": "Använd bilder som indata",
@@ -3088,9 +3095,9 @@
   "journalDeleteQuestion": "Vill du ta bort denna journalpost?",
   "journalDurationLabel": "Varaktighet",
   "journalEndDateLabel": "Slutdatum",
-  "journalEndTimeLabel": "Sluttid",
   "journalEndsAnotherDayHint": "Välj ett separat slutdatum",
   "journalEndsAnotherDayLabel": "Slutar på en annan dag",
+  "journalEndTimeLabel": "Sluttid",
   "journalFilterEntryTypesTitle": "Inträdetyper",
   "journalFilterFlagged": "Flaggad",
   "journalFilterPrivate": "Privat",
@@ -3099,8 +3106,6 @@
   "journalFilterTitle": "Filterjournal",
   "journalHideLinkHint": "Dölj länk",
   "journalHideMapHint": "Göm kartan",
-  "journalLinkFromHint": "Länk från",
-  "journalLinkToHint": "Länk till",
   "journalLinkedEntriesActivityFilterAudio": "Ljud",
   "journalLinkedEntriesActivityFilterCode": "Kod",
   "journalLinkedEntriesActivityFilterImages": "Bilder",
@@ -3112,6 +3117,8 @@
   "journalLinkedEntriesSortNewestFirst": "Nyaste första gången",
   "journalLinkedEntriesSortOldestFirst": "Äldsta första",
   "journalLinkedFromLabel": "Länkad från:",
+  "journalLinkFromHint": "Länk från",
+  "journalLinkToHint": "Länk till",
   "journalOvernightNextDay": "Slutar {date} (nästa dag)",
   "@journalOvernightNextDay": {
     "description": "Chip shown when an entry's end time is earlier than its start time, indicating it ends on the next day.",
@@ -3188,6 +3195,20 @@
   "keyboardKeyShift": "Skift",
   "keyboardKeySpace": "Rymden",
   "keyboardResizeDividerLabel": "Storleksjustera rutorna",
+  "keyboardResizeDividerValue": "Ändra paneler, {value} pixlar. Intervall {min} till {max} pixlar.",
+  "@keyboardResizeDividerValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "keyboardShortcutsNoResults": "Inga genvägar matchar din sökning",
   "keyboardShortcutsSearchHint": "Sökgenvägar...",
   "keyboardShortcutsSubtitle": "Varje skrivbordskommando och dess nuvarande tangentbordskombination.",
@@ -3251,8 +3272,8 @@
   "knowledgeGraphNodeTypeRating": "Betyg",
   "knowledgeGraphNodeTypeTask": "Uppgift",
   "knowledgeGraphOpenDetails": "Öppna detaljer",
-  "knowledgeGraphRecentToOlder": "nyligen → äldre",
   "knowledgeGraphRecenter": "Nyare",
+  "knowledgeGraphRecentToOlder": "nyligen → äldre",
   "knowledgeGraphRelationAiSource": "AI-källa",
   "knowledgeGraphRelationChecklist": "Checklista",
   "knowledgeGraphRelationInProject": "I projektet",
@@ -3270,12 +3291,12 @@
       }
     }
   },
-  "linkExistingTask": "Länka befintlig uppgift...",
   "linkedFromCaption": "från",
   "linkedTaskImageBadge": "Från länkad uppgift",
   "linkedTasksMenuTooltip": "Länkade uppgifter alternativ",
   "linkedTasksTitle": "Länkade uppgifter",
   "linkedToCaption": "att",
+  "linkExistingTask": "Länka befintlig uppgift...",
   "loggingDomainAgentRuntime": "Agentens runtime",
   "loggingDomainAgentWorkflow": "Agentens arbetsflöde",
   "loggingDomainAi": "AI",
@@ -3357,6 +3378,10 @@
   "maintenancePurgeSentOutboxConfirm": "JA, UTRENSNING",
   "maintenancePurgeSentOutboxDescription": "Radera rader som skickats ut käll äldre än 7 dagar och hämta disken",
   "maintenancePurgeSentOutboxQuestion": "Purge skickade ut utkorgsartiklar äldre än 7 dagar? Detta raderar redan skickade rader i bitar och kör VACUUM för att återta disken. Väntande och felposter sparas.",
+  "maintenanceRecreateFts5": "Återskapa fulltextindex",
+  "maintenanceRecreateFts5Confirm": "JA, ÅTERSKAPA INDEX",
+  "maintenanceRecreateFts5Description": "Återskapa fulltext-sökindex",
+  "maintenanceRecreateFts5Message": "Är du säker på att du vill återskapa fulltextindexet? Detta kan ta lite tid.",
   "maintenanceReSync": "Synkronisera om meddelanden",
   "maintenanceReSyncAgentEntities": "Agententiteter",
   "maintenanceReSyncDescription": "Synkronisera om meddelanden från servern",
@@ -3364,10 +3389,6 @@
   "maintenanceReSyncJournalEntities": "Tidskriftsenheter",
   "maintenanceReSyncSelectAtLeastOne": "Välj minst en enhetstyp",
   "maintenanceReSyncStart": "Start",
-  "maintenanceRecreateFts5": "Återskapa fulltextindex",
-  "maintenanceRecreateFts5Confirm": "JA, ÅTERSKAPA INDEX",
-  "maintenanceRecreateFts5Description": "Återskapa fulltext-sökindex",
-  "maintenanceRecreateFts5Message": "Är du säker på att du vill återskapa fulltextindexet? Detta kan ta lite tid.",
   "maintenanceSyncDefinitions": "Synkronisera mätbara saker, instrumentpaneler, vanor, kategorier, AI-inställningar",
   "maintenanceSyncDefinitionsDescription": "Synkronisera mätbara saker, instrumentpaneler, vanor, kategorier och AI-inställningar",
   "manageLinks": "Hantera länkar...",
@@ -3841,8 +3862,10 @@
   "projectPickerUnassigned": "Inget projekt",
   "projectRecommendationDismissTooltip": "Avslut",
   "projectRecommendationResolveTooltip": "Mark bestämde sig",
-  "projectRecommendationUpdateError": "Kunde inte uppdatera rekommendationen. Försök igen, tack.",
   "projectRecommendationsTitle": "Rekommenderade nästa steg",
+  "projectRecommendationUpdateError": "Kunde inte uppdatera rekommendationen. Försök igen, tack.",
+  "projectsFilterStatusLabel": "Status:",
+  "projectsFilterTooltip": "Filterprojekt",
   "projectShowcaseAiReportTitle": "AI-rapport",
   "projectShowcaseBlockedLegend": "{count} Blockerad",
   "@projectShowcaseBlockedLegend": {
@@ -3943,8 +3966,6 @@
   "projectTargetDateLabel": "Måldatum",
   "projectTitleLabel": "Projekttitel",
   "projectTitleRequired": "Projekttiteln kan inte vara tom",
-  "projectsFilterStatusLabel": "Status:",
-  "projectsFilterTooltip": "Filterprojekt",
   "promptDefaultModelBadge": "Standard",
   "promptGenerationCardTitle": "AI-kodningsprompt",
   "promptGenerationCopiedSnackbar": "Prompt kopierad till skrivplatta",
@@ -4111,8 +4132,6 @@
   "sessionRatingSkipButton": "Hoppa över",
   "sessionRatingTitle": "Betygsätt denna session",
   "sessionRatingViewAction": "Visningsbetyg",
-  "settingThemingDark": "Mörkt tema",
-  "settingThemingLight": "Ljustema",
   "settingsAboutAppInformation": "Appinformation",
   "settingsAboutAppTagline": "Din personliga dagbok",
   "settingsAboutBuildType": "Byggtyp",
@@ -4241,8 +4260,8 @@
   "settingsCelebrationsPreviewSample3": "Vattna växterna",
   "settingsCelebrationsPreviewTitle": "Prova",
   "settingsCelebrationsReplay": "Omspel",
-  "settingsCelebrationsResetToDefault": "Återställ till standard",
   "settingsCelebrationsResetToast": "Stilåterställning till standard",
+  "settingsCelebrationsResetToDefault": "Återställ till standard",
   "settingsCelebrationsResetUndo": "Ångra",
   "settingsCelebrationsSectionDescription": "Spela en flourish när du är klar med något. Att stänga av en håller slutförandet och det är haptiskt — det hoppar bara över animationen.",
   "settingsCelebrationsSectionTitle": "Färdigställandefiranden",
@@ -4431,6 +4450,7 @@
     }
   },
   "settingsMatrixRoomInviteTitle": "Rumsinbjudan",
+  "settingsMatrixSentMessagesLabel": "Skickade meddelanden:",
   "settingsMatrixSentMessageType": "Skickad ({eventType})",
   "@settingsMatrixSentMessageType": {
     "placeholders": {
@@ -4439,7 +4459,6 @@
       }
     }
   },
-  "settingsMatrixSentMessagesLabel": "Skickade meddelanden:",
   "settingsMatrixStartVerificationLabel": "Starta verifiering",
   "settingsMatrixStatsTitle": "Matrisstatistik",
   "settingsMatrixTitle": "Synkroniseringsinställningar",
@@ -4468,7 +4487,6 @@
   "settingsMeasurableNameLabel": "Mätbart namn",
   "settingsMeasurablePrivateLabel": "Privat: ",
   "settingsMeasurableSaveLabel": "Spara",
-  "settingsMeasurableUnitLabel": "Enhetsförkortning (valfritt)",
   "settingsMeasurablesCreateTitle": "Skapa mätbart",
   "settingsMeasurablesEmptyState": "Inga mätbara faktorer än",
   "settingsMeasurablesEmptyStateHint": "Mätbara är siffror du följer över tid — vikt, vatten, steg.",
@@ -4484,6 +4502,7 @@
   "settingsMeasurablesSearchHint": "Sök mätbara saker...",
   "settingsMeasurablesSubtitle": "Konfigurera mätbara datatyper",
   "settingsMeasurablesTitle": "Mätbara egenskaper",
+  "settingsMeasurableUnitLabel": "Enhetsförkortning (valfritt)",
   "settingsOnboardingActionSubtitle": "Öppna välkomstflödet igen – koppla upp din AI-hjärna och skapa en uppgift",
   "settingsOnboardingMetricsSubtitle": "FTUE-tratten — installation, aktivering, retention (felsökning)",
   "settingsOnboardingMetricsTitle": "Onboarding-mått",
@@ -4551,6 +4570,8 @@
   "settingsV2UnimplementedTitle": "Panelen har ännu inte implementerats",
   "settingsWhatsNewSubtitle": "Se de senaste uppdateringarna och funktionerna",
   "settingsWhatsNewTitle": "Vad är nytt",
+  "settingThemingDark": "Mörkt tema",
+  "settingThemingLight": "Ljustema",
   "sidebarActiveSectionTitle": "Verksamhet",
   "sidebarActivityCollapseTooltip": "Kollapsaktivitet",
   "sidebarActivityExpandTooltip": "Utöka verksamheten",
@@ -4733,9 +4754,9 @@
   "taskAgentNoAiSetup": "Ingen AI-installation",
   "taskAgentNoAiSetupDescription": "Pausar agentens inferens tills du väljer en profil eller modell.",
   "taskAgentNoModelsAvailable": "Inga kompatibla tänkande modeller tillgängliga",
+  "taskAgentNoProfilesAvailable": "Inga profiler tillgängliga på denna enhet",
   "taskAgentNoProfileSelected": "Ingen AI-installation",
   "taskAgentNoProfileSelectedDescription": "Välj en sparad setup eller tänkmodell innan denna agent kan köras.",
-  "taskAgentNoProfilesAvailable": "Inga profiler tillgängliga på denna enhet",
   "taskAgentProfileChangedToast": "Använder {profile} för varje framtida agentuppdatering tills du ändrar den.",
   "@taskAgentProfileChangedToast": {
     "placeholders": {
@@ -4909,6 +4930,14 @@
   "taskPriorityLow": "Lågt",
   "taskPriorityMedium": "Medium",
   "taskPriorityUrgent": "Brådskande",
+  "tasksAddLabelButton": "Lägg till etikett",
+  "tasksAgentFilterAll": "Alla",
+  "tasksAgentFilterHasAgent": "Har agent",
+  "tasksAgentFilterNoAgent": "Ingen agent",
+  "tasksAgentFilterTitle": "Agent",
+  "tasksFilterApplyTitle": "Använd filter",
+  "tasksFilterClearAll": "Rensa allt",
+  "tasksFilterTitle": "Filteruppgifter",
   "taskShowcaseAudio": "Ljud",
   "taskShowcaseCompletedCount": "{completed} / {total} färdigt",
   "@taskShowcaseCompletedCount": {
@@ -4953,25 +4982,6 @@
   "taskShowcaseTimeTracker": "Tidsspårare",
   "taskShowcaseTodo": "Alla",
   "taskShowcaseTodos": "Alla",
-  "taskStatusAll": "Alla",
-  "taskStatusBlocked": "Blockerad",
-  "taskStatusDone": "Klart",
-  "taskStatusGroomed": "Välvårdad",
-  "taskStatusInProgress": "Pågående",
-  "taskStatusLabel": "Status:",
-  "taskStatusOnHold": "På vänt",
-  "taskStatusOpen": "Öppet",
-  "taskStatusRejected": "Avvisad",
-  "taskTitleEmpty": "Ingen titel",
-  "taskUntitled": "(utan titel)",
-  "tasksAddLabelButton": "Lägg till etikett",
-  "tasksAgentFilterAll": "Alla",
-  "tasksAgentFilterHasAgent": "Har agent",
-  "tasksAgentFilterNoAgent": "Ingen agent",
-  "tasksAgentFilterTitle": "Agent",
-  "tasksFilterApplyTitle": "Använd filter",
-  "tasksFilterClearAll": "Rensa allt",
-  "tasksFilterTitle": "Filteruppgifter",
   "tasksLabelFilterAll": "Alla",
   "tasksLabelFilterTitle": "Etikett",
   "tasksLabelFilterUnlabeled": "Omärkt",
@@ -4995,23 +5005,6 @@
   "tasksSavedFilterDeleteTooltip": "Ta bort sparat filter",
   "tasksSavedFilterDragHandleSemantics": "Dra för att omordna",
   "tasksSavedFilterRenameSemantics": "Byt namn på sparat filter",
-  "tasksSavedFilterToastDeleted": "Filter borttaget",
-  "tasksSavedFilterToastSaved": "Sparade '{name}'",
-  "@tasksSavedFilterToastSaved": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "tasksSavedFilterToastUpdated": "Uppdaterad '{name}'",
-  "@tasksSavedFilterToastUpdated": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "tasksSavedFiltersAllShort": "Alla",
   "tasksSavedFiltersAllTasks": "Alla uppgifter",
   "tasksSavedFiltersCustom": "Sedvänja",
@@ -5089,6 +5082,23 @@
   "tasksSavedFiltersUpdateButtonLabel": "Uppdateringsfilter",
   "tasksSavedFiltersUpdateExistingDescription": "Byt ut dess sparade kriterier mot den nuvarande filterkonfigurationen.",
   "tasksSavedFiltersUpdateExistingTitle": "Uppdatera befintligt filter",
+  "tasksSavedFilterToastDeleted": "Filter borttaget",
+  "tasksSavedFilterToastSaved": "Sparade '{name}'",
+  "@tasksSavedFilterToastSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFilterToastUpdated": "Uppdaterad '{name}'",
+  "@tasksSavedFilterToastUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSearchModeLabel": "Sökläge",
   "tasksShowCreationDate": "Showens skapandedatum på korten",
   "tasksShowDueDate": "Visa inlämningsdatum på korten",
@@ -5096,6 +5106,17 @@
   "tasksSortByDueDate": "Beräknat datum",
   "tasksSortByLabel": "Sortera efter",
   "tasksSortByPriority": "Prioritet",
+  "taskStatusAll": "Alla",
+  "taskStatusBlocked": "Blockerad",
+  "taskStatusDone": "Klart",
+  "taskStatusGroomed": "Välvårdad",
+  "taskStatusInProgress": "Pågående",
+  "taskStatusLabel": "Status:",
+  "taskStatusOnHold": "På vänt",
+  "taskStatusOpen": "Öppet",
+  "taskStatusRejected": "Avvisad",
+  "taskTitleEmpty": "Ingen titel",
+  "taskUntitled": "(utan titel)",
   "thinkingDisclosureCopied": "Motivering kopierad",
   "thinkingDisclosureCopy": "Kopiera resonemang",
   "thinkingDisclosureHide": "Göm resonemanget",
@@ -5128,6 +5149,5 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Klart",
-  "whatsNewSkipButton": "Hoppa över",
-  "@@locale": "sv"
+  "whatsNewSkipButton": "Hoppa över"
 }

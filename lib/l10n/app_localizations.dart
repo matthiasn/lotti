@@ -15392,17 +15392,17 @@ abstract class AppLocalizations {
   /// **'Czech'**
   String get settingsManualLanguageCzechTitle;
 
-  /// No description provided for @settingsManualLanguageDutchTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Dutch'**
-  String get settingsManualLanguageDutchTitle;
-
   /// No description provided for @settingsManualLanguageDanishTitle.
   ///
   /// In en, this message translates to:
   /// **'Danish'**
   String get settingsManualLanguageDanishTitle;
+
+  /// No description provided for @settingsManualLanguageDutchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dutch'**
+  String get settingsManualLanguageDutchTitle;
 
   /// No description provided for @settingsManualLanguageEnglishTitle.
   ///

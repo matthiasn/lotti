@@ -91,27 +91,23 @@ class _DesignSystemContextMenuButtonState
           }
         }
 
-        return Semantics(
-          button: true,
-          label: accessibleLabel,
-          onTap: toggleMenu,
-          child: ExcludeSemantics(
-            child: Tooltip(
-              message: accessibleLabel,
-              excludeFromSemantics: true,
-              child: SizedBox(
-                width: tokens.spacing.step9,
-                height: tokens.spacing.step9,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  iconSize: tokens.spacing.step5,
-                  icon: Icon(
-                    widget.icon,
-                    color: widget.iconColor ?? tokens.colors.text.lowEmphasis,
-                  ),
-                  onPressed: toggleMenu,
-                ),
+        return SizedBox(
+          width: tokens.spacing.step9,
+          height: tokens.spacing.step9,
+          child: Semantics(
+            label: accessibleLabel,
+            button: true,
+            excludeSemantics: true,
+            onTap: toggleMenu,
+            child: IconButton(
+              tooltip: accessibleLabel,
+              padding: EdgeInsets.zero,
+              iconSize: tokens.spacing.step5,
+              icon: Icon(
+                widget.icon,
+                color: widget.iconColor ?? tokens.colors.text.lowEmphasis,
               ),
+              onPressed: toggleMenu,
             ),
           ),
         );

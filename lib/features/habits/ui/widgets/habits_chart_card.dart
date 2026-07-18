@@ -55,30 +55,26 @@ class HabitsChartCard extends ConsumerWidget {
                 ),
                 if (state.minY > 20)
                   Semantics(
-                    container: true,
-                    button: true,
-                    toggled: state.zeroBased,
                     label: state.zeroBased
                         ? messages.habitsChartUseDynamicBaseline
                         : messages.habitsChartUseZeroBaseline,
+                    button: true,
+                    toggled: state.zeroBased,
+                    excludeSemantics: true,
                     onTap: controller.toggleZeroBased,
-                    child: ExcludeSemantics(
-                      child: Tooltip(
-                        message: state.zeroBased
-                            ? messages.habitsChartUseDynamicBaseline
-                            : messages.habitsChartUseZeroBaseline,
-                        excludeFromSemantics: true,
-                        child: IconButton(
-                          visualDensity: VisualDensity.compact,
-                          onPressed: controller.toggleZeroBased,
-                          icon: Icon(
-                            state.zeroBased
-                                ? MdiIcons.unfoldMoreHorizontal
-                                : MdiIcons.unfoldLessHorizontal,
-                            size: tokens.spacing.step5,
-                            color: tokens.colors.text.mediumEmphasis,
-                          ),
-                        ),
+                    child: IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: controller.toggleZeroBased,
+                      tooltip: state.zeroBased
+                          ? messages.habitsChartUseDynamicBaseline
+                          : messages.habitsChartUseZeroBaseline,
+                      isSelected: state.zeroBased,
+                      icon: Icon(
+                        state.zeroBased
+                            ? MdiIcons.unfoldMoreHorizontal
+                            : MdiIcons.unfoldLessHorizontal,
+                        size: tokens.spacing.step5,
+                        color: tokens.colors.text.mediumEmphasis,
                       ),
                     ),
                   ),

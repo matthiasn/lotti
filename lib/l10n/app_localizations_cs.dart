@@ -9061,10 +9061,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Čeština';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Nizozemština';
+  String get settingsManualLanguageDanishTitle => 'Dánština';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Dánština';
+  String get settingsManualLanguageDutchTitle => 'Nizozemština';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Angličtina';

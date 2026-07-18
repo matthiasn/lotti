@@ -9066,10 +9066,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Ceco';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Olandese';
+  String get settingsManualLanguageDanishTitle => 'Danese';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Danese';
+  String get settingsManualLanguageDutchTitle => 'Olandese';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Inglese';

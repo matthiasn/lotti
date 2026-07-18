@@ -8883,10 +8883,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Czech';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Dutch';
+  String get settingsManualLanguageDanishTitle => 'Danish';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Danish';
+  String get settingsManualLanguageDutchTitle => 'Dutch';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'English';

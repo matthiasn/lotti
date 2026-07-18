@@ -9077,10 +9077,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Checo';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Neerlandés';
+  String get settingsManualLanguageDanishTitle => 'Danés';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Danés';
+  String get settingsManualLanguageDutchTitle => 'Neerlandés';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Inglés';
