@@ -54,6 +54,20 @@ alongside task status, priority, and category filters, so you can ask focused
 questions such as “show open P1 habitat-critical work” without inventing a new
 category for that temporary view.
 
+## Let a task agent suggest labels
+
+When a configured task agent has enough task context, it can suggest fitting
+labels alongside other task changes. Lotti only makes active labels available
+when they are valid for the task's category, and it rejects deleted,
+out-of-scope, duplicate, or low-confidence suggestions. The agent never gets a
+free-form way to create arbitrary tags from a prompt.
+
+Review an agent-originated label in the task's proposed-changes area just as you
+would a checklist, date, or status change. Confirm it when the label improves
+future filtering; dismiss it when it does not. This keeps the task's visible
+organization under your control rather than treating a model guess as source
+truth.
+
 Removing a label from a task is treated as an intentional rejection when
 automatic label suggestions are enabled. Lotti records that choice so the same
 suggestion is not immediately re-applied without new reason.

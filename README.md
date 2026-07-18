@@ -254,8 +254,8 @@ The application is in active daily use. The agentic layer is real, working, and 
 Pick the guide that matches what you want to do:
 
 - 🤖 [Set up AI — local (Ollama) or cloud (Gemini Flash)](GETTING_STARTED.md) — the fastest way to a working agent
-- ✅ [Basic task management](docs/BASIC_TASK_MANAGEMENT.md) — the everyday voice‑to‑checklist workflow
-- 📖 [Manual](docs/MANUAL.md) — how to use Lotti
+- ✅ [Task management and voice capture](https://matthiasn.github.io/lotti/manual/development/getting-started/first-task/) — the everyday voice-to-checklist workflow
+- 📖 [Manual](https://matthiasn.github.io/lotti/manual/development/) — how to use Lotti
 
 For developers:
 
@@ -323,8 +323,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the formal version.
 ## Documentation
 
 - [Getting Started with AI](GETTING_STARTED.md) — set up local Ollama or cloud Gemini
-- [Manual](docs/MANUAL.md) — how to use Lotti
-- [Basic Task Management](docs/BASIC_TASK_MANAGEMENT.md) — voice‑to‑checklist workflow
+- [Manual](https://matthiasn.github.io/lotti/manual/development/) — how to use Lotti
+- [Task management and voice capture](https://matthiasn.github.io/lotti/manual/development/getting-started/first-task/) — the everyday voice-to-checklist workflow
 - [Architecture](docs/ARCHITECTURE.md) — technical design
 - [Background](docs/BACKGROUND.md) — the story behind the project
 - [Privacy Policy](PRIVACY.md)

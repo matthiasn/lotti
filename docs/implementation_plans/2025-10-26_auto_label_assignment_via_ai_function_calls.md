@@ -465,7 +465,7 @@ Test file naming conventions:
 
 ## Documentation & Privacy
 
-- User guide (docs/user_guides/ai_labels.md):
+- User manual (`docs-site/docs/organize-and-reflect/labels.mdx`):
   - Explain when labels are auto-assigned, how to undo, and how to opt out (global and
     per-category).
   - Clarify that the model sees label names and IDs (names sent to provider; IDs used in function
