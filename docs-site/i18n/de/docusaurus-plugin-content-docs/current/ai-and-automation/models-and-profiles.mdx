@@ -5,15 +5,16 @@ description: Beschreibe Modellfähigkeiten einmal und verteile Denken, Bild, Aud
 
 # Arbeit mit Modellen und Profilen routen
 
-Ein Anbieter sagt Lotti, wohin es verbindet. Ein Modell hält die Modell-ID des
-Anbieters und seine Fähigkeiten fest. Ein Inferenzprofil weist diese Modelle den
-von Lotti verstandenen Aufgaben zu. So muss „Welches Modell verarbeitet Audio?“
-nicht in jeder Aufgabe und Automatisierungsregel stehen.
+Ein Anbieter sagt Lotti, wohin die Verbindung geht. Ein Modell hält die
+Modell-ID des Anbieters und seine Fähigkeiten fest. Ein Inferenzprofil weist
+diese Modelle den von Lotti verstandenen Aufgaben zu. So muss „Welches Modell
+verarbeitet Audio?“ nicht in jeder Aufgabe und Automatisierungsregel stehen.
 
 ## Gespeicherte Modelle prüfen
 
 Öffne **Einstellungen → KI-Einstellungen → Modelle**. Die Liste gruppiert nach
-Anbieter und filtert Fähigkeiten für Text, Bild, Audio und Schlussfolgern.
+Anbieter und lässt sich nach Fähigkeiten für Text, Bild, Audio und
+Schlussfolgern filtern.
 
 <ManualScreenshot
   caseId="ai/models"
@@ -22,16 +23,16 @@ Anbieter und filtert Fähigkeiten für Text, Bild, Audio und Schlussfolgern.
 />
 
 **Gleichzeitige Agenten-Aufwachvorgänge** begrenzt, wie viele verschiedene
-Agenten parallel inferieren. Höhere Werte steigern Durchsatz, aber auch
-gleichzeitige Anbieteranfragen und lokale Last. Bleibe bei strengen Ratenlimits
-oder wenig Modellspeicher konservativ.
+Agenten gleichzeitig Inferenz ausführen. Höhere Werte steigern Durchsatz,
+aber auch gleichzeitige Anbieteranfragen und lokale Last. Bleibe bei strengen
+Ratenlimits oder wenig Modellspeicher konservativ.
 
 ## Ein Modell hinzufügen oder bearbeiten
 
 Wähle eine Karte oder **+**. Eine Modelldefinition enthält:
 
 - Anbieter-Verbindung;
-- freundlichen Namen und optionale Beschreibung;
+- Anzeigenamen und optionale Beschreibung;
 - exakte Modell-ID des Anbieters;
 - maximale Anzahl Ausgabe-Token;
 - Eingabe- und Ausgabemodalitäten; und
@@ -44,8 +45,8 @@ Wähle eine Karte oder **+**. Eine Modelldefinition enthält:
 />
 
 Verwende exakt die vom Anbieter erwartete ID. Der Anzeigename ist nur für
-Menschen; seine Änderung ändert das ausgeführte Modell nicht. Behaupte Bild-,
-Audio-, Werkzeug- oder Denkfähigkeiten nur, wenn Modell und Endpunkt sie
+Menschen; seine Änderung ändert das ausgeführte Modell nicht. Gib Bild-,
+Audio-, Werkzeug- oder Denkfähigkeiten nur an, wenn Modell und Endpunkt sie
 wirklich anbieten.
 
 ## Ein Inferenzprofil bauen
@@ -79,13 +80,14 @@ Ordne beim Bearbeiten benötigte Fähigkeiten zu:
 
 **Nur Desktop** blendet ein Profil mobil aus, etwa wenn ein Modell nur vom
 Arbeitsrechner erreichbar ist. Gerätebindung gilt für automatische Verarbeitung
-synchronisierter Audios: Binde nur ein Gerät, das benötigte Anbieter meldet.
+synchronisierter Audios: Binde nur ein Gerät, das die benötigten Anbieter
+meldet.
 Ohne gebundenes Gerät werden synchronisierte Audios nicht automatisch über
 dieses Profil transkribiert.
 
-## Ein Modell ohne IDs auswendig zu lernen wählen
+## Ein Modell wählen, ohne IDs auswendig zu lernen
 
-Auswahlen beginnen beim Anbieter und zeigen danach nur kompatible gespeicherte
+Die Auswahl beginnt beim Anbieter und zeigt danach nur kompatible gespeicherte
 Modelle. Ein Profilplatz für Textdenken bietet etwa kein reines Audiomodell an.
 
 <ManualScreenshot
@@ -98,7 +100,7 @@ Modelle. Ein Profilplatz für Textdenken bietet etwa kein reines Audiomodell an.
 
 Eine Kategorie kann unter **Einstellungen → Definitionen → Kategorien** ein
 Standard-Inferenzprofil wählen. Neue Arbeit erbt so eine zusammenhängende
-Routingregel. Entscheide nach Datenschutz und Fähigkeiten, nicht nur Tempo.
+Routingregel. Entscheide nach Datenschutz und Fähigkeiten, nicht nur nach Tempo.
 
 <ManualScreenshot
   caseId="ai/profile-picker"

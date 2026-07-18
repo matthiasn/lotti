@@ -1,22 +1,23 @@
 ---
 title: Use as configurações avançadas com segurança
-description: Controle sinalizadores e registros de recursos, execute ferramentas de manutenção, inspecione métricas de integração e verifique a versão Lotti instalada.
+description: Controle sinalizadores de recursos e registros, execute ferramentas de manutenção, inspecione métricas de integração e verifique a compilação instalada do Lotti.
 ---
 
 # Use configurações avançadas com segurança
 
-Abra **Configurações → Configurações avançadas** para controles de usuário avançado, diagnósticos e
-manutenção. Estas páginas mudam a forma como Lotti funciona ou opera diretamente no local
-dados, portanto, a personalização comum pertence a outro lugar nas Configurações.
+Abra **Configurações → Configurações avançadas** para acessar controles de
+usuário avançado, diagnósticos e manutenção. Estas páginas mudam a forma como o
+Lotti funciona ou operam diretamente nos dados locais, portanto a
+personalização comum fica em outras áreas das Configurações.
 
-Desktop mantém a árvore de configurações ao lado da página selecionada. O celular abre um
-página por vez e fornece um botão Voltar. Os mesmos controles e persistiram
-valores são usados em ambos os layouts.
+No desktop, a árvore de configurações fica ao lado da página selecionada. No
+celular, abre-se uma página por vez, com um botão Voltar. Os mesmos controles e
+valores persistidos são usados em ambos os layouts.
 
 <ManualScreenshot
   caseId="advanced-settings/hub"
   alt="Hub de configurações avançadas Lotti com sinalizadores de configuração, animações, idioma, registro, manutenção, métricas de integração e sobre Lotti"
-  caption="As Configurações Avançadas agrupam os controles operacionais das preferências do dia a dia. Algumas entradas variam de acordo com a plataforma e os recursos habilitados."
+  caption="As Configurações avançadas agrupam os controles operacionais separados das preferências do dia a dia. Algumas entradas variam de acordo com a plataforma e os recursos habilitados."
 />
 
 ## Escolha o idioma do manual
@@ -28,51 +29,54 @@ romeno ou português com base no idioma do seu dispositivo. Selecione **Inglês*
 escolha diferente. A entrada **Manual** no final de Configurações e **Ajuda →
 Manual** no macOS usam essa configuração.
 
-## Capacidades de controle com Config Flags
+## Controle capacidades com Config Flags
 
 <ManualScreenshot
   caseId="advanced-settings/flags"
   alt="Página Lotti Config Flags com opções pesquisáveis para entradas privadas, notificações, gravação de localização, dicas de ferramentas e streaming de IA"
-  caption="A pesquisa corresponde aos nomes e às descrições dos sinalizadores. Cada switch altera imediatamente sua capacidade de tempo de execução armazenado."
+  caption="A pesquisa considera tanto os nomes quanto as descrições dos sinalizadores. Cada switch altera imediatamente a capacidade armazenada correspondente."
 />
 
-**Config Flags** é o painel de controle de capacidade. Inclui controles para:
+**Config Flags** é o painel central de capacidades. Inclui controles para:
 
-- visibilidade de entrada privada, notificações, captura de localização e dicas de ferramentas;
-- Streaming de resposta de IA e reprodução de resumo;
-- comportamento de registro e sincronização de matriz;
-- apresentam páginas como hábitos, painéis, eventos, projetos e novidades;
-- incorporações e pesquisa vetorial; e
-- indicadores operacionais, como atividade de sincronização, ativação de agente pendente e bifurcação
-  cura.
+- visibilidade de entradas privadas, notificações, captura de localização e
+  dicas de ferramentas;
+- streaming de respostas de IA e reprodução de resumos;
+- comportamento de registro e da sincronização Matrix;
+- páginas de recursos, como Hábitos, Painéis, Eventos, Projetos e Novidades;
+- embeddings e pesquisa vetorial; e
+- indicadores operacionais, como atividade de sincronização, despertares de
+  agente pendentes e correção de bifurcações.
 
-Use **Sinalizadores de pesquisa** para restringir a lista por título ou descrição. Selecione uma linha
-ou seu switch para mudar a bandeira. O novo valor persiste imediatamente; lá
-não há ação Salvar separada.
+Use **Sinalizadores de pesquisa** para restringir a lista por título ou
+descrição. Selecione uma linha ou seu switch para alterar o sinalizador. O
+novo valor é salvo imediatamente; não há uma ação separada de Salvar.
 
-Os sinalizadores podem expor comportamento experimental ou de diagnóstico. Mude um deliberadamente,
-em seguida, verifique o fluxo de trabalho afetado antes de alterar outro. O **Mostrar privado
-entradas?** sinalizador controla se o conteúdo confidencial é incluído nas listas e
-seletores; ele não criptografa, exporta, exclui ou altera a privacidade de um
-entrada.
+Os sinalizadores podem expor comportamento experimental ou de diagnóstico.
+Altere um deliberadamente e verifique o fluxo de trabalho afetado antes de
+alterar outro. O sinalizador **Mostrar entradas privadas?** controla se o
+conteúdo sensível é incluído em listas e seletores; ele não criptografa,
+exporta, exclui nem altera a privacidade de uma entrada.
 
 ## Escolha o que Lotti registra
 
 <ManualScreenshot
   caseId="advanced-settings/logging"
   alt="Configurações do Lotti Logging com um switch mestre de registro, domínios operacionais individuais e registro de consulta lenta"
-  caption="O switch mestre controla os controles por domínio. O dispositivo Project Waddle mantém Sincronização, IA e Tarefas habilitadas para diagnósticos focados."
+  caption="O switch mestre condiciona os controles por domínio. O fixture do Project Waddle mantém Sincronização, IA e Tarefas habilitadas para diagnósticos focados."
 />
 
-**Logging** começa com a opção global **Enable Logging**. Quando estiver ligado,
-habilite apenas os domínios necessários para uma investigação, como Sync, AI, Tasks,
-Rótulos, Saúde, Hábitos, Navegação, Notificações ou Sistema Operacional Diário. **Registro lento
-consultas** adiciona diagnósticos de desempenho do banco de dados.
+**Logging** começa com a opção global **Enable Logging**. Quando ela está
+ligada, habilite apenas os domínios necessários para uma investigação, como
+Sincronização, IA, Tarefas, Rótulos, Saúde, Hábitos, Navegação, Notificações ou
+Daily OS. **Registrar consultas lentas** adiciona diagnósticos de desempenho do
+banco de dados.
 
-Desligar o switch mestre desativa os controles de domínio. Os erros ainda são
-escrito para o diário `error-*.log`; essas chaves controlam diagnósticos adicionais
-registro, não o registro de erro mínimo. Desative domínios barulhentos após um
-investigação para que os logs permaneçam focados e o uso do armazenamento permaneça previsível.
+Desligar o switch mestre desativa os controles por domínio. Os erros continuam
+sendo gravados no `error-*.log` diário; esses switches governam o registro de
+diagnóstico adicional, não o registro mínimo de erros. Desative domínios
+ruidosos após uma investigação para que os logs permaneçam focados e o uso de
+armazenamento continue previsível.
 
 ## Execute ações de manutenção deliberadamente
 
@@ -84,36 +88,41 @@ investigação para que os logs permaneçam focados e o uso do armazenamento per
 
 **Manutenção** contém vários tipos diferentes de ação:
 
-- **Mostrar boas-vindas à integração** e **Galeria de animação de integração** estão ao vivo
-  visualizações para desenvolvimento e controle de qualidade.
-- **Redefinir dicas no aplicativo** torna dicas únicas elegíveis para aparecerem novamente.
-- **Redefinir caixa de diálogo de configuração do Gemini** limpa sua dispensa para que o prompt do provedor possa
-  ser testado novamente.
+- **Mostrar boas-vindas à integração** e **Galeria de animação de integração**
+  são pré-visualizações ao vivo para desenvolvimento e controle de qualidade.
+- **Redefinir dicas no aplicativo** faz com que dicas de exibição única possam
+  aparecer novamente.
+- **Redefinir caixa de diálogo de configuração do Gemini** limpa a dispensa
+  dela para que o prompt do provedor possa ser testado novamente.
 - **Excluir banco de dados do editor** remove rascunhos do editor.
-- **Excluir banco de dados de agentes** remove o banco de dados de agentes e sai do Lotti para que o
-  o aplicativo pode ser reiniciado em um armazenamento limpo.
-- **Limpar itens excluídos** limpa permanentemente registros excluídos de forma reversível por meio de um
-  fluxo de confirmação dedicado.
-- **Recriar índice de texto completo** reconstrói dados de pesquisa local sem recriar
-  entradas de diário.
-- **Gerar Embeddings** aparece quando a loja de embeddings está disponível e
-  preenche categorias selecionadas.
-- **Repintar sobreposição de arco-íris** pisca regiões de repintura para diagnóstico da IU. Istoé mantido na memória e retorna para desligado após a reinicialização.
+- **Excluir banco de dados de agentes** remove o banco de dados de agentes e
+  fecha o Lotti para que o aplicativo possa reiniciar com um armazenamento
+  limpo.
+- **Limpar itens excluídos** apaga permanentemente registros com exclusão
+  reversível por meio de um fluxo de confirmação dedicado.
+- **Recriar índice de texto completo** reconstrói os dados de pesquisa local
+  sem recriar entradas de diário.
+- **Gerar Embeddings** aparece quando o armazenamento de embeddings está
+  disponível e preenche retroativamente as categorias selecionadas.
+- **Repintar sobreposição de arco-íris** destaca as regiões repintadas para
+  diagnóstico da interface. A opção é mantida apenas na memória e volta a ficar
+  desligada após reiniciar o aplicativo.
 
-As ações de visualização e redefinição não compartilham o mesmo risco que a exclusão e a eliminação.
-Para ações destrutivas, confirme se o alvo é o armazém local pretendido
-e deixe qualquer operação atual de sincronização ou gravação terminar primeiro.
+As ações de pré-visualização e redefinição não têm o mesmo risco que exclusão e
+limpeza. Para ações destrutivas, confirme se o alvo é o armazenamento local
+pretendido e deixe qualquer operação de sincronização ou gravação em andamento
+terminar primeiro.
 
 ## Inspecione o funil de integração
 
 <ManualScreenshot
   caseId="advanced-settings/onboarding-metrics"
   alt="Página Lotti Onboarding Metrics mostrando tempo de instalação, quatro dias ativos, status de ativação e contagens de eventos sem conteúdo"
-  caption="O dispositivo manual determinístico atingiu seu verdadeiro aha ao longo de quatro dias ativos após conectar um provedor e registrar várias capturas."
+  caption="O fixture determinístico do manual atingiu seu verdadeiro momento aha ao longo de quatro dias ativos após conectar um provedor e registrar várias capturas."
 />
 
-**Métricas de integração** é uma superfície para desenvolvedores e controle de qualidade. Deriva um funil local
-de eventos e shows sem conteúdo:
+**Métricas de integração** é uma área para desenvolvedores e controle de
+qualidade. Ela deriva um funil local a partir de eventos sem conteúdo e mostra:
 
 - o carimbo de data/hora visto pela primeira vez em UTC;
 - total de dias ativos e dias ativos durante os primeiros sete dias;
@@ -121,33 +130,36 @@ de eventos e shows sem conteúdo:
 - se o marco real de ativação foi alcançado; e
 - uma contagem para cada evento de integração.
 
-A página registra nomes de eventos e metadados de baixa cardinalidade, não texto de diário,
-títulos de tarefas, transcrições ou detalhes sensíveis à sardinha do Projeto Waddle.
+A página registra nomes de eventos e metadados de baixa cardinalidade, não
+texto do diário, títulos de tarefas, transcrições ou os detalhes sigilosos
+sobre sardinhas do Project Waddle.
 
-**Redefinir o estado do teste de integração** limpa a cadência do prompt de integração e o local
-métricas de funil após confirmação. Não exclui dados do diário, configuração
-sinalizadores ou histórico real do plano diário do sistema operacional. Um perfil que já planejou um dia
-portanto, permanece inelegível para o caminho exato do primeiro plano do perfil limpo.
+**Redefinir o estado do teste de integração** limpa a cadência dos prompts de
+integração e as métricas locais do funil após confirmação. Não exclui dados do
+diário, sinalizadores de configuração nem o histórico real de planos do Daily
+OS. Um perfil que já planejou um dia permanece, portanto, inelegível para o
+caminho exato de primeiro plano em perfil limpo.
 
-## Verifique os totais locais e de compilação
+## Verifique a compilação e os totais locais
 
 <ManualScreenshot
   caseId="advanced-settings/about"
   alt="Página Lotti Sobre mostrando versão, plataforma, tipo de compilação, 2.604 entradas de diário, 11 entradas sinalizadas e contagens de tarefas"
-  caption="Sobre Lotti identifica a construção em execução e resume os dados locais. O dispositivo do Projeto Waddle contém 2.604 entradas e 65 tarefas em cinco estados."
+  caption="Sobre Lotti identifica a compilação em execução e resume os dados locais. O fixture do Project Waddle contém 2.604 entradas e 65 tarefas em cinco estados."
 />
 
-**Sobre Lotti** é o lugar mais rápido para verificar qual compilação está realmente em execução.
-Ele mostra a versão do aplicativo e o número da compilação, a plataforma e o tipo de compilação. Incluir
-esses valores em um relatório de diagnóstico para que um comportamento possa ser correspondido ao correto
-código e lançamento.
+**Sobre Lotti** é o lugar mais rápido para verificar qual compilação está de
+fato em execução. Ela mostra a versão e o número da compilação do aplicativo,
+a plataforma e o tipo de compilação. Inclua esses valores em um relatório de
+diagnóstico para que um comportamento possa ser associado ao código e à versão
+corretos.
 
-O cartão **Seus dados** resume lançamentos contábeis locais, lançamentos sinalizados e
-contagens de tarefas divididas em abertas, em andamento, em espera, bloqueadas e concluídas. O
-O espaço de trabalho do Project Waddle estabelecido no manual demonstra uma conta não vazia:
-2.604 lançamentos contábeis manuais, 11 entradas sinalizadas e 65 tarefas em vez de espaço reservado
-zeros.
+O cartão **Seus dados** resume as entradas de diário locais, as entradas
+sinalizadas e as contagens de tarefas divididas em Abertas, Em andamento, Em
+espera, Bloqueadas e Concluídas. O espaço de trabalho consolidado do Project
+Waddle do manual demonstra uma conta não vazia: 2.604 entradas de diário, 11
+entradas sinalizadas e 65 tarefas, em vez de zeros de exemplo.
 
-Os efeitos de conclusão têm seu próprio guia: consulte
-**[Personalize as celebrações de conclusão](./completion-celebrations.mdx)** para o
-Página de animações e seu playground ao vivo.
+Os efeitos de conclusão têm um guia próprio: consulte
+**[Personalize as celebrações de conclusão](./completion-celebrations.mdx)**
+para conhecer a página Animações e seu playground ao vivo.

@@ -9,7 +9,7 @@ Sarcinile grupează un rezultat cu contextul și pașii necesari pentru a-l fina
 
 <ManualScreenshot
   caseId="tasks/workspace"
-  alt="Spațiul de lucru al sarcinilor din producție, cu rânduri de sarcini reale și miniaturi de copertă din datele demonstrative Interplanetary Penguin Logistics"
+  alt="Spațiul de lucru al sarcinilor din producție, cu rânduri de sarcini reale și miniaturi de copertă din datele demonstrative Intergalactic Penguin Logistics"
 />
 
 Pe desktop, lista sarcinilor rămâne vizibilă lângă sarcina selectată, astfel încât să puteți parcurge munca fără a pierde contextul. Pe mobil, selectarea unei sarcini deschide detaliul ei pe tot ecranul. Coperta urmează sarcina oriunde apare, inclusiv în lista de sarcini și în elementele legate din agenda Daily OS.
@@ -27,7 +27,7 @@ Aceeași sarcină poate conține descriere, categorie, etichete, termen, înregi
 
 O sarcină poate avea un singur agent. Atribuirea îi oferă un asistent AI persistent, cu propria configurare de inferență, raport, stare de activare și istoric al propunerilor. Agentul citește sarcina și contextul legat, distilează situația curentă într-un raport scurt și poate afișa modificări propuse ale sarcinii sau listei de verificare, pe care dvs. le confirmați sau le respingeți.
 
-Agentul atribuit apare sub listele de verificare și sarcinile legate. Cardul pliat păstrează vizibile cel mai recent rezumat, controlul de actualizare automată, acțiunea **Activați agentul** și ruta modelului activ, fără să transforme pagina sarcinii într-o consolă AI.
+Agentul atribuit apare sub listele de verificare și sarcinile legate. Cardul restrâns păstrează vizibile cel mai recent rezumat, controlul de actualizare automată, acțiunea **Activați agentul** și ruta modelului activ, fără să transforme pagina sarcinii într-o consolă AI.
 
 <ManualScreenshot
   caseId="tasks/agent-card"
@@ -45,7 +45,7 @@ Alegeți **Citiți mai mult** pentru a extinde raportul complet în același loc
 
 ### Revizuiți modificările propuse
 
-O activare finalizată poate actualiza raportul și poate adăuga propuneri. Actualizările automate decid *când se activează agentul*; nu îi dau agentului permisiunea de a edita sarcina. Propunerile rămân în așteptare până acționați asupra lor.
+O activare finalizată poate actualiza raportul și poate adăuga propuneri. Actualizările automate decid *când se activează agentul*; nu îi dau agentului permisiunea de a edita sarcina. Propunerile rămân în așteptare până când luați o decizie în privința lor.
 
 <ManualScreenshot
   caseId="tasks/agent-suggestions"
@@ -57,7 +57,7 @@ Folosiți crucea pentru a **Respinge** o propunere sau bifa pentru a o **Confirm
 
 Deschideți **Istoric** pentru a revedea rezultate recente. Acesta distinge modificările confirmate de cele respinse. O intrare respinsă poate reprezenta decizia dvs. sau o propunere retrasă de agent după ce un context mai nou a făcut-o depășită.
 
-O acțiune manuală **Activați agentul** poate produce același tip de raport și propuneri ca o activare automată. Dezactivarea actualizărilor automate oprește activările viitoare din fundal; nu aplică, nu respinge și nu rezolvă în alt fel propunerile care vă așteaptă deja decizia.
+O acțiune manuală **Activați agentul** poate produce același tip de raport și propuneri ca o activare automată. Dezactivarea actualizărilor automate oprește activările viitoare din fundal; nu aplică, nu respinge și nu rezolvă în alt fel propunerile care așteaptă deja decizia dvs.
 
 ### Alegeți actualizări automate sau manuale
 
@@ -66,12 +66,12 @@ Agenții noi ai sarcinilor pornesc cu **Actualizări automate dezactivate**. Sim
 <ManualScreenshot
   caseId="tasks/agent-card-manual"
   alt="Cardul agentului Habitat Watcher cu actualizările automate oprite, o notificare privind raportul depășit și acțiunea manuală Activați agentul"
-  caption="Modul manual observă schimbările și raportează învechirea fără a porni inferența."
+  caption="Modul manual observă schimbările și semnalează raportul depășit fără a porni inferența."
 />
 
-Când **Actualizări automate** sunt active, Lotti grupează schimbările potrivite ale sarcinii timp de aproximativ două minute înainte de a programa reîmprospătarea. Această coalescență evită o activare pentru fiecare editare mică. **Activați agentul** rămâne disponibil pentru o reîmprospătare imediată solicitată de dvs.
+Când **Actualizări automate** sunt active, Lotti grupează schimbările potrivite ale sarcinii timp de aproximativ două minute înainte de a programa reîmprospătarea. Această grupare evită câte o activare pentru fiecare editare mică. **Activați agentul** rămâne disponibil pentru o reîmprospătare imediată solicitată de dvs.
 
-Dezactivarea actualizărilor automate șterge numărătoarea inversă și reîmprospătările automate din coadă, dar nu anulează o activare solicitată explicit. Activarea lor din nou se aplică schimbărilor viitoare; nu redă schimbările sosite cât timp automatizarea a fost oprită.
+Dezactivarea actualizărilor automate șterge numărătoarea inversă și reîmprospătările automate din coadă, dar nu anulează o activare solicitată explicit. Activarea lor din nou se aplică schimbărilor viitoare; nu reprocesează schimbările sosite cât timp automatizarea a fost oprită.
 
 ## Prioritate
 
@@ -116,7 +116,7 @@ Consultați [Adăugați înregistrări și context](../plan-and-capture/entries.
 
 Dacă este configurată o abilitate de generare a imaginilor, deschideți meniul de generare al sarcinii și alegeți acțiunea pentru copertă. Lotti arată mai întâi imaginile atașate deja sarcinii, împreună cu imaginile de copertă disponibile din sarcinile legate. Selectați până la cinci referințe care să ghideze rezultatul sau continuați fără referință.
 
-Imaginea generată este creată în Lotti pe baza contextului sarcinii și a referințelor selectate. Este un ajutor vizual, nu un câmp obligatoriu: folosiți-o când o imagine distinctă face munca mai ușor sau mai plăcut de recunoscut. Ruta curentă de generare folosește furnizorul configurat, așadar tratați promptul și referințele selectate drept date pe care decideți intenționat să le trimiteți acelui furnizor; o rută locală de raționament sau transcriere nu face automat locală generarea copertei.
+Imaginea generată este creată în Lotti pe baza contextului sarcinii și a referințelor selectate. Este un ajutor vizual, nu un câmp obligatoriu: folosiți-o când o imagine distinctă face munca mai ușor sau mai plăcut de recunoscut. Ruta curentă de generare folosește furnizorul configurat, așadar tratați promptul și referințele selectate drept date pe care decideți intenționat să le trimiteți acelui furnizor; o rută locală de raționament sau transcriere nu înseamnă automat că generarea copertei rulează local.
 
 <ManualScreenshot
   caseId="tasks/cover-references"

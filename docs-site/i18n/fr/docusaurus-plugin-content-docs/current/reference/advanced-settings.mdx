@@ -5,10 +5,10 @@ description: Contrôle les flags et la journalisation, exécute les outils de ma
 
 # Utiliser les paramètres avancés avec précaution
 
-Ouvre **Réglages → Paramètres avancés** pour les contrôles avancés, les
+Ouvre **Paramètres → Paramètres avancés** pour les contrôles avancés, les
 diagnostics et la maintenance. Ces pages modifient le fonctionnement de Lotti
 ou agissent directement sur des données locales ; la personnalisation ordinaire
-a donc sa place ailleurs dans les Réglages.
+a donc sa place ailleurs dans les Paramètres.
 
 Sur ordinateur, l’arborescence des réglages reste à côté de la page
 sélectionnée. Sur mobile, une page s’ouvre à la fois avec un bouton retour. Les
@@ -27,7 +27,7 @@ système** est le réglage par défaut et ouvre le manuel anglais, allemand,
 français, tchèque, roumain ou portugais selon la langue de ton appareil.
 Choisis **Anglais**, **Allemand**, **Français**, **Tchèque**, **Roumain** ou
 **Portugais** pour conserver un autre choix. L’entrée **Manuel** en bas des
-Réglages et **Aide → Manuel** sur macOS utilisent toutes deux ce réglage.
+Paramètres et **Aide → Manuel** sur macOS utilisent toutes deux ce réglage.
 
 ## Contrôler les fonctionnalités avec les flags
 
@@ -55,8 +55,8 @@ La nouvelle valeur est enregistrée immédiatement ; il n’y a pas d’action
 Enregistrer séparée.
 
 Les flags peuvent exposer des comportements expérimentaux ou de
-diagnostic. Modifie-en un délibérément, vérifie le flux concerné, puis seulement
-ensuite un autre. **Afficher les entrées privées ?** contrôle l’inclusion du
+diagnostic. Modifie-en un délibérément, vérifie le flux concerné, puis passe
+seulement ensuite au suivant. **Afficher les entrées privées ?** contrôle l’inclusion du
 contenu sensible dans les listes et sélecteurs ; il ne chiffre, n’exporte, ne
 supprime ni ne modifie le niveau de confidentialité d’une entrée.
 
@@ -64,7 +64,7 @@ supprime ni ne modifie le niveau de confidentialité d’une entrée.
 
 <ManualScreenshot
   caseId="advanced-settings/logging"
-  alt="Réglages de journalisation Lotti avec un interrupteur maître, des domaines opérationnels individuels et la journalisation des requêtes lentes"
+  alt="Paramètres de journalisation Lotti avec un interrupteur maître, des domaines opérationnels individuels et la journalisation des requêtes lentes"
   caption="L’interrupteur maître contrôle les domaines individuels. Le jeu de données Project Waddle laisse la synchronisation, l’IA et les tâches activées pour des diagnostics ciblés."
 />
 
@@ -135,13 +135,14 @@ d’événements sans contenu et indiquent :
 
 La page enregistre des noms d’événements et des métadonnées à faible
 cardinalité, pas le texte du journal, les titres des tâches, les transcriptions
-ni les détails sensibles aux sardines de Project Waddle.
+ni les détails sensibles sur les sardines de Project Waddle.
 
 **Réinitialiser l’état de test d’intégration** efface la cadence des invites
 d’intégration et les métriques locales du parcours après confirmation. Cela ne
 supprime pas les données du journal, les flags ou
 l’historique réel des plans Daily OS. Un profil ayant déjà planifié une journée
-reste donc inéligible au chemin exact du premier plan sur un profil propre.
+ne peut donc plus emprunter le chemin exact du premier plan réservé à un profil
+vierge.
 
 ## Vérifier la version et les totaux locaux
 

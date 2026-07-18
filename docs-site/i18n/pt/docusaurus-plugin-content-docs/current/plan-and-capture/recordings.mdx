@@ -5,65 +5,70 @@ description: Capture uma nota de voz e decida qual processamento automatizado de
 
 # Gravar áudio
 
-O áudio é útil quando falar é mais rápido do que digitar ou quando o tom e os detalhes
-importa. Uma gravação pode ser independente ou estar dentro de uma tarefa.
+O áudio é útil quando falar é mais rápido do que digitar ou quando o tom e os
+detalhes importam. Uma gravação pode ser avulsa ou estar dentro de uma tarefa.
 
 ## Capture uma gravação
 
-1. Abra o diário ou a tarefa que deverá possuir a gravação.
+1. Abra o diário ou a tarefa que será dona da gravação.
 2. Use a ação **+** e escolha **Gravação de áudio**.
 3. Revise as opções de processamento disponíveis.
 4. Comece a gravar, fale claramente e pare quando terminar.
 
 <ManualScreenshot
   caseId="recordings/active"
-  alt="Folha de gravação de áudio ativa mostrando o visualizador ao vivo, tempo decorrido, pausar, descartar, parar e controles de reconhecimento de fala"
+  alt="Folha de gravação de áudio ativa mostrando o visualizador ao vivo, o tempo decorrido e os controles de pausar, descartar, parar e reconhecimento de fala"
 />
 
-Durante a captura, a planilha mantém o tempo decorrido e o visualizador de entrada ao vivo em
-ver. Você pode pausar e retomar sem encerrar a gravação, descartar a tomada,
-ou escolha **Parar** para salvá-lo. Quando a transcrição com reconhecimento de tarefa está disponível, o
-A opção **Reconhecimento de fala** controla se o processamento deve começar após
-a gravação é salva.
+Durante a captura, a folha mantém à vista o tempo decorrido e o visualizador
+de entrada ao vivo. Você pode pausar e retomar sem encerrar a gravação,
+descartar a tomada ou escolher **Parar** para salvá-la. Quando a transcrição
+com reconhecimento de tarefa está disponível, a opção **Reconhecimento de
+fala** controla se o processamento deve começar depois que a gravação for
+salva.
 
-Quando um perfil de inferência e uma habilidade de transcrição são configurados, Lotti pode
-transcrever a gravação após a captura. As gravações de tarefas também podem oferecer
-processamento com reconhecimento de tarefas, como lista de verificação ou atualizações de resumo.
+Quando um perfil de inferência e uma habilidade de transcrição estão
+configurados, o Lotti pode transcrever a gravação após a captura. Gravações em
+tarefas também podem oferecer processamento com reconhecimento de tarefa, como
+atualizações de lista de verificação ou de resumo.
 
 ## Revise as transcrições salvas
 
-Abra uma entrada de áudio, use seu menu ***…** e escolha **Reconhecimento de fala**.
-A folha de revisão mantém todas as transcrições salvas com a gravação, em vez de
-substituindo um resultado anterior. Cada linha mostra quando o processamento foi executado, quanto tempo demorou
-pegou, o idioma detectado e o provedor e modelo que o produziu.
+Abra uma entrada de áudio, use o menu **…** e escolha **Reconhecimento de
+fala**. A folha de revisão mantém todas as transcrições salvas junto com a
+gravação, em vez de substituir um resultado anterior. Cada linha mostra quando
+o processamento foi executado, quanto tempo levou, o idioma detectado e o
+provedor e o modelo que o produziram.
 
 <ManualScreenshot
   caseId="recordings/transcripts"
-  alt="Folha de reconhecimento de fala sobre uma entrada de áudio do Projeto Waddle com inglês selecionado e dois resultados de transcrição salvos de Mistral e Whisper"
+  alt="Folha de reconhecimento de fala sobre uma entrada de áudio do Project Waddle com inglês selecionado e dois resultados de transcrição salvos do Mistral e do Whisper"
   caption="A gravação de origem permanece visível atrás da folha, enquanto cada resultado de reconhecimento mantém a sua própria proveniência."
 />
 
 O seletor de idioma oferece atualmente **Auto**, **Inglês** e **Deutsch**.
-Use **Auto** quando o provedor precisar detectar o idioma ou selecionar um idioma
-antes de executar o reconhecimento quando você já sabe disso. A escolha é armazenada em
-a entrada de áudio.
+Use **Auto** quando o provedor deve detectar o idioma, ou selecione um idioma
+antes de executar o reconhecimento quando você já o conhece. A escolha fica
+armazenada na entrada de áudio.
 
-Selecione a divisa dupla em um resultado para revelar o texto completo e selecionável.
-Expandir uma linha também revela sua ação de exclusão. Excluir uma transcrição remove
-esse resultado de reconhecimento, não a gravação de origem ou as outras transcrições.
+Selecione o chevron duplo em um resultado para revelar o texto completo e
+selecionável. Expandir uma linha também revela sua ação de exclusão. Excluir
+uma transcrição remove esse resultado de reconhecimento, não a gravação de
+origem nem as outras transcrições.
 
 <ManualScreenshot
   caseId="recordings/transcript-expanded"
-  alt="Transcrição expandida do Projeto Waddle descrevendo a carga de sardinha Europa, 37 pinguins imperadores e o alimentador de peixes com gravidade zero"
-  caption="Revise o texto completo e a origem do fornecedor antes de usar o texto gerado como contexto de tarefa."
+  alt="Transcrição expandida do Project Waddle descrevendo a carga de sardinhas de Europa, 37 pinguins-imperadores e o alimentador de peixes em gravidade zero"
+  caption="Revise o texto completo e a proveniência do provedor antes de usar o texto gerado como contexto da tarefa."
 />
 
 ## Escolha a automação deliberadamente
 
-As opções de processamento são solicitações para habilidades de IA configuradas. O provedor selecionado
-pode ser local ou remoto, portanto verifique o perfil de inferência ativo antes de usar
-material sensível. Revise o texto gerado e as alterações propostas nas tarefas, em vez de
-tratando-os como fonte de verdade.
+As opções de processamento são solicitações a habilidades de IA configuradas.
+O provedor selecionado pode ser local ou remoto, portanto verifique o perfil
+de inferência ativo antes de usar material sensível. Revise o texto gerado e
+as alterações propostas nas tarefas, em vez de tratá-los como fonte da
+verdade.
 
-Consulte [Configuração do provedor de IA](../ai-and-automation/provider-setup.mdx) para controlar onde
-inferência é executada.
+Consulte [Configuração do provedor de IA](../ai-and-automation/provider-setup.mdx)
+para controlar onde a inferência é executada.

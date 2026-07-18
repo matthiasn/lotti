@@ -5,19 +5,20 @@ description: Conecte um provedor de IA, escolha o estilo de gravação e as áre
 
 # Configure Lotti com integração
 
-A integração conecta as peças mínimas necessárias para a tarefa assistida por IA de Lotti
-fluxo de trabalho: um provedor, um estilo de gravação, pelo menos uma categoria e um primeiro
-verdadeira tarefa. É uma configuração guiada, não um ambiente de demonstração separado – provedores,
-categorias e tarefas criadas aqui permanecem no aplicativo normal.
+A integração conecta as peças mínimas necessárias para o fluxo de trabalho de
+tarefas assistido por IA de Lotti: um provedor, um estilo de gravação, pelo
+menos uma categoria e uma primeira tarefa real. É uma configuração guiada, não
+um ambiente de demonstração separado – provedores, categorias e tarefas
+criados aqui permanecem no aplicativo normal.
 
-Abra **Configurações → Integração** sempre que quiser iniciar ou reproduzir o fluxo.
-A página também mostra se este perfil já criou seu primeiro
-Tarefa estruturada por IA.
+Abra **Configurações → Integração** sempre que quiser iniciar ou repetir o
+fluxo. A página também mostra se este perfil já criou sua primeira tarefa
+estruturada por IA.
 
 <ManualScreenshot
   caseId="onboarding/settings"
-  alt="Configurações do Lotti Onboarding mostrando um status ativado e a ação de integração do Replay"
-  caption="Este perfil do Projeto Waddle já criou sua primeira tarefa de IA. A integração do replay permanece disponível após a ativação."
+  alt="Configurações de integração do Lotti mostrando o status ativado e a ação de repetir a integração"
+  caption="Este perfil do Project Waddle já criou sua primeira tarefa de IA. Repetir a integração continua disponível após a ativação."
 />
 
 ## Comece com a promessa de boas-vindas
@@ -25,16 +26,18 @@ Tarefa estruturada por IA.
 <ManualScreenshot
   caseId="onboarding/welcome"
   alt="Painel de boas-vindas de integração da Lotti convidando o usuário a conectar um cérebro de IA e transformar a fala em uma tarefa estruturada"
-  caption="O painel de boas-vindas é aberto no aplicativo atual. Escolha seu cérebro de IA para continuar ou saia do fluxo sem alterar a configuração."
+  caption="O painel de boas-vindas abre sobre o aplicativo atual. Escolha seu cérebro de IA para continuar ou saia do fluxo sem alterar a configuração."
 />
 
-Escolha **Escolha seu cérebro de IA** para começar. **Olhe ao redor primeiro**, a luz esmaecida
-área fora do painel e a ação de retorno do sistema saem da integração sem
-conectando qualquer coisa. Você pode retornar das Configurações mais tarde.
+Selecione **Escolha seu cérebro de IA** para começar. Escolher **Olhe ao redor
+primeiro**, tocar na área escurecida fora do painel ou usar a ação de voltar
+do sistema sai da integração sem conectar nada. Você pode voltar mais tarde
+pelas Configurações.
 
-Lotti também pode oferecer boas-vindas automaticamente a um perfil elegível. O
-o prompt automático tem uma cadência de novas tentativas limitada; a entrada Configurações não, então
-você sempre mantém um caminho de volta.
+Lotti também pode oferecer essas boas-vindas automaticamente a um perfil
+elegível. O prompt automático tem uma cadência limitada de novas tentativas; a
+entrada nas Configurações não tem, então você sempre mantém um caminho de
+volta.
 
 ## Escolha onde a estruturação de tarefas é executada
 
@@ -46,10 +49,10 @@ você sempre mantém um caminho de volta.
 
 A página do provedor identifica as opções hospedadas e locais disponíveis:
 
-- **Melious.ai** é o padrão recomendado hospedado na UE com modelo dinâmico
-  roteamento.
-- **Mistral**, **Gemini** e **Qwen** expõem suas hospedagens correspondentes
-  regiões.
+- **Melious.ai** é o padrão recomendado, hospedado na UE, com roteamento
+  dinâmico de modelos.
+- **Mistral**, **Gemini** e **Qwen** expõem suas respectivas regiões de
+  hospedagem.
 - **OpenAI** está disponível nas opções expandidas.
 - **Ollama** se conecta a um endpoint local compatível e não requer um
   chave de API hospedada.
@@ -60,11 +63,11 @@ A página do provedor identifica as opções hospedadas e locais disponíveis:
   caption="Lotti verifica o provedor escolhido antes de ativar o Connect. Os provedores hospedados usam a mesma etapa com um campo de chave de API."
 />
 
-Para um provedor hospedado, cole a chave de API do provedor. Lotti verifica o
-conexão antes de ativar **Conectar**. Ollama verifica o local configurado
-modelos acessíveis de endpoint e relatórios. Uma conexão bem-sucedida persiste
-provedor e semeia os modelos e perfil de inferência usados pelos demais
-passos.
+Para um provedor hospedado, cole a chave de API do provedor. Lotti verifica a
+conexão antes de ativar **Conectar**. O Ollama verifica o endpoint local
+configurado e informa os modelos acessíveis. Uma conexão bem-sucedida salva o
+provedor e semeia os modelos e o perfil de inferência usados pelas etapas
+seguintes.
 
 <ManualScreenshot
   caseId="onboarding/success"
@@ -72,10 +75,11 @@ passos.
   caption="A confirmação da conexão é intencionalmente calma; o maior retorno é reservado para a primeira tarefa real."
 />
 
-O texto da tarefa capturado é enviado ao provedor atribuído à categoria selecionada
-para estruturação. Escolha um provedor cujo modelo de implantação e tratamento de dados
-se adapta ao material que você planeja capturar. Um endpoint local acessível do Ollama mantém
-essa solicitação de estruturação na máquina que a executa.
+O texto de tarefa capturado é enviado para estruturação ao provedor atribuído
+à categoria selecionada. Escolha um provedor cujo modelo de implantação e de
+tratamento de dados combine com o material que você planeja capturar. Um
+endpoint local acessível do Ollama mantém essa solicitação de estruturação na
+máquina que a executa.
 
 ## Escolha a sensação de gravação e as áreas de trabalho
 
@@ -85,9 +89,9 @@ essa solicitação de estruturação na máquina que a executa.
   caption="Escolha o visual de gravação que pareça mais claro. Ambas as opções usam o mesmo pipeline de captura."
 />
 
-Após a conexão ser bem-sucedida, escolha o estilo de gravação usado pela primeira tarefa
-captura e posteriormente superfícies de captura de voz. Você pode alterá-lo novamente em
-**Configurações → Estilo de gravação**.
+Depois que a conexão for bem-sucedida, escolha o estilo de gravação usado pela
+captura da primeira tarefa e, mais tarde, pelas superfícies de captura de voz.
+Você pode alterá-lo novamente em **Configurações → Estilo de gravação**.
 
 <ManualScreenshot
   caseId="onboarding/categories"
@@ -95,50 +99,54 @@ captura e posteriormente superfícies de captura de voz. Você pode alterá-lo n
   caption="Escolha uma ou mais áreas para o novo provedor. Texto dimensionado e layouts estreitos usam automaticamente uma opção de largura total por linha."
 />
 
-A seguir, selecione uma ou mais áreas de trabalho. As predefinições cobrem categorias comuns, como
-Trabalho, Fitness, Família e Amigos; **Adicione o seu próprio** cria uma categoria com um
-nome que corresponda ao seu espaço de trabalho. A integração reutiliza uma categoria existente com
-o mesmo nome em vez de criar uma duplicata, restaura-o quando necessário e
-conecta-o ao perfil de inferência recém-propagado.
+A seguir, selecione uma ou mais áreas de trabalho. As predefinições cobrem
+categorias comuns, como Trabalho, Fitness, Família e Amigos; **Adicione o seu
+próprio** cria uma categoria com um nome que corresponda ao seu espaço de
+trabalho. A integração reutiliza uma categoria existente com o mesmo nome em
+vez de criar uma duplicata, restaura-a quando necessário e a conecta ao perfil
+de inferência recém-semeado.
 
-O jogo manual cria dois destinos reais—**Penguin Operations** e
-**Controle da missão** — portanto, a próxima etapa demonstra a mesma escolha de categoria que
-conta de trabalho vê.
+O cenário do manual cria dois destinos reais – **Penguin Operations** e
+**Controle da missão** –, então a próxima etapa demonstra a mesma escolha de
+categoria que uma conta em uso real vê.
 
 ## Capture a primeira tarefa real
 
 <ManualScreenshot
   caseId="onboarding/first-task"
-  alt="Painel de integração de primeira tarefa Lotti com captura de voz, operações Penguin e destinos de controle de missão, sugestões e tipo Rather"
-  caption="Escolha onde a tarefa deve chegar e fale naturalmente, use uma sugestão inicial ou selecione Em vez de digitar. Operações Penguin são selecionadas aqui."
+  alt="Painel de integração da primeira tarefa do Lotti com captura de voz, os destinos Penguin Operations e Controle da missão, sugestões e a opção Prefere digitar"
+  caption="Escolha onde a tarefa deve chegar e então fale naturalmente, use uma sugestão inicial ou selecione Prefere digitar. Penguin Operations está selecionada aqui."
 />
 
-O painel da primeira tarefa usa o pipeline de captura normal de Lotti. Escolha o alvo
-categoria e use um dos três caminhos:
+O painel da primeira tarefa usa o pipeline de captura normal de Lotti. Escolha
+a categoria de destino e use um dos três caminhos:
 
-1. Selecione a gravação visual e fale a tarefa em uma frase normal.
+1. Selecione o visual de gravação e fale a tarefa em uma frase normal.
 2. Escolha uma sugestão inicial para tentar o caminho de estruturação imediatamente.
 3. Escolha **Prefere digitar?** e insira o pensamento sem usar o microfone.
 
-Lotti ecoa as palavras capturadas enquanto as estrutura. O resultado é um verdadeiro
-tarefa na categoria escolhida, e não dados de amostra apenas de integração. Ao estruturar
-produz sugestões de checklist, elas chegam à tarefa como propostas para que você
-pode confirmá-los em vez de alterar silenciosamente a tarefa.
+Lotti ecoa as palavras capturadas enquanto as estrutura. O resultado é uma
+tarefa real na categoria escolhida, e não dados de exemplo restritos à
+integração. Quando a estruturação produz sugestões de lista de verificação,
+elas chegam à tarefa como propostas para você confirmar, em vez de alterar a
+tarefa silenciosamente.
 
 <ManualScreenshot
   caseId="onboarding/task-created"
   alt="Painel de sucesso de integração da Lotti mostrando a tarefa criada Inspecionar o revezamento da sardinha Europa"
-  caption="O pensamento digitado do Projeto Waddle torna-se “Inspecione o revezamento da sardinha Europa”. A tarefa permanece no painel até que você a escolha."
+  caption="O pensamento digitado do Project Waddle torna-se “Inspecionar o revezamento da sardinha Europa”. A tarefa permanece no painel até que você a escolha."
 />
 
-Escolha o cartão de tarefas criado para fechar a integração e abrir sua página de tarefas normal.
-A partir daí você pode revisar propostas de listas de verificação, adicionar capas ou evidências, definir um
-data de vencimento e prioridade, e trazer a tarefa para o Daily OS.
+Escolha o cartão da tarefa criada para fechar a integração e abrir a página
+normal da tarefa. A partir daí, você pode revisar propostas de lista de
+verificação, adicionar capa ou evidências, definir data de vencimento e
+prioridade e trazer a tarefa para o Daily OS.
 
-Se você fechar o fluxo após conectar um provedor, Lotti mantém esse provedor
-configuração e trata as boas-vindas como concluídas. A repetição da integração mais tarde permanece
-seguro: é uma ação explícita de configurações, em vez de outro prompt automático.
+Se você fechar o fluxo depois de conectar um provedor, Lotti mantém a
+configuração desse provedor e trata as boas-vindas como concluídas. Repetir a
+integração mais tarde continua seguro: é uma ação explícita nas Configurações,
+e não outro prompt automático.
 
-Continue com [crie sua primeira tarefa](./first-task.mdx),
-[gerenciar categorias](../organize-and-reflect/categories.mdx), e
+Continue com [criar sua primeira tarefa](./first-task.mdx),
+[gerenciar categorias](../organize-and-reflect/categories.mdx) e
 [configurar provedores](../ai-and-automation/provider-setup.mdx).

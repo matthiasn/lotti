@@ -1,18 +1,18 @@
 ---
 title: Revise o uso e o impacto da IA
-description: Compare solicitações de IA por período, categoria e modelo, incluindo custo estimado, energia, emissões e uso de token.
+description: Compare solicitações de IA por período, categoria e modelo, incluindo custo estimado, energia, emissões e uso de tokens.
 ---
 
 # Revise o uso e o impacto da IA
 
-Abra **Configurações → Configurações de IA → Uso e impacto** para entender como configurado
-modelos de nuvem estão sendo usados. A mesma análise também pode ser acessada pela IA
-rota do painel de impacto.
+Abra **Configurações → Configurações de IA → Uso e impacto** para entender
+como os modelos de nuvem configurados estão sendo usados. A mesma análise
+também pode ser acessada pela rota do painel de impacto de IA.
 
 <ManualScreenshot
   caseId="ai/usage"
-  alt="Painel Lotti AI Impact para julho de 2026 mostrando custo, energia, equivalente de dióxido de carbono, tokens, solicitações e barras de categoria"
-  caption="O mês de exemplo do Projeto Waddle separa o Controle da Missão e as Operações Penguin, mantendo visível a pegada total da solicitação."
+  alt="Painel de impacto de IA do Lotti para julho de 2026 mostrando custo, energia, equivalente de dióxido de carbono, tokens, solicitações e barras de categoria"
+  caption="O mês de exemplo do Project Waddle separa Mission Control e Penguin Operations, mantendo visível a pegada total de solicitações."
 />
 
 ## Leia os cartões de resumo
@@ -25,25 +25,28 @@ Os cartões superiores resumem o período selecionado:
 - **Tokens** conta tokens de modelo processados.
 - **Solicitações** conta chamadas de inferência.
 
-O indicador de comparação utiliza o período equivalente anterior quando se
-disponível. Um aumento percentual é contexto, não automaticamente um problema: um
-a semana de revisão de lançamento não deve ser comparada cegamente com uma semana de colônia ociosa.
+O indicador de comparação utiliza o período equivalente anterior quando ele
+está disponível. Um aumento percentual é contexto, não automaticamente um
+problema: uma semana de revisão de lançamento não deve ser comparada às cegas
+com uma semana ociosa na colônia.
 
-Energia, CO₂e e custo são medidos apenas para modelos de nuvem. A inferência local pode
-consumir energia substancial do dispositivo sem aparecer nas estimativas da nuvem,
-portanto, esta página não é um medidor de energia completo para todo o sistema.
+Energia, CO₂e e custo são medidos apenas para modelos de nuvem. A inferência
+local pode consumir bastante energia do dispositivo sem aparecer nessas
+estimativas de nuvem; portanto, esta página não é um medidor de energia
+completo para o sistema inteiro.
 
 ## Alterar a análise
 
-Use o controle de período e os botões de seta para avançar no tempo ou pule para
-**Este mês** e **Este ano**. Em seguida, escolha **Ambos**, **Por categoria** ou **Por
-modelo**. Dentro de um gráfico, alterne entre valores por dia, totais acumulados e
-compartilhe quando disponível.
+Use o controle de período e os botões de seta para percorrer o tempo ou pule
+para **Este mês** e **Este ano**. Em seguida, escolha **Ambos**,
+**Por categoria** ou **Por modelo**. Dentro de um gráfico, alterne entre
+valores por dia, totais acumulados e participação, quando disponível.
 
-As visualizações de categoria respondem “qual área de trabalho impulsionou o uso?” Resposta das visualizações do modelo
-“qual modelo configurado impulsionou o uso?” Use ambos antes de alterar um perfil: a
-modelo de alto custo pode ser justificado para uma categoria especializada, mas um desperdício como
-padrão geral.
+As visualizações por categoria respondem “qual área de trabalho impulsionou o
+uso?”; as visualizações por modelo respondem “qual modelo configurado
+impulsionou o uso?”. Use ambas antes de alterar um perfil: um modelo de alto
+custo pode ser justificado para uma categoria especializada, mas um
+desperdício como padrão geral.
 
 ## Agir com base em um resultado surpreendente
 
@@ -53,7 +56,8 @@ Se o uso aumentar inesperadamente:
 2. comparar categorias e modelos;
 3. revisar a automação e a simultaneidade dos agentes;
 4. inspecionar o perfil de inferência atribuído à categoria afetada; e
-5. verificar o faturamento do fornecedor antes de tratar a estimativa de Lotti como uma fatura.
+5. verificar o faturamento no provedor antes de tratar a estimativa do Lotti
+   como uma fatura.
 
 Para alterar a rota responsável pelas chamadas futuras, volte para
 [Modelos e perfis de inferência](./models-and-profiles.mdx).

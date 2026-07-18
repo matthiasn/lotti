@@ -80,8 +80,8 @@ group. Give it a name that distinguishes the physical machine, such as
 
 The page also lists capabilities the device can provide, such as local audio
 transcription or local language-model inference. Known devices show what the
-other nodes most recently advertised. Capability availability is descriptive;
-the relevant AI profile must still be configured to use it.
+other nodes most recently advertised. The listed capabilities are descriptive;
+the relevant AI profile must still be configured to use them.
 
 ## Understand catch-up and backfill
 
@@ -121,8 +121,8 @@ useful when data looks stale but the account still reports as connected.
 The sent-message card groups Matrix event types. **Top KPIs** summarizes
 processed messages, failures, and scheduled retries, while the entity totals
 show which Lotti payload families contributed to that work. A rising processed
-count with stable failures is healthy. Repeated failures or retries that never
-clear call for checking the outbox and the connectivity of the other device.
+count with stable failures is healthy. If failures repeat or retries never
+clear, check the outbox and the other device's connectivity.
 
 ## Inspect the Outbox
 

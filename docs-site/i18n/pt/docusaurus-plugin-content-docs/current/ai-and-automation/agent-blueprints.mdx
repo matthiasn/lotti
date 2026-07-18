@@ -1,6 +1,6 @@
 ---
 title: Projete modelos e almas de agentes
-description: Defina as responsabilidades reutilizáveis do agente, separe a personalidade das instruções e melhore ambas por meio de revisões individuais versionadas.
+description: Defina responsabilidades reutilizáveis de agentes, separe a personalidade das instruções e melhore ambas por meio de revisões 1 a 1 versionadas.
 ---
 
 # Crie modelos e almas de agentes
@@ -14,13 +14,14 @@ instruções entre eles.
 
 ## Revise o catálogo de modelos
 
-Abra **Configurações → Agentes → Modelos de agente**. O catálogo mostra o modelo
-tipo, identidade do modelo, versão ativa e se uma revisão precisa de atenção.
+Abra **Configurações → Agentes → Modelos de agente**. O catálogo mostra o tipo
+do modelo, a identidade do modelo, a versão ativa e se alguma revisão precisa
+de atenção.
 
 <ManualScreenshot
   caseId="agents/templates"
-  alt="Modelos de agente Lotti para segurança de habitat orbital, planejamento do dia do Projeto Waddle, monitoramento do fornecimento de sardinha e treinamento em diplomacia de peixes"
-  caption="Cada modelo do Projeto Waddle tem uma responsabilidade restrita e uma versão visível, em vez de um agente multifuncional com um prompt irrevisável."
+  alt="Modelos de agente do Lotti para segurança do habitat orbital, planejamento do dia do Project Waddle, monitoramento do suprimento de sardinhas e coaching em diplomacia de peixes"
+  caption="Cada modelo do Project Waddle tem uma responsabilidade restrita e uma versão visível, em vez de um agente multifuncional com um prompt impossível de revisar."
 />
 
 Os tipos integrados atendem a diferentes escopos:
@@ -33,9 +34,9 @@ Os tipos integrados atendem a diferentes escopos:
 
 ## Edite um modelo
 
-Selecione um modelo para editar sua configuração atual. Escolha um padrão
-perfil de inferência com as ferramentas e modalidades que a responsabilidade exige,
-então, opcionalmente, atribua uma alma.
+Selecione um modelo para editar sua configuração atual. Escolha um perfil de
+inferência padrão com as ferramentas e modalidades que a responsabilidade
+exige e, opcionalmente, atribua uma alma.
 
 <ManualScreenshot
   caseId="agents/template-editor"
@@ -45,23 +46,23 @@ então, opcionalmente, atribua uma alma.
 
 Use os dois campos de diretiva deliberadamente:
 
-- **Diretriz Geral** define a responsabilidade, os limites e a decisão
-  regras.
-- **Diretiva de Relatórios** define o que um relatório útil salvo deve conter.
+- **Diretriz Geral** define a responsabilidade, os limites e as regras de
+  decisão.
+- **Diretiva de Relatórios** define o que um relatório salvo útil deve conter.
 
-Salvar um modelo editado cria uma nova versão. A história existente permanece
-disponível para auditoria e reversão; evite esconder responsabilidades não relacionadas em
-uma longa directiva apenas para reduzir o número de modelos.
+Salvar um modelo editado cria uma nova versão. O histórico existente permanece
+disponível para auditoria e reversão; evite esconder responsabilidades não
+relacionadas em uma única diretiva longa só para reduzir o número de modelos.
 
 ## Execute um modelo individualmente
 
-A página de conversa individual **1 a 1** do modelo propõe alterações com base na atividade
-real de ativação, no feedback, no desempenho e nas sessões anteriores. Uma sessão pendente é uma
-proposta, não uma reescrita automática.
+A página **1 a 1** do modelo apresenta as alterações propostas com base na
+atividade real de despertar, no feedback, no desempenho e nas sessões
+anteriores. Uma sessão pendente é uma proposta, não uma reescrita automática.
 
 <ManualScreenshot
   caseId="agents/template-review"
-  alt="Orbital Habitat Sentinel individualmente mostrando uma proposta sobre como trazer à tona a decisão de lançamento e métricas de desempenho recentes"
+  alt="Conversa 1 a 1 do Orbital Habitat Sentinel mostrando uma proposta para destacar a decisão de lançamento e métricas de desempenho recentes"
   caption="A proposta de exemplo responde a uma falha concreta: a conclusão de segurança estava correta, mas a decisão de avançar/não avançar foi enterrada sob trivialidades sobre peixes."
 />
 
@@ -71,49 +72,50 @@ registro de modelo versionado.
 
 ## Mantenha a personalidade reutilizável com almas
 
-Abra o **Souls** para ver as personalidades que os modelos podem compartilhar. Uma alma é
-não é outro prompt de tarefa; controla como um agente se comunica, treina e
-empurra de volta.
+Abra **Souls** para ver as personalidades que os modelos podem compartilhar.
+Uma alma não é mais um prompt de tarefa; ela controla como um agente se
+comunica, orienta e questiona.
 
 <ManualScreenshot
   caseId="agents/souls"
   alt="Catálogo de almas Lotti contendo Almirante Pebble, Dr. Flipper e Capitão Sardina"
-  caption="O Projeto Waddle separa um diretor de voo calmo, um cientista curioso e um coordenador de carga prático das tarefas que os utilizam."
+  caption="O Project Waddle separa um diretor de voo calmo, um cientista curioso e um coordenador de carga prático das tarefas que os utilizam."
 />
 
-O editor soul mantém quatro preocupações explícitas:
+O editor de almas mantém quatro aspectos explícitos:
 
 <ManualScreenshot
   caseId="agents/soul-editor"
-  alt="Editor de soul Admiral Pebble com voz, limites de tom, estilo de treinamento e política anti-bajulação"
+  alt="Editor da alma Admiral Pebble com voz, limites de tom, estilo de coaching e política anti-bajulação"
   caption="O Almirante Pebble pode permanecer caloroso e decisivo enquanto desafia as suposições otimistas de lançamento com evidências."
 />
 
-- **Diretiva de Voz** descreve a voz e a comunicação reconhecíveis
-  prioridades.
+- **Diretiva de Voz** descreve a voz reconhecível e as prioridades de
+  comunicação.
 - **Tom Bounds** indica o que a voz deve evitar.
 - **Estilo de Coaching** descreve como ajuda alguém a tomar uma decisão.
 - **Política Anti-Bajulação** explica quando e como deve discordar.
 
-Use limites comportamentais concretos. “Seja útil” é difícil de revisar; “desafio
-suposições otimistas de lançamento e cite a observação que mudou seu
-conclusão” pode ser verificada em relação à saída real.
+Use limites comportamentais concretos. “Seja útil” é difícil de revisar;
+“desafie suposições otimistas de lançamento e cite a observação que mudou sua
+conclusão” pode ser verificado em relação à saída real.
 
 ## Evolua uma alma compartilhada com cuidado
 
-Uma alma **1 a 1** obtém feedback de cada modelo que usa essa personalidade.
-Isso torna a mudança poderosa: aprová-la pode melhorar vários agentes, mas um
-mudanças ruins também podem afetar todos eles.
+O **1 a 1** de uma alma reúne feedback de todos os modelos que usam essa
+personalidade. Isso torna a mudança poderosa: aprová-la pode melhorar vários
+agentes, mas uma mudança ruim também pode afetar todos eles.
 
 <ManualScreenshot
   caseId="agents/soul-review"
-  alt="O almirante Pebble se reúne individualmente com uma proposta, um modelo de compartilhamento e histórico de sessão completo"
-  caption="A contagem de compartilhamentos e o histórico de sessões tornam o raio da explosão visível antes que as alterações de personalidade sejam aprovadas."
+  alt="Conversa 1 a 1 da alma Admiral Pebble com uma proposta, um modelo que a compartilha e o histórico de sessões concluídas"
+  caption="A contagem de compartilhamentos e o histórico de sessões tornam o raio de impacto visível antes que as alterações de personalidade sejam aprovadas."
 />
 
-Leia a contagem de compartilhamentos, o resumo do feedback proposto e a recapitulação anterior antes
-iniciando uma revisão de personalidade. Se o feedback se aplicar apenas a uma responsabilidade,
-mude esse modelo em vez de ensinar à alma compartilhada uma regra específica para uma tarefa.
+Leia a contagem de compartilhamentos, o resumo do feedback proposto e a
+recapitulação anterior antes de iniciar uma revisão de personalidade. Se o
+feedback se aplicar apenas a uma responsabilidade, mude esse modelo em vez de
+ensinar à alma compartilhada uma regra específica de uma tarefa.
 
-Volte para [Executar e monitorar agentes](./agents.mdx) para inspecionar as instâncias e
-ciclos de despertar produzidos a partir desses projetos.
+Volte para [Executar e monitorar agentes](./agents.mdx) para inspecionar as
+instâncias e os ciclos de despertar produzidos a partir desses modelos.

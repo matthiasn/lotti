@@ -9,8 +9,9 @@ description: Steuere Funktionsschalter und Protokollierung, führe Wartung aus, 
 Diagnose und Wartung. Diese Seiten verändern Lottis Laufzeit oder lokale Daten;
 normale Personalisierung gehört an andere Stellen.
 
-Desktop hält den Einstellungsbaum neben der gewählten Seite, mobil öffnet jede
-Seite einzeln. Bedienelemente und gespeicherte Werte sind identisch.
+Auf dem Desktop bleibt der Einstellungsbaum neben der gewählten Seite sichtbar;
+mobil öffnet sich jede Seite einzeln. Bedienelemente und gespeicherte Werte
+sind identisch.
 
 <ManualScreenshot
   caseId="advanced-settings/hub"
@@ -34,7 +35,7 @@ Einstellung.
 <ManualScreenshot
   caseId="advanced-settings/flags"
   alt="Lottis Funktionsschalter mit Suche und Optionen für private Einträge, Benachrichtigungen, Standort, Tooltips und KI-Streaming"
-  caption="Die Suche trifft Namen und Beschreibungen. Jeder Schalter ändert die gespeicherte Laufzeitfähigkeit sofort."
+  caption="Die Suche durchsucht Namen und Beschreibungen. Jeder Schalter ändert die gespeicherte Laufzeitfähigkeit sofort."
 />
 
 **Funktionsschalter** enthält unter anderem:
@@ -46,13 +47,14 @@ Einstellung.
 - Embeddings und Vektorsuche; und
 - operative Anzeigen wie Sync-Aktivität, ausstehende Agenten und Fork-Heilung.
 
-**Schalter suchen** filtert nach Titel oder Beschreibung. Zeile oder Switch
-ändert den Wert sofort ohne Speichern.
+**Schalter suchen** filtert nach Titel oder Beschreibung. Ein Tipp auf Zeile
+oder Schalter ändert den Wert sofort, ohne zu speichern.
 
-Schalter können experimentelles oder diagnostisches Verhalten öffnen. Ändere
-gezielt einen und prüfe den Ablauf. **Private Einträge anzeigen?** steuert die
-Einbeziehung sensibler Inhalte in Listen und Auswahlfeldern; es verschlüsselt,
-exportiert oder löscht nichts und ändert keinen Datenschutzstatus.
+Schalter können experimentelles oder diagnostisches Verhalten freischalten.
+Ändere gezielt einen und prüfe den Ablauf. **Private Einträge anzeigen?**
+steuert die Einbeziehung sensibler Inhalte in Listen und Auswahlfeldern; es
+verschlüsselt, exportiert oder löscht nichts und ändert keinen
+Datenschutzstatus.
 
 ## Festlegen, was Lotti protokolliert
 
@@ -89,14 +91,16 @@ den Mindestfehlerdatensatz. Deaktiviere Rauschen nach der Untersuchung.
 - **Agenten-Datenbank löschen** entfernt sie und beendet Lotti für einen
   sauberen Neustart.
 - **Gelöschte Elemente bereinigen** entfernt Soft-Deletes nach Bestätigung endgültig.
-- **Volltextindex neu erstellen** baut Suche ohne Journaleinträge neu.
-- **Embeddings erzeugen** füllt bei verfügbarem Speicher ausgewählte Kategorien.
+- **Volltextindex neu erstellen** baut die lokalen Suchdaten neu auf, ohne
+  Journaleinträge neu zu erstellen.
+- **Embeddings erzeugen** erscheint bei verfügbarem Embedding-Speicher und
+  füllt ausgewählte Kategorien nach.
 - **Repaint-Regenbogen** markiert neu gezeichnete UI-Bereiche und ist nach
   Neustart wieder aus.
 
 Vorschau und Reset haben nicht dasselbe Risiko wie Löschen. Prüfe bei
 destruktiven Aktionen den lokalen Zielspeicher und lass laufende Sync- oder
-Schreibvorgänge enden.
+Schreibvorgänge erst abschließen.
 
 ## Den Onboarding-Trichter prüfen
 
