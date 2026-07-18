@@ -1,27 +1,27 @@
 ---
-title: Rennen en monitoren agenten
-description: Controleer de activiteit van de agent, inspecteer lopende instanties, en controle geplande wake cycli zonder verlies van de audit trail.
+title: Agenten uitvoeren en monitoren
+description: Controleer agentactiviteit, inspecteer actieve instanties en beheer geplande wakkercycli zonder de audittrail te verliezen.
 ---
 
-# Rennen en monitoren agenten
+# Agenten uitvoeren en monitoren
 
-Agenten lieten Lotti een bepaalde verantwoordelijkheid dragen tijdens meerdere wakkercycli.
-Elke lopende instantie komt van een agent template, gebruikt een gevolgtrekking setup,
-en houdt zijn eigen staat, rapporten, observaties en activiteiten geschiedenis. Open
-**Settings → Agents** to see the system as a whole.
+Agenten stellen Lotti in staat een bepaalde verantwoordelijkheid tijdens meerdere wakkercycli te dragen.
+Elke actieve instantie is gebaseerd op een agentsjabloon, gebruikt een gevolgtrekkingsconfiguratie
+en houdt zijn eigen status, rapporten, observaties en activiteitengeschiedenis bij. Open
+**Instellingen → Agenten** om het hele systeem te bekijken.
 
-Agent rapporten, observaties, en wachtrijen beschrijven de agent werkt
-ze niet stil het persoonlijke logboek herschrijven. Wanneer een taakbeheerder
-Lotti wil de taakgegevens wijzigen, en presenteert een voorstel voor uw beoordeling.
+Agentrapporten, observaties en wachtrijen beschrijven het werk van de agent;
+ze herschrijven het persoonlijke logboek niet stilzwijgend. Wanneer een taakagent
+de taakgegevens wil wijzigen, presenteert Lotti een voorstel ter beoordeling.
 [Beoordeel voorgestelde wijzigingen](../organize-and-reflect/tasks.mdx#beoordeel-voorgestelde-wijzigingen)
 voor de controles van de goedkeuring per taken en de beperkte begintitel en taal ervan
 uitzonderingen.
 
-## Lees de activiteit van het middel voordat u deze wijzigt
+## Lees de agentactiviteit voordat je die wijzigt
 
-The **Stats** page combines wake activity and token usage. The first chart
-toont wanneer de agenten wakker werden gedurende de laatste 24 uur. De dagelijkse sectie vergelijkt
-vandaag met dezelfde tijd op de afgelopen dagen, dan breekt het gebruik naar model en
+De pagina **Statistieken** combineert wakkere activiteit en tokengebruik. De eerste grafiek
+toont wanneer de agenten in de afgelopen 24 uur wakker werden. De dagelijkse sectie vergelijkt
+vandaag met hetzelfde tijdstip op eerdere dagen en splitst vervolgens het gebruik uit naar model en
 bron.
 
 <ManualScreenshot
@@ -32,29 +32,29 @@ bron.
 
 Gebruik deze pagina om drie verschillende vragen te beantwoorden:
 
-- **When did agents run?** Read the 24-hour wake chart.
-- **How much inference did they use?** Compare the daily and per-model charts.
-- **Which responsibility drove it?** Review the template/source breakdown.
+- **Wanneer zijn de agenten uitgevoerd?** Bekijk de 24-uurs wekgrafiek.
+- **Hoeveel gevolgtrekkingen hebben ze gebruikt?** Vergelijk de dagelijkse en per-modelgrafieken.
+- **Welke verantwoordelijkheid stuurde dit aan?** Bekijk de uitsplitsing per sjabloon en bron.
 
 Een spike is niet automatisch een fout. Een start-review dag moet drukker zijn
 dan een gewone kolonie dag. Onderzoek onverwachte activiteit door het openen van de
 bronsjabloon of -instance voordat een globale limiet voor concurrency wordt gewijzigd.
 
-## De lopende instanties controleren
+## De actieve instanties controleren
 
-Open **Instances** to see every agent and evolution session. Rows expose the
-Agent soort, levenscyclus, toegewezen template, en ziel. Groeperen door ziel is nuttig
-wanneer meerdere verantwoordelijkheden één stem en een beslissingsstijl delen.
+Open **Instanties** om elke agent en evolutiesessie te bekijken. Rijen tonen het
+agenttype, de levenscyclus, het toegewezen sjabloon en de ziel. Groeperen op ziel is nuttig
+wanneer meerdere verantwoordelijkheden één stem en beslissingsstijl delen.
 
 <ManualScreenshot
   caseId="agents/instances"
-  alt="Lotti agent gevallen gegroepeerd door Admiraal Pebble, Dr. Flipper, Kapitein Sardina, en een evolutie sessie"
-  caption="De Habitat Seal Inspector, Project Waddle Planner en Sardine Cargo Coördinator blijven gescheiden, zelfs wanneer ze de middelen op systeemniveau delen."
+  alt="Lotti-agentinstanties gegroepeerd op Admiraal Pebble, Dr. Flipper, Kapitein Sardina en een evolutiesessie"
+  caption="De Habitat Seal Inspector, Project Waddle Planner en Sardine Cargo Coordinator blijven gescheiden, zelfs wanneer ze systeembronnen delen."
 />
 
-Select an instance to inspect its internals. The **Stats** tab shows model
-gebruik, het sjabloon, de huidige route van de gevolgtrekking, de levenscycluscontroles, het aantal wake-ups;
-en planningstoestand.
+Selecteer een instantie om de interne werking ervan te inspecteren. Het tabblad **Statistieken** toont
+modelgebruik, het sjabloon, de huidige gevolgtrekkingsroute, levenscycluscontroles, het aantal wakkercycli
+en de planningsstatus.
 
 <ManualScreenshot
   caseId="agents/instance-detail"
@@ -64,21 +64,21 @@ en planningstoestand.
 
 De overige instantietabbladen bewaren verschillende bewijzen:
 
-- **Reports** contains the agent's saved report snapshots.
-- **Conversations** groups messages by wake cycle.
-- **Observations** exposes captured findings without mixing them into reports.
-- **Activity** shows the chronological message and tool trail.
+- **Rapporten** bevat de opgeslagen rapportmomentopnamen van de agent.
+- **Gesprekken** groepeert berichten per wakkercyclus.
+- **Observaties** toont vastgelegde bevindingen zonder ze met rapporten te vermengen.
+- **Activiteit** toont het chronologische spoor van berichten en hulpmiddelen.
 
-**Pause** keeps the instance but stops normal work. **Re-analyze** asks a task
-agent to reconsider its current subject. **Destroy** is destructive and should
-worden alleen gebruikt wanneer de instantie zelf niet meer wordt gewenst; het wijzigen van de
-template voor toekomstige agenten vereist niet dat niet-gerelateerde gevallen worden vernietigd.
+**Pauzeren** behoudt de instantie maar stopt het normale werk. **Opnieuw analyseren** vraagt een taakagent
+om het huidige onderwerp opnieuw te beoordelen. **Vernietigen** is destructief en mag
+alleen worden gebruikt wanneer de instantie zelf niet meer gewenst is; het wijzigen van het
+sjabloon voor toekomstige agenten vereist niet dat niet-gerelateerde instanties worden verwijderd.
 
-## Begrijp wake cycles
+## Begrijp wakkercycli
 
-Open **Wake Cycles** to see work that is running now and work due later. A
-**Pending** wake was requested by the agent. A **Scheduled** wake was placed by
-het systeem of de planner. Elke rij houdt de gekoppelde taak, project of dag zichtbaar
+Open **Wakkercycli** om werk te bekijken dat nu wordt uitgevoerd en later gepland staat. Een
+wakkercyclus **In afwachting** is door de agent aangevraagd. Een **Geplande** wakkercyclus is ingesteld door
+het systeem of de planner. Elke rij houdt de gekoppelde taak, het project of de dag zichtbaar
 naast de verantwoordelijke agent en een live countdown.
 
 <ManualScreenshot
@@ -87,9 +87,9 @@ naast de verantwoordelijke agent en een live countdown.
   caption="De wachtrij onderscheidt een op verzoek van een agent gevraagde habitat follow-up van lanceer-dag en vracht schema's, dus een aftelling heeft altijd een reden en eigenaar."
 />
 
-Verwijdert die timer door een wake in de wachtrij te verwijderen; het verwijdert het apparaat of de make-up niet
-verbonden taak. Als een wake onmiddellijk terugkeert, inspecteer de agent staat of de
-automatisering die het gevraagd in plaats van herhaaldelijk verwijderen van het symptoom.
+Het verwijderen van een wakkercyclus uit de wachtrij verwijdert alleen die timer, niet de gekoppelde
+taak. Als een wakkercyclus onmiddellijk terugkeert, inspecteer dan de agentstatus of de
+automatisering die hem heeft aangevraagd in plaats van herhaaldelijk het symptoom te verwijderen.
 
-Continue with [Agent templates and souls](./agent-blueprints.mdx) to define
-wat deze gevallen doen en hoe ze communiceren.
+Ga verder met [Agentsjablonen en zielen](./agent-blueprints.mdx) om te definiëren
+wat deze instanties doen en hoe ze communiceren.

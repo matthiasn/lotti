@@ -9,7 +9,7 @@ const _copy = <String, String>{
   "Theming": "Thema",
   "Recording Style": "Opnamestijl",
   "Modern — energy orb": "Modern — energiebol",
-  "Analogue — VU meter": "Absolute",
+  "Analogue — VU meter": "Analoog — VU-meter",
   "Speech": "Spraak",
   "Voice": "Stem",
   "Male 3": "Man 3",
@@ -71,8 +71,8 @@ const _copy = <String, String>{
   "Time Analysis": "Tijdanalyse",
   "TOTAL": "TOTAAL",
   "FOCUS": "FOCUS",
-  "Running total": "Totaal",
-  "Running total over the range": "Totaal over het bereik lopen",
+  "Running total": "Lopend totaal",
+  "Running total over the range": "Lopend totaal over het bereik",
   "Compare": "Vergelijken",
   "Change": "Verschil",
   "PREVIOUS": "VOORAFGAANDE",
@@ -89,7 +89,7 @@ const _copy = <String, String>{
   "Friday, July 17, 2026": "vrijdag 17 juli 2026",
   "July 2026": "juli 2026",
   "Images": "Afbeeldingen",
-  "Code": "Rubriek",
+  "Code": "Code",
   "Filter & Sort": "Filteren en sorteren",
   "Newest first": "Nieuwste eerst",
   "Oldest first": "Oudste eerst",
@@ -138,7 +138,7 @@ const _copy = <String, String>{
   "Create your first task": "Maak je eerste taak",
   "Record your thought": "Neem je gedachte op",
   "Listening… tap when you're done": "Luisteren… tik als je klaar bent",
-  "Rather type?": "- Nogal type?",
+  "Rather type?": "Liever typen?",
   "Your first task is ready": "Je eerste taak is klaar",
   "You've created your first AI task": "Je hebt je eerste AI taak gemaakt.",
   "Talk. Lotti turns it into a plan.": "Lotti maakt er een plan van.",
@@ -160,9 +160,9 @@ const _copy = <String, String>{
   "Sparks": "Vonken",
   "Combine two": "Combineer twee",
   "Try it": "Probeer het.",
-  "Count emperor penguins": "Graaf keizerpinguïns",
+  "Count emperor penguins": "Keizerpinguïns tellen",
   "Route sardine cargo": "Route sardinelading",
-  "Brief Mission Control": "Korte Missiecontrole",
+  "Brief Mission Control": "Missiecontrole briefen",
   "Changes save and apply everywhere instantly":
       "Wijzigingen overal direct opslaan en toepassen",
   "Shape": "Vorm",
@@ -181,10 +181,10 @@ const _copy = <String, String>{
   "Log penguin roll call": "Log pinguïn roll call",
   "Confirm all 37 emperor penguins are aboard.":
       "Bevestig dat alle 37 keizerpinguïns aan boord zijn.",
-  "Recalibrate fish feeder": "Visvoeder kalibreren",
+  "Recalibrate fish feeder": "Visvoederautomaat herkalibreren",
   "Tune the zero-gravity feeder after the midday delivery.":
-      "Stel de nul-zwaartekracht voer na de middag levering.",
-  "Review sardine inventory": "Evaluatie van de sardineinventaris",
+      "Stel de nul-zwaartekracht voederautomaat af na de middaglevering.",
+  "Review sardine inventory": "Sardine-inventaris beoordelen",
   "Reconcile consumed crates with the orbital manifest.":
       "Vergelijk de kisten met de orbitaal manifest.",
   "Success": "Gelukt",
@@ -318,7 +318,7 @@ const _copy = <String, String>{
   "Dinner shift after the Europa cargo docked":
       "Dinerdienst na het aanmeren van de Europa vracht",
   "Observed at": "Waargenomen bij",
-  "Penguins accounted for": "Pinguïns in rekening gebracht",
+  "Penguins accounted for": "Getelde pinguïns",
   "Edit measurable": "Meetbaar bewerken",
   "Daily average": "Dagelijks gemiddelde",
   "Colony operations": "Koloniebewerkingen",
@@ -329,7 +329,7 @@ const _copy = <String, String>{
       "Privé-lancering voor Project Waddle.",
   "Habitat pressure — Daily average": "Habitatdruk",
   "Sardines consumed — Daily sum": "Sardines geconsumeerd",
-  "Penguins accounted for — Daily sum": "Pinguïns accounted for",
+  "Penguins accounted for — Daily sum": "Getelde pinguïns",
   "Add charts by type": "Toevoegen van grafieken per type",
   "Measurements": "Metingen",
   "Health": "Status",
@@ -337,9 +337,9 @@ const _copy = <String, String>{
       "De habitat kwam door inspectie, alle 37 keizerpinguïns groette in ongeveer dezelfde richting, en de sardine lading kwam koud.",
   "Price discovery, cold-chain diplomacy, and formal fish hats.":
       "Prijsontdekking, koude-keten diplomatie, en formele vishoedjes.",
-  "Emperor penguin roll-call gala": "Keizerpinguïn roll-call gala",
+  "Emperor penguin roll-call gala": "Keizerpinguïn-appèlgala",
   "Every penguin was present; two attended twice.":
-      "Elke pinguïn was aanwezig; twee keer aanwezig.",
+      "Elke pinguïn was aanwezig; twee waren er twee keer.",
   "Europa cold-chain grand opening": "Europa koude-keten grote opening",
   "The ribbon froze before anyone could cut it.":
       "Het lint bevroor voordat iemand het kon knippen.",
@@ -445,7 +445,7 @@ const _copy = <String, String>{
   "Project Waddle launch briefing": "Project Waddle lanceringsbriefing",
   "In progress · 2 sessions": "In uitvoering · 2 zittingen",
   "before Mission Control wakes up": "voordat Mission Control wakker wordt",
-  "run the emperor penguin roll call": "Voer de keizer pinguïn roll call",
+  "run the emperor penguin roll call": "voer het keizerpinguïn-appèl uit",
   "Recurring · weekdays": "Terugkerende dagen",
   "Mark complete after all 37 answer": "Markeren na alles 37 antwoord",
   "Replace the diplomatic fish bucket": "Vervang de diplomatieke visemmer",
@@ -497,7 +497,7 @@ Voer de voedertest uit, voeg de telemetrieafbeelding toe en vraag daarna toestem
   "Build a realistic day around energy, fixed launch windows, and the colony rule that lunch still counts even during a sardine emergency.":
       "Bouw een realistische dag rond energie, vaste lanceerramen en de kolonieregel dat de lunch nog steeds telt, zelfs tijdens een sardine noodgeval.",
   "Call out over-capacity plans before asking for commitment.":
-      "Roep plannen voor overcapaciteit voordat u om inzet vraagt.",
+      "Meld plannen met overcapaciteit voordat u om inzet vraagt.",
   "Track sardine cargo pods, cold-chain handoffs, and zero-gravity feeder stock without sending private manifests to a cloud model.":
       "Track sardine lading pods, koude-keten handoffs, en zero-zwaartekracht feeder voorraad zonder het verzenden van privé manifesten naar een cloud model.",
   "Report shortages by habitat, pod, and expected penguin impact.":
