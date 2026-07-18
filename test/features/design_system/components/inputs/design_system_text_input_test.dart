@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -204,6 +206,58 @@ void main() {
       );
 
       expect(opacity.opacity, dsTokensLight.colors.text.lowEmphasis.a);
+    });
+
+    testWidgets('updates the border on mouse hover and restores it on exit', (
+      tester,
+    ) async {
+      const key = Key('hover-input');
+
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(
+          key: key,
+          label: 'Hoverable',
+        ),
+      );
+
+      Color currentBorderColor() {
+        final decoratedBox = tester.widget<DecoratedBox>(
+          find.descendant(
+            of: find.byKey(key),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is DecoratedBox &&
+                  widget.decoration is BoxDecoration &&
+                  (widget.decoration as BoxDecoration).border != null,
+            ),
+          ),
+        );
+        return ((decoratedBox.decoration as BoxDecoration).border! as Border)
+            .top
+            .color;
+      }
+
+      final restingColor = dsTokensLight.colors.text.highEmphasis.withValues(
+        alpha: 0.12,
+      );
+      expect(currentBorderColor(), restingColor);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+
+      await gesture.moveTo(tester.getCenter(find.byType(TextField)));
+      await tester.pump();
+      expect(
+        currentBorderColor(),
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
+
+      await gesture.moveTo(const Offset(-100, -100));
+      await tester.pump();
+      expect(currentBorderColor(), restingColor);
     });
 
     testWidgets('applies error border color when errorText is set', (

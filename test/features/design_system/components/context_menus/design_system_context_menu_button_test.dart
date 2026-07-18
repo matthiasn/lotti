@@ -41,7 +41,7 @@ void main() {
     });
 
     testWidgets(
-      'tapping the trigger opens the DesignSystemContextMenu; tapping a row '
+      'tapping the trigger toggles the DesignSystemContextMenu; tapping a row '
       'fires its callback and closes the menu',
       (tester) async {
         var taps = 0;
@@ -65,6 +65,16 @@ void main() {
 
         expect(find.byType(DesignSystemContextMenu), findsOneWidget);
         expect(find.text('Edit'), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DesignSystemContextMenu), findsNothing);
+
+        await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DesignSystemContextMenu), findsOneWidget);
 
         await tester.tap(find.text('Edit'));
         await tester.pumpAndSettle();

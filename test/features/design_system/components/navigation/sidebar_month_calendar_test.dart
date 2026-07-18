@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsAction;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/navigation/sidebar_month_calendar.dart';
@@ -145,8 +147,11 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('tapping a day reports its local midnight', (tester) async {
-      DateTime? selected;
+    testWidgets('semantic day activation reports its local midnight', (
+      tester,
+    ) async {
+      final selectedDays = <DateTime>[];
+      final semantics = tester.ensureSemantics();
       await tester.pumpWidget(
         _wrap(
           SidebarMonthCalendar(
@@ -154,13 +159,27 @@ void main() {
             today: DateTime(2026, 5, 24),
             onPreviousMonth: () {},
             onNextMonth: () {},
-            onDaySelected: (day) => selected = day,
+            onDaySelected: selectedDays.add,
           ),
         ),
       );
 
+      final day = tester.getSemantics(
+        find.bySemanticsLabel('Wednesday, May 13, 2026'),
+      );
+      // ignore: deprecated_member_use
+      tester.binding.pipelineOwner.semanticsOwner!.performAction(
+        day.id,
+        SemanticsAction.tap,
+      );
+      await tester.pump();
+
+      final expectedDay = DateTime(2026, 5, 13);
+      expect(selectedDays, [expectedDay]);
+
       await tester.tap(find.text('13'));
-      expect(selected, DateTime(2026, 5, 13));
+      expect(selectedDays, [expectedDay, expectedDay]);
+      semantics.dispose();
     });
 
     testWidgets(
