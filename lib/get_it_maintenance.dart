@@ -138,14 +138,31 @@ Future<void> _backfillAiAttribution() async {
       if (entities.length < pageSize) break;
     }
 
-    final agentEntities = await AgentRepository(
-      getIt<AgentDatabase>(),
-    ).getAllEntities();
-    await service.backfill(
-      agentEntities: agentEntities,
-      consumptionEvents: await getIt<ConsumptionRepository>()
-          .eventsWithoutAttribution(),
-    );
+    final agentRepository = AgentRepository(getIt<AgentDatabase>());
+    String? lastAgentId;
+    while (true) {
+      final entities = await agentRepository.getEntitiesPage(
+        limit: pageSize,
+        afterId: lastAgentId,
+      );
+      if (entities.isEmpty) break;
+      await service.backfill(agentEntities: entities);
+      lastAgentId = entities.last.id;
+      if (entities.length < pageSize) break;
+    }
+
+    final consumptionRepository = getIt<ConsumptionRepository>();
+    String? lastConsumptionEventId;
+    while (true) {
+      final events = await consumptionRepository.eventsWithoutAttribution(
+        limit: pageSize,
+        afterId: lastConsumptionEventId,
+      );
+      if (events.isEmpty) break;
+      await service.backfill(consumptionEvents: events);
+      lastConsumptionEventId = events.last.id;
+      if (events.length < pageSize) break;
+    }
     await settingsDb.saveSettingsItem(settingsKey, 'true');
   } catch (error, stackTrace) {
     logger.error(

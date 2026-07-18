@@ -310,6 +310,51 @@ void main() {
     expect(await repository.getPendingAttribution(pending.id), pending);
   });
 
+  test('recoverStale continues after one pending session fails', () async {
+    final now = DateTime.utc(2026, 3, 15, 12);
+    AiAttributionPendingSession pending({
+      required String id,
+      required DateTime startedAt,
+      required AiAttributionPendingPhase phase,
+      List<String> interactionIds = const [],
+    }) => AiAttributionPendingSession(
+      id: id,
+      attributionId: id,
+      workType: AiWorkType.codingPrompt,
+      initiator: makeAiActor(),
+      trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
+      executor: makeAiExecutor(),
+      privacyClassification: AiPrivacyClassification.standard,
+      phase: phase,
+      startedAt: startedAt,
+      lastUpdatedAt: startedAt,
+      intendedOutputs: [makeAiArtifact(id: '$id-output')],
+      interactionIds: interactionIds,
+    );
+    final broken = pending(
+      id: 'broken',
+      startedAt: now.subtract(const Duration(hours: 3)),
+      phase: AiAttributionPendingPhase.evidenceDurable,
+      interactionIds: const ['missing-event'],
+    );
+    final recoverable = pending(
+      id: 'recoverable',
+      startedAt: now.subtract(const Duration(hours: 2)),
+      phase: AiAttributionPendingPhase.prepared,
+    );
+    await repository.upsertPendingAttribution(broken);
+    await repository.upsertPendingAttribution(recoverable);
+
+    final recovered = await withClock(
+      Clock.fixed(now),
+      () => service.recoverStale(threshold: const Duration(hours: 1)),
+    );
+
+    expect(recovered.map((item) => item.id), ['recoverable']);
+    expect(await repository.getPendingAttribution('broken'), broken);
+    expect(await repository.getPendingAttribution('recoverable'), isNull);
+  });
+
   test('missing pending sessions fail every operation explicitly', () async {
     await expectLater(
       service.recordInteraction(

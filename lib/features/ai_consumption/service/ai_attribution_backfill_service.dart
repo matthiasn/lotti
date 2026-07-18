@@ -41,6 +41,24 @@ class AiAttributionBackfillService {
     var migratedConsumptionEvents = 0;
 
     for (final entity in journalEntities) {
+      if (entity is JournalAudio) {
+        final transcripts =
+            entity.data.transcripts ?? const <AudioTranscript>[];
+        for (var index = 0; index < transcripts.length; index++) {
+          final transcript = transcripts[index];
+          final carrier = transcript.aiAttribution;
+          if (carrier != null) {
+            await _repository.projectTerminalEnvelope(carrier);
+            projectedCarriers++;
+          } else {
+            await _repository.upsertAttribution(
+              _legacyAudioTranscriptAttribution(entity, transcript, index),
+            );
+            createdLegacyAttributions++;
+          }
+        }
+        continue;
+      }
       final carriers = terminalEnvelopesFromJournalEntity(entity).toList();
       for (final carrier in carriers) {
         await _repository.projectTerminalEnvelope(carrier);
@@ -75,8 +93,8 @@ class AiAttributionBackfillService {
         payload: event.payload ?? _legacyPayload(event),
         cost: event.cost ?? _legacyCost(event),
       );
-      await _repository.upsertEvent(migrated);
       await _repository.upsertAttribution(_legacyEventAttribution(migrated));
+      await _repository.upsertEvent(migrated);
       migratedConsumptionEvents++;
     }
 
@@ -101,26 +119,31 @@ class AiAttributionBackfillService {
         ),
         categoryId: entity.meta.categoryId,
       );
-    } else if (entity is JournalAudio) {
-      final transcripts = entity.data.transcripts ?? const <AudioTranscript>[];
-      for (var index = 0; index < transcripts.length; index++) {
-        final transcript = transcripts[index];
-        yield _legacyAttribution(
-          id: _id(
-            'journal-audio-transcript',
-            '${entity.id}|${transcript.id ?? transcript.created.toUtc().toIso8601String()}|$index',
-          ),
-          workType: AiWorkType.audioTranscription,
-          createdAt: transcript.created,
-          output: AiArtifactReference(
-            type: AiArtifactType.journalAudio,
-            id: entity.id,
-            subId: transcript.id,
-          ),
-          categoryId: entity.meta.categoryId,
-        );
-      }
     }
+  }
+
+  AiWorkAttribution _legacyAudioTranscriptAttribution(
+    JournalAudio entity,
+    AudioTranscript transcript,
+    int index,
+  ) {
+    final transcriptSourceId =
+        transcript.id ??
+        '${transcript.created.toUtc().toIso8601String()}|$index';
+    return _legacyAttribution(
+      id: _id(
+        'journal-audio-transcript',
+        '${entity.id}|$transcriptSourceId',
+      ),
+      workType: AiWorkType.audioTranscription,
+      createdAt: transcript.created,
+      output: AiArtifactReference(
+        type: AiArtifactType.journalAudio,
+        id: entity.id,
+        subId: transcript.id,
+      ),
+      categoryId: entity.meta.categoryId,
+    );
   }
 
   AiWorkAttribution _legacyAgentReport(AgentReportEntity report) =>
@@ -217,9 +240,19 @@ class AiAttributionBackfillService {
           : AiCostSource.legacyReported,
       assessedAt: (event.completedAt ?? event.createdAt).toUtc(),
       originalAmountDecimal: credits?.toString(),
-      originalUnit: credits == null ? null : 'credit',
+      originalUnit: credits == null ? null : 'meliousCredit',
+      reportingAmountMicros: credits == null
+          ? null
+          : (credits * 1000000).round(),
+      reportingCurrency: credits == null ? null : 'EUR',
       providerType: event.providerType.name,
       billingSource: credits == null ? null : 'legacy_consumption_event',
+      pricingSnapshot: credits == null
+          ? null
+          : const {
+              'version': 'legacy-melious-credit-eur-v1',
+              'formula': '1 meliousCredit ≈ 1 EUR',
+            },
     );
   }
 

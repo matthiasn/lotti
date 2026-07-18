@@ -50,27 +50,7 @@ class ConsumptionRepository {
 
   /// Idempotently projects one terminal attribution and its typed links.
   Future<void> upsertAttribution(AiWorkAttribution attribution) =>
-      _db.transaction(() async {
-        await _db
-            .into(_db.aiWorkAttributions)
-            .insertOnConflictUpdate(
-              AttributionDbConversions.attributionToCompanion(attribution),
-            );
-        for (final link in attribution.links) {
-          if (link.attributionId != attribution.id) {
-            throw ArgumentError.value(
-              link.attributionId,
-              'link.attributionId',
-              'must match attribution ${attribution.id}',
-            );
-          }
-          await _db
-              .into(_db.aiAttributionLinks)
-              .insertOnConflictUpdate(
-                AttributionDbConversions.linkToCompanion(link),
-              );
-        }
-      });
+      _db.transaction(() => _replaceAttribution(attribution));
 
   /// Projects a terminal output-carrier envelope idempotently.
   Future<void> projectTerminalEnvelope(
@@ -85,7 +65,7 @@ class ConsumptionRepository {
   Future<void> projectRecoveryCapsule({
     required AiAttributionRecoveryCapsule capsule,
     required AiConsumptionEvent event,
-  }) async {
+  }) => _db.transaction(() async {
     final existing = await getAttribution(capsule.attributionId);
     if (existing != null && existing.status != AiWorkStatus.partial) return;
 
@@ -100,7 +80,7 @@ class ConsumptionRepository {
           artifact: output,
         ),
     ];
-    await upsertAttribution(
+    await _replaceAttribution(
       AiWorkAttribution(
         id: capsule.attributionId,
         workType: capsule.workType,
@@ -120,7 +100,7 @@ class ConsumptionRepository {
         errorCode: 'terminal_carrier_missing',
       ),
     );
-  }
+  });
 
   /// Fetch a terminal attribution by id.
   Future<AiWorkAttribution?> getAttribution(String id) async {
@@ -140,6 +120,7 @@ class ConsumptionRepository {
         await (_db.select(_db.aiAttributionLinks)
               ..where(
                 (table) =>
+                    table.role.equals(AiAttributionLinkRole.output.name) &
                     table.artifactType.equals(artifact.type.name) &
                     table.artifactId.equals(artifact.id) &
                     (artifact.subId == null
@@ -370,11 +351,49 @@ class ConsumptionRepository {
   }
 
   /// Legacy interactions that predate the top-level attribution id.
-  Future<List<AiConsumptionEvent>> eventsWithoutAttribution() async {
-    final rows = await (_db.select(
-      _db.consumptionEvents,
-    )..where((table) => table.attributionId.isNull())).get();
+  Future<List<AiConsumptionEvent>> eventsWithoutAttribution({
+    int? limit,
+    String? afterId,
+  }) async {
+    final query = _db.select(_db.consumptionEvents)
+      ..where(
+        (table) =>
+            table.attributionId.isNull() &
+            (afterId == null
+                ? const Constant(true)
+                : table.id.isBiggerThanValue(afterId)),
+      )
+      ..orderBy([(table) => OrderingTerm.asc(table.id)]);
+    if (limit != null) query.limit(limit);
+    final rows = await query.get();
     return rows.map(ConsumptionDbConversions.fromRow).toList();
+  }
+
+  Future<void> _replaceAttribution(AiWorkAttribution attribution) async {
+    for (final link in attribution.links) {
+      if (link.attributionId != attribution.id) {
+        throw ArgumentError.value(
+          link.attributionId,
+          'link.attributionId',
+          'must match attribution ${attribution.id}',
+        );
+      }
+    }
+    await _db
+        .into(_db.aiWorkAttributions)
+        .insertOnConflictUpdate(
+          AttributionDbConversions.attributionToCompanion(attribution),
+        );
+    await (_db.delete(
+      _db.aiAttributionLinks,
+    )..where((row) => row.attributionId.equals(attribution.id))).go();
+    for (final link in attribution.links) {
+      await _db
+          .into(_db.aiAttributionLinks)
+          .insertOnConflictUpdate(
+            AttributionDbConversions.linkToCompanion(link),
+          );
+    }
   }
 
   /// Run [action] inside a database transaction.

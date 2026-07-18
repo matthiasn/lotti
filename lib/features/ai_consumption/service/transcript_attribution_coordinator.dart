@@ -41,6 +41,7 @@ class TranscriptAttributionCoordinator {
     required String modelId,
     required InferenceProviderType providerType,
     required AiInteractionKind interactionKind,
+    required AiPrivacyClassification privacyClassification,
     String? taskId,
     String? categoryId,
   }) async {
@@ -58,7 +59,7 @@ class TranscriptAttributionCoordinator {
         initiator: await _identityResolver.humanInitiator(),
         trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
         executor: await _identityResolver.executor(),
-        privacyClassification: AiPrivacyClassification.standard,
+        privacyClassification: privacyClassification,
         intendedOutputs: [output],
         sources: [
           AiArtifactReference(
@@ -93,7 +94,7 @@ class TranscriptAttributionCoordinator {
           requestDigest: 'journal-audio:$audioEntryId',
           responseDigest: sha256.convert(utf8.encode(transcript)).toString(),
           capturePolicy: AiPayloadCapturePolicy.referenceOnly,
-          privacyClassification: AiPrivacyClassification.standard,
+          privacyClassification: privacyClassification,
           createdAt: now,
         ),
         cost: AiInteractionCost(

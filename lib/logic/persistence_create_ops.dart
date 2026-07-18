@@ -263,7 +263,11 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
         meta: id == null ? metadata : metadata.copyWith(id: id),
       );
 
-      await logic.createDbEntity(aiResponse, linkedId: linkedId);
+      final persisted = await logic.createDbEntity(
+        aiResponse,
+        linkedId: linkedId,
+      );
+      if (persisted != true) return null;
 
       if (linkedId != null) {
         updateNotifications.notify({linkedId});

@@ -543,7 +543,7 @@ void main() {
           ),
         ).thenAnswer((_) async => page);
         when(
-          repository.eventsWithoutAttribution,
+          () => repository.eventsWithoutAttribution(limit: 250),
         ).thenAnswer((_) async => events);
         when(
           () => service.backfill(
@@ -572,15 +572,7 @@ void main() {
         verify(
           () => service.backfill(journalEntities: page),
         ).called(1);
-        final finalCall =
-            verify(
-                  () => service.backfill(
-                    agentEntities: captureAny(named: 'agentEntities'),
-                    consumptionEvents: events,
-                  ),
-                ).captured.single
-                as Iterable<AgentDomainEntity>;
-        expect(finalCall, isEmpty);
+        verify(() => service.backfill(consumptionEvents: events)).called(1);
         verify(
           () => settingsDb.saveSettingsItem(settingsKey, 'true'),
         ).called(1);

@@ -49,9 +49,10 @@ AiInteractionCost? effectiveInteractionCost(
         'one selection may contain only one interaction id',
       );
     }
-    if (byId.putIfAbsent(cost.id, () => cost) != cost) {
+    if (byId.containsKey(cost.id)) {
       throw InvalidAiCostEvidence('duplicate cost id ${cost.id}');
     }
+    byId[cost.id] = cost;
     _validateAmountShape(cost);
   }
 
@@ -96,15 +97,23 @@ AiCostTotals aggregateEffectiveCosts(Iterable<AiInteractionCost> evidence) {
   var known = 0;
   var unknown = 0;
   for (final costs in byInteraction.values) {
-    final effective = effectiveInteractionCost(costs);
-    final amount = effective?.reportingAmountMicros;
-    final currency = effective?.reportingCurrency;
-    if (amount == null || currency == null) {
+    try {
+      final effective = effectiveInteractionCost(costs);
+      final amount = effective?.reportingAmountMicros;
+      final currency = effective?.reportingCurrency;
+      if (amount == null || currency == null) {
+        unknown++;
+        continue;
+      }
+      known++;
+      totals.update(
+        currency,
+        (value) => value + amount,
+        ifAbsent: () => amount,
+      );
+    } on InvalidAiCostEvidence {
       unknown++;
-      continue;
     }
-    known++;
-    totals.update(currency, (value) => value + amount, ifAbsent: () => amount);
   }
 
   return AiCostTotals(

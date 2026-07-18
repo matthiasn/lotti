@@ -1969,8 +1969,9 @@ void main() {
             transcript: 'realtime transcript text',
             providerName: 'Mistral',
             modelId: 'voxtral-mini-transcribe-realtime-2602',
-            providerType: InferenceProviderType.mistral,
+            providerType: InferenceProviderType.genericOpenAi,
             interactionKind: AiInteractionKind.realtimeTranscription,
+            privacyClassification: AiPrivacyClassification.standard,
             taskId: 'task-id',
             categoryId: 'test-category',
           ),
@@ -2031,6 +2032,16 @@ void main() {
           ..setCategoryId('test-category');
 
         // Start realtime recording first
+        when(
+          () => mockRealtimeService.resolveRealtimeConfig(),
+        ).thenAnswer(
+          (_) async => (
+            model: _fakeRealtimeConfig.model,
+            provider: _fakeRealtimeConfig.provider.copyWith(
+              inferenceProviderType: InferenceProviderType.genericOpenAi,
+            ),
+          ),
+        );
         await controller.recordRealtime(linkedId: 'task-id');
 
         expect(
@@ -2079,6 +2090,14 @@ void main() {
             ),
           ),
         ).called(1);
+
+        clearInteractions(attributionCoordinator);
+        when(() => mockPersistence.updateDbEntity(any())).thenAnswer((_) async {
+          return false;
+        });
+        await controller.recordRealtime(linkedId: 'task-id');
+        await controller.stopRealtime();
+        verifyNever(() => attributionCoordinator.finalize(prepared));
       });
     });
 

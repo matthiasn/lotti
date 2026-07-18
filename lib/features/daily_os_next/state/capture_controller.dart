@@ -563,6 +563,9 @@ class CaptureController extends Notifier<CaptureState> {
               modelId: model,
               providerType: providerType,
               interactionKind: interactionKind,
+              privacyClassification: journalAudio.meta.private == true
+                  ? AiPrivacyClassification.private
+                  : AiPrivacyClassification.standard,
               categoryId: journalAudio.meta.categoryId,
             )
           : null;
@@ -583,8 +586,8 @@ class CaptureController extends Notifier<CaptureState> {
         ),
         entryText: EntryText(plainText: transcript, markdown: transcript),
       );
-      await persistenceLogic.updateDbEntity(updated);
-      if (prepared != null) {
+      final persisted = await persistenceLogic.updateDbEntity(updated);
+      if (persisted == true && prepared != null) {
         await getIt<TranscriptAttributionCoordinator>().finalize(prepared);
       }
     } catch (_) {

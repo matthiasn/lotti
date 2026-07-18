@@ -2193,6 +2193,44 @@ void main() {
       verifyLogged(LogDomain.persistence, 'createAiResponseEntry');
     });
 
+    test(
+      'createAiResponseEntry returns null when persistence is rejected',
+      () async {
+        when(
+          () => journalDb.updateJournalEntity(
+            any<JournalEntity>(),
+            overwrite: false,
+          ),
+        ).thenAnswer(
+          (_) async => JournalUpdateResult.skipped(
+            reason: JournalUpdateSkipReason.overwritePrevented,
+          ),
+        );
+
+        final result = await logic.createAiResponseEntry(
+          data: const AiResponseData(
+            model: 'model',
+            systemMessage: 'system',
+            prompt: 'prompt',
+            thoughts: 'thoughts',
+            response: 'response',
+          ),
+          dateFrom: DateTime(2024, 3, 15, 10),
+        );
+
+        expect(result, isNull);
+        verify(
+          () => vectorClockService.burnUnboundVectorClock(
+            any<VectorClock?>(),
+            reason: any<String>(
+              named: 'reason',
+              that: contains('createDbEntity write rejected'),
+            ),
+          ),
+        ).called(1);
+      },
+    );
+
     test('createEventEntry logs and returns null on failure', () async {
       stubCreateMetadataThrows();
 

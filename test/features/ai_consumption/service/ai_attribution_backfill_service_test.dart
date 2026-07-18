@@ -88,6 +88,9 @@ void main() {
     );
     expect(migrated.cost?.source, AiCostSource.legacyReported);
     expect(migrated.cost?.originalAmountDecimal, '0.25');
+    expect(migrated.cost?.originalUnit, 'meliousCredit');
+    expect(migrated.cost?.reportingAmountMicros, 250000);
+    expect(migrated.cost?.reportingCurrency, 'EUR');
     expect(attribution?.workType, AiWorkType.audioTranscription);
     expect(attribution?.primaryOutput?.id, 'audio-1');
   });
@@ -148,6 +151,123 @@ void main() {
       );
     },
   );
+
+  test('backfills carrier-less transcripts beside terminal carriers', () async {
+    final envelope = makeAiTerminalEnvelope(
+      attributionId: 'terminal-transcript',
+      output: const AiArtifactReference(
+        type: AiArtifactType.journalAudio,
+        id: 'mixed-audio',
+        subId: 'new-transcript',
+      ),
+    );
+    final audio = JournalEntity.journalAudio(
+      meta: Metadata(
+        id: 'mixed-audio',
+        createdAt: createdAt,
+        updatedAt: createdAt,
+        dateFrom: createdAt,
+        dateTo: createdAt,
+      ),
+      data: AudioData(
+        dateFrom: createdAt,
+        dateTo: createdAt,
+        audioFile: 'audio.m4a',
+        audioDirectory: '/audio',
+        duration: const Duration(seconds: 5),
+        transcripts: [
+          AudioTranscript(
+            id: 'new-transcript',
+            created: createdAt,
+            library: 'provider',
+            model: 'model',
+            detectedLanguage: 'en',
+            transcript: 'new',
+            aiAttribution: envelope,
+          ),
+          AudioTranscript(
+            id: 'legacy-transcript',
+            created: createdAt,
+            library: 'provider',
+            model: 'model',
+            detectedLanguage: 'en',
+            transcript: 'legacy',
+          ),
+        ],
+      ),
+    );
+
+    final result = await service.backfill(journalEntities: [audio]);
+
+    expect(result.projectedCarriers, 1);
+    expect(result.createdLegacyAttributions, 1);
+    expect(
+      await repository.getAttributionForArtifact(
+        const AiArtifactReference(
+          type: AiArtifactType.journalAudio,
+          id: 'mixed-audio',
+          subId: 'legacy-transcript',
+        ),
+      ),
+      isNotNull,
+    );
+  });
+
+  test('stable transcript IDs are independent of list order', () async {
+    AudioTranscript transcript(String id) => AudioTranscript(
+      id: id,
+      created: createdAt,
+      library: 'provider',
+      model: 'model',
+      detectedLanguage: 'en',
+      transcript: id,
+    );
+    JournalAudio audio(List<AudioTranscript> transcripts) =>
+        JournalEntity.journalAudio(
+              meta: Metadata(
+                id: 'reordered-audio',
+                createdAt: createdAt,
+                updatedAt: createdAt,
+                dateFrom: createdAt,
+                dateTo: createdAt,
+              ),
+              data: AudioData(
+                dateFrom: createdAt,
+                dateTo: createdAt,
+                audioFile: 'audio.m4a',
+                audioDirectory: '/audio',
+                duration: const Duration(seconds: 5),
+                transcripts: transcripts,
+              ),
+            )
+            as JournalAudio;
+    final first = transcript('first');
+    final second = transcript('second');
+    await service.backfill(
+      journalEntities: [
+        audio([first, second]),
+      ],
+    );
+    const artifact = AiArtifactReference(
+      type: AiArtifactType.journalAudio,
+      id: 'reordered-audio',
+      subId: 'first',
+    );
+    final originalId = (await repository.getAttributionForArtifact(
+      artifact,
+    ))!.id;
+
+    await service.backfill(
+      journalEntities: [
+        audio([second, first]),
+      ],
+    );
+
+    expect(
+      (await repository.getAttributionForArtifact(artifact))?.id,
+      originalId,
+    );
+  });
 
   test(
     'creates conservative legacy records for transcripts and reports',

@@ -40,6 +40,7 @@ class AiAttributionSummary extends ConsumerWidget {
       attribution: attribution,
       details: details,
       compact: compact,
+      isLoading: asyncDetails.isLoading && details == null,
     );
     if (!includeTopSpacing) return row;
     return Padding(
@@ -54,11 +55,13 @@ class _AttributionRow extends StatelessWidget {
     required this.attribution,
     required this.details,
     required this.compact,
+    required this.isLoading,
   });
 
   final AiWorkAttribution attribution;
   final AiAttributionDetails? details;
   final bool compact;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -69,16 +72,22 @@ class _AttributionRow extends StatelessWidget {
       _triggerLabel(context, attribution.trigger.type),
       _statusLabel(context, attribution.status),
     );
-    final model = details?.interactions
-        .map((event) => event.providerModelId ?? event.modelId)
-        .whereType<String>()
-        .firstOrNull;
-    final secondary = context.messages.aiAttributionSecondary(
-      model ?? context.messages.aiAttributionUnknownModel,
-      DateFormat.yMMMd().add_jm().format(attribution.completedAt.toLocal()),
-      details?.interactions.length ?? 0,
-    );
-    final cost = _formatCost(context, details);
+    final model = isLoading
+        ? null
+        : details?.interactions
+              .map((event) => event.providerModelId ?? event.modelId)
+              .whereType<String>()
+              .firstOrNull;
+    final secondary = isLoading
+        ? '…'
+        : context.messages.aiAttributionSecondary(
+            model ?? context.messages.aiAttributionUnknownModel,
+            DateFormat.yMMMd().add_jm().format(
+              attribution.completedAt.toLocal(),
+            ),
+            details?.interactions.length ?? 0,
+          );
+    final cost = isLoading ? '…' : _formatCost(context, details);
     final radius = BorderRadius.circular(tokens.radii.m);
 
     return Semantics(

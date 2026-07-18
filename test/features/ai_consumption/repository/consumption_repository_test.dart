@@ -496,6 +496,46 @@ void main() {
       );
     });
 
+    test('terminal replacement removes obsolete links', () async {
+      final base = makeAiTerminalEnvelope(attributionId: 'replace-links');
+      final kept = base.attribution.links.single;
+      final obsoleteArtifact = makeAiArtifact(id: 'obsolete-output');
+      final obsolete = AiAttributionLink(
+        id: 'obsolete-link',
+        attributionId: base.attribution.id,
+        role: AiAttributionLinkRole.output,
+        artifact: obsoleteArtifact,
+      );
+      await repo.upsertAttribution(
+        base.attribution.copyWith(links: [kept, obsolete]),
+      );
+
+      await repo.upsertAttribution(base.attribution.copyWith(links: [kept]));
+
+      expect(await repo.getAttributionForArtifact(kept.artifact), isNotNull);
+      expect(await repo.getAttributionForArtifact(obsoleteArtifact), isNull);
+    });
+
+    test('reverse lookup ignores source and context links', () async {
+      final base = makeAiTerminalEnvelope(attributionId: 'input-only');
+      final input = makeAiArtifact(id: 'shared-input');
+      await repo.upsertAttribution(
+        base.attribution.copyWith(
+          primaryOutput: null,
+          links: [
+            AiAttributionLink(
+              id: 'source-link',
+              attributionId: base.attribution.id,
+              role: AiAttributionLinkRole.source,
+              artifact: input,
+            ),
+          ],
+        ),
+      );
+
+      expect(await repo.getAttributionForArtifact(input), isNull);
+    });
+
     test(
       'recovery capsule projects a replaceable partial attribution',
       () async {
@@ -680,7 +720,9 @@ void main() {
       expect(await repo.getPendingAttribution('earlier'), isNull);
     });
 
-    test('finds only legacy events without attribution', () async {
+    test('finds legacy events in stable bounded pages', () async {
+      await repo.upsertEvent(makeConsumptionEvent(id: 'legacy-a'));
+      await repo.upsertEvent(makeConsumptionEvent(id: 'legacy-b'));
       await repo.upsertEvent(makeConsumptionEvent(id: 'legacy'));
       await repo.upsertEvent(
         makeConsumptionEvent(
@@ -689,8 +731,17 @@ void main() {
       );
 
       expect(
-        (await repo.eventsWithoutAttribution()).map((event) => event.id),
-        ['legacy'],
+        (await repo.eventsWithoutAttribution(
+          limit: 2,
+        )).map((event) => event.id),
+        ['legacy', 'legacy-a'],
+      );
+      expect(
+        (await repo.eventsWithoutAttribution(
+          limit: 2,
+          afterId: 'legacy-a',
+        )).map((event) => event.id),
+        ['legacy-b'],
       );
     });
   });

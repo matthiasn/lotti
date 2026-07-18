@@ -32,7 +32,7 @@ AudioNote _audioNoteFixture() => AudioNote(
   duration: Duration.zero,
 );
 
-JournalAudio _persistedAudio({String id = 'audio_001'}) {
+JournalAudio _persistedAudio({String id = 'audio_001', bool private = false}) {
   return JournalAudio(
     meta: Metadata(
       id: id,
@@ -41,6 +41,7 @@ JournalAudio _persistedAudio({String id = 'audio_001'}) {
       dateFrom: _recordingStartedAt,
       dateTo: _recordingStartedAt.add(const Duration(seconds: 2)),
       vectorClock: const VectorClock(<String, int>{}),
+      private: private,
     ),
     data: AudioData(
       dateFrom: _recordingStartedAt,
@@ -1572,6 +1573,7 @@ void main() {
             modelId: 'cloud-inference',
             providerType: InferenceProviderType.genericOpenAi,
             interactionKind: AiInteractionKind.audioTranscription,
+            privacyClassification: AiPrivacyClassification.private,
           ),
         ).thenAnswer((_) async => prepared);
         when(() => coordinator.finalize(prepared)).thenAnswer((_) async {});
@@ -1581,7 +1583,7 @@ void main() {
           recorder: recorder,
           transcriber: transcriber,
           realtimeService: realtimeService,
-          persistAudio: (_) async => _persistedAudio(),
+          persistAudio: (_) async => _persistedAudio(private: true),
         );
         addTearDown(container.dispose);
         final notifier = container.read(captureControllerProvider.notifier);
@@ -1593,6 +1595,57 @@ void main() {
         expect(transcript.id, 'transcript-id');
         expect(transcript.aiAttribution, envelope);
         verify(() => coordinator.finalize(prepared)).called(1);
+      },
+    );
+
+    test(
+      'batch capture leaves attribution pending when persistence is rejected',
+      () async {
+        when(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenAnswer((_) async => 'unpersisted transcript');
+        when(() => persistenceLogic.updateDbEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          latestUpdated = invocation.positionalArguments.first as JournalAudio;
+          return false;
+        });
+        final coordinator = MockTranscriptAttributionCoordinator();
+        final prepared = PreparedTranscriptAttribution(
+          transcriptId: 'pending-transcript',
+          envelope: makeAiTerminalEnvelope(attributionId: 'pending'),
+        );
+        when(
+          () => coordinator.prepare(
+            audioEntryId: 'audio_001',
+            transcript: 'unpersisted transcript',
+            providerName: 'batch-transcribe',
+            modelId: 'cloud-inference',
+            providerType: InferenceProviderType.genericOpenAi,
+            interactionKind: AiInteractionKind.audioTranscription,
+            privacyClassification: AiPrivacyClassification.standard,
+          ),
+        ).thenAnswer((_) async => prepared);
+        getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
+        final container = _aliveContainer(
+          recorder: recorder,
+          transcriber: transcriber,
+          realtimeService: realtimeService,
+          persistAudio: (_) async => _persistedAudio(),
+        );
+        addTearDown(container.dispose);
+
+        await container.read(captureControllerProvider.notifier).toggle();
+        await container.read(captureControllerProvider.notifier).toggle();
+
+        expect(
+          latestUpdated?.data.transcripts?.single.id,
+          'pending-transcript',
+        );
+        verifyNever(() => coordinator.finalize(prepared));
       },
     );
 

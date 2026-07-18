@@ -1057,9 +1057,18 @@ class SkillInferenceRunner {
           : AiCostSource.providerReported,
       assessedAt: completedAt,
       originalAmountDecimal: impact?.costCredits.toString(),
-      originalUnit: impact?.costCredits == null ? null : 'credits',
+      originalUnit: impact?.costCredits == null ? null : 'meliousCredit',
+      reportingAmountMicros: impact?.costCredits == null
+          ? null
+          : (impact!.costCredits! * 1000000).round(),
+      reportingCurrency: impact?.costCredits == null ? null : 'EUR',
       providerType: provider.inferenceProviderType.name,
-      pricingSnapshot: const {'version': 'provider-reported-v1'},
+      pricingSnapshot: impact?.costCredits == null
+          ? null
+          : const {
+              'version': 'melious-credit-eur-v1',
+              'formula': '1 meliousCredit ≈ 1 EUR',
+            },
     );
     final payload = AiInteractionPayload(
       id: uuid.v4(),

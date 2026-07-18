@@ -405,8 +405,10 @@ sequenceDiagram
   persisted `JournalAudio`, `TranscriptAttributionCoordinator` publishes
   reference-only interaction evidence first. The resulting `AudioTranscript`
   carries a stable sub-id and terminal attribution envelope; unknown provider
-  cost stays explicitly unknown. The journal write is skipped if the
-  consumption publication barrier fails.
+  cost stays explicitly unknown and privacy follows the source audio entry.
+  The journal write is skipped if the consumption publication barrier fails,
+  and attribution is finalized only after the journal update confirms that it
+  applied.
 - Capture and Refine share one **anchored voice template**: a per-phase
   headline at the top (the state narrator — "What's on your mind …", "I'm
   listening.", "Writing that down…", "Does this look right?"), a flexible

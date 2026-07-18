@@ -59,6 +59,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   DateTime? _realtimeStartTime;
   String? _realtimeModelName;
   String? _realtimeProviderName;
+  InferenceProviderType? _realtimeProviderType;
 
   /// Sliding-window VU meter driving the live level display.
   final VuMeter _vuMeter = VuMeter(
@@ -440,6 +441,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       final config = await service.resolveRealtimeConfig();
       _realtimeModelName = config?.model.providerModelId;
       _realtimeProviderName = config?.provider.name;
+      _realtimeProviderType = config?.provider.inferenceProviderType;
 
       // Subscribe to amplitude stream for VU meter
       _realtimeAmplitudeSub = service.amplitudeStream.listen((dbfs) {
@@ -501,6 +503,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     // Capture metadata in locals before any cleanup nulls them (#6).
     final modelName = _realtimeModelName;
     final providerName = _realtimeProviderName;
+    final providerType = _realtimeProviderType;
 
     try {
       // Cancel amplitude subscription
@@ -584,6 +587,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
           transcript: result.transcript,
           providerName: providerName ?? 'Mistral',
           modelId: modelName ?? 'voxtral-mini',
+          providerType: providerType ?? InferenceProviderType.mistral,
           detectedLanguage: result.detectedLanguage,
           taskId: linkedTaskId,
         );
@@ -602,6 +606,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
 
       _realtimeModelName = null;
       _realtimeProviderName = null;
+      _realtimeProviderType = null;
 
       _loggingService.log(
         LogDomain.speech,
@@ -681,6 +686,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     required String transcript,
     required String providerName,
     required String modelId,
+    required InferenceProviderType providerType,
     String? detectedLanguage,
     String? taskId,
   }) async {
@@ -691,8 +697,11 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
             transcript: transcript,
             providerName: providerName,
             modelId: modelId,
-            providerType: InferenceProviderType.mistral,
+            providerType: providerType,
             interactionKind: AiInteractionKind.realtimeTranscription,
+            privacyClassification: journalAudio.meta.private == true
+                ? AiPrivacyClassification.private
+                : AiPrivacyClassification.standard,
             taskId: taskId,
             categoryId: journalAudio.meta.categoryId,
           )
@@ -732,8 +741,11 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       // Non-fatal: notification will still include the audio entry's own ID.
     }
 
-    await persistenceLogic.updateDbEntity(updated, linkedId: parentId);
-    if (prepared != null) {
+    final persisted = await persistenceLogic.updateDbEntity(
+      updated,
+      linkedId: parentId,
+    );
+    if (persisted == true && prepared != null) {
       await getIt<TranscriptAttributionCoordinator>().finalize(prepared);
     }
   }
@@ -754,6 +766,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     _realtimeStartTime = null;
     _realtimeModelName = null;
     _realtimeProviderName = null;
+    _realtimeProviderType = null;
   }
 
   /// Pauses any currently playing audio. Shared between `record` and

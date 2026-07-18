@@ -1817,6 +1817,18 @@ void main() {
             attribution.interaction.cost?.originalAmountDecimal,
             '0.25',
           );
+          expect(
+            attribution.interaction.cost?.originalUnit,
+            'meliousCredit',
+          );
+          expect(
+            attribution.interaction.cost?.reportingAmountMicros,
+            250000,
+          );
+          expect(
+            attribution.interaction.cost?.reportingCurrency,
+            'EUR',
+          );
           final saved =
               verify(
                     () => mockAiInputRepo.createAiResponseEntry(

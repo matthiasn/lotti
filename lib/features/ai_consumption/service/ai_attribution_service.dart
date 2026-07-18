@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
@@ -238,26 +240,36 @@ class AiAttributionService {
     final recovered = <AiWorkAttribution>[];
     for (final pending in await _repository.pendingAttributions()) {
       if (pending.lastUpdatedAt.isAfter(cutoff)) continue;
-      var recoverable = pending;
-      if (pending.phase == AiAttributionPendingPhase.evidenceDurable &&
-          pending.interactionIds.isNotEmpty) {
-        recoverable = await retryPublication(
-          attributionId: pending.id,
-          interactionId: pending.interactionIds.last,
-        );
-        if (recoverable.phase != AiAttributionPendingPhase.evidencePublished) {
-          continue;
+      try {
+        var recoverable = pending;
+        if (pending.phase == AiAttributionPendingPhase.evidenceDurable &&
+            pending.interactionIds.isNotEmpty) {
+          recoverable = await retryPublication(
+            attributionId: pending.id,
+            interactionId: pending.interactionIds.last,
+          );
+          if (recoverable.phase !=
+              AiAttributionPendingPhase.evidencePublished) {
+            continue;
+          }
         }
+        final hasEvidence = recoverable.interactionIds.isNotEmpty;
+        final envelope = await prepareCompletion(
+          attributionId: recoverable.id,
+          outputs: recoverable.intendedOutputs,
+          status: hasEvidence ? AiWorkStatus.partial : AiWorkStatus.abandoned,
+          errorCode: hasEvidence ? 'output_missing' : 'execution_interrupted',
+        );
+        await finalize(envelope);
+        recovered.add(envelope.attribution);
+      } on Object catch (error, stackTrace) {
+        developer.log(
+          'Failed to recover stale AI attribution ${pending.id}',
+          name: 'ai_attribution.recovery',
+          error: error,
+          stackTrace: stackTrace,
+        );
       }
-      final hasEvidence = recoverable.interactionIds.isNotEmpty;
-      final envelope = await prepareCompletion(
-        attributionId: recoverable.id,
-        outputs: recoverable.intendedOutputs,
-        status: hasEvidence ? AiWorkStatus.partial : AiWorkStatus.abandoned,
-        errorCode: hasEvidence ? 'output_missing' : 'execution_interrupted',
-      );
-      await finalize(envelope);
-      recovered.add(envelope.attribution);
     }
     return recovered;
   }

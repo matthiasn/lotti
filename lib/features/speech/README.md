@@ -264,8 +264,10 @@ Two important implementation details:
    unknown-cost evidence. Only after the publication barrier succeeds does it
    append an `AudioTranscript` with a stable id and terminal attribution
    envelope to `JournalAudio.data.transcripts`; it also mirrors the transcript
-   into `entryText`. The attribution projection is finalized after the journal
-   write, so a transcript never advertises evidence that was not durable.
+   into `entryText`. Attribution inherits the audio entry's privacy flag and
+   the provider type resolved for the realtime session. The projection is
+   finalized only when the journal update confirms that it applied, so a
+   transcript never advertises evidence that was not durable.
 
 `cancelRealtime()` is the realtime discard path (the ✕ button in realtime
 mode). It tears down the recorder and realtime service without creating or

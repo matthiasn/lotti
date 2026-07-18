@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -109,6 +111,43 @@ void main() {
       findsNothing,
     );
     expect(find.text('AI attribution'), findsNothing);
+  });
+
+  testWidgets('does not flash unknown details while loading', (tester) async {
+    final envelope = makeAiTerminalEnvelope();
+    final completer = Completer<AiAttributionDetails?>();
+    await tester.pumpWidget(
+      makeTestableWidget(
+        AiAttributionSummary(
+          artifact: makeAiArtifact(),
+          envelope: envelope,
+        ),
+        overrides: [
+          aiAttributionDetailsProvider.overrideWith(
+            (ref, id) => completer.future,
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('…'), findsNWidgets(2));
+    expect(find.textContaining('Unknown model'), findsNothing);
+    expect(find.text('Cost unknown'), findsNothing);
+
+    completer.complete(
+      AiAttributionDetails(
+        attribution: envelope.attribution,
+        interactions: const [],
+        costTotals: AiCostTotals.empty,
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('…'), findsNothing);
+    expect(find.textContaining('Unknown model'), findsOneWidget);
+    expect(find.text('No charge'), findsOneWidget);
   });
 
   testWidgets('narrow compact summary exposes zero cost and private details', (

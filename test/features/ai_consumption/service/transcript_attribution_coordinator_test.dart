@@ -59,6 +59,7 @@ void main() {
         modelId: 'voxtral',
         providerType: InferenceProviderType.mistral,
         interactionKind: AiInteractionKind.realtimeTranscription,
+        privacyClassification: AiPrivacyClassification.private,
         taskId: 'task-1',
         categoryId: 'category-1',
       );
@@ -69,6 +70,14 @@ void main() {
       expect(interaction.payload?.response, isEmpty);
       expect(interaction.payload?.responseDigest, isNot(contains(transcript)));
       expect(interaction.cost?.source, AiCostSource.unknown);
+      expect(
+        interaction.payload?.privacyClassification,
+        AiPrivacyClassification.private,
+      );
+      expect(
+        prepared.envelope.attribution.privacyClassification,
+        AiPrivacyClassification.private,
+      );
       expect(
         prepared.envelope.attribution.primaryOutput?.subId,
         prepared.transcriptId,

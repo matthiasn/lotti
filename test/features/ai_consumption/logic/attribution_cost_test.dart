@@ -91,6 +91,34 @@ void main() {
     expect(aggregateEffectiveCosts(const []), same(AiCostTotals.empty));
   });
 
+  test('aggregation isolates corrupt evidence to its interaction', () {
+    final totals = aggregateEffectiveCosts([
+      cost(
+        id: 'valid-eur',
+        interactionId: 'valid-call',
+        source: AiCostSource.providerReported,
+        micros: 250,
+        currency: 'EUR',
+      ),
+      cost(
+        id: 'cycle-a',
+        interactionId: 'corrupt-call',
+        source: AiCostSource.providerReported,
+        supersedes: 'cycle-b',
+      ),
+      cost(
+        id: 'cycle-b',
+        interactionId: 'corrupt-call',
+        source: AiCostSource.providerReported,
+        supersedes: 'cycle-a',
+      ),
+    ]);
+
+    expect(totals.reportingMicrosByCurrency, {'EUR': 250});
+    expect(totals.knownInteractionCount, 1);
+    expect(totals.unknownInteractionCount, 1);
+  });
+
   test('authority, assessment time, and id form a deterministic ordering', () {
     const sources = AiCostSource.values;
     final evidence = [
@@ -123,6 +151,7 @@ void main() {
   test('rejects malformed evidence graphs and amount shapes', () {
     final valid = cost(id: 'valid', source: AiCostSource.providerReported);
     final invalidCases = <List<AiInteractionCost>>[
+      [valid, valid],
       [
         valid,
         cost(
