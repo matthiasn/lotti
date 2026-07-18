@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Dutch system locales, and the published Manual now has a Dutch route with
   matching localized screenshots. Settings → Advanced → Language can also
   select Dutch explicitly.
+- **Danish and Swedish are now available across Lotti and its Manual.** The
+  app follows Danish and Swedish system locales, with matching Manual routes,
+  localized screenshots, and explicit language choices in Settings → Advanced
+  → Language.
 
 ### Changed
 - **Language now changes Lotti as well as the Manual.** Selecting a language
@@ -23,12 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   wakes the task agent while automatic updates are off. The summary is marked
   out of date instead, so the card shows the Wake agent action and no
   inference tokens are spent without consent.
-
-### Added
-- **Danish and Swedish are now available across Lotti and its Manual.** The
-  app follows Danish and Swedish system locales, with matching Manual routes,
-  localized screenshots, and explicit language choices in Settings → Advanced
-  → Language.
 
 ### Changed
 - **The task AI summary card is more compact and calmer.** The summary now

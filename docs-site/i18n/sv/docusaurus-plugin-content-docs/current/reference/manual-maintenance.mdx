@@ -6,22 +6,22 @@ description: Det lätta bidragsflödet för manuellt innehåll och skärmdumpar.
 # Underhåll denna manual
 
 Källkoden finns i applikationsarkivet, så en beteendeförändring och dess
-Dokumentation kan landa ihop. Genererade skärmdumpar finns i syskonet
-`lotti-docs` repository and are never committed to the application tree.
+dokumentation kan landa ihop. Genererade skärmdumpar finns i syskonarkivet
+`lotti-docs` och checkas aldrig in i applikationsträdet.
 
 ## Redigera prosa
 
-1. Edit or add the English MDX file under `docs-site/docs`.
+1. Redigera eller lägg till den engelska MDX-filen under `docs-site/docs`.
 2. Uppdatera matchningsfilen för varje publicerad plats under
    `docs-site/i18n/<locale>/docusaurus-plugin-content-docs/current`.
-3. Add a new page to `docs-site/sidebars.ts`.
-4. Update `docs-site/metadata/features.json` when coverage changes.
+3. Lägg till en ny sida i `docs-site/sidebars.ts`.
+4. Uppdatera `docs-site/metadata/features.json` när täckningen ändras.
 5. Uppdatera matchande poster i
-   `docs-site/metadata/surface-inventory.json`. A surface becomes **verified**
+   `docs-site/metadata/surface-inventory.json`. En yta blir **verifierad**
    endast när dess nuvarande produktionsgränssnitt, prosa och skärmdumpstäckning har
    Alla har granskats.
-6. Run `make manual_check`.
-7. Review the production build locally with `make manual_serve`, including the
+6. Kör `make manual_check`.
+7. Granska produktionsbygget lokalt med `make manual_serve`, inklusive
    Språkväljare och varje lokaliserad rutt.
 
 Validering kräver att varje publicerat översättningsträd innehåller samma sida
@@ -41,43 +41,41 @@ En osynlig, gammal bråk.
 
 Täckningsstater har medvetet strikta betydelser:
 
-- **Planned** betyder att ytan är känd men fortfarande saknar fullständig täckning.
+- **Planerad** betyder att ytan är känd men fortfarande saknar fullständig täckning.
 - **Dokumenterat** betyder att användbar prosa finns, men skärmdumpar från nuvarande produktion
   eller så saknas en noggrannhet från början till slut.
-- ** verifierad betyder att den relevanta funktionssidan är verifierad och stödd av
-  Registrerade produktionsskärmdumpar.
+- **Verifierad** betyder att den relevanta funktionssidan är verifierad och stödd av
+  registrerade produktionsskärmdumpar.
 
-Run `npm --prefix docs-site run coverage:complete` for the release gate. It
-misslyckas tills varje inventerad yta är verifierad; Vanlig inkrementell manual
-Builds fortsätter att rapportera de återstående räkningarna utan att blockera ämnesstorlek
-Åtaganden.
+Kör `npm --prefix docs-site run coverage:complete` som utgivningsgrind. Det
+misslyckas tills varje inventerad yta är verifierad; vanliga inkrementella
+manualbyggen fortsätter att rapportera de återstående räkningarna utan att blockera
+ämnesändringar.
 
 ## Lägg till ett skärmdumpsfall
 
 1. Lägg till eller återanvänd en deterministisk Flutter-skärmdumpssele.
 2. Registrera fallet och dess fyra källbilder i
    `docs-site/metadata/screenshot-cases.json`.
-3. Put visible fixture copy behind `manualScreenshotText(...)` for every
-   Stödd lokalitet när den inte redan tillhandahålls av applokaliseringen
-   filer.
-4. Capture every locale into `../lotti-docs`; never into this repository.
+3. Lägg synlig fixturetext bakom `manualScreenshotText(...)` för varje
+   språk som stöds när den inte redan tillhandahålls av applokaliseringsfilerna.
+4. Fånga varje språk i `../lotti-docs`, aldrig i detta arkiv.
 5. Skapa och validera mediemanifestet.
-6. Reference the case with `<ManualScreenshot caseId="…" alt="…" />` on
-   every language page.
+6. Referera till fallet med `<ManualScreenshot caseId="…" alt="…" />` på
+   varje språksida.
 
-Every app screenshot in an authored page must use `ManualScreenshot`. Direct
-links to old `lotti-docs` images fail manual validation because they cannot
-follow the global Mobile/Desktop choice or the manual's light/dark theme.
+Varje appskärmdump på en författad sida måste använda `ManualScreenshot`. Direkta
+länkar till gamla `lotti-docs`-bilder misslyckas vid manualvalidering eftersom de
+inte kan följa det globala Mobile/Desktop-valet eller manualens ljusa/mörka tema.
 
-Every automated case must provide mobile-light, mobile-dark, desktop-light,
-and desktop-dark variants in every published locale. The manual component
-chooses the matching language and theme. Changing Mobile/Desktop on any image
-updates every screenshot immediately and persists across pages and open manual
-tabs.
+Varje automatiserat fall måste ha mobile-light-, mobile-dark-, desktop-light-
+och desktop-dark-varianter för varje publicerat språk. Manualkomponenten väljer
+det matchande språket och temat. När Mobile/Desktop ändras på en bild uppdateras
+alla skärmdumpar direkt, och valet bevaras mellan sidor och öppna manualflikar.
 
 ## Publish a release
 
-Manual source is not copied for every app version. The app release tag already
-preserves its exact source. CI checks out that tag, builds with
-`MANUAL_VERSION=<version>`, and publishes an immutable static directory. The
-release dropdown is a small manifest of those directories.
+Manualkällan kopieras inte för varje appversion. Appens utgåvetagg bevarar
+redan exakt källa. CI checkar ut den taggen, bygger med
+`MANUAL_VERSION=<version>` och publicerar en oföränderlig statisk katalog.
+Utgåverullistan är ett litet manifest över dessa kataloger.
