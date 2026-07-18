@@ -2,8 +2,12 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:lotti/features/ai/util/audio_converter_channel.dart';
+import 'package:lotti/features/speech/services/pcm_wav.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+
+export 'package:lotti/features/speech/services/pcm_wav.dart'
+    show buildWavHeader;
 
 /// Signature of a WAV→M4A converter, matching
 /// [AudioConverterChannel.convertWavToM4a]. Returns `true` on success;
@@ -13,41 +17,6 @@ typedef WavToM4aConverter =
       required String inputPath,
       required String outputPath,
     });
-
-/// Builds a 44-byte canonical WAV header (RIFF + `fmt ` + `data` chunks) for
-/// a PCM payload of [dataSize] bytes.
-///
-/// Defaults match the realtime transcription capture format: PCM 16-bit
-/// signed little-endian, 16kHz, mono.
-Uint8List buildWavHeader({
-  required int dataSize,
-  int sampleRate = 16000,
-  int channels = 1,
-  int bitsPerSample = 16,
-}) {
-  final byteRate = sampleRate * channels * bitsPerSample ~/ 8;
-  final blockAlign = channels * bitsPerSample ~/ 8;
-
-  final header = ByteData(44)
-    // RIFF header
-    ..setUint32(0, 0x52494646) // 'RIFF'
-    ..setUint32(4, 36 + dataSize, Endian.little) // file size - 8
-    ..setUint32(8, 0x57415645) // 'WAVE'
-    // fmt chunk
-    ..setUint32(12, 0x666D7420) // 'fmt '
-    ..setUint32(16, 16, Endian.little) // chunk size
-    ..setUint16(20, 1, Endian.little) // PCM format
-    ..setUint16(22, channels, Endian.little)
-    ..setUint32(24, sampleRate, Endian.little)
-    ..setUint32(28, byteRate, Endian.little)
-    ..setUint16(32, blockAlign, Endian.little)
-    ..setUint16(34, bitsPerSample, Endian.little)
-    // data chunk
-    ..setUint32(36, 0x64617461) // 'data'
-    ..setUint32(40, dataSize, Endian.little);
-
-  return header.buffer.asUint8List();
-}
 
 /// Persists captured realtime PCM audio as an audio file.
 ///
