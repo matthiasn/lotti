@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1054]
+### Fixed
+- **Screen-reader controls now consistently expose one actionable, localized
+  announcement.** Back, overflow, chart-baseline, and entry-collapse controls
+  retain their labels, actions, and state without duplicate speech; new
+  accessibility labels are available in Danish, Swedish, and Dutch.
+
 ## [0.9.1053]
 ### Added
 - **Danish and Swedish are now available across Lotti and its Manual.** The

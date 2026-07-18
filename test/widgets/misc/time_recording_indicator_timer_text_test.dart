@@ -37,10 +37,8 @@ void main() {
   testWidgets('TimeRecordingIndicator text width is stable', (tester) async {
     Future<void> pumpOnce(JournalEntity entity) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: Center(child: TimeRecordingIndicator()),
-          ),
+        makeTestableWidgetWithScaffold(
+          const Center(child: TimeRecordingIndicator()),
         ),
       );
       timeStreamController.add(entity);

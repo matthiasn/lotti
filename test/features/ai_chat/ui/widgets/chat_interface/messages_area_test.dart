@@ -4,13 +4,13 @@ import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/messages_area.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/typing_indicator.dart';
 
-void main() {
-  Widget wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
+import '../../../../../widget_test_utils.dart';
 
+void main() {
   group('MessagesArea', () {
     testWidgets('shows empty state when there are no messages', (tester) async {
       await tester.pumpWidget(
-        wrap(
+        makeTestableWidgetWithScaffold(
           MessagesArea(
             messages: const <ChatMessage>[],
             scrollController: ScrollController(),
@@ -28,7 +28,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        wrap(
+        makeTestableWidgetWithScaffold(
           MessagesArea(
             messages: const <ChatMessage>[],
             scrollController: ScrollController(),
@@ -55,7 +55,7 @@ void main() {
       ];
 
       await tester.pumpWidget(
-        wrap(
+        makeTestableWidgetWithScaffold(
           MessagesArea(
             messages: msgs,
             scrollController: ScrollController(),

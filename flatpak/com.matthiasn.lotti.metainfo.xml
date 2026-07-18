@@ -33,6 +33,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1054" date="2026-07-18">
+      <description>
+        <p>Screen-reader controls now expose one clear actionable announcement with their label and state. New accessibility labels are also available in Danish, Swedish, and Dutch.</p>
+      </description>
+    </release>
     <release version="0.9.1053" date="2026-07-18">
       <description>
         <p>Danish and Swedish are now available throughout Lotti and its Manual. The app follows Danish and Swedish system locales, and Settings → Advanced → Language can open each matching manual explicitly.</p>
