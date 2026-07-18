@@ -260,6 +260,10 @@ void main() {
         Icons.edit_note_outlined,
         'Prompt generation',
       ),
+      AiConsumptionResponseType.embeddingIndexing: (
+        Icons.hub_outlined,
+        'Embedding indexing',
+      ),
     };
     stubEvents([
       for (final type in cases.keys)

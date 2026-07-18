@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -28,6 +29,20 @@ void _stubIncomingEvent(
     ),
   );
 }
+
+AiAttributionRecoveryCapsule _capsule({
+  String executorHostId = 'remote-host',
+}) => AiAttributionRecoveryCapsule(
+  id: 'capsule-1',
+  attributionId: 'attribution-1',
+  workType: AiWorkType.imageAnalysis,
+  initiator: makeAiActor(),
+  trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
+  executor: makeAiExecutor(hostId: executorHostId),
+  privacyClassification: AiPrivacyClassification.standard,
+  startedAt: DateTime(2026, 3, 15, 12),
+  intendedOutputs: [makeAiArtifact()],
+);
 
 void main() {
   setUpAll(registerSyncProcessorFallbacks);
@@ -86,6 +101,99 @@ void main() {
 
       verifyNever(() => repo.upsertEvent(any()));
     });
+
+    test('projects an authentic recovery capsule on a fresh event', () async {
+      final payload =
+          makeConsumptionEvent(
+            id: 'evt-recovery',
+            vectorClock: const VectorClock({'remote-host': 4}),
+          ).copyWith(
+            attributionId: 'attribution-1',
+            recoveryCapsule: _capsule(),
+          );
+      when(
+        () => repo.projectRecoveryCapsule(
+          capsule: any(named: 'capsule'),
+          event: any(named: 'event'),
+        ),
+      ).thenAnswer((_) async {});
+      _stubIncomingEvent(payload);
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => repo.upsertEvent(payload)).called(1);
+      verify(
+        () => repo.projectRecoveryCapsule(
+          capsule: payload.recoveryCapsule!,
+          event: payload,
+        ),
+      ).called(1);
+    });
+
+    test('rejects a recovery capsule from a different executor host', () async {
+      final payload =
+          makeConsumptionEvent(
+            id: 'evt-forged-recovery',
+            vectorClock: const VectorClock({'remote-host': 4}),
+          ).copyWith(
+            attributionId: 'attribution-1',
+            recoveryCapsule: _capsule(executorHostId: 'other-host'),
+          );
+      _stubIncomingEvent(payload);
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(
+        () => repo.upsertEvent(payload.copyWith(recoveryCapsule: null)),
+      ).called(1);
+      verifyNever(
+        () => repo.projectRecoveryCapsule(
+          capsule: any(named: 'capsule'),
+          event: any(named: 'event'),
+        ),
+      );
+      verify(
+        () => loggingService.log(
+          LogDomain.sync,
+          any(that: contains('recoveryCapsuleRejected')),
+          subDomain: 'processor.apply',
+        ),
+      ).called(1);
+    });
+
+    test(
+      'projects recovery evidence even when the event is a replay',
+      () async {
+        final payload =
+            makeConsumptionEvent(
+              id: 'evt-recovery-replay',
+              vectorClock: const VectorClock({'remote-host': 4}),
+            ).copyWith(
+              attributionId: 'attribution-1',
+              recoveryCapsule: _capsule(),
+            );
+        when(
+          () => repo.getVectorClock(payload.id),
+        ).thenAnswer((_) async => const VectorClock({'remote-host': 5}));
+        when(
+          () => repo.projectRecoveryCapsule(
+            capsule: any(named: 'capsule'),
+            event: any(named: 'event'),
+          ),
+        ).thenAnswer((_) async {});
+        _stubIncomingEvent(payload);
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => repo.upsertEvent(any()));
+        verify(
+          () => repo.projectRecoveryCapsule(
+            capsule: payload.recoveryCapsule!,
+            event: payload,
+          ),
+        ).called(1);
+      },
+    );
 
     test('applies when the local clock is concurrent with the incoming '
         'one — append-only rows must never be dropped on a tie', () async {

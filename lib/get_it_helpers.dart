@@ -180,5 +180,9 @@ Future<void> _registerLateAndOptionalServices() async {
 
   // Automatically populate sequence log if empty (one-time migration)
   unawaited(_checkAndPopulateSequenceLog());
+  // The maintenance routine itself is exercised through its testing entrypoint;
+  // this fire-and-forget composition-root hook has no observable completion.
+  // coverage:ignore-start
   unawaited(_backfillAiAttribution());
+  // coverage:ignore-end
 }

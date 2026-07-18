@@ -9,12 +9,17 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/workflow/wake_output_writer.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/sync/g_counter.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 
 // Deterministic identity / time used across the suite.
 const _agentId = 'agent-1';
@@ -211,6 +216,87 @@ void main() {
   });
 
   group('report', () {
+    test(
+      'embeds and finalizes durable attribution for a written report',
+      () async {
+        await setUpTestGetIt();
+        addTearDown(tearDownTestGetIt);
+        final attributionService = MockAiAttributionService();
+        getIt.registerSingleton<AiAttributionService>(attributionService);
+        final envelope = makeAiTerminalEnvelope(
+          attributionId: 'wake-attribution',
+          output: makeAiArtifact(
+            type: AiArtifactType.agentReport,
+            id: 'report-attributed',
+          ),
+        );
+        when(
+          () => attributionService.prepareCompletion(
+            attributionId: agentWakeAttributionId(_runKey),
+            outputs: any(named: 'outputs'),
+          ),
+        ).thenAnswer((_) async => envelope);
+        when(
+          () => attributionService.finalize(envelope),
+        ).thenAnswer((_) async {});
+        when(
+          () => repo.getReportHead(_agentId, AgentReportScopes.current),
+        ).thenAnswer((_) async => null);
+
+        await run(
+          reportContent: 'Attributed report',
+          uuid: _SequentialUuid(['report-attributed', 'head-attributed']),
+        );
+
+        final report = capturedUpserts().whereType<AgentReportEntity>().single;
+        expect(
+          report.provenance[aiAttributionProvenanceKey],
+          envelope.toJson(),
+        );
+        verify(
+          () => attributionService.prepareCompletion(
+            attributionId: agentWakeAttributionId(_runKey),
+            outputs: [
+              const AiArtifactReference(
+                type: AiArtifactType.agentReport,
+                id: 'report-attributed',
+              ),
+            ],
+          ),
+        ).called(1);
+        verify(() => attributionService.finalize(envelope)).called(1);
+      },
+    );
+
+    test(
+      'writes the report when attribution publication is unavailable',
+      () async {
+        await setUpTestGetIt();
+        addTearDown(tearDownTestGetIt);
+        final attributionService = MockAiAttributionService();
+        getIt.registerSingleton<AiAttributionService>(attributionService);
+        when(
+          () => attributionService.prepareCompletion(
+            attributionId: any(named: 'attributionId'),
+            outputs: any(named: 'outputs'),
+          ),
+        ).thenThrow(const AiAttributionPublicationException('offline'));
+        when(
+          () => repo.getReportHead(_agentId, AgentReportScopes.current),
+        ).thenAnswer((_) async => null);
+
+        final result = await run(
+          reportContent: 'Still durable',
+          uuid: _SequentialUuid(['report-without-attribution', 'head-id']),
+        );
+
+        expect(result?.reportId, 'report-without-attribution');
+        final report = capturedUpserts().whereType<AgentReportEntity>().single;
+        expect(report.provenance, isNot(contains(aiAttributionProvenanceKey)));
+        verifyNever(() => attributionService.finalize(any()));
+      },
+    );
+
     test('stamps immutable inference provenance on a written report', () async {
       const provenance = ReportInferenceProvenance(
         runKey: _runKey,

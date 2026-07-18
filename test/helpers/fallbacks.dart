@@ -25,8 +25,10 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -52,6 +54,66 @@ final AiConsumptionEvent fallbackAiConsumptionEvent = AiConsumptionEvent(
   responseType: AiConsumptionResponseType.agentTurn,
   vectorClock: null,
 );
+
+const AiAttributionStart fallbackAiAttributionStart = AiAttributionStart(
+  workType: AiWorkType.textGeneration,
+  initiator: AiActorSnapshot(
+    type: AiActorType.system,
+    id: 'fallback-actor',
+    displayName: 'Fallback actor',
+  ),
+  trigger: AiTriggerSnapshot(type: AiTriggerType.automatic),
+  executor: AiExecutorSnapshot(
+    hostId: 'fallback-host',
+    displayName: 'Fallback host',
+  ),
+  privacyClassification: AiPrivacyClassification.standard,
+);
+
+final AiTerminalAttributionEnvelope fallbackAiTerminalAttributionEnvelope =
+    AiTerminalAttributionEnvelope(
+      id: 'fallback-terminal',
+      attribution: AiWorkAttribution(
+        id: 'fallback-attribution',
+        workType: AiWorkType.textGeneration,
+        status: AiWorkStatus.succeeded,
+        initiator: const AiActorSnapshot(
+          type: AiActorType.system,
+          id: 'fallback-actor',
+          displayName: 'Fallback actor',
+        ),
+        trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
+        executor: const AiExecutorSnapshot(
+          hostId: 'fallback-host',
+          displayName: 'Fallback host',
+        ),
+        privacyClassification: AiPrivacyClassification.standard,
+        startedAt: DateTime.fromMillisecondsSinceEpoch(0),
+        completedAt: DateTime.fromMillisecondsSinceEpoch(0),
+        vectorClock: null,
+        links: const [],
+      ),
+    );
+
+final AiAttributionRecoveryCapsule fallbackAiAttributionRecoveryCapsule =
+    AiAttributionRecoveryCapsule(
+      id: 'fallback-recovery-capsule',
+      attributionId: 'fallback-attribution',
+      workType: AiWorkType.textGeneration,
+      initiator: const AiActorSnapshot(
+        type: AiActorType.system,
+        id: 'fallback-actor',
+        displayName: 'Fallback actor',
+      ),
+      trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
+      executor: const AiExecutorSnapshot(
+        hostId: 'fallback-host',
+        displayName: 'Fallback host',
+      ),
+      privacyClassification: AiPrivacyClassification.standard,
+      startedAt: DateTime.fromMillisecondsSinceEpoch(0),
+      intendedOutputs: const [],
+    );
 
 final ProjectEntry fallbackProjectEntry =
     JournalEntity.project(
@@ -427,6 +489,11 @@ void registerAllFallbackValues() {
 
   // AI consumption event fallback (recorder/repository mocks).
   registerFallbackValue(fallbackAiConsumptionEvent);
+  registerFallbackValue(fallbackAiAttributionStart);
+  registerFallbackValue(fallbackAiTerminalAttributionEnvelope);
+  registerFallbackValue(fallbackAiTerminalAttributionEnvelope.attribution);
+  registerFallbackValue(fallbackAiAttributionRecoveryCapsule);
+  registerFallbackValue(<AiArtifactReference>[]);
 
   // GenUI A2uiMessage fallback (needed when MockSurfaceController.handleMessage
   // is stubbed with any()).

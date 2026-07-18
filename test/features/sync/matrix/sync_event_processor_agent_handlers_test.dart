@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -724,6 +725,11 @@ void main() {
     });
 
     test('processes agent report entity', () async {
+      final consumptionRepository = MockConsumptionRepository();
+      when(
+        () => consumptionRepository.upsertAttribution(any()),
+      ).thenAnswer((_) async {});
+      processor.consumptionRepository = consumptionRepository;
       final entity = AgentDomainEntity.agentReport(
         id: 'report-1',
         agentId: 'agent-1',
@@ -743,6 +749,19 @@ void main() {
       await processor.process(event: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      final attribution =
+          verify(
+                () => consumptionRepository.upsertAttribution(captureAny()),
+              ).captured.single
+              as AiWorkAttribution;
+      expect(attribution.workType, AiWorkType.agentReport);
+      expect(
+        attribution.primaryOutput,
+        const AiArtifactReference(
+          type: AiArtifactType.agentReport,
+          id: 'report-1',
+        ),
+      );
     });
 
     test('processes agent report head entity', () async {

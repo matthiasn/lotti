@@ -370,4 +370,65 @@ void main() {
       ).called(1);
     });
   });
+
+  group('attribution publication barrier', () {
+    test('returns the exact stamped event after durable enqueue', () async {
+      final result = await service.recordEventForPublication(
+        makeConsumptionEvent(id: 'publication-success'),
+      );
+
+      expect(result.published, isTrue);
+      expect(result.event.id, 'publication-success');
+      expect(result.event.vectorClock, stamped);
+      expect(await repo.getEvent(result.event.id), result.event);
+      verify(
+        () => sequenceLog.recordSentEntry(
+          entryId: result.event.id,
+          vectorClock: stamped,
+          payloadType: SyncSequencePayloadType.consumptionEvent,
+        ),
+      ).called(1);
+      verify(() => outbox.enqueueMessage(any())).called(1);
+    });
+
+    test(
+      'reports a failed enqueue while preserving stamped evidence',
+      () async {
+        when(
+          () => outbox.enqueueMessage(any()),
+        ).thenThrow(Exception('outbox unavailable'));
+
+        final result = await service.recordEventForPublication(
+          makeConsumptionEvent(id: 'publication-durable'),
+        );
+
+        expect(result.published, isFalse);
+        expect(result.event.vectorClock, stamped);
+        expect(await repo.getEvent(result.event.id), result.event);
+      },
+    );
+
+    test(
+      'retry enqueues an already-stamped event without another write',
+      () async {
+        final event = makeConsumptionEvent(
+          id: 'publication-retry',
+          vectorClock: stamped,
+        );
+
+        expect(await service.retryEventPublication(event), isTrue);
+
+        final message =
+            verify(
+                  () => outbox.enqueueMessage(captureAny()),
+                ).captured.single
+                as SyncConsumptionEvent;
+        expect(message.event, event);
+        expect(await repo.getEvent(event.id), isNull);
+        verifyNever(
+          () => vcService.getNextVectorClock(previous: any(named: 'previous')),
+        );
+      },
+    );
+  });
 }

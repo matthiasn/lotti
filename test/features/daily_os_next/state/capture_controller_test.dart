@@ -10,6 +10,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -19,6 +21,7 @@ import 'package:record/record.dart' as record;
 import 'package:record/record.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 
 final _recordingStartedAt = DateTime(2026, 5, 26, 9);
 
@@ -1536,6 +1539,60 @@ void main() {
         expect(transcript.library, 'batch-transcribe');
         expect(latestUpdated!.entryText, isA<EntryText>());
         expect(latestUpdated!.entryText!.plainText, 'hello journal');
+      },
+    );
+
+    test(
+      'batch capture persists and finalizes transcript attribution',
+      () async {
+        when(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenAnswer((_) async => 'attributed transcript');
+        final coordinator = MockTranscriptAttributionCoordinator();
+        final envelope = makeAiTerminalEnvelope(
+          attributionId: 'transcript-attribution',
+          output: makeAiArtifact(
+            type: AiArtifactType.journalAudio,
+            id: 'audio_001',
+            subId: 'transcript-id',
+          ),
+        );
+        final prepared = PreparedTranscriptAttribution(
+          transcriptId: 'transcript-id',
+          envelope: envelope,
+        );
+        when(
+          () => coordinator.prepare(
+            audioEntryId: 'audio_001',
+            transcript: 'attributed transcript',
+            providerName: 'batch-transcribe',
+            modelId: 'cloud-inference',
+            providerType: InferenceProviderType.genericOpenAi,
+            interactionKind: AiInteractionKind.audioTranscription,
+          ),
+        ).thenAnswer((_) async => prepared);
+        when(() => coordinator.finalize(prepared)).thenAnswer((_) async {});
+        getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
+
+        final container = _aliveContainer(
+          recorder: recorder,
+          transcriber: transcriber,
+          realtimeService: realtimeService,
+          persistAudio: (_) async => _persistedAudio(),
+        );
+        addTearDown(container.dispose);
+        final notifier = container.read(captureControllerProvider.notifier);
+
+        await notifier.toggle();
+        await notifier.toggle();
+
+        final transcript = latestUpdated!.data.transcripts!.single;
+        expect(transcript.id, 'transcript-id');
+        expect(transcript.aiAttribution, envelope);
+        verify(() => coordinator.finalize(prepared)).called(1);
       },
     );
 

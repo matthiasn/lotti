@@ -54,11 +54,6 @@ class AttributionDbConversions {
     );
   }
 
-  static AiAttributionLink linkFromRow(db.AiAttributionLink row) =>
-      AiAttributionLink.fromJson(
-        jsonDecode(row.serialized) as Map<String, dynamic>,
-      );
-
   static db.AiInteractionPayloadsCompanion payloadToCompanion(
     AiInteractionPayload payload,
   ) {

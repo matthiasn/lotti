@@ -1011,10 +1011,12 @@ void main() {
 
       // Create AI response entry
       final aiResponse = await getIt<PersistenceLogic>().createAiResponseEntry(
+        id: 'ai-response-id',
         data: aiResponseData,
       );
 
       expect(aiResponse, isNotNull);
+      expect(aiResponse?.id, 'ai-response-id');
       expect(aiResponse?.data, aiResponseData);
 
       // Retrieve the AI response from the database

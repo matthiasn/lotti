@@ -27,8 +27,11 @@ import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -41,6 +44,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 
 enum _GeneratedPromptStreamPartKind { text, whitespace, empty }
 
@@ -171,6 +175,73 @@ extension _AnyGeneratedPromptStreamScenario on glados.Any {
       useHighEndModel: useHighEndModel,
     ),
   );
+}
+
+class _AttributionTestHarness {
+  final service = MockAiAttributionService();
+  final identityResolver = MockAiAttributionIdentityResolver();
+
+  late AiAttributionStart startCommand;
+  late AiAttributionPendingSession pending;
+  late AiConsumptionEvent interaction;
+  late AiTerminalAttributionEnvelope terminal;
+
+  void register({required String attributionId}) {
+    getIt
+      ..registerSingleton<AiAttributionService>(service)
+      ..registerSingleton<AiAttributionIdentityResolver>(identityResolver);
+    when(identityResolver.humanInitiator).thenAnswer(
+      (_) async => makeAiActor(),
+    );
+    when(identityResolver.executor).thenAnswer(
+      (_) async => makeAiExecutor(),
+    );
+    when(() => service.begin(any())).thenAnswer((invocation) async {
+      startCommand =
+          invocation.positionalArguments.single as AiAttributionStart;
+      return pending = AiAttributionPendingSession(
+        id: attributionId,
+        attributionId: attributionId,
+        workType: startCommand.workType,
+        initiator: startCommand.initiator,
+        trigger: startCommand.trigger,
+        executor: startCommand.executor,
+        privacyClassification: startCommand.privacyClassification,
+        phase: AiAttributionPendingPhase.prepared,
+        startedAt: DateTime(2026, 3, 15),
+        lastUpdatedAt: DateTime(2026, 3, 15),
+        intendedOutputs: startCommand.intendedOutputs,
+        sourceArtifacts: startCommand.sources,
+        taskId: startCommand.taskId,
+        categoryId: startCommand.categoryId,
+      );
+    });
+    when(
+      () => service.recordInteraction(
+        attributionId: any(named: 'attributionId'),
+        event: any(named: 'event'),
+      ),
+    ).thenAnswer((invocation) async {
+      interaction = invocation.namedArguments[#event] as AiConsumptionEvent;
+      return AiAttributedInteractionResult(
+        session: pending,
+        event: interaction.copyWith(attributionId: pending.id),
+        published: true,
+      );
+    });
+    when(
+      () => service.prepareCompletion(
+        attributionId: any(named: 'attributionId'),
+        outputs: any(named: 'outputs'),
+      ),
+    ).thenAnswer((_) async {
+      return terminal = makeAiTerminalEnvelope(
+        attributionId: pending.id,
+        output: pending.intendedOutputs.single,
+      );
+    });
+    when(() => service.finalize(any())).thenAnswer((_) async {});
+  }
 }
 
 /// Stubs the [MockDomainLogger.error] sink so error-path code can log without
@@ -1662,6 +1733,136 @@ void main() {
         );
       });
 
+      test(
+        'persists attributed image analysis with provider-reported cost',
+        () async {
+          final attribution = _AttributionTestHarness()
+            ..register(attributionId: 'image-attribution');
+          await createStubImageFile();
+          final imageEntity = makeImageEntity();
+          when(
+            () => mockAiInputRepo.getEntity(imageEntity.id),
+          ).thenAnswer((_) async => imageEntity);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer((invocation) {
+            (invocation.namedArguments[#impactCollector]
+                    as InferenceImpactCollector?)
+                ?.impact = const MeliousCallImpact(
+              costCredits: 0.25,
+            );
+            return Stream.fromIterable([
+              makeStreamChunk('Attributed image analysis'),
+            ]);
+          });
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((invocation) async {
+            final id = invocation.namedArguments[#id] as String;
+            final data = invocation.namedArguments[#data] as AiResponseData;
+            return AiResponseEntry(
+              meta: Metadata(
+                id: id,
+                createdAt: DateTime(2026, 3, 15),
+                updatedAt: DateTime(2026, 3, 15),
+                dateFrom: DateTime(2026, 3, 15),
+                dateTo: DateTime(2026, 3, 15),
+              ),
+              data: data,
+            );
+          });
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runImageAnalysis(
+            imageEntryId: imageEntity.id,
+            automationResult: makeImageAnalysisResult(),
+          );
+
+          expect(attribution.startCommand.workType, AiWorkType.imageAnalysis);
+          expect(
+            attribution.startCommand.sources.single.type,
+            AiArtifactType.journalImage,
+          );
+          expect(
+            attribution.interaction.interactionKind,
+            AiInteractionKind.imageAnalysis,
+          );
+          expect(
+            attribution.interaction.cost?.source,
+            AiCostSource.providerReported,
+          );
+          expect(
+            attribution.interaction.cost?.originalAmountDecimal,
+            '0.25',
+          );
+          final saved =
+              verify(
+                    () => mockAiInputRepo.createAiResponseEntry(
+                      id: any(named: 'id'),
+                      data: captureAny(named: 'data'),
+                      start: any(named: 'start'),
+                      linkedId: imageEntity.id,
+                    ),
+                  ).captured.single
+                  as AiResponseData;
+          expect(saved.aiAttribution, attribution.terminal);
+          verify(
+            () => attribution.service.finalize(attribution.terminal),
+          ).called(1);
+
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingException();
+
+          await runner.runImageAnalysis(
+            imageEntryId: imageEntity.id,
+            automationResult: makeImageAnalysisResult(),
+          );
+
+          final error =
+              verify(
+                    () => mockLoggingService.error(
+                      LogDomain.ai,
+                      captureAny<Object>(),
+                      stackTrace: any<StackTrace?>(named: 'stackTrace'),
+                      subDomain: 'runImageAnalysis',
+                    ),
+                  ).captured.single
+                  as Object;
+          expect(error, isA<StateError>());
+          verifyNever(() => attribution.service.finalize(any()));
+        },
+      );
+
       test('appends analysis to existing entryText', () async {
         final imageEntity =
             JournalEntity.journalImage(
@@ -2659,6 +2860,227 @@ void main() {
         final categoryId = captured[2] as String?;
         expect(categoryId, 'cat-1');
       });
+
+      test(
+        'publishes attribution evidence before saving a generated prompt',
+        () async {
+          final attributionService = MockAiAttributionService();
+          final identityResolver = MockAiAttributionIdentityResolver();
+          getIt
+            ..registerSingleton<AiAttributionService>(attributionService)
+            ..registerSingleton<AiAttributionIdentityResolver>(
+              identityResolver,
+            );
+          addTearDown(() {
+            if (getIt.isRegistered<AiAttributionService>()) {
+              getIt.unregister<AiAttributionService>();
+            }
+            if (getIt.isRegistered<AiAttributionIdentityResolver>()) {
+              getIt.unregister<AiAttributionIdentityResolver>();
+            }
+          });
+          when(identityResolver.humanInitiator).thenAnswer(
+            (_) async => makeAiActor(),
+          );
+          when(identityResolver.executor).thenAnswer(
+            (_) async => makeAiExecutor(),
+          );
+          late AiAttributionPendingSession pending;
+          late AiAttributionStart startCommand;
+          when(() => attributionService.begin(any())).thenAnswer((
+            invocation,
+          ) async {
+            startCommand =
+                invocation.positionalArguments.single as AiAttributionStart;
+            return pending = AiAttributionPendingSession(
+              id: 'prompt-attribution',
+              attributionId: 'prompt-attribution',
+              workType: startCommand.workType,
+              initiator: startCommand.initiator,
+              trigger: startCommand.trigger,
+              executor: startCommand.executor,
+              privacyClassification: startCommand.privacyClassification,
+              phase: AiAttributionPendingPhase.prepared,
+              startedAt: DateTime(2026, 3, 15),
+              lastUpdatedAt: DateTime(2026, 3, 15),
+              intendedOutputs: startCommand.intendedOutputs,
+              sourceArtifacts: startCommand.sources,
+              taskId: startCommand.taskId,
+              categoryId: startCommand.categoryId,
+            );
+          });
+          late AiConsumptionEvent interaction;
+          when(
+            () => attributionService.recordInteraction(
+              attributionId: any(named: 'attributionId'),
+              event: any(named: 'event'),
+            ),
+          ).thenAnswer((invocation) async {
+            interaction =
+                invocation.namedArguments[#event] as AiConsumptionEvent;
+            return AiAttributedInteractionResult(
+              session: pending,
+              event: interaction.copyWith(attributionId: pending.id),
+              published: true,
+            );
+          });
+          late AiTerminalAttributionEnvelope terminal;
+          when(
+            () => attributionService.prepareCompletion(
+              attributionId: any(named: 'attributionId'),
+              outputs: any(named: 'outputs'),
+            ),
+          ).thenAnswer((_) async {
+            return terminal = makeAiTerminalEnvelope(
+              attributionId: pending.id,
+              output: pending.intendedOutputs.single,
+            );
+          });
+          when(
+            () => attributionService.finalize(any()),
+          ).thenAnswer((_) async {});
+          final baseSource = makeTextEntry(
+            id: 'attributed-prompt-source',
+            markdown: 'Build an attributed feature.',
+            categoryId: 'cat-private',
+          );
+          final source = baseSource.copyWith(
+            meta: baseSource.meta.copyWith(private: true),
+          );
+          when(
+            () => mockAiInputRepo.getEntity('attributed-prompt-source'),
+          ).thenAnswer((_) async => source);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([
+              makeStreamChunk('## Summary\nAttributed\n\n## Prompt\nDo it'),
+            ]),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((invocation) async {
+            final id = invocation.namedArguments[#id] as String;
+            final data = invocation.namedArguments[#data] as AiResponseData;
+            return AiResponseEntry(
+              meta: Metadata(
+                id: id,
+                createdAt: DateTime(2026, 3, 15),
+                updatedAt: DateTime(2026, 3, 15),
+                dateFrom: DateTime(2026, 3, 15),
+                dateTo: DateTime(2026, 3, 15),
+              ),
+              data: data,
+            );
+          });
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            entryId: source.id,
+            automationResult: makePromptGenerationResult(),
+          );
+
+          expect(startCommand.workType, AiWorkType.codingPrompt);
+          expect(
+            startCommand.privacyClassification,
+            AiPrivacyClassification.private,
+          );
+          expect(startCommand.sources.single.type, AiArtifactType.journalEntry);
+          expect(interaction.interactionKind, AiInteractionKind.textGeneration);
+          expect(
+            interaction.payload?.capturePolicy,
+            AiPayloadCapturePolicy.referenceOnly,
+          );
+          expect(interaction.payload?.request.single.sha256, isNotEmpty);
+          expect(interaction.payload?.response.single.sha256, isNotEmpty);
+          expect(interaction.cost?.source, AiCostSource.unknown);
+          final saved =
+              verify(
+                    () => mockAiInputRepo.createAiResponseEntry(
+                      id: any(named: 'id'),
+                      data: captureAny(named: 'data'),
+                      start: any(named: 'start'),
+                      linkedId: any(named: 'linkedId'),
+                      categoryId: any(named: 'categoryId'),
+                    ),
+                  ).captured.single
+                  as AiResponseData;
+          expect(saved.aiAttribution, terminal);
+          verify(() => attributionService.finalize(terminal)).called(1);
+        },
+      );
+
+      test(
+        'does not finalize attribution when prompt persistence fails',
+        () async {
+          final attribution = _AttributionTestHarness()
+            ..register(attributionId: 'failed-prompt-attribution');
+          final source = makeTextEntry(
+            id: 'failed-attributed-prompt',
+            markdown: 'Generate a prompt.',
+          );
+          when(
+            () => mockAiInputRepo.getEntity(source.id),
+          ).thenAnswer((_) async => source);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(makeStreamChunk('Generated prompt')),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingException();
+
+          await runner.runPromptGeneration(
+            entryId: source.id,
+            automationResult: makePromptGenerationResult(),
+          );
+
+          final error =
+              verify(
+                    () => mockLoggingService.error(
+                      LogDomain.ai,
+                      captureAny<Object>(),
+                      stackTrace: any<StackTrace?>(named: 'stackTrace'),
+                      subDomain: 'runPromptGeneration',
+                    ),
+                  ).captured.single
+                  as Object;
+          expect(error, isA<StateError>());
+          verifyNever(() => attribution.service.finalize(any()));
+        },
+      );
 
       test(
         'coding prompt links to the source entry when there is no task',
