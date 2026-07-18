@@ -134,6 +134,8 @@ void main() {
         label: 'Use zero baseline',
         isButton: true,
         hasToggledState: true,
+        // ignore: avoid_redundant_argument_values
+        isToggled: false,
         hasTapAction: true,
       ),
     );

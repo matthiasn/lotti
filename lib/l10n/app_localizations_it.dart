@@ -6088,6 +6088,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get journalEndTimeLabel => 'Tempo di chiusura';
 
   @override
+  String get journalEntryExpandLabel => 'Espandi voce';
+
+  @override
   String get journalFilterEntryTypesTitle => 'Tipologie di ammissione';
 
   @override

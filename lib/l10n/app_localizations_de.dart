@@ -6049,6 +6049,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalEndTimeLabel => 'Endzeit';
 
   @override
+  String get journalEntryExpandLabel => 'Eintrag erweitern';
+
+  @override
   String get journalFilterEntryTypesTitle => 'Eintragstypen';
 
   @override

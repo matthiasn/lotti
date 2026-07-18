@@ -6076,6 +6076,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalEndTimeLabel => 'Čas konce';
 
   @override
+  String get journalEntryExpandLabel => 'Rozbalit záznam';
+
+  @override
   String get journalFilterEntryTypesTitle => 'Typy záznamů';
 
   @override

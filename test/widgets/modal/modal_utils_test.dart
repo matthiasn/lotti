@@ -558,6 +558,8 @@ void main() {
 
         expect(find.text('Modal content'), findsOneWidget);
         expect(triggerFocusNode.hasFocus, isFalse);
+        final modalContext = tester.element(find.text('Modal content'));
+        expect(FocusScope.of(modalContext).hasFocus, isTrue);
 
         Navigator.of(triggerContext).pop();
         await tester.pump();

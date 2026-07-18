@@ -6111,6 +6111,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalEndTimeLabel => 'Heure de fin';
 
   @override
+  String get journalEntryExpandLabel => 'Développer l’entrée';
+
+  @override
   String get journalFilterEntryTypesTitle => 'Types d\'entrée';
 
   @override

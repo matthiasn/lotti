@@ -3097,6 +3097,7 @@
   "journalEndsAnotherDayHint": "Pick a separate end date",
   "journalEndsAnotherDayLabel": "Ends on another day",
   "journalEndTimeLabel": "End time",
+  "journalEntryExpandLabel": "Expand entry",
   "journalFilterEntryTypesTitle": "Entry types",
   "journalFilterFlagged": "Flagged",
   "journalFilterPrivate": "Private",

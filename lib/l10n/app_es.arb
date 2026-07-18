@@ -2573,6 +2573,7 @@
   "journalEndsAnotherDayHint": "Elige una fecha de fin distinta",
   "journalEndsAnotherDayLabel": "Termina otro día",
   "journalEndTimeLabel": "Hora de fin",
+  "journalEntryExpandLabel": "Expandir entrada",
   "journalFilterEntryTypesTitle": "Tipos de entrada",
   "journalFilterFlagged": "Marcados",
   "journalFilterPrivate": "Privados",

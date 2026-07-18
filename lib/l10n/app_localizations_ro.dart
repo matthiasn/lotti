@@ -4983,7 +4983,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemScrollbarSizesTitle => 'Dimensiuni bară de derulare';
 
   @override
-  String get designSystemSearchClearLabel => 'Șterge căutarea';
+  String get designSystemSearchClearLabel => 'Ștergeți căutarea';
 
   @override
   String get designSystemSearchFilledText => 'Căutare Lotti';
@@ -5511,11 +5511,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitsAllDoneToday => 'Tot finalizat azi';
 
   @override
-  String get habitsChartUseDynamicBaseline =>
-      'Folosește linia de bază dinamică';
+  String get habitsChartUseDynamicBaseline => 'Folosiți linia de bază dinamică';
 
   @override
-  String get habitsChartUseZeroBaseline => 'Folosește linia de bază zero';
+  String get habitsChartUseZeroBaseline => 'Folosiți linia de bază zero';
 
   @override
   String get habitsCompletedHeader => 'Finalizate';
@@ -6114,6 +6113,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get journalEndTimeLabel => 'Oră de sfârșit';
+
+  @override
+  String get journalEntryExpandLabel => 'Extindeți intrarea';
 
   @override
   String get journalFilterEntryTypesTitle => 'Tipuri de intrare';

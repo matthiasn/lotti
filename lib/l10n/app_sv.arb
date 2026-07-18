@@ -400,8 +400,8 @@
   "agentSoulSelectTitle": "Välj själ",
   "agentSoulsEmptyFiltered": "Inga själar matchar dina filter.",
   "agentSoulSettingsTab": "Miljöer",
-  "agentSoulsSearchPlaceholder": "Söksjälar...",
-  "agentSoulsTitle": "Souls",
+  "agentSoulsSearchPlaceholder": "Sök själar...",
+  "agentSoulsTitle": "Själar",
   "agentSoulToneBoundsLabel": "Tongränser",
   "agentSoulVersionHistoryTitle": "Versionshistorik",
   "agentSoulVersionLabel": "Version {version}",
@@ -631,8 +631,8 @@
   "@agentTemplateSettingsTab": {
     "description": "Tab label for the settings tab in agent template detail."
   },
-  "agentTemplatesFilterSectionKind": "Snällt",
-  "agentTemplatesGroupByKind": "Snällt",
+  "agentTemplatesFilterSectionKind": "Typ",
+  "agentTemplatesGroupByKind": "Typ",
   "agentTemplatesGroupNone": "Alla",
   "agentTemplatesSearchPlaceholder": "Sök mallar...",
   "agentTemplateStatsTab": "Statistik",
@@ -1109,7 +1109,7 @@
   "aiProviderConnectSavedAsDraftToast": "Sparad som utkast",
   "aiProviderConnectStepChoose": "Välj leverantör",
   "aiProviderConnectStepConnect": "Koppla upp",
-  "aiProviderConnectStepReview": "Recension",
+  "aiProviderConnectStepReview": "Granska",
   "aiProviderDetailActiveProfileTitle": "Aktiv profil",
   "aiProviderDetailAddModelButton": "Lägg till modell",
   "aiProviderDetailApiKeyLabel": "API-nyckel",
@@ -2641,7 +2641,7 @@
   "desktopEmptyStateSelectDashboard": "Välj en instrumentpanel för att visa detaljer",
   "desktopEmptyStateSelectProject": "Välj ett projekt för att se detaljer",
   "desktopEmptyStateSelectTask": "Välj en uppgift för att visa detaljer",
-  "deviceDeletedSuccess": "Enhet {deviceName} raderad framgångsrikt",
+  "deviceDeletedSuccess": "Enheten {deviceName} har raderats",
   "@deviceDeletedSuccess": {
     "placeholders": {
       "deviceName": {
@@ -2850,7 +2850,7 @@
   "habitsHeatmapLess": "Mindre",
   "habitsHeatmapMore": "Mer",
   "habitShowAlertAtLabel": "Visa varning på",
-  "habitShowFromLabel": "Föreställning från",
+  "habitShowFromLabel": "Visa från",
   "habitsLaggardHint": "{habit} — behöll {kept} av {active}",
   "@habitsLaggardHint": {
     "placeholders": {
@@ -2934,7 +2934,7 @@
   "imagePromptGenerationFullPromptLabel": "Fullständig bildprompt:",
   "images": "Bilder",
   "imageViewerDownloadFailed": "Kunde inte spara bilden",
-  "imageViewerDownloadingTooltip": "Sparbild",
+  "imageViewerDownloadingTooltip": "Spara bild",
   "imageViewerDownloadPermissionDenied": "Fotoåtkomst nekad — aktivera det i Inställningar",
   "imageViewerDownloadSaved": "Räddad {fileName}",
   "@imageViewerDownloadSaved": {
@@ -2996,7 +2996,7 @@
       }
     }
   },
-  "inferenceProfilesTitle": "Slutsatsprofiler",
+  "inferenceProfilesTitle": "Inferensprofiler",
   "inferenceProfileThinking": "Tänkande",
   "inferenceProfileThinkingHighEnd": "Tänkande (avancerat)",
   "inferenceProfileThinkingRequired": "En tänkande modell krävs",
@@ -3098,6 +3098,7 @@
   "journalEndsAnotherDayHint": "Välj ett separat slutdatum",
   "journalEndsAnotherDayLabel": "Slutar på en annan dag",
   "journalEndTimeLabel": "Sluttid",
+  "journalEntryExpandLabel": "Expandera post",
   "journalFilterEntryTypesTitle": "Inträdetyper",
   "journalFilterFlagged": "Flaggad",
   "journalFilterPrivate": "Privat",
@@ -3195,7 +3196,7 @@
   "keyboardKeyShift": "Skift",
   "keyboardKeySpace": "Rymden",
   "keyboardResizeDividerLabel": "Storleksjustera rutorna",
-  "keyboardResizeDividerValue": "Ändra paneler, {value} pixlar. Intervall {min} till {max} pixlar.",
+  "keyboardResizeDividerValue": "Panelstorlek: {value} pixlar. Tillåtet intervall: {min}–{max} pixlar.",
   "@keyboardResizeDividerValue": {
     "placeholders": {
       "value": {
@@ -3865,7 +3866,7 @@
   "projectRecommendationsTitle": "Rekommenderade nästa steg",
   "projectRecommendationUpdateError": "Kunde inte uppdatera rekommendationen. Försök igen, tack.",
   "projectsFilterStatusLabel": "Status:",
-  "projectsFilterTooltip": "Filterprojekt",
+  "projectsFilterTooltip": "Filtrera projekt",
   "projectShowcaseAiReportTitle": "AI-rapport",
   "projectShowcaseBlockedLegend": "{count} Blockerad",
   "@projectShowcaseBlockedLegend": {
@@ -4937,7 +4938,7 @@
   "tasksAgentFilterTitle": "Agent",
   "tasksFilterApplyTitle": "Använd filter",
   "tasksFilterClearAll": "Rensa allt",
-  "tasksFilterTitle": "Filteruppgifter",
+  "tasksFilterTitle": "Filtrera uppgifter",
   "taskShowcaseAudio": "Ljud",
   "taskShowcaseCompletedCount": "{completed} / {total} färdigt",
   "@taskShowcaseCompletedCount": {
@@ -5083,7 +5084,7 @@
   "tasksSavedFiltersUpdateExistingDescription": "Byt ut dess sparade kriterier mot den nuvarande filterkonfigurationen.",
   "tasksSavedFiltersUpdateExistingTitle": "Uppdatera befintligt filter",
   "tasksSavedFilterToastDeleted": "Filter borttaget",
-  "tasksSavedFilterToastSaved": "Sparade '{name}'",
+  "tasksSavedFilterToastSaved": "Filtret '{name}' sparades",
   "@tasksSavedFilterToastSaved": {
     "placeholders": {
       "name": {
@@ -5091,7 +5092,7 @@
       }
     }
   },
-  "tasksSavedFilterToastUpdated": "Uppdaterad '{name}'",
+  "tasksSavedFilterToastUpdated": "Filtret '{name}' uppdaterades",
   "@tasksSavedFilterToastUpdated": {
     "placeholders": {
       "name": {

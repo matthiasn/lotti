@@ -6011,6 +6011,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get journalEndTimeLabel => 'Endetid';
 
   @override
+  String get journalEntryExpandLabel => 'Udvid opslag';
+
+  @override
   String get journalFilterEntryTypesTitle => 'Deltagertyper';
 
   @override

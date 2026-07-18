@@ -123,6 +123,12 @@ and flagged controls, then the consistently anchored favorite and overflow
 controls. AI is included only when an applicable skill is available, so a
 zero-width AI placeholder cannot consume layout space.
 
+For collapsed linked entries, the preview row is one disclosure control. Its
+semantic label uses the localized generic **Expand entry** action plus the
+entry's full date; the thumbnail, timestamp, duration, and chevron are
+excluded from the child semantics tree so screen readers do not announce
+competing actions for the same row.
+
 Every action keeps its 48px-wide tap target. The inter-control gap always uses
 the design-system `spacing.step2` (4px), so the timestamp gets the maximum
 available width without hiding or clipping an action.

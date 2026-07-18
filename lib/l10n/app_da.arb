@@ -3098,6 +3098,7 @@
   "journalEndsAnotherDayHint": "Vælg en separat slutdato",
   "journalEndsAnotherDayLabel": "Slutter på en anden dag",
   "journalEndTimeLabel": "Endetid",
+  "journalEntryExpandLabel": "Udvid opslag",
   "journalFilterEntryTypesTitle": "Deltagertyper",
   "journalFilterFlagged": "Flaget",
   "journalFilterPrivate": "Privat",

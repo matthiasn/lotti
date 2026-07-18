@@ -3097,6 +3097,7 @@
   "journalEndsAnotherDayHint": "Kies een aparte einddatum",
   "journalEndsAnotherDayLabel": "Eindigt op een andere dag",
   "journalEndTimeLabel": "Eindtijd",
+  "journalEntryExpandLabel": "Item uitklappen",
   "journalFilterEntryTypesTitle": "Typen invoer",
   "journalFilterFlagged": "Gevlagd",
   "journalFilterPrivate": "Privé",

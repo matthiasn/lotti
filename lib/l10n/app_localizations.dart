@@ -10444,6 +10444,12 @@ abstract class AppLocalizations {
   /// **'End time'**
   String get journalEndTimeLabel;
 
+  /// No description provided for @journalEntryExpandLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand entry'**
+  String get journalEntryExpandLabel;
+
   /// No description provided for @journalFilterEntryTypesTitle.
   ///
   /// In en, this message translates to:

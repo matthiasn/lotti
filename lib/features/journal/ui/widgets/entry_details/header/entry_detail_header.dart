@@ -293,10 +293,15 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
       // Collapsed preview: thumbnail/icon + date + duration, chevron trailing.
       // The whole preview row is a tap target (not just the small caret) so a
       // collapsed entry reliably expands wherever it's tapped.
+      final collapsedLabel = [
+        context.messages.journalEntryExpandLabel,
+        if (entry != null)
+          MaterialLocalizations.of(context).formatFullDate(entry.meta.dateFrom),
+      ].join(', ');
       return Semantics(
         button: true,
         toggled: false,
-        label: collapseLabel,
+        label: collapsedLabel,
         onTap: widget.onToggleCollapse,
         child: ExcludeSemantics(
           child: GestureDetector(

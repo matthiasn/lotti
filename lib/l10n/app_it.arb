@@ -3098,6 +3098,7 @@
   "journalEndsAnotherDayHint": "Scegli una data di fine separata",
   "journalEndsAnotherDayLabel": "Finisce in un altro giorno",
   "journalEndTimeLabel": "Tempo di chiusura",
+  "journalEntryExpandLabel": "Espandi voce",
   "journalFilterEntryTypesTitle": "Tipologie di ammissione",
   "journalFilterFlagged": "Bandiera",
   "journalFilterPrivate": "Privato",

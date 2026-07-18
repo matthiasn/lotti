@@ -1046,6 +1046,51 @@ void main() {
           );
           semantics.dispose();
         });
+
+        testWidgets(
+          'labels a collapsed entry with a generic action and its date',
+          (tester) async {
+            final semantics = tester.ensureSemantics();
+            when(
+              () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+            ).thenAnswer((_) async => testAudioEntry);
+
+            await tester.pumpWidget(
+              makeTestableWidgetWithScaffold(
+                EntryDetailHeader(
+                  entryId: testAudioEntry.meta.id,
+                  inLinkedEntries: true,
+                  isCollapsible: true,
+                  isCollapsed: true,
+                  onToggleCollapse: () {},
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
+
+            final context = tester.element(find.byType(EntryDetailHeader));
+            final expectedLabel = [
+              context.messages.journalEntryExpandLabel,
+              MaterialLocalizations.of(
+                context,
+              ).formatFullDate(testAudioEntry.meta.dateFrom),
+            ].join(', ');
+
+            expect(
+              tester.getSemantics(find.bySemanticsLabel(expectedLabel)),
+              matchesSemantics(
+                label: expectedLabel,
+                isButton: true,
+                hasToggledState: true,
+                // ignore: avoid_redundant_argument_values
+                isToggled: false,
+                hasTapAction: true,
+              ),
+            );
+            semantics.dispose();
+          },
+        );
       });
 
       group('animated chevron rotation', () {

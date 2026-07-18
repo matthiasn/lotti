@@ -5978,6 +5978,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalEndTimeLabel => 'End time';
 
   @override
+  String get journalEntryExpandLabel => 'Expand entry';
+
+  @override
   String get journalFilterEntryTypesTitle => 'Entry types';
 
   @override

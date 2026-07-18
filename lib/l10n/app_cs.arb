@@ -2580,6 +2580,7 @@
   "journalEndsAnotherDayHint": "Vyber samostatné datum konce",
   "journalEndsAnotherDayLabel": "Končí jiný den",
   "journalEndTimeLabel": "Čas konce",
+  "journalEntryExpandLabel": "Rozbalit záznam",
   "journalFilterEntryTypesTitle": "Typy záznamů",
   "journalFilterFlagged": "Označené",
   "journalFilterPrivate": "Soukromé",

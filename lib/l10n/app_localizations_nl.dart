@@ -6028,6 +6028,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get journalEndTimeLabel => 'Eindtijd';
 
   @override
+  String get journalEntryExpandLabel => 'Item uitklappen';
+
+  @override
   String get journalFilterEntryTypesTitle => 'Typen invoer';
 
   @override

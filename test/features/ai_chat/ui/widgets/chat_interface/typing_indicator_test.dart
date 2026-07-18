@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/typing_indicator.dart';
-import 'package:lotti/l10n/app_localizations.dart';
+
+import '../../../../../widget_test_utils.dart';
 
 void main() {
   Future<void> pumpIndicator(
@@ -9,11 +10,7 @@ void main() {
     required bool isUser,
   }) async {
     await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: TypingIndicator(isUser: isUser)),
-      ),
+      makeTestableWidget(TypingIndicator(isUser: isUser)),
     );
   }
 
