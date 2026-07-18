@@ -1401,18 +1401,18 @@
   "apiKeyProviderTypeHint": "Selecteer een providertype",
   "apiKeyProviderTypeLabel": "Type aanbieder",
   "apiKeyShowTooltip": "API-sleutel tonen",
-  "audioRecordingCancel": "AFWIJKEN",
+  "audioRecordingCancel": "Annuleren",
   "audioRecordingDiscardDialogBody": "Deze opname wordt verwijderd. Er zal geen audio-invoer, transcript of taaksamenvatting worden aangemaakt.",
   "audioRecordingDiscardDialogCancel": "Blijf opnemen",
   "audioRecordingDiscardDialogConfirm": "Gooien",
   "audioRecordingDiscardDialogTitle": "Opname weggooien?",
   "audioRecordingListening": "Luisteren...",
-  "audioRecordingPause": "PAUSE",
+  "audioRecordingPause": "Pauzeren",
   "audioRecordingRealtime": "Levende omschrijving",
-  "audioRecordingResume": "RESUME",
+  "audioRecordingResume": "Hervatten",
   "audioRecordings": "Audio-opnames",
   "audioRecordingStandard": "Standaard",
-  "audioRecordingStop": "STOP",
+  "audioRecordingStop": "Stoppen",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 actie} other{{count} acties}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -1423,7 +1423,7 @@
   },
   "backfillAdvancedRecoveryTitle": "Geavanceerd herstel",
   "backfillAskPeersConfirmAccept": "Vragen aan gelijken",
-  "backfillAskPeersConfirmContent": "{count, plural, =1{Deze flips 1 onoplosbaar sequence-log entry terug naar ontbrekende zodat de normale backfill sweep opnieuw vraagt peers. Peers die nog steeds de lading zal reageren; echt unrecoverable ingangen zal opnieuw met pensioen na de 7-daagse amnestie venster.} other{Dit draait allemaal om. {count} Onoplosbare sequence-log items terug naar ontbrekende zodat de normale backfill sweep opnieuw vraagt peers. Peers die nog steeds de lading zal reageren; echt unrecoverable items zal opnieuw met pensioen na de 7-daagse amnestie venster.}}",
+  "backfillAskPeersConfirmContent": "{count, plural, =1{Hiermee wordt 1 onherstelbare vermelding in het sequentielogboek weer als ontbrekend gemarkeerd, zodat de normale inhaalslag andere apparaten opnieuw bevraagt. Apparaten die de gegevens nog hebben, reageren; echt onherstelbare vermeldingen worden na het amnestievenster van zeven dagen opnieuw als onherstelbaar aangemerkt.} other{Hiermee worden alle {count} onherstelbare vermeldingen in het sequentielogboek weer als ontbrekend gemarkeerd, zodat de normale inhaalslag andere apparaten opnieuw bevraagt. Apparaten die de gegevens nog hebben, reageren; echt onherstelbare vermeldingen worden na het amnestievenster van zeven dagen opnieuw als onherstelbaar aangemerkt.}}",
   "@backfillAskPeersConfirmContent": {
     "placeholders": {
       "count": {
@@ -2238,7 +2238,7 @@
       }
     }
   },
-  "dailyOsNextStateDueToday": "Vandaag moet worden betaald",
+  "dailyOsNextStateDueToday": "Vervalt vandaag",
   "dailyOsNextStateInProgress": "{count, plural, =0{In behandeling} =1{Aan de gang · 1 zitting} other{In uitvoering {count} sessies}}",
   "@dailyOsNextStateInProgress": {
     "placeholders": {

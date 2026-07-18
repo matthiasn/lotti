@@ -2372,7 +2372,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get apiKeyShowTooltip => 'API-sleutel tonen';
 
   @override
-  String get audioRecordingCancel => 'AFWIJKEN';
+  String get audioRecordingCancel => 'Annuleren';
 
   @override
   String get audioRecordingDiscardDialogBody =>
@@ -2391,13 +2391,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get audioRecordingListening => 'Luisteren...';
 
   @override
-  String get audioRecordingPause => 'PAUSE';
+  String get audioRecordingPause => 'Pauzeren';
 
   @override
   String get audioRecordingRealtime => 'Levende omschrijving';
 
   @override
-  String get audioRecordingResume => 'RESUME';
+  String get audioRecordingResume => 'Hervatten';
 
   @override
   String get audioRecordings => 'Audio-opnames';
@@ -2406,7 +2406,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get audioRecordingStandard => 'Standaard';
 
   @override
-  String get audioRecordingStop => 'STOP';
+  String get audioRecordingStop => 'Stoppen';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
@@ -2431,9 +2431,9 @@ class AppLocalizationsNl extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Dit draait allemaal om. $count Onoplosbare sequence-log items terug naar ontbrekende zodat de normale backfill sweep opnieuw vraagt peers. Peers die nog steeds de lading zal reageren; echt unrecoverable items zal opnieuw met pensioen na de 7-daagse amnestie venster.',
+          'Hiermee worden alle $count onherstelbare vermeldingen in het sequentielogboek weer als ontbrekend gemarkeerd, zodat de normale inhaalslag andere apparaten opnieuw bevraagt. Apparaten die de gegevens nog hebben, reageren; echt onherstelbare vermeldingen worden na het amnestievenster van zeven dagen opnieuw als onherstelbaar aangemerkt.',
       one:
-          'Deze flips 1 onoplosbaar sequence-log entry terug naar ontbrekende zodat de normale backfill sweep opnieuw vraagt peers. Peers die nog steeds de lading zal reageren; echt unrecoverable ingangen zal opnieuw met pensioen na de 7-daagse amnestie venster.',
+          'Hiermee wordt 1 onherstelbare vermelding in het sequentielogboek weer als ontbrekend gemarkeerd, zodat de normale inhaalslag andere apparaten opnieuw bevraagt. Apparaten die de gegevens nog hebben, reageren; echt onherstelbare vermeldingen worden na het amnestievenster van zeven dagen opnieuw als onherstelbaar aangemerkt.',
     );
     return '$_temp0';
   }
@@ -4108,7 +4108,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextStateDueToday => 'Vandaag moet worden betaald';
+  String get dailyOsNextStateDueToday => 'Vervalt vandaag';
 
   @override
   String dailyOsNextStateInProgress(int count) {
