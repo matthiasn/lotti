@@ -15,6 +15,9 @@ void main() {
     required ValueChanged<double> onDrag,
     double hitTargetWidth = 8,
     bool enabled = true,
+    double? currentValue,
+    double? minValue,
+    double? maxValue,
   }) {
     return makeTestableWidgetNoScroll(
       Row(
@@ -24,6 +27,9 @@ void main() {
             onDrag: onDrag,
             hitTargetWidth: hitTargetWidth,
             enabled: enabled,
+            currentValue: currentValue,
+            minValue: minValue,
+            maxValue: maxValue,
           ),
           const Expanded(child: SizedBox()),
         ],
@@ -227,6 +233,37 @@ void main() {
       expect(deltas, hasLength(2));
       expect(deltas.first, greaterThan(0));
       expect(deltas.last, -deltas.first);
+      semanticsHandle.dispose();
+    });
+
+    testWidgets('announces the current width, range, and next values', (
+      tester,
+    ) async {
+      final semanticsHandle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        buildTestWidget(
+          onDrag: (_) {},
+          currentValue: 320,
+          minValue: 200,
+          maxValue: 500,
+        ),
+      );
+
+      final semanticsNode = tester.getSemantics(
+        find
+            .descendant(
+              of: find.byType(ResizableDivider),
+              matching: find.byType(Semantics),
+            )
+            .first,
+      );
+      expect(
+        semanticsNode.label,
+        'Resize panes, 320 pixels. Range 200 to 500 pixels.',
+      );
+      expect(semanticsNode.value, '320');
+      expect(semanticsNode.increasedValue, '332');
+      expect(semanticsNode.decreasedValue, '308');
       semanticsHandle.dispose();
     });
   });

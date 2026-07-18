@@ -536,6 +536,7 @@
   "aiCardReadMore": "Leer más",
   "aiCardShowLess": "Mostrar menos",
   "aiCardTitle": "Resumen de IA",
+  "aiChatAssistantResponding": "El asistente está respondiendo",
   "aiChatMessageCopied": "Copiado al portapapeles",
   "aiConfigFailedToLoadModelsGeneric": "Error al cargar modelos. Por favor, inténtalo de nuevo.",
   "aiConfigNoModelsAvailable": "Aún no has configurado ningún modelo de IA. Añade uno en Ajustes.",
@@ -1219,6 +1220,8 @@
   "backfillToggleDescription": "Solicita las entradas faltantes de las últimas 24 horas.",
   "backfillToggleTitle": "Relleno automático",
   "basicSettings": "Ajustes básicos",
+  "calendarHasPlanLabel": "Tiene un plan",
+  "calendarTodayLabel": "Hoy",
   "cancelButton": "Cancelar",
   "categoryActiveDescription": "Las categorías inactivas no aparecerán en las listas de selección",
   "categoryActiveSwitchDescription": "Seleccionable para nuevas entradas",
@@ -2184,6 +2187,7 @@
   "designSystemProgressBarSampleLabel": "Etiqueta de barra de progreso",
   "designSystemRadioButtonLabel": "Botón de radio",
   "designSystemScrollbarSizesTitle": "Tamaños de barra de desplazamiento",
+  "designSystemSearchClearLabel": "Borrar búsqueda",
   "designSystemSearchFilledText": "Búsqueda de Lotti",
   "designSystemSearchHintLabel": "Escribe usuario",
   "designSystemSelectedLabel": "Seleccionado",
@@ -2359,6 +2363,8 @@
   "habitsAboveGoal": "En marcha",
   "habitsActiveHabitsCount": "{count, plural, one{1 hábito activo} other{{count} hábitos activos}}",
   "habitsAllDoneToday": "Todo hecho hoy",
+  "habitsChartUseDynamicBaseline": "Usar línea de base dinámica",
+  "habitsChartUseZeroBaseline": "Usar línea de base cero",
   "habitsCompletedHeader": "Completado",
   "habitsCompletionRateTitle": "Tasa de cumplimiento",
   "habitsConsistencyTitle": "Constancia",
@@ -2655,6 +2661,20 @@
   "keyboardKeyShift": "Mayús",
   "keyboardKeySpace": "Espacio",
   "keyboardResizeDividerLabel": "Redimensionar paneles",
+  "keyboardResizeDividerValue": "Redimensionar paneles, {value} píxeles. Rango de {min} a {max} píxeles.",
+  "@keyboardResizeDividerValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "keyboardShortcutsNoResults": "No hay atajos que coincidan con tu búsqueda",
   "keyboardShortcutsSearchHint": "Buscar atajos…",
   "keyboardShortcutsSubtitle": "Todos los comandos de escritorio y sus combinaciones de teclas actuales.",

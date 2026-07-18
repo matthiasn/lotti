@@ -437,6 +437,7 @@ class _DesktopSidebarNavItem extends StatelessWidget {
     final semantics = Semantics(
       button: !destination.isLink,
       link: destination.isLink,
+      enabled: onTap != null,
       selected: destination.isLink ? null : active,
       label: destination.label,
       hint: destination.semanticsHint,
@@ -517,10 +518,12 @@ class _ExpandedRowContent extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
-              destination.label,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.highEmphasis,
+            child: ExcludeSemantics(
+              child: Text(
+                destination.label,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
               ),
             ),
           ),

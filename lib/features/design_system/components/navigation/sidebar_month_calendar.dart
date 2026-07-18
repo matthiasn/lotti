@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/first_day_of_week.dart';
 
 /// Compact month calendar for the desktop navigation sidebar — the
@@ -84,13 +85,16 @@ class SidebarMonthCalendar extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(
-                DateFormat.yMMMM(locale).format(month),
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                  color: tokens.colors.text.highEmphasis,
+              child: Semantics(
+                header: true,
+                child: Text(
+                  DateFormat.yMMMM(locale).format(month),
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
             _MonthNavButton(
@@ -198,55 +202,67 @@ class _DayCell extends StatelessWidget {
         : tokens.colors.text.mediumEmphasis;
 
     return Semantics(
+      container: true,
       button: true,
-      selected: isSelected || isToday,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: () => onTap(day),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            if (isToday)
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: teal,
-                  shape: BoxShape.circle,
-                ),
-                child: const SizedBox.square(dimension: 24),
-              )
-            else if (isSelected)
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: tokens.colors.surface.selected,
-                  shape: BoxShape.circle,
-                ),
-                child: const SizedBox.square(dimension: 24),
-              ),
-            Text(
-              '${day.day}',
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: numberColor,
-                fontWeight: isToday
-                    ? tokens.typography.weight.semiBold
-                    : tokens.typography.weight.regular,
-              ),
-            ),
-            if (isMarked)
-              Positioned(
-                bottom: 1,
-                child: DecoratedBox(
+      selected: isSelected,
+      label: _semanticLabel(context),
+      onTap: () => onTap(day),
+      child: ExcludeSemantics(
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () => onTap(day),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              if (isToday)
+                DecoratedBox(
                   decoration: BoxDecoration(
-                    color: isToday
-                        ? tokens.colors.text.onInteractiveAlert
-                        : teal,
+                    color: teal,
                     shape: BoxShape.circle,
                   ),
-                  child: SizedBox.square(dimension: tokens.spacing.step2),
+                  child: const SizedBox.square(dimension: 24),
+                )
+              else if (isSelected)
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: tokens.colors.surface.selected,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const SizedBox.square(dimension: 24),
+                ),
+              Text(
+                '${day.day}',
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: numberColor,
+                  fontWeight: isToday
+                      ? tokens.typography.weight.semiBold
+                      : tokens.typography.weight.regular,
                 ),
               ),
-          ],
+              if (isMarked)
+                Positioned(
+                  bottom: 1,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: isToday
+                          ? tokens.colors.text.onInteractiveAlert
+                          : teal,
+                      shape: BoxShape.circle,
+                    ),
+                    child: SizedBox.square(dimension: tokens.spacing.step2),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  String _semanticLabel(BuildContext context) {
+    final labels = [MaterialLocalizations.of(context).formatFullDate(day)];
+    if (isToday) labels.add(context.messages.calendarTodayLabel);
+    if (isMarked) labels.add(context.messages.calendarHasPlanLabel);
+    return labels.join(', ');
   }
 }

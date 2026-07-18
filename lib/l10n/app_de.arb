@@ -536,6 +536,7 @@
   "aiCardReadMore": "Mehr lesen",
   "aiCardShowLess": "Weniger anzeigen",
   "aiCardTitle": "KI-Zusammenfassung",
+  "aiChatAssistantResponding": "Der Assistent antwortet",
   "aiChatMessageCopied": "In die Zwischenablage kopiert",
   "aiConfigFailedToLoadModelsGeneric": "Fehler beim Laden der Modelle. Bitte versuche es erneut.",
   "aiConfigNoModelsAvailable": "Noch keine AI-Modelle konfiguriert. Bitte füge eines in den Einstellungen hinzu.",
@@ -1219,6 +1220,8 @@
   "backfillToggleDescription": "Fordert fehlende Einträge der letzten 24 Stunden an.",
   "backfillToggleTitle": "Automatische Nachfüllung",
   "basicSettings": "Grundeinstellungen",
+  "calendarHasPlanLabel": "Hat einen Plan",
+  "calendarTodayLabel": "Heute",
   "cancelButton": "Abbrechen",
   "categoryActiveDescription": "Inaktive Kategorien erscheinen nicht in Auswahllisten",
   "categoryActiveSwitchDescription": "Für neue Einträge wählbar",
@@ -2184,6 +2187,7 @@
   "designSystemProgressBarSampleLabel": "Progress-Bar-Label",
   "designSystemRadioButtonLabel": "Radio-Button",
   "designSystemScrollbarSizesTitle": "Scrollbar-Größen",
+  "designSystemSearchClearLabel": "Suche löschen",
   "designSystemSearchFilledText": "Lotti-Suche",
   "designSystemSearchHintLabel": "Benutzer eingeben",
   "designSystemSelectedLabel": "Ausgewählt",
@@ -2359,6 +2363,8 @@
   "habitsAboveGoal": "Im Plan",
   "habitsActiveHabitsCount": "{count, plural, one{1 aktive Gewohnheit} other{{count} aktive Gewohnheiten}}",
   "habitsAllDoneToday": "Heute alles erledigt",
+  "habitsChartUseDynamicBaseline": "Dynamische Basislinie verwenden",
+  "habitsChartUseZeroBaseline": "Null-Basislinie verwenden",
   "habitsCompletedHeader": "Abgeschlossen",
   "habitsCompletionRateTitle": "Erfolgsquote",
   "habitsConsistencyTitle": "Beständigkeit",
@@ -2655,6 +2661,20 @@
   "keyboardKeyShift": "Umschalt",
   "keyboardKeySpace": "Leertaste",
   "keyboardResizeDividerLabel": "Bereiche anpassen",
+  "keyboardResizeDividerValue": "Bereiche anpassen, {value} Pixel. Bereich {min} bis {max} Pixel.",
+  "@keyboardResizeDividerValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "keyboardShortcutsNoResults": "Keine Kurzbefehle passen zu deiner Suche",
   "keyboardShortcutsSearchHint": "Kurzbefehle suchen…",
   "keyboardShortcutsSubtitle": "Alle Desktop-Befehle und ihre aktuellen Tastenkombinationen.",

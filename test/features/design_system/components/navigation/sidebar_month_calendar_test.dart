@@ -96,6 +96,55 @@ void main() {
       expect(otherLabel.style?.color, tokens.colors.text.mediumEmphasis);
     });
 
+    testWidgets('exposes each day with its full date and independent states', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _wrap(
+          SidebarMonthCalendar(
+            month: DateTime(2026, 5),
+            today: DateTime(2026, 5, 24),
+            selectedDay: DateTime(2026, 5, 13),
+            markedDays: {DateTime(2026, 5, 13), DateTime(2026, 5, 24)},
+            onPreviousMonth: () {},
+            onNextMonth: () {},
+            onDaySelected: (_) {},
+          ),
+        ),
+      );
+
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('May 2026')),
+        matchesSemantics(label: 'May 2026', isHeader: true),
+      );
+      expect(
+        tester.getSemantics(
+          find.bySemanticsLabel('Wednesday, May 13, 2026, Has plan'),
+        ),
+        matchesSemantics(
+          label: 'Wednesday, May 13, 2026, Has plan',
+          isButton: true,
+          hasSelectedState: true,
+          isSelected: true,
+          hasTapAction: true,
+        ),
+      );
+      expect(
+        tester.getSemantics(
+          find.bySemanticsLabel('Sunday, May 24, 2026, Today, Has plan'),
+        ),
+        matchesSemantics(
+          label: 'Sunday, May 24, 2026, Today, Has plan',
+          isButton: true,
+          hasSelectedState: true,
+          hasTapAction: true,
+        ),
+      );
+
+      semantics.dispose();
+    });
+
     testWidgets('tapping a day reports its local midnight', (tester) async {
       DateTime? selected;
       await tester.pumpWidget(

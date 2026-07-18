@@ -15,8 +15,15 @@ class ResizableDivider extends StatefulWidget {
     required this.onDrag,
     this.hitTargetWidth = 8,
     this.enabled = true,
+    this.currentValue,
+    this.minValue,
+    this.maxValue,
     super.key,
-  });
+  }) : assert(
+         (currentValue == null && minValue == null && maxValue == null) ||
+             (currentValue != null && minValue != null && maxValue != null),
+         'Provide all resize semantic values or none of them.',
+       );
 
   /// Called with the horizontal drag delta when the user drags the divider.
   /// Ignored while [enabled] is false.
@@ -27,6 +34,15 @@ class ResizableDivider extends StatefulWidget {
 
   /// Whether the divider accepts drag input and renders hover feedback.
   final bool enabled;
+
+  /// The current width of the pane controlled by this divider, when known.
+  ///
+  /// Supplying all three semantic values lets assistive technology announce
+  /// the current width and its valid range alongside the increase/decrease
+  /// actions. Leave all three null when the parent has no bounded value.
+  final double? currentValue;
+  final double? minValue;
+  final double? maxValue;
 
   @override
   State<ResizableDivider> createState() => _ResizableDividerState();
@@ -90,9 +106,31 @@ class _ResizableDividerState extends State<ResizableDivider> {
         ? tokens.spacing.step8
         : tokens.spacing.step4;
 
+    final currentValue = widget.currentValue?.round();
+    final minValue = widget.minValue?.round();
+    final maxValue = widget.maxValue?.round();
+    String? valueAfterChange(double delta) {
+      if (currentValue == null || minValue == null || maxValue == null) {
+        return null;
+      }
+      return (currentValue + delta)
+          .clamp(minValue, maxValue)
+          .round()
+          .toString();
+    }
+
     return Semantics(
-      label: context.messages.keyboardResizeDividerLabel,
+      label: currentValue == null
+          ? context.messages.keyboardResizeDividerLabel
+          : context.messages.keyboardResizeDividerValue(
+              currentValue,
+              minValue!,
+              maxValue!,
+            ),
       slider: true,
+      value: currentValue?.toString(),
+      increasedValue: valueAfterChange(keyboardStep()),
+      decreasedValue: valueAfterChange(-keyboardStep()),
       onIncrease: () => widget.onDrag(keyboardStep()),
       onDecrease: () => widget.onDrag(-keyboardStep()),
       child: Focus(

@@ -121,6 +121,35 @@ void main() {
       expect(find.text('Maximum 500 characters'), findsOneWidget);
     });
 
+    testWidgets('associates the label and helper text with the field', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await _pumpTextarea(
+        tester,
+        const DesignSystemTextarea(
+          label: 'Notes',
+          helperText: 'Maximum 500 characters',
+        ),
+      );
+
+      final field = find.bySemanticsLabel('Notes, Maximum 500 characters');
+      expect(
+        tester.getSemantics(field),
+        matchesSemantics(
+          label: 'Notes, Maximum 500 characters',
+          isTextField: true,
+          isMultiline: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasFocusAction: true,
+          hasTapAction: true,
+        ),
+      );
+      semantics.dispose();
+    });
+
     testWidgets('renders error text and hides helper when error is set', (
       tester,
     ) async {
@@ -138,6 +167,38 @@ void main() {
 
       expect(find.text('Field is required'), findsOneWidget);
       expect(find.text('This is helper'), findsNothing);
+    });
+
+    testWidgets('associates and announces validation errors', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await _pumpTextarea(
+        tester,
+        const DesignSystemTextarea(
+          label: 'Required',
+          errorText: 'Field is required',
+        ),
+      );
+
+      expect(
+        tester.getSemantics(
+          find.bySemanticsLabel('Required, Field is required'),
+        ),
+        matchesSemantics(
+          label: 'Required, Field is required',
+          isTextField: true,
+          isMultiline: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasFocusAction: true,
+          hasTapAction: true,
+        ),
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Field is required')),
+        matchesSemantics(label: 'Field is required', isLiveRegion: true),
+      );
+      semantics.dispose();
     });
 
     testWidgets('shows character counter when enabled', (tester) async {

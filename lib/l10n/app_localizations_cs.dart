@@ -1209,6 +1209,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiCardTitle => 'Souhrn AI';
 
   @override
+  String get aiChatAssistantResponding => 'Asistent odpovídá';
+
+  @override
   String get aiChatMessageCopied => 'Zkopírováno do schránky';
 
   @override
@@ -2637,6 +2640,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get basicSettings => 'Základní nastavení';
+
+  @override
+  String get calendarHasPlanLabel => 'Má plán';
+
+  @override
+  String get calendarTodayLabel => 'Dnes';
 
   @override
   String get cancelButton => 'Zrušit';
@@ -4951,6 +4960,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemScrollbarSizesTitle => 'Velikosti posuvníku';
 
   @override
+  String get designSystemSearchClearLabel => 'Vymazat hledání';
+
+  @override
   String get designSystemSearchFilledText => 'Hledání Lotti';
 
   @override
@@ -5463,6 +5475,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get habitsAllDoneToday => 'Dnes hotovo vše';
+
+  @override
+  String get habitsChartUseDynamicBaseline =>
+      'Použít dynamickou základní linii';
+
+  @override
+  String get habitsChartUseZeroBaseline => 'Použít nulovou základní linii';
 
   @override
   String get habitsCompletedHeader => 'Dokončeno';
@@ -6306,6 +6325,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get keyboardResizeDividerLabel => 'Změnit velikost panelů';
+
+  @override
+  String keyboardResizeDividerValue(int value, int min, int max) {
+    return 'Změnit velikost panelů, $value pixelů. Rozsah $min až $max pixelů.';
+  }
 
   @override
   String get keyboardShortcutsNoResults =>

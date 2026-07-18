@@ -145,6 +145,37 @@ void main() {
       expect(settingsTapped, isTrue);
     });
 
+    testWidgets('announces a destination without a callback as unavailable', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+            settingsDestination: buildSettingsDestination(),
+          ),
+        ),
+      );
+
+      final settings = find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics && widget.properties.label == 'Settings',
+      );
+      expect(
+        tester.getSemantics(settings),
+        matchesSemantics(
+          label: 'Settings',
+          isButton: true,
+          hasEnabledState: true,
+          hasSelectedState: true,
+        ),
+      );
+      semantics.dispose();
+    });
+
     testWidgets(
       'utility link stays above Settings and remains available when collapsed',
       (tester) async {

@@ -724,6 +724,7 @@
   "aiCardReadMore": "Read more",
   "aiCardShowLess": "Show less",
   "aiCardTitle": "AI summary",
+  "aiChatAssistantResponding": "Assistant is responding",
   "aiChatMessageCopied": "Copied to clipboard",
   "aiConfigFailedToLoadModelsGeneric": "Failed to load models. Please try again.",
   "aiConfigNoModelsAvailable": "No AI models are configured yet. Please add one in settings.",
@@ -1504,6 +1505,8 @@
   "backfillToggleDescription": "Requests missing entries from the last 24 hours.",
   "backfillToggleTitle": "Automatic backfill",
   "basicSettings": "Basic settings",
+  "calendarHasPlanLabel": "Has plan",
+  "calendarTodayLabel": "Today",
   "cancelButton": "Cancel",
   "categoryActiveDescription": "Inactive categories won't appear in selection lists",
   "categoryActiveSwitchDescription": "Selectable for new entries",
@@ -2578,6 +2581,7 @@
   "designSystemProgressBarSampleLabel": "Progress bar label",
   "designSystemRadioButtonLabel": "Radio button",
   "designSystemScrollbarSizesTitle": "Scrollbar Sizes",
+  "designSystemSearchClearLabel": "Clear search",
   "designSystemSearchFilledText": "Lotti search",
   "designSystemSearchHintLabel": "Type user",
   "designSystemSelectedLabel": "Selected",
@@ -2804,6 +2808,8 @@
     }
   },
   "habitsAllDoneToday": "All done today",
+  "habitsChartUseDynamicBaseline": "Use dynamic baseline",
+  "habitsChartUseZeroBaseline": "Use zero baseline",
   "habitsCompletedHeader": "Completed",
   "habitsCompletionRateTitle": "Completion rate",
   "habitsConsistencyTitle": "Consistency",
@@ -3188,6 +3194,20 @@
   "keyboardKeyShift": "Shift",
   "keyboardKeySpace": "Space",
   "keyboardResizeDividerLabel": "Resize panes",
+  "keyboardResizeDividerValue": "Resize panes, {value} pixels. Range {min} to {max} pixels.",
+  "@keyboardResizeDividerValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "keyboardShortcutsNoResults": "No shortcuts match your search",
   "keyboardShortcutsSearchHint": "Search shortcuts…",
   "keyboardShortcutsSubtitle": "Every desktop command and its current keyboard combination.",

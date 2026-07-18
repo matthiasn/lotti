@@ -725,6 +725,7 @@
   "aiCardReadMore": "Leggi tutto",
   "aiCardShowLess": "Mostra di meno",
   "aiCardTitle": "Riepilogo dell'AI",
+  "aiChatAssistantResponding": "L’assistente sta rispondendo",
   "aiChatMessageCopied": "Copiato negli appunti",
   "aiConfigFailedToLoadModelsGeneric": "Non caricare modelli. Si prega di riprovare.",
   "aiConfigNoModelsAvailable": "Non sono ancora configurati modelli AI. Si prega di aggiungere uno nelle impostazioni.",
@@ -1505,6 +1506,8 @@
   "backfillToggleDescription": "Richieste di informazioni mancanti dalle ultime 24 ore.",
   "backfillToggleTitle": "Ricarica automatica",
   "basicSettings": "Impostazioni di base",
+  "calendarHasPlanLabel": "Ha un piano",
+  "calendarTodayLabel": "Oggi",
   "cancelButton": "Annullamento",
   "categoryActiveDescription": "Le categorie inattive non appaiono nelle liste di selezione",
   "categoryActiveSwitchDescription": "Selezionabile per nuove voci",
@@ -2579,6 +2582,7 @@
   "designSystemProgressBarSampleLabel": "Etichetta di barre di progresso",
   "designSystemRadioButtonLabel": "Pulsante radio",
   "designSystemScrollbarSizesTitle": "Dimensioni della barra di scorrimento",
+  "designSystemSearchClearLabel": "Cancella ricerca",
   "designSystemSearchFilledText": "Ricerca Lotti",
   "designSystemSearchHintLabel": "Tipo utente",
   "designSystemSelectedLabel": "Selezionato",
@@ -2805,6 +2809,8 @@
     }
   },
   "habitsAllDoneToday": "Tutto fatto oggi",
+  "habitsChartUseDynamicBaseline": "Usa la linea di base dinamica",
+  "habitsChartUseZeroBaseline": "Usa la linea di base zero",
   "habitsCompletedHeader": "Completo",
   "habitsCompletionRateTitle": "Tasso di compensazione",
   "habitsConsistencyTitle": "Consistenza",
@@ -3189,6 +3195,20 @@
   "keyboardKeyShift": "Spostamento",
   "keyboardKeySpace": "Spazio",
   "keyboardResizeDividerLabel": "Ridimensionare i pannelli",
+  "keyboardResizeDividerValue": "Ridimensionare i pannelli, {value} pixel. Intervallo da {min} a {max} pixel.",
+  "@keyboardResizeDividerValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "keyboardShortcutsNoResults": "Nessuna scorciatoia corrisponde alla tua ricerca",
   "keyboardShortcutsSearchHint": "Cerca scorciatoie...",
   "keyboardShortcutsSubtitle": "Ogni comando desktop e la sua combinazione di tastiera corrente.",

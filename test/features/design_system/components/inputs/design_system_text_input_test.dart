@@ -36,6 +36,37 @@ void main() {
       expect(find.text('Your work email'), findsOneWidget);
     });
 
+    testWidgets('associates the label and helper text with the field', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(
+          label: 'Email',
+          helperText: 'Your work email',
+        ),
+      );
+
+      final field = find.bySemanticsLabel('Email, Your work email');
+      expect(field, findsOneWidget);
+      expect(
+        tester.getSemantics(field),
+        matchesSemantics(
+          label: 'Email, Your work email',
+          isTextField: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasFocusAction: true,
+          hasTapAction: true,
+        ),
+      );
+
+      semantics.dispose();
+    });
+
     testWidgets('renders error text and hides helper when error is set', (
       tester,
     ) async {
@@ -50,6 +81,42 @@ void main() {
 
       expect(find.text('Required field'), findsOneWidget);
       expect(find.text('Helper'), findsNothing);
+    });
+
+    testWidgets('associates and announces validation errors', (tester) async {
+      final semantics = tester.ensureSemantics();
+
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(
+          label: 'Required',
+          errorText: 'Required field',
+        ),
+      );
+
+      final field = find.bySemanticsLabel('Required, Required field');
+      expect(field, findsOneWidget);
+      expect(
+        tester.getSemantics(field),
+        matchesSemantics(
+          label: 'Required, Required field',
+          isTextField: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasFocusAction: true,
+          hasTapAction: true,
+        ),
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Required field')),
+        matchesSemantics(
+          label: 'Required field',
+          isLiveRegion: true,
+        ),
+      );
+
+      semantics.dispose();
     });
 
     testWidgets('renders leading and trailing icons', (tester) async {
@@ -82,6 +149,39 @@ void main() {
 
       await tester.enterText(find.byType(TextField), 'Hello');
       expect(changedText, 'Hello');
+    });
+
+    testWidgets('labels an actionable trailing icon for screen readers', (
+      tester,
+    ) async {
+      var clearCount = 0;
+      final semantics = tester.ensureSemantics();
+
+      await _pumpInput(
+        tester,
+        DesignSystemTextInput(
+          label: 'Search',
+          trailingIcon: Icons.clear,
+          trailingIconTooltip: 'Clear search',
+          onTrailingIconTap: () => clearCount++,
+        ),
+      );
+
+      final clearButton = find.bySemanticsLabel('Clear search');
+      expect(
+        tester.getSemantics(clearButton),
+        matchesSemantics(
+          label: 'Clear search',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasTapAction: true,
+        ),
+      );
+
+      await tester.tap(clearButton);
+      expect(clearCount, 1);
+      semantics.dispose();
     });
 
     testWidgets('applies disabled opacity when not enabled', (tester) async {

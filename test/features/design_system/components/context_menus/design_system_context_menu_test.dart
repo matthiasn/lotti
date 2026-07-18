@@ -74,6 +74,41 @@ void main() {
       expect(tapped, isTrue);
     });
 
+    testWidgets('exposes available and unavailable items as named buttons', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await _pumpContextMenu(
+        tester,
+        DesignSystemContextMenu(
+          items: [
+            DesignSystemContextMenuItem(label: 'Open', onTap: () {}),
+            const DesignSystemContextMenuItem(label: 'Unavailable'),
+          ],
+        ),
+      );
+
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Open')),
+        matchesSemantics(
+          label: 'Open',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasTapAction: true,
+        ),
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Unavailable')),
+        matchesSemantics(
+          label: 'Unavailable',
+          isButton: true,
+          hasEnabledState: true,
+        ),
+      );
+      semantics.dispose();
+    });
+
     testWidgets('applies destructive color to destructive items', (
       tester,
     ) async {

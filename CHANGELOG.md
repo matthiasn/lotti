@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the same Manual translation. Follow system restores your device language
   for both.
 
+### Fixed
+- **Screen-reader navigation, fields, and visual controls now describe their
+  actions and state.** Overflow menus, text-field icon actions, search clear,
+  chart-scale controls, and calendar dates expose accessible names; fields
+  keep their labels and validation feedback when focused; back navigation
+  follows the app language; and unavailable navigation destinations announce
+  their disabled state instead of sounding actionable.
 - **The task AI summary card is more compact and calmer.** The summary now
   leads directly under a tighter header, and all secondary controls moved
   into a quiet footer at the card bottom: the Wake agent button, a small

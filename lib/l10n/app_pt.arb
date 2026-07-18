@@ -724,6 +724,7 @@
   "aiCardReadMore": "Leia mais",
   "aiCardShowLess": "Mostrar menos",
   "aiCardTitle": "Resumo de IA",
+  "aiChatAssistantResponding": "O assistente está respondendo",
   "aiChatMessageCopied": "Copiado para a área de transferência",
   "aiConfigFailedToLoadModelsGeneric": "Falha ao carregar modelos. Por favor, tente novamente.",
   "aiConfigNoModelsAvailable": "Nenhum modelo de IA está configurado ainda. Adicione um nas configurações.",
@@ -1504,6 +1505,8 @@
   "backfillToggleDescription": "Solicita entradas ausentes das últimas 24 horas.",
   "backfillToggleTitle": "Preenchimento automático",
   "basicSettings": "Configurações básicas",
+  "calendarHasPlanLabel": "Tem um plano",
+  "calendarTodayLabel": "Hoje",
   "cancelButton": "Cancelar",
   "categoryActiveDescription": "As categorias inativas não aparecerão nas listas de seleção",
   "categoryActiveSwitchDescription": "Selecionável para novas entradas",
@@ -2578,6 +2581,7 @@
   "designSystemProgressBarSampleLabel": "Etiqueta da barra de progresso",
   "designSystemRadioButtonLabel": "Botão de rádio",
   "designSystemScrollbarSizesTitle": "Tamanhos da barra de rolagem",
+  "designSystemSearchClearLabel": "Limpar pesquisa",
   "designSystemSearchFilledText": "Pesquisa lotti",
   "designSystemSearchHintLabel": "Digite usuário",
   "designSystemSelectedLabel": "Selecionado",
@@ -2804,6 +2808,8 @@
     }
   },
   "habitsAllDoneToday": "Tudo feito hoje",
+  "habitsChartUseDynamicBaseline": "Usar linha de base dinâmica",
+  "habitsChartUseZeroBaseline": "Usar linha de base zero",
   "habitsCompletedHeader": "Concluído",
   "habitsCompletionRateTitle": "Taxa de conclusão",
   "habitsConsistencyTitle": "Consistência",
@@ -3188,6 +3194,20 @@
   "keyboardKeyShift": "Mudança",
   "keyboardKeySpace": "Espaço",
   "keyboardResizeDividerLabel": "Redimensionar painéis",
+  "keyboardResizeDividerValue": "Redimensionar painéis, {value} pixels. Intervalo de {min} a {max} pixels.",
+  "@keyboardResizeDividerValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "keyboardShortcutsNoResults": "Nenhum atalho corresponde à sua pesquisa",
   "keyboardShortcutsSearchHint": "Atalhos de pesquisa…",
   "keyboardShortcutsSubtitle": "Cada comando da área de trabalho e sua combinação atual de teclado.",

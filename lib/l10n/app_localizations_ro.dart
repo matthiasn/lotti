@@ -1217,6 +1217,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiCardTitle => 'Rezumat AI';
 
   @override
+  String get aiChatAssistantResponding => 'Asistentul răspunde';
+
+  @override
   String get aiChatMessageCopied => 'Copiat în clipboard';
 
   @override
@@ -2648,6 +2651,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get basicSettings => 'Setări de bază';
+
+  @override
+  String get calendarHasPlanLabel => 'Are un plan';
+
+  @override
+  String get calendarTodayLabel => 'Astăzi';
 
   @override
   String get cancelButton => 'Anulați';
@@ -4974,6 +4983,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemScrollbarSizesTitle => 'Dimensiuni bară de derulare';
 
   @override
+  String get designSystemSearchClearLabel => 'Șterge căutarea';
+
+  @override
   String get designSystemSearchFilledText => 'Căutare Lotti';
 
   @override
@@ -5497,6 +5509,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get habitsAllDoneToday => 'Tot finalizat azi';
+
+  @override
+  String get habitsChartUseDynamicBaseline =>
+      'Folosește linia de bază dinamică';
+
+  @override
+  String get habitsChartUseZeroBaseline => 'Folosește linia de bază zero';
 
   @override
   String get habitsCompletedHeader => 'Finalizate';
@@ -6346,6 +6365,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keyboardResizeDividerLabel => 'Redimensionați panourile';
+
+  @override
+  String keyboardResizeDividerValue(int value, int min, int max) {
+    return 'Redimensionați panourile, $value pixeli. Interval $min-$max pixeli.';
+  }
 
   @override
   String get keyboardShortcutsNoResults =>

@@ -308,7 +308,7 @@ That is easy to miss if you only read the state shape. The controller stores `se
 The completion-rate chart lives inside `HabitsChartCard` at the bottom of the page — a titled, bordered `dsCardSurface` card. The card supplies the title (`habitsCompletionRateTitle`), the time-span switch, and the zero-baseline toggle; the chart (`HabitCompletionRateChart`) supplies a headline, a single trend line, and — when a day is tapped — that day's breakdown.
 
 - **Time span** is a `TimeSpanSegmentedControl` over `[14, 30, 90]` days, always visible in the card header (no longer hidden behind a calendar toggle). Selecting a span calls `setTimeSpan`, which refetches the range and recomputes. `HabitsChartCard.timeSpans` is the single source for the offered windows. The chart also drives the day window for each dashboard row's history strip via the page's shared `rangeStart` / `rangeEnd`.
-- **Zero-baseline toggle** only appears when `state.minY > 20` (i.e. the lowest day clears the 20% floor, where cropping the axis is actually meaningful). It flips `zeroBased`, switching between a zero-based Y axis and the cropped minimum.
+- **Zero-baseline toggle** only appears when `state.minY > 20` (i.e. the lowest day clears the 20% floor, where cropping the axis is actually meaningful). It flips `zeroBased`, switching between a zero-based Y axis and the cropped minimum. Its icon-only surface is a named, toggled semantic button (`Use zero baseline` / `Use dynamic baseline`), so the same chart-scale decision is usable without seeing the glyph.
 
 ### Headline, trend line, and stats
 

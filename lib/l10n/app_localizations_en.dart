@@ -1196,6 +1196,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiCardTitle => 'AI summary';
 
   @override
+  String get aiChatAssistantResponding => 'Assistant is responding';
+
+  @override
   String get aiChatMessageCopied => 'Copied to clipboard';
 
   @override
@@ -2592,6 +2595,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get basicSettings => 'Basic settings';
+
+  @override
+  String get calendarHasPlanLabel => 'Has plan';
+
+  @override
+  String get calendarTodayLabel => 'Today';
 
   @override
   String get cancelButton => 'Cancel';
@@ -4872,6 +4881,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemScrollbarSizesTitle => 'Scrollbar Sizes';
 
   @override
+  String get designSystemSearchClearLabel => 'Clear search';
+
+  @override
   String get designSystemSearchFilledText => 'Lotti search';
 
   @override
@@ -5378,6 +5390,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get habitsAllDoneToday => 'All done today';
+
+  @override
+  String get habitsChartUseDynamicBaseline => 'Use dynamic baseline';
+
+  @override
+  String get habitsChartUseZeroBaseline => 'Use zero baseline';
 
   @override
   String get habitsCompletedHeader => 'Completed';
@@ -6207,6 +6225,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyboardResizeDividerLabel => 'Resize panes';
+
+  @override
+  String keyboardResizeDividerValue(int value, int min, int max) {
+    return 'Resize panes, $value pixels. Range $min to $max pixels.';
+  }
 
   @override
   String get keyboardShortcutsNoResults => 'No shortcuts match your search';

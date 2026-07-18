@@ -536,6 +536,7 @@
   "aiCardReadMore": "Citiți mai mult",
   "aiCardShowLess": "Afișați mai puțin",
   "aiCardTitle": "Rezumat AI",
+  "aiChatAssistantResponding": "Asistentul răspunde",
   "aiChatMessageCopied": "Copiat în clipboard",
   "aiConfigFailedToLoadModelsGeneric": "Eșec la încărcarea modelelor. Vă rugăm să încercați din nou.",
   "aiConfigNoModelsAvailable": "Nu sunt configurate modele AI încă. Vă rugăm să adăugați unul în setări.",
@@ -1219,6 +1220,8 @@
   "backfillToggleDescription": "Solicită intrările lipsă din ultimele 24 de ore.",
   "backfillToggleTitle": "Completare automată",
   "basicSettings": "Setări de bază",
+  "calendarHasPlanLabel": "Are un plan",
+  "calendarTodayLabel": "Astăzi",
   "cancelButton": "Anulați",
   "categoryActiveDescription": "Categoriile inactive nu vor apărea în listele de selecție",
   "categoryActiveSwitchDescription": "Selectabil pentru intrări noi",
@@ -2184,6 +2187,7 @@
   "designSystemProgressBarSampleLabel": "Etichetă bară de progres",
   "designSystemRadioButtonLabel": "Buton radio",
   "designSystemScrollbarSizesTitle": "Dimensiuni bară de derulare",
+  "designSystemSearchClearLabel": "Șterge căutarea",
   "designSystemSearchFilledText": "Căutare Lotti",
   "designSystemSearchHintLabel": "Introdu utilizatorul",
   "designSystemSelectedLabel": "Selectat",
@@ -2359,6 +2363,8 @@
   "habitsAboveGoal": "Conform planului",
   "habitsActiveHabitsCount": "{count, plural, one{1 obicei activ} few{{count} obiceiuri active} other{{count} de obiceiuri active}}",
   "habitsAllDoneToday": "Tot finalizat azi",
+  "habitsChartUseDynamicBaseline": "Folosește linia de bază dinamică",
+  "habitsChartUseZeroBaseline": "Folosește linia de bază zero",
   "habitsCompletedHeader": "Finalizate",
   "habitsCompletionRateTitle": "Rata de finalizare",
   "habitsConsistencyTitle": "Consecvență",
@@ -2655,6 +2661,20 @@
   "keyboardKeyShift": "Shift",
   "keyboardKeySpace": "Spațiu",
   "keyboardResizeDividerLabel": "Redimensionați panourile",
+  "keyboardResizeDividerValue": "Redimensionați panourile, {value} pixeli. Interval {min}-{max} pixeli.",
+  "@keyboardResizeDividerValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "keyboardShortcutsNoResults": "Nicio comandă rapidă nu corespunde căutării dvs.",
   "keyboardShortcutsSearchHint": "Căutați comenzi rapide…",
   "keyboardShortcutsSubtitle": "Toate comenzile pentru desktop și combinațiile lor actuale de taste.",

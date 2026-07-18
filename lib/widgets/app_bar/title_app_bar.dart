@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -61,13 +60,7 @@ class TitleWidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
         margin: margin,
         child: title,
       ),
-      leading: showBackButton
-          ? const BackWidget().animate().fadeIn(
-              duration: const Duration(
-                seconds: 1,
-              ),
-            )
-          : Container(),
+      leading: showBackButton ? const BackWidget() : Container(),
       centerTitle: true,
     );
   }
@@ -85,24 +78,38 @@ class BackWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final action = onPressed ?? () => getIt<NavService>().beamBack();
+    final tooltip = MaterialLocalizations.of(context).backButtonTooltip;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(width: 2),
-        IconButton(
-          onPressed: onPressed ?? () => getIt<NavService>().beamBack(),
-          icon: Icon(
-            Icons.chevron_left,
-            size: 30,
-            weight: 500,
-            // onSurfaceVariant, not outline: the chevron is an
-            // interactive control and must clear the 3:1 non-text
-            // contrast minimum on both themes.
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            semanticLabel: 'Navigate back',
+        Semantics(
+          container: true,
+          button: true,
+          label: tooltip,
+          onTap: action,
+          child: ExcludeSemantics(
+            child: Tooltip(
+              message: tooltip,
+              excludeFromSemantics: true,
+              child: IconButton(
+                onPressed: action,
+                icon: Icon(
+                  Icons.chevron_left,
+                  size: 30,
+                  weight: 500,
+                  // onSurfaceVariant, not outline: the chevron is an
+                  // interactive control and must clear the 3:1 non-text
+                  // contrast minimum on both themes.
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           ),
         ),
       ],
-    ).animate().fadeIn(duration: const Duration(seconds: 1));
+    );
   }
 }

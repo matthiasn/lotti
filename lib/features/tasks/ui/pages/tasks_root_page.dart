@@ -42,6 +42,9 @@ class TasksRootPage extends ConsumerWidget {
           child: const TasksTabPage(),
         ),
         divider: ResizableDivider(
+          currentValue: paneWidths.listPaneWidth,
+          minValue: minListPaneWidth,
+          maxValue: maxListPaneWidth,
           onDrag: (delta) => ref
               .read(paneWidthControllerProvider.notifier)
               .updateListPaneWidth(delta),

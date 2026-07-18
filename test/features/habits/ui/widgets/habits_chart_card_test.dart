@@ -118,6 +118,29 @@ void main() {
     },
   );
 
+  testWidgets('labels the baseline toggle and exposes its state', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await pump(
+      tester,
+      HabitsState.initial().copyWith(minY: 21, zeroBased: false),
+    );
+
+    final toggle = find.bySemanticsLabel('Use zero baseline');
+    expect(
+      tester.getSemantics(toggle),
+      matchesSemantics(
+        label: 'Use zero baseline',
+        isButton: true,
+        hasToggledState: true,
+        hasTapAction: true,
+      ),
+    );
+
+    semantics.dispose();
+  });
+
   testWidgets('renders the HabitCompletionRateChart', (tester) async {
     await pump(tester, HabitsState.initial());
 

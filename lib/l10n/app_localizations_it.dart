@@ -1216,6 +1216,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiCardTitle => 'Riepilogo dell\'AI';
 
   @override
+  String get aiChatAssistantResponding => 'L’assistente sta rispondendo';
+
+  @override
   String get aiChatMessageCopied => 'Copiato negli appunti';
 
   @override
@@ -2643,6 +2646,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get basicSettings => 'Impostazioni di base';
+
+  @override
+  String get calendarHasPlanLabel => 'Ha un piano';
+
+  @override
+  String get calendarTodayLabel => 'Oggi';
 
   @override
   String get cancelButton => 'Annullamento';
@@ -4965,6 +4974,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Dimensioni della barra di scorrimento';
 
   @override
+  String get designSystemSearchClearLabel => 'Cancella ricerca';
+
+  @override
   String get designSystemSearchFilledText => 'Ricerca Lotti';
 
   @override
@@ -5477,6 +5489,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get habitsAllDoneToday => 'Tutto fatto oggi';
+
+  @override
+  String get habitsChartUseDynamicBaseline => 'Usa la linea di base dinamica';
+
+  @override
+  String get habitsChartUseZeroBaseline => 'Usa la linea di base zero';
 
   @override
   String get habitsCompletedHeader => 'Completo';
@@ -6322,6 +6340,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get keyboardResizeDividerLabel => 'Ridimensionare i pannelli';
+
+  @override
+  String keyboardResizeDividerValue(int value, int min, int max) {
+    return 'Ridimensionare i pannelli, $value pixel. Intervallo da $min a $max pixel.';
+  }
 
   @override
   String get keyboardShortcutsNoResults =>

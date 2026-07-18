@@ -10,6 +10,61 @@ import '../../../../widget_test_utils.dart';
 
 void main() {
   group('DesignSystemSearch', () {
+    testWidgets(
+      'labels the editable field and clear action for screen readers',
+      (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SizedBox(
+              width: 244,
+              child: DesignSystemSearch(
+                hintText: 'Find entries',
+              ),
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        final field = find.bySemanticsLabel('Find entries');
+        expect(field, findsOneWidget);
+        expect(
+          tester.getSemantics(field),
+          matchesSemantics(
+            label: 'Find entries',
+            isTextField: true,
+            hasEnabledState: true,
+            isEnabled: true,
+            isFocusable: true,
+            hasFocusAction: true,
+            hasTapAction: true,
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'Lotti');
+        await tester.pump();
+
+        final clearButton = find.bySemanticsLabel('Clear search');
+        expect(
+          tester.getSemantics(clearButton),
+          matchesSemantics(
+            label: 'Clear search',
+            isButton: true,
+            hasEnabledState: true,
+            isEnabled: true,
+            isFocusable: true,
+            hasFocusAction: true,
+            hasTapAction: true,
+          ),
+        );
+
+        semantics.dispose();
+      },
+    );
+
     testWidgets('renders placeholder styles and reveals the clear affordance', (
       tester,
     ) async {
@@ -46,7 +101,7 @@ void main() {
         find.byType(EditableText),
       );
       final mediumTextField = tester.widget<TextField>(find.byType(TextField));
-      expect(mediumTextField.decoration!.hintText, 'Type user');
+      expect(mediumTextField.decoration!.hintText, isNull);
       expect(
         mediumEditableText.style.height,
         dsTokensLight.typography.styles.body.bodyMedium.height,

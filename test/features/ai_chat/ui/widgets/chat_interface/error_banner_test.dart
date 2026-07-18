@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/error_banner.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -58,11 +59,38 @@ void main() {
         onDismiss: () => dismissals++,
       );
 
-      await tester.tap(find.text('Retry'));
+      final context = tester.element(find.byType(ErrorBanner));
+      await tester.tap(find.text(context.messages.aiInferenceErrorRetryButton));
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(retries, 1);
       expect(dismissals, 0);
+    });
+
+    testWidgets('announces the error and names the dismiss button', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pumpBanner(
+        tester,
+        error: 'Network unreachable',
+        onRetry: () {},
+        onDismiss: () {},
+      );
+
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Network unreachable')),
+        matchesSemantics(label: 'Network unreachable', isLiveRegion: true),
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Close')),
+        matchesSemantics(
+          label: 'Close',
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      semantics.dispose();
     });
 
     testWidgets('Close button triggers onDismiss only', (tester) async {

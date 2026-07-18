@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 enum DesignSystemSearchSize {
   small,
@@ -150,7 +151,9 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
               _SearchActionButton(
                 size: spec,
                 enabled: widget.enabled,
-                semanticsLabel: widget.semanticsLabel ?? widget.hintText,
+                semanticsLabel: MaterialLocalizations.of(
+                  context,
+                ).searchFieldLabel,
                 onPressed: widget.enabled && widget.onSearchPressed != null
                     ? _handleSearchPressed
                     : null,
@@ -172,35 +175,38 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
                           ),
                         ),
                       ),
-                    TextField(
-                      controller: _controller,
-                      focusNode: widget.focusNode,
-                      enabled: widget.enabled,
-                      onChanged: widget.onChanged,
-                      onSubmitted: widget.onSubmitted,
-                      textInputAction: TextInputAction.search,
-                      cursorHeight: scaledTextHeight,
-                      selectionHeightStyle: ui.BoxHeightStyle.tight,
-                      strutStyle: StrutStyle.fromTextStyle(
-                        textStyle,
-                        forceStrutHeight: true,
-                      ),
-                      style: textStyle,
-                      textAlignVertical: const TextAlignVertical(y: -0.3),
-                      decoration: InputDecoration(
-                        hintText: widget.hintText,
-                        hintStyle: hintStyle.copyWith(
-                          color: Colors.transparent,
+                    Semantics(
+                      container: true,
+                      label: widget.semanticsLabel ?? widget.hintText,
+                      child: TextField(
+                        controller: _controller,
+                        focusNode: widget.focusNode,
+                        enabled: widget.enabled,
+                        onChanged: widget.onChanged,
+                        onSubmitted: widget.onSubmitted,
+                        textInputAction: TextInputAction.search,
+                        cursorHeight: scaledTextHeight,
+                        selectionHeightStyle: ui.BoxHeightStyle.tight,
+                        strutStyle: StrutStyle.fromTextStyle(
+                          textStyle,
+                          forceStrutHeight: true,
                         ),
-                        border: _noBorder,
-                        enabledBorder: _noBorder,
-                        disabledBorder: _noBorder,
-                        focusedBorder: _noBorder,
-                        errorBorder: _noBorder,
-                        focusedErrorBorder: _noBorder,
-                        contentPadding: EdgeInsets.zero,
-                        isDense: true,
-                        isCollapsed: true,
+                        style: textStyle,
+                        textAlignVertical: const TextAlignVertical(y: -0.3),
+                        decoration: const InputDecoration(
+                          hint: ExcludeSemantics(
+                            child: SizedBox.shrink(),
+                          ),
+                          border: _noBorder,
+                          enabledBorder: _noBorder,
+                          disabledBorder: _noBorder,
+                          focusedBorder: _noBorder,
+                          errorBorder: _noBorder,
+                          focusedErrorBorder: _noBorder,
+                          contentPadding: EdgeInsets.zero,
+                          isDense: true,
+                          isCollapsed: true,
+                        ),
                       ),
                     ),
                   ],
@@ -212,9 +218,7 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
                   size: spec,
                   enabled: widget.enabled,
                   color: tokens.colors.text.highEmphasis,
-                  semanticsLabel: MaterialLocalizations.of(
-                    context,
-                  ).cancelButtonLabel,
+                  semanticsLabel: context.messages.designSystemSearchClearLabel,
                   onPressed: widget.enabled ? _handleClearPressed : null,
                 ),
               ],

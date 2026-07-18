@@ -368,8 +368,23 @@ Several components enforce accessible naming at construction time. Examples:
 - `DesignSystemSplitButton` resolves explicit semantics labels for primary and dropdown actions
 - `DesignSystemCheckbox` requires either a visible label or a semantics label
 - `DesignSystemTooltipIcon` maps tooltip text into semantics by default
+- `DesignSystemContextMenuButton` always exposes a localized trigger name,
+  using its tooltip when supplied and Material's “show menu” label otherwise
+- `DesignSystemTextInput` gives the editable node its persistent label plus
+  helper or error text, announces validation errors as live feedback, requires
+  a tooltip/semantic label for every actionable trailing icon, and excludes
+  decorative trailing icons rather than announcing them as unavailable buttons
+- `DesignSystemSearch` gives the editable node its semantic name and exposes
+  its clear affordance as a localized button rather than an unlabeled glyph
 - `DesignSystemTimeWheel` exposes hour, minute, and AM/PM columns as separate
   adjustable semantic controls, including next/previous values
+
+Navigation components also publish disabled state explicitly: a bottom-nav or
+desktop-sidebar destination with no callback remains discoverable, but assistive
+technology announces it as unavailable and it exposes no tap action.
+`SidebarMonthCalendar` exposes the month as a heading and each day as one
+button labelled with its full localized date; selected, today, and plan states
+remain distinct so today is never falsely announced as the selected date.
 
 This is not universal policy machinery hidden somewhere central. It is encoded directly in component constructors and `Semantics` wrappers, which is better because the rule stays close to the widget that can violate it.
 
