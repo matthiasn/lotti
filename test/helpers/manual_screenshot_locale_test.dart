@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'manual_screenshot_czech_text.dart';
+import 'manual_screenshot_danish_text.dart';
 import 'manual_screenshot_dutch_text.dart';
 import 'manual_screenshot_french_text.dart';
 import 'manual_screenshot_italian_text.dart';
@@ -9,6 +10,7 @@ import 'manual_screenshot_locale.dart';
 import 'manual_screenshot_portuguese_text.dart';
 import 'manual_screenshot_romanian_text.dart';
 import 'manual_screenshot_spanish_text.dart';
+import 'manual_screenshot_swedish_text.dart';
 
 void main() {
   group('manual screenshot locale', () {
@@ -65,12 +67,24 @@ void main() {
         }),
         const Locale('es'),
       );
+      expect(
+        manualScreenshotLocaleFromEnvironment(
+          const {'LOTTI_MANUAL_LOCALE': 'da'},
+        ),
+        const Locale('da'),
+      );
+      expect(
+        manualScreenshotLocaleFromEnvironment(
+          const {'LOTTI_MANUAL_LOCALE': 'sv'},
+        ),
+        const Locale('sv'),
+      );
     });
 
     test('rejects unsupported screenshot locales', () {
       expect(
         () => manualScreenshotLocaleFromEnvironment(const {
-          'LOTTI_MANUAL_LOCALE': 'sv',
+          'LOTTI_MANUAL_LOCALE': 'fi',
         }),
         throwsArgumentError,
       );
@@ -130,6 +144,22 @@ void main() {
         'Ispeziona l’habitat orbitale dei pinguini',
       );
       expect(manualScreenshotItalianText('Unknown fixture'), isNull);
+    });
+
+    test('Danish fixture catalog localizes representative demo copy', () {
+      expect(
+        manualScreenshotDanishText('Inspect orbital penguin habitat'),
+        'Undersøg pingvinhabitatet i kredsløb',
+      );
+      expect(manualScreenshotDanishText('Unknown fixture'), isNull);
+    });
+
+    test('Swedish fixture catalog localizes representative demo copy', () {
+      expect(
+        manualScreenshotSwedishText('Inspect orbital penguin habitat'),
+        'Inspektera pingvinernas omloppshabitat',
+      );
+      expect(manualScreenshotSwedishText('Unknown fixture'), isNull);
     });
 
     test('French fixture catalog localizes multiline agent reports', () {

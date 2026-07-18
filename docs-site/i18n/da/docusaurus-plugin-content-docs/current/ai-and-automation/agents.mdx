@@ -1,0 +1,95 @@
+---
+title: Kør og overvåg agenter
+description: Overvåg agentaktivitet, inspicer kørende instanser og styr planlagte vågecyklusser uden at miste revisionssporet.
+---
+
+# Kør og overvåg agenter
+
+Agenterne lader Lotti bære et defineret ansvar over flere vågecyklusser.
+Hver kørende instans kommer fra en agentskabelon, bruger en inferensopsætning,
+og bevarer sin egen tilstand, rapporter, observationer og aktivitetshistorie. Åben
+**Indstillinger → agenter** for at se systemet som helhed.
+
+Agentrapporter, observationer og kø-våger beskriver agentens arbejde
+staten; De omskriver ikke lydløst den personlige logbog. Når en task agent
+vil ændre opgavedata, Lotti præsenterer et forslag til din gennemgang. Se
+[Review proposed changes](../organize-and-reflect/tasks.mdx#gennemgå-foreslåede-ændringer)
+for godkendelseskontroller pr. opgave og deres snævre indledende titel og sprog
+undtagelser.
+
+## Læs agentaktiviteten, før du ændrer den
+
+**Stats**-siden kombinerer vågaktivitet og token-brug. Det første diagram
+Viser da agenter vågnede inden for de sidste 24 timer. Den daglige sektion sammenligner
+I dag med samme tid på de seneste dage, derefter opdeles forbruget efter model og
+Kilde.
+
+<ManualScreenshot
+  caseId="agents/stats"
+  alt="Lotti agent statistics showing Project Waddle wake activity, daily token usage, and model charts"
+  caption="Project Waddle's example fleet is busiest around habitat checks and launch planning; the model and source sections make that activity attributable."
+/>
+
+Brug denne side til at besvare tre forskellige spørgsmål:
+
+- **Hvornår løb agenterne?** Læs 24-timers vågeskemaet.
+- **Hvor meget inferenser brugte de?** Sammenlign de daglige og pr. model-diagrammer.
+- **Hvilket ansvar drev det?** Gennemgå skabelon-/kildeopdelingen.
+
+En stigning er ikke automatisk en fejl. En lancerings- og gennemgangsdag bør være travlere
+end en almindelig kolonidag. Undersøg uventede aktiviteter ved at åbne
+Kildeskabelon eller instans før du ændrer en global samtidighedsgrænse.
+
+## Inspicer de kørende instanser
+
+Åbn **Instanser** for at se hver agent og evolutionssession. Rækker afslører
+agenttype, livscyklus, tildelt skabelon og sjæl. Gruppering efter sjæl er nyttigt
+Når flere ansvarsområder deler én stemme og beslutningsstil.
+
+<ManualScreenshot
+  caseId="agents/instances"
+  alt="Lotti agent instances grouped by Admiral Pebble, Dr. Flipper, Captain Sardina, and an evolution session"
+  caption="The Habitat Seal Inspector, Project Waddle Planner, and Sardine Cargo Coordinator remain separate instances even when they share system-level resources."
+/>
+
+Vælg en instans til at inspicere dens interne dele. **Statistik**-fanen viser modellen
+brug, dets skabelon, nuværende inferensrute, livscykluskontroller, vågenopæl,
+og planlægningstilstand.
+
+<ManualScreenshot
+  caseId="agents/instance-detail"
+  alt="Habitat Seal Inspector instance detail with token usage, Orbital Habitat Sentinel template, inference route, lifecycle controls, and wake state"
+  caption="The instance keeps enough provenance to explain which template and route produced its work before you pause, re-analyze, or destroy it."
+/>
+
+De resterende instansfaner indeholder forskellige beviser:
+
+- **Rapporter** indeholder agentens gemte rapportsnapshots.
+- **Samtaler** grupperer beskeder efter vågencyklus.
+- **Observationer** afslører indfangede fund uden at blande dem i rapporter.
+- **Aktivitet** viser den kronologiske besked og værktøjssporet.
+
+**Pause** beholder instansen, men stopper normalt arbejde. **Gen-analyser** stiller en opgave
+agent til at genoverveje sit nuværende emne. **Destroy** er destruktivt og bør
+kun bruges, når selve instansen ikke længere er ønsket; Ændring af
+Skabelon for fremtidige agenter kræver ikke, at man ødelægger urelaterede instanser.
+
+## Forstå vågencyklusser
+
+Åbn **Wake Cycles** for at se arbejde, der kører nu og arbejde, der skal afleveres senere. A
+**Afventende** våge blev anmodet af agenten. En **planlagt** våge blev arrangeret af
+Systemet eller planlæggeren. Hver række holder den tilknyttede opgave, projekt eller dag synlig
+sammen med den ansvarlige agent og en live nedtælling.
+
+<ManualScreenshot
+  caseId="agents/pending-wakes"
+  alt="Lotti Wake Cycles showing the running habitat inspection and scheduled Project Waddle and sardine logistics wakes"
+  caption="The queue distinguishes an agent-requested habitat follow-up from launch-day and cargo schedules, so a countdown always has a reason and owner."
+/>
+
+Sletning af en kø-wake fjerner den timer; den sletter ikke agenten eller dens
+Sammenkoblet opgave. Hvis en våge straks vender tilbage, inspiceres agentens tilstand eller
+Automatisering, der bad om det i stedet for gentagne gange at slette symptomet.
+
+Continue with [Agent templates and souls](./agent-blueprints.mdx) to define
+Hvad disse instanser gør, og hvordan de kommunikerer.

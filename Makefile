@@ -21,7 +21,7 @@ LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 THRESH ?= 1000
 LOTTI_DOCS_DIR ?= $(abspath ../lotti-docs)
 MANUAL_VERSION ?= development
-MANUAL_LOCALES ?= en de fr it es cs nl ro pt
+MANUAL_LOCALES ?= en de fr it es cs nl ro pt da sv
 MANUAL_CAPTURE_DIR ?= $(LOTTI_DOCS_DIR)/manual/.staging/$(MANUAL_VERSION)
 MANUAL_MEDIA_DIR ?= $(LOTTI_DOCS_DIR)/manual/screenshots
 

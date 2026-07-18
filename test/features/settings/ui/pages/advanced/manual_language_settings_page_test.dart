@@ -73,7 +73,7 @@ void main() {
       final messages = context.messages;
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
-      expect(find.byType(DesignSystemRadioButton), findsNWidgets(10));
+      expect(find.byType(DesignSystemRadioButton), findsNWidgets(12));
       expect(
         find.text(messages.settingsManualLanguageFollowSystemSubtitle),
         findsOneWidget,
@@ -95,6 +95,8 @@ void main() {
         messages.settingsManualLanguageDutchTitle,
         messages.settingsManualLanguageRomanianTitle,
         messages.settingsManualLanguagePortugueseTitle,
+        messages.settingsManualLanguageDanishTitle,
+        messages.settingsManualLanguageSwedishTitle,
       ]) {
         expect(rowFor(tester, title).selected, isFalse);
       }
@@ -133,13 +135,15 @@ void main() {
     ).called(1);
   });
 
-  testWidgets('Italian, Spanish, and Dutch choices persist their overrides', (
+  testWidgets('translated manual language choices persist their overrides', (
     tester,
   ) async {
     for (final language in [
       ManualLanguage.italian,
       ManualLanguage.spanish,
       ManualLanguage.dutch,
+      ManualLanguage.danish,
+      ManualLanguage.swedish,
     ]) {
       await pumpPage(tester);
       final context = tester.element(find.byType(ManualLanguageSettingsBody));
@@ -150,6 +154,10 @@ void main() {
           context.messages.settingsManualLanguageSpanishTitle,
         ManualLanguage.dutch =>
           context.messages.settingsManualLanguageDutchTitle,
+        ManualLanguage.danish =>
+          context.messages.settingsManualLanguageDanishTitle,
+        ManualLanguage.swedish =>
+          context.messages.settingsManualLanguageSwedishTitle,
         _ => throw StateError('Unexpected Manual language: $language'),
       };
 

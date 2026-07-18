@@ -1,0 +1,54 @@
+---
+title: Kör kontextuella AI-färdigheter
+description: Använd menyn Generera för att köra endast de AI-åtgärder som gäller för den aktuella uppgiften, inspelningen, bilden eller posten.
+---
+
+# Kör kontextuella AI-färdigheter
+
+AI-färdigheter är namngivna handlingar med instruktioner och inmatningskrav. Lotti
+filtrerar **Generera...**-menyn till den aktuella enheten, så att en uppgift inte erbjuder
+en ljudbaserad transkriptionsåtgärd och en bild erbjuder inte en handling som
+kräver en inspelning.
+
+<ManualScreenshot
+  caseId="ai/skills"
+  alt="Project Waddle habitat image with the Generate modal offering Inspect habitat photo"
+  caption="On a habitat image linked to the task, the applicable action looks for pressure-gauge anomalies and visible seal damage."
+/>
+
+## Kör en färdighet
+
+1. Öppna en uppgift eller stödd dagboksanteckning.
+2. Välj den angivna assistentåtgärden i ingångsrubriken. Detta öppnar
+   **Generera...**.
+3. Läs färdighetsbeskrivningen och välj den handling du vill ha.
+4. Om Lotti erbjuder en modell- eller tänkarlägesväljare, bekräfta standarden eller
+   Välj en engångsöverskrivning.
+5. Fortsätt arbeta medan slutsatsen pågår; resultatet är kopplat till
+   relevant uppgift eller post när den är klar.
+
+Den tillgängliga menyn ändras med kontext:
+
+- tasks kan erbjuda text- och uppgiftskontextåtgärder;
+- ljudposter kan erbjuda transkription och ljudmedvetna åtgärder;
+- bilder kan erbjuda visuell analys; och
+- textposter kan erbjuda prompt- eller genereringsåtgärder som accepterar text.
+
+Vissa färdigheter behöver en länkad uppgift eftersom de läser bredare uppgiftskontext eller skriver
+deras resultat åter till den uppgiften. Om en handling saknas, kontrollera först posten
+typ och uppgiftslänk, kontrollera sedan att den aktiva inferensprofilen har en modell för
+den nödvändiga kapaciteten.
+
+## Modellöverskrivningar är tillfälliga
+
+När en färdighet erbjuder en modellplockare gäller det valet för den aktuella
+åkallan. Den skriver inte tyst om kategorin standard eller inferens.
+profil. För att ändra den normala rutten, redigera profilen nedan
+[Models and inference profiles](./models-and-profiles.mdx).
+
+## Behandla genererat utdata som ett utkast
+
+Granska genererade prompts, sammanfattningar, transkriptioner, bildanalys och konstverk
+innan han förlitade sig på dem. Uppgiftskontexten kan vara ofullständig, leverantörer kan returnera
+felaktig utgång, och en kapabel modell kan fortfarande missförstå en mycket allvarlig
+Sardinnödsituation.

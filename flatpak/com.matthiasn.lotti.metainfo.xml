@@ -33,6 +33,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1053" date="2026-07-18">
+      <description>
+        <p>Danish and Swedish are now available throughout Lotti and its Manual. The app follows Danish and Swedish system locales, and Settings → Advanced → Language can open each matching manual explicitly.</p>
+      </description>
+    </release>
     <release version="0.9.1052" date="2026-07-18">
       <description>
           <p>Dutch is now available throughout Lotti and its Manual. The app follows Dutch system locales, and Settings → Advanced → Language can open the matching Dutch manual explicitly.</p>

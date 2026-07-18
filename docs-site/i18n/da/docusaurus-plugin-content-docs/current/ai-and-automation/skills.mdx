@@ -1,0 +1,54 @@
+---
+title: Kør kontekstuelle AI-færdigheder
+description: Brug Generer-menuen til kun at køre de AI-handlinger, der gælder for den aktuelle opgave, optagelse, billede eller indtastning.
+---
+
+# Kør kontekstuelle AI-færdigheder
+
+AI-færdigheder er navngivne handlinger med instruktioner og inputkrav. Lotti
+filtrerer **Generer...**-menuen til den aktuelle enhed, så en opgave ikke tilbyder
+en lyd-only transskriptionshandling og et billede tilbyder ikke en handling, der
+kræver en optagelse.
+
+<ManualScreenshot
+  caseId="ai/skills"
+  alt="Project Waddle habitat image with the Generate modal offering Inspect habitat photo"
+  caption="On a habitat image linked to the task, the applicable action looks for pressure-gauge anomalies and visible seal damage."
+/>
+
+## Kør en færdighed
+
+1. Åbn en opgave eller understøttet dagbogspost.
+2. Vælg den markerede assistenthandling i indgangsheaderen. Dette åbner
+   **Generer...**.
+3. Læs færdighedsbeskrivelsen og vælg den handling, du ønsker.
+4. Hvis Lotti tilbyder en model- eller tænkningsmetodevælger, bekræft standarden eller
+   Vælg en engangs-overstyring.
+5. Bliv ved med at arbejde, mens slutningen kører; resultatet er knyttet til
+   relevant opgave eller indtastning, når den er fuldført.
+
+Den tilgængelige menu ændrer sig med konteksten:
+
+- tasks kan tilbyde tekst- og opgave-konteksthandlinger;
+- lydindgange kan tilbyde transskription og lydbevidste handlinger;
+- billeder kan tilbyde visuel analyse; og
+- tekstposter kan tilbyde prompt- eller genereringshandlinger, der accepterer tekst.
+
+Nogle færdigheder kræver en sammenhængende opgave, fordi de læser bredere opgavekontekst eller skriver
+deres resultat tilbage til den opgave. Hvis en handling mangler, tjek først indtastningen
+type og opgavelink, og så tjekke at den aktive inferensprofil har en model for
+den nødvendige kapacitet.
+
+## Modeloverrides er midlertidige
+
+Når en færdighed tilbyder en modelplukker, gælder det valg for den nuværende
+påkaldelse. Den omskriver ikke lydløst kategorien som standard eller slutning
+profil. For at ændre den normale rute, rediger profilen nedenfor
+[Models and inference profiles](./models-and-profiles.mdx).
+
+## Behandl genereret output som et udkast
+
+Gennemgå genererede prompts, resuméer, transskriptioner, billedanalyse og kunstværk
+før han stolede på dem. Opgavekonteksten kan være ufuldstændig, udbydere kan returnere
+forkert output, og en kapabel model kan stadig misforstå en meget alvorlig
+Sardin-nødsituation.

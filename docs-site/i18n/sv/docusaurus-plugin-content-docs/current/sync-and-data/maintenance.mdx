@@ -1,0 +1,40 @@
+---
+title: Synkroniseringsunderhåll
+description: Använd Matrix-synkroniseringsreparation och rensningsåtgärder medvetet, från att skicka om poster till att återskapa sekvenshistorik.
+---
+
+# Synkroniseringsunderhåll
+
+Öppna **Inställningar → Synkronisera → Underhåll** för reparation och rensning på databasnivå.
+Dessa åtgärder ingår inte i rutinmässig parning eller daglig synkronisering.
+Innan du använder dem, låt aktiva skrivningar slutföra och behåll en aktuell backup av data
+Du kan inte återskapa.
+
+<ManualScreenshot
+  caseId="sync/maintenance"
+  alt="Lotti Matrix Sync Maintenance with sync database deletion, definition sync, message re-sync, sequence-log population, and sent-outbox purge"
+  caption="Maintenance groups destructive, replay, and cleanup actions on one page. The confirmation text defines the scope of each operation."
+/>
+
+## Välj den smalaste reparationen
+
+- **Ta bort synkroniseringsdatabas** tar bort den lokala synkroniseringsdatabasen. Detta är destruktivt
+  Lokal återställning, inte ett vanligt sätt att koppla bort en enhet.
+- **Sync definitions** skickar de aktuella definitionsposterna igen, såsom
+  kategorier och andra delade konfigurationer.
+- ** Synkronisera om meddelanden** spelar upp utvalda meddelanden när fjärrtillstånd saknas
+  eller så måste en tidigare leverans upprepas.
+- **Fyll sekvenslogg** rekonstruerar den lokala sekvenshistoriken som används för att
+  Upptäck luckor och fyll på driv.
+- **Rensa gamla skickade utkorgsobjekt** raderar redan skickade diagnostiska köhistoriker
+  efter dess bevarandetid. Den tar inte bort väntande eller misslyckat arbete.
+
+Börja med den minsta operationen som matchar symtomet. En fastklämd anknytning
+belongs in the [Outbox](./sync.mdx#inspektera-utboxen); persistent sequence gaps
+hör hemma i reserv; två giltiga samtidiga redigeringar hör hemma i
+[Conflicts](./conflicts.mdx). Deleting the sync database should be a last-resort
+Lokal återställning utfördes med en känd kompatibel motpart och backup tillgänglig.
+
+Efter en reparation, återgå till **Sync Statistics**, bekräfta att det bearbetade arbetet är
+avancerar utan att antalet misslyckanden ökar, och kontrollera att Utkorgen och
+Kvarfyllningsantalet, sätt sig.

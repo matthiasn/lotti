@@ -1,0 +1,67 @@
+---
+title: Gennemse Hvad der er nyt
+description: Gennemgå den seneste Lotti-udgivelse, gennemgå ældre udgivelsesnoter, og kontroller hvilke opdateringer, der forbliver usete.
+---
+
+# Gennemse Hvad der er nyt
+
+What's New præsenterer udgivelsesnoter i Lotti, matchet med den version, du er
+løb. Den kan åbne automatisk efter en berettiget første lancering eller version
+ændring, og den er også tilgængelig fra **Hvad er nyt** i Indstillinger, når
+Den funktion er aktiveret.
+
+Udgivelsesnoter bestilles som de nyeste først. Hver side kombinerer en udgivelsesspecifik
+heltebillede, dets præcise app-version og en kort beretning om bruger-synlige
+forandringer.
+
+<ManualScreenshot
+  caseId="whats-new/latest"
+  alt="Lotti What's New modal for version 0.9.1049 with a Project Waddle mission-control banner and release notes"
+  caption="The latest unseen release carries a NEW badge. This fixture explains the Daily OS and task-workspace improvements behind Project Waddle's orbital launch."
+/>
+
+## Læs den aktuelle udgivelse
+
+Versionsmærket identificerer den udgivelse, hvis noter vises på skærmen. **NY**
+markerer den nyeste udgivelse i det nuværende sæt; Det betyder ikke alle genstande på
+siden er ufærdig eller eksperimenterende.
+
+Brødteksten ruller uafhængigt, når udgivelsen er længere end den tilgængelige
+højde. Links bruger den normale Lotti-linkhandler, og billeder forudindlæses, når
+tilgængelig, så det forbliver glidende at skifte mellem udgivelser.
+
+## Gennemgang af udgivelseshistorik
+
+<ManualScreenshot
+  caseId="whats-new/past-release"
+  alt="Lotti What's New modal for version 0.9.1048 with penguin sardine-market cover art and older release navigation"
+  caption="Use the footer chevrons or position markers to move between releases. The older Project Waddle note covers time comparison and dashboard-ready sardine telemetry."
+/>
+
+Brug footer-kontrollerne til at navigere:
+
+- Den højre chevron åbner den næste ældre udgivelse;
+- venstre chevron vender tilbage til en nyere udgave;
+- positionsmarkørerne viser, hvor den aktuelle side befinder sig i det indlæste sæt;
+- ** Skip** lukker et multi-udgivelsessæt før sidste side og markerer hele
+  lastet sæt som set; og
+- **Færdig** vises på den ældste side og markerer også hele sættet som set.
+
+At lukke modalen ved at trække den væk eller vælge det dæmpede område omkring den er
+mere konservativt: Lotti markerer kun de udgivelser, du faktisk har nået, gennem
+den længst genopsigtede side. Udgivelser, du ikke nåede, kan derfor fremstå som
+næste gang åbner What's New.
+
+## Genbesøg noter, du allerede har afvist
+
+Når der ikke er nogen usete udgivelser tilbage, viser åbningen What's New en **Du er fanget
+Up** State. Vælg **Se tidligere udgivelser** for at fjerne de lokalt synlige markører og
+Gennemse det tilgængelige udgivelsessæt igen. Dette ændrer kun den lokale udgivelsesnote
+historie; Den ændrer ikke den installerede app-version eller downloader en anden version.
+
+What's New viser aldrig noter for en udgivelse, der er nyere end den installerede Lotti
+version. Hvis udgivelsesindhold ikke kan indlæses, falder appen tilbage til en tom
+Stat, i stedet for at præsentere noter for det forkerte build.
+
+For det præcise build-nummer, platform, lokale indgangsantal og opgavetællinger, se
+[About Lotti](./advanced-settings.mdx#verificér-byggeriet-og-de-lokale-totaler).

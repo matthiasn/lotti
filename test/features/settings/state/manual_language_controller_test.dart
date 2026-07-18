@@ -19,7 +19,12 @@ void main() {
       expect(ManualLanguage.fromStoredValue('cs'), ManualLanguage.czech);
       expect(ManualLanguage.fromStoredValue('nl'), ManualLanguage.dutch);
       expect(ManualLanguage.fromStoredValue('ro'), ManualLanguage.romanian);
-      expect(ManualLanguage.fromStoredValue('pt'), ManualLanguage.portuguese);
+      expect(
+        ManualLanguage.fromStoredValue('pt'),
+        ManualLanguage.portuguese,
+      );
+      expect(ManualLanguage.fromStoredValue('da'), ManualLanguage.danish);
+      expect(ManualLanguage.fromStoredValue('sv'), ManualLanguage.swedish);
       expect(ManualLanguage.fromStoredValue(null), isNull);
     });
 
@@ -63,11 +68,19 @@ void main() {
         manualLanguageForSystemLocale(const Locale('pt', 'BR')),
         ManualLanguage.portuguese,
       );
+      expect(
+        manualLanguageForSystemLocale(const Locale('da', 'DK')),
+        ManualLanguage.danish,
+      );
+      expect(
+        manualLanguageForSystemLocale(const Locale('sv', 'SE')),
+        ManualLanguage.swedish,
+      );
     });
 
     test('falls back to English for an unsupported system language', () {
       expect(
-        manualLanguageForSystemLocale(const Locale('sv', 'SE')),
+        manualLanguageForSystemLocale(const Locale('fi', 'FI')),
         ManualLanguage.english,
       );
     });
@@ -107,11 +120,19 @@ void main() {
         manualUriFor(systemLocale: const Locale('pt')).toString(),
         '${lottiManualBaseUrl}pt/',
       );
+      expect(
+        manualUriFor(systemLocale: const Locale('da')).toString(),
+        '${lottiManualBaseUrl}da/',
+      );
+      expect(
+        manualUriFor(systemLocale: const Locale('sv')).toString(),
+        '${lottiManualBaseUrl}sv/',
+      );
     });
 
     test('uses English for unsupported system languages', () {
       expect(
-        manualUriFor(systemLocale: const Locale('sv')).toString(),
+        manualUriFor(systemLocale: const Locale('fi')).toString(),
         lottiManualBaseUrl,
       );
     });

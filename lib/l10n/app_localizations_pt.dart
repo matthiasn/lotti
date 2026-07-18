@@ -9011,6 +9011,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsManualLanguageDutchTitle => 'Holandês';
 
   @override
+  String get settingsManualLanguageDanishTitle => 'Dinamarquês';
+
+  @override
   String get settingsManualLanguageEnglishTitle => 'Inglês';
 
   @override
@@ -9037,6 +9040,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsManualLanguageSpanishTitle => 'Espanhol';
+
+  @override
+  String get settingsManualLanguageSwedishTitle => 'Sueco';
 
   @override
   String get settingsManualLanguageTitle => 'Idioma';

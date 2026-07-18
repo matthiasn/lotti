@@ -1,0 +1,160 @@
+---
+title: Banevaner og målinger
+description: Konfigurer tilbagevendende adfærd og numeriske observationer, og registrer derefter hver enkelt ærligt.
+---
+
+# Banevaner og målinger
+
+En vane svarer på **skete denne tilbagevendende adfærd?** En målbar værdi
+svarer på **hvilken numerisk værdi observerede jeg?** De kan støtte det samme
+mål uden at være udskiftelige: "Kejserpingvin-navneopråb" er en vane, mens
+"Optalte pingviner" er en målbar værdi.
+
+## Arbejd med vaner
+
+Vaner-siden organiserer aktive definitioner efter, hvad der skal afleveres nu, planlagt
+til senere, og færdiggjort. Dets daglige resumé, konsistenshistorik, stimer og
+Fuldførelsesrate-diagram hjælper dig med at opdage mønstre uden at behandle én overset dag
+som hele historien.
+
+<ManualScreenshot
+  caseId="habits/today"
+  alt="Penguin Operations habits dashboard showing habitat checks, penguin roll call, sardine inventory, completion state, streaks, and recent history"
+/>
+
+### Skab og find vanedefinitioner
+
+1. Åbn **Indstillinger → Vaner**.
+2. Vælg **Opret vane**.
+3. Giv adfærden et konkret, gentageligt navn og en brugbar beskrivelse.
+4. Vælg dens kategori, muligheder og tidsplan.
+5. Gem.
+
+<ManualScreenshot
+  caseId="habits/settings-list"
+  alt="Habit settings containing Emperor penguin roll call, Review sardine forecast, and Walk the habitat seals with favorite, inactive, and private states"
+  caption="Search definitions here. The star, hidden-eye, and lock identify favorite, inactive, and private habits."
+/>
+
+<ManualScreenshot
+  caseId="habits/settings-detail"
+  alt="Emperor penguin roll call habit editor with expedition description, Penguin Operations category, and favorite, private, and active options"
+/>
+
+Definitionseditoren inkluderer:
+
+- **Kategori** til filtrering og visuel kontekst.
+- **Dashboard** når vanen skal vises som et diagram på et valgt dashboard.
+- **Favorit** for højere fremtræden.
+- **Private** for at skjule det, medmindre private indgange vises.
+- **Aktiv** for at styre, om den vises på Vaner-siden uden at slette
+  dens historie.
+
+### Planlæg en daglig vane
+
+<ManualScreenshot
+  caseId="habits/schedule"
+  alt="Emperor penguin roll call schedule starting July 1, shown from 06:00 with a 06:30 alert"
+/>
+
+Den nuværende redaktør er daily-first. Sæt en **startdato**, eventuelt udskyd hvornår
+vanen er **vist fra**, og vælg valgfrit, hvornår Lotti skal **vise en
+alarm**. Datamodellen forstår også ugentlige og månedlige skemaer, men
+Nuværende redaktør afslører de rigere tidskontroller for daglige vaner.
+
+### Optag hvad der faktisk skete
+
+Åbn en vane eller brug dens hurtige handling. Den detaljerede udfyldelsesformular understøtter
+Tre udfald:
+
+- **Succes** — adfærden skete.
+- **Missed** — det var forventet og muligt, men det skete ikke.
+- **Spring** — det gjaldt ikke rimeligt den dag.
+
+<ManualScreenshot
+  caseId="habits/record"
+  alt="Habit completion form for inspecting the penguin habitat seals, with Success, Skip, and Missed outcomes plus date and notes"
+/>
+
+Brug den tilstand, der bevarer virkeligheden. En ærlig historie er mere nyttig end en
+Perfekt udseende diagram. Fuldførelsesoptegnelser er journalposter, så senere visninger
+Kan rekonstruere det effektive resultat for hver vane og dag.
+
+## Arbejd med målbare størrelser
+
+En målbar definition beskriver tallet, før du registrerer det: dets navn,
+enhed, privatliv og hvordan flere observationer kombineres på diagrammer.
+
+<ManualScreenshot
+  caseId="measurables/settings-list"
+  alt="Measurable settings containing Habitat pressure, Penguins accounted for, and Sardines consumed"
+/>
+
+### Opret en målbar datatype
+
+1. Åbn **Indstillinger → Målbare datatyper**.
+2. Vælg handlingen tilføj handlingen.
+3. Tilføj et navn, valgfri beskrivelse og en kortfattet forkortelse af enheden.
+4. Vælg den standardaggregation, som diagrammer bruger.
+5. Beslut om det skal være favorit eller privat, og gem så.
+
+<ManualScreenshot
+  caseId="measurables/settings-detail"
+  alt="Habitat pressure measurable editor using kPa and Daily average aggregation"
+/>
+
+Vælg aggregering baseret på, hvad gentagne læsninger betyder:
+
+| Aggregation | Brug den, når |
+| --- | --- |
+| Ingen aggregering | Hver enkelt observation betyder noget |
+| Dagligt beløb | Målinger akkumuleres, såsom sardiner spist |
+| Dagligt maksimum | Dagens top er det vigtige signal |
+| Dagligt gennemsnit | Målinger tager en ændring af værdien, såsom habitattryk |
+| Timesumme | Akkumulering kræver finere time-spande |
+
+Enheden er visningskontekst, ikke en konverter. Hvis du definerer habitattryk som
+`kPa`, skal du registrere værdier konsekvent i kPa. Opret en separat måling,
+hvis en anden enhed repræsenterer en reelt anderledes serie.
+
+### Optag en måling
+
+Åbn et dashboard, der indeholder det målbare, og vælg tilføjelseshandlingen på dets
+Diagram. Indtast den observerede værdi; Lotti holder enheden ved siden af nummeret, så det
+er klart, hvad der vil blive gemt. Nylige distinkte værdier vises som **Hurtig registrering**-
+handlinger, når man gentager en af dem, er nyttig.
+
+<ManualScreenshot
+  caseId="measurements/capture"
+  alt="Sardines consumed measurement editor opened from its populated dashboard chart, with 84 sardines, quick-log suggestions, observed time, comment, and Save action"
+/>
+
+Brug **Observeret at** for det tidspunkt, hvor målingen faktisk blev taget, i stedet for
+det tidspunkt, du tilfældigvis går ind i den. Den første side vælger kalenderens dato.
+**I dag** vender direkte tilbage til den nuværende dato.
+
+<ManualScreenshot
+  caseId="measurements/date"
+  alt="Observed at calendar selecting Friday July 17 2026 for the sardine measurement"
+/>
+
+Scroll til tidssektionen for at indstille time og minut. **Nu** genopretter
+Nuværende tid. Vælg **Færdig** for at vende tilbage til det stadig fyldte måleudkast,
+derefter **Gem** for at oprette journalposten.
+
+<ManualScreenshot
+  caseId="measurements/time"
+  alt="Observed at time wheel set to 10:30 AM for the sardine measurement"
+/>
+
+Kommentaren er valgfri, men den er nyttig, når et tal skal operere
+kontekst—for eksempel en levering, et usædvanligt skift eller en ændret måling
+metode. At gemme en måling ændrer ikke den målbare definition eller dens
+aggregeringsregel.
+
+## Forbind de to uden at forveksle dem
+
+En navneopråb kan gennemføres med succes, selvom kun 36 pingviner var
+tællet—vanen registrerer, om proceduren fandt sted, mens det målbare
+registrerer resultatet. Læg begge på et [dashboard](./dashboards.mdx), når
+deres forhold besvarer et tilbagevendende operationelt spørgsmål.

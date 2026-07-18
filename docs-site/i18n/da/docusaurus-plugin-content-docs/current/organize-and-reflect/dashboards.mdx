@@ -1,0 +1,111 @@
+---
+title: Byg nyttige dashboards
+description: Kombiner vaner, målinger, sundhed, spørgeskemaer og træning i en genanvendelig operationel visning.
+---
+
+# Byg nyttige dashboards
+
+Et dashboard grupperer diagrammer, der besvarer et tilbagevendende spørgsmål. **Koloni
+Operationer** medfører habitatpres, efterspørgsel efter sardiner og ekspeditionens antal
+sammen; **Missionsberedskab** holder en privat opsendelsesgennemgang adskilt. Bygning
+Omkring en beslutning i stedet for at indsamle alle tilgængelige tal.
+
+<ManualScreenshot
+  caseId="dashboards/settings-list"
+  alt="Dashboard settings containing Colony operations and the private Mission readiness dashboard"
+/>
+
+## Opret et dashboard
+
+1. Åbn **Indstillinger → Dashboard-administration**.
+2. Vælg **Opret dashboard**.
+3. Tilføj et klart navn og en beskrivelse af det spørgsmål, det skal besvare.
+4. Tildel eventuelt en kategori og en privatlivsindstilling.
+5. Tilføj og arranger diagrammer, og gem derefter.
+
+<ManualScreenshot
+  caseId="dashboards/settings-detail"
+  alt="Dashboardredaktør for kolonioperationer, tilknyttet Pingvinoperationer, med indstillinger for privatliv og aktiv status"
+/>
+
+- **Kategori** gør dashboardet tilgængeligt for kategoribaseret filtrering.
+- **Privat** skjuler dashboardet, medmindre private poster vises.
+- **Aktiv** styrer, om det vises i dashboardlisten uden at slette definitionen.
+
+## Komponer og ordn diagrammer
+
+<ManualScreenshot
+  caseId="dashboards/charts"
+  alt="Diagramliste for kolonioperationer med dagligt gennemsnit for habitattryk, daglig sum for spiste sardiner og daglig sum for registrerede pingviner"
+  caption="Træk i håndtaget for at ændre rækkefølgen. Vælg justeringsknappen på et målediagram for at ændre dets aggregering, eller fjern det med ×."
+/>
+
+Diagramrækkefølgen er dashboard-ordenen. Sæt signalet, der rammer resten ind, først. For
+Kolonioperationer og habitatpres fører til, at et usikkert habitat ændrer, hvordan
+hvert andet tal bør tolkes.
+
+Målediagrammer gemmer deres egen aggregering på dashboard-elementet. Det lader
+De samme målbare vises med et andet resumé i et andet dashboard
+uden at ændre de underliggende observationer.
+
+## Tilføj diagrammer fra understøttede kilder
+
+<ManualScreenshot
+  caseId="dashboards/sources"
+  alt="Dashboardredaktør med Vaner, Målinger, Sundhed, Undersøgelser og Træninger som diagramkilder samt JSON-eksport"
+/>
+
+Redaktøren kan tilføje:
+
+- **Vaner** for fuldførelseshistorik.
+- **Målinger** for brugerdefinerede numeriske observationer.
+- **Sundhedsdata** understøttet af den nuværende platform og tilladelser.
+- **Undersøgelser** for konfigurerede spørgeskemaresultater.
+- **Træninger** importeret fra understøttede sundhedskilder.
+
+Udvid en kilde, vælg et eller flere diagrammer, og tilføj dem. Tilgængeligheden
+afhænger af de definitioner og platformdata, der findes; sundhedstilladelser og
+understøttede typer varierer efter enhed.
+
+## Åbn og fortolk et dashboard
+
+Åbn **Insights** for at se aktive dashboards. Listen viser hvert dashboards
+kategoriikon, navn og formål. Brug filteret i headeren til at fokusere på én
+eller flere kategorier.
+
+<ManualScreenshot
+  caseId="dashboards/list"
+  alt="Lotti Insights dashboard list with Colony operations and private Mission readiness dashboards"
+  caption="Desktop reserves the right pane for the selected dashboard; mobile opens the selected dashboard as a separate page."
+/>
+
+Vælg **Kolonioperationer** for at åbne dens kort. På skrivebordet er listen og
+Det valgte dashboard forbliver side om side. På mobilen åbner dashboardet, mens det er
+Egen side med en tilbage-knap.
+
+<ManualScreenshot
+  caseId="dashboards/view"
+  alt="Colony operations dashboard showing 90 days of habitat pressure and sardines consumed with the dashboards list beside it on desktop"
+  caption="The fixed header keeps the 30, 90, 180, and 365-day range controls visible while the charts scroll below."
+/>
+
+Det valgte interval gælder for alle diagrammer på siden. Kortene bevarer
+Deres egne enheder og aggregation: Habitattryk bruger et dagligt gennemsnit, mens
+Sardinforbrug og pingvinantal bruger daglige summer. Vælg **+** på en
+målekort for at registrere en ny observation af den type.
+
+<ManualScreenshot
+  caseId="dashboards/view-crew"
+  alt="Colony operations dashboard scrolled to Sardines consumed and Penguins accounted for charts"
+  caption="A brief dip to 36 penguins is visible in the 90-day crew history; the surrounding days return to the expected 37."
+/>
+
+Behandl et diagram som bevis, ikke som en dom. Tjek aggregeringen, enhederne, datoen
+Rækkevidde, manglende observationer og privatlivstilstand, før man drager konklusioner.
+
+## Eksport dashboardkonfiguration
+
+**Gem og kopier JSON** gemmer dashboardet, og kopierer derefter dets konfiguration
+og henviste til målbare definitioner. Dette er nyttigt til inspektion eller flytning
+en konfiguration, men det er ikke et live sync-link: senere redigeringer opdaterer ikke en
+allerede kopieret nyttelast.

@@ -1,0 +1,59 @@
+---
+title: Granska AI:s användning och påverkan
+description: Jämför AI-förfrågningar efter period, kategori och modell, inklusive uppskattad kostnad, energi, utsläpp och tokenanvändning.
+---
+
+# Granska AI:s användning och påverkan
+
+Öppna **Inställningar → AI-inställningar → Användning & Påverkan** för att förstå hur konfigurerat det är
+Molnmodeller används. Samma analys är också tillgänglig från AI:n
+Vägen för att påverka instrumentpanelen.
+
+<ManualScreenshot
+  caseId="ai/usage"
+  alt="Lotti AI Impact dashboard for July 2026 showing cost, energy, carbon dioxide equivalent, tokens, requests, and category bars"
+  caption="Project Waddle's example month separates Mission Control and Penguin Operations while keeping the total request footprint visible."
+/>
+
+## Läs sammanfattningskorten
+
+De översta korten sammanfattar den valda perioden:
+
+- **Kostnad** uppskattar leverantörens utgifter.
+- **Energi** uppskattar elektricitet som kan tillskrivas uppmätt molninferens.
+- **CO₂e** uttrycker den associerade utsläppsuppskattningen.
+- ** Tokens** räknar bearbetade modelltokens.
+- **Förfrågningar** räknar inferenssamtal.
+
+Jämförelseindikatorn använder den föregående ekvivalenta perioden när man är
+tillgänglig. En procentuell ökning är kontext, inte automatiskt ett problem: en
+Lanseringsgranskningsveckan bör inte blint jämföras med en idle colony-vecka.
+
+Energi, CO₂e och kostnad mäts endast för molnmodeller. Lokal inferens kan
+förbrukar betydande enhetsenergi utan att synas i dessa molnuppskattningar,
+Så den här sidan är inte en komplett effektmätare för hela systemet.
+
+## Ändra analysen
+
+Använd tidskontroll- och pilknapparna för att röra dig genom tiden, eller hoppa till
+**Den här månaden** och **I år**. Välj sedan **Båda**, **Efter kategori**, eller **Av
+Modell**. Inom ett diagram, växla mellan per-dag-värden, löpande totalsummor och
+Dela där det är möjligt.
+
+Kategorivisningar svarar "vilket arbetsområde drev användning?" Svar på modellvyer
+"Vilken konfigurerad modell drev användningen?" Använd båda innan du ändrar profil: a
+Högkostnadsmodellen kan motiveras för en specialistkategori men vara slösaktig som en
+Allmän standard.
+
+## Agera på ett överraskande resultat
+
+Om användningen hoppar oväntat:
+
+1.  begränsar perioden till den första drabbade dagen;
+2.  jämför kategori- och modelluppdelningar;
+3. granskningsautomation och agentsamtidighet;
+4.  inspektera inferensprofilen som tilldelats den berörda kategorin; och
+5. verifiera leverantörsbaserad fakturering innan du behandlar Lottis uppskattning som en faktura.
+
+För att ändra rutten som ansvarar för framtida samtal, återgå till
+[Models and inference profiles](./models-and-profiles.mdx).

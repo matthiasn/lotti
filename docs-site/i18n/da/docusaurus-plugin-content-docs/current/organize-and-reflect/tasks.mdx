@@ -1,0 +1,271 @@
+---
+title: Arbejd med opgaver
+description: Brug status, prioritet, tjeklister og tilknyttet kontekst til at fremme resultaterne.
+---
+
+# Arbejd med opgaver
+
+Opgaver grupperer et resultat med konteksten og de nødvendige trin for at færdiggøre det. Keep
+Titler resultatorienterede og sæt støttende noter, billeder, optagelser og tid
+Registrer i opgaven.
+
+<ManualScreenshot
+  caseId="tasks/workspace"
+  alt="Production task workspace showing real task rows with cover-art thumbnails from the Intergalactic Penguin Logistics demo data"
+/>
+
+På skrivebordet forbliver opgavelisten synlig ved siden af den valgte opgave, så du kan
+Bevæge dig igennem arbejdet uden at miste kontekst. På mobilen åbner valg af en opgave sin
+detaljevisning i fuld skærm. Coverkunsten følger opgaven overalt, hvor den dukker op,
+herunder opgavelisten og tilknyttede daglige OS-dagsordenspunkter.
+
+Coverkunst er valgfrit, men det kan gøre et tæt arbejdsområde meget nemmere at scanne.
+Brug det som et nyttigt visuelt signal, en produktreference eller en mindeværdig metafor
+for arbejdet. Project Waddle-illustrationerne i denne manual er kun en
+Eksempel: Et cover kan være lige så praktisk, legende eller vidunderligt mærkeligt som dig
+ønske.
+
+<ManualScreenshot
+  caseId="tasks/detail"
+  alt="Production task detail page for inspecting the orbital penguin habitat, with the same cover art used by task thumbnails"
+/>
+
+Den samme opgave kan indeholde en beskrivelse, kategori, etiketter, forfaldsdato, tidsregistreringer,
+tjeklisteelementer, billeder, links og lydoptagelser.
+
+## Tildel en task agent
+
+En opgave kan have én opgaveagent. At tildele en giver opgaven en vedvarende AI
+Assistent med sit eget inferens-setup, rapport, vågentilstand og forslag
+Historie. Agenten læser opgaven og dens tilknyttede kontekst, destillerer strømmen
+situationen til en kort rapport, og kan fremvise foreslået opgave eller tjekliste
+Ændringer, du kan bekræfte eller afvise.
+
+Den tildelte agent vises under opgavens tjeklister og tilknyttede opgaver. Det
+kollapset kort beholder det seneste resumé, automatisk opdateringskontrol, **Væk
+agent**-handling og aktiv modelrute synlig uden at gøre opgavesiden synlig
+føles som en AI-konsol.
+
+<ManualScreenshot
+  caseId="tasks/agent-card"
+  alt="Assigned Habitat Watcher task agent on the orbital penguin habitat task, showing its current summary, automatic updates, wake action, and Project Waddle model route"
+  caption="Habitat Watcher is assigned to this task; assignment and automatic updates are separate choices."
+/>
+
+På en telefon følger kortet en enkelt læserækkefølge: identitet, opdateringskontroller,
+AI-opsætning, rapport, derefter foreslåede ændringer og historik. På skrivebordet rapporterer og
+Forslag udgør læsekolonnen, mens Compact-kontrollerne forbliver i nærheden.
+
+Vælg **Læs mere** for at udvide den komplette rapport, der er på plads. Det udvidede kort
+holder opgaven synlig, tilføjer rapportens understøttende vurdering og anbefaling
+næste skridt, og tilbyder **Åbne agent-internt** når du har brug for rapporter,
+samtaler, observationer eller detaljer i runtime.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-expanded"
+  alt="Expanded Habitat Watcher task-agent card with the full Project Waddle habitat assessment and recommended next step"
+  caption="The full report expands inside the task instead of sending you to a separate page."
+/>
+
+### Vælg agentens AI-opsætning
+
+Kortets række **Nuværende opsætning** identificerer profil, model og udbyder
+brugt til sin næste våge. Vælg den for at vælge en gemt inferensprofil, overstyr
+Kun tænkemodellen, gå tilbage til profilens standard, kopier kategoriens
+nuværende opsætning, eller slå AI fra for denne ene agent. Et valg forbliver hos det
+agent for fremtidige opdateringer; At kopiere en kategoriopsætning er et øjebliksbillede, ikke et link
+Det ændrer sig stille senere.
+
+Hvis en rapport blev udarbejdet gennem en anden rute, opbevarer Lotti en separat
+**Denne rapport** kilde i stedet for at omdøbe historien til den nuværende
+opsætning. At slå AI fra efterlader den eksisterende rapport læsbar, men forhindrer yderligere
+Vågner, indtil du vælger en fungerende opsætning igen. Automatiske opdateringer kan ikke
+aktiveret, mens agenten ikke har nogen fungerende AI-opsætning.
+
+### Gennemgå foreslåede ændringer
+
+En færdig våge kan opdatere rapporten og tilføje foreslåede ændringer. Automatisk
+opdateringer afgør *hvornår agenten vågner*; De giver ikke agenten tilladelse til at
+Rediger opgaven. Forslag forbliver afventende, indtil du handler på dem.
+
+<ManualScreenshot
+  caseId="tasks/agent-suggestions"
+  alt="Habitat Watcher task-agent card with two pending Project Waddle proposals, individual dismiss and confirm actions, and a Confirm all action"
+  caption="The agent proposes a feeder-test checklist item and a revised estimate; neither change has been applied yet."
+/>
+
+Brug korset til at **afvise** et forslag eller checken til **Bekræft** og ansøge
+det. Du kan også swipe et forslag til venstre for at afvise eller til højre for at bekræfte. Hvornår
+flere forslag er under behandling, **Bekræft alle** gælder for de nuværende listede
+ændrer sig sammen. Gennemgå masseforslag grundigt, især status, dato,
+og ændringer i tjeklisten.
+
+Åbn **Historie** for at genbesøge de seneste resultater. Den skelner bekræftet
+ændringer fra afviste ting. En afvist indførsel kan repræsentere enten din
+beslutning eller et forslag, som agenten trak tilbage efter nyere opgavekontekst havde fremsat det
+konstant.
+
+En manuel **Wake-agent** kan producere samme slags rapporter og forslag som
+En automatisk vækning. At slå automatiske opdateringer fra stopper fremtidig baggrund
+vågner; Den anvender ikke, fravælger eller afslutter ikke forslag, der er
+venter allerede på din beslutning.
+
+### Vælg automatiske eller manuelle opdateringer
+
+Nye opgaveagenter starter med **Automatiske opdateringer slået fra**. Tildeling alene gør det ikke
+Brug tokens i baggrunden. Mens opdateringerne er slukkede, fortsætter Lotti med at
+Bemærk relevante ændringer i opgaven og dens tilknyttede poster, markerer en ældre
+resumé som forældet, og venter på, at du vælger **Wake agent**. En manual
+wake forbliver tilgængelig, når agenten har en fungerende AI-opsætning.
+
+<ManualScreenshot
+  caseId="tasks/agent-card-manual"
+  alt="Habitat Watcher task-agent card with automatic updates off, an out-of-date report notice, and a manual Wake agent action"
+  caption="Manual mode observes changes and reports staleness without starting inference."
+/>
+
+Den forældede meddelelse lader bevidst den sidste brugbare rapport stå tilbage. Hvis
+En relevant redigering ankommer, efter en våge begynder, og den nyere redigering beholder rapporten
+markeret gammel, selv når den tidligere våge er slut. Når du har brug for en rapport, der
+inkluderer de seneste ændringer, væk agenten igen, når opgaven er afsluttet.
+
+Når **automatiske opdateringer** er tændt, samler Lotti matchende opgaveændringer for
+cirka to minutter før en opdatering. Denne sammensmeltning undgår en agent
+vågen for hver lille redigering. **Wake agent** er stadig tilgængelig med det samme,
+Brugerens anmodning om opdatering.
+
+At slå automatiske opdateringer fra fjerner den ventende nedtælling og køen
+Automatisk opdatering, men annullerer ikke en vækning, du eksplicit har bedt om.
+At tænde den igen gælder for fremtidige ændringer; den genafspiller ikke ændringer, der ændrer
+ankom, mens automatiseringen var slået fra.
+
+## Prioritet
+
+Lotti bruger fire kompakte prioritetsniveauer:
+
+| Prioritet | Betyder | Brug den til |
+| --- | --- | --- |
+| P0 | Hastende | Arbejde, der virkelig kræver opmærksomhed næste |
+| P1 | Høj | Vigtigt arbejde, der bør ske snart |
+| P2 | Medium | Den normale standard |
+| P3 | Lav | Arbejde der kan vente |
+
+Åbn en opgave og brug prioritetskontrollen i dens header til at ændre niveauet.
+Eksisterende opgaver uden eksplicit prioritet opfører sig som P2.
+
+Pickeren staver de kompakte koder, mens prioritetsglyfferne tilføjer et visuelt udseende
+Sæt både lyse og mørke temaer ind. Behandl P0–P3-koderne som betydningen; farve
+Hjælper med scanning, men bør aldrig være det eneste signal, du er afhængig af.
+
+## Filtrer og ordn opgavelisten
+
+Brug filterkontrollen ved siden af opgavesøgningsfeltet for at fokusere listen. Vælg
+en eller flere statusser, prioriteter, kategorier, etiketter og—når Projekter er
+aktiveret—projekter. Kategori- og labelvælgere tilbyder også **Unassigned** for
+arbejde, der stadig mangler den organiserende detalje. **Agent**-valget adskiller
+opgaver med en tildelt agent fra opgaver uden en.
+
+<ManualScreenshot
+  caseId="tasks/filters"
+  alt="Task filter sheet with sort, status, priority, category, and label controls"
+/>
+
+Valg inden for ét filter er alternativer: valg af P0 og P1 viser enten
+Prioritet. Forskellige filtre indsnævrer resultatet sammen: vælg P0 eller P1
+*og* Penguin Operations viser kun matchende arbejde. Brug **Ryd alt** for at returnere
+til et ubegrænset syn i stedet for at forsøge at omgøre hvert valg individuelt.
+
+Vælg **Forfaldsdato**, **Oprettet** eller **Prioritet** i samme ark for at ændre
+Rækkefølgen. Prioritetsrækkefølgen er P0 til P3, med nyere opgaver først inden for en
+Prioritet, medmindre en anden sortering er aktiv. På skrivebordet er en aktiveret vektorsøgning
+Setup kan også tilbyde semantisk søgning sammen med almindelig fuldtekstsøgning.
+
+Når du regelmæssigt vender tilbage til det samme fokuserede syn, gem det aktive filter
+fra arket og giv det et klart navn. Genåbn den fra opgavelisten, så
+Opdater det gemte filter, når dets kriterier ændres.
+
+## Brug tjeklister til næste lag ned
+
+En tjekliste bør være mindre og mere konkret end dens opgave. "Udgiv
+manualen" er en opgave; "Verificér hvert navigationslink" er et tjeklistepunkt.
+Tjeklister kan redigeres direkte og kan også foreslås af konfigureret AI
+færdigheder ud fra opgavekonteksten.
+
+## Tilføj opgavekontekst
+
+Brug opgavens **Add**-handling til at vedhæfte en tjekliste, en anden opgave, en lyd
+optagelse, en timer, en tekstindtastning eller et billede uden at forlade opgaven. Den
+Tilgængelige handlinger afhænger af den aktuelle platform og kontekst.
+
+<ManualScreenshot
+  caseId="entries/create-menu"
+  alt="Add menu over the orbital habitat task with task-aware capture actions"
+/>
+
+See [Add entries and context](../plan-and-capture/entries.mdx) for when to use
+hver indgangstype.
+
+## Generer coverkunst ud fra billeder fra virkelige opgaver
+
+Hvis en billedgenereringsfærdighed er konfigureret, åbn opgavens genereringsmenu
+og vælg dens cover-art handling. Lotti viser først billeder, der allerede er vedhæftet til
+opgaven, plus tilgængelige coverbilleder fra tilknyttede opgaver. Vælg op til fem
+referencer for at styre resultatet, eller fortsætte uden reference.
+
+Det genererede cover skabes i Lotti ud fra opgavens kontekst og enhver
+referencer, du vælger. Det er et visuelt hjælpemiddel, ikke et påkrævet felt: brug det, når en
+Et tydeligt billede gør værket lettere eller mere fornøjeligt at genkende. Den
+Den nuværende billedgenereringsrute bruger den konfigurerede udbyder, så behandl
+genereringsprompt og udvalgte referencer som data, du bevidst sender
+til den udbyder; En lokal tænkning eller transskriptionsvej dækker ikke
+Generation lokal.
+
+<ManualScreenshot
+  caseId="tasks/cover-references"
+  alt="Generate Cover Art sheet showing five distinct Project Waddle reference images from the task context"
+  caption="The picker uses the same task imagery visible throughout the Project Waddle demo."
+/>
+
+Efter du fortsætter, kører billedgenerering i baggrunden. Fremskridtet
+view bruger Lottis produktionstænkningsvisualisering og kan lukkes uden
+Aflyser jobbet.
+
+<ManualScreenshot
+  caseId="tasks/cover-generating"
+  alt="Task cover-art generation in progress with Lotti's production shader visualizer"
+/>
+
+Det genererede billede bliver opgavedækningen og følger opgaven ind i listen,
+detaljer, projekt og daglige OS-visninger. Et stærkt omslag bør forblive genkendeligt
+når det brede kildebillede beskæres til en kompakt opgaveminiature. Det kan det være
+bogstavelige beviser, en tilbageholdende metafor, eller så mærkeligt som værket fortjener;
+Den eneste nyttige test er, om du kan genkende opgaven hurtigere senere.
+
+## Linkrelaterede opgaver
+
+Åbn opgavens **Linked**-sektion og vælg at linke en eksisterende opgave. Søgning
+vælger derefter det relevante udfald. Lotti udelukker den aktuelle opgave
+og opgaver, der allerede er forbundet i den retning.
+
+<ManualScreenshot
+  caseId="tasks/link-picker"
+  alt="Production task-link picker listing related Project Waddle tasks and their status, priority, category, and due-date context"
+/>
+
+Opgavelinks er retningsbestemt: den aktuelle opgave peger på den opgave, du vælger.
+Begge sider forbliver tilgængelige via deres sammenkædede indgangssektioner, mens hver side
+Opgaven bevarer sin egen status, tidsplan og vedhæftninger.
+
+## Brug stemmen uden at miste kontrollen
+
+Skriv en note i opgaven, når det er hurtigere at forklare situationen højt.
+Med transskription og opgavefærdigheder konfigureret kan Lotti omsætte den kontekst til
+tekst og foreslåede ændringer i tjeklisten. Gennemgå resultatet, især navne,
+dates, and destructive changes. See [Record audio](../plan-and-capture/recordings.mdx)
+for optagelseskontroller og behandlingsmuligheder.
+
+:::tip
+
+Brug P0 sparsomt. Hvis alt er akut, stopper etiketten med at bære information.
+
+:::

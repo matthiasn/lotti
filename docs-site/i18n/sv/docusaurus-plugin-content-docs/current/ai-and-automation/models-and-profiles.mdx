@@ -1,0 +1,126 @@
+---
+title: Ruttarbete med modeller och profiler
+description: Beskriv modellens kapaciteter en gång, använd sedan inferensprofiler för att styra tänkande, syn, ljud och bildgenerering.
+---
+
+# Ruttarbete med modeller och profiler
+
+En leverantör berättar för Lotti var hon ska koppla in. En modell registrerar ett leverantörsmodell-ID
+och dess kapaciteter. En inferensprofil tilldelar sedan dessa modeller till
+jobb Lotti förstår. Detta håller "vilken modell hanterar ljud?" utanför alla
+individuell uppgift och automatiseringsregel.
+
+## Granska sparade modeller
+
+Öppna **Inställningar → AI-inställningar → modeller**. Listan grupperar modeller efter leverantör
+och exponerar funktionsfilter för text, bild, ljud och resonemang.
+
+<ManualScreenshot
+  caseId="ai/models"
+  alt="Lotti AI model list with Project Waddle text, reasoning, vision, transcription, and image-generation models"
+  caption="The Project Waddle workspace mixes cloud and local models while keeping every model's capabilities explicit."
+/>
+
+Kontrollen **Samtidigt aktiverar agent** högst upp i AI-inställningarna begränsar hur
+Många olika agenter kan dra inferens samtidigt. Ett högre värde kan förbättras
+genomströmning, men det ökar också samtidiga leverantörsförfrågningar och lokala
+Enheten laddas. Var försiktig när en leverantör har strikta prisgränser eller en
+Lokal modell Server har begränsat minne.
+
+## Lägg till eller redigera en modell
+
+Välj ett modellkort, eller använd **+** för att lägga till ett. En modelldefinition inkluderar:
+
+- leverantörsanslutningen;
+-  ett vänligt visningsnamn och valfri beskrivning;
+- leverantörens exakta modell-ID;
+-  den maximala fullbordningstokengränsen;
+- in- och utmatningsmodaliteter; och
+- kapabilitetsflaggor såsom resonemang eller funktionsanrop.
+
+<ManualScreenshot
+  caseId="ai/model-editor"
+  alt="Lotti model editor for Waddle Command 70B showing provider, provider model ID, completion limit, modalities, and reasoning capability"
+  caption="Capability metadata matters: Lotti uses it to decide which models are eligible for each profile slot and one-off picker."
+/>
+
+Använd exakt den identifierare som leverantören förväntar sig. Visningsnamnet gäller endast för
+personer; Att ändra det ändrar inte vad leverantören driver. Gör inte anspråk på image,
+ljud-, verktygs- eller resonemangstöd, om inte den modellen och slutpunkten faktiskt är
+Ge det.
+
+## Bygg en inferensprofil
+
+Öppna **Inställningar → AI-inställningar → Inferensprofiler**. Varje profil är återanvändbar
+Routingpolicy. Översikten visar vilken modell som tjänar varje konfigurerad plats.
+
+<ManualScreenshot
+  caseId="ai/profiles"
+  alt="Lotti inference profiles for Project Waddle Command, Habitat Local-First, and Fish Diplomacy with their routed models"
+  caption="Profiles can optimize for different boundaries: a broad cloud profile, a desktop-only local profile, or a specialist reasoning profile."
+/>
+
+Redigera en profil för att tilldela modeller för de funktioner du använder:
+
+- **Tänkande** är den obligatoriska allmänna textmodellen.
+- **Thinking (High-End)** kan hantera arbete som uttryckligen kräver fler
+  En kapabel resonemangsväg.
+- **Bildigenkänning** analyserar bilder.
+- **Transkription** omvandlar ljud till text.
+- **Bildgenerering** skapar uppgiftskonstverk och andra genererade bilder. The
+  Den nuvarande inbyggda bildgenereringsvägen använder en konfigurerad fjärrleverantör, så
+  Välj den vårdgivaren och de referenser du skickar med samma omsorg som någon annan
+  Annan molninferensväg.
+
+<ManualScreenshot
+  caseId="ai/profile-editor"
+  alt="Project Waddle Command profile editor assigning thinking, high-end reasoning, image-recognition, transcription, and image-generation models"
+  caption="One profile routes every Project Waddle modality without repeating model choices across tasks."
+/>
+
+**Endast för datorer** döljer en profil på mobila plattformar, vilket är användbart när det gäller
+Det beror på en modell som bara kan nås från en arbetsstation. Enhetspinning är för
+Automatiserad synkroniserad ljudbehandling: Fäst endast när den valda enheten annonserar
+De tjänster som behövs av profilen. Utan fastnålad enhet är synkat ljud inte det
+automatiskt transkriberad av den profilen.
+
+## Välj en modell utan att memorera ID:n
+
+Modellväljare börjar med leverantören och visar endast kompatibla sparade modeller.
+Pickern i en profilplats, till exempel, erbjuder inte en ljudmodell endast för ljud
+för textresonemang.
+
+<ManualScreenshot
+  caseId="ai/model-picker"
+  alt="Lotti Choose a model modal listing OpenRouter, Ollama, and Google Gemini providers over the Project Waddle profile editor"
+  caption="Choose the provider first; Lotti then narrows the next page to eligible models from that connection."
+/>
+
+## Sätt en kategoristandard
+
+En kategori kan välja en standardinferensprofil under **Inställningar →
+Definitioner → kategorier**. Nytt arbete i den kategorin kan sedan ärva en
+Samordnad ruttningspolicy. Välj profilen vars integritet och kapacitet kombineras
+matchar kategorin istället för att välja enbart efter hastighet.
+
+<ManualScreenshot
+  caseId="ai/profile-picker"
+  alt="Penguin Operations category editor with a modal offering Project Waddle Command, Habitat Local-First, and Fish Diplomacy profiles"
+  caption="The desktop-only badge makes platform restrictions visible before a category default is selected."
+/>
+
+## Legacy profilrutt
+
+Den äldre fristående **Inference Profiles**-rutten finns fortfarande tillgänglig för
+kompatibilitet och redigerar samma lagrade profilposter. Den exponerar interna
+modell-ID:n och ger mindre beroendekontext än AI-inställningar, så föredra
+nuvarande **AI-inställningar → Inferensprofiler**-sidan för normalt underhåll.
+
+<ManualScreenshot
+  caseId="ai/legacy-profiles"
+  alt="Legacy Lotti Inference Profiles page showing Project Waddle profile slots as internal model identifiers"
+  caption="Use this compatibility screen only when an older link takes you there; the current AI Settings profile cards are easier to audit."
+/>
+
+Fortsätt med [AI-färdigheter](./skills.mdx) för att se hur den valda profilen blir
+en handling på en uppgift eller post.

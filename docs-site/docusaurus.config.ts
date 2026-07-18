@@ -45,11 +45,15 @@ const config: Config = {
   },
   i18n: {
     defaultLocale: 'en',
-    locales: ['en', 'de', 'fr', 'it', 'es', 'cs', 'nl', 'ro', 'pt'],
+    locales: ['en', 'de', 'fr', 'it', 'es', 'cs', 'nl', 'ro', 'pt', 'da', 'sv'],
     localeConfigs: {
       en: {
         label: 'English',
         htmlLang: 'en-US',
+      },
+      da: {
+        label: 'Dansk',
+        htmlLang: 'da-DK',
       },
       de: {
         label: 'Deutsch',
@@ -82,6 +86,10 @@ const config: Config = {
       pt: {
         label: 'Português',
         htmlLang: 'pt-BR',
+      },
+      sv: {
+        label: 'Svenska',
+        htmlLang: 'sv-SE',
       },
     },
   },
@@ -127,7 +135,7 @@ const config: Config = {
         docsRouteBasePath: '/',
         // lunr-languages has no Czech stemmer. Czech pages are still indexed
         // and searchable by exact tokens; the other locales keep stemming.
-        language: ['en', 'de', 'fr', 'it', 'es', 'nl', 'ro', 'pt'],
+        language: ['en', 'de', 'fr', 'it', 'es', 'nl', 'ro', 'pt', 'da', 'sv'],
       },
     ],
   ],

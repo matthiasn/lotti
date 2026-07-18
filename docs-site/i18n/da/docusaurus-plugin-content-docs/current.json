@@ -1,0 +1,30 @@
+{
+  "version.label": {
+    "message": "Nuværende",
+    "description": "The label for version current"
+  },
+  "sidebar.manualSidebar.category.Start here": {
+    "message": "Start her",
+    "description": "The label for category 'Start here' in sidebar 'manualSidebar'"
+  },
+  "sidebar.manualSidebar.category.Plan & capture": {
+    "message": "Plan & fangst",
+    "description": "The label for category 'Plan & capture' in sidebar 'manualSidebar'"
+  },
+  "sidebar.manualSidebar.category.Organize & reflect": {
+    "message": "Organiser og reflekter",
+    "description": "The label for category 'Organize & reflect' in sidebar 'manualSidebar'"
+  },
+  "sidebar.manualSidebar.category.AI & automation": {
+    "message": "AI og automatisering",
+    "description": "The label for category 'AI & automation' in sidebar 'manualSidebar'"
+  },
+  "sidebar.manualSidebar.category.Sync & data": {
+    "message": "Sync & data",
+    "description": "The label for category 'Sync & data' in sidebar 'manualSidebar'"
+  },
+  "sidebar.manualSidebar.category.Reference": {
+    "message": "Reference",
+    "description": "The label for category 'Reference' in sidebar 'manualSidebar'"
+  }
+}

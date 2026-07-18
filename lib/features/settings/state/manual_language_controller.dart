@@ -25,7 +25,9 @@ enum ManualLanguage {
   czech('cs'),
   dutch('nl'),
   romanian('ro'),
-  portuguese('pt');
+  portuguese('pt'),
+  danish('da'),
+  swedish('sv');
 
   const ManualLanguage(this.languageCode);
 

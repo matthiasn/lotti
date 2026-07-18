@@ -583,7 +583,7 @@ It is an Advanced leaf on both settings surfaces (`advanced/manual-language` →
 detail pane through the `advanced-manual-language` panel registration.
 
 The manual currently publishes English, German, French, Italian, Spanish,
-Czech, Dutch, Romanian, and Portuguese. `Follow system` is the default:
+Czech, Dutch, Romanian, Portuguese, Danish, and Swedish. `Follow system` is the default:
 [`ManualLanguageController`](state/manual_language_controller.dart) matches the
 device locale to that catalog and falls back to English when no manual
 translation exists. The same explicit override is passed to
@@ -595,7 +595,7 @@ link.
 ```mermaid
 flowchart LR
   Choice["Advanced → Language"] --> Preference{"Explicit override?"}
-  Preference -->|yes| Override["English / German / French / Italian / Spanish / Czech / Dutch / Romanian / Portuguese"]
+  Preference -->|yes| Override["English / German / French / Italian / Spanish / Czech / Dutch / Romanian / Portuguese / Danish / Swedish"]
   Preference -->|no| System["Platform system locale"]
   Override --> OverrideAppUi["Lotti UI in selected language"]
   System --> SystemAppUi["Lotti UI follows system language"]

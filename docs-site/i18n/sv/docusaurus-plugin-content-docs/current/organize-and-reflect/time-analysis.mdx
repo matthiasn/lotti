@@ -1,0 +1,163 @@
+---
+title: Förstå vart din tid tog vägen
+description: Bryt upp tiden efter kategori, följ fokusområden och jämför motsvarande perioder utan att lämna Daily OS.
+---
+
+# Förstå vart din tid tog vägen
+
+Tidsanalys omvandlar dina inspelade sessioner till en kategoriuppdelning. Använd den
+för att svara på hur mycket tid du spelade in, vart det tog vägen och om mixen ändrades
+från föregående period. Project Waddle-exemplet skiljer **Penguin åt
+Operation**, **Kontrollen**, **Fiskdiplomati**, **Orbital forskning**, och
+**Mänskligt underhåll**, samtidigt som man exponerar okategoriserad tid som behöver
+Uppmärksamhet.
+
+På skrivbordet, öppna **Daily OS** och välj **Tidsanalys** under sidofältet
+Kalender. Instrumentpanelen fyller innehållsområdet så att diagrammet och den exakta tabellen kan göra det
+Bli läst tillsammans. Dess kontroller reflow vid smala bredder utan att ändra vad
+Det gör de.
+
+<ManualScreenshot
+  caseId="time-analysis/overview"
+  alt="Time Analysis dashboard showing Project Waddle time across five operational categories and uncategorized work"
+  caption="The overview combines headline totals, a seven-day stacked chart, and the exact category table. Switch the manual to mobile or desktop and light or dark to inspect every production layout."
+/>
+
+## Läs huvudkorten
+
+Den första raden sammanfattar den valda perioden:
+
+- **TOTAL** är all spårad tid. Dess bildtext nämner den största kategorin och dess
+  dela, så kortet svarar på var mest tid gick samt hur mycket som var
+  inspelat.
+- **FOCUS** lägger till de kategorier du valt att titta på. I exemplet, Penguin
+  Operations och Mission Control utgör fokusuppsättningen.
+- **ÖVRIGT** är allt utanför det fokussetet.
+
+Innan en fokusuppsättning finns visar Lotti **Välj fokuskategorier** istället för
+två nollvärdeskort. Välj den, välj en eller flera aktiva kategorier, och
+avsluta med **Klart**. Använd inställningsknappen på Focus-kortet när du är på
+måste förändras. Denna preferens är lokal för Lotti och förändrar inte
+kategorier på alla bidrag.
+
+## Välj en användbar period
+
+Välj periodenheten för att växla mellan **Dag**, **Vecka**, **Månad**,
+**Kvartal**, och **År**. Använd chevronerna för att flytta en hel period i en period
+Tid. Den främre chevronen stannar vid nuvarande period, så instrumentpanelen aldrig
+navigerar in i ett tomt framtida område.
+
+Välj datumetiketten för att öppna kalendern och hoppa direkt till perioden
+innehåller en annan dag. Veckogränser följer den första vardagen konfigurerad av
+enhetsregionen.
+
+Två genvägar täcker de vanligaste frågorna:
+
+- **Denna månad** visar månad hittills; och
+- ** I år** visar år hittills.
+
+Dessa intervall slutar idag istället för att lägga till tomma framtida dagar till. Etiketten inkluderar
+**(hittills)**, och genomsnittet använder bara de senaste dagarna.
+
+## Läs diagrammet och tabellen tillsammans
+
+De staplade staplarna visar hur varje kategori bidrog till varje timme, dag eller
+vecka inom intervallet. Håll muspekaren eller tryck på en stapel för att se kategorivärdena bakom den
+Hink.
+
+### Följ den löpande totalen
+
+Välj **Löpande total** när frågan ändras från "vad hände i detta
+hink?" till "hur mycket har jag samlat på mig sedan den här banan började?" Lotti vänder sig
+varje kategori i en kumulativ area:
+
+- tjockleken på ett färgat band vid ett datum är den kategorins spårade tid
+  från början av det valda intervallet fram till det datumet;
+- Den övre kanten av hela stacken är all spårad tid ackumulerad över
+  samma intervall; och
+- banden kan bara hålla eller stiga. En platt sektion innebär att ingen tid lades till
+  den kategorin under dessa kategorier; den drar inte ifrån tidigare arbete.
+
+<ManualScreenshot
+  caseId="time-analysis/running-total"
+  alt="Time Analysis running-total chart accumulating Project Waddle categories across the selected month"
+  caption="Running total accumulates each category from the beginning of the range. The top edge is total tracked time so far; each band shows how much its category contributed to that total."
+/>
+
+Det valda intervallet avgör var räkningen börjar. Flytta till en annan
+Perioden startar om totalen vid den periodens första hink. **Dag** använder timpris
+hinkar, kortare flerdagarsintervaller använder dagliga hinkar och långdistansanvändning
+veckovisa hinkar, men den samlade betydelsen är densamma. I en ström,
+ofullbordad punkt, Lotti stannar området vid den senaste hinken istället
+att dra en vilseledande platt linje genom framtida datum.
+
+Att räkna totalen ändrar endast diagramprognosen. **TOTAL**, **FOKUS**,
+**ÖVRIGT**, och kategoritabellen fortsätter att beskriva hela det valda
+Räckvidd. Håll muspekaren eller tryck på området för att se löpvärdet för varje kategori vid
+Den punkten. Välj **Per dag**, **Per vecka** eller **Per timme** för att återvända till
+individuella hinkvärden. Om bara en hink har gått behåller Lotti stängerna
+eftersom en enpunktslinje inte skulle kommunicera en trend.
+
+Tabellen är den exakta uppslagningen. Den ordnar kategorier efter spårad tid och
+visar deras total, andel, genomsnitt per dag och en relativ datastav. En grå
+**Okategoriserad** rad är avsiktlig: den gör saknad attribution synlig
+istället för att tyst dölja det. Öppna de relaterade posterna eller uppgifterna och tilldela en
+kategori när den tiden ska tillhöra ett operativt område.
+
+## Jämför motsvarande perioder
+
+<ManualScreenshot
+  caseId="time-analysis/compare"
+  alt="Time Analysis comparison for Project Waddle showing current time, previous-period time, and percentage changes by category"
+  caption="Compare uses the same elapsed days in each period. Direction is communicated by an arrow, sign, and colour, while the chart remains focused on the current period."
+/>
+
+Välj **Jämföra** för att lägga till föregående period. Under en pågående vecka, månad,
+kvartal, eller år, jämför Lotti den förflutna delen med samma antal av
+dagar precis innan det. Ett resultat från söndag månad till datum är därför inte
+jämfört med en hel föregående månad.
+
+Rubrikkorten visar den procentuella förändringen och det tidigare värdet.
+Tabellen växlar till **NUVARANDE**, **FÖREGÅENDE** och **FÖRÄNDRING**. På
+smala skärmar döljs kolumnen med lägre prioritet, Föregående, medan Nuvarande
+och Förändring fortsatt syns. En uppåt- eller nedåtriktad förändring markeras
+också med en pil och ett tydligt tecken utöver färg; mycket små förändringar
+förblir neutrala och ett resultat utan tidigare baslinje visas som nytt.
+
+Diagrammet visar fortfarande bara den aktuella perioden. Notisen
+**Jämförelsen visas i tabellen nedan** pekar på de exakta värdena och undviker
+en andra stapelserie som skulle skymma kategorifördelningen.
+
+## Vad Lotti räknas
+
+Tidsanalys räknar tidsbestämda dagboksanteckningar vars slut är senare än deras
+Börja. Ljudets längd räknas inte separat, eftersom en inspelning görs
+under en löpande timer annars räknas dubbelt.
+
+Kategoriattribuering följer verket:
+
+1. Om tidsinmatningen är kopplad till en uppgift med en kategori, är uppgiftskategorin
+   Vinner.
+2. Annars används tidspostens egen kategori.
+3. Om ingen av dem existerar framträder tiden som Okategoriserad.
+
+Överlappande timers i samma kategori slås ihop innan totalen blir
+Beräknat. Överlappningar i olika kategorier kvarstår i båda kategorierna,
+eftersom de representerar separata typer av dokumenterad aktivitet. Inlägg som spänner
+Midnatt delas in i rätt lokala kalenderdagar. Privata anteckningar lyd
+den globala inställningen för synlighet av privata data, och instrumentpanelen uppdateras när
+Poster, länkar, uppgiftskategorier eller att synlighetsinställningen ändras.
+
+## Håll bilden trovärdig
+
+Använd kategorier konsekvent på uppgifter som äger inspelat arbete. Granska
+Okategoriserad rad periodiskt, och välj fokuskategorier som svarar på en
+En riktig fråga snarare än att försöka inkludera allt. För Projekt Waddle,
+Att titta på Penguin Operations and Mission Control gör Fokus-kortet till en
+operativ beredskapssignal medan fiskdiplomati och mänskligt underhåll kvarstår
+synligt i hela genomgången.
+
+Time Analysis exporterar för närvarande inte CSV, grupperar inte resultat efter projekt eller ritar
+föregående period som en annan listserie. De exakta jämförelsevärdena är
+hålls i tabellen, där de är lättare att läsa och mindre benägna att förvränga
+Aktuell bild.

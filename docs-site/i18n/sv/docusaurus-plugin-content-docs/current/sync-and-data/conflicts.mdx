@@ -1,0 +1,70 @@
+---
+title: Lös synkroniseringskonflikter
+description: Jämför samtidiga redigeringar fält för fält och behåll eller kombinera rätt information.
+---
+
+# Lös synkroniseringskonflikter
+
+En konflikt uppstår när två enheter ändrar samma post oberoende av varandra och
+Ingen av versionerna är tydligt nyare. Lotti bevarar båda versionerna istället för
+Tyst välja en.
+
+Öppna **Inställningar → Synka → konflikter**. Listan skiljer olöst och
+lösta objekt och identifierar entitetstyp och tid för varje konflikt.
+
+<ManualScreenshot
+  caseId="sync/conflicts"
+  alt="Lotti Sync Conflicts list with unresolved Project Waddle task and sardine manifest conflicts plus a resolved task"
+  caption="Resolve current items first. Resolved items remain visible as an audit trail of earlier decisions."
+/>
+
+## Jämför båda versionerna
+
+Öppna en konflikt för att se alla olika fält. Textändringar inkluderar ordnivå
+höjdpunkter; Oförändrade fält sammanfattas så att sidan inte döljer hur mycket
+av inlägget håller fortfarande med.
+
+<ManualScreenshot
+  caseId="sync/conflict-detail"
+  alt="Lotti conflict detail comparing local and synced Project Waddle task titles and descriptions field by field"
+  caption="This device kept the final emperor and cargo hold; the synced version cleared all 37 penguins and scheduled the sardine release. Both facts matter."
+/>
+
+De tre upplösningsvägarna är:
+
+- **Använd denna enhet** behåller den kompletta lokala versionen.
+- **Använd från synk** behåller den kompletta inkommande versionen.
+- **Combine** låter dig välja ett startlag och sedan välja vinnaren för
+  varje oberoende sammanslagningsbart fält.
+
+Att behålla ena sidan är lämpligt när den andra är helt enkelt uttjatad.
+**Combine** är det säkrare valet när separata fält innehåller giltigt arbete från
+båda enheterna; Lotti markerar det som rekommenderat när flera sammanslagningsbara fält
+Skiljer sig.
+
+## Kombinera fält utan omskrivning
+
+Välj **Kombinera**, välj vilken version du vill börja från, och byt sedan individuell
+fält på andra sidan. Fält som inte kan slås ihop oberoende följer
+den valda startversionen.
+
+<ManualScreenshot
+  caseId="sync/conflict-combine"
+  alt="Lotti Combine conflict editor with starting-version control and separate choices for the task title and body"
+  caption="Start with one structurally complete entry, then take the better title and body from either this device or sync."
+/>
+
+Gå igenom alla listade fält innan du väljer **Tillämpa kombinerat**. The
+Resolved post får en sammanslagen synkroniseringshistorik så samma två redigeringar gör det inte
+Omedelbart konflikt igen.
+
+:::caution[En resolution ändrar det delade resultatet]
+
+Att behålla en sida eller tillämpa en kombinerad version skriver vinnaren lokalt och
+Tillåter den att synkronisera med de andra enheterna. Läs hela diffen tidigare
+Bekräftar. Om ena sidan tog bort anteckningen medan den andra redigerade den, Lotti
+visar det säkrare valet att ta bort och redigera istället för en vanlig fältsammanslagning.
+
+:::
+
+Return to [Sync devices](./sync.mdx) to inspect delivery and catch-up health.

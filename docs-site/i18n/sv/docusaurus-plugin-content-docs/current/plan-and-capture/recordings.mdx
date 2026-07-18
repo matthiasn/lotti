@@ -1,0 +1,83 @@
+---
+title: Spela in ljud
+description: Fånga en röstanteckning och bestäm vilken automatiserad bearbetning som ska följas.
+---
+
+# Spela in ljud
+
+Ljud är användbart när man talar snabbare än att skriva eller när ton och detaljer är
+Sak. En inspelning kan stå för sig själv eller vara live i en uppgift.
+
+## Fånga en inspelning
+
+1. Öppna journalen eller uppgiften som ska äga inspelningen.
+2. Använd **+**-åtgärden och välj **Ljudinspelning**.
+3. Gå igenom de tillgängliga behandlingsalternativen.
+4. Börja spela in, tala tydligt, och sluta när du är klar.
+
+<ManualScreenshot
+  caseId="recordings/active"
+  alt="Active audio recording sheet showing the live visualizer, elapsed time, pause, discard, stop, and speech recognition controls"
+/>
+
+Under inspelningen håller arket förfluten tid och den levande inmatningsvisualiseraren i
+vy. Du kan pausa och fortsätta utan att avsluta inspelningen, kasta tagningen,
+eller välj **Stopp** för att spara den. När uppgiftsmedveten transkription är tillgänglig,
+**Alternativ för taligenkänning** styr om bearbetningen ska påbörjas efter
+Inspelningen sparas.
+
+När en inferensprofil och transkriptionsfärdighet konfigureras kan Lotti
+Skriva av inspelningen efter att den fångats. Uppgiftsinspelningar kan också erbjuda
+Uppgiftsmedveten bearbetning såsom checklistor eller sammanfattningsuppdateringar.
+
+## Diktera användbar uppgiftskontext
+
+För uppgiftsmedveten bearbetning, säg resultatet och namnge sedan konkreta åtgärder,
+Personer, datum eller begränsningar. "Bekräfta fredagens lastfönster, fråga sedan
+Mission Control om uppskjutningsgodkännandet" ger Lotti mycket mer användbar kontext
+Istället för "Fixa pingvingrejen." En kort paus mellan olika handlingar också
+gör det färdiga betygsutdraget lättare att granska.
+
+Uppgiftsmedveten bearbetning kan omvandla den inspelningen till en utskrift, en uppdaterad
+Förslag på rapport eller checklistor. Detta är granskabara AI-resultat, inte ett påstående
+att uppgiften ändrades av sig själv: kontrollera namn, datum och föreslagna ändringar innan
+Du accepterar dem. För svår ljudinspelning, flytta till en tystare plats, håll
+mikrofonen är ganska nära och prata i ett naturligt, jämnt tempo.
+
+## Gå igenom sparade utskrifter
+
+Öppna en ljudpost, använd dess **...**-meny och välj **Taligenkänning**.
+Granskningsbladet behåller varje sparat transkript med inspelningen istället för
+ersätta ett tidigare resultat. Varje rad visar när bearbetningen kördes, hur länge den var
+Tok, det upptäckta språket, samt leverantören och modellen som producerade det.
+
+<ManualScreenshot
+  caseId="recordings/transcripts"
+  alt="Speech Recognition sheet over a Project Waddle audio entry with English selected and two saved transcript results from Mistral and Whisper"
+  caption="The source recording remains visible behind the sheet, while each recognition result keeps its own provenance."
+/>
+
+Språkväljaren erbjuder för närvarande **Auto**, **Engelska** och **Deutsch**.
+Använd **Auto** när vårdgivaren ska upptäcka språket, eller välj ett språk
+Innan du kör igenkänning när du redan kan det. Valet lagras på
+ljudingången.
+
+Välj dubbel-chevron på ett resultat för att visa den kompletta, valbara texten.
+Att expandera en rad avslöjar också dess borttagningsåtgärd. Att radera en utskrift tar bort
+det erkännanderesultatet, inte källinspelningen eller de andra transkriptionerna.
+
+<ManualScreenshot
+  caseId="recordings/transcript-expanded"
+  alt="Expanded Project Waddle transcript describing Europa sardine cargo, 37 emperor penguins, and the zero-gravity fish feeder"
+  caption="Review the full wording and provider provenance before using generated text as task context."
+/>
+
+## Välj automation medvetet
+
+Bearbetningsalternativ är förfrågningar om konfigurerade AI-färdigheter. Den valda leverantören
+kan vara lokal eller avlägsen, så verifiera den aktiva inferensprofilen innan användning
+känsligt material. Granska genererad text och föreslagna uppgifter istället för
+behandla dem som källsanning.
+
+See [AI provider setup](../ai-and-automation/provider-setup.mdx) to control where
+Slutsatsen löper.

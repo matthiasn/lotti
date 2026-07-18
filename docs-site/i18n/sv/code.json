@@ -1,0 +1,102 @@
+{
+  "manual.screenshot.allScreenshots": {
+    "message": "Alla skärmdumpar",
+    "description": "Label for the global screenshot viewport preference"
+  },
+  "manual.screenshot.close": {
+    "message": "Stäng"
+  },
+  "manual.screenshot.desktop": {
+    "message": "Skrivbord"
+  },
+  "manual.screenshot.desktopView": {
+    "message": "Skrivbordsvy"
+  },
+  "manual.screenshot.expand": {
+    "message": "Utöka"
+  },
+  "manual.screenshot.expandedViewer": {
+    "message": "Utökad skärmdumpsvisare"
+  },
+  "manual.screenshot.fullscreen": {
+    "message": "Helskärm"
+  },
+  "manual.screenshot.layoutLabel": {
+    "message": "Skärmdumpslayout för alla bilder"
+  },
+  "manual.screenshot.mobile": {
+    "message": "Mobil"
+  },
+  "manual.screenshot.mobileView": {
+    "message": "Mobilvy"
+  },
+  "manual.screenshot.openViewer": {
+    "message": "Öppna skärmdumpsvisare"
+  },
+  "manual.screenshot.screenshot": {
+    "message": "Skärmdump"
+  },
+  "manual.translationNotice.disclosure": {
+    "message": "Denna översättning skapades med Microsoft Translator och har ännu inte korrekturlästs."
+  },
+  "manual.translationNotice.invitation": {
+    "message": "Korrigeringar och förbättringar är mycket välkomna som en"
+  },
+  "manual.translationNotice.issue": {
+    "message": "GitHub-problem"
+  },
+  "manual.translationNotice.or": {
+    "message": "eller"
+  },
+  "manual.translationNotice.pullRequest": {
+    "message": "Pull request"
+  },
+  "manual.translationNotice.title": {
+    "message": "Maskinöversättning — recension välkomnas"
+  },
+  "manual.version.development": {
+    "message": "Utveckling"
+  },
+  "theme.colorToggle.ariaLabel.mode.system": {
+    "message": "Systemläge"
+  },
+  "theme.docs.sidebar.navAriaLabel": {
+    "message": "Navigering i dokumentationsfältet"
+  },
+  "theme.IconExternalLink.ariaLabel": {
+    "message": "(öppnas i en ny flik)"
+  },
+  "theme.NavBar.navAriaLabel": {
+    "message": "Huvudnavigering"
+  },
+  "theme.SearchBar.label": {
+    "message": "Sökning"
+  },
+  "theme.SearchBar.noResultsText": {
+    "message": "Inga resultat"
+  },
+  "theme.SearchBar.searchInContext": {
+    "message": "Se alla resultat i \"{context}\""
+  },
+  "theme.SearchBar.seeAllOutsideContext": {
+    "message": "Se alla resultat utanför \"{context}\""
+  },
+  "theme.SearchBar.seeAll": {
+    "message": "Se alla resultat"
+  },
+  "theme.SearchPage.existingResultsTitle": {
+    "message": "Sökresultat för \"{query}\""
+  },
+  "theme.SearchPage.emptyResultsTitle": {
+    "message": "Sökdokumentation"
+  },
+  "theme.SearchPage.documentsFound.plurals": {
+    "message": "Ett dokument hittat|{count} dokument hittade"
+  },
+  "theme.SearchPage.noResultsText": {
+    "message": "Inga dokument hittades"
+  },
+  "theme.SearchPage.searchContext.everywhere": {
+    "message": "Överallt"
+  }
+}

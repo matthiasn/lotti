@@ -1,0 +1,84 @@
+---
+title: Tag-arbete med etiketter
+description: Använd etiketter för tvärgående kontext som spänner över kategorier och uppgifter.
+---
+
+# Tag-arbete med etiketter
+
+Etiketter lägger till ett andra, flexibelt organisationslager. En uppgift har en primär
+kategori, men den kan bära flera etiketter för initiativ, brådska, väntan
+delstater, eller annan egendom som går över kategorigränser.
+
+<ManualScreenshot
+  caseId="labels/list"
+  alt="Etikettinställningar med Väntar på Mission Control, Habitat kritisk, Project Waddle och Sardinmarknadskänslighet samt antal uppgiftsanvändningar"
+  caption="Användningsantal visar vilka etiketter som är aktiva i arbetsytan; låset markerar en privat etikett."
+/>
+
+Intergalactic Penguin Logistics arbetsplats använder etiketter medvetet:
+
+- **Projekt Waddle** kopplar samman uppskjutningsarbetet över Penguin Operations, Mission
+  Kontroll och fiskdiplomati.
+- **Habitat kritisk** identifierar arbete som måste slutföras innan expeditionen
+  går in i den orbitala habitatet.
+- **Väntar på Mission Control** registrerar ett verkligt blockeringstillstånd.
+- **Sardinmarknadskänslighet** håller privat förhandlingsarbete identifierbart.
+
+## Skapa och redigera en etikett
+
+1. Öppna **Inställningar → etiketter**.
+2. Välj **Skapa etikett**.
+3. Lägg till ett kortfattat namn och en valfri beskrivning.
+4. Välj en färg som skiljer sig från andra etiketter.
+5. Avgör om etiketten är privat och vilka kategorier som får använda den.
+6. Spara.
+
+<ManualScreenshot
+  caseId="labels/detail"
+  alt="Project Waddle label editor showing its launch-critical description, blue color, privacy option, and three applicable categories"
+/>
+
+Beskrivningar är värda att skriva när en etikett kan tolkas i mer än
+Enkelriktat. De ger den operativa betydelsen utan att tvinga fram den förklaringen
+i varje uppgiftstitel.
+
+**Tillämpliga kategorier** begränsar var etiketten kan väljas. Projekt
+Waddle finns tillgänglig i de tre delarna av expeditionen som ingår i uppskjutningen,
+medan en specialistetikett kan förbli begränsad till en kategori. Detta håller plockarna kvar
+relevant istället för att presentera alla etiketter överallt.
+
+## Applicera etiketter på uppgifter
+
+Öppna en uppgift och använd dess etikettkontroll för att lägga till eller ta bort etiketter. Skivbolagsarbete
+Tillsammans med uppgiftsstatus-, prioriterings- och kategorifilter, så att du kan fråga fokuserat
+frågor som "visa öppet P1-habitatkritiskt arbete" utan att uppfinna något nytt
+kategori för den tillfälliga vyn.
+
+## Låt en uppgiftsagent föreslå etiketter
+
+När en konfigurerad taskagent har tillräckligt med uppgiftskontext kan den föreslå att passa
+etiketter tillsammans med andra uppgiftsändringar. Lotti gör endast aktiva etiketter tillgängliga
+när de är giltiga för uppgiftens kategori, och den avvisar raderad,
+förslag utanför omfattningen, dubbletter eller låg konfidens. Agenten får aldrig ett
+fritt sätt att skapa godtyckliga taggar från en prompt.
+
+Granska en agent-initierad etikett i uppgiftens föreslagna förändringar-område precis som du
+Skulle en checklista, datum eller status ändras. Bekräfta när etiketten förbättras
+framtida filtrering; avfärda det när det inte gör det. Detta gör uppgiften synlig
+organisering under din kontroll istället för att behandla en modell-gissning som källa
+Sanningen.
+
+Att ta bort en etikett från en uppgift behandlas som ett avsiktligt avslag när
+Automatiska etiketteringsförslag är aktiverade. Lotti antecknar det valet, så samma sak
+Förslag återappliceras inte omedelbart utan en ny anledning.
+
+## Håll etiketter användbara
+
+- Föredra etiketter som ändrar ett beslut, filter eller recension.
+- Återanvänd en stabil etikett istället för att skapa stavningsvarianter.
+- Kontrollera användningssiffrorna innan du raderar eller konsoliderar etiketter.
+- Använd integritet när etikettnamnet i sig avslöjar känslig kontext.
+- Pensionera etiketter som inte längre beskriver live-arbete.
+
+Om något är det primära, hållbara hemmet för arbetet, gör det till en
+[kategori](./categories.mdx) i stället.

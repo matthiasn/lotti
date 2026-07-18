@@ -1,0 +1,119 @@
+---
+title: Designagent-skabeloner og sjæle
+description: Definér genanvendelige agentansvar, adskil personlighed fra instruktioner, og forbedr begge gennem versionerede én-til-én gennemgange.
+---
+
+# Designagent-skabeloner og sjæle
+
+En **agent-skabelon** definerer et genanvendeligt ansvar: typen af agent,
+dens inferensprofil, driftsdirektiver, rapportformat og valgfri
+personlighed. En **sjæl** har den genanvendelige stemme, tonegrænser, coaching
+stil, og anti-smiskeri-politik. At holde disse begreber adskilt gør det muligt
+Personlighedsforbedringer konsekvent på tværs af flere skabeloner uden at kopiere
+instruktioner mellem dem.
+
+## Gennemgå skabelonkataloget
+
+Åbn **Indstillinger → agenter → agentskabeloner**. Kataloget viser skabelonen
+type, modelidentitet, aktiv version og om en anmeldelse kræver opmærksomhed.
+
+<ManualScreenshot
+  caseId="agents/templates"
+  alt="Lotti agent templates for orbital habitat safety, Project Waddle day planning, sardine supply monitoring, and fish diplomacy coaching"
+  caption="Each Project Waddle template has a narrow responsibility and visible version instead of one all-purpose agent with an unreviewable prompt."
+/>
+
+De indbyggede typer tjener forskellige formål:
+
+- **Task Agent** arbejder mod én opgave og dens tilknyttede beviser.
+- **Dagagent** planlægger og reviderer en dag.
+- **Projektagent** følger et projekt over tid.
+- **Event Agent** følger et event-arbejdsområde.
+- **Template Improver** understøtter den versionerede én-til-én gennemgangsproces.
+
+## Rediger en skabelon
+
+Vælg en skabelon for at redigere dens nuværende konfiguration. Vælg en standard
+Inferensprofil med de værktøjer og modaliteter, som ansvaret kræver,
+og derefter eventuelt tildele en sjæl.
+
+<ManualScreenshot
+  caseId="agents/template-editor"
+  alt="Orbital Habitat Sentinel template editor using Project Waddle Command and Admiral Pebble with habitat safety and report directives"
+  caption="The sentinel's operational directive describes what to inspect; Admiral Pebble contributes the communication and challenge style."
+/>
+
+Brug de to direktivfelter bevidst:
+
+- **Generel direktiv** definerer ansvar, grænser og beslutning
+  regler.
+- **Rapportdirektiv** definerer, hvad en nyttig gemt rapport skal indeholde.
+
+Gemning af en redigeret skabelon skaber en ny version, og eksisterende historik forbliver
+tilgængelig for revision og tilbagerulning. Undgå at skjule urelaterede ansvarsområder i
+En lang direktiv bare for at reducere antallet af skabeloner.
+
+## Kør en skabelon én-til-én
+
+Skabelonen **1-til-1** siderammer foreslog ændringer i forhold til reel våge
+aktivitet, feedback, optræden og tidligere sessioner. En ventende session er en
+Forslag, ikke en automatisk omskrivning.
+
+<ManualScreenshot
+  caseId="agents/template-review"
+  alt="Orbital Habitat Sentinel one-on-one showing a proposal about surfacing the launch decision and recent performance metrics"
+  caption="The example proposal responds to a concrete failure: the safety finding was correct, but the go/no-go decision was buried under fish trivia."
+/>
+
+Start samtalen, inspicer beviserne, og godkend kun ændringerne
+Det forbedrer ansvaret. Det godkendte resultat bliver et andet
+Versioneret skabelonpost.
+
+## Hold personligheden genanvendelig med sjæle
+
+Åbn **Sjæle** for at se de personligheder, som skabeloner kan dele. En sjæl er
+ikke endnu en opgaveprompt; Den kontrollerer, hvordan en agent kommunikerer, coacher og
+Skubber tilbage.
+
+<ManualScreenshot
+  caseId="agents/souls"
+  alt="Lotti soul catalog containing Admiral Pebble, Dr. Flipper, and Captain Sardina"
+  caption="Project Waddle separates a calm flight director, a curious scientist, and a practical cargo coordinator from the jobs that use them."
+/>
+
+Soul-redaktøren holder fire bekymringer tydelige:
+
+<ManualScreenshot
+  caseId="agents/soul-editor"
+  alt="Admiral Pebble soul editor with voice, tone bounds, coaching style, and anti-sycophancy policy"
+  caption="Admiral Pebble can stay warm and decisive while still challenging optimistic launch assumptions with evidence."
+/>
+
+- **Stemmedirektiv** beskriver den genkendelige stemme og kommunikation
+  prioriteter.
+- **Tone Bounds** angiver, hvad stemmen skal undgå.
+- **Coaching Style** beskriver, hvordan det hjælper nogen med at træffe en beslutning.
+- **Anti-Smiskeri-politik** forklarer, hvornår og hvordan den bør være uenig.
+
+Brug konkrete adfærdsmæssige grænser. "Vær hjælpsom" er svært at gennemgå; "Udfordring
+Optimistiske lanceringsantagelser og citer observationen, der ændrede dig
+konklusion" kan kontrolleres i forhold til det faktiske output.
+
+## Udvikl en delt sjæl forsigtigt
+
+En sjæl **1-til-1** henter feedback fra hver skabelon med den personlighed.
+Det gør ændringen stærk: at godkende den kan forbedre flere agenter, men en
+Dårlige ændringer kan også påvirke dem alle.
+
+<ManualScreenshot
+  caseId="agents/soul-review"
+  alt="Admiral Pebble soul one-on-one with a proposal, one sharing template, and completed session history"
+  caption="The sharing count and session history make the blast radius visible before personality changes are approved."
+/>
+
+Læs delingstallet, det foreslåede feedbackresumé og tidligere resumé før
+Start en personlighedsvurdering. Hvis feedback kun gælder for ét ansvar,
+Ændr den skabelon i stedet for at lære den delte sjæl en opgavespecifik regel.
+
+Return to [Run and monitor agents](./agents.mdx) to inspect the instances and
+vågecyklusser produceret ud fra disse tegninger.
