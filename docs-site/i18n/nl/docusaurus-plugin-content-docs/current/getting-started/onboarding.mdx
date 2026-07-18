@@ -1,0 +1,145 @@
+---
+title: Lotti instellen met onboarding
+description: Sluit een AI-provider aan, kies de opnamestijl en werkgebieden en verander een eerste gedachte in een echte taak.
+---
+
+# Lotti opzetten met onboarding
+
+Onboarding verbindt de minimale onderdelen die nodig zijn voor Lotti's AI-ondersteunde taak
+workflow: één aanbieder, een opnamestijl, minimaal één categorie en een primeur
+echte taak. Het is een begeleide installatie, geen aparte demo-omgeving – providers,
+categorieën en hier gemaakte taken blijven in de normale app.
+
+Open **Instellingen → Onboarding** wanneer u de stroom wilt starten of opnieuw wilt afspelen.
+Op de pagina wordt ook weergegeven of dit profiel al zijn eerste heeft aangemaakt
+AI-gestructureerde taak.
+
+<ManualScreenshot
+  caseId="onboarding/settings"
+  alt="Lotti Onboarding instellingen tonen een geactiveerde status en de Replay onboard actie"
+  caption="Dit Project Waddle-profiel heeft al zijn eerste AI-taak gemaakt. Na activering blijft het opnieuw aan boord spelen beschikbaar."
+/>
+
+## Begin met de welkomstbelofte
+
+<ManualScreenshot
+  caseId="onboarding/welcome"
+  alt="Lotti onboarding welkomstpanel nodigt de gebruiker uit om een AI brein te verbinden en spraak om te zetten in een gestructureerde taak"
+  caption="Het welkomstpaneel opent via de huidige app. Kies uw AI-hersenen om door te gaan of verlaat de stroom zonder de instelling te wijzigen."
+/>
+
+Selecteer **Kies je AI-brein** om te beginnen. Kiezen voor **Kijk eerst rond**,
+door op het gedimde gebied buiten het paneel te tikken en de terugactie van het systeem te gebruiken
+ze verlaten allemaal de onboarding zonder iets aan te sluiten. U kunt terugkeren via Instellingen
+later.
+
+Lotti kan dit welkom ook automatisch aanbieden aan een in aanmerking komend profiel. De
+automatische prompt heeft een beperkte frequentie voor nieuwe pogingen; het item Instellingen doet dat niet
+je hebt altijd een weg terug.
+
+## Kies waar taakstructurering wordt uitgevoerd
+
+<ManualScreenshot
+  caseId="onboarding/providers"
+  alt="Lotti onboarding provider chocer met Melious.ai, Mistral, Gemini, Qwen, OpenAI, en Ollama"
+  caption="Primaire gehoste providers verschijnen eerst. Meer opties voor OpenAI en het lokale Ollama pad uitbreiden."
+/>
+
+De providerpagina identificeert de beschikbare gehoste en lokale keuzes:
+
+- **Melious.ai** is de aanbevolen, door de EU gehoste standaard met dynamisch model
+  routering.
+- **Mistral**, **Gemini** en **Qwen** tonen hun overeenkomstige gehost
+  regio's.
+- **OpenAI** is beschikbaar onder de uitgebreide opties.
+- **Ollama** maakt verbinding met een compatibel lokaal eindpunt en vereist geen
+  gehoste API-sleutel.
+
+<ManualScreenshot
+  caseId="onboarding/api-key"
+  alt="Lotti onboarding provider verificatiepaneel met een geverifieerde lokale Ollama verbinding"
+  caption="Lotti controleert de gekozen provider voordat Connect wordt ingeschakeld. Hosted providers gebruiken dezelfde stap met een API-toetsenveld."
+/>
+
+Voor een gehoste provider plakt u de API-sleutel van de provider. Lotti verifieert de
+verbinding voordat u **Verbinden** inschakelt. Ollama verifieert de geconfigureerde lokale
+eindpunt en rapporteert bereikbare modellen. Een succesvolle verbinding slaat de
+provider en zaait de modellen en het gevolgtrekkingsprofiel dat door de overigen wordt gebruikt
+stappen.
+
+<ManualScreenshot
+  caseId="onboarding/success"
+  alt="Lotti onboarding bevestiging dat de AI provider is aangesloten en klaar"
+  caption="De verbindingsbevestiging is opzettelijk kalm; de grotere uitbetaling is gereserveerd voor de eerste echte taak."
+/>
+
+De vastgelegde taaktekst wordt ter structurering verzonden naar de provider die aan de opdracht is toegewezen
+geselecteerde categorie. Kies een provider wiens implementatie- en gegevensverwerkingsmodel
+past bij het materiaal dat u wilt vastleggen. Er blijft een bereikbaar lokaal Ollama-eindpunt behouden
+dat structureringsverzoek op de machine waarop het wordt uitgevoerd.
+
+## Kies het opnamegevoel en de werkgebieden
+
+<ManualScreenshot
+  caseId="onboarding/recording-style"
+  alt="Lotti onboarding opname-stijl kiesmachine met moderne energiebol en analoge VU meter opties"
+  caption="Kies het opnamebeeld dat het duidelijkst voelt. Beide opties gebruiken dezelfde opnamepijplijn."
+/>
+
+Nadat de verbinding tot stand is gebracht, kiest u de opnamestijl die voor de eerste taak wordt gebruikt
+capture en later voice-capture-oppervlakken. Onder kunt u dit weer wijzigen
+**Instellingen → Opnamestijl**.
+
+<ManualScreenshot
+  caseId="onboarding/categories"
+  alt="Lotti onboarding werk-gebied kieser met werk, fitness, familie, vrienden, en voeg uw eigen keuzes"
+  caption="Kies één of meer gebieden voor de nieuwe provider. Geschaalde tekst en smalle indelingen maken automatisch gebruik van één volledige breedte keuze per rij."
+/>
+
+Selecteer vervolgens een of meer werkgebieden. Voorinstellingen omvatten algemene categorieën zoals
+Werk, fitness, familie en vrienden; **Voeg je eigen toe** maakt een categorie met een
+naam die overeenkomt met uw werkruimte. Onboarding hergebruikt een bestaande categorie met
+dezelfde naam in plaats van een duplicaat te maken, deze indien nodig te herstellen, en
+verbindt het met het nieuw geplaatste inferentieprofiel.
+
+De handmatige armatuur creëert twee echte bestemmingen: **Penguin Operations** en
+**Mission Control** – dus de volgende stap demonstreert dezelfde categoriekeuze
+werkende account ziet.
+
+## Leg de eerste echte taak vast
+
+<ManualScreenshot
+  caseId="onboarding/first-task"
+  alt="Lotti eerste-taak onboarding paneel met spraakopname, Penguin Operations en Mission Control bestemmingen, suggesties, en eerder type"
+  caption="Kies waar de taak moet landen, spreek dan natuurlijk, gebruik een starter-voorstel, of selecteer Lettertype. Penguin Operations wordt hier geselecteerd."
+/>
+
+Het eerste taakpaneel maakt gebruik van de normale opvangpijplijn van Lotti. Kies het doel
+categorie en gebruik vervolgens een van de drie paden:
+
+1. Selecteer het opnamebeeld en spreek de taak in een normale zin uit.
+2. Kies een startersuggestie om het structureringstraject meteen uit te proberen.
+3. Kies **Liever typen?** en voer de gedachte in zonder de microfoon te gebruiken.
+
+Lotti herhaalt de vastgelegde woorden terwijl ze ze structureert. Het resultaat is een echte
+taak in de gekozen categorie, en niet alleen voorbeeldgegevens voor onboarding. Bij het structureren
+produceert checklistsuggesties, deze komen als voorstellen voor u op de taak
+om te bevestigen in plaats van de taak stil te wijzigen.
+
+<ManualScreenshot
+  caseId="onboarding/task-created"
+  alt="Lotti onboarding succes panel toont de gecreëerde taak Inspecteer de Europa sardine relais"
+  caption="De getypte Project Waddle-gedachte wordt omgezet in een echte taak."
+/>
+
+Kies de gemaakte taakkaart om de onboarding te sluiten en de normale taakpagina te openen.
+Van daaruit kunt u checklistvoorstellen bekijken, albumhoezen of bewijsmateriaal toevoegen, een
+vervaldatum en prioriteit, en breng de taak naar Daily OS.
+
+Sluit je de stroom af nadat je een provider hebt aangesloten, dan behoudt Lotti die provider
+instellen en beschouwt het welkom als voltooid. Onboarding later opnieuw afspelen blijft bestaan
+veilig: het is een expliciete actie in Instellingen en geen andere automatische prompt.
+
+Ga verder met [maak je eerste taak](./first-task.mdx),
+[categorieën beheren](../organize-and-reflect/categories.mdx), en
+[providers configureren](../ai-and-automation/provider-setup.mdx).

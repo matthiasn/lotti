@@ -1,0 +1,85 @@
+---
+title: Verbind een AI-provider
+description: Verbind cloud- of lokale gevolgtrekkingen, inspecteer de modellen en houd inloggegevens en eindpunten onder controle.
+---
+
+# Sluit een AI-provider aan
+
+Lotti verdeelt een AI-installatie in drie lagen: een **provider** is de dienst die ervoor wordt geleverd
+verbinding maakt, een **model** is een model dat via die service wordt getoond, en een
+**inferentieprofiel** stuurt elk soort werk naar een model. Begin met de
+provider en bekijk vervolgens de modellen en profielen die eromheen zijn gemaakt.
+
+<ManualScreenshot
+  caseId="ai/providers"
+  alt="Lotti AI instellingen tonen Mission Control Router, Habitat Local Lab, Orbital Vision, en Penguin Audio Bay providers"
+  caption="AI-instellingen houden cloud- en lokale verbindingen bij elkaar. Elke kaart toont de verbindingsstatus en hoeveel opgeslagen modellen deze gebruiken."
+/>
+
+## Kies lokaal of op afstand
+
+- Een cloudprovider is meestal de snelste installatie en vereist doorgaans een API
+  sleutel. Tekst, audio of afbeeldingen die er doorheen worden verzonden, verlaten het apparaat.
+- Een lokale provider kan de gevolgtrekking op uw eigen machine of op een lokaal eindpunt bewaren
+  u beheert, maar de service moet actief zijn en bereikbaar zijn vanaf het apparaat
+  waar Lotti het aanroept. Een LAN-adres kan nog steeds een prompt verplaatsen tussen uw
+  apparaten; “lokaal” betekent dat het niet naar een aanbieder van een gehost model wordt verzonden, niet dat nee
+  netwerkhop bestaat.
+- Een aangepaste basis-URL kan een ondersteund providertype naar een compatibele proxy verwijzen
+  of poort. Het providertype bepaalt nog steeds het protocolspecifieke gedrag.
+
+## Sluit een provider aan
+
+1. Open **Instellingen → AI-instellingen → Providers**.
+2. Selecteer de knop **+**.
+3. Kies een ondersteunde provider.
+4. Voer indien nodig de weergavenaam, het eindpunt en de API-sleutel in.
+5. Voeg eventuele voorgestelde modellen toe en sla deze op.
+
+Voor ondersteunde first-run providers zaait Lotti nuttige modellen en een of meer
+gevolgtrekkingsprofielen. Het resultatenscherm vat samen wat er is gemaakt.
+
+<ManualScreenshot
+  caseId="ai/provider-editor"
+  alt="Lotti provider editor voor Mission Control Router met OpenRouter geselecteerd, een basis URL, gemaskerde API-sleutel, en voorgestelde modellen"
+  caption="Geheimen blijven gemaskeerd. Aanbevolen modellen zijn snelkoppelingen, geen vereiste. U kunt later provider-specifieke model-ID's toevoegen."
+/>
+
+## Inspecteer en onderhoud een verbinding
+
+Open een providerkaart om de gemaskeerde inloggegevens, basis-URL, opgeslagen modellen,
+en elk actief profiel dat afhankelijk is van die modellen. Vanaf hier kunt u de
+verbinding, voeg een ander model toe of verwijder de provider.
+
+<ManualScreenshot
+  caseId="ai/provider-detail"
+  alt="Mission Control Router provider detail toont zijn verbinding, Waddle Command modellen, en actieve Project Waddle profiel"
+  caption="De afhankelijkheidssamenvatting maakt de straal zichtbaar voordat u een provider wijzigt of verwijdert."
+/>
+
+Het wijzigen van een basis-URL of API-sleutel is van invloed op elk model dat aan die provider is gekoppeld.
+Nadat u een van beide waarden heeft gewijzigd, verifieert u een representatieve AI-actie voordat u ervan uitgaat
+de verbinding is gezond. Het verwijderen van een provider kan ook gevolgen hebben voor profielen
+werk door zijn modellen leiden; bekijk eerst de afhankelijkheidsinformatie.
+
+## Bekijk profielroutering
+
+Open [Models en inferentieprofielen](./models-and-profiles.mdx) om te verifiëren wat
+de provider blootlegt en hoe Lotti elke mogelijkheid routeert. Categorieën kunnen een
+standaardprofiel voor hun werk kiezen, terwijl individuele automatisering een model kan selecteren
+of overschrijven wanneer de workflow die keuze biedt.
+
+## Privacygrens
+
+Voordat u gevoelige tekst, audio of afbeeldingen verzendt, moet u bevestigen of dit is geconfigureerd
+eindpunt is lokaal of extern. Een vriendelijke naam als ‘Habitat Local Lab’ is dat niet
+de beveiligingsgrens: de basis-URL, het netwerkpad en de machine die wordt bediend
+het zijn. Lotti slaat het logboek hoe dan ook lokaal op; dit besluit beheerst de
+gevolgtrekking noemt zichzelf.
+
+:::warning[API-sleutels]
+
+Behandel providersleutels als geheimen. Plak ze nooit in documentatie, problemen of
+schermafbeeldingen.
+
+:::

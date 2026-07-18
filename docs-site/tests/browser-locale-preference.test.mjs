@@ -13,7 +13,7 @@ test('browser locale matching uses the first supported language', () => {
   assert.equal(
     preferredSupportedLocale(
       ['ro-RO', 'fr-FR', 'cs-CZ', 'de-DE', 'en-US'],
-      ['en', 'de', 'fr', 'it', 'es', 'cs', 'ro', 'pt'],
+      ['en', 'de', 'fr', 'it', 'es', 'cs', 'nl', 'ro', 'pt'],
       'en',
     ),
     'ro',
@@ -21,7 +21,7 @@ test('browser locale matching uses the first supported language', () => {
   assert.equal(
     preferredSupportedLocale(
       ['pt-BR', 'fr-FR', 'de-DE', 'en-US'],
-      ['en', 'de', 'fr', 'it', 'es', 'cs', 'ro', 'pt'],
+      ['en', 'de', 'fr', 'it', 'es', 'cs', 'nl', 'ro', 'pt'],
       'en',
     ),
     'pt',
@@ -29,7 +29,7 @@ test('browser locale matching uses the first supported language', () => {
   assert.equal(
     preferredSupportedLocale(
       ['es-ES', 'fr-FR', 'cs-CZ', 'de-DE', 'en-US'],
-      ['en', 'de', 'fr', 'it', 'es', 'cs', 'ro', 'pt'],
+      ['en', 'de', 'fr', 'it', 'es', 'cs', 'nl', 'ro', 'pt'],
       'en',
     ),
     'es',
@@ -37,7 +37,7 @@ test('browser locale matching uses the first supported language', () => {
   assert.equal(
     preferredSupportedLocale(
       ['fr-FR', 'cs-CZ', 'de-DE', 'en-US'],
-      ['en', 'de', 'fr', 'it', 'es', 'cs', 'ro', 'pt'],
+      ['en', 'de', 'fr', 'it', 'es', 'cs', 'nl', 'ro', 'pt'],
       'en',
     ),
     'fr',
@@ -95,6 +95,10 @@ test('locale root URLs preserve the default route and add alternatives', () => {
     '/lotti/manual/development/cs/',
   );
   assert.equal(
+    localeRootUrl('/lotti/manual/development/', 'nl', 'en'),
+    '/lotti/manual/development/nl/',
+  );
+  assert.equal(
     localeRootUrl('/lotti/manual/development/', 'fr', 'en'),
     '/lotti/manual/development/fr/',
   );
@@ -134,6 +138,7 @@ test('an explicit locale dropdown choice is persisted', () => {
       it: {htmlLang: 'it-IT'},
       es: {htmlLang: 'es-ES'},
       cs: {htmlLang: 'cs-CZ'},
+      nl: {htmlLang: 'nl-NL'},
       ro: {htmlLang: 'ro-RO'},
       pt: {htmlLang: 'pt-BR'},
     },

@@ -67,15 +67,13 @@ void main() {
 
   testWidgets(
     'renders the tokenized grouped choices with Follow system active',
-    (
-      tester,
-    ) async {
+    (tester) async {
       await pumpPage(tester);
       final context = tester.element(find.byType(ManualLanguageSettingsBody));
       final messages = context.messages;
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
-      expect(find.byType(DesignSystemRadioButton), findsNWidgets(9));
+      expect(find.byType(DesignSystemRadioButton), findsNWidgets(10));
       expect(
         find.text(messages.settingsManualLanguageFollowSystemSubtitle),
         findsOneWidget,
@@ -94,6 +92,7 @@ void main() {
         messages.settingsManualLanguageItalianTitle,
         messages.settingsManualLanguageSpanishTitle,
         messages.settingsManualLanguageCzechTitle,
+        messages.settingsManualLanguageDutchTitle,
         messages.settingsManualLanguageRomanianTitle,
         messages.settingsManualLanguagePortugueseTitle,
       ]) {
@@ -104,9 +103,7 @@ void main() {
 
   testWidgets(
     'selecting a language updates the row and persists the override',
-    (
-      tester,
-    ) async {
+    (tester) async {
       await pumpPage(tester);
       final context = tester.element(find.byType(ManualLanguageSettingsBody));
       final german = context.messages.settingsManualLanguageGermanTitle;
@@ -136,10 +133,14 @@ void main() {
     ).called(1);
   });
 
-  testWidgets('Italian and Spanish choices persist their overrides', (
+  testWidgets('Italian, Spanish, and Dutch choices persist their overrides', (
     tester,
   ) async {
-    for (final language in [ManualLanguage.italian, ManualLanguage.spanish]) {
+    for (final language in [
+      ManualLanguage.italian,
+      ManualLanguage.spanish,
+      ManualLanguage.dutch,
+    ]) {
       await pumpPage(tester);
       final context = tester.element(find.byType(ManualLanguageSettingsBody));
       final title = switch (language) {
@@ -147,6 +148,8 @@ void main() {
           context.messages.settingsManualLanguageItalianTitle,
         ManualLanguage.spanish =>
           context.messages.settingsManualLanguageSpanishTitle,
+        ManualLanguage.dutch =>
+          context.messages.settingsManualLanguageDutchTitle,
         _ => throw StateError('Unexpected Manual language: $language'),
       };
 

@@ -1,0 +1,154 @@
+---
+title: Gebruik geavanceerde instellingen veilig
+description: Beheer functievlaggen en logboekregistratie, voer onderhoudstools uit, inspecteer onboarding-statistieken en verifieer de geïnstalleerde Lotti-build.
+---
+
+# Gebruik geavanceerde instellingen veilig
+
+Open **Instellingen → Geavanceerde instellingen** voor bedieningselementen voor hoofdgebruikers, diagnostiek en
+onderhoud. Deze pagina's veranderen de manier waarop Lotti werkt of werken rechtstreeks op lokaal niveau
+gegevens, dus gewone personalisatie hoort elders in Instellingen.
+
+Desktop bewaart de instellingenboom naast de geselecteerde pagina. Mobiel opent er een
+pagina per keer en biedt een terugknop. Dezelfde controles en bleven bestaan
+waarden worden in beide lay-outs gebruikt.
+
+<ManualScreenshot
+  caseId="advanced-settings/hub"
+  alt="Lotti Advanced Settings hub met Config Flags, Animaties, Taal, Loggen, Onderhoud, Onboarding Metrics, en Over Lotti"
+  caption="Geavanceerde instellingen groepen operationele controles weg van alledaagse voorkeuren. Sommige items variëren per platform en ingeschakelde mogelijkheden."
+/>
+
+## Kies de handmatige taal
+
+Open **Taal** om te bepalen welke gepubliceerde handleiding de app opent. ** Volg
+systeem** is de standaard en kiest Engels, Duits, Frans, Italiaans,
+Spaanse, Tsjechische, Roemeense of Portugese handleiding vanuit de taal van uw apparaat.
+Selecteer **Engels**, **Duits**, **Frans**, **Italiaans**, **Spaans**, **Tsjechisch**,
+**Roemeens** of **Portugees** om een andere keuze te maken. De handmatige invoer
+onderaan Instellingen en **Help → Handmatig** op macOS gebruiken beide deze instelling.
+
+## Controlemogelijkheden met configuratievlaggen
+
+<ManualScreenshot
+  caseId="advanced-settings/flags"
+  alt="Lotti Config Vlaggen pagina met doorzoekbare schakelaars voor privé-items, meldingen, locatie-opname, tooltips en AI-streaming"
+  caption="Zoek komt overeen met zowel vlagnamen en beschrijvingen. Elke schakelaar verandert onmiddellijk zijn opgeslagen runtime vermogen."
+/>
+
+**Config Flags** is het capaciteitenschakelbord. Het omvat controles voor:
+
+- Zichtbaarheid van privé-toegang, meldingen, locatieregistratie en tooltips;
+- AI-reactiestreaming en samenvattingsweergave;
+- loggen en Matrix-synchronisatiegedrag;
+- functiepagina's zoals Gewoonten, Dashboards, Evenementen, Projecten en Wat is er nieuw;
+- inbedding en zoeken naar vectoren; en
+- operationele indicatoren zoals synchronisatieactiviteit, wachtende agenten en vork
+  genezing.
+
+Gebruik **Zoekvlaggen** om de lijst te verfijnen op titel of beschrijving. Selecteer een rij
+of de schakelaar om de vlag te veranderen. De nieuwe waarde wordt onmiddellijk opgeslagen; daar
+is geen afzonderlijke actie Opslaan.
+
+Vlaggen kunnen experimenteel of diagnostisch gedrag blootleggen. Verander er bewust één,
+Controleer vervolgens de betreffende workflow voordat u een andere wijzigt. De **Toon privé
+entrys?** vlag bepaalt of gevoelige inhoud wordt opgenomen in lijsten en
+kiezers; het codeert, exporteert, verwijdert of wijzigt de privacy van een
+binnenkomst.
+
+## Kies wat Lotti logt
+
+<ManualScreenshot
+  caseId="advanced-settings/logging"
+  alt="Lotti Loginstellingen met een master logging switch, individuele operationele domeinen en slow-query logging"
+  caption="De master switch poorten de per-domein controles. De Project Waddle armatuur houdt Sync, AI, en taken ingeschakeld voor gerichte diagnostiek."
+/>
+
+**Logboekregistratie** begint met de algemene schakelaar **Logboekregistratie inschakelen**. Wanneer het is ingeschakeld,
+schakel alleen de domeinen in die nodig zijn voor een onderzoek, zoals synchronisatie, AI, taken,
+Labels, Gezondheid, Gewoonten, Navigatie, Meldingen of Dagelijks besturingssysteem. **Log langzaam in
+queries** voegt diagnostiek van databaseprestaties toe.
+
+Als u de hoofdschakelaar uitschakelt, worden de domeincontroles uitgeschakeld. Er zijn nog steeds fouten
+geschreven naar de dagelijkse `error-*.log`; deze schakelaars regelen de aanvullende diagnose
+logboekregistratie, niet het minimale foutrecord. Schakel luidruchtige domeinen uit na een
+zodat logboeken gefocust blijven en het opslaggebruik voorspelbaar blijft.
+
+## Voer bewust onderhoudsacties uit
+
+<ManualScreenshot
+  caseId="advanced-settings/maintenance"
+  alt="Lotti Onderhoud pagina met onboarding previews, reset acties, database verwijdering, zuivering, zoekindex, inbeddingen, en herverf diagnostiek"
+  caption="Onderhoud combineert veilige previews met destructieve en diagnostische acties. Lees de bevestiging en de scope voordat u verder gaat."
+/>
+
+**Onderhoud** omvat verschillende soorten acties:
+
+- **Toon onboarding-welkomst** en **Onboarding-animatiegalerij** zijn live
+  previews voor ontwikkeling en kwaliteitscontrole.
+- **In-app-hints opnieuw instellen** zorgt ervoor dat eenmalige tips opnieuw kunnen verschijnen.
+- **Reset Gemini Setup Dialog** heft de verwijdering op, zodat de provider hierom kan vragen
+  opnieuw getest worden.
+- **Editordatabase verwijderen** verwijdert editorconcepten.
+- **Agentendatabase verwijderen** verwijdert de agentendatabase en sluit Lotti af, zodat de
+  app kan opnieuw opstarten tegen een schone winkel.
+- **Verwijderde items verwijderen** verwijdert permanent verwijderde records via een
+  speciale bevestigingsstroom.
+- **Maak de volledige tekstindex opnieuw** bouwt lokale zoekgegevens opnieuw op zonder opnieuw te maken
+  journaalposten.
+- **Insluitingen genereren** verschijnt wanneer de insluitingswinkel beschikbaar is en
+  vult geselecteerde categorieën aan.
+- **Regenboogoverlay opnieuw schilderen** knippert terwijl gebieden opnieuw worden geverfd voor UI-diagnostiek. Het
+  wordt in het geheugen bewaard en keert na opnieuw starten terug naar uit.
+
+Preview- en resetacties brengen niet hetzelfde risico met zich mee als verwijderen en opschonen.
+Voor destructieve acties bevestigt u dat het doelwit de beoogde lokale winkel is
+en laat eventuele huidige synchronisatie- of schrijfbewerkingen eerst eindigen.
+
+## Inspecteer de onboarding-trechter
+
+<ManualScreenshot
+  caseId="advanced-settings/onboarding-metrics"
+  alt="Lotti Onboarding Metrics pagina met installatietijd, vier actieve dagen, activeringsstatus en inhoudsvrije gebeurtenis telt"
+  caption="De deterministische handmatige armatuur bereikte zijn echte aha gedurende vier actieve dagen na het verbinden van een provider en het opnemen van verschillende vangt."
+/>
+
+**Onboarding Metrics** is een ontwikkelaars- en QA-oppervlak. Het leidt een lokale trechter af
+van inhoudsvrije evenementen en shows:
+
+- de eerst geziene tijdstempel in UTC;
+- totaal actieve dagen en actieve dagen gedurende de eerste zeven dagen;
+- of de installatie tot het pre-FTUE-basiscohort behoort;
+- of de echte activeringsmijlpaal is bereikt; en
+- een telling voor elk onboarding-evenement.
+
+De pagina registreert gebeurtenisnamen en metagegevens met een lage kardinaliteit, geen tijdschrifttekst.
+taaktitels, transcripties of de sardinegevoelige details van Project Waddle.
+
+**Reset onboarding teststatus** wist de cadans van de onboardingprompt en de lokale
+trechterstatistieken na bevestiging. Er worden geen journaalgegevens verwijderd, config
+vlaggen of echte dagelijkse OS-plangeschiedenis. Een profiel dat al een dag heeft gepland
+komt daarom niet in aanmerking voor het exacte eerste planpad met schoon profiel.
+
+## Controleer de build en lokale totalen
+
+<ManualScreenshot
+  caseId="advanced-settings/about"
+  alt="Lotti Over pagina met versie, platform, bouwtype, 2604 journal ingangen, 11 gemarkeerde ingangen, en taak telt"
+  caption="Over Lotti identificeert de lopende bouw en vat lokale gegevens samen. De Project Waddle armatuur bevat 2.604 inzendingen en 65 taken in vijf staten."
+/>
+
+**Over Lotti** is de snelste plaats om te verifiëren welke build daadwerkelijk actief is.
+Het toont de app-versie en het buildnummer, het platform en het buildtype. Inclusief
+deze waarden in een diagnostisch rapport, zodat gedrag aan de rechterkant kan worden gekoppeld
+coderen en loslaten.
+
+De kaart **Uw gegevens** geeft een overzicht van lokale journaalboekingen, gemarkeerde vermeldingen en
+taaktellingen opgesplitst in Open, In uitvoering, In de wacht, Geblokkeerd en Klaar. De
+De gevestigde Project Waddle-werkruimte van de handleiding toont een niet-lege account:
+2.604 journaalboekingen, 11 gemarkeerde vermeldingen en 65 taken in plaats van een tijdelijke aanduiding
+nullen.
+
+Voltooiingseffecten hebben hun eigen gids: zie
+**[Voltooiingsfeesten aanpassen](./completion-celebrations.mdx)** voor de
+Animatiepagina en de live speeltuin.

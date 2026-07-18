@@ -143,6 +143,17 @@ Esegui il test dell'alimentatore, allega l'immagine della telemetria, quindi ric
 
 Execute o teste do alimentador, anexe a imagem de telemetria e solicite a aprovação do lançamento.
 ''',
+  nl: '''
+## Laatste beoordeling
+
+- De drukafdichtingen A–F bleven gedurende de nachtdienst stabiel.
+- Er zijn 840 sardines geladen; de kalibratie van de voederautomaat blokkeert de vrijgave nog steeds.
+- De toestemming van Mission Control is nodig vóór de telling van 06:30.
+
+## Aanbevolen volgende stap
+
+Voer de voedertest uit, voeg de telemetrieafbeelding toe en vraag daarna toestemming voor de lancering.
+''',
 );
 
 final AiConfigModel _manualThinkingModel = manualDemoAiModels.firstWhere(

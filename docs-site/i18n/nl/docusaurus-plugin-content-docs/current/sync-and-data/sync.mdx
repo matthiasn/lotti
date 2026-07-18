@@ -1,0 +1,152 @@
+---
+title: Synchroniseer apparaten
+description: Koppel apparaten, verifieer hun identiteit, controleer de levering en herstel ontbrekende gegevens zonder te raden.
+---
+
+# Synchroniseer apparaten
+
+Lotti Sync houdt ondersteunde gegevens op één lijn tussen uw apparaten. Elk apparaat heeft
+een eigen lokale database; Bij synchronisatie worden wijzigingen verplaatst via het geconfigureerde synchronisatieaccount
+en haalt een apparaat op nadat het offline is geweest. Sync verplaatst het
+registratiesysteem niet naar een Lotti-cloud: de geconfigureerde Matrix-servicerelais
+end-to-end gecodeerde payloads tussen uw apparaten, terwijl elk apparaat deze behoudt
+zijn eigen lokale kopie.
+
+Open **Instellingen → Synchroniseren** om de beschikbare instellingen, status en herstel te bekijken
+pagina's. Het nummer naast **Outbox** is werk dat de synchronisatie niet heeft bereikt
+nog dienst.
+
+<ManualScreenshot
+  caseId="sync/hub"
+  alt="Lotti Synchroniseren instellingen met Provisioned Sync, apparaat identiteit, backfill, statistieken, outbox, conflicten, en onderhoud"
+  caption="De Sync-hub houdt de dagelijkse status in de buurt van diagnoses en hersteltools. Project Waddle heeft momenteel drie outbox-items te inspecteren."
+/>
+
+## Koppel een ander apparaat
+
+Begin op een apparaat dat al is verbonden:
+
+1. Open **Instellingen → Synchronisatie → Ingerichte synchronisatie**.
+2. Toon op het bureaublad de QR-code voor de overdracht. Houd dit scherm privé: de bundel
+   geeft toegang tot uw synchronisatieaccount en kamer.
+3. Open op het nieuwe apparaat dezelfde pagina en scan de QR-code of plak de
+   volledige inrichtingsbundel.
+4. Controleer de gedecodeerde server, gebruiker en ruimte voordat u **Importeren** selecteert.
+5. Laat de eerste synchronisatie voltooien voordat u een van beide apps sluit.
+
+<ManualScreenshot
+  caseId="sync/status"
+  alt="Voorzien van Sync status op mobiel en de veilige apparaat overdracht QR code op bureaublad"
+  caption="Desktop kan de overdracht QR code; mobiel toont de aangesloten account en verificatie staat. Behandel de QR code als een wachtwoord."
+/>
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Lotti provisioning import review toont de project Waddle sync server, gebruiker en room"
+  caption="Importeer alleen wanneer elke gedecodeerde waarde behoort tot het synchronisatieaccount dat u wilde aansluiten."
+/>
+
+Als de import een fout meldt, laat het originele apparaat dan aangesloten, genereer een
+nieuwe overdrachtsbundel en probeer het opnieuw met de volledige waarde. Bewerk de
+gecodeerde bundel niet.
+
+## Controleer het nieuwe apparaat
+
+Koppelen verbindt het apparaat; verificatie bevestigt dat beide apparaten dat zijn
+met elkaar praten zonder een onbekend apparaat in het midden.
+
+<ManualScreenshot
+  caseId="sync/verification"
+  alt="Lotti apparaat verificatie vergelijken van een reeks van pinguïn, vis, raket, ijs, aarde, maan, ster, en telescoop emoji"
+  caption="Vergelijk de gehele emoji-reeks op beide apparaten. Accepteer alleen wanneer elke afbeelding en de volgorde precies overeenkomen."
+/>
+
+Vergelijk de emoji persoonlijk of via een vertrouwd gesprek. Selecteer **Accepteren** voor beide
+apparaten alleen als de volledige reeks overeenkomt. Als zelfs maar één emoji verschilt,
+annuleer de verificatie en onderzoek de account- en apparaatnamen eerder
+opnieuw proberen.
+
+## Geef apparaten een naam en maak reclame voor mogelijkheden
+
+**Synchronisatieknooppuntprofiel** identificeert het huidige apparaat voor de rest van de synchronisatie
+groep. Geef het een naam die de fysieke machine onderscheidt, zoals
+'Mission Control Mac' in plaats van 'Desktop'.
+
+<ManualScreenshot
+  caseId="sync/node-profile"
+  alt="Lotti Synchroniseren knooppuntprofiel voor Mission Control Mac met lokale gevolgtrekkingen mogelijkheden en bekende Project Waddle apparaten"
+  caption="Duidelijke apparaatnamen maken verificatie, diagnoses, en apparaat-gepinde lokale gevolgtrekking veel gemakkelijker te controleren."
+/>
+
+De pagina vermeldt ook de mogelijkheden die het apparaat kan bieden, zoals lokale audio
+transcriptie of gevolgtrekking uit een lokaal taalmodel. Bekende apparaten laten zien wat de
+andere knooppunten die het laatst zijn geadverteerd. De genoemde mogelijkheden zijn beschrijvend;
+het relevante AI-profiel moet nog steeds worden geconfigureerd om ze te gebruiken.
+
+## Begrijp inhaal- en aanvullingsactiviteiten
+
+Normale synchronisatieprocessen veranderen zodra ze binnenkomen. **Backfill** detecteert gaten in de
+reeks ontvangen van bekende apparaten en vraagt ontbrekende records opnieuw op.
+
+<ManualScreenshot
+  caseId="sync/backfill"
+  alt="Lotti Synchroniseren Backfill pagina met inkomend, ontbrekend en overgeslagen status plus reeks statistieken en automatische backfill"
+  caption="Project Waddle heeft 2.868 sequentie records ontvangen en weet momenteel over vier ontbrekende records over twee apparaat ID's."
+/>
+
+- **Inkomend** is werk dat momenteel in de wachtrij voor binnenkomend verkeer staat.
+- **Ontbreekt** is het aantal bekende hiaten in de reeks.
+- **Overgeslagen** is werk dat in de wachtrij voor binnenkomend verkeer is verlaten nadat dit niet meer mogelijk was
+  normaal verwerkt.
+- **Automatische aanvulling** vraagt voortdurend om herstelbare gaten en is de
+  juiste standaard voor normaal gebruik.
+- **Geavanceerd herstel** bevat handmatige controles voor een onderzoek. Gebruik het
+  pas nadat gewone synchronisatie en automatische aanvulling tijd hebben gehad om tot rust te komen.
+
+Een ontbrekende telling die niet nul is, betekent niet automatisch gegevensverlies: een ander apparaat kan dat wel zijn
+nog steeds offline zijn, of het verzoek is mogelijk al onderweg. Onderzoek wanneer de
+het aantal blijft ongewijzigd terwijl alle verwachte apparaten online zijn.
+
+## Synchronisatiestatistieken lezen
+
+**Synchronisatiestatistieken** scheidt het berichtvolume en de verwerkingsstatus. Het is
+handig als de gegevens er verouderd uitzien, maar het account nog steeds als verbonden rapporteert.
+
+<ManualScreenshot
+  caseId="sync/stats"
+  alt="Lotti Matrix Synchroniseren Statistieken met verzonden berichten tellen, top verwerking KPI's, berichtentypes, storingen, retrieves, en entiteit totalen"
+  caption="Tellingen stellen vast of berichten bewegen; fouten en geplande herhalingen tonen aan of de pijpleiding schoon beweegt."
+/>
+
+De kaart voor verzonden berichten groepeert Matrix-gebeurtenistypen. **Top-KPI's** samengevat
+verwerkte berichten, mislukkingen en geplande nieuwe pogingen, terwijl de entiteit optelt
+laten zien welke Lotti-ladingfamilies aan dat werk hebben bijgedragen. Een stijgende verwerkt
+tellen met stabiele mislukkingen is gezond. Als fouten zich herhalen of nooit opnieuw proberen
+wissen, controleer het postvak UIT en de connectiviteit van het andere apparaat.
+
+## Inspecteer de Outbox
+
+De **Outbox** is de lokale wachtrij met wijzigingen die wachten om te worden verzonden. Filter het op
+staat om actief werk te scheiden van mislukkingen.
+
+<ManualScreenshot
+  caseId="sync/outbox"
+  alt="Lotti Sync Outbox gefilterd naar een mislukte project Waddle-habitat druk-seal foto met retry en verwijdering acties"
+  caption="Foute items houden hun onderwerp, lading details, retry geschiedenis, en lokale bijlage pad zodat herstel is specifiek in plaats van blind."
+/>
+
+- **Pending** items wachten op hun beurt.
+- **Verzendende** artikelen zijn momenteel onderweg.
+- **Mislukte** items hebben hun huidige poging voltooid en blijven beschikbaar voor
+  inspectie.
+- **Verzonden** artikelen zijn afgeleverd en worden tijdelijk bewaard
+  diagnostiek.
+
+Gebruik **Alles opnieuw proberen** nadat het onderliggende verbindings- of accountprobleem is opgelost.
+Verwijder een mislukt item alleen als u de wijziging opzettelijk niet wilt
+andere apparaten bereiken. Het verwijderen uit het postvak UIT is geen vervanging voor
+het repareren van de overeenkomstige lokale vermelding of bijlage.
+
+Ga verder met [Synchronisatieconflicten oplossen](./conflicts.mdx) wanneer twee apparaten zijn bewerkt
+hetzelfde item onafhankelijk, of [Synchronisatieonderhoud](./maintenance.mdx) voor
+hersteltools op databaseniveau.

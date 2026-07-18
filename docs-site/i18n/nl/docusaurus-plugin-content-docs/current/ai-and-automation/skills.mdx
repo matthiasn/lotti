@@ -1,0 +1,54 @@
+---
+title: Voer contextuele AI-vaardigheden uit
+description: Gebruik het menu Genereren om alleen de AI-acties uit te voeren die van toepassing zijn op de huidige taak, opname, afbeelding of item.
+---
+
+# Voer contextuele AI-vaardigheden uit
+
+AI-vaardigheden zijn benoemde acties met instructies en invoervereisten. Lotti
+filtert het menu **Genereren…** op de huidige entiteit, zodat er geen taak wordt aangeboden
+een transcriptieactie met alleen audio en een afbeelding biedt die actie niet
+vereist een opname.
+
+<ManualScreenshot
+  caseId="ai/skills"
+  alt="Project Waddle habitat afbeelding met de Generate modal offering Inspect habitat foto"
+  caption="Op een habitatbeeld dat aan de taak is gekoppeld, wordt bij de toepasselijke actie gezocht naar druk-gauge-anomalieën en zichtbare schade aan de zegels."
+/>
+
+## Voer een vaardigheid uit
+
+1. Open een taak of ondersteunde journaalboeking.
+2. Selecteer de geschetste assistentactie in de invoerkop. Deze gaat open
+   **Genereer...**.
+3. Lees de vaardigheidsbeschrijving en selecteer de gewenste actie.
+4. Als Lotti een model- of denkmoduskiezer aanbiedt, bevestig dan de standaard of
+   kies voor een eenmalige overschrijving.
+5. Blijf werken terwijl de gevolgtrekking wordt uitgevoerd; het resultaat is bijgevoegd bij de
+   relevante taak of invoer wanneer deze is voltooid.
+
+Het beschikbare menu verandert afhankelijk van de context:
+
+- taken kunnen tekst- en taakcontextacties bieden;
+- audio-inzendingen kunnen transcriptie en audiobewuste acties bieden;
+- afbeeldingen kunnen visuele analyse bieden; en
+- tekstinvoer kan prompt- of generatieacties bieden die tekst accepteren.
+
+Sommige vaardigheden hebben een gekoppelde taak nodig omdat ze een bredere taakcontext lezen of schrijven
+hun resultaat terug naar die taak. Als een actie ontbreekt, controleer dan eerst de invoer
+type en taakkoppeling en controleer vervolgens of het actieve inferentieprofiel een model voor heeft
+het vereiste vermogen.
+
+## Modeloverschrijvingen zijn tijdelijk
+
+Wanneer een vaardigheid een modelkiezer biedt, is die keuze van toepassing op de huidige
+aanroeping. Het herschrijft niet stilzwijgend de categorie standaard of gevolgtrekking
+profiel. Om de normale route te wijzigen, bewerkt u het profiel onder
+[Modellen en gevolgtrekkingsprofielen](./models-and-profiles.mdx).
+
+## Behandel de gegenereerde uitvoer als een concept
+
+Bekijk gegenereerde aanwijzingen, samenvattingen, transcripties, beeldanalyse en illustraties
+voordat u erop vertrouwt. Taakcontext kan onvolledig zijn, providers kunnen terugkeren
+onjuiste uitvoer, en een capabel model kan nog steeds een zeer ernstig misverstand verkeerd begrijpen
+sardine noodgeval.

@@ -9094,6 +9094,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Tchèque';
 
   @override
+  String get settingsManualLanguageDutchTitle => 'Néerlandais';
+
+  @override
   String get settingsManualLanguageEnglishTitle => 'Anglais';
 
   @override

@@ -1,0 +1,9 @@
+{
+  "version.label": {"message": "Huidig", "description": "The label for version current"},
+  "sidebar.manualSidebar.category.Start here": {"message": "Begin hier", "description": "The label for category 'Start here' in sidebar 'manualSidebar'"},
+  "sidebar.manualSidebar.category.Plan & capture": {"message": "Plannen en vastleggen", "description": "The label for category 'Plan & capture' in sidebar 'manualSidebar'"},
+  "sidebar.manualSidebar.category.Organize & reflect": {"message": "Organiseren en reflecteren", "description": "The label for category 'Organize & reflect' in sidebar 'manualSidebar'"},
+  "sidebar.manualSidebar.category.AI & automation": {"message": "AI en automatisering", "description": "The label for category 'AI & automation' in sidebar 'manualSidebar'"},
+  "sidebar.manualSidebar.category.Sync & data": {"message": "Synchronisatie en gegevens", "description": "The label for category 'Sync & data' in sidebar 'manualSidebar'"},
+  "sidebar.manualSidebar.category.Reference": {"message": "Naslagwerk", "description": "The label for category 'Reference' in sidebar 'manualSidebar'"}
+}

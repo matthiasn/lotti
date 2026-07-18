@@ -1,0 +1,83 @@
+---
+title: Audio opnemen
+description: Leg een spraaknotitie vast en beslis welke geautomatiseerde verwerking moet volgen.
+---
+
+# Audio opnemen
+
+Audio is handig wanneer spreken sneller gaat dan typen of wanneer toon en detail aanwezig zijn
+kwestie. Een opname kan op zichzelf staan ​​of binnen een taak bestaan.
+
+## Maak een opname
+
+1. Open het journaal of de taak die eigenaar moet zijn van de opname.
+2. Gebruik de actie **+** en kies **Audio-opname**.
+3. Bekijk de beschikbare verwerkingsopties.
+4. Start de opname, spreek duidelijk en stop wanneer u klaar bent.
+
+<ManualScreenshot
+  caseId="recordings/active"
+  alt="Actieve audio-opnameblad met de live visualisatie, verstreken tijd, pauze, weggooien, stoppen, en spraakherkenning controles"
+/>
+
+Tijdens het vastleggen houdt het blad de verstreken tijd bij en de visualisatie van live-invoer
+bekijken. U kunt pauzeren en hervatten zonder de opname te beëindigen, de opname weggooien,
+of kies **Stop** om het op te slaan. Wanneer taakbewuste transcriptie beschikbaar is, wordt de
+De optie **Spraakherkenning** bepaalt of de verwerking daarna moet beginnen
+de opname wordt opgeslagen.
+
+Wanneer een inferentieprofiel en transcriptievaardigheid zijn geconfigureerd, kan Lotti dat doen
+transcribeer de opname na opname. Taakopnames kunnen ook bieden
+taakbewuste verwerking zoals checklist- of samenvattingsupdates.
+
+## Dicteer nuttige taakcontext
+
+Voor taakbewuste verwerking: zeg de uitkomst en benoem vervolgens concrete acties,
+mensen, data of beperkingen. 'Bevestig het vrachtvenster op vrijdag en vraag het dan
+Mission Control over de goedkeuring van de lancering” geeft Lotti een veel nuttiger context
+dan ‘het pinguïngedoe uitzoeken’. Ook een korte pauze tussen verschillende acties
+maakt het resulterende transcript gemakkelijker te beoordelen.
+
+Taakbewuste verwerking kan die opname omzetten in een transcriptie, een vernieuwde versie
+rapport of checklistsuggesties. Dit zijn controleerbare AI-resultaten, geen claim
+dat de taak vanzelf veranderde: controleer vooraf namen, datums en voorgestelde wijzigingen
+jij accepteert ze. Ga voor moeilijke audio naar een rustigere plek, bewaar de
+microfoon redelijk dichtbij en spreek in een natuurlijk, gestaag tempo.
+
+## Bekijk opgeslagen transcripties
+
+Open een audio-item, gebruik het *…**-menu ervan en kies **Spraakherkenning**.
+Het beoordelingsblad bewaart elk opgeslagen transcript bij de opname in plaats van
+ter vervanging van een eerder resultaat. Elke rij laat zien wanneer de verwerking is uitgevoerd en hoe lang deze heeft geduurd
+nam, de gedetecteerde taal en de aanbieder en het model dat deze produceerde.
+
+<ManualScreenshot
+  caseId="recordings/transcripts"
+  alt="Speech Recognition sheet over een Project Waddle audio-invoer met Engels geselecteerd en twee opgeslagen transcript resultaten van Mistral en Whisper"
+  caption="De bronopname blijft zichtbaar achter het blad, terwijl elke herkenningsuitslag zijn eigen herkomst behoudt."
+/>
+
+De taalkiezer biedt momenteel **Auto**, **Engels** en **Deutsch**.
+Gebruik **Auto** wanneer de provider de taal moet detecteren, of selecteer een taal
+voordat u de herkenning uitvoert als u dit al weet. De keuze wordt opgeslagen op
+de audio-invoer.
+
+Selecteer de dubbele punthaak op een resultaat om de volledige, selecteerbare tekst weer te geven.
+Als u een rij uitbreidt, wordt ook de verwijderactie ervan zichtbaar. Als u een transcript verwijdert, wordt het verwijderd
+dat herkenningsresultaat, niet de bronopname of de andere transcripties.
+
+<ManualScreenshot
+  caseId="recordings/transcript-expanded"
+  alt="Uitgebreide Project Waddle transcript waarin Europa sardine lading, 37 keizerpinguïns, en de nul zwaartekracht vis feeder worden beschreven"
+  caption="Bekijk de volledige formulering en herkomst van de aanbieder alvorens gegenereerde tekst als taakcontext te gebruiken."
+/>
+
+## Kies bewust voor automatisering
+
+Verwerkingsopties zijn verzoeken om geconfigureerde AI-vaardigheden. De geselecteerde aanbieder
+kan lokaal of op afstand zijn, dus controleer het actieve inferentieprofiel voordat u het gebruikt
+gevoelig materiaal. Beoordeel de gegenereerde tekst en voorgestelde taakwijzigingen in plaats van
+behandelen ze als bronwaarheid.
+
+Zie [AI provider instellen](../ai-and-automation/provider-setup.mdx) om te bepalen waar
+gevolgtrekking loopt.

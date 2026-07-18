@@ -9008,6 +9008,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Tcheco';
 
   @override
+  String get settingsManualLanguageDutchTitle => 'Holandês';
+
+  @override
   String get settingsManualLanguageEnglishTitle => 'Inglês';
 
   @override

@@ -9037,6 +9037,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Čeština';
 
   @override
+  String get settingsManualLanguageDutchTitle => 'Nizozemština';
+
+  @override
   String get settingsManualLanguageEnglishTitle => 'Angličtina';
 
   @override

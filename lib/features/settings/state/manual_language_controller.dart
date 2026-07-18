@@ -20,6 +20,7 @@ enum ManualLanguage {
   italian('it'),
   spanish('es'),
   czech('cs'),
+  dutch('nl'),
   romanian('ro'),
   portuguese('pt');
 
@@ -54,10 +55,7 @@ ManualLanguage manualLanguageForSystemLocale(Locale systemLocale) {
 ///
 /// A `null` override follows [systemLocale]. English intentionally remains on
 /// the default route; translated manuals add their locale segment.
-Uri manualUriFor({
-  required Locale systemLocale,
-  ManualLanguage? override,
-}) {
+Uri manualUriFor({required Locale systemLocale, ManualLanguage? override}) {
   final language = override ?? manualLanguageForSystemLocale(systemLocale);
   final localeSegment = language == ManualLanguage.english
       ? ''

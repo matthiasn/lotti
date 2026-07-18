@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1052]
+### Added
+- **Dutch is now available across Lotti and its Manual.** The app follows
+  Dutch system locales, and the published Manual now has a Dutch route with
+  matching localized screenshots. Settings → Advanced → Language can also
+  select Dutch explicitly.
+
 ### Fixed
 - **Audio transcripts respect the automatic-updates switch.** Finishing an
   audio transcription — locally or synced from another device — no longer

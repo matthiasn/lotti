@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'manual_screenshot_czech_text.dart';
+import 'manual_screenshot_dutch_text.dart';
 import 'manual_screenshot_french_text.dart';
 import 'manual_screenshot_italian_text.dart';
 import 'manual_screenshot_locale.dart';
@@ -17,54 +18,60 @@ void main() {
         const Locale('en'),
       );
       expect(
-        manualScreenshotLocaleFromEnvironment(
-          const {'LOTTI_MANUAL_LOCALE': 'de'},
-        ),
+        manualScreenshotLocaleFromEnvironment(const {
+          'LOTTI_MANUAL_LOCALE': 'de',
+        }),
         const Locale('de'),
       );
       expect(
-        manualScreenshotLocaleFromEnvironment(
-          const {'LOTTI_MANUAL_LOCALE': 'cs'},
-        ),
+        manualScreenshotLocaleFromEnvironment(const {
+          'LOTTI_MANUAL_LOCALE': 'cs',
+        }),
         const Locale('cs'),
       );
       expect(
-        manualScreenshotLocaleFromEnvironment(
-          const {'LOTTI_MANUAL_LOCALE': 'fr'},
-        ),
+        manualScreenshotLocaleFromEnvironment(const {
+          'LOTTI_MANUAL_LOCALE': 'nl',
+        }),
+        const Locale('nl'),
+      );
+      expect(
+        manualScreenshotLocaleFromEnvironment(const {
+          'LOTTI_MANUAL_LOCALE': 'fr',
+        }),
         const Locale('fr'),
       );
       expect(
-        manualScreenshotLocaleFromEnvironment(
-          const {'LOTTI_MANUAL_LOCALE': 'it'},
-        ),
+        manualScreenshotLocaleFromEnvironment(const {
+          'LOTTI_MANUAL_LOCALE': 'it',
+        }),
         const Locale('it'),
       );
       expect(
-        manualScreenshotLocaleFromEnvironment(
-          const {'LOTTI_MANUAL_LOCALE': 'ro'},
-        ),
+        manualScreenshotLocaleFromEnvironment(const {
+          'LOTTI_MANUAL_LOCALE': 'ro',
+        }),
         const Locale('ro'),
       );
       expect(
-        manualScreenshotLocaleFromEnvironment(
-          const {'LOTTI_MANUAL_LOCALE': 'pt'},
-        ),
+        manualScreenshotLocaleFromEnvironment(const {
+          'LOTTI_MANUAL_LOCALE': 'pt',
+        }),
         const Locale('pt'),
       );
       expect(
-        manualScreenshotLocaleFromEnvironment(
-          const {'LOTTI_MANUAL_LOCALE': 'es'},
-        ),
+        manualScreenshotLocaleFromEnvironment(const {
+          'LOTTI_MANUAL_LOCALE': 'es',
+        }),
         const Locale('es'),
       );
     });
 
     test('rejects unsupported screenshot locales', () {
       expect(
-        () => manualScreenshotLocaleFromEnvironment(
-          const {'LOTTI_MANUAL_LOCALE': 'nl'},
-        ),
+        () => manualScreenshotLocaleFromEnvironment(const {
+          'LOTTI_MANUAL_LOCALE': 'sv',
+        }),
         throwsArgumentError,
       );
     });
@@ -75,6 +82,14 @@ void main() {
         'Zkontrolovat orbitální obydlí tučňáků',
       );
       expect(manualScreenshotCzechText('Unknown fixture'), isNull);
+    });
+
+    test('Dutch fixture catalog localizes representative demo copy', () {
+      expect(
+        manualScreenshotDutchText('Inspect orbital penguin habitat'),
+        'Inspecteer het orbitale pinguïnverblijf',
+      );
+      expect(manualScreenshotDutchText('Unknown fixture'), isNull);
     });
 
     test('French fixture catalog localizes representative demo copy', () {
@@ -117,10 +132,8 @@ void main() {
       expect(manualScreenshotItalianText('Unknown fixture'), isNull);
     });
 
-    test(
-      'French fixture catalog localizes multiline agent reports',
-      () {
-        const report = '''
+    test('French fixture catalog localizes multiline agent reports', () {
+      const report = '''
 ## Latest assessment
 
 - Pressure seals A–F stayed stable across the night shift.
@@ -131,11 +144,10 @@ void main() {
 
 Run the feeder test, attach the telemetry image, then request launch approval.''';
 
-        expect(
-          manualScreenshotFrenchText(report),
-          startsWith('## Dernière évaluation'),
-        );
-      },
-    );
+      expect(
+        manualScreenshotFrenchText(report),
+        startsWith('## Dernière évaluation'),
+      );
+    });
   });
 }

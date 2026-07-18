@@ -1,0 +1,126 @@
+---
+title: Routewerk met modellen en profielen
+description: Beschrijf de modelmogelijkheden één keer en gebruik vervolgens gevolgtrekkingsprofielen om het genereren van denken, visie, audio en afbeeldingen te sturen.
+---
+
+# Routewerk met modellen en profielen
+
+Een provider vertelt Lotti waar ze verbinding moet maken. Een model registreert één providermodel-ID
+en zijn mogelijkheden. Een gevolgtrekkingsprofiel wijst deze modellen vervolgens toe aan de
+banen Lotti begrijpt het. Hierdoor blijft “welk model verwerkt audio?” uit elke
+individuele taak en automatiseringsregel.
+
+## Bekijk opgeslagen modellen
+
+Open **Instellingen → AI-instellingen → Modellen**. De lijst groepeert modellen per provider
+en legt mogelijkhedenfilters bloot voor tekst, visie, audio en redenering.
+
+<ManualScreenshot
+  caseId="ai/models"
+  alt="Lotti AI modellijst met Project Waddle tekst, redeneren, visie, transcriptie, en beeld-generatie modellen"
+  caption="De Project Waddle werkruimte mixt cloud- en lokale modellen en houdt de mogelijkheden van elk model expliciet."
+/>
+
+Het besturingselement **Gelijktijdig ontwaken** bovenaan de AI-instellingen beperkt de manier waarop
+veel verschillende agenten kunnen tegelijk gevolgtrekkingen maken. Een hogere waarde kan verbeteren
+doorvoer, maar het verhoogt ook gelijktijdige providerverzoeken en lokaal
+apparaat belasting. Houd het conservatief als een aanbieder strikte tarieflimieten hanteert of een
+lokale modelserver heeft beperkt geheugen.
+
+## Een model toevoegen of bewerken
+
+Selecteer een modelkaart of gebruik **++** om er een toe te voegen. Een modeldefinitie omvat:
+
+- de provideraansluiting;
+- een gebruiksvriendelijke weergavenaam en optionele beschrijving;
+- het exacte model-ID van de aanbieder;
+- de maximale voltooiingstokenlimiet;
+- input- en outputmodaliteiten; en
+- vaardigheidsvlaggen zoals redeneren of functieaanroepen.
+
+<ManualScreenshot
+  caseId="ai/model-editor"
+  alt="Lotti model editor voor Waddle Command 70B tonen provider, provider model ID, voltooiing limiet, modaliteiten, en redeneren vermogen"
+  caption="Capaciteitsmetadata is belangrijk: Lotti gebruikt het om te bepalen welke modellen in aanmerking komen voor elk profielslot en eenmalige picker."
+/>
+
+Gebruik de exacte identificatie die de provider verwacht. De weergavenaam is alleen voor
+mensen; Als u dit wijzigt, verandert niets aan wat de provider uitvoert. Claim geen imago,
+audio-, tool- of redeneringsondersteuning, tenzij dat model en eindpunt daadwerkelijk bestaan
+geef het.
+
+## Bouw een gevolgtrekkingsprofiel
+
+Open **Instellingen → AI-instellingen → Inferentieprofielen**. Elk profiel is herbruikbaar
+routeringsbeleid. In het overzicht ziet u welk model elk geconfigureerd slot bedient.
+
+<ManualScreenshot
+  caseId="ai/profiles"
+  alt="Lotti-inferentieprofielen voor Project Waddle Command, Habitat Local-First en Fish Diplomacy met hun gerouteerde modellen"
+  caption="Profielen kunnen voor verschillende grenzen optimaliseren: een breed cloudprofiel, een lokaal profiel alleen voor desktops, of een gespecialiseerd redeneerprofiel."
+/>
+
+Bewerk een profiel om modellen toe te wijzen voor de mogelijkheden die u gebruikt:
+
+- **Denken** is het vereiste algemene tekstmodel.
+- **Denken (High-End)** kan werk aan dat expliciet om meer vraagt
+  capabel redeneerpad.
+- **Beeldherkenning** analyseert afbeeldingen.
+- **Transcriptie** converteert audio naar tekst.
+- **Afbeelding genereren** creëert taakillustraties en andere gegenereerde afbeeldingen. Het
+  huidige ingebouwde pad voor het genereren van afbeeldingen maakt gebruik van een geconfigureerde externe provider, dus
+  kies die aanbieder en de referenties die u opstuurt met dezelfde zorg als alle andere
+  andere cloud-inferentieroute.
+
+<ManualScreenshot
+  caseId="ai/profile-editor"
+  alt="Project Waddle Command profiel editor toewijzen denken, high-end redeneren, beeld-herkenning, transcriptie, en beeld-generatie modellen"
+  caption="Eén profiel routes elke Project Waddle modaliteit zonder modelkeuzes over taken te herhalen."
+/>
+
+**Alleen desktop** verbergt een profiel op mobiele platforms, wat handig is wanneer dit het geval is
+hangt af van een model dat alleen bereikbaar is vanaf een werkstation. Apparaat vastzetten is voor
+geautomatiseerde gesynchroniseerde audioverwerking: alleen vastzetten wanneer het geselecteerde apparaat adverteert
+de providers die nodig zijn voor het profiel. Als er geen vastgezet apparaat is, is er geen gesynchroniseerde audio
+automatisch getranscribeerd door dat profiel.
+
+## Kies een model zonder ID's te onthouden
+
+Modelkiezers beginnen bij de aanbieder en tonen alleen compatibele opgeslagen modellen.
+De kiezer in een profielslot biedt bijvoorbeeld geen model met alleen audio
+voor tekstredenering.
+
+<ManualScreenshot
+  caseId="ai/model-picker"
+  alt="Lotti Kies een model modal listing OpenRouter, Ollama en Google Gemini providers via de Project Waddle profiel editor"
+  caption="Kies eerst de provider; Lotti vernauwt vervolgens de volgende pagina naar in aanmerking komende modellen van die verbinding."
+/>
+
+## Stel een standaardcategorie in
+
+Een categorie kan een standaardinferentieprofiel kiezen onder **Instellingen →
+Definities → Categorieën**. Nieuw werk in die categorie kan dan a. erven
+coherent routeringsbeleid. Selecteer het profiel waarvan de privacy en mogelijkheden samenkomen
+overeenkomt met de categorie in plaats van uitsluitend op snelheid te kiezen.
+
+<ManualScreenshot
+  caseId="ai/profile-picker"
+  alt="Penguin Operations categorie editor met een modal offering Project Waddle Command, Habitat Local-First, en Fish Diplomacy profielen"
+  caption="De alleen-desktop badge maakt platform beperkingen zichtbaar voordat een categorie standaard is geselecteerd."
+/>
+
+## Verouderde profielroute
+
+De oudere, zelfstandige **Inference Profiles**-route blijft beschikbaar voor
+compatibiliteit en bewerkt dezelfde opgeslagen profielrecords. Het legt innerlijk bloot
+model-ID's en biedt minder afhankelijkheidscontext dan AI-instellingen, dus geef de voorkeur aan de
+huidige pagina **AI-instellingen → Inferentieprofielen** voor normaal onderhoud.
+
+<ManualScreenshot
+  caseId="ai/legacy-profiles"
+  alt="Legacy Lotti Inferentie Profielen pagina met Project Waddle profiel slots als interne model identificatie"
+  caption="Gebruik dit compatibiliteitsscherm alleen wanneer een oudere link u daar brengt; de huidige AI-instellingen profielkaarten zijn gemakkelijker te controleren."
+/>
+
+Ga verder met [AI-vaardigheden](./skills.mdx) om te zien hoe het geselecteerde profiel wordt
+een actie op een taak of item.
