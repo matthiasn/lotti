@@ -36,6 +36,7 @@
     <release version="0.9.1054" date="2026-07-18">
       <description>
         <p>Screen-reader controls now expose one clear actionable announcement with their label and state. New accessibility labels are also available in Danish, Swedish, and Dutch.</p>
+        <p>Matrix sync now finishes catching up after reconnecting during a large burst, even on poor networks. Reconnected devices recover every missed entry instead of stopping after a partial server page.</p>
       </description>
     </release>
     <release version="0.9.1053" date="2026-07-18">

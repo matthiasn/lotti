@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   announcement.** Back, overflow, chart-baseline, and entry-collapse controls
   retain their labels, actions, and state without duplicate speech; new
   accessibility labels are available in Danish, Swedish, and Dutch.
+- **Matrix sync now finishes catching up after reconnecting during a large
+  burst, even on poor networks.** Reconnected devices recover every missed
+  entry instead of stopping after a partial server page.
 
 ## [0.9.1053]
 ### Added
