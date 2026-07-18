@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
+import 'package:lotti/utils/device_region.dart';
 
 import '../../../../test_helper.dart';
 
@@ -42,6 +43,65 @@ void main() {
     expect(result?.date, DateTime(2025, 6, 16));
     expect(result?.cleared, isFalse);
   });
+
+  for (final scenario in [
+    (
+      name: 'German locale',
+      locale: const Locale('de', 'DE'),
+      firstDayOfWeekIndex: DateTime.monday % 7,
+      weekdayLabels: const ['M', 'D', 'M', 'D', 'F', 'S', 'S'],
+      dayOneColumn: 6,
+    ),
+    (
+      name: 'US locale',
+      locale: const Locale('en', 'US'),
+      firstDayOfWeekIndex: DateTime.sunday % 7,
+      weekdayLabels: const ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+      dayOneColumn: 0,
+    ),
+    (
+      name: 'English UI with a German region',
+      locale: const Locale('en', 'US'),
+      firstDayOfWeekIndex: DateTime.monday % 7,
+      weekdayLabels: const ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+      dayOneColumn: 6,
+    ),
+  ]) {
+    testWidgets(
+      '${scenario.name} orders the weekday header and month grid regionally',
+      (tester) async {
+        await _pumpLauncher(
+          tester,
+          locale: scenario.locale,
+          firstDayOfWeekIndex: scenario.firstDayOfWeekIndex,
+          onPressed: (context) => showDesignSystemDatePicker(
+            context: context,
+            title: 'Target date',
+            initialDate: DateTime(2025, 6, 15),
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2030),
+          ),
+        );
+        await tester.pump();
+
+        final headerCells = _weekdayHeaderCells(tester);
+        expect(
+          headerCells.map((cell) => cell.label),
+          scenario.weekdayLabels,
+        );
+
+        final dayOne = find.descendant(
+          of: find.byType(CalendarDatePicker),
+          matching: find.text('1'),
+        );
+        expect(dayOne, findsOneWidget);
+        expect(
+          tester.getCenter(dayOne).dx,
+          closeTo(headerCells[scenario.dayOneColumn].dx, 0.1),
+        );
+      },
+    );
+  }
 
   testWidgets('optional Clear is distinct from dismissing the modal', (
     tester,
@@ -156,9 +216,18 @@ void main() {
 Future<void> _pumpLauncher(
   WidgetTester tester, {
   required Future<void> Function(BuildContext context) onPressed,
+  Locale? locale,
+  int? firstDayOfWeekIndex,
 }) async {
   await tester.pumpWidget(
     WidgetTestBench(
+      locale: locale,
+      overrides: [
+        if (firstDayOfWeekIndex != null)
+          firstDayOfWeekIndexProvider.overrideWith(
+            (ref) async => firstDayOfWeekIndex,
+          ),
+      ],
       child: Builder(
         builder: (context) => ElevatedButton(
           onPressed: () => onPressed(context),
@@ -170,4 +239,38 @@ Future<void> _pumpLauncher(
   await tester.tap(find.text('Open picker'));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
+}
+
+List<({String label, double dx})> _weekdayHeaderCells(WidgetTester tester) {
+  final textElements = find
+      .descendant(
+        of: find.byType(CalendarDatePicker),
+        matching: find.byType(Text),
+      )
+      .evaluate();
+  final singleCharacterCells = <({String label, Offset center})>[];
+
+  for (final element in textElements) {
+    final text = element.widget as Text;
+    final label = text.data;
+    if (label == null || label.runes.length != 1) continue;
+    final renderBox = element.renderObject! as RenderBox;
+    singleCharacterCells.add((
+      label: label,
+      center: renderBox.localToGlobal(renderBox.size.center(Offset.zero)),
+    ));
+  }
+
+  final headerY = singleCharacterCells
+      .map((cell) => cell.center.dy)
+      .reduce((a, b) => a < b ? a : b);
+  final headerCells =
+      singleCharacterCells
+          .where((cell) => (cell.center.dy - headerY).abs() < 0.1)
+          .map((cell) => (label: cell.label, dx: cell.center.dx))
+          .toList()
+        ..sort((a, b) => a.dx.compareTo(b.dx));
+
+  expect(headerCells, hasLength(7));
+  return headerCells;
 }
