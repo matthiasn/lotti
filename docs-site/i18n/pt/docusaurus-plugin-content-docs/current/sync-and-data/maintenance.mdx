@@ -1,14 +1,15 @@
 ---
 title: Manutenção de sincronização
-description: Use ações de reparo e limpeza de sincronização da Matrix deliberadamente, desde o reenvio de registros até a reconstrução do histórico de sequência.
+description: Use as ações de reparo e limpeza da sincronização Matrix deliberadamente, do reenvio de registros à reconstrução do histórico de sequência.
 ---
 
 # Manutenção de sincronização
 
-Abra **Configurações → Sincronização → Manutenção** para reparo e limpeza no nível do banco de dados.
-Essas ações não fazem parte do emparelhamento de rotina ou da sincronização diária.
-Antes de usá-los, deixe as gravações ativas terminarem e mantenha um backup atual dos dados
-você não pode recriar.
+Abra **Configurações → Sincronização → Manutenção** para reparo e limpeza no
+nível do banco de dados. Essas ações não fazem parte do emparelhamento de
+rotina nem da sincronização do dia a dia. Antes de usá-las, deixe as gravações
+ativas terminarem e mantenha um backup atualizado dos dados que você não
+consegue recriar.
 
 <ManualScreenshot
   caseId="sync/maintenance"
@@ -18,23 +19,27 @@ você não pode recriar.
 
 ## Escolha o reparo mais estreito
 
-- **Excluir banco de dados de sincronização** remove o banco de dados de sincronização local. Isso é destrutivo
-  recuperação local, não uma maneira normal de desconectar um dispositivo.
+- **Excluir banco de dados de sincronização** remove o banco de dados de
+  sincronização local. Isso é uma recuperação local destrutiva, não uma forma
+  normal de desconectar um dispositivo.
 - **Sincronizar definições** envia novamente os registros de definição atuais, como
   categorias e outras configurações compartilhadas.
 - **Ressincronizar mensagens** reproduz mensagens selecionadas quando o estado remoto está ausente
   ou uma entrega anterior precisa ser repetida.
-- **Popular log de sequência** reconstrói o histórico de sequência local usado para
-  detectar lacunas e impulsionar o preenchimento.
-- **Limpar itens antigos da caixa de saída enviados** exclui o histórico da fila de diagnóstico já enviado
-  após o seu período de retenção. Ele não remove trabalhos pendentes ou com falha.
+- **Popular log de sequência** reconstrói o histórico de sequência local usado
+  para detectar lacunas e acionar o preenchimento.
+- **Limpar itens antigos da caixa de saída enviados** exclui o histórico já
+  enviado da fila de diagnóstico após o período de retenção. Não remove
+  trabalhos pendentes nem com falha.
 
 Comece com a menor operação que corresponda ao sintoma. Um anexo preso
-pertence à [Caixa de saída](./sync.mdx#inspecione-a-caixa-de-saída); lacunas de sequência persistentes
-pertencem ao Backfill; duas edições simultâneas válidas pertencem a
-[Conflitos](./conflicts.mdx). A exclusão do banco de dados de sincronização deve ser o último recurso
-redefinição local realizada com um par em bom estado e backup disponível.
+pertence à [Caixa de saída](./sync.mdx#inspecione-a-caixa-de-saída); lacunas
+de sequência persistentes pertencem ao Backfill; duas edições simultâneas
+válidas pertencem a [Conflitos](./conflicts.mdx). A exclusão do banco de dados
+de sincronização deve ser uma redefinição local de último recurso, realizada
+com um par em bom estado e um backup disponível.
 
-Após um reparo, retorne para **Sincronizar estatísticas**, confirme se o trabalho processado foi
-avançando sem uma contagem crescente de falhas e verifique se a Caixa de saída e
-Aterramento de liquidação de contagem faltante.
+Após um reparo, retorne a **Sincronizar estatísticas**, confirme que o
+trabalho processado está avançando sem uma contagem crescente de falhas e
+verifique se a Caixa de saída e a contagem de ausentes do Preenchimento se
+estabilizam.

@@ -13,7 +13,7 @@ Ende-zu-Ende-verschlüsselte Nutzdaten zwischen deinen Geräten weiter, während
 jedes Gerät seine eigene lokale Kopie behält.
 
 Öffne **Einstellungen → Synchronisierung** für Einrichtung, Gesundheit und
-Wiederherstellung. Die Zahl bei **Sync-Postausgang** sind Änderungen, die den
+Wiederherstellung. Die Zahl bei **Sync-Postausgang** zählt Änderungen, die den
 Sync-Dienst noch nicht erreicht haben.
 
 <ManualScreenshot
@@ -32,7 +32,8 @@ Beginne auf einem bereits verbundenen Gerät:
 3. Öffne auf dem neuen Gerät dieselbe Seite und scanne den QR-Code oder füge
    das vollständige Bereitstellungspaket ein.
 4. Prüfe Server, Benutzer und Raum vor **Importieren**.
-5. Lass die erste Synchronisierung enden, bevor du eine App schließt.
+5. Warte, bis die erste Synchronisierung abgeschlossen ist, bevor du eine App
+   schließt.
 
 <ManualScreenshot
   caseId="sync/status"
@@ -61,8 +62,8 @@ Zwischengerät miteinander sprechen.
 />
 
 Vergleiche persönlich oder über einen vertrauenswürdigen Anruf. Wähle auf
-beiden Geräten **Akzeptieren** nur bei vollständiger Übereinstimmung. Bei einer
-Abweichung abbrechen und Konto sowie Gerätenamen prüfen.
+beiden Geräten **Akzeptieren** nur bei vollständiger Übereinstimmung. Brich
+bei einer Abweichung ab und prüfe Konto sowie Gerätenamen.
 
 ## Geräte benennen und Fähigkeiten melden
 
@@ -82,7 +83,6 @@ verwenden.
 
 ## Aufholen und Nachfüllung verstehen
 
-Lücken in Sequenzen bekannter Geräte und fordert Datensätze erneut an.
 Normaler Sync verarbeitet eintreffende Änderungen. **Nachfüllung** erkennt
 Lücken in Sequenzen bekannter Geräte und fordert fehlende Datensätze erneut an.
 
@@ -102,8 +102,8 @@ Lücken in Sequenzen bekannter Geräte und fordert fehlende Datensätze erneut a
   sich zu beruhigen.
 
 Eine fehlende Zahl ist nicht automatisch Datenverlust: Ein Gerät kann offline
-oder die Anfrage unterwegs sein. Untersuche, wenn der Wert bei allen online
-erwarteten Geräten unverändert bleibt.
+oder die Anfrage unterwegs sein. Untersuche erst, wenn der Wert unverändert
+bleibt, obwohl alle erwarteten Geräte online sind.
 
 ## Synchronisierungsstatistik lesen
 
@@ -120,8 +120,9 @@ Konto aber weiterhin als verbunden angezeigt wird.
 Die Karte gesendeter Nachrichten gruppiert Matrix-Ereignistypen. Die
 **KPI-Übersicht** fasst verarbeitete Nachrichten, Fehler und geplante
 Wiederholungen zusammen; Elementsummen zeigen Lotti-Nutzlastfamilien. Steigende
-Verarbeitung bei stabilen Fehlern ist gesund. Wiederholte Fehler oder nie
-endende Wiederholungen führen zum Postausgang und zur Verbindung anderer Geräte.
+Verarbeitung bei stabilen Fehlern ist gesund. Bei wiederholten Fehlern oder
+nie endenden Wiederholungen schaust du in den Postausgang und prüfst die
+Verbindung der anderen Geräte.
 
 ## Den Ausgang prüfen
 
@@ -134,14 +135,14 @@ Filtere nach Zustand.
   caption="Fehler bewahren Betreff, Nutzlast, Versuchshistorie und lokalen Anhangspfad für gezielte Wiederherstellung."
 />
 
-- **Ausstehend** wartet auf die Reihe.
+- **Ausstehend** wartet, bis es an der Reihe ist.
 - **Wird gesendet** ist unterwegs.
 - **Fehlgeschlagen** hat Versuche erschöpft und bleibt prüfbar.
-- **Gesendet** wurde zugestellt und kurz für Diagnose behalten.
+- **Gesendet** wurde zugestellt und bleibt kurz für die Diagnose sichtbar.
 
 Verwende **Alle erneut senden**, nachdem Verbindung oder Konto repariert
 sind. Entferne einen Fehler nur, wenn die Änderung bewusst nie andere Geräte
 erreichen soll. Das ersetzt keine Reparatur des lokalen Eintrags oder Anhangs.
 
-Bei parallelen Änderungen geht es zu [Konflikten](./conflicts.mdx), für
-Datenbankwerkzeuge zur [Sync-Wartung](./maintenance.mdx).
+Parallele Änderungen behandelt die Seite zu [Konflikten](./conflicts.mdx);
+Datenbankwerkzeuge findest du unter [Sync-Wartung](./maintenance.mdx).

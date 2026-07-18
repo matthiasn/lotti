@@ -32,14 +32,15 @@ publiquen silenciosamente como copias sin traducir. Las URL públicas en inglés
 cambian; los otros idiomas se publican bajo su propio prefijo de idioma
 versionado.
 
-## Mantén autoritario el inventario de cobertura
+## Mantén el inventario de cobertura como fuente autorizada
 
 El inventario define el límite del manual en inglés para V1: cada página Beamer,
 cada hoja o editor de Settings V2 y cada flujo de trabajo importante que crea o
-cambia materialmente datos o configuración transversal. Cada entrada registra su
-archivo fuente propietario y un ancla de texto fuente. La validación falla si
-cualquiera de ellos desaparece, lo que obliga a que un cambio de ruta o interfaz
-actualice la auditoría del manual en vez de dejar una fila obsoleta invisible.
+cambia materialmente datos o configuración transversal. Cada entrada registra
+el archivo fuente al que pertenece y un ancla de texto fuente. La validación
+falla si cualquiera de ellos desaparece, lo que obliga a que un cambio de ruta
+o interfaz actualice la auditoría del manual en vez de dejar una fila obsoleta
+invisible.
 
 Los estados de cobertura tienen significados deliberadamente estrictos:
 
@@ -70,7 +71,7 @@ recuentos restantes sin bloquear confirmaciones por tema.
 
 Cada captura de la aplicación de una página creada debe usar
 `ManualScreenshot`. Los enlaces directos a imágenes antiguas de `lotti-docs`
-fallan la validación del manual porque no pueden seguir la elección global
+no superan la validación del manual porque no pueden seguir la elección global
 Móvil/Escritorio ni el tema claro u oscuro del manual.
 
 Cada caso automatizado debe proporcionar variantes móvil-clara, móvil-oscura,

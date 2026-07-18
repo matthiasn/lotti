@@ -27,8 +27,8 @@ marks the newest release in the current set; it does not mean every item on the
 page is unfinished or experimental.
 
 The body scrolls independently when the release is longer than the available
-height. Links use the normal Lotti link handler, and images are loaded ahead of
-page changes when available so moving between releases stays smooth.
+height. Links use the normal Lotti link handler, and images are preloaded when
+available so moving between releases stays smooth.
 
 ## Move through release history
 
@@ -47,7 +47,7 @@ Use the footer controls to navigate:
   loaded set as seen; and
 - **Done** appears on the oldest page and also marks the whole set as seen.
 
-Closing the modal by dragging it away or dismissing the surrounding barrier is
+Closing the modal by dragging it away or selecting the dimmed area around it is
 more conservative: Lotti marks only the releases you actually reached, through
 the furthest page viewed. Releases you did not reach can therefore appear the
 next time What's New opens.

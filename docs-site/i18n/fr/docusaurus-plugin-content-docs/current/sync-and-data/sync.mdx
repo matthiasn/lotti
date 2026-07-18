@@ -13,13 +13,13 @@ dans un cloud Lotti : le service Matrix configuré relaie des charges utiles
 chiffrées de bout en bout entre tes appareils, tandis que chacun conserve sa
 propre copie locale.
 
-Ouvre **Réglages → Synchronisation** pour accéder aux pages de configuration,
+Ouvre **Paramètres → Synchronisation** pour accéder aux pages de configuration,
 d’état et de récupération. Le nombre affiché à côté de **Boîte d’envoi**
 correspond au travail qui n’a pas encore atteint le service de synchronisation.
 
 <ManualScreenshot
   caseId="sync/hub"
-  alt="Réglages Lotti Sync avec synchronisation provisionnée, identité de l’appareil, rattrapage, statistiques, boîte d’envoi, conflits et maintenance"
+  alt="Paramètres Lotti Sync avec synchronisation provisionnée, identité de l’appareil, rattrapage, statistiques, boîte d’envoi, conflits et maintenance"
   caption="Le centre de synchronisation maintient l’état courant près des outils de diagnostic et de récupération. Project Waddle contient actuellement trois éléments de boîte d’envoi à examiner."
 />
 
@@ -27,7 +27,7 @@ correspond au travail qui n’a pas encore atteint le service de synchronisation
 
 Commence sur un appareil déjà connecté :
 
-1. Ouvre **Réglages → Synchronisation → Synchronisation provisionnée**.
+1. Ouvre **Paramètres → Synchronisation → Synchronisation provisionnée**.
 2. Sur ordinateur, affiche le code QR de transfert. Garde cet écran privé : le
    lot donne accès à ton compte et à ton salon de synchronisation.
 3. Sur le nouvel appareil, ouvre la même page et scanne le code QR ou colle le
@@ -101,8 +101,8 @@ redemande les enregistrements manquants.
 
 - **Entrant** est le travail actuellement en attente dans la file entrante.
 - **Manquant** est le nombre d’écarts de séquence connus.
-- **Ignoré** est le travail abandonné par la file entrante après avoir échoué à
-  être traité normalement.
+- **Ignoré** est le travail que la file entrante a abandonné après un échec du
+  traitement normal.
 - **Rattrapage automatique** redemande continuellement les écarts récupérables
   et est le bon réglage par défaut pour un usage normal.
 - **Récupération avancée** contient des contrôles manuels pour une enquête. Ne
@@ -129,7 +129,7 @@ mais que le compte paraît toujours connecté.
 La carte des messages envoyés regroupe les types d’événements Matrix. **Top
 KPI** résume les messages traités, les échecs et les nouvelles tentatives
 planifiées, tandis que les totaux d’entités montrent quelles familles de
-charges utiles Lotti ont contribué à ce travail. Un nombre de messages traités
+charges utiles de Lotti ont contribué à ce travail. Un nombre de messages traités
 qui augmente avec des échecs stables est sain. Des échecs répétés ou des
 nouvelles tentatives qui ne se résorbent jamais demandent de vérifier la boîte
 d’envoi et la connectivité de l’autre appareil.

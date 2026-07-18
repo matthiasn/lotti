@@ -1,13 +1,14 @@
 ---
 title: Faça a manutenção deste manual
-description: O fluxo de trabalho de contribuição leve para conteúdo manual e capturas de tela.
+description: O fluxo de contribuição leve para o conteúdo do manual e as capturas de tela.
 ---
 
 # Mantenha este manual
 
-A fonte reside no repositório do aplicativo, portanto, uma mudança de comportamento e sua
-a documentação pode pousar junto. Capturas de tela geradas ao vivo no irmão
-`lotti-docs` e nunca são comprometidos com a árvore da aplicação.
+O código-fonte fica no repositório do aplicativo, para que uma mudança de
+comportamento e sua documentação possam entrar juntas. As capturas de tela
+geradas ficam no repositório irmão `lotti-docs` e nunca são adicionadas à
+árvore do aplicativo.
 
 ## Editar prosa
 
@@ -17,67 +18,73 @@ a documentação pode pousar junto. Capturas de tela geradas ao vivo no irmão
 3. Adicione uma nova página a `docs-site/sidebars.ts`.
 4. Atualize `docs-site/metadata/features.json` quando a cobertura mudar.
 5. Atualize as entradas correspondentes em
-   `docs-site/metadata/surface-inventory.json`. Uma superfície torna-se **verificada**
-   somente quando sua interface de produção atual, prosa e cobertura de captura de tela tiverem
-   tudo foi revisado.
+   `docs-site/metadata/surface-inventory.json`. Uma superfície só se torna
+   **verificada** quando sua interface de produção atual, a prosa e a
+   cobertura de capturas de tela tiverem sido todas revisadas.
 6. Execute `make manual_check`.
-7. Revise a construção de produção localmente com `make manual_serve`, incluindo o
-   seletor de idioma e todas as rotas localizadas.
+7. Revise a compilação de produção localmente com `make manual_serve`,
+   incluindo o seletor de idioma e todas as rotas localizadas.
 
-A validação exige que cada árvore de tradução publicada contenha a mesma página
-caminhos como a árvore de origem em inglês. Também rejeita corpos de páginas traduzidos que
-são idênticos ao inglês, portanto, novas páginas não podem ser enviadas silenciosamente como não traduzidas
-cópias. Os URLs públicos em inglês permanecem inalterados; outras línguas são
-publicado abaixo de seu próprio prefixo de localidade com versão.
+A validação exige que cada árvore de tradução publicada contenha os mesmos
+caminhos de página que a árvore de origem em inglês. Ela também rejeita corpos
+de página traduzidos que sejam idênticos ao inglês, de modo que páginas novas
+não podem ser publicadas discretamente como cópias não traduzidas. As URLs
+públicas em inglês permanecem inalteradas; os outros idiomas são publicados
+sob seu próprio prefixo de localidade com versão.
 
-## Mantenha o inventário de cobertura oficial
+## Mantenha o inventário de cobertura como fonte oficial
 
-O inventário define os limites do manual inglês V1: cada página do Beamer, cada
-Folha ou editor de configurações V2 e todos os principais fluxos de trabalho que criam ou materialmente
-altera dados ou configuração transversal. Cada entrada registra sua propriedade
-arquivo de origem e uma âncora de texto de origem. A validação falhará se um deles desaparecer,
-o que força uma mudança de rota ou UI para atualizar a auditoria manual em vez de sair
-uma linha obsoleta invisível.
+O inventário define o limite V1 do manual em inglês: cada página do Beamer,
+cada folha ou editor das Configurações V2 e todo fluxo de trabalho importante
+que cria ou altera materialmente dados ou configurações transversais. Cada
+entrada registra o arquivo de origem responsável e uma âncora no texto-fonte.
+A validação falha se qualquer um dos dois desaparecer, o que força uma mudança
+de rota ou de interface a atualizar a auditoria do manual em vez de deixar uma
+linha obsoleta invisível.
 
 Os estados de cobertura têm significados deliberadamente estritos:
 
-- **Planejado** significa que a superfície é conhecida, mas ainda não possui cobertura completa.
-- **Documentado** significa que existe prosa útil, mas capturas de tela da produção atual
-  ou ainda falta uma revisão de precisão de ponta a ponta.
-- **Verificado** significa que a página do recurso relevante foi verificada e apoiada por
-  capturas de tela de produção registradas.
+- **Planejado** significa que a superfície é conhecida, mas ainda não tem
+  cobertura completa.
+- **Documentado** significa que existe prosa útil, mas ainda faltam capturas
+  de tela da produção atual ou uma revisão de precisão de ponta a ponta.
+- **Verificado** significa que a página do recurso relevante foi verificada e
+  está respaldada por capturas de tela de produção registradas.
 
-Execute `npm --prefix docs-site run coverage:complete` para a porta de liberação. Isso
-falha até que todas as superfícies inventariadas sejam verificadas; manual incremental comum
-compilações continuam a relatar as contagens restantes sem bloquear o tamanho do tópico
-compromete.
+Execute `npm --prefix docs-site run coverage:complete` para o gate de
+lançamento. Ele falha até que todas as superfícies inventariadas estejam
+verificadas; as compilações incrementais comuns do manual continuam informando
+as contagens restantes sem bloquear commits do tamanho de um tópico.
 
 ## Adicione um caso de captura de tela
 
-1. Adicione ou reutilize um conjunto determinístico de captura de tela do Flutter.
+1. Adicione ou reutilize um harness determinístico de capturas de tela em
+   Flutter.
 2. Registre o caso e suas quatro imagens de origem em
    `docs-site/metadata/screenshot-cases.json`.
-3. Coloque uma cópia visível do fixture atrás de `manualScreenshotText(...)` para cada
-   localidade suportada quando ainda não foi fornecida pela localização do aplicativo
-   arquivos.
-4. Capture todos os locais em `../lotti-docs`; nunca neste repositório.
+3. Coloque os textos visíveis do fixture atrás de `manualScreenshotText(...)`
+   para cada localidade suportada quando eles ainda não forem fornecidos pelos
+   arquivos de localização do aplicativo.
+4. Capture todas as localidades em `../lotti-docs`; nunca neste repositório.
 5. Gere e valide o manifesto de mídia.
-6. Consulte o caso com `<ManualScreenshot caseId="…" alt="…" />` na
+6. Referencie o caso com `<ManualScreenshot caseId="…" alt="…" />` em
    cada página de idioma.
 
-Cada captura de tela do aplicativo em uma página de autoria deve usar `ManualScreenshot`. Direto
-links para imagens `lotti-docs` antigas falham na validação manual porque não podem
-siga a escolha global Mobile/Desktop ou o tema claro/escuro do manual.
+Toda captura de tela do aplicativo em uma página escrita deve usar
+`ManualScreenshot`. Links diretos para imagens antigas do `lotti-docs` falham
+na validação do manual porque não conseguem acompanhar a escolha global
+Mobile/Desktop nem o tema claro/escuro do manual.
 
-Todo caso automatizado deve fornecer mobile-light, mobile-dark, desktop-light,
-e variantes desktop-dark em cada localidade publicada. O componente manual
-escolhe o idioma e o tema correspondentes. Alterando Mobile/Desktop em qualquer imagem
-atualiza todas as capturas de tela imediatamente e persiste nas páginas e no manual aberto
-guias.
+Todo caso automatizado deve fornecer as variantes mobile-light, mobile-dark,
+desktop-light e desktop-dark em cada localidade publicada. O componente do
+manual escolhe o idioma e o tema correspondentes. Alterar Mobile/Desktop em
+qualquer imagem atualiza todas as capturas de tela imediatamente e persiste
+entre páginas e abas abertas do manual.
 
 ## Publicar um lançamento
 
-A fonte manual não é copiada para todas as versões do aplicativo. A tag de lançamento do aplicativo já
-preserva sua origem exata. CI verifica essa tag, constrói com
-`MANUAL_VERSION=<version>`, e publica um diretório estático imutável. O
-O menu suspenso de lançamento é um pequeno manifesto desses diretórios.
+O código-fonte do manual não é copiado para cada versão do aplicativo. A tag
+de lançamento do aplicativo já preserva sua origem exata. O CI faz checkout
+dessa tag, compila com `MANUAL_VERSION=<version>` e publica um diretório
+estático imutável. O menu suspenso de versões é um pequeno manifesto desses
+diretórios.
