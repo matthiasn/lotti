@@ -58,3 +58,4 @@ Each ADR should contain:
 - [`0028-tagged-plaintext-payload-and-day-summaries.md`](./0028-tagged-plaintext-payload-and-day-summaries.md)
 - [`0029-knowledge-graph-explorer.md`](./0029-knowledge-graph-explorer.md)
 - [`0030-desktop-keyboard-command-system.md`](./0030-desktop-keyboard-command-system.md)
+- [`0031-resilient-day-planning-capture-and-processing.md`](./0031-resilient-day-planning-capture-and-processing.md)

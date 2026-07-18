@@ -401,6 +401,17 @@ sequenceDiagram
   realtime output looks truncated. Refine uses the same Mistral-preferred
   realtime path but disables the full-file batch verifier for that session so a
   reviewed Mistral transcript is not replaced by an MLX fallback.
+- **Known P1 resilience gap (current runtime).** The batch path currently calls
+  transcription before it creates the `JournalAudio`, and the realtime path
+  creates the journal row only after the realtime service finishes. The
+  day-scoped `CaptureEntity` is created later still, when the user submits a
+  non-empty reviewed transcript, and its manual parse wake lives in the
+  in-memory `WakeQueue`. A provider/network failure can therefore leave a
+  stopped file without a discoverable day entry, while an app restart can lose
+  the pending processing intent. The accepted local-first design — durable
+  audio first, a device-local processing outbox, an Activity timeline, and
+  later-invocation discovery — is specified in
+  [`2026-07-18_resilient_day_planning_capture_and_timeline.md`](../../../docs/implementation_plans/2026-07-18_resilient_day_planning_capture_and_timeline.md).
 - Capture and Refine share one **anchored voice template**: a per-phase
   headline at the top (the state narrator — "What's on your mind …", "I'm
   listening.", "Writing that down…", "Does this look right?"), a flexible
