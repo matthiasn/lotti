@@ -245,7 +245,9 @@ The verifier hits the provider's models endpoint from your machine. If you're be
 - **Smart Checklists:** dictate tasks and let AI organize them
 - **Weekly Reviews:** generate AI summaries of your accomplishments
 
-**Ready to start using voice-to-checklist?** Follow the [Basic Task Management Guide](docs/BASIC_TASK_MANAGEMENT.md) for a step-by-step walkthrough.
+**Ready to start using voice-to-checklist?** Follow the
+[task-management walkthrough](https://matthiasn.github.io/lotti/manual/development/getting-started/first-task/)
+and [recording guide](https://matthiasn.github.io/lotti/manual/development/plan-and-capture/recordings/).
 
 ← Back to [Main README](README.md)
 
