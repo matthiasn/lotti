@@ -144,11 +144,13 @@ class PersistenceLogic implements PersistenceLogicContract {
     DateTime? dateFrom,
     String? linkedId,
     String? categoryId,
+    String? id,
   }) => _entries.createAiResponseEntry(
     data: data,
     dateFrom: dateFrom,
     linkedId: linkedId,
     categoryId: categoryId,
+    id: id,
   );
 
   Future<JournalEvent?> createEventEntry({
@@ -245,11 +247,13 @@ class PersistenceLogic implements PersistenceLogicContract {
     DateTime? dateFrom,
     String? linkedId,
     String? categoryId,
+    String? id,
   }) => _create.createAiResponseEntryImpl(
     data: data,
     dateFrom: dateFrom,
     linkedId: linkedId,
     categoryId: categoryId,
+    id: id,
   );
 
   @override

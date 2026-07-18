@@ -3,6 +3,7 @@ import 'package:flutter_material_design_icons/flutter_material_design_icons.dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list_item.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -111,7 +112,7 @@ void main() {
       expect(find.byType(ExpansionTile), findsOneWidget);
 
       // Check that language is displayed
-      expect(find.textContaining('Lang: EN'), findsOneWidget);
+      expect(find.textContaining('Language: EN'), findsOneWidget);
 
       // Check that model is displayed
       expect(find.textContaining('Model: Gemini'), findsOneWidget);
@@ -250,16 +251,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Find the Opacity widget containing the delete button
-      final opacityFinder = find.ancestor(
+      final visibilityFinder = find.ancestor(
         of: find.byIcon(MdiIcons.trashCanOutline),
-        matching: find.byType(Opacity),
+        matching: find.byType(Visibility),
       );
 
-      expect(opacityFinder, findsOneWidget);
-
-      final opacity = tester.widget<Opacity>(opacityFinder);
-      expect(opacity.opacity, 0);
+      expect(visibilityFinder, findsOneWidget);
+      expect(tester.widget<Visibility>(visibilityFinder).visible, isFalse);
     });
 
     testWidgets('delete button is visible when expanded', (tester) async {
@@ -271,16 +269,13 @@ void main() {
       await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
       await tester.pump();
 
-      // Find the Opacity widget containing the delete button
-      final opacityFinder = find.ancestor(
+      final visibilityFinder = find.ancestor(
         of: find.byIcon(MdiIcons.trashCanOutline),
-        matching: find.byType(Opacity),
+        matching: find.byType(Visibility),
       );
 
-      expect(opacityFinder, findsOneWidget);
-
-      final opacity = tester.widget<Opacity>(opacityFinder);
-      expect(opacity.opacity, 1);
+      expect(visibilityFinder, findsOneWidget);
+      expect(tester.widget<Visibility>(visibilityFinder).visible, isTrue);
     });
 
     testWidgets('icon buttons have zero padding and minimal constraints', (
@@ -352,7 +347,10 @@ void main() {
           (widget) =>
               widget is Padding &&
               widget.padding ==
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  EdgeInsets.symmetric(
+                    horizontal: dsTokensLight.spacing.step5,
+                    vertical: dsTokensLight.spacing.step4,
+                  ),
         ),
       );
 
@@ -376,13 +374,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Check that German language is displayed in uppercase
-      expect(find.textContaining('Lang: DE'), findsOneWidget);
+      expect(find.textContaining('Language: DE'), findsOneWidget);
 
       await tester.pumpWidget(makeTestableWidget(testTranscriptLongModel));
       await tester.pump();
 
       // Check that French language is displayed in uppercase
-      expect(find.textContaining('Lang: FR'), findsOneWidget);
+      expect(find.textContaining('Language: FR'), findsOneWidget);
     });
 
     testWidgets('language and model info are on the same row', (tester) async {

@@ -70,12 +70,14 @@ class AiInputRepository {
     required DateTime start,
     String? linkedId,
     String? categoryId,
+    String? id,
   }) async {
     return getIt<PersistenceLogic>().createAiResponseEntry(
       data: data,
       dateFrom: start,
       linkedId: linkedId,
       categoryId: categoryId,
+      id: id,
     );
   }
 

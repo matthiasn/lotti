@@ -11,6 +11,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/daily_os_next/state/capture_dbfs.dart';
 import 'package:lotti/features/daily_os_next/state/capture_state.dart';
 import 'package:lotti/features/daily_os_next/state/realtime_transcript_selection.dart';
@@ -436,6 +438,11 @@ class CaptureController extends Notifier<CaptureState> {
         library: config?.provider.name ?? 'realtime',
         model: config?.model.providerModelId ?? 'unknown',
         detectedLanguage: result.detectedLanguage ?? '-',
+        providerType: getIt.isRegistered<TranscriptAttributionCoordinator>()
+            ? config?.provider.inferenceProviderType ??
+                  InferenceProviderType.genericOpenAi
+            : InferenceProviderType.genericOpenAi,
+        interactionKind: AiInteractionKind.realtimeTranscription,
       );
     }
 
@@ -516,6 +523,8 @@ class CaptureController extends Notifier<CaptureState> {
         library: 'batch-transcribe',
         model: 'cloud-inference',
         detectedLanguage: '-',
+        providerType: InferenceProviderType.genericOpenAi,
+        interactionKind: AiInteractionKind.audioTranscription,
       );
     }
 
@@ -541,15 +550,30 @@ class CaptureController extends Notifier<CaptureState> {
     required String library,
     required String model,
     required String detectedLanguage,
+    required InferenceProviderType providerType,
+    required AiInteractionKind interactionKind,
   }) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
+      final prepared = getIt.isRegistered<TranscriptAttributionCoordinator>()
+          ? await getIt<TranscriptAttributionCoordinator>().prepare(
+              audioEntryId: journalAudio.id,
+              transcript: transcript,
+              providerName: library,
+              modelId: model,
+              providerType: providerType,
+              interactionKind: interactionKind,
+              categoryId: journalAudio.meta.categoryId,
+            )
+          : null;
       final audioTranscript = AudioTranscript(
         created: _now(),
         library: library,
         model: model,
         detectedLanguage: detectedLanguage,
         transcript: transcript,
+        id: prepared?.transcriptId,
+        aiAttribution: prepared?.envelope,
       );
       final existing = journalAudio.data.transcripts ?? <AudioTranscript>[];
       final updated = journalAudio.copyWith(
@@ -560,6 +584,9 @@ class CaptureController extends Notifier<CaptureState> {
         entryText: EntryText(plainText: transcript, markdown: transcript),
       );
       await persistenceLogic.updateDbEntity(updated);
+      if (prepared != null) {
+        await getIt<TranscriptAttributionCoordinator>().finalize(prepared);
+      }
     } catch (_) {
       // Attaching the transcript is best-effort — the capture flow
       // still proceeds with the in-memory transcript even if the

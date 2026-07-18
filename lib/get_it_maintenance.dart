@@ -110,3 +110,52 @@ Future<void> _checkAndPopulateSequenceLog() async {
 @visibleForTesting
 Future<void> checkAndPopulateSequenceLogForTesting() =>
     _checkAndPopulateSequenceLog();
+
+/// Projects conservative, deterministic attribution for pre-attribution data.
+Future<void> _backfillAiAttribution() async {
+  const settingsKey = 'maintenance_aiAttributionBackfillV1';
+  final settingsDb = getIt<SettingsDb>();
+  final logger = getIt<DomainLogger>();
+  try {
+    if (await settingsDb.itemByKey(settingsKey) == 'true') return;
+    final service = getIt<AiAttributionBackfillService>();
+    final journalDb = getIt<JournalDb>();
+    const pageSize = 250;
+    var offset = 0;
+    while (true) {
+      final entities = await journalDb.getJournalEntities(
+        types: const ['AiResponse', 'JournalAudio'],
+        starredStatuses: const [true, false],
+        privateStatuses: const [true, false],
+        flaggedStatuses: const [0, 1],
+        ids: null,
+        limit: pageSize,
+        offset: offset,
+      );
+      if (entities.isEmpty) break;
+      await service.backfill(journalEntities: entities);
+      offset += entities.length;
+      if (entities.length < pageSize) break;
+    }
+
+    final agentEntities = await AgentRepository(
+      getIt<AgentDatabase>(),
+    ).getAllEntities();
+    await service.backfill(
+      agentEntities: agentEntities,
+      consumptionEvents: await getIt<ConsumptionRepository>()
+          .eventsWithoutAttribution(),
+    );
+    await settingsDb.saveSettingsItem(settingsKey, 'true');
+  } catch (error, stackTrace) {
+    logger.error(
+      LogDomain.ai,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'aiAttributionBackfill',
+    );
+  }
+}
+
+@visibleForTesting
+Future<void> backfillAiAttributionForTesting() => _backfillAiAttribution();

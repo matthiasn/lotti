@@ -15,6 +15,7 @@ import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_store_loader.dart';
@@ -25,6 +26,10 @@ import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_backfill_service.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
@@ -412,11 +417,31 @@ Future<void> registerSingletons() async {
   );
   getIt
     ..registerSingleton<ConsumptionRepository>(consumptionRepository)
+    ..registerSingleton<AiAttributionBackfillService>(
+      AiAttributionBackfillService(consumptionRepository),
+    )
     ..registerSingleton<ConsumptionSyncService>(consumptionSyncService)
+    ..registerSingleton<AiAttributionIdentityResolver>(
+      AiAttributionIdentityResolver(
+        settingsDb,
+        vectorClockService,
+      ),
+    )
+    ..registerSingleton<AiAttributionService>(
+      AiAttributionService(consumptionRepository, consumptionSyncService),
+    )
+    ..registerSingleton<TranscriptAttributionCoordinator>(
+      TranscriptAttributionCoordinator(
+        getIt<AiAttributionService>(),
+        getIt<AiAttributionIdentityResolver>(),
+      ),
+    )
     ..registerSingleton<AiConsumptionRecorder>(
       AiConsumptionRecorder(
         syncService: consumptionSyncService,
         logger: domainLogger,
+        attributionService: getIt<AiAttributionService>(),
+        identityResolver: getIt<AiAttributionIdentityResolver>(),
       ),
     );
   final notificationRepository = NotificationRepository(

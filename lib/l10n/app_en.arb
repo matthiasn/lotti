@@ -695,6 +695,77 @@
   "aggregationHourlySum": "Hourly sum",
   "aggregationNone": "Raw values",
   "aiAssistantTitle": "Generate…",
+  "aiAttributionCost": "Cost",
+  "aiAttributionCostUnknown": "Cost unknown",
+  "aiAttributionCostZero": "No charge",
+  "aiAttributionCreator": "Creator",
+  "aiAttributionExecutor": "Executed on",
+  "aiAttributionInteractionLine": "Call {index}: {model} · {tokens} tokens",
+  "@aiAttributionInteractionLine": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "model": {
+        "type": "String"
+      },
+      "tokens": {
+        "type": "int"
+      }
+    }
+  },
+  "aiAttributionInteractions": "Interactions",
+  "aiAttributionNoInteractionDetails": "No interaction details are available.",
+  "aiAttributionPrivacy": "Privacy",
+  "aiAttributionPrivacyMixed": "Mixed",
+  "aiAttributionPrivacyPrivate": "Private",
+  "aiAttributionPrivacyStandard": "Standard",
+  "aiAttributionSecondary": "{model} · {time} · {callCount, plural, =0{no calls} =1{1 call} other{{callCount} calls}}",
+  "@aiAttributionSecondary": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "callCount": {
+        "type": "int"
+      }
+    }
+  },
+  "aiAttributionSensitiveContentNotice": "Request and response content is hidden because this work contains private data.",
+  "aiAttributionStatus": "Status",
+  "aiAttributionStatusAbandoned": "Interrupted",
+  "aiAttributionStatusCancelled": "Cancelled",
+  "aiAttributionStatusFailed": "Failed",
+  "aiAttributionStatusPartial": "Partial",
+  "aiAttributionStatusSucceeded": "Completed",
+  "aiAttributionSummary": "{actor} · {trigger} · {status}",
+  "@aiAttributionSummary": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "trigger": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "aiAttributionTitle": "AI attribution",
+  "aiAttributionTriggerAgent": "Agent",
+  "aiAttributionTriggerAutomatic": "Automatic",
+  "aiAttributionTriggerImported": "Imported",
+  "aiAttributionTriggerManual": "Manual",
+  "aiAttributionTriggerScheduled": "Scheduled",
+  "aiAttributionTriggerSynced": "From sync",
+  "aiAttributionUnknownCreator": "Unknown creator",
+  "aiAttributionUnknownExecutor": "Unknown execution device",
+  "aiAttributionUnknownModel": "Unknown model",
+  "aiAttributionYou": "You",
   "aiBatchToggleTooltip": "Switch to standard recording",
   "aiCapabilityChipImageGeneration": "Image generation",
   "aiCapabilityChipImageRecognition": "Image recognition",
@@ -797,6 +868,7 @@
   },
   "aiConsumptionTypeAgentTurn": "Agent turn",
   "aiConsumptionTypeAudioTranscription": "Transcription",
+  "aiConsumptionTypeEmbeddingIndexing": "Embedding indexing",
   "aiConsumptionTypeImageAnalysis": "Image analysis",
   "aiConsumptionTypeImageGeneration": "Image generation",
   "aiConsumptionTypePromptGeneration": "Prompt generation",
@@ -5132,6 +5204,25 @@
   "timeEntryItemEnd": "End",
   "timeEntryItemRunning": "Running",
   "timeEntryItemStart": "Start",
+  "transcriptLanguageLabel": "Language: {language}",
+  "@transcriptLanguageLabel": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "transcriptModelLabel": "Model: {provider}, {model}",
+  "@transcriptModelLabel": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "model": {
+        "type": "String"
+      }
+    }
+  },
   "unlinkButton": "Unlink",
   "unlinkTaskConfirm": "Are you sure you want to unlink this task?",
   "unlinkTaskTitle": "Unlink Task",

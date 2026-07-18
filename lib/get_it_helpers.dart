@@ -180,4 +180,5 @@ Future<void> _registerLateAndOptionalServices() async {
 
   // Automatically populate sequence log if empty (one-time migration)
   unawaited(_checkAndPopulateSequenceLog());
+  unawaited(_backfillAiAttribution());
 }

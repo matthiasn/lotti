@@ -1,13 +1,17 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
-import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
+import 'package:lotti/features/ai_consumption/database/attribution_db_conversions.dart';
+import 'package:lotti/features/ai_consumption/database/consumption_database.dart'
+    as db;
 import 'package:lotti/features/ai_consumption/database/consumption_db_conversions.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
-/// Raw persistence for [AiConsumptionEvent]s, over [ConsumptionDatabase].
+/// Raw persistence for [AiConsumptionEvent]s, over [db.ConsumptionDatabase].
 ///
 /// Writes are append-only and idempotent: [upsertEvent] uses `id` as the
 /// conflict target, so a replayed sync event (same id) is a no-op rather than a
@@ -17,12 +21,231 @@ import 'package:lotti/features/sync/vector_clock.dart';
 class ConsumptionRepository {
   ConsumptionRepository(this._db);
 
-  final ConsumptionDatabase _db;
+  final db.ConsumptionDatabase _db;
 
   /// Insert or replace an event by `id` (ON CONFLICT DO UPDATE).
-  Future<void> upsertEvent(AiConsumptionEvent event) => _db
-      .into(_db.consumptionEvents)
-      .insertOnConflictUpdate(ConsumptionDbConversions.toCompanion(event));
+  Future<void> upsertEvent(AiConsumptionEvent event) => _db.transaction(
+    () async {
+      final payload = event.payload;
+      if (payload != null) {
+        await _db
+            .into(_db.aiInteractionPayloads)
+            .insertOnConflictUpdate(
+              AttributionDbConversions.payloadToCompanion(payload),
+            );
+      }
+      final cost = event.cost;
+      if (cost != null) {
+        await _db
+            .into(_db.aiInteractionCosts)
+            .insertOnConflictUpdate(
+              AttributionDbConversions.costToCompanion(cost),
+            );
+      }
+      await _db
+          .into(_db.consumptionEvents)
+          .insertOnConflictUpdate(ConsumptionDbConversions.toCompanion(event));
+    },
+  );
+
+  /// Idempotently projects one terminal attribution and its typed links.
+  Future<void> upsertAttribution(AiWorkAttribution attribution) =>
+      _db.transaction(() async {
+        await _db
+            .into(_db.aiWorkAttributions)
+            .insertOnConflictUpdate(
+              AttributionDbConversions.attributionToCompanion(attribution),
+            );
+        for (final link in attribution.links) {
+          if (link.attributionId != attribution.id) {
+            throw ArgumentError.value(
+              link.attributionId,
+              'link.attributionId',
+              'must match attribution ${attribution.id}',
+            );
+          }
+          await _db
+              .into(_db.aiAttributionLinks)
+              .insertOnConflictUpdate(
+                AttributionDbConversions.linkToCompanion(link),
+              );
+        }
+      });
+
+  /// Projects a terminal output-carrier envelope idempotently.
+  Future<void> projectTerminalEnvelope(
+    AiTerminalAttributionEnvelope envelope,
+  ) => upsertAttribution(envelope.attribution);
+
+  /// Builds a local, replaceable partial projection from interaction evidence.
+  ///
+  /// This lets a peer explain an interaction even when the executor vanished
+  /// before publishing the output carrier. A later terminal carrier replaces
+  /// this projection idempotently with the authoritative final status/links.
+  Future<void> projectRecoveryCapsule({
+    required AiAttributionRecoveryCapsule capsule,
+    required AiConsumptionEvent event,
+  }) async {
+    final existing = await getAttribution(capsule.attributionId);
+    if (existing != null && existing.status != AiWorkStatus.partial) return;
+
+    final links = <AiAttributionLink>[
+      for (final output in capsule.intendedOutputs)
+        AiAttributionLink(
+          id:
+              '${capsule.id}|output|${output.type.name}|${output.id}|'
+              '${output.subId ?? ''}',
+          attributionId: capsule.attributionId,
+          role: AiAttributionLinkRole.output,
+          artifact: output,
+        ),
+    ];
+    await upsertAttribution(
+      AiWorkAttribution(
+        id: capsule.attributionId,
+        workType: capsule.workType,
+        status: AiWorkStatus.partial,
+        initiator: capsule.initiator,
+        trigger: capsule.trigger,
+        executor: capsule.executor,
+        privacyClassification: capsule.privacyClassification,
+        startedAt: capsule.startedAt,
+        completedAt: event.completedAt ?? event.createdAt,
+        vectorClock: event.vectorClock,
+        links: links,
+        parentAttributionId: capsule.parentAttributionId,
+        taskId: capsule.taskId,
+        categoryId: capsule.categoryId,
+        primaryOutput: capsule.intendedOutputs.firstOrNull,
+        errorCode: 'terminal_carrier_missing',
+      ),
+    );
+  }
+
+  /// Fetch a terminal attribution by id.
+  Future<AiWorkAttribution?> getAttribution(String id) async {
+    final row = await (_db.select(
+      _db.aiWorkAttributions,
+    )..where((table) => table.id.equals(id))).getSingleOrNull();
+    return row == null
+        ? null
+        : AttributionDbConversions.attributionFromRow(row);
+  }
+
+  /// Reverse lookup from a journal/agent artifact to its attribution.
+  Future<AiWorkAttribution?> getAttributionForArtifact(
+    AiArtifactReference artifact,
+  ) async {
+    final link =
+        await (_db.select(_db.aiAttributionLinks)
+              ..where(
+                (table) =>
+                    table.artifactType.equals(artifact.type.name) &
+                    table.artifactId.equals(artifact.id) &
+                    (artifact.subId == null
+                        ? table.subId.isNull()
+                        : table.subId.equals(artifact.subId!)),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    return link == null ? null : getAttribution(link.attributionId);
+  }
+
+  /// Ordered backend interactions used to produce one logical work item.
+  Future<List<AiConsumptionEvent>> interactionsForAttribution(
+    String attributionId,
+  ) async {
+    final rows =
+        await (_db.select(_db.consumptionEvents)
+              ..where((table) => table.attributionId.equals(attributionId))
+              ..orderBy([
+                (table) => OrderingTerm.asc(table.sequenceIndex),
+                (table) => OrderingTerm.asc(table.createdAt),
+                (table) => OrderingTerm.asc(table.id),
+              ]))
+            .get();
+    return rows.map(ConsumptionDbConversions.fromRow).toList();
+  }
+
+  /// All append-only cost evidence for one interaction.
+  Future<List<AiInteractionCost>> costsForInteraction(
+    String interactionId,
+  ) async {
+    final rows =
+        await (_db.select(_db.aiInteractionCosts)
+              ..where((table) => table.interactionId.equals(interactionId))
+              ..orderBy([
+                (table) => OrderingTerm.asc(table.assessedAt),
+                (table) => OrderingTerm.asc(table.id),
+              ]))
+            .get();
+    return rows.map(AttributionDbConversions.costFromRow).toList();
+  }
+
+  /// All cost evidence attached to interactions in one logical work item.
+  Future<List<AiInteractionCost>> costsForAttribution(
+    String attributionId,
+  ) async {
+    final rows = await _db
+        .customSelect(
+          'SELECT c.serialized AS serialized '
+          'FROM ai_interaction_costs c '
+          'JOIN consumption_events e ON e.id = c.interaction_id '
+          'WHERE e.attribution_id = ? '
+          'ORDER BY c.assessed_at, c.id',
+          variables: [Variable.withString(attributionId)],
+          readsFrom: {_db.aiInteractionCosts, _db.consumptionEvents},
+        )
+        .get();
+    return rows
+        .map(
+          (row) => AiInteractionCost.fromJson(
+            jsonDecode(row.read<String>('serialized')) as Map<String, dynamic>,
+          ),
+        )
+        .toList();
+  }
+
+  /// Captured sync-safe payload for one interaction, if present.
+  Future<AiInteractionPayload?> payloadForInteraction(
+    String interactionId,
+  ) async {
+    final row =
+        await (_db.select(
+              _db.aiInteractionPayloads,
+            )..where((table) => table.interactionId.equals(interactionId)))
+            .getSingleOrNull();
+    return row == null ? null : AttributionDbConversions.payloadFromRow(row);
+  }
+
+  /// Upsert local-only pending saga state.
+  Future<void> upsertPendingAttribution(
+    AiAttributionPendingSession pending,
+  ) => _db
+      .into(_db.pendingAiAttributions)
+      .insertOnConflictUpdate(
+        AttributionDbConversions.pendingToCompanion(pending),
+      );
+
+  Future<List<AiAttributionPendingSession>> pendingAttributions() async {
+    final rows = await (_db.select(
+      _db.pendingAiAttributions,
+    )..orderBy([(table) => OrderingTerm.asc(table.startedAt)])).get();
+    return rows.map(AttributionDbConversions.pendingFromRow).toList();
+  }
+
+  Future<AiAttributionPendingSession?> getPendingAttribution(String id) async {
+    final row = await (_db.select(
+      _db.pendingAiAttributions,
+    )..where((table) => table.id.equals(id))).getSingleOrNull();
+    return row == null ? null : AttributionDbConversions.pendingFromRow(row);
+  }
+
+  Future<void> deletePendingAttribution(String id) async {
+    await (_db.delete(
+      _db.pendingAiAttributions,
+    )..where((row) => row.id.equals(id))).go();
+  }
 
   /// Fetch a single event by [id], or null if absent.
   Future<AiConsumptionEvent?> getEvent(String id) async {
@@ -143,6 +366,14 @@ class ConsumptionRepository {
   /// into the sync sequence log.
   Future<List<AiConsumptionEvent>> eventsWithNullVectorClock() async {
     final rows = await _db.getConsumptionEventsWithNullVectorClock().get();
+    return rows.map(ConsumptionDbConversions.fromRow).toList();
+  }
+
+  /// Legacy interactions that predate the top-level attribution id.
+  Future<List<AiConsumptionEvent>> eventsWithoutAttribution() async {
+    final rows = await (_db.select(
+      _db.consumptionEvents,
+    )..where((table) => table.attributionId.isNull())).get();
     return rows.map(ConsumptionDbConversions.fromRow).toList();
   }
 

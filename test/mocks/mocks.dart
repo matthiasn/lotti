@@ -91,6 +91,7 @@ import 'package:lotti/features/ai_chat/services/realtime_transcription_service.d
 import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
@@ -910,6 +911,9 @@ class MockConsumptionRepository extends Mock implements ConsumptionRepository {
 }
 
 class MockAiConsumptionRecorder extends Mock implements AiConsumptionRecorder {}
+
+class MockAiAttributionIdentityResolver extends Mock
+    implements AiAttributionIdentityResolver {}
 
 class MockConsumptionSyncService extends Mock
     implements ConsumptionSyncService {}

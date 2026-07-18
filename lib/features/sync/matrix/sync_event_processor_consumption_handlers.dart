@@ -17,7 +17,21 @@ extension SyncEventProcessorConsumptionHandlers on SyncEventProcessor {
       return;
     }
 
-    final event = msg.event;
+    final capsule = msg.event.recoveryCapsule;
+    final originatingHostId = msg.originatingHostId;
+    final capsuleIsAuthentic =
+        capsule == null ||
+        (originatingHostId != null &&
+            capsule.executor.hostId == originatingHostId);
+    final event = capsuleIsAuthentic
+        ? msg.event
+        : msg.event.copyWith(recoveryCapsule: null);
+    if (!capsuleIsAuthentic) {
+      _trace(
+        'consumptionEvent.recoveryCapsuleRejected id=${event.id}',
+        subDomain: 'processor.apply',
+      );
+    }
 
     // Append-only dominance: a row is written once and never mutated, so the
     // only inbound outcomes are "new id → apply" and "replay of same id →
@@ -27,12 +41,40 @@ extension SyncEventProcessorConsumptionHandlers on SyncEventProcessor {
     if (incomingVc != null) {
       final localVc = await repo.getVectorClock(event.id);
       if (localVc != null && _localClockDominates(localVc, incomingVc)) {
+        final recoveryCapsule = event.recoveryCapsule;
+        if (recoveryCapsule != null) {
+          await repo.projectRecoveryCapsule(
+            capsule: recoveryCapsule,
+            event: event,
+          );
+        }
         await _recordReceivedConsumptionEvent(msg: msg, event: event);
         return;
       }
     }
 
     await repo.upsertEvent(event);
+    if (event.attributionId == null) {
+      try {
+        await AiAttributionBackfillService(
+          repo,
+        ).backfill(consumptionEvents: [event]);
+      } catch (error, stackTrace) {
+        _loggingService.error(
+          LogDomain.ai,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'processor.aiAttributionBackfill',
+        );
+      }
+    }
+    final recoveryCapsule = event.recoveryCapsule;
+    if (recoveryCapsule != null) {
+      await repo.projectRecoveryCapsule(
+        capsule: recoveryCapsule,
+        event: event,
+      );
+    }
     _updateNotifications.notify(
       {
         if (event.taskId != null) event.taskId!,

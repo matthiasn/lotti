@@ -236,6 +236,7 @@ extension _JournalHandlers on SyncEventProcessor {
     }
 
     if (isDuplicate) {
+      await _projectJournalAttribution(preloaded);
       return _recordDuplicateJournalEntity(
         event: event,
         syncMessage: syncMessage,
@@ -243,12 +244,23 @@ extension _JournalHandlers on SyncEventProcessor {
     }
 
     // preloaded must be non-null when we reach this branch.
-    return _persistJournalEntity(
+    final journalEntity = preloaded!;
+    final diagnostics = await _persistJournalEntity(
       event: event,
       syncMessage: syncMessage,
-      journalEntity: preloaded!,
+      journalEntity: journalEntity,
       journalDb: journalDb,
     );
+    await _projectJournalAttribution(journalEntity);
+    return diagnostics;
+  }
+
+  Future<void> _projectJournalAttribution(JournalEntity? entity) async {
+    final repository = consumptionRepository;
+    if (repository == null || entity == null) return;
+    await AiAttributionBackfillService(
+      repository,
+    ).backfill(journalEntities: [entity]);
   }
 
   /// Records the duplicate in the sequence log so `resolvePendingHints` still

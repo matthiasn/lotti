@@ -29,6 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   warning.
 
 ## [0.9.1054]
+### Added
+- **AI-generated work now carries a consistent attribution record.** Coding
+  prompts, generated and analyzed images, audio transcripts, and agent reports
+  show who or what initiated the work and open a shared detail view for model,
+  usage, timing, interaction evidence, and known or unknown cost. Attribution
+  is preserved across encrypted sync, and older AI work is backfilled
+  conservatively without guessing its creator or lineage.
+
 ### Fixed
 - **Task AI summaries are cleaner, more compact, and easier to operate.**
   Report and proposal text now match editor entries and card summaries, quiet

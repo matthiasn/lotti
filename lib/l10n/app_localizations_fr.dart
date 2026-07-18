@@ -1149,6 +1149,117 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiAssistantTitle => 'Générer…';
 
   @override
+  String get aiAttributionCost => 'Coût';
+
+  @override
+  String get aiAttributionCostUnknown => 'Coût inconnu';
+
+  @override
+  String get aiAttributionCostZero => 'Sans frais';
+
+  @override
+  String get aiAttributionCreator => 'Créateur';
+
+  @override
+  String get aiAttributionExecutor => 'Exécuté sur';
+
+  @override
+  String aiAttributionInteractionLine(int index, String model, int tokens) {
+    return 'Appel $index : $model · $tokens jetons';
+  }
+
+  @override
+  String get aiAttributionInteractions => 'Interactions';
+
+  @override
+  String get aiAttributionNoInteractionDetails =>
+      'Aucun détail d’interaction disponible.';
+
+  @override
+  String get aiAttributionPrivacy => 'Confidentialité';
+
+  @override
+  String get aiAttributionPrivacyMixed => 'Mixte';
+
+  @override
+  String get aiAttributionPrivacyPrivate => 'Privé';
+
+  @override
+  String get aiAttributionPrivacyStandard => 'Standard';
+
+  @override
+  String aiAttributionSecondary(String model, String time, int callCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      callCount,
+      locale: localeName,
+      other: '$callCount appels',
+      one: '1 appel',
+      zero: 'aucun appel',
+    );
+    return '$model · $time · $_temp0';
+  }
+
+  @override
+  String get aiAttributionSensitiveContentNotice =>
+      'Le contenu de la requête et de la réponse est masqué, car ce travail contient des données privées.';
+
+  @override
+  String get aiAttributionStatus => 'Statut';
+
+  @override
+  String get aiAttributionStatusAbandoned => 'Interrompu';
+
+  @override
+  String get aiAttributionStatusCancelled => 'Annulé';
+
+  @override
+  String get aiAttributionStatusFailed => 'Échec';
+
+  @override
+  String get aiAttributionStatusPartial => 'Partiel';
+
+  @override
+  String get aiAttributionStatusSucceeded => 'Terminé';
+
+  @override
+  String aiAttributionSummary(String actor, String trigger, String status) {
+    return '$actor · $trigger · $status';
+  }
+
+  @override
+  String get aiAttributionTitle => 'Attribution IA';
+
+  @override
+  String get aiAttributionTriggerAgent => 'Agent';
+
+  @override
+  String get aiAttributionTriggerAutomatic => 'Automatique';
+
+  @override
+  String get aiAttributionTriggerImported => 'Importé';
+
+  @override
+  String get aiAttributionTriggerManual => 'Manuel';
+
+  @override
+  String get aiAttributionTriggerScheduled => 'Planifié';
+
+  @override
+  String get aiAttributionTriggerSynced => 'Depuis la synchro';
+
+  @override
+  String get aiAttributionUnknownCreator => 'Créateur inconnu';
+
+  @override
+  String get aiAttributionUnknownExecutor => 'Appareil d’exécution inconnu';
+
+  @override
+  String get aiAttributionUnknownModel => 'Modèle inconnu';
+
+  @override
+  String get aiAttributionYou => 'Toi';
+
+  @override
   String get aiBatchToggleTooltip => 'Passer à l\'enregistrement standard';
 
   @override
@@ -1290,6 +1401,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiConsumptionTypeAudioTranscription => 'Transcription';
+
+  @override
+  String get aiConsumptionTypeEmbeddingIndexing => 'Indexation des embeddings';
 
   @override
   String get aiConsumptionTypeImageAnalysis => 'Analyse d\'image';
@@ -10727,6 +10841,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get timeEntryItemStart => 'Début';
+
+  @override
+  String transcriptLanguageLabel(String language) {
+    return 'Langue : $language';
+  }
+
+  @override
+  String transcriptModelLabel(String provider, String model) {
+    return 'Modèle : $provider, $model';
+  }
 
   @override
   String get unlinkButton => 'Délier';

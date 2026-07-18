@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 /// Expandable row for a single [AudioTranscript].
@@ -46,61 +49,59 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
     }
   }
 
-  final titleStyle = const TextStyle(
-    fontSize: fontSizeSmall,
-    fontWeight: FontWeight.w500,
-  );
-
-  final subTitleStyle = const TextStyle(
-    fontSize: fontSizeSmall,
-    fontWeight: FontWeight.w300,
-  );
-
   @override
   Widget build(BuildContext context) {
     final processingTime = widget.transcript.processingTime;
+    final tokens = context.designTokens;
+    final titleStyle = tokens.typography.styles.body.bodySmall;
+    final subTitleStyle = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
 
     return ExpansionTile(
       controller: _controller,
-      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      tilePadding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
       trailing: SizedBox(
-        width: 96,
+        width: tokens.spacing.step12,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            IgnorePointer(
-              ignoring: !show,
-              child: Opacity(
-                opacity: show ? 1 : 0,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 40,
-                    minHeight: 40,
-                  ),
-                  onPressed: () {
-                    SpeechRepository.removeAudioTranscript(
-                      journalEntityId: widget.entryId,
-                      transcript: widget.transcript,
-                    );
-                  },
-                  icon: const Icon(
-                    MdiIcons.trashCanOutline,
-                    size: fontSizeMedium,
-                  ),
+            Visibility(
+              visible: show,
+              maintainAnimation: true,
+              maintainSize: true,
+              maintainState: true,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(
+                  minWidth: tokens.spacing.step8,
+                  minHeight: tokens.spacing.step8,
+                ),
+                onPressed: () {
+                  SpeechRepository.removeAudioTranscript(
+                    journalEntityId: widget.entryId,
+                    transcript: widget.transcript,
+                  );
+                },
+                icon: Icon(
+                  MdiIcons.trashCanOutline,
+                  size: tokens.spacing.step5,
                 ),
               ),
             ),
             IconButton(
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              constraints: BoxConstraints(
+                minWidth: tokens.spacing.step8,
+                minHeight: tokens.spacing.step8,
+              ),
               onPressed: toggleShow,
               icon: Icon(
                 show
                     ? Icons.keyboard_double_arrow_up_outlined
                     : Icons.keyboard_double_arrow_down_outlined,
-                size: fontSizeMedium,
+                size: tokens.spacing.step5,
               ),
             ),
           ],
@@ -115,7 +116,7 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
                 dfShorter.format(widget.transcript.created),
                 style: titleStyle,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: tokens.spacing.step3),
               if (processingTime != null)
                 Text(
                   '⏳${formatMmSs(processingTime)}',
@@ -123,29 +124,49 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
                 ),
             ],
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: tokens.spacing.step2),
           Row(
             children: [
               Text(
-                'Lang: ${widget.transcript.detectedLanguage.toUpperCase()}',
+                context.messages.transcriptLanguageLabel(
+                  widget.transcript.detectedLanguage.toUpperCase(),
+                ),
                 style: subTitleStyle,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: tokens.spacing.step3),
               Flexible(
                 child: Text(
-                  'Model: ${widget.transcript.library}, ${widget.transcript.model}',
+                  context.messages.transcriptModelLabel(
+                    widget.transcript.library,
+                    widget.transcript.model,
+                  ),
                   style: subTitleStyle,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
+          AiAttributionSummary(
+            compact: true,
+            artifact: AiArtifactReference(
+              type: AiArtifactType.journalAudio,
+              id: widget.entryId,
+              subId: widget.transcript.id,
+            ),
+            envelope: widget.transcript.aiAttribution,
+          ),
         ],
       ),
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: SelectableText(widget.transcript.transcript),
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step5,
+            vertical: tokens.spacing.step4,
+          ),
+          child: SelectableText(
+            widget.transcript.transcript,
+            style: tokens.typography.styles.body.bodyMedium,
+          ),
         ),
       ],
     );

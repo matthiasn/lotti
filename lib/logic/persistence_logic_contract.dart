@@ -97,6 +97,7 @@ abstract class PersistenceLogicContract {
     DateTime? dateFrom,
     String? linkedId,
     String? categoryId,
+    String? id,
   });
 
   Future<JournalEvent?> createEventEntryImpl({

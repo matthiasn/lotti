@@ -492,6 +492,11 @@ _AiResponseData _$AiResponseDataFromJson(Map<String, dynamic> json) =>
       thoughtsTokens: (json['thoughtsTokens'] as num?)?.toInt(),
       cachedInputTokens: (json['cachedInputTokens'] as num?)?.toInt(),
       durationMs: (json['durationMs'] as num?)?.toInt(),
+      aiAttribution: json['aiAttribution'] == null
+          ? null
+          : AiTerminalAttributionEnvelope.fromJson(
+              json['aiAttribution'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$AiResponseDataToJson(_AiResponseData instance) =>
@@ -511,6 +516,7 @@ Map<String, dynamic> _$AiResponseDataToJson(_AiResponseData instance) =>
       'thoughtsTokens': instance.thoughtsTokens,
       'cachedInputTokens': instance.cachedInputTokens,
       'durationMs': instance.durationMs,
+      'aiAttribution': instance.aiAttribution,
     };
 
 const _$AiResponseTypeEnumMap = {

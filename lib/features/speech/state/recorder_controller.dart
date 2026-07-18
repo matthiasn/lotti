@@ -5,7 +5,10 @@ import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
@@ -582,6 +585,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
           providerName: providerName ?? 'Mistral',
           modelId: modelName ?? 'voxtral-mini',
           detectedLanguage: result.detectedLanguage,
+          taskId: linkedTaskId,
         );
       }
 
@@ -678,14 +682,29 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     required String providerName,
     required String modelId,
     String? detectedLanguage,
+    String? taskId,
   }) async {
     final persistenceLogic = getIt<PersistenceLogic>();
+    final prepared = getIt.isRegistered<TranscriptAttributionCoordinator>()
+        ? await getIt<TranscriptAttributionCoordinator>().prepare(
+            audioEntryId: journalAudio.id,
+            transcript: transcript,
+            providerName: providerName,
+            modelId: modelId,
+            providerType: InferenceProviderType.mistral,
+            interactionKind: AiInteractionKind.realtimeTranscription,
+            taskId: taskId,
+            categoryId: journalAudio.meta.categoryId,
+          )
+        : null;
     final audioTranscript = AudioTranscript(
       created: DateTime.now(),
       library: providerName,
       model: modelId,
       detectedLanguage: detectedLanguage ?? '-',
       transcript: transcript,
+      id: prepared?.transcriptId,
+      aiAttribution: prepared?.envelope,
     );
 
     final existingTranscripts = journalAudio.data.transcripts ?? [];
@@ -714,6 +733,9 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     }
 
     await persistenceLogic.updateDbEntity(updated, linkedId: parentId);
+    if (prepared != null) {
+      await getIt<TranscriptAttributionCoordinator>().finalize(prepared);
+    }
   }
 
   /// Cleans up realtime recording resources.

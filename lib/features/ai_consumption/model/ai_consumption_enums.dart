@@ -13,6 +13,7 @@
 /// - [imageAnalysis]: vision/OCR over a `JournalImage` entry.
 /// - [imageGeneration]: text-to-image cover-art generation.
 /// - [promptGeneration]: a skill-driven prompt/text generation call.
+/// - [embeddingIndexing]: one local embedding-vector generation call.
 enum AiConsumptionResponseType {
   agentTurn,
   textGeneration,
@@ -20,4 +21,5 @@ enum AiConsumptionResponseType {
   imageAnalysis,
   imageGeneration,
   promptGeneration,
+  embeddingIndexing,
 }

@@ -27,6 +27,42 @@ flowchart TD
   Skills["skills/built_in_skills.dart<br/>(code, not DB)"] -.read.-> Registry["skillRegistryProvider"]
 ```
 
+## AI Work Attribution Boundary
+
+The `ai` feature creates output carriers, while `features/ai_consumption` owns
+their audit model and interaction ledger. `SkillInferenceRunner` uses the strict
+publication saga for transcription, image analysis, prompt generation, and
+image generation: it preallocates the carrier id, makes pending state durable,
+records reference-only request/response evidence plus cost evidence, waits for
+the consumption publication barrier, writes the carrier, and finalizes the
+projection.
+
+```mermaid
+sequenceDiagram
+  participant Runner as SkillInferenceRunner
+  participant Attr as AiAttributionService
+  participant Provider as Cloud/native provider
+  participant Sync as ConsumptionSyncService
+  participant Journal as Journal/PersistenceLogic
+  Runner->>Attr: begin(work type, actor, trigger, intended output)
+  Runner->>Provider: inference request
+  Provider-->>Runner: response + usage/cost evidence
+  Runner->>Attr: recordInteraction(reference-only payload)
+  Attr->>Sync: persist + sequence + outbox
+  Sync-->>Runner: publication accepted
+  Runner->>Attr: prepareCompletion(output link)
+  Runner->>Journal: persist carrier with terminal envelope
+  Runner->>Attr: finalize(envelope)
+```
+
+Carrier mapping is uniform: `AiResponseData.aiAttribution` for generated text
+and authoritative image-analysis results, `ImageData.aiAttribution` for
+generated images, and `AudioTranscript.id/aiAttribution` for transcripts. The
+legacy unified repository still records an explicitly partial compatibility
+attribution rather than claiming a terminal link it cannot prove. Embedding
+indexing records one interaction per chunk with digests only and a known-zero
+local-compute cost.
+
 ## Configuration Model
 
 `AiConfigRepository` persists provider-facing AI configuration objects in

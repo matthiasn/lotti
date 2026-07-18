@@ -325,7 +325,7 @@ as bool?,
 /// @nodoc
 mixin _$ImageData {
 
- DateTime get capturedAt; String get imageId; String get imageFile; String get imageDirectory; Geolocation? get geolocation;
+ DateTime get capturedAt; String get imageId; String get imageFile; String get imageDirectory; Geolocation? get geolocation; AiTerminalAttributionEnvelope? get aiAttribution;
 /// Create a copy of ImageData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -338,16 +338,16 @@ $ImageDataCopyWith<ImageData> get copyWith => _$ImageDataCopyWithImpl<ImageData>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageData&&(identical(other.capturedAt, capturedAt) || other.capturedAt == capturedAt)&&(identical(other.imageId, imageId) || other.imageId == imageId)&&(identical(other.imageFile, imageFile) || other.imageFile == imageFile)&&(identical(other.imageDirectory, imageDirectory) || other.imageDirectory == imageDirectory)&&(identical(other.geolocation, geolocation) || other.geolocation == geolocation));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageData&&(identical(other.capturedAt, capturedAt) || other.capturedAt == capturedAt)&&(identical(other.imageId, imageId) || other.imageId == imageId)&&(identical(other.imageFile, imageFile) || other.imageFile == imageFile)&&(identical(other.imageDirectory, imageDirectory) || other.imageDirectory == imageDirectory)&&(identical(other.geolocation, geolocation) || other.geolocation == geolocation)&&(identical(other.aiAttribution, aiAttribution) || other.aiAttribution == aiAttribution));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,capturedAt,imageId,imageFile,imageDirectory,geolocation);
+int get hashCode => Object.hash(runtimeType,capturedAt,imageId,imageFile,imageDirectory,geolocation,aiAttribution);
 
 @override
 String toString() {
-  return 'ImageData(capturedAt: $capturedAt, imageId: $imageId, imageFile: $imageFile, imageDirectory: $imageDirectory, geolocation: $geolocation)';
+  return 'ImageData(capturedAt: $capturedAt, imageId: $imageId, imageFile: $imageFile, imageDirectory: $imageDirectory, geolocation: $geolocation, aiAttribution: $aiAttribution)';
 }
 
 
@@ -358,11 +358,11 @@ abstract mixin class $ImageDataCopyWith<$Res>  {
   factory $ImageDataCopyWith(ImageData value, $Res Function(ImageData) _then) = _$ImageDataCopyWithImpl;
 @useResult
 $Res call({
- DateTime capturedAt, String imageId, String imageFile, String imageDirectory, Geolocation? geolocation
+ DateTime capturedAt, String imageId, String imageFile, String imageDirectory, Geolocation? geolocation, AiTerminalAttributionEnvelope? aiAttribution
 });
 
 
-$GeolocationCopyWith<$Res>? get geolocation;
+$GeolocationCopyWith<$Res>? get geolocation;$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution;
 
 }
 /// @nodoc
@@ -375,14 +375,15 @@ class _$ImageDataCopyWithImpl<$Res>
 
 /// Create a copy of ImageData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? capturedAt = null,Object? imageId = null,Object? imageFile = null,Object? imageDirectory = null,Object? geolocation = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? capturedAt = null,Object? imageId = null,Object? imageFile = null,Object? imageDirectory = null,Object? geolocation = freezed,Object? aiAttribution = freezed,}) {
   return _then(_self.copyWith(
 capturedAt: null == capturedAt ? _self.capturedAt : capturedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,imageId: null == imageId ? _self.imageId : imageId // ignore: cast_nullable_to_non_nullable
 as String,imageFile: null == imageFile ? _self.imageFile : imageFile // ignore: cast_nullable_to_non_nullable
 as String,imageDirectory: null == imageDirectory ? _self.imageDirectory : imageDirectory // ignore: cast_nullable_to_non_nullable
 as String,geolocation: freezed == geolocation ? _self.geolocation : geolocation // ignore: cast_nullable_to_non_nullable
-as Geolocation?,
+as Geolocation?,aiAttribution: freezed == aiAttribution ? _self.aiAttribution : aiAttribution // ignore: cast_nullable_to_non_nullable
+as AiTerminalAttributionEnvelope?,
   ));
 }
 /// Create a copy of ImageData
@@ -396,6 +397,18 @@ $GeolocationCopyWith<$Res>? get geolocation {
 
   return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
     return _then(_self.copyWith(geolocation: value));
+  });
+}/// Create a copy of ImageData
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution {
+    if (_self.aiAttribution == null) {
+    return null;
+  }
+
+  return $AiTerminalAttributionEnvelopeCopyWith<$Res>(_self.aiAttribution!, (value) {
+    return _then(_self.copyWith(aiAttribution: value));
   });
 }
 }
@@ -479,10 +492,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiTerminalAttributionEnvelope? aiAttribution)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ImageData() when $default != null:
-return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation);case _:
+return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation,_that.aiAttribution);case _:
   return orElse();
 
 }
@@ -500,10 +513,10 @@ return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirect
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiTerminalAttributionEnvelope? aiAttribution)  $default,) {final _that = this;
 switch (_that) {
 case _ImageData():
-return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation);case _:
+return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation,_that.aiAttribution);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -520,10 +533,10 @@ return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirect
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiTerminalAttributionEnvelope? aiAttribution)?  $default,) {final _that = this;
 switch (_that) {
 case _ImageData() when $default != null:
-return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation);case _:
+return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation,_that.aiAttribution);case _:
   return null;
 
 }
@@ -535,7 +548,7 @@ return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirect
 @JsonSerializable()
 
 class _ImageData implements ImageData {
-  const _ImageData({required this.capturedAt, required this.imageId, required this.imageFile, required this.imageDirectory, this.geolocation});
+  const _ImageData({required this.capturedAt, required this.imageId, required this.imageFile, required this.imageDirectory, this.geolocation, this.aiAttribution});
   factory _ImageData.fromJson(Map<String, dynamic> json) => _$ImageDataFromJson(json);
 
 @override final  DateTime capturedAt;
@@ -543,6 +556,7 @@ class _ImageData implements ImageData {
 @override final  String imageFile;
 @override final  String imageDirectory;
 @override final  Geolocation? geolocation;
+@override final  AiTerminalAttributionEnvelope? aiAttribution;
 
 /// Create a copy of ImageData
 /// with the given fields replaced by the non-null parameter values.
@@ -557,16 +571,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageData&&(identical(other.capturedAt, capturedAt) || other.capturedAt == capturedAt)&&(identical(other.imageId, imageId) || other.imageId == imageId)&&(identical(other.imageFile, imageFile) || other.imageFile == imageFile)&&(identical(other.imageDirectory, imageDirectory) || other.imageDirectory == imageDirectory)&&(identical(other.geolocation, geolocation) || other.geolocation == geolocation));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageData&&(identical(other.capturedAt, capturedAt) || other.capturedAt == capturedAt)&&(identical(other.imageId, imageId) || other.imageId == imageId)&&(identical(other.imageFile, imageFile) || other.imageFile == imageFile)&&(identical(other.imageDirectory, imageDirectory) || other.imageDirectory == imageDirectory)&&(identical(other.geolocation, geolocation) || other.geolocation == geolocation)&&(identical(other.aiAttribution, aiAttribution) || other.aiAttribution == aiAttribution));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,capturedAt,imageId,imageFile,imageDirectory,geolocation);
+int get hashCode => Object.hash(runtimeType,capturedAt,imageId,imageFile,imageDirectory,geolocation,aiAttribution);
 
 @override
 String toString() {
-  return 'ImageData(capturedAt: $capturedAt, imageId: $imageId, imageFile: $imageFile, imageDirectory: $imageDirectory, geolocation: $geolocation)';
+  return 'ImageData(capturedAt: $capturedAt, imageId: $imageId, imageFile: $imageFile, imageDirectory: $imageDirectory, geolocation: $geolocation, aiAttribution: $aiAttribution)';
 }
 
 
@@ -577,11 +591,11 @@ abstract mixin class _$ImageDataCopyWith<$Res> implements $ImageDataCopyWith<$Re
   factory _$ImageDataCopyWith(_ImageData value, $Res Function(_ImageData) _then) = __$ImageDataCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime capturedAt, String imageId, String imageFile, String imageDirectory, Geolocation? geolocation
+ DateTime capturedAt, String imageId, String imageFile, String imageDirectory, Geolocation? geolocation, AiTerminalAttributionEnvelope? aiAttribution
 });
 
 
-@override $GeolocationCopyWith<$Res>? get geolocation;
+@override $GeolocationCopyWith<$Res>? get geolocation;@override $AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution;
 
 }
 /// @nodoc
@@ -594,14 +608,15 @@ class __$ImageDataCopyWithImpl<$Res>
 
 /// Create a copy of ImageData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? capturedAt = null,Object? imageId = null,Object? imageFile = null,Object? imageDirectory = null,Object? geolocation = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? capturedAt = null,Object? imageId = null,Object? imageFile = null,Object? imageDirectory = null,Object? geolocation = freezed,Object? aiAttribution = freezed,}) {
   return _then(_ImageData(
 capturedAt: null == capturedAt ? _self.capturedAt : capturedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,imageId: null == imageId ? _self.imageId : imageId // ignore: cast_nullable_to_non_nullable
 as String,imageFile: null == imageFile ? _self.imageFile : imageFile // ignore: cast_nullable_to_non_nullable
 as String,imageDirectory: null == imageDirectory ? _self.imageDirectory : imageDirectory // ignore: cast_nullable_to_non_nullable
 as String,geolocation: freezed == geolocation ? _self.geolocation : geolocation // ignore: cast_nullable_to_non_nullable
-as Geolocation?,
+as Geolocation?,aiAttribution: freezed == aiAttribution ? _self.aiAttribution : aiAttribution // ignore: cast_nullable_to_non_nullable
+as AiTerminalAttributionEnvelope?,
   ));
 }
 
@@ -616,6 +631,18 @@ $GeolocationCopyWith<$Res>? get geolocation {
 
   return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
     return _then(_self.copyWith(geolocation: value));
+  });
+}/// Create a copy of ImageData
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution {
+    if (_self.aiAttribution == null) {
+    return null;
+  }
+
+  return $AiTerminalAttributionEnvelopeCopyWith<$Res>(_self.aiAttribution!, (value) {
+    return _then(_self.copyWith(aiAttribution: value));
   });
 }
 }
@@ -916,7 +943,7 @@ as List<AudioTranscript>?,
 /// @nodoc
 mixin _$AudioTranscript {
 
- DateTime get created; String get library; String get model; String get detectedLanguage; String get transcript; Duration? get processingTime;
+ DateTime get created; String get library; String get model; String get detectedLanguage; String get transcript; Duration? get processingTime; String? get id; AiTerminalAttributionEnvelope? get aiAttribution;
 /// Create a copy of AudioTranscript
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -929,16 +956,16 @@ $AudioTranscriptCopyWith<AudioTranscript> get copyWith => _$AudioTranscriptCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioTranscript&&(identical(other.created, created) || other.created == created)&&(identical(other.library, library) || other.library == library)&&(identical(other.model, model) || other.model == model)&&(identical(other.detectedLanguage, detectedLanguage) || other.detectedLanguage == detectedLanguage)&&(identical(other.transcript, transcript) || other.transcript == transcript)&&(identical(other.processingTime, processingTime) || other.processingTime == processingTime));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioTranscript&&(identical(other.created, created) || other.created == created)&&(identical(other.library, library) || other.library == library)&&(identical(other.model, model) || other.model == model)&&(identical(other.detectedLanguage, detectedLanguage) || other.detectedLanguage == detectedLanguage)&&(identical(other.transcript, transcript) || other.transcript == transcript)&&(identical(other.processingTime, processingTime) || other.processingTime == processingTime)&&(identical(other.id, id) || other.id == id)&&(identical(other.aiAttribution, aiAttribution) || other.aiAttribution == aiAttribution));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,created,library,model,detectedLanguage,transcript,processingTime);
+int get hashCode => Object.hash(runtimeType,created,library,model,detectedLanguage,transcript,processingTime,id,aiAttribution);
 
 @override
 String toString() {
-  return 'AudioTranscript(created: $created, library: $library, model: $model, detectedLanguage: $detectedLanguage, transcript: $transcript, processingTime: $processingTime)';
+  return 'AudioTranscript(created: $created, library: $library, model: $model, detectedLanguage: $detectedLanguage, transcript: $transcript, processingTime: $processingTime, id: $id, aiAttribution: $aiAttribution)';
 }
 
 
@@ -949,11 +976,11 @@ abstract mixin class $AudioTranscriptCopyWith<$Res>  {
   factory $AudioTranscriptCopyWith(AudioTranscript value, $Res Function(AudioTranscript) _then) = _$AudioTranscriptCopyWithImpl;
 @useResult
 $Res call({
- DateTime created, String library, String model, String detectedLanguage, String transcript, Duration? processingTime
+ DateTime created, String library, String model, String detectedLanguage, String transcript, Duration? processingTime, String? id, AiTerminalAttributionEnvelope? aiAttribution
 });
 
 
-
+$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution;
 
 }
 /// @nodoc
@@ -966,7 +993,7 @@ class _$AudioTranscriptCopyWithImpl<$Res>
 
 /// Create a copy of AudioTranscript
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? created = null,Object? library = null,Object? model = null,Object? detectedLanguage = null,Object? transcript = null,Object? processingTime = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? created = null,Object? library = null,Object? model = null,Object? detectedLanguage = null,Object? transcript = null,Object? processingTime = freezed,Object? id = freezed,Object? aiAttribution = freezed,}) {
   return _then(_self.copyWith(
 created: null == created ? _self.created : created // ignore: cast_nullable_to_non_nullable
 as DateTime,library: null == library ? _self.library : library // ignore: cast_nullable_to_non_nullable
@@ -974,10 +1001,24 @@ as String,model: null == model ? _self.model : model // ignore: cast_nullable_to
 as String,detectedLanguage: null == detectedLanguage ? _self.detectedLanguage : detectedLanguage // ignore: cast_nullable_to_non_nullable
 as String,transcript: null == transcript ? _self.transcript : transcript // ignore: cast_nullable_to_non_nullable
 as String,processingTime: freezed == processingTime ? _self.processingTime : processingTime // ignore: cast_nullable_to_non_nullable
-as Duration?,
+as Duration?,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String?,aiAttribution: freezed == aiAttribution ? _self.aiAttribution : aiAttribution // ignore: cast_nullable_to_non_nullable
+as AiTerminalAttributionEnvelope?,
   ));
 }
+/// Create a copy of AudioTranscript
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution {
+    if (_self.aiAttribution == null) {
+    return null;
+  }
 
+  return $AiTerminalAttributionEnvelopeCopyWith<$Res>(_self.aiAttribution!, (value) {
+    return _then(_self.copyWith(aiAttribution: value));
+  });
+}
 }
 
 
@@ -1059,10 +1100,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime created,  String library,  String model,  String detectedLanguage,  String transcript,  Duration? processingTime)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime created,  String library,  String model,  String detectedLanguage,  String transcript,  Duration? processingTime,  String? id,  AiTerminalAttributionEnvelope? aiAttribution)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AudioTranscript() when $default != null:
-return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_that.transcript,_that.processingTime);case _:
+return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_that.transcript,_that.processingTime,_that.id,_that.aiAttribution);case _:
   return orElse();
 
 }
@@ -1080,10 +1121,10 @@ return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime created,  String library,  String model,  String detectedLanguage,  String transcript,  Duration? processingTime)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime created,  String library,  String model,  String detectedLanguage,  String transcript,  Duration? processingTime,  String? id,  AiTerminalAttributionEnvelope? aiAttribution)  $default,) {final _that = this;
 switch (_that) {
 case _AudioTranscript():
-return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_that.transcript,_that.processingTime);case _:
+return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_that.transcript,_that.processingTime,_that.id,_that.aiAttribution);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1100,10 +1141,10 @@ return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime created,  String library,  String model,  String detectedLanguage,  String transcript,  Duration? processingTime)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime created,  String library,  String model,  String detectedLanguage,  String transcript,  Duration? processingTime,  String? id,  AiTerminalAttributionEnvelope? aiAttribution)?  $default,) {final _that = this;
 switch (_that) {
 case _AudioTranscript() when $default != null:
-return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_that.transcript,_that.processingTime);case _:
+return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_that.transcript,_that.processingTime,_that.id,_that.aiAttribution);case _:
   return null;
 
 }
@@ -1115,7 +1156,7 @@ return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_
 @JsonSerializable()
 
 class _AudioTranscript implements AudioTranscript {
-  const _AudioTranscript({required this.created, required this.library, required this.model, required this.detectedLanguage, required this.transcript, this.processingTime});
+  const _AudioTranscript({required this.created, required this.library, required this.model, required this.detectedLanguage, required this.transcript, this.processingTime, this.id, this.aiAttribution});
   factory _AudioTranscript.fromJson(Map<String, dynamic> json) => _$AudioTranscriptFromJson(json);
 
 @override final  DateTime created;
@@ -1124,6 +1165,8 @@ class _AudioTranscript implements AudioTranscript {
 @override final  String detectedLanguage;
 @override final  String transcript;
 @override final  Duration? processingTime;
+@override final  String? id;
+@override final  AiTerminalAttributionEnvelope? aiAttribution;
 
 /// Create a copy of AudioTranscript
 /// with the given fields replaced by the non-null parameter values.
@@ -1138,16 +1181,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioTranscript&&(identical(other.created, created) || other.created == created)&&(identical(other.library, library) || other.library == library)&&(identical(other.model, model) || other.model == model)&&(identical(other.detectedLanguage, detectedLanguage) || other.detectedLanguage == detectedLanguage)&&(identical(other.transcript, transcript) || other.transcript == transcript)&&(identical(other.processingTime, processingTime) || other.processingTime == processingTime));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioTranscript&&(identical(other.created, created) || other.created == created)&&(identical(other.library, library) || other.library == library)&&(identical(other.model, model) || other.model == model)&&(identical(other.detectedLanguage, detectedLanguage) || other.detectedLanguage == detectedLanguage)&&(identical(other.transcript, transcript) || other.transcript == transcript)&&(identical(other.processingTime, processingTime) || other.processingTime == processingTime)&&(identical(other.id, id) || other.id == id)&&(identical(other.aiAttribution, aiAttribution) || other.aiAttribution == aiAttribution));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,created,library,model,detectedLanguage,transcript,processingTime);
+int get hashCode => Object.hash(runtimeType,created,library,model,detectedLanguage,transcript,processingTime,id,aiAttribution);
 
 @override
 String toString() {
-  return 'AudioTranscript(created: $created, library: $library, model: $model, detectedLanguage: $detectedLanguage, transcript: $transcript, processingTime: $processingTime)';
+  return 'AudioTranscript(created: $created, library: $library, model: $model, detectedLanguage: $detectedLanguage, transcript: $transcript, processingTime: $processingTime, id: $id, aiAttribution: $aiAttribution)';
 }
 
 
@@ -1158,11 +1201,11 @@ abstract mixin class _$AudioTranscriptCopyWith<$Res> implements $AudioTranscript
   factory _$AudioTranscriptCopyWith(_AudioTranscript value, $Res Function(_AudioTranscript) _then) = __$AudioTranscriptCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime created, String library, String model, String detectedLanguage, String transcript, Duration? processingTime
+ DateTime created, String library, String model, String detectedLanguage, String transcript, Duration? processingTime, String? id, AiTerminalAttributionEnvelope? aiAttribution
 });
 
 
-
+@override $AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution;
 
 }
 /// @nodoc
@@ -1175,7 +1218,7 @@ class __$AudioTranscriptCopyWithImpl<$Res>
 
 /// Create a copy of AudioTranscript
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? created = null,Object? library = null,Object? model = null,Object? detectedLanguage = null,Object? transcript = null,Object? processingTime = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? created = null,Object? library = null,Object? model = null,Object? detectedLanguage = null,Object? transcript = null,Object? processingTime = freezed,Object? id = freezed,Object? aiAttribution = freezed,}) {
   return _then(_AudioTranscript(
 created: null == created ? _self.created : created // ignore: cast_nullable_to_non_nullable
 as DateTime,library: null == library ? _self.library : library // ignore: cast_nullable_to_non_nullable
@@ -1183,11 +1226,25 @@ as String,model: null == model ? _self.model : model // ignore: cast_nullable_to
 as String,detectedLanguage: null == detectedLanguage ? _self.detectedLanguage : detectedLanguage // ignore: cast_nullable_to_non_nullable
 as String,transcript: null == transcript ? _self.transcript : transcript // ignore: cast_nullable_to_non_nullable
 as String,processingTime: freezed == processingTime ? _self.processingTime : processingTime // ignore: cast_nullable_to_non_nullable
-as Duration?,
+as Duration?,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String?,aiAttribution: freezed == aiAttribution ? _self.aiAttribution : aiAttribution // ignore: cast_nullable_to_non_nullable
+as AiTerminalAttributionEnvelope?,
   ));
 }
 
+/// Create a copy of AudioTranscript
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution {
+    if (_self.aiAttribution == null) {
+    return null;
+  }
 
+  return $AiTerminalAttributionEnvelopeCopyWith<$Res>(_self.aiAttribution!, (value) {
+    return _then(_self.copyWith(aiAttribution: value));
+  });
+}
 }
 
 

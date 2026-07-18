@@ -401,6 +401,12 @@ sequenceDiagram
   realtime output looks truncated. Refine uses the same Mistral-preferred
   realtime path but disables the full-file batch verifier for that session so a
   reviewed Mistral transcript is not replaced by an MLX fallback.
+- When Capture attaches either its realtime result or batch fallback to the
+  persisted `JournalAudio`, `TranscriptAttributionCoordinator` publishes
+  reference-only interaction evidence first. The resulting `AudioTranscript`
+  carries a stable sub-id and terminal attribution envelope; unknown provider
+  cost stays explicitly unknown. The journal write is skipped if the
+  consumption publication barrier fails.
 - Capture and Refine share one **anchored voice template**: a per-phase
   headline at the top (the state narrator — "What's on your mind …", "I'm
   listening.", "Writing that down…", "Does this look right?"), a flexible

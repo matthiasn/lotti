@@ -41,6 +41,8 @@ flowchart LR
   RecorderCtl --> RtTx["RealtimeTranscriptionService"]
   RecorderCtl --> SpeechRepo["SpeechRepository"]
   RecorderCtl --> AutoPrompt["AutomaticPromptTrigger"]
+  RecorderCtl --> Attribution["TranscriptAttributionCoordinator"]
+  Attribution --> Barrier["AI consumption publication barrier"]
 
   PlaybackUI --> PlayerCtl["AudioPlayerController"]
   PlaybackUI --> WaveformProvider["audioWaveformProvider"]
@@ -54,6 +56,7 @@ flowchart LR
   DictSvc --> CategoryRepo["CategoryRepository + JournalRepository"]
   RtTx --> AiConfig["AI config + Mistral or MLX-audio realtime backend"]
   Persist --> JournalAudio["JournalAudio"]
+  Barrier --> JournalAudio
 ```
 
 The feature is not only a recorder. It also owns the app-wide playback
@@ -256,9 +259,13 @@ Two important implementation details:
    actually produced an audio file. Very short recordings can still return
    transcript text from the service, but the controller does not persist
    anything unless an audio artifact exists.
-2. When a realtime transcript exists, the controller appends an
-   `AudioTranscript` to `JournalAudio.data.transcripts` and also mirrors the
-   transcript into `entryText`.
+2. When a realtime transcript exists, the controller asks
+   `TranscriptAttributionCoordinator` to publish reference-only interaction and
+   unknown-cost evidence. Only after the publication barrier succeeds does it
+   append an `AudioTranscript` with a stable id and terminal attribution
+   envelope to `JournalAudio.data.transcripts`; it also mirrors the transcript
+   into `entryText`. The attribution projection is finalized after the journal
+   write, so a transcript never advertises evidence that was not durable.
 
 `cancelRealtime()` is the realtime discard path (the ✕ button in realtime
 mode). It tears down the recorder and realtime service without creating or

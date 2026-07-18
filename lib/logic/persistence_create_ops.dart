@@ -248,17 +248,19 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
     DateTime? dateFrom,
     String? linkedId,
     String? categoryId,
+    String? id,
   }) async {
     try {
+      final metadata = await logic.createMetadata(
+        dateFrom: dateFrom ?? DateTime.now(),
+        dateTo: DateTime.now(),
+        uuidV5Input: json.encode(data),
+        categoryId: categoryId,
+        starred: false,
+      );
       final aiResponse = AiResponseEntry(
         data: data,
-        meta: await logic.createMetadata(
-          dateFrom: dateFrom ?? DateTime.now(),
-          dateTo: DateTime.now(),
-          uuidV5Input: json.encode(data),
-          categoryId: categoryId,
-          starred: false,
-        ),
+        meta: id == null ? metadata : metadata.copyWith(id: id),
       );
 
       await logic.createDbEntity(aiResponse, linkedId: linkedId);

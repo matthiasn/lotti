@@ -91,12 +91,14 @@ Startup does this:
   A successful wake records its start time as `reportFreshAt`, so a task edit
   that arrives during inference remains visibly stale and is not erased by the
   older wake finishing later.
-- Every task-agent report written by `WakeOutputWriter` receives a versioned
-  inference provenance stamp captured once at wake start. It denormalizes model
-  name, publisher, serving-provider name/type, route identifiers and relevant
-  runtime settings without storing credentials or endpoint URLs. Historical
-  reports without the stamp show attribution unavailable instead of borrowing
-  the current setup.
+- Every report written by `WakeOutputWriter` receives two complementary
+  provenance records. `ReportInferenceProvenance` snapshots model routing and
+  runtime settings without credentials or endpoint URLs. The AI-consumption
+  terminal envelope is stored under `provenance[aiAttributionV1]`, linking the
+  creator/trigger, all turns in the wake, cost evidence, and the report output.
+  The wake run key deterministically groups turns into one attribution; the
+  report is the terminal carrier. Historical reports are conservatively
+  backfilled as partial instead of borrowing the current setup.
 - Linked task context for agents is built directly in
   `TaskAgentContextBuilder.buildLinkedTasksContextJson` (the wake's prompt/context
   collaborator, which `TaskAgentWorkflow` holds and delegates to; forked from
@@ -120,6 +122,23 @@ flowchart LR
   Linked["Linked tasks (compact oneLiner/tldr)"] --> Wake
   Wake -.->|disabled today| Drill["get_related_task_details<br/>(enabled: false)"]
   Drill -.-> FullSibling["Full sibling task JSON + latest task-agent report"]
+```
+
+```mermaid
+sequenceDiagram
+  participant Wake as Agent workflow
+  participant Recorder as AiConsumptionRecorder
+  participant Attr as AiAttributionService
+  participant Writer as WakeOutputWriter
+  participant AgentDb as agent.sqlite
+  loop each model turn
+    Wake->>Recorder: agentTurn(wakeRunKey, usage, cost)
+    Recorder->>Attr: append to deterministic wake attribution
+  end
+  Wake->>Writer: final report
+  Writer->>Attr: prepareCompletion(agentReport id)
+  Writer->>AgentDb: report + provenance[aiAttributionV1]
+  Writer->>Attr: finalize terminal projection
 ```
 
 ```mermaid

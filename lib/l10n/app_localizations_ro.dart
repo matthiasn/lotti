@@ -1148,6 +1148,118 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiAssistantTitle => 'Generează…';
 
   @override
+  String get aiAttributionCost => 'Cost';
+
+  @override
+  String get aiAttributionCostUnknown => 'Cost necunoscut';
+
+  @override
+  String get aiAttributionCostZero => 'Fără cost';
+
+  @override
+  String get aiAttributionCreator => 'Creator';
+
+  @override
+  String get aiAttributionExecutor => 'Executat pe';
+
+  @override
+  String aiAttributionInteractionLine(int index, String model, int tokens) {
+    return 'Apelul $index: $model · $tokens tokenuri';
+  }
+
+  @override
+  String get aiAttributionInteractions => 'Interacțiuni';
+
+  @override
+  String get aiAttributionNoInteractionDetails =>
+      'Nu sunt disponibile detalii despre interacțiune.';
+
+  @override
+  String get aiAttributionPrivacy => 'Confidențialitate';
+
+  @override
+  String get aiAttributionPrivacyMixed => 'Mixt';
+
+  @override
+  String get aiAttributionPrivacyPrivate => 'Privat';
+
+  @override
+  String get aiAttributionPrivacyStandard => 'Standard';
+
+  @override
+  String aiAttributionSecondary(String model, String time, int callCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      callCount,
+      locale: localeName,
+      other: '$callCount apeluri',
+      one: '1 apel',
+      zero: 'niciun apel',
+    );
+    return '$model · $time · $_temp0';
+  }
+
+  @override
+  String get aiAttributionSensitiveContentNotice =>
+      'Conținutul solicitării și al răspunsului este ascuns deoarece această activitate conține date private.';
+
+  @override
+  String get aiAttributionStatus => 'Stare';
+
+  @override
+  String get aiAttributionStatusAbandoned => 'Întrerupt';
+
+  @override
+  String get aiAttributionStatusCancelled => 'Anulat';
+
+  @override
+  String get aiAttributionStatusFailed => 'Eșuat';
+
+  @override
+  String get aiAttributionStatusPartial => 'Parțial';
+
+  @override
+  String get aiAttributionStatusSucceeded => 'Finalizat';
+
+  @override
+  String aiAttributionSummary(String actor, String trigger, String status) {
+    return '$actor · $trigger · $status';
+  }
+
+  @override
+  String get aiAttributionTitle => 'Atribuire AI';
+
+  @override
+  String get aiAttributionTriggerAgent => 'Agent';
+
+  @override
+  String get aiAttributionTriggerAutomatic => 'Automat';
+
+  @override
+  String get aiAttributionTriggerImported => 'Importat';
+
+  @override
+  String get aiAttributionTriggerManual => 'Manual';
+
+  @override
+  String get aiAttributionTriggerScheduled => 'Programat';
+
+  @override
+  String get aiAttributionTriggerSynced => 'Din sincronizare';
+
+  @override
+  String get aiAttributionUnknownCreator => 'Creator necunoscut';
+
+  @override
+  String get aiAttributionUnknownExecutor =>
+      'Dispozitiv de execuție necunoscut';
+
+  @override
+  String get aiAttributionUnknownModel => 'Model necunoscut';
+
+  @override
+  String get aiAttributionYou => 'Dvs.';
+
+  @override
   String get aiBatchToggleTooltip => 'Comutare la înregistrare standard';
 
   @override
@@ -1289,6 +1401,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiConsumptionTypeAudioTranscription => 'Transcriere';
+
+  @override
+  String get aiConsumptionTypeEmbeddingIndexing => 'Indexare embedding';
 
   @override
   String get aiConsumptionTypeImageAnalysis => 'Analiză de imagine';
@@ -10710,6 +10825,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get timeEntryItemStart => 'Început';
+
+  @override
+  String transcriptLanguageLabel(String language) {
+    return 'Limbă: $language';
+  }
+
+  @override
+  String transcriptModelLabel(String provider, String model) {
+    return 'Model: $provider, $model';
+  }
 
   @override
   String get unlinkButton => 'Dezleagă';

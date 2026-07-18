@@ -10,6 +10,8 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -447,6 +449,15 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
             stabilizeGeneratedText:
                 item is JournalImage || item is JournalAudio,
           ),
+        if (item is JournalImage)
+          AiAttributionSummary(
+            artifact: AiArtifactReference(
+              type: AiArtifactType.journalImage,
+              id: item.id,
+            ),
+            envelope: item.data.aiAttribution,
+            includeTopSpacing: false,
+          ),
       ];
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,6 +491,15 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
         _bodyEditor(
           itemId,
           stabilizeGeneratedText: item is JournalImage || item is JournalAudio,
+        ),
+      if (item is JournalImage)
+        AiAttributionSummary(
+          artifact: AiArtifactReference(
+            type: AiArtifactType.journalImage,
+            id: item.id,
+          ),
+          envelope: item.data.aiAttribution,
+          includeTopSpacing: false,
         ),
     ];
     final expandedContent = Column(

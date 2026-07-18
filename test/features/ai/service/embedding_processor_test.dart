@@ -12,9 +12,16 @@ import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 enum _GeneratedEmbeddingEntityShape {
   missing,
@@ -405,12 +412,22 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockEmbeddingStore mockEmbeddingStore;
   late MockOllamaEmbeddingRepository mockEmbeddingRepo;
+  late MockAiConsumptionRecorder mockConsumptionRecorder;
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(Float32List(0));
   });
 
-  setUp(() {
+  setUp(() async {
+    mockConsumptionRecorder = MockAiConsumptionRecorder();
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<AiConsumptionRecorder>(
+          mockConsumptionRecorder,
+        );
+      },
+    );
     mockJournalDb = MockJournalDb();
     mockEmbeddingStore = MockEmbeddingStore();
     mockEmbeddingRepo = MockOllamaEmbeddingRepository();
@@ -419,7 +436,12 @@ void main() {
     _stubNoCategoryId(mockEmbeddingStore);
     _stubReplaceEntityEmbeddings(mockEmbeddingStore);
     _stubEmbed(mockEmbeddingRepo);
+    when(
+      () => mockConsumptionRecorder.record(any()),
+    ).thenAnswer((_) async {});
   });
+
+  tearDown(tearDownTestGetIt);
 
   /// Runs [EmbeddingProcessor.processEntity] against the shared mocks,
   /// removing the repeated `journalDb:/embeddingStore:/embeddingRepository:/
@@ -466,6 +488,35 @@ void main() {
           subtype: any(named: 'subtype'),
         ),
       ).called(1);
+    });
+
+    test('records reference-only evidence and known-zero local cost', () async {
+      final entry = JournalEntry(
+        meta: _meta(id: 'recorded-entry', categoryId: 'cat-1'),
+        entryText: const EntryText(plainText: _longText),
+      );
+
+      await processEntity(entity: entry);
+
+      final captured =
+          verify(
+                () => mockConsumptionRecorder.record(captureAny()),
+              ).captured.single
+              as AiConsumptionEvent;
+      expect(
+        captured.responseType,
+        AiConsumptionResponseType.embeddingIndexing,
+      );
+      expect(captured.interactionKind, AiInteractionKind.embedding);
+      expect(captured.entryId, entry.id);
+      expect(
+        captured.payload?.capturePolicy,
+        AiPayloadCapturePolicy.referenceOnly,
+      );
+      expect(captured.payload?.request, isEmpty);
+      expect(captured.payload?.requestDigest, isNot(contains(_longText)));
+      expect(captured.cost?.source, AiCostSource.localCompute);
+      expect(captured.cost?.reportingAmountMicros, 0);
     });
 
     test('returns false when entity not found', () async {

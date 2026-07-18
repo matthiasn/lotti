@@ -4,6 +4,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -38,46 +40,60 @@ class AiResponseSummary extends StatelessWidget {
       ),
     );
 
+    final responseContent = GestureDetector(
+      onDoubleTap: () {
+        ModalUtils.showSinglePageModal<void>(
+          context: context,
+          builder: (BuildContext _) {
+            return AiResponseSummaryModalContent(
+              aiResponse,
+              linkedFromId: linkedFromId,
+            );
+          },
+        );
+      },
+      child: fadeOut
+          ? ShaderMask(
+              shaderCallback: (rect) {
+                return const LinearGradient(
+                  begin: Alignment.center,
+                  end: Alignment.bottomCenter,
+                  stops: [0.3, 1.0],
+                  colors: [
+                    Colors.black,
+                    Colors.transparent,
+                  ],
+                ).createShader(
+                  Rect.fromLTRB(
+                    0,
+                    0,
+                    rect.width,
+                    rect.height,
+                  ),
+                );
+              },
+              blendMode: BlendMode.dstIn,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: content,
+              ),
+            )
+          : content,
+    );
+
     return ModernBaseCard(
-      child: GestureDetector(
-        onDoubleTap: () {
-          ModalUtils.showSinglePageModal<void>(
-            context: context,
-            builder: (BuildContext _) {
-              return AiResponseSummaryModalContent(
-                aiResponse,
-                linkedFromId: linkedFromId,
-              );
-            },
-          );
-        },
-        child: fadeOut
-            ? ShaderMask(
-                shaderCallback: (rect) {
-                  return const LinearGradient(
-                    begin: Alignment.center,
-                    end: Alignment.bottomCenter,
-                    stops: [0.3, 1.0],
-                    colors: [
-                      Colors.black,
-                      Colors.transparent,
-                    ],
-                  ).createShader(
-                    Rect.fromLTRB(
-                      0,
-                      0,
-                      rect.width,
-                      rect.height,
-                    ),
-                  );
-                },
-                blendMode: BlendMode.dstIn,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 200),
-                  child: content,
-                ),
-              )
-            : content,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          responseContent,
+          AiAttributionSummary(
+            artifact: AiArtifactReference(
+              type: AiArtifactType.journalAiResponse,
+              id: aiResponse.meta.id,
+            ),
+            envelope: aiResponse.data.aiAttribution,
+          ),
+        ],
       ),
     );
   }

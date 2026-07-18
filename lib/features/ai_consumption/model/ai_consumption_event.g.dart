@@ -21,6 +21,37 @@ _AiConsumptionEvent _$AiConsumptionEventFromJson(Map<String, dynamic> json) =>
       vectorClock: json['vectorClock'] == null
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      attributionId: json['attributionId'] as String?,
+      sequenceIndex: (json['sequenceIndex'] as num?)?.toInt() ?? 0,
+      interactionKind: $enumDecodeNullable(
+        _$AiInteractionKindEnumMap,
+        json['interactionKind'],
+      ),
+      interactionStatus:
+          $enumDecodeNullable(
+            _$AiInteractionStatusEnumMap,
+            json['interactionStatus'],
+          ) ??
+          AiInteractionStatus.succeeded,
+      completedAt: json['completedAt'] == null
+          ? null
+          : DateTime.parse(json['completedAt'] as String),
+      providerRequestId: json['providerRequestId'] as String?,
+      errorCode: json['errorCode'] as String?,
+      errorSummary: json['errorSummary'] as String?,
+      payload: json['payload'] == null
+          ? null
+          : AiInteractionPayload.fromJson(
+              json['payload'] as Map<String, dynamic>,
+            ),
+      cost: json['cost'] == null
+          ? null
+          : AiInteractionCost.fromJson(json['cost'] as Map<String, dynamic>),
+      recoveryCapsule: json['recoveryCapsule'] == null
+          ? null
+          : AiAttributionRecoveryCapsule.fromJson(
+              json['recoveryCapsule'] as Map<String, dynamic>,
+            ),
       parentId: json['parentId'] as String?,
       taskId: json['taskId'] as String?,
       categoryId: json['categoryId'] as String?,
@@ -58,6 +89,18 @@ Map<String, dynamic> _$AiConsumptionEventToJson(
   'providerType': _$InferenceProviderTypeEnumMap[instance.providerType]!,
   'responseType': _$AiConsumptionResponseTypeEnumMap[instance.responseType]!,
   'vectorClock': instance.vectorClock,
+  'attributionId': instance.attributionId,
+  'sequenceIndex': instance.sequenceIndex,
+  'interactionKind': _$AiInteractionKindEnumMap[instance.interactionKind],
+  'interactionStatus':
+      _$AiInteractionStatusEnumMap[instance.interactionStatus]!,
+  'completedAt': instance.completedAt?.toIso8601String(),
+  'providerRequestId': instance.providerRequestId,
+  'errorCode': instance.errorCode,
+  'errorSummary': instance.errorSummary,
+  'payload': instance.payload,
+  'cost': instance.cost,
+  'recoveryCapsule': instance.recoveryCapsule,
   'parentId': instance.parentId,
   'taskId': instance.taskId,
   'categoryId': instance.categoryId,
@@ -111,4 +154,22 @@ const _$AiConsumptionResponseTypeEnumMap = {
   AiConsumptionResponseType.imageAnalysis: 'imageAnalysis',
   AiConsumptionResponseType.imageGeneration: 'imageGeneration',
   AiConsumptionResponseType.promptGeneration: 'promptGeneration',
+  AiConsumptionResponseType.embeddingIndexing: 'embeddingIndexing',
+};
+
+const _$AiInteractionKindEnumMap = {
+  AiInteractionKind.chatCompletion: 'chatCompletion',
+  AiInteractionKind.textGeneration: 'textGeneration',
+  AiInteractionKind.audioTranscription: 'audioTranscription',
+  AiInteractionKind.realtimeTranscription: 'realtimeTranscription',
+  AiInteractionKind.imageAnalysis: 'imageAnalysis',
+  AiInteractionKind.imageGeneration: 'imageGeneration',
+  AiInteractionKind.embedding: 'embedding',
+};
+
+const _$AiInteractionStatusEnumMap = {
+  AiInteractionStatus.succeeded: 'succeeded',
+  AiInteractionStatus.failed: 'failed',
+  AiInteractionStatus.cancelled: 'cancelled',
+  AiInteractionStatus.partial: 'partial',
 };

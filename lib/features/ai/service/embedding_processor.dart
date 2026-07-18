@@ -1,12 +1,21 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/get_it.dart';
+import 'package:uuid/uuid.dart';
 
 /// Callback that resolves a list of label IDs to their display names.
 ///
@@ -200,9 +209,20 @@ class EmbeddingProcessor {
     // Phase 1: Generate all embeddings (network calls that can fail).
     final generated = <Float32List>[];
     for (final chunk in chunks) {
-      generated.add(
-        await embeddingRepository.embed(input: chunk, baseUrl: baseUrl),
+      final startedAt = DateTime.now().toUtc();
+      final embedding = await embeddingRepository.embed(
+        input: chunk,
+        baseUrl: baseUrl,
       );
+      await _recordEmbeddingConsumption(
+        entityId: entityId,
+        categoryId: categoryId,
+        taskId: taskId,
+        chunk: chunk,
+        embedding: embedding,
+        startedAt: startedAt,
+      );
+      generated.add(embedding);
     }
 
     await embeddingStore.replaceEntityEmbeddings(
@@ -214,6 +234,61 @@ class EmbeddingProcessor {
       categoryId: categoryId,
       taskId: taskId,
       subtype: subtype,
+    );
+  }
+
+  static Future<void> _recordEmbeddingConsumption({
+    required String entityId,
+    required String categoryId,
+    required String taskId,
+    required String chunk,
+    required Float32List embedding,
+    required DateTime startedAt,
+  }) async {
+    if (!getIt.isRegistered<AiConsumptionRecorder>()) return;
+    final eventId = const Uuid().v4();
+    final completedAt = DateTime.now().toUtc();
+    await getIt<AiConsumptionRecorder>().record(
+      AiConsumptionEvent(
+        id: eventId,
+        createdAt: startedAt,
+        providerType: InferenceProviderType.ollama,
+        responseType: AiConsumptionResponseType.embeddingIndexing,
+        vectorClock: null,
+        interactionKind: AiInteractionKind.embedding,
+        completedAt: completedAt,
+        entryId: entityId,
+        taskId: taskId.isEmpty ? null : taskId,
+        categoryId: categoryId.isEmpty ? null : categoryId,
+        providerModelId: ollamaEmbedDefaultModel,
+        durationMs: completedAt.difference(startedAt).inMilliseconds,
+        payload: AiInteractionPayload(
+          id: 'payload-$eventId',
+          interactionId: eventId,
+          request: const [],
+          response: const [],
+          parameters: {'dimensions': embedding.length},
+          requestDigest: sha256.convert(utf8.encode(chunk)).toString(),
+          responseDigest: sha256
+              .convert(embedding.buffer.asUint8List())
+              .toString(),
+          capturePolicy: AiPayloadCapturePolicy.referenceOnly,
+          privacyClassification: AiPrivacyClassification.standard,
+          createdAt: completedAt,
+        ),
+        cost: AiInteractionCost(
+          id: 'cost-$eventId',
+          interactionId: eventId,
+          source: AiCostSource.localCompute,
+          assessedAt: completedAt,
+          originalAmountDecimal: '0',
+          originalUnit: 'USD',
+          reportingAmountMicros: 0,
+          reportingCurrency: 'USD',
+          providerType: InferenceProviderType.ollama.name,
+          billingSource: 'local_compute',
+        ),
+      ),
     );
   }
 }

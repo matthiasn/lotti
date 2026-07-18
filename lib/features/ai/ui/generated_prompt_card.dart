@@ -5,10 +5,13 @@ import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Specialized card for displaying AI-generated prompts (coding or image).
@@ -78,7 +81,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: MotionDurations.medium2,
       vsync: this,
     );
     // Standard expand/collapse caret: collapsed → right (-0.25 turns
@@ -90,12 +93,12 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
         ).animate(
           CurvedAnimation(
             parent: _animationController,
-            curve: Curves.easeInOut,
+            curve: MotionCurves.standard,
           ),
         );
     _expandAnimation = CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeInOut,
+      curve: MotionCurves.standard,
     );
 
     _parseContent();
@@ -168,6 +171,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -178,16 +182,16 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
               _isImagePrompt
                   ? AiResponseType.imagePromptGeneration.icon
                   : AiResponseType.promptGeneration.icon,
-              color: context.colorScheme.primary,
-              size: 18,
+              color: tokens.colors.interactive.enabled,
+              size: tokens.spacing.step5,
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: tokens.spacing.step2),
             Expanded(
               child: Text(
                 _cardTitle(context),
-                style: context.textTheme.titleSmall?.copyWith(
-                  color: context.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: tokens.colors.interactive.enabled,
+                  fontWeight: tokens.typography.weight.semiBold,
                 ),
               ),
             ),
@@ -195,8 +199,8 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
             IconButton(
               icon: Icon(
                 Icons.copy_rounded,
-                color: context.colorScheme.primary,
-                size: 20,
+                color: tokens.colors.interactive.enabled,
+                size: tokens.spacing.step5,
               ),
               visualDensity: VisualDensity.compact,
               tooltip: _isImagePrompt
@@ -210,8 +214,8 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
               child: IconButton(
                 icon: Icon(
                   Icons.expand_more,
-                  color: context.colorScheme.onSurfaceVariant,
-                  size: 20,
+                  color: tokens.colors.text.mediumEmphasis,
+                  size: tokens.spacing.step5,
                 ),
                 visualDensity: VisualDensity.compact,
                 tooltip: _isImagePrompt
@@ -222,7 +226,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: tokens.spacing.step1),
         // Summary (always visible)
         GestureDetector(
           onDoubleTap: () {
@@ -239,6 +243,13 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
           child: SelectionArea(
             child: AgentMarkdownView(_summary),
           ),
+        ),
+        AiAttributionSummary(
+          artifact: AiArtifactReference(
+            type: AiArtifactType.journalAiResponse,
+            id: widget.aiResponse.meta.id,
+          ),
+          envelope: widget.aiResponse.data.aiAttribution,
         ),
         // Expandable full prompt
         AnimatedBuilder(
@@ -258,9 +269,9 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
+              SizedBox(height: tokens.spacing.step4),
               const Divider(),
-              const SizedBox(height: 8),
+              SizedBox(height: tokens.spacing.step2),
               Row(
                 children: [
                   Expanded(
@@ -270,28 +281,26 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
                                 .messages
                                 .imagePromptGenerationFullPromptLabel
                           : context.messages.promptGenerationFullPromptLabel,
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
                       ),
                     ),
                   ),
-                  FilledButton.icon(
+                  DesignSystemButton(
                     onPressed: _copyToClipboard,
-                    icon: const Icon(Icons.copy_rounded, size: 18),
-                    label: Text(
-                      _isImagePrompt
-                          ? context.messages.imagePromptGenerationCopyButton
-                          : context.messages.promptGenerationCopyButton,
-                    ),
+                    leadingIcon: Icons.copy_rounded,
+                    label: _isImagePrompt
+                        ? context.messages.imagePromptGenerationCopyButton
+                        : context.messages.promptGenerationCopyButton,
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: tokens.spacing.step2),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(tokens.spacing.step3),
                 decoration: BoxDecoration(
-                  color: context.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
+                  color: tokens.colors.background.level02,
+                  borderRadius: BorderRadius.circular(tokens.radii.m),
                 ),
                 child: SelectionArea(
                   child: AgentMarkdownView(_fullPrompt),

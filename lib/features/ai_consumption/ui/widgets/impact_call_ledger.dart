@@ -111,6 +111,7 @@ class _LedgerRow extends StatelessWidget {
     AiConsumptionResponseType.imageAnalysis => Icons.image_search_outlined,
     AiConsumptionResponseType.imageGeneration => Icons.brush_outlined,
     AiConsumptionResponseType.promptGeneration => Icons.edit_note_outlined,
+    AiConsumptionResponseType.embeddingIndexing => Icons.hub_outlined,
   };
 
   String _typeLabel(BuildContext context) {
@@ -128,6 +129,8 @@ class _LedgerRow extends StatelessWidget {
         messages.aiConsumptionTypeImageGeneration,
       AiConsumptionResponseType.promptGeneration =>
         messages.aiConsumptionTypePromptGeneration,
+      AiConsumptionResponseType.embeddingIndexing =>
+        messages.aiConsumptionTypeEmbeddingIndexing,
     };
   }
 

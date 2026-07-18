@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -31,7 +32,10 @@ import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
@@ -198,6 +202,19 @@ class SkillInferenceRunner {
 
         // 5. Call inference with separate system/user messages.
         final start = DateTime.now();
+        final transcriptId = uuid.v4();
+        final attribution = await _beginAttribution(
+          workType: AiWorkType.audioTranscription,
+          source: entity,
+          output: AiArtifactReference(
+            type: AiArtifactType.journalAudio,
+            id: audioEntryId,
+            subId: transcriptId,
+          ),
+          skill: skill,
+          automationResult: automationResult,
+          taskId: linkedTaskId,
+        );
         final responseStream = _cloudRepository.generateWithAudio(
           promptResult.userMessage,
           model: modelId,
@@ -219,7 +236,8 @@ class SkillInferenceRunner {
         // has no impact side-channel. Preserve any returned usage while leaving
         // environmental impact unset for both chat-audio and transcription
         // endpoints.
-        await _recordConsumption(
+        final attributionEnvelope = await _recordAttributedConsumption(
+          attribution: attribution,
           entryId: audioEntryId,
           taskId: linkedTaskId,
           categoryId: entity.meta.categoryId,
@@ -230,6 +248,10 @@ class SkillInferenceRunner {
           usage: collected.usage,
           impact: null,
           start: start,
+          interactionKind: AiInteractionKind.audioTranscription,
+          requestText:
+              '${promptResult.systemMessage}\n${promptResult.userMessage}',
+          responseText: collected.content,
         );
 
         final response = collected.content.trim();
@@ -255,6 +277,8 @@ class SkillInferenceRunner {
           detectedLanguage: '-',
           transcript: response,
           processingTime: DateTime.now().difference(start),
+          id: transcriptId,
+          aiAttribution: attributionEnvelope,
         );
 
         final existingTranscripts = currentAudio.data.transcripts ?? [];
@@ -268,6 +292,7 @@ class SkillInferenceRunner {
           ),
         );
         await _journalRepository.updateJournalEntity(updated);
+        await _finalizeAttribution(attributionEnvelope);
 
         _loggingService.log(
           LogDomain.ai,
@@ -363,6 +388,18 @@ class SkillInferenceRunner {
 
         // 5. Call inference with separate system/user messages.
         final start = DateTime.now();
+        final responseId = uuid.v4();
+        final attribution = await _beginAttribution(
+          workType: AiWorkType.imageAnalysis,
+          source: entity,
+          output: AiArtifactReference(
+            type: AiArtifactType.journalAiResponse,
+            id: responseId,
+          ),
+          skill: skill,
+          automationResult: automationResult,
+          taskId: linkedTaskId,
+        );
         final impactCollector = InferenceImpactCollector();
         final responseStream = _cloudRepository.generateWithImages(
           promptResult.userMessage,
@@ -380,7 +417,8 @@ class SkillInferenceRunner {
         // 6. Collect streaming response.
         final collected = await _collectStream(responseStream);
 
-        await _recordConsumption(
+        final attributionEnvelope = await _recordAttributedConsumption(
+          attribution: attribution,
           entryId: imageEntryId,
           taskId: linkedTaskId,
           categoryId: entity.meta.categoryId,
@@ -391,6 +429,10 @@ class SkillInferenceRunner {
           usage: collected.usage,
           impact: impactCollector.impact,
           start: start,
+          interactionKind: AiInteractionKind.imageAnalysis,
+          requestText:
+              '${promptResult.systemMessage}\n${promptResult.userMessage}',
+          responseText: collected.content,
         );
 
         final response = collected.content.trim();
@@ -400,7 +442,8 @@ class SkillInferenceRunner {
           );
         }
 
-        // 7. Save result — append to entryText.
+        // 7. Re-read before persisting either projection so a source deleted
+        // mid-run cannot leave a detached analysis behind.
         final currentImage =
             await EntityStateHelper.getCurrentEntityState<JournalImage>(
               entityId: imageEntryId,
@@ -409,6 +452,34 @@ class SkillInferenceRunner {
             );
         if (currentImage == null) {
           throw StateError('Image entity $imageEntryId disappeared mid-run');
+        }
+
+        // Attributed clients save analysis as its own authoritative output.
+        // The compatibility path below remains the only write when the new
+        // service is not registered (older tests/partial composition roots).
+        if (attribution != null) {
+          final aiResponse = await _aiInputRepository.createAiResponseEntry(
+            id: responseId,
+            data: AiResponseData(
+              model: modelId,
+              systemMessage: promptResult.systemMessage,
+              prompt: promptResult.userMessage,
+              thoughts: '',
+              response: response,
+              skillId: skill.id,
+              type: skill.skillType.toResponseType,
+              aiAttribution: attributionEnvelope,
+            ),
+            start: start,
+            linkedId: imageEntryId,
+            categoryId: entity.meta.categoryId,
+          );
+          if (aiResponse == null) {
+            throw StateError(
+              'Failed to persist image analysis for $imageEntryId',
+            );
+          }
+          await _finalizeAttribution(attributionEnvelope);
         }
 
         final originalText = currentImage.entryText?.markdown ?? '';
@@ -510,6 +581,20 @@ class SkillInferenceRunner {
 
         // 5. Call inference with text-only (no audio/image upload).
         final start = DateTime.now();
+        final responseId = uuid.v4();
+        final attribution = await _beginAttribution(
+          workType: skill.skillType == SkillType.promptGeneration
+              ? AiWorkType.codingPrompt
+              : AiWorkType.textGeneration,
+          source: entity,
+          output: AiArtifactReference(
+            type: AiArtifactType.journalAiResponse,
+            id: responseId,
+          ),
+          skill: skill,
+          automationResult: automationResult,
+          taskId: linkedTaskId,
+        );
         final impactCollector = InferenceImpactCollector();
         final responseStream = _cloudRepository.generate(
           promptResult.userMessage,
@@ -526,7 +611,8 @@ class SkillInferenceRunner {
         // 6. Collect streaming response.
         final collected = await _collectStream(responseStream);
 
-        await _recordConsumption(
+        final attributionEnvelope = await _recordAttributedConsumption(
+          attribution: attribution,
           entryId: entryId,
           taskId: linkedTaskId,
           categoryId: entity.meta.categoryId,
@@ -537,6 +623,10 @@ class SkillInferenceRunner {
           usage: collected.usage,
           impact: impactCollector.impact,
           start: start,
+          interactionKind: AiInteractionKind.textGeneration,
+          requestText:
+              '${promptResult.systemMessage}\n${promptResult.userMessage}',
+          responseText: collected.content,
         );
 
         final response = collected.content.trim();
@@ -560,6 +650,7 @@ class SkillInferenceRunner {
           response: response,
           skillId: skill.id,
           type: skill.skillType.toResponseType,
+          aiAttribution: attributionEnvelope,
         );
 
         // Coding prompts attach to the parent task (like cover art) so each
@@ -574,12 +665,26 @@ class SkillInferenceRunner {
             ? linkedTaskId
             : entryId;
 
-        final aiResponse = await _aiInputRepository.createAiResponseEntry(
-          data: data,
-          start: start,
-          linkedId: linkedId,
-          categoryId: entity.meta.categoryId,
-        );
+        final aiResponse = attributionEnvelope == null
+            ? await _aiInputRepository.createAiResponseEntry(
+                data: data,
+                start: start,
+                linkedId: linkedId,
+                categoryId: entity.meta.categoryId,
+              )
+            : await _aiInputRepository.createAiResponseEntry(
+                id: responseId,
+                data: data,
+                start: start,
+                linkedId: linkedId,
+                categoryId: entity.meta.categoryId,
+              );
+        if (aiResponse == null && attributionEnvelope != null) {
+          throw StateError('Failed to persist generated prompt for $entryId');
+        }
+        if (aiResponse != null) {
+          await _finalizeAttribution(attributionEnvelope);
+        }
 
         // Additionally link the coding prompt back to the source entry so it
         // shows in both the task's and the originating audio/text entry's
@@ -745,6 +850,18 @@ class SkillInferenceRunner {
         );
 
         final start = DateTime.now();
+        final imageId = uuid.v1();
+        final attribution = await _beginAttribution(
+          workType: AiWorkType.imageGeneration,
+          source: entity,
+          output: AiArtifactReference(
+            type: AiArtifactType.journalImage,
+            id: imageId,
+          ),
+          skill: skill,
+          automationResult: automationResult,
+          taskId: linkedTaskId,
+        );
         final impactCollector = InferenceImpactCollector();
         final generatedImage = await _cloudRepository.generateImage(
           prompt: promptResult.userMessage,
@@ -765,7 +882,8 @@ class SkillInferenceRunner {
         // before the task-existence check below: the billed call already
         // happened, so a task deleted mid-flight must not erase its
         // cost/impact record.
-        await _recordConsumption(
+        final attributionEnvelope = await _recordAttributedConsumption(
+          attribution: attribution,
           entryId: entryId,
           taskId: linkedTaskId,
           categoryId: taskEntity is Task ? taskEntity.meta.categoryId : null,
@@ -776,6 +894,10 @@ class SkillInferenceRunner {
           usage: null,
           impact: impactCollector.impact,
           start: start,
+          interactionKind: AiInteractionKind.imageGeneration,
+          requestText:
+              '${promptResult.systemMessage}\n${promptResult.userMessage}',
+          responseText: generatedImage.mimeType,
         );
 
         if (taskEntity is! Task) {
@@ -787,18 +909,21 @@ class SkillInferenceRunner {
         // 7. Import the generated image as a JournalImage linked to the task.
         final extension =
             generatedImage.mimeType.split('/').lastOrNull ?? 'png';
-        final imageId = await importGeneratedImageBytes(
+        final importedImageId = await importGeneratedImageBytes(
           data: Uint8List.fromList(generatedImage.bytes),
           fileExtension: extension,
           linkedId: linkedTaskId,
           categoryId: taskEntity.meta.categoryId,
+          imageId: imageId,
+          aiAttribution: attributionEnvelope,
         );
 
-        if (imageId == null) {
+        if (importedImageId == null) {
           throw StateError(
             'Failed to import generated image for task $linkedTaskId',
           );
         }
+        await _finalizeAttribution(attributionEnvelope);
 
         // 8. Set the image as cover art on the task.
         final updatedData = taskEntity.data.copyWith(coverArtId: imageId);
@@ -852,6 +977,218 @@ class SkillInferenceRunner {
     return (content: buffer.toString(), usage: usage);
   }
 
+  Future<AiAttributionPendingSession?> _beginAttribution({
+    required AiWorkType workType,
+    required JournalEntity source,
+    required AiArtifactReference output,
+    required AiConfigSkill skill,
+    required AutomationResult automationResult,
+    required String? taskId,
+  }) async {
+    if (!getIt.isRegistered<AiAttributionService>() ||
+        !getIt.isRegistered<AiAttributionIdentityResolver>()) {
+      return null;
+    }
+    final identity = getIt<AiAttributionIdentityResolver>();
+    final actor = await identity.humanInitiator();
+    final executor = await identity.executor();
+    final automatic = automationResult.skillAssignment?.automate ?? false;
+    return getIt<AiAttributionService>().begin(
+      AiAttributionStart(
+        workType: workType,
+        initiator: actor,
+        trigger: AiTriggerSnapshot(
+          type: automatic ? AiTriggerType.automatic : AiTriggerType.manual,
+          skillId: skill.id,
+        ),
+        executor: executor,
+        privacyClassification: source.meta.private == true
+            ? AiPrivacyClassification.private
+            : AiPrivacyClassification.standard,
+        intendedOutputs: [output],
+        sources: [_artifactForJournalEntity(source)],
+        taskId: taskId,
+        categoryId: source.meta.categoryId,
+      ),
+    );
+  }
+
+  Future<AiTerminalAttributionEnvelope?> _recordAttributedConsumption({
+    required AiAttributionPendingSession? attribution,
+    required String entryId,
+    required String? taskId,
+    required String? categoryId,
+    required String skillId,
+    required AiConfigInferenceProvider provider,
+    required String modelId,
+    required AiResponseType responseType,
+    required CompletionUsage? usage,
+    required MeliousCallImpact? impact,
+    required DateTime start,
+    required AiInteractionKind interactionKind,
+    required String requestText,
+    required String responseText,
+  }) async {
+    if (attribution == null) {
+      await _recordConsumption(
+        entryId: entryId,
+        taskId: taskId,
+        categoryId: categoryId,
+        skillId: skillId,
+        provider: provider,
+        modelId: modelId,
+        responseType: responseType,
+        usage: usage,
+        impact: impact,
+        start: start,
+      );
+      return null;
+    }
+
+    final interactionId = uuid.v4();
+    final completedAt = DateTime.now();
+    final requestDigest = sha256.convert(utf8.encode(requestText)).toString();
+    final responseDigest = sha256.convert(utf8.encode(responseText)).toString();
+    final cost = AiInteractionCost(
+      id: uuid.v4(),
+      interactionId: interactionId,
+      source: impact?.costCredits == null
+          ? AiCostSource.unknown
+          : AiCostSource.providerReported,
+      assessedAt: completedAt,
+      originalAmountDecimal: impact?.costCredits.toString(),
+      originalUnit: impact?.costCredits == null ? null : 'credits',
+      providerType: provider.inferenceProviderType.name,
+      pricingSnapshot: const {'version': 'provider-reported-v1'},
+    );
+    final payload = AiInteractionPayload(
+      id: uuid.v4(),
+      interactionId: interactionId,
+      request: [
+        AiContentPart(
+          type: AiContentPartType.omitted,
+          sha256: requestDigest,
+          byteLength: utf8.encode(requestText).length,
+        ),
+      ],
+      response: [
+        AiContentPart(
+          type: AiContentPartType.omitted,
+          sha256: responseDigest,
+          byteLength: utf8.encode(responseText).length,
+        ),
+      ],
+      parameters: {
+        'model': modelId,
+        'providerType': provider.inferenceProviderType.name,
+      },
+      requestDigest: requestDigest,
+      responseDigest: responseDigest,
+      capturePolicy: AiPayloadCapturePolicy.referenceOnly,
+      privacyClassification: attribution.privacyClassification,
+      createdAt: completedAt,
+    );
+    final event = _consumptionEvent(
+      id: interactionId,
+      entryId: entryId,
+      taskId: taskId,
+      categoryId: categoryId,
+      skillId: skillId,
+      provider: provider,
+      modelId: modelId,
+      responseType: responseType,
+      usage: usage,
+      impact: impact,
+      start: start,
+      completedAt: completedAt,
+      interactionKind: interactionKind,
+      payload: payload,
+      cost: cost,
+    );
+    final result = await getIt<AiAttributionService>().recordInteraction(
+      attributionId: attribution.id,
+      event: event,
+    );
+    if (!result.published) {
+      throw const AiAttributionPublicationException(
+        'output blocked because attribution evidence could not be published',
+      );
+    }
+    return getIt<AiAttributionService>().prepareCompletion(
+      attributionId: attribution.id,
+      outputs: attribution.intendedOutputs,
+    );
+  }
+
+  Future<void> _finalizeAttribution(
+    AiTerminalAttributionEnvelope? envelope,
+  ) async {
+    if (envelope == null || !getIt.isRegistered<AiAttributionService>()) {
+      return;
+    }
+    await getIt<AiAttributionService>().finalize(envelope);
+  }
+
+  AiArtifactReference _artifactForJournalEntity(JournalEntity entity) =>
+      AiArtifactReference(
+        type: switch (entity) {
+          JournalAudio() => AiArtifactType.journalAudio,
+          JournalImage() => AiArtifactType.journalImage,
+          AiResponseEntry() => AiArtifactType.journalAiResponse,
+          _ => AiArtifactType.journalEntry,
+        },
+        id: entity.meta.id,
+      );
+
+  AiConsumptionEvent _consumptionEvent({
+    required String id,
+    required String entryId,
+    required String? taskId,
+    required String? categoryId,
+    required String skillId,
+    required AiConfigInferenceProvider provider,
+    required String modelId,
+    required AiResponseType responseType,
+    required CompletionUsage? usage,
+    required MeliousCallImpact? impact,
+    required DateTime start,
+    DateTime? completedAt,
+    AiInteractionKind? interactionKind,
+    AiInteractionPayload? payload,
+    AiInteractionCost? cost,
+  }) => AiConsumptionEvent(
+    id: id,
+    createdAt: start,
+    providerType: provider.inferenceProviderType,
+    responseType: responseType.consumptionResponseType,
+    vectorClock: null,
+    interactionKind: interactionKind,
+    completedAt: completedAt,
+    payload: payload,
+    cost: cost,
+    entryId: entryId,
+    taskId: taskId,
+    categoryId: categoryId,
+    skillId: skillId,
+    providerModelId: modelId,
+    durationMs: (completedAt ?? DateTime.now())
+        .difference(start)
+        .inMilliseconds,
+    inputTokens: usage?.promptTokens,
+    outputTokens: usage?.completionTokens,
+    cachedInputTokens: usage?.promptTokensDetails?.cachedTokens,
+    thoughtsTokens: usage?.completionTokensDetails?.reasoningTokens,
+    totalTokens: usage?.totalTokens,
+    credits: impact?.costCredits,
+    energyKwh: impact?.energyKwh,
+    carbonGCo2: impact?.carbonGCo2,
+    waterLiters: impact?.waterLiters,
+    renewablePercent: impact?.renewablePercent,
+    pue: impact?.pue,
+    dataCenter: impact?.dataCenter,
+    upstreamProviderId: impact?.providerId,
+  );
+
   /// Records one AI-consumption event for a completed skill call. Owner ids come
   /// from the call context; tokens from [usage]; cost/energy from [impact]
   /// (Melious only). Never breaks a run — a no-op when no recorder is wired, and
@@ -870,33 +1207,20 @@ class SkillInferenceRunner {
   }) async {
     if (!getIt.isRegistered<AiConsumptionRecorder>()) return;
     await getIt<AiConsumptionRecorder>().record(
-      AiConsumptionEvent(
+      _consumptionEvent(
         // v4 (opaque random): the record id carries no timestamp/node info;
         // createdAt already captures the time explicitly.
         id: uuid.v4(),
-        createdAt: start,
-        providerType: provider.inferenceProviderType,
-        responseType: responseType.consumptionResponseType,
-        vectorClock: null,
         entryId: entryId,
         taskId: taskId,
         categoryId: categoryId,
         skillId: skillId,
-        providerModelId: modelId,
-        durationMs: DateTime.now().difference(start).inMilliseconds,
-        inputTokens: usage?.promptTokens,
-        outputTokens: usage?.completionTokens,
-        cachedInputTokens: usage?.promptTokensDetails?.cachedTokens,
-        thoughtsTokens: usage?.completionTokensDetails?.reasoningTokens,
-        totalTokens: usage?.totalTokens,
-        credits: impact?.costCredits,
-        energyKwh: impact?.energyKwh,
-        carbonGCo2: impact?.carbonGCo2,
-        waterLiters: impact?.waterLiters,
-        renewablePercent: impact?.renewablePercent,
-        pue: impact?.pue,
-        dataCenter: impact?.dataCenter,
-        upstreamProviderId: impact?.providerId,
+        provider: provider,
+        modelId: modelId,
+        responseType: responseType,
+        usage: usage,
+        impact: impact,
+        start: start,
       ),
     );
   }

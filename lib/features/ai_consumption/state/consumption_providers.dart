@@ -5,7 +5,9 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai_consumption/logic/attribution_cost.dart';
 import 'package:lotti/features/ai_consumption/logic/consumption_bucketing.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
@@ -25,6 +27,52 @@ final consumptionRepositoryProvider = Provider<ConsumptionRepository>(
   (ref) => getIt<ConsumptionRepository>(),
   name: 'consumptionRepositoryProvider',
 );
+
+class AiAttributionDetails {
+  const AiAttributionDetails({
+    required this.attribution,
+    required this.interactions,
+    required this.costTotals,
+  });
+
+  final AiWorkAttribution attribution;
+  final List<AiConsumptionEvent> interactions;
+  final AiCostTotals costTotals;
+}
+
+Future<AiAttributionDetails?> _fetchAttributionDetails(
+  ConsumptionRepository repository,
+  AiWorkAttribution? attribution,
+) async {
+  if (attribution == null) return null;
+  final interactions = await repository.interactionsForAttribution(
+    attribution.id,
+  );
+  final costs = await repository.costsForAttribution(attribution.id);
+  return AiAttributionDetails(
+    attribution: attribution,
+    interactions: interactions,
+    costTotals: aggregateEffectiveCosts(costs),
+  );
+}
+
+final aiAttributionDetailsProvider = FutureProvider.autoDispose
+    .family<AiAttributionDetails?, String>((ref, attributionId) async {
+      final repository = ref.watch(consumptionRepositoryProvider);
+      return _fetchAttributionDetails(
+        repository,
+        await repository.getAttribution(attributionId),
+      );
+    }, name: 'aiAttributionDetailsProvider');
+
+final aiAttributionForArtifactProvider = FutureProvider.autoDispose
+    .family<AiAttributionDetails?, AiArtifactReference>((ref, artifact) async {
+      final repository = ref.watch(consumptionRepositoryProvider);
+      return _fetchAttributionDetails(
+        repository,
+        await repository.getAttributionForArtifact(artifact),
+      );
+    }, name: 'aiAttributionForArtifactProvider');
 
 /// Throttle for notification-driven consumption refetches. Consumption rows
 /// arrive in bursts during agent wakes (one per turn); the trailing-edge

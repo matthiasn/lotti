@@ -169,6 +169,7 @@ extension _AgentHandlers on SyncEventProcessor {
             jsonPath: msg.jsonPath,
             prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
           )) {
+        await _projectAgentAttribution(resolvedEntity);
         await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
         return;
       }
@@ -190,6 +191,7 @@ extension _AgentHandlers on SyncEventProcessor {
         );
       }
       await agentRepository!.upsertEntity(entityToApply);
+      await _projectAgentAttribution(entityToApply);
       if (prefetchedAgentEntitiesById?.containsKey(entityToApply.id) ?? false) {
         prefetchedAgentEntitiesById![entityToApply.id] = entityToApply;
       }
@@ -261,6 +263,14 @@ extension _AgentHandlers on SyncEventProcessor {
         subDomain: 'processor.apply',
       );
     }
+  }
+
+  Future<void> _projectAgentAttribution(AgentDomainEntity entity) async {
+    final repository = consumptionRepository;
+    if (repository == null) return;
+    await AiAttributionBackfillService(
+      repository,
+    ).backfill(agentEntities: [entity]);
   }
 
   /// Keeps explicit task-agent fields when an older client sends a rewrite

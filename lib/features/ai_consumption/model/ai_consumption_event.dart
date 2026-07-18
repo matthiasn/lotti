@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -40,6 +41,38 @@ abstract class AiConsumptionEvent with _$AiConsumptionEvent {
 
     /// CRDT clock stamped by the sync-aware write path; null until stamped.
     required VectorClock? vectorClock,
+
+    /// Logical work attribution that owns this interaction. Null only for
+    /// legacy events captured before attribution was introduced.
+    String? attributionId,
+
+    /// Stable order of this interaction inside its logical work operation.
+    @Default(0) int sequenceIndex,
+
+    /// Backend operation and terminal outcome. Legacy rows may not identify
+    /// the operation more precisely than [responseType].
+    AiInteractionKind? interactionKind,
+    @Default(AiInteractionStatus.succeeded)
+    AiInteractionStatus interactionStatus,
+
+    /// Completion timestamp. [createdAt] remains the interaction start.
+    DateTime? completedAt,
+
+    /// Provider request id used for reconciliation when the backend exposes
+    /// one. It must never contain credentials.
+    String? providerRequestId,
+
+    /// Sanitized failure classification; raw provider bodies are not stored.
+    String? errorCode,
+    String? errorSummary,
+
+    /// Reference-only sync-safe interaction evidence and cost assessment.
+    AiInteractionPayload? payload,
+    AiInteractionCost? cost,
+
+    /// Durable publication-saga evidence written before an output is allowed
+    /// into the journal/agent sync path.
+    AiAttributionRecoveryCapsule? recoveryCapsule,
 
     /// The causal parent call/context ("the call that made it"). For agent
     /// turns this is the wake's run key; top-level single calls leave it null.

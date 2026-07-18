@@ -1,64 +1,168 @@
-# AI Consumption
+# AI Consumption and Attribution
 
-Records **what every AI backend call actually burns** — tokens, money, energy,
-CO₂, water — as one immutable, append-only row per call, tagged with its owner
-(task / category / entry) and the call that caused it. Those rows roll up into
-per-task lifetime totals and per-category time-bucketed series, so the app can
-per-task lifetime totals and per-category, per-model, and per-location
-time-bucketed series, so the app can answer "how many kWh / € / g CO₂ did this
-task cost over its lifetime?" and "which categories/models/locations burned what
-this week/month?".
+This feature owns the audit trail for AI work. It answers two related questions:
 
-This module is the **data layer + sync + capture mechanism**. It is deliberately
-separate from the journal (`db.sqlite`) and agent (`agent.sqlite`) domains so
-high-volume diagnostics writes never contend with primary data.
+1. Who or what initiated a logical AI-produced artifact, why did it run, and
+   where is the result?
+2. Which backend interactions, usage, cost evidence, and environmental impact
+   produced that work?
 
-## Architecture
+Attribution is stored separately from the journal (`db.sqlite`) and agent
+(`agent.sqlite`) domains in `ai_consumption.sqlite`. Journal and agent entities
+remain the authoritative output carriers; this database is the queryable local
+projection and interaction ledger.
+
+## Runtime architecture
 
 ```mermaid
 flowchart LR
-  subgraph Capture
-    M[MeliousInferenceRepository<br/>non-streaming path] -->|MeliousCallImpact| C[InferenceImpactCollector]
-    call[AI call site<br/>agent turn / transcription /<br/>image / prompt] -->|InferenceUsage + impact| R[AiConsumptionRecorder]
-  end
-  R --> SS[ConsumptionSyncService.recordEvent]
-  SS -->|VC stamp| Repo[ConsumptionRepository]
-  Repo --> DB[(ai_consumption.sqlite<br/>consumption_events)]
-  SS -->|SyncMessage.consumptionEvent| OB[Outbox → Matrix]
-  OB -. inbound apply .-> DB
-  DB --> Agg[Aggregation<br/>totalsForTask / bucketize]
-  Agg --> UI[AI Impact dashboard<br/>ImpactAnalysisBody]
+  UI["Manual action / automation / agent wake"] --> Begin["AiAttributionService.begin"]
+  Begin --> Pending[("pending_ai_attributions<br/>local only")]
+  Pending --> Call["Provider or native inference"]
+  Call --> Evidence["AiConsumptionEvent + payload + cost"]
+  Evidence --> Barrier["ConsumptionSyncService<br/>publication barrier"]
+  Barrier --> Outbox["Existing consumption-event Matrix envelope"]
+  Barrier --> Carrier["Persist terminal envelope on output carrier"]
+  Carrier --> Project["Project attribution + typed links"]
+  Project --> Store[("ai_consumption.sqlite")]
+  Store --> Summary["AiAttributionSummary + detail sheet"]
+  Store --> Impact["Impact dashboard and aggregates"]
 ```
 
-## Data model
+`SkillInferenceRunner` provides the strict saga for coding/design/research
+prompts, image generation, image analysis, and transcription. Agent turns share
+one deterministic attribution per wake and `WakeOutputWriter` embeds the
+terminal envelope in the final report. Direct batch/realtime transcript writers
+use `TranscriptAttributionCoordinator`: their provider call has already
+completed, but evidence must still cross the barrier before the transcript is
+written. Embedding indexing records reference-only evidence and a known-zero
+local-compute cost. The source-controlled inventory in
+`model/ai_inference_entrypoint_inventory.dart` classifies all product inference
+funnels and their guarantees.
 
-One backend call → one `AiConsumptionEvent` (`model/ai_consumption_event.dart`),
-persisted in `consumption_events` (`database/consumption_database.drift`).
+## Domain model
 
-- **Owners (denormalized, snapshot at call time):** `taskId`, `categoryId`,
-  `entryId`, `agentId`, `wakeRunKey`, `threadId`, `turnIndex`, `promptId`,
-  `skillId`, `configId`. `parentId` records the causal parent (for an agent turn
-  this is the wake's run key).
-- **Provider / model:** `providerType` (reuses `InferenceProviderType`),
-  `modelId`, `providerModelId`, `responseType`
-  (`AiConsumptionResponseType`: agentTurn / textGeneration / audioTranscription /
-  imageAnalysis / imageGeneration / promptGeneration), `durationMs`.
-- **Tokens:** `inputTokens`, `outputTokens`, `cachedInputTokens`,
-  `thoughtsTokens`, `totalTokens`.
-- **Cost + impact (nullable — only Melious reports these):** `credits` (≈ EUR),
-  `energyKwh`, `carbonGCo2`, `waterLiters`, `renewablePercent`, `pue`,
-  `dataCenter`, `upstreamProviderId`. Units are **as delivered** by Melious (kWh,
-  grams CO₂, litres, credits) — no lossy conversion.
+```mermaid
+erDiagram
+  AI_WORK_ATTRIBUTION ||--o{ AI_ATTRIBUTION_LINK : relates
+  AI_WORK_ATTRIBUTION ||--o{ CONSUMPTION_EVENT : owns
+  CONSUMPTION_EVENT ||--o| AI_INTERACTION_PAYLOAD : captures
+  CONSUMPTION_EVENT ||--o{ AI_INTERACTION_COST : assessed_by
 
-**Blob-plus-projection** (identical philosophy to `agent_entities`): the
-`serialized` JSON column (including `vectorClock`) is the sync source of truth
-and round-trips losslessly; the typed columns are a denormalized projection
-written on insert purely so aggregation never touches the JSON blob. The Drift
-row class is `ConsumptionEvent`; the domain model is `AiConsumptionEvent`
-(deliberately different names, mirroring `AgentEntity` vs `AgentDomainEntity`).
+  AI_WORK_ATTRIBUTION {
+    string id PK
+    string work_type
+    string status
+    json initiator_snapshot
+    json trigger_snapshot
+    json executor_snapshot
+    datetime started_at
+    datetime completed_at
+  }
+  AI_ATTRIBUTION_LINK {
+    string id PK
+    string attribution_id FK
+    string role
+    string artifact_type
+    string artifact_id
+    string sub_id
+  }
+  CONSUMPTION_EVENT {
+    string id PK
+    string attribution_id FK
+    int sequence_index
+    string interaction_kind
+    string provider_type
+    string provider_model_id
+    json usage
+  }
+  AI_INTERACTION_PAYLOAD {
+    string interaction_id FK
+    string capture_policy
+    string request_digest
+    string response_digest
+  }
+  AI_INTERACTION_COST {
+    string id PK
+    string interaction_id FK
+    string source
+    string amount_decimal
+    int reporting_amount_micros
+    string supersedes_cost_id
+  }
+```
 
-Rows are immutable: a fresh UUID `id` is minted once, on the device that made the
-call, and never mutated.
+- `AiWorkAttribution` is one immutable logical operation: creator/initiator,
+  trigger, executor, work type, status, timestamps, privacy, and typed links.
+- `AiConsumptionEvent` is one backend interaction. `attributionId` and
+  `sequenceIndex` group multi-call workflows. Legacy rows may be migrated into
+  an explicitly partial attribution.
+- `AiAttributionLink` points to an output, source, or context artifact using
+  `AiArtifactType`, `id`, and optional `subId`. Transcripts therefore have
+  stable ids even when several belong to one audio entry.
+- `AiInteractionPayload` normalizes request/response evidence. New flows use
+  `referenceOnly`: textual/binary content stays in its authoritative carrier
+  while SHA-256 digests and sanitized parameters are synchronized.
+- `AiInteractionCost` is append-only cost evidence. Unknown is distinct from a
+  known zero local-compute charge.
+
+The Drift schema keeps serialized JSON as the round-trip source of truth and
+typed projections for lookup and aggregation. Foreign keys and indexes enforce
+the interaction, link, payload, and cost relationships.
+
+## Publication saga and recovery
+
+```mermaid
+stateDiagram-v2
+  [*] --> Prepared: pending row durable before call
+  Prepared --> Calling: interaction begins
+  Calling --> EvidenceDurable: event/payload/cost committed
+  EvidenceDurable --> EvidencePublished: sequence + outbox accepted
+  EvidencePublished --> OutputPersisted: carrier written
+  OutputPersisted --> [*]: terminal projection; pending row deleted
+  Prepared --> Abandoned: stale recovery; no evidence
+  EvidencePublished --> Partial: stale recovery; output missing
+  Partial --> [*]
+  Abandoned --> [*]
+```
+
+The strict paths preallocate output ids, persist pending state, and attach a
+sanitized recovery capsule to the consumption event. Output persistence is
+blocked until `recordEventForPublication` confirms the event was stamped,
+stored, added to the sequence log, and accepted by the outbox. Inbound sync
+authenticates a capsule against `originatingHostId` before projecting it.
+`recoverStale` retries durable evidence and terminalizes interrupted operations
+as `partial` or `abandoned`; it never fabricates success.
+
+Terminal carriers are:
+
+| Work result | Carrier |
+| --- | --- |
+| Prompt or analysis response | `AiResponseData.aiAttribution` |
+| Generated image | `ImageData.aiAttribution` |
+| Transcript | `AudioTranscript.id` + `aiAttribution` |
+| Agent report | `AgentReportEntity.provenance[aiAttributionV1]` |
+
+`AttributionCarrierProjector` rebuilds the read model from carriers during
+inbound journal/agent sync. `AiAttributionBackfillService` handles existing
+data conservatively: embedded carriers remain authoritative; older responses,
+transcripts, reports, and events receive deterministic partial records with an
+unknown creator/cost rather than guessed lineage. Unmarked historical images
+are not inferred to be generated images.
+
+## Cost semantics
+
+Costs belong to interactions and roll up once per effective interaction. The
+system keeps the provider's exact decimal amount/unit and an optional integer
+micro-unit reporting amount/currency. `effectiveAttributionCost` validates
+supersession chains, rejects cycles and authority downgrades, chooses the
+highest-authority concurrent evidence deterministically, keeps currencies
+separate, and reports the number of interactions whose cost is unknown.
+
+Authority is: externally reconciled → provider reported → legacy reported →
+locally estimated → local compute → unknown. Corrections append a new row with
+`supersedesCostId`; original evidence is never overwritten. The older nullable
+`credits` projection remains for the existing impact dashboard and migration.
 
 ## Impact capture (Melious)
 
@@ -139,6 +243,27 @@ Adaptive-unit display formatting lives beside the bucketing logic
 (`logic/consumption_formatting.dart`): every formatter returns the value
 **with** its unit (`€1.23`, `40 Wh`, `1.2 kg`, `12.3K`) so no call site can
 mislabel a converted number.
+
+## Attribution UI
+
+`AiAttributionSummary` is the shared two-tier disclosure used by every output
+surface. It shows creator/trigger/status, model/time/call count, and the
+effective cost or explicit unknown state. The complete row is one accessible
+tap target. It opens a Wolt bottom sheet on compact layouts and the established
+sized side sheet on desktop.
+
+Placement follows the result's reading order:
+
+- prompt/analysis response: below generated content
+- generated image: below the image/caption in entry details
+- transcript: in the collapsed transcript header
+- agent report: below the TLDR/report and before proposals
+
+The widget accepts an embedded terminal envelope for immediate rendering and
+also performs typed artifact reverse lookup, which is how conservatively
+backfilled records appear. It retains embedded data while the read-model query
+loads, so background refresh never replaces established attribution with a
+full loading/empty shell.
 
 ## Impact dashboard (UI)
 

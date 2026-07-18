@@ -1140,6 +1140,117 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiAssistantTitle => 'Generera...';
 
   @override
+  String get aiAttributionCost => 'Cost';
+
+  @override
+  String get aiAttributionCostUnknown => 'Cost unknown';
+
+  @override
+  String get aiAttributionCostZero => 'No charge';
+
+  @override
+  String get aiAttributionCreator => 'Creator';
+
+  @override
+  String get aiAttributionExecutor => 'Executed on';
+
+  @override
+  String aiAttributionInteractionLine(int index, String model, int tokens) {
+    return 'Call $index: $model · $tokens tokens';
+  }
+
+  @override
+  String get aiAttributionInteractions => 'Interactions';
+
+  @override
+  String get aiAttributionNoInteractionDetails =>
+      'No interaction details are available.';
+
+  @override
+  String get aiAttributionPrivacy => 'Privacy';
+
+  @override
+  String get aiAttributionPrivacyMixed => 'Mixed';
+
+  @override
+  String get aiAttributionPrivacyPrivate => 'Private';
+
+  @override
+  String get aiAttributionPrivacyStandard => 'Standard';
+
+  @override
+  String aiAttributionSecondary(String model, String time, int callCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      callCount,
+      locale: localeName,
+      other: '$callCount calls',
+      one: '1 call',
+      zero: 'no calls',
+    );
+    return '$model · $time · $_temp0';
+  }
+
+  @override
+  String get aiAttributionSensitiveContentNotice =>
+      'Request and response content is hidden because this work contains private data.';
+
+  @override
+  String get aiAttributionStatus => 'Status';
+
+  @override
+  String get aiAttributionStatusAbandoned => 'Interrupted';
+
+  @override
+  String get aiAttributionStatusCancelled => 'Cancelled';
+
+  @override
+  String get aiAttributionStatusFailed => 'Failed';
+
+  @override
+  String get aiAttributionStatusPartial => 'Partial';
+
+  @override
+  String get aiAttributionStatusSucceeded => 'Completed';
+
+  @override
+  String aiAttributionSummary(String actor, String trigger, String status) {
+    return '$actor · $trigger · $status';
+  }
+
+  @override
+  String get aiAttributionTitle => 'AI attribution';
+
+  @override
+  String get aiAttributionTriggerAgent => 'Agent';
+
+  @override
+  String get aiAttributionTriggerAutomatic => 'Automatic';
+
+  @override
+  String get aiAttributionTriggerImported => 'Imported';
+
+  @override
+  String get aiAttributionTriggerManual => 'Manual';
+
+  @override
+  String get aiAttributionTriggerScheduled => 'Scheduled';
+
+  @override
+  String get aiAttributionTriggerSynced => 'From sync';
+
+  @override
+  String get aiAttributionUnknownCreator => 'Unknown creator';
+
+  @override
+  String get aiAttributionUnknownExecutor => 'Unknown execution device';
+
+  @override
+  String get aiAttributionUnknownModel => 'Unknown model';
+
+  @override
+  String get aiAttributionYou => 'You';
+
+  @override
   String get aiBatchToggleTooltip => 'Övergång till standardinspelning';
 
   @override
@@ -1278,6 +1389,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiConsumptionTypeAudioTranscription => 'Transkription';
+
+  @override
+  String get aiConsumptionTypeEmbeddingIndexing => 'Embedding indexing';
 
   @override
   String get aiConsumptionTypeImageAnalysis => 'Bildanalys';
@@ -10529,6 +10643,16 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get timeEntryItemStart => 'Start';
+
+  @override
+  String transcriptLanguageLabel(String language) {
+    return 'Language: $language';
+  }
+
+  @override
+  String transcriptModelLabel(String provider, String model) {
+    return 'Model: $provider, $model';
+  }
 
   @override
   String get unlinkButton => 'Avlänka';
