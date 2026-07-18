@@ -8,8 +8,8 @@
   "addActionAddScreenshot": "Sceneggiatura",
   "addActionAddTask": "Compiti",
   "addActionAddText": "Inserimento del testo",
-  "addActionAddTimer": "Timer",
-  "addActionAddTimeRecording": "Timer Entry",
+  "addActionAddTimer": "Cronometro",
+  "addActionAddTimeRecording": "Registrazione del tempo",
   "addActionImportImage": "Immagine di importazione",
   "addHabitCommentLabel": "Commento",
   "addHabitDateLabel": "Completo a",
@@ -117,7 +117,7 @@
   "agentDetailNotFound": "Agente non trovato.",
   "agentDetailUnexpectedType": "Tipo di entità inaspettata.",
   "agentEvolutionApprovalRate": "Tasso di approssimazione",
-  "agentEvolutionChartMttrTrend": "MTTR Trend",
+  "agentEvolutionChartMttrTrend": "Andamento MTTR",
   "agentEvolutionChartSuccessRateTrend": "Tendenza di successo",
   "agentEvolutionChartVersionPerformance": "Per la versione",
   "agentEvolutionChartWakeHistory": "Storia del risveglio",
@@ -133,7 +133,7 @@
   "agentEvolutionNoSessions": "Nessuna sessione di evoluzione",
   "agentEvolutionNoteRecorded": "Nota Registrata",
   "agentEvolutionProposalApprovalFailed": "Approvazione fallito — si prega di riprovare",
-  "agentEvolutionProposalRationale": "Rationale",
+  "agentEvolutionProposalRationale": "Motivazione",
   "agentEvolutionProposalRejected": "Proposta respinta — continua la conversazione",
   "agentEvolutionProposalTitle": "Variazioni proposte",
   "agentEvolutionProposedDirectives": "Direttive proposte",
@@ -187,7 +187,7 @@
   "agentEvolutionStatusAbandoned": "Abbandonati",
   "agentEvolutionStatusActive": "Attivo",
   "agentEvolutionStatusCompleted": "Completo",
-  "agentEvolutionTimelineFeedbackLabel": "Feedback",
+  "agentEvolutionTimelineFeedbackLabel": "Riscontro",
   "agentEvolutionVersionProposed": "Proposta della Commissione",
   "agentFeedbackCategoryAccuracy": "Accuratezza",
   "agentFeedbackCategoryBreakdownTitle": "Ripartizione della categoria",
@@ -200,7 +200,7 @@
   "agentFeedbackExcellenceTitle": "Note di eccellenza",
   "agentFeedbackGrievancesTitle": "Grievanze",
   "agentFeedbackHighPriorityTitle": "Feedback ad alta qualità",
-  "agentFeedbackItemCount": "{count, plural, =1{1 item} other{{count} items}}X",
+  "agentFeedbackItemCount": "{count, plural, =1{1 elemento} other{{count} articoli}}",
   "@agentFeedbackItemCount": {
     "placeholders": {
       "count": {
@@ -218,7 +218,7 @@
   "agentInstancesFilterSectionSoul": "Animazione",
   "agentInstancesFilterSectionStatus": "Stato",
   "agentInstancesFilterSectionType": "Tipologia",
-  "agentInstancesGroupActiveCount": "{count, plural, =1{1 active} other{{count} active}}X",
+  "agentInstancesGroupActiveCount": "{count, plural, =1{1 attiva} other{{count} attivo}}",
   "@agentInstancesGroupActiveCount": {
     "placeholders": {
       "count": {
@@ -232,7 +232,7 @@
   "agentInstancesKindEvolution": "Evoluzione",
   "agentInstancesKindTaskAgent": "Agente di servizio",
   "agentInstancesPageTitle": "Casi dell'agente",
-  "agentInstancesResultCountAll": "{count, plural, =1{1 instance} other{{count} instances}}X",
+  "agentInstancesResultCountAll": "{count, plural, =1{1 istanza} other{{count} istanze}}",
   "@agentInstancesResultCountAll": {
     "placeholders": {
       "count": {
@@ -263,9 +263,9 @@
   "agentLifecycleActive": "Attivo",
   "agentLifecycleCreated": "Creato",
   "agentLifecycleDestroyed": "Distrutto",
-  "agentLifecycleDormant": "Dormant",
+  "agentLifecycleDormant": "Inattivo",
   "agentMessageKindAction": "Azione",
-  "agentMessageKindMilestone": "Milestone",
+  "agentMessageKindMilestone": "Traguardo",
   "agentMessageKindObservation": "Osservazione",
   "agentMessageKindRetraction": "Retrazione",
   "agentMessageKindSummary": "Sintesi",
@@ -285,7 +285,7 @@
     }
   },
   "agentObservationsEmpty": "Non sono ancora state osservate osservazioni.",
-  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 wake} other{{count} wakes}} ({reasons})",
+  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 sveglia} other{{count} sveglia}} ({reasons})",
   "@agentPendingWakesActivityHourDetail": {
     "placeholders": {
       "hour": {
@@ -300,7 +300,7 @@
     }
   },
   "agentPendingWakesActivityTitle": "Attività di sveglia (24h)",
-  "agentPendingWakesActivityTotal": "{count, plural, =1{1 total wake} other{{count} total wakes}}X",
+  "agentPendingWakesActivityTotal": "{count, plural, =1{1 sveglia totale} other{{count} sveglia totale}}",
   "@agentPendingWakesActivityTotal": {
     "placeholders": {
       "count": {
@@ -313,7 +313,7 @@
   "agentPendingWakesFilterSectionType": "Tipologia",
   "agentPendingWakesGroupByType": "Tipologia",
   "agentPendingWakesPendingLabel": "Finanziamenti",
-  "agentPendingWakesRunningHeading": "{count, plural, =1{Running now} other{Running now ({count})}}X",
+  "agentPendingWakesRunningHeading": "{count, plural, =1{In esecuzione ora} other{In esecuzione ora ({count})}}",
   "@agentPendingWakesRunningHeading": {
     "placeholders": {
       "count": {
@@ -371,7 +371,7 @@
   "agentSoulFieldCoachingStyle": "Stile di coaching",
   "agentSoulFieldToneBounds": "Bordi di tono",
   "agentSoulFieldVoice": "Voce",
-  "agentSoulInfoTab": "Info",
+  "agentSoulInfoTab": "Informazioni",
   "agentSoulNoneAssigned": "Nessuna anima assegnata",
   "agentSoulNotFound": "L'anima non trovata",
   "agentSoulProposalSubtitle": "Cambiamenti di personalità proposti",
@@ -379,7 +379,7 @@
   "agentSoulReviewHeroSubtitle": "Definire la personalità in tutti i modelli che condividono questa anima. L'agente di evoluzione vede feedback da ogni modello che utilizza questa personalità.",
   "agentSoulReviewStartAction": "Iniziare la recensione della personalità",
   "agentSoulReviewStartHint": "Inizia una sessione focalizzata sulla personalità per rivedere il feedback e evolvere la voce, il tono, lo stile di coaching e la direttività.",
-  "agentSoulReviewTemplateCount": "{count, plural, =1{1 template sharing this soul} other{{count} templates sharing this soul}}X",
+  "agentSoulReviewTemplateCount": "{count, plural, =1{1 modello che condivide l'anima} other{{count} modelli che condividono questa anima}}",
   "@agentSoulReviewTemplateCount": {
     "placeholders": {
       "count": {
@@ -441,7 +441,7 @@
   },
   "agentStatsCacheRateLabel": "Tasso di Cache",
   "agentStatsDailyUsageHeading": "Uso quotidiano",
-  "agentStatsInputLabel": "Input",
+  "agentStatsInputLabel": "Dati in ingresso",
   "agentStatsNoUsage": "Nessun utilizzo di token registrato negli ultimi 7 giorni.",
   "agentStatsOutputLabel": "Produzione",
   "agentStatsSourceActiveFor": "Attivo per {duration}",
@@ -453,7 +453,7 @@
     }
   },
   "agentStatsSourceActivityHeading": "Attività agente",
-  "agentStatsSourceWakes": "{count, plural, =1{1 wake} other{{count} wakes}}X",
+  "agentStatsSourceWakes": "{count, plural, =1{1 sveglia} other{{count} sveglia}}",
   "@agentStatsSourceWakes": {
     "placeholders": {
       "count": {
@@ -508,7 +508,7 @@
   "@agentTemplateAggregateTokenUsageHeading": {
     "description": "Heading for the aggregate token usage section in agent template stats."
   },
-  "agentTemplateAssignedLabel": "Template",
+  "agentTemplateAssignedLabel": "Modello",
   "@agentTemplateAssignedLabel": {
     "description": "Label shown next to the template assigned to an agent."
   },
@@ -672,7 +672,7 @@
     "description": "Snackbar message after successfully saving a new template version."
   },
   "agentThreadReportLabel": "Rapporto prodotto durante la veglia",
-  "agentTokenUsageCachedTokens": "Cached",
+  "agentTokenUsageCachedTokens": "In cache",
   "agentTokenUsageEmpty": "Nessun utilizzo di token registrato ancora.",
   "agentTokenUsageErrorLoading": "Non caricare l'utilizzo di token: {error}",
   "@agentTokenUsageErrorLoading": {
@@ -683,7 +683,7 @@
     }
   },
   "agentTokenUsageHeading": "Uso token",
-  "agentTokenUsageInputTokens": "Input",
+  "agentTokenUsageInputTokens": "Dati in ingresso",
   "agentTokenUsageModel": "Modello",
   "agentTokenUsageOutputTokens": "Produzione",
   "agentTokenUsageThoughtsTokens": "Pensieri",
@@ -715,7 +715,7 @@
   "aiCardProposalConfirmed": "Confermato",
   "aiCardProposalDismissed": "Annullamento della decisione n.",
   "aiCardProposalKindAdd": "Aggiungi",
-  "aiCardProposalKindDue": "Due",
+  "aiCardProposalKindDue": "Scadenza",
   "aiCardProposalKindEstimate": "Stima",
   "aiCardProposalKindLabel": "Etichetta",
   "aiCardProposalKindPriority": "Priorità",
@@ -725,7 +725,7 @@
   "aiCardReadMore": "Leggi tutto",
   "aiCardShowLess": "Mostra di meno",
   "aiCardTitle": "Riepilogo dell'AI",
-  "aiChatMessageCopied": "Copied a clipboard",
+  "aiChatMessageCopied": "Copiato negli appunti",
   "aiConfigFailedToLoadModelsGeneric": "Non caricare modelli. Si prega di riprovare.",
   "aiConfigNoModelsAvailable": "Non sono ancora configurati modelli AI. Si prega di aggiungere uno nelle impostazioni.",
   "aiConfigNoSuitableModelsAvailable": "Nessun modello soddisfa i requisiti per questo prompt. Si prega di configurare i modelli che supportano le funzionalità richieste.",
@@ -783,7 +783,7 @@
       }
     }
   },
-  "aiConsumptionTokensLine": "Tokens: {input} in · {output} out",
+  "aiConsumptionTokensLine": "Token: {input} in ingresso · {output} in uscita",
   "@aiConsumptionTokensLine": {
     "placeholders": {
       "input": {
@@ -800,7 +800,7 @@
   "aiConsumptionTypeImageGeneration": "Generazione di immagini",
   "aiConsumptionTypePromptGeneration": "Generazione di Prompt",
   "aiConsumptionTypeTextGeneration": "Generazione di testi",
-  "aiDeleteToastCascadeDescription": "{count, plural, =1{Also removed 1 model: {names}} other{Also removed {count} models: {names}}}X",
+  "aiDeleteToastCascadeDescription": "{count, plural, =1{Rimossa anche 1 modello: {names}} other{Rimossa anche modelli {count}: {names}}}",
   "@aiDeleteToastCascadeDescription": {
     "placeholders": {
       "count": {
@@ -824,7 +824,7 @@
   "aiDeleteToastPromptTitle": "Prompt cancellato",
   "aiDeleteToastProviderTitle": "Fornitore cancellato",
   "aiDeleteToastSkillTitle": "Competenze cancellate",
-  "aiDeleteToastUndoAction": "Undo",
+  "aiDeleteToastUndoAction": "Annulla",
   "aiFormCancel": "Annullamento",
   "aiFormFixErrors": "Si prega di correggere gli errori prima di salvare",
   "aiFormNoChanges": "Nessuna modifica non rilevata",
@@ -858,7 +858,7 @@
   "aiImpactEmptyBody": "Le chiamate dell'IA dai vostri compiti e gli agenti si presenteranno qui.",
   "aiImpactEmptyTitle": "Nessun utilizzo di AI in questa gamma",
   "aiImpactKpiCarbon": "CO2E",
-  "aiImpactKpiCost": "COST",
+  "aiImpactKpiCost": "COSTO",
   "aiImpactKpiDeltaBaseline": "rispetto a {period}",
   "@aiImpactKpiDeltaBaseline": {
     "placeholders": {
@@ -879,7 +879,7 @@
   "aiImpactMetricCost": "Costo",
   "aiImpactMetricEnergy": "Energia",
   "aiImpactMetricRequests": "Richieste",
-  "aiImpactMetricTokens": "Tokens",
+  "aiImpactMetricTokens": "Token",
   "aiImpactModelCallsLabel": "Chiamate {count}",
   "@aiImpactModelCallsLabel": {
     "placeholders": {
@@ -892,7 +892,7 @@
   "aiImpactModelCostHeavy": "costo-pesante",
   "aiImpactModelCoverageNote": "I modelli locali sono esclusi da questo grafico.",
   "aiImpactModelOther": "Altri modelli",
-  "aiImpactModelRatePerMillion": "{cost}/1M tok",
+  "aiImpactModelRatePerMillion": "{cost}/1M token",
   "@aiImpactModelRatePerMillion": {
     "placeholders": {
       "cost": {
@@ -942,7 +942,7 @@
       }
     }
   },
-  "aiModelDownloadStatusDownloadingIndeterminate": "Downloading",
+  "aiModelDownloadStatusDownloadingIndeterminate": "Download in corso",
   "aiModelDownloadStatusFailed": "Download non riuscito",
   "aiModelDownloadStatusInstalled": "Installato",
   "aiModelDownloadStatusNotInstalled": "Non installato",
@@ -954,7 +954,7 @@
   "aiModelInstallChoiceTitle": "Scegli il modello MLX Audio",
   "aiModelPickerByProviderLabel": "Scegli un fornitore",
   "aiModelPickerCurrentDefaultLabel": "Corrente di default",
-  "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} other{{count} models}}X",
+  "aiModelPickerProviderModelCount": "{count, plural, =1{1 modello} other{{count} modelli}}",
   "@aiModelPickerProviderModelCount": {
     "placeholders": {
       "count": {
@@ -986,9 +986,9 @@
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "La famiglia Claude di assistenti dell'AI di Antropic",
   "aiProviderAnthropicName": "Antropico Claude",
-  "aiProviderCardDraftBadge": "DRAFT",
+  "aiProviderCardDraftBadge": "BOZZA",
   "aiProviderCardFixButton": "Fissazione",
-  "aiProviderCardModelCount": "{count, plural, =1{1 model} other{{count} models}}X",
+  "aiProviderCardModelCount": "{count, plural, =1{1 modello} other{{count} modelli}}",
   "@aiProviderCardModelCount": {
     "description": "Right-side meta on a connected provider card when no last-used data is available.",
     "placeholders": {
@@ -998,7 +998,7 @@
       }
     }
   },
-  "aiProviderCardModelCountWithLastUsed": "{count, plural, =1{1 model · last used {lastUsed}} other{{count} models · last used {lastUsed}}}X",
+  "aiProviderCardModelCountWithLastUsed": "{count, plural, =1{1 modello · ultimo {lastUsed}} other{{count} modelli · ultima {lastUsed} usata}}",
   "@aiProviderCardModelCountWithLastUsed": {
     "description": "Right-side meta on a connected provider card combining model count with a last-used label.",
     "placeholders": {
@@ -1013,7 +1013,7 @@
     }
   },
   "aiProviderCardOllamaHint": "Assicurarsi che Ollama stia correndo",
-  "aiProviderCardStatusConnected": "{count, plural, =1{Connected · 1 model} other{Connected · {count} models}}X",
+  "aiProviderCardStatusConnected": "{count, plural, =1{Connesso · 1 modello} other{Connesso · {count} modelli}}",
   "@aiProviderCardStatusConnected": {
     "description": "Provider card status line when the provider has a key + at least one model row.",
     "placeholders": {
@@ -1026,7 +1026,7 @@
   "aiProviderCardStatusConnectedShort": "Collegato",
   "aiProviderCardStatusInvalidKey": "Chiave non valida",
   "aiProviderCardStatusOffline": "Offline · Assicurarsi che Ollama stia correndo",
-  "aiProviderCardStatusOfflineShort": "Offline",
+  "aiProviderCardStatusOfflineShort": "Non in linea",
   "aiProviderConnectBackToProviders": "Torna ai provider",
   "aiProviderConnectBreadcrumbAdd": "Aggiungi il provider",
   "aiProviderConnectFieldBaseUrlHint": "Lasciare vuoto per usare l'endpoint ufficiale",
@@ -1054,7 +1054,7 @@
     }
   },
   "aiProviderConnectionFailedInvalidBaseUrlDetail": "L'URL di base deve includere lo schema http(s) e l'host (ad esempio https://api.example.com)",
-  "aiProviderConnectionFailedNetworkDetail": "{message}X",
+  "aiProviderConnectionFailedNetworkDetail": "{message}",
   "@aiProviderConnectionFailedNetworkDetail": {
     "placeholders": {
       "message": {
@@ -1071,9 +1071,9 @@
       }
     }
   },
-  "aiProviderConnectionRetestButton": "Re-test",
+  "aiProviderConnectionRetestButton": "Retest",
   "aiProviderConnectionRetryButton": "Recuperare",
-  "aiProviderConnectionVerifiedSubtitle": "{count, plural, =1{1 model available on your account · responded in {ms}ms} other{{count} models available on your account · responded in {ms}ms}}X",
+  "aiProviderConnectionVerifiedSubtitle": "{count, plural, =1{1 modello disponibile sul tuo conto · risposto in {ms}ms} other{{count} modelli disponibili sul tuo conto · risposto in {ms}ms}}",
   "@aiProviderConnectionVerifiedSubtitle": {
     "placeholders": {
       "count": {
@@ -1121,7 +1121,7 @@
   "aiProviderDetailEditTooltip": "Modifica del fornitore",
   "aiProviderDetailLoadError": "Non è possibile caricare questo provider. Riprova dall'elenco Impostazioni AI.",
   "aiProviderDetailMissingMessage": "Questo fornitore non è più disponibile.",
-  "aiProviderDetailModelsTitle": "{count, plural, =0{Models} =1{Models · 1} other{Models · {count}}}X",
+  "aiProviderDetailModelsTitle": "{count, plural, =0{Modelli} =1{Modelli · 1} other{Modelli · {count}}}",
   "@aiProviderDetailModelsTitle": {
     "description": "Models section heading on the provider detail page; suffixes the count when one or more models exist.",
     "placeholders": {
@@ -1151,7 +1151,7 @@
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
   "aiProviderOllamaDescription": "Eseguire l'inferenza localmente con Ollama",
   "aiProviderOllamaName": "Ollama",
-  "aiProviderOmlxDescription": "Inferenza oMLX compatibile con OpenAI locale per modelli MLX",
+  "aiProviderOmlxDescription": "Inferenza oMLX compatibile con OpenAI locale per modelli ML",
   "aiProviderOmlxName": "oMLX (locale)",
   "aiProviderOpenAiDescription": "Modelli GPT di OpenAI",
   "aiProviderOpenAiName": "OpenAI",
@@ -1255,7 +1255,7 @@
   },
   "aiSetupPreviewCustomizeButton": "Personalizzarsi",
   "aiSetupPreviewLead": "Scopri cosa aggiunge Lotti. Deseleziona tutto quello che non vuoi; puoi sempre impostarlo a mano.",
-  "aiSetupPreviewLiveBadge": "Live",
+  "aiSetupPreviewLiveBadge": "Vivo",
   "aiSetupPreviewModalTitle": "Configurazione {providerName}",
   "@aiSetupPreviewModalTitle": {
     "placeholders": {
@@ -1286,7 +1286,7 @@
       }
     }
   },
-  "aiSetupResultBulletModels": "{count, plural, =1{Configured 1 model} other{Configured {count} models}}X",
+  "aiSetupResultBulletModels": "{count, plural, =1{Configurato 1 modello} other{Configurati {count} modelli}}",
   "@aiSetupResultBulletModels": {
     "placeholders": {
       "count": {
@@ -1304,7 +1304,7 @@
       }
     }
   },
-  "aiSetupResultErrorsHeader": "{count, plural, =1{1 issue} other{{count} issues}} durante la configurazione",
+  "aiSetupResultErrorsHeader": "{count, plural, =1{1 3°} other{{count} questioni}} durante la configurazione",
   "@aiSetupResultErrorsHeader": {
     "placeholders": {
       "count": {
@@ -1381,7 +1381,7 @@
   "apiKeyHideTooltip": "Nascondi la chiave API",
   "apiKeyInputHint": "Inserisci la chiave API",
   "apiKeyInputLabel": "Chiave API",
-  "apiKeyKnownModelInputLabel": "In: {modalities}",
+  "apiKeyKnownModelInputLabel": "In ingresso: {modalities}",
   "@apiKeyKnownModelInputLabel": {
     "placeholders": {
       "modalities": {
@@ -1389,7 +1389,7 @@
       }
     }
   },
-  "apiKeyKnownModelOutputLabel": "Out: {modalities}",
+  "apiKeyKnownModelOutputLabel": "In uscita: {modalities}",
   "@apiKeyKnownModelOutputLabel": {
     "placeholders": {
       "modalities": {
@@ -1412,9 +1412,9 @@
   "audioRecordingRealtime": "Trascrizione live",
   "audioRecordingResume": "RISORSE",
   "audioRecordings": "Registrazioni audio",
-  "audioRecordingStandard": "Standard",
-  "audioRecordingStop": "STOP",
-  "backfillAdvancedRecoveryActions": "{count, plural, =1{1 action} other{{count} actions}}X",
+  "audioRecordingStandard": "Modalità standard",
+  "audioRecordingStop": "ARRESTA",
+  "backfillAdvancedRecoveryActions": "{count, plural, =1{1 azione} other{{count} azioni}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
       "count": {
@@ -1424,7 +1424,7 @@
   },
   "backfillAdvancedRecoveryTitle": "Recupero avanzato",
   "backfillAskPeersConfirmAccept": "Chiedi ai colleghi",
-  "backfillAskPeersConfirmContent": "{count, plural, =1{This flips 1 unresolvable sequence-log entry back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.} other{This flips all {count} unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.}}X",
+  "backfillAskPeersConfirmContent": "{count, plural, =1{Questa operazione riporta 1 voce irrisolvibile del log di sequenza allo stato mancante, in modo che il normale ciclo di recupero richieda di nuovo i peer. I peer che hanno ancora il contenuto risponderanno; le voci realmente irrecuperabili saranno nuovamente ritirate dopo i 7 giorni di tolleranza.} other{Questa operazione riporta {count} voci irrisolvibili del log di sequenza allo stato mancante, in modo che il normale ciclo di recupero richieda di nuovo i peer. I peer che hanno ancora il contenuto risponderanno; le voci realmente irrecuperabili saranno nuovamente ritirate dopo i 7 giorni di tolleranza.}}",
   "@backfillAskPeersConfirmContent": {
     "placeholders": {
       "count": {
@@ -1436,7 +1436,7 @@
   "backfillAskPeersDescription": "Flip ogni entrata in sequenza-log irrisolvibile indietro per mancare e lasciare che il normale backfill spazzare peers re-ask.",
   "backfillAskPeersProcessing": "Riaprire...",
   "backfillAskPeersTitle": "Chiedi ai coetanei per irrisolvibili",
-  "backfillAskPeersTrigger": "{count, plural, =1{Ask peers for 1 entry} other{Ask peers for {count} entries}}X",
+  "backfillAskPeersTrigger": "{count, plural, =1{Chiedi ai peer 1 voce} other{Chiedi ai peer {count} voci}}",
   "@backfillAskPeersTrigger": {
     "placeholders": {
       "count": {
@@ -1445,7 +1445,7 @@
     }
   },
   "backfillCatchUpDescription": "Tirare le ultime voci scomparse dai colleghi in questo momento.",
-  "backfillDevicesMeta": "{count, plural, =1{1 device ID} other{{count} device IDs}}X",
+  "backfillDevicesMeta": "{count, plural, =1{1 ID dispositivo} other{{count} ID dispositivo}}",
   "@backfillDevicesMeta": {
     "placeholders": {
       "count": {
@@ -1462,11 +1462,11 @@
   "backfillReRequestTitle": "Ri-Richiesta Pending",
   "backfillReRequestTrigger": "Recuperare i Pending",
   "backfillResetUnresolvableDescription": "Reimpostare le voci contrassegnate come unresolvable indietro a mancare in modo che possano essere ri-richiesta.",
-  "backfillResetUnresolvableProcessing": "Resetting...",
+  "backfillResetUnresolvableProcessing": "Rimontare...",
   "backfillResetUnresolvableTitle": "Resettare irrisolvibile",
   "backfillResetUnresolvableTrigger": "Reimpostare le voci irrisolvibili",
   "backfillRetireStuckConfirmAccept": "Retire ora",
-  "backfillRetireStuckConfirmContent": "{count, plural, =1{This marks 1 currently-open (missing or requested) sequence-log entry as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.} other{This marks {count} currently-open (missing or requested) sequence-log entries as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.}}X",
+  "backfillRetireStuckConfirmContent": "{count, plural, =1{Questa operazione contrassegna 1 voce attualmente aperta del log di sequenza (mancante o richiesta) come irrisolvibile. Usala per sbloccare il watermark quando una voce è bloccata da tempo ma non sono ancora trascorsi i 7 giorni di tolleranza. La voce potrà comunque essere ripristinata se il suo contenuto arriverà in seguito sul disco con un vettore di versione valido.} other{Questa operazione contrassegna {count} voci attualmente aperte del log di sequenza (mancanti o richieste) come irrisolvibili. Usala per sbloccare il watermark quando delle voci sono bloccate da tempo ma non sono ancora trascorsi i 7 giorni di tolleranza. Le voci potranno comunque essere ripristinate se i loro contenuti arriveranno in seguito sul disco con un vettore di versione valido.}}",
   "@backfillRetireStuckConfirmContent": {
     "placeholders": {
       "count": {
@@ -1478,7 +1478,7 @@
   "backfillRetireStuckDescription": "Forzare ogni ingresso di sequenza-log mancante o richiesto attualmente in irrisolvibile. Salta l'amnistia di 7 giorni — utilizzare solo per file bloccate bloccando la filigrana.",
   "backfillRetireStuckProcessing": "Retiring...",
   "backfillRetireStuckTitle": "Retire le voci bloccate",
-  "backfillRetireStuckTrigger": "{count, plural, =1{Retire 1 stuck entry} other{Retire {count} stuck entries}}X",
+  "backfillRetireStuckTrigger": "{count, plural, =1{Ritira 1 voce bloccata} other{Ritira {count} voci bloccate}}",
   "@backfillRetireStuckTrigger": {
     "placeholders": {
       "count": {
@@ -1536,7 +1536,7 @@
   "categorySearchPlaceholder": "Cerca le categorie...",
   "changeSetCardTitle": "Modifiche proposte",
   "changeSetConfirmAll": "Confermare tutto",
-  "changeSetConfirmAllPartialIssues": "{count, plural, =1{1 item had partial issues} other{{count} items had partial issues}}X",
+  "changeSetConfirmAllPartialIssues": "{count, plural, =1{1 elemento aveva problemi parziali} other{Gli articoli di {count} hanno problemi parziali}}",
   "@changeSetConfirmAllPartialIssues": {
     "placeholders": {
       "count": {
@@ -1589,7 +1589,7 @@
       }
     }
   },
-  "checklistAiMarkComplete": "Mark Complete",
+  "checklistAiMarkComplete": "Segna come completato",
   "checklistAiSuggestionBody": "Questo articolo sembra essere completato:",
   "checklistAiSuggestionTitle": "AI Suggerimento",
   "checklistAllDone": "Tutti gli articoli completati!",
@@ -1610,7 +1610,7 @@
   "checklistExportAsMarkdown": "Elenco di controllo dell'esportazione come Markdown",
   "checklistExportFailed": "Esportazione fallita",
   "checklistItemArchived": "Articolo archiviato",
-  "checklistItemArchiveUndo": "Undo",
+  "checklistItemArchiveUndo": "Annulla",
   "checklistItemDeleteCancel": "Annullamento",
   "checklistItemDeleteConfirm": "Conferma",
   "checklistItemDeleted": "Articolo cancellato",
@@ -1622,7 +1622,7 @@
   "checklistProgressSemantics": "Progressi della lista di controllo",
   "checklistShare": "Condividi",
   "checklistShareHint": "Stampa lunga da condividere",
-  "checklistsReorder": "Reorder",
+  "checklistsReorder": "Riordina",
   "clearButton": "Cancellazione",
   "colorCustomLabel": "Personale",
   "colorLabel": "Colore",
@@ -1677,7 +1677,7 @@
   "configFlagShowSyncActivityIndicatorDescription": "Mostra uno stato di sincronizzazione tranquillo nella barra laterale; i conti della coda appaiono solo mentre il lavoro è in attesa.",
   "conflictApplyButton": "Applicare",
   "conflictApplyFailedTitle": "Non è possibile applicare la risoluzione",
-  "conflictBannerAgoDays": "{count, plural, =1{1 day ago} other{{count} days ago}}X",
+  "conflictBannerAgoDays": "{count, plural, =1{1 giorno fa} other{{count} giorni fa}}",
   "@conflictBannerAgoDays": {
     "placeholders": {
       "count": {
@@ -1686,7 +1686,7 @@
       }
     }
   },
-  "conflictBannerAgoHours": "{count, plural, =1{1 h ago} other{{count} h ago}}X",
+  "conflictBannerAgoHours": "{count, plural, =1{1 h fa} other{{count} h fa}}",
   "@conflictBannerAgoHours": {
     "placeholders": {
       "count": {
@@ -1696,7 +1696,7 @@
     }
   },
   "conflictBannerAgoJustNow": "solo ora",
-  "conflictBannerAgoMinutes": "{count, plural, =1{1 min ago} other{{count} min ago}}X",
+  "conflictBannerAgoMinutes": "{count, plural, =1{1 minuto fa} other{{count} min fa}}",
   "@conflictBannerAgoMinutes": {
     "placeholders": {
       "count": {
@@ -1738,7 +1738,7 @@
   "conflictDetailLoadErrorTitle": "Non poteva caricare i conflitti",
   "conflictDetailNotFoundTitle": "Conflitto non trovato",
   "conflictDiffRecommended": "Consigliato",
-  "conflictDiffUnchanged": "{count, plural, =1{1 field unchanged} other{{count} fields unchanged}}X",
+  "conflictDiffUnchanged": "{count, plural, =1{1 campo invariato} other{{count} campi invariati}}",
   "@conflictDiffUnchanged": {
     "placeholders": {
       "count": {
@@ -1765,7 +1765,7 @@
   "conflictFooterHelperLocalSelected": "Manterrà la modifica locale e scarterà la versione sincronizzata.",
   "conflictFooterHelperPickASide": "Scegli un lato da applicare.",
   "conflictFooterHelperRemoteSelected": "Accetterà la versione sincronizzata e scarterà la tua modifica locale.",
-  "conflictHeaderPillEntries": "{count, plural, =1{1 entry} other{{count} entries}}X",
+  "conflictHeaderPillEntries": "{count, plural, =1{1 ingresso} other{{count} voci}}",
   "@conflictHeaderPillEntries": {
     "placeholders": {
       "count": {
@@ -1774,7 +1774,7 @@
       }
     }
   },
-  "conflictHeaderPillFieldsDiffer": "{count, plural, =1{1 field differs} other{{count} fields differ}}X",
+  "conflictHeaderPillFieldsDiffer": "{count, plural, =1{1 campo differisce} other{I campi di {count} differiscono}}",
   "@conflictHeaderPillFieldsDiffer": {
     "placeholders": {
       "count": {
@@ -1819,7 +1819,7 @@
   "conflictMetaLocalEdit": "modifiche locali",
   "conflictMetaVecPrefix": "Vec.",
   "conflictMetaViaSync": "via sincronizzazione",
-  "conflictNotificationBody": "{count, plural, =1{1 entry was edited on two devices} other{{count} entries were edited on two devices}}X",
+  "conflictNotificationBody": "{count, plural, =1{1 voce è stata modificata su due dispositivi} other{Le voci {count} sono state modificate su due dispositivi}}",
   "@conflictNotificationBody": {
     "placeholders": {
       "count": {
@@ -1846,7 +1846,7 @@
   "conflictValueAbsent": "Non impostato",
   "conflictValueNo": "No.",
   "conflictValueYes": "Sì.",
-  "conflictWordCount": "{count, plural, one{{count} word} other{{count} words}}X",
+  "conflictWordCount": "{count, plural, one{{count} parola} other{{count} parole}}",
   "@conflictWordCount": {
     "description": "Word count shown on the conflict detail meta row.",
     "placeholders": {
@@ -2079,7 +2079,7 @@
   "dailyOsNextDraftingNudgeDecline": "Non oggi.",
   "dailyOsNextDraftingProgressBlocks": "Blocchi di bozza",
   "dailyOsNextDraftingProgressMatching": "Competenze di corrispondenza",
-  "dailyOsNextDraftingProgressQueued": "Queued",
+  "dailyOsNextDraftingProgressQueued": "Queu",
   "dailyOsNextDraftingProgressReading": "Check-in lettura",
   "dailyOsNextDraftingProgressSaving": "Piano di risparmio",
   "dailyOsNextDraftingProgressValidating": "Validazione",
@@ -2116,7 +2116,7 @@
   "dailyOsNextKnowledgeEditSave": "Salva",
   "dailyOsNextKnowledgeEditStatementHint": "Cosa dovrei ricordare?",
   "dailyOsNextKnowledgeEmpty": "Ancora niente. Mi ricordero' cosa mi dirai.",
-  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 thing I noticed — review} other{{count} things I noticed — review}}X",
+  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 cosa ho notato — recensione} other{{count} cose che ho notato — recensione}}",
   "@dailyOsNextKnowledgeNudge": {
     "placeholders": {
       "count": {
@@ -2129,11 +2129,11 @@
   "dailyOsNextKnowledgeStale": "E' ancora vero?",
   "dailyOsNextKnowledgeTitle": "Quello che ho imparato",
   "dailyOsNextParsedCardBreakLinkTooltip": "Collegamento di rottura",
-  "dailyOsNextPlanViewAgenda": "Agenda",
+  "dailyOsNextPlanViewAgenda": "Ordine del giorno",
   "dailyOsNextPlanViewDay": "Giorno",
   "dailyOsNextReconcileBadgeMatched": "MATCHED:",
   "dailyOsNextReconcileBadgeNew": "NUOVO",
-  "dailyOsNextReconcileBadgeUpdate": "UPDATE",
+  "dailyOsNextReconcileBadgeUpdate": "ATTIVITÀ'",
   "dailyOsNextReconcileBuildDayCta": "Costruisci la mia giornata",
   "dailyOsNextReconcileDecideOverline": "DORTH DECIDING ON",
   "dailyOsNextReconcileDecisionProgress": "{decided} di {total} recensito",
@@ -2162,12 +2162,12 @@
   "dailyOsNextReconcileHeardOverline": "CAPITOLO",
   "dailyOsNextReconcileLowConfidence": "bassa fiducia",
   "dailyOsNextReconcileProcessing": "Ascoltare e abbinare la tua giornata...",
-  "dailyOsNextReconcileReRecord": "Re-record",
+  "dailyOsNextReconcileReRecord": "Registri",
   "dailyOsNextReconcileVoiceHint": "Decisioni di revisione prima di costruire il vostro giorno",
   "dailyOsNextRefineAccept": "Accettare",
   "dailyOsNextRefineCurrentPlan": "PIANO DI CURRE",
   "dailyOsNextRefineDiffAdded": "ADDETTI",
-  "dailyOsNextRefineDiffDropped": "DROPPED",
+  "dailyOsNextRefineDiffDropped": "RIMOSSO",
   "dailyOsNextRefineDiffMoved": "MOVIMENTO",
   "dailyOsNextRefineHeadlineDiffReady": "Ecco cosa cambierei.",
   "dailyOsNextRefineHeadlineIdle": "Cosa dovrebbe cambiare?",
@@ -2231,7 +2231,7 @@
   "dailyOsNextShutdownSaveAndClose": "Salva e chiudi",
   "dailyOsNextShutdownTitle": "Chiudere il giorno",
   "dailyOsNextShutdownTomorrowOverline": "allevamento per il TOMORROW",
-  "dailyOsNextStateDueOnDate": "Due {date}",
+  "dailyOsNextStateDueOnDate": "Scadenza: {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {
       "date": {
@@ -2239,8 +2239,8 @@
       }
     }
   },
-  "dailyOsNextStateDueToday": "Due oggi",
-  "dailyOsNextStateInProgress": "{count, plural, =0{In progress} =1{In progress · 1 session} other{In progress · {count} sessions}}X",
+  "dailyOsNextStateDueToday": "Scadenza oggi",
+  "dailyOsNextStateInProgress": "{count, plural, =0{In corso} =1{In corso · 1 sessione} other{In corso · {count} sessioni}}",
   "@dailyOsNextStateInProgress": {
     "placeholders": {
       "count": {
@@ -2249,7 +2249,7 @@
       }
     }
   },
-  "dailyOsNextStateOverdue": "{days, plural, =0{Overdue} =1{Overdue · 1 day} other{Overdue · {days} days}}X",
+  "dailyOsNextStateOverdue": "{days, plural, =0{Scaduto} =1{Scaduto · 1 giorno} other{Scaduto · {days} giorni}}",
   "@dailyOsNextStateOverdue": {
     "placeholders": {
       "days": {
@@ -2258,7 +2258,7 @@
       }
     }
   },
-  "dailyOsNextStateOverdueOnDate": "{days, plural, =0{Overdue on {date}} =1{Overdue by 1 day on {date}} other{Overdue by {days} days on {date}}}X",
+  "dailyOsNextStateOverdueOnDate": "{days, plural, =0{Scaduto il {date}} =1{Scaduto da 1 giorno il {date}} other{Scaduto da {days} giorni il {date}}}",
   "@dailyOsNextStateOverdueOnDate": {
     "placeholders": {
       "days": {
@@ -2276,7 +2276,7 @@
   "dailyOsNextTimelineBoth": "Piano e reale",
   "dailyOsNextTimelineMeridiemAm": "AMORE",
   "dailyOsNextTimelineMeridiemAmShort": "Sono io.",
-  "dailyOsNextTimelineMeridiemPm": "PM",
+  "dailyOsNextTimelineMeridiemPm": "Pomeriggio",
   "dailyOsNextTimelineMeridiemPmShort": "14:00",
   "dailyOsNextTimelinePlanned": "Piano",
   "dailyOsNextTimelineSessionOf": "Sessione {index} di {total}",
@@ -2294,7 +2294,7 @@
   "dailyOsNextTimelineShowPaged": "Mostra piano e vero e proprio",
   "dailyOsNextTimelineSwipeHint": "Swipe per reale · pizzicare verticalmente per ingrandire",
   "dailyOsNextTimelineTracked": "tracciato",
-  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 earlier session} other{{count} earlier sessions}}X",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sessione precedente} other{{count} sessioni precedenti}}",
   "@dailyOsNextTimeSpentEarlierSessions": {
     "placeholders": {
       "count": {
@@ -2427,7 +2427,7 @@
   "dashboardHealthBloodPressure": "Pressione sanguigna",
   "dashboardHealthDiastolic": "Diastosi",
   "dashboardHealthSystolic": "Sistolica",
-  "dashboardMeasurementAddButtonWithCount": "{count, plural, =1{Add 1 chart} other{Add {count} charts}}X",
+  "dashboardMeasurementAddButtonWithCount": "{count, plural, =1{Aggiungi 1 grafico} other{Aggiungi {count} grafici}}",
   "@dashboardMeasurementAddButtonWithCount": {
     "placeholders": {
       "count": {
@@ -2459,7 +2459,7 @@
   "designSystemActionVariantTitle": "Con l'azione",
   "designSystemActivatedLabel": "Attivato",
   "designSystemAvatarAwayLabel": "Via",
-  "designSystemAvatarBusyLabel": "Busy",
+  "designSystemAvatarBusyLabel": "Occupato",
   "designSystemAvatarConnectedLabel": "Collegato",
   "designSystemAvatarEnabledLabel": "Abilitato",
   "designSystemAvatarSizeMatrixTitle": "Dimensioni Matrix",
@@ -2467,10 +2467,10 @@
   "designSystemBackLabel": "Indietro",
   "designSystemBreadcrumbCurrentLabel": "Braccioli",
   "designSystemBreadcrumbDesignSystemLabel": "Sistema di progettazione",
-  "designSystemBreadcrumbHomeLabel": "Home",
-  "designSystemBreadcrumbMobileLabel": "Mobile",
+  "designSystemBreadcrumbHomeLabel": "Inizio",
+  "designSystemBreadcrumbMobileLabel": "Dispositivo mobile",
   "designSystemBreadcrumbProjectsLabel": "Progetti",
-  "designSystemBreadcrumbSampleLabel": "Breadcrumb",
+  "designSystemBreadcrumbSampleLabel": "Pancromo",
   "designSystemBreadcrumbTrailTitle": "Sentiero del pane",
   "designSystemCalendarPickerLabel": "Picker Calendario",
   "designSystemCalendarViewsTitle": "Vista del calendario",
@@ -2490,18 +2490,18 @@
   "designSystemDefaultLabel": "Predefinito",
   "designSystemDisabledLabel": "Disabili",
   "designSystemDividerLabelText": "Etichetta di Divider",
-  "designSystemDropdownComboboxTitle": "Combobox",
+  "designSystemDropdownComboboxTitle": "Casella combinata",
   "designSystemDropdownFieldLabel": "Etichetta",
-  "designSystemDropdownInputLabel": "Input",
+  "designSystemDropdownInputLabel": "Dati in ingresso",
   "designSystemDropdownListTitle": "Elenco a discesa",
   "designSystemDropdownMultiselectInputLabel": "Seleziona i team",
   "designSystemDropdownMultiselectTitle": "Multiselezione",
   "designSystemDropdownOptionAnalytics": "Analisi",
   "designSystemDropdownOptionBackend": "Indietro",
-  "designSystemDropdownOptionDesign": "Design",
+  "designSystemDropdownOptionDesign": "Progettazione",
   "designSystemDropdownOptionFrontend": "Fronte",
   "designSystemDropdownOptionGrowth": "Crescita",
-  "designSystemDropdownOptionMobile": "Mobile",
+  "designSystemDropdownOptionMobile": "Dispositivo mobile",
   "designSystemDropdownOptionQa": "QA",
   "designSystemErrorLabel": "Errore",
   "designSystemFileUploadClickLabel": "Clicca per caricare",
@@ -2512,21 +2512,21 @@
   "designSystemFileUploadErrorLabel": "Errore",
   "designSystemFileUploadFailedText": "Caricamento in corso",
   "designSystemFileUploadHintText": "SVG, PNG, JPG o GIF (max. 800×400px)",
-  "designSystemFileUploadHoverLabel": "Hover",
+  "designSystemFileUploadHoverLabel": "Passaggio del mouse",
   "designSystemFileUploadItemSectionTitle": "Articoli di file",
   "designSystemFileUploadRetryLabel": "Recuperare",
   "designSystemFileUploadUploadingLabel": "Caricamento",
   "designSystemFilledLabel": "Riempito",
   "designSystemHeaderApiDocumentationLabel": "Documentazione API",
   "designSystemHeaderBackActionLabel": "Indietro",
-  "designSystemHeaderDesktopSectionTitle": "Desktop",
+  "designSystemHeaderDesktopSectionTitle": "Sezione desktop",
   "designSystemHeaderHelpActionLabel": "Aiuto",
-  "designSystemHeaderMobileSectionTitle": "Mobile",
+  "designSystemHeaderMobileSectionTitle": "Sezione mobile",
   "designSystemHeaderNotificationsActionLabel": "Notifica",
   "designSystemHeaderSearchActionLabel": "Ricerca",
   "designSystemHorizontalLabel": "Orizzonte",
-  "designSystemHoverLabel": "Hover",
-  "designSystemInfoLabel": "Info",
+  "designSystemHoverLabel": "Passaggio del mouse",
+  "designSystemInfoLabel": "Informazioni",
   "designSystemInputErrorSample": "Questo campo è richiesto",
   "designSystemInputHelperSample": "Inserisci il tuo nome",
   "designSystemInputHintSample": "Detentore...",
@@ -2543,7 +2543,7 @@
   "designSystemListItemVariantsTitle": "Elenco prodotti Varianti",
   "designSystemListItemWithDividerLabel": "Con divisore",
   "designSystemMediumLabel": "Mezzo",
-  "designSystemMyDailyDurationHoursMinutesCompact": "{hours}h {minutes}m",
+  "designSystemMyDailyDurationHoursMinutesCompact": "{hours}O {minutes}O",
   "@designSystemMyDailyDurationHoursMinutesCompact": {
     "placeholders": {
       "hours": {
@@ -2560,7 +2560,7 @@
   "designSystemNavigationFilterByBlockLabel": "Filtra per blocco",
   "designSystemNavigationHikingLabel": "Escursioni a piedi",
   "designSystemNavigationHolidayLabel": "Vacanza",
-  "designSystemNavigationInsightsLabel": "Insights",
+  "designSystemNavigationInsightsLabel": "Analisi",
   "designSystemNavigationLottiTasksLabel": "Compiti Lotti",
   "designSystemNavigationMyDailyLabel": "Il mio quotidiano",
   "designSystemNavigationNewLabel": "Nuovo",
@@ -2574,7 +2574,7 @@
   "designSystemProgressBarLabelOnlyLabel": "Etichetta solo",
   "designSystemProgressBarOffLabel": "Fuori!",
   "designSystemProgressBarPercentageOnlyLabel": "Percentuale",
-  "designSystemProgressBarQuestBarLabel": "Quest bar",
+  "designSystemProgressBarQuestBarLabel": "Barra della missione",
   "designSystemProgressBarQuestLabel": "Etichetta del premio Mega",
   "designSystemProgressBarSampleLabel": "Etichetta di barre di progresso",
   "designSystemRadioButtonLabel": "Pulsante radio",
@@ -2588,7 +2588,7 @@
   "designSystemSpinnerSkeletonPulseLabel": "Pulsante",
   "designSystemSpinnerSkeletonsTitle": "Scheletri",
   "designSystemSpinnerSkeletonWaveLabel": "Onda",
-  "designSystemSpinnerSpinnersTitle": "Spinners",
+  "designSystemSpinnerSpinnersTitle": "Indicatori di caricamento",
   "designSystemSpinnerTrackLabel": "Con la pista",
   "designSystemSplitButtonDropdownSemantics": "Opzioni aperte {label}",
   "@designSystemSplitButtonDropdownSemantics": {
@@ -2604,7 +2604,7 @@
   "designSystemTabPendingLabel": "Finanziamenti",
   "designSystemTaskListBlockedLabel": "Bloccato",
   "designSystemTaskListDefaultLabel": "Predefinito",
-  "designSystemTaskListHoverLabel": "Hover",
+  "designSystemTaskListHoverLabel": "Passaggio del mouse",
   "designSystemTaskListItemSectionTitle": "Elenco delle attività Varianti dell'oggetto",
   "designSystemTaskListOnHoldLabel": "Aspetta.",
   "designSystemTaskListOpenLabel": "Aprire",
@@ -2628,7 +2628,7 @@
   "designSystemToggleLabel": "Etichetta Toggle",
   "designSystemTooltipIconMessageSample": "Informazioni utili su questo campo",
   "designSystemTooltipIconVariantsTitle": "Icona del tooltip",
-  "designSystemUndoLabel": "Undo",
+  "designSystemUndoLabel": "Annulla",
   "designSystemVariantMatrixTitle": "Matrice Variante",
   "designSystemVerticalLabel": "Verticale",
   "designSystemWarningLabel": "Avvertenza",
@@ -2688,7 +2688,7 @@
   "eventsChangeCover": "Cambia la copertura",
   "eventsDeleteEvent": "Elimina evento",
   "eventsFilterAll": "Tutti",
-  "eventsMetricPhotos": "{count, plural, =1{1 photo} other{{count} photos}}X",
+  "eventsMetricPhotos": "{count, plural, =1{1 foto} other{{count} foto}}",
   "@eventsMetricPhotos": {
     "placeholders": {
       "count": {
@@ -2696,7 +2696,7 @@
       }
     }
   },
-  "eventsMetricTasks": "{count, plural, =1{1 task} other{{count} tasks}}X",
+  "eventsMetricTasks": "{count, plural, =1{1 attività} other{{count} attività}}",
   "@eventsMetricTasks": {
     "placeholders": {
       "count": {
@@ -2724,7 +2724,7 @@
   "eventsTasksEmpty": "Collegare un'attività di preparazione o follow-up",
   "eventsTasksSection": "Compiti",
   "eventsTimelineEmpty": "Aggiungi foto, note o un memo vocale",
-  "eventsTimelineSection": "Timeline",
+  "eventsTimelineSection": "Tempo",
   "eventsTitleHint": "Titolo dell'evento",
   "eventsVoiceNote": "Nota vocale",
   "favoriteLabel": "Preferito",
@@ -2732,7 +2732,7 @@
   "fileMenuNewEntry": "Nuova ammissione",
   "fileMenuNewScreenshot": "Sceneggiatura",
   "fileMenuNewTask": "Compiti",
-  "fileMenuTitle": "File",
+  "fileMenuTitle": "Menu File",
   "filterSelectionNoMatches": "Nessuna corrispondenza",
   "geminiThinkingModeHighDescription": "Il ragionamento più profondo; può aumentare la latenza e il costo.",
   "geminiThinkingModeHighLabel": "Alto.",
@@ -2741,7 +2741,7 @@
   "geminiThinkingModeMediumDescription": "ragionamento bilanciato per risposte più accurate.",
   "geminiThinkingModeMediumLabel": "Mezzo",
   "geminiThinkingModeMinimalDescription": "Impostazione più veloce; Gemini può ancora pensare brevemente su suggerimenti complessi.",
-  "geminiThinkingModeMinimalLabel": "Minimal",
+  "geminiThinkingModeMinimalLabel": "Minimo",
   "generateCoverArt": "Generare l'arte della copertura",
   "generateCoverArtSubtitle": "Crea immagine dalla descrizione vocale",
   "goMenuTitle": "Vai.",
@@ -2796,7 +2796,7 @@
   "habitNotRecordedLabel": "Non registrato",
   "habitPriorityLabel": "Priorità",
   "habitsAboveGoal": "Sulla pista",
-  "habitsActiveHabitsCount": "{count, plural, one{1 active habit} other{{count} active habits}}X",
+  "habitsActiveHabitsCount": "{count, plural, one{1 abitudine attiva} other{{count} abitudini attive}}",
   "@habitsActiveHabitsCount": {
     "placeholders": {
       "count": {
@@ -2861,7 +2861,7 @@
   },
   "habitsOpenHeader": "Due ora",
   "habitsPendingLaterHeader": "Più tardi oggi",
-  "habitsPointsToGoal": "{points, plural, one{1 pt to goal} other{{points} pts to goal}}X",
+  "habitsPointsToGoal": "{points, plural, one{1 pt a gol} other{{points} pts a gol}}",
   "@habitsPointsToGoal": {
     "placeholders": {
       "points": {
@@ -2912,7 +2912,7 @@
   "imageGenerationError": "Non è riuscito a generare immagine",
   "imageGenerationGenerating": "Generando l'immagine...",
   "imageGenerationProviderRejectedTitle": "Il fornitore di immagini ha respinto questa richiesta",
-  "imageGenerationWithReferences": "{count, plural, =0{No reference images} =1{Using 1 reference image} other{Using {count} reference images}}X",
+  "imageGenerationWithReferences": "{count, plural, =0{Nessuna immagine di riferimento} =1{Utilizzo di 1 immagine di riferimento} other{Utilizzo di {count} immagini di riferimento}}",
   "@imageGenerationWithReferences": {
     "placeholders": {
       "count": {
@@ -2920,10 +2920,10 @@
       }
     }
   },
-  "imagePromptGenerationCardTitle": "AI Image Prompt",
-  "imagePromptGenerationCopiedSnackbar": "Pronta immagine copiata a clipboard",
+  "imagePromptGenerationCardTitle": "Prompt di immagine di AI",
+  "imagePromptGenerationCopiedSnackbar": "Prompt dell'immagine copiato negli appunti",
   "imagePromptGenerationCopyButton": "Copia Prompt",
-  "imagePromptGenerationCopyTooltip": "Copia il prompt dell'immagine per clipboard",
+  "imagePromptGenerationCopyTooltip": "Copia il prompt dell'immagine negli appunti",
   "imagePromptGenerationExpandTooltip": "Mostra il prompt completo",
   "imagePromptGenerationFullPromptLabel": "Prompt immagine completa:",
   "images": "Immagini",
@@ -3033,7 +3033,7 @@
   "insightsEmptyTitle": "Nessun tempo tracciato in questa gamma",
   "insightsFocusCategoriesEmpty": "Ancora nessuna categoria attiva.",
   "insightsFocusCategoriesTitle": "Categorie di messa a fuoco",
-  "insightsKpiFocus": "FOCUS",
+  "insightsKpiFocus": "CONCENTRAZIONE",
   "insightsKpiFocusHelp": "Categorie che stai guardando",
   "insightsKpiOther": "ALTRE",
   "insightsKpiOtherHelp": "Tutto il resto",
@@ -3066,7 +3066,7 @@
   "insightsRangeYearToDate": "Quest'anno finora",
   "insightsRangeYtd": "Quest'anno",
   "insightsRefreshError": "Non è stato possibile aggiornare — mostrando gli ultimi dati caricati",
-  "insightsTableAvgPerDay": "AVG/DAY",
+  "insightsTableAvgPerDay": "MEDIA/GIORNO",
   "insightsTableCategory": "CATEGORIA",
   "insightsTableCompareNote": "Il cambiamento è contro il periodo precedente",
   "insightsTableCurrent": "CURRE",
@@ -3084,7 +3084,7 @@
   "journalDateSaveButton": "Salva",
   "journalDateTimeRangeTitle": "Data e ora",
   "journalDateToLabel": "Data di:",
-  "journalDeleteConfirm": "SÌ, DELETE QUESTO ENTRY",
+  "journalDeleteConfirm": "SÌ, ELIMINA QUESTA VOCE",
   "journalDeleteHint": "Eliminare la voce",
   "journalDeleteQuestion": "Vuoi eliminare questa voce del diario?",
   "journalDurationLabel": "Durata",
@@ -3103,7 +3103,7 @@
   "journalLinkedEntriesActivityFilterAudio": "Audio audio",
   "journalLinkedEntriesActivityFilterCode": "Codice",
   "journalLinkedEntriesActivityFilterImages": "Immagini",
-  "journalLinkedEntriesActivityFilterTimer": "Timer",
+  "journalLinkedEntriesActivityFilterTimer": "Cronometro",
   "journalLinkedEntriesFilterModalTitle": "Filtro e Ordinazione",
   "journalLinkedEntriesShowFlaggedOnly": "Mostra solo le voci contrassegnate",
   "journalLinkedEntriesShowHidden": "Mostra le voci nascoste",
@@ -3136,7 +3136,7 @@
   "journalToggleFlaggedTitle": "Bandiera",
   "journalTogglePrivateTitle": "Privato",
   "journalToggleStarredTitle": "Preferito",
-  "journalUnlinkConfirm": "Sì, ENTRY IN LINGUA",
+  "journalUnlinkConfirm": "SÌ, SCOLLEGA LA VOCE",
   "journalUnlinkHint": "Un link",
   "journalUnlinkQuestion": "Sei sicuro di voler sbloccare questa voce?",
   "keyboardCommandActivate": "Attivare l'elemento concentrato",
@@ -3175,12 +3175,12 @@
   "keyboardKeyArrowLeft": "Arrow sinistro",
   "keyboardKeyArrowRight": "Freccia destra",
   "keyboardKeyArrowUp": "Arrow!",
-  "keyboardKeyControl": "Ctrl",
+  "keyboardKeyControl": "Crel",
   "keyboardKeyDelete": "Cancella",
   "keyboardKeyEnd": "Fine",
   "keyboardKeyEnter": "Inserisci",
   "keyboardKeyEscape": "Fuga",
-  "keyboardKeyHome": "Home",
+  "keyboardKeyHome": "Inizio",
   "keyboardKeyMinus": "Minuscolo",
   "keyboardKeyOr": "o",
   "keyboardKeyPageDown": "Pagina iniziale",
@@ -3193,7 +3193,7 @@
   "keyboardShortcutsSearchHint": "Cerca scorciatoie...",
   "keyboardShortcutsSubtitle": "Ogni comando desktop e la sua combinazione di tastiera corrente.",
   "keyboardShortcutsTitle": "Tasti di scelta rapida",
-  "knowledgeGraphAgeDaysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}X",
+  "knowledgeGraphAgeDaysAgo": "{count, plural, =1{1 giorno fa} other{{count} giorni fa}}",
   "@knowledgeGraphAgeDaysAgo": {
     "placeholders": {
       "count": {
@@ -3201,7 +3201,7 @@
       }
     }
   },
-  "knowledgeGraphAgeMonthsAgo": "{count, plural, =1{1 month ago} other{{count} months ago}}X",
+  "knowledgeGraphAgeMonthsAgo": "{count, plural, =1{1 mese fa} other{{count} mesi fa}}",
   "@knowledgeGraphAgeMonthsAgo": {
     "placeholders": {
       "count": {
@@ -3210,7 +3210,7 @@
     }
   },
   "knowledgeGraphAgeToday": "oggi",
-  "knowledgeGraphAgeWeeksAgo": "{count, plural, =1{1 week ago} other{{count} weeks ago}}X",
+  "knowledgeGraphAgeWeeksAgo": "{count, plural, =1{1 settimana fa} other{{count} settimane fa}}",
   "@knowledgeGraphAgeWeeksAgo": {
     "placeholders": {
       "count": {
@@ -3218,7 +3218,7 @@
       }
     }
   },
-  "knowledgeGraphAgeYesterday": "ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri sera, ieri, ieri sera, ieri sera, ieri, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri, ieri sera, ieri sera, ieri, ieri sera, ieri sera, ieri",
+  "knowledgeGraphAgeYesterday": "ieri",
   "knowledgeGraphBack": "Indietro",
   "knowledgeGraphCloseDetails": "Chiudi i dettagli",
   "knowledgeGraphEmpty": "Nessun link per esplorare ancora",
@@ -3234,7 +3234,7 @@
     }
   },
   "knowledgeGraphMoreLinks": "più collegamenti",
-  "knowledgeGraphNodeCount": "{count, plural, =1{1 node} other{{count} nodes}}X",
+  "knowledgeGraphNodeCount": "{count, plural, =1{1 nodo} other{{count} nodi}}",
   "@knowledgeGraphNodeCount": {
     "placeholders": {
       "count": {
@@ -3263,7 +3263,7 @@
   "knowledgeGraphSummarySection": "SUMMARIO",
   "knowledgeGraphTitle": "Grafico della conoscenza",
   "knowledgeGraphTooltip": "Esplora i link",
-  "knowledgeGraphWalkHint": "Toccare un nodo per camminare · {count, plural, =1{1 node} other{{count} nodes}}",
+  "knowledgeGraphWalkHint": "Toccare un nodo per camminare · {count, plural, =1{1 nodo} other{{count} nodi}}",
   "@knowledgeGraphWalkHint": {
     "placeholders": {
       "count": {
@@ -3279,16 +3279,16 @@
   "linkExistingTask": "Collegare il compito esistente...",
   "loggingDomainAgentRuntime": "Tempo libero dell'agente",
   "loggingDomainAgentWorkflow": "Flusso di lavoro agente",
-  "loggingDomainAi": "AI",
+  "loggingDomainAi": "IA",
   "loggingDomainCalendar": "Calendario e ora",
-  "loggingDomainChat": "Chat",
+  "loggingDomainChat": "Conversazione",
   "loggingDomainDailyOs": "Sistema operativo giornaliero",
   "loggingDomainDatabase": "Database",
   "loggingDomainGeneral": "Generale",
   "loggingDomainHabits": "Abitazioni",
   "loggingDomainHealth": "Salute",
   "loggingDomainLabels": "Etichette",
-  "loggingDomainLocation": "Location",
+  "loggingDomainLocation": "Posizione",
   "loggingDomainNavigation": "Navigazione",
   "loggingDomainNotifications": "Notifica",
   "loggingDomainOnboarding": "A bordo & FTUE",
@@ -3299,7 +3299,7 @@
   "loggingDomainSpeech": "Discorso e audio",
   "loggingDomainSync": "Traduzione:",
   "loggingDomainTasks": "Compiti e liste di controllo",
-  "loggingDomainTheming": "Theming",
+  "loggingDomainTheming": "Il nome",
   "loggingDomainWhatsNew": "Cosa c'è di nuovo",
   "maintenanceDeleteAgentDb": "Eliminare il database degli agenti",
   "maintenanceDeleteAgentDbDescription": "Elimina il database degli agenti e riavvia l'app",
@@ -3320,7 +3320,7 @@
   "maintenanceGenerateEmbeddingsConfirm": "Sì, GENERATO",
   "maintenanceGenerateEmbeddingsDescription": "Generare embeddings per le voci in categorie selezionate",
   "maintenanceGenerateEmbeddingsMessage": "Selezionare le categorie per generare embeddings per.",
-  "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entry ({embedded} embedded)} other{{processed} / {total} entries ({embedded} embedded)}}X",
+  "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entrata ({embedded} embedded)} other{{processed} / {total} voci ({embedded} embedded)}}",
   "@maintenanceGenerateEmbeddingsProgress": {
     "placeholders": {
       "processed": {
@@ -3376,7 +3376,7 @@
   "matrixStatsCircuitOpens": "Circuito si apre",
   "matrixStatsConflicts": "Conflitti",
   "matrixStatsCopyDiagnostics": "Diagnostica di copia",
-  "matrixStatsCopyDiagnosticsTooltip": "Copiare la diagnostica di sincronizzazione al clipboard",
+  "matrixStatsCopyDiagnosticsTooltip": "Copia la diagnostica di sincronizzazione negli appunti",
   "matrixStatsDbApplied": "DB applicata",
   "matrixStatsDbApply": "DB Applicare",
   "matrixStatsDbIgnoredVectorClock": "DB Ignorato (VectorClock)",
@@ -3387,7 +3387,7 @@
       "type": {}
     }
   },
-  "matrixStatsEntryLinkNoops": "EntryLink No-ops",
+  "matrixStatsEntryLinkNoops": "Operazioni EntryLink senza effetto",
   "matrixStatsFailures": "Fallimenti",
   "matrixStatsFlushes": "Flussi",
   "matrixStatsForceRescan": "Forza Rescan",
@@ -3414,7 +3414,7 @@
   "matrixStatsSignalsConnectivity": "Segnali (connettività)",
   "matrixStatsSignalsTimelineCallbacks": "Segnali (chiamate di linea temporale)",
   "matrixStatsSkipped": "Abilitato",
-  "matrixStatsSkippedRetryCap": "Skipped (Retry Cap)",
+  "matrixStatsSkippedRetryCap": "Saltato (limite tentativi)",
   "matrixStatsStaleAttachmentPurges": "Punteggio di aggancio",
   "matrixStatsThroughput": "Portata",
   "matrixStatsTopKpis": "I migliori KPI",
@@ -3496,7 +3496,7 @@
   "modelEditSaveButton": "Salva",
   "modelEditSectionCapabilities": "Capacità",
   "modelEditSectionIdentity": "Identità",
-  "modelManagementSelectedCount": "{count} modello{count, plural, =1{} other{s}} selezionato",
+  "modelManagementSelectedCount": "{count} modell{count, plural, =1{o} other{i}} selezionat{count, plural, =1{o} other{i}}",
   "@modelManagementSelectedCount": {
     "placeholders": {
       "count": {
@@ -3516,7 +3516,7 @@
   "multiSelectNoItemsFound": "Nessun articolo trovato",
   "navSidebarManualBrowserHint": "Si apre nel tuo browser",
   "navSidebarManualLabel": "Manuale",
-  "navTabMoreSemanticsLabel": "{count, plural, =1{More, 1 additional destination} other{More, {count} additional destinations}}X",
+  "navTabMoreSemanticsLabel": "{count, plural, =1{Altro, 1 destinazione aggiuntiva} other{Altro, {count} destinazioni aggiuntive}}",
   "@navTabMoreSemanticsLabel": {
     "placeholders": {
       "count": {
@@ -3527,13 +3527,13 @@
   "navTabTitleCalendar": "Quotidiano",
   "navTabTitleEvents": "Eventi",
   "navTabTitleHabits": "Abitazioni",
-  "navTabTitleInsights": "Insights",
+  "navTabTitleInsights": "Analisi",
   "navTabTitleJournal": "Regime di registro",
   "navTabTitleMore": "Altro",
   "navTabTitleProjects": "Progetti",
   "navTabTitleSettings": "Impostazioni delle impostazioni",
   "navTabTitleTasks": "Compiti",
-  "nestedAiResponsesTitle": "{count} AI risposta{count, plural, =1{} other{s}}",
+  "nestedAiResponsesTitle": "{count} rispost{count, plural, =1{a} other{e}} IA",
   "@nestedAiResponsesTitle": {
     "placeholders": {
       "count": {
@@ -3546,7 +3546,7 @@
   "noTasksToLink": "Nessun compito disponibile per il collegamento",
   "notificationBellEmptySemantics": "Notifiche, non avvisi illeggibili",
   "notificationBellTooltip": "Notifica",
-  "notificationBellUnseenSemantics": "Notifiche, {count} unread {count, plural, =1{alert} other{alerts}}",
+  "notificationBellUnseenSemantics": "Notifiche, {count} {count, plural, =1{avviso non letto} other{avvisi non letti}}",
   "@notificationBellUnseenSemantics": {
     "placeholders": {
       "count": {
@@ -3559,7 +3559,7 @@
   "notificationInboxError": "Non ho potuto caricare le notifiche.",
   "notificationInboxTitle": "Notifica",
   "notificationSuggestionAttentionBodyFallback": "Aprire il compito di rivedere.",
-  "notificationSuggestionAttentionTitle": "{count, plural, =1{1 suggestion needs your attention} other{{count} suggestions need your attention}}X",
+  "notificationSuggestionAttentionTitle": "{count, plural, =1{1 suggerimento ha bisogno della vostra attenzione} other{{count} suggerimenti bisogno della vostra attenzione}}",
   "@notificationSuggestionAttentionTitle": {
     "placeholders": {
       "count": {
@@ -3599,7 +3599,7 @@
   "onboardingCategoryContinue": "Continua",
   "onboardingCategoryExplanation": "Ogni area della vostra vita ottiene il proprio spazio. Scegli qualsiasi che si adatta — o aggiungere il proprio.",
   "onboardingCategoryFamily": "Famiglia",
-  "onboardingCategoryFitness": "Fitness",
+  "onboardingCategoryFitness": "Forma fisica",
   "onboardingCategoryFriends": "Amici",
   "onboardingCategoryTitle": "Dove dovrebbe funzionare l'intelligenza artificiale?",
   "onboardingCategoryWhy": "Perché le aree?",
@@ -3699,7 +3699,7 @@
   "outboxMonitorRetry": "Retribuzioni",
   "outboxMonitorRetryConfirmLabel": "Recuperare ora",
   "outboxMonitorRetryConfirmMessage": "Recuperare questo articolo di sincronizzazione ora?",
-  "outboxMonitorRetryFailed": "Retry ha fallito, per favore riprovate.",
+  "outboxMonitorRetryFailed": "Il nuovo tentativo non è riuscito. Riprova.",
   "outboxMonitorRetryQueued": "Recuperare programmato",
   "outboxMonitorSubjectLabel": "Oggetto",
   "outboxMonitorVolumeChartTitle": "Volume di sincronizzazione giornaliero",
@@ -3711,7 +3711,7 @@
   "outboxStatusSending": "Inviare",
   "outboxStatusSent": "Inviato",
   "outboxStatusWaiting": "In attesa di inviare",
-  "outboxSummaryFailed": "{count, plural, =1{1 item couldn't send} other{{count} items couldn't send}}X",
+  "outboxSummaryFailed": "{count, plural, =1{1 elemento non poteva inviare} other{{count} articoli non potevano inviare}}",
   "@outboxSummaryFailed": {
     "placeholders": {
       "count": {
@@ -3720,7 +3720,7 @@
       }
     }
   },
-  "outboxSummaryOffline": "{count, plural, =1{1 item will send when you reconnect} other{{count} items will send when you reconnect}}X",
+  "outboxSummaryOffline": "{count, plural, =1{1 elemento verrà inviato quando ti riconnetterai} other{{count} elementi verranno inviati quando ti riconnetterai}}",
   "@outboxSummaryOffline": {
     "placeholders": {
       "count": {
@@ -3729,7 +3729,7 @@
       }
     }
   },
-  "outboxSummarySending": "{count, plural, =1{Sending 1 item…} other{Sending {count} items…}}X",
+  "outboxSummarySending": "{count, plural, =1{Invio di 1 elemento…} other{Invio di {count} elementi…}}",
   "@outboxSummarySending": {
     "placeholders": {
       "count": {
@@ -3739,7 +3739,7 @@
     }
   },
   "outboxSummarySynced": "Tutto è sincronizzato",
-  "outboxSummaryWaiting": "{count, plural, =1{1 item waiting to send} other{{count} items waiting to send}}X",
+  "outboxSummaryWaiting": "{count, plural, =1{1 elemento in attesa di inviare} other{{count} articoli in attesa di inviare}}",
   "@outboxSummaryWaiting": {
     "placeholders": {
       "count": {
@@ -3748,7 +3748,7 @@
       }
     }
   },
-  "outboxTriedTimes": "{count, plural, =1{Tried once} other{Tried {count} times}}X",
+  "outboxTriedTimes": "{count, plural, =1{Tentato una volta} other{Tentato {count} volte}}",
   "@outboxTriedTimes": {
     "placeholders": {
       "count": {
@@ -3762,10 +3762,10 @@
   "panasEmotionActive": "Attivo",
   "panasEmotionAfraid": "Paura",
   "panasEmotionAlert": "Avviso",
-  "panasEmotionAshamed": "Ashamed",
+  "panasEmotionAshamed": "Vergognoso",
   "panasEmotionAttentive": "Attentivo",
   "panasEmotionDetermined": "Determinazione",
-  "panasEmotionDistressed": "Distressed",
+  "panasEmotionDistressed": "In difficoltà",
   "panasEmotionEnthusiastic": "Enthusiasta",
   "panasEmotionExcited": "Eccitato",
   "panasEmotionGuilty": "Colpevole",
@@ -3773,7 +3773,7 @@
   "panasEmotionInspired": "Ispirato",
   "panasEmotionInterested": "Interessi",
   "panasEmotionIrritable": "Irritabile",
-  "panasEmotionJittery": "Jittery",
+  "panasEmotionJittery": "Agitato",
   "panasEmotionNervous": "Nervosa",
   "panasEmotionProud": "Proudo",
   "panasEmotionScared": "Spaventato",
@@ -3791,7 +3791,7 @@
   "privateSwitchDescription": "Solo visibile quando vengono mostrate le voci private",
   "projectAgentNotProvisioned": "Nessun agente di progetto è stato fornito per questo progetto ancora.",
   "projectAgentSectionTitle": "Agente",
-  "projectCountSummary": "{count, plural, one{{count} project} other{{count} projects}}X",
+  "projectCountSummary": "{count, plural, one{{count} progetto} other{{count} progetti}}",
   "@projectCountSummary": {
     "placeholders": {
       "count": {
@@ -3813,7 +3813,7 @@
   "projectHealthBandSurviving": "Sopravvivere",
   "projectHealthBandWatch": "Guarda qui",
   "projectHealthSectionTitle": "Salute del progetto",
-  "projectHealthSummary": "{projectCount, plural, one{{projectCount} project} other{{projectCount} projects}}, {taskCount, plural, one{{taskCount} task} other{{taskCount} tasks}}",
+  "projectHealthSummary": "{projectCount, plural, one{{projectCount} progetto} other{{projectCount} progetti}}, {taskCount, plural, one{{taskCount} attività} other{{taskCount} attività}}",
   "@projectHealthSummary": {
     "placeholders": {
       "projectCount": {
@@ -3825,7 +3825,7 @@
     }
   },
   "projectHealthTitle": "Progetti",
-  "projectLinkedTaskCount": "{count, plural, one{{count} linked task} other{{count} linked tasks}}X",
+  "projectLinkedTaskCount": "{count, plural, one{{count} attività collegata} other{{count} compiti collegati}}",
   "@projectLinkedTaskCount": {
     "placeholders": {
       "count": {
@@ -3855,7 +3855,7 @@
       }
     }
   },
-  "projectShowcaseBlockedTaskCount": "{count, plural, one{{count} task blocked} other{{count} tasks blocked}}X",
+  "projectShowcaseBlockedTaskCount": "{count, plural, one{{count} task bloccato} other{{count}: attività bloccate}}",
   "@projectShowcaseBlockedTaskCount": {
     "placeholders": {
       "count": {
@@ -3872,7 +3872,7 @@
     }
   },
   "projectShowcaseDescriptionTitle": "Designazione",
-  "projectShowcaseDueDate": "Due {date}",
+  "projectShowcaseDueDate": "Scadenza: {date}",
   "@projectShowcaseDueDate": {
     "placeholders": {
       "date": {
@@ -3887,7 +3887,7 @@
   "projectShowcaseOngoing": "In corso",
   "projectShowcaseProjectTasksTab": "Compiti del progetto",
   "projectShowcaseSearchHint": "Progetti di ricerca",
-  "projectShowcaseSessionsCount": "{count, plural, one{{count} session} other{{count} sessions}}X",
+  "projectShowcaseSessionsCount": "{count, plural, one{{count} sessione} other{{count} sessioni}}",
   "@projectShowcaseSessionsCount": {
     "placeholders": {
       "count": {
@@ -3895,7 +3895,7 @@
       }
     }
   },
-  "projectShowcaseTasksCompleted": "{total, plural, one{{completed}/{total} task completed} other{{completed}/{total} tasks completed}}X",
+  "projectShowcaseTasksCompleted": "{total, plural, one{{completed}/{total} attività completata} other{{completed}/{total} attività completate}}",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {
       "completed": {
@@ -3947,7 +3947,7 @@
   "projectTitleLabel": "Titolo del progetto",
   "projectTitleRequired": "Il titolo del progetto non può essere vuoto",
   "promptDefaultModelBadge": "Predefinito",
-  "promptGenerationCardTitle": "AI Coding Prompt",
+  "promptGenerationCardTitle": "Prompettore di codifica AI",
   "promptGenerationCopiedSnackbar": "Prompt copiato a clipboard",
   "promptGenerationCopyButton": "Copia Prompt",
   "promptGenerationCopyTooltip": "Copia il prompt per il clipboard",
@@ -3956,7 +3956,7 @@
   "promptSelectionModalTitle": "Selezionare Prompt preconfigurato",
   "provisionedSyncBundleImported": "Codice di previsione importato",
   "provisionedSyncConfigureButton": "Configurazione",
-  "provisionedSyncCopiedToClipboard": "Copied a clipboard",
+  "provisionedSyncCopiedToClipboard": "Copiato negli appunti",
   "provisionedSyncDisconnect": "Scollegamento",
   "provisionedSyncDone": "Sincronizzazione configurata con successo",
   "provisionedSyncError": "Configurazione fallita",
@@ -3967,7 +3967,7 @@
   "provisionedSyncImportTitle": "Configurazione di sincronizzazione",
   "provisionedSyncInvalidBundle": "Codice di fornitura non valido",
   "provisionedSyncJoiningRoom": "Unisciti alla sincronia...",
-  "provisionedSyncLoggingIn": "Logging in...",
+  "provisionedSyncLoggingIn": "- Logging in...",
   "provisionedSyncPasteClipboard": "Incolla da appunti",
   "provisionedSyncReady": "Scansiona questo codice QR sul tuo dispositivo mobile",
   "provisionedSyncRetry": "Recuperare",
@@ -3975,7 +3975,7 @@
   "provisionedSyncScanButton": "Scansione del codice QR",
   "provisionedSyncShowQr": "Mostrare il QR provisioning",
   "provisionedSyncSubtitle": "Impostare la sincronizzazione da un bundle di provisioning",
-  "provisionedSyncSummaryHomeserver": "Homeserver",
+  "provisionedSyncSummaryHomeserver": "Server domestico",
   "provisionedSyncSummaryRoom": "Camera",
   "provisionedSyncSummaryUser": "Utente",
   "provisionedSyncTitle": "Sincronizzazione prevista",
@@ -3994,7 +3994,7 @@
   "queueDepthCardLoading": "Leggere la profondità della coda...",
   "queueDepthCardTitle": "La coda in entrata",
   "queueFetchAllHistoryCancel": "Annullamento",
-  "queueFetchAllHistoryCancelled": "Annullato — {events, plural, =0{no events} =1{1 event} other{{events} events}} catturato finora.",
+  "queueFetchAllHistoryCancelled": "Annullato — {events, plural, =0{nessun evento} =1{1 evento} other{{events} eventi}} recuperati finora.",
   "@queueFetchAllHistoryCancelled": {
     "placeholders": {
       "events": {
@@ -4004,7 +4004,7 @@
   },
   "queueFetchAllHistoryClose": "Chiudere",
   "queueFetchAllHistoryDescription": "Cammina tutta la storia visibile della stanza nella coda. Sicuro per annullare; un secondo run riprende da dove l'impaginazione si è fermata.",
-  "queueFetchAllHistoryDone": "{events, plural, =0{No events fetched.} =1{Fetched 1 event across {pages, plural, =1{1 page} other{{pages} pages}}.} other{Fetched {events} events across {pages, plural, =1{1 page} other{{pages} pages}}.}}X",
+  "queueFetchAllHistoryDone": "{events, plural, =0{Nessun evento recuperato.} =1{1 evento recuperato in {pages, plural, =1{1 pagina} other{{pages} pagine}}.} other{{events} eventi recuperati in {pages, plural, =1{1 pagina} other{{pages} pagine}}.}}",
   "@queueFetchAllHistoryDone": {
     "placeholders": {
       "events": {
@@ -4025,7 +4025,7 @@
   },
   "queueFetchAllHistoryErrorUnknown": "Fetch si e' fermato inaspettatamente.",
   "@queueFetchAllHistoryErrorUnknown": {},
-  "queueFetchAllHistoryProgress": "{events, plural, =1{Page {pages}  ·  1 event fetched} other{Page {pages}  ·  {events} events fetched}}X",
+  "queueFetchAllHistoryProgress": "{events, plural, =1{Pagina {pages} · 1 evento recuperato} other{Pagina {pages} · {events} eventi recuperati}}",
   "@queueFetchAllHistoryProgress": {
     "placeholders": {
       "events": {
@@ -4037,7 +4037,7 @@
     }
   },
   "queueFetchAllHistoryTitle": "Storie di cattura",
-  "queueSkippedBadge": "{count, plural, =1{1 skipped} other{{count} skipped}}X",
+  "queueSkippedBadge": "{count, plural, =1{1 saltato} other{{count} saltato}}",
   "@queueSkippedBadge": {
     "placeholders": {
       "count": {
@@ -4045,7 +4045,7 @@
       }
     }
   },
-  "queueSkippedCardBody": "{count, plural, =1{1 sync event the queue gave up on. Tap retry to re-attempt.} other{{count} sync events the queue gave up on. Tap retry to re-attempt.}}X",
+  "queueSkippedCardBody": "{count, plural, =1{1 sincronizzazione della coda ha rinunciato. Toccare la rettiva per re-attempt.} other{{count} sincronizza gli eventi che la coda ha rinunciato. Toccare la re-attempt.}}",
   "@queueSkippedCardBody": {
     "placeholders": {
       "count": {
@@ -4055,7 +4055,7 @@
   },
   "queueSkippedCardTitle": "Eventi sportivi",
   "queueSkippedRetryAll": "Riprovare gli eventi saltati",
-  "queueSkippedRetryAllDone": "{count, plural, =0{No skipped events to retry.} =1{1 event queued for retry.} other{{count} events queued for retry.}}X",
+  "queueSkippedRetryAllDone": "{count, plural, =0{Nessun evento ignorato da ritentare.} =1{1 evento in coda per un nuovo tentativo.} other{{count} eventi in coda per un nuovo tentativo.}}",
   "@queueSkippedRetryAllDone": {
     "placeholders": {
       "count": {
@@ -4063,7 +4063,7 @@
       }
     }
   },
-  "queueSkippedRetryAllError": "Retry fail: {reason}",
+  "queueSkippedRetryAllError": "Nuovo tentativo non riuscito: {reason}",
   "@queueSkippedRetryAllError": {
     "placeholders": {
       "reason": {
@@ -4163,7 +4163,7 @@
   },
   "settingsCategoriesSearchHint": "Cerca le categorie...",
   "settingsCategoriesSubtitle": "Categorie con impostazioni AI",
-  "settingsCategoriesTaskCount": "{count, plural, one{{count} task} other{{count} tasks}}X",
+  "settingsCategoriesTaskCount": "{count, plural, one{{count} attività} other{{count} attività}}",
   "@settingsCategoriesTaskCount": {
     "placeholders": {
       "count": {
@@ -4223,12 +4223,12 @@
   "settingsCelebrationsKnobSpeedSpread": "Variazione della velocità",
   "settingsCelebrationsKnobSpin": "Spingi",
   "settingsCelebrationsKnobSpread": "Arco di dispersione",
-  "settingsCelebrationsKnobSway": "Sway",
+  "settingsCelebrationsKnobSway": "Oscillazione",
   "settingsCelebrationsKnobSwell": "Bene.",
   "settingsCelebrationsKnobTrail": "Lunghezza del sentiero",
-  "settingsCelebrationsKnobTwinkle": "Twinkle",
+  "settingsCelebrationsKnobTwinkle": "Doppia",
   "settingsCelebrationsKnobUpward": "Risalire",
-  "settingsCelebrationsKnobWobble": "Wobble",
+  "settingsCelebrationsKnobWobble": "Dondolio",
   "settingsCelebrationsPlaygroundHint": "Toccare la riga evidenziata per l'anteprima",
   "settingsCelebrationsPlaygroundLiveNote": "Cambiamenti salvare e applicare ovunque istantaneamente",
   "settingsCelebrationsPreviewChecklistItem": "Controllami.",
@@ -4239,25 +4239,25 @@
   "settingsCelebrationsPreviewSample2": "Termina il rapporto",
   "settingsCelebrationsPreviewSample3": "Acquare le piante",
   "settingsCelebrationsPreviewTitle": "Provalo.",
-  "settingsCelebrationsReplay": "Replay",
+  "settingsCelebrationsReplay": "Riproduci",
   "settingsCelebrationsResetToast": "Ripristino stile per impostazione predefinita",
   "settingsCelebrationsResetToDefault": "Ripristino di default",
-  "settingsCelebrationsResetUndo": "Undo",
+  "settingsCelebrationsResetUndo": "Annulla",
   "settingsCelebrationsSectionDescription": "Suona un fiore quando finisci qualcosa. Interruttore uno spegnimento mantiene il completamento e il suo haptico — basta saltare l'animazione.",
   "settingsCelebrationsSectionTitle": "Celebrazioni di completamento",
   "settingsCelebrationsStyleDescription": "Toccare una carta per visualizzare in anteprima uno stile di celebrazione e renderlo tuo.",
   "settingsCelebrationsStyleTitle": "Stile",
   "settingsCelebrationsSubtitle": "Celebrazioni di completamento",
-  "settingsCelebrationsTasksDescription": "Glow e scintille quando si sposta un compito a Done",
+  "settingsCelebrationsTasksDescription": "Bagliori e scintille quando un'attività viene completata",
   "settingsCelebrationsTasksTitle": "Compiti",
   "settingsCelebrationsTitle": "Animazione",
   "settingsCelebrationsVariantBubbles": "Bolle",
   "settingsCelebrationsVariantCombine": "Combina due",
   "settingsCelebrationsVariantCombineDescription": "Due stili casuali, stratificato, ogni volta",
-  "settingsCelebrationsVariantConfetti": "Confetti",
-  "settingsCelebrationsVariantEmbers": "Embers",
+  "settingsCelebrationsVariantConfetti": "Coriandoli",
+  "settingsCelebrationsVariantEmbers": "Legname",
   "settingsCelebrationsVariantFireworks": "Fuochi d'artificio",
-  "settingsCelebrationsVariantRandom": "Random",
+  "settingsCelebrationsVariantRandom": "Casuale",
   "settingsCelebrationsVariantRandomDescription": "Uno stile fresco ad ogni completamento",
   "settingsCelebrationsVariantSparks": "Scintille",
   "settingsConflictsTitle": "Conflitti di sincronizzazione",
@@ -4277,7 +4277,7 @@
   },
   "settingsDashboardsSearchHint": "Cerca cruscotti...",
   "settingsDashboardsSubtitle": "Personalizza le tue viste sul cruscotto",
-  "settingsDashboardsTitle": "Dashboards",
+  "settingsDashboardsTitle": "Pannelli",
   "settingsDefinitionsSubtitle": "Abitudini, categorie, etichette, cruscotti e misurabili",
   "settingsDefinitionsTitle": "Definizioni",
   "settingsFlagsEmptySearch": "Nessuna bandiera corrisponde alla tua ricerca",
@@ -4356,7 +4356,7 @@
   "settingsLabelsSearchHint": "Etichette di ricerca...",
   "settingsLabelsSubtitle": "Organizzare le attività con le etichette colorate",
   "settingsLabelsTitle": "Etichette",
-  "settingsLabelsUsageCount": "{count, plural, =1{1 task} other{{count} tasks}}X",
+  "settingsLabelsUsageCount": "{count, plural, =1{1 attività} other{{count} attività}}",
   "@settingsLabelsUsageCount": {
     "placeholders": {
       "count": {
@@ -4411,7 +4411,7 @@
   "settingsMatrixListUnverifiedLabel": "Dispositivi non verificati",
   "settingsMatrixMaintenanceSubtitle": "Eseguire Matrix compiti di manutenzione e strumenti di recupero",
   "settingsMatrixMaintenanceTitle": "Manutenzione",
-  "settingsMatrixMetrics": "Sync Metrics",
+  "settingsMatrixMetrics": "Sincronizzazioni",
   "settingsMatrixNextPage": "Pagina successiva",
   "settingsMatrixNoUnverifiedLabel": "Nessun dispositivo non verificato",
   "settingsMatrixPreviousPage": "Pagina precedente",
@@ -4437,7 +4437,7 @@
     }
   },
   "settingsMatrixStartVerificationLabel": "Avviare la verifica",
-  "settingsMatrixStatsTitle": "Matrix Stats",
+  "settingsMatrixStatsTitle": "Statistiche Matrix",
   "settingsMatrixTitle": "Impostazioni di sincronizzazione",
   "settingsMatrixUnverifiedDevicesPage": "Dispositivi non verificati",
   "settingsMatrixVerificationCancelledLabel": "Cancellato su altro dispositivo...",
@@ -4483,7 +4483,7 @@
   "settingsOnboardingActionSubtitle": "Riaprire il flusso di benvenuto — collegare il cervello AI e creare un compito",
   "settingsOnboardingMetricsSubtitle": "Imbuto FTUE — installazione, attivazione, ritenzione (debug)",
   "settingsOnboardingMetricsTitle": "Metriche di bordo",
-  "settingsOnboardingReplayTitle": "Replay onboarding",
+  "settingsOnboardingReplayTitle": "Riproduci a bordo",
   "settingsOnboardingStartTitle": "Iniziare a bordo",
   "settingsOnboardingStatusActivated": "Hai creato il tuo primo compito AI",
   "settingsOnboardingStatusLoading": "Caricamento...",
@@ -4502,10 +4502,10 @@
   "settingsResetGeminiConfirm": "Ripristino",
   "settingsResetGeminiConfirmQuestion": "Questo mostrerà la finestra di dialogo di configurazione Gemini.",
   "settingsResetGeminiSubtitle": "Mostra di nuovo la finestra di dialogo di configurazione Gemini AI",
-  "settingsResetGeminiTitle": "Reset Gemini Setup Dialog",
+  "settingsResetGeminiTitle": "Reimposta finestra di configurazione Gemini",
   "settingsResetHintsConfirm": "Conferma",
   "settingsResetHintsConfirmQuestion": "Ripristinare i suggerimenti in-app visualizzati attraverso l'app?",
-  "settingsResetHintsResult": "{count, plural, =0{Reset zero hints} one{Reset one hint} other{Reset {count} hints}}X",
+  "settingsResetHintsResult": "{count, plural, =0{Reimpostati zero suggerimenti} one{Reimpostato un suggerimento} other{Reimpostati {count} suggerimenti}}",
   "@settingsResetHintsResult": {
     "placeholders": {
       "count": {
@@ -4514,7 +4514,7 @@
     }
   },
   "settingsResetHintsSubtitle": "Punte chiare una tantum e suggerimenti di bordo",
-  "settingsResetHintsTitle": "Reset In-App Hints",
+  "settingsResetHintsTitle": "Reimposta suggerimenti nell'app",
   "settingsSpeechSubtitle": "Voce e lettura aloud",
   "settingsSpeechTitle": "Discorso",
   "settingsSyncConflictsSubtitle": "Risolvere i conflitti di sincronizzazione per garantire la coerenza dei dati",
@@ -4539,7 +4539,7 @@
   "settingsThemingDark": "Aspetto oscuro",
   "settingsThemingLight": "Aspetto leggero",
   "settingsThemingSubtitle": "Personalizza l'aspetto dell'app e i temi",
-  "settingsThemingTitle": "Theming",
+  "settingsThemingTitle": "Il nome",
   "settingsV2CategoryEmptyBody": "Scegli un sub-setting a sinistra.",
   "settingsV2DetailRootCrumb": "Impostazioni delle impostazioni",
   "settingsV2EmptyStateBody": "Scegli una sezione a sinistra per iniziare.",
@@ -4555,10 +4555,10 @@
   "sidebarAudioRecordingStatusLabel": "Registrazione",
   "sidebarRunningTimerLabel": "Tempo di esecuzione",
   "sidebarRunningTimerStopTooltip": "Ferma il timer.",
-  "sidebarTimerStatusLabel": "Timer",
+  "sidebarTimerStatusLabel": "Cronometro",
   "sidebarToggleCollapseLabel": "Barra laterale di ricaduta",
   "sidebarToggleExpandLabel": "Barra laterale espandibile",
-  "sidebarWakesActiveCount": "{count, plural, =1{1 active} other{{count} active}}X",
+  "sidebarWakesActiveCount": "{count, plural, =1{1 attiva} other{{count} attivo}}",
   "@sidebarWakesActiveCount": {
     "placeholders": {
       "count": {
@@ -4571,7 +4571,7 @@
   "sidebarWakesNow": "ora",
   "sidebarWakesOpenList": "Elenco aperto",
   "sidebarWakesOpenTask": "Attività aperte",
-  "sidebarWakesQueuedCount": "{count, plural, =1{1 queued} other{{count} queued}}X",
+  "sidebarWakesQueuedCount": "{count, plural, =1{1 coda} other{{count} in coda}}",
   "@sidebarWakesQueuedCount": {
     "placeholders": {
       "count": {
@@ -4579,7 +4579,7 @@
       }
     }
   },
-  "sidebarWakesQueuedLabel": "Queued",
+  "sidebarWakesQueuedLabel": "Queu",
   "sidebarWakesWorkingLabel": "Lavorazione",
   "skillsSectionTitle": "Competenze",
   "speechDictionaryHelper": "Termini semicolon-separati (max 50 chars) per un migliore riconoscimento vocale",
@@ -4632,11 +4632,11 @@
   "syncActivityTitle": "Traduzione:",
   "syncDeleteConfigConfirm": "Si', sono sicuro.",
   "syncDeleteConfigQuestion": "Vuoi eliminare la configurazione di sincronizzazione?",
-  "syncEntitiesConfirm": "START SYNC",
+  "syncEntitiesConfirm": "AVVIA SINCRONIZZAZIONE",
   "syncEntitiesMessage": "Scegli le entità che vuoi sincronizzare.",
   "syncEntitiesSuccessDescription": "Tutto e' aggiornato.",
   "syncEntitiesSuccessTitle": "Sincronizzazione completa",
-  "syncListCountSummary": "{label} · {itemCount, plural, =0{0 items} =1{1 item} other{{itemCount} items}}",
+  "syncListCountSummary": "{label} · {itemCount, plural, =0{0} =1{1 elemento} other{{itemCount} articoli}}",
   "@syncListCountSummary": {
     "placeholders": {
       "label": {
@@ -4677,7 +4677,7 @@
   "syncStepBackfillAgentLinkClocks": "Orologi di collegamento agente di riempimento",
   "syncStepCategories": "Categorie",
   "syncStepComplete": "Completo",
-  "syncStepDashboards": "Dashboards",
+  "syncStepDashboards": "Pannelli",
   "syncStepHabits": "Abitazioni",
   "syncStepLabels": "Etichette",
   "syncStepMeasurables": "Misurabili",
@@ -4766,10 +4766,10 @@
     }
   },
   "taskAgentSetupChoiceHelp": "Scegli un profilo per i suoi valori predefiniti, o sovrascrivi solo il modello di pensiero.",
-  "taskAgentSetupOriginCategory": "Copied dalla categoria di default quando questo agente è stato creato",
+  "taskAgentSetupOriginCategory": "Copiato dalle impostazioni predefinite della categoria quando è stato creato questo agente",
   "taskAgentSetupOriginDisabled": "Disabili",
   "taskAgentSetupOriginLegacy": "Configurazione legacy",
-  "taskAgentSetupOriginTemplate": "Copied dal modello",
+  "taskAgentSetupOriginTemplate": "Copiato dal modello",
   "taskAgentSetupOriginUser": "Hai scelto questo per questo agente.",
   "taskAgentSetupPersistenceDescription": "Le modifiche si applicano ad ogni aggiornamento futuro fino a modificarle.",
   "taskAgentSetupSemantics": "Configurazione corrente: {identity}. Attivare per modificare la configurazione.",
@@ -4792,7 +4792,7 @@
   "taskCategoryLabel": "Categoria:",
   "taskCategoryUnassignedLabel": "non firmata",
   "taskDueDateLabel": "Data di scadenza",
-  "taskDueDateWithDate": "Due: {date}",
+  "taskDueDateWithDate": "Scadenza: {date}",
   "@taskDueDateWithDate": {
     "placeholders": {
       "date": {
@@ -4800,7 +4800,7 @@
       }
     }
   },
-  "taskDueInDays": "Due in {days, plural, =1{1 day} other{{days} days}}",
+  "taskDueInDays": "Due in {days, plural, =1{1 giorno} other{{days} giorni}}",
   "@taskDueInDays": {
     "placeholders": {
       "days": {
@@ -4808,9 +4808,9 @@
       }
     }
   },
-  "taskDueToday": "Due giorni fa",
-  "taskDueTomorrow": "Due giorni dopo",
-  "taskDueYesterday": "Due ieri",
+  "taskDueToday": "Scade oggi",
+  "taskDueTomorrow": "Scade domani",
+  "taskDueYesterday": "Scadeva ieri",
   "taskEditTitleLabel": "Modifica titolo dell'attività",
   "taskEstimateLabel": "Stima:",
   "taskEstimateModalTitle": "Stima",
@@ -4895,7 +4895,7 @@
   "taskLanguageYoruba": "Yoruba",
   "taskNoDueDateLabel": "Nessuna data",
   "taskNoEstimateLabel": "Nessuna stima",
-  "taskOverdueByDays": "Overdue di {days, plural, =1{1 day} other{{days} days}}",
+  "taskOverdueByDays": "In ritardo di {days, plural, =1{1 giorno} other{{days} giorni}}",
   "@taskOverdueByDays": {
     "placeholders": {
       "days": {
@@ -4927,7 +4927,7 @@
       }
     }
   },
-  "taskShowcaseDueDate": "Due: {date}",
+  "taskShowcaseDueDate": "Scadenza: {date}",
   "@taskShowcaseDueDate": {
     "placeholders": {
       "date": {
@@ -4939,7 +4939,7 @@
   "taskShowcaseLinked": "Collegamento",
   "taskShowcaseNoResults": "Nessun compito corrisponde alla tua ricerca.",
   "taskShowcaseReadMore": "Leggi tutto",
-  "taskShowcaseRecordingsCount": "{count, plural, =1{1 recording} other{{count} recordings}}X",
+  "taskShowcaseRecordingsCount": "{count, plural, =1{1 registrazione} other{{count} registrazioni}}",
   "@taskShowcaseRecordingsCount": {
     "placeholders": {
       "count": {
@@ -4947,7 +4947,7 @@
       }
     }
   },
-  "taskShowcaseTaskCount": "{count, plural, =1{1 task} other{{count} tasks}}X",
+  "taskShowcaseTaskCount": "{count, plural, =1{1 attività} other{{count} attività}}",
   "@taskShowcaseTaskCount": {
     "placeholders": {
       "count": {
@@ -4957,8 +4957,8 @@
   },
   "taskShowcaseTaskDescription": "Descrizione dell'attività",
   "taskShowcaseTimeTracker": "Tracciatore di tempo",
-  "taskShowcaseTodo": "Todo",
-  "taskShowcaseTodos": "Todos",
+  "taskShowcaseTodo": "Da fare",
+  "taskShowcaseTodos": "Da fare",
   "tasksLabelFilterAll": "Tutti",
   "tasksLabelFilterTitle": "Etichetta",
   "tasksLabelFilterUnlabeled": "Non etichettato",
@@ -5040,7 +5040,7 @@
   "tasksSavedFiltersSavePopupTitle": "Nome questo filtro",
   "tasksSavedFiltersSheetTitle": "Filtri di attività",
   "tasksSavedFiltersShowLess": "Mostra meno",
-  "tasksSavedFiltersShowMore": "{count, plural, =1{1 more saved filter} other{{count} more saved filters}}X",
+  "tasksSavedFiltersShowMore": "{count, plural, =1{1 filtro più salvato} other{{count} più salvati filtri}}",
   "@tasksSavedFiltersShowMore": {
     "placeholders": {
       "count": {
@@ -5048,7 +5048,7 @@
       }
     }
   },
-  "tasksSavedFiltersTaskCount": "{count, plural, =1{1 task} other{{count} tasks}}X",
+  "tasksSavedFiltersTaskCount": "{count, plural, =1{1 attività} other{{count} attività}}",
   "@tasksSavedFiltersTaskCount": {
     "placeholders": {
       "count": {
@@ -5086,7 +5086,7 @@
   "taskStatusAll": "Tutti",
   "taskStatusBlocked": "Bloccato",
   "taskStatusDone": "Fatto",
-  "taskStatusGroomed": "Groomed",
+  "taskStatusGroomed": "Sposa",
   "taskStatusInProgress": "In corso",
   "taskStatusLabel": "Stato:",
   "taskStatusOnHold": "Aspetta.",
@@ -5105,8 +5105,8 @@
   "timeEntryItemStart": "Iniziare",
   "unlinkButton": "Un link",
   "unlinkTaskConfirm": "Sei sicuro di voler sbloccare questo compito?",
-  "unlinkTaskTitle": "Unlink Task",
-  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} result} other{{elapsed}ms, {count} results}}X",
+  "unlinkTaskTitle": "Scollega attività",
+  "vectorSearchTiming": "{count, plural, =1{{elapsed} ms, {count} risultato} other{{elapsed} ms, {count} risultati}}",
   "@vectorSearchTiming": {
     "placeholders": {
       "elapsed": {

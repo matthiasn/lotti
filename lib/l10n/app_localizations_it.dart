@@ -33,10 +33,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get addActionAddText => 'Inserimento del testo';
 
   @override
-  String get addActionAddTimer => 'Timer';
+  String get addActionAddTimer => 'Cronometro';
 
   @override
-  String get addActionAddTimeRecording => 'Timer Entry';
+  String get addActionAddTimeRecording => 'Registrazione del tempo';
 
   @override
   String get addActionImportImage => 'Immagine di importazione';
@@ -192,7 +192,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentEvolutionApprovalRate => 'Tasso di approssimazione';
 
   @override
-  String get agentEvolutionChartMttrTrend => 'MTTR Trend';
+  String get agentEvolutionChartMttrTrend => 'Andamento MTTR';
 
   @override
   String get agentEvolutionChartSuccessRateTrend => 'Tendenza di successo';
@@ -242,7 +242,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Approvazione fallito — si prega di riprovare';
 
   @override
-  String get agentEvolutionProposalRationale => 'Rationale';
+  String get agentEvolutionProposalRationale => 'Motivazione';
 
   @override
   String get agentEvolutionProposalRejected =>
@@ -304,7 +304,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentEvolutionStatusCompleted => 'Completo';
 
   @override
-  String get agentEvolutionTimelineFeedbackLabel => 'Feedback';
+  String get agentEvolutionTimelineFeedbackLabel => 'Riscontro';
 
   @override
   String get agentEvolutionVersionProposed => 'Proposta della Commissione';
@@ -348,10 +348,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count items',
-      one: '1 item',
+      other: '$count articoli',
+      one: '1 elemento',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -390,10 +390,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count active',
-      one: '1 active',
+      other: '$count attivo',
+      one: '1 attiva',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -419,10 +419,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count instances',
-      one: '1 instance',
+      other: '$count istanze',
+      one: '1 istanza',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -467,13 +467,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentLifecycleDestroyed => 'Distrutto';
 
   @override
-  String get agentLifecycleDormant => 'Dormant';
+  String get agentLifecycleDormant => 'Inattivo';
 
   @override
   String get agentMessageKindAction => 'Azione';
 
   @override
-  String get agentMessageKindMilestone => 'Milestone';
+  String get agentMessageKindMilestone => 'Traguardo';
 
   @override
   String get agentMessageKindObservation => 'Osservazione';
@@ -523,8 +523,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count wakes',
-      one: '1 wake',
+      other: '$count sveglia',
+      one: '1 sveglia',
     );
     return '$hour: $_temp0 ($reasons)';
   }
@@ -537,10 +537,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count total wakes',
-      one: '1 total wake',
+      other: '$count sveglia totale',
+      one: '1 sveglia totale',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -564,10 +564,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Running now ($count)',
-      one: 'Running now',
+      other: 'In esecuzione ora ($count)',
+      one: 'In esecuzione ora',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -732,7 +732,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentSoulFieldVoice => 'Voce';
 
   @override
-  String get agentSoulInfoTab => 'Info';
+  String get agentSoulInfoTab => 'Informazioni';
 
   @override
   String get agentSoulNoneAssigned => 'Nessuna anima assegnata';
@@ -763,10 +763,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count templates sharing this soul',
-      one: '1 template sharing this soul',
+      other: '$count modelli che condividono questa anima',
+      one: '1 modello che condivide l\'anima',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -857,7 +857,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentStatsDailyUsageHeading => 'Uso quotidiano';
 
   @override
-  String get agentStatsInputLabel => 'Input';
+  String get agentStatsInputLabel => 'Dati in ingresso';
 
   @override
   String get agentStatsNoUsage =>
@@ -879,10 +879,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count wakes',
-      one: '1 wake',
+      other: '$count sveglia',
+      one: '1 sveglia',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -946,7 +946,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Uso del token aggregato';
 
   @override
-  String get agentTemplateAssignedLabel => 'Template';
+  String get agentTemplateAssignedLabel => 'Modello';
 
   @override
   String get agentTemplateCreatedSuccess => 'Template creato';
@@ -1093,7 +1093,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentThreadReportLabel => 'Rapporto prodotto durante la veglia';
 
   @override
-  String get agentTokenUsageCachedTokens => 'Cached';
+  String get agentTokenUsageCachedTokens => 'In cache';
 
   @override
   String get agentTokenUsageEmpty =>
@@ -1108,7 +1108,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentTokenUsageHeading => 'Uso token';
 
   @override
-  String get agentTokenUsageInputTokens => 'Input';
+  String get agentTokenUsageInputTokens => 'Dati in ingresso';
 
   @override
   String get agentTokenUsageModel => 'Modello';
@@ -1186,7 +1186,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiCardProposalKindAdd => 'Aggiungi';
 
   @override
-  String get aiCardProposalKindDue => 'Due';
+  String get aiCardProposalKindDue => 'Scadenza';
 
   @override
   String get aiCardProposalKindEstimate => 'Stima';
@@ -1216,7 +1216,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiCardTitle => 'Riepilogo dell\'AI';
 
   @override
-  String get aiChatMessageCopied => 'Copied a clipboard';
+  String get aiChatMessageCopied => 'Copiato negli appunti';
 
   @override
   String get aiConfigFailedToLoadModelsGeneric =>
@@ -1274,7 +1274,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String aiConsumptionTokensLine(String input, String output) {
-    return 'Tokens: $input in · $output out';
+    return 'Token: $input in ingresso · $output in uscita';
   }
 
   @override
@@ -1300,10 +1300,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Also removed $count models: $names',
-      one: 'Also removed 1 model: $names',
+      other: 'Rimossa anche modelli $count: $names',
+      one: 'Rimossa anche 1 modello: $names',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -1327,7 +1327,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiDeleteToastSkillTitle => 'Competenze cancellate';
 
   @override
-  String get aiDeleteToastUndoAction => 'Undo';
+  String get aiDeleteToastUndoAction => 'Annulla';
 
   @override
   String get aiFormCancel => 'Annullamento';
@@ -1397,7 +1397,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiImpactKpiCarbon => 'CO2E';
 
   @override
-  String get aiImpactKpiCost => 'COST';
+  String get aiImpactKpiCost => 'COSTO';
 
   @override
   String aiImpactKpiDeltaBaseline(String period) {
@@ -1442,7 +1442,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiImpactMetricRequests => 'Richieste';
 
   @override
-  String get aiImpactMetricTokens => 'Tokens';
+  String get aiImpactMetricTokens => 'Token';
 
   @override
   String aiImpactModelCallsLabel(String count) {
@@ -1464,7 +1464,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String aiImpactModelRatePerMillion(String cost) {
-    return '$cost/1M tok';
+    return '$cost/1M token';
   }
 
   @override
@@ -1541,7 +1541,8 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get aiModelDownloadStatusDownloadingIndeterminate => 'Downloading';
+  String get aiModelDownloadStatusDownloadingIndeterminate =>
+      'Download in corso';
 
   @override
   String get aiModelDownloadStatusFailed => 'Download non riuscito';
@@ -1582,10 +1583,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count models',
-      one: '1 model',
+      other: '$count modelli',
+      one: '1 modello',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -1647,7 +1648,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiProviderAnthropicName => 'Antropico Claude';
 
   @override
-  String get aiProviderCardDraftBadge => 'DRAFT';
+  String get aiProviderCardDraftBadge => 'BOZZA';
 
   @override
   String get aiProviderCardFixButton => 'Fissazione';
@@ -1657,10 +1658,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count models',
-      one: '1 model',
+      other: '$count modelli',
+      one: '1 modello',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -1668,10 +1669,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count models · last used $lastUsed',
-      one: '1 model · last used $lastUsed',
+      other: '$count modelli · ultima $lastUsed usata',
+      one: '1 modello · ultimo $lastUsed',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -1682,10 +1683,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Connected · $count models',
-      one: 'Connected · 1 model',
+      other: 'Connesso · $count modelli',
+      one: 'Connesso · 1 modello',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -1699,7 +1700,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Offline · Assicurarsi che Ollama stia correndo';
 
   @override
-  String get aiProviderCardStatusOfflineShort => 'Offline';
+  String get aiProviderCardStatusOfflineShort => 'Non in linea';
 
   @override
   String get aiProviderConnectBackToProviders => 'Torna ai provider';
@@ -1743,7 +1744,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String aiProviderConnectionFailedNetworkDetail(String message) {
-    return '${message}X';
+    return '$message';
   }
 
   @override
@@ -1756,7 +1757,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get aiProviderConnectionRetestButton => 'Re-test';
+  String get aiProviderConnectionRetestButton => 'Retest';
 
   @override
   String get aiProviderConnectionRetryButton => 'Recuperare';
@@ -1766,10 +1767,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count models available on your account · responded in ${ms}ms',
-      one: '1 model available on your account · responded in ${ms}ms',
+      other: '$count modelli disponibili sul tuo conto · risposto in ${ms}ms',
+      one: '1 modello disponibile sul tuo conto · risposto in ${ms}ms',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -1853,11 +1854,11 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Models · $count',
-      one: 'Models · 1',
-      zero: 'Models',
+      other: 'Modelli · $count',
+      one: 'Modelli · 1',
+      zero: 'Modelli',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -1934,7 +1935,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get aiProviderOmlxDescription =>
-      'Inferenza oMLX compatibile con OpenAI locale per modelli MLX';
+      'Inferenza oMLX compatibile con OpenAI locale per modelli ML';
 
   @override
   String get aiProviderOmlxName => 'oMLX (locale)';
@@ -2187,7 +2188,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Scopri cosa aggiunge Lotti. Deseleziona tutto quello che non vuoi; puoi sempre impostarlo a mano.';
 
   @override
-  String get aiSetupPreviewLiveBadge => 'Live';
+  String get aiSetupPreviewLiveBadge => 'Vivo';
 
   @override
   String aiSetupPreviewModalTitle(String providerName) {
@@ -2218,10 +2219,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Configured $count models',
-      one: 'Configured 1 model',
+      other: 'Configurati $count modelli',
+      one: 'Configurato 1 modello',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -2234,8 +2235,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count issues',
-      one: '1 issue',
+      other: '$count questioni',
+      one: '1 3°',
     );
     return '$_temp0 durante la configurazione';
   }
@@ -2370,12 +2371,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String apiKeyKnownModelInputLabel(String modalities) {
-    return 'In: $modalities';
+    return 'In ingresso: $modalities';
   }
 
   @override
   String apiKeyKnownModelOutputLabel(String modalities) {
-    return 'Out: $modalities';
+    return 'In uscita: $modalities';
   }
 
   @override
@@ -2427,20 +2428,20 @@ class AppLocalizationsIt extends AppLocalizations {
   String get audioRecordings => 'Registrazioni audio';
 
   @override
-  String get audioRecordingStandard => 'Standard';
+  String get audioRecordingStandard => 'Modalità standard';
 
   @override
-  String get audioRecordingStop => 'STOP';
+  String get audioRecordingStop => 'ARRESTA';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count actions',
-      one: '1 action',
+      other: '$count azioni',
+      one: '1 azione',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -2455,11 +2456,11 @@ class AppLocalizationsIt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'This flips all $count unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.',
+          'Questa operazione riporta $count voci irrisolvibili del log di sequenza allo stato mancante, in modo che il normale ciclo di recupero richieda di nuovo i peer. I peer che hanno ancora il contenuto risponderanno; le voci realmente irrecuperabili saranno nuovamente ritirate dopo i 7 giorni di tolleranza.',
       one:
-          'This flips 1 unresolvable sequence-log entry back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.',
+          'Questa operazione riporta 1 voce irrisolvibile del log di sequenza allo stato mancante, in modo che il normale ciclo di recupero richieda di nuovo i peer. I peer che hanno ancora il contenuto risponderanno; le voci realmente irrecuperabili saranno nuovamente ritirate dopo i 7 giorni di tolleranza.',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -2481,10 +2482,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Ask peers for $count entries',
-      one: 'Ask peers for 1 entry',
+      other: 'Chiedi ai peer $count voci',
+      one: 'Chiedi ai peer 1 voce',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -2496,10 +2497,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count device IDs',
-      one: '1 device ID',
+      other: '$count ID dispositivo',
+      one: '1 ID dispositivo',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -2533,7 +2534,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Reimpostare le voci contrassegnate come unresolvable indietro a mancare in modo che possano essere ri-richiesta.';
 
   @override
-  String get backfillResetUnresolvableProcessing => 'Resetting...';
+  String get backfillResetUnresolvableProcessing => 'Rimontare...';
 
   @override
   String get backfillResetUnresolvableTitle => 'Resettare irrisolvibile';
@@ -2551,11 +2552,11 @@ class AppLocalizationsIt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'This marks $count currently-open (missing or requested) sequence-log entries as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.',
+          'Questa operazione contrassegna $count voci attualmente aperte del log di sequenza (mancanti o richieste) come irrisolvibili. Usala per sbloccare il watermark quando delle voci sono bloccate da tempo ma non sono ancora trascorsi i 7 giorni di tolleranza. Le voci potranno comunque essere ripristinate se i loro contenuti arriveranno in seguito sul disco con un vettore di versione valido.',
       one:
-          'This marks 1 currently-open (missing or requested) sequence-log entry as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.',
+          'Questa operazione contrassegna 1 voce attualmente aperta del log di sequenza (mancante o richiesta) come irrisolvibile. Usala per sbloccare il watermark quando una voce è bloccata da tempo ma non sono ancora trascorsi i 7 giorni di tolleranza. La voce potrà comunque essere ripristinata se il suo contenuto arriverà in seguito sul disco con un vettore di versione valido.',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -2577,10 +2578,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Retire $count stuck entries',
-      one: 'Retire 1 stuck entry',
+      other: 'Ritira $count voci bloccate',
+      one: 'Ritira 1 voce bloccata',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -2750,10 +2751,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count items had partial issues',
-      one: '1 item had partial issues',
+      other: 'Gli articoli di $count hanno problemi parziali',
+      one: '1 elemento aveva problemi parziali',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -2831,7 +2832,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get checklistAiMarkComplete => 'Mark Complete';
+  String get checklistAiMarkComplete => 'Segna come completato';
 
   @override
   String get checklistAiSuggestionBody =>
@@ -2868,7 +2869,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get checklistItemArchived => 'Articolo archiviato';
 
   @override
-  String get checklistItemArchiveUndo => 'Undo';
+  String get checklistItemArchiveUndo => 'Annulla';
 
   @override
   String get checklistItemDeleteCancel => 'Annullamento';
@@ -2906,7 +2907,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get checklistShareHint => 'Stampa lunga da condividere';
 
   @override
-  String get checklistsReorder => 'Reorder';
+  String get checklistsReorder => 'Riordina';
 
   @override
   String get clearButton => 'Cancellazione';
@@ -3101,10 +3102,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count days ago',
-      one: '1 day ago',
+      other: '$count giorni fa',
+      one: '1 giorno fa',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -3112,10 +3113,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count h ago',
-      one: '1 h ago',
+      other: '$count h fa',
+      one: '1 h fa',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -3126,10 +3127,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count min ago',
-      one: '1 min ago',
+      other: '$count min fa',
+      one: '1 minuto fa',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -3175,10 +3176,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count fields unchanged',
-      one: '1 field unchanged',
+      other: '$count campi invariati',
+      one: '1 campo invariato',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -3243,10 +3244,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count entries',
-      one: '1 entry',
+      other: '$count voci',
+      one: '1 ingresso',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -3254,10 +3255,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count fields differ',
-      one: '1 field differs',
+      other: 'I campi di $count differiscono',
+      one: '1 campo differisce',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -3292,10 +3293,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count entries were edited on two devices',
-      one: '1 entry was edited on two devices',
+      other: 'Le voci $count sono state modificate su due dispositivi',
+      one: '1 voce è stata modificata su due dispositivi',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -3361,10 +3362,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count words',
-      one: '$count word',
+      other: '$count parole',
+      one: '$count parola',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -3790,7 +3791,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Competenze di corrispondenza';
 
   @override
-  String get dailyOsNextDraftingProgressQueued => 'Queued';
+  String get dailyOsNextDraftingProgressQueued => 'Queu';
 
   @override
   String get dailyOsNextDraftingProgressReading => 'Check-in lettura';
@@ -3894,10 +3895,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count things I noticed — review',
-      one: '1 thing I noticed — review',
+      other: '$count cose che ho notato — recensione',
+      one: '1 cosa ho notato — recensione',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -3916,7 +3917,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Collegamento di rottura';
 
   @override
-  String get dailyOsNextPlanViewAgenda => 'Agenda';
+  String get dailyOsNextPlanViewAgenda => 'Ordine del giorno';
 
   @override
   String get dailyOsNextPlanViewDay => 'Giorno';
@@ -3928,7 +3929,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextReconcileBadgeNew => 'NUOVO';
 
   @override
-  String get dailyOsNextReconcileBadgeUpdate => 'UPDATE';
+  String get dailyOsNextReconcileBadgeUpdate => 'ATTIVITÀ\'';
 
   @override
   String get dailyOsNextReconcileBuildDayCta => 'Costruisci la mia giornata';
@@ -3968,7 +3969,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Ascoltare e abbinare la tua giornata...';
 
   @override
-  String get dailyOsNextReconcileReRecord => 'Re-record';
+  String get dailyOsNextReconcileReRecord => 'Registri';
 
   @override
   String get dailyOsNextReconcileVoiceHint =>
@@ -3984,7 +3985,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextRefineDiffAdded => 'ADDETTI';
 
   @override
-  String get dailyOsNextRefineDiffDropped => 'DROPPED';
+  String get dailyOsNextRefineDiffDropped => 'RIMOSSO';
 
   @override
   String get dailyOsNextRefineDiffMoved => 'MOVIMENTO';
@@ -4143,22 +4144,22 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String dailyOsNextStateDueOnDate(String date) {
-    return 'Due $date';
+    return 'Scadenza: $date';
   }
 
   @override
-  String get dailyOsNextStateDueToday => 'Due oggi';
+  String get dailyOsNextStateDueToday => 'Scadenza oggi';
 
   @override
   String dailyOsNextStateInProgress(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'In progress · $count sessions',
-      one: 'In progress · 1 session',
-      zero: 'In progress',
+      other: 'In corso · $count sessioni',
+      one: 'In corso · 1 sessione',
+      zero: 'In corso',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -4166,11 +4167,11 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      other: 'Overdue · $days days',
-      one: 'Overdue · 1 day',
-      zero: 'Overdue',
+      other: 'Scaduto · $days giorni',
+      one: 'Scaduto · 1 giorno',
+      zero: 'Scaduto',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -4178,11 +4179,11 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      other: 'Overdue by $days days on $date',
-      one: 'Overdue by 1 day on $date',
-      zero: 'Overdue on $date',
+      other: 'Scaduto da $days giorni il $date',
+      one: 'Scaduto da 1 giorno il $date',
+      zero: 'Scaduto il $date',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -4204,7 +4205,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextTimelineMeridiemAmShort => 'Sono io.';
 
   @override
-  String get dailyOsNextTimelineMeridiemPm => 'PM';
+  String get dailyOsNextTimelineMeridiemPm => 'Pomeriggio';
 
   @override
   String get dailyOsNextTimelineMeridiemPmShort => '14:00';
@@ -4235,10 +4236,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count earlier sessions',
-      one: '1 earlier session',
+      other: '$count sessioni precedenti',
+      one: '1 sessione precedente',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -4555,10 +4556,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Add $count charts',
-      one: 'Add 1 chart',
+      other: 'Aggiungi $count grafici',
+      one: 'Aggiungi 1 grafico',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -4619,7 +4620,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get designSystemAvatarAwayLabel => 'Via';
 
   @override
-  String get designSystemAvatarBusyLabel => 'Busy';
+  String get designSystemAvatarBusyLabel => 'Occupato';
 
   @override
   String get designSystemAvatarConnectedLabel => 'Collegato';
@@ -4644,16 +4645,16 @@ class AppLocalizationsIt extends AppLocalizations {
       'Sistema di progettazione';
 
   @override
-  String get designSystemBreadcrumbHomeLabel => 'Home';
+  String get designSystemBreadcrumbHomeLabel => 'Inizio';
 
   @override
-  String get designSystemBreadcrumbMobileLabel => 'Mobile';
+  String get designSystemBreadcrumbMobileLabel => 'Dispositivo mobile';
 
   @override
   String get designSystemBreadcrumbProjectsLabel => 'Progetti';
 
   @override
-  String get designSystemBreadcrumbSampleLabel => 'Breadcrumb';
+  String get designSystemBreadcrumbSampleLabel => 'Pancromo';
 
   @override
   String get designSystemBreadcrumbTrailTitle => 'Sentiero del pane';
@@ -4715,13 +4716,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get designSystemDividerLabelText => 'Etichetta di Divider';
 
   @override
-  String get designSystemDropdownComboboxTitle => 'Combobox';
+  String get designSystemDropdownComboboxTitle => 'Casella combinata';
 
   @override
   String get designSystemDropdownFieldLabel => 'Etichetta';
 
   @override
-  String get designSystemDropdownInputLabel => 'Input';
+  String get designSystemDropdownInputLabel => 'Dati in ingresso';
 
   @override
   String get designSystemDropdownListTitle => 'Elenco a discesa';
@@ -4739,7 +4740,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get designSystemDropdownOptionBackend => 'Indietro';
 
   @override
-  String get designSystemDropdownOptionDesign => 'Design';
+  String get designSystemDropdownOptionDesign => 'Progettazione';
 
   @override
   String get designSystemDropdownOptionFrontend => 'Fronte';
@@ -4748,7 +4749,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get designSystemDropdownOptionGrowth => 'Crescita';
 
   @override
-  String get designSystemDropdownOptionMobile => 'Mobile';
+  String get designSystemDropdownOptionMobile => 'Dispositivo mobile';
 
   @override
   String get designSystemDropdownOptionQa => 'QA';
@@ -4782,7 +4783,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'SVG, PNG, JPG o GIF (max. 800×400px)';
 
   @override
-  String get designSystemFileUploadHoverLabel => 'Hover';
+  String get designSystemFileUploadHoverLabel => 'Passaggio del mouse';
 
   @override
   String get designSystemFileUploadItemSectionTitle => 'Articoli di file';
@@ -4803,13 +4804,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get designSystemHeaderBackActionLabel => 'Indietro';
 
   @override
-  String get designSystemHeaderDesktopSectionTitle => 'Desktop';
+  String get designSystemHeaderDesktopSectionTitle => 'Sezione desktop';
 
   @override
   String get designSystemHeaderHelpActionLabel => 'Aiuto';
 
   @override
-  String get designSystemHeaderMobileSectionTitle => 'Mobile';
+  String get designSystemHeaderMobileSectionTitle => 'Sezione mobile';
 
   @override
   String get designSystemHeaderNotificationsActionLabel => 'Notifica';
@@ -4821,10 +4822,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get designSystemHorizontalLabel => 'Orizzonte';
 
   @override
-  String get designSystemHoverLabel => 'Hover';
+  String get designSystemHoverLabel => 'Passaggio del mouse';
 
   @override
-  String get designSystemInfoLabel => 'Info';
+  String get designSystemInfoLabel => 'Informazioni';
 
   @override
   String get designSystemInputErrorSample => 'Questo campo è richiesto';
@@ -4879,7 +4880,7 @@ class AppLocalizationsIt extends AppLocalizations {
     int hours,
     int minutes,
   ) {
-    return '${hours}h ${minutes}m';
+    return '${hours}O ${minutes}O';
   }
 
   @override
@@ -4902,7 +4903,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get designSystemNavigationHolidayLabel => 'Vacanza';
 
   @override
-  String get designSystemNavigationInsightsLabel => 'Insights';
+  String get designSystemNavigationInsightsLabel => 'Analisi';
 
   @override
   String get designSystemNavigationLottiTasksLabel => 'Compiti Lotti';
@@ -4947,7 +4948,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get designSystemProgressBarPercentageOnlyLabel => 'Percentuale';
 
   @override
-  String get designSystemProgressBarQuestBarLabel => 'Quest bar';
+  String get designSystemProgressBarQuestBarLabel => 'Barra della missione';
 
   @override
   String get designSystemProgressBarQuestLabel => 'Etichetta del premio Mega';
@@ -4991,7 +4992,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get designSystemSpinnerSkeletonWaveLabel => 'Onda';
 
   @override
-  String get designSystemSpinnerSpinnersTitle => 'Spinners';
+  String get designSystemSpinnerSpinnersTitle => 'Indicatori di caricamento';
 
   @override
   String get designSystemSpinnerTrackLabel => 'Con la pista';
@@ -5020,7 +5021,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get designSystemTaskListDefaultLabel => 'Predefinito';
 
   @override
-  String get designSystemTaskListHoverLabel => 'Hover';
+  String get designSystemTaskListHoverLabel => 'Passaggio del mouse';
 
   @override
   String get designSystemTaskListItemSectionTitle =>
@@ -5096,7 +5097,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get designSystemTooltipIconVariantsTitle => 'Icona del tooltip';
 
   @override
-  String get designSystemUndoLabel => 'Undo';
+  String get designSystemUndoLabel => 'Annulla';
 
   @override
   String get designSystemVariantMatrixTitle => 'Matrice Variante';
@@ -5247,10 +5248,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count photos',
-      one: '1 photo',
+      other: '$count foto',
+      one: '1 foto',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -5258,10 +5259,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count tasks',
-      one: '1 task',
+      other: '$count attività',
+      one: '1 attività',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -5327,7 +5328,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get eventsTimelineEmpty => 'Aggiungi foto, note o un memo vocale';
 
   @override
-  String get eventsTimelineSection => 'Timeline';
+  String get eventsTimelineSection => 'Tempo';
 
   @override
   String get eventsTitleHint => 'Titolo dell\'evento';
@@ -5351,7 +5352,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get fileMenuNewTask => 'Compiti';
 
   @override
-  String get fileMenuTitle => 'File';
+  String get fileMenuTitle => 'Menu File';
 
   @override
   String get filterSelectionNoMatches => 'Nessuna corrispondenza';
@@ -5382,7 +5383,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impostazione più veloce; Gemini può ancora pensare brevemente su suggerimenti complessi.';
 
   @override
-  String get geminiThinkingModeMinimalLabel => 'Minimal';
+  String get geminiThinkingModeMinimalLabel => 'Minimo';
 
   @override
   String get generateCoverArt => 'Generare l\'arte della copertura';
@@ -5468,10 +5469,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count active habits',
-      one: '1 active habit',
+      other: '$count abitudini attive',
+      one: '1 abitudine attiva',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -5557,10 +5558,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points pts to goal',
-      one: '1 pt to goal',
+      other: '$points pts a gol',
+      one: '1 pt a gol',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -5622,26 +5623,26 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Using $count reference images',
-      one: 'Using 1 reference image',
-      zero: 'No reference images',
+      other: 'Utilizzo di $count immagini di riferimento',
+      one: 'Utilizzo di 1 immagine di riferimento',
+      zero: 'Nessuna immagine di riferimento',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
-  String get imagePromptGenerationCardTitle => 'AI Image Prompt';
+  String get imagePromptGenerationCardTitle => 'Prompt di immagine di AI';
 
   @override
   String get imagePromptGenerationCopiedSnackbar =>
-      'Pronta immagine copiata a clipboard';
+      'Prompt dell\'immagine copiato negli appunti';
 
   @override
   String get imagePromptGenerationCopyButton => 'Copia Prompt';
 
   @override
   String get imagePromptGenerationCopyTooltip =>
-      'Copia il prompt dell\'immagine per clipboard';
+      'Copia il prompt dell\'immagine negli appunti';
 
   @override
   String get imagePromptGenerationExpandTooltip => 'Mostra il prompt completo';
@@ -5918,7 +5919,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get insightsFocusCategoriesTitle => 'Categorie di messa a fuoco';
 
   @override
-  String get insightsKpiFocus => 'FOCUS';
+  String get insightsKpiFocus => 'CONCENTRAZIONE';
 
   @override
   String get insightsKpiFocusHelp => 'Categorie che stai guardando';
@@ -5990,7 +5991,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non è stato possibile aggiornare — mostrando gli ultimi dati caricati';
 
   @override
-  String get insightsTableAvgPerDay => 'AVG/DAY';
+  String get insightsTableAvgPerDay => 'MEDIA/GIORNO';
 
   @override
   String get insightsTableCategory => 'CATEGORIA';
@@ -6045,7 +6046,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get journalDateToLabel => 'Data di:';
 
   @override
-  String get journalDeleteConfirm => 'SÌ, DELETE QUESTO ENTRY';
+  String get journalDeleteConfirm => 'SÌ, ELIMINA QUESTA VOCE';
 
   @override
   String get journalDeleteHint => 'Eliminare la voce';
@@ -6102,7 +6103,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get journalLinkedEntriesActivityFilterImages => 'Immagini';
 
   @override
-  String get journalLinkedEntriesActivityFilterTimer => 'Timer';
+  String get journalLinkedEntriesActivityFilterTimer => 'Cronometro';
 
   @override
   String get journalLinkedEntriesFilterModalTitle => 'Filtro e Ordinazione';
@@ -6179,7 +6180,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get journalToggleStarredTitle => 'Preferito';
 
   @override
-  String get journalUnlinkConfirm => 'Sì, ENTRY IN LINGUA';
+  String get journalUnlinkConfirm => 'SÌ, SCOLLEGA LA VOCE';
 
   @override
   String get journalUnlinkHint => 'Un link';
@@ -6281,7 +6282,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get keyboardKeyArrowUp => 'Arrow!';
 
   @override
-  String get keyboardKeyControl => 'Ctrl';
+  String get keyboardKeyControl => 'Crel';
 
   @override
   String get keyboardKeyDelete => 'Cancella';
@@ -6296,7 +6297,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get keyboardKeyEscape => 'Fuga';
 
   @override
-  String get keyboardKeyHome => 'Home';
+  String get keyboardKeyHome => 'Inizio';
 
   @override
   String get keyboardKeyMinus => 'Minuscolo';
@@ -6341,10 +6342,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count days ago',
-      one: '1 day ago',
+      other: '$count giorni fa',
+      one: '1 giorno fa',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -6352,10 +6353,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count months ago',
-      one: '1 month ago',
+      other: '$count mesi fa',
+      one: '1 mese fa',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -6366,15 +6367,14 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count weeks ago',
-      one: '1 week ago',
+      other: '$count settimane fa',
+      one: '1 settimana fa',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
-  String get knowledgeGraphAgeYesterday =>
-      'ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri, ieri sera, ieri, ieri sera, ieri sera, ieri, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri sera, ieri, ieri sera, ieri sera, ieri, ieri sera, ieri sera, ieri';
+  String get knowledgeGraphAgeYesterday => 'ieri';
 
   @override
   String get knowledgeGraphBack => 'Indietro';
@@ -6408,10 +6408,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count nodes',
-      one: '1 node',
+      other: '$count nodi',
+      one: '1 nodo',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -6483,8 +6483,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count nodes',
-      one: '1 node',
+      other: '$count nodi',
+      one: '1 nodo',
     );
     return 'Toccare un nodo per camminare · $_temp0';
   }
@@ -6514,13 +6514,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get loggingDomainAgentWorkflow => 'Flusso di lavoro agente';
 
   @override
-  String get loggingDomainAi => 'AI';
+  String get loggingDomainAi => 'IA';
 
   @override
   String get loggingDomainCalendar => 'Calendario e ora';
 
   @override
-  String get loggingDomainChat => 'Chat';
+  String get loggingDomainChat => 'Conversazione';
 
   @override
   String get loggingDomainDailyOs => 'Sistema operativo giornaliero';
@@ -6541,7 +6541,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get loggingDomainLabels => 'Etichette';
 
   @override
-  String get loggingDomainLocation => 'Location';
+  String get loggingDomainLocation => 'Posizione';
 
   @override
   String get loggingDomainNavigation => 'Navigazione';
@@ -6574,7 +6574,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get loggingDomainTasks => 'Compiti e liste di controllo';
 
   @override
-  String get loggingDomainTheming => 'Theming';
+  String get loggingDomainTheming => 'Il nome';
 
   @override
   String get loggingDomainWhatsNew => 'Cosa c\'è di nuovo';
@@ -6631,10 +6631,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
-      other: '$processed / $total entries ($embedded embedded)',
-      one: '$processed / $total entry ($embedded embedded)',
+      other: '$processed / $total voci ($embedded embedded)',
+      one: '$processed / $total entrata ($embedded embedded)',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -6762,7 +6762,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get matrixStatsCopyDiagnosticsTooltip =>
-      'Copiare la diagnostica di sincronizzazione al clipboard';
+      'Copia la diagnostica di sincronizzazione negli appunti';
 
   @override
   String get matrixStatsDbApplied => 'DB applicata';
@@ -6782,7 +6782,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get matrixStatsEntryLinkNoops => 'EntryLink No-ops';
+  String get matrixStatsEntryLinkNoops => 'Operazioni EntryLink senza effetto';
 
   @override
   String get matrixStatsFailures => 'Fallimenti';
@@ -6853,7 +6853,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get matrixStatsSkipped => 'Abilitato';
 
   @override
-  String get matrixStatsSkippedRetryCap => 'Skipped (Retry Cap)';
+  String get matrixStatsSkippedRetryCap => 'Saltato (limite tentativi)';
 
   @override
   String get matrixStatsStaleAttachmentPurges => 'Punteggio di aggancio';
@@ -7029,10 +7029,16 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 's',
-      one: '',
+      other: 'i',
+      one: 'o',
     );
-    return '$count modello$_temp0 selezionato';
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'i',
+      one: 'o',
+    );
+    return '$count modell$_temp0 selezionat$_temp1';
   }
 
   @override
@@ -7057,10 +7063,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'More, $count additional destinations',
-      one: 'More, 1 additional destination',
+      other: 'Altro, $count destinazioni aggiuntive',
+      one: 'Altro, 1 destinazione aggiuntiva',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -7073,7 +7079,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get navTabTitleHabits => 'Abitazioni';
 
   @override
-  String get navTabTitleInsights => 'Insights';
+  String get navTabTitleInsights => 'Analisi';
 
   @override
   String get navTabTitleJournal => 'Regime di registro';
@@ -7095,10 +7101,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 's',
-      one: '',
+      other: 'e',
+      one: 'a',
     );
-    return '$count AI risposta$_temp0';
+    return '$count rispost$_temp0 IA';
   }
 
   @override
@@ -7122,10 +7128,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'alerts',
-      one: 'alert',
+      other: 'avvisi non letti',
+      one: 'avviso non letto',
     );
-    return 'Notifiche, $count unread $_temp0';
+    return 'Notifiche, $count $_temp0';
   }
 
   @override
@@ -7149,10 +7155,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count suggestions need your attention',
-      one: '1 suggestion needs your attention',
+      other: '$count suggerimenti bisogno della vostra attenzione',
+      one: '1 suggerimento ha bisogno della vostra attenzione',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -7241,7 +7247,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get onboardingCategoryFamily => 'Famiglia';
 
   @override
-  String get onboardingCategoryFitness => 'Fitness';
+  String get onboardingCategoryFitness => 'Forma fisica';
 
   @override
   String get onboardingCategoryFriends => 'Amici';
@@ -7481,7 +7487,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get outboxMonitorRetryFailed =>
-      'Retry ha fallito, per favore riprovate.';
+      'Il nuovo tentativo non è riuscito. Riprova.';
 
   @override
   String get outboxMonitorRetryQueued => 'Recuperare programmato';
@@ -7523,10 +7529,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count items couldn\'t send',
-      one: '1 item couldn\'t send',
+      other: '$count articoli non potevano inviare',
+      one: '1 elemento non poteva inviare',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -7534,10 +7540,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count items will send when you reconnect',
-      one: '1 item will send when you reconnect',
+      other: '$count elementi verranno inviati quando ti riconnetterai',
+      one: '1 elemento verrà inviato quando ti riconnetterai',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -7545,10 +7551,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Sending $count items…',
-      one: 'Sending 1 item…',
+      other: 'Invio di $count elementi…',
+      one: 'Invio di 1 elemento…',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -7559,10 +7565,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count items waiting to send',
-      one: '1 item waiting to send',
+      other: '$count articoli in attesa di inviare',
+      one: '1 elemento in attesa di inviare',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -7570,10 +7576,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Tried $count times',
-      one: 'Tried once',
+      other: 'Tentato $count volte',
+      one: 'Tentato una volta',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -7592,7 +7598,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get panasEmotionAlert => 'Avviso';
 
   @override
-  String get panasEmotionAshamed => 'Ashamed';
+  String get panasEmotionAshamed => 'Vergognoso';
 
   @override
   String get panasEmotionAttentive => 'Attentivo';
@@ -7601,7 +7607,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get panasEmotionDetermined => 'Determinazione';
 
   @override
-  String get panasEmotionDistressed => 'Distressed';
+  String get panasEmotionDistressed => 'In difficoltà';
 
   @override
   String get panasEmotionEnthusiastic => 'Enthusiasta';
@@ -7625,7 +7631,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get panasEmotionIrritable => 'Irritabile';
 
   @override
-  String get panasEmotionJittery => 'Jittery';
+  String get panasEmotionJittery => 'Agitato';
 
   @override
   String get panasEmotionNervous => 'Nervosa';
@@ -7689,10 +7695,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count projects',
-      one: '$count project',
+      other: '$count progetti',
+      one: '$count progetto',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -7743,14 +7749,14 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       projectCount,
       locale: localeName,
-      other: '$projectCount projects',
-      one: '$projectCount project',
+      other: '$projectCount progetti',
+      one: '$projectCount progetto',
     );
     String _temp1 = intl.Intl.pluralLogic(
       taskCount,
       locale: localeName,
-      other: '$taskCount tasks',
-      one: '$taskCount task',
+      other: '$taskCount attività',
+      one: '$taskCount attività',
     );
     return '$_temp0, $_temp1';
   }
@@ -7763,10 +7769,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count linked tasks',
-      one: '$count linked task',
+      other: '$count compiti collegati',
+      one: '$count attività collegata',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -7822,10 +7828,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count tasks blocked',
-      one: '$count task blocked',
+      other: '$count: attività bloccate',
+      one: '$count task bloccato',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -7838,7 +7844,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String projectShowcaseDueDate(String date) {
-    return 'Due $date';
+    return 'Scadenza: $date';
   }
 
   @override
@@ -7869,10 +7875,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count sessions',
-      one: '$count session',
+      other: '$count sessioni',
+      one: '$count sessione',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -7880,10 +7886,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
-      other: '$completed/$total tasks completed',
-      one: '$completed/$total task completed',
+      other: '$completed/$total attività completate',
+      one: '$completed/$total attività completata',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -7945,7 +7951,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get promptDefaultModelBadge => 'Predefinito';
 
   @override
-  String get promptGenerationCardTitle => 'AI Coding Prompt';
+  String get promptGenerationCardTitle => 'Prompettore di codifica AI';
 
   @override
   String get promptGenerationCopiedSnackbar => 'Prompt copiato a clipboard';
@@ -7972,7 +7978,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get provisionedSyncConfigureButton => 'Configurazione';
 
   @override
-  String get provisionedSyncCopiedToClipboard => 'Copied a clipboard';
+  String get provisionedSyncCopiedToClipboard => 'Copiato negli appunti';
 
   @override
   String get provisionedSyncDisconnect => 'Scollegamento';
@@ -8007,7 +8013,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get provisionedSyncJoiningRoom => 'Unisciti alla sincronia...';
 
   @override
-  String get provisionedSyncLoggingIn => 'Logging in...';
+  String get provisionedSyncLoggingIn => '- Logging in...';
 
   @override
   String get provisionedSyncPasteClipboard => 'Incolla da appunti';
@@ -8033,7 +8039,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impostare la sincronizzazione da un bundle di provisioning';
 
   @override
-  String get provisionedSyncSummaryHomeserver => 'Homeserver';
+  String get provisionedSyncSummaryHomeserver => 'Server domestico';
 
   @override
   String get provisionedSyncSummaryRoom => 'Camera';
@@ -8076,11 +8082,11 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       events,
       locale: localeName,
-      other: '$events events',
-      one: '1 event',
-      zero: 'no events',
+      other: '$events eventi',
+      one: '1 evento',
+      zero: 'nessun evento',
     );
-    return 'Annullato — $_temp0 catturato finora.';
+    return 'Annullato — $_temp0 recuperati finora.';
   }
 
   @override
@@ -8095,23 +8101,23 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       pages,
       locale: localeName,
-      other: '$pages pages',
-      one: '1 page',
+      other: '$pages pagine',
+      one: '1 pagina',
     );
     String _temp1 = intl.Intl.pluralLogic(
       pages,
       locale: localeName,
-      other: '$pages pages',
-      one: '1 page',
+      other: '$pages pagine',
+      one: '1 pagina',
     );
     String _temp2 = intl.Intl.pluralLogic(
       events,
       locale: localeName,
-      other: 'Fetched $events events across $_temp0.',
-      one: 'Fetched 1 event across $_temp1.',
-      zero: 'No events fetched.',
+      other: '$events eventi recuperati in $_temp0.',
+      one: '1 evento recuperato in $_temp1.',
+      zero: 'Nessun evento recuperato.',
     );
-    return '${_temp2}X';
+    return '$_temp2';
   }
 
   @override
@@ -8128,10 +8134,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       events,
       locale: localeName,
-      other: 'Page $pages  ·  $events events fetched',
-      one: 'Page $pages  ·  1 event fetched',
+      other: 'Pagina $pages · $events eventi recuperati',
+      one: 'Pagina $pages · 1 evento recuperato',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -8142,10 +8148,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count skipped',
-      one: '1 skipped',
+      other: '$count saltato',
+      one: '1 saltato',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -8154,10 +8160,11 @@ class AppLocalizationsIt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count sync events the queue gave up on. Tap retry to re-attempt.',
-      one: '1 sync event the queue gave up on. Tap retry to re-attempt.',
+          '$count sincronizza gli eventi che la coda ha rinunciato. Toccare la re-attempt.',
+      one:
+          '1 sincronizzazione della coda ha rinunciato. Toccare la rettiva per re-attempt.',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -8171,16 +8178,16 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count events queued for retry.',
-      one: '1 event queued for retry.',
-      zero: 'No skipped events to retry.',
+      other: '$count eventi in coda per un nuovo tentativo.',
+      one: '1 evento in coda per un nuovo tentativo.',
+      zero: 'Nessun evento ignorato da ritentare.',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
   String queueSkippedRetryAllError(String reason) {
-    return 'Retry fail: $reason';
+    return 'Nuovo tentativo non riuscito: $reason';
   }
 
   @override
@@ -8447,10 +8454,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count tasks',
-      one: '$count task',
+      other: '$count attività',
+      one: '$count attività',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -8628,7 +8635,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsCelebrationsKnobSpread => 'Arco di dispersione';
 
   @override
-  String get settingsCelebrationsKnobSway => 'Sway';
+  String get settingsCelebrationsKnobSway => 'Oscillazione';
 
   @override
   String get settingsCelebrationsKnobSwell => 'Bene.';
@@ -8637,13 +8644,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsCelebrationsKnobTrail => 'Lunghezza del sentiero';
 
   @override
-  String get settingsCelebrationsKnobTwinkle => 'Twinkle';
+  String get settingsCelebrationsKnobTwinkle => 'Doppia';
 
   @override
   String get settingsCelebrationsKnobUpward => 'Risalire';
 
   @override
-  String get settingsCelebrationsKnobWobble => 'Wobble';
+  String get settingsCelebrationsKnobWobble => 'Dondolio';
 
   @override
   String get settingsCelebrationsPlaygroundHint =>
@@ -8679,7 +8686,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsCelebrationsPreviewTitle => 'Provalo.';
 
   @override
-  String get settingsCelebrationsReplay => 'Replay';
+  String get settingsCelebrationsReplay => 'Riproduci';
 
   @override
   String get settingsCelebrationsResetToast =>
@@ -8689,7 +8696,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsCelebrationsResetToDefault => 'Ripristino di default';
 
   @override
-  String get settingsCelebrationsResetUndo => 'Undo';
+  String get settingsCelebrationsResetUndo => 'Annulla';
 
   @override
   String get settingsCelebrationsSectionDescription =>
@@ -8711,7 +8718,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsCelebrationsTasksDescription =>
-      'Glow e scintille quando si sposta un compito a Done';
+      'Bagliori e scintille quando un\'attività viene completata';
 
   @override
   String get settingsCelebrationsTasksTitle => 'Compiti';
@@ -8730,16 +8737,16 @@ class AppLocalizationsIt extends AppLocalizations {
       'Due stili casuali, stratificato, ogni volta';
 
   @override
-  String get settingsCelebrationsVariantConfetti => 'Confetti';
+  String get settingsCelebrationsVariantConfetti => 'Coriandoli';
 
   @override
-  String get settingsCelebrationsVariantEmbers => 'Embers';
+  String get settingsCelebrationsVariantEmbers => 'Legname';
 
   @override
   String get settingsCelebrationsVariantFireworks => 'Fuochi d\'artificio';
 
   @override
-  String get settingsCelebrationsVariantRandom => 'Random';
+  String get settingsCelebrationsVariantRandom => 'Casuale';
 
   @override
   String get settingsCelebrationsVariantRandomDescription =>
@@ -8784,7 +8791,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Personalizza le tue viste sul cruscotto';
 
   @override
-  String get settingsDashboardsTitle => 'Dashboards';
+  String get settingsDashboardsTitle => 'Pannelli';
 
   @override
   String get settingsDefinitionsSubtitle =>
@@ -8986,10 +8993,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count tasks',
-      one: '1 task',
+      other: '$count attività',
+      one: '1 attività',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -9112,7 +9119,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsMatrixMaintenanceTitle => 'Manutenzione';
 
   @override
-  String get settingsMatrixMetrics => 'Sync Metrics';
+  String get settingsMatrixMetrics => 'Sincronizzazioni';
 
   @override
   String get settingsMatrixNextPage => 'Pagina successiva';
@@ -9144,7 +9151,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsMatrixStartVerificationLabel => 'Avviare la verifica';
 
   @override
-  String get settingsMatrixStatsTitle => 'Matrix Stats';
+  String get settingsMatrixStatsTitle => 'Statistiche Matrix';
 
   @override
   String get settingsMatrixTitle => 'Impostazioni di sincronizzazione';
@@ -9248,7 +9255,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsOnboardingMetricsTitle => 'Metriche di bordo';
 
   @override
-  String get settingsOnboardingReplayTitle => 'Replay onboarding';
+  String get settingsOnboardingReplayTitle => 'Riproduci a bordo';
 
   @override
   String get settingsOnboardingStartTitle => 'Iniziare a bordo';
@@ -9314,7 +9321,8 @@ class AppLocalizationsIt extends AppLocalizations {
       'Mostra di nuovo la finestra di dialogo di configurazione Gemini AI';
 
   @override
-  String get settingsResetGeminiTitle => 'Reset Gemini Setup Dialog';
+  String get settingsResetGeminiTitle =>
+      'Reimposta finestra di configurazione Gemini';
 
   @override
   String get settingsResetHintsConfirm => 'Conferma';
@@ -9328,11 +9336,11 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Reset $count hints',
-      one: 'Reset one hint',
-      zero: 'Reset zero hints',
+      other: 'Reimpostati $count suggerimenti',
+      one: 'Reimpostato un suggerimento',
+      zero: 'Reimpostati zero suggerimenti',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -9340,7 +9348,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Punte chiare una tantum e suggerimenti di bordo';
 
   @override
-  String get settingsResetHintsTitle => 'Reset In-App Hints';
+  String get settingsResetHintsTitle => 'Reimposta suggerimenti nell\'app';
 
   @override
   String get settingsSpeechSubtitle => 'Voce e lettura aloud';
@@ -9425,7 +9433,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Personalizza l\'aspetto dell\'app e i temi';
 
   @override
-  String get settingsThemingTitle => 'Theming';
+  String get settingsThemingTitle => 'Il nome';
 
   @override
   String get settingsV2CategoryEmptyBody => 'Scegli un sub-setting a sinistra.';
@@ -9476,7 +9484,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get sidebarRunningTimerStopTooltip => 'Ferma il timer.';
 
   @override
-  String get sidebarTimerStatusLabel => 'Timer';
+  String get sidebarTimerStatusLabel => 'Cronometro';
 
   @override
   String get sidebarToggleCollapseLabel => 'Barra laterale di ricaduta';
@@ -9489,10 +9497,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count active',
-      one: '1 active',
+      other: '$count attivo',
+      one: '1 attiva',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -9515,14 +9523,14 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count queued',
-      one: '1 queued',
+      other: '$count in coda',
+      one: '1 coda',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
-  String get sidebarWakesQueuedLabel => 'Queued';
+  String get sidebarWakesQueuedLabel => 'Queu';
 
   @override
   String get sidebarWakesWorkingLabel => 'Lavorazione';
@@ -9660,7 +9668,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Vuoi eliminare la configurazione di sincronizzazione?';
 
   @override
-  String get syncEntitiesConfirm => 'START SYNC';
+  String get syncEntitiesConfirm => 'AVVIA SINCRONIZZAZIONE';
 
   @override
   String get syncEntitiesMessage => 'Scegli le entità che vuoi sincronizzare.';
@@ -9676,9 +9684,9 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       itemCount,
       locale: localeName,
-      other: '$itemCount items',
-      one: '1 item',
-      zero: '0 items',
+      other: '$itemCount articoli',
+      one: '1 elemento',
+      zero: '0',
     );
     return '$label · $_temp0';
   }
@@ -9779,7 +9787,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncStepComplete => 'Completo';
 
   @override
-  String get syncStepDashboards => 'Dashboards';
+  String get syncStepDashboards => 'Pannelli';
 
   @override
   String get syncStepHabits => 'Abitazioni';
@@ -9937,7 +9945,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get taskAgentSetupOriginCategory =>
-      'Copied dalla categoria di default quando questo agente è stato creato';
+      'Copiato dalle impostazioni predefinite della categoria quando è stato creato questo agente';
 
   @override
   String get taskAgentSetupOriginDisabled => 'Disabili';
@@ -9946,7 +9954,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskAgentSetupOriginLegacy => 'Configurazione legacy';
 
   @override
-  String get taskAgentSetupOriginTemplate => 'Copied dal modello';
+  String get taskAgentSetupOriginTemplate => 'Copiato dal modello';
 
   @override
   String get taskAgentSetupOriginUser => 'Hai scelto questo per questo agente.';
@@ -9999,7 +10007,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String taskDueDateWithDate(String date) {
-    return 'Due: $date';
+    return 'Scadenza: $date';
   }
 
   @override
@@ -10007,20 +10015,20 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      other: '$days days',
-      one: '1 day',
+      other: '$days giorni',
+      one: '1 giorno',
     );
     return 'Due in $_temp0';
   }
 
   @override
-  String get taskDueToday => 'Due giorni fa';
+  String get taskDueToday => 'Scade oggi';
 
   @override
-  String get taskDueTomorrow => 'Due giorni dopo';
+  String get taskDueTomorrow => 'Scade domani';
 
   @override
-  String get taskDueYesterday => 'Due ieri';
+  String get taskDueYesterday => 'Scadeva ieri';
 
   @override
   String get taskEditTitleLabel => 'Modifica titolo dell\'attività';
@@ -10195,10 +10203,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      other: '$days days',
-      one: '1 day',
+      other: '$days giorni',
+      one: '1 giorno',
     );
-    return 'Overdue di $_temp0';
+    return 'In ritardo di $_temp0';
   }
 
   @override
@@ -10247,7 +10255,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String taskShowcaseDueDate(String date) {
-    return 'Due: $date';
+    return 'Scadenza: $date';
   }
 
   @override
@@ -10268,10 +10276,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count recordings',
-      one: '1 recording',
+      other: '$count registrazioni',
+      one: '1 registrazione',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -10279,10 +10287,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count tasks',
-      one: '1 task',
+      other: '$count attività',
+      one: '1 attività',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -10292,10 +10300,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskShowcaseTimeTracker => 'Tracciatore di tempo';
 
   @override
-  String get taskShowcaseTodo => 'Todo';
+  String get taskShowcaseTodo => 'Da fare';
 
   @override
-  String get taskShowcaseTodos => 'Todos';
+  String get taskShowcaseTodos => 'Da fare';
 
   @override
   String get tasksLabelFilterAll => 'Tutti';
@@ -10477,10 +10485,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count more saved filters',
-      one: '1 more saved filter',
+      other: '$count più salvati filtri',
+      one: '1 filtro più salvato',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -10488,10 +10496,10 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count tasks',
-      one: '1 task',
+      other: '$count attività',
+      one: '1 attività',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
@@ -10549,7 +10557,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskStatusDone => 'Fatto';
 
   @override
-  String get taskStatusGroomed => 'Groomed';
+  String get taskStatusGroomed => 'Sposa';
 
   @override
   String get taskStatusInProgress => 'In corso';
@@ -10607,17 +10615,17 @@ class AppLocalizationsIt extends AppLocalizations {
       'Sei sicuro di voler sbloccare questo compito?';
 
   @override
-  String get unlinkTaskTitle => 'Unlink Task';
+  String get unlinkTaskTitle => 'Scollega attività';
 
   @override
   String vectorSearchTiming(int elapsed, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '${elapsed}ms, $count results',
-      one: '${elapsed}ms, $count result',
+      other: '$elapsed ms, $count risultati',
+      one: '$elapsed ms, $count risultato',
     );
-    return '${_temp0}X';
+    return '$_temp0';
   }
 
   @override
