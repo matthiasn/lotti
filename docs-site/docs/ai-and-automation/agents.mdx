@@ -70,5 +70,43 @@ Deleting a queued wake removes that timer; it does not delete the agent or its
 linked task. If a wake immediately returns, inspect the agent state or the
 automation that requested it instead of repeatedly deleting the symptom.
 
+## Roadmap: verify learning, not just output
+
+The agent roadmap includes a learning and understanding verifier for work done
+with AI assistance. This feature is planned; it is not available in the app
+yet.
+
+The verifier will ask you to explain a selected concept in your own words after
+meaningful checkpoints, then compare that explanation with a fixed snapshot of
+the work. The result will identify what you explained well, which causal links
+or boundaries are missing, what evidence supports the feedback, and one useful
+next step. It is intended to help you practice and check what you can explain
+under a disclosed condition—unaided-first, open-book, or with a hint—rather
+than merely confirming that generated output exists.
+
+The planned progression is:
+
+1. **On-demand verification** for Lotti tasks, agent reports, accepted
+   proposals, and linked architecture material.
+2. **Consented workspace evidence** for repository revisions, diffs, relevant
+   symbols, and test or analyzer summaries supplied by a read-only development
+   workflow integration.
+3. **Suggested checkpoints** after meaningful completions or before
+   finalization, with strict cooldowns and **Later**, **Skip**, and disable
+   controls.
+4. **Spaced follow-ups** for concepts that need another explanation, prediction,
+   debugging exercise, or transfer question.
+5. **User-private, syncable learning history** that records which concepts and
+   operations were demonstrated in individual checks, without claiming mastery,
+   rankings, streak pressure, or comparison with other people.
+
+The design is evidence-bounded: if Lotti did not receive the relevant code or
+system state, it must say so and must not claim to have verified it. Automatic
+prompts will be non-modal, formative, user-controlled, and never block
+finalization in the planned phases. Ratings will describe one explanation,
+question, support condition, and evidence snapshot; they may include optional
+numeric detail, remain appealable and deletable as agent data, and never become
+proof of mastery or a public credential.
+
 Continue with [Agent templates and souls](./agent-blueprints.mdx) to define
-what these instances do and how they communicate.
+what current instances do and how they communicate.

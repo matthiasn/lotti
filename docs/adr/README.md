@@ -28,6 +28,17 @@ Each ADR should contain:
 
 ## Index
 
+### Learning verification decision cluster
+
+| ADR | Status | Decision ownership |
+| --- | --- | --- |
+| [0031: Learning Verification Checkpoint Policy](./0031-learning-verification-checkpoint-policy.md) | Proposed | Prompt timing, deterministic admission, burden, and learner control. |
+| [0032: Hybrid Understanding Evaluation](./0032-hybrid-understanding-evaluation.md) | Proposed | Question blueprint, semantic comparison, deterministic validation, and calibration. |
+| [0033: Learning Verification Session Persistence](./0033-learning-verification-session-persistence.md) | Proposed | Causal-log authority, immutable artifacts, sync/local evidence, convergence, and retention. |
+| [0034: Learning Understanding Rating](./0034-learning-understanding-rating.md) | Proposed | Observed dimensions, formative labels, feedback order, and comparability limits. |
+
+### Chronological index
+
 - [`0001-agent-capabilities-runtime-model.md`](./0001-agent-capabilities-runtime-model.md)
 - [`0002-wake-scheduling-and-throttling-policy.md`](./0002-wake-scheduling-and-throttling-policy.md)
 - [`0003-task-agent-linked-task-context-contract.md`](./0003-task-agent-linked-task-context-contract.md)
@@ -60,3 +71,7 @@ Each ADR should contain:
 - [`0030-desktop-keyboard-command-system.md`](./0030-desktop-keyboard-command-system.md)
 - [`0031-batch-first-day-audio-capture.md`](./0031-batch-first-day-audio-capture.md)
 - [`0032-hierarchical-day-agent-coordination.md`](./0032-hierarchical-day-agent-coordination.md)
+- [`0031-learning-verification-checkpoint-policy.md`](./0031-learning-verification-checkpoint-policy.md)
+- [`0032-hybrid-understanding-evaluation.md`](./0032-hybrid-understanding-evaluation.md)
+- [`0033-learning-verification-session-persistence.md`](./0033-learning-verification-session-persistence.md)
+- [`0034-learning-understanding-rating.md`](./0034-learning-understanding-rating.md)
