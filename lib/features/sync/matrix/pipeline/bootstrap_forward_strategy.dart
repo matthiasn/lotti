@@ -27,12 +27,16 @@ import 'package:matrix/matrix.dart';
 ///   forward via `/messages?dir=f`, one page at a time, emitting
 ///   each page through the sink until the server reports no more
 ///   future (`!canRequestFuture`) or the [forwardPageCap] safety
-///   cap trips.
+///   cap trips. Some homeservers can return a non-empty context
+///   window without a usable `next_batch` token. In that case the
+///   walk probes another context window from the newest emitted
+///   event; an empty probe is the authoritative end-of-timeline
+///   signal.
 ///
-/// Only events whose timestamp is strictly greater than the
-/// anchor's own timestamp are emitted — the anchor itself and any
-/// events that happen to tie at the same ms on the first chunk are
-/// filtered, since by definition we've already applied them.
+/// Only events that sort strictly after the anchor under the
+/// `(timestamp, eventId)` ordering are emitted, so the anchor itself
+/// and any already-emitted overlap are filtered while same-millisecond
+/// events retain deterministic ordering.
 ///
 /// Returns `BootstrapStopReason.serverExhausted` when the walk
 /// reaches the tip, `boundaryReached` when the cap trips (so
@@ -57,7 +61,7 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
 }) async {
   final nowFn = now ?? DateTime.now;
   final start = nowFn();
-  final Timeline timeline;
+  late Timeline timeline;
   try {
     timeline = await room.getTimeline(
       eventContextId: anchorEventId,
@@ -150,6 +154,26 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
         page.add(event);
       }
 
+      // The cap limits emitted pages, but a capped context response
+      // without a forward token gets one final, un-emitted context
+      // probe. That distinguishes a genuine server tip from a
+      // homeserver's silently truncated context window.
+      if (pageIndex >= forwardPageCap) {
+        if (page.isNotEmpty) {
+          logging.log(
+            LogDomain.sync,
+            'bootstrap.forward.capReached '
+            'pages=$pageIndex cap=$forwardPageCap '
+            'events=$totalEventsSoFar',
+            subDomain: 'bootstrap.forward',
+          );
+          stopReason = BootstrapStopReason.boundaryReached;
+        } else {
+          stopReason = BootstrapStopReason.serverExhausted;
+        }
+        break;
+      }
+
       if (page.isNotEmpty) {
         totalEventsSoFar += page.length;
         final lastTs = TimelineEventOrdering.timestamp(page.last);
@@ -167,7 +191,10 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
           pageIndex: pageIndex,
           totalEventsSoFar: totalEventsSoFar,
           oldestTimestampSoFar: newestTsSoFar,
-          serverHasMore: timeline.canRequestFuture,
+          // When the context contains a productive final window but
+          // omits its forward token, we probe a new context from its
+          // newest event before declaring the server exhausted.
+          serverHasMore: timeline.canRequestFuture || page.isNotEmpty,
           elapsed: nowFn().difference(start),
         );
         final shouldContinue = await sink.onPage(page, info);
@@ -179,8 +206,35 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
       }
 
       if (!timeline.canRequestFuture) {
-        stopReason = BootstrapStopReason.serverExhausted;
-        break;
+        // Matrix SDK timelines only expose `canRequestFuture` when
+        // `/context` includes a next_batch token. Dendrite and other
+        // homeservers can return a capped `events_after` window
+        // without one, which used to strand the tail after that first
+        // window. Re-anchor on the newest event and make one more
+        // server-context request. A context with no strictly newer
+        // events proves that we have reached the tip.
+        if (page.isEmpty || newestEventIdSoFar == null) {
+          stopReason = BootstrapStopReason.serverExhausted;
+          break;
+        }
+
+        try {
+          timeline.cancelSubscriptions();
+          timeline = await room.getTimeline(
+            eventContextId: newestEventIdSoFar,
+            limit: 0,
+          );
+        } catch (error, stackTrace) {
+          logging.error(
+            LogDomain.sync,
+            error,
+            stackTrace: stackTrace,
+            subDomain: 'bootstrap.forward.getTimeline',
+          );
+          stopReason = BootstrapStopReason.error;
+          break;
+        }
+        continue;
       }
 
       if (pageIndex >= forwardPageCap) {

@@ -1996,7 +1996,11 @@ void main() {
             '\$future-$index',
           ]);
         }
-        verify(timeline.cancelSubscriptions).called(1);
+        final expectedCancellations =
+            scenario.expectedStopReason == BootstrapStopReason.serverExhausted
+            ? 2
+            : 1;
+        verify(timeline.cancelSubscriptions).called(expectedCancellations);
       },
       tags: 'glados',
     );
@@ -2072,7 +2076,10 @@ void main() {
         expect(pages, hasLength(1));
         // Anchor itself is filtered out; only e1/e2 reach the sink.
         expect(pages.single.map((e) => e.eventId).toList(), [r'$e1', r'$e2']);
-        verify(tl.cancelSubscriptions).called(1);
+        // A terminal context probe confirms that the non-empty window was
+        // really the server tip, rather than a homeserver-capped response
+        // without a forward token.
+        verify(tl.cancelSubscriptions).called(2);
       },
     );
 
@@ -2161,6 +2168,70 @@ void main() {
             [r'$e3'],
           ],
         );
+      },
+    );
+
+    test(
+      're-anchors context windows that omit a forward token so a capped '
+      'response cannot strand the reconnect tail',
+      () async {
+        final room = MockRoom();
+        final log = MockDomainLogger();
+        final firstWindow = MockTimeline();
+        final secondWindow = MockTimeline();
+        final terminalWindow = MockTimeline();
+        final anchor = buildEvent(r'$anchor', 100);
+        final first = buildEvent(r'$first', 110);
+        final second = buildEvent(r'$second', 120);
+        final timelines = <Timeline>[
+          firstWindow,
+          secondWindow,
+          terminalWindow,
+        ];
+        var contextRequests = 0;
+
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => timelines[contextRequests++]);
+        when(() => firstWindow.events).thenReturn([anchor, first]);
+        when(() => secondWindow.events).thenReturn([first, second]);
+        when(() => terminalWindow.events).thenReturn([second]);
+        when(() => firstWindow.canRequestFuture).thenReturn(false);
+        when(() => secondWindow.canRequestFuture).thenReturn(false);
+        when(() => terminalWindow.canRequestFuture).thenReturn(false);
+        when(firstWindow.cancelSubscriptions).thenAnswer((_) {});
+        when(secondWindow.cancelSubscriptions).thenAnswer((_) {});
+        when(terminalWindow.cancelSubscriptions).thenAnswer((_) {});
+
+        final pages = <List<Event>>[];
+        final result = await CatchUpStrategy.collectForwardForBootstrap(
+          room: room,
+          sink: _CollectingBootstrapSink(pages.add, acceptedPerPage: 1),
+          logging: log,
+          anchorEventId: r'$anchor',
+        );
+
+        expect(result.stopReason, BootstrapStopReason.serverExhausted);
+        expect(result.totalEvents, 2);
+        expect(
+          pages.map((page) => page.single.eventId).toList(),
+          [r'$first', r'$second'],
+        );
+        verify(
+          () => room.getTimeline(eventContextId: r'$anchor', limit: 0),
+        ).called(1);
+        verify(
+          () => room.getTimeline(eventContextId: r'$first', limit: 0),
+        ).called(1);
+        verify(
+          () => room.getTimeline(eventContextId: r'$second', limit: 0),
+        ).called(1);
+        verify(firstWindow.cancelSubscriptions).called(1);
+        verify(secondWindow.cancelSubscriptions).called(1);
+        verify(terminalWindow.cancelSubscriptions).called(1);
       },
     );
 

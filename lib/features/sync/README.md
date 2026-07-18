@@ -798,8 +798,10 @@ The important runtime rules are:
   `/messages?dir=f`. The zero cache limit is required with Matrix SDK 7.0.0:
   otherwise an anchor already present in the SDK database suppresses the
   context request, leaves the timeline without a forward token, and can make a
-  reconnect incorrectly report completion with no bootstrap events,
-  falling back to a timestamp-bounded **backward** walk
+  reconnect incorrectly report completion with no bootstrap events. A
+  productive context window that omits a forward token is re-anchored at its
+  newest event until a follow-up context returns no newer events. It falls
+  back to a timestamp-bounded **backward** walk
   (`collectHistoryForBootstrap`) only for fresh clients with no anchor or when
   the anchor is unresolvable, and feeds events through the same enqueue path
   with `producer=bootstrap`
@@ -880,7 +882,9 @@ Components (all under `lib/features/sync/queue/`):
   `CatchUpStrategy.collectForwardForBootstrap` when `last_applied_event_id` is
   set (the preferred path). The forward walk deliberately passes `limit: 0`
   to `Room.getTimeline` so Matrix SDK cannot satisfy the anchor from its local
-  cache and must return server context with a valid forward-pagination token.
+  cache and must return server context. If a homeserver omits a
+  forward-pagination token from a non-empty context window, the walk probes
+  from that window's newest event until the server returns no newer events.
   It falls back to a timestamp-bounded **backward** walk via
   `collectHistoryForBootstrap` for fresh clients or an unresolvable anchor.
   Walked events are appended via `InboundQueue.appendBootstrapPage`, i.e.
