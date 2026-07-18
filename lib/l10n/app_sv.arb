@@ -7,8 +7,8 @@
   "addActionAddScreenshot": "Skärmdump",
   "addActionAddTask": "Uppgift",
   "addActionAddText": "Textinmatning",
-  "addActionAddTimeRecording": "Timer-inmatning",
-  "addActionAddTimer": "Öppettider",
+  "addActionAddTimeRecording": "Lägg till tidsregistrering",
+  "addActionAddTimer": "Lägg till timer",
   "addActionImportImage": "Importera bild",
   "addHabitCommentLabel": "Kommentar",
   "addHabitDateLabel": "Färdigställd i",
@@ -77,10 +77,10 @@
   "agentControlsDestroyButton": "Förstör",
   "agentControlsDestroyDialogContent": "Detta kommer att permanent inaktivera agenten. Dess historia kommer att bevaras för revision.",
   "agentControlsDestroyDialogTitle": "Förstöra agenten?",
-  "agentControlsDestroyedMessage": "Detta medel har förstörts.",
+  "agentControlsDestroyedMessage": "Denna agent har förstörts.",
   "agentControlsPauseButton": "Paus",
   "agentControlsReanalyzeButton": "Omanalysera",
-  "agentControlsResumeButton": "CV",
+  "agentControlsResumeButton": "Fortsätt",
   "agentConversationEmpty": "Inga samtal än.",
   "agentConversationThreadSummary": "{messageCount} meddelanden, {toolCallCount} verktygsanrop · {shortId}",
   "@agentConversationThreadSummary": {
@@ -463,7 +463,7 @@
   "agentStatsTabTitle": "Statistik",
   "agentStatsThoughtsLabel": "Tankar",
   "agentStatsTodayLabel": "Idag",
-  "agentStatsTokensPerWakeLabel": "Symboler / Wake",
+  "agentStatsTokensPerWakeLabel": "Tokens / väckning",
   "agentStatsTokensUnit": "Tokens",
   "agentStatsUsageAboveAverage": "Du använder fler tokens idag än du brukar göra med {time}.",
   "@agentStatsUsageAboveAverage": {
@@ -481,7 +481,7 @@
       }
     }
   },
-  "agentStatsWakesLabel": "Vakor",
+  "agentStatsWakesLabel": "Väckningar",
   "agentSuggestionTimeEntryUpdateCurrent": "Nutid",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."
@@ -867,7 +867,7 @@
     }
   },
   "aiImpactKpiEnergy": "ENERGI",
-  "aiImpactKpiRequests": "ÖNSKEMÅL",
+  "aiImpactKpiRequests": "FÖRFRÅGNINGAR",
   "aiImpactKpiTokens": "TOKENS",
   "aiImpactLedgerClearFilter": "Visa allt",
   "aiImpactLoadError": "Kunde inte ladda AI-påverkandata",
@@ -877,8 +877,8 @@
   "aiImpactMetricCarbon": "CO₂e",
   "aiImpactMetricCost": "Kostnad",
   "aiImpactMetricEnergy": "Energi",
-  "aiImpactMetricRequests": "Önskemål",
-  "aiImpactMetricTokens": "Brickor",
+  "aiImpactMetricRequests": "Förfrågningar",
+  "aiImpactMetricTokens": "Tokens",
   "aiImpactModelCallsLabel": "{count} anrop",
   "@aiImpactModelCallsLabel": {
     "placeholders": {
@@ -953,7 +953,7 @@
   "aiModelInstallChoiceTitle": "Välj MLX Audio-modellen",
   "aiModelPickerByProviderLabel": "Välj en leverantör",
   "aiModelPickerCurrentDefaultLabel": "Nuvarande betalningsinställelse",
-  "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} other{{count} models}}",
+  "aiModelPickerProviderModelCount": "{count, plural, =1{1 modell} other{{count} modeller}}",
   "@aiModelPickerProviderModelCount": {
     "placeholders": {
       "count": {
@@ -987,7 +987,7 @@
   "aiProviderAnthropicName": "Anthropiske Claude",
   "aiProviderCardDraftBadge": "DRAFT",
   "aiProviderCardFixButton": "Fix",
-  "aiProviderCardModelCount": "{count, plural, =1{1 model} other{{count} models}}",
+  "aiProviderCardModelCount": "{count, plural, =1{1 modell} other{{count} modeller}}",
   "@aiProviderCardModelCount": {
     "description": "Right-side meta on a connected provider card when no last-used data is available.",
     "placeholders": {
@@ -997,7 +997,7 @@
       }
     }
   },
-  "aiProviderCardModelCountWithLastUsed": "{count, plural, =1{1 modell · Senast använda {lastUsed}} other{{count} modeller · Senast använd {lastUsed}}}",
+  "aiProviderCardModelCountWithLastUsed": "{count, plural, =1{1 modell · Senast använd {lastUsed}} other{{count} modeller · Senast använd {lastUsed}}}",
   "@aiProviderCardModelCountWithLastUsed": {
     "description": "Right-side meta on a connected provider card combining model count with a last-used label.",
     "placeholders": {
@@ -1012,7 +1012,7 @@
     }
   },
   "aiProviderCardOllamaHint": "Se till att Ollama är igång",
-  "aiProviderCardStatusConnected": "{count, plural, =1{Connected · 1 modell} other{Ansluten · {count} modeller}}",
+  "aiProviderCardStatusConnected": "{count, plural, =1{Ansluten · 1 modell} other{Ansluten · {count} modeller}}",
   "@aiProviderCardStatusConnected": {
     "description": "Provider card status line when the provider has a key + at least one model row.",
     "placeholders": {
@@ -1051,7 +1051,7 @@
     }
   },
   "aiProviderConnectSaveAndContinue": "Spara & Fortsätt",
-  "aiProviderConnectSaveAsDraft": "Spara som värnplikt",
+  "aiProviderConnectSaveAsDraft": "Spara som utkast",
   "aiProviderConnectSavedAsDraftToast": "Sparad som utkast",
   "aiProviderConnectStepChoose": "Välj leverantör",
   "aiProviderConnectStepConnect": "Koppla upp",
@@ -1120,7 +1120,7 @@
   "aiProviderDetailEditTooltip": "Redigeringsleverantör",
   "aiProviderDetailLoadError": "Kunde inte ladda denna leverantör. Försök igen från AI-inställningslistan.",
   "aiProviderDetailMissingMessage": "Denna leverantör finns inte längre tillgänglig.",
-  "aiProviderDetailModelsTitle": "{count, plural, =0{Models} =1{Modeller · 1} other{Modeller · {count}}}",
+  "aiProviderDetailModelsTitle": "{count, plural, =0{Modeller} =1{Modeller · 1} other{Modeller · {count}}}",
   "@aiProviderDetailModelsTitle": {
     "description": "Models section heading on the provider detail page; suffixes the count when one or more models exist.",
     "placeholders": {
@@ -1685,7 +1685,7 @@
       }
     }
   },
-  "conflictBannerAgoHours": "{count, plural, =1{1 timme sedan} other{{count} h ago}}",
+  "conflictBannerAgoHours": "{count, plural, =1{1 timme sedan} other{{count} h sedan}}",
   "@conflictBannerAgoHours": {
     "placeholders": {
       "count": {
@@ -2230,7 +2230,7 @@
   "dailyOsNextShutdownSaveAndClose": "Spara och stäng",
   "dailyOsNextShutdownTitle": "Avsluta dagen",
   "dailyOsNextShutdownTomorrowOverline": "✦ FÖR MORGONDAGEN",
-  "dailyOsNextStateDueOnDate": "Två {date}",
+  "dailyOsNextStateDueOnDate": "Förfaller: {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {
       "date": {
@@ -2238,8 +2238,8 @@
       }
     }
   },
-  "dailyOsNextStateDueToday": "Ska lämnas in idag",
-  "dailyOsNextStateInProgress": "{count, plural, =0{Pågåd} =1{Pågående · 1 session} other{ Pågår · {count} sessioner}}",
+  "dailyOsNextStateDueToday": "Förfaller idag",
+  "dailyOsNextStateInProgress": "{count, plural, =0{Pågående} =1{Pågående · 1 session} other{Pågående · {count} sessioner}}",
   "@dailyOsNextStateInProgress": {
     "placeholders": {
       "count": {
@@ -2248,7 +2248,7 @@
       }
     }
   },
-  "dailyOsNextStateOverdue": "{days, plural, =0{Overdue} =1{ Försenad · 1 dag} other{ försenad · {days} dagar}}",
+  "dailyOsNextStateOverdue": "{days, plural, =0{Försenad} =1{Försenad · 1 dag} other{Försenad · {days} dagar}}",
   "@dailyOsNextStateOverdue": {
     "placeholders": {
       "days": {
@@ -2989,7 +2989,7 @@
   },
   "inferenceProfileSkillsSection": "Automatiserade färdigheter",
   "inferenceProfileThinking": "Tänkande",
-  "inferenceProfileThinkingHighEnd": "Tänkande (High-End)",
+  "inferenceProfileThinkingHighEnd": "Tänkande (avancerat)",
   "inferenceProfileThinkingRequired": "En tänkande modell krävs",
   "inferenceProfileTranscription": "Transkription",
   "inferenceProfileUnavailable": "Inferensprofil ej tillgänglig",
@@ -3799,14 +3799,14 @@
     }
   },
   "projectCreateButton": "Nytt projekt",
-  "projectCreateTitle": "Create Project",
+  "projectCreateTitle": "Skapa projekt",
   "projectDetailTitle": "Projektdetaljer",
   "projectErrorCreateFailed": "Felskapande projekt.",
   "projectErrorLoadFailed": "Misslyckades med att ladda projektdata.",
   "projectErrorLoadProjects": "Felladdningsprojekt",
   "projectErrorUpdateFailed": "Misslyckades med att uppdatera projektet. Försök igen, tack.",
   "projectFilterLabel": "Projekt",
-  "projectHealthBandAtRisk": "At Risk",
+  "projectHealthBandAtRisk": "I riskzonen",
   "projectHealthBandBlocked": "Blockerad",
   "projectHealthBandOnTrack": "På banan",
   "projectHealthBandSurviving": "Bevarade",
@@ -3869,7 +3869,7 @@
     }
   },
   "projectShowcaseDescriptionTitle": "Beskrivning",
-  "projectShowcaseDueDate": "Två {date}",
+  "projectShowcaseDueDate": "Förfaller: {date}",
   "@projectShowcaseDueDate": {
     "placeholders": {
       "date": {
@@ -3993,7 +3993,7 @@
   "queueDepthCardLoading": "Läser köens djup...",
   "queueDepthCardTitle": "Inkommande kö",
   "queueFetchAllHistoryCancel": "Avbryt",
-  "queueFetchAllHistoryCancelled": "Inställt — {events, plural, =0{ inga evenemang} =1{1 event} other{{events} evenemang}} hittills.",
+  "queueFetchAllHistoryCancelled": "Inställt — {events, plural, =0{inga evenemang} =1{1 händelse} other{{events} evenemang}} hittills.",
   "@queueFetchAllHistoryCancelled": {
     "placeholders": {
       "events": {
@@ -4634,7 +4634,7 @@
   "syncActivityTitle": "Synk",
   "syncDeleteConfigConfirm": "JA, JAG ÄR SÄKER",
   "syncDeleteConfigQuestion": "Vill du ta bort synkroniseringskonfigurationen?",
-  "syncEntitiesConfirm": "START SYNC",
+  "syncEntitiesConfirm": "STARTA SYNKRONISERING",
   "syncEntitiesMessage": "Välj de enheter du vill synka.",
   "syncEntitiesSuccessDescription": "Allt är uppdaterat.",
   "syncEntitiesSuccessTitle": "Synkronisering klar",
@@ -4794,7 +4794,7 @@
   "taskCategoryLabel": "Kategori:",
   "taskCategoryUnassignedLabel": "ej tilldelad",
   "taskDueDateLabel": "Beräknat datum",
-  "taskDueDateWithDate": "Två: {date}",
+  "taskDueDateWithDate": "Förfaller: {date}",
   "@taskDueDateWithDate": {
     "placeholders": {
       "date": {
@@ -4802,7 +4802,7 @@
       }
     }
   },
-  "taskDueInDays": "Inlämning är klar om {days, plural, =1{1 dag} other{{days} dagar}}",
+  "taskDueInDays": "Förfaller om {days, plural, =1{1 dag} other{{days} dagar}}",
   "@taskDueInDays": {
     "placeholders": {
       "days": {
@@ -4984,7 +4984,7 @@
   "tasksPriorityP0": "Brådskande",
   "tasksPriorityP0Description": "Brådskande (så snart som möjligt)",
   "tasksPriorityP1": "Högt",
-  "tasksPriorityP1Description": "High (Snart)",
+  "tasksPriorityP1Description": "Hög (snart)",
   "tasksPriorityP2": "Medium",
   "tasksPriorityP2Description": "Medium (Standard)",
   "tasksPriorityP3": "Lågt",
@@ -5108,7 +5108,7 @@
   "unlinkButton": "Avlänka",
   "unlinkTaskConfirm": "Är du säker på att du vill koppla bort denna uppgift?",
   "unlinkTaskTitle": "Koppla bort uppgiften",
-  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} resultat} other{{elapsed}ms, {count} results}}",
+  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} resultat} other{{elapsed}ms, {count} resultat}}",
   "@vectorSearchTiming": {
     "placeholders": {
       "elapsed": {

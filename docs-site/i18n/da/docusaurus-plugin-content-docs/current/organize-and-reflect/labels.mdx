@@ -49,28 +49,28 @@ relevant i stedet for at præsentere alle etiketter overalt.
 
 ## Påfør etiketter på opgaver
 
-Åbn en opgave og brug dens labelkontrol til at tilføje eller fjerne etiketter. Labels arbejde
-Sammen med opgavestatus-, prioritets- og kategorifiltre, så du kan spørge om fokuseret
-spørgsmål som "vis åbent P1 habitatkritisk arbejde" uden at opfinde noget nyt
-kategori for den midlertidige visning.
+Åbn en opgave og brug dens etiketkontrol til at tilføje eller fjerne etiketter.
+Etiketter fungerer sammen med filtre for opgavestatus, prioritet og kategori,
+så du kan stille fokuserede spørgsmål som "vis åbent P1-habitatkritisk arbejde"
+uden at opfinde en ny kategori til den midlertidige visning.
 
-## Lad en task agent foreslå labels
+## Lad en opgaveagent foreslå etiketter
 
-Når en konfigureret opgaveagent har nok opgavekontekst, kan den foreslå tilpasning
-etiketter sammen med andre opgaveændringer. Lotti stiller kun aktive etiketter til rådighed
-når de er gyldige for opgavens kategori, og den afviser slettet,
-Forslag uden for omfang, duplikat eller lav tillid. Agenten får aldrig en
-fri form til at oprette vilkårlige tags ud fra en prompt.
+Når en konfigureret opgaveagent har nok opgavekontekst, kan den foreslå
+etiketændringer sammen med andre opgaveændringer. Lotti stiller kun aktive
+etiketter til rådighed, når de er gyldige for opgavens kategori, og afviser
+slettede, uden for omfanget liggende, duplikerede eller usikre forslag. Agenten
+får aldrig frie hænder til at oprette vilkårlige etiketter ud fra en prompt.
 
-Gennemgå en agent-initieret etiket i opgavens område for foreslåede ændringer, ligesom du
-Ville en tjekliste, dato eller status ændre sig. Bekræft det, når etiketten forbedres
-fremtidig filtrering; afvis det, når det ikke gør. Dette holder opgaven synlig
-organisering under din kontrol i stedet for at behandle et modelgæt som kilde
-Sandhed.
+Gennemgå en agentinitieret etiket i opgavens område for foreslåede ændringer,
+ligesom du ville gennemgå en tjekliste, dato eller statusændring. Bekræft den,
+når etiketten forbedrer fremtidig filtrering; afvis den, når den ikke gør. Det
+holder opgavernes organisering under din kontrol i stedet for at behandle et
+modelgæt som sandhedskilde.
 
-At fjerne en mærkat fra en opgave behandles som en bevidst afvisning, når
-Automatiske labelforslag er aktiveret. Lotti registrerer det valg, så det samme
-Forslaget genanvendes ikke straks uden en ny grund.
+At fjerne en etiket fra en opgave behandles som en bevidst afvisning, når
+automatiske etiketforslag er aktiveret. Lotti registrerer det valg, så det samme
+forslag ikke straks genanvendes uden en ny begrundelse.
 
 ## Hold etiketter nyttige
 
@@ -80,5 +80,5 @@ Forslaget genanvendes ikke straks uden en ny grund.
 - Brug privatliv, når selve labelnavnet afslører følsom kontekst.
 - Træk etiketter tilbage, der ikke længere beskriver live-arbejde.
 
-Hvis noget er det primære, holdbare hjem for arbejdet, så gør det til et
-[category](./categories.mdx) instead.
+Hvis noget er arbejdets primære, holdbare hjem, så gør det i stedet til en
+[kategori](./categories.mdx).

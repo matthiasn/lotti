@@ -33,10 +33,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get addActionAddText => 'Textinmatning';
 
   @override
-  String get addActionAddTimer => 'Öppettider';
+  String get addActionAddTimer => 'Lägg till timer';
 
   @override
-  String get addActionAddTimeRecording => 'Timer-inmatning';
+  String get addActionAddTimeRecording => 'Lägg till tidsregistrering';
 
   @override
   String get addActionImportImage => 'Importera bild';
@@ -144,7 +144,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentControlsDestroyDialogTitle => 'Förstöra agenten?';
 
   @override
-  String get agentControlsDestroyedMessage => 'Detta medel har förstörts.';
+  String get agentControlsDestroyedMessage => 'Denna agent har förstörts.';
 
   @override
   String get agentControlsPauseButton => 'Paus';
@@ -153,7 +153,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentControlsReanalyzeButton => 'Omanalysera';
 
   @override
-  String get agentControlsResumeButton => 'CV';
+  String get agentControlsResumeButton => 'Fortsätt';
 
   @override
   String get agentConversationEmpty => 'Inga samtal än.';
@@ -891,7 +891,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentStatsTodayLabel => 'Idag';
 
   @override
-  String get agentStatsTokensPerWakeLabel => 'Symboler / Wake';
+  String get agentStatsTokensPerWakeLabel => 'Tokens / väckning';
 
   @override
   String get agentStatsTokensUnit => 'Tokens';
@@ -907,7 +907,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get agentStatsWakesLabel => 'Vakor';
+  String get agentStatsWakesLabel => 'Väckningar';
 
   @override
   String get agentSuggestionTimeEntryUpdateCurrent => 'Nutid';
@@ -1395,7 +1395,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiImpactKpiEnergy => 'ENERGI';
 
   @override
-  String get aiImpactKpiRequests => 'ÖNSKEMÅL';
+  String get aiImpactKpiRequests => 'FÖRFRÅGNINGAR';
 
   @override
   String get aiImpactKpiTokens => 'TOKENS';
@@ -1425,10 +1425,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiImpactMetricEnergy => 'Energi';
 
   @override
-  String get aiImpactMetricRequests => 'Önskemål';
+  String get aiImpactMetricRequests => 'Förfrågningar';
 
   @override
-  String get aiImpactMetricTokens => 'Brickor';
+  String get aiImpactMetricTokens => 'Tokens';
 
   @override
   String aiImpactModelCallsLabel(String count) {
@@ -1567,8 +1567,8 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count models',
-      one: '1 model',
+      other: '$count modeller',
+      one: '1 modell',
     );
     return '$_temp0';
   }
@@ -1641,8 +1641,8 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count models',
-      one: '1 model',
+      other: '$count modeller',
+      one: '1 modell',
     );
     return '$_temp0';
   }
@@ -1653,7 +1653,7 @@ class AppLocalizationsSv extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count modeller · Senast använd $lastUsed',
-      one: '1 modell · Senast använda $lastUsed',
+      one: '1 modell · Senast använd $lastUsed',
     );
     return '$_temp0';
   }
@@ -1667,7 +1667,7 @@ class AppLocalizationsSv extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Ansluten · $count modeller',
-      one: 'Connected · 1 modell',
+      one: 'Ansluten · 1 modell',
     );
     return '$_temp0';
   }
@@ -1778,7 +1778,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiProviderConnectSaveAndContinue => 'Spara & Fortsätt';
 
   @override
-  String get aiProviderConnectSaveAsDraft => 'Spara som värnplikt';
+  String get aiProviderConnectSaveAsDraft => 'Spara som utkast';
 
   @override
   String get aiProviderConnectSavedAsDraftToast => 'Sparad som utkast';
@@ -1837,7 +1837,7 @@ class AppLocalizationsSv extends AppLocalizations {
       locale: localeName,
       other: 'Modeller · $count',
       one: 'Modeller · 1',
-      zero: 'Models',
+      zero: 'Modeller',
     );
     return '$_temp0';
   }
@@ -3074,7 +3074,7 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count h ago',
+      other: '$count h sedan',
       one: '1 timme sedan',
     );
     return '$_temp0';
@@ -4095,20 +4095,20 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String dailyOsNextStateDueOnDate(String date) {
-    return 'Två $date';
+    return 'Förfaller: $date';
   }
 
   @override
-  String get dailyOsNextStateDueToday => 'Ska lämnas in idag';
+  String get dailyOsNextStateDueToday => 'Förfaller idag';
 
   @override
   String dailyOsNextStateInProgress(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: ' Pågår · $count sessioner',
+      other: 'Pågående · $count sessioner',
       one: 'Pågående · 1 session',
-      zero: 'Pågåd',
+      zero: 'Pågående',
     );
     return '$_temp0';
   }
@@ -4118,9 +4118,9 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      other: ' försenad · $days dagar',
-      one: ' Försenad · 1 dag',
-      zero: 'Overdue',
+      other: 'Försenad · $days dagar',
+      one: 'Försenad · 1 dag',
+      zero: 'Försenad',
     );
     return '$_temp0';
   }
@@ -5713,7 +5713,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inferenceProfileThinking => 'Tänkande';
 
   @override
-  String get inferenceProfileThinkingHighEnd => 'Tänkande (High-End)';
+  String get inferenceProfileThinkingHighEnd => 'Tänkande (avancerat)';
 
   @override
   String get inferenceProfileThinkingRequired => 'En tänkande modell krävs';
@@ -7605,7 +7605,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectCreateButton => 'Nytt projekt';
 
   @override
-  String get projectCreateTitle => 'Create Project';
+  String get projectCreateTitle => 'Skapa projekt';
 
   @override
   String get projectDetailTitle => 'Projektdetaljer';
@@ -7628,7 +7628,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectFilterLabel => 'Projekt';
 
   @override
-  String get projectHealthBandAtRisk => 'At Risk';
+  String get projectHealthBandAtRisk => 'I riskzonen';
 
   @override
   String get projectHealthBandBlocked => 'Blockerad';
@@ -7745,7 +7745,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String projectShowcaseDueDate(String date) {
-    return 'Två $date';
+    return 'Förfaller: $date';
   }
 
   @override
@@ -7983,8 +7983,8 @@ class AppLocalizationsSv extends AppLocalizations {
       events,
       locale: localeName,
       other: '$events evenemang',
-      one: '1 event',
-      zero: ' inga evenemang',
+      one: '1 händelse',
+      zero: 'inga evenemang',
     );
     return 'Inställt — $_temp0 hittills.';
   }
@@ -9549,7 +9549,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vill du ta bort synkroniseringskonfigurationen?';
 
   @override
-  String get syncEntitiesConfirm => 'START SYNC';
+  String get syncEntitiesConfirm => 'STARTA SYNKRONISERING';
 
   @override
   String get syncEntitiesMessage => 'Välj de enheter du vill synka.';
@@ -9886,7 +9886,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String taskDueDateWithDate(String date) {
-    return 'Två: $date';
+    return 'Förfaller: $date';
   }
 
   @override
@@ -9897,7 +9897,7 @@ class AppLocalizationsSv extends AppLocalizations {
       other: '$days dagar',
       one: '1 dag',
     );
-    return 'Inlämning är klar om $_temp0';
+    return 'Förfaller om $_temp0';
   }
 
   @override
@@ -10221,7 +10221,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksPriorityP1 => 'Högt';
 
   @override
-  String get tasksPriorityP1Description => 'High (Snart)';
+  String get tasksPriorityP1Description => 'Hög (snart)';
 
   @override
   String get tasksPriorityP2 => 'Medium';
@@ -10500,7 +10500,7 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '${elapsed}ms, $count results',
+      other: '${elapsed}ms, $count resultat',
       one: '${elapsed}ms, $count resultat',
     );
     return '$_temp0';
