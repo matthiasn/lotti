@@ -136,6 +136,33 @@ void main() {
     ).called(1);
   });
 
+  testWidgets('Italian and Spanish choices persist their overrides', (
+    tester,
+  ) async {
+    for (final language in [ManualLanguage.italian, ManualLanguage.spanish]) {
+      await pumpPage(tester);
+      final context = tester.element(find.byType(ManualLanguageSettingsBody));
+      final title = switch (language) {
+        ManualLanguage.italian =>
+          context.messages.settingsManualLanguageItalianTitle,
+        ManualLanguage.spanish =>
+          context.messages.settingsManualLanguageSpanishTitle,
+        _ => throw StateError('Unexpected Manual language: $language'),
+      };
+
+      await tester.tap(find.text(title));
+      await tester.pump();
+
+      expect(rowFor(tester, title).selected, isTrue);
+      verify(
+        () => mocks.settingsDb.saveSettingsItem(
+          manualLanguageSettingsKey,
+          language.languageCode,
+        ),
+      ).called(1);
+    }
+  });
+
   testWidgets('Follow system clears a selected override', (tester) async {
     await pumpPage(tester);
     final context = tester.element(find.byType(ManualLanguageSettingsBody));
