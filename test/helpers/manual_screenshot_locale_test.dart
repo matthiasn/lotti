@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'manual_screenshot_czech_text.dart';
 import 'manual_screenshot_french_text.dart';
+import 'manual_screenshot_italian_text.dart';
 import 'manual_screenshot_locale.dart';
 import 'manual_screenshot_portuguese_text.dart';
 import 'manual_screenshot_romanian_text.dart';
@@ -35,6 +36,12 @@ void main() {
       );
       expect(
         manualScreenshotLocaleFromEnvironment(
+          const {'LOTTI_MANUAL_LOCALE': 'it'},
+        ),
+        const Locale('it'),
+      );
+      expect(
+        manualScreenshotLocaleFromEnvironment(
           const {'LOTTI_MANUAL_LOCALE': 'ro'},
         ),
         const Locale('ro'),
@@ -56,7 +63,7 @@ void main() {
     test('rejects unsupported screenshot locales', () {
       expect(
         () => manualScreenshotLocaleFromEnvironment(
-          const {'LOTTI_MANUAL_LOCALE': 'it'},
+          const {'LOTTI_MANUAL_LOCALE': 'nl'},
         ),
         throwsArgumentError,
       );
@@ -100,6 +107,14 @@ void main() {
         'Inspecione o habitat orbital dos pinguins',
       );
       expect(manualScreenshotPortugueseText('Unknown fixture'), isNull);
+    });
+
+    test('Italian fixture catalog localizes representative demo copy', () {
+      expect(
+        manualScreenshotItalianText('Inspect orbital penguin habitat'),
+        'Ispeziona l’habitat orbitale dei pinguini',
+      );
+      expect(manualScreenshotItalianText('Unknown fixture'), isNull);
     });
 
     test(

@@ -1,0 +1,70 @@
+---
+title: Risolvere i conflitti di sincronizzazione
+description: Confrontare le modifiche concurrent campo per campo e mantenere o combinare le informazioni giuste.
+---
+
+# Risolvere i conflitti di sincronizzazione
+
+Un conflitto appare quando due dispositivi hanno cambiato la stessa voce in modo indipendente e
+né la versione è chiaramente più recente. Lotti conserva entrambe le versioni invece di
+scegliere silenziosamente uno.
+
+Aprire **Impostazioni → Sincronizza → Conflitti**. La lista separa irrisolti e
+oggetti risolti e identifica il tipo e l'ora dell'entità di ogni conflitto.
+
+<ManualScreenshot
+  caseId="sync/conflicts"
+  alt="La lista dei Conflitti Sync con il compito di Waddle del progetto irrisolto e i conflitti manifesti della sardina più un compito risolto"
+  caption="Risolvere gli elementi attuali prima. Gli elementi risolti rimangono visibili come un percorso di audit delle precedenti decisioni."
+/>
+
+## Confronta entrambe le versioni
+
+Aprire un conflitto per vedere ogni campo diverso. I cambiamenti di testo includono il livello di parola
+evidenzia; i campi invariati sono riassunti in modo che la pagina non nasconda quanto
+della voce è ancora d'accordo.
+
+<ManualScreenshot
+  caseId="sync/conflict-detail"
+  alt="Dettaglio conflitto Lotti che confronta i titoli di attività e le descrizioni locali e sincronizzati del progetto Waddle campo per campo"
+  caption="Questo dispositivo ha mantenuto la presa finale dell'imperatore e del carico; la versione sincronizzata ha cancellato tutti i 37 pinguini e programmato il rilascio della sardina."
+/>
+
+I tre percorsi di risoluzione sono:
+
+- ** Utilizzare questo dispositivo** mantiene la versione locale completa.
+- **Utilizza dalla sincronizzazione** mantiene la versione completa in arrivo.
+- **Combina** ti permette di scegliere un lato iniziale e quindi selezionare il vincitore per
+  ogni campo unificato indipendentemente.
+
+Mantenere un lato completo è appropriato quando l'altro è semplicemente stallo.
+**Combine** è la scelta più sicura quando i campi separati contengono un lavoro valido da
+entrambi i dispositivi; Lotti lo segna come raccomandato quando diversi campi mergeable
+differisce.
+
+## Combina i campi senza retyping
+
+Selezionare **Combine**, scegliere la versione da cui partire, quindi passare individualmente
+campi dall'altra parte. Campi che non possono essere fusi indipendentemente seguono
+la versione iniziale selezionata.
+
+<ManualScreenshot
+  caseId="sync/conflict-combine"
+  alt="Lotti combina l'editor dei conflitti con il controllo di avvio e le scelte separate per il titolo e il corpo dell'attività"
+  caption="Iniziare con una voce strutturalmente completa, quindi prendere il titolo e il corpo migliore da questo dispositivo o sincronizzazione."
+/>
+
+Rivedere ogni campo elencato prima di selezionare **Apply combinato **.
+voce risolta riceve una storia di sincronizzazione fusa così le stesse due modifiche non
+immediatamente conflitto di nuovo.
+
+:::caution[Una risoluzione cambia il risultato condiviso]
+
+Mantenere un lato o applicare una versione combinata scrive il vincitore a livello locale e
+consente di sincronizzare gli altri dispositivi. Leggi il diff completo prima
+Se un lato ha cancellato l'ingresso mentre l'altro l'ha modificato, Lotti
+mostra la scelta più sicura di delete-versus-edit invece di una normale fusione di campo.
+
+:::
+
+Ritorna a [Sync devices](./sync.mdx) per ispezionare la consegna e la salute di cattura.

@@ -1,0 +1,59 @@
+---
+title: Verifica l'utilizzo e l'impatto dell'AI
+description: Confronta le richieste AI per periodo, categoria e modello, compresi i costi stimati, l'energia, le emissioni e l'uso token.
+---
+
+# Verifica l'utilizzo e l'impatto dell'AI
+
+Aprire ** Impostazioni → Impostazioni AI → Utilizzo & Impatto** per capire come configurato
+vengono utilizzati modelli cloud, la stessa analisi è raggiungibile anche dall'AI
+percorso cruscotto impatto.
+
+<ManualScreenshot
+  caseId="ai/usage"
+  alt="dashboard Lotti AI Impact per il luglio 2026 che mostra costi, energia, anidride carbonica equivalente, gettoni, richieste e barre di categoria"
+  caption="Il mese di esempio del progetto Waddle separa Mission Control e Penguin Operations mantenendo visibile l'impronta totale della richiesta."
+/>
+
+## Leggi le schede di sintesi
+
+Le prime carte riassumono il periodo selezionato:
+
+- **Cost** stima la spesa del fornitore.
+- **Energia** stima l'energia elettrica attribuibile all'inferenza cloud misurata.
+- **CO2e** esprime la stima delle emissioni associate.
+- ** Tokens** conta i token del modello elaborati.
+- **Richiesta** conta chiamate di inferenza.
+
+L'indicatore di confronto utilizza il periodo equivalente precedente quando uno è
+disponibile. Un aumento percentuale è contesto, non automaticamente un problema: un
+la settimana di lancio-review non dovrebbe essere paragonato ciecamente con una settimana di colonia idle.
+
+Energia, CO2e e costi sono misurati solo per i modelli cloud.
+consumare energia del dispositivo sostanziale senza apparire in quelle stime cloud,
+così questa pagina non è un contatore di potenza completo per l'intero sistema.
+
+## Cambiare l'analisi
+
+Utilizzare il controllo del periodo e pulsanti freccia per passare attraverso il tempo, o saltare per
+# Questo mese e quest'anno # # poi scegli "Both", "By category" o "By" #
+modello**. All'interno di un grafico, passare tra i valori giornalieri, i totali in esecuzione e
+Condividi dove disponibile.
+
+Le opinioni della categoria rispondono “ quale area di lavoro ha guidato l’uso?”
+“Quale modello configurato ha guidato l’utilizzo?” Utilizzare entrambi prima di cambiare un profilo: un
+modello ad alto costo può essere giustificato per una categoria specializzata ma sprecato come un
+di default generale.
+
+## Agire su un risultato sorprendente
+
+Se l'uso salta inaspettatamente:
+
+1. restringere il periodo al primo giorno interessato;
+2. confrontare la categoria e i guasti del modello;
+3. revisione dell'automazione e della convalutazione dell'agente;
+4. controllare il profilo di inferenza assegnato alla categoria interessata; e
+5. verificare la fatturazione sul lato del fornitore prima di trattare la stima di Lotti come fattura.
+
+Per cambiare il percorso responsabile delle chiamate future, torna a
+[Modelli e profili di inferenza](./models-and-profiles.mdx).

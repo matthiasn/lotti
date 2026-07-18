@@ -8983,10 +8983,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsManualLanguageGermanTitle => 'Deutsch';
 
   @override
+  String get settingsManualLanguageItalianTitle => 'Italienisch';
+
+  @override
   String get settingsManualLanguagePortugueseTitle => 'Portugiesisch';
 
   @override
   String get settingsManualLanguageRomanianTitle => 'Rumänisch';
+
+  @override
+  String get settingsManualLanguageSpanishTitle => 'Spanisch';
 
   @override
   String get settingsManualLanguageTitle => 'Sprache';

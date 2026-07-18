@@ -10,6 +10,7 @@ import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
 import 'app_localizations_fr.dart';
+import 'app_localizations_it.dart';
 import 'app_localizations_pt.dart';
 import 'app_localizations_ro.dart';
 
@@ -105,6 +106,7 @@ abstract class AppLocalizations {
     Locale('en', 'GB'),
     Locale('es'),
     Locale('fr'),
+    Locale('it'),
     Locale('pt'),
     Locale('ro'),
   ];
@@ -15372,6 +15374,12 @@ abstract class AppLocalizations {
   /// **'German'**
   String get settingsManualLanguageGermanTitle;
 
+  /// No description provided for @settingsManualLanguageItalianTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Italian'**
+  String get settingsManualLanguageItalianTitle;
+
   /// No description provided for @settingsManualLanguagePortugueseTitle.
   ///
   /// In en, this message translates to:
@@ -15383,6 +15391,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Romanian'**
   String get settingsManualLanguageRomanianTitle;
+
+  /// No description provided for @settingsManualLanguageSpanishTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Spanish'**
+  String get settingsManualLanguageSpanishTitle;
 
   /// No description provided for @settingsManualLanguageTitle.
   ///
@@ -18122,6 +18136,7 @@ class _AppLocalizationsDelegate
     'en',
     'es',
     'fr',
+    'it',
     'pt',
     'ro',
   ].contains(locale.languageCode);
@@ -18155,6 +18170,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsEs();
     case 'fr':
       return AppLocalizationsFr();
+    case 'it':
+      return AppLocalizationsIt();
     case 'pt':
       return AppLocalizationsPt();
     case 'ro':

@@ -121,6 +121,17 @@ Führe den Automatentest aus, hänge das Telemetriebild an und fordere dann die 
 
 Lance le test du distributeur, joins l'image de télémétrie puis demande l'autorisation de lancement.
 ''',
+  it: '''
+## Ultima valutazione
+
+- Le guarnizioni di pressione A–F sono rimaste stabili durante il turno notturno.
+- Sono caricate 840 sardine; la calibrazione dell'alimentatore blocca ancora l'approvazione.
+- L'autorizzazione del Controllo missione è dovuta prima dell'appello delle 06:30.
+
+## Prossimo passo consigliato
+
+Esegui il test dell'alimentatore, allega l'immagine della telemetria, quindi richiedi l'approvazione al lancio.
+''',
   pt: '''
 ## Última avaliação
 

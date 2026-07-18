@@ -17,6 +17,8 @@ enum ManualLanguage {
   english('en'),
   german('de'),
   french('fr'),
+  italian('it'),
+  spanish('es'),
   czech('cs'),
   romanian('ro'),
   portuguese('pt');

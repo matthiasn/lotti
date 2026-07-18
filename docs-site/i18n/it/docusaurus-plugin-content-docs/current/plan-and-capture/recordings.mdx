@@ -1,0 +1,83 @@
+---
+title: Registrazione audio
+description: Catturare una nota vocale e decidere quale elaborazione automatizzata dovrebbe seguire.
+---
+
+# Registrazione audio
+
+L'audio è utile quando si parla è più veloce della digitazione o quando tono e dettaglio
+una registrazione può stare da sola o vivere all'interno di un'attività.
+
+## Catturare una registrazione
+
+1. Aprire la rivista o il compito che dovrebbe possedere la registrazione.
+2. Utilizzare l'azione **+**** e scegliere **Audio Recording**.
+3. Rivedere le opzioni di elaborazione disponibili.
+4. Avviare la registrazione, parlare chiaramente, poi smettere quando finito.
+
+<ManualScreenshot
+  caseId="recordings/active"
+  alt="Foglio di registrazione audio attivo che mostra il live visualizer, tempo trascorso, pausa, scarto, stop e controlli di riconoscimento vocale"
+/>
+
+Durante la cattura, il foglio mantiene il tempo trascorso e il visualizzatore di input dal vivo in
+Puoi fermarti e riprendere senza terminare la registrazione, scartare la presa,
+o scegliere **Stop** per salvarlo. Quando la trascrizione del task-aware è disponibile, la
+**Il riconoscimento vocale** controlla l'opzione se l'elaborazione dovrebbe iniziare dopo
+la registrazione viene salvata.
+
+Quando un profilo di inferenza e un'abilità di trascrizione sono configurati, Lotti può
+trascrivere la registrazione dopo la cattura. Le registrazioni delle attività possono anche offrire
+elaborazione task-aware come checklist o aggiornamenti sommari.
+
+## Disattivare il contesto di attività utile
+
+Per l'elaborazione del task-aware, dire il risultato e poi nominare azioni concrete,
+persone, date, o vincoli. “Confermare la finestra di carico del venerdì, quindi chiedere
+Il Controllo Missione sull’approvazione del lancio” dà a Lotti un contesto molto più utile
+che “scelga la cosa del pinguino.” Una breve pausa tra azioni distinte anche
+rende la trascrizione risultante più facile da rivedere.
+
+L'elaborazione del task-aware può trasformare quella registrazione in una trascrizione, una rinfrescata
+report, o suggerimenti della lista di controllo. Questi sono uscite di intelligenza artificiale, non un reclamo
+che il compito è cambiato da solo: controllare nomi, date e proposte di modifiche prima
+per l'audio difficile, muoversi in un posto più tranquillo, mantenere il
+microfono ragionevolmente vicino, e parlare a un ritmo naturale, costante.
+
+## Revisione delle trascrizioni salvate
+
+Aprire una voce audio, utilizzare il suo menu **...** e scegliere ** Riconoscimento vocale**.
+Il foglio di revisione mantiene ogni trascrizione salvata con la registrazione invece di
+sostituendo un risultato precedente. Ogni riga mostra quando l'elaborazione è corsa, quanto tempo esso
+ha preso, la lingua rilevata, e il fornitore e il modello che l'ha prodotto.
+
+<ManualScreenshot
+  caseId="recordings/transcripts"
+  alt="Scheda di riconoscimento vocale su una voce audio Project Waddle con l'inglese selezionato e due risultati trascritti salvati da Mistral e Whisper"
+  caption="La registrazione di origine rimane visibile dietro il foglio, mentre ogni risultato di riconoscimento mantiene la propria provenienza."
+/>
+
+Il selettore linguistico offre attualmente **Auto**, **English** e **Deutsch**.
+Utilizzare **Auto** quando il provider dovrebbe rilevare la lingua o selezionare una lingua
+prima di eseguire il riconoscimento quando lo conosci già. La scelta è memorizzata
+l'ingresso audio.
+
+Selezionare il doppio-chevron su un risultato per rivelare il testo completo e selezionabile.
+Espansione di una riga rivela anche la sua azione di cancellazione. Cancellare una trascrizione rimuove
+tale risultato di riconoscimento, non la registrazione sorgente o le altre trascrizioni.
+
+<ManualScreenshot
+  caseId="recordings/transcript-expanded"
+  alt="Trascrizione di Waddle del progetto ampliato che descrive il carico di sardine Europa, 37 pinguini imperatori, e l'alimentatore di pesce a gravità zero"
+  caption="Verificare l'intera formulazione e la provenienza del fornitore prima di utilizzare il testo generato come contesto di attività."
+/>
+
+## Scegli l'automazione deliberatamente
+
+Le opzioni di elaborazione sono richieste di competenze AI configurate. Il fornitore selezionato
+può essere locale o remoto, quindi verificare il profilo di inferenza attiva prima di utilizzare
+materiale sensibile. Review generato testo e cambiamenti di attività proposti piuttosto che
+trattarli come verità sorgente.
+
+Vedere [I provider setup](../ai-and-automation/provider-setup.mdx) per controllare dove
+l'inferenza corre.

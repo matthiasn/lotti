@@ -75,7 +75,7 @@ void main() {
       final messages = context.messages;
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
-      expect(find.byType(DesignSystemRadioButton), findsNWidgets(7));
+      expect(find.byType(DesignSystemRadioButton), findsNWidgets(9));
       expect(
         find.text(messages.settingsManualLanguageFollowSystemSubtitle),
         findsOneWidget,
@@ -91,6 +91,8 @@ void main() {
         messages.settingsManualLanguageEnglishTitle,
         messages.settingsManualLanguageGermanTitle,
         messages.settingsManualLanguageFrenchTitle,
+        messages.settingsManualLanguageItalianTitle,
+        messages.settingsManualLanguageSpanishTitle,
         messages.settingsManualLanguageCzechTitle,
         messages.settingsManualLanguageRomanianTitle,
         messages.settingsManualLanguagePortugueseTitle,

@@ -1,0 +1,112 @@
+---
+title: Costruire dashboard utili
+description: Combina abitudini, misure, salute, sondaggi e allenamenti in una visione operativa riutilizzabile.
+---
+
+# Costruire dashboard utili
+
+Un cruscotto gruppi grafici che rispondono a una domanda ricorrente. **Colony
+operazioni** porta la pressione dell'habitat, la domanda di sardine e il conteggio della spedizione
+insieme; **Prontezza della missione** mantiene una recensione di lancio privata separata.
+intorno a una decisione piuttosto che raccogliere ogni numero disponibile.
+
+<ManualScreenshot
+  caseId="dashboards/settings-list"
+  alt="Impostazioni di Dashboard contenenti operazioni di Colony e il dashboard privato di disponibilità Mission"
+/>
+
+## Crea un cruscotto
+
+1. Aprire ** Impostazioni → Gestione Dashboard**.
+2. Selezionare **Crea cruscotto**.
+3. Aggiungi un nome chiaro e una descrizione della domanda che dovrebbe rispondere.
+4. Assegnare facoltativamente una categoria e l'impostazione della privacy.
+5. Aggiungere e organizzare grafici, quindi salvare.
+
+<ManualScreenshot
+  caseId="dashboards/settings-detail"
+  alt="Operazioni di Colony dashboard editor assegnato a Penguin Operations con privacy e opzioni attive"
+/>
+
+- **Category** rende il cruscotto disponibile per il filtraggio a base di categoria.
+- **Private** nasconde il cruscotto a meno che non vengano mostrate le voci private.
+- **Active** controlla se appare nella lista Dashboards senza
+  cancellando la definizione.
+
+## Compose e carte d'ordine
+
+<ManualScreenshot
+  caseId="dashboards/charts"
+  alt="Elenco delle operazioni di colonia con la media giornaliera della pressione Habitat, Sardines ha consumato la somma giornaliera, e Penguins ha rappresentato la somma giornaliera"
+  caption="Selezionare il controllo di regolazione su un grafico di misura per modificare la sua aggregazione o rimuoverlo con ×."
+/>
+
+Ordine grafico è ordine cruscotto. Metti il segnale che inquadra il resto prima. Per
+Operazioni di colonia, la pressione dell'habitat porta perché un habitat non sicuro cambia come
+ogni altro numero deve essere interpretato.
+
+I grafici di misura mantengono la loro aggregazione sulla voce del cruscotto.
+lo stesso aspetto misurabile con un riepilogo diverso in un altro cruscotto
+senza cambiare le osservazioni sottostanti.
+
+## Aggiungere grafici da fonti supportate
+
+<ManualScreenshot
+  caseId="dashboards/sources"
+  alt="Editor di Dashboard che offre Abitudini, Misure, Salute, Sondaggi e Workouts come fonti di grafico più JSON esportazione"
+/>
+
+L'editor può aggiungere:
+
+- Abitudini per la storia del completamento.
+- **Measurements** per osservazioni numeriche definite dall'utente.
+- **Health** dati supportati dalla piattaforma corrente e autorizzazioni.
+- **Surveys** per i risultati del questionario configurati.
+- **Lavoratori** importati da fonti di salute sostenute.
+
+Espandere una fonte, selezionare uno o più grafici, e aggiungerli. Disponibilità dipende
+sulle definizioni e sui dati della piattaforma esistenti; richieste di autorizzazione sanitaria e
+i tipi supportati variano da dispositivo.
+
+## Aprire e interpretare un cruscotto
+
+Aprire **Insights** per vedere cruscotti attivi. L'elenco mostra ogni cruscotto
+icona di categoria, nome e scopo. Utilizzare il filtro nell'intestazione per concentrarsi su uno
+o più categorie.
+
+<ManualScreenshot
+  caseId="dashboards/list"
+  alt="Lista cruscotto Lotti Insights con operazioni di Colony e dashboard privati di disponibilità Mission"
+  caption="Desktop si riserva il riquadro giusto per il cruscotto selezionato; mobile apre il cruscotto selezionato come pagina separata."
+/>
+
+Selezionare **Colony operations** per aprire i suoi grafici. Sul desktop, l'elenco e
+il cruscotto selezionato rimane fianco a fianco. Sul mobile, il cruscotto si apre come la sua
+propria pagina con un pulsante posteriore.
+
+<ManualScreenshot
+  caseId="dashboards/view"
+  alt="Cruscotto di operazioni di colonia che mostra 90 giorni di pressione dell'habitat e sardine consumate con la lista di dashboard accanto a esso sul desktop"
+  caption="L'intestazione fissa mantiene visibili i controlli della gamma 30, 90, 180 e 365 giorni, mentre i grafici scorreranno sotto."
+/>
+
+L'intervallo selezionato si applica ad ogni grafico della pagina.
+le proprie unità e l'aggregazione: la pressione dell'habitat utilizza una media giornaliera mentre
+il consumo di sardine e il contatore del pinguino usano le somme giornaliere.
+scheda di misura per registrare una nuova osservazione di quel tipo.
+
+<ManualScreenshot
+  caseId="dashboards/view-crew"
+  alt="Il cruscotto delle operazioni di colonia scorreva a Sardine consumate e i pinguini rappresentavano i grafici"
+  caption="Un breve tuffo a 36 pinguini è visibile nella storia dell'equipaggio di 90 giorni; i giorni circostanti ritornano al previsto 37."
+/>
+
+Trattare un grafico come prova, non un verdetto. Controllare l'aggregazione, unità, data
+gamma, osservazioni mancanti e stato della privacy prima di trarre conclusioni.
+
+## Configurazione del cruscotto di esportazione
+
+**Salva e copia JSON** persiste il cruscotto, quindi copia la sua configurazione
+e definizioni misurabili, utili per l'ispezione o lo spostamento
+una configurazione, ma non è un link di sincronizzazione dal vivo: le modifiche successive non aggiornano un
+già copiato payload.

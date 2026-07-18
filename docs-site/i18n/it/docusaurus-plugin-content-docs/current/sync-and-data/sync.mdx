@@ -1,0 +1,152 @@
+---
+title: Dispositivi di sincronizzazione
+description: Abbina i dispositivi, verifica la loro identità, monitora la consegna e recupera i dati mancanti senza indovinare.
+---
+
+# Dispositivi di sincronizzazione
+
+Lotti Sync mantiene i dati supportati allineati tra i dispositivi.
+il proprio database locale; Sync muove le modifiche attraverso l'account di sincronizzazione configurato
+e cattura un dispositivo dopo che è stato offline. Sync non sposta
+sistema di registrazione in un cloud Lotti: i relè di servizio configurati Matrix
+payload crittografati end-to-end tra i dispositivi mentre ogni dispositivo mantiene
+la sua copia locale.
+
+Aprire **Impostazioni → Sync** per vedere la configurazione, la salute e il recupero disponibili
+pagine. Il numero accanto a**Outbox** è lavoro che non ha raggiunto la sincronizzazione
+servizio ancora.
+
+<ManualScreenshot
+  caseId="sync/hub"
+  alt="Impostazioni Lotti Sync con Provisioned Sync, identità dispositivo, backfill, statistiche, outbox, conflitti e manutenzione"
+  caption="Il hub Sync mantiene lo stato di tutti i giorni vicino a strumenti diagnostici e di recupero."
+/>
+
+## Coprire un altro dispositivo
+
+Avviare su un dispositivo già collegato:
+
+1. Aprire ** Impostazioni → Sync → Provisioned Sync**.
+2. Sul desktop, mostrare il codice QR di consegna. Tenere questa schermata privata: il bundle
+   garantisce l'accesso al tuo account di sincronizzazione e alla tua stanza.
+3. Sul nuovo dispositivo, aprire la stessa pagina e scansionare il codice QR o incollare il
+   pacchetto completo di provisioning.
+4. Verificare il server, l'utente e la stanza decodificato prima di selezionare **Import**.
+5. Lasciare la prima terminazione di sincronizzazione prima di chiudere entrambe le app.
+
+<ManualScreenshot
+  caseId="sync/status"
+  alt="Provisionato stato Sync su mobile e il dispositivo sicuro consegna codice QR sul desktop"
+  caption="Desktop può presentare il codice QR di consegna; mobile mostra l'account collegato e lo stato di verifica."
+/>
+
+<ManualScreenshot
+  caseId="sync/provisioned"
+  alt="Lotti che fornisce l'importazione recensione che mostra il server di sincronizzazione Project Waddle, utente e camera"
+  caption="Importa solo quando ogni valore decodificato appartiene al conto di sincronizzazione che intendete aderire."
+/>
+
+Se l'importazione segnala un errore, mantenere il dispositivo originale collegato, generare un
+nuovo fascio di consegna, e riprovare con il valore completo. Non modificare manualmente il
+fascio codificato.
+
+## Verificare il nuovo dispositivo
+
+L'accoppiamento collega il dispositivo; la verifica conferma che entrambi i dispositivi sono
+parlare l'un l'altro senza un dispositivo sconosciuto al centro.
+
+<ManualScreenshot
+  caseId="sync/verification"
+  alt="Lotti verifica dispositivo che compara una sequenza di pinguino, pesce, razzo, ghiaccio, terra, luna, stella e cannocchiale emoji"
+  caption="Confrontare l'intera sequenza di emoji su entrambi i dispositivi. Accettare solo quando ogni immagine e il suo ordine corrispondono esattamente."
+/>
+
+Confrontare le emoji di persona o su una chiamata di fiducia. Selezionare **Accept** su entrambi
+dispositivi solo quando la sequenza completa corrisponde. Se anche una emoji differisce,
+annullare la verifica e indagare i nomi dell'account e del dispositivo prima
+Provare di nuovo.
+
+## Dispositivi di nome e funzionalità di pubblicità
+
+**Sync node profile** identifica il dispositivo corrente al resto della sincronizzazione
+gruppo. Dagli un nome che distingue la macchina fisica, come
+“Mission Control Mac” piuttosto che “Desktop”.
+
+<ManualScreenshot
+  caseId="sync/node-profile"
+  alt="Profilo del nodo di Lotti Sync per Mission Control Mac con capacità locali di inferenza e noti dispositivi Project Waddle"
+  caption="I nomi dei dispositivi chiari rendono la verifica, la diagnostica e l'inferenza locale orientata al dispositivo molto più facile da controllare."
+/>
+
+La pagina elenca anche le funzionalità che il dispositivo può fornire, come l'audio locale
+trascrizione o inferenza linguistica locale. Dispositivi noti mostrano che cosa il
+altri nodi più recentemente pubblicizzati. La disponibilità di capacità è descrittiva;
+il relativo profilo AI deve ancora essere configurato per utilizzarlo.
+
+## Comprendere il catch-up e il backfill
+
+I processi di sincronizzazione normali cambiano quando arrivano. **Backfill** rileva lacune nelle
+sequenza ricevuta da dispositivi noti e richieste record mancanti di nuovo.
+
+<ManualScreenshot
+  caseId="sync/backfill"
+  alt="Lotti Sync Backfill pagina che mostra in entrata, mancante e ignorato stato più statistiche di sequenza e riempimento automatico"
+  caption="Project Waddle ha ricevuto 2.868 record di sequenze e attualmente conosce quattro record mancanti su due ID dispositivo."
+/>
+
+- **Inbound** è il lavoro attualmente in attesa nella coda in arrivo.
+- **Missing** è il numero di vuoti di sequenza noti.
+- *Skipped** è il lavoro della coda in entrata abbandonata dopo che non potrebbe essere
+  elaborati normalmente.
+- **Ricarica automatica** richiede continuamente lacune recuperabili ed è il
+  default giusto per l'uso normale.
+- **Il recupero avanzato** contiene controlli manuali per un'indagine.
+  solo dopo la sincronizzazione ordinaria e il backup automatico hanno avuto il tempo di stabilirsi.
+
+Un conteggio mancante non zero non è automaticamente perdita di dati: un altro dispositivo può
+essere ancora offline, o la richiesta può già essere in volo.
+il conteggio rimane invariato mentre tutti i dispositivi attesi sono online.
+
+## Leggi le statistiche di Sync
+
+**Sync Statistics** separa il volume del messaggio dall'elaborazione della salute.
+utile quando i dati sembrano stanti, ma l'account continua a segnalare come collegato.
+
+<ManualScreenshot
+  caseId="sync/stats"
+  alt="Lotti Matrix Sync Statistiche con conta messaggi inviati, KPI di elaborazione superiore, tipi di messaggi, guasti, retries e totali entità"
+  caption="I conti stabiliscono se i messaggi si stanno muovendo; i guasti e le ripetizioni programmate mostrano se la pipeline si sta muovendo in modo pulito."
+/>
+
+I gruppi di carte inviati-messaggio Matrix tipi di eventi. ** Top KPIs** riassume
+messaggi elaborati, fallimenti e ripetizioni programmate, mentre l'entità totale
+mostrare quali famiglie Lotti payload hanno contribuito a questo lavoro.
+conteggio con guasti stabili è sano. Errori ripetuti o ripetizioni che mai
+chiara chiamata per controllare la casella di posta e la connettività dell'altro dispositivo.
+
+## Ispezione della casella di posta
+
+Il **Outbox** è la coda locale delle modifiche che aspettano di essere inviate.
+stato di separare il lavoro attivo dai fallimenti.
+
+<ManualScreenshot
+  caseId="sync/outbox"
+  alt="Lotti Sync Outbox filtrato a un progetto fallito Waddle habitat pressione-seal foto con retry e azioni di rimozione"
+  caption="Gli articoli non registrati mantengono il loro soggetto, i dettagli del payload, la cronologia di riprovazione e il percorso di attaccamento locale quindi il recupero è specifico piuttosto che cieco."
+/>
+
+- Gli articoli stanno aspettando il loro turno.
+- **Sending** gli articoli sono attualmente in volo.
+- **Arricchito** gli oggetti esauriti il loro tentativo attuale e rimangono disponibili per
+  ispezione.
+- **Sent** gli articoli sono stati consegnati e sono conservati temporaneamente per
+  diagnostica.
+
+Utilizzare **Ricerca tutto** dopo che il problema di connessione o account sottostante è risolto.
+Rimuovere un elemento fallito solo quando intenzionalmente non si desidera che il cambiamento a
+raggiungere altri dispositivi. Rimuoverlo dalla casella di posta non è un sostituto per
+riparare l'ingresso o l'allegato locale corrispondente.
+
+Continuare con [Risolvere i conflitti di sincronizzazione](./conflicts.mdx) quando due dispositivi modificati
+la stessa voce in modo indipendente, o [Manutenzione Sinc](./maintenance.mdx) per
+strumenti di recupero a livello di database.

@@ -1,0 +1,83 @@
+---
+title: Mantenere questo manuale
+description: Il flusso di lavoro del contributo leggero per contenuti e screenshot manuali.
+---
+
+# Mantenere questo manuale
+
+La fonte vive nel repository delle applicazioni in modo da un cambiamento di comportamento e la sua
+la documentazione può atterrare insieme. Gli screenshot generati vivono nel fratello
+`lotti-docs` repository e non sono mai impegnati nell'albero delle applicazioni.
+
+## Modifica della prosa
+
+1. Modificare o aggiungere il file MDX inglese ai sensi del `docs-site/docs`.
+2. Aggiornare il file corrispondente per ogni locale pubblicato sotto
+   `docs-site/i18n/<locale>/docusaurus-plugin-content-docs/current`.
+3. Aggiungi una nuova pagina a `docs-site/sidebars.ts`.
+4. Aggiornare `docs-site/metadata/features.json` quando la copertura cambia.
+5. Aggiornare le voci corrispondenti in
+   `docs-site/metadata/surface-inventory.json`. Una superficie diventa **verificata **
+   solo quando la sua produzione attuale UI, prosa e copertura dello screenshot hanno
+   tutti sono stati esaminati.
+6. Correre `make manual_check`.
+7. Rivedere la produzione costruire localmente con `make manual_serve`, compreso il
+   selettore di lingua e ogni percorso localizzato.
+
+La convalida richiede che ogni albero di traduzione pubblicato contenga la stessa pagina
+percorsi come l'albero sorgente inglese. Rifiuta anche i corpi di pagina tradotti che
+sono identici all'inglese, quindi le nuove pagine non possono spedire tranquillamente come non tradotte
+copie. L'URL inglese pubblico rimane invariato; altre lingue sono
+pubblicato sotto il loro prefisso locale versioned.
+
+## Mantenere l'inventario di copertura autorevole
+
+L'inventario definisce il confine inglese-manuale V1: ogni pagina Beamer, ogni
+Impostazioni foglia o editor V2 e ogni flusso di lavoro principale che crea o materialmente
+modifica i dati o la configurazione di taglio incrociato.
+file sorgente e un'ancora di testo sorgente. La validazione non riesce se scompare,
+che forza un percorso o cambiamento dell'interfaccia utente per aggiornare l'audit manuale invece di lasciare
+una riga invisibile stante.
+
+Gli stati di copertura hanno significati volutamente rigorosi:
+
+- **Planned** significa che la superficie è conosciuta ma manca ancora di copertura completa.
+- **Documented** significa che esiste una prosa utile, ma gli screenshot attuali di produzione
+  o una recensione di precisione end-to-end sono ancora mancanti.
+- **Verified** significa che la relativa pagina di funzionalità è verificata e supportata da
+  Schermate di produzione registrate.
+
+Eseguire `npm --prefix docs-site run coverage:complete` per il cancello di rilascio.
+fallisce fino a quando ogni superficie inventariata viene verificata; manuale incrementale ordinario
+continua a segnalare i conti rimanenti senza bloccare le dimensioni dell'argomento
+commit.
+
+## Aggiungi un caso di screenshot
+
+1. Aggiungere o riutilizzare un'imbracatura deterministica Flutter screenshot.
+2. Registrare il caso e le sue quattro immagini sorgente in
+   `docs-site/metadata/screenshot-cases.json`.
+3. Metti la copia visibile dell'apparecchio dietro `manualScreenshotText(...)` per ogni
+   supportato locale quando non è già fornito dalla localizzazione dell'app
+   I file.
+4. Cattura ogni locale in `../lotti-docs`; mai in questo repository.
+5. Generare e convalidare il manifesto dei media.
+6. Riferimento del caso con `<ManualScreenshot caseId="…" alt="…" />` su
+   ogni pagina di lingua.
+
+Ogni schermate di app in una pagina autorizzata deve usare `ManualScreenshot`. Direct
+link a vecchie immagini `lotti-docs` falliscono la validazione manuale perché non possono
+seguire la scelta globale Mobile/Desktop o il tema light/dark del manuale.
+
+Ogni caso automatizzato deve fornire luce mobile, mobile-dark, desktop-light,
+e varianti desktop-dark in ogni locale pubblicato. Il componente manuale
+sceglie la lingua e il tema di corrispondenza. Cambiare Mobile/Desktop su qualsiasi immagine
+aggiorna immediatamente ogni screenshot e persiste tra le pagine e il manuale aperto
+Tavole.
+
+## Pubblica un rilascio
+
+La sorgente manuale non viene copiata per ogni versione dell'app.
+conserva la sua fonte esatta. CI controlla il tag, si costruisce con
+`MANUAL_VERSION=<version>`, e pubblica una directory statica immutabile.
+Il dropdown del rilascio è un piccolo manifesto di quelle directory.
