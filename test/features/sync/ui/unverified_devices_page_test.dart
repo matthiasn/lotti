@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
@@ -9,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../daily_os_next/screenshot_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +47,32 @@ void main() {
     expect(find.text('No unverified devices'), findsOneWidget);
     expect(find.byType(StatusIndicator), findsOneWidget);
     expect(find.byType(DeviceCard), findsNothing);
+  });
+
+  testWidgets('fits the Portuguese empty-device status on a small phone', (
+    tester,
+  ) async {
+    when(
+      () => mockMatrixService.getUnverifiedDevices(),
+    ).thenReturn(<DeviceKeys>[]);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const UnverifiedDevices(),
+        locale: const Locale('pt'),
+        mediaQueryData: MediaQueryData(size: miniDevice.size),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Nenhum dispositivo não verificado'), findsOneWidget);
+    expect(find.byType(StatusIndicator), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('renders device list and refresh re-fetches the device list', (
