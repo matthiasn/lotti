@@ -390,8 +390,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count attivo',
-      one: '1 attiva',
+      other: '$count attivi',
+      one: '1 attivo',
     );
     return '$_temp0';
   }
@@ -523,8 +523,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count sveglia',
-      one: '1 sveglia',
+      other: '$count risvegli',
+      one: '1 risveglio',
     );
     return '$hour: $_temp0 ($reasons)';
   }
@@ -537,8 +537,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count sveglia totale',
-      one: '1 sveglia totale',
+      other: '$count risvegli totali',
+      one: '1 risveglio totale',
     );
     return '$_temp0';
   }
@@ -879,8 +879,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count sveglia',
-      one: '1 sveglia',
+      other: '$count risvegli',
+      one: '1 risveglio',
     );
     return '$_temp0';
   }
@@ -1757,7 +1757,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get aiProviderConnectionRetestButton => 'Retest';
+  String get aiProviderConnectionRetestButton => 'Ripeti il test';
 
   @override
   String get aiProviderConnectionRetryButton => 'Recuperare';
@@ -2235,8 +2235,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count questioni',
-      one: '1 3°',
+      other: '$count problemi',
+      one: '1 problema',
     );
     return '$_temp0 durante la configurazione';
   }
@@ -3791,7 +3791,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Competenze di corrispondenza';
 
   @override
-  String get dailyOsNextDraftingProgressQueued => 'Queu';
+  String get dailyOsNextDraftingProgressQueued => 'In coda';
 
   @override
   String get dailyOsNextDraftingProgressReading => 'Check-in lettura';
@@ -3929,7 +3929,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextReconcileBadgeNew => 'NUOVO';
 
   @override
-  String get dailyOsNextReconcileBadgeUpdate => 'ATTIVITÀ\'';
+  String get dailyOsNextReconcileBadgeUpdate => 'AGGIORNAMENTO';
 
   @override
   String get dailyOsNextReconcileBuildDayCta => 'Costruisci la mia giornata';
@@ -4880,7 +4880,7 @@ class AppLocalizationsIt extends AppLocalizations {
     int hours,
     int minutes,
   ) {
-    return '${hours}O ${minutes}O';
+    return '${hours}h ${minutes}m';
   }
 
   @override
@@ -6282,7 +6282,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get keyboardKeyArrowUp => 'Arrow!';
 
   @override
-  String get keyboardKeyControl => 'Crel';
+  String get keyboardKeyControl => 'Ctrl';
 
   @override
   String get keyboardKeyDelete => 'Cancella';
@@ -8013,7 +8013,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get provisionedSyncJoiningRoom => 'Unisciti alla sincronia...';
 
   @override
-  String get provisionedSyncLoggingIn => '- Logging in...';
+  String get provisionedSyncLoggingIn => 'Accesso in corso...';
 
   @override
   String get provisionedSyncPasteClipboard => 'Incolla da appunti';
@@ -9497,8 +9497,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count attivo',
-      one: '1 attiva',
+      other: '$count attivi',
+      one: '1 attivo',
     );
     return '$_temp0';
   }
@@ -9530,7 +9530,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get sidebarWakesQueuedLabel => 'Queu';
+  String get sidebarWakesQueuedLabel => 'In coda';
 
   @override
   String get sidebarWakesWorkingLabel => 'Lavorazione';
@@ -10557,7 +10557,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskStatusDone => 'Fatto';
 
   @override
-  String get taskStatusGroomed => 'Sposa';
+  String get taskStatusGroomed => 'Rifinito';
 
   @override
   String get taskStatusInProgress => 'In corso';
