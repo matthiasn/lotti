@@ -415,6 +415,11 @@ void main() {
           expect(find.byType(DesktopMenuWrapper), findsOneWidget);
           expect(find.byType(ZoomWrapper), findsOneWidget);
 
+          // The same saved selection drives Lotti's UI locale, not only the
+          // language used when opening the external Manual.
+          final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+          expect(app.locale, const Locale('de'));
+
           // Verify zoom callbacks are wired (non-null)
           final wrapper = tester.widget<DesktopMenuWrapper>(
             find.byType(DesktopMenuWrapper),

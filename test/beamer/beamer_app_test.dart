@@ -28,6 +28,7 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
+import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_trailing_badge.dart';
@@ -485,6 +486,9 @@ Future<void> _pumpReadyMyBeamerApp(
     ProviderScope(
       overrides: [
         themingControllerProvider.overrideWith(ReadyThemingController.new),
+        manualLanguageControllerProvider.overrideWith(
+          _FollowSystemManualLanguageController.new,
+        ),
         enableTooltipsProvider.overrideWith((ref) => Stream.value(true)),
         zoomControllerProvider.overrideWith(TestZoomController.new),
         agentInitializationProvider.overrideWith((ref) async {}),
@@ -3245,6 +3249,13 @@ class _SpyPaneWidthController extends PaneWidthController {
 
   @override
   void updateSidebarWidth(double delta) => onDrag?.call(delta);
+}
+
+/// Keeps ready-app tests focused on their feature rather than preference
+/// hydration. A null value intentionally follows the platform locale.
+class _FollowSystemManualLanguageController extends ManualLanguageController {
+  @override
+  ManualLanguage? build() => null;
 }
 
 /// An [OnboardingWelcomeCadence] that records [recordShown] / [markCompleted]

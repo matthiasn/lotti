@@ -8867,7 +8867,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsManualLanguageFollowSystemSubtitle =>
-      'Use your device language when the manual supports it; otherwise use English.';
+      'Use your device language in Lotti and the Manual when it is supported; otherwise use English.';
 
   @override
   String get settingsManualLanguageFollowSystemTitle => 'Follow system';

@@ -9090,7 +9090,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsManualLanguageFollowSystemSubtitle =>
-      'Folosiți limba dispozitivului dvs. dacă manualul o acceptă; altfel, engleza.';
+      'Folosiți limba dispozitivului dvs. în Lotti și în manual dacă este acceptată; altfel, engleza.';
 
   @override
   String get settingsManualLanguageFollowSystemTitle => 'Urmați sistemul';

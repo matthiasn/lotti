@@ -8973,7 +8973,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsManualLanguageFollowSystemSubtitle =>
-      'Verwende die Sprache deines Geräts, sofern das Handbuch sie unterstützt; andernfalls Englisch.';
+      'Verwende die Sprache deines Geräts in Lotti und im Handbuch, wenn sie unterstützt wird; andernfalls Englisch.';
 
   @override
   String get settingsManualLanguageFollowSystemTitle =>

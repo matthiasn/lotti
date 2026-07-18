@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:async' show FutureOr;
 import 'dart:ui' show Locale;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,10 +6,13 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// SettingsDb key for the optional external-manual language override.
+/// SettingsDb key for the optional app and external-manual language override.
+///
+/// The stored key intentionally retains its original name so existing user
+/// preferences keep working after the setting began controlling Lotti's UI.
 const manualLanguageSettingsKey = 'MANUAL_LANGUAGE';
 
-/// Languages currently published by the Lotti Manual.
+/// Languages currently published by the Lotti Manual and supported by Lotti.
 ///
 /// English is the manual's default locale and therefore has no locale segment
 /// in its URL. The other values map directly to the Docusaurus locale paths.
@@ -27,6 +30,9 @@ enum ManualLanguage {
   const ManualLanguage(this.languageCode);
 
   final String languageCode;
+
+  /// The locale used by Lotti's localized widget tree.
+  Locale get locale => Locale(languageCode);
 
   static ManualLanguage? fromStoredValue(String? value) {
     for (final language in values) {
@@ -74,33 +80,35 @@ Future<void> openManualInBrowser({
   );
 }
 
-/// Persists the optional language override for the external Lotti Manual.
+/// Persists the optional language override for Lotti and the external Manual.
 ///
-/// `null` represents the default *Follow system* choice. The controller
-/// hydrates lazily, while [_userChanged] prevents a late database read from
-/// replacing a selection made immediately after the settings page opens.
-class ManualLanguageController extends Notifier<ManualLanguage?> {
+/// `AsyncLoading` represents initial hydration; `AsyncData(null)` is the
+/// default *Follow system* choice. [_userChanged] prevents a late database
+/// read from replacing a selection made immediately after settings opens.
+class ManualLanguageController extends AsyncNotifier<ManualLanguage?> {
   bool _userChanged = false;
 
   @override
-  ManualLanguage? build() {
-    unawaited(_load());
-    return null;
+  FutureOr<ManualLanguage?> build() async {
+    if (!getIt.isRegistered<SettingsDb>()) return null;
+
+    try {
+      final stored = await getIt<SettingsDb>().itemByKey(
+        manualLanguageSettingsKey,
+      );
+      return _userChanged
+          ? state.value
+          : ManualLanguage.fromStoredValue(stored);
+    } on Object {
+      // A settings read must not keep the app on its loading shell forever.
+      return state.value;
+    }
   }
 
-  Future<void> _load() async {
-    if (!getIt.isRegistered<SettingsDb>()) return;
-    final stored = await getIt<SettingsDb>().itemByKey(
-      manualLanguageSettingsKey,
-    );
-    if (!ref.mounted || _userChanged) return;
-    state = ManualLanguage.fromStoredValue(stored);
-  }
-
-  /// Selects a specific manual language, or clears the override with `null`.
+  /// Selects a specific Lotti and Manual language, or clears the override.
   Future<void> setOverride(ManualLanguage? override) async {
     _userChanged = true;
-    state = override;
+    state = AsyncData(override);
 
     if (!getIt.isRegistered<SettingsDb>()) return;
     final settingsDb = getIt<SettingsDb>();
@@ -116,7 +124,7 @@ class ManualLanguageController extends Notifier<ManualLanguage?> {
 }
 
 final manualLanguageControllerProvider =
-    NotifierProvider<ManualLanguageController, ManualLanguage?>(
+    AsyncNotifierProvider<ManualLanguageController, ManualLanguage?>(
       ManualLanguageController.new,
       name: 'manualLanguageControllerProvider',
     );

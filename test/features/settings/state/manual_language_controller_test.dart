@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +21,11 @@ void main() {
       expect(ManualLanguage.fromStoredValue('ro'), ManualLanguage.romanian);
       expect(ManualLanguage.fromStoredValue('pt'), ManualLanguage.portuguese);
       expect(ManualLanguage.fromStoredValue(null), isNull);
+    });
+
+    test('exposes the locale used by the app', () {
+      expect(ManualLanguage.german.locale, const Locale('de'));
+      expect(ManualLanguage.portuguese.locale, const Locale('pt'));
     });
   });
 
@@ -142,14 +149,46 @@ void main() {
         () => mocks.settingsDb.itemByKey(manualLanguageSettingsKey),
       ).thenAnswer((_) async => 'de');
 
-      expect(container.read(manualLanguageControllerProvider), isNull);
+      expect(
+        container.read(manualLanguageControllerProvider),
+        isA<AsyncLoading<ManualLanguage?>>(),
+      );
       await Future<void>.microtask(() {});
 
       expect(
-        container.read(manualLanguageControllerProvider),
+        container.read(manualLanguageControllerProvider).value,
         ManualLanguage.german,
       );
     });
+
+    test(
+      'keeps loading separate from the Follow system preference',
+      () async {
+        final storedLanguage = Completer<String?>();
+        when(
+          () => mocks.settingsDb.itemByKey(manualLanguageSettingsKey),
+        ).thenAnswer((_) => storedLanguage.future);
+
+        expect(
+          container.read(manualLanguageControllerProvider),
+          isA<AsyncLoading<ManualLanguage?>>(),
+        );
+        await Future<void>.microtask(() {});
+
+        expect(
+          container.read(manualLanguageControllerProvider),
+          isA<AsyncLoading<ManualLanguage?>>(),
+        );
+
+        storedLanguage.complete('de');
+        await Future<void>.microtask(() {});
+
+        expect(
+          container.read(manualLanguageControllerProvider).value,
+          ManualLanguage.german,
+        );
+      },
+    );
 
     test('persists an override and clears it back to Follow system', () async {
       final controller = container.read(
@@ -159,7 +198,7 @@ void main() {
       await controller.setOverride(ManualLanguage.portuguese);
 
       expect(
-        container.read(manualLanguageControllerProvider),
+        container.read(manualLanguageControllerProvider).value,
         ManualLanguage.portuguese,
       );
       verify(
@@ -169,7 +208,9 @@ void main() {
 
       await controller.setOverride(null);
 
-      expect(container.read(manualLanguageControllerProvider), isNull);
+      final preference = container.read(manualLanguageControllerProvider);
+      expect(preference.hasValue, isTrue);
+      expect(preference.value, isNull);
       verify(
         () => mocks.settingsDb.removeSettingsItem(manualLanguageSettingsKey),
       ).called(1);

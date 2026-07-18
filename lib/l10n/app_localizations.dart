@@ -15361,7 +15361,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsManualLanguageFollowSystemSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Use your device language when the manual supports it; otherwise use English.'**
+  /// **'Use your device language in Lotti and the Manual when it is supported; otherwise use English.'**
   String get settingsManualLanguageFollowSystemSubtitle;
 
   /// No description provided for @settingsManualLanguageFollowSystemTitle.

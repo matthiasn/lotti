@@ -9101,7 +9101,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsManualLanguageFollowSystemSubtitle =>
-      'Utilise la langue de ton appareil si le manuel la prend en charge ; sinon, l’anglais.';
+      'Utilise la langue de ton appareil dans Lotti et le manuel si elle est prise en charge ; sinon, l’anglais.';
 
   @override
   String get settingsManualLanguageFollowSystemTitle => 'Suivre le système';

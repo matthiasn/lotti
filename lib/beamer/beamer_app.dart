@@ -1249,8 +1249,9 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
 
     final themingState = ref.watch(themingControllerProvider);
     final enableTooltips = ref.watch(enableTooltipsProvider).value ?? true;
+    final languagePreference = ref.watch(manualLanguageControllerProvider);
 
-    if (themingState.darkTheme == null) {
+    if (themingState.darkTheme == null || languagePreference.isLoading) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: ThemeData.dark().copyWith(
@@ -1261,6 +1262,8 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
         ),
       );
     }
+
+    final languageOverride = languagePreference.value;
 
     final updateActivity =
         (widget.userActivityService ?? getIt<UserActivityService>())
@@ -1282,6 +1285,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
         child: TooltipVisibility(
           visible: enableTooltips,
           child: MaterialApp.router(
+            locale: languageOverride?.locale,
             supportedLocales: AppLocalizations.supportedLocales,
             theme: themingState.lightTheme,
             darkTheme: themingState.darkTheme,
@@ -1319,7 +1323,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
                   onOpenManual: () => openManualInBrowser(
                     systemLocale:
                         WidgetsBinding.instance.platformDispatcher.locale,
-                    override: ref.read(manualLanguageControllerProvider),
+                    override: languageOverride,
                   ),
                   onZoomIn: zoomController.zoomIn,
                   onZoomOut: zoomController.zoomOut,
