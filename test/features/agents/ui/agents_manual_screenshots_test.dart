@@ -1463,7 +1463,7 @@ void main() {
             );
             expect(
               find.textContaining(
-                _t('Waddle Command', 'Watschelkommando'),
+                _t('Waddle Command 70B', 'Watschelkommando 70B'),
               ),
               findsWidgets,
             );
