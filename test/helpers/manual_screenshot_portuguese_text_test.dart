@@ -30,6 +30,8 @@ void main() {
       'Inspect habitat seals': 'Inspecione as vedações do habitat',
       'The penguins are currently technically cargo':
           'Os pinguins são, tecnicamente, carga',
+      'Friday, July 17, 2026': 'sexta-feira, 17 de julho de 2026',
+      'July 2026': 'julho de 2026',
     };
 
     for (final entry in expectedTranslations.entries) {
