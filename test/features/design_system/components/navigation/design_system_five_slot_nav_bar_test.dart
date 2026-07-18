@@ -388,6 +388,8 @@ void main() {
           // the subtree is no longer excluded (keeps badges announced).
           hasFocusAction: true,
           isFocusable: true,
+          hasEnabledState: true,
+          isEnabled: true,
           hasSelectedState: true,
         ),
       );
@@ -396,6 +398,24 @@ void main() {
       expect(
         find.bySemanticsLabel('More, 4 additional destinations'),
         findsOneWidget,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('announces a slot without a callback as unavailable', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pumpBar(tester, items: [item('Unavailable')]);
+
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Unavailable')),
+        matchesSemantics(
+          label: 'Unavailable',
+          isButton: true,
+          hasEnabledState: true,
+          hasSelectedState: true,
+        ),
       );
       handle.dispose();
     });

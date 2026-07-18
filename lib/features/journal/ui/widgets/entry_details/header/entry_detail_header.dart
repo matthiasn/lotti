@@ -218,6 +218,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           iconSize: AppTheme.headerActionIconSize,
         ),
       IconButton(
+        tooltip: context.messages.taskActionBarMoreActions,
         iconSize: AppTheme.headerActionIconSize,
         icon: Icon(Icons.more_horiz, color: tokens.colors.text.mediumEmphasis),
         onPressed: () => ExtendedHeaderModal.show(
@@ -263,16 +264,28 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     EntryController notifier,
   ) {
     final tokens = context.designTokens;
-    final chevron = AnimatedRotation(
-      turns: widget.isCollapsed ? -0.25 : 0.0,
-      duration: AppTheme.chevronRotationDuration,
-      child: IconButton(
-        iconSize: AppTheme.headerActionIconSize,
-        icon: Icon(
-          Icons.expand_more,
-          color: tokens.colors.text.mediumEmphasis,
+    final collapseLabel = widget.isCollapsed
+        ? context.messages.checklistExpandTooltip
+        : context.messages.checklistCollapseTooltip;
+    final chevron = Semantics(
+      label: collapseLabel,
+      button: true,
+      toggled: !widget.isCollapsed,
+      excludeSemantics: true,
+      onTap: widget.onToggleCollapse,
+      child: AnimatedRotation(
+        turns: widget.isCollapsed ? -0.25 : 0.0,
+        duration: AppTheme.chevronRotationDuration,
+        child: IconButton(
+          iconSize: AppTheme.headerActionIconSize,
+          tooltip: collapseLabel,
+          isSelected: !widget.isCollapsed,
+          icon: Icon(
+            Icons.expand_more,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+          onPressed: widget.onToggleCollapse,
         ),
-        onPressed: widget.onToggleCollapse,
       ),
     );
 
@@ -280,20 +293,33 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
       // Collapsed preview: thumbnail/icon + date + duration, chevron trailing.
       // The whole preview row is a tap target (not just the small caret) so a
       // collapsed entry reliably expands wherever it's tapped.
-      return GestureDetector(
-        behavior: HitTestBehavior.opaque,
+      final collapsedLabel = [
+        context.messages.journalEntryExpandLabel,
+        if (entry != null)
+          MaterialLocalizations.of(context).formatFullDate(entry.meta.dateFrom),
+      ].join(', ');
+      return Semantics(
+        button: true,
+        toggled: false,
+        label: collapsedLabel,
         onTap: widget.onToggleCollapse,
-        child: Row(
-          children: [
-            if (entry is JournalImage) _buildImageThumbnail(entry),
-            if (entry is JournalAudio) _buildAudioIcon(context),
-            if (entry is JournalEntry) _buildTextIcon(context),
-            SizedBox(width: tokens.spacing.step3),
-            EntryDatetimeWidget(entryId: widget.entryId),
-            if (entry is JournalAudio) _buildDurationLabel(context, entry),
-            const Spacer(),
-            chevron,
-          ],
+        child: ExcludeSemantics(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onToggleCollapse,
+            child: Row(
+              children: [
+                if (entry is JournalImage) _buildImageThumbnail(entry),
+                if (entry is JournalAudio) _buildAudioIcon(context),
+                if (entry is JournalEntry) _buildTextIcon(context),
+                SizedBox(width: tokens.spacing.step3),
+                EntryDatetimeWidget(entryId: widget.entryId),
+                if (entry is JournalAudio) _buildDurationLabel(context, entry),
+                const Spacer(),
+                chevron,
+              ],
+            ),
+          ),
         ),
       );
     }

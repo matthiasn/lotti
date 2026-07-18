@@ -1433,10 +1433,12 @@ void main() {
           find.byType(AiSettingsFloatingActionButton),
         );
         expect(fab.activeTab, AiSettingsTab.providers);
+        await settleTimers(tester);
         fab.onPressed();
         // Drain the SettingsDb read + modal mount.
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
+        await settleTimers(tester);
+        await settleTimers(tester);
 
         // Pick-provider modal is now in the tree; the legacy edit
         // page is not yet pushed.
@@ -1494,10 +1496,12 @@ void main() {
         final fab = tester.widget<AiSettingsFloatingActionButton>(
           find.byType(AiSettingsFloatingActionButton),
         );
+        await settleTimers(tester);
         fab.onPressed();
         // Drain the SettingsDb read + Wolt modal mount.
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await settleTimers(tester);
+        await settleTimers(tester);
 
         // The unified modal is now visible. Sanity: rendering uses
         // allTypesTiles, so the formerly-hidden OpenAI-compatible

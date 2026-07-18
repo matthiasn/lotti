@@ -1214,6 +1214,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiCardTitle => 'KI-Zusammenfassung';
 
   @override
+  String get aiChatAssistantResponding => 'Der Assistent antwortet';
+
+  @override
   String get aiChatMessageCopied => 'In die Zwischenablage kopiert';
 
   @override
@@ -2627,6 +2630,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get basicSettings => 'Grundeinstellungen';
+
+  @override
+  String get calendarHasPlanLabel => 'Hat einen Plan';
+
+  @override
+  String get calendarTodayLabel => 'Heute';
 
   @override
   String get cancelButton => 'Abbrechen';
@@ -4930,6 +4939,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemScrollbarSizesTitle => 'Scrollbar-Größen';
 
   @override
+  String get designSystemSearchClearLabel => 'Suche löschen';
+
+  @override
   String get designSystemSearchFilledText => 'Lotti-Suche';
 
   @override
@@ -5442,6 +5454,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get habitsAllDoneToday => 'Heute alles erledigt';
+
+  @override
+  String get habitsChartUseDynamicBaseline => 'Dynamische Basislinie verwenden';
+
+  @override
+  String get habitsChartUseZeroBaseline => 'Null-Basislinie verwenden';
 
   @override
   String get habitsCompletedHeader => 'Abgeschlossen';
@@ -6031,6 +6049,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalEndTimeLabel => 'Endzeit';
 
   @override
+  String get journalEntryExpandLabel => 'Eintrag erweitern';
+
+  @override
   String get journalFilterEntryTypesTitle => 'Eintragstypen';
 
   @override
@@ -6284,6 +6305,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get keyboardResizeDividerLabel => 'Bereiche anpassen';
+
+  @override
+  String keyboardResizeDividerValue(int value, int min, int max) {
+    return 'Bereiche anpassen, $value Pixel. Bereich $min bis $max Pixel.';
+  }
 
   @override
   String get keyboardShortcutsNoResults =>
@@ -8966,10 +8992,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Tschechisch';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Niederländisch';
+  String get settingsManualLanguageDanishTitle => 'Dänisch';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Dänisch';
+  String get settingsManualLanguageDutchTitle => 'Niederländisch';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Englisch';

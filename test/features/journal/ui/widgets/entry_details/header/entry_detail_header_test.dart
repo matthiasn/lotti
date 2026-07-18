@@ -17,6 +17,7 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -1005,6 +1006,91 @@ void main() {
 
           expect(toggled, isTrue);
         });
+
+        testWidgets('labels the expanded collapse control and its state', (
+          tester,
+        ) async {
+          final semantics = tester.ensureSemantics();
+          when(
+            () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+          ).thenAnswer((_) async => testImageEntry);
+
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              EntryDetailHeader(
+                entryId: testImageEntry.meta.id,
+                inLinkedEntries: true,
+                isCollapsible: true,
+                onToggleCollapse: () {},
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          final collapseArrow = find.byIcon(Icons.expand_more);
+          final expectedLabel = tester
+              .element(collapseArrow)
+              .messages
+              .checklistCollapseTooltip;
+
+          expect(
+            tester.getSemantics(find.bySemanticsLabel(expectedLabel)),
+            matchesSemantics(
+              label: expectedLabel,
+              isButton: true,
+              hasToggledState: true,
+              isToggled: true,
+              hasTapAction: true,
+            ),
+          );
+          semantics.dispose();
+        });
+
+        testWidgets(
+          'labels a collapsed entry with a generic action and its date',
+          (tester) async {
+            final semantics = tester.ensureSemantics();
+            when(
+              () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+            ).thenAnswer((_) async => testAudioEntry);
+
+            await tester.pumpWidget(
+              makeTestableWidgetWithScaffold(
+                EntryDetailHeader(
+                  entryId: testAudioEntry.meta.id,
+                  inLinkedEntries: true,
+                  isCollapsible: true,
+                  isCollapsed: true,
+                  onToggleCollapse: () {},
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
+
+            final context = tester.element(find.byType(EntryDetailHeader));
+            final expectedLabel = [
+              context.messages.journalEntryExpandLabel,
+              MaterialLocalizations.of(
+                context,
+              ).formatFullDate(testAudioEntry.meta.dateFrom),
+            ].join(', ');
+
+            expect(
+              tester.getSemantics(find.bySemanticsLabel(expectedLabel)),
+              matchesSemantics(
+                label: expectedLabel,
+                isButton: true,
+                hasToggledState: true,
+                // ignore: avoid_redundant_argument_values
+                isToggled: false,
+                hasTapAction: true,
+              ),
+            );
+            semantics.dispose();
+          },
+        );
       });
 
       group('animated chevron rotation', () {

@@ -54,15 +54,28 @@ class HabitsChartCard extends ConsumerWidget {
                   ),
                 ),
                 if (state.minY > 20)
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: controller.toggleZeroBased,
-                    icon: Icon(
-                      state.zeroBased
-                          ? MdiIcons.unfoldMoreHorizontal
-                          : MdiIcons.unfoldLessHorizontal,
-                      size: tokens.spacing.step5,
-                      color: tokens.colors.text.mediumEmphasis,
+                  Semantics(
+                    label: state.zeroBased
+                        ? messages.habitsChartUseDynamicBaseline
+                        : messages.habitsChartUseZeroBaseline,
+                    button: true,
+                    toggled: state.zeroBased,
+                    excludeSemantics: true,
+                    onTap: controller.toggleZeroBased,
+                    child: IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: controller.toggleZeroBased,
+                      tooltip: state.zeroBased
+                          ? messages.habitsChartUseDynamicBaseline
+                          : messages.habitsChartUseZeroBaseline,
+                      isSelected: state.zeroBased,
+                      icon: Icon(
+                        state.zeroBased
+                            ? MdiIcons.unfoldMoreHorizontal
+                            : MdiIcons.unfoldLessHorizontal,
+                        size: tokens.spacing.step5,
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
                     ),
                   ),
                 SizedBox(width: tokens.spacing.step2),

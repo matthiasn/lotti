@@ -252,7 +252,10 @@ void main() {
 
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
 
-      await tester.tap(find.text('Retry'));
+      final messages = AppLocalizations.of(
+        tester.element(find.byType(ChatInterface)),
+      )!;
+      await tester.tap(find.text(messages.aiInferenceErrorRetryButton));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -410,7 +413,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
+      final messages = AppLocalizations.of(
+        tester.element(find.byType(ChatInterface)),
+      )!;
+      expect(find.text(messages.aiInferenceErrorRetryButton), findsOneWidget);
       expect(find.byIcon(Icons.close), findsOneWidget);
     });
 

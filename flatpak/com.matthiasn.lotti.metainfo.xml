@@ -33,6 +33,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1054" date="2026-07-18">
+      <description>
+        <p>Screen-reader controls now expose one clear actionable announcement with their label and state. New accessibility labels are also available in Danish, Swedish, and Dutch.</p>
+        <p>Matrix sync now finishes catching up after reconnecting during a large burst, even on poor networks. Reconnected devices recover every missed entry instead of stopping after a partial server page.</p>
+      </description>
+    </release>
     <release version="0.9.1053" date="2026-07-18">
       <description>
         <p>Danish and Swedish are now available throughout Lotti and its Manual. The app follows Danish and Swedish system locales, and Settings → Advanced → Language can open each matching manual explicitly.</p>
@@ -42,6 +48,7 @@
       <description>
           <p>Dutch is now available throughout Lotti and its Manual. The app follows Dutch system locales, and Settings → Advanced → Language can open the matching Dutch manual explicitly.</p>
           <p>Settings → Advanced → Language now changes Lotti's UI as well as the external Manual. Selecting a language updates both immediately; Follow system restores your device language for both.</p>
+          <p>Screen-reader navigation, fields, and visual controls now describe their actions and state. Overflow menus, text-field icon actions, search clear, chart-scale controls, and calendar dates expose accessible names; fields keep their labels and validation feedback when focused; back navigation follows the app language; and unavailable navigation destinations announce their disabled state instead of sounding actionable.</p>
           <p>Italian is now available throughout Lotti and its Manual. The app follows Italian system locales, and Settings → Advanced → Language can open the matching Italian manual explicitly.</p>
           <p>The task AI summary card is more compact and calmer. The summary leads directly under a tighter header, and all secondary controls moved into a quiet footer at the card bottom: the Wake agent button, a small countdown chip while an automatic update is scheduled, the automatic-updates switch, and the model line. While automatic updates are off, a slim status strip under the summary always reserves the same space, showing either an out-of-date notice with a right-sized Wake agent button or a quiet up-to-date confirmation, so the card never jumps when freshness changes. Proposal rows lead with the proposed change itself over quiet accept and reject icons and a neutral kind tag, long summaries keep a readable line length on wide windows, and History plus Confirm all share one row under the list.</p>
           <p>Audio transcripts respect the automatic-updates switch. Finishing an audio transcription, locally or synced from another device, no longer wakes the task agent while automatic updates are off. The summary is marked out of date instead, so the card shows the Wake agent action and no inference tokens are spent without consent.</p>

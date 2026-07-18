@@ -10,6 +10,7 @@ void main() {
     testWidgets('renders a >=48px trigger; the menu is closed initially', (
       tester,
     ) async {
+      final semantics = tester.ensureSemantics();
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const DesignSystemContextMenuButton(
@@ -28,10 +29,19 @@ void main() {
       // The menu surface is not in the tree until the trigger is tapped.
       expect(find.byType(DesignSystemContextMenu), findsNothing);
       expect(find.text('Edit'), findsNothing);
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('More actions')),
+        matchesSemantics(
+          label: 'More actions',
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      semantics.dispose();
     });
 
     testWidgets(
-      'tapping the trigger opens the DesignSystemContextMenu; tapping a row '
+      'tapping the trigger toggles the DesignSystemContextMenu; tapping a row '
       'fires its callback and closes the menu',
       (tester) async {
         var taps = 0;
@@ -55,6 +65,16 @@ void main() {
 
         expect(find.byType(DesignSystemContextMenu), findsOneWidget);
         expect(find.text('Edit'), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DesignSystemContextMenu), findsNothing);
+
+        await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DesignSystemContextMenu), findsOneWidget);
 
         await tester.tap(find.text('Edit'));
         await tester.pumpAndSettle();

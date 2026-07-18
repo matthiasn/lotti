@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Dismissible error banner shown above the input area with retry and close
 /// actions, wired to the session controller's retry/clear-error handlers.
@@ -33,26 +34,41 @@ class ErrorBanner extends StatelessWidget {
           Icon(Icons.error_outline, color: theme.colorScheme.onErrorContainer),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              error,
-              style: TextStyle(
-                color: theme.colorScheme.onErrorContainer,
+            child: Semantics(
+              container: true,
+              liveRegion: true,
+              label: error,
+              child: ExcludeSemantics(
+                child: Text(
+                  error,
+                  style: TextStyle(
+                    color: theme.colorScheme.onErrorContainer,
+                  ),
+                ),
               ),
             ),
           ),
           TextButton(
             onPressed: onRetry,
             child: Text(
-              'Retry',
+              context.messages.aiInferenceErrorRetryButton,
               style: TextStyle(
                 color: theme.colorScheme.error,
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: onDismiss,
-            iconSize: 18,
+          Semantics(
+            button: true,
+            label: MaterialLocalizations.of(context).closeButtonTooltip,
+            onTap: onDismiss,
+            child: ExcludeSemantics(
+              child: IconButton(
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                icon: const Icon(Icons.close),
+                onPressed: onDismiss,
+                iconSize: 18,
+              ),
+            ),
           ),
         ],
       ),

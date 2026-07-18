@@ -230,6 +230,7 @@ class _FiveSlotNavBarSlot extends StatelessWidget {
     // tap action.
     return Semantics(
       button: true,
+      enabled: item.onTap != null,
       selected: item.active,
       label: item.semanticsLabel ?? item.label,
       child: Material(

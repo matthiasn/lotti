@@ -1693,6 +1693,38 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets('excludes inactive mobile tabs from keyboard focus', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService();
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(2),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+      );
+
+      final stack = tester.widget<IndexedStack>(find.byType(IndexedStack));
+      expect(stack.index, 2);
+      for (var i = 0; i < stack.children.length; i++) {
+        final tickerMode = stack.children[i] as TickerMode;
+        expect(tickerMode.child, isA<ExcludeFocus>());
+        expect((tickerMode.child as ExcludeFocus).excluding, i != 2);
+      }
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
     testWidgets('respects feature flags in sidebar', (tester) async {
       final mockNavService = MockNavService();
       await _stubNavService(

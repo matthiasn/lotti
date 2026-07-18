@@ -16,8 +16,9 @@ enum DesignSystemTextInputSize {
 /// [controller] or owns an internal one, reports edits via [onChanged]/
 /// [onSubmitted], and tracks focus/hover styling. Supports [obscureText],
 /// [autofocus], [textCapitalization], a tappable [trailingIcon] via
-/// [onTrailingIconTap], and an [errorText] that switches the field to its error
-/// state. [enabled] toggles interactivity.
+/// [onTrailingIconTap] (which requires [trailingIconTooltip]), and an
+/// [errorText] that switches the field to its error state. [enabled] toggles
+/// interactivity.
 class DesignSystemTextInput extends StatefulWidget {
   const DesignSystemTextInput({
     this.controller,
@@ -29,6 +30,7 @@ class DesignSystemTextInput extends StatefulWidget {
     this.leadingIcon,
     this.trailingIcon,
     this.onTrailingIconTap,
+    this.trailingIconTooltip,
     this.enabled = true,
     this.obscureText = false,
     this.autofocus = false,
@@ -37,7 +39,14 @@ class DesignSystemTextInput extends StatefulWidget {
     this.onSubmitted,
     this.semanticsLabel,
     super.key,
-  });
+  }) : assert(
+         onTrailingIconTap == null || trailingIcon != null,
+         'A trailing icon action requires a trailingIcon.',
+       ),
+       assert(
+         onTrailingIconTap == null || trailingIconTooltip != null,
+         'A trailing icon action requires a trailingIconTooltip.',
+       );
 
   final TextEditingController? controller;
   final DesignSystemTextInputSize size;
@@ -48,6 +57,12 @@ class DesignSystemTextInput extends StatefulWidget {
   final IconData? leadingIcon;
   final IconData? trailingIcon;
   final VoidCallback? onTrailingIconTap;
+
+  /// Accessible name and tooltip for the actionable [trailingIcon].
+  ///
+  /// Required when [onTrailingIconTap] is supplied so icon-only actions never
+  /// fall back to an icon glyph name in a screen reader.
+  final String? trailingIconTooltip;
   final bool enabled;
   final bool obscureText;
   final bool autofocus;
@@ -106,40 +121,46 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
     final hasError = widget.errorText != null;
     final borderColor = _resolveBorderColor(tokens, hasError);
 
-    final input = Semantics(
-      container: true,
-      label: widget.semanticsLabel,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (widget.label != null) ...[
-            Text(
+    final accessibleFieldLabel = [
+      widget.semanticsLabel ?? widget.label ?? widget.hintText,
+      if (_hasExtraInfo) hasError ? widget.errorText : widget.helperText,
+    ].nonNulls.join(', ');
+
+    final input = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (widget.label != null) ...[
+          ExcludeSemantics(
+            child: Text(
               widget.label!,
               style: spec.labelStyle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            SizedBox(height: spec.labelGap),
-          ],
-          MouseRegion(
-            onEnter: widget.enabled
-                ? (_) => setState(() => _hovered = true)
-                : null,
-            onExit: widget.enabled
-                ? (_) => setState(() => _hovered = false)
-                : null,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(spec.borderRadius),
-                border: Border.all(
-                  color: borderColor,
-                  width: _focused ? 2 : 1,
-                ),
+          ),
+          SizedBox(height: spec.labelGap),
+        ],
+        MouseRegion(
+          onEnter: widget.enabled
+              ? (_) => setState(() => _hovered = true)
+              : null,
+          onExit: widget.enabled
+              ? (_) => setState(() => _hovered = false)
+              : null,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(spec.borderRadius),
+              border: Border.all(
+                color: borderColor,
+                width: _focused ? 2 : 1,
               ),
-              child: SizedBox(
-                height: spec.fieldHeight,
-                child: Center(
+            ),
+            child: SizedBox(
+              height: spec.fieldHeight,
+              child: Center(
+                child: Semantics(
+                  label: accessibleFieldLabel,
                   child: TextField(
                     controller: _controller,
                     focusNode: _focusNode,
@@ -153,8 +174,14 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
                     cursorColor: tokens.colors.text.mediumEmphasis,
                     textAlignVertical: TextAlignVertical.center,
                     decoration: InputDecoration(
-                      hintText: widget.hintText,
-                      hintStyle: spec.hintStyle,
+                      hint: widget.hintText == null
+                          ? null
+                          : ExcludeSemantics(
+                              child: Text(
+                                widget.hintText!,
+                                style: spec.hintStyle,
+                              ),
+                            ),
                       contentPadding: spec.contentPadding,
                       isDense: true,
                       border: _noBorder,
@@ -170,35 +197,31 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
                               color: tokens.colors.text.mediumEmphasis,
                             )
                           : null,
-                      suffixIcon: widget.trailingIcon != null
-                          ? IconButton(
-                              icon: Icon(
-                                widget.trailingIcon,
-                                size: spec.iconSize,
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                              onPressed: widget.enabled
-                                  ? widget.onTrailingIconTap
-                                  : null,
-                            )
-                          : null,
+                      suffixIcon: _buildTrailingIcon(tokens, spec),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-          if (_hasExtraInfo) ...[
-            SizedBox(height: spec.extraInfoGap),
-            Text(
-              hasError ? widget.errorText! : widget.helperText!,
-              style: hasError ? spec.errorStyle : spec.helperStyle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+        ),
+        if (_hasExtraInfo) ...[
+          SizedBox(height: spec.extraInfoGap),
+          Semantics(
+            container: true,
+            label: hasError ? widget.errorText : null,
+            liveRegion: hasError,
+            child: ExcludeSemantics(
+              child: Text(
+                hasError ? widget.errorText! : widget.helperText!,
+                style: hasError ? spec.errorStyle : spec.helperStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ],
+          ),
         ],
-      ),
+      ],
     );
 
     return input.withDisabledOpacity(
@@ -209,6 +232,42 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
 
   bool get _hasExtraInfo =>
       widget.helperText != null || widget.errorText != null;
+
+  Widget? _buildTrailingIcon(DsTokens tokens, _TextInputSpec spec) {
+    final iconData = widget.trailingIcon;
+    if (iconData == null) return null;
+
+    final icon = Icon(
+      iconData,
+      size: spec.iconSize,
+      color: tokens.colors.text.mediumEmphasis,
+    );
+    final onTap = widget.onTrailingIconTap;
+    if (onTap == null) {
+      // An icon without a callback is visual context, not a disabled and
+      // unexplained button in the screen-reader traversal.
+      return ExcludeSemantics(child: icon);
+    }
+
+    final label = widget.trailingIconTooltip!;
+    return Semantics(
+      button: true,
+      enabled: widget.enabled,
+      label: label,
+      onTap: widget.enabled ? onTap : null,
+      child: ExcludeSemantics(
+        child: Tooltip(
+          message: label,
+          excludeFromSemantics: true,
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            icon: icon,
+            onPressed: widget.enabled ? onTap : null,
+          ),
+        ),
+      ),
+    );
+  }
 
   Color _resolveBorderColor(DsTokens tokens, bool hasError) {
     if (hasError) return tokens.colors.alert.error.defaultColor;

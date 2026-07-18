@@ -1208,6 +1208,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiCardTitle => 'Samenvatting van de AI';
 
   @override
+  String get aiChatAssistantResponding => 'De assistent antwoordt';
+
+  @override
   String get aiChatMessageCopied => 'Gekopieerd naar het klembord';
 
   @override
@@ -2614,6 +2617,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get basicSettings => 'Basisinstellingen';
+
+  @override
+  String get calendarHasPlanLabel => 'Heeft een plan';
+
+  @override
+  String get calendarTodayLabel => 'Vandaag';
 
   @override
   String get cancelButton => 'Annuleren';
@@ -4915,6 +4924,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get designSystemScrollbarSizesTitle => 'Schuifbalkgroottes';
 
   @override
+  String get designSystemSearchClearLabel => 'Zoekopdracht wissen';
+
+  @override
   String get designSystemSearchFilledText => 'Lotti-zoekopdracht';
 
   @override
@@ -5425,6 +5437,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get habitsAllDoneToday => 'Alles klaar vandaag';
+
+  @override
+  String get habitsChartUseDynamicBaseline => 'Dynamische basislijn gebruiken';
+
+  @override
+  String get habitsChartUseZeroBaseline => 'Nulbasislijn gebruiken';
 
   @override
   String get habitsCompletedHeader => 'Voltooid';
@@ -6010,6 +6028,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get journalEndTimeLabel => 'Eindtijd';
 
   @override
+  String get journalEntryExpandLabel => 'Item uitklappen';
+
+  @override
   String get journalFilterEntryTypesTitle => 'Typen invoer';
 
   @override
@@ -6260,6 +6281,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get keyboardResizeDividerLabel => 'Pannen verkleinen';
+
+  @override
+  String keyboardResizeDividerValue(int value, int min, int max) {
+    return 'Panelen aanpassen, $value pixels. Bereik $min tot $max pixels.';
+  }
 
   @override
   String get keyboardShortcutsNoResults =>
@@ -8945,10 +8971,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Tsjechisch';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Nederlands';
+  String get settingsManualLanguageDanishTitle => 'Deens';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Deens';
+  String get settingsManualLanguageDutchTitle => 'Nederlands';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Engels';

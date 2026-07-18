@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -36,6 +38,37 @@ void main() {
       expect(find.text('Your work email'), findsOneWidget);
     });
 
+    testWidgets('associates the label and helper text with the field', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(
+          label: 'Email',
+          helperText: 'Your work email',
+        ),
+      );
+
+      final field = find.bySemanticsLabel('Email, Your work email');
+      expect(field, findsOneWidget);
+      expect(
+        tester.getSemantics(field),
+        matchesSemantics(
+          label: 'Email, Your work email',
+          isTextField: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasFocusAction: true,
+          hasTapAction: true,
+        ),
+      );
+
+      semantics.dispose();
+    });
+
     testWidgets('renders error text and hides helper when error is set', (
       tester,
     ) async {
@@ -50,6 +83,42 @@ void main() {
 
       expect(find.text('Required field'), findsOneWidget);
       expect(find.text('Helper'), findsNothing);
+    });
+
+    testWidgets('associates and announces validation errors', (tester) async {
+      final semantics = tester.ensureSemantics();
+
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(
+          label: 'Required',
+          errorText: 'Required field',
+        ),
+      );
+
+      final field = find.bySemanticsLabel('Required, Required field');
+      expect(field, findsOneWidget);
+      expect(
+        tester.getSemantics(field),
+        matchesSemantics(
+          label: 'Required, Required field',
+          isTextField: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasFocusAction: true,
+          hasTapAction: true,
+        ),
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Required field')),
+        matchesSemantics(
+          label: 'Required field',
+          isLiveRegion: true,
+        ),
+      );
+
+      semantics.dispose();
     });
 
     testWidgets('renders leading and trailing icons', (tester) async {
@@ -84,6 +153,39 @@ void main() {
       expect(changedText, 'Hello');
     });
 
+    testWidgets('labels an actionable trailing icon for screen readers', (
+      tester,
+    ) async {
+      var clearCount = 0;
+      final semantics = tester.ensureSemantics();
+
+      await _pumpInput(
+        tester,
+        DesignSystemTextInput(
+          label: 'Search',
+          trailingIcon: Icons.clear,
+          trailingIconTooltip: 'Clear search',
+          onTrailingIconTap: () => clearCount++,
+        ),
+      );
+
+      final clearButton = find.bySemanticsLabel('Clear search');
+      expect(
+        tester.getSemantics(clearButton),
+        matchesSemantics(
+          label: 'Clear search',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasTapAction: true,
+        ),
+      );
+
+      await tester.tap(clearButton);
+      expect(clearCount, 1);
+      semantics.dispose();
+    });
+
     testWidgets('applies disabled opacity when not enabled', (tester) async {
       const key = Key('disabled-input');
 
@@ -104,6 +206,58 @@ void main() {
       );
 
       expect(opacity.opacity, dsTokensLight.colors.text.lowEmphasis.a);
+    });
+
+    testWidgets('updates the border on mouse hover and restores it on exit', (
+      tester,
+    ) async {
+      const key = Key('hover-input');
+
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(
+          key: key,
+          label: 'Hoverable',
+        ),
+      );
+
+      Color currentBorderColor() {
+        final decoratedBox = tester.widget<DecoratedBox>(
+          find.descendant(
+            of: find.byKey(key),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is DecoratedBox &&
+                  widget.decoration is BoxDecoration &&
+                  (widget.decoration as BoxDecoration).border != null,
+            ),
+          ),
+        );
+        return ((decoratedBox.decoration as BoxDecoration).border! as Border)
+            .top
+            .color;
+      }
+
+      final restingColor = dsTokensLight.colors.text.highEmphasis.withValues(
+        alpha: 0.12,
+      );
+      expect(currentBorderColor(), restingColor);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+
+      await gesture.moveTo(tester.getCenter(find.byType(TextField)));
+      await tester.pump();
+      expect(
+        currentBorderColor(),
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
+
+      await gesture.moveTo(const Offset(-100, -100));
+      await tester.pump();
+      expect(currentBorderColor(), restingColor);
     });
 
     testWidgets('applies error border color when errorText is set', (

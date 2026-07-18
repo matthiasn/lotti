@@ -1,52 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
+
+import '../../widget_test_utils.dart';
 
 void main() {
   group('ErrorStateWidget Tests', () {
     testWidgets('displays error message in full mode', (tester) async {
       const errorMessage = 'Test error message';
 
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ErrorStateWidget(
-              error: errorMessage,
-            ),
-          ),
-        ),
+      await _pumpErrorState(
+        tester,
+        error: errorMessage,
       );
 
       // Should display error icon
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
 
       // Should display default title
-      expect(find.text('Error'), findsOneWidget);
+      expect(
+        find.text(
+          tester.element(find.byType(ErrorStateWidget)).messages.commonError,
+        ),
+        findsOneWidget,
+      );
 
       // Should display error message
       expect(find.text(errorMessage), findsOneWidget);
+    });
+
+    testWidgets('announces full and inline errors as live regions', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await _pumpErrorState(tester, error: 'Connection failed');
+      expect(
+        tester.getSemantics(
+          find.bySemanticsLabel('Error\nConnection failed'),
+        ),
+        matchesSemantics(isLiveRegion: true),
+      );
+
+      await _pumpErrorState(
+        tester,
+        error: 'Connection failed',
+        mode: ErrorDisplayMode.inline,
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Connection failed')),
+        matchesSemantics(label: 'Connection failed', isLiveRegion: true),
+      );
+      semantics.dispose();
     });
 
     testWidgets('displays custom title in full mode', (tester) async {
       const errorMessage = 'Test error message';
       const customTitle = 'Custom Error Title';
 
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ErrorStateWidget(
-              error: errorMessage,
-              title: customTitle,
-            ),
-          ),
-        ),
+      await _pumpErrorState(
+        tester,
+        error: errorMessage,
+        title: customTitle,
       );
 
       // Should display custom title
       expect(find.text(customTitle), findsOneWidget);
 
       // Should not display default title
-      expect(find.text('Error'), findsNothing);
+      expect(
+        find.text(
+          tester.element(find.byType(ErrorStateWidget)).messages.commonError,
+        ),
+        findsNothing,
+      );
 
       // Should display error message
       expect(find.text(errorMessage), findsOneWidget);
@@ -55,15 +82,10 @@ void main() {
     testWidgets('displays error message in inline mode', (tester) async {
       const errorMessage = 'Test inline error';
 
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ErrorStateWidget(
-              error: errorMessage,
-              mode: ErrorDisplayMode.inline,
-            ),
-          ),
-        ),
+      await _pumpErrorState(
+        tester,
+        error: errorMessage,
+        mode: ErrorDisplayMode.inline,
       );
 
       // Should not display error icon in inline mode
@@ -73,25 +95,23 @@ void main() {
       expect(find.text(errorMessage), findsOneWidget);
 
       // Should not display title in inline mode
-      expect(find.text('Error'), findsNothing);
+      expect(
+        find.text(
+          tester.element(find.byType(ErrorStateWidget)).messages.commonError,
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('inline mode has proper styling', (tester) async {
       const errorMessage = 'Test error';
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
-            ),
-          ),
-          home: const Scaffold(
-            body: ErrorStateWidget(
-              error: errorMessage,
-              mode: ErrorDisplayMode.inline,
-            ),
-          ),
+      await _pumpErrorState(
+        tester,
+        error: errorMessage,
+        mode: ErrorDisplayMode.inline,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
       );
 
@@ -114,18 +134,11 @@ void main() {
     testWidgets('full mode has proper container styling', (tester) async {
       const errorMessage = 'Test error';
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
-            ),
-          ),
-          home: const Scaffold(
-            body: ErrorStateWidget(
-              error: errorMessage,
-            ),
-          ),
+      await _pumpErrorState(
+        tester,
+        error: errorMessage,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
       );
 
@@ -147,30 +160,17 @@ void main() {
     });
 
     testWidgets('icon has correct size in full mode', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ErrorStateWidget(
-              error: 'Test error',
-            ),
-          ),
-        ),
-      );
+      await _pumpErrorState(tester, error: 'Test error');
 
       final icon = tester.widget<Icon>(find.byIcon(Icons.error_outline));
       expect(icon.size, 48);
     });
 
     testWidgets('text alignment is centered in full mode', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ErrorStateWidget(
-              error: 'Test error',
-              title: 'Error Title',
-            ),
-          ),
-        ),
+      await _pumpErrorState(
+        tester,
+        error: 'Test error',
+        title: 'Error Title',
       );
 
       // Find all text widgets
@@ -190,14 +190,12 @@ void main() {
           'multiple lines of text to test the wrapping behavior.';
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
+        makeTestableWidgetNoScroll(
+          const Scaffold(
             body: Center(
               child: SizedBox(
                 width: 300,
-                child: ErrorStateWidget(
-                  error: longError,
-                ),
+                child: ErrorStateWidget(error: longError),
               ),
             ),
           ),
@@ -217,15 +215,10 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: theme,
-          home: const Scaffold(
-            body: ErrorStateWidget(
-              error: 'Test error',
-            ),
-          ),
-        ),
+      await _pumpErrorState(
+        tester,
+        error: 'Test error',
+        theme: theme,
       );
 
       // Icon should use error color
@@ -233,4 +226,25 @@ void main() {
       expect(icon.color, theme.colorScheme.error);
     });
   });
+}
+
+Future<void> _pumpErrorState(
+  WidgetTester tester, {
+  required String error,
+  String? title,
+  ErrorDisplayMode mode = ErrorDisplayMode.full,
+  ThemeData? theme,
+}) {
+  return tester.pumpWidget(
+    makeTestableWidgetNoScroll(
+      Scaffold(
+        body: ErrorStateWidget(
+          error: error,
+          title: title,
+          mode: mode,
+        ),
+      ),
+      theme: theme,
+    ),
+  );
 }

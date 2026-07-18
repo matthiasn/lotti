@@ -50,6 +50,8 @@ class _DesignSystemContextMenuButtonState
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final accessibleLabel =
+        widget.tooltip ?? MaterialLocalizations.of(context).showMenuTooltip;
     return MenuAnchor(
       controller: _controller,
       alignmentOffset: Offset(0, tokens.spacing.step2),
@@ -81,19 +83,32 @@ class _DesignSystemContextMenuButtonState
         ),
       ],
       builder: (context, controller, child) {
+        void toggleMenu() {
+          if (controller.isOpen) {
+            controller.close();
+          } else {
+            controller.open();
+          }
+        }
+
         return SizedBox(
           width: tokens.spacing.step9,
           height: tokens.spacing.step9,
-          child: IconButton(
-            tooltip: widget.tooltip,
-            padding: EdgeInsets.zero,
-            iconSize: tokens.spacing.step5,
-            icon: Icon(
-              widget.icon,
-              color: widget.iconColor ?? tokens.colors.text.lowEmphasis,
+          child: Semantics(
+            label: accessibleLabel,
+            button: true,
+            excludeSemantics: true,
+            onTap: toggleMenu,
+            child: IconButton(
+              tooltip: accessibleLabel,
+              padding: EdgeInsets.zero,
+              iconSize: tokens.spacing.step5,
+              icon: Icon(
+                widget.icon,
+                color: widget.iconColor ?? tokens.colors.text.lowEmphasis,
+              ),
+              onPressed: toggleMenu,
             ),
-            onPressed: () =>
-                controller.isOpen ? controller.close() : controller.open(),
           ),
         );
       },

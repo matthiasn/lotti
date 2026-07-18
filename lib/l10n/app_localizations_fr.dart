@@ -1218,6 +1218,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiCardTitle => 'Résumé IA';
 
   @override
+  String get aiChatAssistantResponding => 'L’assistant répond';
+
+  @override
   String get aiChatMessageCopied => 'Copié dans le presse-papiers';
 
   @override
@@ -2643,6 +2646,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get basicSettings => 'Paramètres de base';
+
+  @override
+  String get calendarHasPlanLabel => 'A un plan';
+
+  @override
+  String get calendarTodayLabel => 'Aujourd’hui';
 
   @override
   String get cancelButton => 'Annuler';
@@ -4979,6 +4988,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tailles de barre de défilement';
 
   @override
+  String get designSystemSearchClearLabel => 'Effacer la recherche';
+
+  @override
   String get designSystemSearchFilledText => 'Recherche Lotti';
 
   @override
@@ -5496,6 +5508,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get habitsAllDoneToday => 'Tout est fait aujourd\'hui';
+
+  @override
+  String get habitsChartUseDynamicBaseline =>
+      'Utiliser une ligne de base dynamique';
+
+  @override
+  String get habitsChartUseZeroBaseline => 'Utiliser une ligne de base zéro';
 
   @override
   String get habitsCompletedHeader => 'Terminées';
@@ -6092,6 +6111,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalEndTimeLabel => 'Heure de fin';
 
   @override
+  String get journalEntryExpandLabel => 'Développer l’entrée';
+
+  @override
   String get journalFilterEntryTypesTitle => 'Types d\'entrée';
 
   @override
@@ -6342,6 +6364,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get keyboardResizeDividerLabel => 'Redimensionner les volets';
+
+  @override
+  String keyboardResizeDividerValue(int value, int min, int max) {
+    return 'Redimensionner les volets, $value pixels. Plage de $min à $max pixels.';
+  }
 
   @override
   String get keyboardShortcutsNoResults =>
@@ -9094,10 +9121,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Tchèque';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Néerlandais';
+  String get settingsManualLanguageDanishTitle => 'Danois';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Danois';
+  String get settingsManualLanguageDutchTitle => 'Néerlandais';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Anglais';

@@ -536,6 +536,7 @@
   "aiCardReadMore": "Lire plus",
   "aiCardShowLess": "Afficher moins",
   "aiCardTitle": "Résumé IA",
+  "aiChatAssistantResponding": "L’assistant répond",
   "aiChatMessageCopied": "Copié dans le presse-papiers",
   "aiConfigFailedToLoadModelsGeneric": "Échec du chargement des modèles. Réessaie s'il te plaît.",
   "aiConfigNoModelsAvailable": "Aucun modèle d'IA n'est encore configuré. Ajoute-en un dans les paramètres.",
@@ -1219,6 +1220,8 @@
   "backfillToggleDescription": "Demande les entrées manquantes des dernières 24 heures.",
   "backfillToggleTitle": "Rattrapage automatique",
   "basicSettings": "Paramètres de base",
+  "calendarHasPlanLabel": "A un plan",
+  "calendarTodayLabel": "Aujourd’hui",
   "cancelButton": "Annuler",
   "categoryActiveDescription": "Les catégories inactives n'apparaîtront pas dans les listes de sélection",
   "categoryActiveSwitchDescription": "Sélectionnable pour les nouvelles entrées",
@@ -2184,6 +2187,7 @@
   "designSystemProgressBarSampleLabel": "Libellé de barre de progression",
   "designSystemRadioButtonLabel": "Bouton radio",
   "designSystemScrollbarSizesTitle": "Tailles de barre de défilement",
+  "designSystemSearchClearLabel": "Effacer la recherche",
   "designSystemSearchFilledText": "Recherche Lotti",
   "designSystemSearchHintLabel": "Tape un utilisateur",
   "designSystemSelectedLabel": "Sélectionné",
@@ -2359,6 +2363,8 @@
   "habitsAboveGoal": "Dans les clous",
   "habitsActiveHabitsCount": "{count, plural, one{1 habitude active} other{{count} habitudes actives}}",
   "habitsAllDoneToday": "Tout est fait aujourd'hui",
+  "habitsChartUseDynamicBaseline": "Utiliser une ligne de base dynamique",
+  "habitsChartUseZeroBaseline": "Utiliser une ligne de base zéro",
   "habitsCompletedHeader": "Terminées",
   "habitsCompletionRateTitle": "Taux de réussite",
   "habitsConsistencyTitle": "Régularité",
@@ -2567,6 +2573,7 @@
   "journalEndsAnotherDayHint": "Choisis une date de fin distincte",
   "journalEndsAnotherDayLabel": "Se termine un autre jour",
   "journalEndTimeLabel": "Heure de fin",
+  "journalEntryExpandLabel": "Développer l’entrée",
   "journalFilterEntryTypesTitle": "Types d'entrée",
   "journalFilterFlagged": "Suivis",
   "journalFilterPrivate": "Privés",
@@ -2655,6 +2662,20 @@
   "keyboardKeyShift": "Maj",
   "keyboardKeySpace": "Espace",
   "keyboardResizeDividerLabel": "Redimensionner les volets",
+  "keyboardResizeDividerValue": "Redimensionner les volets, {value} pixels. Plage de {min} à {max} pixels.",
+  "@keyboardResizeDividerValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "keyboardShortcutsNoResults": "Aucun raccourci ne correspond à ta recherche",
   "keyboardShortcutsSearchHint": "Rechercher des raccourcis…",
   "keyboardShortcutsSubtitle": "Toutes les commandes de l’application de bureau et leurs combinaisons de touches actuelles.",
@@ -3649,8 +3670,8 @@
   "settingsMaintenanceOnboardingWelcomeTitle": "Afficher l’accueil d’intégration",
   "settingsMaintenanceTitle": "Maintenance",
   "settingsManualLanguageCzechTitle": "Tchèque",
-  "settingsManualLanguageDutchTitle": "Néerlandais",
   "settingsManualLanguageDanishTitle": "Danois",
+  "settingsManualLanguageDutchTitle": "Néerlandais",
   "settingsManualLanguageEnglishTitle": "Anglais",
   "settingsManualLanguageFollowSystemSubtitle": "Utilise la langue de ton appareil dans Lotti et le manuel si elle est prise en charge ; sinon, l’anglais.",
   "settingsManualLanguageFollowSystemTitle": "Suivre le système",

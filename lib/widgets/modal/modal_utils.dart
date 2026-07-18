@@ -52,6 +52,26 @@ class ModalUtils {
     );
   }
 
+  /// A modal route name and heading share one semantic node so assistive
+  /// technology announces the destination when a Wolt sheet takes focus.
+  static Widget _modalTitle(BuildContext context, String title) {
+    final tokens = _tokens(context);
+    return Padding(
+      padding: EdgeInsets.only(top: tokens.spacing.step2),
+      child: Semantics(
+        container: true,
+        explicitChildNodes: true,
+        header: true,
+        namesRoute: true,
+        scopesRoute: true,
+        label: title,
+        child: ExcludeSemantics(
+          child: Text(title, style: modalTitleStyle(context)),
+        ),
+      ),
+    );
+  }
+
   static DsTokens _tokens(BuildContext context) {
     return Theme.of(context).extension<DsTokens>() ??
         (Theme.of(context).brightness == Brightness.dark
@@ -113,19 +133,7 @@ class ModalUtils {
       navBarHeight: navBarHeight ?? tokens.spacing.step10,
       hasTopBarLayer: hasTopBarLayer,
       topBarTitle:
-          titleWidget ??
-          (title != null
-              ? Padding(
-                  padding: EdgeInsets.only(top: tokens.spacing.step2),
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      title,
-                      style: modalTitleStyle(context),
-                    ),
-                  ),
-                )
-              : null),
+          titleWidget ?? (title != null ? _modalTitle(context, title) : null),
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
       leadingNavBarWidget: onTapBack != null
           ? _navigationButton(
@@ -289,19 +297,7 @@ class ModalUtils {
       resizeToAvoidBottomInset: true,
       navBarHeight: navBarHeight ?? tokens.spacing.step10,
       topBarTitle:
-          titleWidget ??
-          (title != null
-              ? Padding(
-                  padding: EdgeInsets.only(top: tokens.spacing.step2),
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      title,
-                      style: modalTitleStyle(context),
-                    ),
-                  ),
-                )
-              : null),
+          titleWidget ?? (title != null ? _modalTitle(context, title) : null),
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
       leadingNavBarWidget: onTapBack != null
           ? _navigationButton(

@@ -543,6 +543,7 @@
   "aiCardReadMore": "Číst více",
   "aiCardShowLess": "Skrýt podrobnosti",
   "aiCardTitle": "Souhrn AI",
+  "aiChatAssistantResponding": "Asistent odpovídá",
   "aiChatMessageCopied": "Zkopírováno do schránky",
   "aiConfigFailedToLoadModelsGeneric": "Nepodařilo se načíst modely. Prosím, zkuste to znovu.",
   "aiConfigNoModelsAvailable": "Žádné AI modely zatím nejsou konfigurovány. Prosím, přidejte je v nastavení.",
@@ -1226,6 +1227,8 @@
   "backfillToggleDescription": "Žádá o chybějící položky za posledních 24 hodin.",
   "backfillToggleTitle": "Automatické zpětné doplňování",
   "basicSettings": "Základní nastavení",
+  "calendarHasPlanLabel": "Má plán",
+  "calendarTodayLabel": "Dnes",
   "cancelButton": "Zrušit",
   "categoryActiveDescription": "Neaktivní kategorie se nebudou zobrazovat ve výběrových seznamech",
   "categoryActiveSwitchDescription": "Volitelné pro nové záznamy",
@@ -2191,6 +2194,7 @@
   "designSystemProgressBarSampleLabel": "Štítek ukazatele průběhu",
   "designSystemRadioButtonLabel": "Přepínač",
   "designSystemScrollbarSizesTitle": "Velikosti posuvníku",
+  "designSystemSearchClearLabel": "Vymazat hledání",
   "designSystemSearchFilledText": "Hledání Lotti",
   "designSystemSearchHintLabel": "Zadej uživatele",
   "designSystemSelectedLabel": "Vybrané",
@@ -2366,6 +2370,8 @@
   "habitsAboveGoal": "Podle plánu",
   "habitsActiveHabitsCount": "{count, plural, one{1 aktivní návyk} few{{count} aktivní návyky} other{{count} aktivních návyků}}",
   "habitsAllDoneToday": "Dnes hotovo vše",
+  "habitsChartUseDynamicBaseline": "Použít dynamickou základní linii",
+  "habitsChartUseZeroBaseline": "Použít nulovou základní linii",
   "habitsCompletedHeader": "Dokončeno",
   "habitsCompletionRateTitle": "Míra plnění",
   "habitsConsistencyTitle": "Důslednost",
@@ -2574,6 +2580,7 @@
   "journalEndsAnotherDayHint": "Vyber samostatné datum konce",
   "journalEndsAnotherDayLabel": "Končí jiný den",
   "journalEndTimeLabel": "Čas konce",
+  "journalEntryExpandLabel": "Rozbalit záznam",
   "journalFilterEntryTypesTitle": "Typy záznamů",
   "journalFilterFlagged": "Označené",
   "journalFilterPrivate": "Soukromé",
@@ -2662,6 +2669,20 @@
   "keyboardKeyShift": "Shift",
   "keyboardKeySpace": "Mezerník",
   "keyboardResizeDividerLabel": "Změnit velikost panelů",
+  "keyboardResizeDividerValue": "Změnit velikost panelů, {value} pixelů. Rozsah {min} až {max} pixelů.",
+  "@keyboardResizeDividerValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "keyboardShortcutsNoResults": "Tvému hledání neodpovídají žádné zkratky",
   "keyboardShortcutsSearchHint": "Hledat zkratky…",
   "keyboardShortcutsSubtitle": "Všechny příkazy pro počítač a jejich aktuální klávesové kombinace.",
@@ -3656,8 +3677,8 @@
   "settingsMaintenanceOnboardingWelcomeTitle": "Zobrazit uvítání onboardingu",
   "settingsMaintenanceTitle": "Údržba",
   "settingsManualLanguageCzechTitle": "Čeština",
-  "settingsManualLanguageDutchTitle": "Nizozemština",
   "settingsManualLanguageDanishTitle": "Dánština",
+  "settingsManualLanguageDutchTitle": "Nizozemština",
   "settingsManualLanguageEnglishTitle": "Angličtina",
   "settingsManualLanguageFollowSystemSubtitle": "Použij jazyk zařízení v Lotti i v příručce, pokud je podporován; jinak angličtinu.",
   "settingsManualLanguageFollowSystemTitle": "Používat jazyk systému",

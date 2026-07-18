@@ -121,41 +121,48 @@ class _DesignSystemTextareaState extends State<DesignSystemTextarea> {
     final hasError = widget.errorText != null;
     final borderColor = _resolveBorderColor(tokens, hasError);
 
-    final textarea = Semantics(
-      container: true,
-      label: widget.semanticsLabel,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (widget.label != null) ...[
-            Text(
+    final accessibleFieldLabel = [
+      widget.semanticsLabel ?? widget.label ?? widget.hintText,
+      if (widget.helperText != null || widget.errorText != null)
+        hasError ? widget.errorText : widget.helperText,
+    ].nonNulls.join(', ');
+
+    final textarea = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (widget.label != null) ...[
+          ExcludeSemantics(
+            child: Text(
               widget.label!,
               style: spec.labelStyle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            SizedBox(height: spec.labelGap),
-          ],
-          MouseRegion(
-            onEnter: widget.enabled
-                ? (_) => setState(() => _hovered = true)
+          ),
+          SizedBox(height: spec.labelGap),
+        ],
+        MouseRegion(
+          onEnter: widget.enabled
+              ? (_) => setState(() => _hovered = true)
+              : null,
+          onExit: widget.enabled
+              ? (_) => setState(() => _hovered = false)
+              : null,
+          child: Focus(
+            onFocusChange: widget.enabled
+                ? (focused) => setState(() => _focused = focused)
                 : null,
-            onExit: widget.enabled
-                ? (_) => setState(() => _hovered = false)
-                : null,
-            child: Focus(
-              onFocusChange: widget.enabled
-                  ? (focused) => setState(() => _focused = focused)
-                  : null,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(spec.borderRadius),
-                  border: Border.all(
-                    color: borderColor,
-                    width: _focused ? 2 : 1,
-                  ),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(spec.borderRadius),
+                border: Border.all(
+                  color: borderColor,
+                  width: _focused ? 2 : 1,
                 ),
+              ),
+              child: Semantics(
+                label: accessibleFieldLabel,
                 child: TextField(
                   key: widget.fieldKey,
                   controller: _controller,
@@ -174,8 +181,14 @@ class _DesignSystemTextareaState extends State<DesignSystemTextarea> {
                   style: spec.textStyle,
                   cursorColor: tokens.colors.text.highEmphasis,
                   decoration: InputDecoration(
-                    hintText: widget.hintText,
-                    hintStyle: spec.hintStyle,
+                    hint: widget.hintText == null
+                        ? null
+                        : ExcludeSemantics(
+                            child: Text(
+                              widget.hintText!,
+                              style: spec.hintStyle,
+                            ),
+                          ),
                     contentPadding: spec.contentPadding,
                     border: _noBorder,
                     enabledBorder: _noBorder,
@@ -189,29 +202,36 @@ class _DesignSystemTextareaState extends State<DesignSystemTextarea> {
               ),
             ),
           ),
-          if (_hasExtraInfo) ...[
-            SizedBox(height: spec.extraInfoGap),
-            Row(
-              children: [
-                if (widget.helperText != null || widget.errorText != null)
-                  Expanded(
-                    child: Text(
-                      hasError ? widget.errorText! : widget.helperText!,
-                      style: hasError ? spec.errorStyle : spec.helperStyle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+        ),
+        if (_hasExtraInfo) ...[
+          SizedBox(height: spec.extraInfoGap),
+          Row(
+            children: [
+              if (widget.helperText != null || widget.errorText != null)
+                Expanded(
+                  child: Semantics(
+                    container: true,
+                    label: hasError ? widget.errorText : null,
+                    liveRegion: hasError,
+                    child: ExcludeSemantics(
+                      child: Text(
+                        hasError ? widget.errorText! : widget.helperText!,
+                        style: hasError ? spec.errorStyle : spec.helperStyle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
-                if (widget.showCounter && widget.maxLength != null)
-                  Text(
-                    '${_controller.text.length}/${widget.maxLength}',
-                    style: spec.counterStyle,
-                  ),
-              ],
-            ),
-          ],
+                ),
+              if (widget.showCounter && widget.maxLength != null)
+                Text(
+                  '${_controller.text.length}/${widget.maxLength}',
+                  style: spec.counterStyle,
+                ),
+            ],
+          ),
         ],
-      ),
+      ],
     );
 
     return textarea.withDisabledOpacity(

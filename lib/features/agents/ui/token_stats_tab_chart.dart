@@ -140,38 +140,40 @@ class _DayLabelsRow extends StatelessWidget {
     // For 30 days: show every 7th day as a date number.
     final showEvery = days.length <= 10 ? 1 : 7;
 
-    return Row(
-      children: [
-        for (var i = 0; i < days.length; i++)
-          Expanded(
-            child: GestureDetector(
-              onTap: () => onBarTap(i),
-              behavior: HitTestBehavior.opaque,
-              child: Center(
-                child: i % showEvery == 0 || i == days.length - 1
-                    ? Text(
-                        days.length <= 10
-                            ? DateFormat.E()
-                                  .format(days[i].date)
-                                  .substring(0, 1)
-                            : '${days[i].date.day}',
-                        style: context.textTheme.labelSmall?.copyWith(
-                          fontSize: days.length > 10 ? 9 : null,
-                          color: days[i].isToday
-                              ? tokens.colors.alert.warning.defaultColor
-                              : selectedIndex == i
-                              ? context.colorScheme.onSurface
-                              : context.colorScheme.onSurfaceVariant,
-                          fontWeight: days[i].isToday || selectedIndex == i
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                        ),
-                      )
-                    : const SizedBox.shrink(),
+    return ExcludeSemantics(
+      child: Row(
+        children: [
+          for (var i = 0; i < days.length; i++)
+            Expanded(
+              child: GestureDetector(
+                onTap: () => onBarTap(i),
+                behavior: HitTestBehavior.opaque,
+                child: Center(
+                  child: i % showEvery == 0 || i == days.length - 1
+                      ? Text(
+                          days.length <= 10
+                              ? DateFormat.E()
+                                    .format(days[i].date)
+                                    .substring(0, 1)
+                              : '${days[i].date.day}',
+                          style: context.textTheme.labelSmall?.copyWith(
+                            fontSize: days.length > 10 ? 9 : null,
+                            color: days[i].isToday
+                                ? tokens.colors.alert.warning.defaultColor
+                                : selectedIndex == i
+                                ? context.colorScheme.onSurface
+                                : context.colorScheme.onSurfaceVariant,
+                            fontWeight: days[i].isToday || selectedIndex == i
+                                ? FontWeight.w700
+                                : FontWeight.w400,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -201,17 +203,10 @@ class _DayBar extends StatelessWidget {
         ? day.tokensByTimeOfDay / maxTokens
         : 0.0;
 
-    if (totalFraction == 0) {
-      return GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: const SizedBox.expand(),
-      );
-    }
-
-    final totalHeight = chartHeight * math.max(0.04, totalFraction);
-    final byTimeHeight =
-        chartHeight * math.max(0.0, math.min(byTimeFraction, totalFraction));
+    final label =
+        '${DateFormat.yMMMd(Localizations.localeOf(context).toString()).format(day.date)}, '
+        '${formatTokenCount(day.totalTokens)} '
+        '${context.messages.agentStatsTokensUnit}';
 
     final fullBarColor = day.isToday
         ? tokens.colors.alert.warning.defaultColor
@@ -224,6 +219,9 @@ class _DayBar extends StatelessWidget {
         ? context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)
         : context.colorScheme.onSurfaceVariant.withValues(alpha: 0.55);
 
+    final totalHeight = chartHeight * math.max(0.04, totalFraction);
+    final byTimeHeight =
+        chartHeight * math.max(0.0, math.min(byTimeFraction, totalFraction));
     final showByTimePortion = byTimeHeight > 0 && !day.isToday;
     // When by-time fills the whole bar, it needs full rounding.
     final byTimeIsFullBar =
@@ -235,37 +233,49 @@ class _DayBar extends StatelessWidget {
           )
         : null;
 
-    return GestureDetector(
+    final visual = totalFraction == 0
+        ? const SizedBox.expand()
+        : SizedBox(
+            height: totalHeight,
+            child: Column(
+              children: [
+                if (!byTimeIsFullBar)
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: fullBarColor,
+                        borderRadius: BorderRadius.vertical(top: cornerRadius),
+                        border: selectedBorder,
+                      ),
+                    ),
+                  ),
+                if (showByTimePortion)
+                  SizedBox(
+                    height: byTimeIsFullBar ? totalHeight : byTimeHeight,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: byTimeColor,
+                        borderRadius: byTimeIsFullBar
+                            ? BorderRadius.vertical(top: cornerRadius)
+                            : BorderRadius.zero,
+                        border: selectedBorder,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+    return Semantics(
+      container: true,
+      button: onTap != null,
+      selected: isSelected,
+      label: label,
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        height: totalHeight,
-        child: Column(
-          children: [
-            if (!byTimeIsFullBar)
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: fullBarColor,
-                    borderRadius: BorderRadius.vertical(top: cornerRadius),
-                    border: selectedBorder,
-                  ),
-                ),
-              ),
-            if (showByTimePortion)
-              SizedBox(
-                height: byTimeIsFullBar ? totalHeight : byTimeHeight,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: byTimeColor,
-                    borderRadius: byTimeIsFullBar
-                        ? BorderRadius.vertical(top: cornerRadius)
-                        : BorderRadius.zero,
-                    border: selectedBorder,
-                  ),
-                ),
-              ),
-          ],
+      child: ExcludeSemantics(
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: visual,
         ),
       ),
     );

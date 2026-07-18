@@ -2201,6 +2201,12 @@ abstract class AppLocalizations {
   /// **'AI summary'**
   String get aiCardTitle;
 
+  /// No description provided for @aiChatAssistantResponding.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant is responding'**
+  String get aiChatAssistantResponding;
+
   /// No description provided for @aiChatMessageCopied.
   ///
   /// In en, this message translates to:
@@ -4480,6 +4486,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Basic settings'**
   String get basicSettings;
+
+  /// No description provided for @calendarHasPlanLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Has plan'**
+  String get calendarHasPlanLabel;
+
+  /// No description provided for @calendarTodayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get calendarTodayLabel;
 
   /// No description provided for @cancelButton.
   ///
@@ -8446,6 +8464,12 @@ abstract class AppLocalizations {
   /// **'Scrollbar Sizes'**
   String get designSystemScrollbarSizesTitle;
 
+  /// No description provided for @designSystemSearchClearLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get designSystemSearchClearLabel;
+
   /// No description provided for @designSystemSearchFilledText.
   ///
   /// In en, this message translates to:
@@ -9369,6 +9393,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All done today'**
   String get habitsAllDoneToday;
+
+  /// No description provided for @habitsChartUseDynamicBaseline.
+  ///
+  /// In en, this message translates to:
+  /// **'Use dynamic baseline'**
+  String get habitsChartUseDynamicBaseline;
+
+  /// No description provided for @habitsChartUseZeroBaseline.
+  ///
+  /// In en, this message translates to:
+  /// **'Use zero baseline'**
+  String get habitsChartUseZeroBaseline;
 
   /// No description provided for @habitsCompletedHeader.
   ///
@@ -10408,6 +10444,12 @@ abstract class AppLocalizations {
   /// **'End time'**
   String get journalEndTimeLabel;
 
+  /// No description provided for @journalEntryExpandLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand entry'**
+  String get journalEntryExpandLabel;
+
   /// No description provided for @journalFilterEntryTypesTitle.
   ///
   /// In en, this message translates to:
@@ -10893,6 +10935,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resize panes'**
   String get keyboardResizeDividerLabel;
+
+  /// No description provided for @keyboardResizeDividerValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Resize panes, {value} pixels. Range {min} to {max} pixels.'**
+  String keyboardResizeDividerValue(int value, int min, int max);
 
   /// No description provided for @keyboardShortcutsNoResults.
   ///
@@ -15350,17 +15398,17 @@ abstract class AppLocalizations {
   /// **'Czech'**
   String get settingsManualLanguageCzechTitle;
 
-  /// No description provided for @settingsManualLanguageDutchTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Dutch'**
-  String get settingsManualLanguageDutchTitle;
-
   /// No description provided for @settingsManualLanguageDanishTitle.
   ///
   /// In en, this message translates to:
   /// **'Danish'**
   String get settingsManualLanguageDanishTitle;
+
+  /// No description provided for @settingsManualLanguageDutchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dutch'**
+  String get settingsManualLanguageDutchTitle;
 
   /// No description provided for @settingsManualLanguageEnglishTitle.
   ///

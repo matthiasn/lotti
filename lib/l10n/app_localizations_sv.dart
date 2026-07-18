@@ -786,10 +786,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentSoulSettingsTab => 'Miljöer';
 
   @override
-  String get agentSoulsSearchPlaceholder => 'Söksjälar...';
+  String get agentSoulsSearchPlaceholder => 'Sök själar...';
 
   @override
-  String get agentSoulsTitle => 'Souls';
+  String get agentSoulsTitle => 'Själar';
 
   @override
   String get agentSoulToneBoundsLabel => 'Tongränser';
@@ -1045,10 +1045,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentTemplateSettingsTab => 'Miljöer';
 
   @override
-  String get agentTemplatesFilterSectionKind => 'Snällt';
+  String get agentTemplatesFilterSectionKind => 'Typ';
 
   @override
-  String get agentTemplatesGroupByKind => 'Snällt';
+  String get agentTemplatesGroupByKind => 'Typ';
 
   @override
   String get agentTemplatesGroupNone => 'Alla';
@@ -1206,6 +1206,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiCardTitle => 'AI-sammanfattning';
+
+  @override
+  String get aiChatAssistantResponding => 'Assistenten svarar';
 
   @override
   String get aiChatMessageCopied => 'Kopierat till skrivplatta';
@@ -1790,7 +1793,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiProviderConnectStepConnect => 'Koppla upp';
 
   @override
-  String get aiProviderConnectStepReview => 'Recension';
+  String get aiProviderConnectStepReview => 'Granska';
 
   @override
   String get aiProviderDetailActiveProfileTitle => 'Aktiv profil';
@@ -2611,6 +2614,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get basicSettings => 'Grundläggande miljöer';
+
+  @override
+  String get calendarHasPlanLabel => 'Har en plan';
+
+  @override
+  String get calendarTodayLabel => 'I dag';
 
   @override
   String get cancelButton => 'Avbryt';
@@ -4900,6 +4909,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get designSystemScrollbarSizesTitle => 'Scrollbar-storlekar';
 
   @override
+  String get designSystemSearchClearLabel => 'Rensa sökning';
+
+  @override
   String get designSystemSearchFilledText => 'Lotti-sökningen';
 
   @override
@@ -5060,7 +5072,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String deviceDeletedSuccess(String deviceName) {
-    return 'Enhet $deviceName raderad framgångsrikt';
+    return 'Enheten $deviceName har raderats';
   }
 
   @override
@@ -5411,6 +5423,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitsAllDoneToday => 'Allt klart idag';
 
   @override
+  String get habitsChartUseDynamicBaseline => 'Använd dynamisk baslinje';
+
+  @override
+  String get habitsChartUseZeroBaseline => 'Använd nollbaslinje';
+
+  @override
   String get habitsCompletedHeader => 'Färdigställd';
 
   @override
@@ -5472,7 +5490,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitShowAlertAtLabel => 'Visa varning på';
 
   @override
-  String get habitShowFromLabel => 'Föreställning från';
+  String get habitShowFromLabel => 'Visa från';
 
   @override
   String habitsLaggardHint(String habit, int kept, int active) {
@@ -5589,7 +5607,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get imageViewerDownloadFailed => 'Kunde inte spara bilden';
 
   @override
-  String get imageViewerDownloadingTooltip => 'Sparbild';
+  String get imageViewerDownloadingTooltip => 'Spara bild';
 
   @override
   String get imageViewerDownloadPermissionDenied =>
@@ -5707,7 +5725,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get inferenceProfilesTitle => 'Slutsatsprofiler';
+  String get inferenceProfilesTitle => 'Inferensprofiler';
 
   @override
   String get inferenceProfileThinking => 'Tänkande';
@@ -5994,6 +6012,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get journalEndTimeLabel => 'Sluttid';
 
   @override
+  String get journalEntryExpandLabel => 'Expandera post';
+
+  @override
   String get journalFilterEntryTypesTitle => 'Inträdetyper';
 
   @override
@@ -6243,6 +6264,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get keyboardResizeDividerLabel => 'Storleksjustera rutorna';
+
+  @override
+  String keyboardResizeDividerValue(int value, int min, int max) {
+    return 'Panelstorlek: $value pixlar. Tillåtet intervall: $min–$max pixlar.';
+  }
 
   @override
   String get keyboardShortcutsNoResults => 'Inga genvägar matchar din sökning';
@@ -7714,7 +7740,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectsFilterStatusLabel => 'Status:';
 
   @override
-  String get projectsFilterTooltip => 'Filterprojekt';
+  String get projectsFilterTooltip => 'Filtrera projekt';
 
   @override
   String get projectShowcaseAiReportTitle => 'AI-rapport';
@@ -8922,10 +8948,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Tjeckiska';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Nederländska';
+  String get settingsManualLanguageDanishTitle => 'Dansk';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Dansk';
+  String get settingsManualLanguageDutchTitle => 'Nederländska';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Engelska';
@@ -10122,7 +10148,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksFilterClearAll => 'Rensa allt';
 
   @override
-  String get tasksFilterTitle => 'Filteruppgifter';
+  String get tasksFilterTitle => 'Filtrera uppgifter';
 
   @override
   String get taskShowcaseAudio => 'Ljud';
@@ -10396,12 +10422,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String tasksSavedFilterToastSaved(String name) {
-    return 'Sparade \'$name\'';
+    return 'Filtret \'$name\' sparades';
   }
 
   @override
   String tasksSavedFilterToastUpdated(String name) {
-    return 'Uppdaterad \'$name\'';
+    return 'Filtret \'$name\' uppdaterades';
   }
 
   @override

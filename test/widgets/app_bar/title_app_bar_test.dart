@@ -30,8 +30,7 @@ void main() {
           ),
         ),
       );
-      // Let the BackWidget fadeIn animation finish (1s).
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
     }
 
     testWidgets('renders title text with app bar style', (tester) async {
@@ -120,7 +119,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const BackWidget()),
       );
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
 
       await tester.tap(find.byType(IconButton));
       await tester.pump();
@@ -138,7 +137,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(BackWidget(onPressed: () => pressed++)),
       );
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
 
       await tester.tap(find.byType(IconButton));
       await tester.pump();
@@ -147,15 +146,33 @@ void main() {
       verifyNever(mockNavService.beamBack);
     });
 
-    testWidgets('renders chevron icon with semantic label', (tester) async {
+    testWidgets('exposes a localized back button to screen readers', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const BackWidget(onPressed: _noop)),
       );
+      await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
+      final button = find.byType(IconButton);
       final icon = tester.widget<Icon>(find.byIcon(Icons.chevron_left));
-      expect(icon.semanticLabel, 'Navigate back');
       expect(icon.size, 30);
+      final expectedLabel = MaterialLocalizations.of(
+        tester.element(button),
+      ).backButtonTooltip;
+      final semanticBackButton = find.bySemanticsLabel(expectedLabel);
+      expect(semanticBackButton, findsOneWidget);
+      expect(
+        tester.getSemantics(semanticBackButton),
+        matchesSemantics(
+          label: expectedLabel,
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      semantics.dispose();
     });
   });
 }

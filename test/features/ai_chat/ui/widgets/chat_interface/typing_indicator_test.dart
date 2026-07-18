@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/typing_indicator.dart';
 
+import '../../../../../widget_test_utils.dart';
+
 void main() {
   Future<void> pumpIndicator(
     WidgetTester tester, {
     required bool isUser,
   }) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: TypingIndicator(isUser: isUser)),
-      ),
+      makeTestableWidget(TypingIndicator(isUser: isUser)),
     );
   }
 
@@ -33,6 +33,20 @@ void main() {
       expect(dot.constraints?.maxHeight, 4);
       expect((dot.decoration! as BoxDecoration).shape, BoxShape.circle);
     }
+  });
+
+  testWidgets('announces one stable assistant-response status', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpIndicator(tester, isUser: false);
+
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('Assistant is responding')),
+      matchesSemantics(
+        label: 'Assistant is responding',
+        isLiveRegion: true,
+      ),
+    );
+    semantics.dispose();
   });
 
   testWidgets('dot color follows the message side', (tester) async {

@@ -1211,6 +1211,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiCardTitle => 'Resumen de IA';
 
   @override
+  String get aiChatAssistantResponding => 'El asistente está respondiendo';
+
+  @override
   String get aiChatMessageCopied => 'Copiado al portapapeles';
 
   @override
@@ -2632,6 +2635,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get basicSettings => 'Ajustes básicos';
+
+  @override
+  String get calendarHasPlanLabel => 'Tiene un plan';
+
+  @override
+  String get calendarTodayLabel => 'Hoy';
 
   @override
   String get cancelButton => 'Cancelar';
@@ -4963,6 +4972,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tamaños de barra de desplazamiento';
 
   @override
+  String get designSystemSearchClearLabel => 'Borrar búsqueda';
+
+  @override
   String get designSystemSearchFilledText => 'Búsqueda de Lotti';
 
   @override
@@ -5480,6 +5492,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get habitsAllDoneToday => 'Todo hecho hoy';
+
+  @override
+  String get habitsChartUseDynamicBaseline => 'Usar línea de base dinámica';
+
+  @override
+  String get habitsChartUseZeroBaseline => 'Usar línea de base cero';
 
   @override
   String get habitsCompletedHeader => 'Completado';
@@ -6081,6 +6099,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get journalEndTimeLabel => 'Hora de fin';
 
   @override
+  String get journalEntryExpandLabel => 'Expandir entrada';
+
+  @override
   String get journalFilterEntryTypesTitle => 'Tipos de entrada';
 
   @override
@@ -6331,6 +6352,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get keyboardResizeDividerLabel => 'Redimensionar paneles';
+
+  @override
+  String keyboardResizeDividerValue(int value, int min, int max) {
+    return 'Redimensionar paneles, $value píxeles. Rango de $min a $max píxeles.';
+  }
 
   @override
   String get keyboardShortcutsNoResults =>
@@ -9054,10 +9080,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Checo';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Neerlandés';
+  String get settingsManualLanguageDanishTitle => 'Danés';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Danés';
+  String get settingsManualLanguageDutchTitle => 'Neerlandés';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Inglés';

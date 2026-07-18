@@ -693,6 +693,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           ),
           ResizableDivider(
             enabled: !isCollapsed,
+            currentValue: paneWidths.sidebarWidth,
+            minValue: minSidebarWidth,
+            maxValue: maxSidebarWidth,
             onDrag: (delta) => ref
                 .read(paneWidthControllerProvider.notifier)
                 .updateSidebarWidth(delta),
@@ -895,7 +898,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 for (var i = 0; i < beamerChildren.length; i++)
                   TickerMode(
                     enabled: i == index,
-                    child: beamerChildren[i],
+                    child: ExcludeFocus(
+                      excluding: i != index,
+                      child: beamerChildren[i],
+                    ),
                   ),
               ],
             ),

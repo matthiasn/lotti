@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Three animated dots shown while the assistant is preparing a response.
 class TypingIndicator extends StatefulWidget {
@@ -36,35 +37,40 @@ class TypingIndicatorState extends State<TypingIndicator>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (int i = 0; i < 3; i++)
-              Container(
-                width: 4,
-                height: 4,
-                margin: const EdgeInsets.symmetric(horizontal: 1),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color:
-                      (widget.isUser
-                              ? theme.colorScheme.onPrimary
-                              : theme.colorScheme.onSurfaceVariant)
-                          .withValues(
-                            alpha:
-                                (_animationController.value + i * 0.3) % 1.0 >
-                                    0.5
-                                ? 1.0
-                                : 0.3,
-                          ),
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: context.messages.aiChatAssistantResponding,
+      child: ExcludeSemantics(
+        child: AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (int i = 0; i < 3; i++)
+                Container(
+                  width: 4,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(horizontal: 1),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color:
+                        (widget.isUser
+                                ? theme.colorScheme.onPrimary
+                                : theme.colorScheme.onSurfaceVariant)
+                            .withValues(
+                              alpha:
+                                  (_animationController.value + i * 0.3) % 1.0 >
+                                      0.5
+                                  ? 1.0
+                                  : 0.3,
+                            ),
+                  ),
                 ),
-              ),
-          ],
-        );
-      },
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

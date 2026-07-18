@@ -234,6 +234,34 @@ void main() {
         expect(page.topBarTitle, isA<Padding>());
       });
 
+      testWidgets('uses the title as a named modal route heading', (
+        tester,
+      ) async {
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.modalSheetPage(
+            context: context,
+            child: const Text('Test Content'),
+            title: 'Edit entry',
+          ),
+        );
+        final semantics = tester.ensureSemantics();
+        await tester.pumpWidget(
+          MaterialApp(home: Scaffold(body: page.topBarTitle)),
+        );
+
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('Edit entry')),
+          matchesSemantics(
+            label: 'Edit entry',
+            isHeader: true,
+            namesRoute: true,
+            scopesRoute: true,
+          ),
+        );
+        semantics.dispose();
+      });
+
       testWidgets('creates page with back button that fires onTapBack', (
         tester,
       ) async {
@@ -490,6 +518,55 @@ void main() {
 
         expect(closeCalls, 1);
         expect(find.text('Draft content'), findsNothing);
+      });
+
+      testWidgets('moves focus into the modal and restores its invoker', (
+        tester,
+      ) async {
+        final triggerFocusNode = FocusNode(debugLabel: 'open-modal');
+        late BuildContext triggerContext;
+        addTearDown(triggerFocusNode.dispose);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Builder(
+              builder: (context) {
+                triggerContext = context;
+                return ElevatedButton(
+                  focusNode: triggerFocusNode,
+                  onPressed: () {
+                    ModalUtils.showSinglePageModal<void>(
+                      context: context,
+                      title: 'Edit entry',
+                      builder: (_) => const Text('Modal content'),
+                    );
+                  },
+                  child: const Text('Open modal'),
+                );
+              },
+            ),
+          ),
+        );
+
+        triggerFocusNode.requestFocus();
+        await tester.pump();
+        expect(triggerFocusNode.hasFocus, isTrue);
+
+        tester.widget<ElevatedButton>(find.byType(ElevatedButton)).onPressed!();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 450));
+
+        expect(find.text('Modal content'), findsOneWidget);
+        expect(triggerFocusNode.hasFocus, isFalse);
+        final modalContext = tester.element(find.text('Modal content'));
+        expect(FocusScope.of(modalContext).hasFocus, isTrue);
+
+        Navigator.of(triggerContext).pop();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 450));
+
+        expect(find.text('Modal content'), findsNothing);
+        expect(triggerFocusNode.hasFocus, isTrue);
       });
 
       testWidgets('dismisses modal on barrier tap', (tester) async {

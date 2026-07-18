@@ -117,31 +117,39 @@ class DesignSystemContextMenu extends StatelessWidget {
         ? tokens.colors.alert.error.defaultColor
         : tokens.colors.text.highEmphasis;
 
-    return InkWell(
+    return Semantics(
+      button: true,
+      enabled: item.onTap != null,
+      label: item.label,
       onTap: item.onTap,
-      child: SizedBox(
-        height: spec.itemHeight,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: spec.horizontalPadding),
-          child: Row(
-            children: [
-              if (item.icon != null) ...[
-                Icon(
-                  item.icon,
-                  size: spec.iconSize,
-                  color: textColor,
-                ),
-                SizedBox(width: spec.iconGap),
-              ],
-              Expanded(
-                child: Text(
-                  item.label,
-                  style: spec.textStyle.copyWith(color: textColor),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+      child: ExcludeSemantics(
+        child: InkWell(
+          onTap: item.onTap,
+          child: SizedBox(
+            height: spec.itemHeight,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: spec.horizontalPadding),
+              child: Row(
+                children: [
+                  if (item.icon != null) ...[
+                    Icon(
+                      item.icon,
+                      size: spec.iconSize,
+                      color: textColor,
+                    ),
+                    SizedBox(width: spec.iconGap),
+                  ],
+                  Expanded(
+                    child: Text(
+                      item.label,
+                      style: spec.textStyle.copyWith(color: textColor),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

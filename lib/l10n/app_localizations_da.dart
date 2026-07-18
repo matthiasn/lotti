@@ -1203,6 +1203,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiCardTitle => 'AI-oversigt';
 
   @override
+  String get aiChatAssistantResponding => 'Assistenten svarer';
+
+  @override
   String get aiChatMessageCopied => 'Kopieret til clipboard';
 
   @override
@@ -2606,6 +2609,12 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get basicSettings => 'Grundlæggende indstillinger';
+
+  @override
+  String get calendarHasPlanLabel => 'Har en plan';
+
+  @override
+  String get calendarTodayLabel => 'I dag';
 
   @override
   String get cancelButton => 'Annuller';
@@ -4900,6 +4909,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get designSystemScrollbarSizesTitle => 'Scrollbar-størrelser';
 
   @override
+  String get designSystemSearchClearLabel => 'Ryd søgning';
+
+  @override
   String get designSystemSearchFilledText => 'Lotti-søgning';
 
   @override
@@ -5408,6 +5420,12 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get habitsAllDoneToday => 'Alt færdigt i dag';
+
+  @override
+  String get habitsChartUseDynamicBaseline => 'Brug dynamisk grundlinje';
+
+  @override
+  String get habitsChartUseZeroBaseline => 'Brug nulgrundlinje';
 
   @override
   String get habitsCompletedHeader => 'Færdiggjort';
@@ -5993,6 +6011,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get journalEndTimeLabel => 'Endetid';
 
   @override
+  String get journalEntryExpandLabel => 'Udvid opslag';
+
+  @override
   String get journalFilterEntryTypesTitle => 'Deltagertyper';
 
   @override
@@ -6242,6 +6263,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get keyboardResizeDividerLabel => 'Omsat størrelse på ruder';
+
+  @override
+  String keyboardResizeDividerValue(int value, int min, int max) {
+    return 'Tilpas paneler, $value pixels. Område $min til $max pixels.';
+  }
 
   @override
   String get keyboardShortcutsNoResults => 'Ingen genveje matcher din søgning';
@@ -8921,10 +8947,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsManualLanguageCzechTitle => 'Tjekkisk';
 
   @override
-  String get settingsManualLanguageDutchTitle => 'Hollandsk';
+  String get settingsManualLanguageDanishTitle => 'Dansk';
 
   @override
-  String get settingsManualLanguageDanishTitle => 'Dansk';
+  String get settingsManualLanguageDutchTitle => 'Hollandsk';
 
   @override
   String get settingsManualLanguageEnglishTitle => 'Engelsk';
