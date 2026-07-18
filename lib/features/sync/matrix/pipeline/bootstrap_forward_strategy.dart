@@ -28,10 +28,11 @@ import 'package:matrix/matrix.dart';
 ///   each page through the sink until the server reports no more
 ///   future (`!canRequestFuture`) or the [forwardPageCap] safety
 ///   cap trips. Some homeservers can return a non-empty context
-///   window without a usable `next_batch` token. In that case the
-///   walk probes another context window from the newest emitted
-///   event; an empty probe is the authoritative end-of-timeline
-///   signal.
+///   window without a usable `next_batch` token, or a stale empty
+///   `/messages` page after advertising a forward token. In either
+///   case the walk probes another context window from the newest
+///   emitted event; an empty probe is the authoritative
+///   end-of-timeline signal.
 ///
 /// Only events that sort strictly after the anchor under the
 /// `(timestamp, eventId)` ordering are emitted, so the anchor itself
@@ -113,6 +114,7 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
   var totalEventsSoFar = 0;
   num? newestTsSoFar;
   String? newestEventIdSoFar;
+  var contextAnchorEventId = anchorEventId;
   var stopReason = BootstrapStopReason.serverExhausted;
 
   try {
@@ -213,17 +215,25 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
         // window. Re-anchor on the newest event and make one more
         // server-context request. A context with no strictly newer
         // events proves that we have reached the tip.
-        if (page.isEmpty || newestEventIdSoFar == null) {
+        // A terminal context whose anchor already matches the newest
+        // emitted event is our confirmation that the server has no
+        // more events. Otherwise the immediately preceding
+        // `requestFuture` may have returned an empty/stale page even
+        // though a fresh `/context` call can still advance us.
+        if (newestEventIdSoFar == null ||
+            contextAnchorEventId == newestEventIdSoFar) {
           stopReason = BootstrapStopReason.serverExhausted;
           break;
         }
 
         try {
           timeline.cancelSubscriptions();
+          final nextContextAnchorEventId = newestEventIdSoFar;
           timeline = await room.getTimeline(
-            eventContextId: newestEventIdSoFar,
+            eventContextId: nextContextAnchorEventId,
             limit: 0,
           );
+          contextAnchorEventId = nextContextAnchorEventId;
         } catch (error, stackTrace) {
           logging.error(
             LogDomain.sync,
