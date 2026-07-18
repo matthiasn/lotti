@@ -33,10 +33,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1053" date="2026-07-18">
+      <description>
+        <p>Danish and Swedish are now available throughout Lotti and its Manual. The app follows Danish and Swedish system locales, and Settings → Advanced → Language can open each matching manual explicitly.</p>
+      </description>
+    </release>
     <release version="0.9.1052" date="2026-07-18">
       <description>
           <p>Dutch is now available throughout Lotti and its Manual. The app follows Dutch system locales, and Settings → Advanced → Language can open the matching Dutch manual explicitly.</p>
-          <p>Danish and Swedish are now available throughout Lotti and its Manual. The app follows Danish and Swedish system locales, and Settings → Advanced → Language can open each matching manual explicitly.</p>
           <p>Settings → Advanced → Language now changes Lotti's UI as well as the external Manual. Selecting a language updates both immediately; Follow system restores your device language for both.</p>
           <p>Italian is now available throughout Lotti and its Manual. The app follows Italian system locales, and Settings → Advanced → Language can open the matching Italian manual explicitly.</p>
           <p>The task AI summary card is more compact and calmer. The summary leads directly under a tighter header, and all secondary controls moved into a quiet footer at the card bottom: the Wake agent button, a small countdown chip while an automatic update is scheduled, the automatic-updates switch, and the model line. While automatic updates are off, a slim status strip under the summary always reserves the same space, showing either an out-of-date notice with a right-sized Wake agent button or a quiet up-to-date confirmation, so the card never jumps when freshness changes. Proposal rows lead with the proposed change itself over quiet accept and reject icons and a neutral kind tag, long summaries keep a readable line length on wide windows, and History plus Confirm all share one row under the list.</p>

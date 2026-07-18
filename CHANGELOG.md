@@ -4,16 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1053]
+### Added
+- **Danish and Swedish are now available across Lotti and its Manual.** The
+  app follows Danish and Swedish system locales, with matching Manual routes,
+  localized screenshots, and explicit language choices in Settings → Advanced
+  → Language.
+
 ## [0.9.1052]
 ### Added
 - **Dutch is now available across Lotti and its Manual.** The app follows
   Dutch system locales, and the published Manual now has a Dutch route with
   matching localized screenshots. Settings → Advanced → Language can also
   select Dutch explicitly.
-- **Danish and Swedish are now available across Lotti and its Manual.** The
-  app follows Danish and Swedish system locales, with matching Manual routes,
-  localized screenshots, and explicit language choices in Settings → Advanced
-  → Language.
 
 ### Changed
 - **Language now changes Lotti as well as the Manual.** Selecting a language
@@ -21,14 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the same Manual translation. Follow system restores your device language
   for both.
 
-### Fixed
-- **Audio transcripts respect the automatic-updates switch.** Finishing an
-  audio transcription — locally or synced from another device — no longer
-  wakes the task agent while automatic updates are off. The summary is marked
-  out of date instead, so the card shows the Wake agent action and no
-  inference tokens are spent without consent.
-
-### Changed
 - **The task AI summary card is more compact and calmer.** The summary now
   leads directly under a tighter header, and all secondary controls moved
   into a quiet footer at the card bottom: the Wake agent button, a small
@@ -42,6 +37,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tag, long summaries keep a readable line length on wide windows, and
   History plus Confirm all share one row under the list. Duplicated
   explanatory captions are gone.
+
+### Fixed
+- **Audio transcripts respect the automatic-updates switch.** Finishing an
+  audio transcription — locally or synced from another device — no longer
+  wakes the task agent while automatic updates are off. The summary is marked
+  out of date instead, so the card shows the Wake agent action and no
+  inference tokens are spent without consent.
 
 ## [0.9.1051]
 ### Fixed
