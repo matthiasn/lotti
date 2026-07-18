@@ -1,0 +1,119 @@
+---
+title: Designagentmallar och själar
+description: Definiera återanvändbara agentansvar, separera personlighet från instruktioner och förbättra båda genom versionerade en-till-en-granskningar.
+---
+
+# Designagentmallar och själar
+
+En **agentmall** definierar ett återanvändbart ansvar: typen av agent,
+dess inferensprofil, driftdirektiv, rapportformat och valfritt
+personlighet. En **själ** bär den återanvändbara rösten, tongränserna, coachningen
+stil, och anti-smickerpolitik. Att hålla dessa begrepp åtskilda gör det möjligt
+Personlighetsförbättring konsekvent över flera mallar utan att kopiera
+instruktioner mellan dem.
+
+## Gå igenom mallkatalogen
+
+Öppna **Inställningar → agenter → agentmallar**. Katalogen visar mallen
+Vänlighet, modellidentitet, aktiv version och om en recension behöver uppmärksamhet.
+
+<ManualScreenshot
+  caseId="agents/templates"
+  alt="Lotti agent templates for orbital habitat safety, Project Waddle day planning, sardine supply monitoring, and fish diplomacy coaching"
+  caption="Each Project Waddle template has a narrow responsibility and visible version instead of one all-purpose agent with an unreviewable prompt."
+/>
+
+De inbyggda typerna tjänar olika syften:
+
+- **Task Agent** arbetar mot en uppgift och dess kopplade bevis.
+- **Dagagent** planerar och reviderar en dag.
+- **Projektagent** följer ett projekt över tid.
+- **Event Agent** följer en händelsearbetsyta.
+- **Template Improver** stöder den versionerade en-till-en-granskningsprocessen.
+
+## Redigera en mall
+
+Välj en mall för att redigera dess nuvarande konfiguration. Välj en standard
+Slutsatsprofil med de verktyg och modaliteter som ansvaret kräver,
+Sedan kan du eventuellt tilldela en själ.
+
+<ManualScreenshot
+  caseId="agents/template-editor"
+  alt="Orbital Habitat Sentinel template editor using Project Waddle Command and Admiral Pebble with habitat safety and report directives"
+  caption="The sentinel's operational directive describes what to inspect; Admiral Pebble contributes the communication and challenge style."
+/>
+
+Använd de två direktivfälten medvetet:
+
+- **Allmän direktiv** definierar ansvar, gränser och beslut
+  regler.
+- **Rapportdirektiv** definierar vad en användbar sparad rapport måste innehålla.
+
+Att spara en redigerad mall skapar en ny version, och befintlig historik finns kvar
+tillgänglig för revision och återställning. Undvik att dölja orelaterade ansvarsområden i
+En lång direktiv bara för att minska antalet mallar.
+
+## Kör en mall en-mot-en
+
+Mallen **1-på-1** sidramar föreslog förändringar mot Real wake
+Aktivitet, återkoppling, framträdande och tidigare sessioner. En väntande session är en
+förslag, inte en automatisk omskrivning.
+
+<ManualScreenshot
+  caseId="agents/template-review"
+  alt="Orbital Habitat Sentinel one-on-one showing a proposal about surfacing the launch decision and recent performance metrics"
+  caption="The example proposal responds to a concrete failure: the safety finding was correct, but the go/no-go decision was buried under fish trivia."
+/>
+
+Starta samtalet, granska bevisen och godkänn endast ändringarna
+Det förbättrar ansvaret. Det godkända resultatet blir ett annat
+Versionsbaserad mallpost.
+
+## Håll personligheten återanvändbar med själar
+
+Öppna **Souls** för att se vilka personligheter som mallar kan dela. En själ är
+inte en annan uppgiftsprompt; Den styr hur en agent kommunicerar, coachar och
+Trycker tillbaka.
+
+<ManualScreenshot
+  caseId="agents/souls"
+  alt="Lotti soul catalog containing Admiral Pebble, Dr. Flipper, and Captain Sardina"
+  caption="Project Waddle separates a calm flight director, a curious scientist, and a practical cargo coordinator from the jobs that use them."
+/>
+
+Soul editor håller fyra frågor tydliga:
+
+<ManualScreenshot
+  caseId="agents/soul-editor"
+  alt="Admiral Pebble soul editor with voice, tone bounds, coaching style, and anti-sycophancy policy"
+  caption="Admiral Pebble can stay warm and decisive while still challenging optimistic launch assumptions with evidence."
+/>
+
+- **Röstdirektiv** beskriver den igenkännbara rösten och kommunikationen
+  prioriteringar.
+- **Tone Bounds** anger vad rösten måste undvika.
+- **Coaching Style** beskriver hur den hjälper någon att fatta ett beslut.
+- **Anti-Smicker-policy** förklarar när och hur den bör vara oense.
+
+Använd konkreta beteendemässiga gränser. "Var hjälpsam" är svårt att repetera; "utmaning
+optimistiska lanseringsantaganden och hänvisa till observationen som förändrade din
+slutsats" kan kontrolleras mot faktisk produktion.
+
+## Utveckla en gemensam själ försiktigt
+
+En själ **1-till-1** hämtar feedback från varje mall med den personligheten.
+Det gör förändringen kraftfull: att godkänna den kan förbättra flera agenter, men en
+Dålig förändring kan också påverka dem alla.
+
+<ManualScreenshot
+  caseId="agents/soul-review"
+  alt="Admiral Pebble soul one-on-one with a proposal, one sharing template, and completed session history"
+  caption="The sharing count and session history make the blast radius visible before personality changes are approved."
+/>
+
+Läs delningsräkningen, föreslagen feedbacksammanfattning och tidigare sammanfattning innan
+Börjar en personlighetsbedömning. Om återkopplingen endast gäller ett ansvar,
+Ändra den mallen istället för att lära den delade själen en uppgiftsspecifik regel.
+
+Return to [Run and monitor agents](./agents.mdx) to inspect the instances and
+vakcykler producerade från dessa ritningar.

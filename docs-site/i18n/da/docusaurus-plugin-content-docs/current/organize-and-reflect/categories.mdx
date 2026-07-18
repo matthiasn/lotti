@@ -1,0 +1,80 @@
+---
+title: Organiser med kategorier
+description: Brug kategorier som meningsfulde grænser for filtrering, planlægning, privatliv og automatisering.
+---
+
+# Organiser med kategorier
+
+A-kategori er det vigtigste strukturelle hjem for et bidrag. Brug en, når en krop af
+arbejdet har brug for sine egne planlægningsregler, privatlivsgrænser, visuel identitet eller AI
+kontekst. I demo-arbejdsområdet, **Pingvinoperationer**, **Mission Control**,
+**Fiskediplomati** og **Menneskelig vedligeholdelse** adskiller sig reelt forskelligt
+områder af ekspeditionen.
+
+<ManualScreenshot
+  caseId="categories/list"
+  alt="Category settings containing Penguin Operations, Mission Control, Fish Diplomacy, and Human Maintenance with task counts and status icons"
+  caption="The list is searchable and shows task counts. Icons identify favorite, private, and inactive categories at a glance."
+/>
+
+## Opret en kategori
+
+1. Åbn **Indstillinger → Kategorier**.
+2. Vælg **Opret kategori**.
+3. Indtast et særpræget navn, farve og ikon.
+4. Opret den, og åbn derefter kategorien igen for at konfigurere dens adfærd.
+
+Oprettelsen starter bevidst med de identificerende felter. Planlægning, privatliv,
+Sprog- og automatiseringsmuligheder findes i den fulde editor efter kategorien
+eksisterer.
+
+## Konfigurer kategoriadfærd
+
+<ManualScreenshot
+  caseId="categories/detail"
+  alt="Penguin Operations category editor showing its name, purple flight identity, and favorite, private, active, and day-planning options"
+/>
+
+Redaktøren styrer mere end blot udseendet:
+
+- ** Favorit** gør en vigtig kategori lettere at genkende og vælge.
+- ** Private** skjuler sit indhold, medmindre private bidrag vises. Det er det
+  en synlighedsgrænse, ikke separat kryptering for selve kategorien.
+- **Active** styrer, om kategorien kan vælges til nye indgange.
+  Deaktivering bevarer eksisterende data.
+- **Dagplanlægning** giver kategorien mulighed for at deltage i Daglig OS-planlægning.
+- **Language** angiver standardsproget for nye opgaver i kategorien.
+
+Brug **dagplanlægning** selektivt. At aktivere det for alle kategorier udvider
+planlæggerens kontekst og gør den daglige ritual mere larmende.
+
+## Tilføj kategorispecifik automatiseringskontekst
+
+En kategori kan give standardindstillinger for nye opgaver: en inferensprofil og en
+Agentskabelon. Disse er standardlåse, ikke permanente låse; Opgavevalg kan
+Skifter stadig senere.
+
+<ManualScreenshot
+  caseId="categories/automation"
+  alt="Penguin Operations advanced settings with Project Waddle speech vocabulary and learned checklist corrections for Sir Flaps-a-Lot"
+  caption="Speech terms are separated with semicolons. Checklist corrections are learned from edits and can be reviewed or deleted here."
+/>
+
+**Talegenkendelse**-ordbogen er nyttig til navne, lokationer, forkortelser,
+og domænevokabular, som transkription ofte overser. Penguin Operations, for
+example, teaches Lotti `Project Waddle`, `Sir Flaps-a-Lot`, `sardine`, and
+`Europa`.
+
+Når du manuelt retter genererede tjeklistetitler, kan Lotti bevare
+før-og-efter-eksempler til fremtidige AI-forslag. Gennemgå eksemplerne her
+og fjerne enhver rettelse, der ikke burde styre senere output.
+
+## Kategorier versus etiketter
+
+Use a category for the primary home of work and a [label](./labels.mdx) for a
+Tværgående ejendom. **Pingvinoperationer** er en kategori; **Habitat
+kritisk** er en betegnelse, der også kan gælde for Mission Control-arbejde.
+
+Hold kategorisystemet lille nok til, at det er åbenlyst at vælge én. Tilføj en ny
+kategori, når det ændrer planlægning, filtrering, privatliv eller automatisering – ikke blot
+fordi et nyt substantiv dukkede op.

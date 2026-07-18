@@ -1,0 +1,85 @@
+---
+title: Koppla ihop en AI-leverantör
+description: Koppla samman moln- eller lokal inferens, inspektera dess modeller och håll behörighet och slutpunkter under kontroll.
+---
+
+# Koppla ihop en AI-leverantör
+
+Lotti delar upp en AI-uppsättning i tre lager: en **leverantör** är tjänsten den är
+ansluter till, en **modell** är en modell som exponeras genom den tjänsten, och en
+**Slutsatssprofil** Leder varje typ av arbete till en modell. Börja med
+Leverantör, sedan granska modellerna och profilerna som skapats kring den.
+
+<ManualScreenshot
+  caseId="ai/providers"
+  alt="Lotti AI Settings showing Mission Control Router, Habitat Local Lab, Orbital Vision, and Penguin Audio Bay providers"
+  caption="AI Settings keeps cloud and local connections together. Each card shows connection state and how many saved models use it."
+/>
+
+## Välj lokalt eller fjärrstyrt
+
+- En molnleverantör är vanligtvis den snabbaste installationen och kräver ofta ett API
+  Nyckel. Text, ljud eller bilder som skickas genom den lämnar enheten.
+- En lokal leverantör kan behålla inferenser på din egen maskin eller en lokal slutpunkt
+  du kontrollerar, men dess tjänst måste vara igång och nåbar från enheten
+  där Lotti åberopar den. En LAN-adress kan fortfarande flytta en prompt mellan dina
+  enheter; "lokal" betyder att det inte skickas till en hostad modellleverantör, inte att nej
+  nätverkshopp finns.
+- En anpassad bas-URL kan peka en stödd leverantörstyp mot en kompatibel proxy
+  eller Gateway. Leverantörstypen styr fortfarande protokollspecifikt beteende.
+
+## Koppla en leverantör
+
+1. Öppna **Inställningar → AI-inställningar → Leverantörer**.
+2. Välj **+**-knappen.
+3. Välj en stödd leverantör.
+4. Ange dess visningsnamn, endpoint och API-nyckel vid behov.
+5. Lägg till vilka modeller du än vill föreslå och spara sedan.
+
+För stödda förstahandsleverantörer seedar Lotti användbara modeller och en eller flera
+Inferensprofiler. Resultatskärmen sammanfattar vad som skapades.
+
+<ManualScreenshot
+  caseId="ai/provider-editor"
+  alt="Lotti provider editor for Mission Control Router with OpenRouter selected, a base URL, masked API key, and suggested models"
+  caption="Credentials stay masked. Suggested models are shortcuts, not a requirement—you can add provider-specific model IDs later."
+/>
+
+## Inspektera och underhåll en anslutning
+
+Öppna ett leverantörskort för att inspektera dess maskerade inloggningsuppgifter, bas-URL, sparade modeller,
+och alla aktiva profiler som är beroende av dessa modeller. Härifrån kan du redigera
+anslutning, lägg till en annan modell eller ta bort leverantören.
+
+<ManualScreenshot
+  caseId="ai/provider-detail"
+  alt="Mission Control Router provider detail showing its connection, Waddle Command models, and active Project Waddle profile"
+  caption="The dependency summary makes the blast radius visible before you change or remove a provider."
+/>
+
+Att ändra en bas-URL eller API-nyckel påverkar varje modell som är kopplad till den leverantören.
+Efter att ha ändrat något av värdena, verifiera en representativ AI-åtgärd innan du antar
+Kopplingen är hälsosam. Att ta bort en leverantör kan också påverka profiler som
+ruttarbete genom dess modeller; Gå igenom beroendeinformationen först.
+
+## Granska profilrouting
+
+Open [Models and inference profiles](./models-and-profiles.mdx) to verify what
+leverantören exponerar och hur Lotti dirigerar varje möjlighet. Kategorier kan sätta en
+Standardprofil för deras arbete, medan individuell automation kan välja eller
+Åsidosätt en modell där arbetsflödet erbjuder det valet.
+
+## Integritetsgräns
+
+Innan du skickar känslig text, ljud eller bilder, kontrollera om de är konfigurerade
+Endpoint är lokal eller fjärrstyrd. Ett vänligt namn som "Habitat Local Lab" är det inte
+säkerhetsgränsen—bas-URL:en, nätverksvägen och maskinen som betjänar
+Det är det. Lotti förvarar loggboken lokalt oavsett; detta beslut styr
+Slutsatssanrop själv.
+
+:::warning[API-nycklar]
+
+Behandla leverantörsnycklar som hemligheter. Klistra aldrig in dem i dokumentation, problem eller
+Skärmdumpar.
+
+:::

@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_cs.dart';
+import 'app_localizations_da.dart';
 import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
@@ -14,6 +15,7 @@ import 'app_localizations_it.dart';
 import 'app_localizations_nl.dart';
 import 'app_localizations_pt.dart';
 import 'app_localizations_ro.dart';
+import 'app_localizations_sv.dart';
 
 // ignore_for_file: type=lint
 
@@ -103,6 +105,7 @@ abstract class AppLocalizations {
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
     Locale('cs'),
+    Locale('da'),
     Locale('de'),
     Locale('en', 'GB'),
     Locale('es'),
@@ -111,6 +114,7 @@ abstract class AppLocalizations {
     Locale('nl'),
     Locale('pt'),
     Locale('ro'),
+    Locale('sv'),
   ];
 
   /// No description provided for @activeLabel.
@@ -15352,6 +15356,12 @@ abstract class AppLocalizations {
   /// **'Dutch'**
   String get settingsManualLanguageDutchTitle;
 
+  /// No description provided for @settingsManualLanguageDanishTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Danish'**
+  String get settingsManualLanguageDanishTitle;
+
   /// No description provided for @settingsManualLanguageEnglishTitle.
   ///
   /// In en, this message translates to:
@@ -15405,6 +15415,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Spanish'**
   String get settingsManualLanguageSpanishTitle;
+
+  /// No description provided for @settingsManualLanguageSwedishTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Swedish'**
+  String get settingsManualLanguageSwedishTitle;
 
   /// No description provided for @settingsManualLanguageTitle.
   ///
@@ -18140,6 +18156,7 @@ class _AppLocalizationsDelegate
   @override
   bool isSupported(Locale locale) => <String>[
     'cs',
+    'da',
     'de',
     'en',
     'es',
@@ -18148,6 +18165,7 @@ class _AppLocalizationsDelegate
     'nl',
     'pt',
     'ro',
+    'sv',
   ].contains(locale.languageCode);
 
   @override
@@ -18171,6 +18189,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   switch (locale.languageCode) {
     case 'cs':
       return AppLocalizationsCs();
+    case 'da':
+      return AppLocalizationsDa();
     case 'de':
       return AppLocalizationsDe();
     case 'en':
@@ -18187,6 +18207,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsPt();
     case 'ro':
       return AppLocalizationsRo();
+    case 'sv':
+      return AppLocalizationsSv();
   }
 
   throw FlutterError(

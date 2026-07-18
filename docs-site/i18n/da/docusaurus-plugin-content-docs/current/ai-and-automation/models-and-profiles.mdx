@@ -1,0 +1,126 @@
+---
+title: Rutearbejde med modeller og profiler
+description: Beskriv modellens kapaciteter én gang, og brug derefter inferensprofiler til at styre tænkning, vision, lyd og billedgenerering.
+---
+
+# Rutearbejde med modeller og profiler
+
+En udbyder fortæller Lotti, hvor hun skal forbinde. En model registrerer én udbydermodel-ID
+og dens kapaciteter. En inferensprofil tildeler derefter disse modeller til
+jobs, forstår Lotti. Dette udelukker "hvilken model håndterer lyd?" fra alle
+Individuelle opgaver og automatiseringsregler.
+
+## Gennemgå gemte modeller
+
+Åbn **Indstillinger → AI-indstillinger → modeller**. Listen grupperer modeller efter udbyder
+og eksponerer kapacitetsfiltre for tekst, billede, lyd og ræsonnement.
+
+<ManualScreenshot
+  caseId="ai/models"
+  alt="Lotti AI model list with Project Waddle text, reasoning, vision, transcription, and image-generation models"
+  caption="The Project Waddle workspace mixes cloud and local models while keeping every model's capabilities explicit."
+/>
+
+**Samtidig agent vågner**-kontrollen øverst i AI-indstillinger begrænser hvordan
+Mange forskellige agenter kan lave slutninger på én gang. En højere værdi kan forbedres
+gennemstrømning, men det øger også samtidige udbyderforespørgsler og lokale
+Enhed indlæst. Hold det forsigtigt, når en udbyder har strenge prisbegrænsninger eller en
+Lokal model server har begrænset hukommelse.
+
+## Tilføj eller rediger en model
+
+Vælg et modelkort, eller brug **+** til at tilføje et. En modeldefinition inkluderer:
+
+- udbyderforbindelsen;
+-  et venligt visningsnavn og valgfri beskrivelse;
+- udbyderens præcise model-ID;
+-  den maksimale fuldførelsestoken-grænse;
+- input- og outputmodaliteter; og
+- kapabilitetsflag såsom ræsonnement eller funktionskald.
+
+<ManualScreenshot
+  caseId="ai/model-editor"
+  alt="Lotti model editor for Waddle Command 70B showing provider, provider model ID, completion limit, modalities, and reasoning capability"
+  caption="Capability metadata matters: Lotti uses it to decide which models are eligible for each profile slot and one-off picker."
+/>
+
+Brug den præcise identifikator, som udbyderen forventer. Visningsnavnet er kun for
+mennesker; At ændre det ændrer ikke, hvad udbyderen kører. Gør ikke krav på image,
+Lyd-, værktøjs- eller ræsonnementstøtte, medmindre modellen og endpointet faktisk er
+Giv det.
+
+## Byg en inferensprofil
+
+Åbn **Indstillinger → AI-indstillinger → Inferensprofiler**. Hver profil er genanvendelig
+Rutingpolitik. Oversigten viser, hvilken model der betjener hver konfigureret slot.
+
+<ManualScreenshot
+  caseId="ai/profiles"
+  alt="Lotti inference profiles for Project Waddle Command, Habitat Local-First, and Fish Diplomacy with their routed models"
+  caption="Profiles can optimize for different boundaries: a broad cloud profile, a desktop-only local profile, or a specialist reasoning profile."
+/>
+
+Rediger en profil for at tildele modeller til de funktioner, du bruger:
+
+- **Tænkning** er den krævede generelle tekstmodel.
+- **Thinking (High-End)** kan håndtere arbejde, der eksplicit kræver mere
+  En kompetent ræsonnementsvej.
+- ** billedgenkendelse** analyserer billeder.
+- **Transskription** konverterer lyd til tekst.
+- **Billedgenerering** skaber opgavekunstværker og andre genererede billeder. Den
+  Den nuværende indbyggede billedgenereringsvej bruger en konfigureret fjernudbyder, så
+  Vælg den udbyder og de referencer, du sender, med samme omhu som enhver anden
+  Anden cloud-inferensrute.
+
+<ManualScreenshot
+  caseId="ai/profile-editor"
+  alt="Project Waddle Command profile editor assigning thinking, high-end reasoning, image-recognition, transcription, and image-generation models"
+  caption="One profile routes every Project Waddle modality without repeating model choices across tasks."
+/>
+
+**Kun for desktop** skjuler en profil på mobile platforme, hvilket er nyttigt, når det er tilfældet
+Det afhænger af en model, der kun kan nås fra en arbejdsstation. Enhedsfastgørelse er til
+Automatisk synkroniseret lydbehandling: Nål kun, når den valgte enhed annoncerer
+De udbydere, der er nødvendige for profilen. Uden en fastgjort enhed er synkroniseret lyd ikke
+automatisk transskriberet af den profil.
+
+## Vælg en model uden at huske ID'er
+
+Modeludvælger starter med leverandøren og viser kun kompatible gemte modeller.
+Pickeren i en profilslot vil for eksempel ikke tilbyde en lyd-only model
+Til tekst-ræsonnering.
+
+<ManualScreenshot
+  caseId="ai/model-picker"
+  alt="Lotti Choose a model modal listing OpenRouter, Ollama, and Google Gemini providers over the Project Waddle profile editor"
+  caption="Choose the provider first; Lotti then narrows the next page to eligible models from that connection."
+/>
+
+## Sæt en kategori som standard
+
+En kategori kan vælge en standard inferensprofil under **Indstillinger →
+Definitioner → kategorier**. Nyt arbejde i den kategori kan derefter arve en
+Sammenhængende rutepolitik. Vælg den profil, hvis privatliv og kapacitet kombineres
+matcher kategorien i stedet for kun at vælge ud fra hastighed.
+
+<ManualScreenshot
+  caseId="ai/profile-picker"
+  alt="Penguin Operations category editor with a modal offering Project Waddle Command, Habitat Local-First, and Fish Diplomacy profiles"
+  caption="The desktop-only badge makes platform restrictions visible before a category default is selected."
+/>
+
+## Legacy-profilrute
+
+Den ældre selvstændige **Inference Profiles**-rute er stadig tilgængelig for
+Kompatibilitet og redigering af de samme gemte profilposter. Det eksponerer indre
+model-IDs og giver mindre afhængighedskontekst end AI-indstillinger, så foretræk
+nuværende **AI-indstillings- → Inferensprofiler**-side til normal vedligeholdelse.
+
+<ManualScreenshot
+  caseId="ai/legacy-profiles"
+  alt="Legacy Lotti Inference Profiles page showing Project Waddle profile slots as internal model identifiers"
+  caption="Use this compatibility screen only when an older link takes you there; the current AI Settings profile cards are easier to audit."
+/>
+
+Continue with [AI skills](./skills.mdx) to see how the selected profile becomes
+en handling på en opgave eller indtastning.

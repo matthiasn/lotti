@@ -1,0 +1,84 @@
+---
+title: Tag-arbejde med labels
+description: Brug etiketter til tværgående kontekst, der spænder over kategorier og opgaver.
+---
+
+# Tag-arbejde med labels
+
+Labels tilføjer et andet, fleksibelt lag af organisering. En opgave har én primær
+kategori, men det kan bære flere mærkater for initiativer, hastværk, ventetid
+stater eller en anden ejendom, der krydser kategorigrænser.
+
+<ManualScreenshot
+  caseId="labels/list"
+  alt="Label settings containing Awaiting Mission Control, Habitat critical, Project Waddle, and Sardine market sensitive with task usage counts"
+  caption="Usage counts reveal which labels are active in the workspace; the lock marks a private label."
+/>
+
+Det Intergalaktiske Penguin Logistics-arbejdsområde bruger mærkater bevidst:
+
+- **Projekt Waddle** forbinder opsendelsesarbejdet på tværs af Penguin Operations og Mission
+  Kontrol og fiskediplomati.
+- **Habitat kritisk** identificerer arbejde, der skal færdiggøres før ekspeditionen
+  går ind i det orbitale habitat.
+- **Venter på Mission Control** registrerer en reel blokeringstilstand.
+- **Sardin-markedssensitivt** holder privat forhandlingsarbejde identificerbart.
+
+## Opret og rediger en etiket
+
+1. Åbn **Indstillinger → Etiketter**.
+2. Vælg **Opret label**.
+3. Tilføj et kort navn og en valgfri beskrivelse.
+4. Vælg en farve, der kan skilles fra andre etiketter.
+5. Beslut om mærket er privat, og hvilke kategorier der må bruge det.
+6. Gem.
+
+<ManualScreenshot
+  caseId="labels/detail"
+  alt="Project Waddle label editor showing its launch-critical description, blue color, privacy option, and three applicable categories"
+/>
+
+Beskrivelser er værd at skrive, når en etiket kan tolkes i mere end
+Én vej. De giver den operationelle betydning uden at tvinge den forklaring
+i hver opgavetitel.
+
+**Relevante kategorier** begrænser, hvor etiketten kan vælges. Projekt
+Waddle er tilgængelig i de tre dele af ekspeditionen, der er involveret i opsendelsen,
+mens et specialistmærke kan forblive begrænset til én kategori. Det holder plukkerne
+relevant i stedet for at præsentere alle etiketter overalt.
+
+## Påfør etiketter på opgaver
+
+Åbn en opgave og brug dens labelkontrol til at tilføje eller fjerne etiketter. Labels arbejde
+Sammen med opgavestatus-, prioritets- og kategorifiltre, så du kan spørge om fokuseret
+spørgsmål som "vis åbent P1 habitatkritisk arbejde" uden at opfinde noget nyt
+kategori for den midlertidige visning.
+
+## Lad en task agent foreslå labels
+
+Når en konfigureret opgaveagent har nok opgavekontekst, kan den foreslå tilpasning
+etiketter sammen med andre opgaveændringer. Lotti stiller kun aktive etiketter til rådighed
+når de er gyldige for opgavens kategori, og den afviser slettet,
+Forslag uden for omfang, duplikat eller lav tillid. Agenten får aldrig en
+fri form til at oprette vilkårlige tags ud fra en prompt.
+
+Gennemgå en agent-initieret etiket i opgavens område for foreslåede ændringer, ligesom du
+Ville en tjekliste, dato eller status ændre sig. Bekræft det, når etiketten forbedres
+fremtidig filtrering; afvis det, når det ikke gør. Dette holder opgaven synlig
+organisering under din kontrol i stedet for at behandle et modelgæt som kilde
+Sandhed.
+
+At fjerne en mærkat fra en opgave behandles som en bevidst afvisning, når
+Automatiske labelforslag er aktiveret. Lotti registrerer det valg, så det samme
+Forslaget genanvendes ikke straks uden en ny grund.
+
+## Hold etiketter nyttige
+
+- Foretræk etiketter, der ændrer en beslutning, et filter eller en anmeldelse.
+- Genanvend én stabil etiket i stedet for at skabe stavevarianter.
+- Tjek forbrugstællingerne, før du sletter eller konsoliderer etiketter.
+- Brug privatliv, når selve labelnavnet afslører følsom kontekst.
+- Træk etiketter tilbage, der ikke længere beskriver live-arbejde.
+
+Hvis noget er det primære, holdbare hjem for arbejdet, så gør det til et
+[category](./categories.mdx) instead.

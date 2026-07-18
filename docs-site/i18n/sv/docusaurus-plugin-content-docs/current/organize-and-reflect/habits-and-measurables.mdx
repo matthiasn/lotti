@@ -1,0 +1,160 @@
+---
+title: Spårvanor och mätningar
+description: Konfigurera återkommande beteenden och numeriska observationer, och registrera sedan varje ärligt.
+---
+
+# Spårvanor och mätningar
+
+En vana svarar **har detta återkommande beteende hänt?** Ett mätbart svar
+**vilket numeriskt värde observerade jag?** De kan stödja samma mål utan
+utbytbara: "Kejsarpingvinens namnuppställning" är en vana, medan "Pingviner"
+redovisad" är ett mätbart värde.
+
+## Arbeta med vanor
+
+Vanesidan organiserar aktiva definitioner i vad som ska lämnas in nu, schemalagt
+för senare, och slutförda. Dess dagliga sammanfattning, konsekvenshistorik, sviter och
+Completion-rate-diagram hjälper dig att upptäcka mönster utan att behandla en utebliven dag
+som hela historien.
+
+<ManualScreenshot
+  caseId="habits/today"
+  alt="Penguin Operations habits dashboard showing habitat checks, penguin roll call, sardine inventory, completion state, streaks, and recent history"
+/>
+
+### Skapa och hitta vanedefinitioner
+
+1. Öppna **Inställningar → Vanor**.
+2. Välj **Skapa vana**.
+3. Ge beteendet ett konkret, upprepbart namn och en användbar beskrivning.
+4. Välj dess kategori, alternativ och schema.
+5. Spara.
+
+<ManualScreenshot
+  caseId="habits/settings-list"
+  alt="Habit settings containing Emperor penguin roll call, Review sardine forecast, and Walk the habitat seals with favorite, inactive, and private states"
+  caption="Search definitions here. The star, hidden-eye, and lock identify favorite, inactive, and private habits."
+/>
+
+<ManualScreenshot
+  caseId="habits/settings-detail"
+  alt="Emperor penguin roll call habit editor with expedition description, Penguin Operations category, and favorite, private, and active options"
+/>
+
+Definitionsredigeraren inkluderar:
+
+- **Kategori** för filtrering och visuell kontext.
+- **Dashboard** när vanan ska visas som ett diagram på en vald dashboard.
+- **Favorit** för högre framträdande.
+- **Privat för att dölja det om inte privata poster visas.
+- **Active** för att kontrollera om den visas på Vanesidan utan att radera den
+  dess historia.
+
+### Schemalägg en daglig vana
+
+<ManualScreenshot
+  caseId="habits/schedule"
+  alt="Emperor penguin roll call schedule starting July 1, shown from 06:00 with a 06:30 alert"
+/>
+
+Den nuvarande redaktören är daily-first. Sätt ett **Startdatum**, eventuellt skjut upp när
+vanan visas från**, och välj valfritt när Lotti ska **visa en
+varning**. Datamodellen förstår också vecko- och månadsscheman, men
+Nuvarande redaktör visar de rikare tidskontrollerna för dagliga vanor.
+
+### Spela in vad som faktiskt hände
+
+Öppna en vana eller använd dess snabba handling. Det detaljerade fyllfyllnadsformuläret stödjer
+Tre utfall:
+
+- **Framgång** — beteendet inträffade.
+- **Missade** — det var väntat och möjligt, men hände inte.
+- **Skip** — det gällde inte rimligen den dagen.
+
+<ManualScreenshot
+  caseId="habits/record"
+  alt="Habit completion form for inspecting the penguin habitat seals, with Success, Skip, and Missed outcomes plus date and notes"
+/>
+
+Använd det tillstånd som bevarar verkligheten. En öppen historia är mer användbar än en
+perfekt diagram. Slutförandeposter är journalanteckningar, så senare visningar
+Kan återskapa det effektiva resultatet för varje vana och dag.
+
+## Arbeta med mätbara delar
+
+En mätbar definition beskriver numret innan du registrerar det: dess namn,
+enhet, integritet och hur flera observationer kombineras på kartor.
+
+<ManualScreenshot
+  caseId="measurables/settings-list"
+  alt="Measurable settings containing Habitat pressure, Penguins accounted for, and Sardines consumed"
+/>
+
+### Skapa en mätbar datatyp
+
+1. Öppna **Inställningar → Mätbara datatyper**.
+2. Välj åtgärden lägg till.
+3. Lägg till ett namn, valfri beskrivning och en kortfattad förkortning av enheten.
+4. Välj standardaggregeringen som används av diagram.
+5. Bestäm om det ska vara favorit eller privat, och spara sedan.
+
+<ManualScreenshot
+  caseId="measurables/settings-detail"
+  alt="Habitat pressure measurable editor using kPa and Daily average aggregation"
+/>
+
+Välj aggregering baserat på vad upprepade läsningar betyder:
+
+| Aggregering | Använd den när |
+| --- | --- |
+| Ingen aggregering | Varje enskild observation är viktig |
+| Daglig summa | Läsningar ackumuleras, såsom sardiner som konsumeras |
+| Daglig maxgräns | Dagens topp är den viktiga signalen |
+| Dagligt genomsnitt | Mätningar mäter ett varierande värde, såsom habitattryck |
+| Timsumma | Ackumulering kräver finare timspann |
+
+Enheten är visningskontext, inte en omvandlare. Om du definierar habitattryck som
+`kPa`, record values in kPa consistently. Create a separate measurable if a
+olika enheter representerar en genuint annorlunda serie.
+
+### Registrera en mätning
+
+Öppna en dashboard som innehåller mätbara och välj tilläggsåtgärden på dess
+Diagram. Ange det observerade värdet; Lotti har enheten bredvid numret så att den
+är tydligt vad som kommer att räddas. Nyligen distinkta värden visas som **Snabblogg**
+handlingar när man upprepar en av dem är användbart.
+
+<ManualScreenshot
+  caseId="measurements/capture"
+  alt="Sardines consumed measurement editor opened from its populated dashboard chart, with 84 sardines, quick-log suggestions, observed time, comment, and Save action"
+/>
+
+Använd **Observerat at** för den tid då avläsningen faktiskt togs, istället för
+när du råkar gå in i den. Den första sidan väljer kalenderdatumet.
+**Idag** återgår direkt till nuvarande datum.
+
+<ManualScreenshot
+  caseId="measurements/date"
+  alt="Observed at calendar selecting Friday July 17 2026 for the sardine measurement"
+/>
+
+Bläddra till tidsdelen för att ställa in timme och minut. **Nu** återställer
+nuvarande tid. Välj **Klart** för att återgå till det fortfarande fyllda mätutkastet,
+sedan **Spara** för att skapa journalposten.
+
+<ManualScreenshot
+  caseId="measurements/time"
+  alt="Observed at time wheel set to 10:30 AM for the sardine measurement"
+/>
+
+Kommentaren är valfri, men användbar när ett nummer behöver fungera
+kontext – till exempel en leverans, en ovanlig förskjutning eller en ändrad mätning
+metod. Att spara en mätning ändrar inte den mätbara definitionen eller dess
+aggregeringsregel.
+
+## Koppla ihop de två utan att förvirra dem
+
+Ett namnupprop kan genomföras framgångsrikt även om bara 36 pingviner var det
+räknat—vanan registrerar om ingreppet ägde rum, medan det mätbara
+records the result. Put both on a [dashboard](./dashboards.mdx) when their
+Relationen besvarar en återkommande operativ fråga.

@@ -1,0 +1,36 @@
+---
+title: Importera hälsodata
+description: Importera ett valt datumintervall från telefonens hälsodatalagring.
+---
+
+# Importera hälsodata
+
+Health Import finns tillgängligt på iOS och Android. Öppna **Inställningar → avancerad →
+Health Import**, välj start- och slutdatum, och välj sedan den datafamilj du har
+vill att Lotti ska läsa från telefonens hälsodatalager.
+
+<ManualScreenshot
+  caseId="health-import/overview"
+  alt="Health Import with a start date, an end date, and separate import actions for activity, sleep, heart rate, blood pressure, body measurements, and workouts"
+  caption="The Mobile view shows the import screen. Health Import is intentionally absent from the desktop Advanced settings tree, which the Desktop view demonstrates."
+/>
+
+De tillgängliga importerna är:
+
+- **Aktivitet** för totala aktivitetssummor;
+- ** Sleep** för sömnprov;
+- **Hjärtfrekvens** för pulsobservationer;
+- **Blodtryck** för blodtrycksmätningar;
+- **Kroppsmätning** för kroppsmetriska avläsningar; och
+- **Träning** för inspelade träningspass.
+
+Varje knapp importerar endast sin egen datafamilj över det visade datumintervallet.
+Att ändra intervallet startar inte en import av sig självt.
+
+Ditt operativsystem kan be om tillstånd för hälsodata. Lotti kan bara läsa
+De typer du beviljar. Om en förväntad datafamilj saknas, kontrollera appens
+hälsobehörigheter i telefonens systeminställningar och försök importera igen.
+
+Health Import visas inte på skrivbordet eftersom den underliggande mobila hälsan
+Butiker finns inte tillgängliga där. Importerade observationer kan fortfarande ses i
+de relevanta Lotti-dashboardarna efter att de har synkat till en annan enhet.

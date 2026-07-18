@@ -1,0 +1,40 @@
+---
+title: Synkroniseringsvedligeholdelse
+description: Brug Matrix-synkronisering, reparation og oprydningshandlinger bevidst, fra genudsendelse af poster til genopbygning af sekvenshistorik.
+---
+
+# Synkroniseringsvedligeholdelse
+
+Åbn **Indstillinger → Synkronisering → Vedligeholdelse** for database-niveau reparation og oprydning.
+Disse handlinger er ikke en del af rutinemæssig parring eller daglig synkronisering.
+Før du bruger dem, lad aktive skrivninger færdige og gem en aktuel backup af data
+Du kan ikke genskabe.
+
+<ManualScreenshot
+  caseId="sync/maintenance"
+  alt="Lotti Matrix Sync Maintenance with sync database deletion, definition sync, message re-sync, sequence-log population, and sent-outbox purge"
+  caption="Maintenance groups destructive, replay, and cleanup actions on one page. The confirmation text defines the scope of each operation."
+/>
+
+## Vælg den smalleste reparation
+
+- **Slet Sync Database** fjerner den lokale synkroniseringsdatabase. Det er ødelæggende
+  Lokal gendannelse, ikke en normal måde at afbryde en enhed på.
+- **Sync definitions** sender de aktuelle definitionsposter igen, såsom
+  kategorier og anden delt konfiguration.
+- ** Re-synkroniseringsbeskeder** afspiller udvalgte beskeder, når fjerntilstanden mangler
+  eller en tidligere levering skal gentages.
+- **Udfyld sekvenslog** rekonstruerer den lokale sekvenshistorik, der bruges til at
+  Opdag huller og driv tilbagefyldning.
+- **Rens gamle sendte udbakke-elementer** sletter allerede sendte diagnostiske køhistorik
+  efter dens opbevaringsperiode. Den fjerner ikke afventende eller mislykket arbejde.
+
+Start med den mindste operation, der matcher symptomet. En fastlåst tilknytning
+belongs in the [Outbox](./sync.mdx#inspicer-outboxen); persistent sequence gaps
+hører til i Backfill; to gyldige samtidige redigeringer hører til i
+[Conflicts](./conflicts.mdx). Deleting the sync database should be a last-resort
+Lokal nulstilling udført med en kendt god peer og backup til rådighed.
+
+Efter en reparation, vend tilbage til **Sync Statistics**, bekræft at det behandlede arbejde er
+Fremgang uden stigende fejl, og tjek at Udbakken og
+Tilbagefyldnings mangler tælling.

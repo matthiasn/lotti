@@ -9040,6 +9040,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsManualLanguageDutchTitle => 'Nizozemština';
 
   @override
+  String get settingsManualLanguageDanishTitle => 'Dánština';
+
+  @override
   String get settingsManualLanguageEnglishTitle => 'Angličtina';
 
   @override
@@ -9067,6 +9070,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsManualLanguageSpanishTitle => 'Španělština';
+
+  @override
+  String get settingsManualLanguageSwedishTitle => 'Švédština';
 
   @override
   String get settingsManualLanguageTitle => 'Jazyk';

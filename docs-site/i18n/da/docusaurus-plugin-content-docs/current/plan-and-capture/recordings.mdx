@@ -1,0 +1,83 @@
+---
+title: Optag lyd
+description: Optag en talenote og beslut, hvilken automatiseret behandling der skal følge.
+---
+
+# Optag lyd
+
+Lyd er nyttig, når man taler hurtigere end at skrive, eller når tone og detaljer
+Betydning. En optagelse kan stå alene eller live i en opgave.
+
+## Optag en optagelse
+
+1. Åbn journalen eller opgaven, der skal eje optagelsen.
+2. Brug **+**-handlingen og vælg **Lydoptagelse**.
+3. Gennemgå de tilgængelige behandlingsmuligheder.
+4. Begynd at optage, tal tydeligt, og stop så, når du er færdig.
+
+<ManualScreenshot
+  caseId="recordings/active"
+  alt="Active audio recording sheet showing the live visualizer, elapsed time, pause, discard, stop, and speech recognition controls"
+/>
+
+Under optagelsen holder arket forløbet tid og den levende inputvisualisering i
+Udsigt. Du kan pause og genoptage uden at afslutte optagelsen, kassere optagelsen,
+eller vælg **Stop** for at gemme det. Når opgavebevidst transskription er tilgængelig,
+**Talegenkendelse**-muligheden styrer, om behandlingen skal begynde efter
+optagelsen gemmes.
+
+Når en inferensprofil og transskriptionsfærdighed konfigureres, kan Lotti
+Transskribér optagelsen efter optagelsen. Opgaveoptagelser kan også tilbyde
+Opgavebevidst behandling såsom opdateringer af tjeklister eller sammendrag.
+
+## Dikter nyttig opgavekontekst
+
+For opgavebevidst behandling, sig resultatet og nævn derefter konkrete handlinger,
+Folk, datoer eller begrænsninger. "Bekræft fredagens lastvindue, og spørg så
+Mission Control om opsendelsesgodkendelsen" giver Lotti langt mere brugbar kontekst
+end "få styr på pingvin-sagen." En kort pause mellem forskellige handlinger også
+gør det færdige transkript lettere at gennemgå.
+
+Opgavebevidst behandling kan omdanne den optagelse til en transskription, en opdateret
+Forslag til rapporter eller tjeklister. Disse er AI-output, der kan gennemgås, ikke en påstand
+at opgaven ændrede sig af sig selv: tjek navne, datoer og foreslåede ændringer før
+Du accepterer dem. For svær lyd, flyt et mere stille sted, hold den
+mikrofonen er rimelig tæt på, og tal i et naturligt, jævnt tempo.
+
+## Gennemgå gemte udskrifter
+
+Åbn en lydindgang, brug dens **...**-menu, og vælg **Talegenkendelse**.
+Gennemgangsarket gemmer alle gemte udskrifter med optagelsen i stedet for
+at erstatte et tidligere resultat. Hver række viser, hvornår behandlingen kørte, og hvor længe den var
+Tog, det opdagede sprog, samt den udbyder og model, der producerede det.
+
+<ManualScreenshot
+  caseId="recordings/transcripts"
+  alt="Speech Recognition sheet over a Project Waddle audio entry with English selected and two saved transcript results from Mistral and Whisper"
+  caption="The source recording remains visible behind the sheet, while each recognition result keeps its own provenance."
+/>
+
+Sprogvælgeren tilbyder i øjeblikket **Auto**, **Engelsk** og **Deutsch**.
+Brug **Auto**, når udbyderen skal opdage sproget, eller vælg et sprog
+før du kører genkendelse, når du allerede kender det. Valget gemmes på
+lydindgangen.
+
+Vælg dobbelt-chevron på et resultat for at afsløre den komplette, valgbare tekst.
+Udvidelse af en række afslører også dens sletningshandling. Sletning af en transskription fjerner
+det genkendelsesresultat, ikke kildeoptagelsen eller de andre udskrifter.
+
+<ManualScreenshot
+  caseId="recordings/transcript-expanded"
+  alt="Expanded Project Waddle transcript describing Europa sardine cargo, 37 emperor penguins, and the zero-gravity fish feeder"
+  caption="Review the full wording and provider provenance before using generated text as task context."
+/>
+
+## Vælg automatisering med vilje
+
+Behandlingsmuligheder er forespørgsler om konfigurerede AI-færdigheder. Den valgte udbyder
+kan være lokal eller fjern, så verificér den aktive inferensprofil, før du bruger
+følsomt materiale. Gennemgå genereret tekst og foreslåede opgaveændringer i stedet for
+Behandle dem som kildesandhed.
+
+See [AI provider setup](../ai-and-automation/provider-setup.mdx) to control where
+Slutningen løber.

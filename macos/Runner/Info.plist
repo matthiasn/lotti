@@ -14,6 +14,7 @@
 	<string>6.0</string>
 	<key>CFBundleLocalizations</key>
 	<array>
+		<string>da</string>
 		<string>en</string>
 		<string>cs</string>
 		<string>de</string>
@@ -23,6 +24,7 @@
 		<string>nl</string>
 		<string>pt</string>
 		<string>ro</string>
+		<string>sv</string>
 	</array>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>

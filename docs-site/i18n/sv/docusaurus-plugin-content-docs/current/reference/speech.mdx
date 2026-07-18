@@ -1,0 +1,51 @@
+---
+title: Välj läsrösten
+description: Konfigurera röst, modell och uppspelningshastighet på enheten som används för att läsa upp uppgiftssammanfattningar högt.
+---
+
+# Välj läsrösten
+
+När högläsning är tillgänglig, öppna **Inställningar → Tal**. Dessa kontroller
+tillämpa sammanfattningar på uppgift-AI; de ändrar inte mikrofonfångst eller vilken AI
+Leverantören transkriberar en inspelning.
+
+<ManualScreenshot
+  caseId="speech/settings"
+  alt="Lotti Speech settings with Male 3 selected, the Supertonic 3 on-device model, and 1.25 reading speed"
+  caption="The example mission-control setup uses Male 3 at 1.25× for brisk Project Waddle briefings."
+/>
+
+## Välj en röst
+
+Använd **Female / Male**-knappen för att bläddra bland de två grupperna, välj sedan en av
+de fem numrerade rösterna i den gruppen. Att byta grupper ändrar endast
+synlig lista; Välj en numrerad röst för att göra den aktiv.
+
+<ManualScreenshot
+  caseId="speech/voice-options"
+  alt="Lotti Speech settings showing the five female on-device voice options"
+  caption="Ten bundled voice styles are available: Female 1–5 and Male 1–5."
+/>
+
+Den valda rösten är en enhetslokal preferens. Det låter varje enhet använda en
+Röst som passar dess högtalare och lyssnarmiljö utan att förändra
+Val på dina andra enheter.
+
+## Modellnedladdning och integritet
+
+Lotti använder för närvarande **Supertonic 3** för högläsning. Syntesen körs på
+enheten istället för att skicka sammanfattningen till en molnbaserad taltjänst. Modellen är
+stor och laddas ner första gången den behövs, så tillåt tid, nätverk
+bandbredd och lagring för den initiala installationen.
+
+## Ställ in läshastigheten
+
+Välj en hastighet från **0,5×** till **2×**. En inställning på **1×** är den naturliga
+pris; Lägre värden saktar ner genomgången och högre värden förkortar den. The
+vald hastighet lagras också endast på den aktuella enheten.
+
+Högläsningsknappen visas endast när funktionen är aktiverad, plattformen
+stöder talmotorn, och uppgiften har en icke-tom AI-sammanfattning.
+
+För talad input och sparade igenkänningsresultat, se
+[Record audio](../plan-and-capture/recordings.mdx).

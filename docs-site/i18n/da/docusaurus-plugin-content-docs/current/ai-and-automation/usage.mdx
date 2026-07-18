@@ -1,0 +1,59 @@
+---
+title: Gennemgå AI-brug og indvirkning
+description: Sammenlign AI-anmodninger efter periode, kategori og model, inklusive estimeret pris, energi, emissioner og token-brug.
+---
+
+# Gennemgå AI-brug og indvirkning
+
+Åbn **Indstillinger → AI-indstillinger → Brug & Påvirkning** for at forstå, hvordan den er konfigureret
+Cloud-modeller bliver brugt. Den samme analyse kan også nås fra AI'en
+Impact-instrumentbræt-ruten.
+
+<ManualScreenshot
+  caseId="ai/usage"
+  alt="Lotti AI Impact dashboard for July 2026 showing cost, energy, carbon dioxide equivalent, tokens, requests, and category bars"
+  caption="Project Waddle's example month separates Mission Control and Penguin Operations while keeping the total request footprint visible."
+/>
+
+## Læs resumékortene
+
+De øverste kort opsummerer den valgte periode:
+
+- **Omkostninger** estimerer udbyderens forbrug.
+- **Energi** estimerer elektricitet, der kan tilskrives målt sky-inferens.
+- **CO₂e** udtrykker det tilknyttede emissionsestimat.
+- **Tokens** tæller behandlede modeltokens.
+- **Anmodninger** tæller slutningsopkald.
+
+Sammenligningsindikatoren bruger den tidligere ækvivalente periode, hvor man er
+tilgængelig. En procentvis stigning er kontekst, ikke automatisk et problem: en
+Lancerings-gennemgangsugen bør ikke blindt sammenlignes med en inaktiv koloniuge.
+
+Energi, CO₂e og omkostninger måles kun for skymodeller. Lokal slutning kan
+forbruge betydelig enhedsenergi uden at optræde i disse cloud-estimater,
+Så denne side er ikke en komplet effektmåler for hele systemet.
+
+## Ændr analysen
+
+Brug tidsstyringen og pileknapperne til at bevæge dig gennem tiden, eller spring til
+**Denne måned** og **I år**. Vælg derefter **Begge**, **Efter kategori** eller **Efter
+model**. Inden for et diagram skiftes mellem per-dag-værdier, løbende totaler og
+Del, hvor det er muligt.
+
+Kategorivisninger svarer "hvilket arbejdsområde drev brugen?" Modelvisningssvar
+"Hvilken konfigureret model drev brugen?" Brug begge før du ændrer en profil: a
+Højomkostningsmodellen kan retfærdiggøres for én specialistkategori, men er spild af ressourcer som en
+Generel standard.
+
+## Handle på et overraskende resultat
+
+Hvis forbruget springer uventet:
+
+1.  indsnævrer perioden til den første berørte dag;
+2.  sammenlign kategori- og modelopdelinger;
+3.  gennemgangsautomatisering og agent-samtidighed;
+4.  inspektere inferensprofilen, der er tildelt den berørte kategori; og
+5.  bekræft fakturering på udbydersiden, før du behandler Lottis tilbud som en faktura.
+
+For at ændre ruten, der er ansvarlig for fremtidige opkald, vend tilbage til
+[Models and inference profiles](./models-and-profiles.mdx).

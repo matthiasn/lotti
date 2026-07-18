@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   out of date instead, so the card shows the Wake agent action and no
   inference tokens are spent without consent.
 
+### Added
+- **Danish and Swedish are now available across Lotti and its Manual.** The
+  app follows Danish and Swedish system locales, with matching Manual routes,
+  localized screenshots, and explicit language choices in Settings → Advanced
+  → Language.
+
+### Changed
 - **The task AI summary card is more compact and calmer.** The summary now
   leads directly under a tighter header, and all secondary controls moved
   into a quiet footer at the card bottom: the Wake agent button, a small

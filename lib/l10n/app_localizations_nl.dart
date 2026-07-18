@@ -8948,6 +8948,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsManualLanguageDutchTitle => 'Nederlands';
 
   @override
+  String get settingsManualLanguageDanishTitle => 'Deens';
+
+  @override
   String get settingsManualLanguageEnglishTitle => 'Engels';
 
   @override
@@ -8974,6 +8977,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsManualLanguageSpanishTitle => 'Spaans';
+
+  @override
+  String get settingsManualLanguageSwedishTitle => 'Zweeds';
 
   @override
   String get settingsManualLanguageTitle => 'Taal';

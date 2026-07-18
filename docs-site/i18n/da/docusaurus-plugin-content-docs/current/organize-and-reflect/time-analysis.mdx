@@ -1,0 +1,163 @@
+---
+title: Forstå, hvor din tid blev af
+description: Bryd tiden op efter kategori, følg fokusområder, og sammenlign tilsvarende perioder uden at forlade Daily OS.
+---
+
+# Forstå, hvor din tid blev af
+
+Tidsanalyse omdanner dine optagede sessioner til en kategoriopdeling. Brug den
+for at svare på, hvor meget tid du indspillede, hvor det blev af, og om mixet ændrede sig
+fra den forrige periode. Project Waddle-eksemplet adskiller **Penguin
+Operationer**, **Mission Control**, **Fiskediplomati**, **Orbital forskning** og
+**Menneskelig vedligeholdelse**, samtidig med at den ukategoriserede tid, der er nødvendig, eksponerer
+Opmærksomhed.
+
+På skrivebordet åbner du **Daglig OS** og vælger **Tidsanalyse** under sidebaren
+Kalender. Dashboardet fylder indholdsområdet, så diagrammet og den præcise tabel kan
+Læses sammen. Dens kontroller reflow ved smalle bredder uden at ændre hvad
+Det gør de.
+
+<ManualScreenshot
+  caseId="time-analysis/overview"
+  alt="Time Analysis dashboard showing Project Waddle time across five operational categories and uncategorized work"
+  caption="The overview combines headline totals, a seven-day stacked chart, and the exact category table. Switch the manual to mobile or desktop and light or dark to inspect every production layout."
+/>
+
+## Læs overskriftskortene
+
+Den første række opsummerer den valgte periode:
+
+- **TOTAL** er al registreret tid. Dens billedtekst nævner den største kategori og dens
+  del, så kortet svarer, hvor det meste af tiden gik, samt hvor meget der var
+  optaget.
+- **FOCUS** tilføjer de kategorier, du valgte at se. I eksemplet, Penguin
+  Operations og Mission Control udgør fokussættet.
+- **ANDET** er alt uden for det fokussæt.
+
+Før et fokussæt eksisterer, viser Lotti **Vælg fokuskategorier** i stedet for
+To nul-værdi kort. Vælg den, vælg en eller flere aktive kategorier, og
+Afslutt med **Færdig**. Brug tune-knappen på Focus-kortet, når du sætter
+skal ændres. Denne præference er lokal for Lotti og ændrer ikke
+kategorier på ethvert bidrag.
+
+## Vælg en nyttig periode
+
+Vælg periodens enhed for at skifte mellem **Dag**, **Uge**, **Måned**,
+**Kvartal** og **År**. Brug chevronerne til at flytte en hel periode ad gangen
+Tidspunkt. Den forreste chevron stopper ved den nuværende periode, så instrumentbrættet aldrig
+navigerer ind i en tom fremtidig rækkevidde.
+
+Vælg datomærket for at åbne kalenderen og spring direkte til perioden
+indeholder en anden dag. Ugegrænserne følger den første hverdag konfigureret af
+enhedens region.
+
+To genveje dækker de mest almindelige spørgsmål:
+
+- **Denne måned** viser måned-til-nu; og
+- ** I år** viser år til dato.
+
+Disse intervaller slutter i dag i stedet for at tilføje tomme fremtidige dage. Labelen inkluderer
+**(indtil videre)**, og gennemsnittene bruger kun forløbne dage.
+
+## Læs diagrammet og tabellen sammen
+
+De stablede bjælker viser, hvordan hver kategori bidrog til hver time, dag eller
+Uge i intervallet. Hold musen over eller tryk på en bjælke for at se kategoriværdierne bag den
+spand.
+
+### Følg det løbende antal
+
+Vælg **Løbende total**, når spørgsmålet ændrer sig fra "hvad skete der i denne
+spand?" til "hvor meget har jeg samlet op siden denne serie begyndte?" Lotti vender sig
+Hver kategori i et kumulativt område:
+
+- tykkelsen af et farvet bånd på en dato er kategoriens sporede tid
+  fra starten af det valgte område til den dato;
+- Den øverste kant af hele stacken er al sporet tid akkumuleret over
+  samme interval; og
+- Båndene kan kun holde eller stige. En flad sektion betyder, at der ikke blev tilføjet tid
+  den kategori i disse spande; det trækker ikke tidligere arbejde fra.
+
+<ManualScreenshot
+  caseId="time-analysis/running-total"
+  alt="Time Analysis running-total chart accumulating Project Waddle categories across the selected month"
+  caption="Running total accumulates each category from the beginning of the range. The top edge is total tracked time so far; each band shows how much its category contributed to that total."
+/>
+
+Det valgte område bestemmer, hvor tællingen starter. At flytte til en anden
+perioden starter totalen forfra ved den første kurv i den pågældende periode. **Dag** bruger timebetaling
+spande, kortere flerdages intervaller bruger daglige spande, og lange perioder bruger
+ugentlige spande, men den samlede betydning forbliver den samme. I en strøm,
+ufærdig punktum, stopper Lotti området ved den senest forløbne spand i stedet
+af at tegne en vildledende flad linje gennem fremtidige datoer.
+
+Løbende totalen ændrer kun diagramfremskrivningen. **TOTAL**, **FOKUS**,
+**ANDET**, og kategoritabellen fortsætter med at beskrive hele det udvalgte
+rækkevidde. Hold musen over eller tryk på området for at se den løbende værdi for hver kategori ved
+Det punkt. Vælg **Per dag**, **Per uge** eller **Per time** for at vende tilbage til
+individuelle spandværdier. Hvis der kun er gået én spand, beholder Lotti tremmerne
+fordi en étpunkts løbelinje ikke ville kommunikere en tendens.
+
+Tabellen er det præcise opslag. Den ordner kategorier efter sporet tid og
+viser deres total, andel, gennemsnit pr. dag og en relativ databar. En grå
+**Ukategoriseret**-rækken er bevidst: den gør manglende attribution synlig
+i stedet for at skjule det i stilhed. Åbn de relaterede poster eller opgaver og tildel en
+kategori, når det tidspunkt skal tilhøre et operationelt område.
+
+## Sammenlign ækvivalente perioder
+
+<ManualScreenshot
+  caseId="time-analysis/compare"
+  alt="Time Analysis comparison for Project Waddle showing current time, previous-period time, and percentage changes by category"
+  caption="Compare uses the same elapsed days in each period. Direction is communicated by an arrow, sign, and colour, while the chart remains focused on the current period."
+/>
+
+Vælg **Sammenlign** for at tilføje den forrige periode. For en uge under igangværende måned,
+kvartal, eller år, sammenligner Lotti den forløbne del med det samme antal af
+dage lige før det. Et søndagsresultat fra måned til dato er derfor ikke
+Sammenlignet med en hel tidligere måned.
+
+Overskriftskortene får deres procentvise ændring og tidligere værdi. Bordet
+skifter til **CURRENT**, **TIDLIGERE** og **Change**. Ved smalle bredder
+kolonnen med lavere prioritet Tidligere udelades, mens Current og Change forbliver
+synligt. Et opadgående eller nedadgående resultat bruger også en pil og et eksplicit tegn
+som farve; meget små ændringer forbliver neutrale og et resultat uden tidligere
+Baseline vises som ny.
+
+Diagrammet viser fortsat kun den aktuelle periode. Noten **Sammenligning
+vist i tabellen nedenfor** peger på de præcise værdier og forhindrer et andet sæt
+af barer fra at skjule kategori-blandingen.
+
+## Hvad Lotti tæller
+
+Tidsanalyse tæller tidsbegrænsede journalposter, hvis slutning er senere end deres
+start. Lydvarighed tælles ikke separat, fordi en optagelse er lavet
+under en kørende timer ville ellers tælle dobbelt.
+
+Kategori-attribution følger værket:
+
+1. Hvis tidsindtastningen er knyttet til en opgave med en kategori, er opgavekategorien
+   vinder.
+2. Ellers bruges tidsindtastningens egen kategori.
+3. Hvis ingen af delene eksisterer, fremstår tiden som Ukategoriseret.
+
+Overlappende timere i samme kategori slås sammen, før totalen er
+beregnet. Overlap i forskellige kategorier forbliver i begge kategorier,
+fordi de repræsenterer forskellige former for registreret aktivitet. Indlæg, der spænder over
+Midnat er delt op i de korrekte lokale kalenderdage. Private indtastninger adlyder
+indstillingen global privat-data synlighed, og dashboardet opdateres, når
+poster, links, opgavekategorier eller at synlighedsindstillingen ændres.
+
+## Hold billedet troværdigt
+
+Brug kategorier konsekvent på opgaver, der indeholder optaget arbejde. Gennemgå
+Ukategoriseret række periodisk, og vælg fokuskategorier, der svarer på en
+Ægte spørgsmål i stedet for at prøve at inkludere alt. For Projekt Waddle,
+At se Penguin Operations and Mission Control gør Focus-kortet til en
+operationel beredskabssignal, mens fiskediplomati og menneskelig vedligeholdelse forbliver
+synligt i hele gennemgangen.
+
+Time Analysis eksporterer i øjeblikket ikke CSV, grupperer resultater efter projekt eller tegner
+den foregående periode som endnu en hitlisteserie. De præcise sammenligningsværdier er
+opbevaret i tabellen, hvor de er lettere at læse og mindre tilbøjelige til at forvride
+Billede fra nutiden.

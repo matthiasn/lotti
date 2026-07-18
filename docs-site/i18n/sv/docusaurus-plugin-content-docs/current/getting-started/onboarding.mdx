@@ -1,0 +1,145 @@
+---
+title: Sätt upp Lotti med onboarding
+description: Koppla ihop en AI-leverantör, välj inspelningsstil och arbetsområden, och förvandla en första tanke till en verklig uppgift.
+---
+
+# Sätt upp Lotti med onboarding
+
+Onboarding kopplar ihop de minsta delarna som behövs för Lottis AI-assisterade uppgift
+arbetsflöde: en leverantör, en inspelningsstil, minst en kategori och en första
+Verkligt arbete. Det är en guidad uppställning, inte en separat demomiljö—leverantörer,
+Kategorier och uppgifter som skapas här finns kvar i den vanliga appen.
+
+Öppna **Inställningar → Onboarding** när du vill starta eller spela upp flödet igen.
+Sidan visar också om denna profil redan har skapat sin första
+AI-strukturerad uppgift.
+
+<ManualScreenshot
+  caseId="onboarding/settings"
+  alt="Lotti Onboarding settings showing an activated status and the Replay onboarding action"
+  caption="This Project Waddle profile has already created its first AI task. Replay onboarding remains available after activation."
+/>
+
+## Börja med välkomstlöftet
+
+<ManualScreenshot
+  caseId="onboarding/welcome"
+  alt="Lotti onboarding welcome panel inviting the user to connect an AI brain and turn speech into a structured task"
+  caption="The welcome panel opens over the current app. Choose your AI brain to continue, or leave the flow without changing setup."
+/>
+
+Välj **Välj din AI-hjärna** för att börja. Väljer **Titta runt först**,
+knacka på det dämpade området utanför panelen och använda systemets bakåtåtgärd
+Alla lämnar onboarding utan att koppla in något. Du kan återgå från Inställningar
+senare.
+
+Lotti kan också automatiskt erbjuda detta välkomnande till en berättigad profil. The
+automatisk prompt har en begränsad återförsöksfrekvens; Inställningsposten gör det inte, så
+Du har alltid en väg tillbaka.
+
+## Välj var uppgiftsstrukturering körs
+
+<ManualScreenshot
+  caseId="onboarding/providers"
+  alt="Lotti onboarding provider chooser with Melious.ai, Mistral, Gemini, Qwen, OpenAI, and Ollama"
+  caption="Primary hosted providers appear first. Expand More options for OpenAI and the local Ollama path."
+/>
+
+Leverantörssidan identifierar de tillgängliga hostade och lokala alternativen:
+
+- **Melious.ai** är den rekommenderade EU-värdade standarden med dynamisk modell
+  Routing.
+- **Mistral**, **Gemini** och **Qwen** avslöjar sina motsvarande värdar
+  regioner.
+- **OpenAI** finns tillgängligt under de utökade alternativen.
+- ** Ollama** ansluter till en kompatibel lokal slutpunkt och kräver inte en
+  hostad API-nyckel.
+
+<ManualScreenshot
+  caseId="onboarding/api-key"
+  alt="Lotti onboarding provider verification panel showing a verified local Ollama connection"
+  caption="Lotti verifies the chosen provider before enabling Connect. Hosted providers use the same step with an API-key field."
+/>
+
+För en hostad leverantör, klistra in leverantörens API-nyckel. Lotti verifierar
+anslutning innan aktivering av **Anslut**. Ollama verifierar den konfigurerade lokala
+Endpoint och rapporterar nåbara modeller. En lyckad anslutning sparar
+leverantör och seedar modellerna och inferensprofilen som används av de övriga
+Steg.
+
+<ManualScreenshot
+  caseId="onboarding/success"
+  alt="Lotti onboarding confirmation that the AI provider is connected and ready"
+  caption="The connection confirmation is intentionally calm; the larger payoff is reserved for the first real task."
+/>
+
+Fångad uppgiftstext skickas för strukturering till den leverantör som är tilldelad
+Vald kategori. Välj en leverantör vars distributions- och datahanteringsmodell
+passar materialet du planerar att fånga. En nåbar lokal Ollama-slutpunkt håller
+den struktureringsförfrågan på maskinen som kör den.
+
+## Välj inspelningskänslan och arbetsområdena
+
+<ManualScreenshot
+  caseId="onboarding/recording-style"
+  alt="Lotti onboarding recording-style chooser with Modern energy orb and Analogue VU meter options"
+  caption="Choose the recording visual that feels clearest. Both options use the same capture pipeline."
+/>
+
+Efter att anslutningen lyckats, välj inspelningsstilen som används av den första uppgiften
+inspelning och senare röstinspelning ytor. Du kan ändra det igen under
+**Inställningar → inspelningsstil**.
+
+<ManualScreenshot
+  caseId="onboarding/categories"
+  alt="Lotti onboarding work-area chooser with Work, Fitness, Family, Friends, and Add your own choices"
+  caption="Choose one or more areas for the new provider. Scaled text and narrow layouts automatically use one full-width choice per row."
+/>
+
+Välj sedan ett eller flera arbetsområden. Presets täcker vanliga kategorier såsom
+Arbete, Träning, Familj och Vänner; **Lägg till din egen** skapar en kategori med en
+Namn som matchar din arbetsplats. Onboarding återanvänder en befintlig kategori med
+samma namn, istället för att skapa en dubblett, återställer den vid behov, och
+kopplar den till den nyss sådda inferensprofilen.
+
+Den manuella armaturen skapar två verkliga destinationer—**Penguin Operations** och
+**Mission Control**—så nästa steg visar samma kategorival a
+Fungerande konto ser.
+
+## Fånga den första verkliga uppgiften
+
+<ManualScreenshot
+  caseId="onboarding/first-task"
+  alt="Lotti first-task onboarding panel with voice capture, Penguin Operations and Mission Control destinations, suggestions, and Rather type"
+  caption="Choose where the task should land, then speak naturally, use a starter suggestion, or select Rather type. Penguin Operations is selected here."
+/>
+
+Panelen för första uppgiften använder Lottis normala fångstpipeline. Välj målet
+kategori, använd sedan en av tre vägar:
+
+1. Välj inspelningsbilden och säg uppgiften i en vanlig mening.
+2. Välj ett startförslag för att prova strukturprocessen direkt.
+3. Välj **Vill du skriva?** och mata in tanken utan att använda mikrofonen.
+
+Lotti ekar de fångade orden medan den strukturerar dem. Resultatet är en verklig
+uppgift i den valda kategorin, inte endast onboarding-exempeldata. Vid strukturering
+Ger checklistförslag, de kommer till uppgiften som förslag till dig
+för att bekräfta istället för att tyst ändra uppgiften.
+
+<ManualScreenshot
+  caseId="onboarding/task-created"
+  alt="Lotti onboarding success panel showing the created task Inspect the Europa sardine relay"
+  caption="The typed Project Waddle thought becomes “Inspect the Europa sardine relay.” The task stays in the panel until you choose it."
+/>
+
+Välj det skapade uppgiftskortet för att stänga onboarding och öppna dess vanliga uppgiftssida.
+Därifrån kan du granska checklistor, lägga till omslagskonst eller bevis, sätta upp en
+förfallodatum och prioritet, och ta in uppgiften i Daily OS.
+
+Om du stänger flödet efter att ha kopplat en leverantör, behåller Lotti den leverantören
+Förbered och behandlar välkomsten som avslutad. Omstart senare kvarstår
+säker: det är en explicit inställningsåtgärd snarare än en annan automatisk prompt.
+
+Continue with [create your first task](./first-task.mdx),
+[manage categories](../organize-and-reflect/categories.mdx), and
+[configure providers](../ai-and-automation/provider-setup.mdx).

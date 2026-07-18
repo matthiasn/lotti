@@ -1,0 +1,80 @@
+---
+title: Fyll i och återbesök undersökningar
+description: Starta de medföljande frågeformulären från en instrumentpanel, skicka in ett svar i taget och behåll resultaten i tidskriften.
+---
+
+# Fyll i och återbesök undersökningar
+
+Lotti innehåller tre fasta frågeformulär: **CFQ-11**, **GHQ-12** och
+**PANAS**. Lägg till undersökningen du använder i en instrumentpanel och välj sedan **+**-åtgärden
+på dess diagram varje gång du vill spela in ett nytt svar. Instrumentpanelen är
+både startpunkten och platsen där slutförda poäng blir en trend.
+
+Exemplen nedan startar den verkliga PANAS-uppgiften från **Kolonioperationerna**
+instrumentpanelen. Frågeformuläret och dess navigation kommer från samma produktion
+Survey Runner som används av appen.
+
+<ManualScreenshot
+  caseId="surveys/panas-intro"
+  alt="PANAS survey instructions opened over the Colony operations dashboard"
+  caption="Read the instrument's time frame and response scale before continuing. The progress indicator counts every instruction, question, and completion step."
+/>
+
+## Lägg till en undersökning i en instrumentpanel
+
+Öppna **Inställningar → Definitioner → Dashboards**, redigera en instrumentpanel och lägg till ett diagram
+från **Undersökningar**. De tillgängliga instrumenten är:
+
+- **CFQ-11**, Chalder Fatigue Scale;
+- **GHQ-12**, den allmänna hälsoundersökningen; och
+- **PANAS**, schemat för positiv och negativ affekt.
+
+Gå tillbaka till **Dashboards** och öppna dashboarden. Listan visar inskickade
+resultat för dess instrument. Välj dess **+**-åtgärd för att påbörja ett nytt svar.
+Varje diagram startar sitt matchningsformulär med en fast uppsättning frågor;
+Det finns inget generiskt formulär som anpassar sina frågor till dina inspelade data.
+
+## Svara på den aktuella frågan
+
+Instruktionssteget förklarar den begärda tidsramen och betydelsen av
+Svarsskala. Välj **NÄSTA** för att börja. PANAS presenterar sedan 20 affekterade ord ett
+åt gången och ber om ett val över femgradig skalan. Instrumentets
+instruktioner, påverksord, kompletteringskopia och skalaetiketter följer appen
+språket; denna engelska skärmdump visar **Mycket lite eller inte alls**
+**Extremt**.
+
+<ManualScreenshot
+  caseId="surveys/panas-question"
+  alt="PANAS Interested question with five response choices from Very slightly or not at all to Extremely"
+  caption="Questions are presented sequentially. Pick one response, continue, and use the progress count to see where you are in the questionnaire."
+/>
+
+De andra paketerade undersökningarna använder sina egna fasta fråge- och poängdefinitioner.
+Välj det svar som matchar formuleringen och tidsramen som visas av
+instrument; Lotti tolkar inte om eller fyller i svaren automatiskt.
+
+## Skicka in eller avbryt medvetet
+
+Fortsätt med slutförandesteget för att skicka in. Lotti lagrar den råa uppgiften
+resultatet och dess beräknade poängkategorier som en undersökningspost i journalen. The
+Dashboard läser tillbaka dessa poster i sitt diagram, så en ny ifylld undersökning
+lägger till en annan daterad iakttagelse.
+
+När uppgiften stängs frågas om det aktuella resultatet ska kasseras. En inställd undersökning
+lagras inte, även om den delvis besvarats. Om svaret spelar roll,
+Avsluta färdigställandet innan du lämnar arket.
+
+## Förstå de sparade poängen
+
+Den persisterade posten behåller både de individuella svaren och de beräknade svaren
+Sammanfattning som används av kartor:
+
+- **CFQ-11** ger sin konfigurerade utmattningspoäng;
+- **GHQ-12** producerar sitt konfigurerade allmänna hälsopoäng; och
+- **PANAS** ger separata **Positiv Affekt** och **Negativ Afefekt**
+  totalsummor.
+
+Öppna motsvarande journalpost för att granska den sparade undersökningssammanfattningen. Användning
+instrumentpanelen för ändringar över tid och journalen för den daterade källposten.
+Undersökningsdiagram ersätter inte enkätens instruktioner, men det gör Lotti
+inte tillhandahålla ett enkätförfattarsystem för att ändra dessa sammanhängande definitioner.

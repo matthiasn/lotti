@@ -1,0 +1,154 @@
+---
+title: Brug avancerede indstillinger sikkert
+description: Kontroller funktionsflag og logning, kør vedligeholdelsesværktøjer, inspicer onboarding-målinger og verificér den installerede Lotti-version.
+---
+
+# Brug avancerede indstillinger sikkert
+
+Åbn **Indstillinger → Avancerede indstillinger** for strømbrugerkontroller, diagnostik og
+vedligeholdelse. Disse sider ændrer enten, hvordan Lotti kører, eller handler direkte på lokalt niveau
+data, så almindelig personalisering hører til et andet sted i Indstillinger.
+
+Skrivebordet beholder indstillingstræet ved siden af den valgte side. Mobil åbner en
+side ad gangen og giver en bag-knap. De samme kontroller og fortsatte
+værdier bruges i begge layouts.
+
+<ManualScreenshot
+  caseId="advanced-settings/hub"
+  alt="Lotti Advanced Settings hub with Config Flags, Animations, Language, Logging, Maintenance, Onboarding Metrics, and About Lotti"
+  caption="Advanced Settings groups operational controls away from everyday preferences. Some entries vary by platform and enabled capabilities."
+/>
+
+## Vælg manualsproget
+
+Åbn **Sprog** for at beslutte, hvilken offentliggjort manual appen åbner. **Følg
+system** er standarden og vælger engelsk, tysk, fransk, italiensk,
+Spansk, tjekkisk, rumænsk eller portugisisk manual fra dit enhedssprog.
+Vælg **engelsk**, **tysk**, **fransk**, **italiensk**, **spansk**, **tjekkisk**,
+**rumænsk**, eller **portugisisk** for at bestå et andet valg. Manual-indgangen
+nederst i Indstillinger og **Hjælp → Manual** på macOS bruger begge denne indstilling.
+
+## Kontrolfunktioner med konfigurationsflag
+
+<ManualScreenshot
+  caseId="advanced-settings/flags"
+  alt="Lotti Config Flags page with searchable switches for private entries, notifications, location recording, tooltips, and AI streaming"
+  caption="Search matches both flag names and descriptions. Each switch changes its stored runtime capability immediately."
+/>
+
+**Konfigurationsflag** er kapabilitetscentralen. Den indeholder kontroller for:
+
+-  synlighed ved privat indgang, notifikationer, lokationsregistrering og tooltips;
+- AI-svarstreaming og opsummeringsafspilning;
+- logging og Matrix-synkroniseringsadfærd;
+-  funktioner som Vaner, Dashboards, Events, Projekter og Hvad der er nyt;
+- indlejringer og vektorsøgning; og
+- operationelle indikatorer såsom synkroniseringsaktivitet, ventende agentvågninger og fork
+  helende.
+
+Brug **Søgeflag** til at indsnævre listen efter titel eller beskrivelse. Vælg en række
+Eller det er en switch for at ændre flaget. Den nye værdi gemmes straks; Der
+er ikke en separat gem-handling.
+
+Flag kan afsløre eksperimentel eller diagnostisk adfærd. Skift én med vilje,
+Derefter verificerer du den berørte arbejdsgang, før du ændrer en anden. **Showets private
+Opslag?**-flaget styrer, om følsomt indhold inkluderes på tværs af lister og
+udvælgere; Den krypterer, eksporterer, sletter ikke og ændrer ikke privatlivet for en
+Adgang.
+
+## Vælg det, Lotti logger
+
+<ManualScreenshot
+  caseId="advanced-settings/logging"
+  alt="Lotti Logging settings with a master logging switch, individual operational domains, and slow-query logging"
+  caption="The master switch gates the per-domain controls. The Project Waddle fixture keeps Sync, AI, and Tasks enabled for focused diagnostics."
+/>
+
+**Logging** starter med den globale **Enable Logging**-kontakt. Når den er tændt,
+aktiver kun de domæner, der er nødvendige for en undersøgelse, såsom Sync, AI, Tasks,
+Etiketter, sundhed, vaner, navigation, notifikationer eller dagligt styresystem. **Log langsomt
+Forespørgsler** tilføjer databaseydelsesdiagnostik.
+
+Når man slukker for masterkontakten, deaktiveres domænekontrollerne. Fejl er stadig
+written to the daily `error-*.log`; these switches govern additional diagnostic
+Logning, ikke minimumsfejlregistreringen. Deaktiver støjende domæner efter en
+undersøgelse, så logs forbliver fokuserede, og opbevaringsforbruget forbliver forudsigeligt.
+
+## Udfør vedligeholdelseshandlinger bevidst
+
+<ManualScreenshot
+  caseId="advanced-settings/maintenance"
+  alt="Lotti Maintenance page with onboarding previews, reset actions, database deletion, purge, search index, embeddings, and repaint diagnostics"
+  caption="Maintenance combines safe previews with destructive and diagnostic actions. Read the confirmation and scope before continuing."
+/>
+
+**Vedligeholdelse** indeholder flere forskellige slags handlinger:
+
+- **Visning onboarding velkommen** og **Onboarding animationsgalleri** er live
+  forhåndsvisninger til udvikling og QA.
+- **Nulstil In-App Hints** gør engangstips tilgængelige for at dukke op igen.
+- **Nulstil Gemini Setup Dialog** fjerner sin afvisning, så udbyderprompten kan
+  Blive testet igen.
+- **Slet editordatabase** fjerner editor-udkast.
+- **Slet agentdatabasen** fjerner agentdatabasen og forlader Lotti, så
+  appen kan genstarte mod en ren butik.
+- **Rens slettede elementer** sletter permanent blødslettede poster gennem en
+  dedikeret bekræftelsesflow.
+- **Genskab fuldtekstindeks** genopbygger lokale søgedata uden at genskabe
+  dagbogsindlæg.
+- **Generer embeddings** vises, når embedding-butikken er tilgængelig og
+  Efterfyldninger udvalgte kategorier.
+- **Repaint rainbow overlay** blinker, der maler områder om til UI-diagnostik. Det
+  holdes i hukommelsen og vender tilbage til slukket efter genstart.
+
+Forhåndsvisnings- og nulstillingshandlinger indebærer ikke samme risiko som sletning og udrensning.
+For destruktive handlinger skal du bekræfte, at målet er den tiltænkte lokale butik
+og lad enhver nuværende synkroniserings- eller skriveoperation afsluttes først.
+
+## Inspicer onboarding-tragten
+
+<ManualScreenshot
+  caseId="advanced-settings/onboarding-metrics"
+  alt="Lotti Onboarding Metrics page showing install time, four active days, activation status, and content-free event counts"
+  caption="The deterministic manual fixture reached its real aha across four active days after connecting a provider and recording several captures."
+/>
+
+**Onboarding Metrics** er en udvikler- og QA-overflade. Den udleder en lokal tragt
+Fra indholdsfrie begivenheder og shows:
+
+-  det første sete tidsstempel i UTC;
+-  samlede aktive dage og aktive dage i de første syv dage;
+- om installationen tilhører den pre-FTUE baseline-kohorte;
+- om den reelle aktiveringsmilepæl blev nået; og
+-  tæller for hver onboarding-begivenhed.
+
+Siden registrerer begivenhedsnavne og lavkardinalitet-metadata, ikke journaltekst,
+opgavetitler, transskriptioner eller de sardinfølsomme detaljer i Project Waddle.
+
+**Nulstil onboarding testtilstand** rydder onboarding prompt cadence og lokal
+Tragtmålinger efter bekræftelse. Den sletter ikke journaldata, konfiguration
+flag eller ægte Daily OS-planhistorik. En profil, der allerede har planlagt en dag
+Derfor forbliver det ikke berettiget til den præcise rene profil førsteplan-vej.
+
+## Verificér byggeriet og de lokale totaler
+
+<ManualScreenshot
+  caseId="advanced-settings/about"
+  alt="Lotti About page showing version, platform, build type, 2604 journal entries, 11 flagged entries, and task counts"
+  caption="About Lotti identifies the running build and summarizes local data. The Project Waddle fixture contains 2,604 entries and 65 tasks across five states."
+/>
+
+**About Lotti** er det hurtigste sted at verificere, hvilket build der faktisk kører.
+Den viser app-versionen og build-nummer, platform og build-type. Inkluder
+disse værdier i en diagnostisk rapport, så en adfærd kan matches til højre
+kode og frigivelse.
+
+**Dine data**-kortet opsummerer lokale journalposter, markerede poster og
+Opgaveantal delt i Åben, I gang, På pause, Blokeret og Færdig. Den
+manualens etablerede Project Waddle-arbejdsområde demonstrerer en ikke-tom konto:
+2.604 journalposter, 11 markerede poster og 65 opgaver i stedet for pladsholdere
+Nul.
+
+Fuldførelseseffekter har deres egen guide: se
+**[Customize completion celebrations](./completion-celebrations.mdx)** for the
+Animationssiden og dens live legeplads.

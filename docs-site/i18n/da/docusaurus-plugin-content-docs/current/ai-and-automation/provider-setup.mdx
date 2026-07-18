@@ -1,0 +1,85 @@
+---
+title: Forbind en AI-udbyder
+description: Forbind cloud- eller lokal inferens, inspicer dens modeller, og hold legitimationsoplysninger og endepunkter under kontrol.
+---
+
+# Forbind en AI-udbyder
+
+Lotti opdeler et AI-setup i tre lag: en **udbyder** er den service, den er
+forbinder til, en **model** er en model, der eksponeres gennem den tjeneste, og en
+**Inferensprofil** Sender hver type arbejde til en model. Start med
+Udbyder, gennemgå derefter modellerne og profilerne, der er oprettet omkring den.
+
+<ManualScreenshot
+  caseId="ai/providers"
+  alt="Lotti AI Settings showing Mission Control Router, Habitat Local Lab, Orbital Vision, and Penguin Audio Bay providers"
+  caption="AI Settings keeps cloud and local connections together. Each card shows connection state and how many saved models use it."
+/>
+
+## Vælg lokalt eller fjernt
+
+- En cloud-udbyder er som regel den hurtigste opsætning og kræver ofte et API
+  nøgle. Tekst, lyd eller billeder, der sendes igennem den, forlader enheden.
+- En lokal udbyder kan holde slutninger på din egen maskine eller et lokalt endpoint
+  du kontrollerer, men dens service skal køre og være tilgængelig fra enheden
+  hvor Lotti påkalder det. En LAN-adresse kan stadig flytte en prompt mellem dine
+  enheder; "lokal" betyder, at det ikke sendes til en hostet modeludbyder, ikke at nej
+  Network Hop eksisterer.
+- En brugerdefineret basis-URL kan pege en understøttet udbydertype mod en kompatibel proxy
+  eller gateway. Udbydertypen styrer stadig protokolspecifik adfærd.
+
+## Forbind en udbyder
+
+1. Åbn **Indstillinger → AI-indstillinger → Udbydere**.
+2. Vælg **+**-knappen.
+3. Vælg en understøttet udbyder.
+4. Indtast dets visningsnavn, endpoint og API-nøgle, når det er nødvendigt.
+5. Tilføj de foreslåede modeller, du ønsker, og gem så.
+
+For understøttede førstegangsudbydere starter Lotti nyttige modeller og en eller flere
+Inferensprofiler. Resultatskærmen opsummerer, hvad der blev oprettet.
+
+<ManualScreenshot
+  caseId="ai/provider-editor"
+  alt="Lotti provider editor for Mission Control Router with OpenRouter selected, a base URL, masked API key, and suggested models"
+  caption="Credentials stay masked. Suggested models are shortcuts, not a requirement—you can add provider-specific model IDs later."
+/>
+
+## Inspicer og vedligehold forbindelsen
+
+Åbn et udbyderkort for at inspicere dets maskerede legitimationsoplysninger, basis-URL, gemte modeller,
+og enhver aktiv profil, der afhænger af disse modeller. Herfra kan du redigere
+forbindelse, tilføj en anden model, eller fjern udbyderen.
+
+<ManualScreenshot
+  caseId="ai/provider-detail"
+  alt="Mission Control Router provider detail showing its connection, Waddle Command models, and active Project Waddle profile"
+  caption="The dependency summary makes the blast radius visible before you change or remove a provider."
+/>
+
+Ændring af en basis-URL eller API-nøgle påvirker alle modeller, der er tilknyttet den pågældende udbyder.
+Efter at have ændret en af værdierne, verificér en repræsentativ AI-handling, før du antager
+forbindelsen er sund. At fjerne en udbyder kan også påvirke profiler, der
+rutearbejde gennem sine modeller; Gennemgå først oplysningerne om afhængighed.
+
+## Gennemgang profil-routing
+
+Open [Models and inference profiles](./models-and-profiles.mdx) to verify what
+udbyderen afslører og hvordan Lotti dirigerer hver funktion. Kategorier kan sætte en
+Standardprofil for deres arbejde, mens individuel automation kan vælge eller
+Overstyr en model, hvor arbejdsgangen tilbyder det valg.
+
+## Privatlivsgrænse
+
+Før du sender følsom tekst, lyd eller billeder, bekræft om de er konfigureret
+Endpoint er lokalt eller fjernt. Et venligt navn som "Habitat Local Lab" er det ikke
+sikkerhedsgrænsen—basis-URL'en, netværksstien og maskinen, der serverer
+Det er det. Lotti opbevarer logbogen lokalt uanset hvad; Denne beslutning gælder for
+Slutningskald sig selv.
+
+:::warning[API-nøgler]
+
+Behandl udbydernøgler som hemmeligheder. Indsæt dem aldrig i dokumentation, problemer eller
+Screenshots.
+
+:::

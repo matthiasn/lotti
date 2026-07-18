@@ -1,0 +1,178 @@
+---
+title: För en användbar dagbok
+description: Hitta anteckningar, foton, inspelningar, händelser och AI-resultat i ett och samma flöde, och koppla sedan ihop den stödjande aktiviteten bakom varje post.
+---
+
+# För en användbar dagbok
+
+Dagboken är Lottis blandade inlägg. Den innehåller anteckningar, foton, inspelningar,
+händelser, checklistor, mätningar och AI-svar tillsammans utan att vända på
+dem till uppgifter. Använd den när du vill minnas, inspektera eller koppla ihop vad
+hände; använd **Tasks** när posten i sig är arbete du fortfarande behöver göra.
+
+<ManualScreenshot
+  caseId="journal/overview"
+  alt="Journal feed containing a Project Waddle launch photo, mission log, Europa sardine voice memo, summit event, and cargo telemetry summary"
+  caption="Type glyphs make the mixed feed scannable, while category colours, labels, stars, flags, durations, and status chips keep the useful context close to each entry."
+/>
+
+## Läs det blandade flödet
+
+Varje kort leder med sitt innehåll och använder en färgad glyf för att identifiera
+Inträdestyp. Färgen kommer från bidragets kategori, så **Penguin
+Operationer**, **Mission Control** och **Fiskdiplomati** är fortfarande igenkännbara
+även när flera inträdestyper dyker upp samtidigt.
+
+Korten lägger till den metadata som är viktig för deras typ. Till exempel:
+
+-  ett ljudmeddelande visar dess varaktighet och flagga;
+- en händelse visar dess status, datum, betyg och notering;
+-  en checklista visar färdigställande framsteg;
+-  en mätning visar dess värde och enhet; och
+-  ett AI-svar markeras som AI-genererat.
+
+Flödet laddas in sidor, så en lång dagbok behöver inte rendera hela sin journal
+historia på en gång.
+
+## Sök efter ord eller betydelse
+
+Använd **Full Text** för att hitta orden som lagrats i en post. När vektorsökning är
+aktiverat, byt till **Vector** för att leta efter poster med liknande betydelse även
+när de använder olika formuleringar. Vektorresultat returneras som en rankad mängd
+istället för som ett oändligt paget flöde.
+
+Om vektorsökning inte är tillgänglig eller senare inaktiveras, returnerar Lotti journalen
+till fulltextläge istället för att lämna söket i ett oanvändbart tillstånd.
+
+## Filtrera vad som visas
+
+<ManualScreenshot
+  caseId="journal/filters"
+  alt="Journal filter dialog with starred, flagged, private, entry-type, and category controls over the penguin logistics feed"
+  caption="Combine entry properties, types, and categories to turn the mixed feed into the slice you need."
+/>
+
+Öppna filterknappen bredvid Sök. Du kan begränsa dagboken till:
+
+-  stjärnmärkta, flaggade eller privata inlägg;
+-  en eller flera typer av inträden, inklusive Text, Händelse, Ljud, Foto, Checklista,
+  Att göra, och AI-respons; och
+-  en eller flera kategorier.
+
+Lotti sparar dessa val till Journalen. Uppgiftsfilter lagras
+separat, så att ändra journalvyn inte oväntat omarrangerar
+Uppgiftssidan.
+
+## Lägg till en post
+
+<ManualScreenshot
+  caseId="journal/create"
+  alt="Add menu offering Event, Task, Audio Recording, Text Entry, Import Image, and Screenshot over the Project Waddle journal"
+  caption="The menu only offers actions supported by the current platform and context."
+/>
+
+Välj **+** för att öppna menyn Lägg till. Från huvudjournalen kan du skapa en text
+Inträde, uppgift, händelse eller ljudinspelning, importera ett foto eller ta en skärmdump.
+En klistra-åtgärd kan visas när urklippet innehåller en bild. Händelseskapande är
+visas när Event-funktionen är aktiverad.
+
+Samma meny anpassas i en befintlig ingång. Där kan den också skapa en timer
+redan länkad till posten, och uppgiftsdetaljer kan erbjuda en länkad checklista.
+Importerade, klistrade in, släppta och inspelade bilder kan gå automatiskt
+Bildanalys när den automatiseringen är konfigurerad.
+
+## Läs och redigera ett inlägg
+
+<ManualScreenshot
+  caseId="journal/detail"
+  alt="Project Waddle mission log detail with category, labels, star, duration, rich text, activity filters, and a linked launch photo"
+  caption="The entry remains the source of truth; supporting photos, timers, prompts, and incoming links stay attached below it."
+/>
+
+Detaljhuvudet behåller inmatningsdatum, kategori, etiketter, stjärna, flagga, integritet,
+och överfylla handlingar tillsammans. Välj brödtexten för att redigera rich text. Rädda från
+redigeringskontroller, eller använd **Ctrl+S** på Windows och Linux och **Command+S** på
+macOS. Ospädd text sparas som ett utkast; Att kassera återställer det senast sparade
+Nöjd.
+
+Överflödesmenyn innehåller de åtgärder som gäller för den aktuella posttypen,
+inklusive kopiera, radera och medieåtgärder. På skrivbordet finns bild- och ljudposter
+kan också visa deras källfil i filhanteraren.
+
+### Ändra en postens datum och längd
+
+Välj datum eller längd i posthuvudet för att öppna **Datum & Tid**. För en
+Samma dags inskrivning, välj ett datum och bestäm start- och sluttid oberoende av varandra.
+Tidsöversikten uppdateras när hjulen rör sig. Slå på **Välj en separat ände
+datum** för en övernattnings- eller flerdagarsinträdet, och använd antingen **Nu**-åtgärden för att
+Flytta den ändpunkten till nuvarande datum och tid.
+
+<ManualScreenshot
+  caseId="journal/date-time"
+  alt="Date and Time editor for the Project Waddle mission log with July 17 date, 8:10 AM start, 8:40 AM end, and 30-minute duration"
+/>
+
+Välj datumknappen för att öppna kalendersidan. **Idag** återvänder till
+nuvarande, **Klart** återgår till räckviddsredigeraren, och **Spara** applicerar
+Fullständig start-/slutperiod till ingången.
+
+<ManualScreenshot
+  caseId="journal/date-picker"
+  alt="Start date calendar selecting Friday July 17 2026 for the Project Waddle mission log"
+/>
+
+Att ändra tidsstämpeln påverkar var posten visas i kronologisk form
+Vyer. Den skriver inte om inslagstexten eller frigör dess länkade aktivitet.
+
+## Följ länkad aktivitet
+
+<ManualScreenshot
+  caseId="journal/activity"
+  alt="Linked Project Waddle activity with an AI coding prompt, a 23-minute roll-call rehearsal, and the incoming launch-review task"
+  caption="Outgoing activity answers what this entry contains; Linked from shows which other entry points back to it."
+/>
+
+Poster kan länka till foton, timers, ljud, AI-resultat, anteckningar och annat
+Stödalbum. Aktivitetspillen låter dig visa eller dölja **Timer**,
+**Ljud**, **Bilder** och **Kod**-poster. Öppna sorteringskontrollen för att växla
+Mellan nyast-först och äldsta-först-ordning, inkludera dolda länkar eller visa
+Endast flaggad aktivitet.
+
+De två riktningarna betyder olika saker:
+
+- aktiviteten under posten är länkad **från denna post**; och
+- **Länkad från** listar poster som pekar **till denna post**.
+
+Till exempel innehåller Project Waddle-uppdragsloggen dess uppskjutningsfoto,
+diagnostisk prompt och roll-up-timer, medan uppskjutnings-granskningsuppgiften visas
+under **Länkad från** eftersom den uppgiften också refererar till loggen.
+
+Öppna sorteringspiller för att tillsammans skapa flera synlighetsförändringar. Välj den
+ordning, om dolda poster ska inkluderas, och om endast flaggade
+Bidragen ska finnas kvar. Aktivitetslistan ändras när du markerar bocken
+för att avsluta arket; Att stänga arket på något annat sätt kastar bort det iscensatta
+val.
+
+<ManualScreenshot
+  caseId="journal/linked-filter"
+  alt="Filter and Sort sheet over Project Waddle linked activity with Oldest first and Show hidden entries selected"
+/>
+
+## Öppna och spara ett foto
+
+Välj ett inline-foto för att öppna helskärmsvisaren. Nyp eller använd visaren
+Kontroller för att zooma och panorera, och sedan återställa bilden vid behov. Sparande använder
+originalfil istället för den mindre förhandsvisningen: mobilen skriver till fotot
+biblioteket efter att behörighet har beviljats, medan skrivbordet öppnar systemsparningen
+dialog så du väljer destinationen.
+
+## Dagbok eller uppgift?
+
+| Använd dagboken för... | Använd Uppgifter för... |
+| --- | --- |
+| En uppdragslogg, foto, röstmeddelande, mätning, händelseminne eller AI-resultat | En åtgärd med status, prioritet, uppskattning, checklista eller arbetssession |
+| "Europasardiner är kallare än vad diplomatiskt protokoll kräver" | "Kalibrera om gravitationsfria fiskmataren" |
+| Bevis och kontext du kanske vill återbesöka | Arbete du behöver planera, genomföra och slutföra |
+
+Koppla dem när en uppgift behöver bevis från tidskriften. Detta håller handlingen vid liv
+fokuserad samtidigt som den bevarade den rikare operativa dokumentationen bakom sig.

@@ -28,6 +28,16 @@ const localeExpectations = {
     mobile: 'Mobile',
     openViewer: 'Ouvrir la visionneuse de captures',
   },
+  da: {
+    allScreenshots: 'Alle skærmbilleder',
+    desktop: 'Skrivebord',
+    firstTaskTitle: 'Lav din første opgave',
+    layoutLabel: 'Skærmbillede-layout for alle billeder',
+    mobile: 'Mobil',
+    openViewer: 'Åbn skærmbilledefremviser',
+    translationDisclosure:
+      'Denne oversættelse blev lavet med Microsoft Translator og er endnu ikke korrekturlæst.',
+  },
   it: {
     allScreenshots: 'Tutti gli screenshot',
     desktop: 'Desktop',
@@ -81,6 +91,16 @@ const localeExpectations = {
     openViewer: 'Abrir visualizador de capturas de tela',
     translationDisclosure:
       'Esta tradução foi gerada automaticamente e ainda não foi revisada.',
+  },
+  sv: {
+    allScreenshots: 'Alla skärmdumpar',
+    desktop: 'Skrivbord',
+    firstTaskTitle: 'Skapa din första uppgift',
+    layoutLabel: 'Skärmdumpslayout för alla bilder',
+    mobile: 'Mobil',
+    openViewer: 'Öppna skärmdumpsvisare',
+    translationDisclosure:
+      'Denna översättning skapades med Microsoft Translator och har ännu inte korrekturlästs.',
   },
 };
 const translatedLocales = screenshotRegistry.locales.filter(

@@ -234,42 +234,59 @@ class _NavCluster extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final compactLayout = !isDesktopLayout(context);
 
     // Pill-shaped (badgesPills) to match the segmented toggle and the
     // to-date/Compare pills, so the whole header speaks one rounded idiom.
     final radius = BorderRadius.circular(tokens.radii.badgesPills);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        border: Border.all(color: tokens.colors.decorative.level02),
-      ),
-      // Clip so the end chevrons' tap ripples follow the rounded corners.
-      child: ClipRRect(
-        borderRadius: radius,
-        child: IntrinsicHeight(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            // stretch so each segment (and the dividers between them) fills the
-            // full cluster height — the chevron hover then covers the whole
-            // height instead of leaving a gap top and bottom.
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _ClusterButton(
-                icon: Icons.chevron_left_rounded,
-                tooltip: messages.insightsPeriodPrevious,
-                onPressed: onStepBack,
-              ),
-              _ClusterDivider(tokens: tokens),
-              _UnitDropdown(unit: unit, onSelectUnit: onSelectUnit),
-              _ClusterDivider(tokens: tokens),
-              _PeriodLabel(label: label, onTap: onOpenCalendar),
-              _ClusterDivider(tokens: tokens),
-              _ClusterButton(
-                icon: Icons.chevron_right_rounded,
-                tooltip: messages.insightsPeriodNext,
-                onPressed: onStepForward,
-              ),
-            ],
+    return ConstrainedBox(
+      // Some compact surfaces horizontally scroll their controls, which means
+      // they pass unbounded width. Give the cluster the viewport's width in
+      // that case so the period label can ellipsize without introducing a
+      // LayoutBuilder below an IntrinsicHeight parent.
+      constraints: compactLayout
+          ? BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width)
+          : const BoxConstraints(),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          border: Border.all(color: tokens.colors.decorative.level02),
+        ),
+        // Clip so the end chevrons' tap ripples follow the rounded corners.
+        child: ClipRRect(
+          borderRadius: radius,
+          child: IntrinsicHeight(
+            child: Row(
+              // On compact layouts, let localized period labels ellipsize
+              // rather than overflowing the dashboard card.
+              mainAxisSize: compactLayout ? MainAxisSize.max : MainAxisSize.min,
+              // stretch so each segment (and the dividers between them) fills
+              // the full cluster height — the chevron hover then covers the
+              // whole height instead of leaving a gap top and bottom.
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _ClusterButton(
+                  icon: Icons.chevron_left_rounded,
+                  tooltip: messages.insightsPeriodPrevious,
+                  onPressed: onStepBack,
+                ),
+                _ClusterDivider(tokens: tokens),
+                _UnitDropdown(unit: unit, onSelectUnit: onSelectUnit),
+                _ClusterDivider(tokens: tokens),
+                if (compactLayout)
+                  Flexible(
+                    child: _PeriodLabel(label: label, onTap: onOpenCalendar),
+                  )
+                else
+                  _PeriodLabel(label: label, onTap: onOpenCalendar),
+                _ClusterDivider(tokens: tokens),
+                _ClusterButton(
+                  icon: Icons.chevron_right_rounded,
+                  tooltip: messages.insightsPeriodNext,
+                  onPressed: onStepForward,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -375,15 +392,18 @@ class _PeriodLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final compactLayout = !isDesktopLayout(context);
     final content = ConstrainedBox(
       // A stable minimum so stepping (which changes the label text, and with it
       // its width) never shifts the chevrons that sit on either side of the
       // cluster — the arrows must not jump under the pointer. Sized to hold the
       // longest realistic label ("September 2026 (so far)") plus the glyph;
       // shorter labels centre within it.
-      constraints: BoxConstraints(
-        minWidth: tokens.spacing.step13 + tokens.spacing.step7,
-      ),
+      constraints: compactLayout
+          ? const BoxConstraints()
+          : BoxConstraints(
+              minWidth: tokens.spacing.step13 + tokens.spacing.step7,
+            ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,

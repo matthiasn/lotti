@@ -1,0 +1,102 @@
+{
+  "manual.screenshot.allScreenshots": {
+    "message": "Alle skærmbilleder",
+    "description": "Label for the global screenshot viewport preference"
+  },
+  "manual.screenshot.close": {
+    "message": "Luk"
+  },
+  "manual.screenshot.desktop": {
+    "message": "Skrivebord"
+  },
+  "manual.screenshot.desktopView": {
+    "message": "Skrivebordsvisning"
+  },
+  "manual.screenshot.expand": {
+    "message": "Udvid"
+  },
+  "manual.screenshot.expandedViewer": {
+    "message": "Udvidet skærmbilledefremviser"
+  },
+  "manual.screenshot.fullscreen": {
+    "message": "Fuldskærm"
+  },
+  "manual.screenshot.layoutLabel": {
+    "message": "Skærmbillede-layout for alle billeder"
+  },
+  "manual.screenshot.mobile": {
+    "message": "Mobil"
+  },
+  "manual.screenshot.mobileView": {
+    "message": "Mobil visning"
+  },
+  "manual.screenshot.openViewer": {
+    "message": "Åbn skærmbilledefremviser"
+  },
+  "manual.screenshot.screenshot": {
+    "message": "Skærmbillede"
+  },
+  "manual.translationNotice.disclosure": {
+    "message": "Denne oversættelse blev lavet med Microsoft Translator og er endnu ikke korrekturlæst."
+  },
+  "manual.translationNotice.invitation": {
+    "message": "Rettelser og forbedringer er meget velkomne som en"
+  },
+  "manual.translationNotice.issue": {
+    "message": "GitHub-problemet"
+  },
+  "manual.translationNotice.or": {
+    "message": "eller"
+  },
+  "manual.translationNotice.pullRequest": {
+    "message": "pull request"
+  },
+  "manual.translationNotice.title": {
+    "message": "Maskinoversættelse — anmeldelse er velkommen"
+  },
+  "manual.version.development": {
+    "message": "Udvikling"
+  },
+  "theme.colorToggle.ariaLabel.mode.system": {
+    "message": "Systemtilstand"
+  },
+  "theme.docs.sidebar.navAriaLabel": {
+    "message": "Docs sidebar-navigation"
+  },
+  "theme.IconExternalLink.ariaLabel": {
+    "message": "(åbner i en ny fane)"
+  },
+  "theme.NavBar.navAriaLabel": {
+    "message": "Hovednavigation"
+  },
+  "theme.SearchBar.label": {
+    "message": "Søgning"
+  },
+  "theme.SearchBar.noResultsText": {
+    "message": "Ingen resultater"
+  },
+  "theme.SearchBar.searchInContext": {
+    "message": "Se alle resultater i \"{context}\""
+  },
+  "theme.SearchBar.seeAllOutsideContext": {
+    "message": "Se alle resultater uden for \"{context}\""
+  },
+  "theme.SearchBar.seeAll": {
+    "message": "Se alle resultater"
+  },
+  "theme.SearchPage.existingResultsTitle": {
+    "message": "Søgeresultater for \"{query}\""
+  },
+  "theme.SearchPage.emptyResultsTitle": {
+    "message": "Søgedokumentation"
+  },
+  "theme.SearchPage.documentsFound.plurals": {
+    "message": "Ét dokument fundet|{count} dokumenter fundet"
+  },
+  "theme.SearchPage.noResultsText": {
+    "message": "Ingen dokumenter fundet"
+  },
+  "theme.SearchPage.searchContext.everywhere": {
+    "message": "Overalt"
+  }
+}
