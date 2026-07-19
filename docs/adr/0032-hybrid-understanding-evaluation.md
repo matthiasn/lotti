@@ -32,8 +32,9 @@ Use a hybrid evaluation pipeline.
    evidence digests, privacy, response bounds, recorded assistance/support, and
    blueprint-specific evidence coverage.
 4. A tool-less LLM decomposes the response into claims and proposes anchored
-   0–4 levels only for dimensions the blueprint elicited: correctness, causal
-   understanding, completeness, boundaries/trade-offs, and validation/transfer.
+   0–4 levels only for dimensions the blueprint elicited: correctness,
+   causal/mechanistic understanding, completeness/relevance,
+   boundaries/trade-offs, and validation/transfer.
    Every other dimension is `notObserved` and cannot reduce the result.
 5. Every material claim, gap, contradiction, and proposed level must cite valid
    evidence item IDs from the frozen snapshot.

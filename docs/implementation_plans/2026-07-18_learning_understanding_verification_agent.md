@@ -39,6 +39,7 @@
 16. [Rollout gates and success measures](#16-rollout-gates-and-success-measures)
 17. [Implementation work packages](#17-implementation-work-packages)
 18. [Decision index](#18-decision-index)
+19. [Appendix A — Expert-panel review log](#appendix-a--expert-panel-review-log)
 
 ## Canonical terminology
 
@@ -1271,8 +1272,7 @@ Before automatic prompting, test:
 ### Phase 4 — Spaced follow-up and learning history
 
 - Add concept projections, due-review suggestions, private per-check history,
-  and
-  self-confidence calibration.
+  and self-confidence calibration.
 - No streaks, public comparison, or notification pressure.
 - Done when users can disable or reset history and spacing remains subordinate
   to meaningful work context.

@@ -29,7 +29,7 @@ session, separate from journal ratings.
    detail across observed weights only; the LLM cannot choose the aggregate.
 3. Use formative labels: Transfer demonstrated in this check (90–100, only
    after a genuinely novel transfer item with validation/transfer at level 4;
-   otherwise cap both displayed score at 89 and label eligibility), Core
+   otherwise cap both the displayed score at 89 and label eligibility), Core
    mechanism demonstrated (75–89), Developing explanation (50–74), Core idea
    needs review (0–49). **Not assessed** is a non-scored assessment outcome when
    evidence/evaluator reliability is insufficient, not a formative label.
