@@ -46,6 +46,29 @@ JournalAudio _persistedAudio({String id = 'audio_001'}) {
   );
 }
 
+DayProcessingClaim _foregroundClaim() {
+  return DayProcessingClaim(
+    token: 'foreground-token',
+    job: DayProcessingJob(
+      id: 'transcribe_test-session',
+      kind: DayProcessingJobKind.transcribeAudio,
+      status: DayProcessingJobStatus.running,
+      dayId: 'dayplan-2026-05-26',
+      activityEntryId: 'activity-1',
+      recordingSessionId: 'test-session',
+      audioId: 'audio_001',
+      audioPath: '/tmp/test-session.wav',
+      createdAt: _recordingStartedAt,
+      updatedAt: _recordingStartedAt,
+      nextAttemptAt: _recordingStartedAt,
+      attempts: 1,
+      generation: 1,
+      claimToken: 'foreground-token',
+      leaseUntil: _recordingStartedAt.add(const Duration(minutes: 1)),
+    ),
+  );
+}
+
 /// Builds the standard kept-alive container with a caller-owned raw recorder.
 ProviderContainer _aliveContainer({
   required MockAudioTranscriptionService transcriber,
@@ -212,6 +235,22 @@ void main() {
       persistAudio: persistAudio,
       realtimeRecorderFactory: () => fakeRecorder,
     );
+
+    void stubOutboxClaim(
+      MockDayProcessingOutboxRepository outbox,
+      Future<DayProcessingClaim?> Function() response,
+    ) {
+      when(
+        () => outbox.enqueueAndClaimTranscription(
+          dayId: any(named: 'dayId'),
+          activityEntryId: any(named: 'activityEntryId'),
+          recordingSessionId: any(named: 'recordingSessionId'),
+          audioId: any(named: 'audioId'),
+          audioPath: any(named: 'audioPath'),
+          capturedAt: any(named: 'capturedAt'),
+        ),
+      ).thenAnswer((_) => response());
+    }
 
     test(
       'toggle prefers realtime when configured, starts the WebSocket, '
@@ -587,6 +626,41 @@ void main() {
       },
     );
 
+    test('reset contains a late realtime startup failure', () async {
+      final realtimeStart = Completer<void>();
+      when(
+        () => realtimeService.startRealtimeTranscription(
+          capture: any(named: 'capture'),
+          pcmStream: any(named: 'pcmStream'),
+          onDelta: any(named: 'onDelta'),
+          onCaptureFailure: any(named: 'onCaptureFailure'),
+          config: any(named: 'config'),
+          resolveConfigWhenAbsent: false,
+        ),
+      ).thenAnswer((_) => realtimeStart.future);
+      final container = buildContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(captureControllerProvider.notifier);
+
+      final start = notifier.toggle();
+      await pumpEventQueue();
+      notifier.reset();
+      realtimeStart.completeError(StateError('late backend failure'));
+      await start;
+
+      expect(
+        container.read(captureControllerProvider),
+        const CaptureState.idle(),
+      );
+      verify(
+        () => realtimeService.stopAndRetainForRecovery(
+          capture: durableCapture,
+          stopRecorder: any(named: 'stopRecorder'),
+        ),
+      ).called(2);
+      expect(fakeRecorder.disposed, isTrue);
+    });
+
     test(
       'audio destination failure discards before microphone start',
       () async {
@@ -852,6 +926,216 @@ void main() {
         expect(job.audioId, 'audio_001');
       },
     );
+
+    test('retains saved audio when its outbox claim is unavailable', () async {
+      final outbox = MockDayProcessingOutboxRepository();
+      stubOutboxClaim(outbox, () async => null);
+      final container = _aliveContainer(
+        transcriber: transcriber,
+        realtimeService: realtimeService,
+        persistAudio: persistAudio,
+        realtimeRecorderFactory: () => fakeRecorder,
+        processingOutbox: outbox,
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(captureControllerProvider.notifier);
+
+      await notifier.toggle();
+      await notifier.toggle();
+
+      expect(
+        container.read(captureControllerProvider),
+        isA<CaptureState>()
+            .having((state) => state.phase, 'phase', CapturePhase.error)
+            .having(
+              (state) => state.error,
+              'error',
+              CaptureError.recordingSavedPendingTranscription,
+            )
+            .having((state) => state.audioId, 'audioId', 'audio_001'),
+      );
+      expect(fakeRecorder.disposed, isTrue);
+    });
+
+    test('records an empty foreground transcript as retryable work', () async {
+      when(
+        () => realtimeService.stop(
+          capture: any(named: 'capture'),
+          stopRecorder: any(named: 'stopRecorder'),
+          outputPath: any(named: 'outputPath'),
+        ),
+      ).thenAnswer((invocation) async {
+        final stopRecorder =
+            invocation.namedArguments[#stopRecorder] as Future<void> Function();
+        final outputPath = invocation.namedArguments[#outputPath] as String;
+        await stopRecorder();
+        return RealtimeStopResult(
+          transcript: '',
+          recordingSessionId: 'test-session',
+          audioFilePath: '$outputPath.wav',
+          captureDisposition: RealtimeCaptureDisposition.complete,
+        );
+      });
+      when(
+        () => transcriber.transcribe(
+          any(),
+          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+        ),
+      ).thenAnswer((_) async => '');
+      final outbox = MockDayProcessingOutboxRepository();
+      final claim = _foregroundClaim();
+      stubOutboxClaim(outbox, () async => claim);
+      when(
+        () => outbox.markFailure(
+          jobId: claim.job.id,
+          claimToken: claim.token,
+          failureClass: DayProcessingFailureClass.timeout,
+          error: 'No transcript was produced',
+        ),
+      ).thenAnswer((_) async => claim.job);
+      final container = _aliveContainer(
+        transcriber: transcriber,
+        realtimeService: realtimeService,
+        persistAudio: persistAudio,
+        realtimeRecorderFactory: () => fakeRecorder,
+        processingOutbox: outbox,
+      );
+      addTearDown(container.dispose);
+
+      await container.read(captureControllerProvider.notifier).toggle();
+      await container.read(captureControllerProvider.notifier).toggle();
+
+      expect(
+        container.read(captureControllerProvider).error,
+        CaptureError.recordingSavedPendingTranscription,
+      );
+      verify(
+        () => outbox.markFailure(
+          jobId: claim.job.id,
+          claimToken: claim.token,
+          failureClass: DayProcessingFailureClass.timeout,
+          error: 'No transcript was produced',
+        ),
+      ).called(1);
+    });
+
+    test(
+      'uses the registered outbox and retries a rejected journal update',
+      () async {
+        final outbox = MockDayProcessingOutboxRepository();
+        final claim = _foregroundClaim();
+        stubOutboxClaim(outbox, () async => claim);
+        when(
+          () => outbox.markTranscriptReady(
+            jobId: claim.job.id,
+            claimToken: claim.token,
+            transcript: 'hello realtime',
+          ),
+        ).thenAnswer((_) async => claim.job);
+        when(
+          () => outbox.markFailure(
+            jobId: claim.job.id,
+            claimToken: claim.token,
+            failureClass: DayProcessingFailureClass.local,
+            error: 'Journal transcript commit was not accepted',
+            retryDelay: const Duration(seconds: 1),
+          ),
+        ).thenAnswer((_) async => claim.job);
+        final persistenceLogic = MockPersistenceLogic();
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt
+              ..registerSingleton<DayProcessingOutboxRepository>(outbox)
+              ..registerSingleton<PersistenceLogic>(persistenceLogic);
+          },
+        );
+        addTearDown(tearDownTestGetIt);
+        when(
+          () => persistenceLogic.updateMetadata(any()),
+        ).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments.single as Metadata,
+        );
+        when(
+          () => persistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => false);
+        final container = buildContainer();
+        addTearDown(container.dispose);
+
+        await container.read(captureControllerProvider.notifier).toggle();
+        await container.read(captureControllerProvider.notifier).toggle();
+
+        expect(
+          container.read(captureControllerProvider).error,
+          CaptureError.recordingSavedPendingTranscription,
+        );
+        verify(
+          () => outbox.markFailure(
+            jobId: claim.job.id,
+            claimToken: claim.token,
+            failureClass: DayProcessingFailureClass.local,
+            error: 'Journal transcript commit was not accepted',
+            retryDelay: const Duration(seconds: 1),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('contains outbox completion and retry publication failures', () async {
+      final outbox = MockDayProcessingOutboxRepository();
+      final claim = _foregroundClaim();
+      stubOutboxClaim(outbox, () async => claim);
+      when(
+        () => outbox.markTranscriptReady(
+          jobId: claim.job.id,
+          claimToken: claim.token,
+          transcript: 'hello realtime',
+        ),
+      ).thenThrow(StateError('ready publication failed'));
+      when(
+        () => outbox.markFailure(
+          jobId: claim.job.id,
+          claimToken: claim.token,
+          failureClass: DayProcessingFailureClass.local,
+          error: any<String>(named: 'error'),
+          retryDelay: const Duration(seconds: 1),
+        ),
+      ).thenThrow(StateError('retry publication failed'));
+      final container = _aliveContainer(
+        transcriber: transcriber,
+        realtimeService: realtimeService,
+        persistAudio: persistAudio,
+        realtimeRecorderFactory: () => fakeRecorder,
+        processingOutbox: outbox,
+      );
+      addTearDown(container.dispose);
+
+      await container.read(captureControllerProvider.notifier).toggle();
+      await container.read(captureControllerProvider.notifier).toggle();
+
+      expect(
+        container.read(captureControllerProvider),
+        isA<CaptureState>()
+            .having((state) => state.phase, 'phase', CapturePhase.error)
+            .having(
+              (state) => state.error,
+              'error',
+              CaptureError.recordingSavedPendingTranscription,
+            ),
+      );
+      verify(
+        () => outbox.markFailure(
+          jobId: claim.job.id,
+          claimToken: claim.token,
+          failureClass: DayProcessingFailureClass.local,
+          error: any<String>(
+            named: 'error',
+            that: contains('ready publication failed'),
+          ),
+          retryDelay: const Duration(seconds: 1),
+        ),
+      ).called(1);
+    });
 
     test('retains a saved partial source without committing it', () async {
       when(
