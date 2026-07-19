@@ -455,7 +455,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
               type: AiArtifactType.journalImage,
               id: item.id,
             ),
-            envelope: item.data.aiAttribution,
+            attribution: item.data.aiAttribution,
             includeTopSpacing: false,
           ),
       ];
@@ -498,7 +498,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
             type: AiArtifactType.journalImage,
             id: item.id,
           ),
-          envelope: item.data.aiAttribution,
+          attribution: item.data.aiAttribution,
           includeTopSpacing: false,
         ),
     ];

@@ -9,12 +9,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
-import 'package:lotti/features/ai/repository/transcription_exception.dart';
-import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
-import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
-import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -24,7 +19,6 @@ import 'package:record/record.dart' as record;
 import 'package:record/record.dart';
 
 import '../../../mocks/mocks.dart';
-import '../../ai_consumption/test_utils.dart';
 
 final _recordingStartedAt = DateTime(2026, 5, 26, 9);
 
@@ -35,7 +29,7 @@ AudioNote _audioNoteFixture() => AudioNote(
   duration: Duration.zero,
 );
 
-JournalAudio _persistedAudio({String id = 'audio_001', bool private = false}) {
+JournalAudio _persistedAudio({String id = 'audio_001'}) {
   return JournalAudio(
     meta: Metadata(
       id: id,
@@ -44,7 +38,6 @@ JournalAudio _persistedAudio({String id = 'audio_001', bool private = false}) {
       dateFrom: _recordingStartedAt,
       dateTo: _recordingStartedAt.add(const Duration(seconds: 2)),
       vectorClock: const VectorClock(<String, int>{}),
-      private: private,
     ),
     data: AudioData(
       dateFrom: _recordingStartedAt,
@@ -53,35 +46,6 @@ JournalAudio _persistedAudio({String id = 'audio_001', bool private = false}) {
       audioDirectory: '/audio/2026-05-26/',
       duration: const Duration(seconds: 2),
     ),
-  );
-}
-
-TranscriptAttributionSession _batchAttributionSession({
-  String id = 'batch-attribution',
-  String transcriptId = 'transcript-id',
-}) {
-  final startedAt = DateTime.utc(2026, 5, 26, 9);
-  return TranscriptAttributionSession(
-    transcriptId: transcriptId,
-    pending: AiAttributionPendingSession(
-      id: id,
-      attributionId: id,
-      workType: AiWorkType.audioTranscription,
-      initiator: makeAiActor(),
-      trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
-      executor: makeAiExecutor(),
-      privacyClassification: AiPrivacyClassification.mixed,
-      phase: AiAttributionPendingPhase.evidencePublished,
-      startedAt: startedAt,
-      lastUpdatedAt: startedAt,
-      intendedOutputs: const [],
-      interactionIds: const ['batch-interaction'],
-    ),
-    providerName: 'batch-transcribe',
-    modelId: 'cloud-inference',
-    providerType: InferenceProviderType.genericOpenAi,
-    interactionKind: AiInteractionKind.audioTranscription,
-    startedAt: startedAt,
   );
 }
 
@@ -554,144 +518,6 @@ void main() {
     );
 
     test(
-      'realtime attribution records the call and terminalizes no output',
-      () async {
-        final coordinator = MockTranscriptAttributionCoordinator();
-        final session = _batchAttributionSession(id: 'realtime-attribution');
-        when(
-          () => coordinator.begin(
-            providerName: 'fake-provider',
-            modelId: 'fake-model',
-            providerType: InferenceProviderType.genericOpenAi,
-            interactionKind: AiInteractionKind.realtimeTranscription,
-            privacyClassification: AiPrivacyClassification.mixed,
-          ),
-        ).thenAnswer((_) async => session);
-        when(
-          () => coordinator.recordInteraction(
-            session: session,
-            audioEntryId: 'audio_001',
-            transcript: '',
-          ),
-        ).thenAnswer((_) async {});
-        when(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: 'empty_transcript',
-          ),
-        ).thenAnswer((_) async {});
-        getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
-        addTearDown(
-          () => getIt.unregister<TranscriptAttributionCoordinator>(),
-        );
-        when(
-          () => realtimeService.stop(
-            stopRecorder: any(named: 'stopRecorder'),
-            outputPath: any(named: 'outputPath'),
-          ),
-        ).thenAnswer((invocation) async {
-          final stopRecorder =
-              invocation.namedArguments[#stopRecorder]
-                  as Future<void> Function();
-          await stopRecorder();
-          return const RealtimeStopResult(transcript: '   ');
-        });
-        final container = buildContainer();
-        addTearDown(container.dispose);
-        final notifier = container.read(captureControllerProvider.notifier)
-          ..skipRealtimeTranscriptVerificationForNextCapture();
-
-        await notifier.toggle();
-        await notifier.toggle();
-
-        expect(container.read(captureControllerProvider).transcript, isEmpty);
-        verify(
-          () => coordinator.recordInteraction(
-            session: session,
-            audioEntryId: 'audio_001',
-            transcript: '',
-          ),
-        ).called(1);
-        verify(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: 'empty_transcript',
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'realtime attribution fails when startup fails after preparation',
-      () async {
-        final coordinator = MockTranscriptAttributionCoordinator();
-        final session = _batchAttributionSession(id: 'realtime-start-failure');
-        final failure = StateError('socket unavailable');
-        when(
-          () => coordinator.begin(
-            providerName: 'fake-provider',
-            modelId: 'fake-model',
-            providerType: InferenceProviderType.genericOpenAi,
-            interactionKind: AiInteractionKind.realtimeTranscription,
-            privacyClassification: AiPrivacyClassification.mixed,
-          ),
-        ).thenAnswer((_) async => session);
-        when(
-          () => coordinator.fail(session: session, error: failure),
-        ).thenAnswer((_) async {});
-        when(
-          () => realtimeService.startRealtimeTranscription(
-            pcmStream: any(named: 'pcmStream'),
-            onDelta: any(named: 'onDelta'),
-            config: any(named: 'config'),
-          ),
-        ).thenThrow(failure);
-        getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
-        addTearDown(
-          () => getIt.unregister<TranscriptAttributionCoordinator>(),
-        );
-        final container = buildContainer();
-        addTearDown(container.dispose);
-
-        await container.read(captureControllerProvider.notifier).toggle();
-
-        expect(
-          container.read(captureControllerProvider).error,
-          CaptureError.realtimeTranscriptionStartFailed,
-        );
-        verify(
-          () => coordinator.fail(session: session, error: failure),
-        ).called(1);
-      },
-    );
-
-    test('disposing an active realtime capture records cancellation', () async {
-      final coordinator = MockTranscriptAttributionCoordinator();
-      final session = _batchAttributionSession(id: 'realtime-cancelled');
-      when(
-        () => coordinator.begin(
-          providerName: 'fake-provider',
-          modelId: 'fake-model',
-          providerType: InferenceProviderType.genericOpenAi,
-          interactionKind: AiInteractionKind.realtimeTranscription,
-          privacyClassification: AiPrivacyClassification.mixed,
-        ),
-      ).thenAnswer((_) async => session);
-      when(() => coordinator.cancel(session)).thenAnswer((_) async {});
-      getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
-      addTearDown(
-        () => getIt.unregister<TranscriptAttributionCoordinator>(),
-      );
-      final container = buildContainer();
-
-      await container.read(captureControllerProvider.notifier).toggle();
-      container.dispose();
-      await pumpEventQueue();
-
-      verify(() => coordinator.cancel(session)).called(1);
-    });
-
-    test(
       'uses full-file transcription when realtime final text is truncated',
       () async {
         when(
@@ -730,79 +556,6 @@ void main() {
           state.transcript,
           'plan client animation and commission work for tomorrow',
         );
-      },
-    );
-
-    test(
-      'attributed realtime verification reuses the pending session when the '
-      'audio carrier is unavailable',
-      () async {
-        final coordinator = MockTranscriptAttributionCoordinator();
-        final session = _batchAttributionSession(
-          id: 'realtime-verification',
-        );
-        when(
-          () => coordinator.begin(
-            providerName: 'fake-provider',
-            modelId: 'fake-model',
-            providerType: InferenceProviderType.genericOpenAi,
-            interactionKind: AiInteractionKind.realtimeTranscription,
-            privacyClassification: AiPrivacyClassification.mixed,
-          ),
-        ).thenAnswer((_) async => session);
-        when(
-          () => coordinator.recordInteraction(
-            session: session,
-            audioEntryId: null,
-            transcript: 'hello realtime',
-          ),
-        ).thenAnswer((_) async {});
-        when(
-          () => transcriber.transcribe(
-            any(),
-            attributionSession: session.pending,
-            terminalizeAttributionFailure: false,
-          ),
-        ).thenAnswer((_) async => 'verified attributed transcript');
-        when(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: 'audio_carrier_unavailable',
-          ),
-        ).thenAnswer((_) async {});
-        getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
-        addTearDown(
-          () => getIt.unregister<TranscriptAttributionCoordinator>(),
-        );
-        final container = _aliveContainer(
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: (_) async => null,
-          realtimeRecorderFactory: () => fakeRecorder,
-        );
-        addTearDown(container.dispose);
-
-        final notifier = container.read(captureControllerProvider.notifier);
-        await notifier.toggle();
-        await notifier.toggle();
-
-        expect(
-          container.read(captureControllerProvider).transcript,
-          'verified attributed transcript',
-        );
-        verify(
-          () => transcriber.transcribe(
-            any(),
-            attributionSession: session.pending,
-            terminalizeAttributionFailure: false,
-          ),
-        ).called(1);
-        verify(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: 'audio_carrier_unavailable',
-          ),
-        ).called(1);
       },
     );
 
@@ -1787,197 +1540,14 @@ void main() {
     );
 
     test(
-      'batch carrier remains successful when projection finalize fails',
-      () async {
-        when(
-          () => transcriber.transcribe(
-            any(),
-            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-          ),
-        ).thenAnswer((_) async => 'attributed transcript');
-        final coordinator = MockTranscriptAttributionCoordinator();
-        final envelope = makeAiTerminalEnvelope(
-          attributionId: 'transcript-attribution',
-          output: makeAiArtifact(
-            type: AiArtifactType.journalAudio,
-            id: 'audio_001',
-            subId: 'transcript-id',
-          ),
-        );
-        final prepared = PreparedTranscriptAttribution(
-          transcriptId: 'transcript-id',
-          envelope: envelope,
-        );
-        final session = _batchAttributionSession(
-          id: 'transcript-attribution',
-        );
-        when(
-          () => coordinator.begin(
-            providerName: 'batch-transcribe',
-            modelId: 'cloud-inference',
-            providerType: InferenceProviderType.genericOpenAi,
-            interactionKind: AiInteractionKind.audioTranscription,
-            privacyClassification: AiPrivacyClassification.mixed,
-          ),
-        ).thenAnswer((_) async => session);
-        when(
-          () => transcriber.transcribe(
-            any(),
-            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-            attributionSession: session.pending,
-            terminalizeAttributionFailure: false,
-          ),
-        ).thenAnswer((_) async => 'attributed transcript');
-        when(
-          () => coordinator.prepareOutput(
-            session: session,
-            audioEntryId: 'audio_001',
-          ),
-        ).thenAnswer((_) async => prepared);
-        when(
-          () => coordinator.finalize(prepared),
-        ).thenThrow(StateError('projection unavailable'));
-        when(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: 'transcript_persistence_failed',
-          ),
-        ).thenAnswer((_) async {});
-        getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
-
-        final container = _aliveContainer(
-          recorder: recorder,
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: (_) async => _persistedAudio(private: true),
-        );
-        addTearDown(container.dispose);
-        final notifier = container.read(captureControllerProvider.notifier);
-
-        await notifier.toggle();
-        await notifier.toggle();
-
-        final transcript = latestUpdated!.data.transcripts!.single;
-        expect(transcript.id, 'transcript-id');
-        expect(transcript.aiAttribution, envelope);
-        verify(() => coordinator.finalize(prepared)).called(1);
-        verifyNever(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: 'transcript_persistence_failed',
-          ),
-        );
-      },
-    );
-
-    test(
-      'batch capture terminalizes attribution when persistence is rejected',
-      () async {
-        when(
-          () => transcriber.transcribe(
-            any(),
-            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-          ),
-        ).thenAnswer((_) async => 'unpersisted transcript');
-        when(() => persistenceLogic.updateDbEntity(any())).thenAnswer((
-          invocation,
-        ) async {
-          latestUpdated = invocation.positionalArguments.first as JournalAudio;
-          return false;
-        });
-        final coordinator = MockTranscriptAttributionCoordinator();
-        final prepared = PreparedTranscriptAttribution(
-          transcriptId: 'pending-transcript',
-          envelope: makeAiTerminalEnvelope(attributionId: 'pending'),
-        );
-        final session = _batchAttributionSession(
-          id: 'pending',
-          transcriptId: 'pending-transcript',
-        );
-        when(
-          () => coordinator.begin(
-            providerName: 'batch-transcribe',
-            modelId: 'cloud-inference',
-            providerType: InferenceProviderType.genericOpenAi,
-            interactionKind: AiInteractionKind.audioTranscription,
-            privacyClassification: AiPrivacyClassification.mixed,
-          ),
-        ).thenAnswer((_) async => session);
-        when(
-          () => transcriber.transcribe(
-            any(),
-            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-            attributionSession: session.pending,
-            terminalizeAttributionFailure: false,
-          ),
-        ).thenAnswer((_) async => 'unpersisted transcript');
-        when(
-          () => coordinator.prepareOutput(
-            session: session,
-            audioEntryId: 'audio_001',
-          ),
-        ).thenAnswer((_) async => prepared);
-        when(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: 'transcript_persistence_failed',
-          ),
-        ).thenAnswer((_) async {});
-        getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
-        final container = _aliveContainer(
-          recorder: recorder,
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: (_) async => _persistedAudio(),
-        );
-        addTearDown(container.dispose);
-
-        await container.read(captureControllerProvider.notifier).toggle();
-        await container.read(captureControllerProvider.notifier).toggle();
-
-        expect(
-          latestUpdated?.data.transcripts?.single.id,
-          'pending-transcript',
-        );
-        verifyNever(() => coordinator.finalize(prepared));
-        verify(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: 'transcript_persistence_failed',
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
       'empty batch transcript skips the journal-audio attach step',
       () async {
-        final coordinator = MockTranscriptAttributionCoordinator();
-        final session = _batchAttributionSession(id: 'empty-batch');
-        when(
-          () => coordinator.begin(
-            providerName: 'batch-transcribe',
-            modelId: 'cloud-inference',
-            providerType: InferenceProviderType.genericOpenAi,
-            interactionKind: AiInteractionKind.audioTranscription,
-            privacyClassification: AiPrivacyClassification.mixed,
-          ),
-        ).thenAnswer((_) async => session);
         when(
           () => transcriber.transcribe(
             any(),
             speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-            attributionSession: session.pending,
-            terminalizeAttributionFailure: false,
           ),
         ).thenAnswer((_) async => '   ');
-        when(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: 'empty_transcript',
-          ),
-        ).thenAnswer((_) async {});
-        getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
 
         final container = _aliveContainer(
           recorder: recorder,
@@ -1995,141 +1565,6 @@ void main() {
         expect(
           container.read(captureControllerProvider).transcript,
           '',
-        );
-        verify(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: 'empty_transcript',
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'recorded batch failure terminalizes output without inventing a call',
-      () async {
-        final coordinator = MockTranscriptAttributionCoordinator();
-        final session = _batchAttributionSession(id: 'recorded-failure');
-        final cause = TranscriptionException(
-          'empty provider response',
-          provider: 'provider',
-        );
-        final failure = AttributedTranscriptionException(
-          cause: cause,
-          evidenceState: TranscriptionEvidenceState.recorded,
-        );
-        when(
-          () => coordinator.begin(
-            providerName: 'batch-transcribe',
-            modelId: 'cloud-inference',
-            providerType: InferenceProviderType.genericOpenAi,
-            interactionKind: AiInteractionKind.audioTranscription,
-            privacyClassification: AiPrivacyClassification.mixed,
-          ),
-        ).thenAnswer((_) async => session);
-        when(
-          () => transcriber.transcribe(
-            any(),
-            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-            attributionSession: session.pending,
-            terminalizeAttributionFailure: false,
-          ),
-        ).thenThrow(failure);
-        when(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: 'TranscriptionException',
-          ),
-        ).thenAnswer((_) async {});
-        when(
-          () => coordinator.fail(session: session, error: cause),
-        ).thenAnswer((_) async {});
-        getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
-        final container = _aliveContainer(
-          recorder: recorder,
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: (_) async => _persistedAudio(),
-        );
-        addTearDown(container.dispose);
-
-        await container.read(captureControllerProvider.notifier).toggle();
-        await container.read(captureControllerProvider.notifier).toggle();
-
-        expect(
-          container.read(captureControllerProvider).error,
-          CaptureError.transcriptionFailed,
-        );
-        verify(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: 'TranscriptionException',
-          ),
-        ).called(1);
-        verifyNever(
-          () => coordinator.fail(session: session, error: cause),
-        );
-      },
-    );
-
-    test(
-      'uncertain batch evidence leaves the pending saga for recovery',
-      () async {
-        final coordinator = MockTranscriptAttributionCoordinator();
-        final session = _batchAttributionSession(id: 'uncertain-failure');
-        const cause = AiAttributionPublicationException(
-          'publication uncertain',
-        );
-        const failure = AttributedTranscriptionException(
-          cause: cause,
-          evidenceState: TranscriptionEvidenceState.uncertain,
-        );
-        when(
-          () => coordinator.begin(
-            providerName: 'batch-transcribe',
-            modelId: 'cloud-inference',
-            providerType: InferenceProviderType.genericOpenAi,
-            interactionKind: AiInteractionKind.audioTranscription,
-            privacyClassification: AiPrivacyClassification.mixed,
-          ),
-        ).thenAnswer((_) async => session);
-        when(
-          () => transcriber.transcribe(
-            any(),
-            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-            attributionSession: session.pending,
-            terminalizeAttributionFailure: false,
-          ),
-        ).thenThrow(failure);
-        when(
-          () => coordinator.fail(session: session, error: cause),
-        ).thenAnswer((_) async {});
-        when(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: any(named: 'errorCode'),
-          ),
-        ).thenAnswer((_) async {});
-        getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
-        final container = _aliveContainer(
-          recorder: recorder,
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: (_) async => _persistedAudio(),
-        );
-        addTearDown(container.dispose);
-
-        await container.read(captureControllerProvider.notifier).toggle();
-        await container.read(captureControllerProvider.notifier).toggle();
-
-        verifyNever(
-          () => coordinator.fail(session: session, error: cause),
-        );
-        verifyNever(
-          () => coordinator.failOutput(
-            session: session,
-            errorCode: any(named: 'errorCode'),
-          ),
         );
       },
     );
@@ -2257,10 +1692,6 @@ class _FakeRealtimeRecorder implements record.AudioRecorder {
 class _FakeProvider implements AiConfigInferenceProvider {
   @override
   String get name => 'fake-provider';
-
-  @override
-  InferenceProviderType get inferenceProviderType =>
-      InferenceProviderType.genericOpenAi;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;

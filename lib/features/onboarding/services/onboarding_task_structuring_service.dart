@@ -185,7 +185,6 @@ Rules:
                 );
               },
               impact: () => impactCollector.impact,
-              privacyClassification: AiPrivacyClassification.mixed,
               categoryId: categoryId,
             )
           : invoke();

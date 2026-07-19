@@ -10,48 +10,48 @@ class AttributionCarrierProjector {
   final ConsumptionRepository _repository;
 
   Future<void> projectJournalEntity(JournalEntity entity) async {
-    for (final envelope in terminalEnvelopesFromJournalEntity(entity)) {
-      await _repository.projectTerminalEnvelope(envelope);
+    for (final attribution in attributionsFromJournalEntity(entity)) {
+      await _repository.upsertAttribution(attribution);
     }
   }
 
   Future<void> projectAgentEntity(AgentDomainEntity entity) async {
-    final envelope = terminalEnvelopeFromAgentEntity(entity);
-    if (envelope != null) {
-      await _repository.projectTerminalEnvelope(envelope);
+    final attribution = attributionFromAgentEntity(entity);
+    if (attribution != null) {
+      await _repository.upsertAttribution(attribution);
     }
   }
 }
 
-Iterable<AiTerminalAttributionEnvelope> terminalEnvelopesFromJournalEntity(
+Iterable<AiWorkAttribution> attributionsFromJournalEntity(
   JournalEntity entity,
 ) sync* {
   switch (entity) {
     case final AiResponseEntry response:
-      final envelope = response.data.aiAttribution;
-      if (envelope != null) yield envelope;
+      final attribution = response.data.aiAttribution;
+      if (attribution != null) yield attribution;
     case final JournalImage image:
-      final envelope = image.data.aiAttribution;
-      if (envelope != null) yield envelope;
+      final attribution = image.data.aiAttribution;
+      if (attribution != null) yield attribution;
     case final JournalAudio audio:
       for (final transcript
           in audio.data.transcripts ?? const <AudioTranscript>[]) {
-        final envelope = transcript.aiAttribution;
-        if (envelope != null) yield envelope;
+        final attribution = transcript.aiAttribution;
+        if (attribution != null) yield attribution;
       }
     default:
       return;
   }
 }
 
-AiTerminalAttributionEnvelope? terminalEnvelopeFromAgentEntity(
+AiWorkAttribution? attributionFromAgentEntity(
   AgentDomainEntity entity,
 ) {
   if (entity is! AgentReportEntity) return null;
   final raw = entity.provenance[aiAttributionProvenanceKey];
   if (raw is! Map) return null;
   try {
-    return AiTerminalAttributionEnvelope.fromJson(
+    return AiWorkAttribution.fromJson(
       Map<String, dynamic>.from(raw),
     );
   } on Object {

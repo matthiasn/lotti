@@ -13,14 +13,14 @@ void main() {
     expect(coveredTypes, containsAll(AiWorkType.values));
   });
 
-  test('strict publication sagas identify their terminal carrier', () {
-    final strictEntries = aiInferenceEntrypoints.where(
-      (entry) => entry.coverage == AiAttributionCoverage.strictPublicationSaga,
+  test('output-carrier entries identify their durable carrier', () {
+    final outputEntries = aiInferenceEntrypoints.where(
+      (entry) => entry.coverage == AiAttributionCoverage.outputCarrier,
     );
 
-    expect(strictEntries, isNotEmpty);
+    expect(outputEntries, isNotEmpty);
     expect(
-      strictEntries.every(
+      outputEntries.every(
         (entry) => entry.outputCarrier?.trim().isNotEmpty ?? false,
       ),
       isTrue,
@@ -34,15 +34,15 @@ void main() {
 
     expect(
       entries['unified-inference']?.coverage,
-      AiAttributionCoverage.strictPublicationSaga,
+      AiAttributionCoverage.outputCarrier,
     );
     expect(
       entries['conversation-repository']?.coverage,
-      AiAttributionCoverage.durablePartialCapture,
+      AiAttributionCoverage.interactionOnly,
     );
     expect(
       entries['embedding-indexing']?.coverage,
-      AiAttributionCoverage.strictPublicationSaga,
+      AiAttributionCoverage.outputCarrier,
     );
     expect(entries['embedding-indexing']?.outputCarrier, contains('Embedding'));
     expect(entries, isNot(contains('legacy-unified-inference')));

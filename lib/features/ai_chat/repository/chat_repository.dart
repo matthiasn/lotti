@@ -89,7 +89,7 @@ class ChatRepository {
       throw ArgumentError('categoryId is required for sending messages');
     }
 
-    AiAttributionPendingSession? attributionSession;
+    AiAttributionSession? attributionSession;
     var attributionTerminalized = false;
     try {
       loggingService.log(
@@ -124,7 +124,6 @@ class ChatRepository {
         attributionSession = await getIt<AiInteractionCapture>().beginSession(
           workType: AiWorkType.textGeneration,
           trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
-          privacyClassification: AiPrivacyClassification.mixed,
           categoryId: categoryId,
         );
       }

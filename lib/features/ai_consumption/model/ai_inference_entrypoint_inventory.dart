@@ -2,14 +2,11 @@ import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 
 /// Attribution guarantee enforced at a production inference entry point.
 enum AiAttributionCoverage {
-  /// A durable pending session exists before the backend call and the output
-  /// is blocked until interaction evidence crossed the publication barrier.
-  strictPublicationSaga,
+  /// The provider call is recorded and the output embeds attribution.
+  outputCarrier,
 
-  /// Durable pending state and terminal evidence surround the backend call,
-  /// while the funnel explicitly records that no syncable output carrier is
-  /// available yet.
-  durablePartialCapture,
+  /// The provider call is recorded but no durable output carrier is available.
+  interactionOnly,
 
   /// Development-only verification/evaluation and therefore not product data.
   developmentOnly,
@@ -46,21 +43,21 @@ const aiInferenceEntrypoints = <AiInferenceEntrypoint>[
       AiWorkType.imageAnalysis,
       AiWorkType.audioTranscription,
     },
-    coverage: AiAttributionCoverage.strictPublicationSaga,
+    coverage: AiAttributionCoverage.outputCarrier,
     outputCarrier: 'AiResponseData, ImageData, or AudioTranscript',
   ),
   AiInferenceEntrypoint(
     id: 'agent-wake-workflows',
     owner: 'lib/features/agents/workflow',
     workTypes: {AiWorkType.agentReport},
-    coverage: AiAttributionCoverage.strictPublicationSaga,
+    coverage: AiAttributionCoverage.outputCarrier,
     outputCarrier: 'AgentReportEntity.provenance',
   ),
   AiInferenceEntrypoint(
     id: 'agent-log-compaction',
     owner: 'lib/features/agents/service/agent_log_llm_summarizer.dart',
     workTypes: {AiWorkType.internalInference},
-    coverage: AiAttributionCoverage.durablePartialCapture,
+    coverage: AiAttributionCoverage.interactionOnly,
     outputCarrier: null,
   ),
   AiInferenceEntrypoint(
@@ -72,21 +69,21 @@ const aiInferenceEntrypoints = <AiInferenceEntrypoint>[
       AiWorkType.imageAnalysis,
       AiWorkType.audioTranscription,
     },
-    coverage: AiAttributionCoverage.strictPublicationSaga,
+    coverage: AiAttributionCoverage.outputCarrier,
     outputCarrier: 'AiResponseData, ImageData, or AudioTranscript',
   ),
   AiInferenceEntrypoint(
     id: 'conversation-repository',
     owner: 'lib/features/ai/conversation/conversation_repository.dart',
     workTypes: {AiWorkType.internalInference},
-    coverage: AiAttributionCoverage.durablePartialCapture,
+    coverage: AiAttributionCoverage.interactionOnly,
     outputCarrier: null,
   ),
   AiInferenceEntrypoint(
     id: 'embedding-indexing',
     owner: 'lib/features/ai/service/embedding_processor.dart',
     workTypes: {AiWorkType.embeddingIndexing},
-    coverage: AiAttributionCoverage.strictPublicationSaga,
+    coverage: AiAttributionCoverage.outputCarrier,
     outputCarrier: 'EmbeddingStore vector set keyed by entity/content hash',
   ),
   AiInferenceEntrypoint(
@@ -94,7 +91,7 @@ const aiInferenceEntrypoints = <AiInferenceEntrypoint>[
     owner:
         'lib/features/onboarding/services/onboarding_task_structuring_service.dart',
     workTypes: {AiWorkType.textGeneration},
-    coverage: AiAttributionCoverage.durablePartialCapture,
+    coverage: AiAttributionCoverage.interactionOnly,
     outputCarrier: null,
   ),
   AiInferenceEntrypoint(
@@ -104,7 +101,7 @@ const aiInferenceEntrypoints = <AiInferenceEntrypoint>[
       AiWorkType.textGeneration,
       AiWorkType.audioTranscription,
     },
-    coverage: AiAttributionCoverage.durablePartialCapture,
+    coverage: AiAttributionCoverage.interactionOnly,
     outputCarrier: null,
   ),
   AiInferenceEntrypoint(

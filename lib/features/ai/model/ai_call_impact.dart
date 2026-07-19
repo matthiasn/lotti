@@ -10,7 +10,7 @@ import 'package:meta/meta.dart';
 /// it, and Melious may omit fields.
 ///
 /// Units are exactly as Melious delivers them (no lossy conversion): energy in
-/// kWh, carbon in grams CO₂, water in litres, cost in credits (≈ EUR).
+/// kWh, carbon in grams CO₂, water in litres, and cost in Melious credits.
 @immutable
 class MeliousCallImpact {
   const MeliousCallImpact({
@@ -87,7 +87,7 @@ class MeliousCallImpact {
   /// (`environment_impact.provider_id`).
   final String? providerId;
 
-  /// Billing cost in Melious credits, ≈ EUR (`billing_cost.credits`).
+  /// Billing cost in Melious credits (`billing_cost.credits`).
   final double? costCredits;
 
   /// Exact provider-reported billing decimal, retained for audit evidence.

@@ -14,11 +14,11 @@ import 'package:uuid/uuid.dart';
 class PreparedTranscriptAttribution {
   const PreparedTranscriptAttribution({
     required this.transcriptId,
-    required this.envelope,
+    required this.attribution,
   });
 
   final String transcriptId;
-  final AiTerminalAttributionEnvelope envelope;
+  final AiWorkAttribution attribution;
 }
 
 /// Durable transcript capture created before provider/native inference starts.
@@ -34,7 +34,7 @@ class TranscriptAttributionSession {
   });
 
   final String transcriptId;
-  final AiAttributionPendingSession pending;
+  final AiAttributionSession pending;
   final String providerName;
   final String modelId;
   final InferenceProviderType providerType;
@@ -57,7 +57,6 @@ class TranscriptAttributionCoordinator {
     required String modelId,
     required InferenceProviderType providerType,
     required AiInteractionKind interactionKind,
-    required AiPrivacyClassification privacyClassification,
     String? taskId,
     String? categoryId,
   }) async {
@@ -68,8 +67,6 @@ class TranscriptAttributionCoordinator {
         workType: AiWorkType.audioTranscription,
         initiator: await _identityResolver.humanInitiator(),
         trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
-        executor: await _identityResolver.executor(),
-        privacyClassification: privacyClassification,
         taskId: taskId,
         categoryId: categoryId,
       ),
@@ -92,7 +89,6 @@ class TranscriptAttributionCoordinator {
     required String modelId,
     required InferenceProviderType providerType,
     required AiInteractionKind interactionKind,
-    required AiPrivacyClassification privacyClassification,
     String? taskId,
     String? categoryId,
   }) async {
@@ -101,7 +97,6 @@ class TranscriptAttributionCoordinator {
       modelId: modelId,
       providerType: providerType,
       interactionKind: interactionKind,
-      privacyClassification: privacyClassification,
       taskId: taskId,
       categoryId: categoryId,
     );
@@ -144,7 +139,7 @@ class TranscriptAttributionCoordinator {
   }) async {
     final eventId = const Uuid().v4();
     final completedAt = clock.now().toUtc();
-    final evidence = await _attributionService.recordInteraction(
+    await _attributionService.recordInteraction(
       attributionId: session.pending.id,
       event: AiConsumptionEvent(
         id: eventId,
@@ -164,44 +159,23 @@ class TranscriptAttributionCoordinator {
         inputTokens: _usageInt(usage, const ['input_tokens', 'inputTokens']),
         outputTokens: _usageInt(usage, const ['output_tokens', 'outputTokens']),
         totalTokens: _usageInt(usage, const ['total_tokens', 'totalTokens']),
-        payload: AiInteractionPayload(
-          id: 'payload-$eventId',
-          interactionId: eventId,
-          request: const [],
-          response: const [],
-          parameters: {'providerName': session.providerName},
-          requestDigest: sha256
-              .convert(utf8.encode(audioEntryId ?? session.pending.id))
-              .toString(),
-          responseDigest: sha256.convert(utf8.encode(transcript)).toString(),
-          capturePolicy: AiPayloadCapturePolicy.referenceOnly,
-          privacyClassification: session.pending.privacyClassification,
-          createdAt: completedAt,
-        ),
-        cost: AiInteractionCost(
-          id: 'cost-$eventId',
-          interactionId: eventId,
-          source: AiCostSource.unknown,
-          assessedAt: completedAt,
-          providerType: session.providerType.name,
-        ),
+        requestDigest: sha256
+            .convert(utf8.encode(audioEntryId ?? session.pending.id))
+            .toString(),
+        responseDigest: sha256.convert(utf8.encode(transcript)).toString(),
+        interactionParameters: {'providerName': session.providerName},
       ),
     );
-    if (!evidence.published) {
-      throw const AiAttributionPublicationException(
-        'transcript evidence did not cross the publication barrier',
-      );
-    }
   }
 
-  /// Prepares the carrier envelope after the provider interaction was already
+  /// Prepares the output attribution after the provider interaction was already
   /// recorded through the shared interaction capture boundary under this
-  /// session's pending attribution.
+  /// session's attribution.
   Future<PreparedTranscriptAttribution> prepareOutput({
     required TranscriptAttributionSession session,
     required String audioEntryId,
   }) async {
-    final envelope = await _attributionService.prepareCompletion(
+    final attribution = await _attributionService.prepareCompletion(
       attributionId: session.pending.id,
       outputs: [
         AiArtifactReference(
@@ -213,7 +187,7 @@ class TranscriptAttributionCoordinator {
     );
     return PreparedTranscriptAttribution(
       transcriptId: session.transcriptId,
-      envelope: envelope,
+      attribution: attribution,
     );
   }
 
@@ -229,8 +203,7 @@ class TranscriptAttributionCoordinator {
     errorCode: error.runtimeType.toString(),
   );
 
-  /// Records an explicit user cancellation instead of leaving a pending saga
-  /// for stale-session recovery.
+  /// Records an explicit user cancellation.
   Future<void> cancel(TranscriptAttributionSession session) =>
       _terminalizeWithoutCarrier(
         session: session,
@@ -245,13 +218,13 @@ class TranscriptAttributionCoordinator {
     required TranscriptAttributionSession session,
     required String errorCode,
   }) async {
-    final envelope = await _attributionService.prepareCompletion(
+    final attribution = await _attributionService.prepareCompletion(
       attributionId: session.pending.id,
       outputs: const [],
       status: AiWorkStatus.failed,
       errorCode: errorCode,
     );
-    await _attributionService.finalize(envelope);
+    await _attributionService.finalize(attribution);
   }
 
   Future<void> _terminalizeWithoutCarrier({
@@ -262,7 +235,7 @@ class TranscriptAttributionCoordinator {
   }) async {
     final eventId = const Uuid().v4();
     final completedAt = clock.now().toUtc();
-    final evidence = await _attributionService.recordInteraction(
+    await _attributionService.recordInteraction(
       attributionId: session.pending.id,
       event: AiConsumptionEvent(
         id: eventId,
@@ -278,45 +251,24 @@ class TranscriptAttributionCoordinator {
         categoryId: session.pending.categoryId,
         providerModelId: session.modelId,
         durationMs: completedAt.difference(session.startedAt).inMilliseconds,
-        payload: AiInteractionPayload(
-          id: 'payload-$eventId',
-          interactionId: eventId,
-          request: const [],
-          response: const [],
-          parameters: {'providerName': session.providerName},
-          requestDigest: sha256
-              .convert(utf8.encode(session.pending.id))
-              .toString(),
-          responseDigest: sha256.convert(const []).toString(),
-          capturePolicy: AiPayloadCapturePolicy.referenceOnly,
-          privacyClassification: session.pending.privacyClassification,
-          createdAt: completedAt,
-        ),
-        cost: AiInteractionCost(
-          id: 'cost-$eventId',
-          interactionId: eventId,
-          source: AiCostSource.unknown,
-          assessedAt: completedAt,
-          providerType: session.providerType.name,
-        ),
+        requestDigest: sha256
+            .convert(utf8.encode(session.pending.id))
+            .toString(),
+        responseDigest: sha256.convert(const []).toString(),
+        interactionParameters: {'providerName': session.providerName},
       ),
     );
-    if (!evidence.published) {
-      throw const AiAttributionPublicationException(
-        'transcript failure evidence did not cross the publication barrier',
-      );
-    }
-    final envelope = await _attributionService.prepareCompletion(
+    final attribution = await _attributionService.prepareCompletion(
       attributionId: session.pending.id,
       outputs: const [],
       status: workStatus,
       errorCode: errorCode,
     );
-    await _attributionService.finalize(envelope);
+    await _attributionService.finalize(attribution);
   }
 
   Future<void> finalize(PreparedTranscriptAttribution attribution) =>
-      _attributionService.finalize(attribution.envelope);
+      _attributionService.finalize(attribution.attribution);
 
   static int? _usageInt(Map<String, dynamic>? usage, List<String> keys) {
     if (usage == null) return null;

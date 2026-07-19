@@ -268,9 +268,7 @@ extension _AgentHandlers on SyncEventProcessor {
   Future<void> _projectAgentAttribution(AgentDomainEntity entity) async {
     final repository = consumptionRepository;
     if (repository == null) return;
-    await AiAttributionBackfillService(
-      repository,
-    ).backfill(agentEntities: [entity]);
+    await AttributionCarrierProjector(repository).projectAgentEntity(entity);
   }
 
   /// Keeps explicit task-agent fields when an older client sends a rewrite

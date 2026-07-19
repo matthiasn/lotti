@@ -25,8 +25,8 @@ void main() {
     dateTo: createdAt,
   );
 
-  test('extracts the terminal envelope from an AI response carrier', () {
-    final envelope = makeAiTerminalEnvelope();
+  test('extracts attribution from an AI response carrier', () {
+    final attribution = makeAiWorkAttribution();
     final entity = JournalEntity.aiResponse(
       meta: metadata('output-1'),
       data: AiResponseData(
@@ -35,16 +35,16 @@ void main() {
         prompt: 'prompt',
         thoughts: '',
         response: 'response',
-        aiAttribution: envelope,
+        aiAttribution: attribution,
       ),
     );
 
-    expect(terminalEnvelopesFromJournalEntity(entity), [envelope]);
+    expect(attributionsFromJournalEntity(entity), [attribution]);
   });
 
   test('extracts independently attributed transcripts from audio', () {
-    final first = makeAiTerminalEnvelope(attributionId: 'first');
-    final second = makeAiTerminalEnvelope(attributionId: 'second');
+    final first = makeAiWorkAttribution(attributionId: 'first');
+    final second = makeAiWorkAttribution(attributionId: 'second');
     final entity = JournalEntity.journalAudio(
       meta: metadata('audio-1'),
       data: AudioData(
@@ -74,11 +74,11 @@ void main() {
       ),
     );
 
-    expect(terminalEnvelopesFromJournalEntity(entity), [first, second]);
+    expect(attributionsFromJournalEntity(entity), [first, second]);
   });
 
   test('extracts an image carrier and ignores unrelated journal entities', () {
-    final envelope = makeAiTerminalEnvelope(attributionId: 'image');
+    final attribution = makeAiWorkAttribution(attributionId: 'image');
     final image = JournalEntity.journalImage(
       meta: metadata('image-1'),
       data: ImageData(
@@ -86,17 +86,17 @@ void main() {
         imageFile: 'image.jpg',
         imageDirectory: '/images',
         capturedAt: createdAt,
-        aiAttribution: envelope,
+        aiAttribution: attribution,
       ),
     );
     final entry = JournalEntity.journalEntry(meta: metadata('entry-1'));
 
-    expect(terminalEnvelopesFromJournalEntity(image), [envelope]);
-    expect(terminalEnvelopesFromJournalEntity(entry), isEmpty);
+    expect(attributionsFromJournalEntity(image), [attribution]);
+    expect(attributionsFromJournalEntity(entry), isEmpty);
   });
 
   test('decodes persisted agent carriers and rejects malformed provenance', () {
-    final envelope = makeAiTerminalEnvelope(attributionId: 'agent');
+    final attribution = makeAiWorkAttribution(attributionId: 'agent');
     AgentReportEntity report(Map<String, Object?> provenance) =>
         AgentReportEntity(
           id: 'report-1',
@@ -107,22 +107,22 @@ void main() {
           provenance: provenance,
         );
     final normalized =
-        jsonDecode(jsonEncode(envelope.toJson())) as Map<String, dynamic>;
+        jsonDecode(jsonEncode(attribution.toJson())) as Map<String, dynamic>;
 
     expect(
-      terminalEnvelopeFromAgentEntity(
+      attributionFromAgentEntity(
         report({aiAttributionProvenanceKey: normalized}),
       ),
-      envelope,
+      attribution,
     );
     expect(
-      terminalEnvelopeFromAgentEntity(
+      attributionFromAgentEntity(
         report({aiAttributionProvenanceKey: 'invalid'}),
       ),
       isNull,
     );
     expect(
-      terminalEnvelopeFromAgentEntity(
+      attributionFromAgentEntity(
         report({
           aiAttributionProvenanceKey: const {'bad': true},
         }),
@@ -130,7 +130,7 @@ void main() {
       isNull,
     );
     expect(
-      terminalEnvelopeFromAgentEntity(
+      attributionFromAgentEntity(
         AgentDomainEntity.agentReportHead(
           id: 'head-1',
           agentId: 'agent-1',
@@ -144,17 +144,17 @@ void main() {
     );
   });
 
-  test('projector persists journal and agent terminal carriers', () async {
+  test('projector persists journal and agent attribution carriers', () async {
     final repository = MockConsumptionRepository();
     final projector = AttributionCarrierProjector(repository);
-    final journalEnvelope = makeAiTerminalEnvelope(
+    final journalEnvelope = makeAiWorkAttribution(
       attributionId: 'journal-project',
     );
-    final agentEnvelope = makeAiTerminalEnvelope(
+    final agentEnvelope = makeAiWorkAttribution(
       attributionId: 'agent-project',
     );
     when(
-      () => repository.projectTerminalEnvelope(any()),
+      () => repository.upsertAttribution(any()),
     ).thenAnswer((_) async {});
     final journal = JournalEntity.aiResponse(
       meta: metadata('journal-output'),
@@ -193,10 +193,10 @@ void main() {
     );
 
     verify(
-      () => repository.projectTerminalEnvelope(journalEnvelope),
+      () => repository.upsertAttribution(journalEnvelope),
     ).called(1);
     verify(
-      () => repository.projectTerminalEnvelope(agentEnvelope),
+      () => repository.upsertAttribution(agentEnvelope),
     ).called(1);
   });
 }

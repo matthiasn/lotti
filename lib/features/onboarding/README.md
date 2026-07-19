@@ -451,7 +451,7 @@ and the host pops the modal and deep-links to the **real `TaskDetailsPage`**.
   category → profile → thinking model → provider and runs a single-shot
   `CloudInferenceRepository.generate` returning `{title, checklist[]}`.
   The provider call is wrapped by `AiInteractionCapture` before invocation and
-  records reference-only digests, model, usage, timing, and known/unknown cost.
+  records digests, model, usage, timing, and actual provider-reported cost.
   Because the structured result is immediately transformed into a task rather
   than stored as its own AI carrier, this audit record is explicitly partial
   and does not claim the task as an AI-generated output.

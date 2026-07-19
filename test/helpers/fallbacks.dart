@@ -58,62 +58,24 @@ final AiConsumptionEvent fallbackAiConsumptionEvent = AiConsumptionEvent(
 const AiAttributionStart fallbackAiAttributionStart = AiAttributionStart(
   workType: AiWorkType.textGeneration,
   initiator: AiActorSnapshot(
-    type: AiActorType.system,
-    id: 'fallback-actor',
-    displayName: 'Fallback actor',
+    type: AiActorType.human,
+    id: 'fallback-human',
+    displayName: 'Fallback Human',
+    humanPrincipalId: 'fallback-human',
   ),
-  trigger: AiTriggerSnapshot(type: AiTriggerType.automatic),
-  executor: AiExecutorSnapshot(
-    hostId: 'fallback-host',
-    displayName: 'Fallback host',
-  ),
-  privacyClassification: AiPrivacyClassification.standard,
+  trigger: AiTriggerSnapshot(type: AiTriggerType.manual),
 );
 
-final AiTerminalAttributionEnvelope fallbackAiTerminalAttributionEnvelope =
-    AiTerminalAttributionEnvelope(
-      id: 'fallback-terminal',
-      attribution: AiWorkAttribution(
-        id: 'fallback-attribution',
-        workType: AiWorkType.textGeneration,
-        status: AiWorkStatus.succeeded,
-        initiator: const AiActorSnapshot(
-          type: AiActorType.system,
-          id: 'fallback-actor',
-          displayName: 'Fallback actor',
-        ),
-        trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
-        executor: const AiExecutorSnapshot(
-          hostId: 'fallback-host',
-          displayName: 'Fallback host',
-        ),
-        privacyClassification: AiPrivacyClassification.standard,
-        startedAt: DateTime.fromMillisecondsSinceEpoch(0),
-        completedAt: DateTime.fromMillisecondsSinceEpoch(0),
-        vectorClock: null,
-        links: const [],
-      ),
-    );
-
-final AiAttributionRecoveryCapsule fallbackAiAttributionRecoveryCapsule =
-    AiAttributionRecoveryCapsule(
-      id: 'fallback-recovery-capsule',
-      attributionId: 'fallback-attribution',
-      workType: AiWorkType.textGeneration,
-      initiator: const AiActorSnapshot(
-        type: AiActorType.system,
-        id: 'fallback-actor',
-        displayName: 'Fallback actor',
-      ),
-      trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
-      executor: const AiExecutorSnapshot(
-        hostId: 'fallback-host',
-        displayName: 'Fallback host',
-      ),
-      privacyClassification: AiPrivacyClassification.standard,
-      startedAt: DateTime.fromMillisecondsSinceEpoch(0),
-      intendedOutputs: const [],
-    );
+final AiWorkAttribution fallbackAiWorkAttribution = AiWorkAttribution(
+  id: 'fallback-attribution',
+  workType: AiWorkType.textGeneration,
+  status: AiWorkStatus.succeeded,
+  initiator: fallbackAiAttributionStart.initiator,
+  trigger: fallbackAiAttributionStart.trigger,
+  startedAt: DateTime(2024),
+  completedAt: DateTime(2024),
+  vectorClock: const VectorClock({}),
+);
 
 final ProjectEntry fallbackProjectEntry =
     JournalEntity.project(
@@ -356,7 +318,6 @@ void registerAllFallbackValues() {
   // Enum fallbacks
   registerFallbackValue(ChangeSource.user);
   registerFallbackValue(AiConfigType.inferenceProvider);
-  registerFallbackValue(AiWorkStatus.succeeded);
   registerFallbackValue(AgentMilestone.wakeCompleted);
   registerFallbackValue(AgentMessageKind.system);
 
@@ -491,10 +452,8 @@ void registerAllFallbackValues() {
   // AI consumption event fallback (recorder/repository mocks).
   registerFallbackValue(fallbackAiConsumptionEvent);
   registerFallbackValue(fallbackAiAttributionStart);
-  registerFallbackValue(fallbackAiTerminalAttributionEnvelope);
-  registerFallbackValue(fallbackAiTerminalAttributionEnvelope.attribution);
-  registerFallbackValue(fallbackAiAttributionRecoveryCapsule);
-  registerFallbackValue(<AiArtifactReference>[]);
+  registerFallbackValue(fallbackAiWorkAttribution);
+  registerFallbackValue(AiWorkStatus.succeeded);
 
   // GenUI A2uiMessage fallback (needed when MockSurfaceController.handleMessage
   // is stubbed with any()).

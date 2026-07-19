@@ -1141,16 +1141,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAssistantTitle => 'Generovat…';
 
   @override
-  String get aiAttributionArtifactContext => 'Kontext';
-
-  @override
   String get aiAttributionArtifactOutput => 'Výstup';
-
-  @override
-  String get aiAttributionArtifacts => 'Propojené položky';
-
-  @override
-  String get aiAttributionArtifactSource => 'Zdroj';
 
   @override
   String get aiAttributionCompletedAt => 'Dokončeno';
@@ -1159,28 +1150,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAttributionCost => 'Cena';
 
   @override
-  String get aiAttributionCostSource => 'Zdroj nákladů';
-
-  @override
-  String get aiAttributionCostSourceEstimated => 'Místní odhad';
-
-  @override
-  String get aiAttributionCostSourceLegacy => 'Starší vykázaná hodnota';
-
-  @override
-  String get aiAttributionCostSourceLocal => 'Místní zpracování';
-
-  @override
-  String get aiAttributionCostSourceProvider => 'Vykázáno poskytovatelem';
-
-  @override
-  String get aiAttributionCostSourceReconciled => 'Externě odsouhlaseno';
-
-  @override
   String get aiAttributionCostUnknown => 'Cena neznámá';
-
-  @override
-  String get aiAttributionCostZero => 'Bez poplatku';
 
   @override
   String get aiAttributionCreator => 'Tvůrce';
@@ -1192,14 +1162,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAttributionDuration => 'Doba trvání';
 
   @override
-  String get aiAttributionExecutor => 'Spuštěno na';
-
-  @override
-  String aiAttributionInteractionLine(int index, String model, int tokens) {
-    return 'Volání $index: $model · $tokens tokenů';
-  }
-
-  @override
   String get aiAttributionInteractions => 'Interakce';
 
   @override
@@ -1208,21 +1170,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get aiAttributionNoInteractionDetails =>
       'Nejsou dostupné žádné podrobnosti interakce.';
-
-  @override
-  String get aiAttributionPrivacy => 'Soukromí';
-
-  @override
-  String get aiAttributionPrivacyMixed => 'Smíšené';
-
-  @override
-  String get aiAttributionPrivacyPrivate => 'Soukromé';
-
-  @override
-  String get aiAttributionPrivacyStandard => 'Standardní';
-
-  @override
-  String get aiAttributionPrivacyUnknown => 'Neznámé';
 
   @override
   String get aiAttributionRequestEvidence => 'Doklad požadavku';
@@ -1243,21 +1190,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get aiAttributionSensitiveContentNotice =>
-      'Obsah požadavku a odpovědi je skrytý, protože tato práce obsahuje soukromá data.';
-
-  @override
-  String get aiAttributionSomeCallsUnknown =>
-      'Některá volání mají neznámé náklady';
-
-  @override
   String get aiAttributionStartedAt => 'Zahájeno';
 
   @override
   String get aiAttributionStatus => 'Stav';
-
-  @override
-  String get aiAttributionStatusAbandoned => 'Přerušeno';
 
   @override
   String get aiAttributionStatusCancelled => 'Zrušeno';
@@ -1311,9 +1247,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiAttributionUnknownCreator => 'Neznámý tvůrce';
-
-  @override
-  String get aiAttributionUnknownExecutor => 'Neznámé zařízení';
 
   @override
   String get aiAttributionUnknownModel => 'Neznámý model';

@@ -695,46 +695,16 @@
   "aggregationHourlySum": "Hourly sum",
   "aggregationNone": "Raw values",
   "aiAssistantTitle": "Generate…",
-  "aiAttributionArtifactContext": "Context",
   "aiAttributionArtifactOutput": "Output",
-  "aiAttributionArtifacts": "Linked items",
-  "aiAttributionArtifactSource": "Source",
   "aiAttributionCompletedAt": "Completed at",
   "aiAttributionCost": "Cost",
-  "aiAttributionCostSource": "Cost source",
-  "aiAttributionCostSourceEstimated": "Estimated locally",
-  "aiAttributionCostSourceLegacy": "Legacy reported",
-  "aiAttributionCostSourceLocal": "Local compute",
-  "aiAttributionCostSourceProvider": "Provider reported",
-  "aiAttributionCostSourceReconciled": "Reconciled externally",
   "aiAttributionCostUnknown": "Cost unknown",
-  "aiAttributionCostZero": "No charge",
   "aiAttributionCreator": "Creator",
   "aiAttributionDiagnostics": "Diagnostics",
   "aiAttributionDuration": "Duration",
-  "aiAttributionExecutor": "Executed on",
-  "aiAttributionInteractionLine": "Call {index}: {model} · {tokens} tokens",
-  "@aiAttributionInteractionLine": {
-    "placeholders": {
-      "index": {
-        "type": "int"
-      },
-      "model": {
-        "type": "String"
-      },
-      "tokens": {
-        "type": "int"
-      }
-    }
-  },
   "aiAttributionInteractions": "Interactions",
   "aiAttributionLoading": "Loading AI attribution…",
   "aiAttributionNoInteractionDetails": "No interaction details are available.",
-  "aiAttributionPrivacy": "Privacy",
-  "aiAttributionPrivacyMixed": "Mixed",
-  "aiAttributionPrivacyPrivate": "Private",
-  "aiAttributionPrivacyStandard": "Standard",
-  "aiAttributionPrivacyUnknown": "Unknown",
   "aiAttributionRequestEvidence": "Request evidence",
   "aiAttributionResponseEvidence": "Response evidence",
   "aiAttributionSecondary": "{model} · {time} · {callCount, plural, =0{no calls} =1{1 call} other{{callCount} calls}}",
@@ -751,11 +721,8 @@
       }
     }
   },
-  "aiAttributionSensitiveContentNotice": "Request and response content is hidden because this work contains private data.",
-  "aiAttributionSomeCallsUnknown": "Some calls have unknown cost",
   "aiAttributionStartedAt": "Started at",
   "aiAttributionStatus": "Status",
-  "aiAttributionStatusAbandoned": "Interrupted",
   "aiAttributionStatusCancelled": "Cancelled",
   "aiAttributionStatusFailed": "Failed",
   "aiAttributionStatusPartial": "Partial",
@@ -786,7 +753,6 @@
   "aiAttributionTriggerSynced": "From sync",
   "aiAttributionUnavailable": "AI attribution is unavailable.",
   "aiAttributionUnknownCreator": "Unknown creator",
-  "aiAttributionUnknownExecutor": "Unknown execution device",
   "aiAttributionUnknownModel": "Unknown model",
   "aiAttributionYou": "You",
   "aiBatchToggleTooltip": "Switch to standard recording",

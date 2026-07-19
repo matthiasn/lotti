@@ -2069,29 +2069,11 @@ abstract class AppLocalizations {
   /// **'Generate…'**
   String get aiAssistantTitle;
 
-  /// No description provided for @aiAttributionArtifactContext.
-  ///
-  /// In en, this message translates to:
-  /// **'Context'**
-  String get aiAttributionArtifactContext;
-
   /// No description provided for @aiAttributionArtifactOutput.
   ///
   /// In en, this message translates to:
   /// **'Output'**
   String get aiAttributionArtifactOutput;
-
-  /// No description provided for @aiAttributionArtifacts.
-  ///
-  /// In en, this message translates to:
-  /// **'Linked items'**
-  String get aiAttributionArtifacts;
-
-  /// No description provided for @aiAttributionArtifactSource.
-  ///
-  /// In en, this message translates to:
-  /// **'Source'**
-  String get aiAttributionArtifactSource;
 
   /// No description provided for @aiAttributionCompletedAt.
   ///
@@ -2105,53 +2087,11 @@ abstract class AppLocalizations {
   /// **'Cost'**
   String get aiAttributionCost;
 
-  /// No description provided for @aiAttributionCostSource.
-  ///
-  /// In en, this message translates to:
-  /// **'Cost source'**
-  String get aiAttributionCostSource;
-
-  /// No description provided for @aiAttributionCostSourceEstimated.
-  ///
-  /// In en, this message translates to:
-  /// **'Estimated locally'**
-  String get aiAttributionCostSourceEstimated;
-
-  /// No description provided for @aiAttributionCostSourceLegacy.
-  ///
-  /// In en, this message translates to:
-  /// **'Legacy reported'**
-  String get aiAttributionCostSourceLegacy;
-
-  /// No description provided for @aiAttributionCostSourceLocal.
-  ///
-  /// In en, this message translates to:
-  /// **'Local compute'**
-  String get aiAttributionCostSourceLocal;
-
-  /// No description provided for @aiAttributionCostSourceProvider.
-  ///
-  /// In en, this message translates to:
-  /// **'Provider reported'**
-  String get aiAttributionCostSourceProvider;
-
-  /// No description provided for @aiAttributionCostSourceReconciled.
-  ///
-  /// In en, this message translates to:
-  /// **'Reconciled externally'**
-  String get aiAttributionCostSourceReconciled;
-
   /// No description provided for @aiAttributionCostUnknown.
   ///
   /// In en, this message translates to:
   /// **'Cost unknown'**
   String get aiAttributionCostUnknown;
-
-  /// No description provided for @aiAttributionCostZero.
-  ///
-  /// In en, this message translates to:
-  /// **'No charge'**
-  String get aiAttributionCostZero;
 
   /// No description provided for @aiAttributionCreator.
   ///
@@ -2171,18 +2111,6 @@ abstract class AppLocalizations {
   /// **'Duration'**
   String get aiAttributionDuration;
 
-  /// No description provided for @aiAttributionExecutor.
-  ///
-  /// In en, this message translates to:
-  /// **'Executed on'**
-  String get aiAttributionExecutor;
-
-  /// No description provided for @aiAttributionInteractionLine.
-  ///
-  /// In en, this message translates to:
-  /// **'Call {index}: {model} · {tokens} tokens'**
-  String aiAttributionInteractionLine(int index, String model, int tokens);
-
   /// No description provided for @aiAttributionInteractions.
   ///
   /// In en, this message translates to:
@@ -2200,36 +2128,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No interaction details are available.'**
   String get aiAttributionNoInteractionDetails;
-
-  /// No description provided for @aiAttributionPrivacy.
-  ///
-  /// In en, this message translates to:
-  /// **'Privacy'**
-  String get aiAttributionPrivacy;
-
-  /// No description provided for @aiAttributionPrivacyMixed.
-  ///
-  /// In en, this message translates to:
-  /// **'Mixed'**
-  String get aiAttributionPrivacyMixed;
-
-  /// No description provided for @aiAttributionPrivacyPrivate.
-  ///
-  /// In en, this message translates to:
-  /// **'Private'**
-  String get aiAttributionPrivacyPrivate;
-
-  /// No description provided for @aiAttributionPrivacyStandard.
-  ///
-  /// In en, this message translates to:
-  /// **'Standard'**
-  String get aiAttributionPrivacyStandard;
-
-  /// No description provided for @aiAttributionPrivacyUnknown.
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown'**
-  String get aiAttributionPrivacyUnknown;
 
   /// No description provided for @aiAttributionRequestEvidence.
   ///
@@ -2249,18 +2147,6 @@ abstract class AppLocalizations {
   /// **'{model} · {time} · {callCount, plural, =0{no calls} =1{1 call} other{{callCount} calls}}'**
   String aiAttributionSecondary(String model, String time, int callCount);
 
-  /// No description provided for @aiAttributionSensitiveContentNotice.
-  ///
-  /// In en, this message translates to:
-  /// **'Request and response content is hidden because this work contains private data.'**
-  String get aiAttributionSensitiveContentNotice;
-
-  /// No description provided for @aiAttributionSomeCallsUnknown.
-  ///
-  /// In en, this message translates to:
-  /// **'Some calls have unknown cost'**
-  String get aiAttributionSomeCallsUnknown;
-
   /// No description provided for @aiAttributionStartedAt.
   ///
   /// In en, this message translates to:
@@ -2272,12 +2158,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status'**
   String get aiAttributionStatus;
-
-  /// No description provided for @aiAttributionStatusAbandoned.
-  ///
-  /// In en, this message translates to:
-  /// **'Interrupted'**
-  String get aiAttributionStatusAbandoned;
 
   /// No description provided for @aiAttributionStatusCancelled.
   ///
@@ -2380,12 +2260,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown creator'**
   String get aiAttributionUnknownCreator;
-
-  /// No description provided for @aiAttributionUnknownExecutor.
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown execution device'**
-  String get aiAttributionUnknownExecutor;
 
   /// No description provided for @aiAttributionUnknownModel.
   ///

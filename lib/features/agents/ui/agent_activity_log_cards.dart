@@ -41,7 +41,7 @@ class _ReportSnapshotCardState extends State<ReportSnapshotCard> {
     final timestamp = formatAgentDateTime(report.createdAt);
     final ai = context.designTokens.colors.aiCard;
     final attributionEnvelope = _expanded
-        ? terminalEnvelopeFromAgentEntity(report)
+        ? attributionFromAgentEntity(report)
         : null;
 
     return Card(
@@ -122,7 +122,7 @@ class _ReportSnapshotCardState extends State<ReportSnapshotCard> {
                     type: AiArtifactType.agentReport,
                     id: report.id,
                   ),
-                  envelope: attributionEnvelope,
+                  attribution: attributionEnvelope,
                 ),
             ],
           ),

@@ -78,7 +78,7 @@ void main() {
   testWidgets('report carrier surfaces its compact AI attribution summary', (
     tester,
   ) async {
-    final envelope = makeAiTerminalEnvelope();
+    final envelope = makeAiWorkAttribution();
     final report = makeTestReport().copyWith(
       provenance: {
         aiAttributionProvenanceKey: jsonDecode(

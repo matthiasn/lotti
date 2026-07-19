@@ -91,11 +91,9 @@ import 'package:lotti/features/ai_chat/services/realtime_transcription_service.d
 import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
-import 'package:lotti/features/ai_consumption/service/ai_attribution_backfill_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
-import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
@@ -916,18 +914,12 @@ class MockConsumptionRepository extends Mock implements ConsumptionRepository {
 
 class MockAiConsumptionRecorder extends Mock implements AiConsumptionRecorder {}
 
-class MockAiInteractionCapture extends Mock implements AiInteractionCapture {}
+class MockAiAttributionService extends Mock implements AiAttributionService {}
 
 class MockAiAttributionIdentityResolver extends Mock
     implements AiAttributionIdentityResolver {}
 
-class MockAiAttributionService extends Mock implements AiAttributionService {}
-
-class MockAiAttributionBackfillService extends Mock
-    implements AiAttributionBackfillService {}
-
-class MockTranscriptAttributionCoordinator extends Mock
-    implements TranscriptAttributionCoordinator {}
+class MockAiInteractionCapture extends Mock implements AiInteractionCapture {}
 
 class MockConsumptionSyncService extends Mock
     implements ConsumptionSyncService {}

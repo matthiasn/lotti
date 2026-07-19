@@ -258,9 +258,7 @@ extension _JournalHandlers on SyncEventProcessor {
   Future<void> _projectJournalAttribution(JournalEntity? entity) async {
     final repository = consumptionRepository;
     if (repository == null || entity == null) return;
-    await AiAttributionBackfillService(
-      repository,
-    ).backfill(journalEntities: [entity]);
+    await AttributionCarrierProjector(repository).projectJournalEntity(entity);
   }
 
   /// Records the duplicate in the sequence log so `resolvePendingHints` still

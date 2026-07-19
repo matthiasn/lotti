@@ -10,18 +10,14 @@ import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
-import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
-import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
-import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
-import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 
 // ChatCompletionMessage is a sealed class and cannot be faked
 
@@ -30,123 +26,20 @@ class FakeChatCompletionMessageToolCall extends Fake
 
 class FakeConversationManager extends Fake implements ConversationManager {}
 
-({
-  MockAiAttributionService service,
-  MockAiAttributionIdentityResolver identity,
-})
-_registerAttributionCapture() {
-  final service = MockAiAttributionService();
-  final identity = MockAiAttributionIdentityResolver();
-  const human = AiActorSnapshot(
-    type: AiActorType.human,
-    id: 'human-1',
-    displayName: 'Test User',
-    humanPrincipalId: 'human-1',
-  );
-  const executor = AiExecutorSnapshot(
-    hostId: 'host-1',
-    displayName: 'Test Host',
-  );
-  when(identity.humanInitiator).thenAnswer((_) async => human);
-  when(
-    () => identity.agentInitiator(
-      id: any(named: 'id'),
-      displayName: any(named: 'displayName'),
-    ),
-  ).thenAnswer(
-    (invocation) async => AiActorSnapshot(
-      type: AiActorType.agent,
-      id: invocation.namedArguments[#id] as String,
-      displayName: invocation.namedArguments[#displayName] as String,
-      humanPrincipalId: human.id,
-    ),
-  );
-  when(identity.executor).thenAnswer((_) async => executor);
-  when(() => service.begin(any())).thenAnswer((invocation) async {
-    final command = invocation.positionalArguments.first as AiAttributionStart;
-    final id = command.attributionId ?? 'attribution-1';
-    return AiAttributionPendingSession(
-      id: id,
-      attributionId: id,
-      workType: command.workType,
-      initiator: command.initiator,
-      trigger: command.trigger,
-      executor: command.executor,
-      privacyClassification: command.privacyClassification,
-      phase: AiAttributionPendingPhase.prepared,
-      startedAt: DateTime(2024, 3, 15, 10, 30),
-      lastUpdatedAt: DateTime(2024, 3, 15, 10, 30),
-      intendedOutputs: command.intendedOutputs,
-      sourceArtifacts: command.sources,
-      contextArtifacts: command.context,
-      taskId: command.taskId,
-      categoryId: command.categoryId,
-    );
-  });
-  when(
-    () => service.recordInteraction(
-      attributionId: any(named: 'attributionId'),
-      event: any(named: 'event'),
-    ),
-  ).thenAnswer((invocation) async {
-    final attributionId = invocation.namedArguments[#attributionId] as String;
-    final event = invocation.namedArguments[#event] as AiConsumptionEvent;
-    final session = AiAttributionPendingSession(
-      id: attributionId,
-      attributionId: attributionId,
-      workType: AiWorkType.agentReport,
-      initiator: const AiActorSnapshot(
-        type: AiActorType.agent,
-        id: 'agent-1',
-        displayName: 'agent-1',
-      ),
-      trigger: const AiTriggerSnapshot(type: AiTriggerType.agentTool),
-      executor: executor,
-      privacyClassification: AiPrivacyClassification.mixed,
-      phase: AiAttributionPendingPhase.evidencePublished,
-      startedAt: event.createdAt,
-      lastUpdatedAt: event.completedAt ?? event.createdAt,
-      intendedOutputs: const [],
-      interactionIds: [event.id],
-    );
-    return AiAttributedInteractionResult(
-      session: session,
-      event: event.copyWith(attributionId: attributionId),
-      published: true,
-    );
-  });
-  when(
-    () => service.prepareCompletion(
-      attributionId: any(named: 'attributionId'),
-      outputs: any(named: 'outputs'),
-      status: any(named: 'status'),
-      errorCode: any(named: 'errorCode'),
-      errorSummary: any(named: 'errorSummary'),
-    ),
-  ).thenAnswer((_) async => fallbackAiTerminalAttributionEnvelope);
-  when(() => service.finalize(any())).thenAnswer((_) async {});
-
-  if (getIt.isRegistered<AiInteractionCapture>()) {
-    getIt.unregister<AiInteractionCapture>();
-  }
-  if (getIt.isRegistered<AiAttributionIdentityResolver>()) {
-    getIt.unregister<AiAttributionIdentityResolver>();
-  }
-  getIt
-    ..registerSingleton<AiAttributionIdentityResolver>(identity)
-    ..registerSingleton<AiInteractionCapture>(
-      AiInteractionCapture(service, identity),
-    );
-  addTearDown(() {
-    if (getIt.isRegistered<AiInteractionCapture>()) {
-      getIt.unregister<AiInteractionCapture>();
-    }
-    if (getIt.isRegistered<AiAttributionIdentityResolver>()) {
-      getIt.unregister<AiAttributionIdentityResolver>();
-    }
-  });
-  return (service: service, identity: identity);
+AiInteractionCaptureTestBench _registerInteractionCapture() {
+  final bench = AiInteractionCaptureTestBench.create()..register();
+  addTearDown(bench.unregister);
+  return bench;
 }
+
+List<AiConsumptionEvent> _capturedEvents(
+  AiInteractionCaptureTestBench bench,
+) => verify(
+  () => bench.service.recordInteraction(
+    attributionId: any(named: 'attributionId'),
+    event: captureAny(named: 'event'),
+  ),
+).captured.cast<AiConsumptionEvent>();
 
 /// Shared 8-argument stub for `generateTextWithMessages`;
 /// chain `.thenAnswer(...)` with the stream (or function) the test needs.
@@ -178,9 +71,11 @@ void main() {
     registerAllFallbackValues();
     // registerFallbackValue(FakeChatCompletionMessage()); // Not needed as ChatCompletionMessage is sealed
     registerFallbackValue(FakeChatCompletionMessageToolCall());
+    registerFallbackValue(FakeAiConfigInferenceProvider());
     registerFallbackValue(FakeConversationManager());
     registerFallbackValue(ThoughtSignatureCollector());
     registerFallbackValue(<String, String>{});
+    registerFallbackValue(fallbackAiConsumptionEvent);
   });
 
   setUp(() {
@@ -2041,7 +1936,7 @@ void main() {
         test(
           'records an agentTurn event with owner ids, tokens, and impact',
           () async {
-            final attribution = _registerAttributionCapture();
+            final bench = _registerInteractionCapture();
             stubTurnWithUsage(
               usage: const CompletionUsage(
                 promptTokens: 100,
@@ -2054,7 +1949,6 @@ void main() {
               ),
               impact: const MeliousCallImpact(
                 costCredits: 0.5,
-                costCreditsDecimal: '0.500000',
                 energyKwh: 0.002,
                 carbonGCo2: 1.5,
                 waterLiters: 0.3,
@@ -2066,18 +1960,11 @@ void main() {
             );
 
             await withClock(
-              Clock.fixed(DateTime.utc(2024, 3, 15, 10, 30)),
+              Clock.fixed(DateTime(2024, 3, 15, 10, 30)),
               () => sendWithConsumption(agentId: 'agent-1'),
             );
 
-            final captured = verify(
-              () => attribution.service.recordInteraction(
-                attributionId: captureAny(named: 'attributionId'),
-                event: captureAny(named: 'event'),
-              ),
-            ).captured;
-            expect(captured.first, agentWakeAttributionId('wake-1'));
-            final event = captured.last as AiConsumptionEvent;
+            final event = _capturedEvents(bench).single;
             expect(event.responseType, AiConsumptionResponseType.agentTurn);
             // The wake run key doubles as the causal parent id.
             expect(event.parentId, 'wake-1');
@@ -2092,7 +1979,7 @@ void main() {
             expect(event.turnIndex, 1);
             expect(event.providerModelId, 'test-model');
             expect(event.providerType, InferenceProviderType.ollama);
-            expect(event.createdAt, DateTime.utc(2024, 3, 15, 10, 30));
+            expect(event.createdAt, DateTime(2024, 3, 15, 10, 30).toUtc());
             expect(event.durationMs, 0);
             expect(event.inputTokens, 100);
             expect(event.outputTokens, 40);
@@ -2100,8 +1987,6 @@ void main() {
             expect(event.thoughtsTokens, 15);
             expect(event.totalTokens, 140);
             expect(event.credits, 0.5);
-            expect(event.cost?.originalAmountDecimal, '0.500000');
-            expect(event.cost?.reportingAmountMicros, 500000);
             expect(event.energyKwh, 0.002);
             expect(event.carbonGCo2, 1.5);
             expect(event.waterLiters, 0.3);
@@ -2109,18 +1994,6 @@ void main() {
             expect(event.pue, 1.2);
             expect(event.dataCenter, 'FI');
             expect(event.upstreamProviderId, 'upstream-x');
-            final command =
-                verify(
-                      () => attribution.service.begin(captureAny()),
-                    ).captured.single
-                    as AiAttributionStart;
-            expect(command.initiator.type, AiActorType.agent);
-            expect(command.initiator.id, 'agent-1');
-            expect(command.initiator.humanPrincipalId, 'human-1');
-            expect(command.trigger.agentId, 'agent-1');
-            expect(command.trigger.wakeRunKey, 'wake-1');
-            expect(command.taskId, 'task-1');
-            expect(command.categoryId, 'cat-1');
           },
         );
 
@@ -2128,7 +2001,7 @@ void main() {
           'records executor and editor models as separate consumption events '
           'under one wake',
           () async {
-            final attribution = _registerAttributionCapture();
+            final bench = _registerInteractionCapture();
             _stubGenerateText(mockOllamaRepo).thenAnswer((invocation) {
               final model = invocation.namedArguments[#model] as String;
               final isEditor = model == 'qwen3.5-122b-a10b';
@@ -2136,7 +2009,6 @@ void main() {
                       as InferenceImpactCollector?)
                   ?.impact = MeliousCallImpact(
                 costCredits: isEditor ? 0.2 : 0.5,
-                costCreditsDecimal: isEditor ? '0.2' : '0.5',
                 energyKwh: isEditor ? 0.001 : 0.003,
               );
               return Stream.fromIterable([
@@ -2189,16 +2061,7 @@ void main() {
               model: 'qwen3.5-122b-a10b',
             );
 
-            final captured = verify(
-              () => attribution.service.recordInteraction(
-                attributionId: captureAny(named: 'attributionId'),
-                event: captureAny(named: 'event'),
-              ),
-            ).captured;
-            final events = [
-              for (var index = 1; index < captured.length; index += 2)
-                captured[index] as AiConsumptionEvent,
-            ];
+            final events = _capturedEvents(bench);
             expect(events, hasLength(2));
             expect(events.map((event) => event.id).toSet(), hasLength(2));
             expect(events.map((event) => event.wakeRunKey).toSet(), {'wake-1'});
@@ -2207,10 +2070,6 @@ void main() {
               'qwen3.5-122b-a10b',
             ]);
             expect(events.map((event) => event.credits), [0.5, 0.2]);
-            expect(
-              events.map((event) => event.cost?.originalAmountDecimal),
-              ['0.5', '0.2'],
-            );
             expect(events.map((event) => event.energyKwh), [0.003, 0.001]);
           },
         );
@@ -2219,7 +2078,7 @@ void main() {
           'increments turnIndex per turn and parents every turn on the '
           'wake run key',
           () async {
-            final attribution = _registerAttributionCapture();
+            final bench = _registerInteractionCapture();
 
             var callCount = 0;
             _stubGenerateText(mockOllamaRepo).thenAnswer((_) {
@@ -2312,16 +2171,7 @@ void main() {
               ],
             );
 
-            final captured = verify(
-              () => attribution.service.recordInteraction(
-                attributionId: captureAny(named: 'attributionId'),
-                event: captureAny(named: 'event'),
-              ),
-            ).captured;
-            final events = [
-              for (var index = 1; index < captured.length; index += 2)
-                captured[index] as AiConsumptionEvent,
-            ];
+            final events = _capturedEvents(bench);
             expect(events, hasLength(2));
             // turnIndex mirrors ConversationManager.turnCount (user-message
             // count at request time): 1 for the first turn, 2 after the
@@ -2341,9 +2191,9 @@ void main() {
         );
 
         test(
-          'captures non-agent calls under one human-owned attribution',
+          'records non-agent calls as text generation without an agent owner',
           () async {
-            final attribution = _registerAttributionCapture();
+            final bench = _registerInteractionCapture();
             stubTurnWithUsage(
               usage: const CompletionUsage(
                 promptTokens: 10,
@@ -2355,38 +2205,19 @@ void main() {
             final usage = await sendWithConsumption(agentId: null);
 
             expect(usage, isNotNull);
-            final event =
-                verify(
-                      () => attribution.service.recordInteraction(
-                        attributionId: any(named: 'attributionId'),
-                        event: captureAny(named: 'event'),
-                      ),
-                    ).captured.single
-                    as AiConsumptionEvent;
+            final event = _capturedEvents(bench).single;
             expect(
               event.responseType,
               AiConsumptionResponseType.textGeneration,
             );
-            final command =
-                verify(
-                      () => attribution.service.begin(captureAny()),
-                    ).captured.single
-                    as AiAttributionStart;
-            expect(command.initiator.type, AiActorType.human);
-            verify(
-              () => attribution.service.finalize(
-                fallbackAiTerminalAttributionEnvelope,
-              ),
-            ).called(1);
+            expect(event.agentId, isNull);
           },
         );
 
         test(
-          'completes normally when no capture boundary is registered',
+          'completes normally when no interaction capture is registered',
           () async {
-            if (getIt.isRegistered<AiInteractionCapture>()) {
-              getIt.unregister<AiInteractionCapture>();
-            }
+            AiInteractionCaptureTestBench.create().unregister();
             stubTurnWithUsage(
               usage: const CompletionUsage(
                 promptTokens: 100,
@@ -2397,8 +2228,8 @@ void main() {
 
             final usage = await sendWithConsumption(agentId: 'agent-1');
 
-            // Lightweight composition roots may omit capture; the provider
-            // result still remains usable in tests.
+            // The turn still completes and reports usage; the missing
+            // capture is silently skipped.
             expect(usage, isNotNull);
             expect(usage!.inputTokens, 100);
             final manager = repository.getConversation(conversationId)!;
@@ -2410,11 +2241,11 @@ void main() {
         );
 
         test(
-          'rethrows a strict attribution publication failure for agent work',
+          'returns usage when consumption recording fails',
           () async {
-            final attribution = _registerAttributionCapture();
+            final bench = _registerInteractionCapture();
             when(
-              () => attribution.service.recordInteraction(
+              () => bench.service.recordInteraction(
                 attributionId: any(named: 'attributionId'),
                 event: any(named: 'event'),
               ),
@@ -2427,21 +2258,21 @@ void main() {
               ),
             );
 
-            await expectLater(
-              repository.sendMessage(
-                conversationId: conversationId,
-                message: 'Hello',
-                model: 'test-model',
-                provider: provider,
-                inferenceRepo: mockOllamaRepo,
-                consumptionAgentId: 'agent-1',
-                rethrowInferenceErrors: true,
-              ),
-              throwsA(isA<StateError>()),
+            final usage = await repository.sendMessage(
+              conversationId: conversationId,
+              message: 'Hello',
+              model: 'test-model',
+              provider: provider,
+              inferenceRepo: mockOllamaRepo,
+              consumptionAgentId: 'agent-1',
+              rethrowInferenceErrors: true,
             );
+
+            expect(usage?.inputTokens, 100);
+            expect(usage?.outputTokens, 40);
             expect(
               repository.getConversation(conversationId)!.lastError,
-              contains('telemetry write failed'),
+              isNull,
             );
           },
         );

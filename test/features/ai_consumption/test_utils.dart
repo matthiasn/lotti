@@ -12,11 +12,9 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
 
-/// Shared test bench for funnels that use the concrete pre-call capture
-/// boundary with mocked persistence and identity services.
 class AiInteractionCaptureTestBench {
   AiInteractionCaptureTestBench._(
-    this._pendingById, {
+    this._sessions, {
     required this.service,
     required this.identity,
     required this.capture,
@@ -31,87 +29,60 @@ class AiInteractionCaptureTestBench {
       displayName: 'Test User',
       humanPrincipalId: 'human-1',
     );
-    const executor = AiExecutorSnapshot(
-      hostId: 'host-1',
-      displayName: 'Test Host',
-    );
-    final pendingById = <String, AiAttributionPendingSession>{};
+    final sessions = <String, AiAttributionSession>{};
 
     when(identity.humanInitiator).thenAnswer((_) async => human);
-    when(identity.executor).thenAnswer((_) async => executor);
     when(
       () => identity.automationInitiator(
         id: any(named: 'id'),
         displayName: any(named: 'displayName'),
       ),
-    ).thenAnswer((invocation) async {
-      return AiActorSnapshot(
+    ).thenAnswer(
+      (invocation) async => AiActorSnapshot(
         type: AiActorType.automation,
         id: invocation.namedArguments[#id] as String,
         displayName: invocation.namedArguments[#displayName] as String,
         humanPrincipalId: human.id,
-      );
-    });
+      ),
+    );
     when(
       () => identity.agentInitiator(
         id: any(named: 'id'),
         displayName: any(named: 'displayName'),
       ),
-    ).thenAnswer((invocation) async {
-      return AiActorSnapshot(
+    ).thenAnswer(
+      (invocation) async => AiActorSnapshot(
         type: AiActorType.agent,
         id: invocation.namedArguments[#id] as String,
         displayName: invocation.namedArguments[#displayName] as String,
         humanPrincipalId: human.id,
-      );
-    });
+      ),
+    );
     when(() => service.begin(any())).thenAnswer((invocation) async {
       final command =
           invocation.positionalArguments.first as AiAttributionStart;
-      final id =
-          command.attributionId ?? 'attribution-${pendingById.length + 1}';
-      final now = DateTime.utc(2024, 3, 15, 10, 30);
-      final pending = AiAttributionPendingSession(
-        id: id,
-        attributionId: id,
-        workType: command.workType,
-        initiator: command.initiator,
-        trigger: command.trigger,
-        executor: command.executor,
-        privacyClassification: command.privacyClassification,
-        phase: AiAttributionPendingPhase.prepared,
-        startedAt: now,
-        lastUpdatedAt: now,
-        intendedOutputs: command.intendedOutputs,
-        sourceArtifacts: command.sources,
-        contextArtifacts: command.context,
-        taskId: command.taskId,
-        categoryId: command.categoryId,
+      final id = command.attributionId ?? 'attribution-${sessions.length + 1}';
+      return sessions.putIfAbsent(
+        id,
+        () => AiAttributionSession(
+          id: id,
+          workType: command.workType,
+          initiator: command.initiator,
+          trigger: command.trigger,
+          startedAt: DateTime.utc(2024, 3, 15, 10, 30),
+          intendedOutputs: command.intendedOutputs,
+          parentAttributionId: command.parentAttributionId,
+          taskId: command.taskId,
+          categoryId: command.categoryId,
+        ),
       );
-      pendingById[id] = pending;
-      return pending;
     });
     when(
       () => service.recordInteraction(
         attributionId: any(named: 'attributionId'),
         event: any(named: 'event'),
       ),
-    ).thenAnswer((invocation) async {
-      final attributionId = invocation.namedArguments[#attributionId] as String;
-      final event = invocation.namedArguments[#event] as AiConsumptionEvent;
-      final pending = pendingById[attributionId]!;
-      final updated = pending.copyWith(
-        phase: AiAttributionPendingPhase.evidencePublished,
-        lastUpdatedAt: event.completedAt ?? event.createdAt,
-        interactionIds: [...pending.interactionIds, event.id],
-      );
-      pendingById[attributionId] = updated;
-      return AiAttributedInteractionResult(
-        session: updated,
-        event: event.copyWith(attributionId: attributionId),
-        published: true,
-      );
-    });
+    ).thenAnswer((_) async {});
     when(
       () => service.prepareCompletion(
         attributionId: any(named: 'attributionId'),
@@ -121,50 +92,34 @@ class AiInteractionCaptureTestBench {
         errorSummary: any(named: 'errorSummary'),
       ),
     ).thenAnswer((invocation) async {
-      final attributionId = invocation.namedArguments[#attributionId] as String;
+      final id = invocation.namedArguments[#attributionId] as String;
+      final session = sessions[id]!;
       final outputs =
           invocation.namedArguments[#outputs] as List<AiArtifactReference>;
-      final status = invocation.namedArguments[#status] as AiWorkStatus;
-      final pending = pendingById[attributionId]!;
       final effectiveOutputs = outputs.isEmpty
-          ? pending.intendedOutputs
+          ? session.intendedOutputs
           : outputs;
-      return AiTerminalAttributionEnvelope(
-        id: 'terminal-$attributionId',
-        attribution: AiWorkAttribution(
-          id: attributionId,
-          workType: pending.workType,
-          status: status,
-          initiator: pending.initiator,
-          trigger: pending.trigger,
-          executor: pending.executor,
-          privacyClassification: pending.privacyClassification,
-          startedAt: pending.startedAt,
-          completedAt: DateTime.utc(2024, 3, 15, 10, 31),
-          vectorClock: null,
-          links: [
-            for (final output in effectiveOutputs)
-              AiAttributionLink(
-                id: 'link-$attributionId-${output.id}',
-                attributionId: attributionId,
-                role: AiAttributionLinkRole.output,
-                artifact: output,
-              ),
-          ],
-          primaryOutput: effectiveOutputs.isEmpty
-              ? null
-              : effectiveOutputs.first,
-          taskId: pending.taskId,
-          categoryId: pending.categoryId,
-          errorCode: invocation.namedArguments[#errorCode] as String?,
-          errorSummary: invocation.namedArguments[#errorSummary] as String?,
-        ),
+      return AiWorkAttribution(
+        id: id,
+        workType: session.workType,
+        status: invocation.namedArguments[#status] as AiWorkStatus,
+        initiator: session.initiator,
+        trigger: session.trigger,
+        startedAt: session.startedAt,
+        completedAt: DateTime.utc(2024, 3, 15, 10, 31),
+        vectorClock: null,
+        parentAttributionId: session.parentAttributionId,
+        taskId: session.taskId,
+        categoryId: session.categoryId,
+        primaryOutput: effectiveOutputs.isEmpty ? null : effectiveOutputs.first,
+        errorCode: invocation.namedArguments[#errorCode] as String?,
+        errorSummary: invocation.namedArguments[#errorSummary] as String?,
       );
     });
     when(() => service.finalize(any())).thenAnswer((_) async {});
 
     return AiInteractionCaptureTestBench._(
-      pendingById,
+      sessions,
       service: service,
       identity: identity,
       capture: AiInteractionCapture(service, identity),
@@ -174,22 +129,17 @@ class AiInteractionCaptureTestBench {
   final MockAiAttributionService service;
   final MockAiAttributionIdentityResolver identity;
   final AiInteractionCapture capture;
-  final Map<String, AiAttributionPendingSession> _pendingById;
+  final Map<String, AiAttributionSession> _sessions;
 
-  /// Seeds the deterministic owner normally created inside a real agent
-  /// conversation. Workflow tests use mocked conversation repositories, so
-  /// they need this pending state before exercising carrier publication.
   void seedAgentWake({
     required String wakeRunKey,
     required String agentId,
     String? taskId,
     String? categoryId,
   }) {
-    final attributionId = agentWakeAttributionId(wakeRunKey);
-    final now = DateTime.utc(2024, 3, 15, 10, 30);
-    _pendingById[attributionId] = AiAttributionPendingSession(
-      id: attributionId,
-      attributionId: attributionId,
+    final id = agentWakeAttributionId(wakeRunKey);
+    _sessions[id] = AiAttributionSession(
+      id: id,
       workType: AiWorkType.agentReport,
       initiator: AiActorSnapshot(
         type: AiActorType.agent,
@@ -202,38 +152,20 @@ class AiInteractionCaptureTestBench {
         agentId: agentId,
         wakeRunKey: wakeRunKey,
       ),
-      executor: const AiExecutorSnapshot(
-        hostId: 'host-1',
-        displayName: 'Test Host',
-      ),
-      privacyClassification: AiPrivacyClassification.mixed,
-      phase: AiAttributionPendingPhase.evidencePublished,
-      startedAt: now,
-      lastUpdatedAt: now,
-      intendedOutputs: const [],
-      interactionIds: const ['interaction-1'],
+      startedAt: DateTime.utc(2024, 3, 15, 10, 30),
       taskId: taskId,
       categoryId: categoryId,
     );
   }
 
   void register() {
-    if (getIt.isRegistered<AiAttributionService>()) {
-      getIt.unregister<AiAttributionService>();
-    }
-    if (getIt.isRegistered<AiInteractionCapture>()) {
-      getIt.unregister<AiInteractionCapture>();
-    }
-    if (getIt.isRegistered<AiAttributionIdentityResolver>()) {
-      getIt.unregister<AiAttributionIdentityResolver>();
-    }
+    unregister();
     getIt
       ..registerSingleton<AiAttributionService>(service)
       ..registerSingleton<AiAttributionIdentityResolver>(identity)
       ..registerSingleton<AiInteractionCapture>(capture);
   }
 
-  /// Removes the capture services registered by [register].
   void unregister() {
     if (getIt.isRegistered<AiInteractionCapture>()) {
       getIt.unregister<AiInteractionCapture>();
@@ -247,9 +179,6 @@ class AiInteractionCaptureTestBench {
   }
 }
 
-/// Deterministic factory for [AiConsumptionEvent]s in tests. Every field is
-/// overridable; the defaults model a Melious agent turn with full impact data
-/// so tests only pass the parts that matter to them.
 AiConsumptionEvent makeConsumptionEvent({
   String id = 'evt-1',
   DateTime? createdAt,
@@ -257,6 +186,12 @@ AiConsumptionEvent makeConsumptionEvent({
   AiConsumptionResponseType responseType = AiConsumptionResponseType.agentTurn,
   VectorClock? vectorClock,
   String? attributionId,
+  AiInteractionKind? interactionKind,
+  AiInteractionStatus interactionStatus = AiInteractionStatus.succeeded,
+  DateTime? completedAt,
+  String? requestDigest,
+  String? responseDigest,
+  Map<String, dynamic>? interactionParameters,
   String? parentId,
   String? taskId = 'task-1',
   String? categoryId = 'cat-1',
@@ -277,6 +212,7 @@ AiConsumptionEvent makeConsumptionEvent({
   int? thoughtsTokens,
   int? totalTokens = 1500,
   double? credits = 0.002,
+  String? costCreditsDecimal = '0.002',
   double? energyKwh = 0.0003,
   double? carbonGCo2 = 0.12,
   double? waterLiters = 0.01,
@@ -284,43 +220,48 @@ AiConsumptionEvent makeConsumptionEvent({
   double? pue = 1.1,
   String? dataCenter = 'FI',
   String? upstreamProviderId,
-}) {
-  return AiConsumptionEvent(
-    id: id,
-    createdAt: createdAt ?? DateTime(2026, 3, 15, 12),
-    providerType: providerType,
-    responseType: responseType,
-    vectorClock: vectorClock,
-    attributionId: attributionId,
-    parentId: parentId,
-    taskId: taskId,
-    categoryId: categoryId,
-    entryId: entryId,
-    agentId: agentId,
-    wakeRunKey: wakeRunKey,
-    threadId: threadId,
-    turnIndex: turnIndex,
-    promptId: promptId,
-    skillId: skillId,
-    configId: configId,
-    modelId: modelId,
-    providerModelId: providerModelId,
-    durationMs: durationMs,
-    inputTokens: inputTokens,
-    outputTokens: outputTokens,
-    cachedInputTokens: cachedInputTokens,
-    thoughtsTokens: thoughtsTokens,
-    totalTokens: totalTokens,
-    credits: credits,
-    energyKwh: energyKwh,
-    carbonGCo2: carbonGCo2,
-    waterLiters: waterLiters,
-    renewablePercent: renewablePercent,
-    pue: pue,
-    dataCenter: dataCenter,
-    upstreamProviderId: upstreamProviderId,
-  );
-}
+}) => AiConsumptionEvent(
+  id: id,
+  createdAt: createdAt ?? DateTime(2026, 3, 15, 12),
+  providerType: providerType,
+  responseType: responseType,
+  vectorClock: vectorClock,
+  attributionId: attributionId,
+  interactionKind: interactionKind,
+  interactionStatus: interactionStatus,
+  completedAt: completedAt,
+  requestDigest: requestDigest,
+  responseDigest: responseDigest,
+  interactionParameters: interactionParameters,
+  parentId: parentId,
+  taskId: taskId,
+  categoryId: categoryId,
+  entryId: entryId,
+  agentId: agentId,
+  wakeRunKey: wakeRunKey,
+  threadId: threadId,
+  turnIndex: turnIndex,
+  promptId: promptId,
+  skillId: skillId,
+  configId: configId,
+  modelId: modelId,
+  providerModelId: providerModelId,
+  durationMs: durationMs,
+  inputTokens: inputTokens,
+  outputTokens: outputTokens,
+  cachedInputTokens: cachedInputTokens,
+  thoughtsTokens: thoughtsTokens,
+  totalTokens: totalTokens,
+  credits: credits,
+  costCreditsDecimal: costCreditsDecimal,
+  energyKwh: energyKwh,
+  carbonGCo2: carbonGCo2,
+  waterLiters: waterLiters,
+  renewablePercent: renewablePercent,
+  pue: pue,
+  dataCenter: dataCenter,
+  upstreamProviderId: upstreamProviderId,
+);
 
 AiActorSnapshot makeAiActor({
   AiActorType type = AiActorType.human,
@@ -333,11 +274,6 @@ AiActorSnapshot makeAiActor({
   humanPrincipalId: type == AiActorType.human ? id : null,
 );
 
-AiExecutorSnapshot makeAiExecutor({
-  String hostId = 'host-a',
-  String displayName = 'Ada’s Mac',
-}) => AiExecutorSnapshot(hostId: hostId, displayName: displayName);
-
 AiArtifactReference makeAiArtifact({
   AiArtifactType type = AiArtifactType.journalAiResponse,
   String id = 'output-1',
@@ -347,8 +283,6 @@ AiArtifactReference makeAiArtifact({
 AiAttributionStart makeAiAttributionStart({
   AiWorkType workType = AiWorkType.codingPrompt,
   List<AiArtifactReference>? intendedOutputs,
-  List<AiArtifactReference> sources = const [],
-  List<AiArtifactReference> context = const [],
 }) => AiAttributionStart(
   workType: workType,
   initiator: makeAiActor(),
@@ -356,48 +290,26 @@ AiAttributionStart makeAiAttributionStart({
     type: AiTriggerType.manual,
     skillId: 'skill-1',
   ),
-  executor: makeAiExecutor(),
-  privacyClassification: AiPrivacyClassification.standard,
   intendedOutputs: intendedOutputs ?? [makeAiArtifact()],
-  sources: sources,
-  context: context,
   taskId: 'task-1',
   categoryId: 'cat-1',
 );
 
-AiTerminalAttributionEnvelope makeAiTerminalEnvelope({
+AiWorkAttribution makeAiWorkAttribution({
   String attributionId = 'attribution-1',
   AiArtifactReference? output,
-}) {
-  final artifact = output ?? makeAiArtifact();
-  return AiTerminalAttributionEnvelope(
-    id: 'terminal-$attributionId',
-    attribution: AiWorkAttribution(
-      id: attributionId,
-      workType: AiWorkType.codingPrompt,
-      status: AiWorkStatus.succeeded,
-      initiator: makeAiActor(),
-      trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
-      executor: makeAiExecutor(),
-      privacyClassification: AiPrivacyClassification.standard,
-      startedAt: DateTime(2026, 3, 15, 12),
-      completedAt: DateTime(2026, 3, 15, 12, 0, 1),
-      vectorClock: const VectorClock({'host-a': 1}),
-      links: [
-        AiAttributionLink(
-          id: 'link-$attributionId',
-          attributionId: attributionId,
-          role: AiAttributionLinkRole.output,
-          artifact: artifact,
-        ),
-      ],
-      primaryOutput: artifact,
-    ),
-  );
-}
+}) => AiWorkAttribution(
+  id: attributionId,
+  workType: AiWorkType.codingPrompt,
+  status: AiWorkStatus.succeeded,
+  initiator: makeAiActor(),
+  trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+  startedAt: DateTime(2026, 3, 15, 12),
+  completedAt: DateTime(2026, 3, 15, 12, 0, 1),
+  vectorClock: const VectorClock({'host-a': 1}),
+  primaryOutput: output ?? makeAiArtifact(),
+);
 
-/// Deterministic factory for [ConsumptionTotals] fixtures. Defaults to the
-/// all-zero totals so tests only set the fields they assert on.
 ConsumptionTotals makeConsumptionTotals({
   int callCount = 0,
   int impactCallCount = 0,
@@ -410,24 +322,20 @@ ConsumptionTotals makeConsumptionTotals({
   double energyKwh = 0,
   double carbonGCo2 = 0,
   double waterLiters = 0,
-}) {
-  return ConsumptionTotals(
-    callCount: callCount,
-    impactCallCount: impactCallCount,
-    inputTokens: inputTokens,
-    outputTokens: outputTokens,
-    cachedInputTokens: cachedInputTokens,
-    thoughtsTokens: thoughtsTokens,
-    totalTokens: totalTokens,
-    credits: credits,
-    energyKwh: energyKwh,
-    carbonGCo2: carbonGCo2,
-    waterLiters: waterLiters,
-  );
-}
+}) => ConsumptionTotals(
+  callCount: callCount,
+  impactCallCount: impactCallCount,
+  inputTokens: inputTokens,
+  outputTokens: outputTokens,
+  cachedInputTokens: cachedInputTokens,
+  thoughtsTokens: thoughtsTokens,
+  totalTokens: totalTokens,
+  credits: credits,
+  energyKwh: energyKwh,
+  carbonGCo2: carbonGCo2,
+  waterLiters: waterLiters,
+);
 
-/// Deterministic factory for [ConsumptionMetricRow] fixtures — one call with
-/// binary-exact double defaults so summed cells compare exactly.
 ConsumptionMetricRow makeMetricRow({
   DateTime? createdAt,
   String? categoryId = 'work',
@@ -440,20 +348,18 @@ ConsumptionMetricRow makeMetricRow({
   String? providerModelId,
   String? dataCenter,
   double? renewablePercent,
-}) {
-  return ConsumptionMetricRow(
-    createdAt: createdAt ?? DateTime(2026, 6, 7, 9),
-    categoryId: categoryId,
-    modelId: modelId,
-    providerModelId: providerModelId,
-    metrics: ConsumptionMetrics(
-      callCount: callCount,
-      totalTokens: totalTokens,
-      credits: credits,
-      energyKwh: energyKwh,
-      carbonGCo2: carbonGCo2,
-    ),
-    dataCenter: dataCenter,
-    renewablePercent: renewablePercent,
-  );
-}
+}) => ConsumptionMetricRow(
+  createdAt: createdAt ?? DateTime(2026, 6, 7, 9),
+  categoryId: categoryId,
+  modelId: modelId,
+  providerModelId: providerModelId,
+  metrics: ConsumptionMetrics(
+    callCount: callCount,
+    totalTokens: totalTokens,
+    credits: credits,
+    energyKwh: energyKwh,
+    carbonGCo2: carbonGCo2,
+  ),
+  dataCenter: dataCenter,
+  renewablePercent: renewablePercent,
+);

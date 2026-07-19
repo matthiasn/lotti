@@ -12,7 +12,6 @@ import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
-import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/daily_os_next/state/capture_dbfs.dart';
 import 'package:lotti/features/daily_os_next/state/capture_state.dart';
@@ -263,7 +262,6 @@ class CaptureController extends Notifier<CaptureState> {
               modelId: config.model.providerModelId,
               providerType: config.provider.inferenceProviderType,
               interactionKind: AiInteractionKind.realtimeTranscription,
-              privacyClassification: AiPrivacyClassification.mixed,
             );
       }
       await _realtimeService.startRealtimeTranscription(
@@ -555,7 +553,6 @@ class CaptureController extends Notifier<CaptureState> {
           modelId: 'cloud-inference',
           providerType: InferenceProviderType.genericOpenAi,
           interactionKind: AiInteractionKind.audioTranscription,
-          privacyClassification: AiPrivacyClassification.mixed,
         );
       }
       final attributionSession = _transcriptAttribution;
@@ -660,9 +657,6 @@ class CaptureController extends Notifier<CaptureState> {
               modelId: model,
               providerType: providerType,
               interactionKind: interactionKind,
-              privacyClassification: journalAudio.meta.private == true
-                  ? AiPrivacyClassification.private
-                  : AiPrivacyClassification.standard,
               categoryId: journalAudio.meta.categoryId,
             )
           : interactionAlreadyRecorded
@@ -683,7 +677,7 @@ class CaptureController extends Notifier<CaptureState> {
         detectedLanguage: detectedLanguage,
         transcript: transcript,
         id: prepared?.transcriptId,
-        aiAttribution: prepared?.envelope,
+        aiAttribution: prepared?.attribution,
       );
       final existing = journalAudio.data.transcripts ?? <AudioTranscript>[];
       final updated = journalAudio.copyWith(
@@ -707,9 +701,6 @@ class CaptureController extends Notifier<CaptureState> {
           errorCode: 'transcript_persistence_failed',
         );
       }
-    } on AiAttributionPublicationException {
-      // Publication state is uncertain, so recovery must reconcile the
-      // pending saga without fabricating terminal failure evidence.
     } catch (_) {
       if (attributionSession != null &&
           getIt.isRegistered<TranscriptAttributionCoordinator>()) {
@@ -772,12 +763,9 @@ class CaptureController extends Notifier<CaptureState> {
         }
         return;
       }
-      if (error is AiAttributionPublicationException) {
-        return;
-      }
       await coordinator.fail(session: attribution, error: error);
     } catch (_) {
-      // The pending saga remains durable for startup recovery.
+      // Attribution cleanup is best-effort on this error path.
     }
   }
 

@@ -494,7 +494,7 @@ _AiResponseData _$AiResponseDataFromJson(Map<String, dynamic> json) =>
       durationMs: (json['durationMs'] as num?)?.toInt(),
       aiAttribution: json['aiAttribution'] == null
           ? null
-          : AiTerminalAttributionEnvelope.fromJson(
+          : AiWorkAttribution.fromJson(
               json['aiAttribution'] as Map<String, dynamic>,
             ),
     );

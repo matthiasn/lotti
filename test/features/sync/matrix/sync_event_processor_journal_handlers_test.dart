@@ -3,7 +3,6 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -17,7 +16,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import '../../ai_consumption/test_utils.dart';
 import 'sync_event_processor_test_helpers.dart';
 
 void main() {
@@ -28,34 +26,6 @@ void main() {
     test(
       'processes embedded links after successful journal entity update',
       () async {
-        final consumptionRepository = MockConsumptionRepository();
-        final attributionEnvelope = makeAiTerminalEnvelope(
-          attributionId: 'synced-attribution',
-          output: makeAiArtifact(id: 'entry-id'),
-        );
-        when(
-          () => consumptionRepository.projectTerminalEnvelope(
-            attributionEnvelope,
-          ),
-        ).thenAnswer((_) async {});
-        processor.consumptionRepository = consumptionRepository;
-        final aiResponse = AiResponseEntry(
-          meta: Metadata(
-            id: 'entry-id',
-            createdAt: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-          ),
-          data: AiResponseData(
-            model: 'gpt-5',
-            systemMessage: '',
-            prompt: 'prompt',
-            thoughts: '',
-            response: 'response',
-            aiAttribution: attributionEnvelope,
-          ),
-        );
         final link1 = EntryLink.basic(
           id: 'link-1',
           fromId: 'entry-id',
@@ -83,7 +53,7 @@ void main() {
 
         when(
           () => journalEntityLoader.load(jsonPath: '/entry.json'),
-        ).thenAnswer((_) async => aiResponse);
+        ).thenAnswer((_) async => fallbackJournalEntity);
         when(() => event.text).thenReturn(encodeMessage(message));
         when(() => journalDb.upsertEntryLink(link1)).thenAnswer((_) async => 1);
         when(() => journalDb.upsertEntryLink(link2)).thenAnswer((_) async => 1);
@@ -93,11 +63,6 @@ void main() {
         // Verify both links were upserted
         verify(() => journalDb.upsertEntryLink(link1)).called(1);
         verify(() => journalDb.upsertEntryLink(link2)).called(1);
-        verify(
-          () => consumptionRepository.projectTerminalEnvelope(
-            attributionEnvelope,
-          ),
-        ).called(1);
 
         // Verify logging for each embedded link
         verify(

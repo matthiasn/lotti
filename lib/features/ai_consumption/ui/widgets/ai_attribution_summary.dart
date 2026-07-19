@@ -1,8 +1,7 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/features/ai_consumption/logic/attribution_cost.dart';
+import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
@@ -16,27 +15,25 @@ import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 class AiAttributionSummary extends ConsumerWidget {
   const AiAttributionSummary({
     required this.artifact,
-    this.envelope,
+    this.attribution,
     this.compact = false,
     this.includeTopSpacing = true,
     super.key,
   });
 
   final AiArtifactReference artifact;
-  final AiTerminalAttributionEnvelope? envelope;
+  final AiWorkAttribution? attribution;
   final bool compact;
   final bool includeTopSpacing;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncDetails = envelope == null
+    final asyncDetails = attribution == null
         ? ref.watch(aiAttributionForArtifactProvider(artifact))
-        : ref.watch(
-            aiAttributionDetailsProvider(envelope!.attribution.id),
-          );
+        : ref.watch(aiAttributionDetailsProvider(attribution!.id));
     final details = asyncDetails.value;
-    final attribution = details?.attribution ?? envelope?.attribution;
-    if (attribution == null) {
+    final resolvedAttribution = details?.attribution ?? attribution;
+    if (resolvedAttribution == null) {
       if (asyncDetails.isLoading) {
         return _AttributionAvailability(
           label: context.messages.aiAttributionLoading,
@@ -51,7 +48,7 @@ class AiAttributionSummary extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     final row = _AttributionRow(
-      attribution: attribution,
+      attribution: resolvedAttribution,
       details: details,
       compact: compact,
       isLoading: asyncDetails.isLoading && details == null,
@@ -119,30 +116,19 @@ class _AttributionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final actor = _actorDisplayName(context, attribution.initiator);
     final primary = context.messages.aiAttributionSummary(
-      actor,
+      _actorDisplayName(context, attribution.initiator),
       _triggerLabel(context, attribution.trigger.type),
       _statusLabel(context, attribution.status),
     );
-    final model = isLoading
-        ? null
-        : details?.interactions
-              .map((event) => event.providerModelId ?? event.modelId)
-              .whereType<String>()
-              .firstOrNull;
     final secondary = isLoading
         ? '…'
         : context.messages.aiAttributionSecondary(
-            model ?? context.messages.aiAttributionUnknownModel,
-            DateFormat.yMMMd(
-              Localizations.localeOf(context).toString(),
-            ).add_jm().format(
-              attribution.completedAt.toLocal(),
-            ),
+            _firstModel(details) ?? context.messages.aiAttributionUnknownModel,
+            _formatTimestamp(context, attribution.completedAt),
             details?.interactions.length ?? 0,
           );
-    final cost = isLoading ? '…' : _formatCost(context, details);
+    final cost = isLoading ? '…' : _formatTotalCost(context, details);
     final radius = BorderRadius.circular(tokens.radii.m);
 
     return Semantics(
@@ -161,66 +147,39 @@ class _AttributionRow extends StatelessWidget {
               horizontal: tokens.spacing.step3,
               vertical: compact ? tokens.spacing.step2 : tokens.spacing.step3,
             ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final wide =
-                    constraints.maxWidth >= WoltModalConfig.pageBreakpoint;
-                return Row(
-                  children: [
-                    Icon(
-                      Icons.auto_awesome_outlined,
-                      size: tokens.spacing.step5,
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                    SizedBox(width: tokens.spacing.step3),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            primary,
-                            style: tokens.typography.styles.body.bodySmall
-                                .copyWith(
-                                  color: tokens.colors.text.highEmphasis,
-                                ),
-                          ),
-                          SizedBox(height: tokens.spacing.step1),
-                          Text(
-                            secondary,
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(
-                                  color: tokens.colors.text.mediumEmphasis,
-                                ),
-                          ),
-                          if (!wide) ...[
-                            SizedBox(height: tokens.spacing.step1),
-                            Text(
-                              cost,
-                              style: tokens.typography.styles.others.caption
-                                  .copyWith(
-                                    color: tokens.colors.text.mediumEmphasis,
-                                  ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    if (wide) ...[
-                      SizedBox(width: tokens.spacing.step3),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome_outlined,
+                  size: tokens.spacing.step5,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        cost,
+                        primary,
                         style: tokens.typography.styles.body.bodySmall,
                       ),
+                      SizedBox(height: tokens.spacing.step1),
+                      Text(
+                        '$secondary · $cost',
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
                     ],
-                    SizedBox(width: tokens.spacing.step2),
-                    Icon(
-                      Icons.chevron_right,
-                      size: tokens.spacing.step5,
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ],
-                );
-              },
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step2),
+                Icon(
+                  Icons.chevron_right,
+                  size: tokens.spacing.step5,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ],
             ),
           ),
         ),
@@ -247,10 +206,7 @@ Future<void> _showDetails(
       final live = ref.watch(aiAttributionDetailsProvider(attribution.id));
       final liveDetails = live.value ?? details;
       if (liveDetails != null) {
-        return _AttributionDetailsBody(
-          attribution: liveDetails.attribution,
-          details: liveDetails,
-        );
+        return _AttributionDetailsBody(details: liveDetails);
       }
       return _AttributionAvailability(
         label: live.hasError
@@ -263,16 +219,15 @@ Future<void> _showDetails(
 );
 
 class _AttributionDetailsBody extends StatelessWidget {
-  const _AttributionDetailsBody({required this.attribution, this.details});
+  const _AttributionDetailsBody({required this.details});
 
-  final AiWorkAttribution attribution;
-  final AiAttributionDetails? details;
+  final AiAttributionDetails details;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final interactions = details?.interactions ?? const <AiConsumptionEvent>[];
-    final duration = attribution.completedAt.difference(attribution.startedAt);
+    final attribution = details.attribution;
+    final output = attribution.primaryOutput;
     return Padding(
       padding: EdgeInsets.all(tokens.spacing.cardPadding),
       child: Column(
@@ -293,24 +248,13 @@ class _AttributionDetailsBody extends StatelessWidget {
           ),
           _Detail(
             label: context.messages.aiAttributionCost,
-            value: _formatCost(context, details),
-          ),
-          _Detail(
-            label: context.messages.aiAttributionPrivacy,
-            value: _privacyLabel(
-              context,
-              attribution.privacyClassification,
-            ),
-          ),
-          _Detail(
-            label: context.messages.aiAttributionExecutor,
-            value: attribution.executor.displayName.trim().isEmpty
-                ? context.messages.aiAttributionUnknownExecutor
-                : attribution.executor.displayName,
+            value: _formatTotalCost(context, details),
           ),
           _Detail(
             label: context.messages.aiAttributionDuration,
-            value: _formatDuration(duration),
+            value: _formatDuration(
+              attribution.completedAt.difference(attribution.startedAt),
+            ),
           ),
           _Detail(
             label: context.messages.aiAttributionStartedAt,
@@ -320,49 +264,25 @@ class _AttributionDetailsBody extends StatelessWidget {
             label: context.messages.aiAttributionCompletedAt,
             value: _formatTimestamp(context, attribution.completedAt),
           ),
-          SizedBox(height: tokens.spacing.step3),
-          _SectionHeading(context.messages.aiAttributionArtifacts),
-          SizedBox(height: tokens.spacing.step2),
-          if (attribution.links.isEmpty)
-            Text(
-              context.messages.aiAttributionNoInteractionDetails,
-              style: tokens.typography.styles.body.bodySmall,
-            )
-          else
-            for (final link in attribution.links)
-              _Detail(
-                label: _artifactRoleLabel(context, link.role),
-                value:
-                    '${link.artifact.type.name}: ${link.artifact.id}'
-                    '${link.artifact.subId == null ? '' : ' / ${link.artifact.subId}'}',
-                selectable: true,
-              ),
+          if (output != null)
+            _Detail(
+              label: context.messages.aiAttributionArtifactOutput,
+              value:
+                  '${output.type.name}: ${output.id}'
+                  '${output.subId == null ? '' : ' / ${output.subId}'}',
+              selectable: true,
+            ),
           SizedBox(height: tokens.spacing.step3),
           _SectionHeading(context.messages.aiAttributionInteractions),
           SizedBox(height: tokens.spacing.step2),
-          if (interactions.isEmpty)
+          if (details.interactions.isEmpty)
             Text(
               context.messages.aiAttributionNoInteractionDetails,
               style: tokens.typography.styles.body.bodySmall,
             )
           else
-            for (final interaction in interactions)
-              _InteractionDetails(
-                interaction: interaction,
-                cost: _effectiveCost(details, interaction.id),
-              ),
-          if (attribution.privacyClassification ==
-                  AiPrivacyClassification.private ||
-              attribution.privacyClassification ==
-                  AiPrivacyClassification.mixed) ...[
-            SizedBox(height: tokens.spacing.step3),
-            Text(
-              context.messages.aiAttributionSensitiveContentNotice,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ),
-          ],
+            for (final interaction in details.interactions)
+              _InteractionDetails(interaction: interaction),
           SizedBox(height: tokens.spacing.step3),
           _SectionHeading(context.messages.aiAttributionDiagnostics),
           SizedBox(height: tokens.spacing.step2),
@@ -391,10 +311,9 @@ class _SectionHeading extends StatelessWidget {
 }
 
 class _InteractionDetails extends StatelessWidget {
-  const _InteractionDetails({required this.interaction, required this.cost});
+  const _InteractionDetails({required this.interaction});
 
   final AiConsumptionEvent interaction;
-  final AiInteractionCost? cost;
 
   @override
   Widget build(BuildContext context) {
@@ -408,7 +327,6 @@ class _InteractionDetails extends StatelessWidget {
         : NumberFormat.decimalPattern(
             Localizations.localeOf(context).toString(),
           ).format(interaction.totalTokens);
-    final payload = interaction.payload;
     return Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.step2),
       child: Material(
@@ -417,7 +335,7 @@ class _InteractionDetails extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: ExpansionTile(
           title: Text(
-            '${interaction.sequenceIndex + 1}. $model',
+            model,
             style: tokens.typography.styles.body.bodySmall,
           ),
           subtitle: Text(
@@ -444,42 +362,24 @@ class _InteractionDetails extends StatelessWidget {
                     ),
             ),
             _Detail(
-              label: context.messages.aiAttributionStartedAt,
-              value: _formatTimestamp(context, interaction.createdAt),
-            ),
-            if (interaction.completedAt != null)
-              _Detail(
-                label: context.messages.aiAttributionCompletedAt,
-                value: _formatTimestamp(context, interaction.completedAt!),
-              ),
-            _Detail(
               label: context.messages.aiAttributionTokens,
               value: tokenText,
             ),
             _Detail(
               label: context.messages.aiAttributionCost,
-              value: _formatAssessmentCost(context, cost),
+              value: _formatInteractionCost(context, interaction),
             ),
-            _Detail(
-              label: context.messages.aiAttributionCostSource,
-              value: _costSourceLabel(context, cost?.source),
-            ),
-            if (payload != null) ...[
+            if (interaction.requestDigest != null)
               _Detail(
                 label: context.messages.aiAttributionRequestEvidence,
-                value: payload.requestDigest,
+                value: interaction.requestDigest!,
                 selectable: true,
               ),
+            if (interaction.responseDigest != null)
               _Detail(
                 label: context.messages.aiAttributionResponseEvidence,
-                value: payload.responseDigest,
+                value: interaction.responseDigest!,
                 selectable: true,
-              ),
-            ],
-            if (interaction.providerRequestId != null)
-              SelectableText(
-                interaction.providerRequestId!,
-                style: tokens.typography.styles.others.caption,
               ),
             SelectableText(
               interaction.id,
@@ -541,82 +441,37 @@ class _Detail extends StatelessWidget {
   }
 }
 
-String _formatCost(BuildContext context, AiAttributionDetails? details) {
-  final totals = details?.costTotals;
-  if (totals == null ||
-      (totals.knownInteractionCount == 0 &&
-          totals.reportingMicrosByCurrency.isEmpty)) {
-    return context.messages.aiAttributionCostUnknown;
+String? _firstModel(AiAttributionDetails? details) {
+  for (final event in details?.interactions ?? const <AiConsumptionEvent>[]) {
+    final model = event.providerModelId ?? event.modelId;
+    if (model != null) return model;
   }
-  final known = totals.reportingMicrosByCurrency.entries
-      .map(
-        (entry) => NumberFormat.simpleCurrency(
-          name: entry.key,
-          locale: Localizations.localeOf(context).toString(),
-        ).format(entry.value / 1000000),
-      )
-      .join(' + ');
-  if (known.isEmpty) return context.messages.aiAttributionCostUnknown;
-  return totals.unknownInteractionCount == 0
-      ? known
-      : '$known · ${context.messages.aiAttributionSomeCallsUnknown}';
+  return null;
 }
 
-AiInteractionCost? _effectiveCost(
+String _formatTotalCost(
+  BuildContext context,
   AiAttributionDetails? details,
-  String interactionId,
 ) {
-  if (details == null) return null;
-  try {
-    return effectiveInteractionCost(
-      details.costAssessments.where(
-        (assessment) => assessment.interactionId == interactionId,
-      ),
-    );
-  } on InvalidAiCostEvidence {
-    return null;
-  }
-}
-
-String _formatAssessmentCost(
-  BuildContext context,
-  AiInteractionCost? cost,
-) {
-  final micros = cost?.reportingAmountMicros;
-  final currency = cost?.reportingCurrency;
-  if (micros == null || currency == null) {
+  final values = details?.interactions
+      .map((event) => event.credits)
+      .whereType<double>();
+  if (values == null || values.isEmpty) {
     return context.messages.aiAttributionCostUnknown;
   }
-  return NumberFormat.simpleCurrency(
-    name: currency,
-    locale: Localizations.localeOf(context).toString(),
-  ).format(micros / 1000000);
+  final total = values.fold<double>(0, (sum, value) => sum + value);
+  return formatCredits(total);
 }
 
-String _costSourceLabel(
+String _formatInteractionCost(
   BuildContext context,
-  AiCostSource? source,
-) => switch (source) {
-  AiCostSource.localCompute => context.messages.aiAttributionCostSourceLocal,
-  AiCostSource.locallyEstimated =>
-    context.messages.aiAttributionCostSourceEstimated,
-  AiCostSource.legacyReported => context.messages.aiAttributionCostSourceLegacy,
-  AiCostSource.providerReported =>
-    context.messages.aiAttributionCostSourceProvider,
-  AiCostSource.externallyReconciled =>
-    context.messages.aiAttributionCostSourceReconciled,
-  AiCostSource.unknown || null => context.messages.aiAttributionCostUnknown,
-};
-
-String _artifactRoleLabel(
-  BuildContext context,
-  AiAttributionLinkRole role,
-) => switch (role) {
-  AiAttributionLinkRole.output => context.messages.aiAttributionArtifactOutput,
-  AiAttributionLinkRole.source => context.messages.aiAttributionArtifactSource,
-  AiAttributionLinkRole.context =>
-    context.messages.aiAttributionArtifactContext,
-};
+  AiConsumptionEvent interaction,
+) {
+  final credits = interaction.credits;
+  return credits == null
+      ? context.messages.aiAttributionCostUnknown
+      : formatCredits(credits);
+}
 
 String _interactionStatusLabel(
   BuildContext context,
@@ -662,19 +517,5 @@ String _statusLabel(BuildContext context, AiWorkStatus status) =>
       AiWorkStatus.succeeded => context.messages.aiAttributionStatusSucceeded,
       AiWorkStatus.failed => context.messages.aiAttributionStatusFailed,
       AiWorkStatus.cancelled => context.messages.aiAttributionStatusCancelled,
-      AiWorkStatus.abandoned => context.messages.aiAttributionStatusAbandoned,
       AiWorkStatus.partial => context.messages.aiAttributionStatusPartial,
     };
-
-String _privacyLabel(
-  BuildContext context,
-  AiPrivacyClassification privacy,
-) => switch (privacy) {
-  AiPrivacyClassification.standard =>
-    context.messages.aiAttributionPrivacyStandard,
-  AiPrivacyClassification.private =>
-    context.messages.aiAttributionPrivacyPrivate,
-  AiPrivacyClassification.mixed => context.messages.aiAttributionPrivacyMixed,
-  AiPrivacyClassification.unknown =>
-    context.messages.aiAttributionPrivacyUnknown,
-};

@@ -1,26 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
-import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
-import 'package:lotti/features/ai_consumption/service/ai_attribution_backfill_service.dart';
-import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'features/agents/test_utils.dart';
 import 'mocks/mocks.dart';
 
 void main() {
@@ -30,9 +20,6 @@ void main() {
       const Stream<List<({String id, Map<String, int>? vectorClock})>>.empty(),
     );
     registerFallbackValue(() async => 0);
-    registerFallbackValue(<JournalEntity>[]);
-    registerFallbackValue(<AgentDomainEntity>[]);
-    registerFallbackValue(<AiConsumptionEvent>[]);
   });
   setUp(() async {
     // Use a dedicated scope per test to avoid cross-file contamination
@@ -469,210 +456,5 @@ void main() {
         ),
       ).called(1);
     });
-  });
-
-  group('backfillAiAttributionForTesting', () {
-    const settingsKey = 'maintenance_aiAttributionBackfillV1';
-    late MockSettingsDb settingsDb;
-    late MockDomainLogger logger;
-
-    setUp(() {
-      settingsDb = MockSettingsDb();
-      logger = MockDomainLogger();
-      when(
-        () => logger.error(
-          any<LogDomain>(),
-          any<Object>(),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          subDomain: any<String?>(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async {});
-      getIt
-        ..registerSingleton<SettingsDb>(settingsDb)
-        ..registerSingleton<DomainLogger>(logger);
-    });
-
-    test('skips the already-completed migration', () async {
-      when(
-        () => settingsDb.itemByKey(settingsKey),
-      ).thenAnswer((_) async => 'true');
-
-      await backfillAiAttributionForTesting();
-
-      verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
-    });
-
-    test(
-      'backfills legacy carriers, agent rows, and consumption events',
-      () async {
-        final journalDb = MockJournalDb();
-        final agentDb = AgentDatabase(
-          inMemoryDatabase: true,
-          background: false,
-        );
-        final repository = MockConsumptionRepository();
-        final service = MockAiAttributionBackfillService();
-        addTearDown(agentDb.close);
-        final agent = makeTestIdentity(id: 'legacy-agent');
-        await AgentRepository(agentDb).upsertEntity(agent);
-        final journalEntity = JournalEntity.journalEntry(
-          meta: Metadata(
-            id: 'legacy-entry',
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            dateFrom: DateTime(2024, 3, 15),
-            dateTo: DateTime(2024, 3, 15),
-          ),
-        );
-        final event = AiConsumptionEvent(
-          id: 'legacy-event',
-          createdAt: DateTime(2024, 3, 15),
-          providerType: InferenceProviderType.openAi,
-          responseType: AiConsumptionResponseType.promptGeneration,
-          vectorClock: null,
-        );
-        final page = [journalEntity];
-        final events = [event];
-        when(
-          () => settingsDb.itemByKey(settingsKey),
-        ).thenAnswer((_) async => null);
-        when(
-          () => journalDb.getJournalEntities(
-            types: any(named: 'types'),
-            starredStatuses: any(named: 'starredStatuses'),
-            privateStatuses: any(named: 'privateStatuses'),
-            flaggedStatuses: any(named: 'flaggedStatuses'),
-            ids: any(named: 'ids'),
-            limit: any(named: 'limit'),
-            offset: any(named: 'offset'),
-          ),
-        ).thenAnswer((_) async => page);
-        when(
-          () => repository.eventsWithoutAttribution(limit: 250),
-        ).thenAnswer((_) async => events);
-        when(
-          () => service.backfill(
-            journalEntities: any(named: 'journalEntities'),
-            agentEntities: any(named: 'agentEntities'),
-            consumptionEvents: any(named: 'consumptionEvents'),
-          ),
-        ).thenAnswer(
-          (_) async => const AiAttributionBackfillResult(
-            projectedCarriers: 0,
-            createdLegacyAttributions: 0,
-            migratedConsumptionEvents: 0,
-          ),
-        );
-        when(
-          () => settingsDb.saveSettingsItem(settingsKey, 'true'),
-        ).thenAnswer((_) async => 1);
-        getIt
-          ..registerSingleton<JournalDb>(journalDb)
-          ..registerSingleton<AgentDatabase>(agentDb)
-          ..registerSingleton<ConsumptionRepository>(repository)
-          ..registerSingleton<AiAttributionBackfillService>(service);
-
-        await backfillAiAttributionForTesting();
-
-        verify(
-          () => service.backfill(journalEntities: page),
-        ).called(1);
-        verify(() => service.backfill(agentEntities: [agent])).called(1);
-        verify(() => service.backfill(consumptionEvents: events)).called(1);
-        verify(
-          () => settingsDb.saveSettingsItem(settingsKey, 'true'),
-        ).called(1);
-      },
-    );
-
-    test('logs failures without marking the migration complete', () async {
-      when(
-        () => settingsDb.itemByKey(settingsKey),
-      ).thenThrow(StateError('settings unavailable'));
-
-      await backfillAiAttributionForTesting();
-
-      verify(
-        () => logger.error(
-          LogDomain.ai,
-          any<Object>(that: isA<StateError>()),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          subDomain: 'aiAttributionBackfill',
-        ),
-      ).called(1);
-      verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
-    });
-  });
-
-  test('recoverAiAttributionForTesting runs stale-saga recovery', () async {
-    final service = MockAiAttributionService();
-    final logger = MockDomainLogger();
-    when(
-      () => service.recoverStale(threshold: const Duration(minutes: 15)),
-    ).thenAnswer((_) async => const []);
-    getIt
-      ..registerSingleton<AiAttributionService>(service)
-      ..registerSingleton<DomainLogger>(logger);
-
-    await recoverAiAttributionForTesting();
-
-    verify(
-      () => service.recoverStale(threshold: const Duration(minutes: 15)),
-    ).called(1);
-  });
-
-  test('recoverAiAttributionForTesting logs recovery failures', () async {
-    final service = MockAiAttributionService();
-    final logger = MockDomainLogger();
-    final failure = StateError('recovery database unavailable');
-    when(
-      () => service.recoverStale(threshold: const Duration(minutes: 15)),
-    ).thenThrow(failure);
-    when(
-      () => logger.error(
-        LogDomain.ai,
-        failure,
-        stackTrace: any(named: 'stackTrace'),
-        subDomain: 'aiAttributionRecovery',
-      ),
-    ).thenAnswer((_) async {});
-    getIt
-      ..registerSingleton<AiAttributionService>(service)
-      ..registerSingleton<DomainLogger>(logger);
-
-    await recoverAiAttributionForTesting();
-
-    verify(
-      () => logger.error(
-        LogDomain.ai,
-        failure,
-        stackTrace: any(named: 'stackTrace'),
-        subDomain: 'aiAttributionRecovery',
-      ),
-    ).called(1);
-  });
-
-  test('maintainAiAttributionForTesting runs backfill and recovery', () async {
-    const settingsKey = 'maintenance_aiAttributionBackfillV1';
-    final settingsDb = MockSettingsDb();
-    final service = MockAiAttributionService();
-    final logger = MockDomainLogger();
-    when(
-      () => settingsDb.itemByKey(settingsKey),
-    ).thenAnswer((_) async => 'true');
-    when(
-      () => service.recoverStale(threshold: const Duration(minutes: 15)),
-    ).thenAnswer((_) async => const []);
-    getIt
-      ..registerSingleton<SettingsDb>(settingsDb)
-      ..registerSingleton<AiAttributionService>(service)
-      ..registerSingleton<DomainLogger>(logger);
-
-    await maintainAiAttributionForTesting();
-
-    verify(() => settingsDb.itemByKey(settingsKey)).called(1);
-    verify(
-      () => service.recoverStale(threshold: const Duration(minutes: 15)),
-    ).called(1);
   });
 }

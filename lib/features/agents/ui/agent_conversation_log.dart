@@ -277,13 +277,13 @@ class _ThreadReportCard extends StatelessWidget {
         ),
         children: [
           AgentMarkdownView(report.content),
-          if (terminalEnvelopeFromAgentEntity(report) case final envelope?)
+          if (attributionFromAgentEntity(report) case final attribution?)
             AiAttributionSummary(
               artifact: AiArtifactReference(
                 type: AiArtifactType.agentReport,
                 id: report.id,
               ),
-              envelope: envelope,
+              attribution: attribution,
             ),
         ],
       ),

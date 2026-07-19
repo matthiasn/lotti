@@ -8,7 +8,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
-import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
@@ -453,7 +452,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
                   config?.provider.inferenceProviderType ??
                   InferenceProviderType.mistral,
               interactionKind: AiInteractionKind.realtimeTranscription,
-              privacyClassification: AiPrivacyClassification.mixed,
               taskId: linkedId,
               categoryId: _categoryId,
             );
@@ -673,10 +671,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         subDomain: 'stopRealtime',
       );
       _vuMeter.reset();
-      if (exception is AiAttributionPublicationException) {
-        // Publication state is uncertain. Leave the pending saga for recovery
-        // instead of recording a second synthetic provider interaction.
-      } else if (attributionInteractionRecorded && attributionSession != null) {
+      if (attributionInteractionRecorded && attributionSession != null) {
         try {
           await getIt<TranscriptAttributionCoordinator>().failOutput(
             session: attributionSession,
@@ -712,9 +707,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     final attribution = session ?? _realtimeAttribution;
     if (attribution == null ||
         !getIt.isRegistered<TranscriptAttributionCoordinator>()) {
-      return;
-    }
-    if (error is AiAttributionPublicationException) {
       return;
     }
     try {
@@ -801,9 +793,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
                   modelId: modelId,
                   providerType: providerType,
                   interactionKind: AiInteractionKind.realtimeTranscription,
-                  privacyClassification: journalAudio.meta.private == true
-                      ? AiPrivacyClassification.private
-                      : AiPrivacyClassification.standard,
                   taskId: taskId,
                   categoryId: journalAudio.meta.categoryId,
                 )
@@ -819,7 +808,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       detectedLanguage: detectedLanguage ?? '-',
       transcript: transcript,
       id: prepared?.transcriptId,
-      aiAttribution: prepared?.envelope,
+      aiAttribution: prepared?.attribution,
     );
 
     final existingTranscripts = journalAudio.data.transcripts ?? [];

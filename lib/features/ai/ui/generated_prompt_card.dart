@@ -249,7 +249,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
             type: AiArtifactType.journalAiResponse,
             id: widget.aiResponse.meta.id,
           ),
-          envelope: widget.aiResponse.data.aiAttribution,
+          attribution: widget.aiResponse.data.aiAttribution,
         ),
         // Expandable full prompt
         AnimatedBuilder(

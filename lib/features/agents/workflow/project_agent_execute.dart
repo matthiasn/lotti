@@ -208,14 +208,15 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     }) async {
       if (!recordConsumption) return;
       try {
-        final envelope = await getIt<AiAttributionService>().prepareCompletion(
-          attributionId: agentWakeAttributionId(runKey),
-          outputs: const [],
-          status: status,
-          errorCode: errorCode,
-          errorSummary: errorSummary,
-        );
-        await getIt<AiAttributionService>().finalize(envelope);
+        final attribution = await getIt<AiAttributionService>()
+            .prepareCompletion(
+              attributionId: agentWakeAttributionId(runKey),
+              outputs: const [],
+              status: status,
+              errorCode: errorCode,
+              errorSummary: errorSummary,
+            );
+        await getIt<AiAttributionService>().finalize(attribution);
       } catch (error, stackTrace) {
         _logError(
           'failed to terminalize carrier-less attribution',
@@ -353,7 +354,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       final reportId = reportContent.isEmpty
           ? null
           : ProjectAgentWorkflow._uuid.v4();
-      AiTerminalAttributionEnvelope? attributionEnvelope;
+      AiWorkAttribution? attributionEnvelope;
       if (reportId != null && getIt.isRegistered<AiAttributionService>()) {
         attributionEnvelope = await getIt<AiAttributionService>()
             .prepareCompletion(

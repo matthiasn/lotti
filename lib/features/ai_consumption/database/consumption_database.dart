@@ -47,31 +47,11 @@ class ConsumptionDatabase extends _$ConsumptionDatabase {
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.addColumn(consumptionEvents, consumptionEvents.attributionId);
-        await m.addColumn(consumptionEvents, consumptionEvents.sequenceIndex);
-        await m.addColumn(consumptionEvents, consumptionEvents.interactionKind);
-        await m.addColumn(
-          consumptionEvents,
-          consumptionEvents.interactionStatus,
-        );
-        await m.addColumn(consumptionEvents, consumptionEvents.completedAt);
-        await m.addColumn(
-          consumptionEvents,
-          consumptionEvents.providerRequestId,
-        );
-        await m.addColumn(consumptionEvents, consumptionEvents.errorCode);
-        await m.addColumn(consumptionEvents, consumptionEvents.errorSummary);
-        await m.addColumn(consumptionEvents, consumptionEvents.payloadId);
-        await m.addColumn(consumptionEvents, consumptionEvents.costId);
-
         await m.createTable(aiWorkAttributions);
-        await m.createTable(aiAttributionLinks);
-        await m.createTable(aiInteractionPayloads);
-        await m.createTable(aiInteractionCosts);
-        await m.createTable(pendingAiAttributions);
 
         await customStatement(
-          'CREATE INDEX IF NOT EXISTS idx_consumption_attribution_sequence '
-          'ON consumption_events(attribution_id, sequence_index) '
+          'CREATE INDEX IF NOT EXISTS idx_consumption_attribution '
+          'ON consumption_events(attribution_id, created_at) '
           'WHERE attribution_id IS NOT NULL',
         );
         await customStatement(
@@ -91,25 +71,6 @@ class ConsumptionDatabase extends _$ConsumptionDatabase {
         await customStatement(
           'CREATE INDEX IF NOT EXISTS idx_attribution_type_created '
           'ON ai_work_attributions(work_type, completed_at)',
-        );
-        await customStatement(
-          'CREATE UNIQUE INDEX IF NOT EXISTS idx_attribution_link_unique '
-          'ON ai_attribution_links(attribution_id, role, artifact_type, '
-          "artifact_id, IFNULL(sub_id, ''))",
-        );
-        await customStatement(
-          'CREATE INDEX IF NOT EXISTS idx_attribution_link_target '
-          'ON ai_attribution_links(artifact_type, artifact_id, sub_id)',
-        );
-        await customStatement(
-          'CREATE INDEX IF NOT EXISTS idx_cost_interaction_assessed '
-          'ON ai_interaction_costs(interaction_id, assessed_at)',
-        );
-        await customStatement(
-          'CREATE UNIQUE INDEX IF NOT EXISTS idx_cost_external_record '
-          'ON ai_interaction_costs(provider_type, billing_account_key, '
-          'billing_source, external_record_id) '
-          'WHERE external_record_id IS NOT NULL',
         );
       }
     },

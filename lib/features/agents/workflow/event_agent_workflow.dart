@@ -204,14 +204,15 @@ class EventAgentWorkflow {
     }) async {
       if (!recordConsumption) return;
       try {
-        final envelope = await getIt<AiAttributionService>().prepareCompletion(
-          attributionId: agentWakeAttributionId(runKey),
-          outputs: const [],
-          status: status,
-          errorCode: errorCode,
-          errorSummary: errorSummary,
-        );
-        await getIt<AiAttributionService>().finalize(envelope);
+        final attribution = await getIt<AiAttributionService>()
+            .prepareCompletion(
+              attributionId: agentWakeAttributionId(runKey),
+              outputs: const [],
+              status: status,
+              errorCode: errorCode,
+              errorSummary: errorSummary,
+            );
+        await getIt<AiAttributionService>().finalize(attribution);
       } catch (error, stackTrace) {
         _logError(
           'failed to terminalize carrier-less attribution',
@@ -359,7 +360,7 @@ class EventAgentWorkflow {
       final extractedObservations = strategy.extractObservations();
       final deferredItems = strategy.extractDeferredItems();
       final reportId = hasReport ? _uuid.v4() : null;
-      AiTerminalAttributionEnvelope? attributionEnvelope;
+      AiWorkAttribution? attributionEnvelope;
       if (reportId != null && getIt.isRegistered<AiAttributionService>()) {
         attributionEnvelope = await getIt<AiAttributionService>()
             .prepareCompletion(

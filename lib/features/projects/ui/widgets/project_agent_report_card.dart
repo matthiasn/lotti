@@ -143,7 +143,7 @@ class ProjectAgentReportCard extends ConsumerWidget {
         final hasReport = report != null && report.content.trim().isNotEmpty;
         final reportEnvelope = report == null
             ? null
-            : terminalEnvelopeFromAgentEntity(report);
+            : attributionFromAgentEntity(report);
 
         return LottiFormSection(
           title: context.messages.projectAgentSectionTitle,
@@ -233,7 +233,7 @@ class ProjectAgentReportCard extends ConsumerWidget {
                           type: AiArtifactType.agentReport,
                           id: report.id,
                         ),
-                        envelope: reportEnvelope,
+                        attribution: reportEnvelope,
                       ),
                   ],
                 ),

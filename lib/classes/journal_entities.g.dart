@@ -62,7 +62,7 @@ _ImageData _$ImageDataFromJson(Map<String, dynamic> json) => _ImageData(
       : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
   aiAttribution: json['aiAttribution'] == null
       ? null
-      : AiTerminalAttributionEnvelope.fromJson(
+      : AiWorkAttribution.fromJson(
           json['aiAttribution'] as Map<String, dynamic>,
         ),
 );
@@ -115,7 +115,7 @@ _AudioTranscript _$AudioTranscriptFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String?,
       aiAttribution: json['aiAttribution'] == null
           ? null
-          : AiTerminalAttributionEnvelope.fromJson(
+          : AiWorkAttribution.fromJson(
               json['aiAttribution'] as Map<String, dynamic>,
             ),
     );

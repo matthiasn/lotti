@@ -1,6 +1,6 @@
 /// Pure adaptive-unit formatters for AI consumption metrics.
 ///
-/// Values are stored in the units Melious delivers (credits ≈ EUR, kWh, g CO₂,
+/// Values are stored in the units Melious delivers (credits, kWh, g CO₂,
 /// liters — see `AiConsumptionEvent`); display adapts the unit to the
 /// magnitude so a single task ("12 Wh") and a whole year ("34 kWh") both read
 /// naturally. Every formatter returns a value **with** its unit suffix so call
@@ -22,10 +22,10 @@ final NumberFormat _compact = NumberFormat.compact();
 String _shaped(double value) =>
     value < 10 ? _oneDecimal.format(value) : _whole.format(value);
 
-/// Formats Melious credits as Euro (credits ≈ EUR per the provider contract).
+/// Formats Melious credits using the product's established EUR presentation.
 ///
-/// `€0.00` for zero, `<€0.01` for dust below a cent, two decimals up to
-/// `€100`, whole euros above.
+/// The euro symbol is presentation only; persisted events retain the raw
+/// provider-reported credits and do not attach or infer currency metadata.
 String formatCredits(double credits) {
   if (credits <= 0) return '€0.00';
   if (credits < 0.01) return '<€0.01';

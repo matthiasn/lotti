@@ -189,7 +189,6 @@ class AgentLogLlmSummarizer {
             triggerType: AiTriggerType.automatic,
             automationId: 'automation:agent-log-compaction',
             automationDisplayName: 'Agent log compaction',
-            privacyClassification: AiPrivacyClassification.mixed,
           )
         : invoke();
 

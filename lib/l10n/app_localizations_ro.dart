@@ -1148,16 +1148,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiAssistantTitle => 'Generează…';
 
   @override
-  String get aiAttributionArtifactContext => 'Context';
-
-  @override
   String get aiAttributionArtifactOutput => 'Rezultat';
-
-  @override
-  String get aiAttributionArtifacts => 'Elemente asociate';
-
-  @override
-  String get aiAttributionArtifactSource => 'Sursă';
 
   @override
   String get aiAttributionCompletedAt => 'Finalizat la';
@@ -1166,28 +1157,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiAttributionCost => 'Cost';
 
   @override
-  String get aiAttributionCostSource => 'Sursa costului';
-
-  @override
-  String get aiAttributionCostSourceEstimated => 'Estimat local';
-
-  @override
-  String get aiAttributionCostSourceLegacy => 'Valoare veche raportată';
-
-  @override
-  String get aiAttributionCostSourceLocal => 'Procesare locală';
-
-  @override
-  String get aiAttributionCostSourceProvider => 'Raportat de furnizor';
-
-  @override
-  String get aiAttributionCostSourceReconciled => 'Reconciliat extern';
-
-  @override
   String get aiAttributionCostUnknown => 'Cost necunoscut';
-
-  @override
-  String get aiAttributionCostZero => 'Fără cost';
 
   @override
   String get aiAttributionCreator => 'Creator';
@@ -1199,14 +1169,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiAttributionDuration => 'Durată';
 
   @override
-  String get aiAttributionExecutor => 'Executat pe';
-
-  @override
-  String aiAttributionInteractionLine(int index, String model, int tokens) {
-    return 'Apelul $index: $model · $tokens tokenuri';
-  }
-
-  @override
   String get aiAttributionInteractions => 'Interacțiuni';
 
   @override
@@ -1215,21 +1177,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get aiAttributionNoInteractionDetails =>
       'Nu sunt disponibile detalii despre interacțiune.';
-
-  @override
-  String get aiAttributionPrivacy => 'Confidențialitate';
-
-  @override
-  String get aiAttributionPrivacyMixed => 'Mixt';
-
-  @override
-  String get aiAttributionPrivacyPrivate => 'Privat';
-
-  @override
-  String get aiAttributionPrivacyStandard => 'Standard';
-
-  @override
-  String get aiAttributionPrivacyUnknown => 'Necunoscută';
 
   @override
   String get aiAttributionRequestEvidence => 'Dovada solicitării';
@@ -1250,21 +1197,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get aiAttributionSensitiveContentNotice =>
-      'Conținutul solicitării și al răspunsului este ascuns deoarece această activitate conține date private.';
-
-  @override
-  String get aiAttributionSomeCallsUnknown =>
-      'Unele apeluri au cost necunoscut';
-
-  @override
   String get aiAttributionStartedAt => 'Început la';
 
   @override
   String get aiAttributionStatus => 'Stare';
-
-  @override
-  String get aiAttributionStatusAbandoned => 'Întrerupt';
 
   @override
   String get aiAttributionStatusCancelled => 'Anulat';
@@ -1319,10 +1255,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiAttributionUnknownCreator => 'Creator necunoscut';
-
-  @override
-  String get aiAttributionUnknownExecutor =>
-      'Dispozitiv de execuție necunoscut';
 
   @override
   String get aiAttributionUnknownModel => 'Model necunoscut';

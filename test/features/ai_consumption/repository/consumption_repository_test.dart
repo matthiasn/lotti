@@ -3,10 +3,7 @@
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai_consumption/database/attribution_db_conversions.dart';
-import 'package:lotti/features/ai_consumption/database/consumption_database.dart'
-    hide AiAttributionLink, AiInteractionCost, AiInteractionPayload;
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -69,6 +66,43 @@ void main() {
 
     test('getEvent returns null for an unknown id', () async {
       expect(await repo.getEvent('nope'), isNull);
+    });
+  });
+
+  group('attribution projection', () {
+    test('round-trips attribution and resolves its primary output', () async {
+      final attribution = makeAiWorkAttribution();
+
+      await repo.upsertAttribution(attribution);
+
+      expect(await repo.getAttribution(attribution.id), attribution);
+      expect(
+        await repo.getAttributionForArtifact(attribution.primaryOutput!),
+        attribution,
+      );
+    });
+
+    test('returns linked interactions in creation order', () async {
+      await repo.upsertEvent(
+        makeConsumptionEvent(
+          id: 'second',
+          attributionId: 'attribution-1',
+          createdAt: DateTime.utc(2026, 7, 19, 10, 0, 2),
+        ),
+      );
+      await repo.upsertEvent(
+        makeConsumptionEvent(
+          id: 'first',
+          attributionId: 'attribution-1',
+          createdAt: DateTime.utc(2026, 7, 19, 10),
+        ),
+      );
+
+      final interactions = await repo.interactionsForAttribution(
+        'attribution-1',
+      );
+
+      expect(interactions.map((event) => event.id), ['first', 'second']);
     });
   });
 
@@ -448,301 +482,6 @@ void main() {
         limit: 1,
       );
       expect(events.single, event);
-    });
-  });
-
-  group('attribution persistence', () {
-    test('round-trips terminal links and reverse artifact lookup', () async {
-      final envelope = makeAiTerminalEnvelope();
-
-      await repo.projectTerminalEnvelope(envelope);
-
-      expect(
-        await repo.getAttribution(envelope.attribution.id),
-        envelope.attribution,
-      );
-      expect(
-        await repo.getAttributionForArtifact(
-          envelope.attribution.primaryOutput!,
-        ),
-        envelope.attribution,
-      );
-      expect(
-        await repo.getAttributionForArtifact(
-          const AiArtifactReference(
-            type: AiArtifactType.journalAiResponse,
-            id: 'missing',
-          ),
-        ),
-        isNull,
-      );
-    });
-
-    test('rejects links owned by another attribution', () async {
-      final attribution = makeAiTerminalEnvelope().attribution.copyWith(
-        links: [
-          AiAttributionLink(
-            id: 'wrong-link',
-            attributionId: 'someone-else',
-            role: AiAttributionLinkRole.output,
-            artifact: makeAiArtifact(),
-          ),
-        ],
-      );
-
-      await expectLater(
-        repo.upsertAttribution(attribution),
-        throwsArgumentError,
-      );
-    });
-
-    test('terminal replacement removes obsolete links', () async {
-      final base = makeAiTerminalEnvelope(attributionId: 'replace-links');
-      final kept = base.attribution.links.single;
-      final obsoleteArtifact = makeAiArtifact(id: 'obsolete-output');
-      final obsolete = AiAttributionLink(
-        id: 'obsolete-link',
-        attributionId: base.attribution.id,
-        role: AiAttributionLinkRole.output,
-        artifact: obsoleteArtifact,
-      );
-      await repo.upsertAttribution(
-        base.attribution.copyWith(links: [kept, obsolete]),
-      );
-
-      await repo.upsertAttribution(base.attribution.copyWith(links: [kept]));
-
-      expect(await repo.getAttributionForArtifact(kept.artifact), isNotNull);
-      expect(await repo.getAttributionForArtifact(obsoleteArtifact), isNull);
-    });
-
-    test('reverse lookup ignores source and context links', () async {
-      final base = makeAiTerminalEnvelope(attributionId: 'input-only');
-      final input = makeAiArtifact(id: 'shared-input');
-      await repo.upsertAttribution(
-        base.attribution.copyWith(
-          primaryOutput: null,
-          links: [
-            AiAttributionLink(
-              id: 'source-link',
-              attributionId: base.attribution.id,
-              role: AiAttributionLinkRole.source,
-              artifact: input,
-            ),
-          ],
-        ),
-      );
-
-      expect(await repo.getAttributionForArtifact(input), isNull);
-    });
-
-    test(
-      'recovery capsule projects a replaceable partial attribution',
-      () async {
-        final event = makeConsumptionEvent(id: 'recovery-event').copyWith(
-          completedAt: DateTime(2026, 3, 15, 12, 1),
-          vectorClock: const VectorClock({'host-a': 2}),
-        );
-        final output = makeAiArtifact(subId: 'part-1');
-        final capsule = AiAttributionRecoveryCapsule(
-          id: 'capsule-1',
-          attributionId: 'recovered-1',
-          workType: AiWorkType.imageAnalysis,
-          initiator: makeAiActor(),
-          trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
-          executor: makeAiExecutor(),
-          privacyClassification: AiPrivacyClassification.private,
-          startedAt: DateTime(2026, 3, 15, 12),
-          intendedOutputs: [output],
-          taskId: 'task-1',
-          categoryId: 'cat-1',
-        );
-
-        await repo.projectRecoveryCapsule(capsule: capsule, event: event);
-        await repo.projectRecoveryCapsule(capsule: capsule, event: event);
-
-        final recovered = await repo.getAttribution('recovered-1');
-        expect(recovered?.status, AiWorkStatus.partial);
-        expect(recovered?.primaryOutput, output);
-        expect(recovered?.completedAt, event.completedAt);
-        expect(recovered?.vectorClock, event.vectorClock);
-        expect(recovered?.errorCode, 'terminal_carrier_missing');
-        expect(
-          await repo.getAttributionForArtifact(output),
-          recovered,
-        );
-      },
-    );
-
-    test('terminal projection is not replaced by a recovery capsule', () async {
-      final envelope = makeAiTerminalEnvelope(attributionId: 'terminal-1');
-      await repo.upsertAttribution(envelope.attribution);
-      final capsule = AiAttributionRecoveryCapsule(
-        id: 'capsule-terminal',
-        attributionId: envelope.attribution.id,
-        workType: AiWorkType.imageAnalysis,
-        initiator: makeAiActor(),
-        trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
-        executor: makeAiExecutor(),
-        privacyClassification: AiPrivacyClassification.standard,
-        startedAt: DateTime(2026, 3, 15),
-        intendedOutputs: [makeAiArtifact(id: 'replacement')],
-      );
-
-      await repo.projectRecoveryCapsule(
-        capsule: capsule,
-        event: makeConsumptionEvent(),
-      );
-
-      expect(
-        await repo.getAttribution(envelope.attribution.id),
-        envelope.attribution,
-      );
-    });
-  });
-
-  group('interaction evidence', () {
-    test(
-      'round-trips ordered interactions, payloads, and cost evidence',
-      () async {
-        final createdAt = DateTime(2026, 3, 15, 12);
-        final payload = AiInteractionPayload(
-          id: 'payload-1',
-          interactionId: 'interaction-1',
-          request: const [],
-          response: const [],
-          parameters: const {'temperature': 0},
-          requestDigest: 'request-digest',
-          responseDigest: 'response-digest',
-          capturePolicy: AiPayloadCapturePolicy.metadataOnly,
-          privacyClassification: AiPrivacyClassification.standard,
-          createdAt: createdAt,
-        );
-        final firstCost = AiInteractionCost(
-          id: 'cost-a',
-          interactionId: 'interaction-1',
-          source: AiCostSource.providerReported,
-          assessedAt: createdAt,
-          originalAmountDecimal: '0.1',
-          originalUnit: 'EUR',
-          reportingAmountMicros: 100000,
-          reportingCurrency: 'EUR',
-        );
-        final event =
-            makeConsumptionEvent(
-              id: 'interaction-1',
-              createdAt: createdAt,
-            ).copyWith(
-              attributionId: 'attribution-1',
-              sequenceIndex: 1,
-              payload: payload,
-              cost: firstCost,
-            );
-        final earlier = makeConsumptionEvent(
-          id: 'interaction-0',
-          createdAt: createdAt,
-        ).copyWith(attributionId: 'attribution-1', sequenceIndex: 0);
-
-        await repo.upsertEvent(event);
-        await repo.upsertEvent(earlier);
-        await db
-            .into(db.aiInteractionCosts)
-            .insertOnConflictUpdate(
-              AttributionDbConversions.costToCompanion(
-                firstCost.copyWith(
-                  id: 'cost-b',
-                  assessedAt: createdAt.add(const Duration(seconds: 1)),
-                  supersedesCostId: firstCost.id,
-                ),
-              ),
-            );
-
-        expect(
-          (await repo.interactionsForAttribution(
-            'attribution-1',
-          )).map((item) => item.id),
-          ['interaction-0', 'interaction-1'],
-        );
-        expect(await repo.payloadForInteraction('interaction-1'), payload);
-        expect(await repo.payloadForInteraction('missing'), isNull);
-        expect(
-          (await repo.costsForInteraction(
-            'interaction-1',
-          )).map((item) => item.id),
-          ['cost-a', 'cost-b'],
-        );
-        expect(
-          (await repo.costsForAttribution(
-            'attribution-1',
-          )).map((item) => item.id),
-          ['cost-a', 'cost-b'],
-        );
-      },
-    );
-  });
-
-  group('pending attribution sessions', () {
-    test('orders, fetches, replaces, and deletes pending sessions', () async {
-      AiAttributionPendingSession pending(String id, DateTime startedAt) =>
-          AiAttributionPendingSession(
-            id: id,
-            attributionId: id,
-            workType: AiWorkType.codingPrompt,
-            initiator: makeAiActor(),
-            trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
-            executor: makeAiExecutor(),
-            privacyClassification: AiPrivacyClassification.standard,
-            phase: AiAttributionPendingPhase.prepared,
-            startedAt: startedAt,
-            lastUpdatedAt: startedAt,
-            intendedOutputs: const [],
-          );
-
-      final later = pending('later', DateTime(2026, 3, 15, 13));
-      final earlier = pending('earlier', DateTime(2026, 3, 15, 12));
-      await repo.upsertPendingAttribution(later);
-      await repo.upsertPendingAttribution(earlier);
-
-      expect(
-        (await repo.pendingAttributions()).map((item) => item.id),
-        ['earlier', 'later'],
-      );
-      expect(await repo.getPendingAttribution('earlier'), earlier);
-      expect(await repo.getPendingAttribution('missing'), isNull);
-
-      final updated = earlier.copyWith(
-        phase: AiAttributionPendingPhase.calling,
-      );
-      await repo.upsertPendingAttribution(updated);
-      expect(await repo.getPendingAttribution('earlier'), updated);
-
-      await repo.deletePendingAttribution('earlier');
-      expect(await repo.getPendingAttribution('earlier'), isNull);
-    });
-
-    test('finds legacy events in stable bounded pages', () async {
-      await repo.upsertEvent(makeConsumptionEvent(id: 'legacy-a'));
-      await repo.upsertEvent(makeConsumptionEvent(id: 'legacy-b'));
-      await repo.upsertEvent(makeConsumptionEvent(id: 'legacy'));
-      await repo.upsertEvent(
-        makeConsumptionEvent(
-          id: 'attributed',
-        ).copyWith(attributionId: 'attribution-1'),
-      );
-
-      expect(
-        (await repo.eventsWithoutAttribution(
-          limit: 2,
-        )).map((event) => event.id),
-        ['legacy', 'legacy-a'],
-      );
-      expect(
-        (await repo.eventsWithoutAttribution(
-          limit: 2,
-          afterId: 'legacy-a',
-        )).map((event) => event.id),
-        ['legacy-b'],
-      );
     });
   });
 }

@@ -599,7 +599,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     );
     final attributionEnvelope = report == null
         ? null
-        : terminalEnvelopeFromAgentEntity(report);
+        : attributionFromAgentEntity(report);
     final attributionSummary = report == null || attributionEnvelope == null
         ? null
         : AiAttributionSummary(
@@ -607,7 +607,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
               type: AiArtifactType.agentReport,
               id: report.id,
             ),
-            envelope: attributionEnvelope,
+            attribution: attributionEnvelope,
             compact: true,
             includeTopSpacing: false,
           );

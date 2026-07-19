@@ -192,7 +192,7 @@ void main() {
     testWidgets('renders attribution carried by the latest project report', (
       tester,
     ) async {
-      final envelope = makeAiTerminalEnvelope(
+      final envelope = makeAiWorkAttribution(
         attributionId: 'project-report-attribution',
       );
       final report = makeTestReport(

@@ -42,7 +42,7 @@ flowchart LR
   RecorderCtl --> SpeechRepo["SpeechRepository"]
   RecorderCtl --> AutoPrompt["AutomaticPromptTrigger"]
   RecorderCtl --> Attribution["TranscriptAttributionCoordinator"]
-  Attribution --> Barrier["AI consumption publication barrier"]
+  Attribution --> Consumption["AI consumption event"]
 
   PlaybackUI --> PlayerCtl["AudioPlayerController"]
   PlaybackUI --> WaveformProvider["audioWaveformProvider"]
@@ -56,7 +56,7 @@ flowchart LR
   DictSvc --> CategoryRepo["CategoryRepository + JournalRepository"]
   RtTx --> AiConfig["AI config + Mistral or MLX-audio realtime backend"]
   Persist --> JournalAudio["JournalAudio"]
-  Barrier --> JournalAudio
+  Attribution --> JournalAudio
 ```
 
 The feature is not only a recorder. It also owns the app-wide playback
@@ -254,10 +254,10 @@ sequenceDiagram
   Speech-->>Ctl: JournalAudio carrier
   Ctl->>Attr: recordInteraction(realtime digest, usage/status)
   Ctl->>Attr: prepareOutput(audio id, transcript id)
-  Attr-->>Ctl: published terminal envelope
-  Ctl->>Persist: save transcript + envelope onto JournalAudio and entryText
+  Attr-->>Ctl: attribution record
+  Ctl->>Persist: save transcript + attribution onto JournalAudio and entryText
   Persist-->>Ctl: write accepted
-  Ctl->>Attr: finalize(envelope)
+  Ctl->>Attr: finalize local projection
   Ctl->>Ctl: reset recorder state
 ```
 
@@ -268,22 +268,14 @@ Two important implementation details:
    transcript text from the service, but the controller does not persist
    anything unless an audio artifact exists.
 2. Before realtime inference starts, the controller asks
-   `TranscriptAttributionCoordinator` for a durable pending session. When a
-   transcript exists, the coordinator publishes reference-only interaction,
-   token-usage, and cost evidence (unknown when the provider reports none).
-   Only after the publication barrier succeeds does it
-   append an `AudioTranscript` with a stable id and terminal attribution
-   envelope to `JournalAudio.data.transcripts`; it also mirrors the transcript
-   into `entryText`. Attribution inherits the audio entry's privacy flag and
-   the provider type resolved for the realtime session. The projection is
-   finalized only when the journal update confirms that it applied. If that
-   post-carrier projection fails, the successful carrier remains authoritative
-   and the pending saga is left for recovery. Uncertain interaction publication
-   likewise stays pending instead of creating synthetic failure evidence. Missing
-   audio, empty transcript, or rejected/throwing persistence terminalizes the
-   already-recorded interaction as an output failure, so a transcript never
-   advertises evidence that was not durable and the pending session does not
-   leak.
+   `TranscriptAttributionCoordinator` for an in-memory attribution session.
+   When a transcript exists, the coordinator records interaction metadata and
+   token usage, then appends an `AudioTranscript` with a stable id and embedded
+   attribution to `JournalAudio.data.transcripts`; it also mirrors the text
+   into `entryText`. The carrier is authoritative. After the journal update
+   succeeds, the coordinator upserts the local attribution projection. Missing
+   audio, empty transcript, or rejected persistence records a failed or
+   cancelled outcome without inventing provider cost.
 
 `cancelRealtime()` is the realtime discard path (the ✕ button in real-time
 mode). It records a terminal cancelled attribution, then tears down the recorder

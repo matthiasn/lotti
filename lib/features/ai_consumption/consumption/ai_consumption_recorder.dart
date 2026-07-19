@@ -9,8 +9,7 @@ import 'package:lotti/services/domain_logging.dart';
 /// Thin, safe facade that AI call sites use to record one consumption event.
 ///
 /// Compatibility callers use [record], which logs failures without changing
-/// their existing inference behavior. Output publication sagas use
-/// [recordRequired], which propagates a failed attribution barrier.
+/// their existing inference behavior.
 class AiConsumptionRecorder {
   AiConsumptionRecorder({
     required this._syncService,
@@ -37,7 +36,6 @@ class AiConsumptionRecorder {
     }
   }
 
-  /// Records evidence and propagates failures to strict publication sagas.
   Future<void> recordRequired(AiConsumptionEvent event) async {
     if (event.attributionId != null ||
         _attributionService == null ||
@@ -48,7 +46,7 @@ class AiConsumptionRecorder {
     await _recordCompatibilityAttribution(event);
   }
 
-  /// Adapts older completed-call funnels to the new evidence envelope.
+  /// Adapts older completed-call funnels to the shared attribution record.
   ///
   /// These call sites cannot yet guarantee a terminal output carrier, so the
   /// work is intentionally marked partial instead of overstating provenance.
@@ -91,8 +89,6 @@ class AiConsumptionRecorder {
           skillId: event.skillId,
           promptId: event.promptId,
         ),
-        executor: await identityResolver.executor(),
-        privacyClassification: AiPrivacyClassification.standard,
         taskId: event.taskId,
         categoryId: event.categoryId,
         attributionId:
@@ -102,7 +98,7 @@ class AiConsumptionRecorder {
             : null,
       ),
     );
-    final result = await attributionService.recordInteraction(
+    await attributionService.recordInteraction(
       attributionId: pending.id,
       event: event.copyWith(
         interactionKind:
@@ -110,18 +106,17 @@ class AiConsumptionRecorder {
         completedAt: event.completedAt ?? DateTime.now(),
       ),
     );
-    if (!result.published) return;
     if (event.responseType == AiConsumptionResponseType.agentTurn &&
         wakeRunKey != null) {
       return;
     }
-    final envelope = await attributionService.prepareCompletion(
+    final attribution = await attributionService.prepareCompletion(
       attributionId: pending.id,
       outputs: const [],
       status: AiWorkStatus.partial,
       errorCode: 'legacy_output_carrier_unavailable',
     );
-    await attributionService.finalize(envelope);
+    await attributionService.finalize(attribution);
   }
 
   AiWorkType _workType(AiConsumptionResponseType type) => switch (type) {

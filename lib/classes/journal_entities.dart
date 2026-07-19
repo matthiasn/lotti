@@ -55,7 +55,7 @@ abstract class ImageData with _$ImageData {
     required String imageFile,
     required String imageDirectory,
     Geolocation? geolocation,
-    AiTerminalAttributionEnvelope? aiAttribution,
+    AiWorkAttribution? aiAttribution,
   }) = _ImageData;
 
   factory ImageData.fromJson(Map<String, dynamic> json) =>
@@ -89,7 +89,7 @@ abstract class AudioTranscript with _$AudioTranscript {
     required String transcript,
     Duration? processingTime,
     String? id,
-    AiTerminalAttributionEnvelope? aiAttribution,
+    AiWorkAttribution? aiAttribution,
   }) = _AudioTranscript;
 
   factory AudioTranscript.fromJson(Map<String, dynamic> json) =>

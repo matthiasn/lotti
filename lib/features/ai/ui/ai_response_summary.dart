@@ -91,7 +91,7 @@ class AiResponseSummary extends StatelessWidget {
               type: AiArtifactType.journalAiResponse,
               id: aiResponse.meta.id,
             ),
-            envelope: aiResponse.data.aiAttribution,
+            attribution: aiResponse.data.aiAttribution,
           ),
         ],
       ),

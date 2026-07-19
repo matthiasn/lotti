@@ -64,7 +64,7 @@ class AudioTranscriptionService {
   Future<String> transcribe(
     String filePath, {
     List<String> speechDictionaryTerms = const [],
-    AiAttributionPendingSession? attributionSession,
+    AiAttributionSession? attributionSession,
     bool terminalizeAttributionFailure = true,
   }) => transcribeStream(
     filePath,
@@ -84,7 +84,7 @@ class AudioTranscriptionService {
   Stream<String> transcribeStream(
     String filePath, {
     List<String> speechDictionaryTerms = const [],
-    AiAttributionPendingSession? attributionSession,
+    AiAttributionSession? attributionSession,
     bool terminalizeAttributionFailure = true,
   }) async* {
     final aiRepo = ref.read(aiConfigRepositoryProvider);
@@ -179,7 +179,6 @@ class AudioTranscriptionService {
             existingSession: attributionSession,
             terminalizeSuccess: attributionSession == null,
             terminalizeFailure: terminalizeAttributionFailure,
-            privacyClassification: AiPrivacyClassification.mixed,
           );
         } on _ProviderTranscriptionFailure catch (failure) {
           throw AttributedTranscriptionException(
@@ -267,7 +266,6 @@ class AudioTranscriptionService {
             existingSession: attributionSession,
             terminalizeSuccess: attributionSession == null,
             terminalizeFailure: terminalizeAttributionFailure,
-            privacyClassification: AiPrivacyClassification.mixed,
           );
 
     try {

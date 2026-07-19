@@ -93,7 +93,7 @@ class WakeOutputWriter {
         ? null
         : sanitizeAgentReportText(reportOneLiner);
     final reportId = sanitizedContent.isEmpty ? null : _idGen.v4();
-    AiTerminalAttributionEnvelope? attributionEnvelope;
+    AiWorkAttribution? attributionEnvelope;
     if (reportId != null && getIt.isRegistered<AiAttributionService>()) {
       attributionEnvelope = await getIt<AiAttributionService>()
           .prepareCompletion(

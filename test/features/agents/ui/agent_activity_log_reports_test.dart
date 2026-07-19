@@ -102,7 +102,7 @@ void main() {
     });
 
     testWidgets('first report is expanded by default', (tester) async {
-      final envelope = makeAiTerminalEnvelope(
+      final envelope = makeAiWorkAttribution(
         attributionId: 'activity-report-attribution',
       );
       final reports = <AgentDomainEntity>[

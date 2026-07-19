@@ -28,7 +28,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
-import 'package:lotti/features/ai_consumption/service/ai_attribution_backfill_service.dart';
+import 'package:lotti/features/ai_consumption/service/attribution_carrier_projector.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_keys.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';

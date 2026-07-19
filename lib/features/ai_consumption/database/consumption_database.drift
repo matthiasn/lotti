@@ -16,18 +16,8 @@ CREATE TABLE consumption_events (
   parent_id TEXT,
   created_at DATETIME NOT NULL,
 
-  -- Logical work attribution and interaction lifecycle. Nullable/defaulted so
-  -- schema-v1 rows remain valid and legacy peers keep decoding events.
+  -- Logical work attribution. Nullable so schema-v1 rows remain valid.
   attribution_id TEXT,
-  sequence_index INTEGER NOT NULL DEFAULT 0,
-  interaction_kind TEXT,
-  interaction_status TEXT NOT NULL DEFAULT 'succeeded',
-  completed_at DATETIME,
-  provider_request_id TEXT,
-  error_code TEXT,
-  error_summary TEXT,
-  payload_id TEXT,
-  cost_id TEXT,
 
   -- Denormalized owners (snapshot at call time)
   task_id TEXT,
@@ -81,9 +71,9 @@ CREATE INDEX idx_consumption_category_created
 -- Global range scans (all categories, a time window).
 CREATE INDEX idx_consumption_created ON consumption_events(created_at);
 
--- Ordered interaction drill-down for one logical work item.
-CREATE INDEX idx_consumption_attribution_sequence
-  ON consumption_events(attribution_id, sequence_index)
+-- Interaction drill-down for one logical work item.
+CREATE INDEX idx_consumption_attribution
+  ON consumption_events(attribution_id, created_at)
   WHERE attribution_id IS NOT NULL;
 
 -- One terminal, immutable top-level audit header per logical AI work item.
@@ -95,8 +85,6 @@ CREATE TABLE ai_work_attributions (
   initiator_id TEXT NOT NULL,
   initiator_display_name TEXT NOT NULL,
   trigger_type TEXT NOT NULL,
-  executor_host_id TEXT NOT NULL,
-  privacy_classification TEXT NOT NULL,
   started_at DATETIME NOT NULL,
   completed_at DATETIME NOT NULL,
   parent_attribution_id TEXT,
@@ -122,87 +110,6 @@ CREATE INDEX idx_attribution_actor_created
   ON ai_work_attributions(initiator_id, completed_at);
 CREATE INDEX idx_attribution_type_created
   ON ai_work_attributions(work_type, completed_at);
-
--- Typed cross-database output/source/context references. The attribution FK is
--- local to ai_consumption.sqlite; artifact targets intentionally have no SQL FK.
-CREATE TABLE ai_attribution_links (
-  id TEXT NOT NULL PRIMARY KEY,
-  attribution_id TEXT NOT NULL REFERENCES ai_work_attributions(id),
-  role TEXT NOT NULL,
-  artifact_type TEXT NOT NULL,
-  artifact_id TEXT NOT NULL,
-  sub_id TEXT,
-  content_digest TEXT,
-  serialized TEXT NOT NULL
-);
-
-CREATE UNIQUE INDEX idx_attribution_link_unique
-  ON ai_attribution_links(
-    attribution_id,
-    role,
-    artifact_type,
-    artifact_id,
-    IFNULL(sub_id, '')
-  );
-CREATE INDEX idx_attribution_link_target
-  ON ai_attribution_links(artifact_type, artifact_id, sub_id);
-
--- Reference-only synchronized request/response envelope. Exact opted-in text
--- remains local-only and is never placed in the sync-safe serialized value.
-CREATE TABLE ai_interaction_payloads (
-  id TEXT NOT NULL PRIMARY KEY,
-  interaction_id TEXT NOT NULL UNIQUE,
-  capture_policy TEXT NOT NULL,
-  privacy_classification TEXT NOT NULL,
-  request_digest TEXT NOT NULL,
-  response_digest TEXT NOT NULL,
-  serialized TEXT NOT NULL
-);
-
--- Append-only exact cost evidence. Provider amounts remain decimal text;
--- reporting micros are the explicitly rounded aggregation projection.
-CREATE TABLE ai_interaction_costs (
-  id TEXT NOT NULL PRIMARY KEY,
-  interaction_id TEXT NOT NULL,
-  source TEXT NOT NULL,
-  original_amount_decimal TEXT,
-  original_unit TEXT,
-  reporting_amount_micros INTEGER,
-  reporting_currency TEXT,
-  provider_type TEXT,
-  billing_account_key TEXT,
-  billing_source TEXT,
-  external_record_id TEXT,
-  supersedes_cost_id TEXT,
-  assessed_at DATETIME NOT NULL,
-  pricing_snapshot TEXT,
-  serialized TEXT NOT NULL,
-  CHECK (
-    external_record_id IS NULL OR (
-      provider_type IS NOT NULL AND
-      billing_account_key IS NOT NULL AND
-      billing_source IS NOT NULL
-    )
-  )
-);
-
-CREATE INDEX idx_cost_interaction_assessed
-  ON ai_interaction_costs(interaction_id, assessed_at);
-CREATE UNIQUE INDEX idx_cost_external_record
-  ON ai_interaction_costs(
-    provider_type,
-    billing_account_key,
-    billing_source,
-    external_record_id
-  ) WHERE external_record_id IS NOT NULL;
-
--- Local-only crash-recovery saga state; never synchronized.
-CREATE TABLE pending_ai_attributions (
-  id TEXT NOT NULL PRIMARY KEY,
-  started_at DATETIME NOT NULL,
-  last_updated_at DATETIME NOT NULL,
-  serialized TEXT NOT NULL
-);
 
 -- ── Named queries ───────────────────────────────────────────────────────────
 

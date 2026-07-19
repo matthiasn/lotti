@@ -4,7 +4,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
@@ -120,85 +119,6 @@ void main() {
       ),
     ).thenAnswer((_) async => events);
   }
-
-  group('attribution detail providers', () {
-    final envelope = makeAiTerminalEnvelope();
-    final interaction = makeConsumptionEvent(
-      id: 'interaction-1',
-    ).copyWith(attributionId: 'attribution-1');
-    final cost = AiInteractionCost(
-      id: 'cost-1',
-      interactionId: interaction.id,
-      source: AiCostSource.providerReported,
-      assessedAt: DateTime(2026, 3, 15),
-      reportingAmountMicros: 125,
-      reportingCurrency: 'EUR',
-    );
-
-    void stubDetails(AiWorkAttribution? attribution) {
-      when(
-        () => repository.getAttribution(any()),
-      ).thenAnswer((_) async => attribution);
-      when(
-        () => repository.getAttributionForArtifact(
-          envelope.attribution.primaryOutput!,
-        ),
-      ).thenAnswer((_) async => attribution);
-      when(
-        () => repository.interactionsForAttribution(any()),
-      ).thenAnswer((_) async => [interaction]);
-      when(
-        () => repository.costsForAttribution(any()),
-      ).thenAnswer((_) async => [cost]);
-    }
-
-    test('loads attribution, interactions, and effective cost by id', () async {
-      stubDetails(envelope.attribution);
-      final container = makeContainer();
-
-      final details = await container.read(
-        aiAttributionDetailsProvider(envelope.attribution.id).future,
-      );
-
-      expect(details?.attribution, envelope.attribution);
-      expect(details?.interactions, [interaction]);
-      expect(details?.costTotals.reportingMicrosByCurrency, {'EUR': 125});
-      expect(details?.costTotals.knownInteractionCount, 1);
-    });
-
-    test(
-      'loads attribution details through an artifact reverse lookup',
-      () async {
-        stubDetails(envelope.attribution);
-        final container = makeContainer();
-
-        final details = await container.read(
-          aiAttributionForArtifactProvider(
-            envelope.attribution.primaryOutput!,
-          ).future,
-        );
-
-        expect(details?.attribution.id, envelope.attribution.id);
-        verify(
-          () => repository.getAttributionForArtifact(
-            envelope.attribution.primaryOutput!,
-          ),
-        ).called(1);
-      },
-    );
-
-    test('returns null without querying child evidence when absent', () async {
-      stubDetails(null);
-      final container = makeContainer();
-
-      expect(
-        await container.read(aiAttributionDetailsProvider('missing').future),
-        isNull,
-      );
-      verifyNever(() => repository.interactionsForAttribution(any()));
-      verifyNever(() => repository.costsForAttribution(any()));
-    });
-  });
 
   group('consumptionLedgerProvider', () {
     const range = InsightsRange(startDay: 20610, endDayExclusive: 20617);

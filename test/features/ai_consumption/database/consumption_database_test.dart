@@ -131,36 +131,17 @@ void main() {
     expect(version.read<int>('user_version'), 2);
     expect(
       columns.map((row) => row.read<String>('name')),
-      containsAll(<String>[
-        'attribution_id',
-        'sequence_index',
-        'interaction_kind',
-        'interaction_status',
-        'completed_at',
-        'provider_request_id',
-        'error_code',
-        'error_summary',
-        'payload_id',
-        'cost_id',
-      ]),
+      contains('attribution_id'),
     );
     expect(
       names,
       containsAll(<String>{
         'ai_work_attributions',
-        'ai_attribution_links',
-        'ai_interaction_payloads',
-        'ai_interaction_costs',
-        'pending_ai_attributions',
-        'idx_consumption_attribution_sequence',
+        'idx_consumption_attribution',
         'idx_attribution_output',
         'idx_attribution_task_created',
         'idx_attribution_actor_created',
         'idx_attribution_type_created',
-        'idx_attribution_link_unique',
-        'idx_attribution_link_target',
-        'idx_cost_interaction_assessed',
-        'idx_cost_external_record',
       }),
     );
   });

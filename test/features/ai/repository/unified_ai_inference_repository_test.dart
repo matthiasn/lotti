@@ -32,10 +32,8 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
-import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
 import 'package:lotti/features/journal/repository/journal_repository.dart'
@@ -1282,12 +1280,12 @@ void main() {
           mockCloudInferenceRepo,
           stream: _createMockTextStream(['done']),
         );
-        _stubCreateAiResponseEntry(mockAiInputRepo, attributed: true);
+        _stubCreateAiResponseEntry(mockAiInputRepo);
         when(
           () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
         ).thenAnswer((_) async => true);
 
-        final attribution = _registerAttributionCapture();
+        final bench = _registerInteractionCapture();
 
         await repository!.runInference(
           entityId: taskEntity.id,
@@ -1296,60 +1294,16 @@ void main() {
           onStatusChange: (_) {},
         );
 
-        final captured = verify(
-          () => attribution.service.recordInteraction(
-            attributionId: any(named: 'attributionId'),
-            event: captureAny(named: 'event'),
-          ),
-        ).captured;
+        final captured = _capturedEvents(bench);
         expect(captured, hasLength(1));
-        final event = captured.single as AiConsumptionEvent;
+        final event = captured.single;
         expect(event.entryId, taskEntity.id);
         expect(event.taskId, taskEntity.id);
         expect(event.categoryId, 'cat-1');
         expect(event.providerType, InferenceProviderType.melious);
         expect(event.responseType, AiConsumptionResponseType.promptGeneration);
-        expect(event.configId, 'provider-1');
         expect(event.modelId, 'model-1');
         expect(event.providerModelId, 'glm-5.2');
-        verify(() => attribution.service.begin(any())).called(1);
-        verify(
-          () => attribution.service.prepareCompletion(
-            attributionId: any(named: 'attributionId'),
-            outputs: any(named: 'outputs'),
-          ),
-        ).called(1);
-        verify(() => attribution.service.finalize(any())).called(1);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            id: any(named: 'id'),
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
-        _stubGenerate(
-          mockCloudInferenceRepo,
-          stream: _createMockTextStream(['not persisted']),
-        );
-
-        await expectLater(
-          repository!.runInference(
-            entityId: taskEntity.id,
-            promptConfig: promptConfig,
-            onProgress: (_) {},
-            onStatusChange: (_) {},
-          ),
-          throwsA(
-            isA<StateError>().having(
-              (error) => error.message,
-              'message',
-              contains('Failed to persist attributed AI response'),
-            ),
-          ),
-        );
       });
 
       test(
@@ -1412,7 +1366,6 @@ void main() {
             ),
             impact: const MeliousCallImpact(
               costCredits: 1.25,
-              costCreditsDecimal: '1.250000',
               energyKwh: 0.004,
               carbonGCo2: 3.2,
               waterLiters: 0.8,
@@ -1422,12 +1375,12 @@ void main() {
               providerId: 'upstream-glm',
             ),
           );
-          _stubCreateAiResponseEntry(mockAiInputRepo, attributed: true);
+          _stubCreateAiResponseEntry(mockAiInputRepo);
           when(
             () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
           ).thenAnswer((_) async => true);
 
-          final attribution = _registerAttributionCapture();
+          final bench = _registerInteractionCapture();
 
           await repository!.runInference(
             entityId: taskEntity.id,
@@ -1436,14 +1389,7 @@ void main() {
             onStatusChange: (_) {},
           );
 
-          final event =
-              verify(
-                    () => attribution.service.recordInteraction(
-                      attributionId: any(named: 'attributionId'),
-                      event: captureAny(named: 'event'),
-                    ),
-                  ).captured.single
-                  as AiConsumptionEvent;
+          final event = _capturedEvents(bench).single;
           expect(event.promptId, 'prompt-1');
           expect(event.durationMs, isNotNull);
           expect(event.inputTokens, 150);
@@ -1452,8 +1398,6 @@ void main() {
           expect(event.thoughtsTokens, 25);
           expect(event.totalTokens, 210);
           expect(event.credits, 1.25);
-          expect(event.cost?.originalAmountDecimal, '1.250000');
-          expect(event.cost?.reportingAmountMicros, 1250000);
           expect(event.energyKwh, 0.004);
           expect(event.carbonGCo2, 3.2);
           expect(event.waterLiters, 0.8);
@@ -3227,37 +3171,6 @@ void main() {
               apiKey: 'test-api-key',
             ),
           ).called(1);
-
-          _stubCreateAiResponseEntry(mockAiInputRepo, attributed: true);
-          _stubGenerateWithImages(
-            mockCloudInferenceRepo,
-            stream: _createMockTextStream(['Attributed analysis']),
-          );
-          final attribution = _registerAttributionCapture();
-
-          await repository!.runInference(
-            entityId: 'test-id',
-            promptConfig: promptConfig,
-            onProgress: (_) {},
-            onStatusChange: (_) {},
-          );
-
-          final startCommand =
-              verify(
-                    () => attribution.service.begin(captureAny()),
-                  ).captured.single
-                  as AiAttributionStart;
-          expect(startCommand.workType, AiWorkType.imageAnalysis);
-          verify(
-            () => mockAiInputRepo.createAiResponseEntry(
-              id: any(named: 'id'),
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: 'test-id',
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).called(1);
-          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
         } finally {
           // Clean up the temporary directory
           tempDir.deleteSync(recursive: true);
@@ -6964,69 +6877,19 @@ Take into account the following task context:
             stream: _createMockTextStream(['Transcribed text']),
           );
           _stubCreateAiResponseEntry(mockAiInputRepo);
-          final attribution = _registerAttributionCapture();
 
           final statusChanges = <InferenceStatus>[];
-          await expectLater(
-            repository!.runInference(
-              entityId: 'test-id',
-              promptConfig: promptConfig,
-              onProgress: (_) {},
-              onStatusChange: statusChanges.add,
-            ),
-            throwsA(isA<Exception>()),
-          );
-
-          expect(statusChanges, [InferenceStatus.running]);
-          final completions = verify(
-            () => attribution.service.prepareCompletion(
-              attributionId: any(named: 'attributionId'),
-              outputs: captureAny(named: 'outputs'),
-              status: captureAny(named: 'status'),
-              errorCode: any(named: 'errorCode'),
-            ),
-          ).captured;
-          expect(
-            completions.whereType<List<AiArtifactReference>>().any(
-              (outputs) => outputs.single.type == AiArtifactType.journalAudio,
-            ),
-            isTrue,
-          );
-          expect(completions, contains(AiWorkStatus.failed));
-
-          clearInteractions(attribution.service);
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => false);
-          _stubGenerateWithAudio(
-            mockCloudInferenceRepo,
-            stream: _createMockTextStream(['Still not persisted']),
-          );
-          await expectLater(
-            repository!.runInference(
-              entityId: 'test-id',
-              promptConfig: promptConfig,
-              onProgress: (_) {},
-              onStatusChange: (_) {},
-            ),
-            throwsA(isA<StateError>()),
-          );
-
-          clearInteractions(attribution.service);
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
-          _stubGenerateWithAudio(
-            mockCloudInferenceRepo,
-            stream: _createMockTextStream(['Persisted transcript']),
-          );
           await repository!.runInference(
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: (_) {},
-            onStatusChange: (_) {},
+            onStatusChange: statusChanges.add,
           );
-          verify(() => attribution.service.finalize(any())).called(1);
+
+          expect(statusChanges, [
+            InferenceStatus.running,
+            InferenceStatus.idle,
+          ]);
         },
       );
     },
@@ -8348,10 +8211,20 @@ Stream<CreateChatCompletionStreamResponse> _createMockTextStream(
   ]);
 }
 
-AiInteractionCaptureTestBench _registerAttributionCapture() {
+AiInteractionCaptureTestBench _registerInteractionCapture() {
   final bench = AiInteractionCaptureTestBench.create()..register();
+  addTearDown(bench.unregister);
   return bench;
 }
+
+List<AiConsumptionEvent> _capturedEvents(
+  AiInteractionCaptureTestBench bench,
+) => verify(
+  () => bench.service.recordInteraction(
+    attributionId: any(named: 'attributionId'),
+    event: captureAny(named: 'event'),
+  ),
+).captured.cast<AiConsumptionEvent>();
 
 /// Stubs `CloudInferenceRepository.generate` to return [stream]. When
 /// [impact] is given, the stub writes it into the `InferenceImpactCollector`
@@ -8452,42 +8325,31 @@ void _stubInferenceContext({
   ).thenAnswer((_) async => taskDetailsJson);
 }
 
-/// Stubs `AiInputRepository.createAiResponseEntry`.
-///
-/// Attributed runs require a durable carrier and therefore receive a concrete
-/// response entry with the caller-supplied output ID. Legacy test paths retain
-/// the historical null result.
-void _stubCreateAiResponseEntry(
-  MockAiInputRepository mock, {
-  bool attributed = false,
-}) {
-  if (attributed) {
-    when(
-      () => mock.createAiResponseEntry(
-        id: any(named: 'id'),
-        data: any(named: 'data'),
-        start: any(named: 'start'),
-        linkedId: any(named: 'linkedId'),
-        categoryId: any(named: 'categoryId'),
-      ),
-    ).thenAnswer((invocation) async {
-      return AiResponseEntry(
-        meta: _createMetadata(
-          id: invocation.namedArguments[#id] as String,
-        ),
-        data: invocation.namedArguments[#data] as AiResponseData,
-      );
-    });
-    return;
-  }
+/// Stubs `AiInputRepository.createAiResponseEntry` to return null.
+void _stubCreateAiResponseEntry(MockAiInputRepository mock) {
   when(
     () => mock.createAiResponseEntry(
+      id: any(named: 'id'),
       data: any(named: 'data'),
       start: any(named: 'start'),
       linkedId: any(named: 'linkedId'),
       categoryId: any(named: 'categoryId'),
     ),
-  ).thenAnswer((_) async => null);
+  ).thenAnswer((invocation) async {
+    final start = invocation.namedArguments[#start] as DateTime;
+    return JournalEntity.aiResponse(
+          meta: Metadata(
+            id: invocation.namedArguments[#id] as String? ?? 'ai-response-1',
+            createdAt: start,
+            updatedAt: start,
+            dateFrom: start,
+            dateTo: start,
+            categoryId: invocation.namedArguments[#categoryId] as String?,
+          ),
+          data: invocation.namedArguments[#data] as AiResponseData,
+        )
+        as AiResponseEntry;
+  });
 }
 
 CreateChatCompletionStreamResponse _createStreamChunkWithToolCalls(

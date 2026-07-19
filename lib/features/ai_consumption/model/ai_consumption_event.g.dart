@@ -22,7 +22,6 @@ _AiConsumptionEvent _$AiConsumptionEventFromJson(Map<String, dynamic> json) =>
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
       attributionId: json['attributionId'] as String?,
-      sequenceIndex: (json['sequenceIndex'] as num?)?.toInt() ?? 0,
       interactionKind: $enumDecodeNullable(
         _$AiInteractionKindEnumMap,
         json['interactionKind'],
@@ -39,19 +38,10 @@ _AiConsumptionEvent _$AiConsumptionEventFromJson(Map<String, dynamic> json) =>
       providerRequestId: json['providerRequestId'] as String?,
       errorCode: json['errorCode'] as String?,
       errorSummary: json['errorSummary'] as String?,
-      payload: json['payload'] == null
-          ? null
-          : AiInteractionPayload.fromJson(
-              json['payload'] as Map<String, dynamic>,
-            ),
-      cost: json['cost'] == null
-          ? null
-          : AiInteractionCost.fromJson(json['cost'] as Map<String, dynamic>),
-      recoveryCapsule: json['recoveryCapsule'] == null
-          ? null
-          : AiAttributionRecoveryCapsule.fromJson(
-              json['recoveryCapsule'] as Map<String, dynamic>,
-            ),
+      requestDigest: json['requestDigest'] as String?,
+      responseDigest: json['responseDigest'] as String?,
+      interactionParameters:
+          json['interactionParameters'] as Map<String, dynamic>?,
       parentId: json['parentId'] as String?,
       taskId: json['taskId'] as String?,
       categoryId: json['categoryId'] as String?,
@@ -72,6 +62,7 @@ _AiConsumptionEvent _$AiConsumptionEventFromJson(Map<String, dynamic> json) =>
       thoughtsTokens: (json['thoughtsTokens'] as num?)?.toInt(),
       totalTokens: (json['totalTokens'] as num?)?.toInt(),
       credits: (json['credits'] as num?)?.toDouble(),
+      costCreditsDecimal: json['costCreditsDecimal'] as String?,
       energyKwh: (json['energyKwh'] as num?)?.toDouble(),
       carbonGCo2: (json['carbonGCo2'] as num?)?.toDouble(),
       waterLiters: (json['waterLiters'] as num?)?.toDouble(),
@@ -90,7 +81,6 @@ Map<String, dynamic> _$AiConsumptionEventToJson(
   'responseType': _$AiConsumptionResponseTypeEnumMap[instance.responseType]!,
   'vectorClock': instance.vectorClock,
   'attributionId': instance.attributionId,
-  'sequenceIndex': instance.sequenceIndex,
   'interactionKind': _$AiInteractionKindEnumMap[instance.interactionKind],
   'interactionStatus':
       _$AiInteractionStatusEnumMap[instance.interactionStatus]!,
@@ -98,9 +88,9 @@ Map<String, dynamic> _$AiConsumptionEventToJson(
   'providerRequestId': instance.providerRequestId,
   'errorCode': instance.errorCode,
   'errorSummary': instance.errorSummary,
-  'payload': instance.payload,
-  'cost': instance.cost,
-  'recoveryCapsule': instance.recoveryCapsule,
+  'requestDigest': instance.requestDigest,
+  'responseDigest': instance.responseDigest,
+  'interactionParameters': instance.interactionParameters,
   'parentId': instance.parentId,
   'taskId': instance.taskId,
   'categoryId': instance.categoryId,
@@ -121,6 +111,7 @@ Map<String, dynamic> _$AiConsumptionEventToJson(
   'thoughtsTokens': instance.thoughtsTokens,
   'totalTokens': instance.totalTokens,
   'credits': instance.credits,
+  'costCreditsDecimal': instance.costCreditsDecimal,
   'energyKwh': instance.energyKwh,
   'carbonGCo2': instance.carbonGCo2,
   'waterLiters': instance.waterLiters,

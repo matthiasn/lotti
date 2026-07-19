@@ -267,7 +267,7 @@ abstract class AiResponseData with _$AiResponseData {
     int? cachedInputTokens,
     // Processing duration in milliseconds
     int? durationMs,
-    AiTerminalAttributionEnvelope? aiAttribution,
+    AiWorkAttribution? aiAttribution,
   }) = _AiResponseData;
 
   factory AiResponseData.fromJson(Map<String, dynamic> json) =>

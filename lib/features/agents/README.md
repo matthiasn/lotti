@@ -92,23 +92,21 @@ Startup does this:
   that arrives during inference remains visibly stale and is not erased by the
   older wake finishing later.
 - Every agent report carrier receives AI-consumption provenance. Task agents
-  publish through `WakeOutputWriter`; project and event workflows apply the
-  same evidence barrier directly in their report transaction. The terminal
-  envelope is stored under `provenance[aiAttributionV1]`, linking the
-  creator/trigger, all turns in the wake, cost evidence, and the report output.
+  publish through `WakeOutputWriter`; project and event workflows use the same
+  report-carrier pattern. Attribution is stored under
+  `provenance[aiAttributionV1]`, linking the creator/trigger, calls in the wake,
+  actual provider-reported cost, and the report output.
   `ReportInferenceProvenance` separately snapshots model routing and runtime
   settings without credentials or endpoint URLs. The wake run key
   deterministically groups initial calls, tool continuations, and forced-report
-  retries into one attribution. Historical reports are conservatively
-  backfilled as partial instead of borrowing the current setup.
-- Agent turn recording uses the required publication path. A wake cannot write
-  a report if interaction evidence failed to cross the sync publication
-  barrier, and no report writer falls back to an unattributed report. A wake
-  that produces no report terminalizes its deterministic owner as failed or
-  partial instead of leaking pending state.
+  retries into one attribution. Historical reports are not assigned guessed
+  creator or cost data.
+- Agent turn recording persists consumption independently from the report.
+  The report carrier is authoritative and the local attribution projection is
+  updated after the report write.
   Log-compaction inference is a separate carrier-less AI operation captured
   before each backend call and terminalized as partial because its checkpoint
-  format has no attribution envelope.
+  format has no attribution record.
 - Linked task context for agents is built directly in
   `TaskAgentContextBuilder.buildLinkedTasksContextJson` (the wake's prompt/context
   collaborator, which `TaskAgentWorkflow` holds and delegates to; forked from

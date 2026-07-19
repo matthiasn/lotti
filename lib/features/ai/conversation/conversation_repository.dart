@@ -268,7 +268,7 @@ class ConversationRepository extends Notifier<void> {
     final capture = getIt.isRegistered<AiInteractionCapture>()
         ? getIt<AiInteractionCapture>()
         : null;
-    AiAttributionPendingSession? attributionSession;
+    AiAttributionSession? attributionSession;
     if (capture != null) {
       final agentId = consumptionAgentId;
       final initiator = agentId == null
@@ -292,15 +292,6 @@ class ConversationRepository extends Notifier<void> {
         attributionId: consumptionWakeRunKey == null
             ? null
             : agentWakeAttributionId(consumptionWakeRunKey),
-        privacyClassification: AiPrivacyClassification.mixed,
-        sources: consumptionTaskId == null
-            ? const []
-            : [
-                AiArtifactReference(
-                  type: AiArtifactType.journalEntry,
-                  id: consumptionTaskId,
-                ),
-              ],
         taskId: consumptionTaskId,
         categoryId: consumptionCategoryId,
       );
@@ -396,7 +387,6 @@ class ConversationRepository extends Notifier<void> {
                   existingSession: attributionSession,
                   terminalizeSuccess: false,
                   terminalizeFailure: false,
-                  privacyClassification: AiPrivacyClassification.mixed,
                   taskId: consumptionTaskId,
                   categoryId: consumptionCategoryId,
                 );

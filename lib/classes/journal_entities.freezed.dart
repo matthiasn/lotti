@@ -325,7 +325,7 @@ as bool?,
 /// @nodoc
 mixin _$ImageData {
 
- DateTime get capturedAt; String get imageId; String get imageFile; String get imageDirectory; Geolocation? get geolocation; AiTerminalAttributionEnvelope? get aiAttribution;
+ DateTime get capturedAt; String get imageId; String get imageFile; String get imageDirectory; Geolocation? get geolocation; AiWorkAttribution? get aiAttribution;
 /// Create a copy of ImageData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -358,11 +358,11 @@ abstract mixin class $ImageDataCopyWith<$Res>  {
   factory $ImageDataCopyWith(ImageData value, $Res Function(ImageData) _then) = _$ImageDataCopyWithImpl;
 @useResult
 $Res call({
- DateTime capturedAt, String imageId, String imageFile, String imageDirectory, Geolocation? geolocation, AiTerminalAttributionEnvelope? aiAttribution
+ DateTime capturedAt, String imageId, String imageFile, String imageDirectory, Geolocation? geolocation, AiWorkAttribution? aiAttribution
 });
 
 
-$GeolocationCopyWith<$Res>? get geolocation;$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution;
+$GeolocationCopyWith<$Res>? get geolocation;$AiWorkAttributionCopyWith<$Res>? get aiAttribution;
 
 }
 /// @nodoc
@@ -383,7 +383,7 @@ as String,imageFile: null == imageFile ? _self.imageFile : imageFile // ignore: 
 as String,imageDirectory: null == imageDirectory ? _self.imageDirectory : imageDirectory // ignore: cast_nullable_to_non_nullable
 as String,geolocation: freezed == geolocation ? _self.geolocation : geolocation // ignore: cast_nullable_to_non_nullable
 as Geolocation?,aiAttribution: freezed == aiAttribution ? _self.aiAttribution : aiAttribution // ignore: cast_nullable_to_non_nullable
-as AiTerminalAttributionEnvelope?,
+as AiWorkAttribution?,
   ));
 }
 /// Create a copy of ImageData
@@ -402,12 +402,12 @@ $GeolocationCopyWith<$Res>? get geolocation {
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution {
+$AiWorkAttributionCopyWith<$Res>? get aiAttribution {
     if (_self.aiAttribution == null) {
     return null;
   }
 
-  return $AiTerminalAttributionEnvelopeCopyWith<$Res>(_self.aiAttribution!, (value) {
+  return $AiWorkAttributionCopyWith<$Res>(_self.aiAttribution!, (value) {
     return _then(_self.copyWith(aiAttribution: value));
   });
 }
@@ -492,7 +492,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiTerminalAttributionEnvelope? aiAttribution)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiWorkAttribution? aiAttribution)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ImageData() when $default != null:
 return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation,_that.aiAttribution);case _:
@@ -513,7 +513,7 @@ return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirect
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiTerminalAttributionEnvelope? aiAttribution)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiWorkAttribution? aiAttribution)  $default,) {final _that = this;
 switch (_that) {
 case _ImageData():
 return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation,_that.aiAttribution);case _:
@@ -533,7 +533,7 @@ return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirect
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiTerminalAttributionEnvelope? aiAttribution)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime capturedAt,  String imageId,  String imageFile,  String imageDirectory,  Geolocation? geolocation,  AiWorkAttribution? aiAttribution)?  $default,) {final _that = this;
 switch (_that) {
 case _ImageData() when $default != null:
 return $default(_that.capturedAt,_that.imageId,_that.imageFile,_that.imageDirectory,_that.geolocation,_that.aiAttribution);case _:
@@ -556,7 +556,7 @@ class _ImageData implements ImageData {
 @override final  String imageFile;
 @override final  String imageDirectory;
 @override final  Geolocation? geolocation;
-@override final  AiTerminalAttributionEnvelope? aiAttribution;
+@override final  AiWorkAttribution? aiAttribution;
 
 /// Create a copy of ImageData
 /// with the given fields replaced by the non-null parameter values.
@@ -591,11 +591,11 @@ abstract mixin class _$ImageDataCopyWith<$Res> implements $ImageDataCopyWith<$Re
   factory _$ImageDataCopyWith(_ImageData value, $Res Function(_ImageData) _then) = __$ImageDataCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime capturedAt, String imageId, String imageFile, String imageDirectory, Geolocation? geolocation, AiTerminalAttributionEnvelope? aiAttribution
+ DateTime capturedAt, String imageId, String imageFile, String imageDirectory, Geolocation? geolocation, AiWorkAttribution? aiAttribution
 });
 
 
-@override $GeolocationCopyWith<$Res>? get geolocation;@override $AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution;
+@override $GeolocationCopyWith<$Res>? get geolocation;@override $AiWorkAttributionCopyWith<$Res>? get aiAttribution;
 
 }
 /// @nodoc
@@ -616,7 +616,7 @@ as String,imageFile: null == imageFile ? _self.imageFile : imageFile // ignore: 
 as String,imageDirectory: null == imageDirectory ? _self.imageDirectory : imageDirectory // ignore: cast_nullable_to_non_nullable
 as String,geolocation: freezed == geolocation ? _self.geolocation : geolocation // ignore: cast_nullable_to_non_nullable
 as Geolocation?,aiAttribution: freezed == aiAttribution ? _self.aiAttribution : aiAttribution // ignore: cast_nullable_to_non_nullable
-as AiTerminalAttributionEnvelope?,
+as AiWorkAttribution?,
   ));
 }
 
@@ -636,12 +636,12 @@ $GeolocationCopyWith<$Res>? get geolocation {
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution {
+$AiWorkAttributionCopyWith<$Res>? get aiAttribution {
     if (_self.aiAttribution == null) {
     return null;
   }
 
-  return $AiTerminalAttributionEnvelopeCopyWith<$Res>(_self.aiAttribution!, (value) {
+  return $AiWorkAttributionCopyWith<$Res>(_self.aiAttribution!, (value) {
     return _then(_self.copyWith(aiAttribution: value));
   });
 }
@@ -943,7 +943,7 @@ as List<AudioTranscript>?,
 /// @nodoc
 mixin _$AudioTranscript {
 
- DateTime get created; String get library; String get model; String get detectedLanguage; String get transcript; Duration? get processingTime; String? get id; AiTerminalAttributionEnvelope? get aiAttribution;
+ DateTime get created; String get library; String get model; String get detectedLanguage; String get transcript; Duration? get processingTime; String? get id; AiWorkAttribution? get aiAttribution;
 /// Create a copy of AudioTranscript
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -976,11 +976,11 @@ abstract mixin class $AudioTranscriptCopyWith<$Res>  {
   factory $AudioTranscriptCopyWith(AudioTranscript value, $Res Function(AudioTranscript) _then) = _$AudioTranscriptCopyWithImpl;
 @useResult
 $Res call({
- DateTime created, String library, String model, String detectedLanguage, String transcript, Duration? processingTime, String? id, AiTerminalAttributionEnvelope? aiAttribution
+ DateTime created, String library, String model, String detectedLanguage, String transcript, Duration? processingTime, String? id, AiWorkAttribution? aiAttribution
 });
 
 
-$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution;
+$AiWorkAttributionCopyWith<$Res>? get aiAttribution;
 
 }
 /// @nodoc
@@ -1003,19 +1003,19 @@ as String,transcript: null == transcript ? _self.transcript : transcript // igno
 as String,processingTime: freezed == processingTime ? _self.processingTime : processingTime // ignore: cast_nullable_to_non_nullable
 as Duration?,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String?,aiAttribution: freezed == aiAttribution ? _self.aiAttribution : aiAttribution // ignore: cast_nullable_to_non_nullable
-as AiTerminalAttributionEnvelope?,
+as AiWorkAttribution?,
   ));
 }
 /// Create a copy of AudioTranscript
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution {
+$AiWorkAttributionCopyWith<$Res>? get aiAttribution {
     if (_self.aiAttribution == null) {
     return null;
   }
 
-  return $AiTerminalAttributionEnvelopeCopyWith<$Res>(_self.aiAttribution!, (value) {
+  return $AiWorkAttributionCopyWith<$Res>(_self.aiAttribution!, (value) {
     return _then(_self.copyWith(aiAttribution: value));
   });
 }
@@ -1100,7 +1100,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime created,  String library,  String model,  String detectedLanguage,  String transcript,  Duration? processingTime,  String? id,  AiTerminalAttributionEnvelope? aiAttribution)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime created,  String library,  String model,  String detectedLanguage,  String transcript,  Duration? processingTime,  String? id,  AiWorkAttribution? aiAttribution)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AudioTranscript() when $default != null:
 return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_that.transcript,_that.processingTime,_that.id,_that.aiAttribution);case _:
@@ -1121,7 +1121,7 @@ return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime created,  String library,  String model,  String detectedLanguage,  String transcript,  Duration? processingTime,  String? id,  AiTerminalAttributionEnvelope? aiAttribution)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime created,  String library,  String model,  String detectedLanguage,  String transcript,  Duration? processingTime,  String? id,  AiWorkAttribution? aiAttribution)  $default,) {final _that = this;
 switch (_that) {
 case _AudioTranscript():
 return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_that.transcript,_that.processingTime,_that.id,_that.aiAttribution);case _:
@@ -1141,7 +1141,7 @@ return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime created,  String library,  String model,  String detectedLanguage,  String transcript,  Duration? processingTime,  String? id,  AiTerminalAttributionEnvelope? aiAttribution)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime created,  String library,  String model,  String detectedLanguage,  String transcript,  Duration? processingTime,  String? id,  AiWorkAttribution? aiAttribution)?  $default,) {final _that = this;
 switch (_that) {
 case _AudioTranscript() when $default != null:
 return $default(_that.created,_that.library,_that.model,_that.detectedLanguage,_that.transcript,_that.processingTime,_that.id,_that.aiAttribution);case _:
@@ -1166,7 +1166,7 @@ class _AudioTranscript implements AudioTranscript {
 @override final  String transcript;
 @override final  Duration? processingTime;
 @override final  String? id;
-@override final  AiTerminalAttributionEnvelope? aiAttribution;
+@override final  AiWorkAttribution? aiAttribution;
 
 /// Create a copy of AudioTranscript
 /// with the given fields replaced by the non-null parameter values.
@@ -1201,11 +1201,11 @@ abstract mixin class _$AudioTranscriptCopyWith<$Res> implements $AudioTranscript
   factory _$AudioTranscriptCopyWith(_AudioTranscript value, $Res Function(_AudioTranscript) _then) = __$AudioTranscriptCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime created, String library, String model, String detectedLanguage, String transcript, Duration? processingTime, String? id, AiTerminalAttributionEnvelope? aiAttribution
+ DateTime created, String library, String model, String detectedLanguage, String transcript, Duration? processingTime, String? id, AiWorkAttribution? aiAttribution
 });
 
 
-@override $AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution;
+@override $AiWorkAttributionCopyWith<$Res>? get aiAttribution;
 
 }
 /// @nodoc
@@ -1228,7 +1228,7 @@ as String,transcript: null == transcript ? _self.transcript : transcript // igno
 as String,processingTime: freezed == processingTime ? _self.processingTime : processingTime // ignore: cast_nullable_to_non_nullable
 as Duration?,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String?,aiAttribution: freezed == aiAttribution ? _self.aiAttribution : aiAttribution // ignore: cast_nullable_to_non_nullable
-as AiTerminalAttributionEnvelope?,
+as AiWorkAttribution?,
   ));
 }
 
@@ -1236,12 +1236,12 @@ as AiTerminalAttributionEnvelope?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution {
+$AiWorkAttributionCopyWith<$Res>? get aiAttribution {
     if (_self.aiAttribution == null) {
     return null;
   }
 
-  return $AiTerminalAttributionEnvelopeCopyWith<$Res>(_self.aiAttribution!, (value) {
+  return $AiWorkAttributionCopyWith<$Res>(_self.aiAttribution!, (value) {
     return _then(_self.copyWith(aiAttribution: value));
   });
 }

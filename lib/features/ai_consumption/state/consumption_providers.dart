@@ -5,7 +5,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/ai_consumption/logic/attribution_cost.dart';
 import 'package:lotti/features/ai_consumption/logic/consumption_bucketing.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
@@ -32,14 +31,10 @@ class AiAttributionDetails {
   const AiAttributionDetails({
     required this.attribution,
     required this.interactions,
-    required this.costTotals,
-    this.costAssessments = const [],
   });
 
   final AiWorkAttribution attribution;
   final List<AiConsumptionEvent> interactions;
-  final AiCostTotals costTotals;
-  final List<AiInteractionCost> costAssessments;
 }
 
 Future<AiAttributionDetails?> _fetchAttributionDetails(
@@ -50,12 +45,9 @@ Future<AiAttributionDetails?> _fetchAttributionDetails(
   final interactions = await repository.interactionsForAttribution(
     attribution.id,
   );
-  final costs = await repository.costsForAttribution(attribution.id);
   return AiAttributionDetails(
     attribution: attribution,
     interactions: interactions,
-    costTotals: aggregateEffectiveCosts(costs),
-    costAssessments: costs,
   );
 }
 

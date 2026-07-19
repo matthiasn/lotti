@@ -51,107 +51,6 @@ class ConsumptionEvents extends Table
     requiredDuringInsert: false,
     $customConstraints: '',
   );
-  static const VerificationMeta _sequenceIndexMeta = const VerificationMeta(
-    'sequenceIndex',
-  );
-  late final GeneratedColumn<int> sequenceIndex = GeneratedColumn<int>(
-    'sequence_index',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    $customConstraints: 'NOT NULL DEFAULT 0',
-    defaultValue: const CustomExpression('0'),
-  );
-  static const VerificationMeta _interactionKindMeta = const VerificationMeta(
-    'interactionKind',
-  );
-  late final GeneratedColumn<String> interactionKind = GeneratedColumn<String>(
-    'interaction_kind',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _interactionStatusMeta = const VerificationMeta(
-    'interactionStatus',
-  );
-  late final GeneratedColumn<String> interactionStatus =
-      GeneratedColumn<String>(
-        'interaction_status',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-        $customConstraints: 'NOT NULL DEFAULT \'succeeded\'',
-        defaultValue: const CustomExpression('\'succeeded\''),
-      );
-  static const VerificationMeta _completedAtMeta = const VerificationMeta(
-    'completedAt',
-  );
-  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
-    'completed_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _providerRequestIdMeta = const VerificationMeta(
-    'providerRequestId',
-  );
-  late final GeneratedColumn<String> providerRequestId =
-      GeneratedColumn<String>(
-        'provider_request_id',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-        $customConstraints: '',
-      );
-  static const VerificationMeta _errorCodeMeta = const VerificationMeta(
-    'errorCode',
-  );
-  late final GeneratedColumn<String> errorCode = GeneratedColumn<String>(
-    'error_code',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _errorSummaryMeta = const VerificationMeta(
-    'errorSummary',
-  );
-  late final GeneratedColumn<String> errorSummary = GeneratedColumn<String>(
-    'error_summary',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _payloadIdMeta = const VerificationMeta(
-    'payloadId',
-  );
-  late final GeneratedColumn<String> payloadId = GeneratedColumn<String>(
-    'payload_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _costIdMeta = const VerificationMeta('costId');
-  late final GeneratedColumn<String> costId = GeneratedColumn<String>(
-    'cost_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
   static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
   late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
     'task_id',
@@ -485,15 +384,6 @@ class ConsumptionEvents extends Table
     parentId,
     createdAt,
     attributionId,
-    sequenceIndex,
-    interactionKind,
-    interactionStatus,
-    completedAt,
-    providerRequestId,
-    errorCode,
-    errorSummary,
-    payloadId,
-    costId,
     taskId,
     categoryId,
     entryId,
@@ -563,78 +453,6 @@ class ConsumptionEvents extends Table
           data['attribution_id']!,
           _attributionIdMeta,
         ),
-      );
-    }
-    if (data.containsKey('sequence_index')) {
-      context.handle(
-        _sequenceIndexMeta,
-        sequenceIndex.isAcceptableOrUnknown(
-          data['sequence_index']!,
-          _sequenceIndexMeta,
-        ),
-      );
-    }
-    if (data.containsKey('interaction_kind')) {
-      context.handle(
-        _interactionKindMeta,
-        interactionKind.isAcceptableOrUnknown(
-          data['interaction_kind']!,
-          _interactionKindMeta,
-        ),
-      );
-    }
-    if (data.containsKey('interaction_status')) {
-      context.handle(
-        _interactionStatusMeta,
-        interactionStatus.isAcceptableOrUnknown(
-          data['interaction_status']!,
-          _interactionStatusMeta,
-        ),
-      );
-    }
-    if (data.containsKey('completed_at')) {
-      context.handle(
-        _completedAtMeta,
-        completedAt.isAcceptableOrUnknown(
-          data['completed_at']!,
-          _completedAtMeta,
-        ),
-      );
-    }
-    if (data.containsKey('provider_request_id')) {
-      context.handle(
-        _providerRequestIdMeta,
-        providerRequestId.isAcceptableOrUnknown(
-          data['provider_request_id']!,
-          _providerRequestIdMeta,
-        ),
-      );
-    }
-    if (data.containsKey('error_code')) {
-      context.handle(
-        _errorCodeMeta,
-        errorCode.isAcceptableOrUnknown(data['error_code']!, _errorCodeMeta),
-      );
-    }
-    if (data.containsKey('error_summary')) {
-      context.handle(
-        _errorSummaryMeta,
-        errorSummary.isAcceptableOrUnknown(
-          data['error_summary']!,
-          _errorSummaryMeta,
-        ),
-      );
-    }
-    if (data.containsKey('payload_id')) {
-      context.handle(
-        _payloadIdMeta,
-        payloadId.isAcceptableOrUnknown(data['payload_id']!, _payloadIdMeta),
-      );
-    }
-    if (data.containsKey('cost_id')) {
-      context.handle(
-        _costIdMeta,
-        costId.isAcceptableOrUnknown(data['cost_id']!, _costIdMeta),
       );
     }
     if (data.containsKey('task_id')) {
@@ -890,42 +708,6 @@ class ConsumptionEvents extends Table
         DriftSqlType.string,
         data['${effectivePrefix}attribution_id'],
       ),
-      sequenceIndex: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}sequence_index'],
-      )!,
-      interactionKind: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}interaction_kind'],
-      ),
-      interactionStatus: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}interaction_status'],
-      )!,
-      completedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}completed_at'],
-      ),
-      providerRequestId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}provider_request_id'],
-      ),
-      errorCode: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}error_code'],
-      ),
-      errorSummary: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}error_summary'],
-      ),
-      payloadId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}payload_id'],
-      ),
-      costId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}cost_id'],
-      ),
       taskId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}task_id'],
@@ -1064,18 +846,8 @@ class ConsumptionEvent extends DataClass
   final String? parentId;
   final DateTime createdAt;
 
-  /// Logical work attribution and interaction lifecycle. Nullable/defaulted so
-  /// schema-v1 rows remain valid and legacy peers keep decoding events.
+  /// Logical work attribution. Nullable so schema-v1 rows remain valid.
   final String? attributionId;
-  final int sequenceIndex;
-  final String? interactionKind;
-  final String interactionStatus;
-  final DateTime? completedAt;
-  final String? providerRequestId;
-  final String? errorCode;
-  final String? errorSummary;
-  final String? payloadId;
-  final String? costId;
 
   /// Denormalized owners (snapshot at call time)
   final String? taskId;
@@ -1119,15 +891,6 @@ class ConsumptionEvent extends DataClass
     this.parentId,
     required this.createdAt,
     this.attributionId,
-    required this.sequenceIndex,
-    this.interactionKind,
-    required this.interactionStatus,
-    this.completedAt,
-    this.providerRequestId,
-    this.errorCode,
-    this.errorSummary,
-    this.payloadId,
-    this.costId,
     this.taskId,
     this.categoryId,
     this.entryId,
@@ -1169,29 +932,6 @@ class ConsumptionEvent extends DataClass
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || attributionId != null) {
       map['attribution_id'] = Variable<String>(attributionId);
-    }
-    map['sequence_index'] = Variable<int>(sequenceIndex);
-    if (!nullToAbsent || interactionKind != null) {
-      map['interaction_kind'] = Variable<String>(interactionKind);
-    }
-    map['interaction_status'] = Variable<String>(interactionStatus);
-    if (!nullToAbsent || completedAt != null) {
-      map['completed_at'] = Variable<DateTime>(completedAt);
-    }
-    if (!nullToAbsent || providerRequestId != null) {
-      map['provider_request_id'] = Variable<String>(providerRequestId);
-    }
-    if (!nullToAbsent || errorCode != null) {
-      map['error_code'] = Variable<String>(errorCode);
-    }
-    if (!nullToAbsent || errorSummary != null) {
-      map['error_summary'] = Variable<String>(errorSummary);
-    }
-    if (!nullToAbsent || payloadId != null) {
-      map['payload_id'] = Variable<String>(payloadId);
-    }
-    if (!nullToAbsent || costId != null) {
-      map['cost_id'] = Variable<String>(costId);
     }
     if (!nullToAbsent || taskId != null) {
       map['task_id'] = Variable<String>(taskId);
@@ -1288,29 +1028,6 @@ class ConsumptionEvent extends DataClass
       attributionId: attributionId == null && nullToAbsent
           ? const Value.absent()
           : Value(attributionId),
-      sequenceIndex: Value(sequenceIndex),
-      interactionKind: interactionKind == null && nullToAbsent
-          ? const Value.absent()
-          : Value(interactionKind),
-      interactionStatus: Value(interactionStatus),
-      completedAt: completedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(completedAt),
-      providerRequestId: providerRequestId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(providerRequestId),
-      errorCode: errorCode == null && nullToAbsent
-          ? const Value.absent()
-          : Value(errorCode),
-      errorSummary: errorSummary == null && nullToAbsent
-          ? const Value.absent()
-          : Value(errorSummary),
-      payloadId: payloadId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(payloadId),
-      costId: costId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(costId),
       taskId: taskId == null && nullToAbsent
           ? const Value.absent()
           : Value(taskId),
@@ -1404,19 +1121,6 @@ class ConsumptionEvent extends DataClass
       parentId: serializer.fromJson<String?>(json['parent_id']),
       createdAt: serializer.fromJson<DateTime>(json['created_at']),
       attributionId: serializer.fromJson<String?>(json['attribution_id']),
-      sequenceIndex: serializer.fromJson<int>(json['sequence_index']),
-      interactionKind: serializer.fromJson<String?>(json['interaction_kind']),
-      interactionStatus: serializer.fromJson<String>(
-        json['interaction_status'],
-      ),
-      completedAt: serializer.fromJson<DateTime?>(json['completed_at']),
-      providerRequestId: serializer.fromJson<String?>(
-        json['provider_request_id'],
-      ),
-      errorCode: serializer.fromJson<String?>(json['error_code']),
-      errorSummary: serializer.fromJson<String?>(json['error_summary']),
-      payloadId: serializer.fromJson<String?>(json['payload_id']),
-      costId: serializer.fromJson<String?>(json['cost_id']),
       taskId: serializer.fromJson<String?>(json['task_id']),
       categoryId: serializer.fromJson<String?>(json['category_id']),
       entryId: serializer.fromJson<String?>(json['entry_id']),
@@ -1459,15 +1163,6 @@ class ConsumptionEvent extends DataClass
       'parent_id': serializer.toJson<String?>(parentId),
       'created_at': serializer.toJson<DateTime>(createdAt),
       'attribution_id': serializer.toJson<String?>(attributionId),
-      'sequence_index': serializer.toJson<int>(sequenceIndex),
-      'interaction_kind': serializer.toJson<String?>(interactionKind),
-      'interaction_status': serializer.toJson<String>(interactionStatus),
-      'completed_at': serializer.toJson<DateTime?>(completedAt),
-      'provider_request_id': serializer.toJson<String?>(providerRequestId),
-      'error_code': serializer.toJson<String?>(errorCode),
-      'error_summary': serializer.toJson<String?>(errorSummary),
-      'payload_id': serializer.toJson<String?>(payloadId),
-      'cost_id': serializer.toJson<String?>(costId),
       'task_id': serializer.toJson<String?>(taskId),
       'category_id': serializer.toJson<String?>(categoryId),
       'entry_id': serializer.toJson<String?>(entryId),
@@ -1506,15 +1201,6 @@ class ConsumptionEvent extends DataClass
     Value<String?> parentId = const Value.absent(),
     DateTime? createdAt,
     Value<String?> attributionId = const Value.absent(),
-    int? sequenceIndex,
-    Value<String?> interactionKind = const Value.absent(),
-    String? interactionStatus,
-    Value<DateTime?> completedAt = const Value.absent(),
-    Value<String?> providerRequestId = const Value.absent(),
-    Value<String?> errorCode = const Value.absent(),
-    Value<String?> errorSummary = const Value.absent(),
-    Value<String?> payloadId = const Value.absent(),
-    Value<String?> costId = const Value.absent(),
     Value<String?> taskId = const Value.absent(),
     Value<String?> categoryId = const Value.absent(),
     Value<String?> entryId = const Value.absent(),
@@ -1552,19 +1238,6 @@ class ConsumptionEvent extends DataClass
     attributionId: attributionId.present
         ? attributionId.value
         : this.attributionId,
-    sequenceIndex: sequenceIndex ?? this.sequenceIndex,
-    interactionKind: interactionKind.present
-        ? interactionKind.value
-        : this.interactionKind,
-    interactionStatus: interactionStatus ?? this.interactionStatus,
-    completedAt: completedAt.present ? completedAt.value : this.completedAt,
-    providerRequestId: providerRequestId.present
-        ? providerRequestId.value
-        : this.providerRequestId,
-    errorCode: errorCode.present ? errorCode.value : this.errorCode,
-    errorSummary: errorSummary.present ? errorSummary.value : this.errorSummary,
-    payloadId: payloadId.present ? payloadId.value : this.payloadId,
-    costId: costId.present ? costId.value : this.costId,
     taskId: taskId.present ? taskId.value : this.taskId,
     categoryId: categoryId.present ? categoryId.value : this.categoryId,
     entryId: entryId.present ? entryId.value : this.entryId,
@@ -1614,27 +1287,6 @@ class ConsumptionEvent extends DataClass
       attributionId: data.attributionId.present
           ? data.attributionId.value
           : this.attributionId,
-      sequenceIndex: data.sequenceIndex.present
-          ? data.sequenceIndex.value
-          : this.sequenceIndex,
-      interactionKind: data.interactionKind.present
-          ? data.interactionKind.value
-          : this.interactionKind,
-      interactionStatus: data.interactionStatus.present
-          ? data.interactionStatus.value
-          : this.interactionStatus,
-      completedAt: data.completedAt.present
-          ? data.completedAt.value
-          : this.completedAt,
-      providerRequestId: data.providerRequestId.present
-          ? data.providerRequestId.value
-          : this.providerRequestId,
-      errorCode: data.errorCode.present ? data.errorCode.value : this.errorCode,
-      errorSummary: data.errorSummary.present
-          ? data.errorSummary.value
-          : this.errorSummary,
-      payloadId: data.payloadId.present ? data.payloadId.value : this.payloadId,
-      costId: data.costId.present ? data.costId.value : this.costId,
       taskId: data.taskId.present ? data.taskId.value : this.taskId,
       categoryId: data.categoryId.present
           ? data.categoryId.value
@@ -1711,15 +1363,6 @@ class ConsumptionEvent extends DataClass
           ..write('parentId: $parentId, ')
           ..write('createdAt: $createdAt, ')
           ..write('attributionId: $attributionId, ')
-          ..write('sequenceIndex: $sequenceIndex, ')
-          ..write('interactionKind: $interactionKind, ')
-          ..write('interactionStatus: $interactionStatus, ')
-          ..write('completedAt: $completedAt, ')
-          ..write('providerRequestId: $providerRequestId, ')
-          ..write('errorCode: $errorCode, ')
-          ..write('errorSummary: $errorSummary, ')
-          ..write('payloadId: $payloadId, ')
-          ..write('costId: $costId, ')
           ..write('taskId: $taskId, ')
           ..write('categoryId: $categoryId, ')
           ..write('entryId: $entryId, ')
@@ -1760,15 +1403,6 @@ class ConsumptionEvent extends DataClass
     parentId,
     createdAt,
     attributionId,
-    sequenceIndex,
-    interactionKind,
-    interactionStatus,
-    completedAt,
-    providerRequestId,
-    errorCode,
-    errorSummary,
-    payloadId,
-    costId,
     taskId,
     categoryId,
     entryId,
@@ -1808,15 +1442,6 @@ class ConsumptionEvent extends DataClass
           other.parentId == this.parentId &&
           other.createdAt == this.createdAt &&
           other.attributionId == this.attributionId &&
-          other.sequenceIndex == this.sequenceIndex &&
-          other.interactionKind == this.interactionKind &&
-          other.interactionStatus == this.interactionStatus &&
-          other.completedAt == this.completedAt &&
-          other.providerRequestId == this.providerRequestId &&
-          other.errorCode == this.errorCode &&
-          other.errorSummary == this.errorSummary &&
-          other.payloadId == this.payloadId &&
-          other.costId == this.costId &&
           other.taskId == this.taskId &&
           other.categoryId == this.categoryId &&
           other.entryId == this.entryId &&
@@ -1854,15 +1479,6 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
   final Value<String?> parentId;
   final Value<DateTime> createdAt;
   final Value<String?> attributionId;
-  final Value<int> sequenceIndex;
-  final Value<String?> interactionKind;
-  final Value<String> interactionStatus;
-  final Value<DateTime?> completedAt;
-  final Value<String?> providerRequestId;
-  final Value<String?> errorCode;
-  final Value<String?> errorSummary;
-  final Value<String?> payloadId;
-  final Value<String?> costId;
   final Value<String?> taskId;
   final Value<String?> categoryId;
   final Value<String?> entryId;
@@ -1899,15 +1515,6 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
     this.parentId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.attributionId = const Value.absent(),
-    this.sequenceIndex = const Value.absent(),
-    this.interactionKind = const Value.absent(),
-    this.interactionStatus = const Value.absent(),
-    this.completedAt = const Value.absent(),
-    this.providerRequestId = const Value.absent(),
-    this.errorCode = const Value.absent(),
-    this.errorSummary = const Value.absent(),
-    this.payloadId = const Value.absent(),
-    this.costId = const Value.absent(),
     this.taskId = const Value.absent(),
     this.categoryId = const Value.absent(),
     this.entryId = const Value.absent(),
@@ -1945,15 +1552,6 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
     this.parentId = const Value.absent(),
     required DateTime createdAt,
     this.attributionId = const Value.absent(),
-    this.sequenceIndex = const Value.absent(),
-    this.interactionKind = const Value.absent(),
-    this.interactionStatus = const Value.absent(),
-    this.completedAt = const Value.absent(),
-    this.providerRequestId = const Value.absent(),
-    this.errorCode = const Value.absent(),
-    this.errorSummary = const Value.absent(),
-    this.payloadId = const Value.absent(),
-    this.costId = const Value.absent(),
     this.taskId = const Value.absent(),
     this.categoryId = const Value.absent(),
     this.entryId = const Value.absent(),
@@ -1995,15 +1593,6 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
     Expression<String>? parentId,
     Expression<DateTime>? createdAt,
     Expression<String>? attributionId,
-    Expression<int>? sequenceIndex,
-    Expression<String>? interactionKind,
-    Expression<String>? interactionStatus,
-    Expression<DateTime>? completedAt,
-    Expression<String>? providerRequestId,
-    Expression<String>? errorCode,
-    Expression<String>? errorSummary,
-    Expression<String>? payloadId,
-    Expression<String>? costId,
     Expression<String>? taskId,
     Expression<String>? categoryId,
     Expression<String>? entryId,
@@ -2041,15 +1630,6 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
       if (parentId != null) 'parent_id': parentId,
       if (createdAt != null) 'created_at': createdAt,
       if (attributionId != null) 'attribution_id': attributionId,
-      if (sequenceIndex != null) 'sequence_index': sequenceIndex,
-      if (interactionKind != null) 'interaction_kind': interactionKind,
-      if (interactionStatus != null) 'interaction_status': interactionStatus,
-      if (completedAt != null) 'completed_at': completedAt,
-      if (providerRequestId != null) 'provider_request_id': providerRequestId,
-      if (errorCode != null) 'error_code': errorCode,
-      if (errorSummary != null) 'error_summary': errorSummary,
-      if (payloadId != null) 'payload_id': payloadId,
-      if (costId != null) 'cost_id': costId,
       if (taskId != null) 'task_id': taskId,
       if (categoryId != null) 'category_id': categoryId,
       if (entryId != null) 'entry_id': entryId,
@@ -2090,15 +1670,6 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
     Value<String?>? parentId,
     Value<DateTime>? createdAt,
     Value<String?>? attributionId,
-    Value<int>? sequenceIndex,
-    Value<String?>? interactionKind,
-    Value<String>? interactionStatus,
-    Value<DateTime?>? completedAt,
-    Value<String?>? providerRequestId,
-    Value<String?>? errorCode,
-    Value<String?>? errorSummary,
-    Value<String?>? payloadId,
-    Value<String?>? costId,
     Value<String?>? taskId,
     Value<String?>? categoryId,
     Value<String?>? entryId,
@@ -2136,15 +1707,6 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
       parentId: parentId ?? this.parentId,
       createdAt: createdAt ?? this.createdAt,
       attributionId: attributionId ?? this.attributionId,
-      sequenceIndex: sequenceIndex ?? this.sequenceIndex,
-      interactionKind: interactionKind ?? this.interactionKind,
-      interactionStatus: interactionStatus ?? this.interactionStatus,
-      completedAt: completedAt ?? this.completedAt,
-      providerRequestId: providerRequestId ?? this.providerRequestId,
-      errorCode: errorCode ?? this.errorCode,
-      errorSummary: errorSummary ?? this.errorSummary,
-      payloadId: payloadId ?? this.payloadId,
-      costId: costId ?? this.costId,
       taskId: taskId ?? this.taskId,
       categoryId: categoryId ?? this.categoryId,
       entryId: entryId ?? this.entryId,
@@ -2193,33 +1755,6 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
     }
     if (attributionId.present) {
       map['attribution_id'] = Variable<String>(attributionId.value);
-    }
-    if (sequenceIndex.present) {
-      map['sequence_index'] = Variable<int>(sequenceIndex.value);
-    }
-    if (interactionKind.present) {
-      map['interaction_kind'] = Variable<String>(interactionKind.value);
-    }
-    if (interactionStatus.present) {
-      map['interaction_status'] = Variable<String>(interactionStatus.value);
-    }
-    if (completedAt.present) {
-      map['completed_at'] = Variable<DateTime>(completedAt.value);
-    }
-    if (providerRequestId.present) {
-      map['provider_request_id'] = Variable<String>(providerRequestId.value);
-    }
-    if (errorCode.present) {
-      map['error_code'] = Variable<String>(errorCode.value);
-    }
-    if (errorSummary.present) {
-      map['error_summary'] = Variable<String>(errorSummary.value);
-    }
-    if (payloadId.present) {
-      map['payload_id'] = Variable<String>(payloadId.value);
-    }
-    if (costId.present) {
-      map['cost_id'] = Variable<String>(costId.value);
     }
     if (taskId.present) {
       map['task_id'] = Variable<String>(taskId.value);
@@ -2324,15 +1859,6 @@ class ConsumptionEventsCompanion extends UpdateCompanion<ConsumptionEvent> {
           ..write('parentId: $parentId, ')
           ..write('createdAt: $createdAt, ')
           ..write('attributionId: $attributionId, ')
-          ..write('sequenceIndex: $sequenceIndex, ')
-          ..write('interactionKind: $interactionKind, ')
-          ..write('interactionStatus: $interactionStatus, ')
-          ..write('completedAt: $completedAt, ')
-          ..write('providerRequestId: $providerRequestId, ')
-          ..write('errorCode: $errorCode, ')
-          ..write('errorSummary: $errorSummary, ')
-          ..write('payloadId: $payloadId, ')
-          ..write('costId: $costId, ')
           ..write('taskId: $taskId, ')
           ..write('categoryId: $categoryId, ')
           ..write('entryId: $entryId, ')
@@ -2448,28 +1974,6 @@ class AiWorkAttributions extends Table
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
-  static const VerificationMeta _executorHostIdMeta = const VerificationMeta(
-    'executorHostId',
-  );
-  late final GeneratedColumn<String> executorHostId = GeneratedColumn<String>(
-    'executor_host_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  static const VerificationMeta _privacyClassificationMeta =
-      const VerificationMeta('privacyClassification');
-  late final GeneratedColumn<String> privacyClassification =
-      GeneratedColumn<String>(
-        'privacy_classification',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: true,
-        $customConstraints: 'NOT NULL',
-      );
   static const VerificationMeta _startedAtMeta = const VerificationMeta(
     'startedAt',
   );
@@ -2589,8 +2093,6 @@ class AiWorkAttributions extends Table
     initiatorId,
     initiatorDisplayName,
     triggerType,
-    executorHostId,
-    privacyClassification,
     startedAt,
     completedAt,
     parentAttributionId,
@@ -2678,28 +2180,6 @@ class AiWorkAttributions extends Table
       );
     } else if (isInserting) {
       context.missing(_triggerTypeMeta);
-    }
-    if (data.containsKey('executor_host_id')) {
-      context.handle(
-        _executorHostIdMeta,
-        executorHostId.isAcceptableOrUnknown(
-          data['executor_host_id']!,
-          _executorHostIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_executorHostIdMeta);
-    }
-    if (data.containsKey('privacy_classification')) {
-      context.handle(
-        _privacyClassificationMeta,
-        privacyClassification.isAcceptableOrUnknown(
-          data['privacy_classification']!,
-          _privacyClassificationMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_privacyClassificationMeta);
     }
     if (data.containsKey('started_at')) {
       context.handle(
@@ -2822,14 +2302,6 @@ class AiWorkAttributions extends Table
         DriftSqlType.string,
         data['${effectivePrefix}trigger_type'],
       )!,
-      executorHostId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}executor_host_id'],
-      )!,
-      privacyClassification: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}privacy_classification'],
-      )!,
       startedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}started_at'],
@@ -2891,8 +2363,6 @@ class AiWorkAttribution extends DataClass
   final String initiatorId;
   final String initiatorDisplayName;
   final String triggerType;
-  final String executorHostId;
-  final String privacyClassification;
   final DateTime startedAt;
   final DateTime completedAt;
   final String? parentAttributionId;
@@ -2911,8 +2381,6 @@ class AiWorkAttribution extends DataClass
     required this.initiatorId,
     required this.initiatorDisplayName,
     required this.triggerType,
-    required this.executorHostId,
-    required this.privacyClassification,
     required this.startedAt,
     required this.completedAt,
     this.parentAttributionId,
@@ -2934,8 +2402,6 @@ class AiWorkAttribution extends DataClass
     map['initiator_id'] = Variable<String>(initiatorId);
     map['initiator_display_name'] = Variable<String>(initiatorDisplayName);
     map['trigger_type'] = Variable<String>(triggerType);
-    map['executor_host_id'] = Variable<String>(executorHostId);
-    map['privacy_classification'] = Variable<String>(privacyClassification);
     map['started_at'] = Variable<DateTime>(startedAt);
     map['completed_at'] = Variable<DateTime>(completedAt);
     if (!nullToAbsent || parentAttributionId != null) {
@@ -2970,8 +2436,6 @@ class AiWorkAttribution extends DataClass
       initiatorId: Value(initiatorId),
       initiatorDisplayName: Value(initiatorDisplayName),
       triggerType: Value(triggerType),
-      executorHostId: Value(executorHostId),
-      privacyClassification: Value(privacyClassification),
       startedAt: Value(startedAt),
       completedAt: Value(completedAt),
       parentAttributionId: parentAttributionId == null && nullToAbsent
@@ -3012,10 +2476,6 @@ class AiWorkAttribution extends DataClass
         json['initiator_display_name'],
       ),
       triggerType: serializer.fromJson<String>(json['trigger_type']),
-      executorHostId: serializer.fromJson<String>(json['executor_host_id']),
-      privacyClassification: serializer.fromJson<String>(
-        json['privacy_classification'],
-      ),
       startedAt: serializer.fromJson<DateTime>(json['started_at']),
       completedAt: serializer.fromJson<DateTime>(json['completed_at']),
       parentAttributionId: serializer.fromJson<String?>(
@@ -3045,10 +2505,6 @@ class AiWorkAttribution extends DataClass
       'initiator_id': serializer.toJson<String>(initiatorId),
       'initiator_display_name': serializer.toJson<String>(initiatorDisplayName),
       'trigger_type': serializer.toJson<String>(triggerType),
-      'executor_host_id': serializer.toJson<String>(executorHostId),
-      'privacy_classification': serializer.toJson<String>(
-        privacyClassification,
-      ),
       'started_at': serializer.toJson<DateTime>(startedAt),
       'completed_at': serializer.toJson<DateTime>(completedAt),
       'parent_attribution_id': serializer.toJson<String?>(parentAttributionId),
@@ -3070,8 +2526,6 @@ class AiWorkAttribution extends DataClass
     String? initiatorId,
     String? initiatorDisplayName,
     String? triggerType,
-    String? executorHostId,
-    String? privacyClassification,
     DateTime? startedAt,
     DateTime? completedAt,
     Value<String?> parentAttributionId = const Value.absent(),
@@ -3090,8 +2544,6 @@ class AiWorkAttribution extends DataClass
     initiatorId: initiatorId ?? this.initiatorId,
     initiatorDisplayName: initiatorDisplayName ?? this.initiatorDisplayName,
     triggerType: triggerType ?? this.triggerType,
-    executorHostId: executorHostId ?? this.executorHostId,
-    privacyClassification: privacyClassification ?? this.privacyClassification,
     startedAt: startedAt ?? this.startedAt,
     completedAt: completedAt ?? this.completedAt,
     parentAttributionId: parentAttributionId.present
@@ -3128,12 +2580,6 @@ class AiWorkAttribution extends DataClass
       triggerType: data.triggerType.present
           ? data.triggerType.value
           : this.triggerType,
-      executorHostId: data.executorHostId.present
-          ? data.executorHostId.value
-          : this.executorHostId,
-      privacyClassification: data.privacyClassification.present
-          ? data.privacyClassification.value
-          : this.privacyClassification,
       startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
       completedAt: data.completedAt.present
           ? data.completedAt.value
@@ -3173,8 +2619,6 @@ class AiWorkAttribution extends DataClass
           ..write('initiatorId: $initiatorId, ')
           ..write('initiatorDisplayName: $initiatorDisplayName, ')
           ..write('triggerType: $triggerType, ')
-          ..write('executorHostId: $executorHostId, ')
-          ..write('privacyClassification: $privacyClassification, ')
           ..write('startedAt: $startedAt, ')
           ..write('completedAt: $completedAt, ')
           ..write('parentAttributionId: $parentAttributionId, ')
@@ -3198,8 +2642,6 @@ class AiWorkAttribution extends DataClass
     initiatorId,
     initiatorDisplayName,
     triggerType,
-    executorHostId,
-    privacyClassification,
     startedAt,
     completedAt,
     parentAttributionId,
@@ -3222,8 +2664,6 @@ class AiWorkAttribution extends DataClass
           other.initiatorId == this.initiatorId &&
           other.initiatorDisplayName == this.initiatorDisplayName &&
           other.triggerType == this.triggerType &&
-          other.executorHostId == this.executorHostId &&
-          other.privacyClassification == this.privacyClassification &&
           other.startedAt == this.startedAt &&
           other.completedAt == this.completedAt &&
           other.parentAttributionId == this.parentAttributionId &&
@@ -3244,8 +2684,6 @@ class AiWorkAttributionsCompanion extends UpdateCompanion<AiWorkAttribution> {
   final Value<String> initiatorId;
   final Value<String> initiatorDisplayName;
   final Value<String> triggerType;
-  final Value<String> executorHostId;
-  final Value<String> privacyClassification;
   final Value<DateTime> startedAt;
   final Value<DateTime> completedAt;
   final Value<String?> parentAttributionId;
@@ -3265,8 +2703,6 @@ class AiWorkAttributionsCompanion extends UpdateCompanion<AiWorkAttribution> {
     this.initiatorId = const Value.absent(),
     this.initiatorDisplayName = const Value.absent(),
     this.triggerType = const Value.absent(),
-    this.executorHostId = const Value.absent(),
-    this.privacyClassification = const Value.absent(),
     this.startedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.parentAttributionId = const Value.absent(),
@@ -3287,8 +2723,6 @@ class AiWorkAttributionsCompanion extends UpdateCompanion<AiWorkAttribution> {
     required String initiatorId,
     required String initiatorDisplayName,
     required String triggerType,
-    required String executorHostId,
-    required String privacyClassification,
     required DateTime startedAt,
     required DateTime completedAt,
     this.parentAttributionId = const Value.absent(),
@@ -3307,8 +2741,6 @@ class AiWorkAttributionsCompanion extends UpdateCompanion<AiWorkAttribution> {
        initiatorId = Value(initiatorId),
        initiatorDisplayName = Value(initiatorDisplayName),
        triggerType = Value(triggerType),
-       executorHostId = Value(executorHostId),
-       privacyClassification = Value(privacyClassification),
        startedAt = Value(startedAt),
        completedAt = Value(completedAt),
        serialized = Value(serialized);
@@ -3320,8 +2752,6 @@ class AiWorkAttributionsCompanion extends UpdateCompanion<AiWorkAttribution> {
     Expression<String>? initiatorId,
     Expression<String>? initiatorDisplayName,
     Expression<String>? triggerType,
-    Expression<String>? executorHostId,
-    Expression<String>? privacyClassification,
     Expression<DateTime>? startedAt,
     Expression<DateTime>? completedAt,
     Expression<String>? parentAttributionId,
@@ -3343,9 +2773,6 @@ class AiWorkAttributionsCompanion extends UpdateCompanion<AiWorkAttribution> {
       if (initiatorDisplayName != null)
         'initiator_display_name': initiatorDisplayName,
       if (triggerType != null) 'trigger_type': triggerType,
-      if (executorHostId != null) 'executor_host_id': executorHostId,
-      if (privacyClassification != null)
-        'privacy_classification': privacyClassification,
       if (startedAt != null) 'started_at': startedAt,
       if (completedAt != null) 'completed_at': completedAt,
       if (parentAttributionId != null)
@@ -3370,8 +2797,6 @@ class AiWorkAttributionsCompanion extends UpdateCompanion<AiWorkAttribution> {
     Value<String>? initiatorId,
     Value<String>? initiatorDisplayName,
     Value<String>? triggerType,
-    Value<String>? executorHostId,
-    Value<String>? privacyClassification,
     Value<DateTime>? startedAt,
     Value<DateTime>? completedAt,
     Value<String?>? parentAttributionId,
@@ -3392,9 +2817,6 @@ class AiWorkAttributionsCompanion extends UpdateCompanion<AiWorkAttribution> {
       initiatorId: initiatorId ?? this.initiatorId,
       initiatorDisplayName: initiatorDisplayName ?? this.initiatorDisplayName,
       triggerType: triggerType ?? this.triggerType,
-      executorHostId: executorHostId ?? this.executorHostId,
-      privacyClassification:
-          privacyClassification ?? this.privacyClassification,
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
       parentAttributionId: parentAttributionId ?? this.parentAttributionId,
@@ -3434,14 +2856,6 @@ class AiWorkAttributionsCompanion extends UpdateCompanion<AiWorkAttribution> {
     }
     if (triggerType.present) {
       map['trigger_type'] = Variable<String>(triggerType.value);
-    }
-    if (executorHostId.present) {
-      map['executor_host_id'] = Variable<String>(executorHostId.value);
-    }
-    if (privacyClassification.present) {
-      map['privacy_classification'] = Variable<String>(
-        privacyClassification.value,
-      );
     }
     if (startedAt.present) {
       map['started_at'] = Variable<DateTime>(startedAt.value);
@@ -3491,8 +2905,6 @@ class AiWorkAttributionsCompanion extends UpdateCompanion<AiWorkAttribution> {
           ..write('initiatorId: $initiatorId, ')
           ..write('initiatorDisplayName: $initiatorDisplayName, ')
           ..write('triggerType: $triggerType, ')
-          ..write('executorHostId: $executorHostId, ')
-          ..write('privacyClassification: $privacyClassification, ')
           ..write('startedAt: $startedAt, ')
           ..write('completedAt: $completedAt, ')
           ..write('parentAttributionId: $parentAttributionId, ')
@@ -3503,2335 +2915,6 @@ class AiWorkAttributionsCompanion extends UpdateCompanion<AiWorkAttribution> {
           ..write('primaryOutputSubId: $primaryOutputSubId, ')
           ..write('serialized: $serialized, ')
           ..write('schemaVersion: $schemaVersion, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class AiAttributionLinks extends Table
-    with TableInfo<AiAttributionLinks, AiAttributionLink> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  AiAttributionLinks(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL PRIMARY KEY',
-  );
-  static const VerificationMeta _attributionIdMeta = const VerificationMeta(
-    'attributionId',
-  );
-  late final GeneratedColumn<String> attributionId = GeneratedColumn<String>(
-    'attribution_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL REFERENCES ai_work_attributions(id)',
-  );
-  static const VerificationMeta _roleMeta = const VerificationMeta('role');
-  late final GeneratedColumn<String> role = GeneratedColumn<String>(
-    'role',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  static const VerificationMeta _artifactTypeMeta = const VerificationMeta(
-    'artifactType',
-  );
-  late final GeneratedColumn<String> artifactType = GeneratedColumn<String>(
-    'artifact_type',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  static const VerificationMeta _artifactIdMeta = const VerificationMeta(
-    'artifactId',
-  );
-  late final GeneratedColumn<String> artifactId = GeneratedColumn<String>(
-    'artifact_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  static const VerificationMeta _subIdMeta = const VerificationMeta('subId');
-  late final GeneratedColumn<String> subId = GeneratedColumn<String>(
-    'sub_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _contentDigestMeta = const VerificationMeta(
-    'contentDigest',
-  );
-  late final GeneratedColumn<String> contentDigest = GeneratedColumn<String>(
-    'content_digest',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _serializedMeta = const VerificationMeta(
-    'serialized',
-  );
-  late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-    'serialized',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    attributionId,
-    role,
-    artifactType,
-    artifactId,
-    subId,
-    contentDigest,
-    serialized,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'ai_attribution_links';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<AiAttributionLink> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('attribution_id')) {
-      context.handle(
-        _attributionIdMeta,
-        attributionId.isAcceptableOrUnknown(
-          data['attribution_id']!,
-          _attributionIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_attributionIdMeta);
-    }
-    if (data.containsKey('role')) {
-      context.handle(
-        _roleMeta,
-        role.isAcceptableOrUnknown(data['role']!, _roleMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_roleMeta);
-    }
-    if (data.containsKey('artifact_type')) {
-      context.handle(
-        _artifactTypeMeta,
-        artifactType.isAcceptableOrUnknown(
-          data['artifact_type']!,
-          _artifactTypeMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_artifactTypeMeta);
-    }
-    if (data.containsKey('artifact_id')) {
-      context.handle(
-        _artifactIdMeta,
-        artifactId.isAcceptableOrUnknown(data['artifact_id']!, _artifactIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_artifactIdMeta);
-    }
-    if (data.containsKey('sub_id')) {
-      context.handle(
-        _subIdMeta,
-        subId.isAcceptableOrUnknown(data['sub_id']!, _subIdMeta),
-      );
-    }
-    if (data.containsKey('content_digest')) {
-      context.handle(
-        _contentDigestMeta,
-        contentDigest.isAcceptableOrUnknown(
-          data['content_digest']!,
-          _contentDigestMeta,
-        ),
-      );
-    }
-    if (data.containsKey('serialized')) {
-      context.handle(
-        _serializedMeta,
-        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_serializedMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  AiAttributionLink map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return AiAttributionLink(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      attributionId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}attribution_id'],
-      )!,
-      role: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}role'],
-      )!,
-      artifactType: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}artifact_type'],
-      )!,
-      artifactId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}artifact_id'],
-      )!,
-      subId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}sub_id'],
-      ),
-      contentDigest: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}content_digest'],
-      ),
-      serialized: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}serialized'],
-      )!,
-    );
-  }
-
-  @override
-  AiAttributionLinks createAlias(String alias) {
-    return AiAttributionLinks(attachedDatabase, alias);
-  }
-
-  @override
-  bool get dontWriteConstraints => true;
-}
-
-class AiAttributionLink extends DataClass
-    implements Insertable<AiAttributionLink> {
-  final String id;
-  final String attributionId;
-  final String role;
-  final String artifactType;
-  final String artifactId;
-  final String? subId;
-  final String? contentDigest;
-  final String serialized;
-  const AiAttributionLink({
-    required this.id,
-    required this.attributionId,
-    required this.role,
-    required this.artifactType,
-    required this.artifactId,
-    this.subId,
-    this.contentDigest,
-    required this.serialized,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['attribution_id'] = Variable<String>(attributionId);
-    map['role'] = Variable<String>(role);
-    map['artifact_type'] = Variable<String>(artifactType);
-    map['artifact_id'] = Variable<String>(artifactId);
-    if (!nullToAbsent || subId != null) {
-      map['sub_id'] = Variable<String>(subId);
-    }
-    if (!nullToAbsent || contentDigest != null) {
-      map['content_digest'] = Variable<String>(contentDigest);
-    }
-    map['serialized'] = Variable<String>(serialized);
-    return map;
-  }
-
-  AiAttributionLinksCompanion toCompanion(bool nullToAbsent) {
-    return AiAttributionLinksCompanion(
-      id: Value(id),
-      attributionId: Value(attributionId),
-      role: Value(role),
-      artifactType: Value(artifactType),
-      artifactId: Value(artifactId),
-      subId: subId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(subId),
-      contentDigest: contentDigest == null && nullToAbsent
-          ? const Value.absent()
-          : Value(contentDigest),
-      serialized: Value(serialized),
-    );
-  }
-
-  factory AiAttributionLink.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return AiAttributionLink(
-      id: serializer.fromJson<String>(json['id']),
-      attributionId: serializer.fromJson<String>(json['attribution_id']),
-      role: serializer.fromJson<String>(json['role']),
-      artifactType: serializer.fromJson<String>(json['artifact_type']),
-      artifactId: serializer.fromJson<String>(json['artifact_id']),
-      subId: serializer.fromJson<String?>(json['sub_id']),
-      contentDigest: serializer.fromJson<String?>(json['content_digest']),
-      serialized: serializer.fromJson<String>(json['serialized']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'attribution_id': serializer.toJson<String>(attributionId),
-      'role': serializer.toJson<String>(role),
-      'artifact_type': serializer.toJson<String>(artifactType),
-      'artifact_id': serializer.toJson<String>(artifactId),
-      'sub_id': serializer.toJson<String?>(subId),
-      'content_digest': serializer.toJson<String?>(contentDigest),
-      'serialized': serializer.toJson<String>(serialized),
-    };
-  }
-
-  AiAttributionLink copyWith({
-    String? id,
-    String? attributionId,
-    String? role,
-    String? artifactType,
-    String? artifactId,
-    Value<String?> subId = const Value.absent(),
-    Value<String?> contentDigest = const Value.absent(),
-    String? serialized,
-  }) => AiAttributionLink(
-    id: id ?? this.id,
-    attributionId: attributionId ?? this.attributionId,
-    role: role ?? this.role,
-    artifactType: artifactType ?? this.artifactType,
-    artifactId: artifactId ?? this.artifactId,
-    subId: subId.present ? subId.value : this.subId,
-    contentDigest: contentDigest.present
-        ? contentDigest.value
-        : this.contentDigest,
-    serialized: serialized ?? this.serialized,
-  );
-  AiAttributionLink copyWithCompanion(AiAttributionLinksCompanion data) {
-    return AiAttributionLink(
-      id: data.id.present ? data.id.value : this.id,
-      attributionId: data.attributionId.present
-          ? data.attributionId.value
-          : this.attributionId,
-      role: data.role.present ? data.role.value : this.role,
-      artifactType: data.artifactType.present
-          ? data.artifactType.value
-          : this.artifactType,
-      artifactId: data.artifactId.present
-          ? data.artifactId.value
-          : this.artifactId,
-      subId: data.subId.present ? data.subId.value : this.subId,
-      contentDigest: data.contentDigest.present
-          ? data.contentDigest.value
-          : this.contentDigest,
-      serialized: data.serialized.present
-          ? data.serialized.value
-          : this.serialized,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('AiAttributionLink(')
-          ..write('id: $id, ')
-          ..write('attributionId: $attributionId, ')
-          ..write('role: $role, ')
-          ..write('artifactType: $artifactType, ')
-          ..write('artifactId: $artifactId, ')
-          ..write('subId: $subId, ')
-          ..write('contentDigest: $contentDigest, ')
-          ..write('serialized: $serialized')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    attributionId,
-    role,
-    artifactType,
-    artifactId,
-    subId,
-    contentDigest,
-    serialized,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is AiAttributionLink &&
-          other.id == this.id &&
-          other.attributionId == this.attributionId &&
-          other.role == this.role &&
-          other.artifactType == this.artifactType &&
-          other.artifactId == this.artifactId &&
-          other.subId == this.subId &&
-          other.contentDigest == this.contentDigest &&
-          other.serialized == this.serialized);
-}
-
-class AiAttributionLinksCompanion extends UpdateCompanion<AiAttributionLink> {
-  final Value<String> id;
-  final Value<String> attributionId;
-  final Value<String> role;
-  final Value<String> artifactType;
-  final Value<String> artifactId;
-  final Value<String?> subId;
-  final Value<String?> contentDigest;
-  final Value<String> serialized;
-  final Value<int> rowid;
-  const AiAttributionLinksCompanion({
-    this.id = const Value.absent(),
-    this.attributionId = const Value.absent(),
-    this.role = const Value.absent(),
-    this.artifactType = const Value.absent(),
-    this.artifactId = const Value.absent(),
-    this.subId = const Value.absent(),
-    this.contentDigest = const Value.absent(),
-    this.serialized = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  AiAttributionLinksCompanion.insert({
-    required String id,
-    required String attributionId,
-    required String role,
-    required String artifactType,
-    required String artifactId,
-    this.subId = const Value.absent(),
-    this.contentDigest = const Value.absent(),
-    required String serialized,
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       attributionId = Value(attributionId),
-       role = Value(role),
-       artifactType = Value(artifactType),
-       artifactId = Value(artifactId),
-       serialized = Value(serialized);
-  static Insertable<AiAttributionLink> custom({
-    Expression<String>? id,
-    Expression<String>? attributionId,
-    Expression<String>? role,
-    Expression<String>? artifactType,
-    Expression<String>? artifactId,
-    Expression<String>? subId,
-    Expression<String>? contentDigest,
-    Expression<String>? serialized,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (attributionId != null) 'attribution_id': attributionId,
-      if (role != null) 'role': role,
-      if (artifactType != null) 'artifact_type': artifactType,
-      if (artifactId != null) 'artifact_id': artifactId,
-      if (subId != null) 'sub_id': subId,
-      if (contentDigest != null) 'content_digest': contentDigest,
-      if (serialized != null) 'serialized': serialized,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  AiAttributionLinksCompanion copyWith({
-    Value<String>? id,
-    Value<String>? attributionId,
-    Value<String>? role,
-    Value<String>? artifactType,
-    Value<String>? artifactId,
-    Value<String?>? subId,
-    Value<String?>? contentDigest,
-    Value<String>? serialized,
-    Value<int>? rowid,
-  }) {
-    return AiAttributionLinksCompanion(
-      id: id ?? this.id,
-      attributionId: attributionId ?? this.attributionId,
-      role: role ?? this.role,
-      artifactType: artifactType ?? this.artifactType,
-      artifactId: artifactId ?? this.artifactId,
-      subId: subId ?? this.subId,
-      contentDigest: contentDigest ?? this.contentDigest,
-      serialized: serialized ?? this.serialized,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (attributionId.present) {
-      map['attribution_id'] = Variable<String>(attributionId.value);
-    }
-    if (role.present) {
-      map['role'] = Variable<String>(role.value);
-    }
-    if (artifactType.present) {
-      map['artifact_type'] = Variable<String>(artifactType.value);
-    }
-    if (artifactId.present) {
-      map['artifact_id'] = Variable<String>(artifactId.value);
-    }
-    if (subId.present) {
-      map['sub_id'] = Variable<String>(subId.value);
-    }
-    if (contentDigest.present) {
-      map['content_digest'] = Variable<String>(contentDigest.value);
-    }
-    if (serialized.present) {
-      map['serialized'] = Variable<String>(serialized.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('AiAttributionLinksCompanion(')
-          ..write('id: $id, ')
-          ..write('attributionId: $attributionId, ')
-          ..write('role: $role, ')
-          ..write('artifactType: $artifactType, ')
-          ..write('artifactId: $artifactId, ')
-          ..write('subId: $subId, ')
-          ..write('contentDigest: $contentDigest, ')
-          ..write('serialized: $serialized, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class AiInteractionPayloads extends Table
-    with TableInfo<AiInteractionPayloads, AiInteractionPayload> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  AiInteractionPayloads(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL PRIMARY KEY',
-  );
-  static const VerificationMeta _interactionIdMeta = const VerificationMeta(
-    'interactionId',
-  );
-  late final GeneratedColumn<String> interactionId = GeneratedColumn<String>(
-    'interaction_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL UNIQUE',
-  );
-  static const VerificationMeta _capturePolicyMeta = const VerificationMeta(
-    'capturePolicy',
-  );
-  late final GeneratedColumn<String> capturePolicy = GeneratedColumn<String>(
-    'capture_policy',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  static const VerificationMeta _privacyClassificationMeta =
-      const VerificationMeta('privacyClassification');
-  late final GeneratedColumn<String> privacyClassification =
-      GeneratedColumn<String>(
-        'privacy_classification',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: true,
-        $customConstraints: 'NOT NULL',
-      );
-  static const VerificationMeta _requestDigestMeta = const VerificationMeta(
-    'requestDigest',
-  );
-  late final GeneratedColumn<String> requestDigest = GeneratedColumn<String>(
-    'request_digest',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  static const VerificationMeta _responseDigestMeta = const VerificationMeta(
-    'responseDigest',
-  );
-  late final GeneratedColumn<String> responseDigest = GeneratedColumn<String>(
-    'response_digest',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  static const VerificationMeta _serializedMeta = const VerificationMeta(
-    'serialized',
-  );
-  late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-    'serialized',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    interactionId,
-    capturePolicy,
-    privacyClassification,
-    requestDigest,
-    responseDigest,
-    serialized,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'ai_interaction_payloads';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<AiInteractionPayload> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('interaction_id')) {
-      context.handle(
-        _interactionIdMeta,
-        interactionId.isAcceptableOrUnknown(
-          data['interaction_id']!,
-          _interactionIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_interactionIdMeta);
-    }
-    if (data.containsKey('capture_policy')) {
-      context.handle(
-        _capturePolicyMeta,
-        capturePolicy.isAcceptableOrUnknown(
-          data['capture_policy']!,
-          _capturePolicyMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_capturePolicyMeta);
-    }
-    if (data.containsKey('privacy_classification')) {
-      context.handle(
-        _privacyClassificationMeta,
-        privacyClassification.isAcceptableOrUnknown(
-          data['privacy_classification']!,
-          _privacyClassificationMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_privacyClassificationMeta);
-    }
-    if (data.containsKey('request_digest')) {
-      context.handle(
-        _requestDigestMeta,
-        requestDigest.isAcceptableOrUnknown(
-          data['request_digest']!,
-          _requestDigestMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_requestDigestMeta);
-    }
-    if (data.containsKey('response_digest')) {
-      context.handle(
-        _responseDigestMeta,
-        responseDigest.isAcceptableOrUnknown(
-          data['response_digest']!,
-          _responseDigestMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_responseDigestMeta);
-    }
-    if (data.containsKey('serialized')) {
-      context.handle(
-        _serializedMeta,
-        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_serializedMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  AiInteractionPayload map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return AiInteractionPayload(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      interactionId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}interaction_id'],
-      )!,
-      capturePolicy: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}capture_policy'],
-      )!,
-      privacyClassification: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}privacy_classification'],
-      )!,
-      requestDigest: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}request_digest'],
-      )!,
-      responseDigest: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}response_digest'],
-      )!,
-      serialized: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}serialized'],
-      )!,
-    );
-  }
-
-  @override
-  AiInteractionPayloads createAlias(String alias) {
-    return AiInteractionPayloads(attachedDatabase, alias);
-  }
-
-  @override
-  bool get dontWriteConstraints => true;
-}
-
-class AiInteractionPayload extends DataClass
-    implements Insertable<AiInteractionPayload> {
-  final String id;
-  final String interactionId;
-  final String capturePolicy;
-  final String privacyClassification;
-  final String requestDigest;
-  final String responseDigest;
-  final String serialized;
-  const AiInteractionPayload({
-    required this.id,
-    required this.interactionId,
-    required this.capturePolicy,
-    required this.privacyClassification,
-    required this.requestDigest,
-    required this.responseDigest,
-    required this.serialized,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['interaction_id'] = Variable<String>(interactionId);
-    map['capture_policy'] = Variable<String>(capturePolicy);
-    map['privacy_classification'] = Variable<String>(privacyClassification);
-    map['request_digest'] = Variable<String>(requestDigest);
-    map['response_digest'] = Variable<String>(responseDigest);
-    map['serialized'] = Variable<String>(serialized);
-    return map;
-  }
-
-  AiInteractionPayloadsCompanion toCompanion(bool nullToAbsent) {
-    return AiInteractionPayloadsCompanion(
-      id: Value(id),
-      interactionId: Value(interactionId),
-      capturePolicy: Value(capturePolicy),
-      privacyClassification: Value(privacyClassification),
-      requestDigest: Value(requestDigest),
-      responseDigest: Value(responseDigest),
-      serialized: Value(serialized),
-    );
-  }
-
-  factory AiInteractionPayload.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return AiInteractionPayload(
-      id: serializer.fromJson<String>(json['id']),
-      interactionId: serializer.fromJson<String>(json['interaction_id']),
-      capturePolicy: serializer.fromJson<String>(json['capture_policy']),
-      privacyClassification: serializer.fromJson<String>(
-        json['privacy_classification'],
-      ),
-      requestDigest: serializer.fromJson<String>(json['request_digest']),
-      responseDigest: serializer.fromJson<String>(json['response_digest']),
-      serialized: serializer.fromJson<String>(json['serialized']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'interaction_id': serializer.toJson<String>(interactionId),
-      'capture_policy': serializer.toJson<String>(capturePolicy),
-      'privacy_classification': serializer.toJson<String>(
-        privacyClassification,
-      ),
-      'request_digest': serializer.toJson<String>(requestDigest),
-      'response_digest': serializer.toJson<String>(responseDigest),
-      'serialized': serializer.toJson<String>(serialized),
-    };
-  }
-
-  AiInteractionPayload copyWith({
-    String? id,
-    String? interactionId,
-    String? capturePolicy,
-    String? privacyClassification,
-    String? requestDigest,
-    String? responseDigest,
-    String? serialized,
-  }) => AiInteractionPayload(
-    id: id ?? this.id,
-    interactionId: interactionId ?? this.interactionId,
-    capturePolicy: capturePolicy ?? this.capturePolicy,
-    privacyClassification: privacyClassification ?? this.privacyClassification,
-    requestDigest: requestDigest ?? this.requestDigest,
-    responseDigest: responseDigest ?? this.responseDigest,
-    serialized: serialized ?? this.serialized,
-  );
-  AiInteractionPayload copyWithCompanion(AiInteractionPayloadsCompanion data) {
-    return AiInteractionPayload(
-      id: data.id.present ? data.id.value : this.id,
-      interactionId: data.interactionId.present
-          ? data.interactionId.value
-          : this.interactionId,
-      capturePolicy: data.capturePolicy.present
-          ? data.capturePolicy.value
-          : this.capturePolicy,
-      privacyClassification: data.privacyClassification.present
-          ? data.privacyClassification.value
-          : this.privacyClassification,
-      requestDigest: data.requestDigest.present
-          ? data.requestDigest.value
-          : this.requestDigest,
-      responseDigest: data.responseDigest.present
-          ? data.responseDigest.value
-          : this.responseDigest,
-      serialized: data.serialized.present
-          ? data.serialized.value
-          : this.serialized,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('AiInteractionPayload(')
-          ..write('id: $id, ')
-          ..write('interactionId: $interactionId, ')
-          ..write('capturePolicy: $capturePolicy, ')
-          ..write('privacyClassification: $privacyClassification, ')
-          ..write('requestDigest: $requestDigest, ')
-          ..write('responseDigest: $responseDigest, ')
-          ..write('serialized: $serialized')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    interactionId,
-    capturePolicy,
-    privacyClassification,
-    requestDigest,
-    responseDigest,
-    serialized,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is AiInteractionPayload &&
-          other.id == this.id &&
-          other.interactionId == this.interactionId &&
-          other.capturePolicy == this.capturePolicy &&
-          other.privacyClassification == this.privacyClassification &&
-          other.requestDigest == this.requestDigest &&
-          other.responseDigest == this.responseDigest &&
-          other.serialized == this.serialized);
-}
-
-class AiInteractionPayloadsCompanion
-    extends UpdateCompanion<AiInteractionPayload> {
-  final Value<String> id;
-  final Value<String> interactionId;
-  final Value<String> capturePolicy;
-  final Value<String> privacyClassification;
-  final Value<String> requestDigest;
-  final Value<String> responseDigest;
-  final Value<String> serialized;
-  final Value<int> rowid;
-  const AiInteractionPayloadsCompanion({
-    this.id = const Value.absent(),
-    this.interactionId = const Value.absent(),
-    this.capturePolicy = const Value.absent(),
-    this.privacyClassification = const Value.absent(),
-    this.requestDigest = const Value.absent(),
-    this.responseDigest = const Value.absent(),
-    this.serialized = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  AiInteractionPayloadsCompanion.insert({
-    required String id,
-    required String interactionId,
-    required String capturePolicy,
-    required String privacyClassification,
-    required String requestDigest,
-    required String responseDigest,
-    required String serialized,
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       interactionId = Value(interactionId),
-       capturePolicy = Value(capturePolicy),
-       privacyClassification = Value(privacyClassification),
-       requestDigest = Value(requestDigest),
-       responseDigest = Value(responseDigest),
-       serialized = Value(serialized);
-  static Insertable<AiInteractionPayload> custom({
-    Expression<String>? id,
-    Expression<String>? interactionId,
-    Expression<String>? capturePolicy,
-    Expression<String>? privacyClassification,
-    Expression<String>? requestDigest,
-    Expression<String>? responseDigest,
-    Expression<String>? serialized,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (interactionId != null) 'interaction_id': interactionId,
-      if (capturePolicy != null) 'capture_policy': capturePolicy,
-      if (privacyClassification != null)
-        'privacy_classification': privacyClassification,
-      if (requestDigest != null) 'request_digest': requestDigest,
-      if (responseDigest != null) 'response_digest': responseDigest,
-      if (serialized != null) 'serialized': serialized,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  AiInteractionPayloadsCompanion copyWith({
-    Value<String>? id,
-    Value<String>? interactionId,
-    Value<String>? capturePolicy,
-    Value<String>? privacyClassification,
-    Value<String>? requestDigest,
-    Value<String>? responseDigest,
-    Value<String>? serialized,
-    Value<int>? rowid,
-  }) {
-    return AiInteractionPayloadsCompanion(
-      id: id ?? this.id,
-      interactionId: interactionId ?? this.interactionId,
-      capturePolicy: capturePolicy ?? this.capturePolicy,
-      privacyClassification:
-          privacyClassification ?? this.privacyClassification,
-      requestDigest: requestDigest ?? this.requestDigest,
-      responseDigest: responseDigest ?? this.responseDigest,
-      serialized: serialized ?? this.serialized,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (interactionId.present) {
-      map['interaction_id'] = Variable<String>(interactionId.value);
-    }
-    if (capturePolicy.present) {
-      map['capture_policy'] = Variable<String>(capturePolicy.value);
-    }
-    if (privacyClassification.present) {
-      map['privacy_classification'] = Variable<String>(
-        privacyClassification.value,
-      );
-    }
-    if (requestDigest.present) {
-      map['request_digest'] = Variable<String>(requestDigest.value);
-    }
-    if (responseDigest.present) {
-      map['response_digest'] = Variable<String>(responseDigest.value);
-    }
-    if (serialized.present) {
-      map['serialized'] = Variable<String>(serialized.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('AiInteractionPayloadsCompanion(')
-          ..write('id: $id, ')
-          ..write('interactionId: $interactionId, ')
-          ..write('capturePolicy: $capturePolicy, ')
-          ..write('privacyClassification: $privacyClassification, ')
-          ..write('requestDigest: $requestDigest, ')
-          ..write('responseDigest: $responseDigest, ')
-          ..write('serialized: $serialized, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class AiInteractionCosts extends Table
-    with TableInfo<AiInteractionCosts, AiInteractionCost> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  AiInteractionCosts(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL PRIMARY KEY',
-  );
-  static const VerificationMeta _interactionIdMeta = const VerificationMeta(
-    'interactionId',
-  );
-  late final GeneratedColumn<String> interactionId = GeneratedColumn<String>(
-    'interaction_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
-  late final GeneratedColumn<String> source = GeneratedColumn<String>(
-    'source',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  static const VerificationMeta _originalAmountDecimalMeta =
-      const VerificationMeta('originalAmountDecimal');
-  late final GeneratedColumn<String> originalAmountDecimal =
-      GeneratedColumn<String>(
-        'original_amount_decimal',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-        $customConstraints: '',
-      );
-  static const VerificationMeta _originalUnitMeta = const VerificationMeta(
-    'originalUnit',
-  );
-  late final GeneratedColumn<String> originalUnit = GeneratedColumn<String>(
-    'original_unit',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _reportingAmountMicrosMeta =
-      const VerificationMeta('reportingAmountMicros');
-  late final GeneratedColumn<int> reportingAmountMicros = GeneratedColumn<int>(
-    'reporting_amount_micros',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _reportingCurrencyMeta = const VerificationMeta(
-    'reportingCurrency',
-  );
-  late final GeneratedColumn<String> reportingCurrency =
-      GeneratedColumn<String>(
-        'reporting_currency',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-        $customConstraints: '',
-      );
-  static const VerificationMeta _providerTypeMeta = const VerificationMeta(
-    'providerType',
-  );
-  late final GeneratedColumn<String> providerType = GeneratedColumn<String>(
-    'provider_type',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _billingAccountKeyMeta = const VerificationMeta(
-    'billingAccountKey',
-  );
-  late final GeneratedColumn<String> billingAccountKey =
-      GeneratedColumn<String>(
-        'billing_account_key',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-        $customConstraints: '',
-      );
-  static const VerificationMeta _billingSourceMeta = const VerificationMeta(
-    'billingSource',
-  );
-  late final GeneratedColumn<String> billingSource = GeneratedColumn<String>(
-    'billing_source',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _externalRecordIdMeta = const VerificationMeta(
-    'externalRecordId',
-  );
-  late final GeneratedColumn<String> externalRecordId = GeneratedColumn<String>(
-    'external_record_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _supersedesCostIdMeta = const VerificationMeta(
-    'supersedesCostId',
-  );
-  late final GeneratedColumn<String> supersedesCostId = GeneratedColumn<String>(
-    'supersedes_cost_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _assessedAtMeta = const VerificationMeta(
-    'assessedAt',
-  );
-  late final GeneratedColumn<DateTime> assessedAt = GeneratedColumn<DateTime>(
-    'assessed_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  static const VerificationMeta _pricingSnapshotMeta = const VerificationMeta(
-    'pricingSnapshot',
-  );
-  late final GeneratedColumn<String> pricingSnapshot = GeneratedColumn<String>(
-    'pricing_snapshot',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    $customConstraints: '',
-  );
-  static const VerificationMeta _serializedMeta = const VerificationMeta(
-    'serialized',
-  );
-  late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-    'serialized',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    interactionId,
-    source,
-    originalAmountDecimal,
-    originalUnit,
-    reportingAmountMicros,
-    reportingCurrency,
-    providerType,
-    billingAccountKey,
-    billingSource,
-    externalRecordId,
-    supersedesCostId,
-    assessedAt,
-    pricingSnapshot,
-    serialized,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'ai_interaction_costs';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<AiInteractionCost> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('interaction_id')) {
-      context.handle(
-        _interactionIdMeta,
-        interactionId.isAcceptableOrUnknown(
-          data['interaction_id']!,
-          _interactionIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_interactionIdMeta);
-    }
-    if (data.containsKey('source')) {
-      context.handle(
-        _sourceMeta,
-        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_sourceMeta);
-    }
-    if (data.containsKey('original_amount_decimal')) {
-      context.handle(
-        _originalAmountDecimalMeta,
-        originalAmountDecimal.isAcceptableOrUnknown(
-          data['original_amount_decimal']!,
-          _originalAmountDecimalMeta,
-        ),
-      );
-    }
-    if (data.containsKey('original_unit')) {
-      context.handle(
-        _originalUnitMeta,
-        originalUnit.isAcceptableOrUnknown(
-          data['original_unit']!,
-          _originalUnitMeta,
-        ),
-      );
-    }
-    if (data.containsKey('reporting_amount_micros')) {
-      context.handle(
-        _reportingAmountMicrosMeta,
-        reportingAmountMicros.isAcceptableOrUnknown(
-          data['reporting_amount_micros']!,
-          _reportingAmountMicrosMeta,
-        ),
-      );
-    }
-    if (data.containsKey('reporting_currency')) {
-      context.handle(
-        _reportingCurrencyMeta,
-        reportingCurrency.isAcceptableOrUnknown(
-          data['reporting_currency']!,
-          _reportingCurrencyMeta,
-        ),
-      );
-    }
-    if (data.containsKey('provider_type')) {
-      context.handle(
-        _providerTypeMeta,
-        providerType.isAcceptableOrUnknown(
-          data['provider_type']!,
-          _providerTypeMeta,
-        ),
-      );
-    }
-    if (data.containsKey('billing_account_key')) {
-      context.handle(
-        _billingAccountKeyMeta,
-        billingAccountKey.isAcceptableOrUnknown(
-          data['billing_account_key']!,
-          _billingAccountKeyMeta,
-        ),
-      );
-    }
-    if (data.containsKey('billing_source')) {
-      context.handle(
-        _billingSourceMeta,
-        billingSource.isAcceptableOrUnknown(
-          data['billing_source']!,
-          _billingSourceMeta,
-        ),
-      );
-    }
-    if (data.containsKey('external_record_id')) {
-      context.handle(
-        _externalRecordIdMeta,
-        externalRecordId.isAcceptableOrUnknown(
-          data['external_record_id']!,
-          _externalRecordIdMeta,
-        ),
-      );
-    }
-    if (data.containsKey('supersedes_cost_id')) {
-      context.handle(
-        _supersedesCostIdMeta,
-        supersedesCostId.isAcceptableOrUnknown(
-          data['supersedes_cost_id']!,
-          _supersedesCostIdMeta,
-        ),
-      );
-    }
-    if (data.containsKey('assessed_at')) {
-      context.handle(
-        _assessedAtMeta,
-        assessedAt.isAcceptableOrUnknown(data['assessed_at']!, _assessedAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_assessedAtMeta);
-    }
-    if (data.containsKey('pricing_snapshot')) {
-      context.handle(
-        _pricingSnapshotMeta,
-        pricingSnapshot.isAcceptableOrUnknown(
-          data['pricing_snapshot']!,
-          _pricingSnapshotMeta,
-        ),
-      );
-    }
-    if (data.containsKey('serialized')) {
-      context.handle(
-        _serializedMeta,
-        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_serializedMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  AiInteractionCost map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return AiInteractionCost(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      interactionId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}interaction_id'],
-      )!,
-      source: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}source'],
-      )!,
-      originalAmountDecimal: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}original_amount_decimal'],
-      ),
-      originalUnit: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}original_unit'],
-      ),
-      reportingAmountMicros: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}reporting_amount_micros'],
-      ),
-      reportingCurrency: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}reporting_currency'],
-      ),
-      providerType: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}provider_type'],
-      ),
-      billingAccountKey: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}billing_account_key'],
-      ),
-      billingSource: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}billing_source'],
-      ),
-      externalRecordId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}external_record_id'],
-      ),
-      supersedesCostId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}supersedes_cost_id'],
-      ),
-      assessedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}assessed_at'],
-      )!,
-      pricingSnapshot: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}pricing_snapshot'],
-      ),
-      serialized: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}serialized'],
-      )!,
-    );
-  }
-
-  @override
-  AiInteractionCosts createAlias(String alias) {
-    return AiInteractionCosts(attachedDatabase, alias);
-  }
-
-  @override
-  List<String> get customConstraints => const [
-    'CHECK(external_record_id IS NULL OR(provider_type IS NOT NULL AND billing_account_key IS NOT NULL AND billing_source IS NOT NULL))',
-  ];
-  @override
-  bool get dontWriteConstraints => true;
-}
-
-class AiInteractionCost extends DataClass
-    implements Insertable<AiInteractionCost> {
-  final String id;
-  final String interactionId;
-  final String source;
-  final String? originalAmountDecimal;
-  final String? originalUnit;
-  final int? reportingAmountMicros;
-  final String? reportingCurrency;
-  final String? providerType;
-  final String? billingAccountKey;
-  final String? billingSource;
-  final String? externalRecordId;
-  final String? supersedesCostId;
-  final DateTime assessedAt;
-  final String? pricingSnapshot;
-  final String serialized;
-  const AiInteractionCost({
-    required this.id,
-    required this.interactionId,
-    required this.source,
-    this.originalAmountDecimal,
-    this.originalUnit,
-    this.reportingAmountMicros,
-    this.reportingCurrency,
-    this.providerType,
-    this.billingAccountKey,
-    this.billingSource,
-    this.externalRecordId,
-    this.supersedesCostId,
-    required this.assessedAt,
-    this.pricingSnapshot,
-    required this.serialized,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['interaction_id'] = Variable<String>(interactionId);
-    map['source'] = Variable<String>(source);
-    if (!nullToAbsent || originalAmountDecimal != null) {
-      map['original_amount_decimal'] = Variable<String>(originalAmountDecimal);
-    }
-    if (!nullToAbsent || originalUnit != null) {
-      map['original_unit'] = Variable<String>(originalUnit);
-    }
-    if (!nullToAbsent || reportingAmountMicros != null) {
-      map['reporting_amount_micros'] = Variable<int>(reportingAmountMicros);
-    }
-    if (!nullToAbsent || reportingCurrency != null) {
-      map['reporting_currency'] = Variable<String>(reportingCurrency);
-    }
-    if (!nullToAbsent || providerType != null) {
-      map['provider_type'] = Variable<String>(providerType);
-    }
-    if (!nullToAbsent || billingAccountKey != null) {
-      map['billing_account_key'] = Variable<String>(billingAccountKey);
-    }
-    if (!nullToAbsent || billingSource != null) {
-      map['billing_source'] = Variable<String>(billingSource);
-    }
-    if (!nullToAbsent || externalRecordId != null) {
-      map['external_record_id'] = Variable<String>(externalRecordId);
-    }
-    if (!nullToAbsent || supersedesCostId != null) {
-      map['supersedes_cost_id'] = Variable<String>(supersedesCostId);
-    }
-    map['assessed_at'] = Variable<DateTime>(assessedAt);
-    if (!nullToAbsent || pricingSnapshot != null) {
-      map['pricing_snapshot'] = Variable<String>(pricingSnapshot);
-    }
-    map['serialized'] = Variable<String>(serialized);
-    return map;
-  }
-
-  AiInteractionCostsCompanion toCompanion(bool nullToAbsent) {
-    return AiInteractionCostsCompanion(
-      id: Value(id),
-      interactionId: Value(interactionId),
-      source: Value(source),
-      originalAmountDecimal: originalAmountDecimal == null && nullToAbsent
-          ? const Value.absent()
-          : Value(originalAmountDecimal),
-      originalUnit: originalUnit == null && nullToAbsent
-          ? const Value.absent()
-          : Value(originalUnit),
-      reportingAmountMicros: reportingAmountMicros == null && nullToAbsent
-          ? const Value.absent()
-          : Value(reportingAmountMicros),
-      reportingCurrency: reportingCurrency == null && nullToAbsent
-          ? const Value.absent()
-          : Value(reportingCurrency),
-      providerType: providerType == null && nullToAbsent
-          ? const Value.absent()
-          : Value(providerType),
-      billingAccountKey: billingAccountKey == null && nullToAbsent
-          ? const Value.absent()
-          : Value(billingAccountKey),
-      billingSource: billingSource == null && nullToAbsent
-          ? const Value.absent()
-          : Value(billingSource),
-      externalRecordId: externalRecordId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(externalRecordId),
-      supersedesCostId: supersedesCostId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(supersedesCostId),
-      assessedAt: Value(assessedAt),
-      pricingSnapshot: pricingSnapshot == null && nullToAbsent
-          ? const Value.absent()
-          : Value(pricingSnapshot),
-      serialized: Value(serialized),
-    );
-  }
-
-  factory AiInteractionCost.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return AiInteractionCost(
-      id: serializer.fromJson<String>(json['id']),
-      interactionId: serializer.fromJson<String>(json['interaction_id']),
-      source: serializer.fromJson<String>(json['source']),
-      originalAmountDecimal: serializer.fromJson<String?>(
-        json['original_amount_decimal'],
-      ),
-      originalUnit: serializer.fromJson<String?>(json['original_unit']),
-      reportingAmountMicros: serializer.fromJson<int?>(
-        json['reporting_amount_micros'],
-      ),
-      reportingCurrency: serializer.fromJson<String?>(
-        json['reporting_currency'],
-      ),
-      providerType: serializer.fromJson<String?>(json['provider_type']),
-      billingAccountKey: serializer.fromJson<String?>(
-        json['billing_account_key'],
-      ),
-      billingSource: serializer.fromJson<String?>(json['billing_source']),
-      externalRecordId: serializer.fromJson<String?>(
-        json['external_record_id'],
-      ),
-      supersedesCostId: serializer.fromJson<String?>(
-        json['supersedes_cost_id'],
-      ),
-      assessedAt: serializer.fromJson<DateTime>(json['assessed_at']),
-      pricingSnapshot: serializer.fromJson<String?>(json['pricing_snapshot']),
-      serialized: serializer.fromJson<String>(json['serialized']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'interaction_id': serializer.toJson<String>(interactionId),
-      'source': serializer.toJson<String>(source),
-      'original_amount_decimal': serializer.toJson<String?>(
-        originalAmountDecimal,
-      ),
-      'original_unit': serializer.toJson<String?>(originalUnit),
-      'reporting_amount_micros': serializer.toJson<int?>(reportingAmountMicros),
-      'reporting_currency': serializer.toJson<String?>(reportingCurrency),
-      'provider_type': serializer.toJson<String?>(providerType),
-      'billing_account_key': serializer.toJson<String?>(billingAccountKey),
-      'billing_source': serializer.toJson<String?>(billingSource),
-      'external_record_id': serializer.toJson<String?>(externalRecordId),
-      'supersedes_cost_id': serializer.toJson<String?>(supersedesCostId),
-      'assessed_at': serializer.toJson<DateTime>(assessedAt),
-      'pricing_snapshot': serializer.toJson<String?>(pricingSnapshot),
-      'serialized': serializer.toJson<String>(serialized),
-    };
-  }
-
-  AiInteractionCost copyWith({
-    String? id,
-    String? interactionId,
-    String? source,
-    Value<String?> originalAmountDecimal = const Value.absent(),
-    Value<String?> originalUnit = const Value.absent(),
-    Value<int?> reportingAmountMicros = const Value.absent(),
-    Value<String?> reportingCurrency = const Value.absent(),
-    Value<String?> providerType = const Value.absent(),
-    Value<String?> billingAccountKey = const Value.absent(),
-    Value<String?> billingSource = const Value.absent(),
-    Value<String?> externalRecordId = const Value.absent(),
-    Value<String?> supersedesCostId = const Value.absent(),
-    DateTime? assessedAt,
-    Value<String?> pricingSnapshot = const Value.absent(),
-    String? serialized,
-  }) => AiInteractionCost(
-    id: id ?? this.id,
-    interactionId: interactionId ?? this.interactionId,
-    source: source ?? this.source,
-    originalAmountDecimal: originalAmountDecimal.present
-        ? originalAmountDecimal.value
-        : this.originalAmountDecimal,
-    originalUnit: originalUnit.present ? originalUnit.value : this.originalUnit,
-    reportingAmountMicros: reportingAmountMicros.present
-        ? reportingAmountMicros.value
-        : this.reportingAmountMicros,
-    reportingCurrency: reportingCurrency.present
-        ? reportingCurrency.value
-        : this.reportingCurrency,
-    providerType: providerType.present ? providerType.value : this.providerType,
-    billingAccountKey: billingAccountKey.present
-        ? billingAccountKey.value
-        : this.billingAccountKey,
-    billingSource: billingSource.present
-        ? billingSource.value
-        : this.billingSource,
-    externalRecordId: externalRecordId.present
-        ? externalRecordId.value
-        : this.externalRecordId,
-    supersedesCostId: supersedesCostId.present
-        ? supersedesCostId.value
-        : this.supersedesCostId,
-    assessedAt: assessedAt ?? this.assessedAt,
-    pricingSnapshot: pricingSnapshot.present
-        ? pricingSnapshot.value
-        : this.pricingSnapshot,
-    serialized: serialized ?? this.serialized,
-  );
-  AiInteractionCost copyWithCompanion(AiInteractionCostsCompanion data) {
-    return AiInteractionCost(
-      id: data.id.present ? data.id.value : this.id,
-      interactionId: data.interactionId.present
-          ? data.interactionId.value
-          : this.interactionId,
-      source: data.source.present ? data.source.value : this.source,
-      originalAmountDecimal: data.originalAmountDecimal.present
-          ? data.originalAmountDecimal.value
-          : this.originalAmountDecimal,
-      originalUnit: data.originalUnit.present
-          ? data.originalUnit.value
-          : this.originalUnit,
-      reportingAmountMicros: data.reportingAmountMicros.present
-          ? data.reportingAmountMicros.value
-          : this.reportingAmountMicros,
-      reportingCurrency: data.reportingCurrency.present
-          ? data.reportingCurrency.value
-          : this.reportingCurrency,
-      providerType: data.providerType.present
-          ? data.providerType.value
-          : this.providerType,
-      billingAccountKey: data.billingAccountKey.present
-          ? data.billingAccountKey.value
-          : this.billingAccountKey,
-      billingSource: data.billingSource.present
-          ? data.billingSource.value
-          : this.billingSource,
-      externalRecordId: data.externalRecordId.present
-          ? data.externalRecordId.value
-          : this.externalRecordId,
-      supersedesCostId: data.supersedesCostId.present
-          ? data.supersedesCostId.value
-          : this.supersedesCostId,
-      assessedAt: data.assessedAt.present
-          ? data.assessedAt.value
-          : this.assessedAt,
-      pricingSnapshot: data.pricingSnapshot.present
-          ? data.pricingSnapshot.value
-          : this.pricingSnapshot,
-      serialized: data.serialized.present
-          ? data.serialized.value
-          : this.serialized,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('AiInteractionCost(')
-          ..write('id: $id, ')
-          ..write('interactionId: $interactionId, ')
-          ..write('source: $source, ')
-          ..write('originalAmountDecimal: $originalAmountDecimal, ')
-          ..write('originalUnit: $originalUnit, ')
-          ..write('reportingAmountMicros: $reportingAmountMicros, ')
-          ..write('reportingCurrency: $reportingCurrency, ')
-          ..write('providerType: $providerType, ')
-          ..write('billingAccountKey: $billingAccountKey, ')
-          ..write('billingSource: $billingSource, ')
-          ..write('externalRecordId: $externalRecordId, ')
-          ..write('supersedesCostId: $supersedesCostId, ')
-          ..write('assessedAt: $assessedAt, ')
-          ..write('pricingSnapshot: $pricingSnapshot, ')
-          ..write('serialized: $serialized')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    interactionId,
-    source,
-    originalAmountDecimal,
-    originalUnit,
-    reportingAmountMicros,
-    reportingCurrency,
-    providerType,
-    billingAccountKey,
-    billingSource,
-    externalRecordId,
-    supersedesCostId,
-    assessedAt,
-    pricingSnapshot,
-    serialized,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is AiInteractionCost &&
-          other.id == this.id &&
-          other.interactionId == this.interactionId &&
-          other.source == this.source &&
-          other.originalAmountDecimal == this.originalAmountDecimal &&
-          other.originalUnit == this.originalUnit &&
-          other.reportingAmountMicros == this.reportingAmountMicros &&
-          other.reportingCurrency == this.reportingCurrency &&
-          other.providerType == this.providerType &&
-          other.billingAccountKey == this.billingAccountKey &&
-          other.billingSource == this.billingSource &&
-          other.externalRecordId == this.externalRecordId &&
-          other.supersedesCostId == this.supersedesCostId &&
-          other.assessedAt == this.assessedAt &&
-          other.pricingSnapshot == this.pricingSnapshot &&
-          other.serialized == this.serialized);
-}
-
-class AiInteractionCostsCompanion extends UpdateCompanion<AiInteractionCost> {
-  final Value<String> id;
-  final Value<String> interactionId;
-  final Value<String> source;
-  final Value<String?> originalAmountDecimal;
-  final Value<String?> originalUnit;
-  final Value<int?> reportingAmountMicros;
-  final Value<String?> reportingCurrency;
-  final Value<String?> providerType;
-  final Value<String?> billingAccountKey;
-  final Value<String?> billingSource;
-  final Value<String?> externalRecordId;
-  final Value<String?> supersedesCostId;
-  final Value<DateTime> assessedAt;
-  final Value<String?> pricingSnapshot;
-  final Value<String> serialized;
-  final Value<int> rowid;
-  const AiInteractionCostsCompanion({
-    this.id = const Value.absent(),
-    this.interactionId = const Value.absent(),
-    this.source = const Value.absent(),
-    this.originalAmountDecimal = const Value.absent(),
-    this.originalUnit = const Value.absent(),
-    this.reportingAmountMicros = const Value.absent(),
-    this.reportingCurrency = const Value.absent(),
-    this.providerType = const Value.absent(),
-    this.billingAccountKey = const Value.absent(),
-    this.billingSource = const Value.absent(),
-    this.externalRecordId = const Value.absent(),
-    this.supersedesCostId = const Value.absent(),
-    this.assessedAt = const Value.absent(),
-    this.pricingSnapshot = const Value.absent(),
-    this.serialized = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  AiInteractionCostsCompanion.insert({
-    required String id,
-    required String interactionId,
-    required String source,
-    this.originalAmountDecimal = const Value.absent(),
-    this.originalUnit = const Value.absent(),
-    this.reportingAmountMicros = const Value.absent(),
-    this.reportingCurrency = const Value.absent(),
-    this.providerType = const Value.absent(),
-    this.billingAccountKey = const Value.absent(),
-    this.billingSource = const Value.absent(),
-    this.externalRecordId = const Value.absent(),
-    this.supersedesCostId = const Value.absent(),
-    required DateTime assessedAt,
-    this.pricingSnapshot = const Value.absent(),
-    required String serialized,
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       interactionId = Value(interactionId),
-       source = Value(source),
-       assessedAt = Value(assessedAt),
-       serialized = Value(serialized);
-  static Insertable<AiInteractionCost> custom({
-    Expression<String>? id,
-    Expression<String>? interactionId,
-    Expression<String>? source,
-    Expression<String>? originalAmountDecimal,
-    Expression<String>? originalUnit,
-    Expression<int>? reportingAmountMicros,
-    Expression<String>? reportingCurrency,
-    Expression<String>? providerType,
-    Expression<String>? billingAccountKey,
-    Expression<String>? billingSource,
-    Expression<String>? externalRecordId,
-    Expression<String>? supersedesCostId,
-    Expression<DateTime>? assessedAt,
-    Expression<String>? pricingSnapshot,
-    Expression<String>? serialized,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (interactionId != null) 'interaction_id': interactionId,
-      if (source != null) 'source': source,
-      if (originalAmountDecimal != null)
-        'original_amount_decimal': originalAmountDecimal,
-      if (originalUnit != null) 'original_unit': originalUnit,
-      if (reportingAmountMicros != null)
-        'reporting_amount_micros': reportingAmountMicros,
-      if (reportingCurrency != null) 'reporting_currency': reportingCurrency,
-      if (providerType != null) 'provider_type': providerType,
-      if (billingAccountKey != null) 'billing_account_key': billingAccountKey,
-      if (billingSource != null) 'billing_source': billingSource,
-      if (externalRecordId != null) 'external_record_id': externalRecordId,
-      if (supersedesCostId != null) 'supersedes_cost_id': supersedesCostId,
-      if (assessedAt != null) 'assessed_at': assessedAt,
-      if (pricingSnapshot != null) 'pricing_snapshot': pricingSnapshot,
-      if (serialized != null) 'serialized': serialized,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  AiInteractionCostsCompanion copyWith({
-    Value<String>? id,
-    Value<String>? interactionId,
-    Value<String>? source,
-    Value<String?>? originalAmountDecimal,
-    Value<String?>? originalUnit,
-    Value<int?>? reportingAmountMicros,
-    Value<String?>? reportingCurrency,
-    Value<String?>? providerType,
-    Value<String?>? billingAccountKey,
-    Value<String?>? billingSource,
-    Value<String?>? externalRecordId,
-    Value<String?>? supersedesCostId,
-    Value<DateTime>? assessedAt,
-    Value<String?>? pricingSnapshot,
-    Value<String>? serialized,
-    Value<int>? rowid,
-  }) {
-    return AiInteractionCostsCompanion(
-      id: id ?? this.id,
-      interactionId: interactionId ?? this.interactionId,
-      source: source ?? this.source,
-      originalAmountDecimal:
-          originalAmountDecimal ?? this.originalAmountDecimal,
-      originalUnit: originalUnit ?? this.originalUnit,
-      reportingAmountMicros:
-          reportingAmountMicros ?? this.reportingAmountMicros,
-      reportingCurrency: reportingCurrency ?? this.reportingCurrency,
-      providerType: providerType ?? this.providerType,
-      billingAccountKey: billingAccountKey ?? this.billingAccountKey,
-      billingSource: billingSource ?? this.billingSource,
-      externalRecordId: externalRecordId ?? this.externalRecordId,
-      supersedesCostId: supersedesCostId ?? this.supersedesCostId,
-      assessedAt: assessedAt ?? this.assessedAt,
-      pricingSnapshot: pricingSnapshot ?? this.pricingSnapshot,
-      serialized: serialized ?? this.serialized,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (interactionId.present) {
-      map['interaction_id'] = Variable<String>(interactionId.value);
-    }
-    if (source.present) {
-      map['source'] = Variable<String>(source.value);
-    }
-    if (originalAmountDecimal.present) {
-      map['original_amount_decimal'] = Variable<String>(
-        originalAmountDecimal.value,
-      );
-    }
-    if (originalUnit.present) {
-      map['original_unit'] = Variable<String>(originalUnit.value);
-    }
-    if (reportingAmountMicros.present) {
-      map['reporting_amount_micros'] = Variable<int>(
-        reportingAmountMicros.value,
-      );
-    }
-    if (reportingCurrency.present) {
-      map['reporting_currency'] = Variable<String>(reportingCurrency.value);
-    }
-    if (providerType.present) {
-      map['provider_type'] = Variable<String>(providerType.value);
-    }
-    if (billingAccountKey.present) {
-      map['billing_account_key'] = Variable<String>(billingAccountKey.value);
-    }
-    if (billingSource.present) {
-      map['billing_source'] = Variable<String>(billingSource.value);
-    }
-    if (externalRecordId.present) {
-      map['external_record_id'] = Variable<String>(externalRecordId.value);
-    }
-    if (supersedesCostId.present) {
-      map['supersedes_cost_id'] = Variable<String>(supersedesCostId.value);
-    }
-    if (assessedAt.present) {
-      map['assessed_at'] = Variable<DateTime>(assessedAt.value);
-    }
-    if (pricingSnapshot.present) {
-      map['pricing_snapshot'] = Variable<String>(pricingSnapshot.value);
-    }
-    if (serialized.present) {
-      map['serialized'] = Variable<String>(serialized.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('AiInteractionCostsCompanion(')
-          ..write('id: $id, ')
-          ..write('interactionId: $interactionId, ')
-          ..write('source: $source, ')
-          ..write('originalAmountDecimal: $originalAmountDecimal, ')
-          ..write('originalUnit: $originalUnit, ')
-          ..write('reportingAmountMicros: $reportingAmountMicros, ')
-          ..write('reportingCurrency: $reportingCurrency, ')
-          ..write('providerType: $providerType, ')
-          ..write('billingAccountKey: $billingAccountKey, ')
-          ..write('billingSource: $billingSource, ')
-          ..write('externalRecordId: $externalRecordId, ')
-          ..write('supersedesCostId: $supersedesCostId, ')
-          ..write('assessedAt: $assessedAt, ')
-          ..write('pricingSnapshot: $pricingSnapshot, ')
-          ..write('serialized: $serialized, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class PendingAiAttributions extends Table
-    with TableInfo<PendingAiAttributions, PendingAiAttribution> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  PendingAiAttributions(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL PRIMARY KEY',
-  );
-  static const VerificationMeta _startedAtMeta = const VerificationMeta(
-    'startedAt',
-  );
-  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
-    'started_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  static const VerificationMeta _lastUpdatedAtMeta = const VerificationMeta(
-    'lastUpdatedAt',
-  );
-  late final GeneratedColumn<DateTime> lastUpdatedAt =
-      GeneratedColumn<DateTime>(
-        'last_updated_at',
-        aliasedName,
-        false,
-        type: DriftSqlType.dateTime,
-        requiredDuringInsert: true,
-        $customConstraints: 'NOT NULL',
-      );
-  static const VerificationMeta _serializedMeta = const VerificationMeta(
-    'serialized',
-  );
-  late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-    'serialized',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL',
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    startedAt,
-    lastUpdatedAt,
-    serialized,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'pending_ai_attributions';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<PendingAiAttribution> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('started_at')) {
-      context.handle(
-        _startedAtMeta,
-        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_startedAtMeta);
-    }
-    if (data.containsKey('last_updated_at')) {
-      context.handle(
-        _lastUpdatedAtMeta,
-        lastUpdatedAt.isAcceptableOrUnknown(
-          data['last_updated_at']!,
-          _lastUpdatedAtMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_lastUpdatedAtMeta);
-    }
-    if (data.containsKey('serialized')) {
-      context.handle(
-        _serializedMeta,
-        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_serializedMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  PendingAiAttribution map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return PendingAiAttribution(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      startedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}started_at'],
-      )!,
-      lastUpdatedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}last_updated_at'],
-      )!,
-      serialized: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}serialized'],
-      )!,
-    );
-  }
-
-  @override
-  PendingAiAttributions createAlias(String alias) {
-    return PendingAiAttributions(attachedDatabase, alias);
-  }
-
-  @override
-  bool get dontWriteConstraints => true;
-}
-
-class PendingAiAttribution extends DataClass
-    implements Insertable<PendingAiAttribution> {
-  final String id;
-  final DateTime startedAt;
-  final DateTime lastUpdatedAt;
-  final String serialized;
-  const PendingAiAttribution({
-    required this.id,
-    required this.startedAt,
-    required this.lastUpdatedAt,
-    required this.serialized,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['started_at'] = Variable<DateTime>(startedAt);
-    map['last_updated_at'] = Variable<DateTime>(lastUpdatedAt);
-    map['serialized'] = Variable<String>(serialized);
-    return map;
-  }
-
-  PendingAiAttributionsCompanion toCompanion(bool nullToAbsent) {
-    return PendingAiAttributionsCompanion(
-      id: Value(id),
-      startedAt: Value(startedAt),
-      lastUpdatedAt: Value(lastUpdatedAt),
-      serialized: Value(serialized),
-    );
-  }
-
-  factory PendingAiAttribution.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return PendingAiAttribution(
-      id: serializer.fromJson<String>(json['id']),
-      startedAt: serializer.fromJson<DateTime>(json['started_at']),
-      lastUpdatedAt: serializer.fromJson<DateTime>(json['last_updated_at']),
-      serialized: serializer.fromJson<String>(json['serialized']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'started_at': serializer.toJson<DateTime>(startedAt),
-      'last_updated_at': serializer.toJson<DateTime>(lastUpdatedAt),
-      'serialized': serializer.toJson<String>(serialized),
-    };
-  }
-
-  PendingAiAttribution copyWith({
-    String? id,
-    DateTime? startedAt,
-    DateTime? lastUpdatedAt,
-    String? serialized,
-  }) => PendingAiAttribution(
-    id: id ?? this.id,
-    startedAt: startedAt ?? this.startedAt,
-    lastUpdatedAt: lastUpdatedAt ?? this.lastUpdatedAt,
-    serialized: serialized ?? this.serialized,
-  );
-  PendingAiAttribution copyWithCompanion(PendingAiAttributionsCompanion data) {
-    return PendingAiAttribution(
-      id: data.id.present ? data.id.value : this.id,
-      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
-      lastUpdatedAt: data.lastUpdatedAt.present
-          ? data.lastUpdatedAt.value
-          : this.lastUpdatedAt,
-      serialized: data.serialized.present
-          ? data.serialized.value
-          : this.serialized,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('PendingAiAttribution(')
-          ..write('id: $id, ')
-          ..write('startedAt: $startedAt, ')
-          ..write('lastUpdatedAt: $lastUpdatedAt, ')
-          ..write('serialized: $serialized')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(id, startedAt, lastUpdatedAt, serialized);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is PendingAiAttribution &&
-          other.id == this.id &&
-          other.startedAt == this.startedAt &&
-          other.lastUpdatedAt == this.lastUpdatedAt &&
-          other.serialized == this.serialized);
-}
-
-class PendingAiAttributionsCompanion
-    extends UpdateCompanion<PendingAiAttribution> {
-  final Value<String> id;
-  final Value<DateTime> startedAt;
-  final Value<DateTime> lastUpdatedAt;
-  final Value<String> serialized;
-  final Value<int> rowid;
-  const PendingAiAttributionsCompanion({
-    this.id = const Value.absent(),
-    this.startedAt = const Value.absent(),
-    this.lastUpdatedAt = const Value.absent(),
-    this.serialized = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  PendingAiAttributionsCompanion.insert({
-    required String id,
-    required DateTime startedAt,
-    required DateTime lastUpdatedAt,
-    required String serialized,
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       startedAt = Value(startedAt),
-       lastUpdatedAt = Value(lastUpdatedAt),
-       serialized = Value(serialized);
-  static Insertable<PendingAiAttribution> custom({
-    Expression<String>? id,
-    Expression<DateTime>? startedAt,
-    Expression<DateTime>? lastUpdatedAt,
-    Expression<String>? serialized,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (startedAt != null) 'started_at': startedAt,
-      if (lastUpdatedAt != null) 'last_updated_at': lastUpdatedAt,
-      if (serialized != null) 'serialized': serialized,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  PendingAiAttributionsCompanion copyWith({
-    Value<String>? id,
-    Value<DateTime>? startedAt,
-    Value<DateTime>? lastUpdatedAt,
-    Value<String>? serialized,
-    Value<int>? rowid,
-  }) {
-    return PendingAiAttributionsCompanion(
-      id: id ?? this.id,
-      startedAt: startedAt ?? this.startedAt,
-      lastUpdatedAt: lastUpdatedAt ?? this.lastUpdatedAt,
-      serialized: serialized ?? this.serialized,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (startedAt.present) {
-      map['started_at'] = Variable<DateTime>(startedAt.value);
-    }
-    if (lastUpdatedAt.present) {
-      map['last_updated_at'] = Variable<DateTime>(lastUpdatedAt.value);
-    }
-    if (serialized.present) {
-      map['serialized'] = Variable<String>(serialized.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('PendingAiAttributionsCompanion(')
-          ..write('id: $id, ')
-          ..write('startedAt: $startedAt, ')
-          ..write('lastUpdatedAt: $lastUpdatedAt, ')
-          ..write('serialized: $serialized, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5855,9 +2938,9 @@ abstract class _$ConsumptionDatabase extends GeneratedDatabase {
     'idx_consumption_created',
     'CREATE INDEX idx_consumption_created ON consumption_events (created_at)',
   );
-  late final Index idxConsumptionAttributionSequence = Index(
-    'idx_consumption_attribution_sequence',
-    'CREATE INDEX idx_consumption_attribution_sequence ON consumption_events (attribution_id, sequence_index) WHERE attribution_id IS NOT NULL',
+  late final Index idxConsumptionAttribution = Index(
+    'idx_consumption_attribution',
+    'CREATE INDEX idx_consumption_attribution ON consumption_events (attribution_id, created_at) WHERE attribution_id IS NOT NULL',
   );
   late final AiWorkAttributions aiWorkAttributions = AiWorkAttributions(this);
   late final Index idxAttributionOutput = Index(
@@ -5876,28 +2959,6 @@ abstract class _$ConsumptionDatabase extends GeneratedDatabase {
     'idx_attribution_type_created',
     'CREATE INDEX idx_attribution_type_created ON ai_work_attributions (work_type, completed_at)',
   );
-  late final AiAttributionLinks aiAttributionLinks = AiAttributionLinks(this);
-  late final Index idxAttributionLinkUnique = Index(
-    'idx_attribution_link_unique',
-    'CREATE UNIQUE INDEX idx_attribution_link_unique ON ai_attribution_links (attribution_id, role, artifact_type, artifact_id, IFNULL(sub_id, \'\'))',
-  );
-  late final Index idxAttributionLinkTarget = Index(
-    'idx_attribution_link_target',
-    'CREATE INDEX idx_attribution_link_target ON ai_attribution_links (artifact_type, artifact_id, sub_id)',
-  );
-  late final AiInteractionPayloads aiInteractionPayloads =
-      AiInteractionPayloads(this);
-  late final AiInteractionCosts aiInteractionCosts = AiInteractionCosts(this);
-  late final Index idxCostInteractionAssessed = Index(
-    'idx_cost_interaction_assessed',
-    'CREATE INDEX idx_cost_interaction_assessed ON ai_interaction_costs (interaction_id, assessed_at)',
-  );
-  late final Index idxCostExternalRecord = Index(
-    'idx_cost_external_record',
-    'CREATE UNIQUE INDEX idx_cost_external_record ON ai_interaction_costs (provider_type, billing_account_key, billing_source, external_record_id) WHERE external_record_id IS NOT NULL',
-  );
-  late final PendingAiAttributions pendingAiAttributions =
-      PendingAiAttributions(this);
   Selectable<ConsumptionEvent> getConsumptionEventById(String id) {
     return customSelect(
       'SELECT * FROM consumption_events WHERE id = ?1',
@@ -5953,20 +3014,12 @@ abstract class _$ConsumptionDatabase extends GeneratedDatabase {
     idxConsumptionTaskCreated,
     idxConsumptionCategoryCreated,
     idxConsumptionCreated,
-    idxConsumptionAttributionSequence,
+    idxConsumptionAttribution,
     aiWorkAttributions,
     idxAttributionOutput,
     idxAttributionTaskCreated,
     idxAttributionActorCreated,
     idxAttributionTypeCreated,
-    aiAttributionLinks,
-    idxAttributionLinkUnique,
-    idxAttributionLinkTarget,
-    aiInteractionPayloads,
-    aiInteractionCosts,
-    idxCostInteractionAssessed,
-    idxCostExternalRecord,
-    pendingAiAttributions,
   ];
 }
 
@@ -5976,15 +3029,6 @@ typedef $ConsumptionEventsCreateCompanionBuilder =
       Value<String?> parentId,
       required DateTime createdAt,
       Value<String?> attributionId,
-      Value<int> sequenceIndex,
-      Value<String?> interactionKind,
-      Value<String> interactionStatus,
-      Value<DateTime?> completedAt,
-      Value<String?> providerRequestId,
-      Value<String?> errorCode,
-      Value<String?> errorSummary,
-      Value<String?> payloadId,
-      Value<String?> costId,
       Value<String?> taskId,
       Value<String?> categoryId,
       Value<String?> entryId,
@@ -6023,15 +3067,6 @@ typedef $ConsumptionEventsUpdateCompanionBuilder =
       Value<String?> parentId,
       Value<DateTime> createdAt,
       Value<String?> attributionId,
-      Value<int> sequenceIndex,
-      Value<String?> interactionKind,
-      Value<String> interactionStatus,
-      Value<DateTime?> completedAt,
-      Value<String?> providerRequestId,
-      Value<String?> errorCode,
-      Value<String?> errorSummary,
-      Value<String?> payloadId,
-      Value<String?> costId,
       Value<String?> taskId,
       Value<String?> categoryId,
       Value<String?> entryId,
@@ -6091,51 +3126,6 @@ class $ConsumptionEventsFilterComposer
 
   ColumnFilters<String> get attributionId => $composableBuilder(
     column: $table.attributionId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get sequenceIndex => $composableBuilder(
-    column: $table.sequenceIndex,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get interactionKind => $composableBuilder(
-    column: $table.interactionKind,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get interactionStatus => $composableBuilder(
-    column: $table.interactionStatus,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get completedAt => $composableBuilder(
-    column: $table.completedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get providerRequestId => $composableBuilder(
-    column: $table.providerRequestId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get errorCode => $composableBuilder(
-    column: $table.errorCode,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get errorSummary => $composableBuilder(
-    column: $table.errorSummary,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get payloadId => $composableBuilder(
-    column: $table.payloadId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get costId => $composableBuilder(
-    column: $table.costId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6319,51 +3309,6 @@ class $ConsumptionEventsOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get sequenceIndex => $composableBuilder(
-    column: $table.sequenceIndex,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get interactionKind => $composableBuilder(
-    column: $table.interactionKind,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get interactionStatus => $composableBuilder(
-    column: $table.interactionStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
-    column: $table.completedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get providerRequestId => $composableBuilder(
-    column: $table.providerRequestId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get errorCode => $composableBuilder(
-    column: $table.errorCode,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get errorSummary => $composableBuilder(
-    column: $table.errorSummary,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get payloadId => $composableBuilder(
-    column: $table.payloadId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get costId => $composableBuilder(
-    column: $table.costId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get taskId => $composableBuilder(
     column: $table.taskId,
     builder: (column) => ColumnOrderings(column),
@@ -6538,45 +3483,6 @@ class $ConsumptionEventsAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get sequenceIndex => $composableBuilder(
-    column: $table.sequenceIndex,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get interactionKind => $composableBuilder(
-    column: $table.interactionKind,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get interactionStatus => $composableBuilder(
-    column: $table.interactionStatus,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
-    column: $table.completedAt,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get providerRequestId => $composableBuilder(
-    column: $table.providerRequestId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get errorCode =>
-      $composableBuilder(column: $table.errorCode, builder: (column) => column);
-
-  GeneratedColumn<String> get errorSummary => $composableBuilder(
-    column: $table.errorSummary,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get payloadId =>
-      $composableBuilder(column: $table.payloadId, builder: (column) => column);
-
-  GeneratedColumn<String> get costId =>
-      $composableBuilder(column: $table.costId, builder: (column) => column);
-
   GeneratedColumn<String> get taskId =>
       $composableBuilder(column: $table.taskId, builder: (column) => column);
 
@@ -6745,15 +3651,6 @@ class $ConsumptionEventsTableManager
                 Value<String?> parentId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<String?> attributionId = const Value.absent(),
-                Value<int> sequenceIndex = const Value.absent(),
-                Value<String?> interactionKind = const Value.absent(),
-                Value<String> interactionStatus = const Value.absent(),
-                Value<DateTime?> completedAt = const Value.absent(),
-                Value<String?> providerRequestId = const Value.absent(),
-                Value<String?> errorCode = const Value.absent(),
-                Value<String?> errorSummary = const Value.absent(),
-                Value<String?> payloadId = const Value.absent(),
-                Value<String?> costId = const Value.absent(),
                 Value<String?> taskId = const Value.absent(),
                 Value<String?> categoryId = const Value.absent(),
                 Value<String?> entryId = const Value.absent(),
@@ -6790,15 +3687,6 @@ class $ConsumptionEventsTableManager
                 parentId: parentId,
                 createdAt: createdAt,
                 attributionId: attributionId,
-                sequenceIndex: sequenceIndex,
-                interactionKind: interactionKind,
-                interactionStatus: interactionStatus,
-                completedAt: completedAt,
-                providerRequestId: providerRequestId,
-                errorCode: errorCode,
-                errorSummary: errorSummary,
-                payloadId: payloadId,
-                costId: costId,
                 taskId: taskId,
                 categoryId: categoryId,
                 entryId: entryId,
@@ -6837,15 +3725,6 @@ class $ConsumptionEventsTableManager
                 Value<String?> parentId = const Value.absent(),
                 required DateTime createdAt,
                 Value<String?> attributionId = const Value.absent(),
-                Value<int> sequenceIndex = const Value.absent(),
-                Value<String?> interactionKind = const Value.absent(),
-                Value<String> interactionStatus = const Value.absent(),
-                Value<DateTime?> completedAt = const Value.absent(),
-                Value<String?> providerRequestId = const Value.absent(),
-                Value<String?> errorCode = const Value.absent(),
-                Value<String?> errorSummary = const Value.absent(),
-                Value<String?> payloadId = const Value.absent(),
-                Value<String?> costId = const Value.absent(),
                 Value<String?> taskId = const Value.absent(),
                 Value<String?> categoryId = const Value.absent(),
                 Value<String?> entryId = const Value.absent(),
@@ -6882,15 +3761,6 @@ class $ConsumptionEventsTableManager
                 parentId: parentId,
                 createdAt: createdAt,
                 attributionId: attributionId,
-                sequenceIndex: sequenceIndex,
-                interactionKind: interactionKind,
-                interactionStatus: interactionStatus,
-                completedAt: completedAt,
-                providerRequestId: providerRequestId,
-                errorCode: errorCode,
-                errorSummary: errorSummary,
-                payloadId: payloadId,
-                costId: costId,
                 taskId: taskId,
                 categoryId: categoryId,
                 entryId: entryId,
@@ -6961,8 +3831,6 @@ typedef $AiWorkAttributionsCreateCompanionBuilder =
       required String initiatorId,
       required String initiatorDisplayName,
       required String triggerType,
-      required String executorHostId,
-      required String privacyClassification,
       required DateTime startedAt,
       required DateTime completedAt,
       Value<String?> parentAttributionId,
@@ -6984,8 +3852,6 @@ typedef $AiWorkAttributionsUpdateCompanionBuilder =
       Value<String> initiatorId,
       Value<String> initiatorDisplayName,
       Value<String> triggerType,
-      Value<String> executorHostId,
-      Value<String> privacyClassification,
       Value<DateTime> startedAt,
       Value<DateTime> completedAt,
       Value<String?> parentAttributionId,
@@ -6998,40 +3864,6 @@ typedef $AiWorkAttributionsUpdateCompanionBuilder =
       Value<int> schemaVersion,
       Value<int> rowid,
     });
-
-final class $AiWorkAttributionsReferences
-    extends
-        BaseReferences<
-          _$ConsumptionDatabase,
-          AiWorkAttributions,
-          AiWorkAttribution
-        > {
-  $AiWorkAttributionsReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static MultiTypedResultKey<AiAttributionLinks, List<AiAttributionLink>>
-  _aiAttributionLinksRefsTable(_$ConsumptionDatabase db) =>
-      MultiTypedResultKey.fromTable(
-        db.aiAttributionLinks,
-        aliasName: $_aliasNameGenerator(
-          db.aiWorkAttributions.id,
-          db.aiAttributionLinks.attributionId,
-        ),
-      );
-
-  $AiAttributionLinksProcessedTableManager get aiAttributionLinksRefs {
-    final manager = $AiAttributionLinksTableManager(
-      $_db,
-      $_db.aiAttributionLinks,
-    ).filter((f) => f.attributionId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _aiAttributionLinksRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
 
 class $AiWorkAttributionsFilterComposer
     extends Composer<_$ConsumptionDatabase, AiWorkAttributions> {
@@ -7074,16 +3906,6 @@ class $AiWorkAttributionsFilterComposer
 
   ColumnFilters<String> get triggerType => $composableBuilder(
     column: $table.triggerType,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get executorHostId => $composableBuilder(
-    column: $table.executorHostId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get privacyClassification => $composableBuilder(
-    column: $table.privacyClassification,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7136,31 +3958,6 @@ class $AiWorkAttributionsFilterComposer
     column: $table.schemaVersion,
     builder: (column) => ColumnFilters(column),
   );
-
-  Expression<bool> aiAttributionLinksRefs(
-    Expression<bool> Function($AiAttributionLinksFilterComposer f) f,
-  ) {
-    final $AiAttributionLinksFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.aiAttributionLinks,
-      getReferencedColumn: (t) => t.attributionId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $AiAttributionLinksFilterComposer(
-            $db: $db,
-            $table: $db.aiAttributionLinks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $AiWorkAttributionsOrderingComposer
@@ -7204,16 +4001,6 @@ class $AiWorkAttributionsOrderingComposer
 
   ColumnOrderings<String> get triggerType => $composableBuilder(
     column: $table.triggerType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get executorHostId => $composableBuilder(
-    column: $table.executorHostId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get privacyClassification => $composableBuilder(
-    column: $table.privacyClassification,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -7306,16 +4093,6 @@ class $AiWorkAttributionsAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get executorHostId => $composableBuilder(
-    column: $table.executorHostId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get privacyClassification => $composableBuilder(
-    column: $table.privacyClassification,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<DateTime> get startedAt =>
       $composableBuilder(column: $table.startedAt, builder: (column) => column);
 
@@ -7361,31 +4138,6 @@ class $AiWorkAttributionsAnnotationComposer
     column: $table.schemaVersion,
     builder: (column) => column,
   );
-
-  Expression<T> aiAttributionLinksRefs<T extends Object>(
-    Expression<T> Function($AiAttributionLinksAnnotationComposer a) f,
-  ) {
-    final $AiAttributionLinksAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.aiAttributionLinks,
-      getReferencedColumn: (t) => t.attributionId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $AiAttributionLinksAnnotationComposer(
-            $db: $db,
-            $table: $db.aiAttributionLinks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $AiWorkAttributionsTableManager
@@ -7399,9 +4151,16 @@ class $AiWorkAttributionsTableManager
           $AiWorkAttributionsAnnotationComposer,
           $AiWorkAttributionsCreateCompanionBuilder,
           $AiWorkAttributionsUpdateCompanionBuilder,
-          (AiWorkAttribution, $AiWorkAttributionsReferences),
+          (
+            AiWorkAttribution,
+            BaseReferences<
+              _$ConsumptionDatabase,
+              AiWorkAttributions,
+              AiWorkAttribution
+            >,
+          ),
           AiWorkAttribution,
-          PrefetchHooks Function({bool aiAttributionLinksRefs})
+          PrefetchHooks Function()
         > {
   $AiWorkAttributionsTableManager(
     _$ConsumptionDatabase db,
@@ -7425,8 +4184,6 @@ class $AiWorkAttributionsTableManager
                 Value<String> initiatorId = const Value.absent(),
                 Value<String> initiatorDisplayName = const Value.absent(),
                 Value<String> triggerType = const Value.absent(),
-                Value<String> executorHostId = const Value.absent(),
-                Value<String> privacyClassification = const Value.absent(),
                 Value<DateTime> startedAt = const Value.absent(),
                 Value<DateTime> completedAt = const Value.absent(),
                 Value<String?> parentAttributionId = const Value.absent(),
@@ -7446,8 +4203,6 @@ class $AiWorkAttributionsTableManager
                 initiatorId: initiatorId,
                 initiatorDisplayName: initiatorDisplayName,
                 triggerType: triggerType,
-                executorHostId: executorHostId,
-                privacyClassification: privacyClassification,
                 startedAt: startedAt,
                 completedAt: completedAt,
                 parentAttributionId: parentAttributionId,
@@ -7469,8 +4224,6 @@ class $AiWorkAttributionsTableManager
                 required String initiatorId,
                 required String initiatorDisplayName,
                 required String triggerType,
-                required String executorHostId,
-                required String privacyClassification,
                 required DateTime startedAt,
                 required DateTime completedAt,
                 Value<String?> parentAttributionId = const Value.absent(),
@@ -7490,8 +4243,6 @@ class $AiWorkAttributionsTableManager
                 initiatorId: initiatorId,
                 initiatorDisplayName: initiatorDisplayName,
                 triggerType: triggerType,
-                executorHostId: executorHostId,
-                privacyClassification: privacyClassification,
                 startedAt: startedAt,
                 completedAt: completedAt,
                 parentAttributionId: parentAttributionId,
@@ -7505,47 +4256,9 @@ class $AiWorkAttributionsTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $AiWorkAttributionsReferences(db, table, e),
-                ),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({aiAttributionLinksRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (aiAttributionLinksRefs) db.aiAttributionLinks,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (aiAttributionLinksRefs)
-                    await $_getPrefetchedData<
-                      AiWorkAttribution,
-                      AiWorkAttributions,
-                      AiAttributionLink
-                    >(
-                      currentTable: table,
-                      referencedTable: $AiWorkAttributionsReferences
-                          ._aiAttributionLinksRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $AiWorkAttributionsReferences(
-                            db,
-                            table,
-                            p0,
-                          ).aiAttributionLinksRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where(
-                            (e) => e.attributionId == item.id,
-                          ),
-                      typedResults: items,
-                    ),
-                ];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -7560,1283 +4273,15 @@ typedef $AiWorkAttributionsProcessedTableManager =
       $AiWorkAttributionsAnnotationComposer,
       $AiWorkAttributionsCreateCompanionBuilder,
       $AiWorkAttributionsUpdateCompanionBuilder,
-      (AiWorkAttribution, $AiWorkAttributionsReferences),
+      (
+        AiWorkAttribution,
+        BaseReferences<
+          _$ConsumptionDatabase,
+          AiWorkAttributions,
+          AiWorkAttribution
+        >,
+      ),
       AiWorkAttribution,
-      PrefetchHooks Function({bool aiAttributionLinksRefs})
-    >;
-typedef $AiAttributionLinksCreateCompanionBuilder =
-    AiAttributionLinksCompanion Function({
-      required String id,
-      required String attributionId,
-      required String role,
-      required String artifactType,
-      required String artifactId,
-      Value<String?> subId,
-      Value<String?> contentDigest,
-      required String serialized,
-      Value<int> rowid,
-    });
-typedef $AiAttributionLinksUpdateCompanionBuilder =
-    AiAttributionLinksCompanion Function({
-      Value<String> id,
-      Value<String> attributionId,
-      Value<String> role,
-      Value<String> artifactType,
-      Value<String> artifactId,
-      Value<String?> subId,
-      Value<String?> contentDigest,
-      Value<String> serialized,
-      Value<int> rowid,
-    });
-
-final class $AiAttributionLinksReferences
-    extends
-        BaseReferences<
-          _$ConsumptionDatabase,
-          AiAttributionLinks,
-          AiAttributionLink
-        > {
-  $AiAttributionLinksReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static AiWorkAttributions _attributionIdTable(_$ConsumptionDatabase db) =>
-      db.aiWorkAttributions.createAlias(
-        $_aliasNameGenerator(
-          db.aiAttributionLinks.attributionId,
-          db.aiWorkAttributions.id,
-        ),
-      );
-
-  $AiWorkAttributionsProcessedTableManager get attributionId {
-    final $_column = $_itemColumn<String>('attribution_id')!;
-
-    final manager = $AiWorkAttributionsTableManager(
-      $_db,
-      $_db.aiWorkAttributions,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_attributionIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $AiAttributionLinksFilterComposer
-    extends Composer<_$ConsumptionDatabase, AiAttributionLinks> {
-  $AiAttributionLinksFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get role => $composableBuilder(
-    column: $table.role,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get artifactType => $composableBuilder(
-    column: $table.artifactType,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get artifactId => $composableBuilder(
-    column: $table.artifactId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get subId => $composableBuilder(
-    column: $table.subId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get contentDigest => $composableBuilder(
-    column: $table.contentDigest,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get serialized => $composableBuilder(
-    column: $table.serialized,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $AiWorkAttributionsFilterComposer get attributionId {
-    final $AiWorkAttributionsFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.attributionId,
-      referencedTable: $db.aiWorkAttributions,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $AiWorkAttributionsFilterComposer(
-            $db: $db,
-            $table: $db.aiWorkAttributions,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $AiAttributionLinksOrderingComposer
-    extends Composer<_$ConsumptionDatabase, AiAttributionLinks> {
-  $AiAttributionLinksOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get role => $composableBuilder(
-    column: $table.role,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get artifactType => $composableBuilder(
-    column: $table.artifactType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get artifactId => $composableBuilder(
-    column: $table.artifactId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get subId => $composableBuilder(
-    column: $table.subId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get contentDigest => $composableBuilder(
-    column: $table.contentDigest,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get serialized => $composableBuilder(
-    column: $table.serialized,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $AiWorkAttributionsOrderingComposer get attributionId {
-    final $AiWorkAttributionsOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.attributionId,
-      referencedTable: $db.aiWorkAttributions,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $AiWorkAttributionsOrderingComposer(
-            $db: $db,
-            $table: $db.aiWorkAttributions,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $AiAttributionLinksAnnotationComposer
-    extends Composer<_$ConsumptionDatabase, AiAttributionLinks> {
-  $AiAttributionLinksAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get role =>
-      $composableBuilder(column: $table.role, builder: (column) => column);
-
-  GeneratedColumn<String> get artifactType => $composableBuilder(
-    column: $table.artifactType,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get artifactId => $composableBuilder(
-    column: $table.artifactId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get subId =>
-      $composableBuilder(column: $table.subId, builder: (column) => column);
-
-  GeneratedColumn<String> get contentDigest => $composableBuilder(
-    column: $table.contentDigest,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get serialized => $composableBuilder(
-    column: $table.serialized,
-    builder: (column) => column,
-  );
-
-  $AiWorkAttributionsAnnotationComposer get attributionId {
-    final $AiWorkAttributionsAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.attributionId,
-      referencedTable: $db.aiWorkAttributions,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $AiWorkAttributionsAnnotationComposer(
-            $db: $db,
-            $table: $db.aiWorkAttributions,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $AiAttributionLinksTableManager
-    extends
-        RootTableManager<
-          _$ConsumptionDatabase,
-          AiAttributionLinks,
-          AiAttributionLink,
-          $AiAttributionLinksFilterComposer,
-          $AiAttributionLinksOrderingComposer,
-          $AiAttributionLinksAnnotationComposer,
-          $AiAttributionLinksCreateCompanionBuilder,
-          $AiAttributionLinksUpdateCompanionBuilder,
-          (AiAttributionLink, $AiAttributionLinksReferences),
-          AiAttributionLink,
-          PrefetchHooks Function({bool attributionId})
-        > {
-  $AiAttributionLinksTableManager(
-    _$ConsumptionDatabase db,
-    AiAttributionLinks table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $AiAttributionLinksFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $AiAttributionLinksOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $AiAttributionLinksAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> attributionId = const Value.absent(),
-                Value<String> role = const Value.absent(),
-                Value<String> artifactType = const Value.absent(),
-                Value<String> artifactId = const Value.absent(),
-                Value<String?> subId = const Value.absent(),
-                Value<String?> contentDigest = const Value.absent(),
-                Value<String> serialized = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => AiAttributionLinksCompanion(
-                id: id,
-                attributionId: attributionId,
-                role: role,
-                artifactType: artifactType,
-                artifactId: artifactId,
-                subId: subId,
-                contentDigest: contentDigest,
-                serialized: serialized,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String attributionId,
-                required String role,
-                required String artifactType,
-                required String artifactId,
-                Value<String?> subId = const Value.absent(),
-                Value<String?> contentDigest = const Value.absent(),
-                required String serialized,
-                Value<int> rowid = const Value.absent(),
-              }) => AiAttributionLinksCompanion.insert(
-                id: id,
-                attributionId: attributionId,
-                role: role,
-                artifactType: artifactType,
-                artifactId: artifactId,
-                subId: subId,
-                contentDigest: contentDigest,
-                serialized: serialized,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $AiAttributionLinksReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({attributionId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (attributionId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.attributionId,
-                                referencedTable: $AiAttributionLinksReferences
-                                    ._attributionIdTable(db),
-                                referencedColumn: $AiAttributionLinksReferences
-                                    ._attributionIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $AiAttributionLinksProcessedTableManager =
-    ProcessedTableManager<
-      _$ConsumptionDatabase,
-      AiAttributionLinks,
-      AiAttributionLink,
-      $AiAttributionLinksFilterComposer,
-      $AiAttributionLinksOrderingComposer,
-      $AiAttributionLinksAnnotationComposer,
-      $AiAttributionLinksCreateCompanionBuilder,
-      $AiAttributionLinksUpdateCompanionBuilder,
-      (AiAttributionLink, $AiAttributionLinksReferences),
-      AiAttributionLink,
-      PrefetchHooks Function({bool attributionId})
-    >;
-typedef $AiInteractionPayloadsCreateCompanionBuilder =
-    AiInteractionPayloadsCompanion Function({
-      required String id,
-      required String interactionId,
-      required String capturePolicy,
-      required String privacyClassification,
-      required String requestDigest,
-      required String responseDigest,
-      required String serialized,
-      Value<int> rowid,
-    });
-typedef $AiInteractionPayloadsUpdateCompanionBuilder =
-    AiInteractionPayloadsCompanion Function({
-      Value<String> id,
-      Value<String> interactionId,
-      Value<String> capturePolicy,
-      Value<String> privacyClassification,
-      Value<String> requestDigest,
-      Value<String> responseDigest,
-      Value<String> serialized,
-      Value<int> rowid,
-    });
-
-class $AiInteractionPayloadsFilterComposer
-    extends Composer<_$ConsumptionDatabase, AiInteractionPayloads> {
-  $AiInteractionPayloadsFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get interactionId => $composableBuilder(
-    column: $table.interactionId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get capturePolicy => $composableBuilder(
-    column: $table.capturePolicy,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get privacyClassification => $composableBuilder(
-    column: $table.privacyClassification,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get requestDigest => $composableBuilder(
-    column: $table.requestDigest,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get responseDigest => $composableBuilder(
-    column: $table.responseDigest,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get serialized => $composableBuilder(
-    column: $table.serialized,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $AiInteractionPayloadsOrderingComposer
-    extends Composer<_$ConsumptionDatabase, AiInteractionPayloads> {
-  $AiInteractionPayloadsOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get interactionId => $composableBuilder(
-    column: $table.interactionId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get capturePolicy => $composableBuilder(
-    column: $table.capturePolicy,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get privacyClassification => $composableBuilder(
-    column: $table.privacyClassification,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get requestDigest => $composableBuilder(
-    column: $table.requestDigest,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get responseDigest => $composableBuilder(
-    column: $table.responseDigest,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get serialized => $composableBuilder(
-    column: $table.serialized,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $AiInteractionPayloadsAnnotationComposer
-    extends Composer<_$ConsumptionDatabase, AiInteractionPayloads> {
-  $AiInteractionPayloadsAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get interactionId => $composableBuilder(
-    column: $table.interactionId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get capturePolicy => $composableBuilder(
-    column: $table.capturePolicy,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get privacyClassification => $composableBuilder(
-    column: $table.privacyClassification,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get requestDigest => $composableBuilder(
-    column: $table.requestDigest,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get responseDigest => $composableBuilder(
-    column: $table.responseDigest,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get serialized => $composableBuilder(
-    column: $table.serialized,
-    builder: (column) => column,
-  );
-}
-
-class $AiInteractionPayloadsTableManager
-    extends
-        RootTableManager<
-          _$ConsumptionDatabase,
-          AiInteractionPayloads,
-          AiInteractionPayload,
-          $AiInteractionPayloadsFilterComposer,
-          $AiInteractionPayloadsOrderingComposer,
-          $AiInteractionPayloadsAnnotationComposer,
-          $AiInteractionPayloadsCreateCompanionBuilder,
-          $AiInteractionPayloadsUpdateCompanionBuilder,
-          (
-            AiInteractionPayload,
-            BaseReferences<
-              _$ConsumptionDatabase,
-              AiInteractionPayloads,
-              AiInteractionPayload
-            >,
-          ),
-          AiInteractionPayload,
-          PrefetchHooks Function()
-        > {
-  $AiInteractionPayloadsTableManager(
-    _$ConsumptionDatabase db,
-    AiInteractionPayloads table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $AiInteractionPayloadsFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $AiInteractionPayloadsOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $AiInteractionPayloadsAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> interactionId = const Value.absent(),
-                Value<String> capturePolicy = const Value.absent(),
-                Value<String> privacyClassification = const Value.absent(),
-                Value<String> requestDigest = const Value.absent(),
-                Value<String> responseDigest = const Value.absent(),
-                Value<String> serialized = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => AiInteractionPayloadsCompanion(
-                id: id,
-                interactionId: interactionId,
-                capturePolicy: capturePolicy,
-                privacyClassification: privacyClassification,
-                requestDigest: requestDigest,
-                responseDigest: responseDigest,
-                serialized: serialized,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String interactionId,
-                required String capturePolicy,
-                required String privacyClassification,
-                required String requestDigest,
-                required String responseDigest,
-                required String serialized,
-                Value<int> rowid = const Value.absent(),
-              }) => AiInteractionPayloadsCompanion.insert(
-                id: id,
-                interactionId: interactionId,
-                capturePolicy: capturePolicy,
-                privacyClassification: privacyClassification,
-                requestDigest: requestDigest,
-                responseDigest: responseDigest,
-                serialized: serialized,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $AiInteractionPayloadsProcessedTableManager =
-    ProcessedTableManager<
-      _$ConsumptionDatabase,
-      AiInteractionPayloads,
-      AiInteractionPayload,
-      $AiInteractionPayloadsFilterComposer,
-      $AiInteractionPayloadsOrderingComposer,
-      $AiInteractionPayloadsAnnotationComposer,
-      $AiInteractionPayloadsCreateCompanionBuilder,
-      $AiInteractionPayloadsUpdateCompanionBuilder,
-      (
-        AiInteractionPayload,
-        BaseReferences<
-          _$ConsumptionDatabase,
-          AiInteractionPayloads,
-          AiInteractionPayload
-        >,
-      ),
-      AiInteractionPayload,
-      PrefetchHooks Function()
-    >;
-typedef $AiInteractionCostsCreateCompanionBuilder =
-    AiInteractionCostsCompanion Function({
-      required String id,
-      required String interactionId,
-      required String source,
-      Value<String?> originalAmountDecimal,
-      Value<String?> originalUnit,
-      Value<int?> reportingAmountMicros,
-      Value<String?> reportingCurrency,
-      Value<String?> providerType,
-      Value<String?> billingAccountKey,
-      Value<String?> billingSource,
-      Value<String?> externalRecordId,
-      Value<String?> supersedesCostId,
-      required DateTime assessedAt,
-      Value<String?> pricingSnapshot,
-      required String serialized,
-      Value<int> rowid,
-    });
-typedef $AiInteractionCostsUpdateCompanionBuilder =
-    AiInteractionCostsCompanion Function({
-      Value<String> id,
-      Value<String> interactionId,
-      Value<String> source,
-      Value<String?> originalAmountDecimal,
-      Value<String?> originalUnit,
-      Value<int?> reportingAmountMicros,
-      Value<String?> reportingCurrency,
-      Value<String?> providerType,
-      Value<String?> billingAccountKey,
-      Value<String?> billingSource,
-      Value<String?> externalRecordId,
-      Value<String?> supersedesCostId,
-      Value<DateTime> assessedAt,
-      Value<String?> pricingSnapshot,
-      Value<String> serialized,
-      Value<int> rowid,
-    });
-
-class $AiInteractionCostsFilterComposer
-    extends Composer<_$ConsumptionDatabase, AiInteractionCosts> {
-  $AiInteractionCostsFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get interactionId => $composableBuilder(
-    column: $table.interactionId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get source => $composableBuilder(
-    column: $table.source,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get originalAmountDecimal => $composableBuilder(
-    column: $table.originalAmountDecimal,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get originalUnit => $composableBuilder(
-    column: $table.originalUnit,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get reportingAmountMicros => $composableBuilder(
-    column: $table.reportingAmountMicros,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get reportingCurrency => $composableBuilder(
-    column: $table.reportingCurrency,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get providerType => $composableBuilder(
-    column: $table.providerType,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get billingAccountKey => $composableBuilder(
-    column: $table.billingAccountKey,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get billingSource => $composableBuilder(
-    column: $table.billingSource,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get externalRecordId => $composableBuilder(
-    column: $table.externalRecordId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get supersedesCostId => $composableBuilder(
-    column: $table.supersedesCostId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get assessedAt => $composableBuilder(
-    column: $table.assessedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get pricingSnapshot => $composableBuilder(
-    column: $table.pricingSnapshot,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get serialized => $composableBuilder(
-    column: $table.serialized,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $AiInteractionCostsOrderingComposer
-    extends Composer<_$ConsumptionDatabase, AiInteractionCosts> {
-  $AiInteractionCostsOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get interactionId => $composableBuilder(
-    column: $table.interactionId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get source => $composableBuilder(
-    column: $table.source,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get originalAmountDecimal => $composableBuilder(
-    column: $table.originalAmountDecimal,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get originalUnit => $composableBuilder(
-    column: $table.originalUnit,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get reportingAmountMicros => $composableBuilder(
-    column: $table.reportingAmountMicros,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get reportingCurrency => $composableBuilder(
-    column: $table.reportingCurrency,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get providerType => $composableBuilder(
-    column: $table.providerType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get billingAccountKey => $composableBuilder(
-    column: $table.billingAccountKey,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get billingSource => $composableBuilder(
-    column: $table.billingSource,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get externalRecordId => $composableBuilder(
-    column: $table.externalRecordId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get supersedesCostId => $composableBuilder(
-    column: $table.supersedesCostId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get assessedAt => $composableBuilder(
-    column: $table.assessedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get pricingSnapshot => $composableBuilder(
-    column: $table.pricingSnapshot,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get serialized => $composableBuilder(
-    column: $table.serialized,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $AiInteractionCostsAnnotationComposer
-    extends Composer<_$ConsumptionDatabase, AiInteractionCosts> {
-  $AiInteractionCostsAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get interactionId => $composableBuilder(
-    column: $table.interactionId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get source =>
-      $composableBuilder(column: $table.source, builder: (column) => column);
-
-  GeneratedColumn<String> get originalAmountDecimal => $composableBuilder(
-    column: $table.originalAmountDecimal,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get originalUnit => $composableBuilder(
-    column: $table.originalUnit,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get reportingAmountMicros => $composableBuilder(
-    column: $table.reportingAmountMicros,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get reportingCurrency => $composableBuilder(
-    column: $table.reportingCurrency,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get providerType => $composableBuilder(
-    column: $table.providerType,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get billingAccountKey => $composableBuilder(
-    column: $table.billingAccountKey,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get billingSource => $composableBuilder(
-    column: $table.billingSource,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get externalRecordId => $composableBuilder(
-    column: $table.externalRecordId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get supersedesCostId => $composableBuilder(
-    column: $table.supersedesCostId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<DateTime> get assessedAt => $composableBuilder(
-    column: $table.assessedAt,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get pricingSnapshot => $composableBuilder(
-    column: $table.pricingSnapshot,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get serialized => $composableBuilder(
-    column: $table.serialized,
-    builder: (column) => column,
-  );
-}
-
-class $AiInteractionCostsTableManager
-    extends
-        RootTableManager<
-          _$ConsumptionDatabase,
-          AiInteractionCosts,
-          AiInteractionCost,
-          $AiInteractionCostsFilterComposer,
-          $AiInteractionCostsOrderingComposer,
-          $AiInteractionCostsAnnotationComposer,
-          $AiInteractionCostsCreateCompanionBuilder,
-          $AiInteractionCostsUpdateCompanionBuilder,
-          (
-            AiInteractionCost,
-            BaseReferences<
-              _$ConsumptionDatabase,
-              AiInteractionCosts,
-              AiInteractionCost
-            >,
-          ),
-          AiInteractionCost,
-          PrefetchHooks Function()
-        > {
-  $AiInteractionCostsTableManager(
-    _$ConsumptionDatabase db,
-    AiInteractionCosts table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $AiInteractionCostsFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $AiInteractionCostsOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $AiInteractionCostsAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> interactionId = const Value.absent(),
-                Value<String> source = const Value.absent(),
-                Value<String?> originalAmountDecimal = const Value.absent(),
-                Value<String?> originalUnit = const Value.absent(),
-                Value<int?> reportingAmountMicros = const Value.absent(),
-                Value<String?> reportingCurrency = const Value.absent(),
-                Value<String?> providerType = const Value.absent(),
-                Value<String?> billingAccountKey = const Value.absent(),
-                Value<String?> billingSource = const Value.absent(),
-                Value<String?> externalRecordId = const Value.absent(),
-                Value<String?> supersedesCostId = const Value.absent(),
-                Value<DateTime> assessedAt = const Value.absent(),
-                Value<String?> pricingSnapshot = const Value.absent(),
-                Value<String> serialized = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => AiInteractionCostsCompanion(
-                id: id,
-                interactionId: interactionId,
-                source: source,
-                originalAmountDecimal: originalAmountDecimal,
-                originalUnit: originalUnit,
-                reportingAmountMicros: reportingAmountMicros,
-                reportingCurrency: reportingCurrency,
-                providerType: providerType,
-                billingAccountKey: billingAccountKey,
-                billingSource: billingSource,
-                externalRecordId: externalRecordId,
-                supersedesCostId: supersedesCostId,
-                assessedAt: assessedAt,
-                pricingSnapshot: pricingSnapshot,
-                serialized: serialized,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String interactionId,
-                required String source,
-                Value<String?> originalAmountDecimal = const Value.absent(),
-                Value<String?> originalUnit = const Value.absent(),
-                Value<int?> reportingAmountMicros = const Value.absent(),
-                Value<String?> reportingCurrency = const Value.absent(),
-                Value<String?> providerType = const Value.absent(),
-                Value<String?> billingAccountKey = const Value.absent(),
-                Value<String?> billingSource = const Value.absent(),
-                Value<String?> externalRecordId = const Value.absent(),
-                Value<String?> supersedesCostId = const Value.absent(),
-                required DateTime assessedAt,
-                Value<String?> pricingSnapshot = const Value.absent(),
-                required String serialized,
-                Value<int> rowid = const Value.absent(),
-              }) => AiInteractionCostsCompanion.insert(
-                id: id,
-                interactionId: interactionId,
-                source: source,
-                originalAmountDecimal: originalAmountDecimal,
-                originalUnit: originalUnit,
-                reportingAmountMicros: reportingAmountMicros,
-                reportingCurrency: reportingCurrency,
-                providerType: providerType,
-                billingAccountKey: billingAccountKey,
-                billingSource: billingSource,
-                externalRecordId: externalRecordId,
-                supersedesCostId: supersedesCostId,
-                assessedAt: assessedAt,
-                pricingSnapshot: pricingSnapshot,
-                serialized: serialized,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $AiInteractionCostsProcessedTableManager =
-    ProcessedTableManager<
-      _$ConsumptionDatabase,
-      AiInteractionCosts,
-      AiInteractionCost,
-      $AiInteractionCostsFilterComposer,
-      $AiInteractionCostsOrderingComposer,
-      $AiInteractionCostsAnnotationComposer,
-      $AiInteractionCostsCreateCompanionBuilder,
-      $AiInteractionCostsUpdateCompanionBuilder,
-      (
-        AiInteractionCost,
-        BaseReferences<
-          _$ConsumptionDatabase,
-          AiInteractionCosts,
-          AiInteractionCost
-        >,
-      ),
-      AiInteractionCost,
-      PrefetchHooks Function()
-    >;
-typedef $PendingAiAttributionsCreateCompanionBuilder =
-    PendingAiAttributionsCompanion Function({
-      required String id,
-      required DateTime startedAt,
-      required DateTime lastUpdatedAt,
-      required String serialized,
-      Value<int> rowid,
-    });
-typedef $PendingAiAttributionsUpdateCompanionBuilder =
-    PendingAiAttributionsCompanion Function({
-      Value<String> id,
-      Value<DateTime> startedAt,
-      Value<DateTime> lastUpdatedAt,
-      Value<String> serialized,
-      Value<int> rowid,
-    });
-
-class $PendingAiAttributionsFilterComposer
-    extends Composer<_$ConsumptionDatabase, PendingAiAttributions> {
-  $PendingAiAttributionsFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get startedAt => $composableBuilder(
-    column: $table.startedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get lastUpdatedAt => $composableBuilder(
-    column: $table.lastUpdatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get serialized => $composableBuilder(
-    column: $table.serialized,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $PendingAiAttributionsOrderingComposer
-    extends Composer<_$ConsumptionDatabase, PendingAiAttributions> {
-  $PendingAiAttributionsOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
-    column: $table.startedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get lastUpdatedAt => $composableBuilder(
-    column: $table.lastUpdatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get serialized => $composableBuilder(
-    column: $table.serialized,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $PendingAiAttributionsAnnotationComposer
-    extends Composer<_$ConsumptionDatabase, PendingAiAttributions> {
-  $PendingAiAttributionsAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get startedAt =>
-      $composableBuilder(column: $table.startedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get lastUpdatedAt => $composableBuilder(
-    column: $table.lastUpdatedAt,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get serialized => $composableBuilder(
-    column: $table.serialized,
-    builder: (column) => column,
-  );
-}
-
-class $PendingAiAttributionsTableManager
-    extends
-        RootTableManager<
-          _$ConsumptionDatabase,
-          PendingAiAttributions,
-          PendingAiAttribution,
-          $PendingAiAttributionsFilterComposer,
-          $PendingAiAttributionsOrderingComposer,
-          $PendingAiAttributionsAnnotationComposer,
-          $PendingAiAttributionsCreateCompanionBuilder,
-          $PendingAiAttributionsUpdateCompanionBuilder,
-          (
-            PendingAiAttribution,
-            BaseReferences<
-              _$ConsumptionDatabase,
-              PendingAiAttributions,
-              PendingAiAttribution
-            >,
-          ),
-          PendingAiAttribution,
-          PrefetchHooks Function()
-        > {
-  $PendingAiAttributionsTableManager(
-    _$ConsumptionDatabase db,
-    PendingAiAttributions table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $PendingAiAttributionsFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $PendingAiAttributionsOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $PendingAiAttributionsAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> startedAt = const Value.absent(),
-                Value<DateTime> lastUpdatedAt = const Value.absent(),
-                Value<String> serialized = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => PendingAiAttributionsCompanion(
-                id: id,
-                startedAt: startedAt,
-                lastUpdatedAt: lastUpdatedAt,
-                serialized: serialized,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required DateTime startedAt,
-                required DateTime lastUpdatedAt,
-                required String serialized,
-                Value<int> rowid = const Value.absent(),
-              }) => PendingAiAttributionsCompanion.insert(
-                id: id,
-                startedAt: startedAt,
-                lastUpdatedAt: lastUpdatedAt,
-                serialized: serialized,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $PendingAiAttributionsProcessedTableManager =
-    ProcessedTableManager<
-      _$ConsumptionDatabase,
-      PendingAiAttributions,
-      PendingAiAttribution,
-      $PendingAiAttributionsFilterComposer,
-      $PendingAiAttributionsOrderingComposer,
-      $PendingAiAttributionsAnnotationComposer,
-      $PendingAiAttributionsCreateCompanionBuilder,
-      $PendingAiAttributionsUpdateCompanionBuilder,
-      (
-        PendingAiAttribution,
-        BaseReferences<
-          _$ConsumptionDatabase,
-          PendingAiAttributions,
-          PendingAiAttribution
-        >,
-      ),
-      PendingAiAttribution,
       PrefetchHooks Function()
     >;
 
@@ -8847,14 +4292,6 @@ class $ConsumptionDatabaseManager {
       $ConsumptionEventsTableManager(_db, _db.consumptionEvents);
   $AiWorkAttributionsTableManager get aiWorkAttributions =>
       $AiWorkAttributionsTableManager(_db, _db.aiWorkAttributions);
-  $AiAttributionLinksTableManager get aiAttributionLinks =>
-      $AiAttributionLinksTableManager(_db, _db.aiAttributionLinks);
-  $AiInteractionPayloadsTableManager get aiInteractionPayloads =>
-      $AiInteractionPayloadsTableManager(_db, _db.aiInteractionPayloads);
-  $AiInteractionCostsTableManager get aiInteractionCosts =>
-      $AiInteractionCostsTableManager(_db, _db.aiInteractionCosts);
-  $PendingAiAttributionsTableManager get pendingAiAttributions =>
-      $PendingAiAttributionsTableManager(_db, _db.pendingAiAttributions);
 }
 
 class SumConsumptionByTaskResult {

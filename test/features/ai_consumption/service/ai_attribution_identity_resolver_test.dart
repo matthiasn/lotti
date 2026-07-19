@@ -9,19 +9,16 @@ import '../../../mocks/mocks.dart';
 
 void main() {
   late MockSettingsDb settingsDb;
-  late MockVectorClockService vectorClockService;
   late AiAttributionIdentityResolver resolver;
 
   setUp(() {
     settingsDb = MockSettingsDb();
-    vectorClockService = MockVectorClockService();
     when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
     when(
       () => settingsDb.saveSettingsItem(any(), any()),
     ).thenAnswer((_) async => 1);
     resolver = AiAttributionIdentityResolver(
       settingsDb,
-      vectorClockService,
       uuid: _FixedUuid(),
     );
   });
@@ -47,7 +44,6 @@ void main() {
       ).thenAnswer((_) async => 'Ada');
       final matrixResolver = AiAttributionIdentityResolver(
         settingsDb,
-        vectorClockService,
         matrixUserId: () => '@ada:example.org',
         uuid: _FixedUuid(),
       );
@@ -78,16 +74,6 @@ void main() {
     ).thenAnswer((_) async => null);
 
     expect((await resolver.humanInitiator()).displayName, isEmpty);
-  });
-
-  test('captures the host id and falls back when none exists', () async {
-    when(vectorClockService.getHost).thenAnswer((_) async => 'host-a');
-    final known = await resolver.executor();
-    expect(known.hostId, 'host-a');
-    expect(known.displayName, isNotEmpty);
-
-    when(vectorClockService.getHost).thenAnswer((_) async => null);
-    expect((await resolver.executor()).hostId, 'unknown-host');
   });
 
   test('automation and agent actors retain their accountable human', () async {

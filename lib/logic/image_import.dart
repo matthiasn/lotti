@@ -701,7 +701,7 @@ Future<String?> importGeneratedImageBytes({
   String? linkedId,
   String? categoryId,
   String? imageId,
-  AiTerminalAttributionEnvelope? aiAttribution,
+  AiWorkAttribution? aiAttribution,
 }) async {
   // Validate file size
   if (data.length > ImageImportConstants.maxFileSizeBytes) {

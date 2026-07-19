@@ -92,13 +92,6 @@ class EmbeddingProcessor {
       embeddingStore: embeddingStore,
       embeddingRepository: embeddingRepository,
       baseUrl: baseUrl,
-      privacyClassification: entity.meta.private == true
-          ? AiPrivacyClassification.private
-          : AiPrivacyClassification.standard,
-      sourceArtifact: AiArtifactReference(
-        type: AiArtifactType.journalEntry,
-        id: entityId,
-      ),
     );
 
     // When both content and category changed, the task embedding is already
@@ -186,11 +179,6 @@ class EmbeddingProcessor {
       embeddingStore: embeddingStore,
       embeddingRepository: embeddingRepository,
       baseUrl: baseUrl,
-      privacyClassification: AiPrivacyClassification.mixed,
-      sourceArtifact: AiArtifactReference(
-        type: AiArtifactType.agentReport,
-        id: reportId,
-      ),
     );
 
     return true;
@@ -209,8 +197,6 @@ class EmbeddingProcessor {
     required EmbeddingStore embeddingStore,
     required OllamaEmbeddingRepository embeddingRepository,
     required String baseUrl,
-    required AiPrivacyClassification privacyClassification,
-    required AiArtifactReference sourceArtifact,
     String categoryId = '',
     String taskId = '',
     String subtype = '',
@@ -229,9 +215,7 @@ class EmbeddingProcessor {
       trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
       automationId: 'automation:embedding-indexer',
       automationDisplayName: 'Embedding indexer',
-      privacyClassification: privacyClassification,
       intendedOutputs: [output],
-      sources: [sourceArtifact],
       taskId: taskId.isEmpty ? null : taskId,
       categoryId: categoryId.isEmpty ? null : categoryId,
     );
@@ -257,14 +241,6 @@ class EmbeddingProcessor {
                 invoke: invoke,
                 responseText: (value) =>
                     sha256.convert(value.buffer.asUint8List()).toString(),
-                cost: const AiCapturedCost(
-                  source: AiCostSource.localCompute,
-                  originalAmountDecimal: '0',
-                  originalUnit: 'USD',
-                  reportingAmountMicros: 0,
-                  reportingCurrency: 'USD',
-                  billingSource: 'local_compute',
-                ),
                 interactionContext: AiCapturedContext(
                   entryId: entityId,
                 ),
@@ -274,7 +250,6 @@ class EmbeddingProcessor {
                 triggerType: AiTriggerType.automatic,
                 automationId: 'automation:embedding-indexer',
                 automationDisplayName: 'Embedding indexer',
-                privacyClassification: privacyClassification,
                 taskId: taskId.isEmpty ? null : taskId,
                 categoryId: categoryId.isEmpty ? null : categoryId,
               );

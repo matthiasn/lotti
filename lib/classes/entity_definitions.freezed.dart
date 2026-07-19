@@ -2667,7 +2667,7 @@ mixin _$AiResponseData {
 // research-prompt all use [AiResponseType.promptGeneration]).
  String? get skillId; List<AiActionItem>? get suggestedActionItems; AiResponseType? get type; double? get temperature;// Usage statistics (nullable for backward compatibility)
  int? get inputTokens; int? get outputTokens; int? get thoughtsTokens; int? get cachedInputTokens;// Processing duration in milliseconds
- int? get durationMs; AiTerminalAttributionEnvelope? get aiAttribution;
+ int? get durationMs; AiWorkAttribution? get aiAttribution;
 /// Create a copy of AiResponseData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2700,11 +2700,11 @@ abstract mixin class $AiResponseDataCopyWith<$Res>  {
   factory $AiResponseDataCopyWith(AiResponseData value, $Res Function(AiResponseData) _then) = _$AiResponseDataCopyWithImpl;
 @useResult
 $Res call({
- String model, String systemMessage, String prompt, String thoughts, String response, String? promptId, String? skillId, List<AiActionItem>? suggestedActionItems, AiResponseType? type, double? temperature, int? inputTokens, int? outputTokens, int? thoughtsTokens, int? cachedInputTokens, int? durationMs, AiTerminalAttributionEnvelope? aiAttribution
+ String model, String systemMessage, String prompt, String thoughts, String response, String? promptId, String? skillId, List<AiActionItem>? suggestedActionItems, AiResponseType? type, double? temperature, int? inputTokens, int? outputTokens, int? thoughtsTokens, int? cachedInputTokens, int? durationMs, AiWorkAttribution? aiAttribution
 });
 
 
-$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution;
+$AiWorkAttributionCopyWith<$Res>? get aiAttribution;
 
 }
 /// @nodoc
@@ -2735,19 +2735,19 @@ as int?,thoughtsTokens: freezed == thoughtsTokens ? _self.thoughtsTokens : thoug
 as int?,cachedInputTokens: freezed == cachedInputTokens ? _self.cachedInputTokens : cachedInputTokens // ignore: cast_nullable_to_non_nullable
 as int?,durationMs: freezed == durationMs ? _self.durationMs : durationMs // ignore: cast_nullable_to_non_nullable
 as int?,aiAttribution: freezed == aiAttribution ? _self.aiAttribution : aiAttribution // ignore: cast_nullable_to_non_nullable
-as AiTerminalAttributionEnvelope?,
+as AiWorkAttribution?,
   ));
 }
 /// Create a copy of AiResponseData
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution {
+$AiWorkAttributionCopyWith<$Res>? get aiAttribution {
     if (_self.aiAttribution == null) {
     return null;
   }
 
-  return $AiTerminalAttributionEnvelopeCopyWith<$Res>(_self.aiAttribution!, (value) {
+  return $AiWorkAttributionCopyWith<$Res>(_self.aiAttribution!, (value) {
     return _then(_self.copyWith(aiAttribution: value));
   });
 }
@@ -2832,7 +2832,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String model,  String systemMessage,  String prompt,  String thoughts,  String response,  String? promptId,  String? skillId,  List<AiActionItem>? suggestedActionItems,  AiResponseType? type,  double? temperature,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  int? durationMs,  AiTerminalAttributionEnvelope? aiAttribution)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String model,  String systemMessage,  String prompt,  String thoughts,  String response,  String? promptId,  String? skillId,  List<AiActionItem>? suggestedActionItems,  AiResponseType? type,  double? temperature,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  int? durationMs,  AiWorkAttribution? aiAttribution)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AiResponseData() when $default != null:
 return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_that.response,_that.promptId,_that.skillId,_that.suggestedActionItems,_that.type,_that.temperature,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.durationMs,_that.aiAttribution);case _:
@@ -2853,7 +2853,7 @@ return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String model,  String systemMessage,  String prompt,  String thoughts,  String response,  String? promptId,  String? skillId,  List<AiActionItem>? suggestedActionItems,  AiResponseType? type,  double? temperature,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  int? durationMs,  AiTerminalAttributionEnvelope? aiAttribution)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String model,  String systemMessage,  String prompt,  String thoughts,  String response,  String? promptId,  String? skillId,  List<AiActionItem>? suggestedActionItems,  AiResponseType? type,  double? temperature,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  int? durationMs,  AiWorkAttribution? aiAttribution)  $default,) {final _that = this;
 switch (_that) {
 case _AiResponseData():
 return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_that.response,_that.promptId,_that.skillId,_that.suggestedActionItems,_that.type,_that.temperature,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.durationMs,_that.aiAttribution);case _:
@@ -2873,7 +2873,7 @@ return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String model,  String systemMessage,  String prompt,  String thoughts,  String response,  String? promptId,  String? skillId,  List<AiActionItem>? suggestedActionItems,  AiResponseType? type,  double? temperature,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  int? durationMs,  AiTerminalAttributionEnvelope? aiAttribution)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String model,  String systemMessage,  String prompt,  String thoughts,  String response,  String? promptId,  String? skillId,  List<AiActionItem>? suggestedActionItems,  AiResponseType? type,  double? temperature,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  int? durationMs,  AiWorkAttribution? aiAttribution)?  $default,) {final _that = this;
 switch (_that) {
 case _AiResponseData() when $default != null:
 return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_that.response,_that.promptId,_that.skillId,_that.suggestedActionItems,_that.type,_that.temperature,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.durationMs,_that.aiAttribution);case _:
@@ -2921,7 +2921,7 @@ class _AiResponseData implements AiResponseData {
 @override final  int? cachedInputTokens;
 // Processing duration in milliseconds
 @override final  int? durationMs;
-@override final  AiTerminalAttributionEnvelope? aiAttribution;
+@override final  AiWorkAttribution? aiAttribution;
 
 /// Create a copy of AiResponseData
 /// with the given fields replaced by the non-null parameter values.
@@ -2956,11 +2956,11 @@ abstract mixin class _$AiResponseDataCopyWith<$Res> implements $AiResponseDataCo
   factory _$AiResponseDataCopyWith(_AiResponseData value, $Res Function(_AiResponseData) _then) = __$AiResponseDataCopyWithImpl;
 @override @useResult
 $Res call({
- String model, String systemMessage, String prompt, String thoughts, String response, String? promptId, String? skillId, List<AiActionItem>? suggestedActionItems, AiResponseType? type, double? temperature, int? inputTokens, int? outputTokens, int? thoughtsTokens, int? cachedInputTokens, int? durationMs, AiTerminalAttributionEnvelope? aiAttribution
+ String model, String systemMessage, String prompt, String thoughts, String response, String? promptId, String? skillId, List<AiActionItem>? suggestedActionItems, AiResponseType? type, double? temperature, int? inputTokens, int? outputTokens, int? thoughtsTokens, int? cachedInputTokens, int? durationMs, AiWorkAttribution? aiAttribution
 });
 
 
-@override $AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution;
+@override $AiWorkAttributionCopyWith<$Res>? get aiAttribution;
 
 }
 /// @nodoc
@@ -2991,7 +2991,7 @@ as int?,thoughtsTokens: freezed == thoughtsTokens ? _self.thoughtsTokens : thoug
 as int?,cachedInputTokens: freezed == cachedInputTokens ? _self.cachedInputTokens : cachedInputTokens // ignore: cast_nullable_to_non_nullable
 as int?,durationMs: freezed == durationMs ? _self.durationMs : durationMs // ignore: cast_nullable_to_non_nullable
 as int?,aiAttribution: freezed == aiAttribution ? _self.aiAttribution : aiAttribution // ignore: cast_nullable_to_non_nullable
-as AiTerminalAttributionEnvelope?,
+as AiWorkAttribution?,
   ));
 }
 
@@ -2999,12 +2999,12 @@ as AiTerminalAttributionEnvelope?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$AiTerminalAttributionEnvelopeCopyWith<$Res>? get aiAttribution {
+$AiWorkAttributionCopyWith<$Res>? get aiAttribution {
     if (_self.aiAttribution == null) {
     return null;
   }
 
-  return $AiTerminalAttributionEnvelopeCopyWith<$Res>(_self.aiAttribution!, (value) {
+  return $AiWorkAttributionCopyWith<$Res>(_self.aiAttribution!, (value) {
     return _then(_self.copyWith(aiAttribution: value));
   });
 }

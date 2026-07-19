@@ -128,7 +128,7 @@ void main() {
     testWidgets('shows report inline when thread has matching report', (
       tester,
     ) async {
-      final envelope = makeAiTerminalEnvelope(
+      final envelope = makeAiWorkAttribution(
         attributionId: 'thread-report-attribution',
       );
       final threads = <String, List<AgentDomainEntity>>{

@@ -46,9 +46,6 @@ abstract class AiConsumptionEvent with _$AiConsumptionEvent {
     /// legacy events captured before attribution was introduced.
     String? attributionId,
 
-    /// Stable order of this interaction inside its logical work operation.
-    @Default(0) int sequenceIndex,
-
     /// Backend operation and terminal outcome. Legacy rows may not identify
     /// the operation more precisely than [responseType].
     AiInteractionKind? interactionKind,
@@ -58,21 +55,19 @@ abstract class AiConsumptionEvent with _$AiConsumptionEvent {
     /// Completion timestamp. [createdAt] remains the interaction start.
     DateTime? completedAt,
 
-    /// Provider request id used for reconciliation when the backend exposes
-    /// one. It must never contain credentials.
+    /// Provider request id, when the backend exposes one. It must never contain
+    /// credentials.
     String? providerRequestId,
 
     /// Sanitized failure classification; raw provider bodies are not stored.
     String? errorCode,
     String? errorSummary,
 
-    /// Reference-only sync-safe interaction evidence and cost assessment.
-    AiInteractionPayload? payload,
-    AiInteractionCost? cost,
-
-    /// Durable publication-saga evidence written before an output is allowed
-    /// into the journal/agent sync path.
-    AiAttributionRecoveryCapsule? recoveryCapsule,
+    /// Non-reversible correlation metadata. Request/response bodies are never
+    /// retained by the consumption system.
+    String? requestDigest,
+    String? responseDigest,
+    Map<String, dynamic>? interactionParameters,
 
     /// The causal parent call/context ("the call that made it"). For agent
     /// turns this is the wake's run key; top-level single calls leave it null.
@@ -103,8 +98,11 @@ abstract class AiConsumptionEvent with _$AiConsumptionEvent {
     int? totalTokens,
 
     // ── Cost + environmental impact (Melious-only; null elsewhere) ───────────
-    /// Billing cost in Melious credits (≈ EUR).
+    /// Actual billing cost reported by Melious, in Melious credits.
     double? credits,
+
+    /// Exact decimal representation of [credits] as reported by Melious.
+    String? costCreditsDecimal,
 
     /// Energy in kilowatt-hours, as delivered by Melious.
     double? energyKwh,

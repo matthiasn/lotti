@@ -1401,7 +1401,7 @@ void main() {
     ) async {
       final attributedImage = testImageEntry.copyWith(
         data: testImageEntry.data.copyWith(
-          aiAttribution: makeAiTerminalEnvelope(
+          aiAttribution: makeAiWorkAttribution(
             output: AiArtifactReference(
               type: AiArtifactType.journalImage,
               id: testImageEntry.id,

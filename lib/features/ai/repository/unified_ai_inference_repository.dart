@@ -135,7 +135,7 @@ class UnifiedAiInferenceRepository {
     required bool isRerun,
     JournalEntity? entity, // Optional entity to avoid redundant fetches
     String? linkedEntityId,
-    AiAttributionPendingSession? existingAttributionSession,
+    AiAttributionSession? existingAttributionSession,
     String? existingOutputId,
   }) async {
     // Keep the provider alive during the entire inference operation
@@ -229,20 +229,11 @@ class UnifiedAiInferenceRepository {
               type: isRerun ? AiTriggerType.automatic : AiTriggerType.manual,
               promptId: promptConfig.id,
             ),
-            privacyClassification: entity.meta.private == true
-                ? AiPrivacyClassification.private
-                : AiPrivacyClassification.standard,
             intendedOutputs: [
               _outputReference(
                 responseType: promptConfig.aiResponseType,
                 entityId: entity.id,
                 outputId: outputId,
-              ),
-            ],
-            sources: [
-              AiArtifactReference(
-                type: AiArtifactType.journalEntry,
-                id: entity.id,
               ),
             ],
             taskId: entity is Task ? entity.id : null,
@@ -295,9 +286,6 @@ class UnifiedAiInferenceRepository {
               ),
               existingSession: attributionSession,
               terminalizeSuccess: false,
-              privacyClassification: entity.meta.private == true
-                  ? AiPrivacyClassification.private
-                  : AiPrivacyClassification.standard,
               taskId: entity is Task ? entity.id : null,
               categoryId: entity.meta.categoryId,
             );
@@ -388,8 +376,7 @@ class UnifiedAiInferenceRepository {
           try {
             await _failOutputAttribution(attributionSession, error);
           } catch (_) {
-            // Preserve the original output failure. A remaining pending saga
-            // is eligible for startup recovery.
+            // Preserve the original output failure.
           }
         }
         Error.throwWithStackTrace(error, stackTrace);
@@ -600,7 +587,7 @@ class UnifiedAiInferenceRepository {
     int? durationMs,
     double? temperature,
     String? effectiveSystemMessage,
-    AiAttributionPendingSession? attributionSession,
+    AiAttributionSession? attributionSession,
   }) async {
     var thoughts = '';
     var cleanResponse = response;
@@ -661,7 +648,7 @@ class UnifiedAiInferenceRepository {
         (attributionSession != null &&
             entity is JournalImage &&
             promptConfig.aiResponseType == AiResponseType.imageAnalysis);
-    AiTerminalAttributionEnvelope? attributionEnvelope;
+    AiWorkAttribution? attributionEnvelope;
     if (attributionSession != null && shouldSaveEntry) {
       attributionEnvelope = await getIt<AiAttributionService>()
           .prepareCompletion(
@@ -795,7 +782,7 @@ class UnifiedAiInferenceRepository {
     required String response,
     required DateTime start,
     required bool isRerun,
-    required AiAttributionPendingSession? attributionSession,
+    required AiAttributionSession? attributionSession,
     required String outputId,
     AiResponseEntry? aiResponseEntry,
   }) async {
@@ -903,8 +890,8 @@ class UnifiedAiInferenceRepository {
             if (!persisted) {
               throw StateError('Failed to persist attributed transcript');
             }
-            if (transcript.aiAttribution case final envelope?) {
-              await getIt<AiAttributionService>().finalize(envelope);
+            if (transcript.aiAttribution case final attribution?) {
+              await getIt<AiAttributionService>().finalize(attribution);
             }
             developer.log(
               'Successfully updated audio transcription for audio ${entity.id}',
@@ -985,7 +972,7 @@ class UnifiedAiInferenceRepository {
   }
 
   Future<void> _failOutputAttribution(
-    AiAttributionPendingSession session,
+    AiAttributionSession session,
     Object error,
   ) => getIt<AiInteractionCapture>().completeSession(
     session: session,

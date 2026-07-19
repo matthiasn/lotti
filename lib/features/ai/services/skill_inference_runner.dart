@@ -32,7 +32,6 @@ import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
-import 'package:lotti/features/ai_consumption/logic/attribution_cost.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
@@ -976,7 +975,7 @@ class SkillInferenceRunner {
     return (content: buffer.toString(), usage: usage);
   }
 
-  Future<AiAttributionPendingSession?> _beginAttribution({
+  Future<AiAttributionSession?> _beginAttribution({
     required AiWorkType workType,
     required JournalEntity source,
     required AiArtifactReference output,
@@ -990,7 +989,6 @@ class SkillInferenceRunner {
     }
     final identity = getIt<AiAttributionIdentityResolver>();
     final human = await identity.humanInitiator();
-    final executor = await identity.executor();
     final automatic = automationResult.skillAssignment?.automate ?? false;
     final actor = automatic
         ? AiActorSnapshot(
@@ -1008,20 +1006,15 @@ class SkillInferenceRunner {
           type: automatic ? AiTriggerType.automatic : AiTriggerType.manual,
           skillId: skill.id,
         ),
-        executor: executor,
-        privacyClassification: source.meta.private == true
-            ? AiPrivacyClassification.private
-            : AiPrivacyClassification.standard,
         intendedOutputs: [output],
-        sources: [_artifactForJournalEntity(source)],
         taskId: taskId,
         categoryId: source.meta.categoryId,
       ),
     );
   }
 
-  Future<AiTerminalAttributionEnvelope?> _recordAttributedConsumption({
-    required AiAttributionPendingSession? attribution,
+  Future<AiWorkAttribution?> _recordAttributedConsumption({
+    required AiAttributionSession? attribution,
     required String entryId,
     required String? taskId,
     required String? categoryId,
@@ -1056,55 +1049,6 @@ class SkillInferenceRunner {
     final completedAt = DateTime.now();
     final requestDigest = sha256.convert(utf8.encode(requestText)).toString();
     final responseDigest = sha256.convert(utf8.encode(responseText)).toString();
-    final exactCost = impact?.costCreditsDecimal;
-    final cost = AiInteractionCost(
-      id: uuid.v4(),
-      interactionId: interactionId,
-      source: exactCost == null
-          ? AiCostSource.unknown
-          : AiCostSource.providerReported,
-      assessedAt: completedAt,
-      originalAmountDecimal: exactCost,
-      originalUnit: exactCost == null ? null : 'meliousCredit',
-      reportingAmountMicros: exactCost == null
-          ? null
-          : decimalAmountToMicros(exactCost),
-      reportingCurrency: exactCost == null ? null : 'EUR',
-      providerType: provider.inferenceProviderType.name,
-      pricingSnapshot: exactCost == null
-          ? null
-          : const {
-              'version': 'melious-credit-eur-v1',
-              'formula': '1 meliousCredit ≈ 1 EUR',
-            },
-    );
-    final payload = AiInteractionPayload(
-      id: uuid.v4(),
-      interactionId: interactionId,
-      request: [
-        AiContentPart(
-          type: AiContentPartType.omitted,
-          sha256: requestDigest,
-          byteLength: utf8.encode(requestText).length,
-        ),
-      ],
-      response: [
-        AiContentPart(
-          type: AiContentPartType.omitted,
-          sha256: responseDigest,
-          byteLength: utf8.encode(responseText).length,
-        ),
-      ],
-      parameters: {
-        'model': modelId,
-        'providerType': provider.inferenceProviderType.name,
-      },
-      requestDigest: requestDigest,
-      responseDigest: responseDigest,
-      capturePolicy: AiPayloadCapturePolicy.referenceOnly,
-      privacyClassification: attribution.privacyClassification,
-      createdAt: completedAt,
-    );
     final event = _consumptionEvent(
       id: interactionId,
       entryId: entryId,
@@ -1119,18 +1063,13 @@ class SkillInferenceRunner {
       start: start,
       completedAt: completedAt,
       interactionKind: interactionKind,
-      payload: payload,
-      cost: cost,
+      requestDigest: requestDigest,
+      responseDigest: responseDigest,
     );
-    final result = await getIt<AiAttributionService>().recordInteraction(
+    await getIt<AiAttributionService>().recordInteraction(
       attributionId: attribution.id,
       event: event,
     );
-    if (!result.published) {
-      throw const AiAttributionPublicationException(
-        'output blocked because attribution evidence could not be published',
-      );
-    }
     return getIt<AiAttributionService>().prepareCompletion(
       attributionId: attribution.id,
       outputs: attribution.intendedOutputs,
@@ -1138,24 +1077,13 @@ class SkillInferenceRunner {
   }
 
   Future<void> _finalizeAttribution(
-    AiTerminalAttributionEnvelope? envelope,
+    AiWorkAttribution? envelope,
   ) async {
     if (envelope == null || !getIt.isRegistered<AiAttributionService>()) {
       return;
     }
     await getIt<AiAttributionService>().finalize(envelope);
   }
-
-  AiArtifactReference _artifactForJournalEntity(JournalEntity entity) =>
-      AiArtifactReference(
-        type: switch (entity) {
-          JournalAudio() => AiArtifactType.journalAudio,
-          JournalImage() => AiArtifactType.journalImage,
-          AiResponseEntry() => AiArtifactType.journalAiResponse,
-          _ => AiArtifactType.journalEntry,
-        },
-        id: entity.meta.id,
-      );
 
   AiConsumptionEvent _consumptionEvent({
     required String id,
@@ -1171,8 +1099,8 @@ class SkillInferenceRunner {
     required DateTime start,
     DateTime? completedAt,
     AiInteractionKind? interactionKind,
-    AiInteractionPayload? payload,
-    AiInteractionCost? cost,
+    String? requestDigest,
+    String? responseDigest,
   }) => AiConsumptionEvent(
     id: id,
     createdAt: start,
@@ -1181,8 +1109,12 @@ class SkillInferenceRunner {
     vectorClock: null,
     interactionKind: interactionKind,
     completedAt: completedAt,
-    payload: payload,
-    cost: cost,
+    requestDigest: requestDigest,
+    responseDigest: responseDigest,
+    interactionParameters: {
+      'model': modelId,
+      'providerType': provider.inferenceProviderType.name,
+    },
     entryId: entryId,
     taskId: taskId,
     categoryId: categoryId,
@@ -1197,6 +1129,7 @@ class SkillInferenceRunner {
     thoughtsTokens: usage?.completionTokensDetails?.reasoningTokens,
     totalTokens: usage?.totalTokens,
     credits: impact?.costCredits,
+    costCreditsDecimal: impact?.costCreditsDecimal,
     energyKwh: impact?.energyKwh,
     carbonGCo2: impact?.carbonGCo2,
     waterLiters: impact?.waterLiters,

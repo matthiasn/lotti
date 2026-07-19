@@ -15,9 +15,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
-import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
-import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
-import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
@@ -32,7 +29,6 @@ import 'package:record/record.dart' as rec;
 import 'package:record/record.dart';
 
 import '../../../mocks/mocks.dart';
-import '../../ai_consumption/test_utils.dart';
 
 class MockAmplitude extends Mock implements Amplitude {}
 
@@ -1929,7 +1925,6 @@ void main() {
             updatedAt: DateTime(2024, 3, 15, 10, 30),
             dateFrom: DateTime(2024, 3, 15, 10, 30),
             dateTo: DateTime(2024, 3, 15, 10, 30),
-            categoryId: 'test-category',
           ),
         );
         when(
@@ -1944,94 +1939,9 @@ void main() {
           final meta = invocation.positionalArguments[0] as Metadata;
           return meta;
         });
-        JournalAudio? savedAudio;
-        when(() => mockPersistence.updateDbEntity(any())).thenAnswer((
-          call,
-        ) async {
-          savedAudio = call.positionalArguments.single as JournalAudio;
-          return true;
-        });
-        final attributionCoordinator = MockTranscriptAttributionCoordinator();
-        final envelope = makeAiTerminalEnvelope(
-          attributionId: 'realtime-attribution',
-          output: makeAiArtifact(
-            type: AiArtifactType.journalAudio,
-            id: 'test-entry-id',
-            subId: 'realtime-transcript-id',
-          ),
-        );
-        final prepared = PreparedTranscriptAttribution(
-          transcriptId: 'realtime-transcript-id',
-          envelope: envelope,
-        );
-        final attributionSession = TranscriptAttributionSession(
-          transcriptId: 'realtime-transcript-id',
-          pending: AiAttributionPendingSession(
-            id: 'realtime-attribution',
-            attributionId: 'realtime-attribution',
-            workType: AiWorkType.audioTranscription,
-            initiator: makeAiActor(),
-            trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
-            executor: makeAiExecutor(),
-            privacyClassification: AiPrivacyClassification.mixed,
-            phase: AiAttributionPendingPhase.prepared,
-            startedAt: DateTime(2026, 3, 15),
-            lastUpdatedAt: DateTime(2026, 3, 15),
-            intendedOutputs: const [],
-            taskId: 'task-id',
-            categoryId: 'test-category',
-          ),
-          providerName: 'Mistral',
-          modelId: 'voxtral-mini-transcribe-realtime-2602',
-          providerType: InferenceProviderType.genericOpenAi,
-          interactionKind: AiInteractionKind.realtimeTranscription,
-          startedAt: DateTime(2026, 3, 15),
-        );
         when(
-          () => attributionCoordinator.begin(
-            providerName: 'Mistral',
-            modelId: 'voxtral-mini-transcribe-realtime-2602',
-            providerType: InferenceProviderType.genericOpenAi,
-            interactionKind: AiInteractionKind.realtimeTranscription,
-            privacyClassification: AiPrivacyClassification.mixed,
-            taskId: 'task-id',
-            categoryId: 'test-category',
-          ),
-        ).thenAnswer((_) async => attributionSession);
-        when(
-          () => attributionCoordinator.recordInteraction(
-            session: attributionSession,
-            audioEntryId: 'test-entry-id',
-            transcript: 'realtime transcript text',
-          ),
-        ).thenAnswer((_) async {});
-        when(
-          () => attributionCoordinator.prepareOutput(
-            session: attributionSession,
-            audioEntryId: 'test-entry-id',
-          ),
-        ).thenAnswer((_) async => prepared);
-        when(
-          () => attributionCoordinator.finalize(prepared),
-        ).thenThrow(StateError('projection unavailable'));
-        const publicationFailure = AiAttributionPublicationException(
-          'publication uncertain',
-        );
-        when(
-          () => attributionCoordinator.failOutput(
-            session: attributionSession,
-            errorCode: any(named: 'errorCode'),
-          ),
-        ).thenAnswer((_) async {});
-        when(
-          () => attributionCoordinator.fail(
-            session: attributionSession,
-            error: publicationFailure,
-          ),
-        ).thenAnswer((_) async {});
-        getIt.registerSingleton<TranscriptAttributionCoordinator>(
-          attributionCoordinator,
-        );
+          () => mockPersistence.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
 
         // Mock automatic prompt trigger
         final mockTrigger = MockAutomaticPromptTrigger();
@@ -2082,23 +1992,6 @@ void main() {
           ..setCategoryId('test-category');
 
         // Start realtime recording first
-        when(
-          () => mockRealtimeService.resolveRealtimeConfig(),
-        ).thenAnswer(
-          (_) async => (
-            model: _fakeRealtimeConfig.model,
-            provider: _fakeRealtimeConfig.provider.copyWith(
-              inferenceProviderType: InferenceProviderType.genericOpenAi,
-            ),
-          ),
-        );
-        when(
-          () => attributionCoordinator.recordInteraction(
-            session: attributionSession,
-            audioEntryId: 'test-entry-id',
-            transcript: '',
-          ),
-        ).thenAnswer((_) async {});
         await controller.recordRealtime(linkedId: 'task-id');
 
         expect(
@@ -2119,16 +2012,6 @@ void main() {
 
         // Verify transcript was saved via updateDbEntity
         verify(() => mockPersistence.updateDbEntity(any())).called(1);
-        final transcript = savedAudio!.data.transcripts!.single;
-        expect(transcript.id, 'realtime-transcript-id');
-        expect(transcript.aiAttribution, envelope);
-        verify(() => attributionCoordinator.finalize(prepared)).called(1);
-        verifyNever(
-          () => attributionCoordinator.failOutput(
-            session: attributionSession,
-            errorCode: any(named: 'errorCode'),
-          ),
-        );
 
         // Verify automatic prompts were triggered with realtimeTranscriptProvided: true
         verify(
@@ -2152,136 +2035,6 @@ void main() {
               that: equals('stopRealtime'),
             ),
           ),
-        ).called(1);
-
-        clearInteractions(attributionCoordinator);
-        when(
-          () => attributionCoordinator.recordInteraction(
-            session: attributionSession,
-            audioEntryId: 'test-entry-id',
-            transcript: 'realtime transcript text',
-          ),
-        ).thenThrow(publicationFailure);
-        await controller.recordRealtime(linkedId: 'task-id');
-        final uncertainEntryId = await controller.stopRealtime();
-        expect(uncertainEntryId, isNull);
-        verifyNever(
-          () => attributionCoordinator.fail(
-            session: attributionSession,
-            error: publicationFailure,
-          ),
-        );
-        verifyNever(
-          () => attributionCoordinator.failOutput(
-            session: attributionSession,
-            errorCode: any(named: 'errorCode'),
-          ),
-        );
-
-        clearInteractions(attributionCoordinator);
-        when(
-          () => attributionCoordinator.recordInteraction(
-            session: attributionSession,
-            audioEntryId: 'test-entry-id',
-            transcript: 'realtime transcript text',
-          ),
-        ).thenAnswer((_) async {});
-        when(() => mockPersistence.updateDbEntity(any())).thenAnswer((_) async {
-          return false;
-        });
-        await controller.recordRealtime(linkedId: 'task-id');
-        await controller.stopRealtime();
-        verifyNever(() => attributionCoordinator.finalize(prepared));
-        verify(
-          () => attributionCoordinator.failOutput(
-            session: attributionSession,
-            errorCode: 'transcript_persistence_failed',
-          ),
-        ).called(1);
-
-        clearInteractions(attributionCoordinator);
-        when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
-          (_) async => true,
-        );
-        when(
-          () => mockRealtimeService.stop(
-            stopRecorder: any(named: 'stopRecorder'),
-            outputPath: any(named: 'outputPath'),
-          ),
-        ).thenAnswer(
-          (_) async => const RealtimeStopResult(
-            transcript: '',
-            audioFilePath: '/tmp/audio.m4a',
-          ),
-        );
-        await controller.recordRealtime(linkedId: 'task-id');
-        await controller.stopRealtime();
-        verify(
-          () => attributionCoordinator.failOutput(
-            session: attributionSession,
-            errorCode: 'empty_transcript',
-          ),
-        ).called(1);
-
-        clearInteractions(attributionCoordinator);
-        when(
-          () => mockRealtimeService.stop(
-            stopRecorder: any(named: 'stopRecorder'),
-            outputPath: any(named: 'outputPath'),
-          ),
-        ).thenAnswer(
-          (_) async => const RealtimeStopResult(
-            transcript: 'realtime transcript text',
-            audioFilePath: '/tmp/audio.m4a',
-          ),
-        );
-        when(
-          () => attributionCoordinator.prepareOutput(
-            session: attributionSession,
-            audioEntryId: 'test-entry-id',
-          ),
-        ).thenThrow(StateError('output preparation failed'));
-        await controller.recordRealtime(linkedId: 'task-id');
-        expect(await controller.stopRealtime(), isNull);
-        verify(
-          () => attributionCoordinator.failOutput(
-            session: attributionSession,
-            errorCode: 'transcript_output_failed',
-          ),
-        ).called(1);
-
-        clearInteractions(attributionCoordinator);
-        when(
-          () => mockRealtimeService.stop(
-            stopRecorder: any(named: 'stopRecorder'),
-            outputPath: any(named: 'outputPath'),
-          ),
-        ).thenThrow(StateError('provider stop failed'));
-        when(
-          () => attributionCoordinator.fail(
-            session: attributionSession,
-            error: any(named: 'error'),
-          ),
-        ).thenThrow(StateError('attribution failure publication failed'));
-        await controller.recordRealtime(linkedId: 'task-id');
-        expect(await controller.stopRealtime(), isNull);
-        verify(
-          () => mockDomainLogger.error(
-            LogDomain.speech,
-            any<Object>(),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-            subDomain: 'realtimeAttributionFailure',
-          ),
-        ).called(1);
-
-        clearInteractions(attributionCoordinator);
-        when(
-          () => attributionCoordinator.cancel(attributionSession),
-        ).thenAnswer((_) async {});
-        await controller.recordRealtime(linkedId: 'task-id');
-        await controller.cancelRealtime();
-        verify(
-          () => attributionCoordinator.cancel(attributionSession),
         ).called(1);
       });
     });

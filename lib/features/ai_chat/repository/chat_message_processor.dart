@@ -67,7 +67,7 @@ class ChatMessageProcessor {
     required String systemMessage,
     String? categoryId,
     List<ChatCompletionTool>? tools,
-    AiAttributionPendingSession? attributionSession,
+    AiAttributionSession? attributionSession,
     bool terminalizeAttribution = true,
   }) {
     final captureRegistered = getIt.isRegistered<AiInteractionCapture>();
@@ -121,7 +121,6 @@ class ChatMessageProcessor {
       existingSession: attributionSession,
       terminalizeSuccess: terminalizeAttribution,
       terminalizeFailure: terminalizeAttribution,
-      privacyClassification: AiPrivacyClassification.mixed,
       categoryId: categoryId,
     );
   }
@@ -488,7 +487,7 @@ class ChatMessageProcessor {
     required List<ChatCompletionMessage> messages,
     required AiInferenceConfig config,
     required String systemMessage,
-    AiAttributionPendingSession? attributionSession,
+    AiAttributionSession? attributionSession,
     String? categoryId,
   }) async {
     final finalPrompt = buildFinalPromptFromMessages(messages);
@@ -512,7 +511,7 @@ class ChatMessageProcessor {
     required List<ChatCompletionMessage> messages,
     required AiInferenceConfig config,
     required String systemMessage,
-    AiAttributionPendingSession? attributionSession,
+    AiAttributionSession? attributionSession,
     String? categoryId,
   }) async* {
     final finalPrompt = buildFinalPromptFromMessages(messages);

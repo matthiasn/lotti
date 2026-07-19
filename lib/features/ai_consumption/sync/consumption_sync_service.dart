@@ -9,20 +9,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 
-/// Result of durably writing an interaction and attempting its sync enqueue.
-class ConsumptionPublicationResult {
-  const ConsumptionPublicationResult({
-    required this.event,
-    required this.published,
-  });
-
-  /// The vector-clock-stamped event committed to the consumption database.
-  final AiConsumptionEvent event;
-
-  /// Whether the existing-compatible sync envelope was durably queued.
-  final bool published;
-}
-
 /// Sync-aware write wrapper around [ConsumptionRepository].
 ///
 /// All **local** consumption writes go through [recordEvent] so each is stamped
@@ -111,48 +97,6 @@ class ConsumptionSyncService {
       );
     });
   }
-
-  /// Writes and stamps [event], returning whether its sync envelope was queued.
-  ///
-  /// Attribution publication uses this as a barrier: a generated output must
-  /// not enter the journal/agent sync path while `published` is false. The DB
-  /// write still commits when enqueue fails, so recovery can retry the exact
-  /// stamped event without spending another vector-clock counter.
-  Future<ConsumptionPublicationResult> recordEventForPublication(
-    AiConsumptionEvent event,
-  ) async {
-    late AiConsumptionEvent stamped;
-    var published = false;
-    await _vectorClockService.withVcScope<void>(() async {
-      stamped = event.copyWith(
-        vectorClock: await _vectorClockService.getNextVectorClock(
-          previous: event.vectorClock,
-        ),
-      );
-      await _repository.upsertEvent(stamped);
-      _notifyWrite(stamped);
-      await _recordSequence(stamped);
-      published = await _enqueuePostWrite(
-        SyncMessage.consumptionEvent(
-          event: stamped,
-          status: SyncEntryStatus.update,
-        ),
-      );
-    });
-    return ConsumptionPublicationResult(
-      event: stamped,
-      published: published,
-    );
-  }
-
-  /// Retries the sync enqueue for an already-stamped committed event.
-  Future<bool> retryEventPublication(AiConsumptionEvent event) =>
-      _enqueuePostWrite(
-        SyncMessage.consumptionEvent(
-          event: event,
-          status: SyncEntryStatus.update,
-        ),
-      );
 
   Future<void> _recordSequence(AiConsumptionEvent event) async {
     final service = _sequenceLog;

@@ -118,9 +118,9 @@ The structure is intentionally split:
 - transcription paths are separated into batch and realtime services
 
 Every production provider call enters `AiInteractionCapture` before invocation.
-The boundary stores a durable creator/trigger/executor header, reference-only
-request and response digests, provider/model, terminal status, timing, token
-usage, and exact Melious cost/impact when reported. Chat sessions and input
+The boundary keeps creator/trigger ownership in memory and stores request and
+response digests, provider/model, terminal status, timing, token usage, and
+exact Melious cost/impact when reported. Chat sessions and input
 transcripts are currently memory-only rather than syncable output carriers, so
 these records terminalize honestly as partial with no fabricated artifact link.
 Batch transcription may instead join an existing transcript attribution session
@@ -128,7 +128,7 @@ when a journal-writing caller owns the carrier.
 
 One user message owns exactly one top-level chat attribution. If the initial
 response requests tools, the initial provider call and the final tool-result
-call are two ordered child interactions under that same pending owner; the
+call are two child interactions under that same owner; the
 repository terminalizes the owner once after the final stream (or as
 failed/cancelled on the corresponding exit path).
 

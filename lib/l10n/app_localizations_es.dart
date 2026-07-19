@@ -1143,16 +1143,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiAssistantTitle => 'Generar…';
 
   @override
-  String get aiAttributionArtifactContext => 'Contexto';
-
-  @override
   String get aiAttributionArtifactOutput => 'Resultado';
-
-  @override
-  String get aiAttributionArtifacts => 'Elementos vinculados';
-
-  @override
-  String get aiAttributionArtifactSource => 'Fuente';
 
   @override
   String get aiAttributionCompletedAt => 'Completado el';
@@ -1161,28 +1152,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiAttributionCost => 'Coste';
 
   @override
-  String get aiAttributionCostSource => 'Fuente del coste';
-
-  @override
-  String get aiAttributionCostSourceEstimated => 'Estimado localmente';
-
-  @override
-  String get aiAttributionCostSourceLegacy => 'Dato heredado';
-
-  @override
-  String get aiAttributionCostSourceLocal => 'Procesamiento local';
-
-  @override
-  String get aiAttributionCostSourceProvider => 'Informado por el proveedor';
-
-  @override
-  String get aiAttributionCostSourceReconciled => 'Conciliado externamente';
-
-  @override
   String get aiAttributionCostUnknown => 'Coste desconocido';
-
-  @override
-  String get aiAttributionCostZero => 'Sin coste';
 
   @override
   String get aiAttributionCreator => 'Creador';
@@ -1194,14 +1164,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiAttributionDuration => 'Duración';
 
   @override
-  String get aiAttributionExecutor => 'Ejecutado en';
-
-  @override
-  String aiAttributionInteractionLine(int index, String model, int tokens) {
-    return 'Llamada $index: $model · $tokens tokens';
-  }
-
-  @override
   String get aiAttributionInteractions => 'Interacciones';
 
   @override
@@ -1210,21 +1172,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get aiAttributionNoInteractionDetails =>
       'No hay detalles de interacción disponibles.';
-
-  @override
-  String get aiAttributionPrivacy => 'Privacidad';
-
-  @override
-  String get aiAttributionPrivacyMixed => 'Mixto';
-
-  @override
-  String get aiAttributionPrivacyPrivate => 'Privado';
-
-  @override
-  String get aiAttributionPrivacyStandard => 'Estándar';
-
-  @override
-  String get aiAttributionPrivacyUnknown => 'Desconocida';
 
   @override
   String get aiAttributionRequestEvidence => 'Evidencia de solicitud';
@@ -1245,21 +1192,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get aiAttributionSensitiveContentNotice =>
-      'El contenido de la solicitud y la respuesta está oculto porque este trabajo contiene datos privados.';
-
-  @override
-  String get aiAttributionSomeCallsUnknown =>
-      'Algunas llamadas tienen un coste desconocido';
-
-  @override
   String get aiAttributionStartedAt => 'Iniciado el';
 
   @override
   String get aiAttributionStatus => 'Estado';
-
-  @override
-  String get aiAttributionStatusAbandoned => 'Interrumpido';
 
   @override
   String get aiAttributionStatusCancelled => 'Cancelado';
@@ -1314,10 +1250,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiAttributionUnknownCreator => 'Creador desconocido';
-
-  @override
-  String get aiAttributionUnknownExecutor =>
-      'Dispositivo de ejecución desconocido';
 
   @override
   String get aiAttributionUnknownModel => 'Modelo desconocido';

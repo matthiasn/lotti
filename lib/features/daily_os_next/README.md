@@ -403,22 +403,19 @@ sequenceDiagram
   reviewed Mistral transcript is not replaced by an MLX fallback.
 - When Capture attaches either its realtime result or batch fallback to the
   persisted `JournalAudio`, `TranscriptAttributionCoordinator` has already
-  created durable pending state before inference. Realtime evidence includes
+  created an in-memory attribution session before inference. Realtime evidence includes
   provider usage; the optional full-file verifier records a second interaction
   under the same attribution instead of creating duplicate top-level work.
   Batch inference records through the shared capture boundary under that same
-  pending session. The resulting `AudioTranscript`
-  carries a stable sub-id and terminal attribution envelope; unknown provider
-  cost stays explicitly unknown and privacy follows the source audio entry.
-  The journal write is skipped if the consumption publication barrier fails,
-  and attribution is finalized only after the journal update confirms that it
-  applied. A post-carrier projection failure leaves the successful carrier
-  authoritative and the pending saga eligible for recovery. Batch capture
-  begins its pending session whenever the coordinator is
+  session. The resulting `AudioTranscript`
+  carries a stable sub-id and embedded attribution; unreported provider cost
+  stays null. Attribution is projected only after the journal update confirms
+  that it applied, while the embedded carrier remains authoritative. Batch capture
+  begins its session whenever the coordinator is
   available, independently of the concrete transcriber implementation. Provider
   failures, empty transcripts, missing audio carriers, rejected transcript
   persistence, and user cancellation terminalize without a carrier; process
-  interruption is recovered by startup maintenance.
+  interruption leaves no fabricated terminal record.
 - Capture and Refine share one **anchored voice template**: a per-phase
   headline at the top (the state narrator — "What's on your mind …", "I'm
   listening.", "Writing that down…", "Does this look right?"), a flexible
