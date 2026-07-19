@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/classes/day_audio_context.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_spool_recovery_service.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
@@ -17,6 +18,59 @@ void main() {
   late Directory root;
   late MockJournalDb journalDb;
   late DayProcessingOutboxRepository outbox;
+
+  Future<DurableAudioSpool> createSpool(String sessionId) async {
+    final spool = await DurableAudioSpool.start(
+      rootDirectory: Directory('${root.path}/.audio_spool'),
+      context: DurableAudioSpoolContext(
+        recordingSessionId: sessionId,
+        activityEntryId: 'activity-$sessionId',
+        createdAt: capturedAt,
+        assetRootPath: root.absolute.path,
+        origin: AudioCaptureOrigin.dailyOs,
+        intent: AudioCaptureIntent.dayPlan,
+        dayId: 'dayplan-2026-07-18',
+        planDate: DateTime(2026, 7, 18),
+      ),
+      chunkBytes: 4,
+    );
+    await spool.append(Uint8List.fromList([1, 2, 3, 4]));
+    return spool;
+  }
+
+  JournalAudio audioForNote(
+    AudioNote note, {
+    required String id,
+    String? transcript,
+  }) => JournalAudio(
+    meta: Metadata(
+      id: id,
+      createdAt: note.createdAt,
+      updatedAt: note.createdAt,
+      dateFrom: note.createdAt,
+      dateTo: note.createdAt.add(note.duration),
+    ),
+    data: AudioData(
+      dateFrom: note.createdAt,
+      dateTo: note.createdAt.add(note.duration),
+      audioFile: note.audioFile,
+      audioDirectory: note.audioDirectory,
+      duration: note.duration,
+      dayContext: note.dayContext,
+      transcripts: transcript == null
+          ? null
+          : [
+              AudioTranscript(
+                created: capturedAt,
+                library: 'test',
+                model: 'test',
+                detectedLanguage: 'en',
+                transcript: transcript,
+                processingJobId: note.dayContext?.processingJobId,
+              ),
+            ],
+    ),
+  );
 
   setUp(() {
     root = Directory.systemTemp.createTempSync('day-spool-recovery-test-');
@@ -183,4 +237,144 @@ void main() {
       isFalse,
     );
   });
+
+  test('reuses journal ownership and restores a completed receipt', () async {
+    final spool = await createSpool('session-owned');
+    final destination = File('${root.path}/audio/owned.wav');
+    final finalized = await spool.finalize(destinationFile: destination);
+    await spool.markCommitted(journalAudioId: 'audio-owned');
+    final source = (await DurableAudioSpool.recover(
+      sessionDirectory: spool.sessionDirectory,
+    )).manifest.context;
+    final note = AudioNote(
+      createdAt: source.createdAt,
+      audioFile: 'owned.wav',
+      audioDirectory: '/audio/',
+      duration: finalized.duration,
+      dayContext: DayAudioContext(
+        dayId: source.dayId!,
+        planDate: source.planDate!,
+        recordingSessionId: source.recordingSessionId,
+        activityEntryId: source.activityEntryId,
+        processingJobId: 'transcribe_session-owned',
+        capturedAt: source.createdAt,
+        intent: 'dayPlan',
+        originHostId: source.originHostId,
+      ),
+    );
+    final owned = audioForNote(
+      note,
+      id: 'audio-owned',
+      transcript: '  Receipt text survived  ',
+    );
+    when(
+      () => journalDb.journalEntityById('audio-owned'),
+    ).thenAnswer((_) async => owned);
+    final service = DayAudioSpoolRecoveryService(
+      journalDb: journalDb,
+      outbox: outbox,
+      assetRoot: root,
+      persistAudio: (_) async => throw StateError('must reuse owner'),
+    );
+
+    final recovered = await service.recoverSession('session-owned');
+
+    expect(recovered, same(owned));
+    final job = await outbox.getById('transcribe_session-owned');
+    expect(job!.status, DayProcessingJobStatus.succeeded);
+    expect(job.resultTranscript, 'Receipt text survived');
+  });
+
+  test(
+    'finds a matching journal row when persistence result is lost',
+    () async {
+      final spool = await createSpool('session-fallback');
+      await spool.finalize(
+        destinationFile: File(
+          '${root.path}/audio/2026-07-18/recovered_session-fallback.wav',
+        ),
+      );
+      final source = (await DurableAudioSpool.recover(
+        sessionDirectory: spool.sessionDirectory,
+      )).manifest.context;
+      final note = AudioNote(
+        createdAt: source.createdAt,
+        audioFile: 'recovered_session-fallback.wav',
+        audioDirectory: '/audio/2026-07-18/',
+        duration: const Duration(microseconds: 125),
+        dayContext: DayAudioContext(
+          dayId: source.dayId!,
+          planDate: source.planDate!,
+          recordingSessionId: source.recordingSessionId,
+          activityEntryId: source.activityEntryId,
+          processingJobId: 'transcribe_session-fallback',
+          capturedAt: source.createdAt,
+          intent: 'dayPlan',
+          originHostId: source.originHostId,
+        ),
+      );
+      final matching = audioForNote(note, id: 'audio-fallback');
+      when(
+        () => journalDb.getJournalEntities(
+          types: const ['JournalAudio'],
+          starredStatuses: const [true, false],
+          privateStatuses: const [true, false],
+          flaggedStatuses: const [1, 0],
+          ids: null,
+          limit: 64,
+          // ignore: avoid_redundant_argument_values
+          offset: 0,
+        ),
+      ).thenAnswer((_) async => [matching]);
+      final service = DayAudioSpoolRecoveryService(
+        journalDb: journalDb,
+        outbox: outbox,
+        assetRoot: root,
+        persistAudio: (_) async => null,
+      );
+
+      final recovered = await service.recoverSession('session-fallback');
+
+      expect(recovered, same(matching));
+      expect(
+        (await outbox.getById('transcribe_session-fallback'))?.audioId,
+        'audio-fallback',
+      );
+    },
+  );
+
+  test(
+    'recoverAll heals valid sessions while isolating damaged ones',
+    () async {
+      await createSpool('session-valid');
+      Directory('${root.path}/.audio_spool/session-damaged').createSync();
+      File(
+        '${root.path}/.audio_spool/session-damaged/manifest-00000001.json',
+      ).writeAsStringSync('damaged');
+      when(
+        () => journalDb.getJournalEntities(
+          types: const ['JournalAudio'],
+          starredStatuses: const [true, false],
+          privateStatuses: const [true, false],
+          flaggedStatuses: const [1, 0],
+          ids: null,
+          limit: 64,
+          // ignore: avoid_redundant_argument_values
+          offset: 0,
+        ),
+      ).thenAnswer((_) async => []);
+      final service = DayAudioSpoolRecoveryService(
+        journalDb: journalDb,
+        outbox: outbox,
+        assetRoot: root,
+        persistAudio: (note) async => audioForNote(note, id: 'audio-valid'),
+      );
+
+      expect(await service.recoverAll(), 1);
+      expect(
+        (await outbox.getById('transcribe_session-valid'))?.audioId,
+        'audio-valid',
+      );
+    },
+  );
 }

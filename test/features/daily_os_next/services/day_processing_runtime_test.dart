@@ -263,4 +263,27 @@ void main() {
     expect(claim!.job.status, DayProcessingJobStatus.running);
     expect(scheduledDelay, const Duration(minutes: 3));
   });
+
+  test('a due-work callback nudges the runtime again', () async {
+    void Function()? scheduledCallback;
+    final secondDrain = Completer<void>();
+    var drains = 0;
+    final runtime = DayProcessingRuntime(
+      repository: repository,
+      now: () => now,
+      drain: () async {
+        drains += 1;
+        if (drains == 2) secondDrain.complete();
+        return 0;
+      },
+      schedule: (_, callback) => scheduledCallback = callback,
+    );
+    addTearDown(runtime.dispose);
+
+    await runtime.nudge();
+    scheduledCallback!();
+    await secondDrain.future;
+
+    expect(drains, 2);
+  });
 }

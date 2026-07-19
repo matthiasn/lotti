@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:path/path.dart' as path;
+import 'package:uuid/uuid.dart';
 
 void main() {
   late Directory root;
@@ -62,20 +63,55 @@ void main() {
     () async {
       await enqueue();
 
-      await expectLater(
-        repository.enqueueTranscription(
-          dayId: 'dayplan-2026-07-19',
-          activityEntryId: 'activity-1',
-          recordingSessionId: 'session-1',
-          audioId: 'audio-1',
-          audioPath: path.join(root.path, 'audio.wav'),
-          capturedAt: DateTime.utc(2026, 7, 18, 7, 40),
-        ),
-        throwsA(isA<DayProcessingIntentConflict>()),
+      final conflict = repository.enqueueTranscription(
+        dayId: 'dayplan-2026-07-19',
+        activityEntryId: 'activity-1',
+        recordingSessionId: 'session-1',
+        audioId: 'audio-1',
+        audioPath: path.join(root.path, 'audio.wav'),
+        capturedAt: DateTime.utc(2026, 7, 18, 7, 40),
       );
+      await expectLater(conflict, throwsA(isA<DayProcessingIntentConflict>()));
+      await conflict.catchError((Object error) {
+        expect(
+          error.toString(),
+          contains('immutable fields differ for transcribe_session-1'),
+        );
+        return enqueue();
+      });
       expect((await repository.getAll()).single.dayId, 'dayplan-2026-07-18');
     },
   );
+
+  test('default claim tokens are UUIDs', () async {
+    await repository.dispose();
+    repository = DayProcessingOutboxRepository(
+      rootDirectory: root,
+      now: () => now,
+    );
+
+    await enqueue();
+    final claim = await repository.claimNext();
+
+    expect(claim, isNotNull);
+    expect(Uuid.isValidUUID(fromString: claim!.token), isTrue);
+  });
+
+  test('interactive enqueue validates an existing immutable intent', () async {
+    await enqueue();
+
+    final claim = await repository.enqueueAndClaimTranscription(
+      dayId: 'dayplan-2026-07-18',
+      activityEntryId: 'activity-1',
+      recordingSessionId: 'session-1',
+      audioId: 'audio-1',
+      audioPath: path.join(root.path, 'audio.wav'),
+      capturedAt: DateTime.utc(2026, 7, 18, 7, 40),
+    );
+
+    expect(claim?.job.id, 'transcribe_session-1');
+    expect(claim?.token, 'claim-1');
+  });
 
   test(
     'repair restores missing pending and completed intents idempotently',
@@ -199,6 +235,27 @@ void main() {
     expect(restored.attempts, 1);
   });
 
+  test('rejects blank output and unknown claimed jobs', () async {
+    await enqueue();
+    final claim = await repository.claimNext();
+
+    await expectLater(
+      repository.markTranscriptReady(
+        jobId: claim!.job.id,
+        claimToken: claim.token,
+        transcript: '   ',
+      ),
+      throwsArgumentError,
+    );
+    await expectLater(
+      repository.markSucceeded(
+        jobId: 'missing-job',
+        claimToken: claim.token,
+      ),
+      throwsStateError,
+    );
+  });
+
   test('reviewed text satisfies pending inference work', () async {
     await enqueue();
 
@@ -268,6 +325,35 @@ void main() {
     expect(await repository.claimNext(), isNotNull);
   });
 
+  test('orders ready work by due time and then stable job id', () async {
+    await enqueue();
+    final claim = await repository.claimNext();
+    await repository.markFailure(
+      jobId: claim!.job.id,
+      claimToken: claim.token,
+      failureClass: DayProcessingFailureClass.providerBusy,
+      error: 'later',
+      retryDelay: const Duration(minutes: 1),
+    );
+    for (final session in ['session-b', 'session-a']) {
+      await repository.enqueueTranscription(
+        dayId: 'dayplan-2026-07-18',
+        activityEntryId: 'activity-$session',
+        recordingSessionId: session,
+        audioId: 'audio-$session',
+        audioPath: path.join(root.path, '$session.wav'),
+        capturedAt: now,
+      );
+    }
+
+    expect((await repository.getAll()).map((job) => job.id), [
+      'transcribe_session-1',
+      'transcribe_session-a',
+      'transcribe_session-b',
+    ]);
+    expect((await repository.claimNext())!.job.id, 'transcribe_session-a');
+  });
+
   test('manual retry cannot bypass a hard provider boundary', () async {
     await enqueue();
     final claim = await repository.claimNext();
@@ -301,6 +387,47 @@ void main() {
     expect(restored.single.id, job.id);
     expect(target.existsSync(), isTrue);
     expect(partial.existsSync(), isFalse);
+  });
+
+  test('startup removes a stale partial beside its published job', () async {
+    await enqueue();
+    final target = root.listSync().whereType<File>().single;
+    final partial = File('${target.path}.part')
+      ..writeAsBytesSync(target.readAsBytesSync());
+
+    final jobs = await repository.getAll();
+
+    expect(jobs, hasLength(1));
+    expect(target.existsSync(), isTrue);
+    expect(partial.existsSync(), isFalse);
+  });
+
+  test('startup quarantines a corrupt orphan partial', () async {
+    File(
+      path.join(root.path, 'corrupt.json.part'),
+    ).writeAsStringSync('not an envelope');
+
+    expect(await repository.getAll(), isEmpty);
+    expect(
+      File(
+        path.join(root.path, 'quarantine', 'corrupt.json.part'),
+      ).existsSync(),
+      isTrue,
+    );
+  });
+
+  test('lookup quarantines a corrupt job at its deterministic path', () async {
+    await enqueue();
+    final targetPath = root.listSync().whereType<File>().single.path;
+    File(targetPath).writeAsStringSync('corrupt');
+
+    expect(await repository.getById('transcribe_session-1'), isNull);
+    expect(
+      File(
+        path.join(root.path, 'quarantine', path.basename(targetPath)),
+      ).existsSync(),
+      isTrue,
+    );
   });
 
   test(

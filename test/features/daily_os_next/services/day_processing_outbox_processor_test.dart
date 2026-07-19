@@ -120,6 +120,18 @@ void main() {
     expect(saved.nextAttemptAt, now.add(const Duration(milliseconds: 2500)));
   });
 
+  test('default jitter and bounded drain process available work', () async {
+    final processor = DayProcessingOutboxProcessor(
+      repository: repository,
+      transcribe: (_) async => throw TimeoutException('slow'),
+      attachTranscript: (_, _) async => true,
+    );
+
+    expect(await processor.drain(maxJobs: 1), 1);
+    final saved = await repository.getById('transcribe_session-1');
+    expect(saved!.nextAttemptAt, now.add(const Duration(milliseconds: 2500)));
+  });
+
   test(
     'missing saved audio waits for recovery without a retry loop',
     () async {
@@ -172,6 +184,19 @@ void main() {
           classifyDayProcessingFailure(error).failureClass,
           expected,
           reason: error.toString(),
+        );
+      }
+
+      for (final message in [
+        'No audio-capable model is available',
+        'Audio model not configured',
+        'Missing provider credential',
+      ]) {
+        expect(
+          classifyDayProcessingFailure(
+            TranscriptionException(message),
+          ).failureClass,
+          DayProcessingFailureClass.setupRequired,
         );
       }
     },

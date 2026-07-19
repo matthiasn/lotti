@@ -1,10 +1,13 @@
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_spool_recovery_service.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_processor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
@@ -18,6 +21,8 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late Directory root;
   late DayProcessingOutboxRepository outbox;
   late MockJournalDb journalDb;
@@ -90,5 +95,71 @@ void main() {
     expect(runtime, isA<DayProcessingRuntime>());
     await runtime.nudge();
     verify(vectorClock.getHost).called(1);
+  });
+
+  test('classifies supported interfaces as online before inference', () async {
+    const channel = MethodChannel('dev.fluttercommunity.plus/connectivity');
+    var platformResult = 'none';
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          channel,
+          (call) async => call.method == 'check' ? [platformResult] : null,
+        );
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null),
+    );
+    final transcriber = MockAudioTranscriptionService();
+    when(
+      () => transcriber.transcribe(
+        any(),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+      ),
+    ).thenAnswer((_) async => 'Recovered transcript');
+    when(
+      () => journalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
+    final container = ProviderContainer(
+      overrides: [
+        audioTranscriptionServiceProvider.overrideWithValue(transcriber),
+      ],
+    );
+    addTearDown(container.dispose);
+    final processor = container.read(dayProcessingOutboxProcessorProvider);
+
+    for (final result in [
+      ConnectivityResult.wifi,
+      ConnectivityResult.mobile,
+      ConnectivityResult.ethernet,
+      ConnectivityResult.vpn,
+      ConnectivityResult.none,
+    ]) {
+      platformResult = result.name;
+      final suffix = result.name;
+      final audio = File('${root.path}/$suffix.wav')..writeAsBytesSync([1, 2]);
+      await outbox.enqueueTranscription(
+        dayId: 'dayplan-2026-07-18',
+        activityEntryId: 'activity-$suffix',
+        recordingSessionId: suffix,
+        audioId: 'audio-$suffix',
+        audioPath: audio.path,
+        capturedAt: DateTime.utc(2026, 7, 18, 8),
+      );
+
+      expect(await processor.processNext(), DayProcessingRunResult.deferred);
+      final saved = await outbox.getById('transcribe_$suffix');
+      expect(
+        saved!.lastFailureClass,
+        result == ConnectivityResult.none
+            ? DayProcessingFailureClass.network
+            : DayProcessingFailureClass.local,
+      );
+    }
+    verify(
+      () => transcriber.transcribe(
+        any(),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+      ),
+    ).called(4);
   });
 }

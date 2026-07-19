@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_audio_context.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
@@ -289,5 +290,132 @@ void main() {
     expect(entries, hasLength(1));
     expect(entries.single.kind, DayActivityEntryKind.summary);
     expect(entries.single.summary, same(summary));
+  });
+
+  test('projects reviewed text, receipt fallback, and local asset state', () {
+    final reviewed =
+        audio(
+          id: 'reviewed',
+          activityId: 'reviewed',
+          sessionId: 'reviewed',
+          transcript: 'Provider text',
+        ).copyWith(
+          entryText: const EntryText(
+            plainText: '  Reviewed text  ',
+            markdown: 'Reviewed text',
+          ),
+        );
+    final receipt = audio(
+      id: 'receipt',
+      activityId: 'receipt',
+      sessionId: 'receipt',
+      transcript: '  Receipt text  ',
+    );
+    final emptyReceipt = audio(
+      id: 'empty',
+      activityId: 'empty',
+      sessionId: 'empty',
+      transcript: '   ',
+    );
+    final local = File('${root.path}/local.wav')..writeAsBytesSync([0]);
+
+    expect(
+      DayActivityEntry(
+        id: 'reviewed',
+        kind: DayActivityEntryKind.recording,
+        createdAt: capturedAt,
+        activityEntryId: 'reviewed',
+        audio: reviewed,
+      ).transcript,
+      'Reviewed text',
+    );
+    expect(
+      DayActivityEntry(
+        id: 'receipt',
+        kind: DayActivityEntryKind.recording,
+        createdAt: capturedAt,
+        activityEntryId: 'receipt',
+        audio: receipt,
+      ).transcript,
+      'Receipt text',
+    );
+    expect(
+      DayActivityEntry(
+        id: 'empty',
+        kind: DayActivityEntryKind.recording,
+        createdAt: capturedAt,
+        activityEntryId: 'empty',
+        audio: emptyReceipt,
+      ).transcript,
+      isNull,
+    );
+    for (final (audioPath, expected) in <(String?, bool?)>[
+      (null, null),
+      (local.path, true),
+      ('${root.path}/missing.wav', false),
+    ]) {
+      expect(
+        DayActivityEntry(
+          id: 'asset-$expected',
+          kind: DayActivityEntryKind.recording,
+          createdAt: capturedAt,
+          activityEntryId: 'asset-$expected',
+          audioPath: audioPath,
+        ).audioAvailableLocally,
+        expected,
+      );
+    }
+  });
+
+  test('paginates journal audio and includes outbox-only recordings', () async {
+    final saved = audio(
+      id: 'saved',
+      activityId: 'saved',
+      sessionId: 'saved',
+    );
+    when(
+      () => journalDb.getJournalEntities(
+        types: const ['JournalAudio'],
+        starredStatuses: const [true, false],
+        privateStatuses: const [true, false],
+        flaggedStatuses: const [1, 0],
+        ids: null,
+        limit: 1,
+        // ignore: avoid_redundant_argument_values
+        offset: 0,
+      ),
+    ).thenAnswer((_) async => [saved]);
+    when(
+      () => journalDb.getJournalEntities(
+        types: const ['JournalAudio'],
+        starredStatuses: const [true, false],
+        privateStatuses: const [true, false],
+        flaggedStatuses: const [1, 0],
+        ids: null,
+        limit: 1,
+        offset: 1,
+      ),
+    ).thenAnswer((_) async => []);
+    await outbox.enqueueTranscription(
+      dayId: dayId,
+      activityEntryId: 'outbox-only',
+      recordingSessionId: 'outbox-only',
+      audioId: 'outbox-only',
+      audioPath: '${root.path}/outbox-only.wav',
+      capturedAt: capturedAt.add(const Duration(minutes: 1)),
+    );
+
+    final entries = await repository.load(dayId: dayId, pageSize: 1);
+
+    expect(entries.map((entry) => entry.activityEntryId), [
+      'saved',
+      'outbox-only',
+    ]);
+    expect(entries.last.audio, isNull);
+    expect(entries.last.audioPath, '${root.path}/outbox-only.wav');
+    expect(
+      entries.last.createdAt,
+      (await outbox.getById('transcribe_outbox-only'))!.createdAt,
+    );
   });
 }
