@@ -3927,6 +3927,107 @@ void main() {
         expect(state.transcript, 'callback transcript');
       },
     );
+
+    test(
+      'wrong-session stop retains audio and contains cleanup failures',
+      () async {
+        final logger = getIt<DomainLogger>() as MockDomainLogger;
+        when(
+          () => logger.log(
+            any<LogDomain>(),
+            any<String>(),
+            subDomain: any<String>(named: 'subDomain'),
+            level: any<InsightLevel>(named: 'level'),
+          ),
+        ).thenReturn(null);
+        when(
+          () => logger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        final recorder = MockAudioRecorder();
+        when(recorder.hasPermission).thenAnswer((_) async => true);
+        when(
+          () => recorder.startStream(any<record.RecordConfig>()),
+        ).thenAnswer((_) async => Stream<Uint8List>.empty());
+        when(recorder.dispose).thenThrow(StateError('dispose failed'));
+        final realtime = MockRealtimeTranscriptionService();
+        final capture = _stubDurableRealtimeCapture(realtime);
+        when(
+          () => realtime.amplitudeStream,
+        ).thenAnswer((_) => Stream<double>.empty());
+        when(
+          () => realtime.startRealtimeTranscription(
+            capture: any(named: 'capture'),
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => realtime.stop(
+            capture: any(named: 'capture'),
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenAnswer(
+          (_) async => RealtimeStopResult(
+            transcript: 'wrong session',
+            recordingSessionId: 'different-session',
+            audioFilePath: '/tmp/wrong-session.wav',
+            captureDisposition: RealtimeCaptureDisposition.complete,
+          ),
+        );
+        when(
+          () => realtime.stopAndRetainForRecovery(
+            capture: capture,
+            stopRecorder: any(named: 'stopRecorder'),
+          ),
+        ).thenThrow(StateError('retain failed'));
+        final container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => recorder,
+                realtimeTranscriptionService: realtime,
+                durableDirectoryProvider: _testDurableDirectory,
+                config: const ChatRecorderConfig(maxSeconds: 0),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        addTearDown(sub.close);
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+
+        await controller.startRealtime();
+        await controller.stopRealtime();
+
+        expect(
+          container.read(chatRecorderControllerProvider).errorType,
+          ChatRecorderErrorType.noAudioRecorded,
+        );
+        for (final subDomain in <String>[
+          'cleanupRealtime.stopAndDrain',
+          'cleanupRealtime.recorder',
+        ]) {
+          verify(
+            () => logger.error(
+              LogDomain.chat,
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: subDomain,
+            ),
+          ).called(1);
+        }
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------

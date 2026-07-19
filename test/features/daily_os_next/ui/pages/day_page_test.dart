@@ -406,6 +406,118 @@ void main() {
       },
     );
 
+    testWidgets('a submitted check-in retries its existing capture', (
+      tester,
+    ) async {
+      _setSurface(tester);
+      final captureService = MockDayAgentCaptureService();
+      when(
+        () => captureService.retryCapture('capture-activity'),
+      ).thenAnswer((_) async => true);
+      final capture = makeTestCapture(
+        id: 'capture-activity',
+        transcript: 'Retry this submitted check-in.',
+        capturedAt: DateTime(2026, 5, 26, 8),
+        dayId: 'dayplan-2026-05-26',
+      );
+      final entry = DayActivityEntry(
+        id: capture.id,
+        kind: DayActivityEntryKind.checkIn,
+        createdAt: capture.capturedAt,
+        activityEntryId: capture.id,
+        capture: capture,
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(
+            draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+            hasPlan: false,
+          ),
+          activityEntries: [entry],
+          overrides: [
+            agent_providers.dayAgentCaptureServiceProvider.overrideWithValue(
+              captureService,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      final messages = tester.element(find.byType(DayPage)).messages;
+
+      await tester.tap(find.text(messages.dailyOsNextActivityUseToPlan));
+      await tester.pump();
+
+      verify(() => captureService.retryCapture('capture-activity')).called(1);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a retained recording seeds refinement for an existing plan', (
+      tester,
+    ) async {
+      _setSurface(tester);
+      final agent = RecordingDayAgent(
+        diff: PlanDiff(
+          id: 'activity-refine-diff',
+          transcript: 'Make the afternoon lighter.',
+          changes: const [],
+          updatedPlan: _drafted(),
+        ),
+      );
+      final capturedAt = DateTime(2026, 5, 26, 8);
+      final job = DayProcessingJob(
+        id: 'activity-refine-job',
+        kind: DayProcessingJobKind.transcribeAudio,
+        status: DayProcessingJobStatus.succeeded,
+        dayId: 'dayplan-2026-05-26',
+        activityEntryId: 'activity-refine',
+        recordingSessionId: 'activity-refine-session',
+        audioId: 'activity-refine-audio',
+        audioPath: '/tmp/activity-refine.wav',
+        createdAt: capturedAt,
+        updatedAt: capturedAt,
+        nextAttemptAt: capturedAt,
+        attempts: 1,
+        generation: 1,
+        resultTranscript: 'Make the afternoon lighter.',
+        completedAt: capturedAt,
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(draft: _drafted()),
+          activityEntries: [
+            DayActivityEntry(
+              id: 'activity-refine',
+              kind: DayActivityEntryKind.recording,
+              createdAt: capturedAt,
+              activityEntryId: 'activity-refine',
+              processingJob: job,
+            ),
+          ],
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+        ),
+      );
+      await tester.pump();
+      tester
+          .widget<PlanViewToggle>(find.byType(PlanViewToggle))
+          .onChanged(PlanView.activity);
+      await tester.pump();
+      await tester.pump();
+      final messages = tester.element(find.byType(DayPage)).messages;
+      expect(find.byType(DayActivityView), findsOneWidget);
+      expect(find.text('Make the afternoon lighter.'), findsOneWidget);
+
+      await tester.tap(find.text(messages.dailyOsNextActivityUseToRefine));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump();
+
+      expect(find.byType(RefineModalContent), findsOneWidget);
+      expect(agent.proposeCount, 1);
+      expect(agent.proposedTranscript, 'Make the afternoon lighter.');
+    });
+
     testWidgets('missing name stays discoverable without blocking check-in', (
       tester,
     ) async {

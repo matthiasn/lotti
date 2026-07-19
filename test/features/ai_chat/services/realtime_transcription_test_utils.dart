@@ -243,6 +243,31 @@ class _CancelErrorStream<T> extends Stream<T> {
   );
 }
 
+/// PCM/source stream wrapper whose subscription reports a cancellation error.
+///
+/// This exercises cleanup containment without defining one-off stream fakes in
+/// the test file.
+class ThrowingCancelStream<T> extends Stream<T> {
+  const ThrowingCancelStream(this.delegate);
+
+  final Stream<T> delegate;
+
+  @override
+  StreamSubscription<T> listen(
+    void Function(T event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) => _CancelErrorSubscription<T>(
+    delegate.listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    ),
+  );
+}
+
 class _CancelErrorSubscription<T> implements StreamSubscription<T> {
   const _CancelErrorSubscription(this.delegate);
 
@@ -543,12 +568,16 @@ class RealtimeTranscriptionTestBench {
   Future<StreamController<Uint8List>> startTranscription({
     void Function(String)? onDelta,
     RealtimeCaptureFailureCallback? onCaptureFailure,
+    Stream<Uint8List> Function(Stream<Uint8List> source)? transformPcmStream,
   }) async {
     _pcmController = StreamController<Uint8List>(sync: true);
     final capture = await prepareCapture();
+    final pcmStream =
+        transformPcmStream?.call(_pcmController!.stream) ??
+        _pcmController!.stream;
     await service.startRealtimeTranscription(
       capture: capture,
-      pcmStream: _pcmController!.stream,
+      pcmStream: pcmStream,
       onDelta: onDelta ?? (_) {},
       onCaptureFailure: onCaptureFailure,
     );

@@ -1254,6 +1254,36 @@ void main() {
       },
     );
 
+    test(
+      'keeps planning available when durable recording lookup fails',
+      () async {
+        final journalDb = MockJournalDb();
+        when(
+          () => journalDb.getJournalEntities(
+            types: const ['JournalAudio'],
+            starredStatuses: const [true, false],
+            privateStatuses: const [true, false],
+            flaggedStatuses: const [1, 0],
+            ids: null,
+            limit: 64,
+            // ignore: avoid_redundant_argument_values
+            offset: 0,
+          ),
+        ).thenThrow(StateError('local audio index unavailable'));
+
+        final result = await execute(
+          workflow(
+            dayAudioEntryContextService: DayAudioEntryContextService(
+              journalDb: journalDb,
+            ),
+          ),
+        );
+
+        expect(result.success, isTrue);
+        expect(sentPrompt().json(DayAgentPromptTags.dayEntries), isNull);
+      },
+    );
+
     test('read-flips to a dayLog of capture transcripts and observations, '
         'dropping the recentObservations listing', () async {
       when(() => syncService.repository).thenReturn(repository);

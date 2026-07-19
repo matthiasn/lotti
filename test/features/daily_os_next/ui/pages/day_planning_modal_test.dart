@@ -28,6 +28,8 @@ class _FakeCaptureController extends CaptureController {
   _FakeCaptureController(this._initial);
 
   final CaptureState _initial;
+  int toggleCalls = 0;
+  DateTime? toggledForDate;
 
   @override
   CaptureState build() => _initial;
@@ -46,7 +48,10 @@ class _FakeCaptureController extends CaptureController {
   Future<void> toggle({
     DateTime? forDate,
     AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
-  }) async {}
+  }) async {
+    toggleCalls += 1;
+    toggledForDate = forDate;
+  }
 }
 
 /// Reconcile agent whose parse step throws — drives the error branch.
@@ -165,6 +170,7 @@ Future<void> _settle(WidgetTester tester) async {
 Future<void> _openCreate(
   WidgetTester tester, {
   CaptureState capture = const CaptureState.idle(),
+  _FakeCaptureController? captureController,
   MockDayAgent? agent,
   List<TimeBlock> actualBlocks = const [],
   Size size = const Size(420, 900),
@@ -186,7 +192,7 @@ Future<void> _openCreate(
       mediaQueryData: MediaQueryData(size: size),
       overrides: [
         captureControllerProvider.overrideWith(
-          () => _FakeCaptureController(capture),
+          () => captureController ?? _FakeCaptureController(capture),
         ),
         // Pin the tracked-time projection so the capture step's "Today so
         // far" card is deterministic and never reaches GetIt-backed services.
@@ -331,6 +337,28 @@ void main() {
         findsOneWidget,
       );
       expect(find.byKey(DayPlanningThinkingShader.indicatorKey), findsNothing);
+    });
+
+    testWidgets('listening Done stops capture for the selected day', (
+      tester,
+    ) async {
+      final controller = _FakeCaptureController(
+        const CaptureState(
+          phase: CapturePhase.listening,
+          transcript: '',
+          amplitudes: [],
+        ),
+      );
+      await _openCreate(tester, captureController: controller);
+      final messages = _l10n(tester);
+
+      await tester.tap(
+        find.widgetWithText(DsGlassPill, messages.dailyOsNextCaptureDoneCta),
+      );
+      await tester.pump();
+
+      expect(controller.toggleCalls, 1);
+      expect(controller.toggledForDate, DateTime(2024, 3, 15));
     });
 
     testWidgets('transcribing bar lights the thinking shader', (tester) async {

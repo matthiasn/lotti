@@ -12,6 +12,7 @@ import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/assistant_settings_sheet.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/input_area.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -220,6 +221,29 @@ void main() {
       tester.widget<DesignSystemToast>(find.byType(DesignSystemToast)).tone,
       DesignSystemToastTone.warning,
     );
+    expect(recorder.clearResultCalls, 1);
+  });
+
+  testWidgets('surfaces localized copy when capture contains no audio', (
+    tester,
+  ) async {
+    late _TranscriptEmittingController recorder;
+    await tester.pumpWidget(
+      _wrap(
+        _inputArea(),
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => recorder = _TranscriptEmittingController(),
+          ),
+        ],
+      ),
+    );
+    final messages = tester.element(find.byType(InputArea)).messages;
+
+    recorder.emitNoAudio();
+    await tester.pump();
+
+    expect(find.text(messages.chatInputNoAudioRecorded), findsOneWidget);
     expect(recorder.clearResultCalls, 1);
   });
 
@@ -1232,6 +1256,13 @@ class _TranscriptEmittingController extends ChatRecorderController {
     state = state.copyWith(
       status: ChatRecorderStatus.idle,
       errorType: ChatRecorderErrorType.recordingSavedForRecovery,
+    );
+  }
+
+  void emitNoAudio() {
+    state = state.copyWith(
+      status: ChatRecorderStatus.idle,
+      errorType: ChatRecorderErrorType.noAudioRecorded,
     );
   }
 

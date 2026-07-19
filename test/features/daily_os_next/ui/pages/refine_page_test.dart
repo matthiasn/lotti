@@ -16,6 +16,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/diff_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
 import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
@@ -890,6 +891,31 @@ void main() {
       },
     );
 
+    testWidgets('modal voice orb stops refinement for the selected day', (
+      tester,
+    ) async {
+      final draft = _emptyPlan();
+      final capture = _DriveableCaptureController();
+      await tester.pumpWidget(
+        _wrap(
+          RefineModalContent(draft: draft),
+          captureFactory: () => capture,
+        ),
+      );
+      await tester.pump();
+      final element = tester.element(find.byType(RefineModalContent));
+      ProviderScope.containerOf(element)
+          .read(refineControllerProvider(draft).notifier)
+          .beginListening(resetTranscript: true);
+      await tester.pump();
+
+      await tester.tap(find.byType(VoiceOrbZone));
+      await tester.pump();
+
+      expect(capture.lastPlanDate, draft.dayDate);
+      expect(capture.lastIntent, AudioCaptureIntent.dayRefine);
+    });
+
     testWidgets(
       'tapping the voice button on diffReady re-arms listening (keeps transcript)',
       (tester) async {
@@ -1066,5 +1092,46 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'saved capture awaiting transcription stays visible after idle',
+      (tester) async {
+        final draft = _emptyPlan();
+        await tester.pumpWidget(
+          _wrap(
+            RefinePage(draft: draft),
+            captureFactory: _DriveableCaptureController.new,
+          ),
+        );
+        await tester.pump();
+        _readNotifier(tester, draft).beginListening(resetTranscript: true);
+        await tester.pump();
+
+        _readCapture(tester).emit(
+          const CaptureState(
+            phase: CapturePhase.error,
+            transcript: '',
+            amplitudes: <double>[],
+            error: CaptureError.recordingSavedPendingTranscription,
+          ),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(RefinePage));
+        final state = ProviderScope.containerOf(
+          context,
+        ).read(refineControllerProvider(draft));
+        expect(state.phase, RefinePhase.idle);
+        expect(state.problem, RefineProblem.captureSavedPendingTranscription);
+        expect(
+          find.text(
+            context
+                .messages
+                .dailyOsNextCaptureErrorRecordingSavedPendingTranscription,
+          ),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

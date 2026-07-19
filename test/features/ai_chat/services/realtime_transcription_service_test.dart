@@ -759,7 +759,51 @@ void main() {
     });
   });
 
+  test('Mistral forwarding failure disables only the remote backend', () async {
+    final repository = ControllableRealtimeRepository()
+      ..onSendAudioChunk = (_) => throw StateError('wire send failed');
+    final bench = await RealtimeTranscriptionTestBench.create(
+      repository: repository,
+    );
+    addTearDown(() async {
+      await repository.close();
+      bench.dispose();
+    });
+    await bench.startTranscription();
+
+    await bench.sendPcm(pcmSilence(64));
+
+    expect(repository.disconnected, isTrue);
+    expect(bench.service.isActive, isTrue);
+    expect(
+      fakeLogging.exceptions.map((error) => error.toString()),
+      contains(contains('wire send failed')),
+    );
+    final result = await bench.stop();
+    expect(result.audioFilePath, isNotNull);
+    expect(result.captureDisposition, RealtimeCaptureDisposition.complete);
+  });
+
   group('stop', () {
+    test('rejects stop when the durable capture was never started', () async {
+      final bench = await RealtimeTranscriptionTestBench.create(
+        addConfig: false,
+      );
+      addTearDown(bench.dispose);
+      final capture = await bench.prepareCapture();
+
+      expect(
+        () => bench.service.stop(
+          capture: capture,
+          stopRecorder: () async {},
+          outputPath: path.join(bench.rootDirectory.path, 'inactive-stop'),
+        ),
+        throwsStateError,
+      );
+      await capture.discard();
+      expect(bench.service.isActive, isFalse);
+    });
+
     test('returns transcript from transcription.done event', () async {
       final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
@@ -1584,6 +1628,52 @@ void main() {
         );
       },
     );
+
+    test('contains a caller failure callback that throws', () async {
+      final bench = await RealtimeTranscriptionTestBench.create(
+        addConfig: false,
+      );
+      addTearDown(bench.dispose);
+      final pcm = await bench.startTranscription(
+        onCaptureFailure: (_, _) => throw StateError('callback failed'),
+      );
+      pcm.addError(StateError('microphone failed'));
+      await pumpEventQueue();
+
+      final result = await bench.stop();
+
+      expect(
+        result.captureDisposition,
+        RealtimeCaptureDisposition.noAudio,
+      );
+      expect(
+        fakeLogging.exceptions.map((error) => error.toString()),
+        containsAll(<Matcher>[
+          contains('microphone failed'),
+          contains('callback failed'),
+        ]),
+      );
+    });
+
+    test('contains PCM subscription cancellation failures', () async {
+      final bench = await RealtimeTranscriptionTestBench.create();
+      addTearDown(bench.dispose);
+      await bench.startTranscription(
+        transformPcmStream: ThrowingCancelStream<Uint8List>.new,
+      );
+      await bench.sendPcm(pcmSilence(64));
+
+      final result = await bench.stop(
+        afterListening: () => bench.simulateDone('kept transcript'),
+      );
+
+      expect(result.transcript, 'kept transcript');
+      expect(result.audioFilePath, isNotNull);
+      expect(
+        fakeLogging.exceptions.map((error) => error.toString()),
+        contains(contains('done cancellation failed')),
+      );
+    });
   });
 
   group('WAV file output', () {

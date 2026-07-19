@@ -57,6 +57,40 @@ void main() {
     );
   }
 
+  DurableAudioSpoolManifest manifestInState(
+    DurableAudioSpool spool,
+    DurableAudioSpoolState state,
+  ) {
+    final current = spool.manifest;
+    return DurableAudioSpoolManifest(
+      generation: current.generation + 1,
+      context: current.context,
+      state: state,
+      chunks: current.chunks,
+      activeChunkBytes: current.activeChunkBytes,
+      acceptedPcmBytes: current.acceptedPcmBytes,
+      chunkBytes: current.chunkBytes,
+      finalWavPath: current.finalWavPath,
+      finalWavSha256: current.finalWavSha256,
+      journalAudioId: current.journalAudioId,
+      pcmReclaimed: current.pcmReclaimed,
+    );
+  }
+
+  void writeOwnerMarker(Directory directory, String journalAudioId) {
+    final payload = jsonEncode(<String, Object?>{
+      'schemaVersion': 1,
+      'journalAudioId': journalAudioId,
+    });
+    File(path.join(directory.path, 'owner.json')).writeAsStringSync(
+      jsonEncode(<String, Object?>{
+        'payload': payload,
+        'sha256': sha256.convert(utf8.encode(payload)).toString(),
+      }),
+      flush: true,
+    );
+  }
+
   test(
     'publishes identity manifest before accepting the first frame',
     () async {
@@ -1198,6 +1232,376 @@ void main() {
       }
     },
   );
+
+  test('round-trips complete capture identity and typed failures', () {
+    final context = DurableAudioSpoolContext(
+      recordingSessionId: 'complete-identity',
+      activityEntryId: 'activity-complete-identity',
+      createdAt: DateTime.utc(2026, 7, 19, 9, 15),
+      assetRootPath: path.join(root.path, 'assets'),
+      origin: AudioCaptureOrigin.dailyOs,
+      intent: AudioCaptureIntent.dayRefine,
+      dayId: 'day-2026-07-19',
+      planDate: DateTime(2026, 7, 19),
+      timeZoneOffsetMinutes: 120,
+      originHostId: 'host-a',
+      continuationOperationId: 'operation-a',
+      baselineRevisionId: 'revision-a',
+      metadata: const <String, String>{'source': 'voice'},
+    );
+
+    final restored = DurableAudioSpoolContext.fromJson(context.toJson());
+
+    expect(restored.origin, AudioCaptureOrigin.dailyOs);
+    expect(restored.intent, AudioCaptureIntent.dayRefine);
+    expect(restored.planDate, DateTime(2026, 7, 19));
+    expect(restored.timeZoneOffsetMinutes, 120);
+    expect(restored.originHostId, 'host-a');
+    expect(restored.continuationOperationId, 'operation-a');
+    expect(restored.baselineRevisionId, 'revision-a');
+    expect(
+      const DurableAudioSpoolNoAudioException().toString(),
+      'No complete PCM sample was captured',
+    );
+    expect(
+      const DurableAudioSpoolRecoveryRequiredException(
+        acceptedPcmBytes: 14,
+        cause: 'disk full',
+      ).toString(),
+      contains('14 bytes: disk full'),
+    );
+  });
+
+  test('empty frames and lifecycle guards preserve durable intent', () async {
+    final spool = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-lifecycle-guards'),
+    );
+    final generation = spool.manifest.generation;
+
+    expect(
+      await spool.append(Uint8List(0)),
+      SpoolAppendResult.persisted,
+    );
+    expect(spool.manifest.generation, generation);
+    await expectLater(
+      spool.markCommitted(journalAudioId: '  '),
+      throwsArgumentError,
+    );
+    await expectLater(
+      spool.markCommitted(journalAudioId: 'premature-owner'),
+      throwsStateError,
+    );
+    await expectLater(spool.reclaimCommittedPcm(), throwsStateError);
+
+    await spool.discard();
+    await spool.discard();
+    await expectLater(
+      spool.finalize(destinationFile: destinationFor('discarded-finalize')),
+      throwsStateError,
+    );
+    expect(spool.manifest.state, DurableAudioSpoolState.discarded);
+  });
+
+  test('recovery preserves the original finalization target', () async {
+    final spool = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-fixed-target'),
+    );
+    await spool.append(Uint8List.fromList(<int>[1, 2]));
+    final destination = destinationFor('session-fixed-target');
+    await spool.finalize(destinationFile: destination);
+    destination.writeAsBytesSync(<int>[0], flush: true);
+    final recovery = await DurableAudioSpool.recover(
+      sessionDirectory: spool.sessionDirectory,
+    );
+
+    await expectLater(
+      recovery.spool!.finalize(
+        destinationFile: destinationFor('changed-target'),
+      ),
+      throwsStateError,
+    );
+    final repaired = await recovery.spool!.finalize(
+      destinationFile: destination,
+    );
+    expect(File(repaired.wavPath).readAsBytesSync().sublist(44), <int>[1, 2]);
+  });
+
+  test('commit, transient, and repeated reclaim guards are fenced', () async {
+    final owned = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-owned-transient'),
+      chunkBytes: 4,
+    );
+    await owned.append(Uint8List.fromList(<int>[1, 2, 3, 4]));
+    final ownedDestination = destinationFor('session-owned-transient');
+    await owned.finalize(destinationFile: ownedDestination);
+    await owned.markCommitted(journalAudioId: 'journal-owned');
+    await expectLater(owned.consumeTransient(), throwsStateError);
+    await owned.reclaimCommittedPcm();
+    await owned.reclaimCommittedPcm();
+    expect(owned.manifest.pcmReclaimed, isTrue);
+
+    final damaged = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-damaged-transient'),
+    );
+    await damaged.append(Uint8List.fromList(<int>[5, 6]));
+    final damagedDestination = destinationFor('session-damaged-transient');
+    await damaged.finalize(destinationFile: damagedDestination);
+    damagedDestination.writeAsBytesSync(<int>[0], flush: true);
+    await expectLater(damaged.consumeTransient(), throwsStateError);
+    await expectLater(
+      damaged.markCommitted(journalAudioId: 'damaged-owner'),
+      throwsStateError,
+    );
+  });
+
+  test('an externally published owner cannot be rebound', () async {
+    final spool = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-external-owner'),
+    );
+    await spool.append(Uint8List.fromList(<int>[1, 2]));
+    await spool.finalize(
+      destinationFile: destinationFor('session-external-owner'),
+    );
+    writeOwnerMarker(spool.sessionDirectory, 'external-owner');
+
+    await expectLater(
+      spool.markCommitted(journalAudioId: 'requested-owner'),
+      throwsStateError,
+    );
+    expect(spool.manifest.journalAudioId, isNull);
+  });
+
+  test('reclaim preparation recovers PCM when its WAV is lost', () async {
+    final spool = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-reclaim-wav-lost'),
+      chunkBytes: 4,
+    );
+    await spool.append(Uint8List.fromList(<int>[1, 2, 3, 4]));
+    final destination = destinationFor('session-reclaim-wav-lost');
+    await spool.finalize(destinationFile: destination);
+    await spool.markCommitted(journalAudioId: 'reclaim-wav-owner');
+    writeManifest(
+      spool.sessionDirectory,
+      manifestInState(spool, DurableAudioSpoolState.reclaimPrepared),
+    );
+    destination.deleteSync();
+
+    final recovery = await DurableAudioSpool.recover(
+      sessionDirectory: spool.sessionDirectory,
+    );
+
+    expect(recovery.manifest.state, DurableAudioSpoolState.recoveryRequired);
+    expect(recovery.spool, isNotNull);
+    expect(recovery.manifest.acceptedPcmBytes, 4);
+  });
+
+  test('reclaim preparation quarantines damaged fallback PCM', () async {
+    final spool = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-reclaim-pcm-damaged'),
+      chunkBytes: 4,
+    );
+    await spool.append(Uint8List.fromList(<int>[1, 2, 3, 4]));
+    final destination = destinationFor('session-reclaim-pcm-damaged');
+    await spool.finalize(destinationFile: destination);
+    await spool.markCommitted(journalAudioId: 'reclaim-pcm-owner');
+    writeManifest(
+      spool.sessionDirectory,
+      manifestInState(spool, DurableAudioSpoolState.reclaimPrepared),
+    );
+    destination.deleteSync();
+    File(
+      path.join(spool.sessionDirectory.path, 'chunk-00000000.pcm'),
+    ).writeAsBytesSync(<int>[4, 3, 2, 1], flush: true);
+
+    final recovery = await DurableAudioSpool.recover(
+      sessionDirectory: spool.sessionDirectory,
+    );
+
+    expect(recovery.isQuarantined, isTrue);
+    expect(
+      recovery.manifest.recoveryReason,
+      DurableAudioRecoveryReason.chunkDigestMismatch,
+    );
+  });
+
+  for (final damage in <String, void Function(File)>{
+    'missing': (file) => file.deleteSync(),
+    'wrong-length': (file) => file.writeAsBytesSync(<int>[1, 2], flush: true),
+  }.entries) {
+    test('quarantines a ${damage.key} listed PCM chunk', () async {
+      final sessionId = 'session-listed-${damage.key}';
+      final spool = await DurableAudioSpool.start(
+        rootDirectory: root,
+        context: contextFor(sessionId),
+        chunkBytes: 4,
+      );
+      await spool.append(Uint8List.fromList(<int>[1, 2, 3, 4]));
+      damage.value(
+        File(path.join(spool.sessionDirectory.path, 'chunk-00000000.pcm')),
+      );
+
+      final recovery = await DurableAudioSpool.recover(
+        sessionDirectory: spool.sessionDirectory,
+      );
+
+      expect(recovery.isQuarantined, isTrue);
+      expect(
+        recovery.manifest.recoveryReason,
+        damage.key == 'missing'
+            ? DurableAudioRecoveryReason.missingChunk
+            : DurableAudioRecoveryReason.invalidChunkLength,
+      );
+    });
+  }
+
+  for (final invalidChunk in <String, List<int>>{
+    'empty': const <int>[],
+    'odd': const <int>[1],
+    'oversized': List<int>.filled(10, 1),
+  }.entries) {
+    test('quarantines an ${invalidChunk.key} orphan PCM chunk', () async {
+      final spool = await DurableAudioSpool.start(
+        rootDirectory: root,
+        context: contextFor('session-orphan-${invalidChunk.key}'),
+        chunkBytes: 8,
+      );
+      File(
+        path.join(spool.sessionDirectory.path, 'chunk-00000000.pcm'),
+      ).writeAsBytesSync(invalidChunk.value, flush: true);
+
+      final recovery = await DurableAudioSpool.recover(
+        sessionDirectory: spool.sessionDirectory,
+      );
+
+      expect(recovery.isQuarantined, isTrue);
+      expect(
+        recovery.manifest.recoveryReason,
+        DurableAudioRecoveryReason.invalidOrphanChunk,
+      );
+    });
+  }
+
+  test('quarantines a short non-terminal orphan PCM chunk', () async {
+    final spool = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-short-orphan'),
+      chunkBytes: 8,
+    );
+    File(
+      path.join(spool.sessionDirectory.path, 'chunk-00000000.pcm'),
+    ).writeAsBytesSync(<int>[1, 2], flush: true);
+    File(
+      path.join(spool.sessionDirectory.path, 'active-00000001.part'),
+    ).writeAsBytesSync(<int>[3, 4], flush: true);
+
+    final recovery = await DurableAudioSpool.recover(
+      sessionDirectory: spool.sessionDirectory,
+    );
+
+    expect(recovery.isQuarantined, isTrue);
+    expect(
+      recovery.manifest.recoveryReason,
+      DurableAudioRecoveryReason.invalidOrphanChunk,
+    );
+  });
+
+  test('quarantines an active PCM chunk after a physical gap', () async {
+    final spool = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-active-gap'),
+      chunkBytes: 8,
+    );
+    File(
+      path.join(spool.sessionDirectory.path, 'active-00000001.part'),
+    ).writeAsBytesSync(<int>[1, 2], flush: true);
+
+    final recovery = await DurableAudioSpool.recover(
+      sessionDirectory: spool.sessionDirectory,
+    );
+
+    expect(recovery.isQuarantined, isTrue);
+    expect(
+      recovery.manifest.recoveryReason,
+      DurableAudioRecoveryReason.activeChunkGap,
+    );
+  });
+
+  test('refuses an existing WAV without a durable session owner', () async {
+    final spool = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-unowned-destination'),
+    );
+    await spool.append(Uint8List.fromList(<int>[1, 2]));
+    final destination = destinationFor('session-unowned-destination')
+      ..parent.createSync(recursive: true)
+      ..writeAsBytesSync(<int>[9], flush: true);
+
+    await expectLater(
+      spool.finalize(destinationFile: destination),
+      throwsA(isA<FileSystemException>()),
+    );
+    expect(destination.readAsBytesSync(), <int>[9]);
+  });
+
+  for (final canonicalExists in <bool>[false, true]) {
+    test(
+      'repairs interrupted WAV publication when canonical exists: '
+      '$canonicalExists',
+      () async {
+        final sessionId = 'session-wav-previous-$canonicalExists';
+        final spool = await DurableAudioSpool.start(
+          rootDirectory: root,
+          context: contextFor(sessionId),
+        );
+        await spool.append(Uint8List.fromList(<int>[1, 2]));
+        final destination = destinationFor(sessionId);
+        destination.parent.createSync(recursive: true);
+        File('${destination.path}.lotti-audio-owner').writeAsStringSync(
+          sessionId,
+          flush: true,
+        );
+        File('${destination.path}.previous').writeAsBytesSync(
+          <int>[7],
+          flush: true,
+        );
+        if (canonicalExists) {
+          destination.writeAsBytesSync(<int>[8], flush: true);
+        }
+
+        final result = await spool.finalize(destinationFile: destination);
+
+        expect(File(result.wavPath).readAsBytesSync().sublist(44), <int>[1, 2]);
+        expect(File('${destination.path}.previous').existsSync(), isFalse);
+      },
+    );
+  }
+
+  test('directory durability reports an unpublished POSIX entry', () async {
+    final missing = Directory(path.join(root.path, 'missing-entry'));
+
+    if (Platform.isWindows) {
+      var observed = false;
+      await AudioSpoolDurability(
+        onBoundary: (_) async => observed = true,
+      ).entryPublished(missing, AudioSpoolDurabilityBoundary.wavPublished);
+      expect(observed, isTrue);
+    } else {
+      await expectLater(
+        const AudioSpoolDurability().entryPublished(
+          missing,
+          AudioSpoolDurabilityBoundary.wavPublished,
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
+    }
+  });
 
   for (final boundary in <AudioSpoolDurabilityBoundary>[
     AudioSpoolDurabilityBoundary.activeFileFlushed,
