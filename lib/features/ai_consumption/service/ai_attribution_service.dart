@@ -69,8 +69,8 @@ class AiAttributionService {
     );
   }
 
-  /// Records one provider call. Sync enqueue is best-effort, matching the
-  /// existing consumption recorder; it never blocks persistence of an output.
+  /// Records one provider call. Sync enqueue is best-effort and never blocks
+  /// persistence of an output.
   Future<void> recordInteraction({
     required String attributionId,
     required AiConsumptionEvent event,

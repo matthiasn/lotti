@@ -22,7 +22,6 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
@@ -406,8 +405,8 @@ Future<void> registerSingletons() async {
   // Self-healing sync: create backfill services after OutboxService is available
   final outboxService = getIt<OutboxService>();
 
-  // Sync-aware consumption write path, now that OutboxService exists, plus the
-  // thin recorder facade that AI call sites use to persist one event per call.
+  // Sync-aware consumption and attribution services, now that OutboxService
+  // is available.
   final consumptionSyncService = ConsumptionSyncService(
     repository: consumptionRepository,
     outboxService: outboxService,
@@ -436,14 +435,6 @@ Future<void> registerSingletons() async {
       TranscriptAttributionCoordinator(
         getIt<AiAttributionService>(),
         getIt<AiAttributionIdentityResolver>(),
-      ),
-    )
-    ..registerSingleton<AiConsumptionRecorder>(
-      AiConsumptionRecorder(
-        syncService: consumptionSyncService,
-        logger: domainLogger,
-        attributionService: getIt<AiAttributionService>(),
-        identityResolver: getIt<AiAttributionIdentityResolver>(),
       ),
     );
   final notificationRepository = NotificationRepository(

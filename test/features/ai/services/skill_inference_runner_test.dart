@@ -26,7 +26,6 @@ import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -41,6 +40,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 
 enum _GeneratedPromptStreamPartKind { text, whitespace, empty }
 
@@ -187,23 +187,20 @@ void _stubLoggingExceptionFor(MockDomainLogger logger) {
   ).thenReturn(null);
 }
 
-/// Registers a stubbed [MockAiConsumptionRecorder] in getIt for one test.
-/// Guards against a pre-existing registration and unregisters via
-/// [addTearDown] so the recorder never leaks into other tests.
-MockAiConsumptionRecorder _registerConsumptionRecorder() {
-  final recorder = MockAiConsumptionRecorder();
-  when(() => recorder.record(any())).thenAnswer((_) async {});
-  if (getIt.isRegistered<AiConsumptionRecorder>()) {
-    getIt.unregister<AiConsumptionRecorder>();
-  }
-  getIt.registerSingleton<AiConsumptionRecorder>(recorder);
-  addTearDown(() {
-    if (getIt.isRegistered<AiConsumptionRecorder>()) {
-      getIt.unregister<AiConsumptionRecorder>();
-    }
-  });
-  return recorder;
+AiInteractionCaptureTestBench _registerInteractionCapture() {
+  final bench = AiInteractionCaptureTestBench.create()..register();
+  addTearDown(bench.unregister);
+  return bench;
 }
+
+List<AiConsumptionEvent> _capturedEvents(
+  AiInteractionCaptureTestBench bench,
+) => verify(
+  () => bench.service.recordInteraction(
+    attributionId: any(named: 'attributionId'),
+    event: captureAny(named: 'event'),
+  ),
+).captured.cast<AiConsumptionEvent>();
 
 /// Stubs the [MockDomainLogger.log] sink for event-path code. Shared by the
 /// file-level tests and the [_GeneratedSkillRunnerBench].
@@ -829,7 +826,7 @@ void main() {
         'records a consumption event with tokens from the response usage '
         'and no environmental impact (transcription endpoint reports none)',
         () async {
-          final recorder = _registerConsumptionRecorder();
+          final attribution = _registerInteractionCapture();
           final audioEntity = makeAudioEntity(categoryId: 'cat-audio');
           await createStubAudioFile();
 
@@ -882,9 +879,7 @@ void main() {
             automationResult: makeTranscriptionResult(),
           );
 
-          final event =
-              verify(() => recorder.record(captureAny())).captured.single
-                  as AiConsumptionEvent;
+          final event = _capturedEvents(attribution).single;
           expect(event.entryId, 'audio-1');
           expect(event.taskId, isNull);
           expect(event.categoryId, 'cat-audio');
@@ -4249,7 +4244,7 @@ void main() {
         'linked task disappeared mid-flight (recording happens before the '
         'task-existence check)',
         () async {
-          final recorder = _registerConsumptionRecorder();
+          final attribution = _registerInteractionCapture();
           stubImageGenPipeline('img-gone', 'task-gone');
           when(
             () => mockCloudRepo.generateImage(
@@ -4308,9 +4303,7 @@ void main() {
           // …but the billed call was already recorded, without a category
           // (there is no task left to read it from) and without token counts
           // (image generation is a single request, not a token stream).
-          final event =
-              verify(() => recorder.record(captureAny())).captured.single
-                  as AiConsumptionEvent;
+          final event = _capturedEvents(attribution).single;
           expect(event.entryId, 'img-gone');
           expect(event.taskId, 'task-gone');
           expect(event.categoryId, isNull);

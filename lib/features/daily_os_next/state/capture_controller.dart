@@ -693,7 +693,7 @@ class CaptureController extends Notifier<CaptureState> {
           await coordinator!.finalize(prepared);
         } catch (_) {
           // The transcript carrier is authoritative. Leave the projection
-          // pending for recovery instead of rewriting the outcome as failed.
+          // unchanged instead of rewriting the persisted outcome as failed.
         }
       } else if (prepared != null && attributionSession != null) {
         await coordinator!.failOutput(
@@ -710,7 +710,7 @@ class CaptureController extends Notifier<CaptureState> {
             errorCode: 'transcript_persistence_failed',
           );
         } catch (_) {
-          // The durable pending session remains eligible for recovery.
+          // Attribution cleanup is best-effort on this error path.
         }
       }
       // Attaching the transcript is best-effort — the capture flow
@@ -781,7 +781,7 @@ class CaptureController extends Notifier<CaptureState> {
               attribution,
             );
           } catch (_) {
-            // A durable pending session remains eligible for stale recovery.
+            // Cancellation cleanup is best-effort.
           }
         }(),
       );

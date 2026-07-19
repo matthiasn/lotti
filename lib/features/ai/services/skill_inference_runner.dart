@@ -31,7 +31,6 @@ import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
@@ -1030,18 +1029,6 @@ class SkillInferenceRunner {
     required String responseText,
   }) async {
     if (attribution == null) {
-      await _recordConsumption(
-        entryId: entryId,
-        taskId: taskId,
-        categoryId: categoryId,
-        skillId: skillId,
-        provider: provider,
-        modelId: modelId,
-        responseType: responseType,
-        usage: usage,
-        impact: impact,
-        start: start,
-      );
       return null;
     }
 
@@ -1138,42 +1125,6 @@ class SkillInferenceRunner {
     dataCenter: impact?.dataCenter,
     upstreamProviderId: impact?.providerId,
   );
-
-  /// Records one AI-consumption event for a completed skill call. Owner ids come
-  /// from the call context; tokens from [usage]; cost/energy from [impact]
-  /// (Melious only). Never breaks a run — a no-op when no recorder is wired, and
-  /// the recorder itself swallows failures.
-  Future<void> _recordConsumption({
-    required String entryId,
-    required String? taskId,
-    required String? categoryId,
-    required String skillId,
-    required AiConfigInferenceProvider provider,
-    required String modelId,
-    required AiResponseType responseType,
-    required CompletionUsage? usage,
-    required MeliousCallImpact? impact,
-    required DateTime start,
-  }) async {
-    if (!getIt.isRegistered<AiConsumptionRecorder>()) return;
-    await getIt<AiConsumptionRecorder>().record(
-      _consumptionEvent(
-        // v4 (opaque random): the record id carries no timestamp/node info;
-        // createdAt already captures the time explicitly.
-        id: uuid.v4(),
-        entryId: entryId,
-        taskId: taskId,
-        categoryId: categoryId,
-        skillId: skillId,
-        provider: provider,
-        modelId: modelId,
-        responseType: responseType,
-        usage: usage,
-        impact: impact,
-        start: start,
-      ),
-    );
-  }
 }
 
 /// Resolved (provider, modelId, model) tuple returned by the per-slot

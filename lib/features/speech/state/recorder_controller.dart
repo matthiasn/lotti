@@ -678,7 +678,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
             errorCode: 'transcript_output_failed',
           );
         } catch (_) {
-          // The durable pending session remains eligible for recovery.
+          // The interaction remains recorded even if marking the output failed.
         }
       } else {
         await _failRealtimeAttribution(exception, session: attributionSession);
@@ -850,7 +850,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
           stackTrace: stackTrace,
           subDomain: 'realtimeAttributionFinalize',
         );
-        // The transcript carrier is authoritative; recovery will project it.
+        // The transcript carrier is authoritative and already persisted.
       }
     } else if (prepared != null && attributionSession != null) {
       await getIt<TranscriptAttributionCoordinator>().failOutput(

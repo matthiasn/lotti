@@ -88,7 +88,6 @@ import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
@@ -911,8 +910,6 @@ class MockConsumptionRepository extends Mock implements ConsumptionRepository {
   @override
   Future<T> runInTransaction<T>(Future<T> Function() action) => action();
 }
-
-class MockAiConsumptionRecorder extends Mock implements AiConsumptionRecorder {}
 
 class MockAiAttributionService extends Mock implements AiAttributionService {}
 

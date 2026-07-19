@@ -176,9 +176,6 @@ The main integrations are:
 - `EmbeddingProcessor`, which groups per-chunk calls under one embedding
   output without inventing monetary cost.
 
-Carrier-less compatibility paths may finish as `partial` because no output
-reference can be proven.
-
 ## Persistence and sync
 
 `ConsumptionRepository` owns local Drift reads/writes. Consumption events are

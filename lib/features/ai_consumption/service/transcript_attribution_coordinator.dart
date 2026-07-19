@@ -21,7 +21,7 @@ class PreparedTranscriptAttribution {
   final AiWorkAttribution attribution;
 }
 
-/// Durable transcript capture created before provider/native inference starts.
+/// In-memory transcript capture created before provider/native inference starts.
 class TranscriptAttributionSession {
   const TranscriptAttributionSession({
     required this.transcriptId,
