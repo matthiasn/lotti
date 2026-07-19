@@ -89,6 +89,31 @@ void main() {
     when(vectorClockService.getHost).thenAnswer((_) async => null);
     expect((await resolver.executor()).hostId, 'unknown-host');
   });
+
+  test('automation and agent actors retain their accountable human', () async {
+    when(
+      () => settingsDb.itemByKey(dailyOsUserNameSettingsKey),
+    ).thenAnswer((_) async => 'Ada');
+
+    final automation = await resolver.automationInitiator(
+      id: 'automation:daily-os',
+      displayName: 'Daily OS',
+    );
+    final agent = await resolver.agentInitiator(
+      id: 'agent:planner',
+      displayName: 'Planner',
+    );
+
+    expect(automation.type, AiActorType.automation);
+    expect(automation.id, 'automation:daily-os');
+    expect(automation.displayName, 'Daily OS');
+    expect(automation.humanPrincipalId, 'local:offline-user');
+    expect(agent.type, AiActorType.agent);
+    expect(agent.id, 'agent:planner');
+    expect(agent.displayName, 'Planner');
+    expect(agent.humanPrincipalId, 'local:offline-user');
+    verify(() => settingsDb.saveSettingsItem(any(), any())).called(1);
+  });
 }
 
 class _FixedUuid implements Uuid {

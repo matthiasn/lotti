@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,8 +9,11 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 
 import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 import '../test_utils.dart';
 
 const String _testAgentId = kTestAgentId;
@@ -124,6 +128,9 @@ void main() {
     testWidgets('shows report inline when thread has matching report', (
       tester,
     ) async {
+      final envelope = makeAiTerminalEnvelope(
+        attributionId: 'thread-report-attribution',
+      );
       final threads = <String, List<AgentDomainEntity>>{
         'thread-abc': [
           makeTestMessage(
@@ -144,6 +151,11 @@ void main() {
           vectorClock: null,
           content: '# Wake Report\n\nTask looks good.',
           threadId: 'thread-abc',
+          provenance: {
+            aiAttributionProvenanceKey: jsonDecode(
+              jsonEncode(envelope.toJson()),
+            ),
+          },
         ),
       ];
 
@@ -161,6 +173,9 @@ void main() {
         find.text('Report produced during this wake'),
         findsOneWidget,
       );
+      await tester.tap(find.text('Report produced during this wake'));
+      await tester.pump();
+      expect(find.byType(AiAttributionSummary), findsOneWidget);
     });
 
     testWidgets('does not show report when threadId does not match', (

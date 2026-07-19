@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'features/agents/test_utils.dart';
 import 'mocks/mocks.dart';
 
 void main() {
@@ -511,6 +513,8 @@ void main() {
         final repository = MockConsumptionRepository();
         final service = MockAiAttributionBackfillService();
         addTearDown(agentDb.close);
+        final agent = makeTestIdentity(id: 'legacy-agent');
+        await AgentRepository(agentDb).upsertEntity(agent);
         final journalEntity = JournalEntity.journalEntry(
           meta: Metadata(
             id: 'legacy-entry',
@@ -573,6 +577,7 @@ void main() {
         verify(
           () => service.backfill(journalEntities: page),
         ).called(1);
+        verify(() => service.backfill(agentEntities: [agent])).called(1);
         verify(() => service.backfill(consumptionEvents: events)).called(1);
         verify(
           () => settingsDb.saveSettingsItem(settingsKey, 'true'),
@@ -611,6 +616,61 @@ void main() {
 
     await recoverAiAttributionForTesting();
 
+    verify(
+      () => service.recoverStale(threshold: const Duration(minutes: 15)),
+    ).called(1);
+  });
+
+  test('recoverAiAttributionForTesting logs recovery failures', () async {
+    final service = MockAiAttributionService();
+    final logger = MockDomainLogger();
+    final failure = StateError('recovery database unavailable');
+    when(
+      () => service.recoverStale(threshold: const Duration(minutes: 15)),
+    ).thenThrow(failure);
+    when(
+      () => logger.error(
+        LogDomain.ai,
+        failure,
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'aiAttributionRecovery',
+      ),
+    ).thenAnswer((_) async {});
+    getIt
+      ..registerSingleton<AiAttributionService>(service)
+      ..registerSingleton<DomainLogger>(logger);
+
+    await recoverAiAttributionForTesting();
+
+    verify(
+      () => logger.error(
+        LogDomain.ai,
+        failure,
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'aiAttributionRecovery',
+      ),
+    ).called(1);
+  });
+
+  test('maintainAiAttributionForTesting runs backfill and recovery', () async {
+    const settingsKey = 'maintenance_aiAttributionBackfillV1';
+    final settingsDb = MockSettingsDb();
+    final service = MockAiAttributionService();
+    final logger = MockDomainLogger();
+    when(
+      () => settingsDb.itemByKey(settingsKey),
+    ).thenAnswer((_) async => 'true');
+    when(
+      () => service.recoverStale(threshold: const Duration(minutes: 15)),
+    ).thenAnswer((_) async => const []);
+    getIt
+      ..registerSingleton<SettingsDb>(settingsDb)
+      ..registerSingleton<AiAttributionService>(service)
+      ..registerSingleton<DomainLogger>(logger);
+
+    await maintainAiAttributionForTesting();
+
+    verify(() => settingsDb.itemByKey(settingsKey)).called(1);
     verify(
       () => service.recoverStale(threshold: const Duration(minutes: 15)),
     ).called(1);

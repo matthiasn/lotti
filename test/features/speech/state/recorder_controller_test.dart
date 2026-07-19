@@ -2092,6 +2092,13 @@ void main() {
             ),
           ),
         );
+        when(
+          () => attributionCoordinator.recordInteraction(
+            session: attributionSession,
+            audioEntryId: 'test-entry-id',
+            transcript: '',
+          ),
+        ).thenAnswer((_) async {});
         await controller.recordRealtime(linkedId: 'task-id');
 
         expect(
@@ -2190,6 +2197,91 @@ void main() {
             session: attributionSession,
             errorCode: 'transcript_persistence_failed',
           ),
+        ).called(1);
+
+        clearInteractions(attributionCoordinator);
+        when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
+          (_) async => true,
+        );
+        when(
+          () => mockRealtimeService.stop(
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenAnswer(
+          (_) async => const RealtimeStopResult(
+            transcript: '',
+            audioFilePath: '/tmp/audio.m4a',
+          ),
+        );
+        await controller.recordRealtime(linkedId: 'task-id');
+        await controller.stopRealtime();
+        verify(
+          () => attributionCoordinator.failOutput(
+            session: attributionSession,
+            errorCode: 'empty_transcript',
+          ),
+        ).called(1);
+
+        clearInteractions(attributionCoordinator);
+        when(
+          () => mockRealtimeService.stop(
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenAnswer(
+          (_) async => const RealtimeStopResult(
+            transcript: 'realtime transcript text',
+            audioFilePath: '/tmp/audio.m4a',
+          ),
+        );
+        when(
+          () => attributionCoordinator.prepareOutput(
+            session: attributionSession,
+            audioEntryId: 'test-entry-id',
+          ),
+        ).thenThrow(StateError('output preparation failed'));
+        await controller.recordRealtime(linkedId: 'task-id');
+        expect(await controller.stopRealtime(), isNull);
+        verify(
+          () => attributionCoordinator.failOutput(
+            session: attributionSession,
+            errorCode: 'transcript_output_failed',
+          ),
+        ).called(1);
+
+        clearInteractions(attributionCoordinator);
+        when(
+          () => mockRealtimeService.stop(
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenThrow(StateError('provider stop failed'));
+        when(
+          () => attributionCoordinator.fail(
+            session: attributionSession,
+            error: any(named: 'error'),
+          ),
+        ).thenThrow(StateError('attribution failure publication failed'));
+        await controller.recordRealtime(linkedId: 'task-id');
+        expect(await controller.stopRealtime(), isNull);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'realtimeAttributionFailure',
+          ),
+        ).called(1);
+
+        clearInteractions(attributionCoordinator);
+        when(
+          () => attributionCoordinator.cancel(attributionSession),
+        ).thenAnswer((_) async {});
+        await controller.recordRealtime(linkedId: 'task-id');
+        await controller.cancelRealtime();
+        verify(
+          () => attributionCoordinator.cancel(attributionSession),
         ).called(1);
       });
     });

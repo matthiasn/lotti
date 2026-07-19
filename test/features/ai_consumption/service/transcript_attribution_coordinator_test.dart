@@ -119,8 +119,8 @@ void main() {
         audioEntryId: 'audio-usage',
         transcript: 'hello',
         usage: const {
-          'input_tokens': 10,
-          'output_tokens': 4,
+          'inputTokens': 10.9,
+          'outputTokens': 4.2,
           'total_tokens': 14,
         },
       ),
@@ -184,4 +184,43 @@ void main() {
       );
     }
   });
+
+  test(
+    'recorded interaction can fail solely because its carrier is missing',
+    () async {
+      final session = await coordinator.begin(
+        providerName: 'Mistral',
+        modelId: 'voxtral',
+        providerType: InferenceProviderType.mistral,
+        interactionKind: AiInteractionKind.audioTranscription,
+        privacyClassification: AiPrivacyClassification.mixed,
+      );
+      await coordinator.recordInteraction(
+        session: session,
+        audioEntryId: null,
+        transcript: 'provider transcript',
+      );
+
+      await coordinator.failOutput(
+        session: session,
+        errorCode: 'audio_carrier_unavailable',
+      );
+
+      final attribution = await repository.getAttribution(session.pending.id);
+      final interactions = await repository.interactionsForAttribution(
+        session.pending.id,
+      );
+      expect(attribution?.status, AiWorkStatus.failed);
+      expect(attribution?.errorCode, 'audio_carrier_unavailable');
+      expect(interactions, hasLength(1));
+      expect(
+        interactions.single.interactionStatus,
+        AiInteractionStatus.succeeded,
+      );
+      expect(
+        await repository.getPendingAttribution(session.pending.id),
+        isNull,
+      );
+    },
+  );
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,8 +8,11 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 
 import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -98,11 +102,19 @@ void main() {
     });
 
     testWidgets('first report is expanded by default', (tester) async {
+      final envelope = makeAiTerminalEnvelope(
+        attributionId: 'activity-report-attribution',
+      );
       final reports = <AgentDomainEntity>[
         makeTestReport(
           id: 'report-1',
           createdAt: DateTime(2024, 3, 15, 10),
           content: 'Report content here',
+          provenance: {
+            aiAttributionProvenanceKey: jsonDecode(
+              jsonEncode(envelope.toJson()),
+            ),
+          },
         ),
         makeTestReport(
           id: 'report-2',
@@ -119,7 +131,8 @@ void main() {
       // First report expanded — GptMarkdown renders content.
       // The second report should be collapsed.
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+      expect(find.byType(AiAttributionSummary), findsOneWidget);
     });
 
     testWidgets('tapping a collapsed report expands it', (tester) async {

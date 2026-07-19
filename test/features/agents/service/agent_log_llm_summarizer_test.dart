@@ -2,11 +2,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/projection/compaction_summary.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 import '../test_data/ai_config_factories.dart';
 
 void main() {
@@ -147,6 +151,86 @@ void main() {
     expect(prompts.last, contains('Running summary so far:\nS1'));
     expect(prompts.last, contains('beta'));
   });
+
+  test(
+    'automatic compaction records its owner and detailed token usage',
+    () async {
+      final attribution = AiInteractionCaptureTestBench.create()..register();
+      addTearDown(attribution.unregister);
+      when(
+        () => inference.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          provider: any(named: 'provider'),
+          impactCollector: any(named: 'impactCollector'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: 'content',
+            object: 'chat.completion.chunk',
+            created: 0,
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Compacted memory',
+                ),
+              ),
+            ],
+          ),
+          const CreateChatCompletionStreamResponse(
+            id: 'usage',
+            object: 'chat.completion.chunk',
+            created: 0,
+            choices: [],
+            usage: CompletionUsage(
+              promptTokens: 60,
+              completionTokens: 15,
+              totalTokens: 75,
+              promptTokensDetails: PromptTokensDetails(cachedTokens: 10),
+              completionTokensDetails: CompletionTokensDetails(
+                reasoningTokens: 4,
+              ),
+            ),
+          ),
+        ]),
+      );
+
+      final result = await summarizer().summarize(
+        sources: [src('e1', 'important note')],
+        model: 'models/test-flash',
+        provider: provider,
+      );
+
+      expect(result, 'Compacted memory');
+      final start =
+          verify(
+                () => attribution.service.begin(captureAny()),
+              ).captured.single
+              as AiAttributionStart;
+      expect(start.initiator.type, AiActorType.automation);
+      expect(start.initiator.id, 'automation:agent-log-compaction');
+      final event =
+          verify(
+                () => attribution.service.recordInteraction(
+                  attributionId: any(named: 'attributionId'),
+                  event: captureAny(named: 'event'),
+                ),
+              ).captured.single
+              as AiConsumptionEvent;
+      expect(event.inputTokens, 60);
+      expect(event.outputTokens, 15);
+      expect(event.cachedInputTokens, 10);
+      expect(event.thoughtsTokens, 4);
+      expect(event.totalTokens, 75);
+    },
+  );
 
   test('throws on an empty model response instead of erasing memory', () async {
     scriptedOutputs = [

@@ -200,3 +200,6 @@ Future<void> _maintainAiAttribution() async {
   await _backfillAiAttribution();
   await _recoverAiAttribution();
 }
+
+@visibleForTesting
+Future<void> maintainAiAttributionForTesting() => _maintainAiAttribution();

@@ -132,6 +132,7 @@ void main() {
             requestText: 'request',
             invoke: () => Stream.error(StateError('provider failed')),
             responseText: (chunk) => '$chunk',
+            impact: () => const MeliousCallImpact(energyKwh: 0.25),
           )
           .drain<void>(),
       throwsA(isA<StateError>()),
@@ -147,6 +148,7 @@ void main() {
             as AiConsumptionEvent;
     expect(event.interactionStatus, AiInteractionStatus.failed);
     expect(event.errorCode, 'StateError');
+    expect(event.energyKwh, 0.25);
     verify(
       () => service.prepareCompletion(
         attributionId: pending.id,
@@ -269,6 +271,7 @@ void main() {
           requestText: 'request',
           invoke: () => providerStream.stream,
           responseText: (chunk) => '$chunk',
+          impact: () => const MeliousCallImpact(carbonGCo2: 1.5),
         )
         .listen((_) => receivedFirstChunk.complete());
 
@@ -287,6 +290,7 @@ void main() {
             as AiConsumptionEvent;
     expect(event.interactionStatus, AiInteractionStatus.cancelled);
     expect(event.errorCode, 'cancelled');
+    expect(event.carbonGCo2, 1.5);
     verify(
       () => service.prepareCompletion(
         attributionId: pending.id,
@@ -334,4 +338,51 @@ void main() {
     expect(start.trigger.type, AiTriggerType.synced);
     verifyNever(identity.humanInitiator);
   });
+
+  test(
+    'realtime capture uses its operation kind and default automation owner',
+    () async {
+      const automation = AiActorSnapshot(
+        type: AiActorType.automation,
+        id: 'automation:audioTranscription',
+        displayName: 'audioTranscription',
+      );
+      when(
+        () => identity.automationInitiator(
+          id: 'automation:audioTranscription',
+          displayName: 'audioTranscription',
+        ),
+      ).thenAnswer((_) async => automation);
+
+      final values = await capture
+          .captureRealtime<int>(
+            workType: AiWorkType.audioTranscription,
+            responseType: AiConsumptionResponseType.audioTranscription,
+            providerType: InferenceProviderType.mistral,
+            modelId: 'voxtral-realtime',
+            requestText: 'live audio',
+            invoke: () => Stream.value(7),
+            responseText: (value) => '$value',
+            triggerType: AiTriggerType.automatic,
+          )
+          .toList();
+
+      expect(values, [7]);
+      final start =
+          verify(
+                () => service.begin(captureAny()),
+              ).captured.single
+              as AiAttributionStart;
+      expect(start.initiator, automation);
+      final event =
+          verify(
+                () => service.recordInteraction(
+                  attributionId: pending.id,
+                  event: captureAny(named: 'event'),
+                ),
+              ).captured.single
+              as AiConsumptionEvent;
+      expect(event.interactionKind, AiInteractionKind.realtimeTranscription);
+    },
+  );
 }

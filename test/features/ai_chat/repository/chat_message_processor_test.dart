@@ -8,11 +8,14 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_message_processor.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 
 /// A streamed chunk carrying only [content].
 CreateChatCompletionStreamResponse _contentChunk(String content) {
@@ -85,6 +88,7 @@ void _stubGenerate(
 
 void main() {
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(
       TaskSummaryRequest(startDate: '2024-01-01', endDate: '2024-01-02'),
     );
@@ -1017,6 +1021,90 @@ void main() {
             .toList();
 
         expect(chunks, ['Hello', ' world']);
+      });
+
+      test('captured chat streams retain detailed token usage', () async {
+        final config = AiInferenceConfig(
+          provider: AiConfigInferenceProvider(
+            id: 'prov-captured',
+            name: 'Provider',
+            baseUrl: 'https://api',
+            apiKey: 'k',
+            createdAt: testDate,
+            inferenceProviderType: InferenceProviderType.openAi,
+          ),
+          model: AiConfigModel(
+            id: 'model-captured',
+            name: 'Model',
+            providerModelId: 'gpt-captured',
+            inferenceProviderId: 'prov-captured',
+            createdAt: testDate,
+            inputModalities: const [Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+            supportsFunctionCalling: true,
+          ),
+        );
+        final attribution = AiInteractionCaptureTestBench.create()..register();
+        addTearDown(attribution.unregister);
+        when(
+          () => mockCloudInferenceRepository.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable([
+            _contentChunk('answer'),
+            const CreateChatCompletionStreamResponse(
+              id: 'usage',
+              object: 'chat.completion.chunk',
+              created: 0,
+              choices: [],
+              usage: CompletionUsage(
+                promptTokens: 30,
+                completionTokens: 12,
+                totalTokens: 42,
+                promptTokensDetails: PromptTokensDetails(cachedTokens: 5),
+                completionTokensDetails: CompletionTokensDetails(
+                  reasoningTokens: 7,
+                ),
+              ),
+            ),
+          ]),
+        );
+
+        final chunks = await processor
+            .generateCapturedStream(
+              prompt: 'question',
+              config: config,
+              systemMessage: 'system',
+              categoryId: testCategoryId,
+            )
+            .toList();
+
+        expect(chunks, hasLength(2));
+        final event =
+            verify(
+                  () => attribution.service.recordInteraction(
+                    attributionId: any(named: 'attributionId'),
+                    event: captureAny(named: 'event'),
+                  ),
+                ).captured.single
+                as AiConsumptionEvent;
+        expect(event.categoryId, testCategoryId);
+        expect(event.inputTokens, 30);
+        expect(event.outputTokens, 12);
+        expect(event.cachedInputTokens, 5);
+        expect(event.thoughtsTokens, 7);
+        expect(event.totalTokens, 42);
       });
 
       test(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -11,6 +12,8 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart' show AiConfig;
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_report_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
@@ -19,6 +22,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_utils.dart';
+import '../../../ai_consumption/test_utils.dart';
 
 void main() {
   const projectId = 'proj-agent-1';
@@ -183,6 +187,40 @@ void main() {
 
       expect(find.textContaining('Project is on track'), findsOneWidget);
       expect(find.textContaining('Milestone review is ready'), findsNothing);
+    });
+
+    testWidgets('renders attribution carried by the latest project report', (
+      tester,
+    ) async {
+      final envelope = makeAiTerminalEnvelope(
+        attributionId: 'project-report-attribution',
+      );
+      final report = makeTestReport(
+        agentId: 'agent-1',
+        content: '## TLDR\nAttributed report.\n',
+        provenance: {
+          aiAttributionProvenanceKey: jsonDecode(jsonEncode(envelope.toJson())),
+        },
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            projectAgentProvider(projectId).overrideWith(
+              (ref) async => testAgent,
+            ),
+            agentReportProvider.overrideWith((ref, agentId) async => report),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('Attributed report'), findsOneWidget);
+      expect(find.byType(AiAttributionSummary), findsOneWidget);
     });
 
     testWidgets('refresh button triggers project reanalysis', (tester) async {

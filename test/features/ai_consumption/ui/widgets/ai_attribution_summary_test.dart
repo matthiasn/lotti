@@ -219,6 +219,7 @@ void main() {
         displayName: ' ',
       ),
       privacyClassification: AiPrivacyClassification.private,
+      links: const [],
     );
     final envelope = base.copyWith(attribution: attribution);
     final details = AiAttributionDetails(
@@ -246,7 +247,10 @@ void main() {
     await tester.pump();
     await tester.pump(MotionDurations.long2);
     expect(find.text('Unknown execution device'), findsOneWidget);
-    expect(find.text('No interaction details are available.'), findsOneWidget);
+    expect(
+      find.text('No interaction details are available.'),
+      findsNWidgets(2),
+    );
     expect(
       find.text(
         'Request and response content is hidden because this work contains '
@@ -382,4 +386,178 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('surfaces provider errors before and inside the details modal', (
+    tester,
+  ) async {
+    final envelope = makeAiTerminalEnvelope();
+
+    await tester.pumpWidget(
+      makeTestableWidget(
+        AiAttributionSummary(
+          artifact: makeAiArtifact(),
+          envelope: envelope,
+        ),
+        overrides: [
+          aiAttributionDetailsProvider.overrideWith(
+            (ref, id) => Future<AiAttributionDetails?>.error(
+              StateError('details unavailable'),
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.textContaining('Ada · Manual · Completed'), findsOneWidget);
+    await tester.tap(find.byType(InkWell));
+    await tester.pump();
+    await tester.pump(MotionDurations.long2);
+
+    expect(find.text('AI attribution is unavailable.'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets(
+    'details expose artifacts, interaction evidence, outcomes, and cost sources',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800, 1400);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+      final base = makeAiTerminalEnvelope();
+      final attribution = base.attribution.copyWith(
+        links: [
+          AiAttributionLink(
+            id: 'output-link',
+            attributionId: base.attribution.id,
+            role: AiAttributionLinkRole.output,
+            artifact: makeAiArtifact(id: 'output-id', subId: 'version-2'),
+          ),
+          AiAttributionLink(
+            id: 'source-link',
+            attributionId: base.attribution.id,
+            role: AiAttributionLinkRole.source,
+            artifact: makeAiArtifact(id: 'source-id'),
+          ),
+          AiAttributionLink(
+            id: 'context-link',
+            attributionId: base.attribution.id,
+            role: AiAttributionLinkRole.context,
+            artifact: makeAiArtifact(id: 'context-id'),
+          ),
+        ],
+      );
+      final envelope = base.copyWith(attribution: attribution);
+      const statuses = AiInteractionStatus.values;
+      const sources = <AiCostSource>[
+        AiCostSource.localCompute,
+        AiCostSource.locallyEstimated,
+        AiCostSource.externallyReconciled,
+        AiCostSource.legacyReported,
+      ];
+      final interactions = <AiConsumptionEvent>[
+        for (var index = 0; index < statuses.length; index++)
+          AiConsumptionEvent(
+            id: 'call-$index',
+            createdAt: DateTime(2026, 3, 15, 12, index),
+            completedAt: DateTime(2026, 3, 15, 12, index, 1),
+            providerType: InferenceProviderType.openAi,
+            responseType: AiConsumptionResponseType.promptGeneration,
+            vectorClock: null,
+            attributionId: attribution.id,
+            sequenceIndex: index,
+            interactionStatus: statuses[index],
+            providerModelId: 'model-$index',
+            providerRequestId: index == 0 ? 'provider-request-42' : null,
+            durationMs: index == 0 ? 1500 : null,
+            totalTokens: index == 0 ? 42 : null,
+            payload: index == 0
+                ? AiInteractionPayload(
+                    id: 'payload-0',
+                    interactionId: 'call-0',
+                    request: const [],
+                    response: const [],
+                    parameters: const {},
+                    requestDigest: 'request-sha256',
+                    responseDigest: 'response-sha256',
+                    capturePolicy: AiPayloadCapturePolicy.metadataOnly,
+                    privacyClassification: AiPrivacyClassification.standard,
+                    createdAt: DateTime(2026, 3, 15, 12),
+                  )
+                : null,
+          ),
+      ];
+      final costs = <AiInteractionCost>[
+        for (var index = 0; index < sources.length; index++)
+          AiInteractionCost(
+            id: 'cost-$index',
+            interactionId: 'call-$index',
+            source: sources[index],
+            assessedAt: DateTime(2026, 3, 15, 12, index),
+            reportingAmountMicros: index,
+            reportingCurrency: 'USD',
+          ),
+        // Invalid concurrent evidence is deliberately displayed as unknown
+        // rather than making the audit sheet fail to open.
+        AiInteractionCost(
+          id: 'duplicate',
+          interactionId: 'call-3',
+          source: AiCostSource.providerReported,
+          assessedAt: DateTime(2026, 3, 15, 13),
+        ),
+        AiInteractionCost(
+          id: 'duplicate',
+          interactionId: 'call-3',
+          source: AiCostSource.providerReported,
+          assessedAt: DateTime(2026, 3, 15, 13, 1),
+        ),
+      ];
+      final details = AiAttributionDetails(
+        attribution: attribution,
+        interactions: interactions,
+        costTotals: const AiCostTotals(
+          reportingMicrosByCurrency: {'USD': 6},
+          knownInteractionCount: 3,
+          unknownInteractionCount: 1,
+        ),
+        costAssessments: costs,
+      );
+
+      await pumpSummary(tester, envelope: envelope, details: details);
+      expect(
+        find.textContaining('Some calls have unknown cost'),
+        findsOneWidget,
+      );
+      await tester.tap(find.byType(InkWell));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Output'), findsOneWidget);
+      expect(find.text('Source'), findsOneWidget);
+      expect(find.text('Context'), findsOneWidget);
+      expect(find.textContaining('output-id / version-2'), findsOneWidget);
+
+      const expectedStatuses = ['Completed', 'Failed', 'Cancelled', 'Partial'];
+      for (var index = 0; index < interactions.length; index++) {
+        final tile = find.text('${index + 1}. model-$index');
+        await tester.ensureVisible(tile);
+        await tester.pump();
+        await tester.tap(tile);
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.text(expectedStatuses[index]), findsWidgets);
+      }
+
+      expect(find.text('0:00:01'), findsWidgets);
+      expect(find.text('42'), findsOneWidget);
+      expect(find.text('request-sha256'), findsOneWidget);
+      expect(find.text('response-sha256'), findsOneWidget);
+      expect(find.text('provider-request-42'), findsOneWidget);
+      expect(find.text('Local compute'), findsOneWidget);
+      expect(find.text('Estimated locally'), findsOneWidget);
+      expect(find.text('Reconciled externally'), findsOneWidget);
+      expect(find.text('Cost unknown'), findsWidgets);
+    },
+  );
 }

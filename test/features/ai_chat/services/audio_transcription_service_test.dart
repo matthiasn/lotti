@@ -23,6 +23,11 @@ import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
 
 class _FakeMlxAudioChannel extends MlxAudioChannel {
+  _FakeMlxAudioChannel({
+    this.result = const MlxAudioTranscriptionResult(text: 'local qwen'),
+  });
+
+  final MlxAudioTranscriptionResult result;
   String? transcribedFilePath;
   String? transcribedModelId;
   List<String>? transcribedSpeechDictionaryTerms;
@@ -38,7 +43,7 @@ class _FakeMlxAudioChannel extends MlxAudioChannel {
     transcribedFilePath = filePath;
     transcribedModelId = modelId;
     transcribedSpeechDictionaryTerms = speechDictionaryTerms;
-    return const MlxAudioTranscriptionResult(text: 'local qwen');
+    return result;
   }
 }
 
@@ -274,6 +279,30 @@ void main() {
     );
     addTearDown(container.dispose);
     return container.read(audioTranscriptionServiceProvider);
+  }
+
+  Future<AiConfigRepository> mlxRepo() async {
+    final repo = isolatedRepo();
+    await repo.saveConfig(
+      _provider(
+        id: 'p-mlx-attribution',
+        type: InferenceProviderType.mlxAudio,
+        name: 'MLX Audio',
+        baseUrl: '',
+        apiKey: '',
+      ),
+      fromSync: true,
+    );
+    await repo.saveConfig(
+      _audioModel(
+        id: 'm-mlx-attribution',
+        providerId: 'p-mlx-attribution',
+        name: 'Qwen3 ASR',
+        providerModelId: mlxAudioQwenAsrModelId,
+      ),
+      fromSync: true,
+    );
+    return repo;
   }
 
   setUpAll(() async {
@@ -543,6 +572,223 @@ void main() {
           event: any(named: 'event'),
         ),
       ).called(1);
+    },
+  );
+
+  test(
+    'attributed MLX transcription records its successful provider call',
+    () async {
+      final file = await audioFile();
+      final attribution = AiInteractionCaptureTestBench.create()..register();
+      addTearDown(attribution.unregister);
+      final pending = await attribution.capture.beginSession(
+        workType: AiWorkType.audioTranscription,
+        trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+        privacyClassification: AiPrivacyClassification.mixed,
+      );
+      final svc = buildService(
+        repo: await mlxRepo(),
+        mlxChannel: _FakeMlxAudioChannel(),
+      );
+
+      expect(
+        await svc.transcribe(
+          file.path,
+          attributionSession: pending,
+          terminalizeAttributionFailure: false,
+        ),
+        'local qwen',
+      );
+      final event =
+          verify(
+                () => attribution.service.recordInteraction(
+                  attributionId: pending.id,
+                  event: captureAny(named: 'event'),
+                ),
+              ).captured.single
+              as AiConsumptionEvent;
+      expect(event.interactionStatus, AiInteractionStatus.succeeded);
+      expect(event.providerModelId, mlxAudioQwenAsrModelId);
+    },
+  );
+
+  test('attributed cloud transcription records detailed token usage', () async {
+    final file = await audioFile();
+    final mockCloud = MockCloudInferenceRepository();
+    _stubGenerateWithAudioStream(
+      mockCloud,
+      () => Stream.value(
+        const CreateChatCompletionStreamResponse(
+          id: 'usage',
+          object: 'chat.completion.chunk',
+          created: 0,
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              index: 0,
+              delta: ChatCompletionStreamResponseDelta(content: 'transcript'),
+            ),
+          ],
+          usage: CompletionUsage(
+            promptTokens: 12,
+            completionTokens: 8,
+            totalTokens: 20,
+            promptTokensDetails: PromptTokensDetails(cachedTokens: 3),
+            completionTokensDetails: CompletionTokensDetails(
+              reasoningTokens: 2,
+            ),
+          ),
+        ),
+      ),
+    );
+    final attribution = AiInteractionCaptureTestBench.create()..register();
+    addTearDown(attribution.unregister);
+    final pending = await attribution.capture.beginSession(
+      workType: AiWorkType.audioTranscription,
+      trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+      privacyClassification: AiPrivacyClassification.mixed,
+    );
+    final svc = buildService(repo: sharedRepo, cloud: mockCloud);
+
+    expect(
+      await svc.transcribe(
+        file.path,
+        attributionSession: pending,
+        terminalizeAttributionFailure: false,
+      ),
+      'transcript',
+    );
+    final event =
+        verify(
+              () => attribution.service.recordInteraction(
+                attributionId: pending.id,
+                event: captureAny(named: 'event'),
+              ),
+            ).captured.single
+            as AiConsumptionEvent;
+    expect(event.inputTokens, 12);
+    expect(event.outputTokens, 8);
+    expect(event.cachedInputTokens, 3);
+    expect(event.thoughtsTokens, 2);
+    expect(event.totalTokens, 20);
+  });
+
+  test(
+    'uncaptured cloud failures wrap non-exception provider errors',
+    () async {
+      final file = await audioFile();
+      final mockCloud = MockCloudInferenceRepository();
+      _stubGenerateWithAudioStream(
+        mockCloud,
+        () => Stream<CreateChatCompletionStreamResponse>.error('raw failure'),
+      );
+      final svc = buildService(repo: sharedRepo, cloud: mockCloud);
+
+      await expectLater(
+        svc.transcribe(file.path),
+        throwsA(
+          isA<Exception>().having(
+            (error) => error.toString(),
+            'message',
+            contains('raw failure'),
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'empty attributed MLX result preserves recorded failure evidence',
+    () async {
+      final file = await audioFile();
+      final attribution = AiInteractionCaptureTestBench.create()..register();
+      addTearDown(attribution.unregister);
+      final pending = await attribution.capture.beginSession(
+        workType: AiWorkType.audioTranscription,
+        trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+        privacyClassification: AiPrivacyClassification.mixed,
+      );
+      final svc = buildService(
+        repo: await mlxRepo(),
+        mlxChannel: _FakeMlxAudioChannel(
+          result: const MlxAudioTranscriptionResult(text: '   '),
+        ),
+      );
+
+      await expectLater(
+        svc.transcribe(
+          file.path,
+          attributionSession: pending,
+          terminalizeAttributionFailure: false,
+        ),
+        throwsA(
+          isA<AttributedTranscriptionException>()
+              .having(
+                (error) => error.evidenceState,
+                'evidenceState',
+                TranscriptionEvidenceState.recorded,
+              )
+              .having(
+                (error) => error.toString(),
+                'message',
+                contains('returned no transcript'),
+              ),
+        ),
+      );
+      final event =
+          verify(
+                () => attribution.service.recordInteraction(
+                  attributionId: pending.id,
+                  event: captureAny(named: 'event'),
+                ),
+              ).captured.single
+              as AiConsumptionEvent;
+      expect(event.interactionStatus, AiInteractionStatus.failed);
+    },
+  );
+
+  test(
+    'MLX publication uncertainty is distinguishable from provider failure',
+    () async {
+      final file = await audioFile();
+      final attribution = AiInteractionCaptureTestBench.create()..register();
+      addTearDown(attribution.unregister);
+      final pending = await attribution.capture.beginSession(
+        workType: AiWorkType.audioTranscription,
+        trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+        privacyClassification: AiPrivacyClassification.mixed,
+      );
+      when(
+        () => attribution.service.recordInteraction(
+          attributionId: pending.id,
+          event: any(named: 'event'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event = invocation.namedArguments[#event] as AiConsumptionEvent;
+        return AiAttributedInteractionResult(
+          session: pending,
+          event: event.copyWith(attributionId: pending.id),
+          published: false,
+        );
+      });
+      final svc = buildService(
+        repo: await mlxRepo(),
+        mlxChannel: _FakeMlxAudioChannel(),
+      );
+
+      await expectLater(
+        svc.transcribe(
+          file.path,
+          attributionSession: pending,
+          terminalizeAttributionFailure: false,
+        ),
+        throwsA(
+          isA<AttributedTranscriptionException>().having(
+            (error) => error.evidenceState,
+            'evidenceState',
+            TranscriptionEvidenceState.uncertain,
+          ),
+        ),
+      );
     },
   );
 

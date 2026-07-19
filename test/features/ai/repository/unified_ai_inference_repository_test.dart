@@ -32,8 +32,10 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
 import 'package:lotti/features/journal/repository/journal_repository.dart'
@@ -1318,6 +1320,36 @@ void main() {
           ),
         ).called(1);
         verify(() => attribution.service.finalize(any())).called(1);
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            id: any(named: 'id'),
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+        _stubGenerate(
+          mockCloudInferenceRepo,
+          stream: _createMockTextStream(['not persisted']),
+        );
+
+        await expectLater(
+          repository!.runInference(
+            entityId: taskEntity.id,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('Failed to persist attributed AI response'),
+            ),
+          ),
+        );
       });
 
       test(
@@ -3195,6 +3227,37 @@ void main() {
               apiKey: 'test-api-key',
             ),
           ).called(1);
+
+          _stubCreateAiResponseEntry(mockAiInputRepo, attributed: true);
+          _stubGenerateWithImages(
+            mockCloudInferenceRepo,
+            stream: _createMockTextStream(['Attributed analysis']),
+          );
+          final attribution = _registerAttributionCapture();
+
+          await repository!.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
+
+          final startCommand =
+              verify(
+                    () => attribution.service.begin(captureAny()),
+                  ).captured.single
+                  as AiAttributionStart;
+          expect(startCommand.workType, AiWorkType.imageAnalysis);
+          verify(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: 'test-id',
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).called(1);
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
         } finally {
           // Clean up the temporary directory
           tempDir.deleteSync(recursive: true);
@@ -6901,19 +6964,69 @@ Take into account the following task context:
             stream: _createMockTextStream(['Transcribed text']),
           );
           _stubCreateAiResponseEntry(mockAiInputRepo);
+          final attribution = _registerAttributionCapture();
 
           final statusChanges = <InferenceStatus>[];
+          await expectLater(
+            repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: statusChanges.add,
+            ),
+            throwsA(isA<Exception>()),
+          );
+
+          expect(statusChanges, [InferenceStatus.running]);
+          final completions = verify(
+            () => attribution.service.prepareCompletion(
+              attributionId: any(named: 'attributionId'),
+              outputs: captureAny(named: 'outputs'),
+              status: captureAny(named: 'status'),
+              errorCode: any(named: 'errorCode'),
+            ),
+          ).captured;
+          expect(
+            completions.whereType<List<AiArtifactReference>>().any(
+              (outputs) => outputs.single.type == AiArtifactType.journalAudio,
+            ),
+            isTrue,
+          );
+          expect(completions, contains(AiWorkStatus.failed));
+
+          clearInteractions(attribution.service);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => false);
+          _stubGenerateWithAudio(
+            mockCloudInferenceRepo,
+            stream: _createMockTextStream(['Still not persisted']),
+          );
+          await expectLater(
+            repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+            ),
+            throwsA(isA<StateError>()),
+          );
+
+          clearInteractions(attribution.service);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          _stubGenerateWithAudio(
+            mockCloudInferenceRepo,
+            stream: _createMockTextStream(['Persisted transcript']),
+          );
           await repository!.runInference(
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: (_) {},
-            onStatusChange: statusChanges.add,
+            onStatusChange: (_) {},
           );
-
-          expect(statusChanges, [
-            InferenceStatus.running,
-            InferenceStatus.idle,
-          ]);
+          verify(() => attribution.service.finalize(any())).called(1);
         },
       );
     },

@@ -73,6 +73,12 @@ void main() {
         currency: 'EUR',
       ),
       cost(
+        id: 'usd-second-call',
+        interactionId: 'call-4',
+        source: AiCostSource.providerReported,
+        micros: 50,
+      ),
+      cost(
         id: 'unknown',
         interactionId: 'call-3',
         source: AiCostSource.unknown,
@@ -81,8 +87,8 @@ void main() {
       ),
     ]);
 
-    expect(totals.reportingMicrosByCurrency, {'USD': 150, 'EUR': 200});
-    expect(totals.knownInteractionCount, 2);
+    expect(totals.reportingMicrosByCurrency, {'USD': 200, 'EUR': 200});
+    expect(totals.knownInteractionCount, 3);
     expect(totals.unknownInteractionCount, 1);
   });
 

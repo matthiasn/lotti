@@ -339,4 +339,25 @@ void main() {
     expect(find.text('planner-model'), findsOneWidget);
     expect(find.text('writer-model'), findsOneWidget);
   });
+
+  testWidgets('narrow attribution groups stack unreported metrics', (
+    tester,
+  ) async {
+    stubEvents([
+      makeConsumptionEvent(
+        id: 'evt-unreported',
+        attributionId: 'short-id',
+        providerModelId: 'local-model',
+        totalTokens: null,
+        credits: null,
+        energyKwh: null,
+      ),
+    ]);
+
+    await pumpLedger(tester, width: 360);
+
+    expect(find.text('AI work · 1 call'), findsOneWidget);
+    expect(find.text('Attribution short-id'), findsOneWidget);
+    expect(find.text('Not reported'), findsOneWidget);
+  });
 }

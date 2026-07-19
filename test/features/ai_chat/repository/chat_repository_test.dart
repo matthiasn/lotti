@@ -1054,6 +1054,128 @@ void main() {
         verify(() => attribution.service.finalize(any())).called(1);
       });
 
+      test(
+        'terminalizes attributed chat work when the provider fails',
+        () async {
+          final attribution = AiInteractionCaptureTestBench.create()
+            ..register();
+          addTearDown(tearDownTestGetIt);
+          setupAiConfigMocks();
+          _stubGenerate(mockCloudInferenceRepository).thenAnswer(
+            (_) => Stream.error(StateError('provider unavailable')),
+          );
+
+          await expectLater(
+            repository
+                .sendMessage(
+                  message: 'Fail this request',
+                  conversationHistory: [],
+                  categoryId: testCategoryId,
+                  modelId: testModel.id,
+                )
+                .drain<void>(),
+            throwsA(isA<ChatRepositoryException>()),
+          );
+
+          final statuses = verify(
+            () => attribution.service.prepareCompletion(
+              attributionId: any(named: 'attributionId'),
+              outputs: const [],
+              status: captureAny(named: 'status'),
+              errorCode: captureAny(named: 'errorCode'),
+            ),
+          ).captured;
+          expect(statuses, containsAll([AiWorkStatus.failed, 'StateError']));
+        },
+      );
+
+      test(
+        'terminalizes attributed chat work when its listener cancels',
+        () async {
+          final attribution = AiInteractionCaptureTestBench.create()
+            ..register();
+          addTearDown(tearDownTestGetIt);
+          setupAiConfigMocks();
+          final finalStreamListened = Completer<void>();
+          final finalStream =
+              StreamController<CreateChatCompletionStreamResponse>(
+                onListen: finalStreamListened.complete,
+              );
+          addTearDown(finalStream.close);
+          final initialStream = Stream.value(
+            const CreateChatCompletionStreamResponse(
+              id: 'tool-call',
+              created: 0,
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    toolCalls: [
+                      ChatCompletionStreamMessageToolCallChunk(
+                        index: 0,
+                        id: 'tool-1',
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'get_task_summaries',
+                          arguments:
+                              '{"start_date":"2024-01-01",'
+                              '"end_date":"2024-01-01"}',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+          var generateCall = 0;
+          _stubGenerate(
+            mockCloudInferenceRepository,
+          ).thenAnswer(
+            (_) => ++generateCall == 1 ? initialStream : finalStream.stream,
+          );
+          when(
+            () => mockTaskSummaryRepository.getTaskSummaries(
+              categoryId: testCategoryId,
+              request: any(named: 'request'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          final resultReceived = Completer<void>();
+          final subscription = repository
+              .sendMessage(
+                message: 'Cancel this request',
+                conversationHistory: [],
+                categoryId: testCategoryId,
+                modelId: testModel.id,
+              )
+              .listen((_) => resultReceived.complete());
+          await finalStreamListened.future;
+          finalStream.add(
+            const CreateChatCompletionStreamResponse(
+              id: 'final-content',
+              created: 0,
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(content: 'partial'),
+                ),
+              ],
+            ),
+          );
+          await resultReceived.future;
+          await subscription.cancel();
+
+          verify(
+            () => attribution.service.prepareCompletion(
+              attributionId: any(named: 'attributionId'),
+              outputs: const [],
+              status: AiWorkStatus.cancelled,
+              errorCode: 'cancelled',
+            ),
+          ).called(1);
+        },
+      );
+
       test('handles conversation history correctly', () async {
         // Setup AI configuration
         setupAiConfigMocks();
