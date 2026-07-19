@@ -163,29 +163,33 @@ class ProposalsSection extends StatelessWidget {
                 // Wrap, not Row: long translations or large text scales
                 // drop the batch action to its own line instead of
                 // overflowing the constrained card.
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: tokens.spacing.step3,
-                  runSpacing: tokens.spacing.step2,
-                  children: [
-                    if (resolved.isNotEmpty)
-                      _HistoryToggle(
-                        open: historyOpen,
-                        count: resolved.length,
-                        onPressed: onToggleHistory,
-                      )
-                    else
-                      const SizedBox.shrink(),
-                    if (onConfirmAll != null)
-                      DesignSystemButton(
-                        label: messages.changeSetConfirmAll,
-                        leadingIcon: Icons.done_all_rounded,
-                        variant: DesignSystemButtonVariant.outlined,
-                        isLoading: confirmAllBusy,
-                        onPressed: () => unawaited(onConfirmAll!()),
-                      ),
-                  ],
+                SizedBox(
+                  key: const ValueKey('proposalBottomRail'),
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: tokens.spacing.step3,
+                    runSpacing: tokens.spacing.step2,
+                    children: [
+                      if (resolved.isNotEmpty)
+                        _HistoryToggle(
+                          open: historyOpen,
+                          count: resolved.length,
+                          onPressed: onToggleHistory,
+                        )
+                      else
+                        const SizedBox.shrink(),
+                      if (onConfirmAll != null)
+                        DesignSystemButton(
+                          label: messages.changeSetConfirmAll,
+                          leadingIcon: Icons.done_all_rounded,
+                          variant: DesignSystemButtonVariant.outlined,
+                          isLoading: confirmAllBusy,
+                          onPressed: () => unawaited(onConfirmAll!()),
+                        ),
+                    ],
+                  ),
                 ),
               ],
               if (resolved.isNotEmpty && historyOpen) ...[
@@ -266,34 +270,40 @@ class _HistoryToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-          // Quiet meta like the footer's model line — the chevron and hit
-          // target signal interactivity without spending accent on a
-          // low-priority disclosure.
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                open
-                    ? Icons.keyboard_arrow_down_rounded
-                    : Icons.chevron_right_rounded,
-                size: tokens.spacing.step5,
-                color: ai.metaText,
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        expanded: open,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(tokens.radii.s),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: tokens.spacing.step9),
+              // Quiet meta like the footer's model line — the chevron and hit
+              // target signal interactivity without spending accent on a
+              // low-priority disclosure.
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    open
+                        ? Icons.keyboard_arrow_down_rounded
+                        : Icons.chevron_right_rounded,
+                    size: tokens.spacing.step5,
+                    color: ai.metaText,
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  Text(
+                    context.messages.aiCardHistoryToggle(count),
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: ai.metaText,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                context.messages.aiCardHistoryToggle(count),
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: ai.metaText,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

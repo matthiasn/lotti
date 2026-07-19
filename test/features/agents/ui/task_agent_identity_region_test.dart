@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -17,7 +18,7 @@ void main() {
     runtimeSettings: {},
   );
 
-  testWidgets('combined row is tappable, accessible, and at least 40 high', (
+  testWidgets('combined row is tappable, accessible, and at least step9 high', (
     tester,
   ) async {
     var taps = 0;
@@ -39,7 +40,14 @@ void main() {
       findsOneWidget,
     );
     final inkWell = find.byType(InkWell).first;
-    expect(tester.getSize(inkWell).height, greaterThanOrEqualTo(40));
+    final context = tester.element(find.byType(TaskAgentIdentityRegion));
+    expect(
+      tester.getSize(inkWell).height,
+      greaterThanOrEqualTo(context.designTokens.spacing.step9),
+    );
+    for (final icon in tester.widgetList<Icon>(find.byType(Icon))) {
+      expect(icon.color, context.designTokens.colors.aiCard.metaText);
+    }
     expect(
       find.bySemanticsLabel(
         RegExp('This report and current setup use Qwen 3.5 Plus'),

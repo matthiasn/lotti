@@ -647,14 +647,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         ),
         borderRadius: cardRadius,
         border: Border.all(color: ai.border),
-        boxShadow: [
-          BoxShadow(
-            color: ai.accent.withValues(alpha: 0.2),
-            blurRadius: 24,
-            spreadRadius: -4,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: cardRadius,

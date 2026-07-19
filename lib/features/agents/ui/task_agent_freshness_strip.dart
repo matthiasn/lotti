@@ -37,7 +37,7 @@ class TaskAgentFreshnessStrip extends StatelessWidget {
   /// full-size pill. Sized for the English message + labeled CTA with
   /// localization headroom; a fixed layout breakpoint like the
   /// reading-measure caps.
-  static const double _compactWidth = 440;
+  static const double compactWidth = 440;
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +90,7 @@ class TaskAgentFreshnessStrip extends StatelessWidget {
       label: isRunning
           ? messages.aiSummaryThinkingLabel
           : messages.taskAgentWakeAgent,
-      enabled: onRunNow != null,
+      enabled: onRunNow != null && !isRunning,
       excludeSemantics: true,
       child: Tooltip(
         message: messages.taskAgentWakeAgent,
@@ -102,8 +102,8 @@ class TaskAgentFreshnessStrip extends StatelessWidget {
             customBorder: const CircleBorder(),
             onTap: isRunning ? null : onRunNow,
             child: SizedBox(
-              width: tokens.spacing.step8,
-              height: tokens.spacing.step8,
+              width: tokens.spacing.step9,
+              height: tokens.spacing.step9,
               child: Center(
                 child: Container(
                   width: tokens.spacing.step7,
@@ -164,7 +164,7 @@ class TaskAgentFreshnessStrip extends StatelessWidget {
       // translation still overflows.
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < _compactWidth;
+          final compact = constraints.maxWidth < compactWidth;
           return Row(
             children: [
               Expanded(child: messageLine),

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1054]
 ### Fixed
+- **Task AI summaries are cleaner, more compact, and easier to operate.**
+  Report and proposal text now match editor entries and card summaries, quiet
+  metadata is easier to read, secondary controls have larger interaction
+  targets, and the footer adapts cleanly to narrow layouts and larger text.
 - **Date pickers now start the week according to your device region.** Entry
   dates, entry ranges, due dates, and project target dates show Monday first in
   European regions and Sunday first in the US, including matching weekday

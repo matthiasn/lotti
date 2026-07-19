@@ -161,8 +161,7 @@ class ResolvedTag extends StatelessWidget {
                 : messages.aiCardProposalDismissed,
             style: tokens.typography.styles.others.caption.copyWith(
               color: color,
-              fontWeight: FontWeight.w600,
-              height: 1,
+              fontWeight: tokens.typography.weight.semiBold,
             ),
           ),
         ],

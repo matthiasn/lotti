@@ -111,7 +111,7 @@ class _SetupIdentityRow extends StatelessWidget {
         : ai.metaText;
     final iconColor = isError
         ? tokens.colors.alert.error.defaultColor
-        : ai.faintMeta;
+        : ai.metaText;
     return Semantics(
       button: true,
       label: semanticsLabel,
@@ -126,9 +126,7 @@ class _SetupIdentityRow extends StatelessWidget {
             onTap: onTap,
             borderRadius: BorderRadius.circular(tokens.radii.s),
             child: ConstrainedBox(
-              // step8 keeps a compliant tap height without the dead band a
-              // 48px floor put around one caption line.
-              constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+              constraints: BoxConstraints(minHeight: tokens.spacing.step9),
               // Shrink-wrapped so the chevron hugs the value instead of
               // drifting to the far row end next to unrelated controls.
               child: Row(
@@ -187,12 +185,12 @@ class _ReportIdentityRow extends StatelessWidget {
           Icon(
             Icons.description_outlined,
             size: tokens.spacing.step5,
-            color: ai.faintMeta,
+            color: ai.metaText,
           ),
           SizedBox(width: tokens.spacing.step2),
           Text(
             label,
-            style: caption.copyWith(color: ai.faintMeta),
+            style: caption.copyWith(color: ai.metaText),
           ),
           SizedBox(width: tokens.spacing.step2),
           Expanded(

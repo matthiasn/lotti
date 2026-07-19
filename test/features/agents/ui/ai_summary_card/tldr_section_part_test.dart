@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -74,6 +76,82 @@ void main() {
   });
 
   group('TldrBody', () {
+    testWidgets('uses editor-aligned bodySmall for all report prose', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(const _DisclosureHarness()),
+      );
+
+      final context = tester.element(find.byType(TldrBody));
+      final styles = context.designTokens.typography.styles.body;
+      final collapsedView = tester.widget<AgentMarkdownView>(
+        find.byType(AgentMarkdownView),
+      );
+
+      expect(collapsedView.style?.fontSize, styles.bodySmall.fontSize);
+      expect(collapsedView.style?.fontSize, isNot(styles.bodyMedium.fontSize));
+
+      await tester.tap(find.text('Read more'));
+      await tester.pump();
+
+      final expandedViews = tester
+          .widgetList<AgentMarkdownView>(find.byType(AgentMarkdownView))
+          .toList();
+      expect(expandedViews, hasLength(2));
+      for (final view in expandedViews) {
+        expect(view.style?.fontSize, styles.bodySmall.fontSize);
+        expect(view.style?.fontWeight, styles.bodySmall.fontWeight);
+        expect(view.style?.fontFamily, styles.bodySmall.fontFamily);
+      }
+    });
+
+    testWidgets('disclosure has a step9 target and reports expansion', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        makeTestableWidget(const _DisclosureHarness()),
+      );
+
+      final disclosure = find.byKey(
+        const ValueKey('taskAgentReportDisclosure'),
+      );
+      final context = tester.element(find.byType(TldrBody));
+      expect(
+        tester.getSize(disclosure).height,
+        greaterThanOrEqualTo(context.designTokens.spacing.step9),
+      );
+      expect(
+        tester.getSemantics(disclosure),
+        matchesSemantics(
+          label: 'Read more',
+          isButton: true,
+          isFocusable: true,
+          hasExpandedState: true,
+          hasFocusAction: true,
+          hasTapAction: true,
+        ),
+      );
+
+      await tester.tap(disclosure);
+      await tester.pump();
+
+      expect(
+        tester.getSemantics(disclosure),
+        matchesSemantics(
+          label: 'Show less',
+          isButton: true,
+          isFocusable: true,
+          hasExpandedState: true,
+          isExpanded: true,
+          hasFocusAction: true,
+          hasTapAction: true,
+        ),
+      );
+      semantics.dispose();
+    });
+
     testWidgets('places disclosure below its summary and expands in place', (
       tester,
     ) async {

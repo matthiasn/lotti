@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../test_data/change_set_factories.dart';
@@ -90,5 +92,29 @@ void main() {
         expect(find.textContaining('Update · '), findsOneWidget);
       },
     );
+
+    testWidgets('proposal prose uses the unmodified bodySmall metrics', (
+      tester,
+    ) async {
+      final bench = AgentTestBench(
+        suggestions: UnifiedSuggestionList(
+          open: [_pending('set_task_status')],
+          activity: const [],
+        ),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final text = tester.widget<Text>(
+        find.textContaining('Status · Body for set_task_status'),
+      );
+      final context = tester.element(find.byType(Text).first);
+      final bodySmall = context.designTokens.typography.styles.body.bodySmall;
+      expect(text.style?.fontSize, bodySmall.fontSize);
+      expect(text.style?.height, bodySmall.height);
+      expect(text.style?.fontWeight, bodySmall.fontWeight);
+    });
   });
 }

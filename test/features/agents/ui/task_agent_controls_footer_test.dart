@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -73,6 +74,10 @@ void main() {
       find.text('Qwen 3.5 Plus · Alibaba · via Melious.ai'),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const ValueKey('taskAgentFooterWideLayout')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const ValueKey('taskAgentWakeButton')));
     expect(wakes, 1);
@@ -124,6 +129,17 @@ void main() {
         // The chip itself is informational — only the close button cancels.
         await tester.tap(find.text('Next update in 1:30'));
         expect(cancellations, 0);
+        final context = tester.element(
+          find.byType(TaskAgentControlsFooter),
+        );
+        expect(
+          tester.getSize(
+            find.byKey(
+              const ValueKey('taskAgentCancelCountdownTarget'),
+            ),
+          ),
+          Size.square(context.designTokens.spacing.step9),
+        );
         await tester.tap(find.byIcon(Icons.close_rounded));
       });
 
@@ -246,5 +262,73 @@ void main() {
 
     await tester.tap(find.text('Qwen 3.5 Plus · Alibaba · via Melious.ai'));
     expect(setupTaps, 1);
+  });
+
+  testWidgets(
+    'narrow German footer stacks identity above untruncated automation',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Center(
+            child: SizedBox(
+              width: 360,
+              child: subject(showWakeButton: false),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(360, 800)),
+          locale: const Locale('de'),
+        ),
+      );
+
+      expect(
+        find.byKey(const ValueKey('taskAgentFooterCompactLayout')),
+        findsOneWidget,
+      );
+      final identity = find.textContaining('Qwen 3.5 Plus').first;
+      final automation = find.text('Automatische Aktualisierungen');
+      expect(automation, findsOneWidget);
+      expect(
+        tester.getBottomLeft(identity).dy,
+        lessThan(tester.getTopLeft(automation).dy),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('large text selects the compact footer layout', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(
+          child: SizedBox(
+            width: 700,
+            child: subject(showWakeButton: false),
+          ),
+        ),
+        mediaQueryData: const MediaQueryData(
+          size: Size(700, 800),
+          textScaler: TextScaler.linear(1.5),
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('taskAgentFooterCompactLayout')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('automatic-updates control has a step9 interaction slot', (
+    tester,
+  ) async {
+    await tester.pumpWidget(makeTestableWidget(subject()));
+
+    final context = tester.element(find.byType(TaskAgentControlsFooter));
+    expect(
+      tester.getSize(
+        find.byKey(const ValueKey('taskAgentAutomaticUpdatesTarget')),
+      ),
+      Size.square(context.designTokens.spacing.step9),
+    );
   });
 }
