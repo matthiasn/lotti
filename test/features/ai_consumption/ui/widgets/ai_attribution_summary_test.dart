@@ -22,6 +22,7 @@ void main() {
     double width = 800,
     bool compact = false,
     bool includeTopSpacing = true,
+    Locale? locale,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -47,6 +48,7 @@ void main() {
               (ref, id) async => details,
             ),
         ],
+        locale: locale,
       ),
     );
     await tester.pump();
@@ -109,6 +111,44 @@ void main() {
     await tester.pump(MotionDurations.short2);
     expect(find.text('120'), findsOneWidget);
     expect(find.text('Provider reported'), findsOneWidget);
+  });
+
+  testWidgets('formats token totals for the current locale', (tester) async {
+    final envelope = makeAiTerminalEnvelope();
+    final details = AiAttributionDetails(
+      attribution: envelope.attribution,
+      interactions: [
+        AiConsumptionEvent(
+          id: 'call-1',
+          createdAt: DateTime(2026, 3, 15, 12),
+          providerType: InferenceProviderType.openAi,
+          responseType: AiConsumptionResponseType.promptGeneration,
+          vectorClock: null,
+          attributionId: envelope.attribution.id,
+          providerModelId: 'gpt-5',
+          totalTokens: 4200,
+        ),
+      ],
+      costTotals: const AiCostTotals(
+        reportingMicrosByCurrency: {},
+        knownInteractionCount: 0,
+        unknownInteractionCount: 1,
+      ),
+    );
+
+    await pumpSummary(
+      tester,
+      envelope: envelope,
+      details: details,
+      locale: const Locale('de'),
+    );
+    await tester.tap(find.byType(InkWell));
+    await tester.pump();
+    await tester.pump(MotionDurations.long2);
+    await tester.tap(find.text('1. gpt-5'));
+    await tester.pump(MotionDurations.short2);
+
+    expect(find.text('4.200'), findsOneWidget);
   });
 
   testWidgets('does not render when no attribution can be resolved', (
@@ -471,8 +511,12 @@ void main() {
             interactionStatus: statuses[index],
             providerModelId: 'model-$index',
             providerRequestId: index == 0 ? 'provider-request-42' : null,
-            durationMs: index == 0 ? 1500 : null,
-            totalTokens: index == 0 ? 42 : null,
+            durationMs: switch (index) {
+              0 => 1500,
+              1 => 500,
+              _ => null,
+            },
+            totalTokens: index == 0 ? 4200 : null,
             payload: index == 0
                 ? AiInteractionPayload(
                     id: 'payload-0',
@@ -550,7 +594,8 @@ void main() {
       }
 
       expect(find.text('0:00:01'), findsWidgets);
-      expect(find.text('42'), findsOneWidget);
+      expect(find.text('0:00:00.500000'), findsOneWidget);
+      expect(find.text('4,200'), findsOneWidget);
       expect(find.text('request-sha256'), findsOneWidget);
       expect(find.text('response-sha256'), findsOneWidget);
       expect(find.text('provider-request-42'), findsOneWidget);

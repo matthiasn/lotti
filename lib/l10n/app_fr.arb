@@ -616,7 +616,7 @@
   "aiConsumptionTypeImageGeneration": "Génération d'image",
   "aiConsumptionTypePromptGeneration": "Génération de prompt",
   "aiConsumptionTypeTextGeneration": "Génération de texte",
-  "aiConsumptionWorkGroup": "Travail IA · {callCount, plural, =1{1 appel} other{{callCount} appels}}",
+  "aiConsumptionWorkGroup": "Groupe de travail IA · {callCount, plural, =1{1 appel} other{{callCount} appels}}",
   "aiDeleteToastCascadeDescription": "{count, plural, =1{1 modèle aussi supprimé : {names}} other{{count} modèles aussi supprimés : {names}}}",
   "@aiDeleteToastCascadeDescription": {
     "placeholders": {

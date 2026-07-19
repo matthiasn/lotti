@@ -78,6 +78,32 @@ class AiCapturedContext {
   final String? modelConfigId;
 }
 
+/// Preserves both failures when a provider call and its required attribution
+/// publication fail in the same capture boundary.
+class AiInteractionCapturePublicationFailure implements Exception {
+  const AiInteractionCapturePublicationFailure({
+    required this.providerError,
+    required this.providerStackTrace,
+    required this.publicationError,
+    required this.publicationStackTrace,
+  });
+
+  /// The provider failure that initiated the error path.
+  final Object providerError;
+
+  /// The original provider stack trace used when exposing this failure.
+  final StackTrace providerStackTrace;
+
+  /// The secondary failure raised while publishing attribution evidence.
+  final Object publicationError;
+
+  /// The stack trace for the attribution-publication failure.
+  final StackTrace publicationStackTrace;
+
+  @override
+  String toString() => providerError.toString();
+}
+
 /// Central pre-call capture boundary for product inference funnels.
 ///
 /// Callers with a durable output carrier may use their stricter publication
@@ -151,28 +177,40 @@ class AiInteractionCapture {
         yield chunk;
       }
       streamCompleted = true;
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
       interactionRecorded = true;
-      await _finish(
-        pending: pending,
-        interactionKind: interactionKind,
-        responseType: responseType,
-        providerType: providerType,
-        modelId: modelId,
-        requestText: requestText,
-        responseText: response.toString(),
-        startedAt: startedAt,
-        interactionStatus: AiInteractionStatus.failed,
-        workStatus: AiWorkStatus.failed,
-        taskId: taskId,
-        categoryId: categoryId,
-        errorCode: error.runtimeType.toString(),
-        usage: usage,
-        impact: impact?.call(),
-        capturedCost: cost,
-        interactionContext: interactionContext,
-        terminalize: terminalizeFailure,
-      );
+      try {
+        await _finish(
+          pending: pending,
+          interactionKind: interactionKind,
+          responseType: responseType,
+          providerType: providerType,
+          modelId: modelId,
+          requestText: requestText,
+          responseText: response.toString(),
+          startedAt: startedAt,
+          interactionStatus: AiInteractionStatus.failed,
+          workStatus: AiWorkStatus.failed,
+          taskId: taskId,
+          categoryId: categoryId,
+          errorCode: error.runtimeType.toString(),
+          usage: usage,
+          impact: impact?.call(),
+          capturedCost: cost,
+          interactionContext: interactionContext,
+          terminalize: terminalizeFailure,
+        );
+      } on Object catch (publicationError, publicationStackTrace) {
+        Error.throwWithStackTrace(
+          AiInteractionCapturePublicationFailure(
+            providerError: error,
+            providerStackTrace: stackTrace,
+            publicationError: publicationError,
+            publicationStackTrace: publicationStackTrace,
+          ),
+          stackTrace,
+        );
+      }
       rethrow;
     } finally {
       if (!streamCompleted && !interactionRecorded) {

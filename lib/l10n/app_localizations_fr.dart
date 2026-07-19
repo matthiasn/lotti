@@ -1502,7 +1502,7 @@ class AppLocalizationsFr extends AppLocalizations {
       other: '$callCount appels',
       one: '1 appel',
     );
-    return 'Travail IA · $_temp0';
+    return 'Groupe de travail IA · $_temp0';
   }
 
   @override

@@ -285,7 +285,7 @@ Two important implementation details:
    advertises evidence that was not durable and the pending session does not
    leak.
 
-`cancelRealtime()` is the realtime discard path (the ✕ button in realtime
+`cancelRealtime()` is the realtime discard path (the ✕ button in real-time
 mode). It records a terminal cancelled attribution, then tears down the recorder
 and realtime service without creating or updating a `JournalAudio` entry. The
 standard-mode discard path is `cancel()`,

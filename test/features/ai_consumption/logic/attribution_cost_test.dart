@@ -224,6 +224,17 @@ void main() {
         throwsA(isA<InvalidAiCostEvidence>()),
       );
     }
+    final identicalDuplicate = cost(
+      id: 'identical-duplicate',
+      source: AiCostSource.providerReported,
+    );
+    expect(
+      () => effectiveInteractionCost([
+        identicalDuplicate,
+        identicalDuplicate,
+      ]),
+      throwsA(isA<InvalidAiCostEvidence>()),
+    );
     expect(
       const InvalidAiCostEvidence('bad').toString(),
       'InvalidAiCostEvidence: bad',

@@ -160,6 +160,58 @@ void main() {
   });
 
   test(
+    'provider and publication failures remain independently inspectable',
+    () async {
+      final providerError = StateError('provider failed');
+      const publicationError = AiAttributionPublicationException(
+        'evidence unavailable',
+      );
+      when(
+        () => service.recordInteraction(
+          attributionId: pending.id,
+          event: any(named: 'event'),
+        ),
+      ).thenThrow(publicationError);
+
+      Object? capturedError;
+      StackTrace? capturedStackTrace;
+      try {
+        await capture
+            .captureStream<int>(
+              workType: AiWorkType.textGeneration,
+              interactionKind: AiInteractionKind.chatCompletion,
+              responseType: AiConsumptionResponseType.textGeneration,
+              providerType: InferenceProviderType.openAi,
+              modelId: 'gpt-5',
+              requestText: 'request',
+              invoke: () => Stream.error(providerError),
+              responseText: (chunk) => '$chunk',
+            )
+            .drain<void>();
+      } on Object catch (error, stackTrace) {
+        capturedError = error;
+        capturedStackTrace = stackTrace;
+      }
+
+      final failure = capturedError! as AiInteractionCapturePublicationFailure;
+      expect(failure.providerError, same(providerError));
+      expect(failure.publicationError, same(publicationError));
+      expect(failure.providerStackTrace, isNot(StackTrace.empty));
+      expect(failure.publicationStackTrace, isNot(StackTrace.empty));
+      expect(failure.toString(), providerError.toString());
+      expect(capturedStackTrace, failure.providerStackTrace);
+      verifyNever(
+        () => service.prepareCompletion(
+          attributionId: any(named: 'attributionId'),
+          outputs: any(named: 'outputs'),
+          status: any(named: 'status'),
+          errorCode: any(named: 'errorCode'),
+        ),
+      );
+    },
+  );
+
+  test(
     'existing sessions retain usage and exact cost without terminalizing',
     () async {
       final values = await capture

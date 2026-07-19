@@ -405,7 +405,9 @@ class _InteractionDetails extends StatelessWidget {
         context.messages.aiAttributionUnknownModel;
     final tokenText = interaction.totalTokens == null
         ? context.messages.aiAttributionTokenUsageUnknown
-        : '${interaction.totalTokens}';
+        : NumberFormat.decimalPattern(
+            Localizations.localeOf(context).toString(),
+          ).format(interaction.totalTokens);
     final payload = interaction.payload;
     return Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.step2),
@@ -628,13 +630,14 @@ String _interactionStatusLabel(
   AiInteractionStatus.partial => context.messages.aiAttributionStatusPartial,
 };
 
-String _formatDuration(Duration duration) =>
-    duration.toString().split('.').first;
+String _formatDuration(Duration duration) => duration.inSeconds == 0
+    ? duration.toString()
+    : duration.toString().split('.').first;
 
 String _formatTimestamp(BuildContext context, DateTime timestamp) =>
     DateFormat.yMMMd(
       Localizations.localeOf(context).toString(),
-    ).add_Hm().format(timestamp.toLocal());
+    ).add_jm().format(timestamp.toLocal());
 
 String _actorDisplayName(BuildContext context, AiActorSnapshot actor) {
   final displayName = actor.displayName.trim();

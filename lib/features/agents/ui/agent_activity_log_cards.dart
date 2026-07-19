@@ -40,6 +40,9 @@ class _ReportSnapshotCardState extends State<ReportSnapshotCard> {
     final report = widget.report;
     final timestamp = formatAgentDateTime(report.createdAt);
     final ai = context.designTokens.colors.aiCard;
+    final attributionEnvelope = _expanded
+        ? terminalEnvelopeFromAgentEntity(report)
+        : null;
 
     return Card(
       margin: const EdgeInsets.symmetric(
@@ -113,13 +116,13 @@ class _ReportSnapshotCardState extends State<ReportSnapshotCard> {
                           parseReportContent(report.content).tldr,
                         ),
                 ),
-              if (_expanded && terminalEnvelopeFromAgentEntity(report) != null)
+              if (attributionEnvelope != null)
                 AiAttributionSummary(
                   artifact: AiArtifactReference(
                     type: AiArtifactType.agentReport,
                     id: report.id,
                   ),
-                  envelope: terminalEnvelopeFromAgentEntity(report),
+                  envelope: attributionEnvelope,
                 ),
             ],
           ),
