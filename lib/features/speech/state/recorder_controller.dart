@@ -59,7 +59,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   DateTime? _realtimeStartTime;
   String? _realtimeModelName;
   String? _realtimeProviderName;
-  InferenceProviderType? _realtimeProviderType;
   TranscriptAttributionSession? _realtimeAttribution;
 
   /// Sliding-window VU meter driving the live level display.
@@ -442,7 +441,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       final config = await service.resolveRealtimeConfig();
       _realtimeModelName = config?.model.providerModelId;
       _realtimeProviderName = config?.provider.name;
-      _realtimeProviderType = config?.provider.inferenceProviderType;
       if (getIt.isRegistered<TranscriptAttributionCoordinator>()) {
         _realtimeAttribution = await getIt<TranscriptAttributionCoordinator>()
             .begin(
@@ -518,7 +516,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     // Capture metadata in locals before any cleanup nulls them (#6).
     final modelName = _realtimeModelName;
     final providerName = _realtimeProviderName;
-    final providerType = _realtimeProviderType;
     final attributionSession = _realtimeAttribution;
     var attributionInteractionRecorded = false;
 
@@ -621,11 +618,8 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
           transcript: result.transcript,
           providerName: providerName ?? 'Mistral',
           modelId: modelName ?? 'voxtral-mini',
-          providerType: providerType ?? InferenceProviderType.mistral,
           detectedLanguage: result.detectedLanguage,
-          taskId: linkedTaskId,
           attributionSession: attributionSession,
-          usage: result.usage,
         );
       } else if (attributionSession != null &&
           getIt.isRegistered<TranscriptAttributionCoordinator>()) {
@@ -650,7 +644,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
 
       _realtimeModelName = null;
       _realtimeProviderName = null;
-      _realtimeProviderType = null;
       _realtimeAttribution = null;
 
       _loggingService.log(
@@ -777,29 +770,17 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     required String transcript,
     required String providerName,
     required String modelId,
-    required InferenceProviderType providerType,
     String? detectedLanguage,
-    String? taskId,
     TranscriptAttributionSession? attributionSession,
-    Map<String, dynamic>? usage,
   }) async {
     final persistenceLogic = getIt<PersistenceLogic>();
-    final prepared = getIt.isRegistered<TranscriptAttributionCoordinator>()
-        ? attributionSession == null
-              ? await getIt<TranscriptAttributionCoordinator>().prepare(
-                  audioEntryId: journalAudio.id,
-                  transcript: transcript,
-                  providerName: providerName,
-                  modelId: modelId,
-                  providerType: providerType,
-                  interactionKind: AiInteractionKind.realtimeTranscription,
-                  taskId: taskId,
-                  categoryId: journalAudio.meta.categoryId,
-                )
-              : await getIt<TranscriptAttributionCoordinator>().prepareOutput(
-                  session: attributionSession,
-                  audioEntryId: journalAudio.id,
-                )
+    final prepared =
+        getIt.isRegistered<TranscriptAttributionCoordinator>() &&
+            attributionSession != null
+        ? await getIt<TranscriptAttributionCoordinator>().prepareOutput(
+            session: attributionSession,
+            audioEntryId: journalAudio.id,
+          )
         : null;
     final audioTranscript = AudioTranscript(
       created: DateTime.now(),
@@ -876,7 +857,6 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     _realtimeStartTime = null;
     _realtimeModelName = null;
     _realtimeProviderName = null;
-    _realtimeProviderType = null;
     _realtimeAttribution = null;
   }
 

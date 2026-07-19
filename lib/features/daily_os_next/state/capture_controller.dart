@@ -477,13 +477,7 @@ class CaptureController extends Notifier<CaptureState> {
         library: config?.provider.name ?? 'realtime',
         model: config?.model.providerModelId ?? 'unknown',
         detectedLanguage: result.detectedLanguage ?? '-',
-        providerType: getIt.isRegistered<TranscriptAttributionCoordinator>()
-            ? config?.provider.inferenceProviderType ??
-                  InferenceProviderType.genericOpenAi
-            : InferenceProviderType.genericOpenAi,
-        interactionKind: AiInteractionKind.realtimeTranscription,
         attributionSession: attributionSession,
-        interactionAlreadyRecorded: attributionSession != null,
       );
     } else if (attributionSession != null && attributionCoordinator != null) {
       await attributionCoordinator.failOutput(
@@ -594,10 +588,7 @@ class CaptureController extends Notifier<CaptureState> {
         library: 'batch-transcribe',
         model: 'cloud-inference',
         detectedLanguage: '-',
-        providerType: InferenceProviderType.genericOpenAi,
-        interactionKind: AiInteractionKind.audioTranscription,
         attributionSession: _transcriptAttribution,
-        interactionAlreadyRecorded: _transcriptAttribution != null,
       );
     } else if (_transcriptAttribution case final attribution?) {
       final coordinator = getIt.isRegistered<TranscriptAttributionCoordinator>()
@@ -636,11 +627,7 @@ class CaptureController extends Notifier<CaptureState> {
     required String library,
     required String model,
     required String detectedLanguage,
-    required InferenceProviderType providerType,
-    required AiInteractionKind interactionKind,
     TranscriptAttributionSession? attributionSession,
-    Map<String, dynamic>? usage,
-    bool interactionAlreadyRecorded = false,
   }) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
@@ -650,25 +637,10 @@ class CaptureController extends Notifier<CaptureState> {
       final prepared = coordinator == null
           ? null
           : attributionSession == null
-          ? await coordinator.prepare(
-              audioEntryId: journalAudio.id,
-              transcript: transcript,
-              providerName: library,
-              modelId: model,
-              providerType: providerType,
-              interactionKind: interactionKind,
-              categoryId: journalAudio.meta.categoryId,
-            )
-          : interactionAlreadyRecorded
-          ? await coordinator.prepareOutput(
+          ? null
+          : await coordinator.prepareOutput(
               session: attributionSession,
               audioEntryId: journalAudio.id,
-            )
-          : await coordinator.complete(
-              session: attributionSession,
-              audioEntryId: journalAudio.id,
-              transcript: transcript,
-              usage: usage,
             );
       final audioTranscript = AudioTranscript(
         created: _now(),

@@ -12,15 +12,23 @@ import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 
 class _FakeMlxAudioChannel extends MlxAudioChannel {
   String? transcribedFilePath;
   String? transcribedModelId;
   List<String>? transcribedSpeechDictionaryTerms;
+  MlxAudioTranscriptionResult result = const MlxAudioTranscriptionResult(
+    text: 'local qwen',
+  );
+  Exception? error;
 
   @override
   Future<MlxAudioTranscriptionResult> transcribeFile({
@@ -33,7 +41,9 @@ class _FakeMlxAudioChannel extends MlxAudioChannel {
     transcribedFilePath = filePath;
     transcribedModelId = modelId;
     transcribedSpeechDictionaryTerms = speechDictionaryTerms;
-    return const MlxAudioTranscriptionResult(text: 'local qwen');
+    final failure = error;
+    if (failure != null) throw failure;
+    return result;
   }
 }
 
@@ -161,7 +171,10 @@ _buildSelectionInputs(List<_ModelKind> kinds) {
   return (models: models, providers: providers);
 }
 
-CreateChatCompletionStreamResponse _contentChunk(String content) {
+CreateChatCompletionStreamResponse _contentChunk(
+  String content, {
+  CompletionUsage? usage,
+}) {
   return CreateChatCompletionStreamResponse(
     id: '0',
     object: 'chat.completion.chunk',
@@ -172,6 +185,7 @@ CreateChatCompletionStreamResponse _contentChunk(String content) {
         delta: ChatCompletionStreamResponseDelta(content: content),
       ),
     ],
+    usage: usage,
   );
 }
 
@@ -252,6 +266,30 @@ void main() {
     return AiConfigRepository(db);
   }
 
+  Future<AiConfigRepository> mlxRepo() async {
+    final repo = isolatedRepo();
+    await repo.saveConfig(
+      _provider(
+        id: 'p-mlx-attribution',
+        type: InferenceProviderType.mlxAudio,
+        name: 'MLX Audio',
+        baseUrl: '',
+        apiKey: '',
+      ),
+      fromSync: true,
+    );
+    await repo.saveConfig(
+      _audioModel(
+        id: 'm-mlx-attribution',
+        providerId: 'p-mlx-attribution',
+        name: 'Qwen3 ASR',
+        providerModelId: mlxAudioQwenAsrModelId,
+      ),
+      fromSync: true,
+    );
+    return repo;
+  }
+
   /// Builds the service with the standard repo/cloud/MLX overrides.
   AudioTranscriptionService buildService({
     required AiConfigRepository repo,
@@ -271,7 +309,23 @@ void main() {
     return container.read(audioTranscriptionServiceProvider);
   }
 
+  AiInteractionCaptureTestBench registerInteractionCapture() {
+    final bench = AiInteractionCaptureTestBench.create()..register();
+    addTearDown(bench.unregister);
+    return bench;
+  }
+
+  List<AiConsumptionEvent> capturedEvents(
+    AiInteractionCaptureTestBench bench,
+  ) => verify(
+    () => bench.service.recordInteraction(
+      attributionId: any(named: 'attributionId'),
+      event: captureAny(named: 'event'),
+    ),
+  ).captured.cast<AiConsumptionEvent>();
+
   setUpAll(() async {
+    registerAllFallbackValues();
     // One shared in-memory DB pre-populated with the standard Gemini
     // provider + flash model pair, and one shared temp dir for fixtures.
     sharedDb = AiConfigDb(inMemoryDatabase: true);
@@ -303,6 +357,198 @@ void main() {
 
     expect(await svc.transcribe(file.path), 'foobar');
   });
+
+  test('attributed cloud transcription records streamed token usage', () async {
+    final attribution = registerInteractionCapture();
+    final file = await audioFile();
+    final mockCloud = MockCloudInferenceRepository();
+    _stubGenerateWithAudioStream(
+      mockCloud,
+      () => Stream.value(
+        _contentChunk(
+          'attributed transcript',
+          usage: const CompletionUsage(
+            promptTokens: 21,
+            completionTokens: 8,
+            totalTokens: 29,
+            promptTokensDetails: PromptTokensDetails(cachedTokens: 5),
+            completionTokensDetails: CompletionTokensDetails(
+              reasoningTokens: 3,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final svc = buildService(repo: sharedRepo, cloud: mockCloud);
+
+    expect(await svc.transcribe(file.path), 'attributed transcript');
+    final event = capturedEvents(attribution).single;
+    expect(event.inputTokens, 21);
+    expect(event.outputTokens, 8);
+    expect(event.cachedInputTokens, 5);
+    expect(event.thoughtsTokens, 3);
+    expect(event.totalTokens, 29);
+    expect(event.requestDigest, isNotEmpty);
+    expect(event.responseDigest, isNotEmpty);
+  });
+
+  test(
+    'attributed cloud provider failure reports recorded evidence',
+    () async {
+      final attribution = registerInteractionCapture();
+      final file = await audioFile();
+      final mockCloud = MockCloudInferenceRepository();
+      _stubGenerateWithAudioStream(
+        mockCloud,
+        () => Stream.error(StateError('cloud failed')),
+      );
+      final svc = buildService(repo: sharedRepo, cloud: mockCloud);
+
+      await expectLater(
+        svc.transcribe(
+          file.path,
+          attributionSession: AiAttributionSession(
+            id: 'existing-attribution',
+            workType: AiWorkType.audioTranscription,
+            initiator: makeAiActor(),
+            trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+            startedAt: DateTime.utc(2026, 7, 19, 10),
+          ),
+          terminalizeAttributionFailure: false,
+        ),
+        throwsA(
+          isA<AttributedTranscriptionException>()
+              .having(
+                (error) => error.evidenceState,
+                'evidenceState',
+                TranscriptionEvidenceState.recorded,
+              )
+              .having((error) => error.cause, 'cause', isA<StateError>()),
+        ),
+      );
+      expect(
+        capturedEvents(attribution).single.interactionStatus,
+        AiInteractionStatus.failed,
+      );
+    },
+  );
+
+  test('capture startup failure reports uncertain evidence', () async {
+    final attribution = registerInteractionCapture();
+    when(() => attribution.service.begin(any())).thenThrow(
+      StateError('capture unavailable'),
+    );
+    final file = await audioFile();
+    final mockCloud = MockCloudInferenceRepository();
+    _stubGenerateWithAudio(mockCloud, ['unused']);
+    final svc = buildService(repo: sharedRepo, cloud: mockCloud);
+
+    await expectLater(
+      svc.transcribe(file.path),
+      throwsA(
+        isA<AttributedTranscriptionException>()
+            .having(
+              (error) => error.evidenceState,
+              'evidenceState',
+              TranscriptionEvidenceState.uncertain,
+            )
+            .having(
+              (error) => error.toString(),
+              'toString',
+              contains('capture unavailable'),
+            ),
+      ),
+    );
+  });
+
+  test(
+    'attributed MLX transcription records the local provider call',
+    () async {
+      final attribution = registerInteractionCapture();
+      final file = await audioFile();
+      final channel = _FakeMlxAudioChannel();
+      final svc = buildService(repo: await mlxRepo(), mlxChannel: channel);
+
+      expect(await svc.transcribe(file.path), 'local qwen');
+      final event = capturedEvents(attribution).single;
+      expect(event.providerType, InferenceProviderType.mlxAudio);
+      expect(event.providerModelId, mlxAudioQwenAsrModelId);
+      expect(event.interactionStatus, AiInteractionStatus.succeeded);
+    },
+  );
+
+  test('empty attributed MLX result reports recorded evidence', () async {
+    final attribution = registerInteractionCapture();
+    final file = await audioFile();
+    final channel = _FakeMlxAudioChannel()
+      ..result = const MlxAudioTranscriptionResult(text: '   ');
+    final svc = buildService(repo: await mlxRepo(), mlxChannel: channel);
+
+    await expectLater(
+      svc.transcribe(
+        file.path,
+        attributionSession: AiAttributionSession(
+          id: 'existing-mlx-attribution',
+          workType: AiWorkType.audioTranscription,
+          initiator: makeAiActor(),
+          trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+          startedAt: DateTime.utc(2026, 7, 19, 10),
+        ),
+        terminalizeAttributionFailure: false,
+      ),
+      throwsA(
+        isA<AttributedTranscriptionException>()
+            .having(
+              (error) => error.evidenceState,
+              'evidenceState',
+              TranscriptionEvidenceState.recorded,
+            )
+            .having(
+              (error) => error.cause,
+              'cause',
+              isA<TranscriptionException>(),
+            ),
+      ),
+    );
+    expect(
+      capturedEvents(attribution).single.interactionStatus,
+      AiInteractionStatus.failed,
+    );
+  });
+
+  test(
+    'MLX attribution finalization failure reports uncertain evidence',
+    () async {
+      final attribution = registerInteractionCapture();
+      when(
+        () => attribution.service.prepareCompletion(
+          attributionId: any(named: 'attributionId'),
+          outputs: any(named: 'outputs'),
+          status: any(named: 'status'),
+          errorCode: any(named: 'errorCode'),
+        ),
+      ).thenThrow(StateError('projection failed'));
+      final file = await audioFile();
+      final svc = buildService(
+        repo: await mlxRepo(),
+        mlxChannel: _FakeMlxAudioChannel(),
+      );
+
+      await expectLater(
+        svc.transcribe(file.path),
+        throwsA(
+          isA<AttributedTranscriptionException>()
+              .having(
+                (error) => error.evidenceState,
+                'evidenceState',
+                TranscriptionEvidenceState.uncertain,
+              )
+              .having((error) => error.cause, 'cause', isA<StateError>()),
+        ),
+      );
+    },
+  );
 
   test(
     'forwards the model row thinking mode for Gemini 3 audio models',
