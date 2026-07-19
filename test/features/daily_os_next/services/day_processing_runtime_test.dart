@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
@@ -195,5 +196,71 @@ void main() {
     await runtime.nudge();
 
     expect(drains, 0);
+  });
+
+  test('start reacts only to connected interfaces and is idempotent', () async {
+    final claim = await repository.claimNext();
+    await repository.markFailure(
+      jobId: claim!.job.id,
+      claimToken: claim.token,
+      failureClass: DayProcessingFailureClass.network,
+      error: 'offline',
+    );
+    final connectivity = StreamController<List<ConnectivityResult>>();
+    var drains = 0;
+    final runtime = DayProcessingRuntime(
+      repository: repository,
+      connectivityChanges: connectivity.stream,
+      drain: () async {
+        drains += 1;
+        return 0;
+      },
+      schedule: (_, _) {},
+    );
+    addTearDown(() async {
+      await runtime.dispose();
+      await connectivity.close();
+    });
+
+    runtime
+      ..start()
+      ..start();
+    await runtime.nudge();
+    final startupDrains = drains;
+
+    connectivity.add(const [ConnectivityResult.none]);
+    await Future<void>.value();
+    expect(
+      (await repository.getById('transcribe_session-1'))!.status,
+      DayProcessingJobStatus.waitingForNetwork,
+    );
+
+    final changed = repository.changes.first;
+    connectivity.add(const [ConnectivityResult.wifi]);
+    await changed;
+    await runtime.nudge();
+
+    expect(drains, greaterThan(startupDrains));
+    expect(
+      (await repository.getById('transcribe_session-1'))!.status,
+      DayProcessingJobStatus.queued,
+    );
+  });
+
+  test('running work is scheduled at its lease boundary', () async {
+    final claim = await repository.claimNext();
+    Duration? scheduledDelay;
+    final runtime = DayProcessingRuntime(
+      repository: repository,
+      now: () => now,
+      drain: () async => 0,
+      schedule: (delay, _) => scheduledDelay = delay,
+    );
+    addTearDown(runtime.dispose);
+
+    await runtime.nudge();
+
+    expect(claim!.job.status, DayProcessingJobStatus.running);
+    expect(scheduledDelay, const Duration(minutes: 3));
   });
 }
