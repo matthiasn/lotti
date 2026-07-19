@@ -160,14 +160,18 @@ narrow widths. Proposal prose uses the same unmodified `body.bodySmall`
 metrics as the report instead of introducing a separate line height.
 
 All secondary controls live in a quiet, flat footer pinned to the card bottom
-(`TaskAgentControlsFooter`). A wake row contains either the manual `Wake
-agent` button or a self-labeled `Next update in m:ss` chip whose dedicated
-close target cancels the scheduled wake. Below it, the tappable model/provider
-identity and automatic-updates control share a row when space permits; at
-narrow widths or large text they stack without truncating the label. Primary
-and destructive controls retain the design system's `spacing.step9`
-interaction height; quiet disclosures and identity links use the denser
-`spacing.step8` row height so their captions do not create oversized bands.
+(`TaskAgentControlsFooter`). Wide cards render one compact utility rail:
+model/provider identity, wake status, and automatic updates. Narrow cards use
+two groups instead of three independent bands: wake status first, then a
+settings row with the automation label directly above model identity and the
+toggle pinned trailing. A scheduled wake is a design-system `DsPill` with a
+clock glyph; its separate `spacing.step8` close target cancels the wake without
+making the informational pill itself destructive. Running uses a
+non-interactive status row with an explicit `spacing.step3` spinner/label gap,
+rather than presenting disabled work as a loading button. Only the toggle and
+toggle retains its `spacing.step9` target, while cancel, status, and identity
+use the denser `spacing.step8` rhythm so the footer stays compact without
+becoming cramped.
 Meaningful attribution uses `aiCard.metaText` rather than the fainter
 decorative color. When setup is
 missing, the disabled toggle explains itself via an info tooltip. The filled
@@ -1971,15 +1975,19 @@ agent runtime produces:
   `Dismissed` tags and a strikethrough.
 - the wake-cycle affordances in the controls footer
   (`task_agent_controls_footer.dart`): a compact `Wake agent` button
-  (calls `TaskAgentService.triggerReanalysis`; swaps to a `Thinking…`
-  spinner while a wake runs), a self-labeled `Next update in m:ss`
-  countdown chip (`h:mm:ss` once the hour cell is needed) that calls
-  `cancelScheduledWake` on tap while a wake is scheduled, the
-  automatic-updates toggle, and the tappable model/provider identity
-  row (`TaskAgentIdentityRegion`, opens `AgentModelSheet`). While
+  (calls `TaskAgentService.triggerReanalysis`), a dedicated `Thinking…`
+  status with tokenized spinner spacing while a wake runs, a design-system
+  `DsPill` labeled `Next update in m:ss` (`h:mm:ss` once the hour cell is
+  needed) with a separate full-size cancel target that calls
+  `cancelScheduledWake`, the automatic-updates toggle, and the tappable
+  model/provider identity row (`TaskAgentIdentityRegion`, opens
+  `AgentModelSheet`). Wide cards keep these on one utility rail; narrow cards
+  keep wake status above one grouped automation/model row. While
   automation is off, `TaskAgentFreshnessStrip` directly under the
   report owns the wake CTA instead (stale warning or quiet up-to-date
-  confirmation in one constant-geometry slot).
+  confirmation in one constant-geometry slot). Disabling automation while a
+  countdown is pending first persists a stale report watermark, so clearing
+  the scheduled wake never changes an older summary to “up to date.”
 
 The card keeps the last visible suggestion list in widget state while an
 agent wake is running. If the provider briefly reloads to an empty or partial

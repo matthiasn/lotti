@@ -114,6 +114,7 @@ Future<void> _capture(
   required Brightness brightness,
   required bool automaticUpdates,
   bool withOpenProposals = false,
+  bool running = false,
 }) async {
   // The toggle and entrance widgets are stateful. Explicitly unmount the
   // previous fixture before applying the next viewport so sequential matrix
@@ -156,6 +157,7 @@ Future<void> _capture(
           identity: identity,
           template: _template(),
           enableSummaryTts: true,
+          isRunning: running,
           mediaQueryData: MediaQueryData(size: device.size),
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
@@ -173,7 +175,9 @@ Future<void> _capture(
   expect(find.text('Task Laura'), findsOneWidget);
   expect(find.text(_summary), findsOneWidget);
 
-  final mode = withOpenProposals
+  final mode = running
+      ? 'running'
+      : withOpenProposals
       ? 'proposals'
       : automaticUpdates
       ? 'scheduled'
@@ -214,10 +218,19 @@ void main() {
           );
         });
       }
+      final theme = brightness == Brightness.dark ? 'dark' : 'light';
+      testWidgets('${device.name} running $theme', (tester) async {
+        await _capture(
+          tester,
+          device: device,
+          brightness: brightness,
+          automaticUpdates: true,
+          running: true,
+        );
+      });
       // The real-world hot path: automation off, stale report, and open
       // proposals awaiting review — exercises the proposal rows the other
       // states leave empty.
-      final theme = brightness == Brightness.dark ? 'dark' : 'light';
       testWidgets('${device.name} proposals $theme', (tester) async {
         await _capture(
           tester,

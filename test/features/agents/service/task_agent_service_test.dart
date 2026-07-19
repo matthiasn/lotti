@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -1931,8 +1932,10 @@ void main() {
 
     group('automatic updates', () {
       test(
-        'turning off persists the preference and clears automation',
+        'turning off persists the preference, preserves pending freshness, '
+        'and clears automation',
         () async {
+          final now = DateTime(2026, 7, 20, 12);
           final identity = makeIdentity(
             config: const AgentConfig(
               inferenceSetup: AgentInferenceSetup(
@@ -1945,19 +1948,37 @@ void main() {
           when(
             () => mockAgentService.getAgent('agent-1'),
           ).thenAnswer((_) async => identity);
-
-          await service.updateAutomaticUpdates(
-            agentId: 'agent-1',
-            enabled: false,
+          final pendingState = makeState().copyWith(
+            nextWakeAt: now.add(const Duration(minutes: 2)),
+            reportFreshAt: now.subtract(const Duration(minutes: 1)),
           );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => pendingState);
 
-          final updated =
-              verify(
-                    () => mockSyncService.upsertEntity(captureAny()),
-                  ).captured.single
-                  as AgentIdentityEntity;
-          expect(updated.config.automaticUpdatesEnabled, isFalse);
-          expect(updated.config.inferenceSetup, identity.config.inferenceSetup);
+          await withClock(Clock.fixed(now), () async {
+            await service.updateAutomaticUpdates(
+              agentId: 'agent-1',
+              enabled: false,
+            );
+          });
+
+          final updatedEntities = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedIdentity = updatedEntities
+              .whereType<AgentIdentityEntity>()
+              .single;
+          final updatedState = updatedEntities
+              .whereType<AgentStateEntity>()
+              .single;
+          expect(updatedIdentity.config.automaticUpdatesEnabled, isFalse);
+          expect(
+            updatedIdentity.config.inferenceSetup,
+            identity.config.inferenceSetup,
+          );
+          expect(updatedState.reportStaleAt, now);
+          expect(updatedState.isReportStale, isTrue);
           verify(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
           ).called(1);
