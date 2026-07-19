@@ -29,23 +29,29 @@ flowchart LR
   Store --> Impact["Impact dashboard and aggregates"]
 ```
 
-`SkillInferenceRunner` provides the strict saga for coding/design/research
-prompts, image generation, image analysis, and transcription. Agent turns share
-one deterministic attribution per wake and `WakeOutputWriter` embeds the
-terminal envelope in the final report. Direct batch/realtime transcript writers
-use `TranscriptAttributionCoordinator`: a pending session is durable before the
-provider/native call, realtime usage is attached at completion, optional batch
-verification is recorded as another interaction in the same attribution, and
-the carrier cannot be written before the evidence barrier. Explicit failures
-and cancellations terminalize immediately; stale recovery is reserved for
-interrupted processes.
+`SkillInferenceRunner` and `UnifiedAiInferenceRepository` provide the strict
+saga for coding/design/research prompts, image generation, image analysis, and
+transcription. Agent turns share one deterministic attribution per wake; task,
+project, and event report writers embed the terminal envelope in report
+provenance only after interaction evidence crosses the publication barrier.
+Direct batch/realtime transcript writers use
+`TranscriptAttributionCoordinator`: a pending session is durable before the
+provider/native call, realtime usage is attached to realtime evidence, optional
+batch verification is a second interaction in the same attribution, and the
+selected transcript is never mislabelled as realtime evidence. Explicit
+failures, cancellations, empty results, missing audio carriers, and rejected
+persistence terminalize. If interaction publication is uncertain, the pending
+saga is preserved for recovery instead of fabricating a second provider call.
 
-`AiInteractionCapture` is the shared pre-call boundary for carrier-less funnels
-such as AI chat, onboarding structuring, chat audio input, and agent-log
-compaction. It records token usage and exact provider cost when available, then
-terminalizes the work as `partial` with `output_carrier_unavailable` rather
-than claiming an output link it cannot prove. Embedding indexing records
-reference-only evidence and a known-zero local-compute cost. The source-controlled inventory in
+`AiInteractionCapture` is the shared pre-call boundary used by unified
+inference, AI chat, agent conversations, onboarding structuring, chat audio
+input, agent-log compaction, and embedding calls. Carrier-less work terminalizes
+as `partial` with `output_carrier_unavailable` rather than claiming an output
+link it cannot prove. A chat user message owns one attribution even when a tool
+call causes an initial and a final provider interaction. Embedding indexing owns
+one attribution per entity/report, one child interaction per chunk, a typed
+`embeddingVector` output, reference-only evidence, and known-zero local-compute
+cost. The source-controlled inventory in
 `model/ai_inference_entrypoint_inventory.dart` classifies all product inference
 funnels and their guarantees.
 
@@ -477,45 +483,46 @@ without recorded calls, so non-AI tasks carry zero extra chrome.
 
 ## Capture wiring
 
-A call site creates an `InferenceImpactCollector`, threads it down through the
-cloud-inference dispatch chain (`CloudInferenceRepository` →
-`cloud_inference_generate[_more]` → `MeliousInferenceRepository`), and, after the
-response drains, builds an `AiConsumptionEvent` (tokens from the response
-`usage`, impact from the collector, owner ids from the local context) and hands
-it to `AiConsumptionRecorder`. Recording is guarded end-to-end — a missing
-recorder or a record failure can never break an inference.
+Every migrated funnel makes pending ownership durable before invoking its
+provider. `AiInteractionCapture` wraps streamed and unary calls, accumulates the
+last usage values, publishes success/failure/cancellation evidence, and accepts
+an `InferenceImpactCollector` side-channel for exact Melious decimal cost and
+environmental impact. Provider configuration ids, provider model ids, prompt,
+skill, task/category, agent, wake, thread, and turn context are stamped on the
+child interaction where available.
 
-**Live** — one event per completed call on:
+- `UnifiedAiInferenceRepository` persists attributed `AiResponseEntry` and
+  `AudioTranscript` carriers and reuses the same owner/output id for automatic
+  language reruns.
+- `SkillInferenceRunner` uses the same begin → evidence → carrier → finalize
+  contract for transcription, image analysis/generation, and prompt generation.
+- `ConversationRepository` records one child interaction per agent turn under
+  the deterministic wake attribution. Project/event forced-report retries and
+  Daily OS draft/repair retries keep the same wake owner and use strict provider
+  error propagation.
+- `ChatRepository` begins once per user message, records both the initial and
+  post-tool provider calls as children, and terminalizes once.
+- `EmbeddingProcessor` begins before the first chunk request and finalizes only
+  after the replacement embedding set is stored.
 
-- The legacy unified path (`UnifiedAiInferenceRepository._processCompleteResponse`
-  → `_recordConsumption`): text generation, image analysis, audio transcription.
-- The modern `SkillInferenceRunner` (all four: transcription, image analysis,
-  image generation, prompt generation), each with its own `_recordConsumption`.
-- **Agent turns, per turn** — `ConversationRepository.sendMessage` records one
-  `agentTurn` event per turn (parent = wake run key), gated on owner ids passed
-  by the workflow. The **task agent** (`task_agent_execute`) passes them.
-
-Because a collector is threaded on these paths, Melious calls run
-**non-streaming** so their impact is returned. Recording is skipped entirely
-when no `AiConsumptionRecorder` is registered, so the wake path carries no
-overhead when tracking is off.
-
-**Remaining call sites** (same `sendMessage` mechanism, one guarded block each):
-the project / event / day / evolution agent workflows — they call
-`sendMessage` identically and just need to pass the (recorder-gated) owner ids.
+Attribution publication failures are part of output correctness: carrier
+writers fail closed or leave the durable pending saga for startup recovery.
+Compatibility recording through `AiConsumptionRecorder` remains only for
+unmigrated/legacy callers and is not the ownership boundary for these funnels.
 
 ## Status
 
 Delivered and tested: the storage schema, repository, aggregation query layer,
 full Matrix sync integration, the Melious non-streaming impact-capture mechanism
 (`MeliousCallImpact` + `InferenceImpactCollector`), the `AiConsumptionRecorder`,
-end-to-end capture on the unified inference path, the skill runner, and
-task-agent turns, and the AI Impact dashboard (five-metric KPI row with a
+strict carrier publication for the unified inference and skill-runner paths,
+durable pre-call capture for conversation/chat funnels, report-carrier
+publication across agent workflows, transcript coordination, embedding output
+attribution, and the AI Impact dashboard (five-metric KPI row with a
 cloud-only coverage note whose tiles are the metric selector, two always-visible
 category and model breakdown charts each with a per-bucket / running-total /
 share mode, click-to-isolate and tap-to-drill that scope the call ledger,
-per-model unit economics, location table, and period stepper). The remaining
-agent workflows above are the follow-on work.
+per-model unit economics, location table, and period stepper).
 
 ## Testing
 

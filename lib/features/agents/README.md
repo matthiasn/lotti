@@ -91,17 +91,21 @@ Startup does this:
   A successful wake records its start time as `reportFreshAt`, so a task edit
   that arrives during inference remains visibly stale and is not erased by the
   older wake finishing later.
-- Every report written by `WakeOutputWriter` receives two complementary
-  provenance records. `ReportInferenceProvenance` snapshots model routing and
-  runtime settings without credentials or endpoint URLs. The AI-consumption
-  terminal envelope is stored under `provenance[aiAttributionV1]`, linking the
+- Every agent report carrier receives AI-consumption provenance. Task agents
+  publish through `WakeOutputWriter`; project and event workflows apply the
+  same evidence barrier directly in their report transaction. The terminal
+  envelope is stored under `provenance[aiAttributionV1]`, linking the
   creator/trigger, all turns in the wake, cost evidence, and the report output.
-  The wake run key deterministically groups turns into one attribution; the
-  report is the terminal carrier. Historical reports are conservatively
+  `ReportInferenceProvenance` separately snapshots model routing and runtime
+  settings without credentials or endpoint URLs. The wake run key
+  deterministically groups initial calls, tool continuations, and forced-report
+  retries into one attribution. Historical reports are conservatively
   backfilled as partial instead of borrowing the current setup.
 - Agent turn recording uses the required publication path. A wake cannot write
   a report if interaction evidence failed to cross the sync publication
-  barrier, and `WakeOutputWriter` never falls back to an unattributed report.
+  barrier, and no report writer falls back to an unattributed report. A wake
+  that produces no report terminalizes its deterministic owner as failed or
+  partial instead of leaking pending state.
   Log-compaction inference is a separate carrier-less AI operation captured
   before each backend call and terminalized as partial because its checkpoint
   format has no attribution envelope.
@@ -133,13 +137,14 @@ flowchart LR
 ```mermaid
 sequenceDiagram
   participant Wake as Agent workflow
-  participant Recorder as AiConsumptionRecorder
+  participant Capture as AiInteractionCapture
   participant Attr as AiAttributionService
   participant Writer as WakeOutputWriter
   participant AgentDb as agent.sqlite
+  Wake->>Capture: begin deterministic wake attribution before provider call
   loop each model turn
-    Wake->>Recorder: agentTurn(wakeRunKey, usage, cost)
-    Recorder->>Attr: append to deterministic wake attribution
+    Wake->>Capture: complete interaction with usage and exact cost
+    Capture->>Attr: append child interaction to wake attribution
   end
   Wake->>Writer: final report
   Writer->>Attr: prepareCompletion(agentReport id)

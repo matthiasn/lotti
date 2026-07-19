@@ -57,11 +57,15 @@ sequenceDiagram
 
 Carrier mapping is uniform: `AiResponseData.aiAttribution` for generated text
 and authoritative image-analysis results, `ImageData.aiAttribution` for
-generated images, and `AudioTranscript.id/aiAttribution` for transcripts. The
-legacy unified repository still records an explicitly partial compatibility
-attribution rather than claiming a terminal link it cannot prove. Embedding
-indexing records one interaction per chunk with digests only and a known-zero
-local-compute cost.
+generated images, and `AudioTranscript.id/aiAttribution` for transcripts.
+`UnifiedAiInferenceRepository` begins before provider invocation, reuses one
+owner and output id across automatic language reruns, publishes evidence before
+persistence, and finalizes only after the carrier write. Attributed image
+analysis is stored as the authoritative `AiResponseEntry` instead of also
+duplicating the response into journal entry text. Embedding indexing begins
+before its first chunk, records one interaction per chunk with digests only and
+a known-zero local-compute cost, and finalizes a typed `embeddingVector` output
+after the store replacement succeeds.
 
 ## Configuration Model
 

@@ -62,7 +62,7 @@ enum AiPayloadCapturePolicy {
 }
 
 /// Strongest privacy classification inherited from interaction sources.
-enum AiPrivacyClassification { standard, private, mixed }
+enum AiPrivacyClassification { standard, private, mixed, unknown }
 
 /// Local publication-saga phase. Pending sessions are never synchronized.
 enum AiAttributionPendingPhase {
@@ -93,6 +93,7 @@ enum AiArtifactType {
   journalAudio,
   agentReport,
   agentMessage,
+  embeddingVector,
 }
 
 /// Origin of one immutable cost assessment.

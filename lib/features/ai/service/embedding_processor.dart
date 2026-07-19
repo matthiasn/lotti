@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -10,12 +9,10 @@ import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
-import 'package:uuid/uuid.dart';
 
 /// Callback that resolves a list of label IDs to their display names.
 ///
@@ -95,6 +92,13 @@ class EmbeddingProcessor {
       embeddingStore: embeddingStore,
       embeddingRepository: embeddingRepository,
       baseUrl: baseUrl,
+      privacyClassification: entity.meta.private == true
+          ? AiPrivacyClassification.private
+          : AiPrivacyClassification.standard,
+      sourceArtifact: AiArtifactReference(
+        type: AiArtifactType.journalEntry,
+        id: entityId,
+      ),
     );
 
     // When both content and category changed, the task embedding is already
@@ -182,6 +186,11 @@ class EmbeddingProcessor {
       embeddingStore: embeddingStore,
       embeddingRepository: embeddingRepository,
       baseUrl: baseUrl,
+      privacyClassification: AiPrivacyClassification.mixed,
+      sourceArtifact: AiArtifactReference(
+        type: AiArtifactType.agentReport,
+        id: reportId,
+      ),
     );
 
     return true;
@@ -200,95 +209,105 @@ class EmbeddingProcessor {
     required EmbeddingStore embeddingStore,
     required OllamaEmbeddingRepository embeddingRepository,
     required String baseUrl,
+    required AiPrivacyClassification privacyClassification,
+    required AiArtifactReference sourceArtifact,
     String categoryId = '',
     String taskId = '',
     String subtype = '',
   }) async {
     final chunks = TextChunker.chunk(text);
+    final capture = getIt.isRegistered<AiInteractionCapture>()
+        ? getIt<AiInteractionCapture>()
+        : null;
+    final output = AiArtifactReference(
+      type: AiArtifactType.embeddingVector,
+      id: entityId,
+      subId: contentHash,
+    );
+    final attributionSession = await capture?.beginSession(
+      workType: AiWorkType.embeddingIndexing,
+      trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
+      automationId: 'automation:embedding-indexer',
+      automationDisplayName: 'Embedding indexer',
+      privacyClassification: privacyClassification,
+      intendedOutputs: [output],
+      sources: [sourceArtifact],
+      taskId: taskId.isEmpty ? null : taskId,
+      categoryId: categoryId.isEmpty ? null : categoryId,
+    );
+    var completionStarted = false;
 
-    // Phase 1: Generate all embeddings (network calls that can fail).
-    final generated = <Float32List>[];
-    for (final chunk in chunks) {
-      final startedAt = DateTime.now().toUtc();
-      final embedding = await embeddingRepository.embed(
-        input: chunk,
-        baseUrl: baseUrl,
-      );
-      await _recordEmbeddingConsumption(
+    try {
+      // Phase 1: Generate all embeddings (network calls that can fail).
+      final generated = <Float32List>[];
+      for (final chunk in chunks) {
+        Future<Float32List> invoke() => embeddingRepository.embed(
+          input: chunk,
+          baseUrl: baseUrl,
+        );
+        final embedding = capture == null
+            ? await invoke()
+            : await capture.captureUnary(
+                workType: AiWorkType.embeddingIndexing,
+                interactionKind: AiInteractionKind.embedding,
+                responseType: AiConsumptionResponseType.embeddingIndexing,
+                providerType: InferenceProviderType.ollama,
+                modelId: ollamaEmbedDefaultModel,
+                requestText: chunk,
+                invoke: invoke,
+                responseText: (value) =>
+                    sha256.convert(value.buffer.asUint8List()).toString(),
+                cost: const AiCapturedCost(
+                  source: AiCostSource.localCompute,
+                  originalAmountDecimal: '0',
+                  originalUnit: 'USD',
+                  reportingAmountMicros: 0,
+                  reportingCurrency: 'USD',
+                  billingSource: 'local_compute',
+                ),
+                interactionContext: AiCapturedContext(
+                  entryId: entityId,
+                ),
+                existingSession: attributionSession,
+                terminalizeSuccess: false,
+                terminalizeFailure: false,
+                triggerType: AiTriggerType.automatic,
+                automationId: 'automation:embedding-indexer',
+                automationDisplayName: 'Embedding indexer',
+                privacyClassification: privacyClassification,
+                taskId: taskId.isEmpty ? null : taskId,
+                categoryId: categoryId.isEmpty ? null : categoryId,
+              );
+        generated.add(embedding);
+      }
+
+      await embeddingStore.replaceEntityEmbeddings(
         entityId: entityId,
+        entityType: entityType,
+        modelId: ollamaEmbedDefaultModel,
+        contentHash: contentHash,
+        embeddings: generated,
         categoryId: categoryId,
         taskId: taskId,
-        chunk: chunk,
-        embedding: embedding,
-        startedAt: startedAt,
+        subtype: subtype,
       );
-      generated.add(embedding);
+      if (attributionSession != null) {
+        completionStarted = true;
+        await capture!.completeSession(
+          session: attributionSession,
+          outputs: [output],
+        );
+      }
+    } on Object catch (error) {
+      if (attributionSession != null && !completionStarted) {
+        await capture!.completeSession(
+          session: attributionSession,
+          outputs: const [],
+          status: AiWorkStatus.failed,
+          errorCode: error.runtimeType.toString(),
+        );
+      }
+      rethrow;
     }
-
-    await embeddingStore.replaceEntityEmbeddings(
-      entityId: entityId,
-      entityType: entityType,
-      modelId: ollamaEmbedDefaultModel,
-      contentHash: contentHash,
-      embeddings: generated,
-      categoryId: categoryId,
-      taskId: taskId,
-      subtype: subtype,
-    );
-  }
-
-  static Future<void> _recordEmbeddingConsumption({
-    required String entityId,
-    required String categoryId,
-    required String taskId,
-    required String chunk,
-    required Float32List embedding,
-    required DateTime startedAt,
-  }) async {
-    if (!getIt.isRegistered<AiConsumptionRecorder>()) return;
-    final eventId = const Uuid().v4();
-    final completedAt = DateTime.now().toUtc();
-    await getIt<AiConsumptionRecorder>().record(
-      AiConsumptionEvent(
-        id: eventId,
-        createdAt: startedAt,
-        providerType: InferenceProviderType.ollama,
-        responseType: AiConsumptionResponseType.embeddingIndexing,
-        vectorClock: null,
-        interactionKind: AiInteractionKind.embedding,
-        completedAt: completedAt,
-        entryId: entityId,
-        taskId: taskId.isEmpty ? null : taskId,
-        categoryId: categoryId.isEmpty ? null : categoryId,
-        providerModelId: ollamaEmbedDefaultModel,
-        durationMs: completedAt.difference(startedAt).inMilliseconds,
-        payload: AiInteractionPayload(
-          id: 'payload-$eventId',
-          interactionId: eventId,
-          request: const [],
-          response: const [],
-          parameters: {'dimensions': embedding.length},
-          requestDigest: sha256.convert(utf8.encode(chunk)).toString(),
-          responseDigest: sha256
-              .convert(embedding.buffer.asUint8List())
-              .toString(),
-          capturePolicy: AiPayloadCapturePolicy.referenceOnly,
-          privacyClassification: AiPrivacyClassification.standard,
-          createdAt: completedAt,
-        ),
-        cost: AiInteractionCost(
-          id: 'cost-$eventId',
-          interactionId: eventId,
-          source: AiCostSource.localCompute,
-          assessedAt: completedAt,
-          originalAmountDecimal: '0',
-          originalUnit: 'USD',
-          reportingAmountMicros: 0,
-          reportingCurrency: 'USD',
-          providerType: InferenceProviderType.ollama.name,
-          billingSource: 'local_compute',
-        ),
-      ),
-    );
   }
 }

@@ -250,10 +250,14 @@ sequenceDiagram
   Modal->>Ctl: stopRealtime()
   Ctl->>RT: stop(stopRecorder, outputPath)
   RT-->>Ctl: transcript + detectedLanguage + saved audio file path
-  Ctl->>Attr: complete(transcript digest, usage)
-  Attr-->>Ctl: published terminal envelope
   Ctl->>Speech: createAudioEntry(...)
-  Ctl->>Ctl: save transcript onto JournalAudio and entryText
+  Speech-->>Ctl: JournalAudio carrier
+  Ctl->>Attr: recordInteraction(realtime digest, usage/status)
+  Ctl->>Attr: prepareOutput(audio id, transcript id)
+  Attr-->>Ctl: published terminal envelope
+  Ctl->>Persist: save transcript + envelope onto JournalAudio and entryText
+  Persist-->>Ctl: write accepted
+  Ctl->>Attr: finalize(envelope)
   Ctl->>Ctl: reset recorder state
 ```
 
@@ -272,8 +276,14 @@ Two important implementation details:
    envelope to `JournalAudio.data.transcripts`; it also mirrors the transcript
    into `entryText`. Attribution inherits the audio entry's privacy flag and
    the provider type resolved for the realtime session. The projection is
-   finalized only when the journal update confirms that it applied, so a
-   transcript never advertises evidence that was not durable.
+   finalized only when the journal update confirms that it applied. If that
+   post-carrier projection fails, the successful carrier remains authoritative
+   and the pending saga is left for recovery. Uncertain interaction publication
+   likewise stays pending instead of creating synthetic failure evidence. Missing
+   audio, empty transcript, or rejected/throwing persistence terminalizes the
+   already-recorded interaction as an output failure, so a transcript never
+   advertises evidence that was not durable and the pending session does not
+   leak.
 
 `cancelRealtime()` is the realtime discard path (the ✕ button in realtime
 mode). It records a terminal cancelled attribution, then tears down the recorder

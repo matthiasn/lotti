@@ -12,10 +12,15 @@ import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 
 class _FakeMlxAudioChannel extends MlxAudioChannel {
   String? transcribedFilePath;
@@ -272,6 +277,7 @@ void main() {
   }
 
   setUpAll(() async {
+    registerAllFallbackValues();
     // One shared in-memory DB pre-populated with the standard Gemini
     // provider + flash model pair, and one shared temp dir for fixtures.
     sharedDb = AiConfigDb(inMemoryDatabase: true);
@@ -438,6 +444,105 @@ void main() {
               ),
         ),
       );
+    },
+  );
+
+  test(
+    'empty attributed stream records one failed provider interaction',
+    () async {
+      final file = await audioFile();
+      final mockCloud = MockCloudInferenceRepository();
+      _stubGenerateWithAudio(mockCloud, ['', '   ']);
+      final attribution = AiInteractionCaptureTestBench.create()..register();
+      addTearDown(attribution.unregister);
+      final pending = await attribution.capture.beginSession(
+        workType: AiWorkType.audioTranscription,
+        trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+        privacyClassification: AiPrivacyClassification.mixed,
+      );
+      final svc = buildService(repo: sharedRepo, cloud: mockCloud);
+
+      await expectLater(
+        svc.transcribe(
+          file.path,
+          attributionSession: pending,
+          terminalizeAttributionFailure: false,
+        ),
+        throwsA(
+          isA<AttributedTranscriptionException>().having(
+            (error) => error.evidenceState,
+            'evidenceState',
+            TranscriptionEvidenceState.recorded,
+          ),
+        ),
+      );
+
+      final events = verify(
+        () => attribution.service.recordInteraction(
+          attributionId: pending.id,
+          event: captureAny(named: 'event'),
+        ),
+      ).captured.whereType<AiConsumptionEvent>().toList();
+      expect(events, hasLength(1));
+      expect(events.single.interactionStatus, AiInteractionStatus.failed);
+      verifyNever(
+        () => attribution.service.prepareCompletion(
+          attributionId: pending.id,
+          outputs: const [],
+        ),
+      );
+    },
+  );
+
+  test(
+    'uncertain attributed publication does not invent failure evidence',
+    () async {
+      final file = await audioFile();
+      final mockCloud = MockCloudInferenceRepository();
+      _stubGenerateWithAudio(mockCloud, ['ok']);
+      final attribution = AiInteractionCaptureTestBench.create()..register();
+      addTearDown(attribution.unregister);
+      final pending = await attribution.capture.beginSession(
+        workType: AiWorkType.audioTranscription,
+        trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+        privacyClassification: AiPrivacyClassification.mixed,
+      );
+      when(
+        () => attribution.service.recordInteraction(
+          attributionId: pending.id,
+          event: any(named: 'event'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event = invocation.namedArguments[#event] as AiConsumptionEvent;
+        return AiAttributedInteractionResult(
+          session: pending,
+          event: event.copyWith(attributionId: pending.id),
+          published: false,
+        );
+      });
+      final svc = buildService(repo: sharedRepo, cloud: mockCloud);
+
+      await expectLater(
+        svc.transcribe(
+          file.path,
+          attributionSession: pending,
+          terminalizeAttributionFailure: false,
+        ),
+        throwsA(
+          isA<AttributedTranscriptionException>().having(
+            (error) => error.evidenceState,
+            'evidenceState',
+            TranscriptionEvidenceState.uncertain,
+          ),
+        ),
+      );
+
+      verify(
+        () => attribution.service.recordInteraction(
+          attributionId: pending.id,
+          event: any(named: 'event'),
+        ),
+      ).called(1);
     },
   );
 

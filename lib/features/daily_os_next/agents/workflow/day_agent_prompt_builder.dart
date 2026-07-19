@@ -223,6 +223,9 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     required List<ChatCompletionTool> tools,
     required DayAgentStrategy strategy,
     required String captureId,
+    required String? consumptionAgentId,
+    required String? consumptionWakeRunKey,
+    required String? consumptionThreadId,
   }) {
     _log(
       'capture wake missed parse_capture_to_items — retrying with forced '
@@ -258,6 +261,10 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
       toolChoice: forcedToolChoice,
       temperature: 0.3,
       strategy: strategy,
+      consumptionAgentId: consumptionAgentId,
+      consumptionWakeRunKey: consumptionWakeRunKey,
+      consumptionThreadId: consumptionThreadId,
+      rethrowInferenceErrors: true,
     );
   }
 
@@ -268,6 +275,9 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     required CloudInferenceWrapper inferenceRepo,
     required List<ChatCompletionTool> tools,
     required DayAgentStrategy strategy,
+    required String? consumptionAgentId,
+    required String? consumptionWakeRunKey,
+    required String? consumptionThreadId,
   }) {
     _log(
       'drafting wake missed draft_day_plan — retrying with forced tool choice',
@@ -299,6 +309,10 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
       toolChoice: forcedToolChoice,
       temperature: 0.3,
       strategy: strategy,
+      consumptionAgentId: consumptionAgentId,
+      consumptionWakeRunKey: consumptionWakeRunKey,
+      consumptionThreadId: consumptionThreadId,
+      rethrowInferenceErrors: true,
     );
   }
 

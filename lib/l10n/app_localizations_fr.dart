@@ -1230,6 +1230,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiAttributionPrivacyStandard => 'Standard';
 
   @override
+  String get aiAttributionPrivacyUnknown => 'Inconnue';
+
+  @override
   String get aiAttributionRequestEvidence => 'Preuve de la requête';
 
   @override

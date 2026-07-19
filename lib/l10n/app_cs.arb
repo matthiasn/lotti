@@ -540,6 +540,7 @@
   "aiAttributionPrivacyMixed": "Smíšené",
   "aiAttributionPrivacyPrivate": "Soukromé",
   "aiAttributionPrivacyStandard": "Standardní",
+  "aiAttributionPrivacyUnknown": "Neznámé",
   "aiAttributionRequestEvidence": "Doklad požadavku",
   "aiAttributionResponseEvidence": "Doklad odpovědi",
   "aiAttributionSecondary": "{model} · {time} · {callCount, plural, =0{žádná volání} =1{1 volání} other{{callCount} volání}}",

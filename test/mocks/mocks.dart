@@ -94,6 +94,7 @@ import 'package:lotti/features/ai_consumption/repository/consumption_repository.
 import 'package:lotti/features/ai_consumption/service/ai_attribution_backfill_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -914,6 +915,8 @@ class MockConsumptionRepository extends Mock implements ConsumptionRepository {
 }
 
 class MockAiConsumptionRecorder extends Mock implements AiConsumptionRecorder {}
+
+class MockAiInteractionCapture extends Mock implements AiInteractionCapture {}
 
 class MockAiAttributionIdentityResolver extends Mock
     implements AiAttributionIdentityResolver {}

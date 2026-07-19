@@ -126,6 +126,12 @@ these records terminalize honestly as partial with no fabricated artifact link.
 Batch transcription may instead join an existing transcript attribution session
 when a journal-writing caller owns the carrier.
 
+One user message owns exactly one top-level chat attribution. If the initial
+response requests tools, the initial provider call and the final tool-result
+call are two ordered child interactions under that same pending owner; the
+repository terminalizes the owner once after the final stream (or as
+failed/cancelled on the corresponding exit path).
+
 ## Runtime Model
 
 ### Session layer

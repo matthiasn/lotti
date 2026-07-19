@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
-import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -10,9 +9,11 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart' hide Error;
@@ -264,6 +265,47 @@ class ConversationRepository extends Notifier<void> {
       return null;
     }
 
+    final capture = getIt.isRegistered<AiInteractionCapture>()
+        ? getIt<AiInteractionCapture>()
+        : null;
+    AiAttributionPendingSession? attributionSession;
+    if (capture != null) {
+      final agentId = consumptionAgentId;
+      final initiator = agentId == null
+          ? null
+          : await getIt<AiAttributionIdentityResolver>().agentInitiator(
+              id: agentId,
+              displayName: agentId,
+            );
+      attributionSession = await capture.beginSession(
+        workType: agentId == null
+            ? AiWorkType.textGeneration
+            : AiWorkType.agentReport,
+        trigger: AiTriggerSnapshot(
+          type: agentId == null
+              ? AiTriggerType.manual
+              : AiTriggerType.agentTool,
+          agentId: agentId,
+          wakeRunKey: consumptionWakeRunKey,
+        ),
+        initiator: initiator,
+        attributionId: consumptionWakeRunKey == null
+            ? null
+            : agentWakeAttributionId(consumptionWakeRunKey),
+        privacyClassification: AiPrivacyClassification.mixed,
+        sources: consumptionTaskId == null
+            ? const []
+            : [
+                AiArtifactReference(
+                  type: AiArtifactType.journalEntry,
+                  id: consumptionTaskId,
+                ),
+              ],
+        taskId: consumptionTaskId,
+        categoryId: consumptionCategoryId,
+      );
+    }
+
     // OpenAI GPT-5 models only accept temperature=1.0 (the default).
     // Other providers support custom temperature values.
     final effectiveTemperature =
@@ -288,7 +330,6 @@ class ConversationRepository extends Notifier<void> {
         // Per-turn cost/energy side-channel (Melious populates it) + timing and
         // the turn index captured before the request advances the count.
         final impactCollector = InferenceImpactCollector();
-        final turnStart = clock.now();
         final turnIndex = manager.turnCount;
 
         // Collect response
@@ -303,18 +344,62 @@ class ConversationRepository extends Notifier<void> {
           // Make the provider call with full conversation history. The
           // rethrow contract is intentionally scoped to this stream only;
           // post-inference telemetry and tool handling degrade gracefully.
-          final stream = inferenceRepo.generateTextWithMessages(
-            messages: messages,
-            model: model,
-            provider: provider,
-            tools: tools,
-            toolChoice: toolChoice,
-            temperature: effectiveTemperature,
-            thoughtSignatures: manager.thoughtSignatures,
-            signatureCollector: signatureCollector,
-            turnIndex: turnIndex,
-            impactCollector: impactCollector,
-          );
+          Stream<CreateChatCompletionStreamResponse> invoke() =>
+              inferenceRepo.generateTextWithMessages(
+                messages: messages,
+                model: model,
+                provider: provider,
+                tools: tools,
+                toolChoice: toolChoice,
+                temperature: effectiveTemperature,
+                thoughtSignatures: manager.thoughtSignatures,
+                signatureCollector: signatureCollector,
+                turnIndex: turnIndex,
+                impactCollector: impactCollector,
+              );
+          final stream = capture == null
+              ? invoke()
+              : capture.captureStream(
+                  workType: consumptionAgentId == null
+                      ? AiWorkType.textGeneration
+                      : AiWorkType.agentReport,
+                  interactionKind: AiInteractionKind.chatCompletion,
+                  responseType: consumptionAgentId == null
+                      ? AiConsumptionResponseType.textGeneration
+                      : AiConsumptionResponseType.agentTurn,
+                  providerType: provider.inferenceProviderType,
+                  modelId: model,
+                  requestText: messages.toString(),
+                  invoke: invoke,
+                  responseText: (chunk) => chunk.toString(),
+                  usageForChunk: (chunk) {
+                    final chunkUsage = chunk.usage;
+                    if (chunkUsage == null) return null;
+                    return AiCapturedUsage(
+                      inputTokens: chunkUsage.promptTokens,
+                      outputTokens: chunkUsage.completionTokens,
+                      cachedInputTokens:
+                          chunkUsage.promptTokensDetails?.cachedTokens,
+                      thoughtsTokens:
+                          chunkUsage.completionTokensDetails?.reasoningTokens,
+                      totalTokens: chunkUsage.totalTokens,
+                    );
+                  },
+                  impact: () => impactCollector.impact,
+                  interactionContext: AiCapturedContext(
+                    parentId: consumptionWakeRunKey,
+                    agentId: consumptionAgentId,
+                    wakeRunKey: consumptionWakeRunKey,
+                    threadId: consumptionThreadId,
+                    turnIndex: turnIndex,
+                  ),
+                  existingSession: attributionSession,
+                  terminalizeSuccess: false,
+                  terminalizeFailure: false,
+                  privacyClassification: AiPrivacyClassification.mixed,
+                  taskId: consumptionTaskId,
+                  categoryId: consumptionCategoryId,
+                );
 
           await for (final response in stream) {
             // Capture usage from the response (typically on the final chunk).
@@ -369,31 +454,6 @@ class ConversationRepository extends Notifier<void> {
         // Accumulate token usage from this turn.
         if (turnUsage != null) {
           accumulated = accumulated.merge(turnUsage);
-        }
-
-        // Record one consumption event for this turn (per-turn granularity).
-        try {
-          await _recordTurnConsumption(
-            agentId: consumptionAgentId,
-            taskId: consumptionTaskId,
-            categoryId: consumptionCategoryId,
-            wakeRunKey: consumptionWakeRunKey,
-            threadId: consumptionThreadId,
-            turnIndex: turnIndex,
-            model: model,
-            provider: provider,
-            usage: turnUsage,
-            impact: impactCollector.impact,
-            start: turnStart,
-          );
-        } catch (e, stackTrace) {
-          developer.log(
-            'Failed to record conversation turn consumption',
-            name: 'ConversationRepository',
-            error: e,
-            stackTrace: stackTrace,
-          );
-          if (consumptionWakeRunKey != null) rethrow;
         }
 
         // Add assistant message.
@@ -469,6 +529,16 @@ class ConversationRepository extends Notifier<void> {
       }
     }
 
+    if (attributionSession != null &&
+        (consumptionAgentId == null || consumptionWakeRunKey == null)) {
+      await capture!.completeSession(
+        session: attributionSession,
+        outputs: const [],
+        status: AiWorkStatus.partial,
+        errorCode: 'output_carrier_unavailable',
+      );
+    }
+
     return accumulated.hasData ? accumulated : null;
   }
 
@@ -495,65 +565,6 @@ class ConversationRepository extends Notifier<void> {
   void deleteConversation(String conversationId) {
     final manager = _conversations.remove(conversationId);
     manager?.dispose();
-  }
-
-  /// Records one AI-consumption event for a single agent turn. A no-op when no
-  /// [agentId] is supplied (non-agent callers) or no recorder is wired. Owner
-  /// ids come from the workflow; tokens from [usage]; cost/energy from [impact]
-  /// (Melious only). `parentId` is the wake run key, so a wake's turns share a
-  /// causal parent.
-  Future<void> _recordTurnConsumption({
-    required String? agentId,
-    required String? taskId,
-    required String? categoryId,
-    required String? wakeRunKey,
-    required String? threadId,
-    required int turnIndex,
-    required String model,
-    required AiConfigInferenceProvider provider,
-    required InferenceUsage? usage,
-    required MeliousCallImpact? impact,
-    required DateTime start,
-  }) async {
-    if (agentId == null) return;
-    if (!getIt.isRegistered<AiConsumptionRecorder>()) return;
-    final recorder = getIt<AiConsumptionRecorder>();
-    final record = wakeRunKey == null
-        ? recorder.record
-        : recorder.recordRequired;
-    await record(
-      AiConsumptionEvent(
-        // v4 (opaque random): the record id carries no timestamp/node info;
-        // createdAt already captures the time explicitly.
-        id: const Uuid().v4(),
-        createdAt: start,
-        providerType: provider.inferenceProviderType,
-        responseType: AiConsumptionResponseType.agentTurn,
-        vectorClock: null,
-        parentId: wakeRunKey,
-        agentId: agentId,
-        taskId: taskId,
-        categoryId: categoryId,
-        wakeRunKey: wakeRunKey,
-        threadId: threadId,
-        turnIndex: turnIndex,
-        providerModelId: model,
-        durationMs: clock.now().difference(start).inMilliseconds,
-        inputTokens: usage?.inputTokens,
-        outputTokens: usage?.outputTokens,
-        cachedInputTokens: usage?.cachedInputTokens,
-        thoughtsTokens: usage?.thoughtsTokens,
-        totalTokens: usage?.totalTokens,
-        credits: impact?.costCredits,
-        energyKwh: impact?.energyKwh,
-        carbonGCo2: impact?.carbonGCo2,
-        waterLiters: impact?.waterLiters,
-        renewablePercent: impact?.renewablePercent,
-        pue: impact?.pue,
-        dataCenter: impact?.dataCenter,
-        upstreamProviderId: impact?.providerId,
-      ),
-    );
   }
 }
 

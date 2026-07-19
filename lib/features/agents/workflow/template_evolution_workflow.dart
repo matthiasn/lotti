@@ -25,7 +25,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/content_extraction_helper.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -182,7 +182,7 @@ class TemplateEvolutionWorkflow {
     final provider = inferenceSlot.provider;
 
     try {
-      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
+      final recordConsumption = getIt.isRegistered<AiInteractionCapture>();
       await conversationRepository.sendMessage(
         conversationId: active.conversationId,
         message: userMessage,

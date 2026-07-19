@@ -96,6 +96,7 @@ const _$AiArtifactTypeEnumMap = {
   AiArtifactType.journalAudio: 'journalAudio',
   AiArtifactType.agentReport: 'agentReport',
   AiArtifactType.agentMessage: 'agentMessage',
+  AiArtifactType.embeddingVector: 'embeddingVector',
 };
 
 _AiAttributionLink _$AiAttributionLinkFromJson(Map<String, dynamic> json) =>
@@ -214,6 +215,7 @@ const _$AiPrivacyClassificationEnumMap = {
   AiPrivacyClassification.standard: 'standard',
   AiPrivacyClassification.private: 'private',
   AiPrivacyClassification.mixed: 'mixed',
+  AiPrivacyClassification.unknown: 'unknown',
 };
 
 _AiInteractionCost _$AiInteractionCostFromJson(Map<String, dynamic> json) =>

@@ -26,8 +26,9 @@ import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -35,7 +36,7 @@ import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:openai_dart/openai_dart.dart' hide Error;
 import 'package:uuid/uuid.dart';
 
 export 'package:lotti/features/ai/repository/ai_tool_call_processor.dart'
@@ -134,6 +135,8 @@ class UnifiedAiInferenceRepository {
     required bool isRerun,
     JournalEntity? entity, // Optional entity to avoid redundant fetches
     String? linkedEntityId,
+    AiAttributionPendingSession? existingAttributionSession,
+    String? existingOutputId,
   }) async {
     // Keep the provider alive during the entire inference operation
     // This prevents disposal when the user navigates away
@@ -214,8 +217,39 @@ class UnifiedAiInferenceRepository {
       // Side-channel for per-call cost/energy impact (Melious non-streaming
       // path populates it; other providers leave it null).
       final impactCollector = InferenceImpactCollector();
+      final capture = getIt.isRegistered<AiInteractionCapture>()
+          ? getIt<AiInteractionCapture>()
+          : null;
+      final outputId = existingOutputId ?? const Uuid().v4();
+      final attributionSession =
+          existingAttributionSession ??
+          await capture?.beginSession(
+            workType: _workType(promptConfig.aiResponseType),
+            trigger: AiTriggerSnapshot(
+              type: isRerun ? AiTriggerType.automatic : AiTriggerType.manual,
+              promptId: promptConfig.id,
+            ),
+            privacyClassification: entity.meta.private == true
+                ? AiPrivacyClassification.private
+                : AiPrivacyClassification.standard,
+            intendedOutputs: [
+              _outputReference(
+                responseType: promptConfig.aiResponseType,
+                entityId: entity.id,
+                outputId: outputId,
+              ),
+            ],
+            sources: [
+              AiArtifactReference(
+                type: AiArtifactType.journalEntry,
+                id: entity.id,
+              ),
+            ],
+            taskId: entity is Task ? entity.id : null,
+            categoryId: entity.meta.categoryId,
+          );
 
-      final stream = await _runCloudInference(
+      final providerStream = await _runCloudInference(
         prompt: prompt,
         model: model,
         provider: provider,
@@ -228,6 +262,45 @@ class UnifiedAiInferenceRepository {
         isAiStreamingEnabled: isAiStreamingEnabled,
         impactCollector: impactCollector,
       );
+      final stream = capture == null
+          ? providerStream
+          : capture.captureStream(
+              workType: _workType(promptConfig.aiResponseType),
+              interactionKind: _interactionKind(promptConfig.aiResponseType),
+              responseType: promptConfig.aiResponseType.consumptionResponseType,
+              providerType: provider.inferenceProviderType,
+              modelId: model.providerModelId,
+              requestText: prompt,
+              invoke: () => providerStream,
+              responseText: _extractTextFromChunk,
+              usageForChunk: (chunk) {
+                final chunkUsage = chunk.usage;
+                if (chunkUsage == null) return null;
+                return AiCapturedUsage(
+                  inputTokens: chunkUsage.promptTokens,
+                  outputTokens: chunkUsage.completionTokens,
+                  cachedInputTokens:
+                      chunkUsage.promptTokensDetails?.cachedTokens,
+                  thoughtsTokens:
+                      chunkUsage.completionTokensDetails?.reasoningTokens,
+                  totalTokens: chunkUsage.totalTokens,
+                );
+              },
+              impact: () => impactCollector.impact,
+              interactionContext: AiCapturedContext(
+                entryId: entity.id,
+                promptId: promptConfig.id,
+                providerConfigId: provider.id,
+                modelConfigId: model.id,
+              ),
+              existingSession: attributionSession,
+              terminalizeSuccess: false,
+              privacyClassification: entity.meta.private == true
+                  ? AiPrivacyClassification.private
+                  : AiPrivacyClassification.standard,
+              taskId: entity is Task ? entity.id : null,
+              categoryId: entity.meta.categoryId,
+            );
 
       // Process the stream and accumulate tool calls
       final toolCallAccumulator = ToolCallAccumulator();
@@ -290,24 +363,37 @@ class UnifiedAiInferenceRepository {
       }
 
       // Process the complete response
-      await _processCompleteResponse(
-        response: buffer.toString(),
-        promptConfig: promptConfig,
-        model: model,
-        prompt: prompt,
-        provider: provider,
-        entity: entity,
-        start: start,
-        isRerun: isRerun,
-        onProgress: onProgress,
-        onStatusChange: onStatusChange,
-        toolCalls: toolCalls,
-        usage: usage,
-        durationMs: durationMs,
-        temperature: temperature,
-        effectiveSystemMessage: systemMessage,
-        impactCollector: impactCollector,
-      );
+      try {
+        await _processCompleteResponse(
+          response: buffer.toString(),
+          promptConfig: promptConfig,
+          model: model,
+          prompt: prompt,
+          provider: provider,
+          entity: entity,
+          start: start,
+          isRerun: isRerun,
+          onProgress: onProgress,
+          onStatusChange: onStatusChange,
+          toolCalls: toolCalls,
+          usage: usage,
+          durationMs: durationMs,
+          temperature: temperature,
+          effectiveSystemMessage: systemMessage,
+          attributionSession: attributionSession,
+          outputId: outputId,
+        );
+      } on Object catch (error, stackTrace) {
+        if (attributionSession != null) {
+          try {
+            await _failOutputAttribution(attributionSession, error);
+          } catch (_) {
+            // Preserve the original output failure. A remaining pending saga
+            // is eligible for startup recovery.
+          }
+        }
+        Error.throwWithStackTrace(error, stackTrace);
+      }
 
       onStatusChange(InferenceStatus.idle);
     } catch (e, stackTrace) {
@@ -508,12 +594,13 @@ class UnifiedAiInferenceRepository {
     required bool isRerun,
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
+    required String outputId,
     List<ChatCompletionMessageToolCall>? toolCalls,
     CompletionUsage? usage,
     int? durationMs,
     double? temperature,
     String? effectiveSystemMessage,
-    InferenceImpactCollector? impactCollector,
+    AiAttributionPendingSession? attributionSession,
   }) async {
     var thoughts = '';
     var cleanResponse = response;
@@ -529,21 +616,6 @@ class UnifiedAiInferenceRepository {
 
     // Process tool calls for checklist completions
     final taskForToolCalls = await _getTaskForEntity(entity);
-
-    // Record one AI-consumption event for this call. Done up-front (before any
-    // language-detection re-run early-returns) so every completed backend call
-    // is accounted for. Never throws — the recorder swallows its own failures.
-    await _recordConsumption(
-      entity: entity,
-      model: model,
-      provider: provider,
-      promptConfig: promptConfig,
-      task: taskForToolCalls,
-      usage: usage,
-      durationMs: durationMs,
-      start: start,
-      impact: impactCollector?.impact,
-    );
 
     if (toolCalls != null && toolCalls.isNotEmpty && taskForToolCalls != null) {
       developer.log(
@@ -569,6 +641,8 @@ class UnifiedAiInferenceRepository {
           onStatusChange: onStatusChange,
           isRerun: true,
           entity: entity, // Pass the entity to avoid redundant fetch
+          existingAttributionSession: attributionSession,
+          existingOutputId: outputId,
         );
         return; // Exit early to avoid duplicate processing
       }
@@ -581,6 +655,25 @@ class UnifiedAiInferenceRepository {
 
     // Create AI response data
     // Note: temperature is computed earlier based on model.isReasoningModel
+    final shouldSaveEntry =
+        promptConfig.aiResponseType.isPromptGenerationType ||
+        (entity is! JournalAudio && entity is! JournalImage) ||
+        (attributionSession != null &&
+            entity is JournalImage &&
+            promptConfig.aiResponseType == AiResponseType.imageAnalysis);
+    AiTerminalAttributionEnvelope? attributionEnvelope;
+    if (attributionSession != null && shouldSaveEntry) {
+      attributionEnvelope = await getIt<AiAttributionService>()
+          .prepareCompletion(
+            attributionId: attributionSession.id,
+            outputs: [
+              AiArtifactReference(
+                type: AiArtifactType.journalAiResponse,
+                id: outputId,
+              ),
+            ],
+          );
+    }
     final data = AiResponseData(
       model: model.providerModelId,
       temperature: temperature,
@@ -594,15 +687,12 @@ class UnifiedAiInferenceRepository {
       outputTokens: usage?.completionTokens,
       thoughtsTokens: usage?.completionTokensDetails?.reasoningTokens,
       durationMs: durationMs,
+      aiAttribution: attributionEnvelope,
     );
 
     // Save the AI response entry
     // Also save for prompt generation types even when triggered from audio entries
     AiResponseEntry? aiResponseEntry;
-    final shouldSaveEntry =
-        promptConfig.aiResponseType.isPromptGenerationType ||
-        (entity is! JournalAudio && entity is! JournalImage);
-
     if (shouldSaveEntry) {
       try {
         // Coding prompts attach to the parent task (like cover art). This
@@ -617,11 +707,15 @@ class UnifiedAiInferenceRepository {
         }
         final aiInputRepository = ref.read(aiInputRepositoryProvider);
         aiResponseEntry = await aiInputRepository.createAiResponseEntry(
+          id: attributionSession == null ? null : outputId,
           data: data,
           start: start,
           linkedId: linkedId,
           categoryId: entity.meta.categoryId,
         );
+        if (attributionSession != null && aiResponseEntry == null) {
+          throw StateError('Failed to persist attributed AI response');
+        }
 
         // Additionally link the coding prompt back to the source entry so it
         // shows in both the task's and the originating audio/text entry's
@@ -657,12 +751,18 @@ class UnifiedAiInferenceRepository {
           'createAiResponseEntry result: ${aiResponseEntry?.id ?? "null"}',
           name: 'UnifiedAiInferenceRepository',
         );
+        if (attributionEnvelope != null) {
+          await getIt<AiAttributionService>().finalize(attributionEnvelope);
+        }
       } catch (e) {
         developer.log(
           'createAiResponseEntry failed: $e',
           name: 'UnifiedAiInferenceRepository',
           error: e,
         );
+        if (attributionSession != null) {
+          rethrow;
+        }
       }
     }
 
@@ -681,6 +781,8 @@ class UnifiedAiInferenceRepository {
       start: start,
       aiResponseEntry: aiResponseEntry,
       isRerun: isRerun,
+      attributionSession: attributionSession,
+      outputId: outputId,
     );
   }
 
@@ -693,6 +795,8 @@ class UnifiedAiInferenceRepository {
     required String response,
     required DateTime start,
     required bool isRerun,
+    required AiAttributionPendingSession? attributionSession,
+    required String outputId,
     AiResponseEntry? aiResponseEntry,
   }) async {
     final journalRepo = ref.read(journalRepositoryProvider);
@@ -706,6 +810,7 @@ class UnifiedAiInferenceRepository {
         // the enum values are kept for DB backwards-compatibility.
         break;
       case AiResponseType.imageAnalysis:
+        if (attributionSession != null) break;
         if (entity is JournalImage) {
           // Get current image state to avoid overwriting concurrent changes
           final currentImage =
@@ -764,6 +869,19 @@ class UnifiedAiInferenceRepository {
             detectedLanguage: '-',
             transcript: response.trim(),
             processingTime: DateTime.now().difference(start),
+            id: attributionSession == null ? null : outputId,
+            aiAttribution: attributionSession == null
+                ? null
+                : await getIt<AiAttributionService>().prepareCompletion(
+                    attributionId: attributionSession.id,
+                    outputs: [
+                      AiArtifactReference(
+                        type: AiArtifactType.journalAudio,
+                        id: entity.id,
+                        subId: outputId,
+                      ),
+                    ],
+                  ),
           );
 
           final completeResponse = response.trim();
@@ -781,7 +899,13 @@ class UnifiedAiInferenceRepository {
                 markdown: completeResponse,
               ),
             );
-            await journalRepo.updateJournalEntity(updated);
+            final persisted = await journalRepo.updateJournalEntity(updated);
+            if (!persisted) {
+              throw StateError('Failed to persist attributed transcript');
+            }
+            if (transcript.aiAttribution case final envelope?) {
+              await getIt<AiAttributionService>().finalize(envelope);
+            }
             developer.log(
               'Successfully updated audio transcription for audio ${entity.id}',
               name: 'UnifiedAiInferenceRepository',
@@ -796,6 +920,9 @@ class UnifiedAiInferenceRepository {
               name: 'UnifiedAiInferenceRepository',
               error: e,
             );
+            if (attributionSession != null) {
+              rethrow;
+            }
           }
         }
       case AiResponseType.promptGeneration:
@@ -857,54 +984,45 @@ class UnifiedAiInferenceRepository {
     return null;
   }
 
-  /// Persists one [AiConsumptionEvent] for a completed backend call: token
-  /// counts from the response [usage], cost/energy from the Melious [impact]
-  /// (null for other providers), and the owner ids from the call context.
-  Future<void> _recordConsumption({
-    required JournalEntity entity,
-    required AiConfigModel model,
-    required AiConfigInferenceProvider provider,
-    required AiConfigPrompt promptConfig,
-    required Task? task,
-    required CompletionUsage? usage,
-    required int? durationMs,
-    required DateTime start,
-    required MeliousCallImpact? impact,
-  }) async {
-    // Recording is optional diagnostics — never let it break an inference. If
-    // the recorder isn't wired (e.g. in a unit test), quietly skip.
-    if (!getIt.isRegistered<AiConsumptionRecorder>()) return;
-    final event = AiConsumptionEvent(
-      // v4 (opaque random): the record id carries no timestamp/node info;
-      // createdAt already captures the time explicitly.
-      id: const Uuid().v4(),
-      createdAt: start,
-      providerType: provider.inferenceProviderType,
-      responseType: promptConfig.aiResponseType.consumptionResponseType,
-      vectorClock: null,
-      entryId: entity.id,
-      taskId: task?.id,
-      categoryId: entity.meta.categoryId,
-      promptId: promptConfig.id,
-      modelId: model.id,
-      providerModelId: model.providerModelId,
-      durationMs: durationMs,
-      inputTokens: usage?.promptTokens,
-      outputTokens: usage?.completionTokens,
-      cachedInputTokens: usage?.promptTokensDetails?.cachedTokens,
-      thoughtsTokens: usage?.completionTokensDetails?.reasoningTokens,
-      totalTokens: usage?.totalTokens,
-      credits: impact?.costCredits,
-      energyKwh: impact?.energyKwh,
-      carbonGCo2: impact?.carbonGCo2,
-      waterLiters: impact?.waterLiters,
-      renewablePercent: impact?.renewablePercent,
-      pue: impact?.pue,
-      dataCenter: impact?.dataCenter,
-      upstreamProviderId: impact?.providerId,
-    );
-    await getIt<AiConsumptionRecorder>().record(event);
-  }
+  Future<void> _failOutputAttribution(
+    AiAttributionPendingSession session,
+    Object error,
+  ) => getIt<AiInteractionCapture>().completeSession(
+    session: session,
+    outputs: const [],
+    status: AiWorkStatus.failed,
+    errorCode: error.runtimeType.toString(),
+  );
+
+  AiWorkType _workType(AiResponseType type) => switch (type) {
+    AiResponseType.promptGeneration => AiWorkType.codingPrompt,
+    AiResponseType.imageGeneration => AiWorkType.imageGeneration,
+    AiResponseType.imageAnalysis => AiWorkType.imageAnalysis,
+    AiResponseType.audioTranscription => AiWorkType.audioTranscription,
+    _ => AiWorkType.textGeneration,
+  };
+
+  AiInteractionKind _interactionKind(AiResponseType type) => switch (type) {
+    AiResponseType.imageGeneration => AiInteractionKind.imageGeneration,
+    AiResponseType.imageAnalysis => AiInteractionKind.imageAnalysis,
+    AiResponseType.audioTranscription => AiInteractionKind.audioTranscription,
+    _ => AiInteractionKind.textGeneration,
+  };
+
+  AiArtifactReference _outputReference({
+    required AiResponseType responseType,
+    required String entityId,
+    required String outputId,
+  }) => responseType == AiResponseType.audioTranscription
+      ? AiArtifactReference(
+          type: AiArtifactType.journalAudio,
+          id: entityId,
+          subId: outputId,
+        )
+      : AiArtifactReference(
+          type: AiArtifactType.journalAiResponse,
+          id: outputId,
+        );
 }
 
 final Provider<UnifiedAiInferenceRepository>

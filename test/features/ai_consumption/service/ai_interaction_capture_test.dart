@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -253,4 +255,83 @@ void main() {
       );
     },
   );
+
+  test('cancelled stream subscriptions publish cancelled evidence', () async {
+    final providerStream = StreamController<int>();
+    final receivedFirstChunk = Completer<void>();
+    final subscription = capture
+        .captureStream<int>(
+          workType: AiWorkType.textGeneration,
+          interactionKind: AiInteractionKind.chatCompletion,
+          responseType: AiConsumptionResponseType.textGeneration,
+          providerType: InferenceProviderType.openAi,
+          modelId: 'gpt-5',
+          requestText: 'request',
+          invoke: () => providerStream.stream,
+          responseText: (chunk) => '$chunk',
+        )
+        .listen((_) => receivedFirstChunk.complete());
+
+    providerStream.add(1);
+    await receivedFirstChunk.future;
+    await subscription.cancel();
+    await providerStream.close();
+
+    final event =
+        verify(
+              () => service.recordInteraction(
+                attributionId: pending.id,
+                event: captureAny(named: 'event'),
+              ),
+            ).captured.single
+            as AiConsumptionEvent;
+    expect(event.interactionStatus, AiInteractionStatus.cancelled);
+    expect(event.errorCode, 'cancelled');
+    verify(
+      () => service.prepareCompletion(
+        attributionId: pending.id,
+        outputs: const [],
+        status: AiWorkStatus.cancelled,
+        errorCode: 'cancelled',
+      ),
+    ).called(1);
+  });
+
+  test('automatic work is owned by an automation actor', () async {
+    const automation = AiActorSnapshot(
+      type: AiActorType.automation,
+      id: 'automation:sync',
+      displayName: 'Synced inference',
+      humanPrincipalId: 'user-1',
+    );
+    when(
+      () => identity.automationInitiator(
+        id: 'automation:sync',
+        displayName: 'Synced inference',
+      ),
+    ).thenAnswer((_) async => automation);
+
+    await capture.captureUnary<int>(
+      workType: AiWorkType.internalInference,
+      interactionKind: AiInteractionKind.textGeneration,
+      responseType: AiConsumptionResponseType.textGeneration,
+      providerType: InferenceProviderType.openAi,
+      modelId: 'gpt-5',
+      requestText: 'request',
+      invoke: () async => 1,
+      responseText: (value) => '$value',
+      triggerType: AiTriggerType.synced,
+      automationId: automation.id,
+      automationDisplayName: automation.displayName,
+    );
+
+    final start =
+        verify(
+              () => service.begin(captureAny()),
+            ).captured.single
+            as AiAttributionStart;
+    expect(start.initiator, automation);
+    expect(start.trigger.type, AiTriggerType.synced);
+    verifyNever(identity.humanInitiator);
+  });
 }

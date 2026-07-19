@@ -1222,6 +1222,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAttributionPrivacyStandard => 'Standardní';
 
   @override
+  String get aiAttributionPrivacyUnknown => 'Neznámé';
+
+  @override
   String get aiAttributionRequestEvidence => 'Doklad požadavku';
 
   @override

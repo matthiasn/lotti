@@ -533,6 +533,7 @@
   "aiAttributionPrivacyMixed": "Gemischt",
   "aiAttributionPrivacyPrivate": "Privat",
   "aiAttributionPrivacyStandard": "Standard",
+  "aiAttributionPrivacyUnknown": "Unbekannt",
   "aiAttributionRequestEvidence": "Anfrage-Nachweis",
   "aiAttributionResponseEvidence": "Antwort-Nachweis",
   "aiAttributionSecondary": "{model} · {time} · {callCount, plural, =0{keine Aufrufe} =1{1 Aufruf} other{{callCount} Aufrufe}}",

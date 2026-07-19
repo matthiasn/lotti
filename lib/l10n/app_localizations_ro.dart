@@ -1229,6 +1229,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiAttributionPrivacyStandard => 'Standard';
 
   @override
+  String get aiAttributionPrivacyUnknown => 'Necunoscută';
+
+  @override
   String get aiAttributionRequestEvidence => 'Dovada solicitării';
 
   @override

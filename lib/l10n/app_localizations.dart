@@ -2225,6 +2225,12 @@ abstract class AppLocalizations {
   /// **'Standard'**
   String get aiAttributionPrivacyStandard;
 
+  /// No description provided for @aiAttributionPrivacyUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get aiAttributionPrivacyUnknown;
+
   /// No description provided for @aiAttributionRequestEvidence.
   ///
   /// In en, this message translates to:

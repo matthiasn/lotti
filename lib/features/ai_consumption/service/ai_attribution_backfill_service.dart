@@ -44,15 +44,14 @@ class AiAttributionBackfillService {
       if (entity is JournalAudio) {
         final transcripts =
             entity.data.transcripts ?? const <AudioTranscript>[];
-        for (var index = 0; index < transcripts.length; index++) {
-          final transcript = transcripts[index];
+        for (final transcript in transcripts) {
           final carrier = transcript.aiAttribution;
           if (carrier != null) {
             await _repository.projectTerminalEnvelope(carrier);
             projectedCarriers++;
           } else {
             await _repository.upsertAttribution(
-              _legacyAudioTranscriptAttribution(entity, transcript, index),
+              _legacyAudioTranscriptAttribution(entity, transcript),
             );
             createdLegacyAttributions++;
           }
@@ -117,9 +116,7 @@ class AiAttributionBackfillService {
           type: AiArtifactType.journalAiResponse,
           id: entity.id,
         ),
-        privacyClassification: entity.meta.private == true
-            ? AiPrivacyClassification.private
-            : AiPrivacyClassification.standard,
+        privacyClassification: _legacyPrivacy(entity.meta.private),
         categoryId: entity.meta.categoryId,
       );
     }
@@ -128,11 +125,15 @@ class AiAttributionBackfillService {
   AiWorkAttribution _legacyAudioTranscriptAttribution(
     JournalAudio entity,
     AudioTranscript transcript,
-    int index,
   ) {
     final transcriptSourceId =
         transcript.id ??
-        '${transcript.created.toUtc().toIso8601String()}|$index';
+        _id(
+          'legacy-transcript',
+          '${entity.id}|${transcript.created.toUtc().toIso8601String()}|'
+              '${transcript.library}|${transcript.model}|'
+              '${transcript.detectedLanguage}|${transcript.transcript}',
+        );
     return _legacyAttribution(
       id: _id(
         'journal-audio-transcript',
@@ -143,11 +144,9 @@ class AiAttributionBackfillService {
       output: AiArtifactReference(
         type: AiArtifactType.journalAudio,
         id: entity.id,
-        subId: transcript.id,
+        subId: transcriptSourceId,
       ),
-      privacyClassification: entity.meta.private == true
-          ? AiPrivacyClassification.private
-          : AiPrivacyClassification.standard,
+      privacyClassification: _legacyPrivacy(entity.meta.private),
       categoryId: entity.meta.categoryId,
     );
   }
@@ -162,6 +161,13 @@ class AiAttributionBackfillService {
           id: report.id,
         ),
       );
+
+  AiPrivacyClassification _legacyPrivacy(bool? isPrivate) =>
+      switch (isPrivate) {
+        true => AiPrivacyClassification.private,
+        false => AiPrivacyClassification.standard,
+        null => AiPrivacyClassification.unknown,
+      };
 
   AiWorkAttribution _legacyEventAttribution(AiConsumptionEvent event) {
     return _legacyAttribution(
@@ -182,7 +188,7 @@ class AiAttributionBackfillService {
     required DateTime createdAt,
     required AiArtifactReference? output,
     AiPrivacyClassification privacyClassification =
-        AiPrivacyClassification.standard,
+        AiPrivacyClassification.unknown,
     String? taskId,
     String? categoryId,
   }) {
@@ -235,7 +241,7 @@ class AiAttributionBackfillService {
         requestDigest: 'legacy-unavailable',
         responseDigest: 'legacy-unavailable',
         capturePolicy: AiPayloadCapturePolicy.metadataOnly,
-        privacyClassification: AiPrivacyClassification.standard,
+        privacyClassification: AiPrivacyClassification.unknown,
         createdAt: event.createdAt.toUtc(),
       );
 

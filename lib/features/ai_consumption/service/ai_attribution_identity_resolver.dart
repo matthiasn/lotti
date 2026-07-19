@@ -50,6 +50,35 @@ class AiAttributionIdentityResolver {
     );
   }
 
+  /// Resolves a stable automation actor while retaining the accountable human
+  /// principal for installations that have one.
+  Future<AiActorSnapshot> automationInitiator({
+    required String id,
+    required String displayName,
+  }) async {
+    final human = await humanInitiator();
+    return AiActorSnapshot(
+      type: AiActorType.automation,
+      id: id,
+      displayName: displayName,
+      humanPrincipalId: human.humanPrincipalId,
+    );
+  }
+
+  /// Resolves an agent actor with the human principal that owns the run.
+  Future<AiActorSnapshot> agentInitiator({
+    required String id,
+    required String displayName,
+  }) async {
+    final human = await humanInitiator();
+    return AiActorSnapshot(
+      type: AiActorType.agent,
+      id: id,
+      displayName: displayName,
+      humanPrincipalId: human.humanPrincipalId,
+    );
+  }
+
   Future<String> _loadOrCreateLocalPrincipalId() async {
     final stored = (await _settingsDb.itemByKey(
       _localAiPrincipalIdSettingsKey,

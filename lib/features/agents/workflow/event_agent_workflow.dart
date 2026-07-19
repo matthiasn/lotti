@@ -22,7 +22,9 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -191,6 +193,33 @@ class EventAgentWorkflow {
       systemMessage: systemPrompt,
       maxTurns: agentIdentity.config.maxTurnsPerWake,
     );
+    final recordConsumption =
+        getIt.isRegistered<AiInteractionCapture>() &&
+        getIt.isRegistered<AiAttributionService>();
+
+    Future<void> finalizeCarrierlessAttribution({
+      required AiWorkStatus status,
+      required String errorCode,
+      String? errorSummary,
+    }) async {
+      if (!recordConsumption) return;
+      try {
+        final envelope = await getIt<AiAttributionService>().prepareCompletion(
+          attributionId: agentWakeAttributionId(runKey),
+          outputs: const [],
+          status: status,
+          errorCode: errorCode,
+          errorSummary: errorSummary,
+        );
+        await getIt<AiAttributionService>().finalize(envelope);
+      } catch (error, stackTrace) {
+        _logError(
+          'failed to terminalize carrier-less attribution',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
 
     try {
       final userPayloadId = _uuid.v4();
@@ -250,7 +279,6 @@ class EventAgentWorkflow {
       }
 
       // 6. Run the conversation.
-      final recordConsumption = getIt.isRegistered<AiConsumptionRecorder>();
       var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
@@ -267,6 +295,7 @@ class EventAgentWorkflow {
             : null,
         consumptionWakeRunKey: recordConsumption ? runKey : null,
         consumptionThreadId: recordConsumption ? threadId : null,
+        rethrowInferenceErrors: true,
       );
 
       // 6b. Forced-report retry: if the model stopped without publishing a
@@ -329,6 +358,20 @@ class EventAgentWorkflow {
       final hasReport = reportContent.isNotEmpty;
       final extractedObservations = strategy.extractObservations();
       final deferredItems = strategy.extractDeferredItems();
+      final reportId = hasReport ? _uuid.v4() : null;
+      AiTerminalAttributionEnvelope? attributionEnvelope;
+      if (reportId != null && getIt.isRegistered<AiAttributionService>()) {
+        attributionEnvelope = await getIt<AiAttributionService>()
+            .prepareCompletion(
+              attributionId: agentWakeAttributionId(runKey),
+              outputs: [
+                AiArtifactReference(
+                  type: AiArtifactType.agentReport,
+                  id: reportId,
+                ),
+              ],
+            );
+      }
 
       await syncService.runInTransaction(() async {
         final latestState =
@@ -363,10 +406,9 @@ class EventAgentWorkflow {
 
         // Persist recap report.
         if (reportContent.isNotEmpty) {
-          final reportId = _uuid.v4();
           await syncService.upsertEntity(
             AgentDomainEntity.agentReport(
-              id: reportId,
+              id: reportId!,
               agentId: agentId,
               scope: AgentReportScopes.current,
               createdAt: now,
@@ -374,6 +416,10 @@ class EventAgentWorkflow {
               content: reportContent,
               tldr: reportTldr,
               oneLiner: reportOneLiner,
+              provenance: <String, Object?>{
+                if (attributionEnvelope != null)
+                  aiAttributionProvenanceKey: attributionEnvelope.toJson(),
+              },
               threadId: threadId,
             ),
           );
@@ -477,6 +523,22 @@ class EventAgentWorkflow {
           );
         }
       });
+      if (attributionEnvelope != null) {
+        try {
+          await getIt<AiAttributionService>().finalize(attributionEnvelope);
+        } catch (error, stackTrace) {
+          _logError(
+            'report attribution projection remains pending for recovery',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+      } else if (recordConsumption) {
+        await finalizeCarrierlessAttribution(
+          status: AiWorkStatus.failed,
+          errorCode: 'output_carrier_unavailable',
+        );
+      }
       onPersistedStateChanged?.call(agentId);
 
       _log(
@@ -492,6 +554,12 @@ class EventAgentWorkflow {
             );
     } catch (e, s) {
       _logError('wake failed', error: e, stackTrace: s);
+
+      await finalizeCarrierlessAttribution(
+        status: AiWorkStatus.failed,
+        errorCode: e.runtimeType.toString(),
+        errorSummary: e.toString(),
+      );
 
       try {
         // Re-read state in a transaction before bumping the failure count, so a
@@ -612,6 +680,7 @@ class EventAgentWorkflow {
         consumptionCategoryId: consumptionCategoryId,
         consumptionWakeRunKey: consumptionWakeRunKey,
         consumptionThreadId: consumptionThreadId,
+        rethrowInferenceErrors: true,
       );
     } catch (e, s) {
       _logError(

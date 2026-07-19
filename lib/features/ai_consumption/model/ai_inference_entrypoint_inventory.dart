@@ -11,14 +11,6 @@ enum AiAttributionCoverage {
   /// available yet.
   durablePartialCapture,
 
-  /// The legacy funnel records a partial attribution after the call without
-  /// claiming an output carrier that it cannot prove.
-  compatibilityPartial,
-
-  /// The call is an internal, non-user-visible operation with consumption
-  /// evidence but no output carrier.
-  internalConsumption,
-
   /// Development-only verification/evaluation and therefore not product data.
   developmentOnly,
 }
@@ -72,7 +64,7 @@ const aiInferenceEntrypoints = <AiInferenceEntrypoint>[
     outputCarrier: null,
   ),
   AiInferenceEntrypoint(
-    id: 'legacy-unified-inference',
+    id: 'unified-inference',
     owner: 'lib/features/ai/repository/unified_ai_inference_repository.dart',
     workTypes: {
       AiWorkType.codingPrompt,
@@ -80,22 +72,22 @@ const aiInferenceEntrypoints = <AiInferenceEntrypoint>[
       AiWorkType.imageAnalysis,
       AiWorkType.audioTranscription,
     },
-    coverage: AiAttributionCoverage.compatibilityPartial,
-    outputCarrier: null,
+    coverage: AiAttributionCoverage.strictPublicationSaga,
+    outputCarrier: 'AiResponseData, ImageData, or AudioTranscript',
   ),
   AiInferenceEntrypoint(
     id: 'conversation-repository',
     owner: 'lib/features/ai/conversation/conversation_repository.dart',
     workTypes: {AiWorkType.internalInference},
-    coverage: AiAttributionCoverage.compatibilityPartial,
+    coverage: AiAttributionCoverage.durablePartialCapture,
     outputCarrier: null,
   ),
   AiInferenceEntrypoint(
     id: 'embedding-indexing',
     owner: 'lib/features/ai/service/embedding_processor.dart',
     workTypes: {AiWorkType.embeddingIndexing},
-    coverage: AiAttributionCoverage.internalConsumption,
-    outputCarrier: null,
+    coverage: AiAttributionCoverage.strictPublicationSaga,
+    outputCarrier: 'EmbeddingStore vector set keyed by entity/content hash',
   ),
   AiInferenceEntrypoint(
     id: 'onboarding-task-structuring',

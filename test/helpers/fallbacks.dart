@@ -356,6 +356,7 @@ void registerAllFallbackValues() {
   // Enum fallbacks
   registerFallbackValue(ChangeSource.user);
   registerFallbackValue(AiConfigType.inferenceProvider);
+  registerFallbackValue(AiWorkStatus.succeeded);
   registerFallbackValue(AgentMilestone.wakeCompleted);
   registerFallbackValue(AgentMessageKind.system);
 

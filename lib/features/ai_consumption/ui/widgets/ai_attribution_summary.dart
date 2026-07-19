@@ -351,8 +351,10 @@ class _AttributionDetailsBody extends StatelessWidget {
                 interaction: interaction,
                 cost: _effectiveCost(details, interaction.id),
               ),
-          if (attribution.privacyClassification !=
-              AiPrivacyClassification.standard) ...[
+          if (attribution.privacyClassification ==
+                  AiPrivacyClassification.private ||
+              attribution.privacyClassification ==
+                  AiPrivacyClassification.mixed) ...[
             SizedBox(height: tokens.spacing.step3),
             Text(
               context.messages.aiAttributionSensitiveContentNotice,
@@ -670,4 +672,6 @@ String _privacyLabel(
   AiPrivacyClassification.private =>
     context.messages.aiAttributionPrivacyPrivate,
   AiPrivacyClassification.mixed => context.messages.aiAttributionPrivacyMixed,
+  AiPrivacyClassification.unknown =>
+    context.messages.aiAttributionPrivacyUnknown,
 };

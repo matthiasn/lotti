@@ -533,6 +533,7 @@
   "aiAttributionPrivacyMixed": "Mixte",
   "aiAttributionPrivacyPrivate": "Privé",
   "aiAttributionPrivacyStandard": "Standard",
+  "aiAttributionPrivacyUnknown": "Inconnue",
   "aiAttributionRequestEvidence": "Preuve de la requête",
   "aiAttributionResponseEvidence": "Preuve de la réponse",
   "aiAttributionSecondary": "{model} · {time} · {callCount, plural, =0{aucun appel} =1{1 appel} other{{callCount} appels}}",

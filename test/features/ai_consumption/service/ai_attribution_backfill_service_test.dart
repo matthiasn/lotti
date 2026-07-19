@@ -63,9 +63,54 @@ void main() {
       expect(attribution?.workType, AiWorkType.codingPrompt);
       expect(attribution?.status, AiWorkStatus.partial);
       expect(attribution?.initiator.id, 'legacy:unknown');
+      expect(
+        attribution?.privacyClassification,
+        AiPrivacyClassification.unknown,
+      );
       expect(attribution?.errorCode, 'legacy_evidence_incomplete');
     },
   );
+
+  test('only explicit legacy non-private metadata maps to standard', () async {
+    JournalEntity response(String id, {required bool? isPrivate}) =>
+        JournalEntity.aiResponse(
+          meta: Metadata(
+            id: id,
+            createdAt: createdAt,
+            updatedAt: createdAt,
+            dateFrom: createdAt,
+            dateTo: createdAt,
+            private: isPrivate,
+          ),
+          data: const AiResponseData(
+            model: 'model',
+            systemMessage: 'system',
+            prompt: 'prompt',
+            thoughts: '',
+            response: 'response',
+          ),
+        );
+
+    await service.backfill(
+      journalEntities: [
+        response('unknown-privacy', isPrivate: null),
+        response('standard-privacy', isPrivate: false),
+        response('private-privacy', isPrivate: true),
+      ],
+    );
+
+    Future<AiPrivacyClassification?> privacy(String id) async =>
+        (await repository.getAttributionForArtifact(
+          AiArtifactReference(
+            type: AiArtifactType.journalAiResponse,
+            id: id,
+          ),
+        ))?.privacyClassification;
+
+    expect(await privacy('unknown-privacy'), AiPrivacyClassification.unknown);
+    expect(await privacy('standard-privacy'), AiPrivacyClassification.standard);
+    expect(await privacy('private-privacy'), AiPrivacyClassification.private);
+  });
 
   test('migrates legacy interaction metadata and reported credits', () async {
     final event = makeConsumptionEvent(

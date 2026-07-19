@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
@@ -1998,14 +1999,35 @@ void main() {
           ),
         ).thenAnswer((_) async => attributionSession);
         when(
-          () => attributionCoordinator.complete(
+          () => attributionCoordinator.recordInteraction(
             session: attributionSession,
             audioEntryId: 'test-entry-id',
             transcript: 'realtime transcript text',
           ),
+        ).thenAnswer((_) async {});
+        when(
+          () => attributionCoordinator.prepareOutput(
+            session: attributionSession,
+            audioEntryId: 'test-entry-id',
+          ),
         ).thenAnswer((_) async => prepared);
         when(
           () => attributionCoordinator.finalize(prepared),
+        ).thenThrow(StateError('projection unavailable'));
+        const publicationFailure = AiAttributionPublicationException(
+          'publication uncertain',
+        );
+        when(
+          () => attributionCoordinator.failOutput(
+            session: attributionSession,
+            errorCode: any(named: 'errorCode'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => attributionCoordinator.fail(
+            session: attributionSession,
+            error: publicationFailure,
+          ),
         ).thenAnswer((_) async {});
         getIt.registerSingleton<TranscriptAttributionCoordinator>(
           attributionCoordinator,
@@ -2094,6 +2116,12 @@ void main() {
         expect(transcript.id, 'realtime-transcript-id');
         expect(transcript.aiAttribution, envelope);
         verify(() => attributionCoordinator.finalize(prepared)).called(1);
+        verifyNever(
+          () => attributionCoordinator.failOutput(
+            session: attributionSession,
+            errorCode: any(named: 'errorCode'),
+          ),
+        );
 
         // Verify automatic prompts were triggered with realtimeTranscriptProvided: true
         verify(
@@ -2120,12 +2148,49 @@ void main() {
         ).called(1);
 
         clearInteractions(attributionCoordinator);
+        when(
+          () => attributionCoordinator.recordInteraction(
+            session: attributionSession,
+            audioEntryId: 'test-entry-id',
+            transcript: 'realtime transcript text',
+          ),
+        ).thenThrow(publicationFailure);
+        await controller.recordRealtime(linkedId: 'task-id');
+        final uncertainEntryId = await controller.stopRealtime();
+        expect(uncertainEntryId, isNull);
+        verifyNever(
+          () => attributionCoordinator.fail(
+            session: attributionSession,
+            error: publicationFailure,
+          ),
+        );
+        verifyNever(
+          () => attributionCoordinator.failOutput(
+            session: attributionSession,
+            errorCode: any(named: 'errorCode'),
+          ),
+        );
+
+        clearInteractions(attributionCoordinator);
+        when(
+          () => attributionCoordinator.recordInteraction(
+            session: attributionSession,
+            audioEntryId: 'test-entry-id',
+            transcript: 'realtime transcript text',
+          ),
+        ).thenAnswer((_) async {});
         when(() => mockPersistence.updateDbEntity(any())).thenAnswer((_) async {
           return false;
         });
         await controller.recordRealtime(linkedId: 'task-id');
         await controller.stopRealtime();
         verifyNever(() => attributionCoordinator.finalize(prepared));
+        verify(
+          () => attributionCoordinator.failOutput(
+            session: attributionSession,
+            errorCode: 'transcript_persistence_failed',
+          ),
+        ).called(1);
       });
     });
 

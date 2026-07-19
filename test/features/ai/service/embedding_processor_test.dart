@@ -12,16 +12,15 @@ import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
-import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 
 enum _GeneratedEmbeddingEntityShape {
   missing,
@@ -412,7 +411,7 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockEmbeddingStore mockEmbeddingStore;
   late MockOllamaEmbeddingRepository mockEmbeddingRepo;
-  late MockAiConsumptionRecorder mockConsumptionRecorder;
+  late AiInteractionCaptureTestBench attribution;
 
   setUpAll(() {
     registerAllFallbackValues();
@@ -420,13 +419,9 @@ void main() {
   });
 
   setUp(() async {
-    mockConsumptionRecorder = MockAiConsumptionRecorder();
+    attribution = AiInteractionCaptureTestBench.create();
     await setUpTestGetIt(
-      additionalSetup: () {
-        getIt.registerSingleton<AiConsumptionRecorder>(
-          mockConsumptionRecorder,
-        );
-      },
+      additionalSetup: attribution.register,
     );
     mockJournalDb = MockJournalDb();
     mockEmbeddingStore = MockEmbeddingStore();
@@ -436,9 +431,6 @@ void main() {
     _stubNoCategoryId(mockEmbeddingStore);
     _stubReplaceEntityEmbeddings(mockEmbeddingStore);
     _stubEmbed(mockEmbeddingRepo);
-    when(
-      () => mockConsumptionRecorder.record(any()),
-    ).thenAnswer((_) async {});
   });
 
   tearDown(tearDownTestGetIt);
@@ -500,7 +492,10 @@ void main() {
 
       final captured =
           verify(
-                () => mockConsumptionRecorder.record(captureAny()),
+                () => attribution.service.recordInteraction(
+                  attributionId: any(named: 'attributionId'),
+                  event: captureAny(named: 'event'),
+                ),
               ).captured.single
               as AiConsumptionEvent;
       expect(
@@ -517,6 +512,14 @@ void main() {
       expect(captured.payload?.requestDigest, isNot(contains(_longText)));
       expect(captured.cost?.source, AiCostSource.localCompute);
       expect(captured.cost?.reportingAmountMicros, 0);
+      verify(() => attribution.service.begin(any())).called(1);
+      verify(
+        () => attribution.service.prepareCompletion(
+          attributionId: any(named: 'attributionId'),
+          outputs: any(named: 'outputs'),
+        ),
+      ).called(1);
+      verify(() => attribution.service.finalize(any())).called(1);
     });
 
     test('returns false when entity not found', () async {

@@ -24,6 +24,30 @@ import 'package:openai_dart/openai_dart.dart';
 const _kDefaultAudioModel = 'gemini-2.5-flash';
 const _kTranscriptionPrompt = 'Transcribe the audio to natural text.';
 
+/// Whether a failed attributed transcription definitely published its single
+/// provider interaction or has an uncertain publication outcome.
+enum TranscriptionEvidenceState { recorded, uncertain }
+
+/// Failure from an attributed provider call with explicit evidence state.
+class AttributedTranscriptionException implements Exception {
+  const AttributedTranscriptionException({
+    required this.cause,
+    required this.evidenceState,
+  });
+
+  final Object cause;
+  final TranscriptionEvidenceState evidenceState;
+
+  @override
+  String toString() => cause.toString();
+}
+
+class _ProviderTranscriptionFailure implements Exception {
+  const _ProviderTranscriptionFailure(this.cause);
+
+  final Object cause;
+}
+
 /// Service that transcribes a local audio file to text using the
 /// configured cloud inference provider and selected audio-capable model.
 class AudioTranscriptionService {
@@ -111,32 +135,65 @@ class AudioTranscriptionService {
         );
 
     if (provider.inferenceProviderType == InferenceProviderType.mlxAudio) {
-      Future<MlxAudioTranscriptionResult> invoke() => ref
-          .read(mlxAudioChannelProvider)
-          .transcribeFile(
-            filePath: filePath,
-            modelId: model.providerModelId,
-            speechDictionaryTerms: speechDictionaryTerms,
-          );
-      final result = getIt.isRegistered<AiInteractionCapture>()
-          ? await getIt<AiInteractionCapture>().captureUnary(
-              workType: AiWorkType.audioTranscription,
-              interactionKind: AiInteractionKind.audioTranscription,
-              responseType: AiConsumptionResponseType.audioTranscription,
-              providerType: provider.inferenceProviderType,
+      Future<MlxAudioTranscriptionResult> invoke() async {
+        final result = await ref
+            .read(mlxAudioChannelProvider)
+            .transcribeFile(
+              filePath: filePath,
               modelId: model.providerModelId,
-              requestText: _kTranscriptionPrompt,
-              invoke: invoke,
-              responseText: (value) => value.text,
-              existingSession: attributionSession,
-              terminalizeSuccess: attributionSession == null,
-              terminalizeFailure: terminalizeAttributionFailure,
-              privacyClassification: AiPrivacyClassification.mixed,
-            )
-          : await invoke();
-      if (result.text.isNotEmpty) {
-        yield result.text;
+              speechDictionaryTerms: speechDictionaryTerms,
+            );
+        if (result.text.trim().isEmpty) {
+          throw TranscriptionException(
+            '${provider.name} returned no transcript for '
+            '${model.providerModelId}. The request completed without any text.',
+            provider: provider.name,
+          );
+        }
+        return result;
       }
+
+      final capture = getIt.isRegistered<AiInteractionCapture>()
+          ? getIt<AiInteractionCapture>()
+          : null;
+      late MlxAudioTranscriptionResult result;
+      if (capture == null) {
+        result = await invoke();
+      } else {
+        try {
+          result = await capture.captureUnary(
+            workType: AiWorkType.audioTranscription,
+            interactionKind: AiInteractionKind.audioTranscription,
+            responseType: AiConsumptionResponseType.audioTranscription,
+            providerType: provider.inferenceProviderType,
+            modelId: model.providerModelId,
+            requestText: _kTranscriptionPrompt,
+            invoke: () async {
+              try {
+                return await invoke();
+              } catch (error) {
+                throw _ProviderTranscriptionFailure(error);
+              }
+            },
+            responseText: (value) => value.text,
+            existingSession: attributionSession,
+            terminalizeSuccess: attributionSession == null,
+            terminalizeFailure: terminalizeAttributionFailure,
+            privacyClassification: AiPrivacyClassification.mixed,
+          );
+        } on _ProviderTranscriptionFailure catch (failure) {
+          throw AttributedTranscriptionException(
+            cause: failure.cause,
+            evidenceState: TranscriptionEvidenceState.recorded,
+          );
+        } catch (error) {
+          throw AttributedTranscriptionException(
+            cause: error,
+            evidenceState: TranscriptionEvidenceState.uncertain,
+          );
+        }
+      }
+      yield result.text;
       return;
     }
 
@@ -147,8 +204,10 @@ class AudioTranscriptionService {
     final useGeminiThinkingMode =
         provider.inferenceProviderType == InferenceProviderType.gemini &&
         GeminiThinkingConfig.isGemini3(model.providerModelId);
-    Stream<CreateChatCompletionStreamResponse> invoke() =>
-        cloud.generateWithAudio(
+    Stream<CreateChatCompletionStreamResponse> invoke() async* {
+      var receivedTranscript = false;
+      try {
+        await for (final chunk in cloud.generateWithAudio(
           _kTranscriptionPrompt,
           model: model.providerModelId,
           audioBase64: audioBase64,
@@ -160,9 +219,31 @@ class AudioTranscriptionService {
           geminiThinkingMode: useGeminiThinkingMode
               ? model.geminiThinkingMode
               : null,
-        );
-    final stream = getIt.isRegistered<AiInteractionCapture>()
-        ? getIt<AiInteractionCapture>().captureStream(
+        )) {
+          final content = chunk.choices?.firstOrNull?.delta?.content ?? '';
+          if (content.trim().isNotEmpty) {
+            receivedTranscript = true;
+          }
+          yield chunk;
+        }
+        if (!receivedTranscript) {
+          throw TranscriptionException(
+            '${provider.name} returned no transcript for '
+            '${model.providerModelId}. The request completed without any text.',
+            provider: provider.name,
+          );
+        }
+      } catch (error) {
+        throw _ProviderTranscriptionFailure(error);
+      }
+    }
+
+    final capture = getIt.isRegistered<AiInteractionCapture>()
+        ? getIt<AiInteractionCapture>()
+        : null;
+    final stream = capture == null
+        ? invoke()
+        : capture.captureStream(
             workType: AiWorkType.audioTranscription,
             interactionKind: AiInteractionKind.audioTranscription,
             responseType: AiConsumptionResponseType.audioTranscription,
@@ -187,25 +268,30 @@ class AudioTranscriptionService {
             terminalizeSuccess: attributionSession == null,
             terminalizeFailure: terminalizeAttributionFailure,
             privacyClassification: AiPrivacyClassification.mixed,
-          )
-        : invoke();
+          );
 
-    var receivedTranscript = false;
-    await for (final chunk in stream) {
-      final content = chunk.choices?.firstOrNull?.delta?.content ?? '';
-      if (content.isNotEmpty) {
-        if (content.trim().isNotEmpty) {
-          receivedTranscript = true;
+    try {
+      await for (final chunk in stream) {
+        final content = chunk.choices?.firstOrNull?.delta?.content ?? '';
+        if (content.isNotEmpty) {
+          yield content;
         }
-        yield content;
       }
-    }
-
-    if (!receivedTranscript) {
-      throw TranscriptionException(
-        '${provider.name} returned no transcript for '
-        '${model.providerModelId}. The request completed without any text.',
-        provider: provider.name,
+    } on _ProviderTranscriptionFailure catch (failure) {
+      if (capture == null) {
+        final cause = failure.cause;
+        if (cause is StateError) throw cause;
+        if (cause is Exception) throw cause;
+        throw Exception(cause.toString());
+      }
+      throw AttributedTranscriptionException(
+        cause: failure.cause,
+        evidenceState: TranscriptionEvidenceState.recorded,
+      );
+    } catch (error) {
+      throw AttributedTranscriptionException(
+        cause: error,
+        evidenceState: TranscriptionEvidenceState.uncertain,
       );
     }
   }

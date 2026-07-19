@@ -14,12 +14,15 @@ import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/system_message_service.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 
 /// Shared stub for `CloudInferenceRepository.generate`; chain
 /// `.thenAnswer(...)` with the response stream the test needs.
@@ -37,12 +40,14 @@ When<Stream<CreateChatCompletionStreamResponse>> _stubGenerate(
       provider: any<AiConfigInferenceProvider?>(named: 'provider'),
       tools: any<List<ChatCompletionTool>?>(named: 'tools'),
       geminiThinkingMode: any(named: 'geminiThinkingMode'),
+      impactCollector: any(named: 'impactCollector'),
     ),
   );
 }
 
 void main() {
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(AiConfigType.inferenceProvider);
     registerFallbackValue(Exception('test'));
     registerFallbackValue(
@@ -928,6 +933,8 @@ void main() {
       });
 
       test('streams final response chunks after tool calls', () async {
+        final attribution = AiInteractionCaptureTestBench.create()..register();
+        addTearDown(tearDownTestGetIt);
         // Setup AI configuration
         setupAiConfigMocks();
 
@@ -1028,6 +1035,23 @@ void main() {
             .toList();
 
         expect(results, ['First ', 'second ', 'third.']);
+        verify(() => attribution.service.begin(any())).called(1);
+        verify(
+          () => attribution.service.recordInteraction(
+            attributionId: any(named: 'attributionId'),
+            event: any(named: 'event'),
+          ),
+        ).called(2);
+        final statuses = verify(
+          () => attribution.service.prepareCompletion(
+            attributionId: any(named: 'attributionId'),
+            outputs: any(named: 'outputs'),
+            status: captureAny(named: 'status'),
+            errorCode: any(named: 'errorCode'),
+          ),
+        ).captured;
+        expect(statuses, [AiWorkStatus.partial]);
+        verify(() => attribution.service.finalize(any())).called(1);
       });
 
       test('handles conversation history correctly', () async {

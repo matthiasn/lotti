@@ -67,6 +67,8 @@ class ChatMessageProcessor {
     required String systemMessage,
     String? categoryId,
     List<ChatCompletionTool>? tools,
+    AiAttributionPendingSession? attributionSession,
+    bool terminalizeAttribution = true,
   }) {
     final captureRegistered = getIt.isRegistered<AiInteractionCapture>();
     final impactCollector = InferenceImpactCollector();
@@ -116,6 +118,9 @@ class ChatMessageProcessor {
         );
       },
       impact: () => impactCollector.impact,
+      existingSession: attributionSession,
+      terminalizeSuccess: terminalizeAttribution,
+      terminalizeFailure: terminalizeAttribution,
       privacyClassification: AiPrivacyClassification.mixed,
       categoryId: categoryId,
     );
@@ -483,6 +488,8 @@ class ChatMessageProcessor {
     required List<ChatCompletionMessage> messages,
     required AiInferenceConfig config,
     required String systemMessage,
+    AiAttributionPendingSession? attributionSession,
+    String? categoryId,
   }) async {
     final finalPrompt = buildFinalPromptFromMessages(messages);
 
@@ -490,6 +497,9 @@ class ChatMessageProcessor {
       prompt: finalPrompt,
       config: config,
       systemMessage: systemMessage,
+      categoryId: categoryId,
+      attributionSession: attributionSession,
+      terminalizeAttribution: attributionSession == null,
     );
 
     final finalResult = await processStreamResponse(finalStream);
@@ -502,6 +512,8 @@ class ChatMessageProcessor {
     required List<ChatCompletionMessage> messages,
     required AiInferenceConfig config,
     required String systemMessage,
+    AiAttributionPendingSession? attributionSession,
+    String? categoryId,
   }) async* {
     final finalPrompt = buildFinalPromptFromMessages(messages);
 
@@ -509,6 +521,9 @@ class ChatMessageProcessor {
       prompt: finalPrompt,
       config: config,
       systemMessage: systemMessage,
+      categoryId: categoryId,
+      attributionSession: attributionSession,
+      terminalizeAttribution: attributionSession == null,
     );
 
     await for (final chunk in finalStream) {

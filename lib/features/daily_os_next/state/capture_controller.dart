@@ -12,7 +12,7 @@ import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
-import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/daily_os_next/state/capture_dbfs.dart';
 import 'package:lotti/features/daily_os_next/state/capture_state.dart';
@@ -442,6 +442,30 @@ class CaptureController extends Notifier<CaptureState> {
     }
 
     final realtimeTranscript = result.transcript.trim();
+    final attributionSession = _transcriptAttribution;
+    final attributionCoordinator =
+        getIt.isRegistered<TranscriptAttributionCoordinator>()
+        ? getIt<TranscriptAttributionCoordinator>()
+        : null;
+    if (attributionSession != null && attributionCoordinator != null) {
+      try {
+        await attributionCoordinator.recordInteraction(
+          session: attributionSession,
+          audioEntryId: journalAudio?.id,
+          transcript: realtimeTranscript,
+          usage: result.usage,
+          interactionStatus: result.usedTranscriptFallback
+              ? AiInteractionStatus.partial
+              : AiInteractionStatus.succeeded,
+          errorCode: result.usedTranscriptFallback
+              ? 'realtime_completion_fallback'
+              : null,
+        );
+      } catch (error) {
+        await _failTranscriptAttribution(error);
+        rethrow;
+      }
+    }
     final finalTranscript = await _resolveRealtimeFinalTranscript(
       result: result,
       realtimeTranscript: realtimeTranscript,
@@ -460,8 +484,15 @@ class CaptureController extends Notifier<CaptureState> {
                   InferenceProviderType.genericOpenAi
             : InferenceProviderType.genericOpenAi,
         interactionKind: AiInteractionKind.realtimeTranscription,
-        attributionSession: _transcriptAttribution,
-        usage: result.usage,
+        attributionSession: attributionSession,
+        interactionAlreadyRecorded: attributionSession != null,
+      );
+    } else if (attributionSession != null && attributionCoordinator != null) {
+      await attributionCoordinator.failOutput(
+        session: attributionSession,
+        errorCode: journalAudio == null
+            ? 'audio_carrier_unavailable'
+            : 'empty_transcript',
       );
     }
 
@@ -518,7 +549,7 @@ class CaptureController extends Notifier<CaptureState> {
       final coordinator = getIt.isRegistered<TranscriptAttributionCoordinator>()
           ? getIt<TranscriptAttributionCoordinator>()
           : null;
-      if (coordinator != null && getIt.isRegistered<AiInteractionCapture>()) {
+      if (coordinator != null) {
         _transcriptAttribution = await coordinator.begin(
           providerName: 'batch-transcribe',
           modelId: 'cloud-inference',
@@ -534,9 +565,11 @@ class CaptureController extends Notifier<CaptureState> {
                   : _transcriber.transcribe(
                       fullPath,
                       attributionSession: attributionSession.pending,
+                      terminalizeAttributionFailure: false,
                     )))
               .trim();
     } catch (e) {
+      await _failTranscriptAttribution(e);
       _transcriptAttribution = null;
       state = const CaptureState(
         phase: CapturePhase.error,
@@ -569,6 +602,18 @@ class CaptureController extends Notifier<CaptureState> {
         attributionSession: _transcriptAttribution,
         interactionAlreadyRecorded: _transcriptAttribution != null,
       );
+    } else if (_transcriptAttribution case final attribution?) {
+      final coordinator = getIt.isRegistered<TranscriptAttributionCoordinator>()
+          ? getIt<TranscriptAttributionCoordinator>()
+          : null;
+      if (coordinator != null) {
+        await coordinator.failOutput(
+          session: attribution,
+          errorCode: journalAudio == null
+              ? 'audio_carrier_unavailable'
+              : 'empty_transcript',
+        );
+      }
     }
 
     _recordingNote = null;
@@ -650,9 +695,33 @@ class CaptureController extends Notifier<CaptureState> {
       );
       final persisted = await persistenceLogic.updateDbEntity(updated);
       if (persisted == true && prepared != null) {
-        await coordinator!.finalize(prepared);
+        try {
+          await coordinator!.finalize(prepared);
+        } catch (_) {
+          // The transcript carrier is authoritative. Leave the projection
+          // pending for recovery instead of rewriting the outcome as failed.
+        }
+      } else if (prepared != null && attributionSession != null) {
+        await coordinator!.failOutput(
+          session: attributionSession,
+          errorCode: 'transcript_persistence_failed',
+        );
       }
+    } on AiAttributionPublicationException {
+      // Publication state is uncertain, so recovery must reconcile the
+      // pending saga without fabricating terminal failure evidence.
     } catch (_) {
+      if (attributionSession != null &&
+          getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+        try {
+          await getIt<TranscriptAttributionCoordinator>().failOutput(
+            session: attributionSession,
+            errorCode: 'transcript_persistence_failed',
+          );
+        } catch (_) {
+          // The durable pending session remains eligible for recovery.
+        }
+      }
       // Attaching the transcript is best-effort — the capture flow
       // still proceeds with the in-memory transcript even if the
       // journal mutation fails.
@@ -690,10 +759,23 @@ class CaptureController extends Notifier<CaptureState> {
       return;
     }
     try {
-      await getIt<TranscriptAttributionCoordinator>().fail(
-        session: attribution,
-        error: error,
-      );
+      final coordinator = getIt<TranscriptAttributionCoordinator>();
+      if (error case AttributedTranscriptionException(
+        :final cause,
+        :final evidenceState,
+      )) {
+        if (evidenceState == TranscriptionEvidenceState.recorded) {
+          await coordinator.failOutput(
+            session: attribution,
+            errorCode: cause.runtimeType.toString(),
+          );
+        }
+        return;
+      }
+      if (error is AiAttributionPublicationException) {
+        return;
+      }
+      await coordinator.fail(session: attribution, error: error);
     } catch (_) {
       // The pending saga remains durable for startup recovery.
     }

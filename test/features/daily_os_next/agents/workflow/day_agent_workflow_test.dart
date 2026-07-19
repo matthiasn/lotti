@@ -17,7 +17,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
@@ -1721,7 +1721,7 @@ void main() {
         // testAiModel defaults to AiConfigModel.geminiThinkingMode == low.
         expect(wrapper.geminiThinkingMode, GeminiThinkingMode.low);
 
-        // No AiConsumptionRecorder is registered, so the consumption gate
+        // No AiInteractionCapture is registered, so the consumption gate
         // stays closed and no owner ids are forwarded to sendMessage.
         final call = conversationRepository.sendMessageCalls.single;
         expect(call.consumptionAgentId, isNull);
@@ -1732,14 +1732,14 @@ void main() {
 
     test(
       'passes consumption owner ids to sendMessage when an '
-      'AiConsumptionRecorder is registered',
+      'AiInteractionCapture is registered',
       () async {
-        getIt.registerSingleton<AiConsumptionRecorder>(
-          MockAiConsumptionRecorder(),
+        getIt.registerSingleton<AiInteractionCapture>(
+          MockAiInteractionCapture(),
         );
         addTearDown(() {
-          if (getIt.isRegistered<AiConsumptionRecorder>()) {
-            getIt.unregister<AiConsumptionRecorder>();
+          if (getIt.isRegistered<AiInteractionCapture>()) {
+            getIt.unregister<AiInteractionCapture>();
           }
         });
         conversationRepository.finalResponse = 'Day-agent wake completed.';

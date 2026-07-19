@@ -26,4 +26,25 @@ void main() {
       isTrue,
     );
   });
+
+  test('migrated funnels retain their implementation-level guarantees', () {
+    final entries = {
+      for (final entry in aiInferenceEntrypoints) entry.id: entry,
+    };
+
+    expect(
+      entries['unified-inference']?.coverage,
+      AiAttributionCoverage.strictPublicationSaga,
+    );
+    expect(
+      entries['conversation-repository']?.coverage,
+      AiAttributionCoverage.durablePartialCapture,
+    );
+    expect(
+      entries['embedding-indexing']?.coverage,
+      AiAttributionCoverage.strictPublicationSaga,
+    );
+    expect(entries['embedding-indexing']?.outputCarrier, contains('Embedding'));
+    expect(entries, isNot(contains('legacy-unified-inference')));
+  });
 }

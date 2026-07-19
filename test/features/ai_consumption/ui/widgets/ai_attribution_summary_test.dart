@@ -350,4 +350,36 @@ void main() {
     await tester.pump(MotionDurations.short2);
     expect(find.text('Token usage unknown'), findsOneWidget);
   });
+
+  testWidgets('labels imported records with unknown privacy explicitly', (
+    tester,
+  ) async {
+    final base = makeAiTerminalEnvelope();
+    final attribution = base.attribution.copyWith(
+      privacyClassification: AiPrivacyClassification.unknown,
+    );
+    final envelope = base.copyWith(attribution: attribution);
+
+    await pumpSummary(
+      tester,
+      envelope: envelope,
+      details: AiAttributionDetails(
+        attribution: attribution,
+        interactions: const [],
+        costTotals: AiCostTotals.empty,
+      ),
+    );
+    await tester.tap(find.byType(InkWell));
+    await tester.pump();
+    await tester.pump(MotionDurations.long2);
+
+    expect(find.text('Unknown'), findsOneWidget);
+    expect(
+      find.text(
+        'Request and response content is hidden because this work contains '
+        'private data.',
+      ),
+      findsNothing,
+    );
+  });
 }

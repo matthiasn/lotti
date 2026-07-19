@@ -533,6 +533,7 @@
   "aiAttributionPrivacyMixed": "Mixt",
   "aiAttributionPrivacyPrivate": "Privat",
   "aiAttributionPrivacyStandard": "Standard",
+  "aiAttributionPrivacyUnknown": "Necunoscută",
   "aiAttributionRequestEvidence": "Dovada solicitării",
   "aiAttributionResponseEvidence": "Dovada răspunsului",
   "aiAttributionSecondary": "{model} · {time} · {callCount, plural, =0{niciun apel} =1{1 apel} other{{callCount} apeluri}}",

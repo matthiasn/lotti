@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
@@ -521,6 +522,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     final providerName = _realtimeProviderName;
     final providerType = _realtimeProviderType;
     final attributionSession = _realtimeAttribution;
+    var attributionInteractionRecorded = false;
 
     try {
       // Cancel amplitude subscription
@@ -595,6 +597,23 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       _linkedId = null;
       final entryId = journalAudio?.meta.id;
 
+      if (attributionSession != null &&
+          getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+        await getIt<TranscriptAttributionCoordinator>().recordInteraction(
+          session: attributionSession,
+          audioEntryId: entryId,
+          transcript: result.transcript,
+          usage: result.usage,
+          interactionStatus: result.usedTranscriptFallback
+              ? AiInteractionStatus.partial
+              : AiInteractionStatus.succeeded,
+          errorCode: result.usedTranscriptFallback
+              ? 'realtime_completion_fallback'
+              : null,
+        );
+        attributionInteractionRecorded = true;
+      }
+
       // Save the realtime transcript on the audio entry
       if (entryId != null &&
           result.transcript.isNotEmpty &&
@@ -609,6 +628,14 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
           taskId: linkedTaskId,
           attributionSession: attributionSession,
           usage: result.usage,
+        );
+      } else if (attributionSession != null &&
+          getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+        await getIt<TranscriptAttributionCoordinator>().failOutput(
+          session: attributionSession,
+          errorCode: entryId == null
+              ? 'audio_carrier_unavailable'
+              : 'empty_transcript',
         );
       }
 
@@ -646,7 +673,21 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         subDomain: 'stopRealtime',
       );
       _vuMeter.reset();
-      await _failRealtimeAttribution(exception, session: attributionSession);
+      if (exception is AiAttributionPublicationException) {
+        // Publication state is uncertain. Leave the pending saga for recovery
+        // instead of recording a second synthetic provider interaction.
+      } else if (attributionInteractionRecorded && attributionSession != null) {
+        try {
+          await getIt<TranscriptAttributionCoordinator>().failOutput(
+            session: attributionSession,
+            errorCode: 'transcript_output_failed',
+          );
+        } catch (_) {
+          // The durable pending session remains eligible for recovery.
+        }
+      } else {
+        await _failRealtimeAttribution(exception, session: attributionSession);
+      }
       await _cleanupRealtime();
       try {
         await ref.read(realtimeTranscriptionServiceProvider).dispose();
@@ -671,6 +712,9 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     final attribution = session ?? _realtimeAttribution;
     if (attribution == null ||
         !getIt.isRegistered<TranscriptAttributionCoordinator>()) {
+      return;
+    }
+    if (error is AiAttributionPublicationException) {
       return;
     }
     try {
@@ -763,11 +807,9 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
                   taskId: taskId,
                   categoryId: journalAudio.meta.categoryId,
                 )
-              : await getIt<TranscriptAttributionCoordinator>().complete(
+              : await getIt<TranscriptAttributionCoordinator>().prepareOutput(
                   session: attributionSession,
                   audioEntryId: journalAudio.id,
-                  transcript: transcript,
-                  usage: usage,
                 )
         : null;
     final audioTranscript = AudioTranscript(
@@ -810,7 +852,22 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       linkedId: parentId,
     );
     if (persisted == true && prepared != null) {
-      await getIt<TranscriptAttributionCoordinator>().finalize(prepared);
+      try {
+        await getIt<TranscriptAttributionCoordinator>().finalize(prepared);
+      } catch (error, stackTrace) {
+        _loggingService.error(
+          LogDomain.speech,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'realtimeAttributionFinalize',
+        );
+        // The transcript carrier is authoritative; recovery will project it.
+      }
+    } else if (prepared != null && attributionSession != null) {
+      await getIt<TranscriptAttributionCoordinator>().failOutput(
+        session: attributionSession,
+        errorCode: 'transcript_persistence_failed',
+      );
     }
   }
 

@@ -412,8 +412,13 @@ sequenceDiagram
   cost stays explicitly unknown and privacy follows the source audio entry.
   The journal write is skipped if the consumption publication barrier fails,
   and attribution is finalized only after the journal update confirms that it
-  applied. Provider failures and user cancellation terminalize without a
-  carrier; process interruption is recovered by startup maintenance.
+  applied. A post-carrier projection failure leaves the successful carrier
+  authoritative and the pending saga eligible for recovery. Batch capture
+  begins its pending session whenever the coordinator is
+  available, independently of the concrete transcriber implementation. Provider
+  failures, empty transcripts, missing audio carriers, rejected transcript
+  persistence, and user cancellation terminalize without a carrier; process
+  interruption is recovered by startup maintenance.
 - Capture and Refine share one **anchored voice template**: a per-phase
   headline at the top (the state narrator — "What's on your mind …", "I'm
   listening.", "Writing that down…", "Does this look right?"), a flexible

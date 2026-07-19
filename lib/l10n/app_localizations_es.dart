@@ -1224,6 +1224,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiAttributionPrivacyStandard => 'Estándar';
 
   @override
+  String get aiAttributionPrivacyUnknown => 'Desconocida';
+
+  @override
   String get aiAttributionRequestEvidence => 'Evidencia de solicitud';
 
   @override

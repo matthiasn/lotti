@@ -13,7 +13,7 @@ import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -24,6 +24,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 import '../test_utils.dart';
 import 'task_agent_workflow_test_helpers.dart';
 
@@ -470,15 +471,15 @@ void main() {
     );
 
     test('passes consumption owner ids to sendMessage when an '
-        'AiConsumptionRecorder is registered', () async {
-      getIt.registerSingleton<AiConsumptionRecorder>(
-        MockAiConsumptionRecorder(),
-      );
-      addTearDown(() {
-        if (getIt.isRegistered<AiConsumptionRecorder>()) {
-          getIt.unregister<AiConsumptionRecorder>();
-        }
-      });
+        'AiInteractionCapture is registered', () async {
+      final attribution = AiInteractionCaptureTestBench.create()
+        ..register()
+        ..seedAgentWake(
+          wakeRunKey: runKey,
+          agentId: agentId,
+          taskId: eventId,
+          categoryId: 'cat-event-001',
+        );
       // The event's own category is what consumption is attributed to.
       final event = eventEntity();
       when(
@@ -489,6 +490,10 @@ void main() {
         ),
       );
       stubReportPublishingRun();
+
+      when(
+        () => attribution.service.finalize(any()),
+      ).thenThrow(StateError('projection unavailable'));
 
       final result = await run();
 
@@ -501,6 +506,22 @@ void main() {
       );
       expect(mockConversationRepository.lastConsumptionWakeRunKey, runKey);
       expect(mockConversationRepository.lastConsumptionThreadId, threadId);
+      final outputs =
+          verify(
+                () => attribution.service.prepareCompletion(
+                  attributionId: any(named: 'attributionId'),
+                  outputs: captureAny(named: 'outputs'),
+                ),
+              ).captured.single
+              as List<AiArtifactReference>;
+      expect(outputs, hasLength(1));
+      expect(outputs.single.type, AiArtifactType.agentReport);
+      final reports = verify(
+        () => mockSyncService.upsertEntity(captureAny()),
+      ).captured.whereType<AgentReportEntity>();
+      expect(reports, hasLength(1));
+      expect(reports.single.provenance, contains(aiAttributionProvenanceKey));
+      verify(() => attribution.service.finalize(any())).called(1);
     });
 
     test('persists observations recorded during the wake', () async {
@@ -903,15 +924,15 @@ void main() {
     });
 
     test('the forced update_report retry carries the consumption owner ids '
-        'when a recorder is registered', () async {
-      getIt.registerSingleton<AiConsumptionRecorder>(
-        MockAiConsumptionRecorder(),
-      );
-      addTearDown(() {
-        if (getIt.isRegistered<AiConsumptionRecorder>()) {
-          getIt.unregister<AiConsumptionRecorder>();
-        }
-      });
+        'when capture is registered', () async {
+      AiInteractionCaptureTestBench.create()
+        ..register()
+        ..seedAgentWake(
+          wakeRunKey: runKey,
+          agentId: agentId,
+          taskId: eventId,
+          categoryId: 'cat-event-001',
+        );
       final event = eventEntity();
       when(
         () => mockJournalRepository.getJournalEntityById(eventId),

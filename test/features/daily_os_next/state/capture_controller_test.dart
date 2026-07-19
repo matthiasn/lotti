@@ -9,8 +9,11 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
+import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/transcript_attribution_coordinator.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -50,6 +53,35 @@ JournalAudio _persistedAudio({String id = 'audio_001', bool private = false}) {
       audioDirectory: '/audio/2026-05-26/',
       duration: const Duration(seconds: 2),
     ),
+  );
+}
+
+TranscriptAttributionSession _batchAttributionSession({
+  String id = 'batch-attribution',
+  String transcriptId = 'transcript-id',
+}) {
+  final startedAt = DateTime.utc(2026, 5, 26, 9);
+  return TranscriptAttributionSession(
+    transcriptId: transcriptId,
+    pending: AiAttributionPendingSession(
+      id: id,
+      attributionId: id,
+      workType: AiWorkType.audioTranscription,
+      initiator: makeAiActor(),
+      trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+      executor: makeAiExecutor(),
+      privacyClassification: AiPrivacyClassification.mixed,
+      phase: AiAttributionPendingPhase.evidencePublished,
+      startedAt: startedAt,
+      lastUpdatedAt: startedAt,
+      intendedOutputs: const [],
+      interactionIds: const ['batch-interaction'],
+    ),
+    providerName: 'batch-transcribe',
+    modelId: 'cloud-inference',
+    providerType: InferenceProviderType.genericOpenAi,
+    interactionKind: AiInteractionKind.audioTranscription,
+    startedAt: startedAt,
   );
 }
 
@@ -1544,7 +1576,7 @@ void main() {
     );
 
     test(
-      'batch capture persists and finalizes transcript attribution',
+      'batch carrier remains successful when projection finalize fails',
       () async {
         when(
           () => transcriber.transcribe(
@@ -1565,18 +1597,41 @@ void main() {
           transcriptId: 'transcript-id',
           envelope: envelope,
         );
+        final session = _batchAttributionSession(
+          id: 'transcript-attribution',
+        );
         when(
-          () => coordinator.prepare(
-            audioEntryId: 'audio_001',
-            transcript: 'attributed transcript',
+          () => coordinator.begin(
             providerName: 'batch-transcribe',
             modelId: 'cloud-inference',
             providerType: InferenceProviderType.genericOpenAi,
             interactionKind: AiInteractionKind.audioTranscription,
-            privacyClassification: AiPrivacyClassification.private,
+            privacyClassification: AiPrivacyClassification.mixed,
+          ),
+        ).thenAnswer((_) async => session);
+        when(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            attributionSession: session.pending,
+            terminalizeAttributionFailure: false,
+          ),
+        ).thenAnswer((_) async => 'attributed transcript');
+        when(
+          () => coordinator.prepareOutput(
+            session: session,
+            audioEntryId: 'audio_001',
           ),
         ).thenAnswer((_) async => prepared);
-        when(() => coordinator.finalize(prepared)).thenAnswer((_) async {});
+        when(
+          () => coordinator.finalize(prepared),
+        ).thenThrow(StateError('projection unavailable'));
+        when(
+          () => coordinator.failOutput(
+            session: session,
+            errorCode: 'transcript_persistence_failed',
+          ),
+        ).thenAnswer((_) async {});
         getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
 
         final container = _aliveContainer(
@@ -1595,11 +1650,17 @@ void main() {
         expect(transcript.id, 'transcript-id');
         expect(transcript.aiAttribution, envelope);
         verify(() => coordinator.finalize(prepared)).called(1);
+        verifyNever(
+          () => coordinator.failOutput(
+            session: session,
+            errorCode: 'transcript_persistence_failed',
+          ),
+        );
       },
     );
 
     test(
-      'batch capture leaves attribution pending when persistence is rejected',
+      'batch capture terminalizes attribution when persistence is rejected',
       () async {
         when(
           () => transcriber.transcribe(
@@ -1618,17 +1679,39 @@ void main() {
           transcriptId: 'pending-transcript',
           envelope: makeAiTerminalEnvelope(attributionId: 'pending'),
         );
+        final session = _batchAttributionSession(
+          id: 'pending',
+          transcriptId: 'pending-transcript',
+        );
         when(
-          () => coordinator.prepare(
-            audioEntryId: 'audio_001',
-            transcript: 'unpersisted transcript',
+          () => coordinator.begin(
             providerName: 'batch-transcribe',
             modelId: 'cloud-inference',
             providerType: InferenceProviderType.genericOpenAi,
             interactionKind: AiInteractionKind.audioTranscription,
-            privacyClassification: AiPrivacyClassification.standard,
+            privacyClassification: AiPrivacyClassification.mixed,
+          ),
+        ).thenAnswer((_) async => session);
+        when(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            attributionSession: session.pending,
+            terminalizeAttributionFailure: false,
+          ),
+        ).thenAnswer((_) async => 'unpersisted transcript');
+        when(
+          () => coordinator.prepareOutput(
+            session: session,
+            audioEntryId: 'audio_001',
           ),
         ).thenAnswer((_) async => prepared);
+        when(
+          () => coordinator.failOutput(
+            session: session,
+            errorCode: 'transcript_persistence_failed',
+          ),
+        ).thenAnswer((_) async {});
         getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
         final container = _aliveContainer(
           recorder: recorder,
@@ -1646,6 +1729,12 @@ void main() {
           'pending-transcript',
         );
         verifyNever(() => coordinator.finalize(prepared));
+        verify(
+          () => coordinator.failOutput(
+            session: session,
+            errorCode: 'transcript_persistence_failed',
+          ),
+        ).called(1);
       },
     );
 
@@ -1675,6 +1764,135 @@ void main() {
         expect(
           container.read(captureControllerProvider).transcript,
           '',
+        );
+      },
+    );
+
+    test(
+      'recorded batch failure terminalizes output without inventing a call',
+      () async {
+        final coordinator = MockTranscriptAttributionCoordinator();
+        final session = _batchAttributionSession(id: 'recorded-failure');
+        final cause = TranscriptionException(
+          'empty provider response',
+          provider: 'provider',
+        );
+        final failure = AttributedTranscriptionException(
+          cause: cause,
+          evidenceState: TranscriptionEvidenceState.recorded,
+        );
+        when(
+          () => coordinator.begin(
+            providerName: 'batch-transcribe',
+            modelId: 'cloud-inference',
+            providerType: InferenceProviderType.genericOpenAi,
+            interactionKind: AiInteractionKind.audioTranscription,
+            privacyClassification: AiPrivacyClassification.mixed,
+          ),
+        ).thenAnswer((_) async => session);
+        when(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            attributionSession: session.pending,
+            terminalizeAttributionFailure: false,
+          ),
+        ).thenThrow(failure);
+        when(
+          () => coordinator.failOutput(
+            session: session,
+            errorCode: 'TranscriptionException',
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => coordinator.fail(session: session, error: cause),
+        ).thenAnswer((_) async {});
+        getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
+        final container = _aliveContainer(
+          recorder: recorder,
+          transcriber: transcriber,
+          realtimeService: realtimeService,
+          persistAudio: (_) async => _persistedAudio(),
+        );
+        addTearDown(container.dispose);
+
+        await container.read(captureControllerProvider.notifier).toggle();
+        await container.read(captureControllerProvider.notifier).toggle();
+
+        expect(
+          container.read(captureControllerProvider).error,
+          CaptureError.transcriptionFailed,
+        );
+        verify(
+          () => coordinator.failOutput(
+            session: session,
+            errorCode: 'TranscriptionException',
+          ),
+        ).called(1);
+        verifyNever(
+          () => coordinator.fail(session: session, error: cause),
+        );
+      },
+    );
+
+    test(
+      'uncertain batch evidence leaves the pending saga for recovery',
+      () async {
+        final coordinator = MockTranscriptAttributionCoordinator();
+        final session = _batchAttributionSession(id: 'uncertain-failure');
+        const cause = AiAttributionPublicationException(
+          'publication uncertain',
+        );
+        const failure = AttributedTranscriptionException(
+          cause: cause,
+          evidenceState: TranscriptionEvidenceState.uncertain,
+        );
+        when(
+          () => coordinator.begin(
+            providerName: 'batch-transcribe',
+            modelId: 'cloud-inference',
+            providerType: InferenceProviderType.genericOpenAi,
+            interactionKind: AiInteractionKind.audioTranscription,
+            privacyClassification: AiPrivacyClassification.mixed,
+          ),
+        ).thenAnswer((_) async => session);
+        when(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            attributionSession: session.pending,
+            terminalizeAttributionFailure: false,
+          ),
+        ).thenThrow(failure);
+        when(
+          () => coordinator.fail(session: session, error: cause),
+        ).thenAnswer((_) async {});
+        when(
+          () => coordinator.failOutput(
+            session: session,
+            errorCode: any(named: 'errorCode'),
+          ),
+        ).thenAnswer((_) async {});
+        getIt.registerSingleton<TranscriptAttributionCoordinator>(coordinator);
+        final container = _aliveContainer(
+          recorder: recorder,
+          transcriber: transcriber,
+          realtimeService: realtimeService,
+          persistAudio: (_) async => _persistedAudio(),
+        );
+        addTearDown(container.dispose);
+
+        await container.read(captureControllerProvider.notifier).toggle();
+        await container.read(captureControllerProvider.notifier).toggle();
+
+        verifyNever(
+          () => coordinator.fail(session: session, error: cause),
+        );
+        verifyNever(
+          () => coordinator.failOutput(
+            session: session,
+            errorCode: any(named: 'errorCode'),
+          ),
         );
       },
     );

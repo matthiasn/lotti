@@ -117,14 +117,33 @@ class TranscriptAttributionCoordinator {
     required String audioEntryId,
     required String transcript,
     Map<String, dynamic>? usage,
+    bool usedTranscriptFallback = false,
+  }) async {
+    await recordInteraction(
+      session: session,
+      audioEntryId: audioEntryId,
+      transcript: transcript,
+      usage: usage,
+      interactionStatus: usedTranscriptFallback
+          ? AiInteractionStatus.partial
+          : AiInteractionStatus.succeeded,
+      errorCode: usedTranscriptFallback ? 'realtime_completion_fallback' : null,
+    );
+    return prepareOutput(session: session, audioEntryId: audioEntryId);
+  }
+
+  /// Records the provider transcript independently from whichever transcript
+  /// a later verification pass selects for the output carrier.
+  Future<void> recordInteraction({
+    required TranscriptAttributionSession session,
+    required String? audioEntryId,
+    required String transcript,
+    Map<String, dynamic>? usage,
+    AiInteractionStatus interactionStatus = AiInteractionStatus.succeeded,
+    String? errorCode,
   }) async {
     final eventId = const Uuid().v4();
     final completedAt = clock.now().toUtc();
-    final output = AiArtifactReference(
-      type: AiArtifactType.journalAudio,
-      id: audioEntryId,
-      subId: session.transcriptId,
-    );
     final evidence = await _attributionService.recordInteraction(
       attributionId: session.pending.id,
       event: AiConsumptionEvent(
@@ -134,7 +153,9 @@ class TranscriptAttributionCoordinator {
         responseType: AiConsumptionResponseType.audioTranscription,
         vectorClock: null,
         interactionKind: session.interactionKind,
+        interactionStatus: interactionStatus,
         completedAt: completedAt,
+        errorCode: errorCode,
         entryId: audioEntryId,
         taskId: session.pending.taskId,
         categoryId: session.pending.categoryId,
@@ -149,7 +170,9 @@ class TranscriptAttributionCoordinator {
           request: const [],
           response: const [],
           parameters: {'providerName': session.providerName},
-          requestDigest: sha256.convert(utf8.encode(audioEntryId)).toString(),
+          requestDigest: sha256
+              .convert(utf8.encode(audioEntryId ?? session.pending.id))
+              .toString(),
           responseDigest: sha256.convert(utf8.encode(transcript)).toString(),
           capturePolicy: AiPayloadCapturePolicy.referenceOnly,
           privacyClassification: session.pending.privacyClassification,
@@ -169,14 +192,6 @@ class TranscriptAttributionCoordinator {
         'transcript evidence did not cross the publication barrier',
       );
     }
-    final envelope = await _attributionService.prepareCompletion(
-      attributionId: session.pending.id,
-      outputs: [output],
-    );
-    return PreparedTranscriptAttribution(
-      transcriptId: session.transcriptId,
-      envelope: envelope,
-    );
   }
 
   /// Prepares the carrier envelope after the provider interaction was already
@@ -223,6 +238,21 @@ class TranscriptAttributionCoordinator {
         workStatus: AiWorkStatus.cancelled,
         errorCode: 'cancelled',
       );
+
+  /// Terminalizes a session whose provider interaction is already recorded
+  /// but whose durable transcript carrier could not be created.
+  Future<void> failOutput({
+    required TranscriptAttributionSession session,
+    required String errorCode,
+  }) async {
+    final envelope = await _attributionService.prepareCompletion(
+      attributionId: session.pending.id,
+      outputs: const [],
+      status: AiWorkStatus.failed,
+      errorCode: errorCode,
+    );
+    await _attributionService.finalize(envelope);
+  }
 
   Future<void> _terminalizeWithoutCarrier({
     required TranscriptAttributionSession session,

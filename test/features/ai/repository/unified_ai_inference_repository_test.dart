@@ -32,7 +32,6 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/ai_consumption/consumption/ai_consumption_recorder.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
@@ -53,6 +52,7 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 import '../test_utils.dart';
 
 class MockPromptCapabilityFilter extends Mock
@@ -104,6 +104,7 @@ void main() {
   late Directory suiteTempDir;
 
   setUpAll(() {
+    registerAllFallbackValues();
     // Isolate registrations from other files when tests are optimized
     getIt.pushNewScope();
     registerFallbackValue(FakeAiConfigPrompt());
@@ -1279,12 +1280,12 @@ void main() {
           mockCloudInferenceRepo,
           stream: _createMockTextStream(['done']),
         );
-        _stubCreateAiResponseEntry(mockAiInputRepo);
+        _stubCreateAiResponseEntry(mockAiInputRepo, attributed: true);
         when(
           () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
         ).thenAnswer((_) async => true);
 
-        final recorder = _registerConsumptionRecorder();
+        final attribution = _registerAttributionCapture();
 
         await repository!.runInference(
           entityId: taskEntity.id,
@@ -1294,7 +1295,10 @@ void main() {
         );
 
         final captured = verify(
-          () => recorder.record(captureAny()),
+          () => attribution.service.recordInteraction(
+            attributionId: any(named: 'attributionId'),
+            event: captureAny(named: 'event'),
+          ),
         ).captured;
         expect(captured, hasLength(1));
         final event = captured.single as AiConsumptionEvent;
@@ -1303,8 +1307,17 @@ void main() {
         expect(event.categoryId, 'cat-1');
         expect(event.providerType, InferenceProviderType.melious);
         expect(event.responseType, AiConsumptionResponseType.promptGeneration);
+        expect(event.configId, 'provider-1');
         expect(event.modelId, 'model-1');
         expect(event.providerModelId, 'glm-5.2');
+        verify(() => attribution.service.begin(any())).called(1);
+        verify(
+          () => attribution.service.prepareCompletion(
+            attributionId: any(named: 'attributionId'),
+            outputs: any(named: 'outputs'),
+          ),
+        ).called(1);
+        verify(() => attribution.service.finalize(any())).called(1);
       });
 
       test(
@@ -1367,6 +1380,7 @@ void main() {
             ),
             impact: const MeliousCallImpact(
               costCredits: 1.25,
+              costCreditsDecimal: '1.250000',
               energyKwh: 0.004,
               carbonGCo2: 3.2,
               waterLiters: 0.8,
@@ -1376,12 +1390,12 @@ void main() {
               providerId: 'upstream-glm',
             ),
           );
-          _stubCreateAiResponseEntry(mockAiInputRepo);
+          _stubCreateAiResponseEntry(mockAiInputRepo, attributed: true);
           when(
             () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
           ).thenAnswer((_) async => true);
 
-          final recorder = _registerConsumptionRecorder();
+          final attribution = _registerAttributionCapture();
 
           await repository!.runInference(
             entityId: taskEntity.id,
@@ -1391,7 +1405,12 @@ void main() {
           );
 
           final event =
-              verify(() => recorder.record(captureAny())).captured.single
+              verify(
+                    () => attribution.service.recordInteraction(
+                      attributionId: any(named: 'attributionId'),
+                      event: captureAny(named: 'event'),
+                    ),
+                  ).captured.single
                   as AiConsumptionEvent;
           expect(event.promptId, 'prompt-1');
           expect(event.durationMs, isNotNull);
@@ -1401,6 +1420,8 @@ void main() {
           expect(event.thoughtsTokens, 25);
           expect(event.totalTokens, 210);
           expect(event.credits, 1.25);
+          expect(event.cost?.originalAmountDecimal, '1.250000');
+          expect(event.cost?.reportingAmountMicros, 1250000);
           expect(event.energyKwh, 0.004);
           expect(event.carbonGCo2, 3.2);
           expect(event.waterLiters, 0.8);
@@ -8214,23 +8235,9 @@ Stream<CreateChatCompletionStreamResponse> _createMockTextStream(
   ]);
 }
 
-/// Registers a stubbed [MockAiConsumptionRecorder] in getIt for one test so
-/// `_recordConsumption` runs (it is a no-op when no recorder is wired).
-/// Guards against a pre-existing registration and unregisters via
-/// [addTearDown].
-MockAiConsumptionRecorder _registerConsumptionRecorder() {
-  final recorder = MockAiConsumptionRecorder();
-  when(() => recorder.record(any())).thenAnswer((_) async {});
-  if (getIt.isRegistered<AiConsumptionRecorder>()) {
-    getIt.unregister<AiConsumptionRecorder>();
-  }
-  getIt.registerSingleton<AiConsumptionRecorder>(recorder);
-  addTearDown(() {
-    if (getIt.isRegistered<AiConsumptionRecorder>()) {
-      getIt.unregister<AiConsumptionRecorder>();
-    }
-  });
-  return recorder;
+AiInteractionCaptureTestBench _registerAttributionCapture() {
+  final bench = AiInteractionCaptureTestBench.create()..register();
+  return bench;
 }
 
 /// Stubs `CloudInferenceRepository.generate` to return [stream]. When
@@ -8332,8 +8339,34 @@ void _stubInferenceContext({
   ).thenAnswer((_) async => taskDetailsJson);
 }
 
-/// Stubs `AiInputRepository.createAiResponseEntry` to return null.
-void _stubCreateAiResponseEntry(MockAiInputRepository mock) {
+/// Stubs `AiInputRepository.createAiResponseEntry`.
+///
+/// Attributed runs require a durable carrier and therefore receive a concrete
+/// response entry with the caller-supplied output ID. Legacy test paths retain
+/// the historical null result.
+void _stubCreateAiResponseEntry(
+  MockAiInputRepository mock, {
+  bool attributed = false,
+}) {
+  if (attributed) {
+    when(
+      () => mock.createAiResponseEntry(
+        id: any(named: 'id'),
+        data: any(named: 'data'),
+        start: any(named: 'start'),
+        linkedId: any(named: 'linkedId'),
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenAnswer((invocation) async {
+      return AiResponseEntry(
+        meta: _createMetadata(
+          id: invocation.namedArguments[#id] as String,
+        ),
+        data: invocation.namedArguments[#data] as AiResponseData,
+      );
+    });
+    return;
+  }
   when(
     () => mock.createAiResponseEntry(
       data: any(named: 'data'),
