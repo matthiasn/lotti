@@ -428,6 +428,203 @@ void main() {
       verifyNever(realtimeService.resolveRealtimeConfig);
     });
 
+    test(
+      'continues with durable batch capture when config lookup fails',
+      () async {
+        when(
+          realtimeService.resolveRealtimeConfig,
+        ).thenThrow(StateError('configuration database unavailable'));
+        final container = buildContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(captureControllerProvider.notifier);
+
+        await notifier.toggle();
+        await notifier.toggle();
+
+        expect(
+          container.read(captureControllerProvider),
+          isA<CaptureState>()
+              .having((value) => value.phase, 'phase', CapturePhase.captured)
+              .having(
+                (value) => value.transcript,
+                'transcript',
+                'hello realtime',
+              ),
+        );
+        verify(
+          () => realtimeService.startRealtimeTranscription(
+            capture: durableCapture,
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
+            resolveConfigWhenAbsent: false,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'reset fences slow config resolution after durable admission',
+      () async {
+        final resolution =
+            Completer<
+              ({AiConfigInferenceProvider provider, AiConfigModel model})?
+            >();
+        when(
+          realtimeService.resolveRealtimeConfig,
+        ).thenAnswer((_) => resolution.future);
+        final container = buildContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(captureControllerProvider.notifier);
+
+        final start = notifier.toggle();
+        await pumpEventQueue();
+        notifier.reset();
+        resolution.complete(realtimeConfig);
+        await start;
+
+        expect(
+          container.read(captureControllerProvider).phase,
+          CapturePhase.idle,
+        );
+        verify(durableCapture.discard).called(1);
+        verifyNever(
+          () => realtimeService.startRealtimeTranscription(
+            capture: any(named: 'capture'),
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
+            config: any(named: 'config'),
+            resolveConfigWhenAbsent: false,
+          ),
+        );
+      },
+    );
+
+    test('reset fences slow microphone permission resolution', () async {
+      final permission = Completer<bool>();
+      fakeRecorder.permissionFuture = permission.future;
+      final container = buildContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(captureControllerProvider.notifier);
+
+      final start = notifier.toggle();
+      await pumpEventQueue();
+      notifier.reset();
+      permission.complete(true);
+      await start;
+
+      expect(
+        container.read(captureControllerProvider).phase,
+        CapturePhase.idle,
+      );
+      expect(fakeRecorder.disposed, isTrue);
+      verify(durableCapture.discard).called(1);
+    });
+
+    test('reset drains a PCM stream opened by an obsolete start', () async {
+      final stream = Completer<Stream<Uint8List>>();
+      fakeRecorder.startStreamFuture = stream.future;
+      final container = buildContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(captureControllerProvider.notifier);
+
+      final start = notifier.toggle();
+      await pumpEventQueue();
+      notifier.reset();
+      stream.complete(pcmController.stream);
+      await start;
+
+      expect(
+        container.read(captureControllerProvider).phase,
+        CapturePhase.idle,
+      );
+      expect(fakeRecorder.stopCalls, 1);
+      expect(fakeRecorder.disposed, isTrue);
+      verify(durableCapture.discard).called(1);
+    });
+
+    test(
+      'reset retains capture when realtime startup completes late',
+      () async {
+        final realtimeStart = Completer<void>();
+        when(
+          () => realtimeService.startRealtimeTranscription(
+            capture: any(named: 'capture'),
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
+            config: any(named: 'config'),
+            resolveConfigWhenAbsent: false,
+          ),
+        ).thenAnswer((_) => realtimeStart.future);
+        final container = buildContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(captureControllerProvider.notifier);
+
+        final start = notifier.toggle();
+        await pumpEventQueue();
+        expect(
+          container.read(captureControllerProvider).phase,
+          CapturePhase.listening,
+        );
+        notifier.reset();
+        realtimeStart.complete();
+        await start;
+        await pumpEventQueue();
+
+        expect(
+          container.read(captureControllerProvider).phase,
+          CapturePhase.idle,
+        );
+        verify(
+          () => realtimeService.stopAndRetainForRecovery(
+            capture: durableCapture,
+            stopRecorder: any(named: 'stopRecorder'),
+          ),
+        ).called(2);
+        expect(fakeRecorder.disposed, isTrue);
+      },
+    );
+
+    test(
+      'audio destination failure discards before microphone start',
+      () async {
+        final root = Directory.systemTemp.createTempSync(
+          'capture-destination-failure-',
+        );
+        addTearDown(() => root.deleteSync(recursive: true));
+        final blocker = File('${root.path}/not-a-directory')
+          ..writeAsStringSync('occupied');
+        final recorderEvents = <String>[];
+        fakeRecorder.onCall = recorderEvents.add;
+        final container = _aliveContainer(
+          transcriber: transcriber,
+          realtimeService: realtimeService,
+          persistAudio: persistAudio,
+          realtimeRecorderFactory: () => fakeRecorder,
+          docDir: () => Directory(blocker.path),
+        );
+        addTearDown(container.dispose);
+
+        await container.read(captureControllerProvider.notifier).toggle();
+
+        expect(
+          container.read(captureControllerProvider),
+          isA<CaptureState>()
+              .having((value) => value.phase, 'phase', CapturePhase.error)
+              .having(
+                (value) => value.error,
+                'error',
+                CaptureError.recordingStartFailed,
+              ),
+        );
+        expect(fakeRecorder.disposed, isTrue);
+        verify(durableCapture.discard).called(1);
+        expect(recorderEvents, ['permission']);
+      },
+    );
+
     test('capture failure immediately stops into retained recovery', () async {
       when(
         () => realtimeService.stop(
@@ -497,6 +694,68 @@ void main() {
         expect(persistedNotes, isEmpty);
       },
     );
+
+    test('rejects a stop result from another durable capture', () async {
+      when(
+        () => realtimeService.stop(
+          capture: any(named: 'capture'),
+          stopRecorder: any(named: 'stopRecorder'),
+          outputPath: any(named: 'outputPath'),
+        ),
+      ).thenAnswer(
+        (_) async => RealtimeStopResult(
+          transcript: 'wrong session',
+          recordingSessionId: 'another-session',
+          captureDisposition: RealtimeCaptureDisposition.complete,
+        ),
+      );
+      final container = buildContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(captureControllerProvider.notifier);
+
+      await notifier.toggle();
+      await notifier.toggle();
+
+      expect(
+        container.read(captureControllerProvider),
+        isA<CaptureState>()
+            .having((value) => value.phase, 'phase', CapturePhase.error)
+            .having(
+              (value) => value.error,
+              'error',
+              CaptureError.noAudioRecorded,
+            ),
+      );
+      expect(persistedNotes, isEmpty);
+    });
+
+    test('complete stop without a WAV reports no recorded audio', () async {
+      when(
+        () => realtimeService.stop(
+          capture: any(named: 'capture'),
+          stopRecorder: any(named: 'stopRecorder'),
+          outputPath: any(named: 'outputPath'),
+        ),
+      ).thenAnswer(
+        (_) async => RealtimeStopResult(
+          transcript: 'text without an asset',
+          recordingSessionId: 'test-session',
+          captureDisposition: RealtimeCaptureDisposition.complete,
+        ),
+      );
+      final container = buildContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(captureControllerProvider.notifier);
+
+      await notifier.toggle();
+      await notifier.toggle();
+
+      expect(
+        container.read(captureControllerProvider).error,
+        CaptureError.noAudioRecorded,
+      );
+      expect(persistedNotes, isEmpty);
+    });
 
     test(
       'finishing without an active realtime session reports '
@@ -1456,7 +1715,9 @@ void main() {
 
 class _FakeRealtimeRecorder implements record.AudioRecorder {
   bool permissionGranted = true;
+  Future<bool>? permissionFuture;
   Stream<Uint8List>? pcmStream;
+  Future<Stream<Uint8List>>? startStreamFuture;
   bool stopped = false;
   int stopCalls = 0;
   bool disposed = false;
@@ -1466,7 +1727,7 @@ class _FakeRealtimeRecorder implements record.AudioRecorder {
   @override
   Future<bool> hasPermission({bool request = true}) async {
     onCall?.call('permission');
-    return permissionGranted;
+    return permissionFuture ?? permissionGranted;
   }
 
   @override
@@ -1475,6 +1736,8 @@ class _FakeRealtimeRecorder implements record.AudioRecorder {
     if (throwOnStartStream) {
       throw StateError('mic busy');
     }
+    final pending = startStreamFuture;
+    if (pending != null) return pending;
     if (pcmStream == null) {
       throw StateError('pcmStream not configured');
     }

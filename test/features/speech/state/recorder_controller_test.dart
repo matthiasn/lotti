@@ -1728,6 +1728,104 @@ void main() {
         );
       });
 
+      test('provider disposal fences slow microphone permission', () async {
+        final permission = Completer<bool>();
+        when(
+          mockRecorder.hasPermission,
+        ).thenAnswer((_) => permission.future);
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
+        );
+
+        final start = controller.recordRealtime(linkedId: 'task-123');
+        await pumpEventQueue();
+        container.dispose();
+        permission.complete(true);
+        await start;
+        await pumpEventQueue();
+
+        verify(durableCapture.discard).called(1);
+        verifyNever(() => mockRecorder.startStream(any()));
+      });
+
+      test('provider disposal fences slow config resolution', () async {
+        final resolution =
+            Completer<
+              ({AiConfigModel model, AiConfigInferenceProvider provider})?
+            >();
+        when(
+          mockRealtimeService.resolveRealtimeConfig,
+        ).thenAnswer((_) => resolution.future);
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
+        );
+
+        final start = controller.recordRealtime(linkedId: 'task-123');
+        await pumpEventQueue();
+        container.dispose();
+        resolution.complete(_fakeRealtimeConfig);
+        await start;
+        await pumpEventQueue();
+
+        verify(durableCapture.discard).called(1);
+        verifyNever(() => mockRecorder.startStream(any()));
+      });
+
+      test('provider disposal drains a PCM stream that opens late', () async {
+        final stream = Completer<Stream<Uint8List>>();
+        when(
+          () => mockRecorder.startStream(any()),
+        ).thenAnswer((_) => stream.future);
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
+        );
+
+        final start = controller.recordRealtime(linkedId: 'task-123');
+        await pumpEventQueue();
+        container.dispose();
+        stream.complete(pcmStreamController.stream);
+        await start;
+        await pumpEventQueue();
+
+        verify(durableCapture.discard).called(1);
+        verify(mockRecorder.stop).called(2);
+      });
+
+      test(
+        'provider disposal retains a realtime backend that starts late',
+        () async {
+          final backendStart = Completer<void>();
+          when(
+            () => mockRealtimeService.startRealtimeTranscription(
+              capture: any(named: 'capture'),
+              config: any(named: 'config'),
+              resolveConfigWhenAbsent: false,
+              pcmStream: any(named: 'pcmStream'),
+              onDelta: any(named: 'onDelta'),
+              onCaptureFailure: any(named: 'onCaptureFailure'),
+            ),
+          ).thenAnswer((_) => backendStart.future);
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+
+          final start = controller.recordRealtime(linkedId: 'task-123');
+          await pumpEventQueue();
+          container.dispose();
+          backendStart.complete();
+          await start;
+          await pumpEventQueue();
+
+          verify(
+            () => mockRealtimeService.stopAndRetainForRecovery(
+              capture: durableCapture,
+              stopRecorder: any(named: 'stopRecorder'),
+            ),
+          ).called(2);
+          verify(mockRecorder.dispose).called(2);
+        },
+      );
+
       test('sets state to recording with isRealtimeMode true', () async {
         final controller = container.read(
           audioRecorderControllerProvider.notifier,
@@ -2055,6 +2153,68 @@ void main() {
     });
 
     group('stopRealtime - error handling', () {
+      test('rejects a stop result belonging to another capture', () async {
+        when(
+          () => mockRealtimeService.stop(
+            capture: any(named: 'capture'),
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenAnswer(
+          (_) async => RealtimeStopResult(
+            transcript: 'foreign result',
+            recordingSessionId: 'another-session',
+            audioFilePath: '/tmp/audio/foreign.wav',
+            captureDisposition: RealtimeCaptureDisposition.complete,
+          ),
+        );
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
+        );
+        await controller.recordRealtime();
+
+        expect(await controller.stopRealtime(), isNull);
+        expect(
+          container.read(audioRecorderControllerProvider).lastSaveOutcome,
+          AudioRecorderSaveOutcome.noAudio,
+        );
+        verifyNever(
+          () => durableCapture.markCommitted(
+            journalAudioId: any(named: 'journalAudioId'),
+          ),
+        );
+      });
+
+      test('maps a complete stop without an audio asset to no audio', () async {
+        when(
+          () => mockRealtimeService.stop(
+            capture: any(named: 'capture'),
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenAnswer(
+          (_) async => RealtimeStopResult(
+            transcript: 'text without a file',
+            recordingSessionId: 'speech-session',
+            captureDisposition: RealtimeCaptureDisposition.complete,
+          ),
+        );
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
+        );
+        await controller.recordRealtime();
+
+        expect(await controller.stopRealtime(), isNull);
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.status, AudioRecorderStatus.stopped);
+        expect(state.lastSaveOutcome, AudioRecorderSaveOutcome.noAudio);
+        verifyNever(
+          () => durableCapture.markCommitted(
+            journalAudioId: any(named: 'journalAudioId'),
+          ),
+        );
+      });
+
       for (final testCase
           in <
             ({

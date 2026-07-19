@@ -88,7 +88,7 @@ class RealtimeTranscriptionService {
     MlxAudioChannel? mlxAudioChannel,
     RealtimeAudioBuffer? audioBuffer,
     this._doneTimeout = const Duration(seconds: 10),
-    this._pcmDrainTimeout = const Duration(seconds: 2),
+    this.pcmDrainTimeout = const Duration(seconds: 2),
     String Function()? durableIdFactory,
     Future<String?> Function()? originHostIdProvider,
   }) : _repository = repository ?? MistralRealtimeTranscriptionRepository(),
@@ -103,7 +103,9 @@ class RealtimeTranscriptionService {
   final MistralRealtimeTranscriptionRepository _repository;
   final MlxAudioChannel _mlxAudioChannel;
   final Duration _doneTimeout;
-  final Duration _pcmDrainTimeout;
+
+  /// Maximum wait for the recorder's PCM stream to close during stop.
+  final Duration pcmDrainTimeout;
   final RealtimeAudioBuffer _audioBuffer;
   final String Function() _durableIdFactory;
   final Future<String?> Function() _originHostIdProvider;
@@ -910,11 +912,11 @@ class RealtimeTranscriptionService {
     final done = _pcmDoneCompleter;
     if (done != null && !done.isCompleted) {
       try {
-        await done.future.timeout(_pcmDrainTimeout);
+        await done.future.timeout(pcmDrainTimeout);
       } on TimeoutException {
         _pcmFailure ??= TimeoutException(
           'PCM stream did not close after recorder stop',
-          _pcmDrainTimeout,
+          pcmDrainTimeout,
         );
         getIt<DomainLogger>().log(
           LogDomain.speech,

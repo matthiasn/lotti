@@ -334,6 +334,10 @@ class FakeMlxAudioChannel extends MlxAudioChannel {
   Exception? startError;
   Exception? appendError;
   Exception? stopError;
+  Completer<void>? startGate;
+  Completer<void>? appendGate;
+  final startEntered = Completer<void>();
+  final appendEntered = Completer<void>();
   bool stopped = false;
   bool cancelled = false;
 
@@ -347,6 +351,8 @@ class FakeMlxAudioChannel extends MlxAudioChannel {
     String? language,
     String delayPreset = 'subtitle',
   }) async {
+    if (!startEntered.isCompleted) startEntered.complete();
+    await startGate?.future;
     final error = startError;
     if (error != null) {
       throw error;
@@ -357,6 +363,8 @@ class FakeMlxAudioChannel extends MlxAudioChannel {
 
   @override
   Future<void> appendRealtimePcm(Uint8List pcm16) async {
+    if (!appendEntered.isCompleted) appendEntered.complete();
+    await appendGate?.future;
     final error = appendError;
     if (error != null) {
       throw error;
@@ -430,6 +438,7 @@ class RealtimeTranscriptionTestBench {
     bool addMlxConfig = false,
     List<AiConfig>? configs,
     Duration doneTimeout = const Duration(seconds: 10),
+    Duration pcmDrainTimeout = const Duration(seconds: 2),
     MistralRealtimeTranscriptionRepository? repository,
     String Function()? durableIdFactory,
   }) async {
@@ -509,6 +518,7 @@ class RealtimeTranscriptionTestBench {
             repository: repository ?? defaultRepository,
             mlxAudioChannel: fakeMlxAudioChannel,
             doneTimeout: doneTimeout,
+            pcmDrainTimeout: pcmDrainTimeout,
             durableIdFactory: durableIdFactory,
           ),
         ),

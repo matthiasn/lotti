@@ -1,5 +1,10 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
@@ -7,7 +12,10 @@ import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_activity_view.dart';
 import 'package:lotti/features/speech/services/durable_audio_spool.dart';
+import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
+import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -40,6 +48,8 @@ void main() {
     resultTranscript: transcript,
     lastFailureClass: failureClass,
   );
+
+  tearDown(() => nav_service.beamToNamedOverride = null);
 
   testWidgets('shows durable states and lets a ready transcript build a plan', (
     tester,
@@ -188,11 +198,13 @@ void main() {
   ) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        DayActivityView(
-          date: date,
-          hasPlan: false,
-          actualBlocks: const [],
-          onUseEntry: (_) {},
+        Scaffold(
+          body: DayActivityView(
+            date: date,
+            hasPlan: false,
+            actualBlocks: const [],
+            onUseEntry: (_) {},
+          ),
         ),
         overrides: [
           dayActivityProvider.overrideWith(
@@ -322,5 +334,275 @@ void main() {
     ]) {
       expect(find.text(text), findsOneWidget);
     }
+  });
+
+  testWidgets('reports retry and reviewed-text persistence failures', (
+    tester,
+  ) async {
+    final retryCompleter = Completer<DayProcessingJob?>();
+    final transcriptWriter = MockDayAudioTranscriptWriter();
+    final outbox = MockDayProcessingOutboxRepository();
+    final runtime = MockDayProcessingRuntime();
+    when(
+      () => outbox.retryNow('job-waiting'),
+    ).thenAnswer((_) => retryCompleter.future);
+    when(
+      () => transcriptWriter.attachManual(
+        audioId: 'audio-waiting',
+        transcript: 'Reviewed but not persisted',
+      ),
+    ).thenAnswer((_) async => false);
+    final waiting = DayActivityEntry(
+      id: 'waiting',
+      kind: DayActivityEntryKind.recording,
+      createdAt: capturedAt,
+      activityEntryId: 'waiting',
+      processingJob: job(
+        id: 'job-waiting',
+        activityId: 'waiting',
+        status: DayProcessingJobStatus.waitingForNetwork,
+      ),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: DayActivityView(
+            date: date,
+            hasPlan: false,
+            actualBlocks: const [],
+            onUseEntry: (_) {},
+          ),
+        ),
+        overrides: [
+          dayActivityProvider.overrideWith((ref, date) async => [waiting]),
+          dayAudioTranscriptWriterProvider.overrideWithValue(transcriptWriter),
+          dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
+          dayProcessingRuntimeProvider.overrideWithValue(runtime),
+        ],
+      ),
+    );
+    await tester.pump();
+    final messages = tester.element(find.byType(DayActivityView)).messages;
+
+    await tester.tap(find.text(messages.dailyOsNextActivityRetry));
+    await tester.tap(find.text(messages.dailyOsNextActivityRetry));
+    verify(() => outbox.retryNow('job-waiting')).called(1);
+    retryCompleter.completeError(StateError('network still unavailable'));
+    await tester.pump();
+    expect(
+      find.text(messages.dailyOsNextActivityActionFailed),
+      findsOneWidget,
+    );
+    verifyNever(runtime.nudge);
+    tester
+        .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
+        .clearSnackBars();
+    await tester.pump();
+
+    await tester.tap(find.text(messages.dailyOsNextActivityAddOrEditText));
+    await tester.pump();
+    await tester.enterText(
+      find.byType(TextField),
+      'Reviewed but not persisted',
+    );
+    await tester.tap(find.text(messages.saveButton));
+    await tester.pump();
+
+    expect(
+      find.text(messages.dailyOsNextActivityTextSaveFailed),
+      findsOneWidget,
+    );
+    verifyNever(() => outbox.satisfyWithReviewedText(any(), any()));
+  });
+
+  testWidgets('renders submitted, saved, refine, setup, and cancel behavior', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(1000, 2000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final transcriptWriter = MockDayAudioTranscriptWriter();
+    final routes = <String>[];
+    nav_service.beamToNamedOverride = routes.add;
+    final submitted =
+        AgentDomainEntity.capture(
+              id: 'submitted',
+              agentId: 'planner',
+              transcript: 'Already submitted',
+              capturedAt: capturedAt,
+              createdAt: capturedAt,
+              vectorClock: null,
+              dayId: 'dayplan-2026-07-18',
+            )
+            as CaptureEntity;
+    final entries = [
+      DayActivityEntry(
+        id: 'ready',
+        kind: DayActivityEntryKind.recording,
+        createdAt: capturedAt,
+        activityEntryId: 'ready',
+        processingJob: job(
+          id: 'job-ready',
+          activityId: 'ready',
+          status: DayProcessingJobStatus.succeeded,
+          transcript: 'Use this to refine the plan.',
+        ),
+      ),
+      DayActivityEntry(
+        id: 'saved',
+        kind: DayActivityEntryKind.recording,
+        createdAt: capturedAt,
+        activityEntryId: 'saved',
+      ),
+      DayActivityEntry(
+        id: 'submitted',
+        kind: DayActivityEntryKind.checkIn,
+        createdAt: capturedAt,
+        activityEntryId: 'submitted',
+        capture: submitted,
+      ),
+      DayActivityEntry(
+        id: 'setup',
+        kind: DayActivityEntryKind.recording,
+        createdAt: capturedAt,
+        activityEntryId: 'setup',
+        processingJob: job(
+          id: 'job-setup',
+          activityId: 'setup',
+          status: DayProcessingJobStatus.waitingForUser,
+          failureClass: DayProcessingFailureClass.setupRequired,
+        ),
+      ),
+    ];
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        DayActivityView(
+          date: date,
+          hasPlan: true,
+          actualBlocks: const [],
+          onUseEntry: (_) {},
+        ),
+        overrides: [
+          dayActivityProvider.overrideWith((ref, date) async => entries),
+          dayAudioTranscriptWriterProvider.overrideWithValue(transcriptWriter),
+        ],
+        mediaQueryData: const MediaQueryData(size: Size(1000, 2000)),
+      ),
+    );
+    await tester.pump();
+    final messages = tester.element(find.byType(DayActivityView)).messages;
+
+    for (final text in [
+      messages.dailyOsNextActivitySubmitted,
+      messages.dailyOsNextActivitySaved,
+      messages.dailyOsNextActivityUseToRefine,
+      messages.dailyOsNextActivityOpenSetup,
+    ]) {
+      expect(
+        find.text(text),
+        text == messages.dailyOsNextActivityUseToRefine
+            ? findsNWidgets(2)
+            : findsOneWidget,
+      );
+    }
+    await tester.tap(find.text(messages.dailyOsNextActivityOpenSetup));
+    expect(routes, ['/settings/ai']);
+
+    await tester.tap(
+      find.text(messages.dailyOsNextActivityAddOrEditText).last,
+    );
+    await tester.pump();
+    await tester.tap(find.text(messages.cancelButton));
+    await tester.pump();
+    verifyNever(
+      () => transcriptWriter.attachManual(
+        audioId: any(named: 'audioId'),
+        transcript: any(named: 'transcript'),
+      ),
+    );
+  });
+
+  testWidgets('retries a failed local projection and shows an empty day', (
+    tester,
+  ) async {
+    var loads = 0;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        DayActivityView(
+          date: date,
+          hasPlan: false,
+          actualBlocks: const [],
+          onUseEntry: (_) {},
+        ),
+        overrides: [
+          dayActivityProvider.overrideWith((ref, date) {
+            loads += 1;
+            if (loads == 1) throw StateError('database unavailable');
+            return const <DayActivityEntry>[];
+          }),
+        ],
+      ),
+    );
+    await tester.pump();
+    final messages = tester.element(find.byType(DayActivityView)).messages;
+
+    await tester.tap(find.text(messages.dailyOsNextActivityRetryLoad));
+    await tester.pump();
+
+    expect(loads, 2);
+    expect(find.text(messages.dailyOsNextActivityEmpty), findsOneWidget);
+    expect(find.text(messages.dailyOsNextActivityLoadFailed), findsNothing);
+  });
+
+  testWidgets('embeds playback when the saved audio asset is local', (
+    tester,
+  ) async {
+    final root = Directory.systemTemp.createTempSync('day-activity-audio-');
+    addTearDown(() => root.deleteSync(recursive: true));
+    final audioFile = File('${root.path}/recording.wav')..writeAsBytesSync([0]);
+    final audio = JournalAudio(
+      meta: Metadata(
+        id: 'audio-local',
+        createdAt: capturedAt,
+        updatedAt: capturedAt,
+        dateFrom: capturedAt,
+        dateTo: capturedAt.add(const Duration(seconds: 1)),
+      ),
+      data: AudioData(
+        dateFrom: capturedAt,
+        dateTo: capturedAt.add(const Duration(seconds: 1)),
+        audioFile: 'recording.wav',
+        audioDirectory: root.path,
+        duration: const Duration(seconds: 1),
+      ),
+    );
+    final entry = DayActivityEntry(
+      id: 'local',
+      kind: DayActivityEntryKind.recording,
+      createdAt: capturedAt,
+      activityEntryId: 'local',
+      audio: audio,
+      audioPath: audioFile.path,
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        DayActivityView(
+          date: date,
+          hasPlan: false,
+          actualBlocks: const [],
+          onUseEntry: (_) {},
+        ),
+        overrides: [
+          dayActivityProvider.overrideWith((ref, date) async => [entry]),
+          audioWaveformProvider.overrideWith((ref, request) async => null),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(AudioPlayerWidget), findsOneWidget);
+    expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
   });
 }

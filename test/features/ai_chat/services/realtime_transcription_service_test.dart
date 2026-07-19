@@ -187,6 +187,14 @@ void main() {
         expect(context.intent, AudioCaptureIntent.dayPlan);
         expect(context.planDate, DateTime(2026, 7, 18));
         expect(context.timeZoneOffsetMinutes, 0);
+        expect(capture.createdAt, DateTime.utc(2026, 7, 18, 8, 15));
+        expect(capture.dayId, 'dayplan-2026-07-18');
+        expect(capture.planDate, DateTime(2026, 7, 18));
+        expect(capture.intent, AudioCaptureIntent.dayPlan);
+        expect(capture.originHostId, isNull);
+        expect(capture.continuationOperationId, isNull);
+        expect(capture.baselineRevisionId, isNull);
+        expect(capture.acceptedPcmBytes, 0);
         expect(
           capture.sessionDirectory.path,
           path.join(assetRoot.path, '.audio_spool', 'daily-session'),
@@ -197,6 +205,33 @@ void main() {
           ),
           contains('manifest-00000001.json'),
         );
+        await capture.discard();
+      },
+    );
+
+    test(
+      'allocates a UUID when no durable identity factory is supplied',
+      () async {
+        final bench = await RealtimeTranscriptionTestBench.create(
+          addConfig: false,
+        );
+        addTearDown(bench.dispose);
+        final assetRoot = await Directory(
+          path.join(bench.rootDirectory.path, 'default-id-assets'),
+        ).create();
+
+        final capture = await bench.service.prepareDefaultDurableCapture(
+          assetRootDirectory: assetRoot,
+          createdAt: DateTime.utc(2026, 7, 18, 8, 30),
+          origin: AudioCaptureOrigin.dailyOs,
+          intent: AudioCaptureIntent.dayPlan,
+        );
+
+        expect(
+          Uuid.isValidUUID(fromString: capture.recordingSessionId),
+          isTrue,
+        );
+        expect(capture.activityEntryId, isNotEmpty);
         await capture.discard();
       },
     );
@@ -368,6 +403,34 @@ void main() {
       expect(bench.service.isActive, isFalse);
       expect(repository.disconnected, isTrue);
       expect(repository.sentChunks, isEmpty);
+    });
+
+    test('slow MLX setup is cancelled after recovery teardown', () async {
+      final bench = await RealtimeTranscriptionTestBench.create(
+        addConfig: false,
+        addMlxConfig: true,
+      );
+      addTearDown(bench.dispose);
+      final gate = Completer<void>();
+      bench.mlxAudioChannel.startGate = gate;
+      final capture = await bench.prepareCapture();
+      final pcm = StreamController<Uint8List>();
+
+      final start = bench.service.startRealtimeTranscription(
+        capture: capture,
+        pcmStream: pcm.stream,
+        onDelta: (_) {},
+      );
+      await bench.mlxAudioChannel.startEntered.future;
+      await bench.service.stopAndRetainForRecovery(
+        capture: capture,
+        stopRecorder: pcm.close,
+      );
+      gate.complete();
+      await start;
+
+      expect(bench.service.isActive, isFalse);
+      expect(bench.mlxAudioChannel.cancelled, isTrue);
     });
 
     test('emits amplitude values from PCM chunks', () async {
@@ -897,6 +960,38 @@ void main() {
       expect(results[0].audioFilePath, results[1].audioFilePath);
     });
 
+    test('rejects a concurrent stop targeting another output', () async {
+      final bench = await RealtimeTranscriptionTestBench.create();
+      addTearDown(bench.dispose);
+      await bench.startTranscription();
+      await bench.sendPcm(pcmSilence(64));
+      final firstOutput = path.join(
+        bench.rootDirectory.path,
+        'assets',
+        'first-stop',
+      );
+      final first = bench.stop(
+        outputPath: firstOutput,
+        afterListening: () => bench.simulateDone('done'),
+      );
+
+      await expectLater(
+        bench.service.stop(
+          capture: bench.activeCapture!,
+          stopRecorder: () async {},
+          outputPath: path.join(
+            bench.rootDirectory.path,
+            'assets',
+            'different-stop',
+          ),
+        ),
+        throwsStateError,
+      );
+      final result = await first;
+
+      expect(result.audioFilePath, '$firstOutput.wav');
+    });
+
     test('calls stopRecorder callback', () async {
       final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
@@ -1160,6 +1255,12 @@ void main() {
         capture: bench.activeCapture!,
         stopRecorder: bench.closePcm,
       );
+      final otherCapture = await bench.prepareCapture();
+      var otherRecorderStops = 0;
+      await bench.service.stopAndRetainForRecovery(
+        capture: otherCapture,
+        stopRecorder: () async => otherRecorderStops += 1,
+      );
       repository.doneController.add(
         const RealtimeTranscriptionDone(text: 'terminal transcript'),
       );
@@ -1170,6 +1271,8 @@ void main() {
       expect(result.transcript, 'terminal transcript');
       expect(result.audioFilePath, isNotNull);
       expect(bench.service.isActive, isFalse);
+      expect(otherRecorderStops, 1);
+      await otherCapture.discard();
     });
 
     test(
@@ -1264,6 +1367,12 @@ void main() {
         await repository.disconnectStarted.future;
         final secondCapture = await bench.prepareCapture();
         final rejectedPcm = StreamController<Uint8List>.broadcast();
+        var secondRecorderStops = 0;
+        await bench.service.stopAndRetainForRecovery(
+          capture: secondCapture,
+          stopRecorder: () async => secondRecorderStops += 1,
+        );
+        expect(secondRecorderStops, 1);
 
         await expectLater(
           bench.service.startRealtimeTranscription(
@@ -1335,6 +1444,40 @@ void main() {
   });
 
   group('PCM stream error handling', () {
+    test(
+      'retains a durable prefix when recorder shutdown never closes PCM',
+      () async {
+        final bench = await RealtimeTranscriptionTestBench.create(
+          addConfig: false,
+          pcmDrainTimeout: Duration.zero,
+        );
+        addTearDown(bench.dispose);
+        final pcm = await bench.startTranscription();
+        await bench.sendPcm(pcmSilence(64));
+
+        final result = await bench.service.stop(
+          capture: bench.activeCapture!,
+          stopRecorder: () async {},
+          outputPath: path.join(
+            bench.rootDirectory.path,
+            'assets',
+            'pcm-drain-timeout',
+          ),
+        );
+        await pcm.close();
+
+        expect(
+          result.captureDisposition,
+          RealtimeCaptureDisposition.savedPartial,
+        );
+        expect(File(result.audioFilePath!).lengthSync(), 44 + 64);
+        expect(
+          fakeLogging.events,
+          contains(contains('PCM stream did not close')),
+        );
+      },
+    );
+
     test(
       'signals spool saturation once so the caller can stop the recorder',
       () async {
@@ -1508,6 +1651,13 @@ void main() {
         expect(result.audioFilePath, endsWith('.wav'));
         expect(converterCalls, 0);
         expect(File(result.audioFilePath!).existsSync(), isTrue);
+        await bench.activeCapture!.markCommitted(
+          journalAudioId: 'journal-audio-1',
+        );
+        expect(
+          bench.activeCapture!.spool.manifest.journalAudioId,
+          'journal-audio-1',
+        );
       },
     );
 
@@ -1525,6 +1675,12 @@ void main() {
       // Without native M4A converter, should fall back to .wav
       expect(result.audioFilePath, isNotNull);
       expect(result.audioFilePath, endsWith('.wav'));
+      await bench.activeCapture!.consumeTransient();
+      expect(
+        bench.activeCapture!.spool.manifest.state,
+        DurableAudioSpoolState.discarded,
+      );
+      expect(File(result.audioFilePath!).existsSync(), isFalse);
     });
 
     test(
