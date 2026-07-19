@@ -246,4 +246,35 @@ void main() {
       containsAll(['transcribe_session-1', 'manual:activity-1']),
     );
   });
+
+  test('propagates a write failure without blocking later writes', () async {
+    final completed = audio(
+      transcripts: <AudioTranscript>[
+        AudioTranscript(
+          created: now,
+          library: 'daily-os-outbox',
+          model: 'configured-audio-model',
+          detectedLanguage: '-',
+          transcript: 'Already attached',
+          processingJobId: 'transcribe_session-1',
+        ),
+      ],
+    );
+    var calls = 0;
+    when(() => journalDb.journalEntityById('audio-1')).thenAnswer((_) async {
+      if (calls++ == 0) throw StateError('database unavailable');
+      return completed;
+    });
+
+    await expectLater(
+      writer.attach(job: job(), transcript: 'First attempt'),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(
+      await writer.attach(job: job(), transcript: 'Duplicate retry'),
+      isTrue,
+    );
+    verifyNever(() => persistenceLogic.updateDbEntity(any()));
+  });
 }

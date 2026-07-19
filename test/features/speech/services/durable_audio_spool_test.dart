@@ -20,13 +20,17 @@ void main() {
     if (root.existsSync()) await root.delete(recursive: true);
   });
 
-  DurableAudioSpoolContext contextFor(String sessionId) {
+  DurableAudioSpoolContext contextFor(
+    String sessionId, {
+    String? activityEntryId,
+    String? assetRootPath,
+  }) {
     return DurableAudioSpoolContext(
       recordingSessionId: sessionId,
-      activityEntryId: 'activity-$sessionId',
+      activityEntryId: activityEntryId ?? 'activity-$sessionId',
       dayId: 'day-2026-07-18',
       createdAt: DateTime.utc(2026, 7, 18, 7, 30),
-      assetRootPath: path.join(root.path, 'assets'),
+      assetRootPath: assetRootPath ?? path.join(root.path, 'assets'),
       metadata: const <String, String>{'intent': 'draft'},
     );
   }
@@ -68,6 +72,84 @@ void main() {
       expect(spool.manifest.context.dayId, 'day-2026-07-18');
       expect(spool.manifest.context.metadata, const {'intent': 'draft'});
       expect(spool.manifest.acceptedPcmBytes, 0);
+    },
+  );
+
+  test('rejects unsafe or internally inconsistent session setup', () async {
+    for (final sessionId in ['slash/session', 'spaces are unsafe']) {
+      await expectLater(
+        DurableAudioSpool.start(
+          rootDirectory: root,
+          context: contextFor(sessionId),
+        ),
+        throwsArgumentError,
+      );
+    }
+    for (final chunkBytes in [0, 3]) {
+      await expectLater(
+        DurableAudioSpool.start(
+          rootDirectory: root,
+          context: contextFor('bad-chunk-$chunkBytes'),
+          chunkBytes: chunkBytes,
+        ),
+        throwsArgumentError,
+      );
+    }
+    await expectLater(
+      DurableAudioSpool.start(
+        rootDirectory: root,
+        context: contextFor('bad-pending'),
+        maxPendingBytes: 0,
+      ),
+      throwsArgumentError,
+    );
+    await expectLater(
+      DurableAudioSpool.start(
+        rootDirectory: root,
+        context: contextFor('bad-activity', activityEntryId: '  '),
+      ),
+      throwsArgumentError,
+    );
+    for (final assetRootPath in ['', 'relative/assets']) {
+      await expectLater(
+        DurableAudioSpool.start(
+          rootDirectory: root,
+          context: contextFor(
+            'bad-assets-${assetRootPath.length}',
+            assetRootPath: assetRootPath,
+          ),
+        ),
+        throwsArgumentError,
+      );
+    }
+  });
+
+  test(
+    'requires a provisioned parent and an unused session directory',
+    () async {
+      final missingParentRoot = Directory(
+        path.join(root.path, 'missing-parent', 'spool'),
+      );
+      await expectLater(
+        DurableAudioSpool.start(
+          rootDirectory: missingParentRoot,
+          context: contextFor('missing-parent'),
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
+
+      final sessionDirectory = Directory(path.join(root.path, 'already-used'))
+        ..createSync();
+      File(
+        path.join(sessionDirectory.path, 'unexpected'),
+      ).writeAsStringSync('x');
+      await expectLater(
+        DurableAudioSpool.start(
+          rootDirectory: root,
+          context: contextFor('already-used'),
+        ),
+        throwsStateError,
+      );
     },
   );
 

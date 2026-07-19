@@ -146,4 +146,49 @@ void main() {
     expect(await repair.repair(), 0);
     expect(await repository.getAll(), isEmpty);
   });
+
+  test('continues through full pages until the final partial page', () async {
+    when(
+      () => journalDb.getJournalEntities(
+        types: const <String>['JournalAudio'],
+        starredStatuses: const <bool>[true, false],
+        privateStatuses: const <bool>[true, false],
+        flaggedStatuses: const <int>[1, 0],
+        ids: null,
+        limit: 1,
+        // ignore: avoid_redundant_argument_values
+        offset: 0,
+      ),
+    ).thenAnswer((_) async => <JournalEntity>[audio(completed: false)]);
+    when(
+      () => journalDb.getJournalEntities(
+        types: const <String>['JournalAudio'],
+        starredStatuses: const <bool>[true, false],
+        privateStatuses: const <bool>[true, false],
+        flaggedStatuses: const <int>[1, 0],
+        ids: null,
+        limit: 1,
+        offset: 1,
+      ),
+    ).thenAnswer((_) async => <JournalEntity>[]);
+    final repair = DayProcessingOutboxRepair(
+      repository: repository,
+      journalDb: journalDb,
+      assetRoot: root,
+    );
+
+    expect(await repair.repair(pageSize: 1), 1);
+    expect(await repository.getAll(), hasLength(1));
+    verify(
+      () => journalDb.getJournalEntities(
+        types: const <String>['JournalAudio'],
+        starredStatuses: const <bool>[true, false],
+        privateStatuses: const <bool>[true, false],
+        flaggedStatuses: const <int>[1, 0],
+        ids: null,
+        limit: 1,
+        offset: 1,
+      ),
+    ).called(1);
+  });
 }

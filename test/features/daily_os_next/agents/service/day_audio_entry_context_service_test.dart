@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_audio_context.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_context_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -189,5 +190,59 @@ void main() {
       entries.map((entry) => entry.audioId),
       containsAll(<String>['recording-0', 'recording-20']),
     );
+  });
+
+  test('paginates and prefers user-reviewed text over receipts', () async {
+    final reviewed =
+        audio(
+          id: 'reviewed',
+          entryDayId: dayId,
+          processingJobId: 'job-reviewed',
+          transcript: 'Automatic wording',
+          receiptJobId: 'job-reviewed',
+        ).copyWith(
+          entryText: const EntryText(
+            plainText: '  My reviewed wording  ',
+            markdown: 'My reviewed wording',
+          ),
+        );
+    when(
+      () => journalDb.getJournalEntities(
+        types: const ['JournalAudio'],
+        starredStatuses: const [true, false],
+        privateStatuses: const [true, false],
+        flaggedStatuses: const [1, 0],
+        ids: null,
+        limit: 1,
+        // ignore: avoid_redundant_argument_values
+        offset: 0,
+      ),
+    ).thenAnswer((_) async => [reviewed]);
+    when(
+      () => journalDb.getJournalEntities(
+        types: const ['JournalAudio'],
+        starredStatuses: const [true, false],
+        privateStatuses: const [true, false],
+        flaggedStatuses: const [1, 0],
+        ids: null,
+        limit: 1,
+        offset: 1,
+      ),
+    ).thenAnswer((_) async => const []);
+
+    final entries = await service.loadForDay(dayId, pageSize: 1);
+
+    expect(entries.single.transcript, 'My reviewed wording');
+    verify(
+      () => journalDb.getJournalEntities(
+        types: const ['JournalAudio'],
+        starredStatuses: const [true, false],
+        privateStatuses: const [true, false],
+        flaggedStatuses: const [1, 0],
+        ids: null,
+        limit: 1,
+        offset: 1,
+      ),
+    ).called(1);
   });
 }

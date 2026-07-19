@@ -49,6 +49,19 @@ void main() {
       () => buildWavHeader(dataSize: 0, bitsPerSample: 12),
       throwsArgumentError,
     );
+    expect(
+      () => buildWavHeader(dataSize: 0, channels: 0xFFFF),
+      throwsRangeError,
+    );
+    expect(
+      () => buildWavHeader(
+        dataSize: 0,
+        sampleRate: 0xFFFFFFFF,
+        channels: 2,
+        bitsPerSample: 8,
+      ),
+      throwsRangeError,
+    );
   });
 
   test('detects a noncanonical or truncated WAV header', () {
