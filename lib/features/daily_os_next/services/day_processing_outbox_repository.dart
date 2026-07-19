@@ -325,8 +325,7 @@ class DayProcessingOutboxRepository {
         DayProcessingJobStatus.waitingForNetwork,
       DayProcessingFailureClass.setupRequired =>
         DayProcessingJobStatus.waitingForUser,
-      DayProcessingFailureClass.missingAsset =>
-        DayProcessingJobStatus.waitingForUser,
+      DayProcessingFailureClass.missingAsset => DayProcessingJobStatus.queued,
       DayProcessingFailureClass.deterministic => DayProcessingJobStatus.failed,
       _ => DayProcessingJobStatus.queued,
     };

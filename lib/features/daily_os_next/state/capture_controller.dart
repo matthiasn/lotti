@@ -22,6 +22,7 @@ import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart' as record;
 
@@ -168,7 +169,7 @@ class CaptureController extends Notifier<CaptureState> {
     final createdAt = _now();
     final planDate = forDate ?? createdAt;
     _activeDayId = dayPlanId(planDate);
-    _activePlanDate = DateTime(planDate.year, planDate.month, planDate.day);
+    _activePlanDate = planDate.dateOnly;
     _activeIntent = intent;
     final docDir = _docDir();
     DurableRealtimeCapture capture;

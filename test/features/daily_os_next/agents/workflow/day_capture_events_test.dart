@@ -8,6 +8,7 @@ CaptureEntity _capture(
   DateTime? capturedAt,
   DateTime? createdAt,
   DateTime? deletedAt,
+  String dayId = '',
 }) =>
     AgentDomainEntity.capture(
           id: id,
@@ -16,6 +17,7 @@ CaptureEntity _capture(
           capturedAt: capturedAt ?? DateTime.utc(2026, 6, 4, 8),
           createdAt: createdAt ?? DateTime.utc(2026, 6, 4, 8, 1),
           vectorClock: null,
+          dayId: dayId,
           deletedAt: deletedAt,
         )
         as CaptureEntity;
@@ -51,11 +53,37 @@ void main() {
   });
 
   group('captureEventMeta', () {
-    test('extracts id and the two ordering timestamps', () {
-      final meta = captureEventMeta(_capture('cap-1'));
+    test('extracts day identity and ordering timestamps', () {
+      final meta = captureEventMeta(
+        _capture('cap-1', dayId: 'dayplan-2026-06-05'),
+      );
       expect(meta.id, 'cap-1');
+      expect(meta.dayId, 'dayplan-2026-06-05');
       expect(meta.createdAt, DateTime.utc(2026, 6, 4, 8, 1));
       expect(meta.capturedAt, DateTime.utc(2026, 6, 4, 8));
+    });
+
+    test('prefers explicit day identity and derives only for legacy data', () {
+      expect(
+        captureEventDayId(
+          captureEventMeta(
+            _capture(
+              'selected-day',
+              capturedAt: DateTime(2026, 6, 4, 23),
+              dayId: 'dayplan-2026-06-05',
+            ),
+          ),
+        ),
+        'dayplan-2026-06-05',
+      );
+      expect(
+        captureEventDayId(
+          captureEventMeta(
+            _capture('legacy', capturedAt: DateTime(2026, 6, 4, 23)),
+          ),
+        ),
+        'dayplan-2026-06-04',
+      );
     });
   });
 

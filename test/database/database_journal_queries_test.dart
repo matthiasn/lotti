@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/day_audio_context.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -107,6 +108,107 @@ void main() {
     tearDownAll(() async {
       await db?.close();
       await getIt.reset();
+    });
+
+    group('Daily OS audio lookups -', () {
+      DayAudioContext context({
+        required String dayId,
+        required String sessionId,
+        required DateTime capturedAt,
+      }) => DayAudioContext(
+        dayId: dayId,
+        planDate: capturedAt,
+        recordingSessionId: sessionId,
+        activityEntryId: 'activity-$sessionId',
+        processingJobId: 'transcribe_$sessionId',
+        capturedAt: capturedAt,
+        intent: 'dayPlan',
+      );
+
+      test('filters and orders a day through denormalized columns', () async {
+        final later = buildAudioEntry(
+          id: 'day-audio-later',
+          timestamp: DateTime(2026, 7, 18, 11),
+          audioDirectory: '/audio/',
+          audioFile: 'later.wav',
+          dayContext: context(
+            dayId: 'dayplan-2026-07-18',
+            sessionId: 'session-later',
+            capturedAt: DateTime(2026, 7, 18, 11),
+          ),
+        );
+        final earlier = buildAudioEntry(
+          id: 'day-audio-earlier',
+          timestamp: DateTime(2026, 7, 18, 8),
+          audioDirectory: '/audio/',
+          audioFile: 'earlier.wav',
+          dayContext: context(
+            dayId: 'dayplan-2026-07-18',
+            sessionId: 'session-earlier',
+            capturedAt: DateTime(2026, 7, 18, 8),
+          ),
+        );
+        final otherDay = buildAudioEntry(
+          id: 'other-day',
+          timestamp: DateTime(2026, 7, 19, 8),
+          audioDirectory: '/audio/',
+          audioFile: 'other.wav',
+          dayContext: context(
+            dayId: 'dayplan-2026-07-19',
+            sessionId: 'session-other',
+            capturedAt: DateTime(2026, 7, 19, 8),
+          ),
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(later));
+        await db!.upsertJournalDbEntity(toDbEntity(otherDay));
+        await db!.upsertJournalDbEntity(toDbEntity(earlier));
+
+        final entries = await db!.getDayAudioEntries(
+          'dayplan-2026-07-18',
+        );
+
+        expect(entries.map((entry) => entry.meta.id), [
+          'day-audio-earlier',
+          'day-audio-later',
+        ]);
+        final plan = await db!
+            .customSelect(
+              'EXPLAIN QUERY PLAN SELECT id FROM journal '
+              "WHERE type = 'JournalAudio' AND deleted = FALSE "
+              "AND day_id = 'dayplan-2026-07-18' "
+              'ORDER BY date_from ASC, id ASC',
+            )
+            .get();
+        expect(
+          plan.map((row) => row.read<String>('detail')).join(' '),
+          contains('idx_journal_day_audio'),
+        );
+      });
+
+      test('resolves a recording session through its unique index', () async {
+        final entry = buildAudioEntry(
+          id: 'session-owner',
+          timestamp: DateTime(2026, 7, 18, 8),
+          audioDirectory: '/audio/',
+          audioFile: 'owner.wav',
+          dayContext: context(
+            dayId: 'dayplan-2026-07-18',
+            sessionId: 'stable-session',
+            capturedAt: DateTime(2026, 7, 18, 8),
+          ),
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(entry));
+
+        final found = await db!.journalAudioByRecordingSessionId(
+          'stable-session',
+        );
+
+        expect(found?.meta.id, 'session-owner');
+        expect(
+          await db!.journalAudioByRecordingSessionId('missing-session'),
+          isNull,
+        );
+      });
     });
 
     group('Edge cases -', () {

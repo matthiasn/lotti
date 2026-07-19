@@ -461,7 +461,7 @@ sequenceDiagram
     Running --> Failed: deterministic provider response
     Failed --> Queued: manual retry
     Running --> Succeeded: receipt attached to JournalAudio
-    Running --> Queued: lease expires or retryable failure
+    Running --> Queued: lease expires / retryable failure / asset not synced yet
     Succeeded --> [*]
   ```
 
@@ -476,6 +476,11 @@ sequenceDiagram
   into the existing Reconcile/Refine flow. A submitted capture remains a
   visible durable continuation handle: reopening it re-enqueues parsing after
   a process restart.
+  `JournalAudio` writes denormalize `dayContext.dayId` and
+  `dayContext.recordingSessionId` into indexed journal columns. Activity and
+  spool recovery therefore perform bounded day/session lookups instead of
+  deserializing the full audio history; the schema migration backfills existing
+  rows and preserves one canonical owner for each stable recording session.
   Async recovery actions expose progress and local failures without hiding the
   retained entry. Reviewed text satisfies pending transcription work, so it is
   not overwritten or followed by unnecessary inference. Missing local audio is

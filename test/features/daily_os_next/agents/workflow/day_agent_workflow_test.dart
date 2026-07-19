@@ -656,15 +656,17 @@ void main() {
                   id: 'cap-1',
                   agentId: agentId,
                   transcript: 'remember to buy oat milk',
-                  capturedAt: DateTime(2026, 5, 25, 7),
+                  capturedAt: DateTime(2026, 5, 24, 23),
                   createdAt: DateTime(2026, 5, 25, 7, 1),
                   vectorClock: null,
+                  dayId: dayId,
                 )
                 as CaptureEntity;
         when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
           (_) async => [
             (
               id: capture.id,
+              dayId: capture.dayId,
               createdAt: capture.createdAt,
               capturedAt: capture.capturedAt,
             ),
@@ -735,6 +737,7 @@ void main() {
           (_) async => [
             (
               id: capture.id,
+              dayId: capture.dayId,
               createdAt: capture.createdAt,
               capturedAt: capture.capturedAt,
             ),
@@ -820,6 +823,7 @@ void main() {
           (_) async => [
             (
               id: capture.id,
+              dayId: capture.dayId,
               createdAt: capture.createdAt,
               capturedAt: capture.capturedAt,
             ),
@@ -1299,9 +1303,10 @@ void main() {
                 id: 'cap-1',
                 agentId: agentId,
                 transcript: 'morning planning capture',
-                capturedAt: DateTime.utc(2026, 5, 25, 7),
+                capturedAt: DateTime.utc(2026, 5, 24, 23),
                 createdAt: DateTime.utc(2026, 5, 25, 7, 1),
                 vectorClock: null,
+                dayId: dayId,
               )
               as CaptureEntity;
       // The substrate loads only lightweight metadata; the transcript is
@@ -1310,6 +1315,7 @@ void main() {
         (_) async => [
           (
             id: capture.id,
+            dayId: capture.dayId,
             createdAt: capture.createdAt,
             capturedAt: capture.capturedAt,
           ),
@@ -3147,6 +3153,7 @@ void main() {
           (_) async => [
             (
               id: capture.id,
+              dayId: capture.dayId,
               createdAt: capture.createdAt,
               capturedAt: capture.capturedAt,
             ),

@@ -164,7 +164,7 @@ void main() {
           origin: AudioCaptureOrigin.dailyOs,
           intent: AudioCaptureIntent.dayPlan,
           dayId: 'dayplan-2026-07-18',
-          planDate: DateTime(2026, 7, 18),
+          planDate: DateTime.utc(2026, 7, 18, 21, 45),
         );
 
         expect(capture.recordingSessionId, 'daily-session');
@@ -185,11 +185,11 @@ void main() {
         final context = capture.spool.manifest.context;
         expect(context.origin, AudioCaptureOrigin.dailyOs);
         expect(context.intent, AudioCaptureIntent.dayPlan);
-        expect(context.planDate, DateTime(2026, 7, 18));
+        expect(context.planDate, DateTime.utc(2026, 7, 18));
         expect(context.timeZoneOffsetMinutes, 0);
         expect(capture.createdAt, DateTime.utc(2026, 7, 18, 8, 15));
         expect(capture.dayId, 'dayplan-2026-07-18');
-        expect(capture.planDate, DateTime(2026, 7, 18));
+        expect(capture.planDate, DateTime.utc(2026, 7, 18));
         expect(capture.intent, AudioCaptureIntent.dayPlan);
         expect(capture.originHostId, isNull);
         expect(capture.continuationOperationId, isNull);
@@ -1653,6 +1653,23 @@ void main() {
           contains('callback failed'),
         ]),
       );
+    });
+
+    test('contains a PCM error emitted synchronously during listen', () async {
+      final bench = await RealtimeTranscriptionTestBench.create(
+        addConfig: false,
+      );
+      addTearDown(bench.dispose);
+      final failure = Completer<Object>();
+
+      await bench.startTranscription(
+        transformPcmStream: (_) =>
+            SynchronousErrorStream<Uint8List>(StateError('sync mic failure')),
+        onCaptureFailure: (error, _) => failure.complete(error),
+      );
+
+      expect((await failure.future).toString(), contains('sync mic failure'));
+      expect(bench.service.isActive, isTrue);
     });
 
     test('contains PCM subscription cancellation failures', () async {

@@ -77,29 +77,13 @@ class DayActivityRepository {
     Iterable<CaptureEntity> captures = const <CaptureEntity>[],
     Iterable<DaySummaryEntity> summaries = const <DaySummaryEntity>[],
     DayPlanEntity? plan,
-    int pageSize = 64,
   }) async {
-    final audioByActivity = <String, JournalAudio>{};
-    var offset = 0;
-    while (true) {
-      final page = await journalDb.getJournalEntities(
-        types: const <String>['JournalAudio'],
-        starredStatuses: const <bool>[true, false],
-        privateStatuses: const <bool>[true, false],
-        flaggedStatuses: const <int>[1, 0],
-        ids: null,
-        limit: pageSize,
-        offset: offset,
-      );
-      for (final audio in page.whereType<JournalAudio>()) {
-        final context = audio.data.dayContext;
-        if (audio.meta.deletedAt == null && context?.dayId == dayId) {
-          audioByActivity[context!.activityEntryId] = audio;
-        }
-      }
-      if (page.length < pageSize) break;
-      offset += pageSize;
-    }
+    final dayAudio = await journalDb.getDayAudioEntries(dayId);
+    final audioByActivity = <String, JournalAudio>{
+      for (final audio in dayAudio)
+        if (audio.data.dayContext case final context?)
+          context.activityEntryId: audio,
+    };
 
     final jobs = await outbox.getAll();
     final jobsByActivity = <String, DayProcessingJob>{

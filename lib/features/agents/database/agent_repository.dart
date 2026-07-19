@@ -107,7 +107,16 @@ class AgentRepository {
     int limit = -1,
   }) => _core.getEntitiesByAgentId(agentId, type: type, limit: limit);
 
-  Future<List<({String id, DateTime createdAt, DateTime capturedAt})>>
+  Future<
+    List<
+      ({
+        String id,
+        String dayId,
+        DateTime createdAt,
+        DateTime capturedAt,
+      })
+    >
+  >
   getCaptureEventMetaByAgentId(String agentId) =>
       _core.getCaptureEventMetaByAgentId(agentId);
 

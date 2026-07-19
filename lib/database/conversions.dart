@@ -56,6 +56,10 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     task: (task) => task.data.due,
     orElse: () => null,
   );
+  final dayAudioContext = entity.maybeMap(
+    journalAudio: (audio) => audio.data.dayContext,
+    orElse: () => null,
+  );
 
   final id = entity.meta.id;
   final dbEntity = JournalDbEntity(
@@ -72,6 +76,8 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     taskPriority: taskPriority,
     taskPriorityRank: taskPriorityRank,
     dueAt: dueAt,
+    dayId: dayAudioContext?.dayId,
+    recordingSessionId: dayAudioContext?.recordingSessionId,
     category: entity.meta.categoryId ?? '',
     dateTo: entity.meta.dateTo,
     plainText: entity.entryText?.plainText,

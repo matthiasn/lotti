@@ -268,6 +268,35 @@ class ThrowingCancelStream<T> extends Stream<T> {
   );
 }
 
+/// Emits an error from inside [listen], before the subscription is returned.
+///
+/// This models custom/native streams whose first terminal event is synchronous
+/// and guards subscription setup against late-initialization races.
+class SynchronousErrorStream<T> extends Stream<T> {
+  const SynchronousErrorStream(this.error);
+
+  final Object error;
+
+  @override
+  StreamSubscription<T> listen(
+    void Function(T event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    final controller = StreamController<T>(sync: true);
+    final subscription = controller.stream.listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
+    controller.addError(error, StackTrace.current);
+    unawaited(controller.close());
+    return subscription;
+  }
+}
+
 class _CancelErrorSubscription<T> implements StreamSubscription<T> {
   const _CancelErrorSubscription(this.delegate);
 

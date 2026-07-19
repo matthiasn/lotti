@@ -11,6 +11,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter/widgets.dart' show UniqueKey;
+import 'package:lotti/classes/day_audio_context.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -238,6 +239,7 @@ JournalEntity buildAudioEntry({
   required DateTime timestamp,
   required String audioDirectory,
   required String audioFile,
+  DayAudioContext? dayContext,
   DateTime? deletedAt,
 }) {
   return JournalEntity.journalAudio(
@@ -257,6 +259,7 @@ JournalEntity buildAudioEntry({
       duration: const Duration(minutes: 5),
       audioDirectory: audioDirectory,
       audioFile: audioFile,
+      dayContext: dayContext,
     ),
     entryText: const EntryText(plainText: 'audio entry'),
   );

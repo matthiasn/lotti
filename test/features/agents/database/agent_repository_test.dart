@@ -640,6 +640,7 @@ void main() {
         String id, {
         required DateTime createdAt,
         required DateTime capturedAt,
+        String dayId = '',
         DateTime? deletedAt,
       }) =>
           AgentDomainEntity.capture(
@@ -649,6 +650,7 @@ void main() {
                 capturedAt: capturedAt,
                 createdAt: createdAt,
                 vectorClock: null,
+                dayId: dayId,
                 deletedAt: deletedAt,
               )
               as CaptureEntity;
@@ -662,6 +664,7 @@ void main() {
               'cap-1',
               createdAt: DateTime.utc(2026, 6, 4, 8, 1),
               capturedAt: DateTime.utc(2026, 6, 4, 8),
+              dayId: 'dayplan-2026-06-05',
             ),
           );
           await repo.upsertEntity(
@@ -701,8 +704,10 @@ void main() {
           final byId = {for (final m in metas) m.id: m};
           expect(byId['cap-1']!.createdAt, DateTime.utc(2026, 6, 4, 8, 1));
           expect(byId['cap-1']!.capturedAt, DateTime.utc(2026, 6, 4, 8));
+          expect(byId['cap-1']!.dayId, 'dayplan-2026-06-05');
           expect(byId['cap-2']!.createdAt, DateTime.utc(2026, 6, 5, 9, 1));
           expect(byId['cap-2']!.capturedAt, DateTime.utc(2026, 6, 5, 9));
+          expect(byId['cap-2']!.dayId, isEmpty);
         },
       );
 

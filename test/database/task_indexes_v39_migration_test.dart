@@ -128,7 +128,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 44);
+        expect(db.schemaVersion, 45);
 
         // v41 swapped the expression-keyed shape for a column-keyed one.
         final sql = await indexSql(db, 'idx_journal_tasks_due_open');
@@ -291,7 +291,7 @@ void main() {
 
       final version = await db.customSelect('PRAGMA user_version').get();
       expect(version.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 44);
+      expect(db.schemaVersion, 45);
 
       final sql = await indexSql(db, 'idx_journal_tasks_priority_date');
       expect(sql, contains('task_priority_rank COLLATE BINARY ASC'));

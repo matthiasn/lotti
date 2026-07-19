@@ -133,7 +133,7 @@ void main() {
   });
 
   test(
-    'missing saved audio waits for recovery without a retry loop',
+    'missing saved audio remains queued for automatic recovery retry',
     () async {
       await audio.delete();
       final processor = DayProcessingOutboxProcessor(
@@ -147,7 +147,8 @@ void main() {
 
       expect(result, DayProcessingRunResult.deferred);
       expect(saved!.attempts, 0);
-      expect(saved.status, DayProcessingJobStatus.waitingForUser);
+      expect(saved.status, DayProcessingJobStatus.queued);
+      expect(saved.nextAttemptAt, now.add(const Duration(seconds: 5)));
       expect(saved.lastFailureClass, DayProcessingFailureClass.missingAsset);
     },
   );

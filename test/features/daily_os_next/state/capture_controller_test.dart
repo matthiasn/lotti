@@ -362,7 +362,7 @@ void main() {
 
         await container
             .read(captureControllerProvider.notifier)
-            .toggle(forDate: DateTime(2026, 5, 24));
+            .toggle(forDate: DateTime.utc(2026, 5, 24, 20));
 
         expect(
           events.take(3),
@@ -375,7 +375,7 @@ void main() {
             origin: AudioCaptureOrigin.dailyOs,
             intent: AudioCaptureIntent.dayPlan,
             dayId: 'dayplan-2026-05-24',
-            planDate: DateTime(2026, 5, 24),
+            planDate: DateTime.utc(2026, 5, 24, 20),
           ),
         ).called(1);
         verify(
@@ -960,12 +960,15 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        await container.read(captureControllerProvider.notifier).toggle();
+        await container
+            .read(captureControllerProvider.notifier)
+            .toggle(forDate: DateTime.utc(2026, 5, 26, 18));
         await container.read(captureControllerProvider.notifier).toggle();
 
         final context = persistedNotes.single.dayContext;
         final job = (await outbox.getAll()).single;
         expect(context!.dayId, 'dayplan-2026-05-26');
+        expect(context.planDate, DateTime.utc(2026, 5, 26));
         expect(context.recordingSessionId, 'test-session');
         expect(context.activityEntryId, 'activity-1');
         expect(context.processingJobId, 'transcribe_test-session');

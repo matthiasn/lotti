@@ -196,25 +196,7 @@ class DayAudioSpoolRecoveryService {
   }
 
   Future<JournalAudio?> _findBySession(String recordingSessionId) async {
-    const pageSize = 64;
-    for (var offset = 0; ; offset += pageSize) {
-      final page = await journalDb.getJournalEntities(
-        types: const <String>['JournalAudio'],
-        starredStatuses: const <bool>[true, false],
-        privateStatuses: const <bool>[true, false],
-        flaggedStatuses: const <int>[1, 0],
-        ids: null,
-        limit: pageSize,
-        offset: offset,
-      );
-      for (final audio in page.whereType<JournalAudio>()) {
-        if (audio.meta.deletedAt == null &&
-            audio.data.dayContext?.recordingSessionId == recordingSessionId) {
-          return audio;
-        }
-      }
-      if (page.length < pageSize) return null;
-    }
+    return journalDb.journalAudioByRecordingSessionId(recordingSessionId);
   }
 
   String? _completedTranscript(JournalAudio audio) {

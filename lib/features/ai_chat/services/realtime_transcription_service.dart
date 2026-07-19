@@ -15,6 +15,7 @@ import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
@@ -195,9 +196,7 @@ class RealtimeTranscriptionService {
         origin: origin,
         intent: intent,
         dayId: dayId,
-        planDate: planDate == null
-            ? null
-            : DateTime(planDate.year, planDate.month, planDate.day),
+        planDate: planDate?.dateOnly,
         timeZoneOffsetMinutes: createdAt.timeZoneOffset.inMinutes,
         originHostId: originHostId,
         continuationOperationId: continuationOperationId,
@@ -759,7 +758,7 @@ class RealtimeTranscriptionService {
     final done = _pcmDoneCompleter = Completer<void>();
     var pendingOperations = 0;
     var sourceClosed = false;
-    late final StreamSubscription<Uint8List> subscription;
+    StreamSubscription<Uint8List>? subscription;
 
     void completeWhenDrained() {
       if (sourceClosed && pendingOperations == 0 && !done.isCompleted) {
@@ -792,7 +791,7 @@ class RealtimeTranscriptionService {
         unawaited(
           () async {
             try {
-              await subscription.cancel();
+              await subscription?.cancel();
             } catch (cancelError, cancelStackTrace) {
               getIt<DomainLogger>().error(
                 LogDomain.speech,
@@ -809,7 +808,7 @@ class RealtimeTranscriptionService {
       }
     }
 
-    subscription = pcmStream.listen(
+    _pcmSubscription = pcmStream.listen(
       (chunk) {
         if (_pcmFailure != null) return;
         pendingOperations += 1;
@@ -839,7 +838,7 @@ class RealtimeTranscriptionService {
       },
       cancelOnError: true,
     );
-    _pcmSubscription = subscription;
+    subscription = _pcmSubscription;
   }
 
   Future<void> _persistAndForward(

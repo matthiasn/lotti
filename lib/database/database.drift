@@ -23,6 +23,10 @@ CREATE TABLE journal (
   geohash_int INTEGER,
   category TEXT NOT NULL DEFAULT '',
   project_id TEXT,
+  -- Daily OS audio lookup keys denormalized from
+  -- `data.dayContext`. NULL for non-Daily-OS and non-audio rows.
+  day_id TEXT,
+  recording_session_id TEXT,
   -- Denormalized from json_extract(serialized,'$.data.due'), populated by
   -- toDbEntity on every upsert. NULL when the task has no due date or the
   -- row is non-Task. Drives the `idx_journal_tasks_due_open` partial index
@@ -35,6 +39,22 @@ CREATE INDEX idx_journal_date_from_asc ON journal (date_from ASC);
 CREATE INDEX idx_journal_date_from_desc ON journal (date_from DESC);
 CREATE INDEX idx_journal_date_to_asc ON journal (date_to ASC);
 CREATE INDEX idx_journal_date_to_desc ON journal (date_to DESC);
+
+CREATE INDEX idx_journal_day_audio ON journal(
+  day_id COLLATE BINARY ASC,
+  date_from COLLATE BINARY ASC,
+  id COLLATE BINARY ASC
+)
+WHERE type = 'JournalAudio'
+  AND deleted = FALSE
+  AND day_id IS NOT NULL;
+
+CREATE UNIQUE INDEX idx_journal_recording_session ON journal(
+  recording_session_id COLLATE BINARY ASC
+)
+WHERE type = 'JournalAudio'
+  AND deleted = FALSE
+  AND recording_session_id IS NOT NULL;
 
 CREATE INDEX idx_journal_tab ON journal(type COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
 -- Supports the import-flag maintenance views: `countImportFlagEntries` filters

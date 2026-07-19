@@ -109,17 +109,8 @@ void main() {
         SpoolAppendResult.persisted,
       );
       when(
-        () => journalDb.getJournalEntities(
-          types: const ['JournalAudio'],
-          starredStatuses: const [true, false],
-          privateStatuses: const [true, false],
-          flaggedStatuses: const [1, 0],
-          ids: null,
-          limit: 64,
-          // ignore: avoid_redundant_argument_values
-          offset: 0,
-        ),
-      ).thenAnswer((_) async => []);
+        () => journalDb.journalAudioByRecordingSessionId('session-1'),
+      ).thenAnswer((_) async => null);
       AudioNote? persistedNote;
       final service = DayAudioSpoolRecoveryService(
         journalDb: journalDb,
@@ -186,17 +177,8 @@ void main() {
     final originalTarget = File('${root.path}/audio/original.wav');
     await spool.finalize(destinationFile: originalTarget);
     when(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 64,
-        // ignore: avoid_redundant_argument_values
-        offset: 0,
-      ),
-    ).thenAnswer((_) async => []);
+      () => journalDb.journalAudioByRecordingSessionId('session-published'),
+    ).thenAnswer((_) async => null);
     AudioNote? persistedNote;
     final service = DayAudioSpoolRecoveryService(
       journalDb: journalDb,
@@ -315,17 +297,8 @@ void main() {
       );
       final matching = audioForNote(note, id: 'audio-fallback');
       when(
-        () => journalDb.getJournalEntities(
-          types: const ['JournalAudio'],
-          starredStatuses: const [true, false],
-          privateStatuses: const [true, false],
-          flaggedStatuses: const [1, 0],
-          ids: null,
-          limit: 64,
-          // ignore: avoid_redundant_argument_values
-          offset: 0,
-        ),
-      ).thenAnswer((_) async => [matching]);
+        () => journalDb.journalAudioByRecordingSessionId('session-fallback'),
+      ).thenAnswer((_) async => matching);
       final service = DayAudioSpoolRecoveryService(
         journalDb: journalDb,
         outbox: outbox,
@@ -343,89 +316,53 @@ void main() {
     },
   );
 
-  test('searches later journal pages for an existing recording', () async {
-    final spool = await createSpool('session-page-two');
-    final destination = File('${root.path}/audio/page-two.wav');
-    final finalized = await spool.finalize(destinationFile: destination);
-    final source = (await DurableAudioSpool.recover(
-      sessionDirectory: spool.sessionDirectory,
-    )).manifest.context;
-    final matching = audioForNote(
-      AudioNote(
-        createdAt: source.createdAt,
-        audioFile: 'page-two.wav',
-        audioDirectory: '/audio/',
-        duration: finalized.duration,
-        dayContext: DayAudioContext(
-          dayId: source.dayId!,
-          planDate: source.planDate!,
-          recordingSessionId: source.recordingSessionId,
-          activityEntryId: source.activityEntryId,
-          processingJobId: 'transcribe_session-page-two',
-          capturedAt: source.createdAt,
-          intent: 'dayPlan',
-          originHostId: source.originHostId,
+  test(
+    'uses the indexed recording-session lookup for existing audio',
+    () async {
+      final spool = await createSpool('session-page-two');
+      final destination = File('${root.path}/audio/page-two.wav');
+      final finalized = await spool.finalize(destinationFile: destination);
+      final source = (await DurableAudioSpool.recover(
+        sessionDirectory: spool.sessionDirectory,
+      )).manifest.context;
+      final matching = audioForNote(
+        AudioNote(
+          createdAt: source.createdAt,
+          audioFile: 'page-two.wav',
+          audioDirectory: '/audio/',
+          duration: finalized.duration,
+          dayContext: DayAudioContext(
+            dayId: source.dayId!,
+            planDate: source.planDate!,
+            recordingSessionId: source.recordingSessionId,
+            activityEntryId: source.activityEntryId,
+            processingJobId: 'transcribe_session-page-two',
+            capturedAt: source.createdAt,
+            intent: 'dayPlan',
+            originHostId: source.originHostId,
+          ),
         ),
-      ),
-      id: 'audio-page-two',
-    );
-    final unrelated = audioForNote(
-      AudioNote(
-        createdAt: capturedAt,
-        audioFile: 'unrelated.wav',
-        audioDirectory: '/audio/',
-        duration: const Duration(seconds: 1),
-        dayContext: DayAudioContext(
-          dayId: 'dayplan-2026-07-18',
-          planDate: DateTime(2026, 7, 18),
-          recordingSessionId: 'another-session',
-          activityEntryId: 'another-activity',
-          processingJobId: 'transcribe_another-session',
-          capturedAt: capturedAt,
-          intent: 'dayPlan',
-          originHostId: 'test-host',
-        ),
-      ),
-      id: 'unrelated-audio',
-    );
-    when(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 64,
-        // ignore: avoid_redundant_argument_values
-        offset: 0,
-      ),
-    ).thenAnswer((_) async => List<JournalEntity>.filled(64, unrelated));
-    when(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 64,
-        offset: 64,
-      ),
-    ).thenAnswer((_) async => [matching]);
-    final service = DayAudioSpoolRecoveryService(
-      journalDb: journalDb,
-      outbox: outbox,
-      assetRoot: root,
-      persistAudio: (_) async => throw StateError('must reuse journal audio'),
-    );
+        id: 'audio-page-two',
+      );
+      when(
+        () => journalDb.journalAudioByRecordingSessionId('session-page-two'),
+      ).thenAnswer((_) async => matching);
+      final service = DayAudioSpoolRecoveryService(
+        journalDb: journalDb,
+        outbox: outbox,
+        assetRoot: root,
+        persistAudio: (_) async => throw StateError('must reuse journal audio'),
+      );
 
-    final recovered = await service.recoverSession('session-page-two');
+      final recovered = await service.recoverSession('session-page-two');
 
-    expect(recovered, same(matching));
-    expect(
-      (await outbox.getById('transcribe_session-page-two'))?.audioId,
-      'audio-page-two',
-    );
-  });
+      expect(recovered, same(matching));
+      expect(
+        (await outbox.getById('transcribe_session-page-two'))?.audioId,
+        'audio-page-two',
+      );
+    },
+  );
 
   test(
     'recoverAll heals valid sessions while isolating damaged ones',
@@ -436,17 +373,8 @@ void main() {
         '${root.path}/.audio_spool/session-damaged/manifest-00000001.json',
       ).writeAsStringSync('damaged');
       when(
-        () => journalDb.getJournalEntities(
-          types: const ['JournalAudio'],
-          starredStatuses: const [true, false],
-          privateStatuses: const [true, false],
-          flaggedStatuses: const [1, 0],
-          ids: null,
-          limit: 64,
-          // ignore: avoid_redundant_argument_values
-          offset: 0,
-        ),
-      ).thenAnswer((_) async => []);
+        () => journalDb.journalAudioByRecordingSessionId('session-valid'),
+      ).thenAnswer((_) async => null);
       final service = DayAudioSpoolRecoveryService(
         journalDb: journalDb,
         outbox: outbox,

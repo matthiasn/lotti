@@ -94,16 +94,7 @@ void main() {
         transcript: 'Gym check-in',
       );
       when(
-        () => journalDb.getJournalEntities(
-          types: const ['JournalAudio'],
-          starredStatuses: const [true, false],
-          privateStatuses: const [true, false],
-          flaggedStatuses: const [1, 0],
-          ids: null,
-          limit: 64,
-          // ignore: avoid_redundant_argument_values
-          offset: 0,
-        ),
+        () => journalDb.getDayAudioEntries(dayId),
       ).thenAnswer((_) async => [saved]);
       await outbox.enqueueTranscription(
         dayId: dayId,
@@ -139,16 +130,7 @@ void main() {
 
   test('surfaces an uncommitted Daily OS spool as a recovery entry', () async {
     when(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 64,
-        // ignore: avoid_redundant_argument_values
-        offset: 0,
-      ),
+      () => journalDb.getDayAudioEntries(dayId),
     ).thenAnswer((_) async => []);
     final spoolRoot = Directory('${root.path}/.audio_spool')..createSync();
     final spool = await DurableAudioSpool.start(
@@ -182,16 +164,7 @@ void main() {
     'includes typed and unresolved-audio check-ins chronologically',
     () async {
       when(
-        () => journalDb.getJournalEntities(
-          types: const ['JournalAudio'],
-          starredStatuses: const [true, false],
-          privateStatuses: const [true, false],
-          flaggedStatuses: const [1, 0],
-          ids: null,
-          limit: 64,
-          // ignore: avoid_redundant_argument_values
-          offset: 0,
-        ),
+        () => journalDb.getDayAudioEntries(dayId),
       ).thenAnswer((_) async => []);
       final typed =
           AgentDomainEntity.capture(
@@ -235,16 +208,7 @@ void main() {
 
   test('includes the generated plan in chronological activity', () async {
     when(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 64,
-        // ignore: avoid_redundant_argument_values
-        offset: 0,
-      ),
+      () => journalDb.getDayAudioEntries(dayId),
     ).thenAnswer((_) async => []);
     final plan = makeTestDayPlan(
       dayId: dayId,
@@ -262,16 +226,7 @@ void main() {
 
   test('includes the planner-authored day summary', () async {
     when(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 64,
-        // ignore: avoid_redundant_argument_values
-        offset: 0,
-      ),
+      () => journalDb.getDayAudioEntries(dayId),
     ).thenAnswer((_) async => []);
     final summary =
         AgentDomainEntity.daySummary(
@@ -367,35 +322,15 @@ void main() {
     }
   });
 
-  test('paginates journal audio and includes outbox-only recordings', () async {
+  test('combines indexed day audio with outbox-only recordings', () async {
     final saved = audio(
       id: 'saved',
       activityId: 'saved',
       sessionId: 'saved',
     );
     when(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 1,
-        // ignore: avoid_redundant_argument_values
-        offset: 0,
-      ),
+      () => journalDb.getDayAudioEntries(dayId),
     ).thenAnswer((_) async => [saved]);
-    when(
-      () => journalDb.getJournalEntities(
-        types: const ['JournalAudio'],
-        starredStatuses: const [true, false],
-        privateStatuses: const [true, false],
-        flaggedStatuses: const [1, 0],
-        ids: null,
-        limit: 1,
-        offset: 1,
-      ),
-    ).thenAnswer((_) async => []);
     await outbox.enqueueTranscription(
       dayId: dayId,
       activityEntryId: 'outbox-only',
@@ -405,7 +340,7 @@ void main() {
       capturedAt: capturedAt.add(const Duration(minutes: 1)),
     );
 
-    final entries = await repository.load(dayId: dayId, pageSize: 1);
+    final entries = await repository.load(dayId: dayId);
 
     expect(entries.map((entry) => entry.activityEntryId), [
       'saved',

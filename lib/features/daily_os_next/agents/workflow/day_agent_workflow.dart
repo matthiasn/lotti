@@ -268,9 +268,7 @@ class DayAgentWorkflow {
           (await agentRepository.getCaptureEventMetaByAgentId(
                 agentId,
               ))
-              .where(
-                (meta) => dayAgentIdForDate(meta.capturedAt) == resolvedDayId,
-              )
+              .where((meta) => captureEventDayId(meta) == resolvedDayId)
               .toList(growable: false);
       capturesLoaded = true;
     } catch (e) {
