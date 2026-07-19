@@ -647,14 +647,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         ),
         borderRadius: cardRadius,
         border: Border.all(color: ai.border),
-        boxShadow: [
-          BoxShadow(
-            color: ai.accent.withValues(alpha: 0.2),
-            blurRadius: 24,
-            spreadRadius: -4,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: cardRadius,
@@ -667,15 +659,15 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
               playbackControl: playbackControl,
             ),
             // Reading order: the summary first, then the update CTA for the
-            // summary just read, then the proposals. One step4 of air between
-            // each block keeps the rhythm even.
+            // summary just read, then the proposals. Quiet links already own
+            // their compact row height, so the section needs only step3 below.
             if (hasReportContent)
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   tokens.spacing.cardPadding,
                   0,
                   tokens.spacing.cardPadding,
-                  tokens.spacing.step4,
+                  tokens.spacing.step3,
                 ),
                 child: reportBody,
               ),

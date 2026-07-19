@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/task_agent_freshness_strip.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -141,6 +142,13 @@ void main() {
         find.byKey(const ValueKey('taskAgentWakeIconButton')),
         findsOneWidget,
       );
+      final context = tester.element(find.byType(TaskAgentFreshnessStrip));
+      expect(
+        tester.getSize(
+          find.byKey(const ValueKey('taskAgentWakeIconButton')),
+        ),
+        Size.square(context.designTokens.spacing.step9),
+      );
       expect(find.byTooltip('Wake agent'), findsOneWidget);
 
       await tester.tap(
@@ -170,6 +178,18 @@ void main() {
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byTooltip('Thinking…'), findsOneWidget);
+      expect(find.byTooltip('Wake agent'), findsNothing);
+      expect(
+        tester.getSemantics(
+          find.byKey(const ValueKey('taskAgentWakeIconButton')),
+        ),
+        matchesSemantics(
+          label: 'Thinking…',
+          isButton: true,
+          hasEnabledState: true,
+        ),
+      );
       await tester.tap(
         find.byKey(const ValueKey('taskAgentWakeIconButton')),
       );

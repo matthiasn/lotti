@@ -677,7 +677,7 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
                           style: tokens.typography.styles.others.caption
                               .copyWith(
                                 color: intentColor,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: tokens.typography.weight.semiBold,
                               ),
                         ),
                         if (dx < 0) SizedBox(width: tokens.spacing.step2),
@@ -856,8 +856,7 @@ class _ResolveBadge extends StatelessWidget {
           label,
           style: tokens.typography.styles.others.caption.copyWith(
             color: color,
-            fontWeight: FontWeight.w700,
-            height: 1.1,
+            fontWeight: tokens.typography.weight.bold,
           ),
         ),
       ],
@@ -939,7 +938,6 @@ class ProposalRowContent extends StatelessWidget {
       ),
       style: tokens.typography.styles.body.bodySmall.copyWith(
         color: ai.bodyText,
-        height: 1.5,
         decoration: lineThrough ? TextDecoration.lineThrough : null,
       ),
     );

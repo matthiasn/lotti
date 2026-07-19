@@ -1,6 +1,6 @@
 /// Deterministic design-review captures for the task-agent summary card.
 ///
-/// The same two interaction states are rendered at desktop and mobile widths
+/// The same interaction states are rendered at desktop and phone widths
 /// in dark and light mode. This matrix is intentionally reused for baseline,
 /// iteration, and final captures so expert-panel comparisons judge the same
 /// content, viewport, and state every time.
@@ -32,6 +32,12 @@ import 'test_bench.dart';
 
 const _subdir = 'task_agent_card';
 final _now = DateTime(2026, 7, 16, 21);
+
+// Production centers task content in a 760px column with 15px horizontal
+// insets (`TaskDetailsPage`), leaving a 730px card. Keep desktop captures at
+// that real rendered width instead of stretching the card across the whole
+// screenshot device and creating layout artifacts users never see.
+const _desktopCardWidth = 730.0;
 
 const _summary =
     'New task created from audio dictation about making task agent auto-wake '
@@ -156,7 +162,7 @@ Future<void> _capture(
               : DesignSystemTheme.light(),
           surfaceConstraints: BoxConstraints.tight(device.size),
           padding: padding,
-          width: isDesktop ? device.size.width - 80 : device.size.width - 24,
+          width: isDesktop ? _desktopCardWidth : device.size.width - 24,
         ).build(),
       ),
     );
@@ -194,7 +200,7 @@ void main() {
 
   setUpAll(loadScreenshotFonts);
 
-  for (final device in [desktopDevice, proDevice]) {
+  for (final device in [desktopDevice, proDevice, miniDevice]) {
     for (final brightness in [Brightness.dark, Brightness.light]) {
       for (final automaticUpdates in [true, false]) {
         final theme = brightness == Brightness.dark ? 'dark' : 'light';

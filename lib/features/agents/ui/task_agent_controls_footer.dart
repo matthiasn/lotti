@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/agents/ui/task_agent_freshness_strip.dart';
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
@@ -68,6 +69,46 @@ class TaskAgentControlsFooter extends StatelessWidget {
     final countdownVisible = showCountdown && wakeAt != null;
     final hasWakeRow = showWakeButton || countdownVisible;
 
+    Widget automationControls({required bool expandLabel}) {
+      final label = Text(
+        messages.taskAgentAutomaticUpdatesLabel,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: ai.metaText,
+        ),
+      );
+      return Row(
+        mainAxisSize: expandLabel ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          if (expandLabel) Expanded(child: label) else Flexible(child: label),
+          SizedBox(width: tokens.spacing.step2),
+          ConstrainedBox(
+            key: const ValueKey('taskAgentAutomaticUpdatesTarget'),
+            constraints: BoxConstraints(
+              minWidth: tokens.spacing.step9,
+              minHeight: tokens.spacing.step9,
+            ),
+            child: DesignSystemToggle(
+              key: const Key('taskAgentAutomaticUpdatesCheckbox'),
+              value: automaticUpdatesEnabled,
+              semanticsLabel: messages.taskAgentAutomaticUpdatesLabel,
+              // The disabled toggle explains itself on demand instead of
+              // spending a permanent caption line on it.
+              tooltipIcon: inferenceAvailable
+                  ? null
+                  : Icons.info_outline_rounded,
+              tooltipMessage: inferenceAvailable
+                  ? null
+                  : messages.taskAgentAutomaticUpdatesNeedsSetup,
+              enabled: inferenceAvailable && !automationBusy,
+              onChanged: onAutomaticUpdatesChanged,
+            ),
+          ),
+        ],
+      );
+    }
+
     return Container(
       key: const ValueKey('taskAgentControlsFooter'),
       decoration: BoxDecoration(
@@ -76,9 +117,9 @@ class TaskAgentControlsFooter extends StatelessWidget {
       ),
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.cardPadding,
-        tokens.spacing.step3,
+        tokens.spacing.step2,
         tokens.spacing.cardPadding,
-        tokens.spacing.step3,
+        tokens.spacing.step2,
       ),
       // The wash band spans the card, but the content snaps to the same
       // reading measure as the summary and the proposal rows — one shared
@@ -96,10 +137,10 @@ class TaskAgentControlsFooter extends StatelessWidget {
                 // One wake affordance per state, in a constant-height slot: the
                 // countdown chip replaces the button while an automatic wake is
                 // scheduled (the scheduled update *is* the pending wake). step8
-                // fits the taller of the two (the cancel button) exactly — a
-                // 48px floor left a dead band under the compact controls.
+                // used to fit the visuals exactly; step9 keeps the same compact
+                // chrome inside a full 48px interaction slot.
                 ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+                  constraints: BoxConstraints(minHeight: tokens.spacing.step9),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: countdownVisible
@@ -121,40 +162,50 @@ class TaskAgentControlsFooter extends StatelessWidget {
                           ),
                   ),
                 ),
-                SizedBox(height: tokens.spacing.step2),
+                SizedBox(height: tokens.spacing.step1),
               ],
-              Row(
-                children: [
-                  Expanded(
-                    child: TaskAgentIdentityRegion(
-                      data: identityData,
-                      onSetupTap: onSetupTap,
-                    ),
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  Text(
-                    messages.taskAgentAutomaticUpdatesLabel,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: ai.metaText,
-                    ),
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  DesignSystemToggle(
-                    key: const Key('taskAgentAutomaticUpdatesCheckbox'),
-                    value: automaticUpdatesEnabled,
-                    semanticsLabel: messages.taskAgentAutomaticUpdatesLabel,
-                    // The disabled toggle explains itself on demand instead of
-                    // spending a permanent caption line on it.
-                    tooltipIcon: inferenceAvailable
-                        ? null
-                        : Icons.info_outline_rounded,
-                    tooltipMessage: inferenceAvailable
-                        ? null
-                        : messages.taskAgentAutomaticUpdatesNeedsSetup,
-                    enabled: inferenceAvailable && !automationBusy,
-                    onChanged: onAutomaticUpdatesChanged,
-                  ),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final textScale = MediaQuery.textScalerOf(context).scale(1);
+                  final compact =
+                      constraints.maxWidth <
+                          TaskAgentFreshnessStrip.compactWidth ||
+                      textScale > 1.3;
+                  if (compact) {
+                    return Column(
+                      key: const ValueKey('taskAgentFooterCompactLayout'),
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TaskAgentIdentityRegion(
+                          data: identityData,
+                          onSetupTap: onSetupTap,
+                        ),
+                        SizedBox(height: tokens.spacing.step1),
+                        automationControls(expandLabel: true),
+                      ],
+                    );
+                  }
+                  return Row(
+                    key: const ValueKey('taskAgentFooterWideLayout'),
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: TaskAgentIdentityRegion(
+                          data: identityData,
+                          onSetupTap: onSetupTap,
+                        ),
+                      ),
+                      Flexible(
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            left: tokens.spacing.step3,
+                          ),
+                          child: automationControls(expandLabel: false),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -209,54 +260,81 @@ class _CountdownChipState extends State<_CountdownChip>
     // Neutral wash, not accent: an informational timer must not read with
     // the same urgency-class as pending proposals — the ON toggle is the
     // scheduled footer's single accent.
-    return Container(
-      padding: EdgeInsets.only(left: tokens.spacing.step3),
-      decoration: BoxDecoration(
-        color: ai.subtleWashStrong,
-        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            context.messages.taskAgentNextUpdateIn(
-              formatCountdown(countdownSeconds),
-            ),
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: ai.metaText,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-          Semantics(
-            button: true,
-            label: widget.cancelTooltip,
-            excludeSemantics: true,
-            child: Tooltip(
-              message: widget.cancelTooltip,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: widget.onCancel,
-                  borderRadius: BorderRadius.circular(
-                    tokens.radii.badgesPills,
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: tokens.spacing.step3,
-                      vertical: tokens.spacing.step2,
-                    ),
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: tokens.spacing.step4,
-                      color: ai.metaText,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+          child: Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              Positioned.fill(
+                top: tokens.spacing.step2,
+                bottom: tokens.spacing.step2,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: ai.subtleWashStrong,
+                    borderRadius: BorderRadius.circular(
+                      tokens.radii.badgesPills,
                     ),
                   ),
                 ),
               ),
-            ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: tokens.spacing.step3),
+                      child: Text(
+                        context.messages.taskAgentNextUpdateIn(
+                          formatCountdown(countdownSeconds),
+                        ),
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: ai.metaText,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  Semantics(
+                    button: true,
+                    label: widget.cancelTooltip,
+                    excludeSemantics: true,
+                    child: Tooltip(
+                      message: widget.cancelTooltip,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: widget.onCancel,
+                          borderRadius: BorderRadius.circular(
+                            tokens.radii.badgesPills,
+                          ),
+                          child: SizedBox(
+                            key: const ValueKey(
+                              'taskAgentCancelCountdownTarget',
+                            ),
+                            width: tokens.spacing.step9,
+                            height: tokens.spacing.step9,
+                            child: Center(
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: tokens.spacing.step4,
+                                color: ai.metaText,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -146,9 +146,9 @@ class TldrBody extends StatelessWidget {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
-    // One step above the row/meta text: the ramp, not the sparkle badge,
-    // marks the summary as the card's hero.
-    final bodyStyle = tokens.typography.styles.body.bodyMedium.copyWith(
+    // Match entry-editor prose and compact card summaries; the header and
+    // card treatment provide the hierarchy without enlarging report text.
+    final bodyStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: ai.bodyText,
     );
     final hasMore = additionalReport?.trim().isNotEmpty ?? false;
@@ -173,7 +173,7 @@ class TldrBody extends StatelessWidget {
           ),
         ],
         if (hasMore || expanded) ...[
-          SizedBox(height: tokens.spacing.step3),
+          SizedBox(height: tokens.spacing.step1),
           Wrap(
             spacing: tokens.spacing.step4,
             runSpacing: tokens.spacing.step2,
@@ -187,6 +187,7 @@ class TldrBody extends StatelessWidget {
                   icon: expanded
                       ? Icons.expand_less_rounded
                       : Icons.expand_more_rounded,
+                  expanded: expanded,
                   onPressed: onToggle,
                 ),
               if (expanded)
@@ -211,36 +212,44 @@ class _QuietDisclosureLink extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onPressed,
+    this.expanded,
     super.key,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onPressed;
+  final bool? expanded;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: tokens.spacing.step5, color: ai.metaText),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                label,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: ai.metaText,
-                ),
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        expanded: expanded,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(tokens.radii.s),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: tokens.spacing.step5, color: ai.metaText),
+                  SizedBox(width: tokens.spacing.step2),
+                  Text(
+                    label,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: ai.metaText,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

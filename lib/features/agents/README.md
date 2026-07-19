@@ -150,18 +150,28 @@ stateDiagram-v2
 
 The AI-summary card keeps report reading and agent controls in separate
 information groups. The report is the hero: header, TLDR (reading measure
-capped at ~75 characters even when the card itself is wider), disclosure,
-and proposals form one linear reading column at every width. With no open
+capped at ~75 characters even when the card itself is wider and rendered with
+the editor-aligned `body.bodySmall` typography token), disclosure, and
+proposals form one linear reading column at every width. With no open
 proposals the `0 pending` pill carries the empty state — no placeholder
-band. All secondary controls live in a quiet footer pinned to the card
-bottom (`TaskAgentControlsFooter`), as two fixed rows so no control ever
-relocates between states: a wake row (the manual `Wake agent` button and,
-while an automatic wake is scheduled, a self-labeled `Next update in m:ss`
-chip that cancels the scheduled wake on tap), then the identity row — the
-tappable model/provider line with the automatic-updates toggle pinned
-trailing (caption-weight label; when setup is missing the disabled toggle
-explains itself via an info tooltip). The filled accent is reserved for the
-one wake CTA per state; the TTS play control idles as a whispered
+band. The proposal rail spans the report reading column, keeping History at
+the leading edge and Confirm all at the trailing edge while still wrapping at
+narrow widths. Proposal prose uses the same unmodified `body.bodySmall`
+metrics as the report instead of introducing a separate line height.
+
+All secondary controls live in a quiet, flat footer pinned to the card bottom
+(`TaskAgentControlsFooter`). A wake row contains either the manual `Wake
+agent` button or a self-labeled `Next update in m:ss` chip whose dedicated
+close target cancels the scheduled wake. Below it, the tappable model/provider
+identity and automatic-updates control share a row when space permits; at
+narrow widths or large text they stack without truncating the label. Primary
+and destructive controls retain the design system's `spacing.step9`
+interaction height; quiet disclosures and identity links use the denser
+`spacing.step8` row height so their captions do not create oversized bands.
+Meaningful attribution uses `aiCard.metaText` rather than the fainter
+decorative color. When setup is
+missing, the disabled toggle explains itself via an info tooltip. The filled
+accent is reserved for the one wake CTA per state; the TTS play control idles as a whispered
 subtleWash/metaText icon and earns the accent pair only while preparing or
 playing. While automation is off, `TaskAgentFreshnessStrip`
 holds a constant-geometry slot directly after the summary (and before the

@@ -14,8 +14,9 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
-import 'package:lotti/features/design_system/theme/motion_tokens.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -806,6 +807,86 @@ void main() {
     });
   });
   group('AiSummaryCard – History', () {
+    testWidgets(
+      'bottom rail distributes History left and Confirm all right',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        final bench = AgentTestBench(
+          suggestions: UnifiedSuggestionList(
+            open: [
+              makePending(
+                id: 'open-a',
+                toolName: 'set_task_status',
+                humanSummary: 'Set status to GROOMED',
+              ),
+              makePending(
+                id: 'open-b',
+                toolName: 'update_task_priority',
+                humanSummary: 'Raise priority to P1',
+              ),
+            ],
+            activity: [
+              makeLedgerEntry(
+                id: 'history-a',
+                status: ChangeItemStatus.confirmed,
+              ),
+            ],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final rail = tester.getRect(
+          find.byKey(const ValueKey('proposalBottomRail')),
+        );
+        final history = find.ancestor(
+          of: find.textContaining('History · 1'),
+          matching: find.byType(InkWell),
+        );
+        final context = tester.element(find.byType(ProposalsSection));
+        final confirmAll = find.ancestor(
+          of: find.text('Confirm all'),
+          matching: find.byType(DesignSystemButton),
+        );
+        expect(tester.getRect(history).left, closeTo(rail.left, 0.01));
+        expect(
+          tester.getSize(history).height,
+          greaterThanOrEqualTo(context.designTokens.spacing.step8),
+        );
+        expect(tester.getRect(confirmAll).right, closeTo(rail.right, 0.01));
+        expect(
+          tester.getSemantics(history),
+          matchesSemantics(
+            label: 'History · 1',
+            isButton: true,
+            isFocusable: true,
+            hasExpandedState: true,
+            hasFocusAction: true,
+            hasTapAction: true,
+          ),
+        );
+
+        await tester.tap(history);
+        await tester.pump();
+
+        expect(
+          tester.getSemantics(history),
+          matchesSemantics(
+            label: 'History · 1',
+            isButton: true,
+            isFocusable: true,
+            hasExpandedState: true,
+            isExpanded: true,
+            hasFocusAction: true,
+            hasTapAction: true,
+          ),
+        );
+        semantics.dispose();
+      },
+    );
+
     testWidgets('History toggle expands and collapses resolved entries', (
       tester,
     ) async {
