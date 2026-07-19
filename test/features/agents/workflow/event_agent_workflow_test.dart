@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -523,6 +524,93 @@ void main() {
       expect(reports.single.provenance, contains(aiAttributionProvenanceKey));
       verify(() => attribution.service.finalize(any())).called(1);
     });
+
+    test(
+      'terminalizes carrier-less attribution when no report is produced',
+      () async {
+        final attribution = AiInteractionCaptureTestBench.create()
+          ..register()
+          ..seedAgentWake(
+            wakeRunKey: runKey,
+            agentId: agentId,
+            taskId: eventId,
+          );
+        mockConversationRepository
+          ..maxDelegateCalls = 2
+          ..sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async => null;
+
+        final result = await run();
+
+        expect(result.success, isFalse);
+        verify(
+          () => attribution.service.prepareCompletion(
+            attributionId: agentWakeAttributionId(runKey),
+            outputs: const [],
+            status: AiWorkStatus.failed,
+            errorCode: 'output_carrier_unavailable',
+          ),
+        ).called(1);
+        verify(() => attribution.service.finalize(any())).called(1);
+      },
+    );
+
+    test(
+      'preserves the no-report result when terminalization also fails',
+      () async {
+        final attribution = AiInteractionCaptureTestBench.create()
+          ..register()
+          ..seedAgentWake(
+            wakeRunKey: runKey,
+            agentId: agentId,
+            taskId: eventId,
+          );
+        mockConversationRepository
+          ..maxDelegateCalls = 2
+          ..sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async => null;
+        when(
+          () => attribution.service.prepareCompletion(
+            attributionId: any(named: 'attributionId'),
+            outputs: any(named: 'outputs'),
+            status: any(named: 'status'),
+            errorCode: any(named: 'errorCode'),
+          ),
+        ).thenThrow(StateError('projection unavailable'));
+
+        final result = await run();
+
+        expect(result.success, isFalse);
+        verify(
+          () => attribution.service.prepareCompletion(
+            attributionId: agentWakeAttributionId(runKey),
+            outputs: const [],
+            status: AiWorkStatus.failed,
+            errorCode: 'output_carrier_unavailable',
+          ),
+        ).called(1);
+      },
+    );
 
     test('persists observations recorded during the wake', () async {
       stubReportPublishingRun(observations: ['send the album to the group']);

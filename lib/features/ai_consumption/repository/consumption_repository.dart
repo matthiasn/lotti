@@ -202,25 +202,6 @@ class ConsumptionRepository {
     return rows.map(ConsumptionDbConversions.fromRow).toList();
   }
 
-  /// Legacy interactions that predate the top-level attribution id.
-  Future<List<AiConsumptionEvent>> eventsWithoutAttribution({
-    int? limit,
-    String? afterId,
-  }) async {
-    final query = _db.select(_db.consumptionEvents)
-      ..where(
-        (table) =>
-            table.attributionId.isNull() &
-            (afterId == null
-                ? const Constant(true)
-                : table.id.isBiggerThanValue(afterId)),
-      )
-      ..orderBy([(table) => OrderingTerm.asc(table.id)]);
-    if (limit != null) query.limit(limit);
-    final rows = await query.get();
-    return rows.map(ConsumptionDbConversions.fromRow).toList();
-  }
-
   /// Run [action] inside a database transaction.
   Future<T> runInTransaction<T>(Future<T> Function() action) =>
       _db.transaction(action);

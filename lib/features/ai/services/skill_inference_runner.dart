@@ -1084,7 +1084,7 @@ class SkillInferenceRunner {
     required CompletionUsage? usage,
     required MeliousCallImpact? impact,
     required DateTime start,
-    DateTime? completedAt,
+    required DateTime completedAt,
     AiInteractionKind? interactionKind,
     String? requestDigest,
     String? responseDigest,
@@ -1107,9 +1107,7 @@ class SkillInferenceRunner {
     categoryId: categoryId,
     skillId: skillId,
     providerModelId: modelId,
-    durationMs: (completedAt ?? DateTime.now())
-        .difference(start)
-        .inMilliseconds,
+    durationMs: completedAt.difference(start).inMilliseconds,
     inputTokens: usage?.promptTokens,
     outputTokens: usage?.completionTokens,
     cachedInputTokens: usage?.promptTokensDetails?.cachedTokens,

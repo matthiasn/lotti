@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -81,6 +82,35 @@ void main() {
         attribution,
       );
     });
+
+    test(
+      'resolves a transcript sub-artifact without matching its siblings',
+      () async {
+        final attribution = makeAiWorkAttribution().copyWith(
+          primaryOutput: const AiArtifactReference(
+            type: AiArtifactType.journalAudio,
+            id: 'audio-1',
+            subId: 'transcript-2',
+          ),
+        );
+        await repo.upsertAttribution(attribution);
+
+        expect(
+          await repo.getAttributionForArtifact(attribution.primaryOutput!),
+          attribution,
+        );
+        expect(
+          await repo.getAttributionForArtifact(
+            const AiArtifactReference(
+              type: AiArtifactType.journalAudio,
+              id: 'audio-1',
+              subId: 'transcript-1',
+            ),
+          ),
+          isNull,
+        );
+      },
+    );
 
     test('returns linked interactions in creation order', () async {
       await repo.upsertEvent(

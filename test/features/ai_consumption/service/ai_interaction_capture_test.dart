@@ -4,6 +4,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -153,5 +154,58 @@ void main() {
             as AiConsumptionEvent;
     expect(event.interactionStatus, AiInteractionStatus.failed);
     expect(event.errorCode, 'StateError');
+  });
+
+  test('captureRealtime records realtime transcription chunks', () async {
+    final chunks = await capture
+        .captureRealtime(
+          workType: AiWorkType.audioTranscription,
+          responseType: AiConsumptionResponseType.audioTranscription,
+          providerType: InferenceProviderType.mistral,
+          modelId: 'voxtral-mini',
+          requestText: 'pcm stream',
+          invoke: () => Stream.fromIterable(['hello', ' world']),
+          responseText: (chunk) => chunk,
+          existingSession: session,
+          terminalizeSuccess: false,
+        )
+        .toList();
+
+    expect(chunks, ['hello', ' world']);
+    final event =
+        verify(
+              () => service.recordInteraction(
+                attributionId: session.id,
+                event: captureAny(named: 'event'),
+              ),
+            ).captured.single
+            as AiConsumptionEvent;
+    expect(event.interactionKind, AiInteractionKind.realtimeTranscription);
+    expect(event.responseDigest, isNotNull);
+  });
+
+  test('automatic sessions use the default automation identity', () async {
+    final automation = makeAiActor().copyWith(
+      type: AiActorType.automation,
+      id: 'automation:embeddingIndexing',
+      displayName: 'embeddingIndexing',
+    );
+    when(
+      () => identity.automationInitiator(
+        id: 'automation:embeddingIndexing',
+        displayName: 'embeddingIndexing',
+      ),
+    ).thenAnswer((_) async => automation);
+
+    await capture.beginSession(
+      workType: AiWorkType.embeddingIndexing,
+      trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
+    );
+
+    final start =
+        verify(() => service.begin(captureAny())).captured.single
+            as AiAttributionStart;
+    expect(start.initiator, automation);
+    expect(start.trigger.type, AiTriggerType.automatic);
   });
 }

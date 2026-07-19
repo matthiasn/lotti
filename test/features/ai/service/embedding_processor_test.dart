@@ -12,9 +12,14 @@ import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../ai_consumption/test_utils.dart';
 
 enum _GeneratedEmbeddingEntityShape {
   missing,
@@ -407,6 +412,7 @@ void main() {
   late MockOllamaEmbeddingRepository mockEmbeddingRepo;
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(Float32List(0));
   });
 
@@ -992,6 +998,84 @@ void main() {
   });
 
   group('EmbeddingProcessor.processAgentReport', () {
+    test(
+      'attributes embedding calls and finalizes the stored vector',
+      () async {
+        final bench = AiInteractionCaptureTestBench.create()..register();
+        addTearDown(bench.unregister);
+        const reportContent =
+            'This attributed report has enough content for embedding.';
+
+        final result = await EmbeddingProcessor.processAgentReport(
+          reportId: 'report-attributed',
+          reportContent: reportContent,
+          taskId: 'task-attributed',
+          categoryId: 'cat-attributed',
+          subtype: 'current',
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          baseUrl: _baseUrl,
+        );
+
+        expect(result, isTrue);
+        final start =
+            verify(() => bench.service.begin(captureAny())).captured.single
+                as AiAttributionStart;
+        expect(start.workType, AiWorkType.embeddingIndexing);
+        expect(start.taskId, 'task-attributed');
+        expect(start.categoryId, 'cat-attributed');
+        expect(start.intendedOutputs.single.id, 'report-attributed');
+        final event =
+            verify(
+                  () => bench.service.recordInteraction(
+                    attributionId: any(named: 'attributionId'),
+                    event: captureAny(named: 'event'),
+                  ),
+                ).captured.single
+                as AiConsumptionEvent;
+        expect(event.interactionKind, AiInteractionKind.embedding);
+        expect(event.responseDigest, isNotNull);
+        verify(() => bench.service.finalize(any())).called(1);
+      },
+    );
+
+    test('terminalizes attribution when embedding generation fails', () async {
+      final bench = AiInteractionCaptureTestBench.create()..register();
+      addTearDown(bench.unregister);
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      ).thenThrow(StateError('offline'));
+
+      await expectLater(
+        EmbeddingProcessor.processAgentReport(
+          reportId: 'report-failed',
+          reportContent:
+              'This attributed report is long enough but embedding fails.',
+          taskId: 'task-failed',
+          categoryId: 'cat-failed',
+          subtype: 'current',
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          baseUrl: _baseUrl,
+        ),
+        throwsStateError,
+      );
+
+      verify(
+        () => bench.service.prepareCompletion(
+          attributionId: any(named: 'attributionId'),
+          outputs: const [],
+          status: AiWorkStatus.failed,
+          errorCode: 'StateError',
+        ),
+      ).called(1);
+      verify(() => bench.service.finalize(any())).called(1);
+    });
+
     test('embeds report content and returns true', () async {
       const reportContent =
           'This agent report has enough content for embedding.';

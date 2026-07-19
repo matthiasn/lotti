@@ -30,4 +30,27 @@ void main() {
 
     expect(AiWorkAttribution.fromJson(json), attribution);
   });
+
+  test('attribution session round-trips its transient work context', () {
+    final session = AiAttributionSession(
+      id: 'session-1',
+      workType: AiWorkType.audioTranscription,
+      initiator: const AiActorSnapshot(
+        type: AiActorType.human,
+        id: 'user-1',
+        displayName: 'Ada',
+      ),
+      trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+      startedAt: DateTime.utc(2026, 7, 19, 10),
+      intendedOutputs: const [
+        AiArtifactReference(type: AiArtifactType.journalAudio, id: 'audio-1'),
+      ],
+      taskId: 'task-1',
+      categoryId: 'category-1',
+    );
+    final json =
+        jsonDecode(jsonEncode(session.toJson())) as Map<String, dynamic>;
+
+    expect(AiAttributionSession.fromJson(json), session);
+  });
 }

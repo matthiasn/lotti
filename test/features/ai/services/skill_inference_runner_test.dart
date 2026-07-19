@@ -1672,6 +1672,67 @@ void main() {
         );
       });
 
+      test('persists attributed image analysis as an AI response', () async {
+        final attribution = _registerInteractionCapture();
+        final imageEntity = makeImageEntity();
+        await createStubImageFile();
+        when(
+          () => mockAiInputRepo.getEntity('img-1'),
+        ).thenAnswer((_) async => imageEntity);
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockCloudRepo.generateWithImages(
+            any(),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            images: any(named: 'images'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.value(makeStreamChunk('Attributed sunset analysis')),
+        );
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            id: any(named: 'id'),
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((invocation) async => makePersistedResponse(invocation));
+        stubLoggingEvent();
+
+        await runner.runImageAnalysis(
+          imageEntryId: 'img-1',
+          automationResult: makeImageAnalysisResult(),
+        );
+
+        final data =
+            verify(
+                  () => mockAiInputRepo.createAiResponseEntry(
+                    id: any(named: 'id'),
+                    data: captureAny(named: 'data'),
+                    start: any(named: 'start'),
+                    linkedId: 'img-1',
+                    categoryId: any(named: 'categoryId'),
+                  ),
+                ).captured.single
+                as AiResponseData;
+        expect(data.response, 'Attributed sunset analysis');
+        expect(data.skillId, testImageSkill.id);
+        expect(data.type, AiResponseType.imageAnalysis);
+        expect(data.aiAttribution, isNotNull);
+        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        expect(_capturedEvents(attribution), hasLength(1));
+        verify(() => attribution.service.finalize(any())).called(1);
+      });
+
       test('appends analysis to existing entryText', () async {
         final imageEntity =
             JournalEntity.journalImage(
@@ -2306,6 +2367,67 @@ void main() {
           // Coding prompt links to the parent task, not the source text entry.
           expect(responseCaptured[1], 'task-text');
           expect(responseCaptured[2], 'cat-text');
+        },
+      );
+
+      test(
+        'persists generated prompts with their attribution carrier',
+        () async {
+          final attribution = _registerInteractionCapture();
+          final textEntry = makeTextEntry(
+            id: 'text-attributed',
+            markdown: 'Implement the attributed change.',
+            categoryId: 'cat-attributed',
+          );
+          when(
+            () => mockAiInputRepo.getEntity('text-attributed'),
+          ).thenAnswer((_) async => textEntry);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(
+              makeStreamChunk('## Summary\nChange\n\n## Prompt\nImplement it'),
+            ),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((invocation) async => makePersistedResponse(invocation));
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            entryId: 'text-attributed',
+            automationResult: makePromptGenerationResult(),
+          );
+
+          final data =
+              verify(
+                    () => mockAiInputRepo.createAiResponseEntry(
+                      id: any(named: 'id'),
+                      data: captureAny(named: 'data'),
+                      start: any(named: 'start'),
+                      linkedId: 'text-attributed',
+                      categoryId: 'cat-attributed',
+                    ),
+                  ).captured.single
+                  as AiResponseData;
+          expect(data.aiAttribution, isNotNull);
+          expect(_capturedEvents(attribution), hasLength(1));
+          verify(() => attribution.service.finalize(any())).called(1);
         },
       );
 

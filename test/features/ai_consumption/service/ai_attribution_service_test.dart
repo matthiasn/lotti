@@ -48,6 +48,20 @@ void main() {
     expect(attribution.primaryOutput, makeAiArtifact());
   });
 
+  test(
+    'uses intended outputs when completion supplies no replacement',
+    () async {
+      final session = await service.begin(makeAiAttributionStart());
+
+      final attribution = await service.prepareCompletion(
+        attributionId: session.id,
+        outputs: const [],
+      );
+
+      expect(attribution.primaryOutput, session.intendedOutputs.first);
+    },
+  );
+
   test('records interaction independently of output persistence', () async {
     when(() => syncService.recordEvent(any())).thenAnswer((_) async {});
     final event = makeConsumptionEvent(id: 'call-1');

@@ -32,6 +32,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
@@ -1405,6 +1406,82 @@ void main() {
           expect(event.pue, 1.15);
           expect(event.dataCenter, 'FI');
           expect(event.upstreamProviderId, 'upstream-glm');
+        },
+      );
+
+      test(
+        'terminalizes attribution when the output carrier cannot persist',
+        () async {
+          final taskEntity = Task(
+            meta: _createMetadata(categoryId: 'cat-failed'),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-failed',
+                createdAt: DateTime(2024, 3, 15, 10, 30),
+                utcOffset: 0,
+              ),
+              title: 'Failed attributed output',
+              statusHistory: [],
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
+            ),
+          );
+          final promptConfig = _createPrompt(
+            id: 'prompt-failed',
+            name: 'Failed prompt',
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.promptGeneration,
+          );
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'glm-5.2',
+          );
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.melious,
+          );
+          _stubInferenceContext(
+            mockAiInputRepo: mockAiInputRepo,
+            mockAiConfigRepo: mockAiConfigRepo,
+            entity: taskEntity,
+            model: model,
+            provider: provider,
+          );
+          _stubGenerate(
+            mockCloudInferenceRepo,
+            stream: _createMockTextStream(['generated']),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              id: any(named: 'id'),
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          final bench = _registerInteractionCapture();
+
+          await expectLater(
+            repository!.runInference(
+              entityId: taskEntity.id,
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+            ),
+            throwsStateError,
+          );
+
+          verify(
+            () => bench.service.prepareCompletion(
+              attributionId: any(named: 'attributionId'),
+              outputs: const [],
+              status: AiWorkStatus.failed,
+              errorCode: 'StateError',
+            ),
+          ).called(1);
+          verify(() => bench.service.finalize(any())).called(1);
         },
       );
 
@@ -2899,6 +2976,116 @@ void main() {
           }
         },
       );
+
+      group('attributed audio transcription', () {
+        Future<AiInteractionCaptureTestBench> arrange({
+          required bool persisted,
+        }) async {
+          final tempDir = Directory.systemTemp.createTempSync(
+            'attributed_audio_test',
+          );
+          overrideTempDirs.add(tempDir);
+          when(() => mockDirectory.path).thenReturn(tempDir.path);
+          final audioEntity = JournalAudio(
+            meta: _createMetadata(categoryId: 'cat-audio'),
+            data: AudioData(
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
+              audioFile: 'test.mp3',
+              audioDirectory: '/audio/',
+              duration: const Duration(seconds: 30),
+            ),
+          );
+          Directory('${tempDir.path}/audio').createSync(recursive: true);
+          File(
+            '${tempDir.path}/audio/test.mp3',
+          ).writeAsBytesSync([1, 2, 3, 4]);
+          final promptConfig = _createPrompt(
+            id: 'prompt-audio-attributed',
+            name: 'Attributed audio',
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'whisper-1',
+          );
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
+          _stubInferenceContext(
+            mockAiInputRepo: mockAiInputRepo,
+            mockAiConfigRepo: mockAiConfigRepo,
+            entity: audioEntity,
+            model: model,
+            provider: provider,
+          );
+          _stubGenerateWithAudio(
+            mockCloudInferenceRepo,
+            stream: _createMockTextStream(['Attributed transcript']),
+          );
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: audioEntity.id),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => persisted);
+          final bench = _registerInteractionCapture();
+          if (persisted) {
+            await repository!.runInference(
+              entityId: audioEntity.id,
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+            );
+          } else {
+            await expectLater(
+              repository!.runInference(
+                entityId: audioEntity.id,
+                promptConfig: promptConfig,
+                onProgress: (_) {},
+                onStatusChange: (_) {},
+              ),
+              throwsStateError,
+            );
+          }
+          return bench;
+        }
+
+        test('embeds and finalizes the transcript carrier', () async {
+          final bench = await arrange(persisted: true);
+
+          final updated =
+              verify(
+                    () => mockJournalRepo.updateJournalEntity(captureAny()),
+                  ).captured.single
+                  as JournalAudio;
+          final transcript = updated.data.transcripts!.single;
+          expect(transcript.transcript, 'Attributed transcript');
+          expect(transcript.id, isNotNull);
+          expect(transcript.aiAttribution?.primaryOutput?.subId, transcript.id);
+          verify(() => bench.service.finalize(any())).called(1);
+        });
+
+        test(
+          'fails the work when transcript persistence returns false',
+          () async {
+            final bench = await arrange(persisted: false);
+
+            verify(
+              () => bench.service.prepareCompletion(
+                attributionId: any(named: 'attributionId'),
+                outputs: const [],
+                status: AiWorkStatus.failed,
+                errorCode: 'StateError',
+              ),
+            ).called(1);
+            verify(() => bench.service.finalize(any())).called(1);
+          },
+        );
+      });
 
       test(
         'audio transcription preserves existing transcripts when adding new one',
