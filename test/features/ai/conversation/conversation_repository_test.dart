@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -1994,6 +1996,10 @@ void main() {
             expect(event.pue, 1.2);
             expect(event.dataCenter, 'FI');
             expect(event.upstreamProviderId, 'upstream-x');
+            expect(
+              event.responseDigest,
+              sha256.convert(utf8.encode('Hi')).toString(),
+            );
           },
         );
 

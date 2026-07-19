@@ -362,7 +362,8 @@ class ConversationRepository extends Notifier<void> {
                   modelId: model,
                   requestText: messages.toString(),
                   invoke: invoke,
-                  responseText: (chunk) => chunk.toString(),
+                  responseText: (chunk) =>
+                      chunk.choices?.firstOrNull?.delta?.content ?? '',
                   usageForChunk: (chunk) {
                     final chunkUsage = chunk.usage;
                     if (chunkUsage == null) return null;
