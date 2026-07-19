@@ -93,7 +93,9 @@ class TaskAgentFreshnessStrip extends StatelessWidget {
       enabled: onRunNow != null && !isRunning,
       excludeSemantics: true,
       child: Tooltip(
-        message: messages.taskAgentWakeAgent,
+        message: isRunning
+            ? messages.aiSummaryThinkingLabel
+            : messages.taskAgentWakeAgent,
         child: Material(
           color: Colors.transparent,
           shape: const CircleBorder(),

@@ -178,6 +178,8 @@ void main() {
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byTooltip('Thinking…'), findsOneWidget);
+      expect(find.byTooltip('Wake agent'), findsNothing);
       expect(
         tester.getSemantics(
           find.byKey(const ValueKey('taskAgentWakeIconButton')),
