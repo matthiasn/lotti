@@ -126,7 +126,7 @@ class _SetupIdentityRow extends StatelessWidget {
             onTap: onTap,
             borderRadius: BorderRadius.circular(tokens.radii.s),
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: tokens.spacing.step9),
+              constraints: BoxConstraints(minHeight: tokens.spacing.step8),
               // Shrink-wrapped so the chevron hugs the value instead of
               // drifting to the far row end next to unrelated controls.
               child: Row(

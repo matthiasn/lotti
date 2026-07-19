@@ -173,7 +173,7 @@ class TldrBody extends StatelessWidget {
           ),
         ],
         if (hasMore || expanded) ...[
-          SizedBox(height: tokens.spacing.step3),
+          SizedBox(height: tokens.spacing.step1),
           Wrap(
             spacing: tokens.spacing.step4,
             runSpacing: tokens.spacing.step2,
@@ -235,7 +235,7 @@ class _QuietDisclosureLink extends StatelessWidget {
             onTap: onPressed,
             borderRadius: BorderRadius.circular(tokens.radii.s),
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: tokens.spacing.step9),
+              constraints: BoxConstraints(minHeight: tokens.spacing.step8),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

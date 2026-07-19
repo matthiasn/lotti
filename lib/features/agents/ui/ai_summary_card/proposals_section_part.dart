@@ -77,7 +77,7 @@ class ProposalsSection extends StatelessWidget {
       ),
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.cardPadding,
-        vertical: tokens.spacing.step4,
+        vertical: tokens.spacing.step3,
       ),
       // Same reading measure as the summary: full-width rows strand the
       // accept/reject actions at the far card edge on wide surfaces.
@@ -159,7 +159,7 @@ class ProposalsSection extends StatelessWidget {
               // already end with their own trailing gap, so only the empty
               // list needs one here.
               if (resolved.isNotEmpty || onConfirmAll != null) ...[
-                if (open.isEmpty) SizedBox(height: tokens.spacing.step3),
+                if (open.isEmpty) SizedBox(height: tokens.spacing.step1),
                 // Wrap, not Row: long translations or large text scales
                 // drop the batch action to its own line instead of
                 // overflowing the constrained card.
@@ -280,7 +280,7 @@ class _HistoryToggle extends StatelessWidget {
             onTap: onPressed,
             borderRadius: BorderRadius.circular(tokens.radii.s),
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: tokens.spacing.step9),
+              constraints: BoxConstraints(minHeight: tokens.spacing.step8),
               // Quiet meta like the footer's model line — the chevron and hit
               // target signal interactivity without spending accent on a
               // low-priority disclosure.

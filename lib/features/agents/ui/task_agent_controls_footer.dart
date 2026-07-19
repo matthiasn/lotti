@@ -72,6 +72,8 @@ class TaskAgentControlsFooter extends StatelessWidget {
     Widget automationControls({required bool expandLabel}) {
       final label = Text(
         messages.taskAgentAutomaticUpdatesLabel,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: tokens.typography.styles.others.caption.copyWith(
           color: ai.metaText,
         ),
@@ -79,7 +81,7 @@ class TaskAgentControlsFooter extends StatelessWidget {
       return Row(
         mainAxisSize: expandLabel ? MainAxisSize.max : MainAxisSize.min,
         children: [
-          if (expandLabel) Expanded(child: label) else label,
+          if (expandLabel) Expanded(child: label) else Flexible(child: label),
           SizedBox(width: tokens.spacing.step2),
           ConstrainedBox(
             key: const ValueKey('taskAgentAutomaticUpdatesTarget'),
@@ -115,9 +117,9 @@ class TaskAgentControlsFooter extends StatelessWidget {
       ),
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.cardPadding,
-        tokens.spacing.step3,
+        tokens.spacing.step2,
         tokens.spacing.cardPadding,
-        tokens.spacing.step3,
+        tokens.spacing.step2,
       ),
       // The wash band spans the card, but the content snaps to the same
       // reading measure as the summary and the proposal rows — one shared
@@ -160,7 +162,7 @@ class TaskAgentControlsFooter extends StatelessWidget {
                           ),
                   ),
                 ),
-                SizedBox(height: tokens.spacing.step2),
+                SizedBox(height: tokens.spacing.step1),
               ],
               LayoutBuilder(
                 builder: (context, constraints) {
@@ -178,22 +180,29 @@ class TaskAgentControlsFooter extends StatelessWidget {
                           data: identityData,
                           onSetupTap: onSetupTap,
                         ),
-                        SizedBox(height: tokens.spacing.step2),
+                        SizedBox(height: tokens.spacing.step1),
                         automationControls(expandLabel: true),
                       ],
                     );
                   }
                   return Row(
                     key: const ValueKey('taskAgentFooterWideLayout'),
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
+                      Flexible(
                         child: TaskAgentIdentityRegion(
                           data: identityData,
                           onSetupTap: onSetupTap,
                         ),
                       ),
-                      SizedBox(width: tokens.spacing.step3),
-                      automationControls(expandLabel: false),
+                      Flexible(
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            left: tokens.spacing.step3,
+                          ),
+                          child: automationControls(expandLabel: false),
+                        ),
+                      ),
                     ],
                   );
                 },
@@ -284,6 +293,8 @@ class _CountdownChipState extends State<_CountdownChip>
                           color: ai.metaText,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),

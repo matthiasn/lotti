@@ -106,7 +106,7 @@ void main() {
       }
     });
 
-    testWidgets('disclosure has a step9 target and reports expansion', (
+    testWidgets('disclosure has a compact step8 target and reports expansion', (
       tester,
     ) async {
       final semantics = tester.ensureSemantics();
@@ -120,7 +120,7 @@ void main() {
       final context = tester.element(find.byType(TldrBody));
       expect(
         tester.getSize(disclosure).height,
-        greaterThanOrEqualTo(context.designTokens.spacing.step9),
+        greaterThanOrEqualTo(context.designTokens.spacing.step8),
       );
       expect(
         tester.getSemantics(disclosure),

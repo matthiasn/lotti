@@ -164,10 +164,12 @@ All secondary controls live in a quiet, flat footer pinned to the card bottom
 agent` button or a self-labeled `Next update in m:ss` chip whose dedicated
 close target cancels the scheduled wake. Below it, the tappable model/provider
 identity and automatic-updates control share a row when space permits; at
-narrow widths or large text they stack without truncating the label. Compact
-secondary actions, disclosures, identity links, and the toggle wrapper retain
-the design system's `spacing.step9` interaction height. Meaningful attribution
-uses `aiCard.metaText` rather than the fainter decorative color. When setup is
+narrow widths or large text they stack without truncating the label. Primary
+and destructive controls retain the design system's `spacing.step9`
+interaction height; quiet disclosures and identity links use the denser
+`spacing.step8` row height so their captions do not create oversized bands.
+Meaningful attribution uses `aiCard.metaText` rather than the fainter
+decorative color. When setup is
 missing, the disabled toggle explains itself via an info tooltip. The filled
 accent is reserved for the one wake CTA per state; the TTS play control idles as a whispered
 subtleWash/metaText icon and earns the accent pair only while preparing or

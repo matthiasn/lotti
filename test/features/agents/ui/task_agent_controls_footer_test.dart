@@ -318,6 +318,70 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'wide German automation label stays single-line under constrained width',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Center(
+            child: SizedBox(
+              width: 520,
+              child: subject(showWakeButton: false),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(
+            size: Size(520, 800),
+            textScaler: TextScaler.linear(1.2),
+          ),
+          locale: const Locale('de'),
+        ),
+      );
+
+      expect(
+        find.byKey(const ValueKey('taskAgentFooterWideLayout')),
+        findsOneWidget,
+      );
+      final label = tester.widget<Text>(
+        find.text('Automatische Aktualisierungen'),
+      );
+      expect(label.maxLines, 1);
+      expect(label.overflow, TextOverflow.ellipsis);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('localized countdown stays single-line at phone width', (
+    tester,
+  ) async {
+    final now = DateTime(2026, 7, 16, 9);
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Center(
+            child: SizedBox(
+              width: 360,
+              child: subject(
+                automaticUpdatesEnabled: true,
+                showCountdown: true,
+                nextWakeAt: now.add(
+                  const Duration(minutes: 1, seconds: 30),
+                ),
+                onRunNow: () {},
+              ),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(360, 800)),
+          locale: const Locale('de'),
+        ),
+      );
+    });
+
+    final countdown = tester.widget<Text>(find.textContaining('1:30'));
+    expect(countdown.maxLines, 1);
+    expect(countdown.overflow, TextOverflow.ellipsis);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('automatic-updates control has a step9 interaction slot', (
     tester,
   ) async {

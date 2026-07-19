@@ -16,7 +16,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart'
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
-import 'package:lotti/features/design_system/theme/motion_tokens.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -845,11 +845,16 @@ void main() {
           of: find.textContaining('History · 1'),
           matching: find.byType(InkWell),
         );
+        final context = tester.element(find.byType(ProposalsSection));
         final confirmAll = find.ancestor(
           of: find.text('Confirm all'),
           matching: find.byType(DesignSystemButton),
         );
         expect(tester.getRect(history).left, closeTo(rail.left, 0.01));
+        expect(
+          tester.getSize(history).height,
+          greaterThanOrEqualTo(context.designTokens.spacing.step8),
+        );
         expect(tester.getRect(confirmAll).right, closeTo(rail.right, 0.01));
         expect(
           tester.getSemantics(history),

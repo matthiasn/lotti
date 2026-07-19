@@ -18,7 +18,7 @@ void main() {
     runtimeSettings: {},
   );
 
-  testWidgets('combined row is tappable, accessible, and at least step9 high', (
+  testWidgets('combined row is tappable, accessible, and at least step8 high', (
     tester,
   ) async {
     var taps = 0;
@@ -43,7 +43,7 @@ void main() {
     final context = tester.element(find.byType(TaskAgentIdentityRegion));
     expect(
       tester.getSize(inkWell).height,
-      greaterThanOrEqualTo(context.designTokens.spacing.step9),
+      greaterThanOrEqualTo(context.designTokens.spacing.step8),
     );
     for (final icon in tester.widgetList<Icon>(find.byType(Icon))) {
       expect(icon.color, context.designTokens.colors.aiCard.metaText);
