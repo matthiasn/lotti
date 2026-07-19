@@ -101,6 +101,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/insights/repository/insights_repository.dart';
@@ -1231,6 +1232,8 @@ class MockDayAudioTranscriptWriter extends Mock
 
 class MockDayProcessingOutboxRepository extends Mock
     implements DayProcessingOutboxRepository {}
+
+class MockDayProcessingRuntime extends Mock implements DayProcessingRuntime {}
 
 class MockScheduledWakeManager extends Mock implements ScheduledWakeManager {}
 

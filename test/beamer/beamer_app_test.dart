@@ -20,6 +20,7 @@ import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.da
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
+import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
@@ -492,6 +493,9 @@ Future<void> _pumpReadyMyBeamerApp(
         enableTooltipsProvider.overrideWith((ref) => Stream.value(true)),
         zoomControllerProvider.overrideWith(TestZoomController.new),
         agentInitializationProvider.overrideWith((ref) async {}),
+        dayProcessingRuntimeProvider.overrideWithValue(
+          MockDayProcessingRuntime(),
+        ),
         matrixServiceProvider.overrideWithValue(mockMatrix),
         loginStateStreamProvider.overrideWith(
           (ref) => Stream.value(LoginState.loggedIn),
@@ -629,6 +633,9 @@ void main() {
             ),
             enableTooltipsProvider.overrideWith(
               (ref) => Stream<bool>.value(true),
+            ),
+            dayProcessingRuntimeProvider.overrideWithValue(
+              MockDayProcessingRuntime(),
             ),
             agentInitializationProvider.overrideWith((ref) async {}),
           ],
