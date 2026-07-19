@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
@@ -239,6 +241,21 @@ class _AudioRecordingModalContentState
     } catch (_) {}
 
     if (!mounted) return;
+
+    final outcome = ref.read(audioRecorderControllerProvider).lastSaveOutcome;
+    if (outcome == AudioRecorderSaveOutcome.savedPendingRecovery) {
+      context.showToast(
+        tone: DesignSystemToastTone.warning,
+        title: context.messages.speechRecordingSavedPendingRecovery,
+        replaceCurrent: true,
+      );
+    } else if (outcome == AudioRecorderSaveOutcome.noAudio) {
+      context.showToast(
+        tone: DesignSystemToastTone.warning,
+        title: context.messages.speechNoAudioRecorded,
+        replaceCurrent: true,
+      );
+    }
 
     // Pop exactly once and return the created entry to [AudioRecordingModal].
     // The previous catch-all called pop a second time when the first pop or the

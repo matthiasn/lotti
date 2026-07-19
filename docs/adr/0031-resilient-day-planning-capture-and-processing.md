@@ -156,7 +156,7 @@ service; no second RAM-only implementation is introduced.
 
 #### Spool format and publication protocol
 
-- Root: `<documents>/audio_spool/<sessionId>/`.
+- Root: `<documents>/.audio_spool/<sessionId>/`.
 - Audio: PCM signed 16-bit little-endian, 16 kHz, mono.
 - Chunks: monotonically numbered two-second files.
 - Active chunk: `<sequence>.part`. Flush at least once per second. A recovery
@@ -234,7 +234,9 @@ initialTranscribeOperationId = UUIDv5(dailyOsOperationNamespace,
   "transcribe:" + sessionId)
 transcribeJobId = "day_transcribe:" + transcribeOperationId
 transcribeDedupeKey = "transcribe:" + journalAudioId
-activityEntryId = "day_audio:" + sessionId
+dailyOsAudioActivityNamespace = UUIDv5(URL,
+  "https://lotti.app/namespaces/day-audio-activity")
+activityEntryId = UUIDv5(dailyOsAudioActivityNamespace, sessionId)
 captureId = UUIDv5(dailyOsCaptureNamespace,
                    "review:" + reviewOperationId)
 initialParseOperationId = UUIDv5(dailyOsOperationNamespace,

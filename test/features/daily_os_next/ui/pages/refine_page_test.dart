@@ -16,9 +16,11 @@ import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/diff_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
+import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -69,19 +71,30 @@ PlanDiff _diffWithTwoChanges(DraftPlan plan) => PlanDiff(
 /// or the AI providers (which would otherwise read Ref during dispose
 /// and explode the test).
 CaptureController _stubCapture() {
-  final recorder = MockAudioRecorderRepository();
+  final realtimeRecorder = MockAudioRecorder();
   final transcriber = MockAudioTranscriptionService();
   final realtime = MockRealtimeTranscriptionService();
-  when(realtime.dispose).thenAnswer((_) async {});
+  final durableCapture = MockDurableRealtimeCapture();
+  when(
+    () => realtime.prepareDefaultDurableCapture(
+      assetRootDirectory: any(named: 'assetRootDirectory'),
+      createdAt: any(named: 'createdAt'),
+      origin: any(named: 'origin'),
+      intent: any(named: 'intent'),
+      dayId: any(named: 'dayId'),
+      planDate: any(named: 'planDate'),
+    ),
+  ).thenAnswer((_) async => durableCapture);
+  when(durableCapture.discard).thenAnswer((_) async {});
   when(realtime.resolveRealtimeConfig).thenAnswer((_) async => null);
-  when(recorder.stopRecording).thenAnswer((_) async {});
   // Permission denied → toggle() lands the controller in CapturePhase.error
   // synchronously enough for tests to observe the resulting refine state.
-  when(recorder.hasPermission).thenAnswer((_) async => false);
+  when(realtimeRecorder.hasPermission).thenAnswer((_) async => false);
+  when(realtimeRecorder.dispose).thenAnswer((_) async {});
   return CaptureController(
-    recorder: recorder,
     transcriber: transcriber,
     realtimeService: realtime,
+    realtimeRecorderFactory: () => realtimeRecorder,
     docDir: Directory.systemTemp.createTempSync,
     persistAudio: (_) async => null,
     now: () => DateTime(2026, 5, 26, 9),
@@ -93,6 +106,8 @@ CaptureController _stubCapture() {
 /// [captureControllerProvider] can be exercised directly, without
 /// driving the real mic / realtime lifecycle.
 class _DriveableCaptureController extends CaptureController {
+  DateTime? lastPlanDate;
+  AudioCaptureIntent? lastIntent;
   @override
   CaptureState build() => const CaptureState.idle();
 
@@ -109,7 +124,13 @@ class _DriveableCaptureController extends CaptureController {
   void skipRealtimeTranscriptVerificationForNextCapture() {}
 
   @override
-  Future<void> toggle() async {}
+  Future<void> toggle({
+    DateTime? forDate,
+    AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
+  }) async {
+    lastPlanDate = forDate;
+    lastIntent = intent;
+  }
 }
 
 Widget _wrap(
@@ -165,6 +186,13 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(fallbackAudioCaptureOrigin);
+    registerFallbackValue(fallbackAudioCaptureIntent);
+    registerFallbackValue(Directory('/tmp'));
+    registerFallbackValue(DateTime(2026, 5, 26, 9));
+  });
+
   group('RefinePage', () {
     testWidgets('idle phase shows status idle, voice button, no diff rows', (
       tester,
@@ -838,7 +866,13 @@ void main() {
       'tapping the voice button while listening triggers a capture toggle',
       (tester) async {
         final draft = _emptyPlan();
-        await tester.pumpWidget(_wrap(RefinePage(draft: draft)));
+        final capture = _DriveableCaptureController();
+        await tester.pumpWidget(
+          _wrap(
+            RefinePage(draft: draft),
+            captureFactory: () => capture,
+          ),
+        );
         await tester.pump();
 
         // Seed refine into listening so the next tap takes the
@@ -851,9 +885,8 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
 
-        // The status line is still rendered (no exception thrown
-        // navigating through the listening branch).
-        expect(find.byType(VoiceButton), findsOneWidget);
+        expect(capture.lastPlanDate, draft.dayDate);
+        expect(capture.lastIntent, AudioCaptureIntent.dayRefine);
       },
     );
 
@@ -995,5 +1028,43 @@ void main() {
         );
       },
     );
+
+    testWidgets('retained capture stays visible after Refine returns idle', (
+      tester,
+    ) async {
+      final draft = _emptyPlan();
+      await tester.pumpWidget(
+        _wrap(
+          RefinePage(draft: draft),
+          captureFactory: _DriveableCaptureController.new,
+        ),
+      );
+      await tester.pump();
+      _readNotifier(tester, draft).beginListening(resetTranscript: true);
+      await tester.pump();
+
+      _readCapture(tester).emit(
+        const CaptureState(
+          phase: CapturePhase.error,
+          transcript: '',
+          amplitudes: <double>[],
+          error: CaptureError.recordingRetainedForRecovery,
+        ),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(RefinePage));
+      final state = ProviderScope.containerOf(
+        context,
+      ).read(refineControllerProvider(draft));
+      expect(state.phase, RefinePhase.idle);
+      expect(state.problem, RefineProblem.captureRetainedForRecovery);
+      expect(
+        find.text(
+          context.messages.dailyOsNextCaptureErrorRecordingSavedForRecovery,
+        ),
+        findsOneWidget,
+      );
+    });
   });
 }

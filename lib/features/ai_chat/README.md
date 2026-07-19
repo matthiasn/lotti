@@ -44,9 +44,8 @@ lib/features/ai_chat/
 ├── services/
 │   ├── audio_transcription_service.dart    # Batch audio transcription
 │   ├── realtime_audio_buffer.dart          # Capped PCM buffer + dBFS amplitude stream
-│   ├── realtime_audio_writer.dart          # WAV write + M4A conversion for captured audio
 │   ├── realtime_transcript_merge.dart      # Pure confirmed-delta/transcript-merge functions
-│   ├── realtime_transcription_service.dart # Real-time transcription orchestration
+│   ├── realtime_transcription_service.dart # Durable local capture + realtime backend orchestration
 │   └── system_message_service.dart        # System prompt construction
 ├── ui/
 │   ├── controllers/
@@ -351,35 +350,61 @@ dictionary/biasing behavior as batch transcription.
 
 It:
 
+- prepares a `DurableAudioSpool` and publishes stable recording identity before
+  microphone permission is requested
 - resolves a Mistral realtime transcription model when configured, otherwise a
   local MLX Qwen3-ASR realtime model
-- opens the native MLX realtime session or Mistral WebSocket session
-- streams PCM audio chunks
-- accumulates capped PCM audio and computes amplitude values via
+- flushes every accepted PCM chunk to the local spool before forwarding that
+  chunk to the selected backend
+- opens the native MLX realtime session or Mistral WebSocket session behind a
+  session fence; early PCM may be retained locally while setup is still pending
+- signals the owning controller on the first local persistence failure so it
+  stops the recorder immediately and retains the accepted prefix for recovery
+- keeps only a capped visualization buffer and computes amplitude values via
   `RealtimeAudioBuffer` (exposed through `amplitudeStream`)
 - accumulates text deltas, diffing MLX full-confirmed-text events into
   deltas with `confirmedTextDelta` (`realtime_transcript_merge.dart`)
 - on stop, waits for `transcription.done` and picks the more complete of
   the final text and the accumulated deltas (`moreCompleteTranscript`)
-- persists the buffered audio via `RealtimeAudioWriter` (temp WAV, then
-  M4A conversion, keeping the WAV as fallback)
+- finalizes the complete durable PCM source as a canonical WAV; backend setup,
+  connection, or inference failure does not prevent local finalization
+- keeps a finalized realtime source in the spool after the transcript is
+  accepted by the current in-memory chat session. `ChatRepository` is not a
+  durable ownership boundary, so garbage collection waits for a future durable
+  chat outbox instead of making the audio unrecoverable after an app restart
+- fences teardown by capture identity; a new realtime start is rejected until
+  the previous session's asynchronous recorder/backend cleanup has completed
 
 ```mermaid
 sequenceDiagram
   participant UI as "ChatRecorderController"
   participant RT as "RealtimeTranscriptionService"
+  participant Spool as "DurableAudioSpool"
   participant Backend as "MLX or Mistral realtime backend"
 
-  UI->>RT: startRealtimeTranscription(pcmStream)
-  RT->>Backend: open realtime session
-  UI->>RT: stream PCM chunks
-  RT->>Backend: append PCM
+  UI->>RT: prepareDefaultDurableCapture(...)
+  RT->>Spool: publish identity manifest
+  Spool-->>UI: prepared capture
+  UI->>RT: startRealtimeTranscription(capture, pcmStream)
+  RT->>Spool: subscribe durable PCM admission
+  par backend setup
+    RT->>Backend: open fenced realtime session
+  and source capture
+    UI->>RT: stream PCM chunks
+    RT->>Spool: append + flush PCM
+    Spool-->>RT: durable acknowledgement
+  end
+  RT->>Backend: append acknowledged PCM when connected
   Backend-->>RT: transcription deltas
   RT-->>UI: onDelta(delta)
   UI->>UI: update partialTranscript
   UI->>RT: stop(...)
+  RT->>UI: stop recorder
+  UI-->>RT: PCM source closed after buffered tail
+  RT->>Spool: drain accepted PCM
   RT->>Backend: end audio
   Backend-->>RT: transcription.done
+  RT->>Spool: finalize canonical WAV
   RT-->>UI: final transcript + audio file path
 ```
 

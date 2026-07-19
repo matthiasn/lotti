@@ -29,6 +29,7 @@ import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
+import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -88,6 +89,10 @@ const SavedTaskFilter fallbackSavedTaskFilter = SavedTaskFilter(
   filter: TasksFilter(),
 );
 
+const AudioCaptureOrigin fallbackAudioCaptureOrigin =
+    AudioCaptureOrigin.dailyOs;
+const AudioCaptureIntent fallbackAudioCaptureIntent =
+    AudioCaptureIntent.dayPlan;
 final AiConfig fallbackAiConfig = AiConfig.inferenceProvider(
   id: 'config-id',
   baseUrl: 'http://example.com',

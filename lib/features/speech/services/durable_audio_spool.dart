@@ -167,6 +167,12 @@ class DurableAudioSpoolRecoveryRequiredException implements Exception {
       'Audio spool recovery required after $acceptedPcmBytes bytes: $cause';
 }
 
+/// Product surface that owns a durable microphone capture.
+enum AudioCaptureOrigin { dailyOs, aiChat, journalAudio }
+
+/// Immutable user intent bound before microphone capture starts.
+enum AudioCaptureIntent { dayPlan, dayRefine, chatMessage, journalEntry }
+
 /// Immutable identity allocated before microphone capture starts.
 class DurableAudioSpoolContext {
   DurableAudioSpoolContext({
@@ -174,7 +180,14 @@ class DurableAudioSpoolContext {
     required this.activityEntryId,
     required this.createdAt,
     required this.assetRootPath,
+    this.origin,
+    this.intent,
     this.dayId,
+    this.planDate,
+    this.timeZoneOffsetMinutes,
+    this.originHostId,
+    this.continuationOperationId,
+    this.baselineRevisionId,
     Map<String, String> metadata = const <String, String>{},
   }) : metadata = Map<String, String>.unmodifiable(
          Map<String, String>.of(metadata),
@@ -186,8 +199,21 @@ class DurableAudioSpoolContext {
       activityEntryId: json['activityEntryId']! as String,
       createdAt: DateTime.parse(json['createdAt']! as String),
       assetRootPath: json['assetRootPath']! as String,
+      origin: json['origin'] == null
+          ? null
+          : AudioCaptureOrigin.values.byName(json['origin']! as String),
+      intent: json['intent'] == null
+          ? null
+          : AudioCaptureIntent.values.byName(json['intent']! as String),
       dayId: json['dayId'] as String?,
-      metadata: (json['metadata']! as Map<String, Object?>).map(
+      planDate: json['planDate'] == null
+          ? null
+          : DateTime.parse(json['planDate']! as String),
+      timeZoneOffsetMinutes: json['timeZoneOffsetMinutes'] as int?,
+      originHostId: json['originHostId'] as String?,
+      continuationOperationId: json['continuationOperationId'] as String?,
+      baselineRevisionId: json['baselineRevisionId'] as String?,
+      metadata: (json['metadata'] as Map<String, Object?>? ?? const {}).map(
         (key, value) => MapEntry(key, value! as String),
       ),
     );
@@ -197,7 +223,14 @@ class DurableAudioSpoolContext {
   final String activityEntryId;
   final DateTime createdAt;
   final String assetRootPath;
+  final AudioCaptureOrigin? origin;
+  final AudioCaptureIntent? intent;
   final String? dayId;
+  final DateTime? planDate;
+  final int? timeZoneOffsetMinutes;
+  final String? originHostId;
+  final String? continuationOperationId;
+  final String? baselineRevisionId;
   final Map<String, String> metadata;
 
   Map<String, Object?> toJson() => <String, Object?>{
@@ -205,7 +238,14 @@ class DurableAudioSpoolContext {
     'activityEntryId': activityEntryId,
     'createdAt': createdAt.toUtc().toIso8601String(),
     'assetRootPath': assetRootPath,
+    'origin': origin?.name,
+    'intent': intent?.name,
     'dayId': dayId,
+    'planDate': planDate?.toIso8601String(),
+    'timeZoneOffsetMinutes': timeZoneOffsetMinutes,
+    'originHostId': originHostId,
+    'continuationOperationId': continuationOperationId,
+    'baselineRevisionId': baselineRevisionId,
     'metadata': metadata,
   };
 }
@@ -383,6 +423,7 @@ class DurableAudioSpool {
   static final _chunkPattern = RegExp(r'^chunk-(\d{8})\.pcm$');
   static final _activePattern = RegExp(r'^active-(\d{8})\.part$');
   static const _ownerFileName = 'owner.json';
+  static const _wavOwnerSuffix = '.lotti-audio-owner';
 
   final Directory _sessionDirectory;
   final int _maxPendingBytes;
@@ -741,6 +782,7 @@ class DurableAudioSpool {
 
     final wavFile = destinationFile;
     await _ensureDurableDirectory(wavFile.parent);
+    await _claimWavDestination(wavFile);
     await _repairInterruptedWavPublication(wavFile);
     final partialFile = File('${wavFile.path}.part');
     if (partialFile.existsSync()) await partialFile.delete();
@@ -825,6 +867,39 @@ class DurableAudioSpool {
     });
   }
 
+  /// Deletes a finalized, unowned transient recording after its transcript
+  /// has been durably accepted by the caller.
+  ///
+  /// This is intentionally separate from [discard]: a user cancel may only
+  /// delete an active/recovery capture, while transient consumption may only
+  /// delete a valid published WAV with no journal owner.
+  Future<void> consumeTransient() {
+    _acceptingFrames = false;
+    return _enqueueLifecycle(() async {
+      await _writeTail;
+      if (_manifest.journalAudioId != null) {
+        throw StateError(
+          'Journal-owned recording cannot be consumed as transient',
+        );
+      }
+      if (_manifest.state == DurableAudioSpoolState.discarded) return;
+      if (_manifest.state != DurableAudioSpoolState.published &&
+          _manifest.state != DurableAudioSpoolState.discarding) {
+        throw StateError(
+          'Only a published transient recording can be consumed',
+        );
+      }
+      if (_manifest.state == DurableAudioSpoolState.published) {
+        if (!await _finalWavIsValid()) {
+          throw StateError('Published transient WAV is not valid');
+        }
+        await _replaceManifest(state: DurableAudioSpoolState.discarding);
+      }
+      await _purgeOwnedFiles();
+      await _replaceManifest(state: DurableAudioSpoolState.discarded);
+    });
+  }
+
   /// Reclaims redundant PCM chunks after the committed grace period.
   Future<void> reclaimCommittedPcm() {
     return _enqueueLifecycle(() async {
@@ -888,6 +963,7 @@ class DurableAudioSpool {
         File(finalPath),
         File('$finalPath.part'),
         File('$finalPath.previous'),
+        File('$finalPath$_wavOwnerSuffix'),
       ]) {
         if (candidate.existsSync()) {
           await candidate.delete();
@@ -982,6 +1058,39 @@ class DurableAudioSpool {
     } else if (destinationFile.existsSync() && previous.existsSync()) {
       await previous.delete();
     }
+  }
+
+  Future<void> _claimWavDestination(File destinationFile) async {
+    final ownerFile = File('${destinationFile.path}$_wavOwnerSuffix');
+    if (ownerFile.existsSync()) {
+      final owner = await ownerFile.readAsString();
+      if (owner != _manifest.context.recordingSessionId) {
+        throw FileSystemException(
+          'Audio destination belongs to another recording session',
+          destinationFile.path,
+        );
+      }
+      return;
+    }
+    if (destinationFile.existsSync()) {
+      throw FileSystemException(
+        'Refusing to replace an unowned audio destination',
+        destinationFile.path,
+      );
+    }
+    final partial = File('${ownerFile.path}.part');
+    await partial.writeAsString(
+      _manifest.context.recordingSessionId,
+      flush: true,
+    );
+    await _durability.fileFlushed(
+      AudioSpoolDurabilityBoundary.ownerFileFlushed,
+    );
+    await partial.rename(ownerFile.path);
+    await _durability.entryPublished(
+      destinationFile.parent,
+      AudioSpoolDurabilityBoundary.ownerPublished,
+    );
   }
 
   Future<void> _publishWav({

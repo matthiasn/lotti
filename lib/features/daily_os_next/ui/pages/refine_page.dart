@@ -137,6 +137,7 @@ class _RefineModalContentState extends ConsumerState<RefineModalContent> {
                       refineState: state,
                       refineNotifier: notifier,
                       captureNotifier: captureNotifier,
+                      planDate: widget.draft.dayDate,
                     ),
                   );
                 },

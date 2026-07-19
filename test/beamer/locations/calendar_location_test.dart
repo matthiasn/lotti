@@ -54,14 +54,10 @@ DraftPlan _drafted() => DraftPlan(
 );
 
 CaptureController _stubCapture() {
-  final recorder = MockAudioRecorderRepository();
   final transcriber = MockAudioTranscriptionService();
   final realtime = MockRealtimeTranscriptionService();
-  when(realtime.dispose).thenAnswer((_) async {});
   when(realtime.resolveRealtimeConfig).thenAnswer((_) async => null);
-  when(recorder.stopRecording).thenAnswer((_) async {});
   return CaptureController(
-    recorder: recorder,
     transcriber: transcriber,
     realtimeService: realtime,
     docDir: Directory.systemTemp.createTempSync,

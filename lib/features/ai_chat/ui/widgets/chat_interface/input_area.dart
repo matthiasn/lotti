@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,7 +40,7 @@ class InputArea extends ConsumerStatefulWidget {
   final ScrollController scrollController;
   final bool isLoading;
   final bool canSend;
-  final ValueChanged<String> onSendMessage;
+  final Future<bool> Function(String message) onSendMessage;
   final bool requiresModelSelection;
   final String categoryId;
 
@@ -58,15 +60,22 @@ class InputAreaState extends ConsumerState<InputArea> {
     _transcriptSubscription = ref.listenManual<ChatRecorderState>(
       chatRecorderControllerProvider,
       (previous, next) {
-        final error = next.error?.trim();
+        final error = _recorderErrorDescription(next);
+        final previousError = previous == null
+            ? null
+            : _recorderErrorDescription(previous);
         if (error != null &&
             error.isNotEmpty &&
-            error != previous?.error &&
+            error != previousError &&
             mounted) {
+          final recordingSaved =
+              next.errorType == ChatRecorderErrorType.recordingSavedForRecovery;
           context.showToast(
-            tone: DesignSystemToastTone.error,
-            title: context.messages.commonError,
-            description: error,
+            tone: recordingSaved
+                ? DesignSystemToastTone.warning
+                : DesignSystemToastTone.error,
+            title: recordingSaved ? error : context.messages.commonError,
+            description: recordingSaved ? null : error,
             duration: const Duration(seconds: 8),
             replaceCurrent: true,
           );
@@ -83,7 +92,7 @@ class InputAreaState extends ConsumerState<InputArea> {
           final transcript = next.transcript!.trim();
           if (transcript.isNotEmpty) {
             if (widget.canSend) {
-              _sendMessage(transcript);
+              unawaited(_acceptVoiceTranscript(transcript));
             } else {
               widget.controller.text = transcript;
               widget.controller.selection = TextSelection.collapsed(
@@ -95,6 +104,16 @@ class InputAreaState extends ConsumerState<InputArea> {
         }
       },
     );
+  }
+
+  String? _recorderErrorDescription(ChatRecorderState recorderState) {
+    return switch (recorderState.errorType) {
+      ChatRecorderErrorType.recordingSavedForRecovery =>
+        context.messages.chatInputRecordingSavedForRecovery,
+      ChatRecorderErrorType.noAudioRecorded =>
+        context.messages.chatInputNoAudioRecorded,
+      _ => recorderState.error?.trim(),
+    };
   }
 
   @override
@@ -111,11 +130,27 @@ class InputAreaState extends ConsumerState<InputArea> {
     }
   }
 
-  void _sendMessage([String? text]) {
-    final message = text ?? widget.controller.text.trim();
-    if (message.isEmpty || !widget.canSend) return;
+  Future<void> _acceptVoiceTranscript(String transcript) async {
+    final accepted = await _sendMessage(transcript);
+    if (!mounted) return;
+    if (accepted) {
+      await ref
+          .read(chatRecorderControllerProvider.notifier)
+          .acknowledgeRealtimeTranscriptConsumed();
+      return;
+    }
+    widget.controller.text = transcript;
+    widget.controller.selection = TextSelection.collapsed(
+      offset: widget.controller.text.length,
+    );
+  }
 
-    widget.onSendMessage(message);
+  Future<bool> _sendMessage([String? text]) async {
+    final message = text ?? widget.controller.text.trim();
+    if (message.isEmpty || !widget.canSend) return false;
+
+    final accepted = await widget.onSendMessage(message);
+    if (!accepted || !mounted) return accepted;
     widget.controller.clear();
 
     // Scroll to the bottom once the frame containing the new message has
@@ -132,6 +167,7 @@ class InputAreaState extends ConsumerState<InputArea> {
         );
       }
     });
+    return true;
   }
 
   @override
@@ -217,7 +253,9 @@ class InputAreaState extends ConsumerState<InputArea> {
                         ),
                         maxLines: null,
                         textInputAction: TextInputAction.send,
-                        onSubmitted: widget.canSend ? _sendMessage : null,
+                        onSubmitted: widget.canSend
+                            ? (value) => unawaited(_sendMessage(value))
+                            : null,
                         enabled:
                             recState.status != ChatRecorderStatus.processing &&
                             widget.canSend,
@@ -259,7 +297,7 @@ class InputAreaState extends ConsumerState<InputArea> {
     if (_hasText) {
       return IconButton.filled(
         icon: const Icon(Icons.send),
-        onPressed: widget.canSend ? _sendMessage : null,
+        onPressed: widget.canSend ? () => unawaited(_sendMessage()) : null,
         tooltip: widget.canSend
             ? context.messages.chatInputSendTooltip
             : context.messages.chatInputPleaseWait,

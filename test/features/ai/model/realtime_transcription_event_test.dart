@@ -47,42 +47,90 @@ void main() {
 
   group('RealtimeStopResult', () {
     test('stores transcript and audio path', () {
-      const result = RealtimeStopResult(
+      final result = RealtimeStopResult(
         transcript: 'Hello world',
+        recordingSessionId: 'test-session',
         audioFilePath: '/tmp/audio.m4a',
+        captureDisposition: RealtimeCaptureDisposition.complete,
       );
       expect(result.transcript, 'Hello world');
       expect(result.audioFilePath, '/tmp/audio.m4a');
       expect(result.usedTranscriptFallback, isFalse);
     });
 
-    test('audioFilePath and detectedLanguage default to null', () {
-      const result = RealtimeStopResult(transcript: 'text');
+    test('recovery result permits no finalized audio path', () {
+      final result = RealtimeStopResult(
+        transcript: 'text',
+        recordingSessionId: 'test-session',
+        captureDisposition: RealtimeCaptureDisposition.recoveryRequired,
+      );
       expect(result.audioFilePath, isNull);
       expect(result.detectedLanguage, isNull);
       expect(result.usedTranscriptFallback, isFalse);
     });
 
     test('stores detectedLanguage when reported by the server', () {
-      const result = RealtimeStopResult(
+      final result = RealtimeStopResult(
         transcript: 'Hallo Welt',
+        recordingSessionId: 'test-session',
         detectedLanguage: 'de',
+        captureDisposition: RealtimeCaptureDisposition.recoveryRequired,
       );
       expect(result.transcript, 'Hallo Welt');
       expect(result.detectedLanguage, 'de');
     });
 
     test('usedTranscriptFallback reflects timeout fallback', () {
-      const result = RealtimeStopResult(
+      final result = RealtimeStopResult(
         transcript: 'partial',
+        recordingSessionId: 'test-session',
         usedTranscriptFallback: true,
+        captureDisposition: RealtimeCaptureDisposition.recoveryRequired,
       );
       expect(result.usedTranscriptFallback, isTrue);
     });
 
     test('handles empty transcript', () {
-      const result = RealtimeStopResult(transcript: '');
+      final result = RealtimeStopResult(
+        transcript: '',
+        recordingSessionId: 'test-session',
+        captureDisposition: RealtimeCaptureDisposition.noAudio,
+      );
       expect(result.transcript, isEmpty);
+    });
+
+    test('rejects complete disposition without an audio path', () {
+      expect(
+        () => RealtimeStopResult(
+          transcript: 'text',
+          recordingSessionId: 'test-session',
+          captureDisposition: RealtimeCaptureDisposition.complete,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('rejects no-audio disposition with a fabricated path', () {
+      expect(
+        () => RealtimeStopResult(
+          transcript: '',
+          recordingSessionId: 'test-session',
+          audioFilePath: '/tmp/empty.wav',
+          captureDisposition: RealtimeCaptureDisposition.noAudio,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('rejects an empty durable recording identity', () {
+      expect(
+        () => RealtimeStopResult(
+          transcript: '',
+          recordingSessionId: '  ',
+          captureDisposition: RealtimeCaptureDisposition.recoveryRequired,
+        ),
+        throwsArgumentError,
+      );
     });
   });
 }

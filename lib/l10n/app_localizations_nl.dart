@@ -2783,10 +2783,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get chatInputListening => 'Luisteren...';
 
   @override
+  String get chatInputNoAudioRecorded => 'No audio was recorded. Try again.';
+
+  @override
   String get chatInputPleaseWait => 'Wacht even...';
 
   @override
   String get chatInputProcessing => 'Bezig met verwerken...';
+
+  @override
+  String get chatInputRecordingSavedForRecovery =>
+      'Audio captured so far is retained on this device. You can record again.';
 
   @override
   String get chatInputRecordVoice => 'Voicemail opnemen';
@@ -3543,6 +3550,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Realtime transcriptie kon niet starten.';
 
   @override
+  String get dailyOsNextCaptureErrorRecordingSavedForRecovery =>
+      'Audio captured so far is retained on this device. You can record again or type instead.';
+
+  @override
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Your recording is saved. Transcription couldn\'t finish.';
+
+  @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Opname kon niet beginnen.';
 
@@ -3600,6 +3615,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Evaluatie';
+
+  @override
+  String get dailyOsNextCaptureRecordingSavedStatus => 'Recording saved';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Opnames';
@@ -9501,6 +9519,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Erkenning van spraak';
+
+  @override
+  String get speechNoAudioRecorded => 'No audio was recorded. Try again.';
+
+  @override
+  String get speechRecordingSavedPendingRecovery =>
+      'Your recording is saved on this device and needs recovery.';
 
   @override
   String get speechSettingsModelDescription => 'Speechmodel voor het apparaat';

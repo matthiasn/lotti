@@ -38,7 +38,7 @@ void _stubCreateMetadata(
 /// tests. Resolves with [returns] (default true), or throws [throws].
 void _stubCreateDbEntity(
   MockPersistenceLogic logic, {
-  bool returns = true,
+  bool? returns = true,
   Object? throws,
 }) {
   final stub = when(
@@ -233,6 +233,32 @@ void main() {
           ).called(1);
         },
       );
+
+      for (final rejectedResult in <bool?>[false, null]) {
+        test(
+          'returns null when createDbEntity returns $rejectedResult',
+          () async {
+            _stubCreateMetadata(mockPersistenceLogic, returns: testMetadata);
+            _stubCreateDbEntity(
+              mockPersistenceLogic,
+              returns: rejectedResult,
+            );
+
+            final result = await SpeechRepository.createAudioEntry(
+              testAudioNote,
+            );
+
+            expect(result, isNull);
+            verify(
+              () => mockDomainLogger.error(
+                LogDomain.persistence,
+                any(that: isA<StateError>()),
+                subDomain: 'createAudioEntry.rejected',
+              ),
+            ).called(1);
+          },
+        );
+      }
     });
 
     group('updateLanguage', () {

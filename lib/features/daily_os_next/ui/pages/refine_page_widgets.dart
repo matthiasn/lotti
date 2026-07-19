@@ -53,6 +53,7 @@ class _RefinementPanel extends ConsumerWidget {
                       refineState: state,
                       refineNotifier: notifier,
                       captureNotifier: captureNotifier,
+                      planDate: draft.dayDate,
                     );
                   },
                 );
@@ -181,13 +182,26 @@ class _ProblemNotice extends StatelessWidget {
     final message = switch (problem) {
       RefineProblem.noChanges => context.messages.dailyOsNextRefineNoChanges,
       RefineProblem.proposalFailed => context.messages.dailyOsNextGenericError,
+      RefineProblem.captureSavedPendingTranscription =>
+        context
+            .messages
+            .dailyOsNextCaptureErrorRecordingSavedPendingTranscription,
+      RefineProblem.captureRetainedForRecovery =>
+        context.messages.dailyOsNextCaptureErrorRecordingSavedForRecovery,
+      RefineProblem.captureFailed => context.messages.dailyOsNextGenericError,
     };
+    final warning =
+        problem == RefineProblem.captureSavedPendingTranscription ||
+        problem == RefineProblem.captureRetainedForRecovery;
+    final color = warning
+        ? tokens.colors.alert.warning.defaultColor
+        : tokens.colors.alert.error.defaultColor;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.alert.error.defaultColor.withValues(alpha: 0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(tokens.radii.s),
         border: Border.all(
-          color: tokens.colors.alert.error.defaultColor.withValues(alpha: 0.36),
+          color: color.withValues(alpha: 0.36),
         ),
       ),
       child: Padding(
@@ -195,7 +209,7 @@ class _ProblemNotice extends StatelessWidget {
         child: Text(
           message,
           style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.alert.error.defaultColor,
+            color: color,
           ),
         ),
       ),

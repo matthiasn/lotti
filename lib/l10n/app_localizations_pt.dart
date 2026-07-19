@@ -2801,10 +2801,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chatInputListening => 'Ouvindo...';
 
   @override
+  String get chatInputNoAudioRecorded => 'No audio was recorded. Try again.';
+
+  @override
   String get chatInputPleaseWait => 'Por favor, espere...';
 
   @override
   String get chatInputProcessing => 'Processando...';
+
+  @override
+  String get chatInputRecordingSavedForRecovery =>
+      'Audio captured so far is retained on this device. You can record again.';
 
   @override
   String get chatInputRecordVoice => 'Gravar mensagem de voz';
@@ -3563,6 +3570,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'A transcrição em tempo real não pôde ser iniciada.';
 
   @override
+  String get dailyOsNextCaptureErrorRecordingSavedForRecovery =>
+      'Audio captured so far is retained on this device. You can record again or type instead.';
+
+  @override
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Your recording is saved. Transcription couldn\'t finish.';
+
+  @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'A gravação não pôde ser iniciada.';
 
@@ -3620,6 +3635,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Revisão';
+
+  @override
+  String get dailyOsNextCaptureRecordingSavedStatus => 'Recording saved';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Capturas';
@@ -9569,6 +9587,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Reconhecimento de fala';
+
+  @override
+  String get speechNoAudioRecorded => 'No audio was recorded. Try again.';
+
+  @override
+  String get speechRecordingSavedPendingRecovery =>
+      'Your recording is saved on this device and needs recovery.';
 
   @override
   String get speechSettingsModelDescription => 'Modelo de fala no dispositivo';

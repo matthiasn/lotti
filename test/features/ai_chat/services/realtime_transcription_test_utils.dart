@@ -22,7 +22,9 @@ import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repo
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:path/path.dart' as path;
 import 'package:stream_channel/stream_channel.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -60,12 +62,21 @@ class FakeRealtimeDomainLogger extends Fake implements DomainLogger {
 
 class FakeWebSocketChannel extends StreamChannelMixin<dynamic>
     implements WebSocketChannel {
-  FakeWebSocketChannel() : _readyCompleter = Completer<void>() {
+  FakeWebSocketChannel({bool emitSessionCreatedOnListen = false})
+    : _readyCompleter = Completer<void>() {
+    _incomingController = StreamController<dynamic>.broadcast(
+      onListen: emitSessionCreatedOnListen
+          ? () => simulateServerMessage({
+              'type': 'session.created',
+              'session': {'request_id': 'test-123'},
+            })
+          : null,
+    );
     _readyCompleter.complete();
   }
 
   final Completer<void> _readyCompleter;
-  final _incomingController = StreamController<dynamic>.broadcast();
+  late final StreamController<dynamic> _incomingController;
   final _outgoingMessages = <String>[];
   bool _isClosed = false;
 
@@ -138,11 +149,22 @@ class FakeWebSocketSink implements WebSocketSink {
 /// controller).
 class ControllableRealtimeRepository
     extends MistralRealtimeTranscriptionRepository {
+  ControllableRealtimeRepository({this.throwOnDoneCancel = false});
+
+  final bool throwOnDoneCancel;
   final deltaController = StreamController<String>.broadcast();
   final languageController = StreamController<String>.broadcast();
   final doneController =
       StreamController<RealtimeTranscriptionDone>.broadcast();
   final sentChunks = <Uint8List>[];
+  void Function(Uint8List pcmBytes)? onSendAudioChunk;
+  Exception? connectError;
+  Exception? endAudioError;
+  Exception? disconnectError;
+  Completer<void>? connectGate;
+  Completer<void>? disconnectGate;
+  final connectStarted = Completer<void>();
+  final disconnectStarted = Completer<void>();
   bool connected = false;
   bool endAudioCalled = false;
   bool disconnected = false;
@@ -153,22 +175,33 @@ class ControllableRealtimeRepository
     required String baseUrl,
     String? model,
   }) async {
+    if (!connectStarted.isCompleted) connectStarted.complete();
+    await connectGate?.future;
+    final error = connectError;
+    if (error != null) throw error;
     connected = true;
   }
 
   @override
   void sendAudioChunk(Uint8List pcmBytes) {
+    onSendAudioChunk?.call(pcmBytes);
     sentChunks.add(Uint8List.fromList(pcmBytes));
   }
 
   @override
   Future<void> endAudio() async {
     endAudioCalled = true;
+    final error = endAudioError;
+    if (error != null) throw error;
   }
 
   @override
   Future<void> disconnect() async {
+    if (!disconnectStarted.isCompleted) disconnectStarted.complete();
+    await disconnectGate?.future;
     disconnected = true;
+    final error = disconnectError;
+    if (error != null) throw error;
   }
 
   @override
@@ -178,14 +211,68 @@ class ControllableRealtimeRepository
   Stream<String> get detectedLanguage => languageController.stream;
 
   @override
-  Stream<RealtimeTranscriptionDone> get transcriptionDone =>
-      doneController.stream;
+  Stream<RealtimeTranscriptionDone> get transcriptionDone => throwOnDoneCancel
+      ? _CancelErrorStream<RealtimeTranscriptionDone>(doneController.stream)
+      : doneController.stream;
 
   Future<void> close() async {
     await deltaController.close();
     await languageController.close();
     await doneController.close();
   }
+}
+
+class _CancelErrorStream<T> extends Stream<T> {
+  const _CancelErrorStream(this.delegate);
+
+  final Stream<T> delegate;
+
+  @override
+  StreamSubscription<T> listen(
+    void Function(T event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) => _CancelErrorSubscription<T>(
+    delegate.listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    ),
+  );
+}
+
+class _CancelErrorSubscription<T> implements StreamSubscription<T> {
+  const _CancelErrorSubscription(this.delegate);
+
+  final StreamSubscription<T> delegate;
+
+  @override
+  Future<void> cancel() => Future<void>.error(
+    StateError('done cancellation failed'),
+  );
+
+  @override
+  void onData(void Function(T data)? handleData) => delegate.onData(handleData);
+
+  @override
+  void onError(Function? handleError) => delegate.onError(handleError);
+
+  @override
+  void onDone(void Function()? handleDone) => delegate.onDone(handleDone);
+
+  @override
+  void pause([Future<void>? resumeSignal]) => delegate.pause(resumeSignal);
+
+  @override
+  void resume() => delegate.resume();
+
+  @override
+  bool get isPaused => delegate.isPaused;
+
+  @override
+  Future<E> asFuture<E>([E? futureValue]) => delegate.asFuture(futureValue);
 }
 
 // ---------------------------------------------------------------------------
@@ -317,12 +404,16 @@ class RealtimeTranscriptionTestBench {
     required this.channel,
     required this.service,
     required this.mlxAudioChannel,
+    required this.rootDirectory,
   });
 
   final ProviderContainer container;
   final FakeWebSocketChannel channel;
   final RealtimeTranscriptionService service;
   final FakeMlxAudioChannel mlxAudioChannel;
+  final Directory rootDirectory;
+  DurableRealtimeCapture? activeCapture;
+  var _sessionIndex = 0;
 
   /// PCM controller for feeding audio data — created lazily per
   /// [startTranscription] call so each test gets a fresh one.
@@ -339,6 +430,8 @@ class RealtimeTranscriptionTestBench {
     bool addMlxConfig = false,
     List<AiConfig>? configs,
     Duration doneTimeout = const Duration(seconds: 10),
+    MistralRealtimeTranscriptionRepository? repository,
+    String Function()? durableIdFactory,
   }) async {
     final db = AiConfigDb(inMemoryDatabase: true);
     final aiRepo = AiConfigRepository(db);
@@ -400,20 +493,11 @@ class RealtimeTranscriptionTestBench {
       );
     }
 
-    final fakeChannel = FakeWebSocketChannel();
+    final fakeChannel = FakeWebSocketChannel(emitSessionCreatedOnListen: true);
     final fakeMlxAudioChannel = FakeMlxAudioChannel();
 
-    final repo = MistralRealtimeTranscriptionRepository(
-      channelFactory: (_, _) {
-        // Simulate the session.created handshake after a microtask
-        Future<void>.delayed(Duration.zero).then((_) {
-          fakeChannel.simulateServerMessage({
-            'type': 'session.created',
-            'session': {'request_id': 'test-123'},
-          });
-        });
-        return fakeChannel;
-      },
+    final defaultRepository = MistralRealtimeTranscriptionRepository(
+      channelFactory: (_, _) => fakeChannel,
     );
 
     final container = ProviderContainer(
@@ -422,46 +506,75 @@ class RealtimeTranscriptionTestBench {
         realtimeTranscriptionServiceProvider.overrideWith(
           (ref) => RealtimeTranscriptionService(
             ref,
-            repository: repo,
+            repository: repository ?? defaultRepository,
             mlxAudioChannel: fakeMlxAudioChannel,
             doneTimeout: doneTimeout,
+            durableIdFactory: durableIdFactory,
           ),
         ),
       ],
     );
 
     final service = container.read(realtimeTranscriptionServiceProvider);
+    final rootDirectory = await Directory.systemTemp.createTemp(
+      'realtime_transcription_bench_',
+    );
 
     return RealtimeTranscriptionTestBench._(
       container: container,
       channel: fakeChannel,
       service: service,
       mlxAudioChannel: fakeMlxAudioChannel,
+      rootDirectory: rootDirectory,
     );
   }
 
   /// Starts a transcription session with optional [onDelta] callback.
   Future<StreamController<Uint8List>> startTranscription({
     void Function(String)? onDelta,
+    RealtimeCaptureFailureCallback? onCaptureFailure,
   }) async {
-    _pcmController = StreamController<Uint8List>();
+    _pcmController = StreamController<Uint8List>(sync: true);
+    final capture = await prepareCapture();
     await service.startRealtimeTranscription(
+      capture: capture,
       pcmStream: _pcmController!.stream,
       onDelta: onDelta ?? (_) {},
+      onCaptureFailure: onCaptureFailure,
     );
     return _pcmController!;
+  }
+
+  /// Allocates a durable capture without starting backend inference.
+  Future<DurableRealtimeCapture> prepareCapture() async {
+    _sessionIndex += 1;
+    final sessionId = 'realtime-test-$_sessionIndex';
+    final capture = activeCapture = await service.prepareDurableCapture(
+      rootDirectory: Directory(path.join(rootDirectory.path, 'spool')),
+      context: DurableAudioSpoolContext(
+        recordingSessionId: sessionId,
+        activityEntryId: 'activity-$sessionId',
+        createdAt: DateTime.utc(2026, 7, 18, 7, 30),
+        assetRootPath: path.join(rootDirectory.path, 'assets'),
+      ),
+    );
+    return capture;
   }
 
   /// Sends PCM data and waits a microtask for it to be processed.
   Future<void> sendPcm(Uint8List data) async {
     _pcmController!.add(data);
-    await Future<void>.delayed(Duration.zero);
+    await service.flushPendingPcm();
   }
 
   /// Sends PCM data synchronously — use inside `fakeAsync` blocks.
   /// Call `async.flushMicrotasks()` after to process.
   void sendPcmSync(Uint8List data) {
     _pcmController!.add(data);
+  }
+
+  Future<void> closePcm() async {
+    await _pcmController?.close();
   }
 
   /// Sends a `transcription.done` event immediately — use inside `fakeAsync`
@@ -488,16 +601,19 @@ class RealtimeTranscriptionTestBench {
     String? outputPath,
     void Function()? afterListening,
   }) async {
-    final dir =
-        outputPath ?? (await Directory.systemTemp.createTemp('rt_test_')).path;
-    addTearDown(() async {
-      final d = Directory(dir);
-      if (d.existsSync()) await d.delete(recursive: true);
-    });
+    final destination =
+        outputPath ?? path.join(rootDirectory.path, 'assets', 'output');
 
     final result = service.stop(
-      stopRecorder: stopRecorder ?? () async {},
-      outputPath: '$dir/output',
+      capture: activeCapture!,
+      stopRecorder: () async {
+        try {
+          await stopRecorder?.call();
+        } finally {
+          await _pcmController?.close();
+        }
+      },
+      outputPath: destination,
     );
     afterListening?.call();
     return result;
@@ -507,6 +623,9 @@ class RealtimeTranscriptionTestBench {
     _pcmController?.close();
     unawaited(mlxAudioChannel.close());
     container.dispose();
+    if (rootDirectory.existsSync()) {
+      rootDirectory.deleteSync(recursive: true);
+    }
   }
 }
 

@@ -5,11 +5,13 @@ import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
+import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/audio_recording_path.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -49,9 +51,12 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   AudioNote? _audioNote;
   bool _disposed = false;
   bool _terminalActionInProgress = false;
+  int _realtimeEpoch = 0;
 
   // Realtime transcription fields
   rec.AudioRecorder? _realtimeRecorder;
+  RealtimeTranscriptionService? _activeRealtimeService;
+  DurableRealtimeCapture? _realtimeCapture;
   StreamSubscription<double>? _realtimeAmplitudeSub;
   DateTime? _realtimeStartTime;
   String? _realtimeModelName;
@@ -98,9 +103,9 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
 
     ref.onDispose(() async {
       _disposed = true;
+      _realtimeEpoch += 1;
       await _amplitudeSub?.cancel();
-      await _realtimeAmplitudeSub?.cancel();
-      await _realtimeRecorder?.dispose();
+      await _cleanupRealtime();
     });
 
     // Initialize asynchronously to check permissions and transition to ready state
@@ -397,11 +402,31 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// `AudioRecorder` and calls `startStream`
   /// at 16kHz PCM mono, the format required by the Mistral Voxtral API.
   Future<void> recordRealtime({String? linkedId}) async {
+    final epoch = ++_realtimeEpoch;
     _linkedId = linkedId;
 
     try {
       // Pause any playing audio first
       await _pauseAudioPlayer();
+      if (!_isCurrentRealtimeEpoch(epoch)) return;
+
+      final service = ref.read(realtimeTranscriptionServiceProvider);
+      final createdAt = DateTime.now();
+      final capture = await service.prepareDefaultDurableCapture(
+        assetRootDirectory: getDocumentsDirectory(),
+        createdAt: createdAt,
+        origin: AudioCaptureOrigin.journalAudio,
+        intent: AudioCaptureIntent.journalEntry,
+        metadata: linkedId == null
+            ? const <String, String>{}
+            : <String, String>{'linkedId': linkedId},
+      );
+      if (!_isCurrentRealtimeEpoch(epoch)) {
+        await capture.discard();
+        return;
+      }
+      _activeRealtimeService = service;
+      _realtimeCapture = capture;
 
       final recorderFactory = ref.read(realtimeRecorderFactoryProvider);
       final recorder = recorderFactory();
@@ -410,8 +435,15 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       _realtimeRecorder = recorder;
 
       final hasPerm = await recorder.hasPermission();
+      if (!_isCurrentRealtimeEpoch(epoch)) {
+        await recorder.dispose();
+        await capture.discard();
+        return;
+      }
       if (!hasPerm) {
         await recorder.dispose();
+        await capture.discard();
+        _realtimeCapture = null;
         _realtimeRecorder = null;
         _loggingService.log(
           LogDomain.speech,
@@ -421,6 +453,17 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         return;
       }
 
+      // Resolve backend metadata before starting the microphone so durable
+      // PCM subscription is the first awaited operation after startStream.
+      final config = await service.resolveRealtimeConfig();
+      if (!_isCurrentRealtimeEpoch(epoch)) {
+        await recorder.dispose();
+        await capture.discard();
+        return;
+      }
+      _realtimeModelName = config?.model.providerModelId;
+      _realtimeProviderName = config?.provider.name;
+
       // Start PCM stream at 16kHz mono (required by Mistral realtime API)
       final pcmStream = await recorder.startStream(
         const rec.RecordConfig(
@@ -429,18 +472,19 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
           numChannels: 1,
         ),
       );
-      _realtimeStartTime = DateTime.now();
-
-      final service = ref.read(realtimeTranscriptionServiceProvider);
-
-      // Resolve config to store model/provider names for transcript metadata
-      final config = await service.resolveRealtimeConfig();
-      _realtimeModelName = config?.model.providerModelId;
-      _realtimeProviderName = config?.provider.name;
+      if (!_isCurrentRealtimeEpoch(epoch)) {
+        try {
+          await recorder.stop();
+        } catch (_) {}
+        await recorder.dispose();
+        await capture.discard();
+        return;
+      }
+      _realtimeStartTime = createdAt;
 
       // Subscribe to amplitude stream for VU meter
       _realtimeAmplitudeSub = service.amplitudeStream.listen((dbfs) {
-        if (_disposed) return;
+        if (!_isCurrentRealtimeEpoch(epoch)) return;
         final startTime = _realtimeStartTime;
         if (startTime == null) return;
         final vu = _vuMeter.addSample(dbfs);
@@ -460,13 +504,30 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
 
       // Start realtime transcription — onDelta accumulates into partialTranscript
       await service.startRealtimeTranscription(
+        capture: capture,
         pcmStream: pcmStream,
         onDelta: (delta) {
-          if (_disposed) return;
+          if (!_isCurrentRealtimeEpoch(epoch)) return;
           final current = state.partialTranscript ?? '';
           state = state.copyWith(partialTranscript: '$current$delta');
         },
+        onCaptureFailure: (_, _) {
+          if (!_isCurrentRealtimeEpoch(epoch) || !state.isRealtimeMode) return;
+          unawaited(stopRealtime());
+        },
+        config: config,
+        resolveConfigWhenAbsent: false,
       );
+      if (!_isCurrentRealtimeEpoch(epoch)) {
+        await service.stopAndRetainForRecovery(
+          capture: capture,
+          stopRecorder: () async {
+            await recorder.stop();
+          },
+        );
+        await recorder.dispose();
+        return;
+      }
 
       _loggingService.log(
         LogDomain.speech,
@@ -474,8 +535,10 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         subDomain: 'recordRealtime',
       );
     } catch (exception, stackTrace) {
+      if (!_isCurrentRealtimeEpoch(epoch)) return;
       // Clean up on failure
       await _cleanupRealtime();
+      _realtimeCapture = null;
       state = state.copyWith(
         status: AudioRecorderStatus.stopped,
         isRealtimeMode: false,
@@ -495,6 +558,8 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   ///
   /// Returns the ID of the created journal entry, or null on error.
   Future<String?> stopRealtime() async {
+    if (_terminalActionInProgress) return null;
+    _terminalActionInProgress = true;
     // Capture metadata in locals before any cleanup nulls them (#6).
     final modelName = _realtimeModelName;
     final providerName = _realtimeProviderName;
@@ -514,23 +579,50 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       final recordingPath = AudioRecordingPath.forTimestamp(created);
       final relativePath = recordingPath.relativeDirectory;
       final directory = await createAssetDirectory(relativePath);
-      final outputPath = recordingPath.outputPathIn(directory);
+      final outputPath = recordingPath.outputPathIn(
+        directory,
+        recordingSessionId: _realtimeCapture!.recordingSessionId,
+      );
 
       // Stop the service — this stops the recorder, sends endAudio,
-      // waits for transcription.done, writes WAV, converts to M4A
+      // waits for transcription.done, and finalizes the durable WAV
       final service = ref.read(realtimeTranscriptionServiceProvider);
       final recorder = _realtimeRecorder;
+      final capture = _realtimeCapture!;
       final result = await service.stop(
+        capture: capture,
         stopRecorder: () async {
           await recorder?.stop();
         },
         outputPath: outputPath,
       );
+      if (result.recordingSessionId != capture.recordingSessionId) {
+        throw StateError('Realtime stop result belongs to another capture');
+      }
 
       // Dispose the recorder
       await recorder?.dispose();
       _realtimeRecorder = null;
+      _activeRealtimeService = null;
       _realtimeStartTime = null;
+
+      if (result.captureDisposition != RealtimeCaptureDisposition.complete) {
+        _vuMeter.reset();
+        state = state.copyWith(
+          status: AudioRecorderStatus.stopped,
+          progress: Duration.zero,
+          dBFS: -160,
+          vu: -20,
+          isRealtimeMode: false,
+          partialTranscript: null,
+          lastSaveOutcome:
+              result.captureDisposition == RealtimeCaptureDisposition.noAudio
+              ? AudioRecorderSaveOutcome.noAudio
+              : AudioRecorderSaveOutcome.savedPendingRecovery,
+        );
+        _realtimeCapture = null;
+        return null;
+      }
 
       // Only create an AudioNote when an actual audio file was produced.
       // audioFilePath is null when no PCM data was captured (e.g. very short
@@ -541,9 +633,23 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
               createdAt: created,
               audioFile: audioFilePath.split('/').last,
               audioDirectory: relativePath,
-              duration: duration,
+              duration: result.audioDuration ?? duration,
             )
           : null;
+      if (audioNote == null) {
+        _vuMeter.reset();
+        state = state.copyWith(
+          status: AudioRecorderStatus.stopped,
+          progress: Duration.zero,
+          dBFS: -160,
+          vu: -20,
+          isRealtimeMode: false,
+          partialTranscript: null,
+          lastSaveOutcome: AudioRecorderSaveOutcome.noAudio,
+        );
+        _realtimeCapture = null;
+        return null;
+      }
 
       // Preserve inference preferences before resetting state
       final enableSpeechRecognition = state.enableSpeechRecognition;
@@ -560,25 +666,51 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       );
 
       // Create the journal audio entry (only when we have an actual audio file)
-      final journalAudio = audioNote != null
-          ? await SpeechRepository.createAudioEntry(
-              audioNote,
-              linkedId: _linkedId,
-              categoryId: _categoryId,
-            )
-          : null;
+      final journalAudio = await SpeechRepository.createAudioEntry(
+        audioNote,
+        linkedId: _linkedId,
+        categoryId: _categoryId,
+      );
+      if (journalAudio == null) {
+        state = state.copyWith(
+          lastSaveOutcome: AudioRecorderSaveOutcome.savedPendingRecovery,
+        );
+        _realtimeCapture = null;
+        return null;
+      }
+      var ownershipBound = true;
+      try {
+        await _realtimeCapture!.markCommitted(
+          journalAudioId: journalAudio.meta.id,
+        );
+      } catch (error, stackTrace) {
+        ownershipBound = false;
+        _loggingService.error(
+          LogDomain.speech,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'stopRealtime.bindOwnership',
+        );
+      }
+      if (!ownershipBound) {
+        state = state.copyWith(
+          lastSaveOutcome: AudioRecorderSaveOutcome.savedPendingRecovery,
+        );
+        _realtimeCapture = null;
+        return null;
+      }
 
       final linkedTaskId = _linkedId;
       _linkedId = null;
-      final entryId = journalAudio?.meta.id;
+      final entryId = journalAudio.meta.id;
 
-      // Save the realtime transcript on the audio entry
-      if (entryId != null &&
-          result.transcript.isNotEmpty &&
-          journalAudio != null) {
+      final realtimeTranscript = result.transcript.trim();
+      // Save only meaningful realtime text. Empty/whitespace results leave
+      // automatic transcription enabled for the retained audio entry.
+      if (realtimeTranscript.isNotEmpty) {
         await _saveRealtimeTranscript(
           journalAudio: journalAudio,
-          transcript: result.transcript,
+          transcript: realtimeTranscript,
           providerName: providerName ?? 'Mistral',
           modelId: modelName ?? 'voxtral-mini',
           detectedLanguage: result.detectedLanguage,
@@ -586,18 +718,22 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       }
 
       // Trigger automatic prompts, but skip batch transcription
-      if (entryId != null && linkedTaskId != null) {
+      if (linkedTaskId != null) {
         unawaited(
           _triggerAutomaticPrompts(
             entryId,
             linkedTaskId: linkedTaskId,
-            realtimeTranscriptProvided: true,
+            realtimeTranscriptProvided: realtimeTranscript.isNotEmpty,
           ),
         );
       }
 
       _realtimeModelName = null;
       _realtimeProviderName = null;
+      _realtimeCapture = null;
+      state = state.copyWith(
+        lastSaveOutcome: AudioRecorderSaveOutcome.saved,
+      );
 
       _loggingService.log(
         LogDomain.speech,
@@ -610,6 +746,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
 
       return entryId;
     } catch (exception, stackTrace) {
+      final hasRecoverableAudio = (_realtimeCapture?.acceptedPcmBytes ?? 0) > 0;
       _loggingService.error(
         LogDomain.speech,
         exception,
@@ -618,9 +755,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       );
       _vuMeter.reset();
       await _cleanupRealtime();
-      try {
-        await ref.read(realtimeTranscriptionServiceProvider).dispose();
-      } catch (_) {}
+      _realtimeCapture = null;
       ref.invalidate(realtimeTranscriptionServiceProvider);
       state = state.copyWith(
         status: AudioRecorderStatus.stopped,
@@ -629,20 +764,30 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         vu: -20,
         isRealtimeMode: false,
         partialTranscript: null,
+        lastSaveOutcome: hasRecoverableAudio
+            ? AudioRecorderSaveOutcome.savedPendingRecovery
+            : AudioRecorderSaveOutcome.noAudio,
       );
+    } finally {
+      _terminalActionInProgress = false;
     }
     return null;
   }
 
   /// Cancels the realtime recording session without saving.
   Future<void> cancelRealtime() async {
+    if (_terminalActionInProgress) return;
+    _terminalActionInProgress = true;
+    _realtimeEpoch += 1;
     try {
+      final capture = _realtimeCapture;
       await _cleanupRealtime();
 
       // Dispose the service to tear down WebSocket and subscriptions,
       // then invalidate the provider so the next recordRealtime() gets
       // a fresh instance.
-      await ref.read(realtimeTranscriptionServiceProvider).dispose();
+      await capture?.discard();
+      _realtimeCapture = null;
       ref.invalidate(realtimeTranscriptionServiceProvider);
 
       _vuMeter.reset();
@@ -667,6 +812,8 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         stackTrace: stackTrace,
         subDomain: 'cancelRealtime',
       );
+    } finally {
+      _terminalActionInProgress = false;
     }
   }
 
@@ -723,16 +870,28 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     } catch (_) {}
     _realtimeAmplitudeSub = null;
     try {
-      await _realtimeRecorder?.stop();
+      final capture = _realtimeCapture;
+      if (capture != null) {
+        await _activeRealtimeService?.stopAndRetainForRecovery(
+          capture: capture,
+          stopRecorder: () async {
+            await _realtimeRecorder?.stop();
+          },
+        );
+      }
     } catch (_) {}
     try {
       await _realtimeRecorder?.dispose();
     } catch (_) {}
     _realtimeRecorder = null;
+    _activeRealtimeService = null;
     _realtimeStartTime = null;
     _realtimeModelName = null;
     _realtimeProviderName = null;
   }
+
+  bool _isCurrentRealtimeEpoch(int epoch) =>
+      !_disposed && ref.mounted && epoch == _realtimeEpoch;
 
   /// Pauses any currently playing audio. Shared between `record` and
   /// [recordRealtime].

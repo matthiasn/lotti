@@ -33,6 +33,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_glass_actio
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import 'manual_screenshot_utils.dart';
@@ -258,7 +259,10 @@ class _CapturedController extends CaptureController {
   void reset() => state = const CaptureState.idle();
 
   @override
-  Future<void> toggle() async {}
+  Future<void> toggle({
+    DateTime? forDate,
+    AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
+  }) async {}
 }
 
 class _PendingParseAgent extends MockDayAgent {

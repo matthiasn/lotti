@@ -58,7 +58,7 @@ class VoiceOrbZone extends StatelessWidget {
 
   final String semanticLabel;
 
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   /// Rolling normalized amplitude window for the waveform strip.
   final List<double> amplitudes;

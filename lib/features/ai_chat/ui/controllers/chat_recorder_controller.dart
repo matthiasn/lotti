@@ -2,14 +2,17 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_amplitude_history.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_state.dart';
+import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:path_provider/path_provider.dart';
@@ -37,6 +40,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     record.AudioRecorder Function()? recorderFactory,
     int Function()? nowMillisProvider,
     Future<Directory> Function()? tempDirectoryProvider,
+    Future<Directory> Function()? durableDirectoryProvider,
     ChatRecorderConfig? config,
     AudioTranscriptionService? transcriptionService,
     RealtimeTranscriptionService? realtimeTranscriptionService,
@@ -45,6 +49,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
            nowMillisProvider ?? (() => DateTime.now().millisecondsSinceEpoch),
        _tempDirectoryProvider =
            tempDirectoryProvider ?? (() async => getTemporaryDirectory()),
+       _durableDirectoryProvider =
+           durableDirectoryProvider ??
+           (() async => getApplicationSupportDirectory()),
        _config = config ?? const ChatRecorderConfig(),
        _transcriptionServiceOverride = transcriptionService,
        _realtimeServiceOverride = realtimeTranscriptionService;
@@ -52,6 +59,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   final record.AudioRecorder Function() _recorderFactory;
   final int Function() _nowMillisProvider;
   final Future<Directory> Function() _tempDirectoryProvider;
+  final Future<Directory> Function() _durableDirectoryProvider;
   final ChatRecorderConfig _config;
   final AudioTranscriptionService? _transcriptionServiceOverride;
   final RealtimeTranscriptionService? _realtimeServiceOverride;
@@ -86,6 +94,8 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       final ampSub = _ampSub;
       final realtimeAmpSub = _realtimeAmpSub;
       final recorder = _recorder;
+      final realtimeCapture = _realtimeCapture;
+      final realtimeService = realtimeCapture == null ? null : _realtimeService;
       final filePath = _filePath;
       final tempDir = _tempDir;
 
@@ -97,6 +107,20 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         try {
           await realtimeAmpSub?.cancel();
         } catch (_) {}
+        if (realtimeService != null) {
+          try {
+            await realtimeService.stopAndRetainForRecovery(
+              capture: realtimeCapture!,
+              stopRecorder: () async {
+                await recorder?.stop();
+              },
+            );
+          } catch (_) {}
+        } else {
+          try {
+            await recorder?.stop();
+          } catch (_) {}
+        }
         try {
           await recorder?.dispose();
         } catch (_) {}
@@ -134,7 +158,10 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   Directory? _tempDir;
   String? _filePath;
   bool _isStarting = false;
+  bool _terminalActionInProgress = false;
   int _operationId = 0; // Incremented for each new operation to prevent races
+  DurableRealtimeCapture? _realtimeCapture;
+  String? _realtimeOutputPath;
 
   static const int _cleanupTimeoutSeconds = 2;
   static const int _fileDeleteTimeoutSeconds = 2;
@@ -345,58 +372,67 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         state.status != ChatRecorderStatus.processing) {
       return;
     }
-
-    final wasRealtime = state.status == ChatRecorderStatus.realtimeRecording;
-
-    // Invalidate current operation to prevent any in-flight async work from updating state
-    _operationId++;
-
-    _maxTimer?.cancel();
+    if (_terminalActionInProgress) return;
+    _terminalActionInProgress = true;
     try {
-      await _ampSub?.cancel();
-    } catch (e, s) {
-      getIt<DomainLogger>().error(
-        LogDomain.chat,
-        e,
-        stackTrace: s,
-        subDomain: 'cancel.ampSub',
-      );
-    }
+      final wasRealtime = state.status == ChatRecorderStatus.realtimeRecording;
 
-    if (wasRealtime) {
-      // Cancel realtime-specific subscriptions
+      // Invalidate current operation to prevent any in-flight async work from updating state
+      _operationId++;
+
+      _maxTimer?.cancel();
       try {
-        await _realtimeAmpSub?.cancel();
-        _realtimeAmpSub = null;
+        await _ampSub?.cancel();
       } catch (e, s) {
         getIt<DomainLogger>().error(
           LogDomain.chat,
           e,
           stackTrace: s,
-          subDomain: 'cancel.realtimeAmpSub',
+          subDomain: 'cancel.ampSub',
         );
       }
-    }
 
-    try {
-      await _recorder?.stop();
-    } catch (e, s) {
-      getIt<DomainLogger>().error(
-        LogDomain.chat,
-        e,
-        stackTrace: s,
-        subDomain: 'cancel.recorder',
-      );
-    }
+      if (wasRealtime) {
+        // Cancel realtime-specific subscriptions
+        try {
+          await _realtimeAmpSub?.cancel();
+          _realtimeAmpSub = null;
+        } catch (e, s) {
+          getIt<DomainLogger>().error(
+            LogDomain.chat,
+            e,
+            stackTrace: s,
+            subDomain: 'cancel.realtimeAmpSub',
+          );
+        }
+      }
 
-    if (wasRealtime) {
-      // Discard: tear down WebSocket and PCM stream without saving audio
-      await _realtimeService.dispose();
-    }
+      try {
+        await _recorder?.stop();
+      } catch (e, s) {
+        getIt<DomainLogger>().error(
+          LogDomain.chat,
+          e,
+          stackTrace: s,
+          subDomain: 'cancel.recorder',
+        );
+      }
 
-    await _cleanupInternal();
-    if (ref.mounted) {
-      state = state.copyWith(status: ChatRecorderStatus.idle);
+      if (wasRealtime) {
+        // Discard only after the recorder has stopped and the durable PCM
+        // subscription has drained.
+        await _stopAndDisposeRealtimeRecorder(stopRecorder: false);
+        await _realtimeCapture?.discard();
+        _realtimeCapture = null;
+        _realtimeOutputPath = null;
+      }
+
+      await _cleanupInternal();
+      if (ref.mounted) {
+        state = state.copyWith(status: ChatRecorderStatus.idle);
+      }
+    } finally {
+      _terminalActionInProgress = false;
     }
   }
 
@@ -527,18 +563,83 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     // Keep amplitude history so UI shows a bit of trailing bars until next start
   }
 
+  Future<void> _stopAndDisposeRealtimeRecorder({
+    bool stopRecorder = true,
+  }) async {
+    try {
+      await _realtimeAmpSub?.cancel();
+    } catch (error, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'cleanupRealtime.amplitude',
+      );
+    }
+    _realtimeAmpSub = null;
+    try {
+      final capture = _realtimeCapture;
+      if (capture != null) {
+        await _realtimeService.stopAndRetainForRecovery(
+          capture: capture,
+          stopRecorder: () async {
+            if (stopRecorder) await _recorder?.stop();
+          },
+        );
+      } else if (stopRecorder) {
+        await _recorder?.stop();
+      }
+    } catch (error, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'cleanupRealtime.stopAndDrain',
+      );
+    }
+    try {
+      await _recorder?.dispose();
+    } catch (error, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'cleanupRealtime.recorder',
+      );
+    }
+    _recorder = null;
+    _maxTimer?.cancel();
+    _maxTimer = null;
+  }
+
   /// Clears a consumed [ChatRecorderState.transcript] / [ChatRecorderState.error]
   /// while keeping the current status, amplitude history, and mode. Called by
   /// `InputArea` after it has read a finished transcript so the same value is
   /// not re-consumed on the next rebuild.
   void clearResult() {
     if (!ref.mounted) return;
-    if (state.transcript != null || state.error != null) {
+    if (state.transcript != null ||
+        state.error != null ||
+        state.errorType != null) {
       state = ChatRecorderState(
         status: state.status,
         amplitudeHistory: state.amplitudeHistory,
         useRealtimeMode: state.useRealtimeMode,
       );
+    }
+  }
+
+  /// Releases this controller's reference after the transcript reaches chat.
+  ///
+  /// Chat sessions are currently memory-backed, so acceptance is not a
+  /// durable commit boundary. The spool deliberately remains on disk for
+  /// startup recovery until the durable chat outbox owns reclamation.
+  Future<void> acknowledgeRealtimeTranscriptConsumed() async {
+    final capture = _realtimeCapture;
+    if (capture == null) return;
+    if (identical(_realtimeCapture, capture)) {
+      _realtimeCapture = null;
+      _realtimeOutputPath = null;
     }
   }
 
@@ -567,9 +668,25 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     _isStarting = true;
     final recorder = _recorderFactory();
     try {
+      final createdAt = DateTime.fromMillisecondsSinceEpoch(
+        _nowMillisProvider(),
+      );
+      final durableRoot = await _durableDirectoryProvider();
+      final capture = await _realtimeService.prepareDefaultDurableCapture(
+        assetRootDirectory: durableRoot,
+        createdAt: createdAt,
+        origin: AudioCaptureOrigin.aiChat,
+        intent: AudioCaptureIntent.chatMessage,
+      );
+      _realtimeCapture = capture;
+      _realtimeOutputPath =
+          '${durableRoot.path}/chat_audio/${capture.recordingSessionId}';
       final hasPerm = await recorder.hasPermission();
       if (!ref.mounted) {
         await recorder.dispose();
+        await capture.discard();
+        _realtimeCapture = null;
+        _realtimeOutputPath = null;
         return;
       }
       if (!hasPerm) {
@@ -578,21 +695,33 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
           errorType: ChatRecorderErrorType.permissionDenied,
         );
         await recorder.dispose();
+        await capture.discard();
+        _realtimeCapture = null;
+        _realtimeOutputPath = null;
         return;
       }
 
       // Start PCM stream at 16kHz mono (required by Mistral realtime API)
-      final pcmStream = await recorder.startStream(
-        const record.RecordConfig(
-          encoder: record.AudioEncoder.pcm16bits,
-          sampleRate: 16000,
-          numChannels: 1,
-        ),
-      );
+      late final Stream<Uint8List> pcmStream;
+      try {
+        pcmStream = await recorder.startStream(
+          const record.RecordConfig(
+            encoder: record.AudioEncoder.pcm16bits,
+            sampleRate: 16000,
+            numChannels: 1,
+          ),
+        );
+      } catch (_) {
+        await recorder.dispose();
+        rethrow;
+      }
 
       if (!ref.mounted) {
         await recorder.stop();
         await recorder.dispose();
+        await capture.discard();
+        _realtimeCapture = null;
+        _realtimeOutputPath = null;
         return;
       }
 
@@ -622,6 +751,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       // Connect WebSocket and start streaming audio.
       // The onDelta callback updates the UI with live transcript text.
       await _realtimeService.startRealtimeTranscription(
+        capture: capture,
         pcmStream: pcmStream,
         onDelta: (delta) {
           if (currentOpId != _operationId || !ref.mounted) return;
@@ -630,6 +760,10 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
             status: ChatRecorderStatus.realtimeRecording,
             partialTranscript: '$current$delta',
           );
+        },
+        onCaptureFailure: (_, _) {
+          if (currentOpId != _operationId || !ref.mounted) return;
+          unawaited(stopRealtime());
         },
       );
 
@@ -650,10 +784,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       // Cancel realtime-specific subscriptions that may have been set up
       // before the failure (e.g. amplitude subscription started before
       // startRealtimeTranscription threw).
-      try {
-        await _realtimeAmpSub?.cancel();
-        _realtimeAmpSub = null;
-      } catch (_) {}
+      await _stopAndDisposeRealtimeRecorder();
 
       if (ref.mounted) {
         state = state.copyWith(
@@ -671,18 +802,26 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   /// Stops a real-time transcription session and produces the final transcript.
   ///
   /// The stop sequence:
-  /// 1. Cancel delta subscription
-  /// 2. Cancel amplitude subscription
-  /// 3. Service stops (cancels PCM stream, stops recorder, sends endAudio,
-  ///    waits for `transcription.done`, writes WAV→M4A)
+  /// 1. Cancel the amplitude subscription
+  /// 2. Service stops the recorder and drains its PCM tail
+  /// 3. Service ends backend inference and finalizes a durable WAV
   /// 4. Controller disposes the recorder
   Future<void> stopRealtime() async {
     if (!ref.mounted) return;
     if (_recorder == null) return;
+    final outputPath = _realtimeOutputPath;
+    final capture = _realtimeCapture;
+    if (outputPath == null || capture == null) return;
+    if (_terminalActionInProgress) return;
+    _terminalActionInProgress = true;
 
     final currentOpId = _operationId;
 
     _maxTimer?.cancel();
+    state = state.copyWith(
+      status: ChatRecorderStatus.processing,
+      partialTranscript: state.partialTranscript,
+    );
 
     try {
       await _realtimeAmpSub?.cancel();
@@ -696,29 +835,45 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       );
     }
 
-    // Set up an output path for the audio file
-    final baseTemp = await _tempDirectoryProvider();
-    if (!ref.mounted) return;
-    _tempDir = await Directory(
-      '${baseTemp.path}/lotti_chat_rec',
-    ).create(recursive: true);
-    if (!ref.mounted) return;
-    final outputPath = '${_tempDir!.path}/chat_rt_${_nowMillisProvider()}';
-
+    var serviceStopCompleted = false;
     try {
       final recorder = _recorder;
       final result = await _realtimeService.stop(
+        capture: capture,
         stopRecorder: () async {
           await recorder?.stop();
         },
         outputPath: outputPath,
       );
+      if (result.recordingSessionId != capture.recordingSessionId) {
+        throw StateError('Realtime stop result belongs to another capture');
+      }
+      serviceStopCompleted = true;
 
+      final transcript = result.transcript.trim();
+      final canConsumeTransient =
+          result.captureDisposition == RealtimeCaptureDisposition.complete &&
+          result.audioFilePath != null &&
+          transcript.isNotEmpty;
       if (currentOpId == _operationId && ref.mounted) {
-        state = state.copyWith(
-          status: ChatRecorderStatus.idle,
-          transcript: result.transcript,
-        );
+        state = canConsumeTransient
+            ? state.copyWith(
+                status: ChatRecorderStatus.idle,
+                transcript: transcript,
+              )
+            : state.copyWith(
+                status: ChatRecorderStatus.idle,
+                errorType:
+                    result.captureDisposition ==
+                            RealtimeCaptureDisposition.noAudio ||
+                        result.audioFilePath == null
+                    ? ChatRecorderErrorType.noAudioRecorded
+                    : ChatRecorderErrorType.recordingSavedForRecovery,
+              );
+      }
+      if (!canConsumeTransient) {
+        _realtimeCapture = null;
+        _realtimeOutputPath = null;
       }
 
       getIt<DomainLogger>().log(
@@ -726,24 +881,33 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         'chat_realtime_recording_stopped: '
         'transcriptLen=${result.transcript.length}, '
         'audioFile=${result.audioFilePath}, '
+        'captureDisposition=${result.captureDisposition.name}, '
         'usedFallback=${result.usedTranscriptFallback}',
         subDomain: 'stopRealtime',
       );
     } catch (e) {
-      // Tear down the WebSocket and service subscriptions that
-      // service.stop() would have cleaned up on success.
-      try {
-        await _realtimeService.dispose();
-      } catch (_) {}
+      final hasRecoverableAudio = capture.acceptedPcmBytes > 0;
       if (currentOpId == _operationId && ref.mounted) {
         state = state.copyWith(
           status: ChatRecorderStatus.idle,
-          error: 'Realtime transcription failed: $e',
-          errorType: ChatRecorderErrorType.transcriptionFailed,
+          error: hasRecoverableAudio
+              ? null
+              : 'Realtime transcription failed before audio was captured: $e',
+          errorType: hasRecoverableAudio
+              ? ChatRecorderErrorType.recordingSavedForRecovery
+              : ChatRecorderErrorType.noAudioRecorded,
         );
       }
     } finally {
+      await _stopAndDisposeRealtimeRecorder(
+        stopRecorder: !serviceStopCompleted,
+      );
       await _cleanupInternal();
+      if (!serviceStopCompleted) {
+        _realtimeCapture = null;
+        _realtimeOutputPath = null;
+      }
+      _terminalActionInProgress = false;
     }
   }
 

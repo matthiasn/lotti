@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' show Tristate;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
@@ -20,14 +20,14 @@ import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:record/record.dart';
 
-import '../../../../mocks/mocks.dart';
+import '../../../../helpers/fallbacks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
@@ -99,13 +99,19 @@ Future<void> _pumpCapture(
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(fallbackAudioCaptureOrigin);
+    registerFallbackValue(fallbackAudioCaptureIntent);
+    registerFallbackValue(Directory('/tmp'));
+  });
+
   group('CapturePage', () {
     testWidgets(
       'idle phase shows talk hint, type action, voice button, no CTA',
       (
         tester,
       ) async {
-        final harness = _AudioHarness()..arm();
+        final harness = _AudioHarness();
         await tester.pumpWidget(
           _wrap(
             const CapturePage(),
@@ -138,7 +144,7 @@ void main() {
     testWidgets('recorded time preview renders above the idle capture prompt', (
       tester,
     ) async {
-      final harness = _AudioHarness()..arm();
+      final harness = _AudioHarness();
       await _pumpCapture(
         tester,
         harness: harness,
@@ -173,7 +179,7 @@ void main() {
     testWidgets(
       'recorded time card swaps to the date-neutral eyebrow for a past date',
       (tester) async {
-        final harness = _AudioHarness()..arm();
+        final harness = _AudioHarness();
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await _pumpCapture(
             tester,
@@ -214,7 +220,7 @@ void main() {
     testWidgets('type instead opens the editable transcript path', (
       tester,
     ) async {
-      final harness = _AudioHarness()..arm();
+      final harness = _AudioHarness();
       await _pumpCapture(tester, harness: harness);
 
       final messages = tester.element(find.byType(CapturePage)).messages;
@@ -233,15 +239,15 @@ void main() {
       await harness.dispose();
     });
 
-    testWidgets('tapping the voice button arms the listening phase', (
+    testWidgets('voice button delegates one start request to the controller', (
       tester,
     ) async {
-      final harness = _AudioHarness()..arm();
+      final controller = _StubCaptureController(const CaptureState.idle());
       await tester.pumpWidget(
         _wrap(
           const CapturePage(),
           overrides: [
-            captureControllerProvider.overrideWith(harness.controllerFactory),
+            captureControllerProvider.overrideWith(() => controller),
           ],
         ),
       );
@@ -249,21 +255,8 @@ void main() {
 
       await tester.tap(find.byType(VoiceButton));
       await tester.pump();
-      await tester.pump();
 
-      final context = tester.element(find.byType(CapturePage));
-      final messages = context.messages;
-      expect(
-        find.text(messages.dailyOsNextCaptureHeadlineListening),
-        findsOneWidget,
-      );
-      expect(
-        find.text(messages.dailyOsNextCaptureListeningStatus),
-        findsOneWidget,
-      );
-      expect(find.byType(LiveWaveform), findsOneWidget);
-
-      await harness.dispose();
+      expect(controller.toggleCalls, 1);
     });
 
     testWidgets(
@@ -383,7 +376,7 @@ void main() {
     for (final c in greetingCases) {
       testWidgets('${c.$1} greeting renders', (tester) async {
         await withClock(Clock.fixed(DateTime(2026, 5, 26, c.$2)), () async {
-          final harness = _AudioHarness()..arm();
+          final harness = _AudioHarness();
           await _pumpCapture(tester, harness: harness);
           final messages = tester.element(find.byType(CapturePage)).messages;
           expect(find.text(c.$3(messages)), findsOneWidget);
@@ -428,7 +421,7 @@ void main() {
     for (final c in tailCases) {
       testWidgets(c.$1, (tester) async {
         await withClock(Clock.fixed(c.$2), () async {
-          final harness = _AudioHarness()..arm();
+          final harness = _AudioHarness();
           await _pumpCapture(
             tester,
             harness: harness,
@@ -450,7 +443,7 @@ void main() {
     testWidgets('dateStrip widget renders in the AppBar when provided', (
       tester,
     ) async {
-      final harness = _AudioHarness()..arm();
+      final harness = _AudioHarness();
       await tester.pumpWidget(
         _wrap(
           const CapturePage(dateStrip: Text('PICKER')),
@@ -586,6 +579,14 @@ void main() {
             CaptureError.transcriptionFailed,
             (m) => m.dailyOsNextCaptureErrorTranscriptionFailed,
           ),
+          (
+            CaptureError.recordingSavedPendingTranscription,
+            (m) => m.dailyOsNextCaptureErrorRecordingSavedPendingTranscription,
+          ),
+          (
+            CaptureError.recordingRetainedForRecovery,
+            (m) => m.dailyOsNextCaptureErrorRecordingSavedForRecovery,
+          ),
         ];
     for (final c in remainingErrorCases) {
       testWidgets('error phase surfaces localized copy for ${c.$1.name}', (
@@ -614,6 +615,60 @@ void main() {
         expect(find.text(c.$2(messages)), findsOneWidget);
       });
     }
+
+    testWidgets('saved recording uses a retained warning state', (
+      tester,
+    ) async {
+      final controller = _StubCaptureController(
+        const CaptureState(
+          phase: CapturePhase.error,
+          transcript: '',
+          amplitudes: [],
+          error: CaptureError.recordingSavedPendingTranscription,
+        ),
+      );
+      await tester.pumpWidget(
+        _wrap(
+          const CapturePage(),
+          overrides: [
+            captureControllerProvider.overrideWith(() => controller),
+          ],
+        ),
+      );
+      await tester.pump();
+      final context = tester.element(find.byType(CapturePage));
+      final messages = context.messages;
+      final tokens = context.designTokens;
+
+      expect(
+        find.text(
+          messages.dailyOsNextCaptureErrorRecordingSavedPendingTranscription,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.dailyOsNextCaptureRecordingSavedStatus),
+        findsOneWidget,
+      );
+      final savedText = tester.widget<Text>(
+        find.text(
+          messages.dailyOsNextCaptureErrorRecordingSavedPendingTranscription,
+        ),
+      );
+      expect(savedText.style?.color, tokens.colors.alert.warning.defaultColor);
+      expect(
+        tester.widget<VoiceButton>(find.byType(VoiceButton)).phase,
+        CapturePhase.captured,
+      );
+      final semantics = tester.getSemantics(find.byType(VoiceButton));
+      expect(semantics.label, messages.dailyOsNextCaptureRecordingSavedStatus);
+      expect(semantics.flagsCollection.isButton, isFalse);
+      expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
+
+      await tester.tap(find.byType(VoiceButton));
+      await tester.pump();
+      expect(controller.toggleCalls, 0);
+    });
 
     testWidgets(
       'listening phase with a partial transcript shows the live preview text',
@@ -945,7 +1000,7 @@ void main() {
     testWidgets(
       'recorded time summary formats hours and minutes together',
       (tester) async {
-        final harness = _AudioHarness()..arm();
+        final harness = _AudioHarness();
         await _pumpCapture(
           tester,
           harness: harness,
@@ -980,7 +1035,7 @@ void main() {
     testWidgets(
       'greeting addresses the user by name when a userName is set',
       (tester) async {
-        final harness = _AudioHarness()..arm();
+        final harness = _AudioHarness();
         await tester.pumpWidget(
           _wrap(
             const CapturePage(),
@@ -1126,7 +1181,7 @@ void main() {
       'renders the calm capture body and omits the time-spent card when '
       'there is no tracked time',
       (tester) async {
-        final harness = _AudioHarness()..arm();
+        final harness = _AudioHarness();
         await _pumpCapture(
           tester,
           harness: harness,
@@ -1153,7 +1208,7 @@ void main() {
     testWidgets(
       'surfaces the Today so far card for tracked time on the current day',
       (tester) async {
-        final harness = _AudioHarness()..arm();
+        final harness = _AudioHarness();
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await _pumpCapture(
             tester,
@@ -1188,7 +1243,7 @@ void main() {
     testWidgets('uses the date-neutral eyebrow when tracking a past day', (
       tester,
     ) async {
-      final harness = _AudioHarness()..arm();
+      final harness = _AudioHarness();
       await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
         await _pumpCapture(
           tester,
@@ -1216,7 +1271,7 @@ void main() {
     testWidgets(
       'falls back to the present-tense eyebrow when no forDate is given',
       (tester) async {
-        final harness = _AudioHarness()..arm();
+        final harness = _AudioHarness();
         await _pumpCapture(
           tester,
           harness: harness,
@@ -1240,35 +1295,6 @@ void main() {
         await harness.dispose();
       },
     );
-
-    testWidgets('tapping the voice button arms the listening phase', (
-      tester,
-    ) async {
-      final harness = _AudioHarness()..arm();
-      await _pumpCapture(
-        tester,
-        harness: harness,
-        page: host(const CaptureModalContent()),
-      );
-
-      await tester.tap(find.byType(VoiceButton));
-      await tester.pump();
-      await tester.pump();
-
-      final messages = tester
-          .element(find.byType(CaptureModalContent))
-          .messages;
-      expect(
-        find.text(messages.dailyOsNextCaptureHeadlineListening),
-        findsOneWidget,
-      );
-      expect(
-        find.text(messages.dailyOsNextCaptureListeningStatus),
-        findsOneWidget,
-      );
-
-      await harness.dispose();
-    });
 
     for (final (phase, labelOf)
         in <(CapturePhase, String Function(AppLocalizations))>[
@@ -1516,52 +1542,11 @@ class _ErrorController extends CaptureController {
   );
 }
 
-/// Wraps a fake recorder + transcription service so widget tests can
-/// drive the [CaptureController] without touching the mic or cloud.
+/// Supplies an idle real controller without touching the mic or cloud.
 class _AudioHarness {
   _AudioHarness();
 
-  static const transcript = 'transcript';
-  final MockAudioRecorderRepository recorder = MockAudioRecorderRepository();
-  final MockAudioTranscriptionService transcriber =
-      MockAudioTranscriptionService();
-  final MockRealtimeTranscriptionService realtimeService =
-      MockRealtimeTranscriptionService();
-  final StreamController<Amplitude> ampController =
-      StreamController<Amplitude>.broadcast();
-
-  void arm() {
-    // Page tests pin the batch path; realtime coverage lives in the
-    // controller test.
-    when(
-      realtimeService.resolveRealtimeConfig,
-    ).thenAnswer((_) async => null);
-    when(realtimeService.dispose).thenAnswer((_) async {});
-    when(recorder.hasPermission).thenAnswer((_) async => true);
-    when(
-      () => recorder.amplitudeStream,
-    ).thenAnswer((_) => ampController.stream);
-    when(recorder.startRecording).thenAnswer(
-      (_) async => AudioNote(
-        createdAt: DateTime(2026, 5, 26, 9),
-        audioFile: 'capture.m4a',
-        audioDirectory: '/audio/2026-05-26/',
-        duration: Duration.zero,
-      ),
-    );
-    when(recorder.stopRecording).thenAnswer((_) async {});
-    when(
-      () => transcriber.transcribe(
-        any(),
-        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-      ),
-    ).thenAnswer((_) async => transcript);
-  }
-
   CaptureController controllerFactory() => CaptureController(
-    recorder: recorder,
-    transcriber: transcriber,
-    realtimeService: realtimeService,
     docDir: Directory.systemTemp.createTempSync,
     persistAudio: (_) async => JournalAudio(
       meta: Metadata(
@@ -1583,9 +1568,7 @@ class _AudioHarness {
     now: () => DateTime(2026, 5, 26, 9),
   );
 
-  Future<void> dispose() async {
-    await ampController.close();
-  }
+  Future<void> dispose() async {}
 }
 
 /// CaptureController override that emits a pre-baked [CaptureState] so
@@ -1594,10 +1577,19 @@ class _StubCaptureController extends CaptureController {
   _StubCaptureController(this._initial);
 
   final CaptureState _initial;
+  int toggleCalls = 0;
 
   static CaptureController Function() factory(CaptureState state) =>
       () => _StubCaptureController(state);
 
   @override
   CaptureState build() => _initial;
+
+  @override
+  Future<void> toggle({
+    DateTime? forDate,
+    AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
+  }) async {
+    toggleCalls += 1;
+  }
 }

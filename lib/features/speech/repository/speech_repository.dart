@@ -53,7 +53,18 @@ class SpeechRepository {
           categoryId: categoryId,
         ),
       );
-      await persistenceLogic.createDbEntity(journalEntity, linkedId: linkedId);
+      final persisted = await persistenceLogic.createDbEntity(
+        journalEntity,
+        linkedId: linkedId,
+      );
+      if (persisted != true) {
+        getIt<DomainLogger>().error(
+          LogDomain.persistence,
+          StateError('Audio journal entry was not inserted'),
+          subDomain: 'createAudioEntry.rejected',
+        );
+        return null;
+      }
 
       return journalEntity;
     } catch (exception, stackTrace) {

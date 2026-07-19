@@ -4769,6 +4769,12 @@ abstract class AppLocalizations {
   /// **'Listening...'**
   String get chatInputListening;
 
+  /// No description provided for @chatInputNoAudioRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'No audio was recorded. Try again.'**
+  String get chatInputNoAudioRecorded;
+
   /// No description provided for @chatInputPleaseWait.
   ///
   /// In en, this message translates to:
@@ -4780,6 +4786,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Processing...'**
   String get chatInputProcessing;
+
+  /// No description provided for @chatInputRecordingSavedForRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio captured so far is retained on this device. You can record again.'**
+  String get chatInputRecordingSavedForRecovery;
 
   /// No description provided for @chatInputRecordVoice.
   ///
@@ -6010,6 +6022,18 @@ abstract class AppLocalizations {
   /// **'Realtime transcription could not start.'**
   String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed;
 
+  /// No description provided for @dailyOsNextCaptureErrorRecordingSavedForRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio captured so far is retained on this device. You can record again or type instead.'**
+  String get dailyOsNextCaptureErrorRecordingSavedForRecovery;
+
+  /// No description provided for @dailyOsNextCaptureErrorRecordingSavedPendingTranscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your recording is saved. Transcription couldn\'t finish.'**
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription;
+
   /// No description provided for @dailyOsNextCaptureErrorRecordingStartFailed.
   ///
   /// In en, this message translates to:
@@ -6111,6 +6135,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review'**
   String get dailyOsNextCaptureReconcileCta;
+
+  /// No description provided for @dailyOsNextCaptureRecordingSavedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording saved'**
+  String get dailyOsNextCaptureRecordingSavedStatus;
 
   /// No description provided for @dailyOsNextCapturesPanelTitle.
   ///
@@ -16300,6 +16330,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Speech Recognition'**
   String get speechModalTitle;
+
+  /// No description provided for @speechNoAudioRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'No audio was recorded. Try again.'**
+  String get speechNoAudioRecorded;
+
+  /// No description provided for @speechRecordingSavedPendingRecovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Your recording is saved on this device and needs recovery.'**
+  String get speechRecordingSavedPendingRecovery;
 
   /// No description provided for @speechSettingsModelDescription.
   ///

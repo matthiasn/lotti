@@ -361,7 +361,9 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
             label: messages.dailyOsNextCaptureDoneCta,
             fillColor: tokens.colors.interactive.enabled,
             foregroundColor: tokens.colors.text.onInteractiveAlert,
-            onTap: () => ref.read(captureControllerProvider.notifier).toggle(),
+            onTap: () => ref
+                .read(captureControllerProvider.notifier)
+                .toggle(forDate: widget.day),
           ),
         ]);
       case CapturePhase.transcribing:

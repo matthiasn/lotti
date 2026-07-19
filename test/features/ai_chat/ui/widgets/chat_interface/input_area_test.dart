@@ -11,6 +11,7 @@ import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
 import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/assistant_settings_sheet.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/input_area.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -30,7 +31,7 @@ Widget _inputArea({
   bool isLoading = false,
   bool canSend = true,
   bool requiresModelSelection = false,
-  void Function(String)? onSendMessage,
+  Future<bool> Function(String)? onSendMessage,
 }) => InputArea(
   controller: controller ?? TextEditingController(),
   scrollController: ScrollController(),
@@ -38,7 +39,7 @@ Widget _inputArea({
   canSend: canSend,
   requiresModelSelection: requiresModelSelection,
   categoryId: 'cat',
-  onSendMessage: onSendMessage ?? (_) {},
+  onSendMessage: onSendMessage ?? (_) async => true,
 );
 
 /// Override that uses the real [ChatRecorderController].
@@ -69,7 +70,10 @@ void main() {
       _wrap(
         _inputArea(
           controller: TextEditingController(text: 'hello'),
-          onSendMessage: (msg) => sent = msg,
+          onSendMessage: (msg) async {
+            sent = msg;
+            return true;
+          },
         ),
         overrides: [_defaultRecorderOverride()],
       ),
@@ -185,6 +189,37 @@ void main() {
     await tester.pump();
 
     expect(find.text('HTTP 422: unsupported audio payload'), findsOneWidget);
+    expect(recorder.clearResultCalls, 1);
+  });
+
+  testWidgets('surfaces localized recovery copy for saved partial audio', (
+    tester,
+  ) async {
+    late _TranscriptEmittingController recorder;
+    await tester.pumpWidget(
+      _wrap(
+        _inputArea(),
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => recorder = _TranscriptEmittingController(),
+          ),
+        ],
+      ),
+    );
+
+    recorder.emitRecoveryRequired();
+    await tester.pump();
+
+    expect(
+      find.text(
+        'Audio captured so far is retained on this device. You can record again.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<DesignSystemToast>(find.byType(DesignSystemToast)).tone,
+      DesignSystemToastTone.warning,
+    );
     expect(recorder.clearResultCalls, 1);
   });
 
@@ -321,7 +356,12 @@ void main() {
     String? sent;
     await tester.pumpWidget(
       _wrap(
-        _inputArea(onSendMessage: (msg) => sent = msg),
+        _inputArea(
+          onSendMessage: (msg) async {
+            sent = msg;
+            return true;
+          },
+        ),
         overrides: [_defaultRecorderOverride()],
       ),
     );
@@ -593,7 +633,10 @@ void main() {
       _wrap(
         _inputArea(
           controller: textController,
-          onSendMessage: (msg) => sentMessage = msg,
+          onSendMessage: (msg) async {
+            sentMessage = msg;
+            return true;
+          },
         ),
         overrides: [
           chatRecorderControllerProvider.overrideWith(() => controller),
@@ -608,6 +651,7 @@ void main() {
 
     expect(sentMessage, 'Hello from realtime');
     expect(textController.text, isEmpty);
+    expect(controller.acknowledgeCalls, 1);
   });
 
   testWidgets('transcript fills text field when canSend is false', (
@@ -622,7 +666,10 @@ void main() {
         _inputArea(
           controller: textController,
           canSend: false,
-          onSendMessage: (msg) => sentMessage = msg,
+          onSendMessage: (msg) async {
+            sentMessage = msg;
+            return true;
+          },
         ),
         overrides: [
           chatRecorderControllerProvider.overrideWith(() => controller),
@@ -637,7 +684,35 @@ void main() {
 
     expect(sentMessage, isNull);
     expect(textController.text, 'Transcript text');
+    expect(controller.acknowledgeCalls, 0);
   });
+
+  testWidgets(
+    'failed durable acceptance keeps voice text and source audio',
+    (tester) async {
+      final textController = TextEditingController();
+      final controller = _TranscriptEmittingController();
+      await tester.pumpWidget(
+        _wrap(
+          _inputArea(
+            controller: textController,
+            onSendMessage: (_) async => false,
+          ),
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(() => controller),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      controller.emitTranscript('Keep this offline message');
+      await tester.pump();
+      await tester.pump();
+
+      expect(textController.text, 'Keep this offline message');
+      expect(controller.acknowledgeCalls, 0);
+    },
+  );
 
   // ---------------------------------------------------------------------------
   // Tune button / requiresModelSelection dialog (lines 234-241)
@@ -874,7 +949,10 @@ void main() {
         _wrap(
           _inputArea(
             controller: textController,
-            onSendMessage: (msg) => sent = msg,
+            onSendMessage: (msg) async {
+              sent = msg;
+              return true;
+            },
           ),
           overrides: [_defaultRecorderOverride()],
         ),
@@ -901,7 +979,10 @@ void main() {
         _wrap(
           _inputArea(
             controller: textController,
-            onSendMessage: (msg) => sent = msg,
+            onSendMessage: (msg) async {
+              sent = msg;
+              return true;
+            },
           ),
           overrides: [_defaultRecorderOverride()],
         ),
@@ -1122,6 +1203,7 @@ class _StaticChatController extends ChatSessionController {
 /// Test controller that can emit a transcript to trigger the subscription
 class _TranscriptEmittingController extends ChatRecorderController {
   int clearResultCalls = 0;
+  int acknowledgeCalls = 0;
 
   @override
   ChatRecorderState build() {
@@ -1144,6 +1226,18 @@ class _TranscriptEmittingController extends ChatRecorderController {
       error: error,
       errorType: ChatRecorderErrorType.transcriptionFailed,
     );
+  }
+
+  void emitRecoveryRequired() {
+    state = state.copyWith(
+      status: ChatRecorderStatus.idle,
+      errorType: ChatRecorderErrorType.recordingSavedForRecovery,
+    );
+  }
+
+  @override
+  Future<void> acknowledgeRealtimeTranscriptConsumed() async {
+    acknowledgeCalls++;
   }
 
   @override

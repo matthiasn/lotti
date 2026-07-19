@@ -33,6 +33,20 @@ void main() {
       );
     });
 
+    test('outputPathIn can bind a stable recording session', () {
+      final path = AudioRecordingPath.forTimestamp(
+        DateTime(2025, 6, 13, 14, 5, 6, 9),
+      );
+
+      expect(
+        path.outputPathIn(
+          '/docs/audio/2025-06-13/',
+          recordingSessionId: 'capture-123',
+        ),
+        '/docs/audio/2025-06-13/2025-06-13_14-05-06-009_capture-123',
+      );
+    });
+
     test('zero-pads single-digit calendar and clock fields', () {
       final path = AudioRecordingPath.forTimestamp(
         DateTime(2026, 1, 2, 3, 4, 5),

@@ -261,8 +261,9 @@ class _FakeChatSessionController extends ChatSessionController {
   Future<void> initializeSession({String? sessionId}) async {}
 
   @override
-  Future<void> sendMessage(String content) async {
+  Future<bool> sendMessage(String content) async {
     sink.value = content;
+    return true;
   }
 }
 
@@ -283,7 +284,7 @@ class _NonSendableChatSessionController extends ChatSessionController {
   Future<void> initializeSession({String? sessionId}) async {}
 
   @override
-  Future<void> sendMessage(String content) async {}
+  Future<bool> sendMessage(String content) async => false;
 }
 
 class _ProcessingChatRecorderController extends ChatRecorderController {

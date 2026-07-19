@@ -2774,10 +2774,17 @@ class AppLocalizationsDa extends AppLocalizations {
   String get chatInputListening => 'Lytter...';
 
   @override
+  String get chatInputNoAudioRecorded => 'No audio was recorded. Try again.';
+
+  @override
   String get chatInputPleaseWait => 'Vent venligst...';
 
   @override
   String get chatInputProcessing => 'Behandler...';
+
+  @override
+  String get chatInputRecordingSavedForRecovery =>
+      'Audio captured so far is retained on this device. You can record again.';
 
   @override
   String get chatInputRecordVoice => 'Optag talebesked';
@@ -3531,6 +3538,14 @@ class AppLocalizationsDa extends AppLocalizations {
       'Realtime-transskription kunne ikke starte.';
 
   @override
+  String get dailyOsNextCaptureErrorRecordingSavedForRecovery =>
+      'Audio captured so far is retained on this device. You can record again or type instead.';
+
+  @override
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Your recording is saved. Transcription couldn\'t finish.';
+
+  @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Optagelsen kunne ikke starte.';
 
@@ -3587,6 +3602,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Anmeldelse';
+
+  @override
+  String get dailyOsNextCaptureRecordingSavedStatus => 'Recording saved';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Fangster';
@@ -9471,6 +9489,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Talutegenkendelse';
+
+  @override
+  String get speechNoAudioRecorded => 'No audio was recorded. Try again.';
+
+  @override
+  String get speechRecordingSavedPendingRecovery =>
+      'Your recording is saved on this device and needs recovery.';
 
   @override
   String get speechSettingsModelDescription => 'On-device talemodel';

@@ -237,7 +237,10 @@ class _CaptureFlowBody extends ConsumerWidget {
           child: _TranscriptZone(state: state, notifier: notifier),
         ),
         SizedBox(height: tokens.spacing.step4),
-        _OrbZone(state: state, onTap: notifier.toggle),
+        _OrbZone(
+          state: state,
+          onTap: () => notifier.toggle(forDate: forDate),
+        ),
         if (showInlineAdvanceCta) ...[
           SizedBox(height: tokens.spacing.step5),
           _InlineFooterSlot(state: state, forDate: forDate),
@@ -564,13 +567,16 @@ class _TranscriptZone extends StatelessWidget {
           ),
         );
       case CapturePhase.error:
+        final recoverable = _isRecoverableCaptureError(state.error);
         return Center(
           child: Text(
             _captureErrorMessage(context, state.error) ??
                 context.messages.dailyOsNextCaptureIdleHint,
             textAlign: TextAlign.center,
             style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.alert.error.defaultColor,
+              color: recoverable
+                  ? tokens.colors.alert.warning.defaultColor
+                  : tokens.colors.alert.error.defaultColor,
             ),
           ),
         );
@@ -600,7 +606,12 @@ class _OrbZone extends ConsumerWidget {
     final (amplitudes, dbfs) = ref.watch(
       captureControllerProvider.select((s) => (s.amplitudes, s.dbfs)),
     );
+    final saved = _isSavedCaptureError(state.error);
     final (caption, captionColor) = switch (state.phase) {
+      CapturePhase.error when saved => (
+        messages.dailyOsNextCaptureRecordingSavedStatus,
+        tokens.colors.alert.warning.defaultColor,
+      ),
       CapturePhase.idle || CapturePhase.error => (
         voiceIdleHint(context),
         tokens.colors.text.lowEmphasis,
@@ -620,13 +631,15 @@ class _OrbZone extends ConsumerWidget {
     };
 
     return VoiceOrbZone(
-      phase: state.phase,
+      phase: saved ? CapturePhase.captured : state.phase,
       caption: caption,
       captionColor: captionColor,
-      semanticLabel: _voiceButtonLabel(context, state.phase),
+      semanticLabel: saved
+          ? messages.dailyOsNextCaptureRecordingSavedStatus
+          : _voiceButtonLabel(context, state.phase),
       amplitudes: amplitudes,
       dbfs: dbfs,
-      onTap: onTap,
+      onTap: saved ? null : onTap,
     );
   }
 
@@ -643,6 +656,13 @@ class _OrbZone extends ConsumerWidget {
     }
   }
 }
+
+bool _isSavedCaptureError(CaptureError? error) =>
+    error == CaptureError.recordingSavedPendingTranscription;
+
+bool _isRecoverableCaptureError(CaptureError? error) =>
+    _isSavedCaptureError(error) ||
+    error == CaptureError.recordingRetainedForRecovery;
 
 String? _captureErrorMessage(BuildContext context, CaptureError? error) {
   final messages = context.messages;
@@ -661,6 +681,10 @@ String? _captureErrorMessage(BuildContext context, CaptureError? error) {
       messages.dailyOsNextCaptureErrorNoAudioRecorded,
     CaptureError.transcriptionFailed =>
       messages.dailyOsNextCaptureErrorTranscriptionFailed,
+    CaptureError.recordingSavedPendingTranscription =>
+      messages.dailyOsNextCaptureErrorRecordingSavedPendingTranscription,
+    CaptureError.recordingRetainedForRecovery =>
+      messages.dailyOsNextCaptureErrorRecordingSavedForRecovery,
     null => null,
   };
 }

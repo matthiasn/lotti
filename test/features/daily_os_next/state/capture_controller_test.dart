@@ -5,29 +5,21 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
-import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' as record;
 import 'package:record/record.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 final _recordingStartedAt = DateTime(2026, 5, 26, 9);
-
-AudioNote _audioNoteFixture() => AudioNote(
-  createdAt: _recordingStartedAt,
-  audioFile: 'capture.m4a',
-  audioDirectory: '/audio/2026-05-26/',
-  duration: Duration.zero,
-);
 
 JournalAudio _persistedAudio({String id = 'audio_001'}) {
   return JournalAudio(
@@ -42,33 +34,40 @@ JournalAudio _persistedAudio({String id = 'audio_001'}) {
     data: AudioData(
       dateFrom: _recordingStartedAt,
       dateTo: _recordingStartedAt.add(const Duration(seconds: 2)),
-      audioFile: 'capture.m4a',
+      audioFile: 'capture.wav',
       audioDirectory: '/audio/2026-05-26/',
       duration: const Duration(seconds: 2),
     ),
   );
 }
 
-/// Builds the standard kept-alive container. Batch tests pass [recorder];
-/// realtime tests pass [realtimeRecorderFactory] instead (the controller
-/// constructs its own recorder per realtime session).
+/// Builds the standard kept-alive container with a caller-owned raw recorder.
 ProviderContainer _aliveContainer({
   required MockAudioTranscriptionService transcriber,
   required MockRealtimeTranscriptionService realtimeService,
   required Future<JournalAudio?> Function(AudioNote) persistAudio,
-  MockAudioRecorderRepository? recorder,
   AudioRecorder Function()? realtimeRecorderFactory,
+  Directory Function()? docDir,
 }) {
+  when(
+    () => realtimeService.stopAndRetainForRecovery(
+      capture: any(named: 'capture'),
+      stopRecorder: any(named: 'stopRecorder'),
+    ),
+  ).thenAnswer((invocation) async {
+    final stopRecorder =
+        invocation.namedArguments[#stopRecorder] as Future<void> Function();
+    await stopRecorder();
+  });
   final container = ProviderContainer(
     overrides: [
       captureControllerProvider.overrideWith(
         () => CaptureController(
-          recorder: recorder,
           transcriber: transcriber,
           realtimeService: realtimeService,
           realtimeRecorderFactory: realtimeRecorderFactory,
           persistAudio: persistAudio,
-          docDir: Directory.systemTemp.createTempSync,
+          docDir: docDir ?? Directory.systemTemp.createTempSync,
           now: () => _recordingStartedAt,
         ),
       ),
@@ -83,275 +82,42 @@ class _StopRecorderFallback extends Fake {
   Future<void> call() async {}
 }
 
-/// Shared batch-path wiring: fresh recorder/transcriber/realtime mocks with
-/// the standard "realtime not configured" stubs. Pass [transcript] to also
-/// stub `transcriber.transcribe`; groups that stub it per-test omit it.
-({
-  MockAudioRecorderRepository recorder,
-  MockAudioTranscriptionService transcriber,
-  MockRealtimeTranscriptionService realtimeService,
-  StreamController<Amplitude> ampController,
-})
-_batchWiring({String? transcript}) {
-  final recorder = MockAudioRecorderRepository();
-  final transcriber = MockAudioTranscriptionService();
-  final realtimeService = MockRealtimeTranscriptionService();
-  final ampController = StreamController<Amplitude>.broadcast();
-
-  // Realtime not configured → controller falls back to the batch path.
-  when(realtimeService.resolveRealtimeConfig).thenAnswer((_) async => null);
-  // `_cleanupSync` disposes the realtime service unconditionally so route
-  // teardown also tears down any active realtime session. The batch tests
-  // still hit it because the dispose call sits before the branching.
-  when(realtimeService.dispose).thenAnswer((_) async {});
-  when(recorder.hasPermission).thenAnswer((_) async => true);
-  when(() => recorder.amplitudeStream).thenAnswer((_) => ampController.stream);
-  when(recorder.startRecording).thenAnswer((_) async => _audioNoteFixture());
-  when(recorder.stopRecording).thenAnswer((_) async {});
-  if (transcript != null) {
-    when(
-      () => transcriber.transcribe(
-        any(),
-        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-      ),
-    ).thenAnswer((_) async => transcript);
-  }
-  return (
-    recorder: recorder,
-    transcriber: transcriber,
-    realtimeService: realtimeService,
-    ampController: ampController,
-  );
-}
-
 void main() {
   setUpAll(() {
-    registerFallbackValue(_audioNoteFixture());
+    registerFallbackValue(fallbackAudioCaptureOrigin);
+    registerFallbackValue(fallbackAudioCaptureIntent);
     registerFallbackValue(_StreamFallback());
     registerFallbackValue(_StopRecorderFallback().call);
-  });
-
-  group('CaptureController (batch path)', () {
-    late MockAudioRecorderRepository recorder;
-    late MockAudioTranscriptionService transcriber;
-    late MockRealtimeTranscriptionService realtimeService;
-    late StreamController<Amplitude> ampController;
-    late List<AudioNote> persistedNotes;
-    JournalAudio? persistResult;
-
-    setUp(() {
-      final wiring = _batchWiring(transcript: '  hello world  ');
-      recorder = wiring.recorder;
-      transcriber = wiring.transcriber;
-      realtimeService = wiring.realtimeService;
-      ampController = wiring.ampController;
-      persistedNotes = <AudioNote>[];
-      persistResult = _persistedAudio();
-    });
-
-    tearDown(() async {
-      await ampController.close();
-    });
-
-    Future<JournalAudio?> persistAudio(AudioNote note) async {
-      persistedNotes.add(note);
-      return persistResult;
-    }
-
-    test('starts in the idle phase', () {
-      final container = _aliveContainer(
-        recorder: recorder,
-        transcriber: transcriber,
-        realtimeService: realtimeService,
-        persistAudio: persistAudio,
-      );
-      addTearDown(container.dispose);
-
-      final state = container.read(captureControllerProvider);
-      expect(state.phase, CapturePhase.idle);
-      expect(state.transcript, '');
-      expect(state.amplitudes, isEmpty);
-      expect(state.audioId, isNull);
-    });
-
-    test(
-      'toggle from idle requests permission, starts recording, '
-      'and streams normalised amplitudes',
-      () async {
-        final container = _aliveContainer(
-          recorder: recorder,
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: persistAudio,
-        );
-        addTearDown(container.dispose);
-
-        await container.read(captureControllerProvider.notifier).toggle();
-        expect(
-          container.read(captureControllerProvider).phase,
-          CapturePhase.listening,
-        );
-        verify(() => recorder.hasPermission()).called(1);
-        verify(() => recorder.startRecording()).called(1);
-
-        ampController.add(Amplitude(current: 0, max: 0));
-        await pumpEventQueue();
-        ampController.add(Amplitude(current: -22.5, max: 0));
-        await pumpEventQueue();
-        ampController.add(Amplitude(current: -60, max: 0));
-        await pumpEventQueue();
-
-        final amplitudes = container.read(captureControllerProvider).amplitudes;
-        expect(amplitudes, hasLength(3));
-        expect(amplitudes.first, closeTo(1.0, 0.001));
-        expect(amplitudes[1], closeTo(0.5, 0.001));
-        // Below the -45 floor clamps to 0.
-        expect(amplitudes.last, closeTo(0.0, 0.001));
-        expect(container.read(captureControllerProvider).dbfs, -60);
-      },
-    );
-
-    test(
-      'toggle from listening stops recording, transcribes, '
-      'persists audio, and exposes audioId + transcript',
-      () async {
-        final container = _aliveContainer(
-          recorder: recorder,
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: persistAudio,
-        );
-        addTearDown(container.dispose);
-
-        final notifier = container.read(captureControllerProvider.notifier);
-        await notifier.toggle();
-        await notifier.toggle();
-
-        final state = container.read(captureControllerProvider);
-        expect(state.phase, CapturePhase.captured);
-        expect(state.transcript, 'hello world');
-        expect(state.audioId, 'audio_001');
-        expect(persistedNotes, hasLength(1));
-        expect(persistedNotes.single.audioFile, 'capture.m4a');
-        verify(() => recorder.stopRecording()).called(1);
-      },
-    );
-
-    test(
-      'toggle from listening surfaces transcription failure as error',
-      () async {
-        when(
-          () => transcriber.transcribe(
-            any(),
-            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-          ),
-        ).thenThrow(StateError('transcription down'));
-
-        final container = _aliveContainer(
-          recorder: recorder,
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: persistAudio,
-        );
-        addTearDown(container.dispose);
-
-        final notifier = container.read(captureControllerProvider.notifier);
-        await notifier.toggle();
-        await notifier.toggle();
-
-        final state = container.read(captureControllerProvider);
-        expect(state.phase, CapturePhase.error);
-        expect(state.error, CaptureError.transcriptionFailed);
-        expect(state.audioId, isNull);
-        expect(persistedNotes, isEmpty);
-      },
-    );
-
-    test('toggle without permission lands in the error phase', () async {
-      when(() => recorder.hasPermission()).thenAnswer((_) async => false);
-
-      final container = _aliveContainer(
-        recorder: recorder,
-        transcriber: transcriber,
-        realtimeService: realtimeService,
-        persistAudio: persistAudio,
-      );
-      addTearDown(container.dispose);
-
-      await container.read(captureControllerProvider.notifier).toggle();
-
-      final state = container.read(captureControllerProvider);
-      expect(state.phase, CapturePhase.error);
-      expect(state.error, CaptureError.microphonePermissionDenied);
-      verifyNever(() => recorder.startRecording());
-    });
-
-    test(
-      'toggle when startRecording returns null lands in the error phase',
-      () async {
-        when(() => recorder.startRecording()).thenAnswer((_) async => null);
-
-        final container = _aliveContainer(
-          recorder: recorder,
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: persistAudio,
-        );
-        addTearDown(container.dispose);
-
-        await container.read(captureControllerProvider.notifier).toggle();
-
-        final state = container.read(captureControllerProvider);
-        expect(state.phase, CapturePhase.error);
-        expect(state.error, CaptureError.recordingStartFailed);
-      },
-    );
-
-    test('reset clears state back to idle from captured', () async {
-      final container = _aliveContainer(
-        recorder: recorder,
-        transcriber: transcriber,
-        realtimeService: realtimeService,
-        persistAudio: persistAudio,
-      );
-      addTearDown(container.dispose);
-
-      final notifier = container.read(captureControllerProvider.notifier);
-      await notifier.toggle();
-      await notifier.toggle();
-      expect(
-        container.read(captureControllerProvider).phase,
-        CapturePhase.captured,
-      );
-
-      notifier.reset();
-      final state = container.read(captureControllerProvider);
-      expect(state.phase, CapturePhase.idle);
-      expect(state.transcript, '');
-      expect(state.amplitudes, isEmpty);
-      expect(state.audioId, isNull);
-    });
+    registerFallbackValue(Directory('/tmp'));
+    registerFallbackValue(DateTime(2026, 5, 26));
+    registerFallbackValue(MockDurableRealtimeCapture());
   });
 
   group('CaptureController (realtime path)', () {
     late MockRealtimeTranscriptionService realtimeService;
     late MockAudioTranscriptionService transcriber;
+    late MockDurableRealtimeCapture durableCapture;
     late _FakeRealtimeRecorder fakeRecorder;
     late StreamController<double> realtimeAmpController;
     late StreamController<Uint8List> pcmController;
     late List<AudioNote> persistedNotes;
     late void Function(String delta)? capturedOnDelta;
+    late RealtimeCaptureFailureCallback? capturedOnCaptureFailure;
     late ({AiConfigInferenceProvider provider, AiConfigModel model})
     realtimeConfig;
 
     setUp(() {
       realtimeService = MockRealtimeTranscriptionService();
       transcriber = MockAudioTranscriptionService();
+      durableCapture = MockDurableRealtimeCapture();
+      when(() => durableCapture.recordingSessionId).thenReturn('test-session');
+      when(() => durableCapture.acceptedPcmBytes).thenReturn(0);
       fakeRecorder = _FakeRealtimeRecorder();
       realtimeAmpController = StreamController<double>.broadcast();
       pcmController = StreamController<Uint8List>.broadcast();
       persistedNotes = <AudioNote>[];
       capturedOnDelta = null;
+      capturedOnCaptureFailure = null;
       realtimeConfig = (provider: _FakeProvider(), model: _FakeModel());
 
       fakeRecorder.pcmStream = pcmController.stream;
@@ -359,22 +125,44 @@ void main() {
       when(
         () => realtimeService.resolveRealtimeConfig(),
       ).thenAnswer((_) async => realtimeConfig);
-      when(realtimeService.dispose).thenAnswer((_) async {});
+      when(
+        () => realtimeService.prepareDefaultDurableCapture(
+          assetRootDirectory: any(named: 'assetRootDirectory'),
+          createdAt: any(named: 'createdAt'),
+          origin: any(named: 'origin'),
+          intent: any(named: 'intent'),
+          dayId: any(named: 'dayId'),
+          planDate: any(named: 'planDate'),
+        ),
+      ).thenAnswer((_) async => durableCapture);
+      when(durableCapture.discard).thenAnswer((_) async {});
+      when(
+        () => durableCapture.markCommitted(
+          journalAudioId: any(named: 'journalAudioId'),
+        ),
+      ).thenAnswer((_) async {});
       when(
         () => realtimeService.amplitudeStream,
       ).thenAnswer((_) => realtimeAmpController.stream);
       when(
         () => realtimeService.startRealtimeTranscription(
+          capture: any(named: 'capture'),
           pcmStream: any(named: 'pcmStream'),
           onDelta: any(named: 'onDelta'),
+          onCaptureFailure: any(named: 'onCaptureFailure'),
           config: any(named: 'config'),
+          resolveConfigWhenAbsent: false,
         ),
       ).thenAnswer((invocation) async {
         capturedOnDelta =
             invocation.namedArguments[#onDelta] as void Function(String);
+        capturedOnCaptureFailure =
+            invocation.namedArguments[#onCaptureFailure]
+                as RealtimeCaptureFailureCallback;
       });
       when(
         () => realtimeService.stop(
+          capture: any(named: 'capture'),
           stopRecorder: any(named: 'stopRecorder'),
           outputPath: any(named: 'outputPath'),
         ),
@@ -385,7 +173,10 @@ void main() {
         await stopRecorder();
         return RealtimeStopResult(
           transcript: 'hello realtime',
-          audioFilePath: '$outputPath.m4a',
+          recordingSessionId: 'test-session',
+          audioFilePath: '$outputPath.wav',
+          captureDisposition: RealtimeCaptureDisposition.complete,
+          audioDuration: const Duration(seconds: 2),
         );
       });
       when(
@@ -394,7 +185,6 @@ void main() {
           speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
         ),
       ).thenAnswer((_) async => 'hello realtime');
-      when(realtimeService.dispose).thenAnswer((_) async {});
     });
 
     tearDown(() async {
@@ -430,9 +220,12 @@ void main() {
         verify(realtimeService.resolveRealtimeConfig).called(1);
         verify(
           () => realtimeService.startRealtimeTranscription(
+            capture: any(named: 'capture'),
             pcmStream: any(named: 'pcmStream'),
             onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
             config: realtimeConfig,
+            resolveConfigWhenAbsent: false,
           ),
         ).called(1);
 
@@ -453,12 +246,229 @@ void main() {
     );
 
     test(
-      'realtime stop failure surfaces realtimeTranscriptionFailed and '
-      'tears the session down',
+      'keeps the durable PCM owner and batch-transcribes when no live '
+      'backend is configured',
       () async {
+        when(
+          realtimeService.resolveRealtimeConfig,
+        ).thenAnswer((_) async => null);
+        final container = buildContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(captureControllerProvider.notifier);
+
+        await notifier.toggle();
+
+        expect(
+          container.read(captureControllerProvider).phase,
+          CapturePhase.listening,
+        );
+        verify(
+          () => realtimeService.startRealtimeTranscription(
+            capture: durableCapture,
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
+            config: any(named: 'config'),
+            resolveConfigWhenAbsent: false,
+          ),
+        ).called(1);
+
+        await notifier.toggle();
+
+        final state = container.read(captureControllerProvider);
+        expect(state.phase, CapturePhase.captured);
+        expect(state.transcript, 'hello realtime');
+        expect(state.audioId, 'audio_001');
+        expect(persistedNotes, hasLength(1));
+        verify(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'prepares day-scoped durability before requesting the microphone',
+      () async {
+        final events = <String>[];
+        fakeRecorder.onCall = events.add;
+        when(
+          () => realtimeService.prepareDefaultDurableCapture(
+            assetRootDirectory: any(named: 'assetRootDirectory'),
+            createdAt: any(named: 'createdAt'),
+            origin: any(named: 'origin'),
+            intent: any(named: 'intent'),
+            dayId: any(named: 'dayId'),
+            planDate: any(named: 'planDate'),
+          ),
+        ).thenAnswer((_) async {
+          events.add('prepare');
+          return durableCapture;
+        });
+        final container = buildContainer();
+        addTearDown(container.dispose);
+
+        await container
+            .read(captureControllerProvider.notifier)
+            .toggle(forDate: DateTime(2026, 5, 24));
+
+        expect(
+          events.take(3),
+          orderedEquals(<String>['prepare', 'permission', 'stream']),
+        );
+        verify(
+          () => realtimeService.prepareDefaultDurableCapture(
+            assetRootDirectory: any(named: 'assetRootDirectory'),
+            createdAt: _recordingStartedAt,
+            origin: AudioCaptureOrigin.dailyOs,
+            intent: AudioCaptureIntent.dayPlan,
+            dayId: 'dayplan-2026-05-24',
+            planDate: DateTime(2026, 5, 24),
+          ),
+        ).called(1);
+        verify(
+          () => realtimeService.startRealtimeTranscription(
+            capture: durableCapture,
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
+            config: realtimeConfig,
+            resolveConfigWhenAbsent: false,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'does not open the microphone when durable admission fails',
+      () async {
+        final events = <String>[];
+        fakeRecorder.onCall = events.add;
+        when(
+          () => realtimeService.prepareDefaultDurableCapture(
+            assetRootDirectory: any(named: 'assetRootDirectory'),
+            createdAt: any(named: 'createdAt'),
+            origin: any(named: 'origin'),
+            intent: any(named: 'intent'),
+            dayId: any(named: 'dayId'),
+            planDate: any(named: 'planDate'),
+          ),
+        ).thenThrow(StateError('spool unavailable'));
+        final container = buildContainer();
+        addTearDown(container.dispose);
+
+        await container.read(captureControllerProvider.notifier).toggle();
+
+        expect(
+          container.read(captureControllerProvider),
+          isA<CaptureState>()
+              .having((value) => value.phase, 'phase', CapturePhase.error)
+              .having(
+                (value) => value.error,
+                'error',
+                CaptureError.recordingStartFailed,
+              ),
+        );
+        expect(events, isEmpty);
+        verifyNever(realtimeService.resolveRealtimeConfig);
+        verifyNever(
+          () => realtimeService.startRealtimeTranscription(
+            capture: any(named: 'capture'),
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
+            config: any(named: 'config'),
+            resolveConfigWhenAbsent: false,
+          ),
+        );
+      },
+    );
+
+    test('reset fences a slow durable capture preparation', () async {
+      final preparation = Completer<DurableRealtimeCapture>();
+      final events = <String>[];
+      fakeRecorder.onCall = events.add;
+      when(
+        () => realtimeService.prepareDefaultDurableCapture(
+          assetRootDirectory: any(named: 'assetRootDirectory'),
+          createdAt: any(named: 'createdAt'),
+          origin: any(named: 'origin'),
+          intent: any(named: 'intent'),
+          dayId: any(named: 'dayId'),
+          planDate: any(named: 'planDate'),
+        ),
+      ).thenAnswer((_) => preparation.future);
+      final container = buildContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(captureControllerProvider.notifier);
+
+      final start = notifier.toggle();
+      await pumpEventQueue();
+      notifier.reset();
+      preparation.complete(durableCapture);
+      await start;
+
+      expect(
+        container.read(captureControllerProvider).phase,
+        CapturePhase.idle,
+      );
+      expect(events, isEmpty);
+      verify(durableCapture.discard).called(1);
+      verifyNever(realtimeService.resolveRealtimeConfig);
+    });
+
+    test('capture failure immediately stops into retained recovery', () async {
+      when(
+        () => realtimeService.stop(
+          capture: any(named: 'capture'),
+          stopRecorder: any(named: 'stopRecorder'),
+          outputPath: any(named: 'outputPath'),
+        ),
+      ).thenAnswer((invocation) async {
+        final stopRecorder =
+            invocation.namedArguments[#stopRecorder] as Future<void> Function();
+        await stopRecorder();
+        return RealtimeStopResult(
+          transcript: 'recoverable partial',
+          recordingSessionId: 'test-session',
+          audioFilePath: '/tmp/recoverable.wav',
+          captureDisposition: RealtimeCaptureDisposition.savedPartial,
+        );
+      });
+      final container = buildContainer();
+      addTearDown(container.dispose);
+      await container.read(captureControllerProvider.notifier).toggle();
+
+      capturedOnCaptureFailure!(
+        StateError('spool saturated'),
+        StackTrace.current,
+      );
+      await pumpEventQueue();
+
+      final state = container.read(captureControllerProvider);
+      expect(state.phase, CapturePhase.error);
+      expect(state.error, CaptureError.recordingRetainedForRecovery);
+      expect(state.transcript, 'recoverable partial');
+      expect(fakeRecorder.stopCalls, 1);
+      verify(
+        () => realtimeService.stop(
+          capture: any(named: 'capture'),
+          stopRecorder: any(named: 'stopRecorder'),
+          outputPath: any(named: 'outputPath'),
+        ),
+      ).called(1);
+    });
+
+    test(
+      'realtime stop failure reports retained audio when PCM was accepted',
+      () async {
+        when(() => durableCapture.acceptedPcmBytes).thenReturn(128);
         // Re-stub stop to throw (last-wins over the group setUp stub).
         when(
           () => realtimeService.stop(
+            capture: any(named: 'capture'),
             stopRecorder: any(named: 'stopRecorder'),
             outputPath: any(named: 'outputPath'),
           ),
@@ -473,7 +483,7 @@ void main() {
 
         final state = container.read(captureControllerProvider);
         expect(state.phase, CapturePhase.error);
-        expect(state.error, CaptureError.realtimeTranscriptionFailed);
+        expect(state.error, CaptureError.recordingRetainedForRecovery);
         // Nothing was persisted for the failed capture.
         expect(persistedNotes, isEmpty);
       },
@@ -512,8 +522,69 @@ void main() {
         expect(state.transcript, 'hello realtime');
         expect(state.audioId, 'audio_001');
         expect(persistedNotes, hasLength(1));
-        expect(persistedNotes.single.audioFile, endsWith('.m4a'));
+        expect(persistedNotes.single.audioFile, endsWith('.wav'));
         expect(persistedNotes.single.audioDirectory, startsWith('/audio/'));
+        expect(persistedNotes.single.duration, const Duration(seconds: 2));
+        verify(
+          () => durableCapture.markCommitted(journalAudioId: 'audio_001'),
+        ).called(1);
+      },
+    );
+
+    test('retains a saved partial source without committing it', () async {
+      when(
+        () => realtimeService.stop(
+          capture: any(named: 'capture'),
+          stopRecorder: any(named: 'stopRecorder'),
+          outputPath: any(named: 'outputPath'),
+        ),
+      ).thenAnswer(
+        (_) async => RealtimeStopResult(
+          transcript: 'partial words',
+          recordingSessionId: 'test-session',
+          audioFilePath: '/tmp/partial.wav',
+          captureDisposition: RealtimeCaptureDisposition.savedPartial,
+        ),
+      );
+      final container = buildContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(captureControllerProvider.notifier);
+      await notifier.toggle();
+      await notifier.toggle();
+
+      final state = container.read(captureControllerProvider);
+      expect(state.phase, CapturePhase.error);
+      expect(state.error, CaptureError.recordingRetainedForRecovery);
+      expect(state.transcript, 'partial words');
+      expect(persistedNotes, isEmpty);
+      verifyNever(
+        () => durableCapture.markCommitted(
+          journalAudioId: any(named: 'journalAudioId'),
+        ),
+      );
+    });
+
+    test(
+      'reports saved pending when journal ownership binding fails',
+      () async {
+        when(
+          () => durableCapture.markCommitted(
+            journalAudioId: any(named: 'journalAudioId'),
+          ),
+        ).thenThrow(StateError('owner marker unavailable'));
+        final container = buildContainer();
+        addTearDown(container.dispose);
+
+        final notifier = container.read(captureControllerProvider.notifier);
+        await notifier.toggle();
+        await notifier.toggle();
+
+        final state = container.read(captureControllerProvider);
+        expect(state.phase, CapturePhase.error);
+        expect(state.error, CaptureError.recordingSavedPendingTranscription);
+        expect(state.audioId, 'audio_001');
+        expect(persistedNotes, hasLength(1));
       },
     );
 
@@ -522,6 +593,7 @@ void main() {
       () async {
         when(
           () => realtimeService.stop(
+            capture: any(named: 'capture'),
             stopRecorder: any(named: 'stopRecorder'),
             outputPath: any(named: 'outputPath'),
           ),
@@ -533,7 +605,9 @@ void main() {
           await stopRecorder();
           return RealtimeStopResult(
             transcript: 'plan client animation',
-            audioFilePath: '$outputPath.m4a',
+            recordingSessionId: 'test-session',
+            audioFilePath: '$outputPath.wav',
+            captureDisposition: RealtimeCaptureDisposition.complete,
           );
         });
         when(
@@ -564,6 +638,7 @@ void main() {
       () async {
         when(
           () => realtimeService.stop(
+            capture: any(named: 'capture'),
             stopRecorder: any(named: 'stopRecorder'),
             outputPath: any(named: 'outputPath'),
           ),
@@ -575,7 +650,9 @@ void main() {
           await stopRecorder();
           return RealtimeStopResult(
             transcript: 'mistral realtime text',
-            audioFilePath: '$outputPath.m4a',
+            recordingSessionId: 'test-session',
+            audioFilePath: '$outputPath.wav',
+            captureDisposition: RealtimeCaptureDisposition.complete,
           );
         });
         when(
@@ -621,9 +698,12 @@ void main() {
         expect(state.error, CaptureError.microphonePermissionDenied);
         verifyNever(
           () => realtimeService.startRealtimeTranscription(
+            capture: any(named: 'capture'),
             pcmStream: any(named: 'pcmStream'),
             onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
             config: any(named: 'config'),
+            resolveConfigWhenAbsent: false,
           ),
         );
       },
@@ -679,182 +759,10 @@ void main() {
     });
   });
 
-  group('CaptureController toggle edge phases + updateTranscript', () {
-    late MockAudioRecorderRepository recorder;
-    late MockAudioTranscriptionService transcriber;
-    late MockRealtimeTranscriptionService realtimeService;
-    late StreamController<Amplitude> ampController;
-
-    setUp(() {
-      final wiring = _batchWiring(transcript: 'hello world');
-      recorder = wiring.recorder;
-      transcriber = wiring.transcriber;
-      realtimeService = wiring.realtimeService;
-      ampController = wiring.ampController;
-    });
-
-    tearDown(() async {
-      await ampController.close();
-    });
-
-    test(
-      'updateTranscript is a no-op outside captured and edits in place '
-      'once captured',
-      () async {
-        final container = _aliveContainer(
-          recorder: recorder,
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: (_) async => _persistedAudio(),
-        );
-        addTearDown(container.dispose);
-
-        final notifier = container.read(captureControllerProvider.notifier)
-          ..updateTranscript('ignored');
-        expect(container.read(captureControllerProvider).transcript, '');
-
-        await notifier.toggle();
-        notifier.updateTranscript('ignored');
-        expect(container.read(captureControllerProvider).transcript, '');
-
-        await notifier.toggle();
-        expect(
-          container.read(captureControllerProvider).phase,
-          CapturePhase.captured,
-        );
-
-        notifier.updateTranscript('user edited');
-        expect(
-          container.read(captureControllerProvider).transcript,
-          'user edited',
-        );
-      },
-    );
-
-    test('toggle from captured calls reset and returns to idle', () async {
-      final container = _aliveContainer(
-        recorder: recorder,
-        transcriber: transcriber,
-        realtimeService: realtimeService,
-        persistAudio: (_) async => _persistedAudio(),
-      );
-      addTearDown(container.dispose);
-
-      final notifier = container.read(captureControllerProvider.notifier);
-      await notifier.toggle();
-      await notifier.toggle();
-      expect(
-        container.read(captureControllerProvider).phase,
-        CapturePhase.captured,
-      );
-
-      await notifier.toggle();
-      final state = container.read(captureControllerProvider);
-      expect(state.phase, CapturePhase.idle);
-      expect(state.transcript, '');
-    });
-
-    test('amplitudes arriving outside listening are ignored', () async {
-      final container = _aliveContainer(
-        recorder: recorder,
-        transcriber: transcriber,
-        realtimeService: realtimeService,
-        persistAudio: (_) async => _persistedAudio(),
-      );
-      addTearDown(container.dispose);
-
-      final notifier = container.read(captureControllerProvider.notifier);
-      await notifier.toggle();
-      await notifier.toggle(); // listening -> captured
-
-      ampController.add(Amplitude(current: 0, max: 0));
-      await pumpEventQueue();
-      expect(
-        container.read(captureControllerProvider).amplitudes,
-        isEmpty,
-      );
-    });
-  });
-
-  group('CaptureController batch path — error and empty branches', () {
-    late MockAudioRecorderRepository recorder;
-    late MockAudioTranscriptionService transcriber;
-    late MockRealtimeTranscriptionService realtimeService;
-    late StreamController<Amplitude> ampController;
-
-    setUp(() {
-      final wiring = _batchWiring();
-      recorder = wiring.recorder;
-      transcriber = wiring.transcriber;
-      realtimeService = wiring.realtimeService;
-      ampController = wiring.ampController;
-    });
-
-    tearDown(() async {
-      await ampController.close();
-    });
-
-    test(
-      'when persist throws, transcript still surfaces in captured phase',
-      () async {
-        when(
-          () => transcriber.transcribe(
-            any(),
-            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-          ),
-        ).thenAnswer((_) async => 'hello world');
-
-        final container = _aliveContainer(
-          recorder: recorder,
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: (_) async => throw StateError('disk full'),
-        );
-        addTearDown(container.dispose);
-
-        final notifier = container.read(captureControllerProvider.notifier);
-        await notifier.toggle();
-        await notifier.toggle();
-
-        final state = container.read(captureControllerProvider);
-        expect(state.phase, CapturePhase.captured);
-        expect(state.transcript, 'hello world');
-        expect(state.audioId, isNull);
-      },
-    );
-
-    test(
-      'persist returning null yields captured state without audioId',
-      () async {
-        when(
-          () => transcriber.transcribe(
-            any(),
-            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-          ),
-        ).thenAnswer((_) async => 'spoken');
-
-        final container = _aliveContainer(
-          recorder: recorder,
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: (_) async => null,
-        );
-        addTearDown(container.dispose);
-
-        final notifier = container.read(captureControllerProvider.notifier);
-        await notifier.toggle();
-        await notifier.toggle();
-
-        final state = container.read(captureControllerProvider);
-        expect(state.phase, CapturePhase.captured);
-        expect(state.audioId, isNull);
-      },
-    );
-  });
-
   group('CaptureController realtime path — error branches + resolver', () {
     late MockRealtimeTranscriptionService realtimeService;
     late MockAudioTranscriptionService transcriber;
+    late MockDurableRealtimeCapture durableCapture;
     late _FakeRealtimeRecorder fakeRecorder;
     late StreamController<double> realtimeAmpController;
     late StreamController<Uint8List> pcmController;
@@ -862,6 +770,9 @@ void main() {
     setUp(() {
       realtimeService = MockRealtimeTranscriptionService();
       transcriber = MockAudioTranscriptionService();
+      durableCapture = MockDurableRealtimeCapture();
+      when(() => durableCapture.recordingSessionId).thenReturn('test-session');
+      when(() => durableCapture.acceptedPcmBytes).thenReturn(0);
       fakeRecorder = _FakeRealtimeRecorder();
       realtimeAmpController = StreamController<double>.broadcast();
       pcmController = StreamController<Uint8List>.broadcast();
@@ -875,7 +786,22 @@ void main() {
       when(
         () => realtimeService.amplitudeStream,
       ).thenAnswer((_) => realtimeAmpController.stream);
-      when(realtimeService.dispose).thenAnswer((_) async {});
+      when(
+        () => realtimeService.prepareDefaultDurableCapture(
+          assetRootDirectory: any(named: 'assetRootDirectory'),
+          createdAt: any(named: 'createdAt'),
+          origin: any(named: 'origin'),
+          intent: any(named: 'intent'),
+          dayId: any(named: 'dayId'),
+          planDate: any(named: 'planDate'),
+        ),
+      ).thenAnswer((_) async => durableCapture);
+      when(durableCapture.discard).thenAnswer((_) async {});
+      when(
+        () => durableCapture.markCommitted(
+          journalAudioId: any(named: 'journalAudioId'),
+        ),
+      ).thenAnswer((_) async {});
     });
 
     tearDown(() async {
@@ -922,9 +848,12 @@ void main() {
       () async {
         when(
           () => realtimeService.startRealtimeTranscription(
+            capture: any(named: 'capture'),
             pcmStream: any(named: 'pcmStream'),
             onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
             config: any(named: 'config'),
+            resolveConfigWhenAbsent: false,
           ),
         ).thenThrow(StateError('socket failed'));
 
@@ -940,17 +869,21 @@ void main() {
     );
 
     test(
-      'realtime stop throwing surfaces error and disposes recorder',
+      'realtime stop throwing with no PCM reports no audio and disposes recorder',
       () async {
         when(
           () => realtimeService.startRealtimeTranscription(
+            capture: any(named: 'capture'),
             pcmStream: any(named: 'pcmStream'),
             onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
             config: any(named: 'config'),
+            resolveConfigWhenAbsent: false,
           ),
         ).thenAnswer((_) async {});
         when(
           () => realtimeService.stop(
+            capture: any(named: 'capture'),
             stopRecorder: any(named: 'stopRecorder'),
             outputPath: any(named: 'outputPath'),
           ),
@@ -965,7 +898,7 @@ void main() {
 
         final state = container.read(captureControllerProvider);
         expect(state.phase, CapturePhase.error);
-        expect(state.error, CaptureError.realtimeTranscriptionFailed);
+        expect(state.error, CaptureError.noAudioRecorded);
         expect(fakeRecorder.disposed, isTrue);
       },
     );
@@ -975,13 +908,17 @@ void main() {
       () async {
         when(
           () => realtimeService.startRealtimeTranscription(
+            capture: any(named: 'capture'),
             pcmStream: any(named: 'pcmStream'),
             onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
             config: any(named: 'config'),
+            resolveConfigWhenAbsent: false,
           ),
         ).thenAnswer((_) async {});
         when(
           () => realtimeService.stop(
+            capture: any(named: 'capture'),
             stopRecorder: any(named: 'stopRecorder'),
             outputPath: any(named: 'outputPath'),
           ),
@@ -993,7 +930,9 @@ void main() {
           await stopRecorder();
           return RealtimeStopResult(
             transcript: 'realtime text',
-            audioFilePath: '$outputPath.m4a',
+            recordingSessionId: 'test-session',
+            audioFilePath: '$outputPath.wav',
+            captureDisposition: RealtimeCaptureDisposition.complete,
           );
         });
         when(
@@ -1022,13 +961,17 @@ void main() {
       () async {
         when(
           () => realtimeService.startRealtimeTranscription(
+            capture: any(named: 'capture'),
             pcmStream: any(named: 'pcmStream'),
             onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
             config: any(named: 'config'),
+            resolveConfigWhenAbsent: false,
           ),
         ).thenAnswer((_) async {});
         when(
           () => realtimeService.stop(
+            capture: any(named: 'capture'),
             stopRecorder: any(named: 'stopRecorder'),
             outputPath: any(named: 'outputPath'),
           ),
@@ -1040,7 +983,9 @@ void main() {
           await stopRecorder();
           return RealtimeStopResult(
             transcript: 'partial realtime',
-            audioFilePath: '$outputPath.m4a',
+            recordingSessionId: 'test-session',
+            audioFilePath: '$outputPath.wav',
+            captureDisposition: RealtimeCaptureDisposition.complete,
             usedTranscriptFallback: true,
           );
         });
@@ -1070,13 +1015,17 @@ void main() {
       () async {
         when(
           () => realtimeService.startRealtimeTranscription(
+            capture: any(named: 'capture'),
             pcmStream: any(named: 'pcmStream'),
             onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
             config: any(named: 'config'),
+            resolveConfigWhenAbsent: false,
           ),
         ).thenAnswer((_) async {});
         when(
           () => realtimeService.stop(
+            capture: any(named: 'capture'),
             stopRecorder: any(named: 'stopRecorder'),
             outputPath: any(named: 'outputPath'),
           ),
@@ -1085,7 +1034,11 @@ void main() {
               invocation.namedArguments[#stopRecorder]
                   as Future<void> Function();
           await stopRecorder();
-          return const RealtimeStopResult(transcript: 'realtime only');
+          return RealtimeStopResult(
+            transcript: 'realtime only',
+            recordingSessionId: 'test-session',
+            captureDisposition: RealtimeCaptureDisposition.recoveryRequired,
+          );
         });
 
         final container = buildContainer();
@@ -1113,13 +1066,17 @@ void main() {
     void stubRealtimeSession({required String realtimeTranscript}) {
       when(
         () => realtimeService.startRealtimeTranscription(
+          capture: any(named: 'capture'),
           pcmStream: any(named: 'pcmStream'),
           onDelta: any(named: 'onDelta'),
+          onCaptureFailure: any(named: 'onCaptureFailure'),
           config: any(named: 'config'),
+          resolveConfigWhenAbsent: false,
         ),
       ).thenAnswer((_) async {});
       when(
         () => realtimeService.stop(
+          capture: any(named: 'capture'),
           stopRecorder: any(named: 'stopRecorder'),
           outputPath: any(named: 'outputPath'),
         ),
@@ -1130,7 +1087,9 @@ void main() {
         await stopRecorder();
         return RealtimeStopResult(
           transcript: realtimeTranscript,
-          audioFilePath: '$outputPath.m4a',
+          recordingSessionId: 'test-session',
+          audioFilePath: '$outputPath.wav',
+          captureDisposition: RealtimeCaptureDisposition.complete,
         );
       });
     }
@@ -1211,6 +1170,33 @@ void main() {
         ).called(1);
       },
     );
+
+    test(
+      'empty realtime result and failed verifier retain the journal audio',
+      () async {
+        stubRealtimeSession(realtimeTranscript: '   ');
+        when(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenThrow(StateError('offline'));
+        final container = buildContainer();
+        addTearDown(container.dispose);
+
+        final notifier = container.read(captureControllerProvider.notifier);
+        await notifier.toggle();
+        await notifier.toggle();
+
+        final state = container.read(captureControllerProvider);
+        expect(state.phase, CapturePhase.error);
+        expect(state.error, CaptureError.recordingSavedPendingTranscription);
+        expect(state.audioId, 'audio_001');
+        verify(
+          () => durableCapture.markCommitted(journalAudioId: 'audio_001'),
+        ).called(1);
+      },
+    );
   });
 
   group(
@@ -1218,6 +1204,7 @@ void main() {
     () {
       late MockRealtimeTranscriptionService realtimeService;
       late MockAudioTranscriptionService transcriber;
+      late MockDurableRealtimeCapture durableCapture;
       late _FakeRealtimeRecorder fakeRecorder;
       late StreamController<double> realtimeAmpController;
       late StreamController<Uint8List> pcmController;
@@ -1226,6 +1213,11 @@ void main() {
       setUp(() {
         realtimeService = MockRealtimeTranscriptionService();
         transcriber = MockAudioTranscriptionService();
+        durableCapture = MockDurableRealtimeCapture();
+        when(
+          () => durableCapture.recordingSessionId,
+        ).thenReturn('test-session');
+        when(() => durableCapture.acceptedPcmBytes).thenReturn(0);
         fakeRecorder = _FakeRealtimeRecorder();
         realtimeAmpController = StreamController<double>.broadcast();
         pcmController = StreamController<Uint8List>.broadcast();
@@ -1238,15 +1230,33 @@ void main() {
         ).thenAnswer(
           (_) async => (provider: _FakeProvider(), model: _FakeModel()),
         );
-        when(realtimeService.dispose).thenAnswer((_) async {});
+        when(
+          () => realtimeService.prepareDefaultDurableCapture(
+            assetRootDirectory: any(named: 'assetRootDirectory'),
+            createdAt: any(named: 'createdAt'),
+            origin: any(named: 'origin'),
+            intent: any(named: 'intent'),
+            dayId: any(named: 'dayId'),
+            planDate: any(named: 'planDate'),
+          ),
+        ).thenAnswer((_) async => durableCapture);
+        when(durableCapture.discard).thenAnswer((_) async {});
+        when(
+          () => durableCapture.markCommitted(
+            journalAudioId: any(named: 'journalAudioId'),
+          ),
+        ).thenAnswer((_) async {});
         when(
           () => realtimeService.amplitudeStream,
         ).thenAnswer((_) => realtimeAmpController.stream);
         when(
           () => realtimeService.startRealtimeTranscription(
+            capture: any(named: 'capture'),
             pcmStream: any(named: 'pcmStream'),
             onDelta: any(named: 'onDelta'),
+            onCaptureFailure: any(named: 'onCaptureFailure'),
             config: any(named: 'config'),
+            resolveConfigWhenAbsent: false,
           ),
         ).thenAnswer((invocation) async {
           capturedOnDelta =
@@ -1254,6 +1264,7 @@ void main() {
         });
         when(
           () => realtimeService.stop(
+            capture: any(named: 'capture'),
             stopRecorder: any(named: 'stopRecorder'),
             outputPath: any(named: 'outputPath'),
           ),
@@ -1265,7 +1276,9 @@ void main() {
           await stopRecorder();
           return RealtimeStopResult(
             transcript: 'hello realtime',
-            audioFilePath: '$outputPath.m4a',
+            recordingSessionId: 'test-session',
+            audioFilePath: '$outputPath.wav',
+            captureDisposition: RealtimeCaptureDisposition.complete,
           );
         });
         when(
@@ -1374,291 +1387,26 @@ void main() {
       );
     },
   );
-
-  group(
-    'CaptureController batch path — amplitude clipping and error handlers',
-    () {
-      late MockAudioRecorderRepository recorder;
-      late MockAudioTranscriptionService transcriber;
-      late MockRealtimeTranscriptionService realtimeService;
-      late StreamController<Amplitude> ampController;
-
-      setUp(() {
-        final wiring = _batchWiring(transcript: 'hello world');
-        recorder = wiring.recorder;
-        transcriber = wiring.transcriber;
-        realtimeService = wiring.realtimeService;
-        ampController = wiring.ampController;
-      });
-
-      tearDown(() async {
-        await ampController.close();
-      });
-
-      test(
-        'batch amplitudes clip to the rolling window of 80 samples',
-        () async {
-          final container = _aliveContainer(
-            recorder: recorder,
-            transcriber: transcriber,
-            realtimeService: realtimeService,
-            persistAudio: (_) async => _persistedAudio(),
-          );
-          addTearDown(container.dispose);
-
-          await container.read(captureControllerProvider.notifier).toggle();
-          expect(
-            container.read(captureControllerProvider).phase,
-            CapturePhase.listening,
-          );
-
-          // Emit 85 amplitude samples — only the last 80 should be kept.
-          for (var i = 0; i < 85; i++) {
-            ampController.add(Amplitude(current: -10, max: 0));
-            await pumpEventQueue();
-          }
-
-          final amplitudes = container
-              .read(captureControllerProvider)
-              .amplitudes;
-          expect(amplitudes.length, 80);
-        },
-      );
-
-      test(
-        'batch amplitude stream onError is swallowed and keeps recording',
-        () async {
-          final container = _aliveContainer(
-            recorder: recorder,
-            transcriber: transcriber,
-            realtimeService: realtimeService,
-            persistAudio: (_) async => _persistedAudio(),
-          );
-          addTearDown(container.dispose);
-
-          await container.read(captureControllerProvider.notifier).toggle();
-          expect(
-            container.read(captureControllerProvider).phase,
-            CapturePhase.listening,
-          );
-
-          // Add a valid sample then trigger a stream error.
-          ampController.add(Amplitude(current: -10, max: 0));
-          await pumpEventQueue();
-          ampController.addError(StateError('amp hw error'));
-          await pumpEventQueue();
-
-          // The recording continues — phase is still listening and the
-          // valid amplitude sample is present.
-          final state = container.read(captureControllerProvider);
-          expect(state.phase, CapturePhase.listening);
-          expect(state.amplitudes, hasLength(1));
-        },
-      );
-    },
-  );
-
-  group('CaptureController attaches batch transcripts to journal audio', () {
-    late MockAudioRecorderRepository recorder;
-    late MockAudioTranscriptionService transcriber;
-    late MockRealtimeTranscriptionService realtimeService;
-    late StreamController<Amplitude> ampController;
-    late MockPersistenceLogic persistenceLogic;
-    JournalAudio? latestUpdated;
-
-    setUp(() async {
-      await getIt.reset();
-      final wiring = _batchWiring();
-      recorder = wiring.recorder;
-      transcriber = wiring.transcriber;
-      realtimeService = wiring.realtimeService;
-      ampController = wiring.ampController;
-      persistenceLogic = MockPersistenceLogic();
-      latestUpdated = null;
-
-      registerFallbackValue(
-        Metadata(
-          id: 'fallback-meta',
-          createdAt: _recordingStartedAt,
-          updatedAt: _recordingStartedAt,
-          dateFrom: _recordingStartedAt,
-          dateTo: _recordingStartedAt,
-          vectorClock: const VectorClock(<String, int>{}),
-        ),
-      );
-      registerFallbackValue(_persistedAudio());
-
-      when(
-        () => persistenceLogic.updateMetadata(any()),
-      ).thenAnswer(
-        (invocation) async => invocation.positionalArguments.first as Metadata,
-      );
-      when(
-        () => persistenceLogic.updateDbEntity(any()),
-      ).thenAnswer((invocation) async {
-        latestUpdated = invocation.positionalArguments.first as JournalAudio;
-        return true;
-      });
-
-      getIt.registerSingleton<PersistenceLogic>(persistenceLogic);
-    });
-
-    tearDown(() async {
-      await ampController.close();
-      await getIt.reset();
-    });
-
-    test(
-      'batch capture writes an AudioTranscript and mirrors the entry text',
-      () async {
-        when(
-          () => transcriber.transcribe(
-            any(),
-            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-          ),
-        ).thenAnswer((_) async => 'hello journal');
-
-        final container = _aliveContainer(
-          recorder: recorder,
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: (_) async => _persistedAudio(),
-        );
-        addTearDown(container.dispose);
-
-        final notifier = container.read(captureControllerProvider.notifier);
-        await notifier.toggle();
-        await notifier.toggle();
-
-        expect(latestUpdated, isNotNull);
-        final transcript = latestUpdated!.data.transcripts!.single;
-        expect(transcript.transcript, 'hello journal');
-        expect(transcript.library, 'batch-transcribe');
-        expect(latestUpdated!.entryText, isA<EntryText>());
-        expect(latestUpdated!.entryText!.plainText, 'hello journal');
-      },
-    );
-
-    test(
-      'empty batch transcript skips the journal-audio attach step',
-      () async {
-        when(
-          () => transcriber.transcribe(
-            any(),
-            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-          ),
-        ).thenAnswer((_) async => '   ');
-
-        final container = _aliveContainer(
-          recorder: recorder,
-          transcriber: transcriber,
-          realtimeService: realtimeService,
-          persistAudio: (_) async => _persistedAudio(),
-        );
-        addTearDown(container.dispose);
-
-        final notifier = container.read(captureControllerProvider.notifier);
-        await notifier.toggle();
-        await notifier.toggle();
-
-        expect(latestUpdated, isNull);
-        expect(
-          container.read(captureControllerProvider).transcript,
-          '',
-        );
-      },
-    );
-  });
-
-  group('CaptureController resolves realtimeService from the provider', () {
-    late MockAudioRecorderRepository recorder;
-    late MockAudioTranscriptionService transcriber;
-    late MockRealtimeTranscriptionService realtimeService;
-    late StreamController<Amplitude> ampController;
-
-    setUp(() {
-      recorder = MockAudioRecorderRepository();
-      transcriber = MockAudioTranscriptionService();
-      realtimeService = MockRealtimeTranscriptionService();
-      ampController = StreamController<Amplitude>.broadcast();
-
-      when(
-        () => realtimeService.resolveRealtimeConfig(),
-      ).thenAnswer((_) async => null);
-      when(realtimeService.dispose).thenAnswer((_) async {});
-      when(recorder.hasPermission).thenAnswer((_) async => true);
-      when(
-        () => recorder.amplitudeStream,
-      ).thenAnswer((_) => ampController.stream);
-      when(
-        recorder.startRecording,
-      ).thenAnswer((_) async => _audioNoteFixture());
-      when(recorder.stopRecording).thenAnswer((_) async {});
-      when(
-        () => transcriber.transcribe(
-          any(),
-          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-        ),
-      ).thenAnswer((_) async => 'provider-resolved');
-    });
-
-    tearDown(() async {
-      await ampController.close();
-    });
-
-    test(
-      'with no realtimeService override the controller reads '
-      'realtimeTranscriptionServiceProvider and uses that instance',
-      () async {
-        // No `realtimeService:` override here — this forces the
-        // `_realtimeServiceOverride ?? ref.read(realtimeTranscriptionServiceProvider)`
-        // default initializer to resolve the service from the provider.
-        final container = ProviderContainer(
-          overrides: [
-            realtimeTranscriptionServiceProvider.overrideWithValue(
-              realtimeService,
-            ),
-            captureControllerProvider.overrideWith(
-              () => CaptureController(
-                recorder: recorder,
-                transcriber: transcriber,
-                persistAudio: (_) async => _persistedAudio(),
-                docDir: Directory.systemTemp.createTempSync,
-                now: () => _recordingStartedAt,
-              ),
-            ),
-          ],
-        )..listen(captureControllerProvider, (_, _) {});
-        addTearDown(container.dispose);
-
-        final notifier = container.read(captureControllerProvider.notifier);
-        await notifier.toggle();
-        await notifier.toggle();
-
-        // The provider-resolved realtime service was the one queried for a
-        // realtime config, proving `_realtimeService` came from the provider.
-        verify(realtimeService.resolveRealtimeConfig).called(1);
-
-        final state = container.read(captureControllerProvider);
-        expect(state.phase, CapturePhase.captured);
-        expect(state.transcript, 'provider-resolved');
-      },
-    );
-  });
 }
 
 class _FakeRealtimeRecorder implements record.AudioRecorder {
   bool permissionGranted = true;
   Stream<Uint8List>? pcmStream;
   bool stopped = false;
+  int stopCalls = 0;
   bool disposed = false;
   bool throwOnStartStream = false;
+  void Function(String event)? onCall;
 
   @override
-  Future<bool> hasPermission({bool request = true}) async => permissionGranted;
+  Future<bool> hasPermission({bool request = true}) async {
+    onCall?.call('permission');
+    return permissionGranted;
+  }
 
   @override
   Future<Stream<Uint8List>> startStream(record.RecordConfig config) async {
+    onCall?.call('stream');
     if (throwOnStartStream) {
       throw StateError('mic busy');
     }
@@ -1670,6 +1418,7 @@ class _FakeRealtimeRecorder implements record.AudioRecorder {
 
   @override
   Future<String?> stop() async {
+    stopCalls += 1;
     stopped = true;
     return null;
   }

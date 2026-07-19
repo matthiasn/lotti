@@ -2811,10 +2811,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get chatInputListening => 'Naslouchám...';
 
   @override
+  String get chatInputNoAudioRecorded =>
+      'Nebyl nahrán žádný zvuk. Zkus to znovu.';
+
+  @override
   String get chatInputPleaseWait => 'Čekejte prosím...';
 
   @override
   String get chatInputProcessing => 'Zpracování...';
+
+  @override
+  String get chatInputRecordingSavedForRecovery =>
+      'Dosud zachycený zvuk zůstává v tomto zařízení. Můžeš nahrávat znovu.';
 
   @override
   String get chatInputRecordVoice => 'Nahrát hlasovou zprávu';
@@ -3576,6 +3584,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přepis v reálném čase se nepodařilo spustit.';
 
   @override
+  String get dailyOsNextCaptureErrorRecordingSavedForRecovery =>
+      'Dosud zachycený zvuk zůstává v tomto zařízení. Můžeš nahrávat znovu nebo místo toho psát.';
+
+  @override
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Nahrávka je uložená. Přepis se nepodařilo dokončit.';
+
+  @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Nahrávání se nepodařilo spustit.';
 
@@ -3632,6 +3648,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Zkontrolovat';
+
+  @override
+  String get dailyOsNextCaptureRecordingSavedStatus => 'Nahrávka je uložená';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Záznamy';
@@ -9592,6 +9611,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Rozpoznávání řeči';
+
+  @override
+  String get speechNoAudioRecorded => 'Nebyl nahrán žádný zvuk. Zkus to znovu.';
+
+  @override
+  String get speechRecordingSavedPendingRecovery =>
+      'Nahrávka je uložená v tomto zařízení a je potřeba ji obnovit.';
 
   @override
   String get speechSettingsModelDescription => 'Hlasový model v zařízení';

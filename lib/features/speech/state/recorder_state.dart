@@ -18,6 +18,14 @@ enum AudioRecorderStatus {
   paused,
 }
 
+/// User-visible result of the most recent terminal save operation.
+enum AudioRecorderSaveOutcome {
+  none,
+  saved,
+  savedPendingRecovery,
+  noAudio,
+}
+
 /// Immutable state model for the audio recording feature.
 ///
 /// This state is managed by [AudioRecorderController] and consumed by
@@ -58,5 +66,9 @@ abstract class AudioRecorderState with _$AudioRecorderState {
     /// Whether the current recording session uses realtime mode
     /// (PCM stream to WebSocket) vs standard file recording.
     @Default(false) bool isRealtimeMode,
+
+    /// Distinguishes a normal save from retained recovery/no-audio outcomes.
+    @Default(AudioRecorderSaveOutcome.none)
+    AudioRecorderSaveOutcome lastSaveOutcome,
   }) = _AudioRecorderState;
 }

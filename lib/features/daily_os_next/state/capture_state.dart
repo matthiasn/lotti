@@ -12,16 +12,17 @@ enum CapturePhase {
 
   /// Recording stopped. Awaiting the final transcript + audio
   /// persistence. Realtime mode usually sits here briefly while
-  /// `transcription.done` is awaited; the batch fallback path stays
-  /// longer while the post-recording transcribe call runs.
+  /// `transcription.done` is awaited; without a live backend it stays longer
+  /// while the finalized durable WAV is batch-transcribed.
   transcribing,
 
   /// Final transcript ready and audio persisted. The "Reconcile →" CTA
   /// is enabled.
   captured,
 
-  /// Microphone, recording, or transcription failed. The user can tap
-  /// the voice button again to retry.
+  /// Microphone, recording, or transcription failed. Retained recovery stays
+  /// retryable; a journal-saved recording awaiting transcription is a
+  /// noninteractive terminal state for this capture session.
   error,
 }
 
@@ -34,6 +35,8 @@ enum CaptureError {
   realtimeTranscriptionFailed,
   noAudioRecorded,
   transcriptionFailed,
+  recordingSavedPendingTranscription,
+  recordingRetainedForRecovery,
 }
 
 /// State held by `CaptureController`.
@@ -67,7 +70,7 @@ class CaptureState {
 
   /// Live transcript text from realtime mode. Updated word-by-word as
   /// the model emits deltas. Cleared once the final [transcript] is
-  /// available. Always empty in the batch-fallback path.
+  /// available. Empty when no live transcription backend is configured.
   final String partialTranscript;
 
   /// Rolling window of normalised amplitude values (0..1). The

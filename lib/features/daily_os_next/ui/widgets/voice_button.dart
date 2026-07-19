@@ -126,7 +126,7 @@ class VoiceButton extends StatefulWidget {
   /// The current Capture phase. Drives glyph + shader visibility.
   final CapturePhase phase;
 
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   /// Used by screen readers; the button has no visible label.
   final String semanticLabel;
@@ -282,8 +282,10 @@ class _VoiceButtonState extends State<VoiceButton>
             ],
           );
 
+    final interactive = widget.onTap != null;
     return Semantics(
-      button: true,
+      button: interactive,
+      enabled: interactive,
       label: widget.semanticLabel,
       child: SizedBox(
         key: VoiceButton.fieldKey,
@@ -386,9 +388,11 @@ class _VoiceButtonState extends State<VoiceButton>
                     child: InkWell(
                       key: VoiceButton.coreButtonKey,
                       onTap: widget.onTap,
-                      onTapDown: (_) => _setPressed(true),
-                      onTapCancel: () => _setPressed(false),
-                      onTapUp: (_) => _setPressed(false),
+                      onTapDown: interactive ? (_) => _setPressed(true) : null,
+                      onTapCancel: interactive
+                          ? () => _setPressed(false)
+                          : null,
+                      onTapUp: interactive ? (_) => _setPressed(false) : null,
                       customBorder: const CircleBorder(),
                       splashColor: (outlined || listening ? teal : onTeal)
                           .withValues(alpha: 0.22),

@@ -540,6 +540,59 @@ void main() {
     expect(recovery.spool, isNull);
   });
 
+  test('consumes only a valid published unowned transient', () async {
+    final transient = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-transient'),
+    );
+    await transient.append(Uint8List.fromList(<int>[1, 2, 3, 4]));
+    final destination = destinationFor('session-transient');
+    await transient.finalize(destinationFile: destination);
+
+    await transient.consumeTransient();
+
+    expect(destination.existsSync(), isFalse);
+    expect(transient.manifest.state, DurableAudioSpoolState.discarded);
+    final recovery = await DurableAudioSpool.recover(
+      sessionDirectory: transient.sessionDirectory,
+    );
+    expect(recovery.spool, isNull);
+
+    final active = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-active-not-consumable'),
+    );
+    await active.append(Uint8List.fromList(<int>[1, 2]));
+    await expectLater(active.consumeTransient(), throwsStateError);
+  });
+
+  test('never replaces an asset owned by another recording session', () async {
+    final first = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-owner-first'),
+    );
+    final second = await DurableAudioSpool.start(
+      rootDirectory: root,
+      context: contextFor('session-owner-second'),
+    );
+    await first.append(Uint8List.fromList(<int>[1, 2]));
+    await second.append(Uint8List.fromList(<int>[3, 4]));
+    final destination = destinationFor('shared-destination');
+    await first.finalize(destinationFile: destination);
+    final firstBytes = destination.readAsBytesSync();
+
+    await expectLater(
+      second.finalize(destinationFile: destination),
+      throwsA(isA<FileSystemException>()),
+    );
+
+    expect(destination.readAsBytesSync(), firstBytes);
+    expect(
+      second.manifest.state,
+      DurableAudioSpoolState.recoveryRequired,
+    );
+  });
+
   test('fails every queued frame after the first persistence hole', () async {
     final entered = Completer<void>();
     final release = Completer<void>();

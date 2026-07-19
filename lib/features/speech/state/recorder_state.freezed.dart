@@ -29,7 +29,8 @@ mixin _$AudioRecorderState {
 /// Updated incrementally as deltas arrive from the WebSocket.
  String? get partialTranscript;/// Whether the current recording session uses realtime mode
 /// (PCM stream to WebSocket) vs standard file recording.
- bool get isRealtimeMode;
+ bool get isRealtimeMode;/// Distinguishes a normal save from retained recovery/no-audio outcomes.
+ AudioRecorderSaveOutcome get lastSaveOutcome;
 /// Create a copy of AudioRecorderState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -40,16 +41,16 @@ $AudioRecorderStateCopyWith<AudioRecorderState> get copyWith => _$AudioRecorderS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.vu, vu) || other.vu == vu)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.showIndicator, showIndicator) || other.showIndicator == showIndicator)&&(identical(other.modalVisible, modalVisible) || other.modalVisible == modalVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition)&&(identical(other.partialTranscript, partialTranscript) || other.partialTranscript == partialTranscript)&&(identical(other.isRealtimeMode, isRealtimeMode) || other.isRealtimeMode == isRealtimeMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.vu, vu) || other.vu == vu)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.showIndicator, showIndicator) || other.showIndicator == showIndicator)&&(identical(other.modalVisible, modalVisible) || other.modalVisible == modalVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition)&&(identical(other.partialTranscript, partialTranscript) || other.partialTranscript == partialTranscript)&&(identical(other.isRealtimeMode, isRealtimeMode) || other.isRealtimeMode == isRealtimeMode)&&(identical(other.lastSaveOutcome, lastSaveOutcome) || other.lastSaveOutcome == lastSaveOutcome));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,status,progress,vu,dBFS,showIndicator,modalVisible,linkedId,enableSpeechRecognition,partialTranscript,isRealtimeMode);
+int get hashCode => Object.hash(runtimeType,status,progress,vu,dBFS,showIndicator,modalVisible,linkedId,enableSpeechRecognition,partialTranscript,isRealtimeMode,lastSaveOutcome);
 
 @override
 String toString() {
-  return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, partialTranscript: $partialTranscript, isRealtimeMode: $isRealtimeMode)';
+  return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, partialTranscript: $partialTranscript, isRealtimeMode: $isRealtimeMode, lastSaveOutcome: $lastSaveOutcome)';
 }
 
 
@@ -60,7 +61,7 @@ abstract mixin class $AudioRecorderStateCopyWith<$Res>  {
   factory $AudioRecorderStateCopyWith(AudioRecorderState value, $Res Function(AudioRecorderState) _then) = _$AudioRecorderStateCopyWithImpl;
 @useResult
 $Res call({
- AudioRecorderStatus status, Duration progress, double vu, double dBFS, bool showIndicator, bool modalVisible, String? linkedId, bool? enableSpeechRecognition, String? partialTranscript, bool isRealtimeMode
+ AudioRecorderStatus status, Duration progress, double vu, double dBFS, bool showIndicator, bool modalVisible, String? linkedId, bool? enableSpeechRecognition, String? partialTranscript, bool isRealtimeMode, AudioRecorderSaveOutcome lastSaveOutcome
 });
 
 
@@ -77,7 +78,7 @@ class _$AudioRecorderStateCopyWithImpl<$Res>
 
 /// Create a copy of AudioRecorderState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? progress = null,Object? vu = null,Object? dBFS = null,Object? showIndicator = null,Object? modalVisible = null,Object? linkedId = freezed,Object? enableSpeechRecognition = freezed,Object? partialTranscript = freezed,Object? isRealtimeMode = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? progress = null,Object? vu = null,Object? dBFS = null,Object? showIndicator = null,Object? modalVisible = null,Object? linkedId = freezed,Object? enableSpeechRecognition = freezed,Object? partialTranscript = freezed,Object? isRealtimeMode = null,Object? lastSaveOutcome = null,}) {
   return _then(_self.copyWith(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as AudioRecorderStatus,progress: null == progress ? _self.progress : progress // ignore: cast_nullable_to_non_nullable
@@ -89,7 +90,8 @@ as bool,linkedId: freezed == linkedId ? _self.linkedId : linkedId // ignore: cas
 as String?,enableSpeechRecognition: freezed == enableSpeechRecognition ? _self.enableSpeechRecognition : enableSpeechRecognition // ignore: cast_nullable_to_non_nullable
 as bool?,partialTranscript: freezed == partialTranscript ? _self.partialTranscript : partialTranscript // ignore: cast_nullable_to_non_nullable
 as String?,isRealtimeMode: null == isRealtimeMode ? _self.isRealtimeMode : isRealtimeMode // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,lastSaveOutcome: null == lastSaveOutcome ? _self.lastSaveOutcome : lastSaveOutcome // ignore: cast_nullable_to_non_nullable
+as AudioRecorderSaveOutcome,
   ));
 }
 
@@ -174,10 +176,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double vu,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition,  String? partialTranscript,  bool isRealtimeMode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double vu,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition,  String? partialTranscript,  bool isRealtimeMode,  AudioRecorderSaveOutcome lastSaveOutcome)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AudioRecorderState() when $default != null:
-return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition,_that.partialTranscript,_that.isRealtimeMode);case _:
+return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition,_that.partialTranscript,_that.isRealtimeMode,_that.lastSaveOutcome);case _:
   return orElse();
 
 }
@@ -195,10 +197,10 @@ return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndica
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double vu,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition,  String? partialTranscript,  bool isRealtimeMode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AudioRecorderStatus status,  Duration progress,  double vu,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition,  String? partialTranscript,  bool isRealtimeMode,  AudioRecorderSaveOutcome lastSaveOutcome)  $default,) {final _that = this;
 switch (_that) {
 case _AudioRecorderState():
-return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition,_that.partialTranscript,_that.isRealtimeMode);case _:
+return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition,_that.partialTranscript,_that.isRealtimeMode,_that.lastSaveOutcome);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -215,10 +217,10 @@ return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndica
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AudioRecorderStatus status,  Duration progress,  double vu,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition,  String? partialTranscript,  bool isRealtimeMode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AudioRecorderStatus status,  Duration progress,  double vu,  double dBFS,  bool showIndicator,  bool modalVisible,  String? linkedId,  bool? enableSpeechRecognition,  String? partialTranscript,  bool isRealtimeMode,  AudioRecorderSaveOutcome lastSaveOutcome)?  $default,) {final _that = this;
 switch (_that) {
 case _AudioRecorderState() when $default != null:
-return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition,_that.partialTranscript,_that.isRealtimeMode);case _:
+return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndicator,_that.modalVisible,_that.linkedId,_that.enableSpeechRecognition,_that.partialTranscript,_that.isRealtimeMode,_that.lastSaveOutcome);case _:
   return null;
 
 }
@@ -230,7 +232,7 @@ return $default(_that.status,_that.progress,_that.vu,_that.dBFS,_that.showIndica
 
 
 class _AudioRecorderState implements AudioRecorderState {
-   _AudioRecorderState({required this.status, required this.progress, required this.vu, required this.dBFS, required this.showIndicator, required this.modalVisible, this.linkedId, this.enableSpeechRecognition, this.partialTranscript, this.isRealtimeMode = false});
+   _AudioRecorderState({required this.status, required this.progress, required this.vu, required this.dBFS, required this.showIndicator, required this.modalVisible, this.linkedId, this.enableSpeechRecognition, this.partialTranscript, this.isRealtimeMode = false, this.lastSaveOutcome = AudioRecorderSaveOutcome.none});
   
 
 /// Current status of the recorder.
@@ -258,6 +260,8 @@ class _AudioRecorderState implements AudioRecorderState {
 /// Whether the current recording session uses realtime mode
 /// (PCM stream to WebSocket) vs standard file recording.
 @override@JsonKey() final  bool isRealtimeMode;
+/// Distinguishes a normal save from retained recovery/no-audio outcomes.
+@override@JsonKey() final  AudioRecorderSaveOutcome lastSaveOutcome;
 
 /// Create a copy of AudioRecorderState
 /// with the given fields replaced by the non-null parameter values.
@@ -269,16 +273,16 @@ _$AudioRecorderStateCopyWith<_AudioRecorderState> get copyWith => __$AudioRecord
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.vu, vu) || other.vu == vu)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.showIndicator, showIndicator) || other.showIndicator == showIndicator)&&(identical(other.modalVisible, modalVisible) || other.modalVisible == modalVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition)&&(identical(other.partialTranscript, partialTranscript) || other.partialTranscript == partialTranscript)&&(identical(other.isRealtimeMode, isRealtimeMode) || other.isRealtimeMode == isRealtimeMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioRecorderState&&(identical(other.status, status) || other.status == status)&&(identical(other.progress, progress) || other.progress == progress)&&(identical(other.vu, vu) || other.vu == vu)&&(identical(other.dBFS, dBFS) || other.dBFS == dBFS)&&(identical(other.showIndicator, showIndicator) || other.showIndicator == showIndicator)&&(identical(other.modalVisible, modalVisible) || other.modalVisible == modalVisible)&&(identical(other.linkedId, linkedId) || other.linkedId == linkedId)&&(identical(other.enableSpeechRecognition, enableSpeechRecognition) || other.enableSpeechRecognition == enableSpeechRecognition)&&(identical(other.partialTranscript, partialTranscript) || other.partialTranscript == partialTranscript)&&(identical(other.isRealtimeMode, isRealtimeMode) || other.isRealtimeMode == isRealtimeMode)&&(identical(other.lastSaveOutcome, lastSaveOutcome) || other.lastSaveOutcome == lastSaveOutcome));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,status,progress,vu,dBFS,showIndicator,modalVisible,linkedId,enableSpeechRecognition,partialTranscript,isRealtimeMode);
+int get hashCode => Object.hash(runtimeType,status,progress,vu,dBFS,showIndicator,modalVisible,linkedId,enableSpeechRecognition,partialTranscript,isRealtimeMode,lastSaveOutcome);
 
 @override
 String toString() {
-  return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, partialTranscript: $partialTranscript, isRealtimeMode: $isRealtimeMode)';
+  return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, partialTranscript: $partialTranscript, isRealtimeMode: $isRealtimeMode, lastSaveOutcome: $lastSaveOutcome)';
 }
 
 
@@ -289,7 +293,7 @@ abstract mixin class _$AudioRecorderStateCopyWith<$Res> implements $AudioRecorde
   factory _$AudioRecorderStateCopyWith(_AudioRecorderState value, $Res Function(_AudioRecorderState) _then) = __$AudioRecorderStateCopyWithImpl;
 @override @useResult
 $Res call({
- AudioRecorderStatus status, Duration progress, double vu, double dBFS, bool showIndicator, bool modalVisible, String? linkedId, bool? enableSpeechRecognition, String? partialTranscript, bool isRealtimeMode
+ AudioRecorderStatus status, Duration progress, double vu, double dBFS, bool showIndicator, bool modalVisible, String? linkedId, bool? enableSpeechRecognition, String? partialTranscript, bool isRealtimeMode, AudioRecorderSaveOutcome lastSaveOutcome
 });
 
 
@@ -306,7 +310,7 @@ class __$AudioRecorderStateCopyWithImpl<$Res>
 
 /// Create a copy of AudioRecorderState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? progress = null,Object? vu = null,Object? dBFS = null,Object? showIndicator = null,Object? modalVisible = null,Object? linkedId = freezed,Object? enableSpeechRecognition = freezed,Object? partialTranscript = freezed,Object? isRealtimeMode = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? progress = null,Object? vu = null,Object? dBFS = null,Object? showIndicator = null,Object? modalVisible = null,Object? linkedId = freezed,Object? enableSpeechRecognition = freezed,Object? partialTranscript = freezed,Object? isRealtimeMode = null,Object? lastSaveOutcome = null,}) {
   return _then(_AudioRecorderState(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as AudioRecorderStatus,progress: null == progress ? _self.progress : progress // ignore: cast_nullable_to_non_nullable
@@ -318,7 +322,8 @@ as bool,linkedId: freezed == linkedId ? _self.linkedId : linkedId // ignore: cas
 as String?,enableSpeechRecognition: freezed == enableSpeechRecognition ? _self.enableSpeechRecognition : enableSpeechRecognition // ignore: cast_nullable_to_non_nullable
 as bool?,partialTranscript: freezed == partialTranscript ? _self.partialTranscript : partialTranscript // ignore: cast_nullable_to_non_nullable
 as String?,isRealtimeMode: null == isRealtimeMode ? _self.isRealtimeMode : isRealtimeMode // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,lastSaveOutcome: null == lastSaveOutcome ? _self.lastSaveOutcome : lastSaveOutcome // ignore: cast_nullable_to_non_nullable
+as AudioRecorderSaveOutcome,
   ));
 }
 

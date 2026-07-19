@@ -45,5 +45,8 @@ class AudioRecordingPath {
   /// Joins the stem onto an already-resolved absolute [directory] to form the
   /// extension-less output path handed to the realtime service (which appends
   /// the final container extension itself).
-  String outputPathIn(String directory) => '$directory$fileNameStem';
+  String outputPathIn(String directory, {String? recordingSessionId}) {
+    final suffix = recordingSessionId == null ? '' : '_$recordingSessionId';
+    return '$directory$fileNameStem$suffix';
+  }
 }

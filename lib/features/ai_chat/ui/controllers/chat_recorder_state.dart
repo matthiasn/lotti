@@ -14,6 +14,8 @@ enum ChatRecorderErrorType {
   startFailed,
   noAudioFile,
   transcriptionFailed,
+  recordingSavedForRecovery,
+  noAudioRecorded,
   concurrentOperation,
 }
 

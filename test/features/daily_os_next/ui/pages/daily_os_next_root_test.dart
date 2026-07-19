@@ -88,7 +88,6 @@ void main() {
       final requestedDates = <DateTime>[];
       final realtimeService = MockRealtimeTranscriptionService();
       when(realtimeService.resolveRealtimeConfig).thenAnswer((_) async => null);
-      when(realtimeService.dispose).thenAnswer((_) async {});
 
       await withClock(Clock.fixed(DateTime(2026, 5, 26, 16, 15)), () async {
         await tester.pumpWidget(
@@ -140,7 +139,6 @@ void main() {
         when(
           realtimeService.resolveRealtimeConfig,
         ).thenAnswer((_) async => null);
-        when(realtimeService.dispose).thenAnswer((_) async {});
 
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -235,7 +233,6 @@ void main() {
     testWidgets('AsyncLoading shows the loading shell', (tester) async {
       final realtimeService = MockRealtimeTranscriptionService();
       when(realtimeService.resolveRealtimeConfig).thenAnswer((_) async => null);
-      when(realtimeService.dispose).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         _wrap(
@@ -265,7 +262,6 @@ void main() {
         when(
           realtimeService.resolveRealtimeConfig,
         ).thenAnswer((_) async => null);
-        when(realtimeService.dispose).thenAnswer((_) async {});
 
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -306,7 +302,6 @@ void main() {
         when(
           realtimeService.resolveRealtimeConfig,
         ).thenAnswer((_) async => null);
-        when(realtimeService.dispose).thenAnswer((_) async {});
 
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -361,7 +356,6 @@ void main() {
         when(
           realtimeService.resolveRealtimeConfig,
         ).thenAnswer((_) async => null);
-        when(realtimeService.dispose).thenAnswer((_) async {});
 
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -410,7 +404,6 @@ void main() {
         when(
           realtimeService.resolveRealtimeConfig,
         ).thenAnswer((_) async => null);
-        when(realtimeService.dispose).thenAnswer((_) async {});
 
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -448,7 +441,6 @@ void main() {
         when(
           realtimeService.resolveRealtimeConfig,
         ).thenAnswer((_) async => null);
-        when(realtimeService.dispose).thenAnswer((_) async {});
 
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -489,7 +481,6 @@ void main() {
         when(
           realtimeService.resolveRealtimeConfig,
         ).thenAnswer((_) async => null);
-        when(realtimeService.dispose).thenAnswer((_) async {});
 
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
@@ -532,7 +523,6 @@ void main() {
         when(
           realtimeService.resolveRealtimeConfig,
         ).thenAnswer((_) async => null);
-        when(realtimeService.dispose).thenAnswer((_) async {});
 
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(

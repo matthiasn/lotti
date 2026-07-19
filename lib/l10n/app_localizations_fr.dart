@@ -2813,10 +2813,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get chatInputListening => 'Écoute en cours...';
 
   @override
+  String get chatInputNoAudioRecorded =>
+      'Aucun son n\'a été enregistré. Réessaie.';
+
+  @override
   String get chatInputPleaseWait => 'Patiente un instant...';
 
   @override
   String get chatInputProcessing => 'Traitement...';
+
+  @override
+  String get chatInputRecordingSavedForRecovery =>
+      'L’audio capturé jusqu’ici reste sur cet appareil. Tu peux recommencer l’enregistrement.';
 
   @override
   String get chatInputRecordVoice => 'Enregistrer un message vocal';
@@ -3583,6 +3591,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'La transcription en temps réel n’a pas pu démarrer.';
 
   @override
+  String get dailyOsNextCaptureErrorRecordingSavedForRecovery =>
+      'L’audio capturé jusqu’ici reste sur cet appareil. Tu peux recommencer l’enregistrement ou écrire à la place.';
+
+  @override
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Ton enregistrement est sauvegardé. La transcription n\'a pas pu se terminer.';
+
+  @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'L’enregistrement n’a pas pu démarrer.';
 
@@ -3639,6 +3655,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Vérifier';
+
+  @override
+  String get dailyOsNextCaptureRecordingSavedStatus =>
+      'Enregistrement sauvegardé';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Captures';
@@ -9654,6 +9674,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Reconnaissance vocale';
+
+  @override
+  String get speechNoAudioRecorded =>
+      'Aucun son n\'a été enregistré. Réessaie.';
+
+  @override
+  String get speechRecordingSavedPendingRecovery =>
+      'Ton enregistrement est sauvegardé sur cet appareil et doit être récupéré.';
 
   @override
   String get speechSettingsModelDescription => 'Modèle vocal sur l\'appareil';

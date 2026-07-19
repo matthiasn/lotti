@@ -2795,10 +2795,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get chatInputListening => 'Hört zu...';
 
   @override
+  String get chatInputNoAudioRecorded =>
+      'Es wurde kein Audio aufgenommen. Versuch es noch einmal.';
+
+  @override
   String get chatInputPleaseWait => 'Bitte warten...';
 
   @override
   String get chatInputProcessing => 'Verarbeitung...';
+
+  @override
+  String get chatInputRecordingSavedForRecovery =>
+      'Der bisher aufgenommene Ton bleibt auf diesem Gerät erhalten. Du kannst erneut aufnehmen.';
 
   @override
   String get chatInputRecordVoice => 'Sprachnachricht aufnehmen';
@@ -3555,6 +3563,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Echtzeit-Transkription konnte nicht starten.';
 
   @override
+  String get dailyOsNextCaptureErrorRecordingSavedForRecovery =>
+      'Der bisher aufgenommene Ton bleibt auf diesem Gerät erhalten. Du kannst erneut aufnehmen oder stattdessen tippen.';
+
+  @override
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Deine Aufnahme ist gespeichert. Die Transkription konnte nicht abgeschlossen werden.';
+
+  @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Die Aufnahme konnte nicht starten.';
 
@@ -3612,6 +3628,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Prüfen';
+
+  @override
+  String get dailyOsNextCaptureRecordingSavedStatus => 'Aufnahme gespeichert';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Aufnahmen';
@@ -9519,6 +9538,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Spracherkennung';
+
+  @override
+  String get speechNoAudioRecorded =>
+      'Es wurde kein Audio aufgenommen. Versuch es noch einmal.';
+
+  @override
+  String get speechRecordingSavedPendingRecovery =>
+      'Deine Aufnahme ist auf diesem Gerät gespeichert und muss wiederhergestellt werden.';
 
   @override
   String get speechSettingsModelDescription => 'Lokales Sprachmodell';

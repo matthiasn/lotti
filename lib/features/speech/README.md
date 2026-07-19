@@ -406,7 +406,14 @@ the linked task has profile-driven transcription available.
 
 - `journal` owns entry detail surfaces and supplies `JournalAudio`
 - `ai_chat` owns realtime transcription transport orchestration
-  (`RealtimeTranscriptionService`)
+  (`RealtimeTranscriptionService`) and the shared crash-safe PCM spool; speech
+  prepares that durable capture before microphone access and commits ownership
+  only after `JournalAudio` persistence succeeds. A local spool failure stops
+  capture immediately, and the modal distinguishes saved-pending-recovery from
+  a genuinely empty recording. The manifest records typed origin/intent and
+  stable session identity before capture; session-owned output paths prevent
+  collisions. `AudioRecorderController` also fences each asynchronous start
+  boundary so provider disposal cannot reopen or publish an obsolete session.
 - `ai` owns the Mistral realtime WebSocket repository
   (`MistralRealtimeTranscriptionRepository`), the MLX-audio backend
   (`MlxAudioChannel`), profile automation, and skill execution

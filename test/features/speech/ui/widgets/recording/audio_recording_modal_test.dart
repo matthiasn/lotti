@@ -17,6 +17,7 @@ import 'package:lotti/features/ai_chat/services/realtime_transcription_service.d
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -1105,6 +1106,54 @@ void main() {
 
         expect(stopRealtimeCalled, isTrue);
       });
+
+      for (final testCase in <AudioRecorderSaveOutcome>[
+        AudioRecorderSaveOutcome.savedPendingRecovery,
+        AudioRecorderSaveOutcome.noAudio,
+      ]) {
+        testWidgets(
+          'STOP surfaces the localized ${testCase.name} warning',
+          (tester) async {
+            stubCategory();
+            final recordingState = AudioRecorderState(
+              status: AudioRecorderStatus.recording,
+              progress: const Duration(seconds: 5),
+              vu: 80,
+              dBFS: -20,
+              showIndicator: false,
+              modalVisible: true,
+              isRealtimeMode: true,
+              lastSaveOutcome: testCase,
+            );
+            await pumpModalContent(
+              tester,
+              extraOverrides: [
+                realtimeAvailableProvider.overrideWith((_) async => true),
+                audioRecorderControllerProvider.overrideWith(
+                  () => _CallbackTrackingController(
+                    fixedState: recordingState,
+                  ),
+                ),
+              ],
+            );
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 250));
+            final messages = AppLocalizations.of(
+              tester.element(find.byType(AudioRecordingModalContent)),
+            )!;
+            final expected =
+                testCase == AudioRecorderSaveOutcome.savedPendingRecovery
+                ? messages.speechRecordingSavedPendingRecovery
+                : messages.speechNoAudioRecorded;
+
+            await tester.tap(find.text('STOP'));
+            await tester.pump();
+
+            expect(find.byType(DesignSystemToast), findsOneWidget);
+            expect(find.text(expected), findsOneWidget);
+          },
+        );
+      }
 
       testWidgets('tapping CANCEL in realtime mode calls cancelRealtime', (
         tester,

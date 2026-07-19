@@ -401,16 +401,45 @@ sequenceDiagram
   realtime output looks truncated. Refine uses the same Mistral-preferred
   realtime path but disables the full-file batch verifier for that session so a
   reviewed Mistral transcript is not replaced by an MLX fallback.
-- **Known P1 resilience gap (current runtime).** The batch path currently calls
-  transcription before it creates the `JournalAudio`, and the realtime path
-  creates the journal row only after the realtime service finishes. The
-  day-scoped `CaptureEntity` is created later still, when the user submits a
-  non-empty reviewed transcript, and its manual parse wake lives in the
-  in-memory `WakeQueue`. A provider/network failure can therefore leave a
-  stopped file without a discoverable day entry, while an app restart can lose
-  the pending processing intent. The accepted local-first design — durable
-  audio first, a device-local processing outbox, an Activity timeline, and
-  later-invocation discovery — is specified in
+- **P1 durable-capture foundation.** Every voice start first publishes an
+  immutable `DurableAudioSpoolContext` containing a deterministic activity id,
+  the selected `dayId`/`planDate`, capture origin and intent, timezone offset,
+  and host id when available. The manifest schema reserves Refine
+  continuation/baseline ids; the current UI model does not yet expose a stable
+  plan revision to populate them. Failure to establish that admission boundary
+  prevents microphone access. Realtime PCM is
+  flushed locally before backend forwarding; output WAV names include the
+  recording-session id, and a session-owner sidecar prevents one capture from
+  replacing another capture's asset. A local write failure checkpoints the
+  accepted prefix and stops capture instead of dropping frames.
+- When no realtime backend is available, Daily OS keeps the same durable PCM
+  owner and simply skips live inference. Stop finalizes the complete local WAV,
+  persists `JournalAudio`, and then runs batch transcription over that artifact.
+  There is therefore no weaker M4A fallback window between microphone start and
+  recovery indexing. An empty response or provider failure is displayed as a
+  saved-pending warning, never as a successful empty capture. Controller
+  lifecycle epochs fence each start boundary: reset, route disposal, or a
+  superseding start cannot resurrect an obsolete microphone session.
+
+  ```mermaid
+  stateDiagram-v2
+    [*] --> Admission
+    Admission --> Error: spool publication fails (microphone stays closed)
+    Admission --> Realtime: realtime route resolves
+    Admission --> LocalOnly: no realtime route
+    Realtime --> RecoveryRetained: local/backend/commit failure after audio
+    Realtime --> Saved: WAV + JournalAudio committed
+    LocalOnly --> RecoveryRetained: durable PCM retained, journal commit fails
+    LocalOnly --> SavedPendingTranscription: WAV + JournalAudio committed first
+    SavedPendingTranscription --> Saved: transcription succeeds
+    SavedPendingTranscription --> SavedPendingTranscription: transcription fails
+  ```
+
+  The day-scoped `CaptureEntity` is still created only after the user submits a
+  non-empty reviewed transcript, and its manual parse wake still lives in the
+  in-memory `WakeQueue`. The next implementation slice is therefore the
+  device-local processing outbox, Activity timeline, manual retry, and
+  later-invocation discovery specified in
   [`2026-07-18_resilient_day_planning_capture_and_timeline.md`](../../../docs/implementation_plans/2026-07-18_resilient_day_planning_capture_and_timeline.md).
 - Capture and Refine share one **anchored voice template**: a per-phase
   headline at the top (the state narrator — "What's on your mind …", "I'm

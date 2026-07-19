@@ -215,6 +215,120 @@ void main() {
     });
 
     group('sendMessage', () {
+      test('persists user message before starting network inference', () async {
+        final saveGate = Completer<ChatSession>();
+        ChatSession? acceptedSession;
+        when(() => mockChatRepository.saveSession(any())).thenAnswer((call) {
+          acceptedSession = call.positionalArguments.first as ChatSession;
+          return saveGate.future;
+        });
+        final streamController = stubStreaming();
+        final subscription = container.listen(
+          chatSessionControllerProvider('test-category'),
+          (_, _) {},
+          fireImmediately: true,
+        );
+        final controller =
+            container.read(
+              chatSessionControllerProvider('test-category').notifier,
+            )..updateState(
+              (state) => state.copyWith(
+                id: 'session-1',
+                selectedModelId: 'model-1',
+              ),
+            );
+
+        final sendFuture = controller.sendMessage('durable first');
+        await pumpEventQueue();
+
+        expect(
+          acceptedSession?.messages.map((message) => message.content),
+          contains('durable first'),
+        );
+        verifyNever(
+          () => mockChatRepository.sendMessage(
+            message: any(named: 'message'),
+            conversationHistory: any(named: 'conversationHistory'),
+            categoryId: any(named: 'categoryId'),
+            modelId: any(named: 'modelId'),
+          ),
+        );
+
+        saveGate.complete(acceptedSession!);
+        await streamController.close();
+        expect(await sendFuture, isTrue);
+        subscription.close();
+      });
+
+      test('rejects local save failure without starting inference', () async {
+        when(
+          () => mockChatRepository.saveSession(any()),
+        ).thenThrow(Exception('disk full'));
+        final controller =
+            container.read(
+              chatSessionControllerProvider('test-category').notifier,
+            )..updateState(
+              (state) => state.copyWith(
+                id: 'session-1',
+                selectedModelId: 'model-1',
+              ),
+            );
+
+        final accepted = await controller.sendMessage('keep the audio');
+
+        expect(accepted, isFalse);
+        expect(
+          container.read(chatSessionControllerProvider('test-category')).error,
+          'Failed to save message locally',
+        );
+        verifyNever(
+          () => mockChatRepository.sendMessage(
+            message: any(named: 'message'),
+            conversationHistory: any(named: 'conversationHistory'),
+            categoryId: any(named: 'categoryId'),
+            modelId: any(named: 'modelId'),
+          ),
+        );
+      });
+
+      test(
+        'network failure still accepts the durably saved user message',
+        () async {
+          final savedSessions = <ChatSession>[];
+          when(() => mockChatRepository.saveSession(any())).thenAnswer((call) {
+            final session = call.positionalArguments.first as ChatSession;
+            savedSessions.add(session);
+            return Future.value(session);
+          });
+          when(
+            () => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            ),
+          ).thenThrow(Exception('offline'));
+          final controller =
+              container.read(
+                chatSessionControllerProvider('test-category').notifier,
+              )..updateState(
+                (state) => state.copyWith(
+                  id: 'session-1',
+                  selectedModelId: 'model-1',
+                ),
+              );
+
+          final accepted = await controller.sendMessage('persist me offline');
+
+          expect(accepted, isTrue);
+          expect(savedSessions, hasLength(1));
+          expect(
+            savedSessions.single.messages.map((message) => message.content),
+            contains('persist me offline'),
+          );
+        },
+      );
+
       test('upgrades soft break before heading to blank line for Markdown', () {
         fakeAsync((async) {
           // Initialize empty session
@@ -1219,7 +1333,7 @@ void main() {
       );
 
       test(
-        '_saveCurrentSession logs error and does not expose it on save failure',
+        'local acceptance exposes save failure and skips inference',
         () async {
           when(
             () => mockChatRepository.createSession(categoryId: 'test-category'),
@@ -1269,17 +1383,23 @@ void main() {
           final state = container.read(
             chatSessionControllerProvider('test-category'),
           );
-          // Error should NOT be exposed to the user for save failures
-          expect(state.error, isNull);
-          // But the logger should have been called
+          expect(state.error, equals('Failed to save message locally'));
           verify(
             () => mockDomainLogger.error(
               LogDomain.chat,
               any<Object>(),
               stackTrace: any<StackTrace>(named: 'stackTrace'),
-              subDomain: '_saveCurrentSession',
+              subDomain: 'sendMessage.accept',
             ),
           ).called(1);
+          verifyNever(
+            () => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            ),
+          );
           sub.close();
         },
       );
@@ -1333,16 +1453,20 @@ void main() {
 
           await controller.sendMessage('Persist me');
 
-          // _saveCurrentSession should have been called once with the full session
-          expect(savedSessions, hasLength(1));
-          final saved = savedSessions.first;
-          expect(saved.id, equals('session-42'));
+          expect(savedSessions, hasLength(2));
+          final accepted = savedSessions.first;
+          final completed = savedSessions.last;
+          expect(accepted.id, equals('session-42'));
           expect(
-            saved.messages.any((m) => m.content == 'Persist me'),
+            accepted.messages.any((m) => m.content == 'Persist me'),
             isTrue,
           );
           expect(
-            saved.messages.any((m) => m.content == 'Saved response'),
+            accepted.messages.any((m) => m.content == 'Saved response'),
+            isFalse,
+          );
+          expect(
+            completed.messages.any((m) => m.content == 'Saved response'),
             isTrue,
           );
           sub.close();

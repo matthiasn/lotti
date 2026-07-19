@@ -116,6 +116,7 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
+import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
@@ -656,6 +657,9 @@ class MockAudioTranscriptionService extends Mock
 class MockRealtimeTranscriptionService extends Mock
     implements RealtimeTranscriptionService {}
 
+class MockDurableRealtimeCapture extends Mock
+    implements DurableRealtimeCapture {}
+
 class MockNavService extends Mock implements NavService {}
 
 /// Minimal settings navigation fake for tests that render the desktop
@@ -682,7 +686,10 @@ class FakeCaptureController extends CaptureController {
   CaptureState build() => const CaptureState.idle();
 
   @override
-  Future<void> toggle() async => onToggle?.call();
+  Future<void> toggle({
+    DateTime? forDate,
+    AudioCaptureIntent intent = AudioCaptureIntent.dayPlan,
+  }) async => onToggle?.call();
 
   @override
   void startTyping() {

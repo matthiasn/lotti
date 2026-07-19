@@ -3,22 +3,20 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:path/path.dart' as path;
+import 'package:uuid/uuid.dart';
 
 import 'realtime_transcription_test_utils.dart';
-
-// ---------------------------------------------------------------------------
-// Fakes & Mocks
-// ---------------------------------------------------------------------------
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -144,19 +142,80 @@ void main() {
   });
 
   group('startRealtimeTranscription', () {
-    test('throws StateError when no config available', () async {
+    test(
+      'publishes stable day identity before a Daily OS microphone starts',
+      () async {
+        final ids = <String>['daily-session'].iterator;
+        final bench = await RealtimeTranscriptionTestBench.create(
+          addConfig: false,
+          durableIdFactory: () {
+            ids.moveNext();
+            return ids.current;
+          },
+        );
+        addTearDown(bench.dispose);
+        final assetRoot = await Directory(
+          path.join(bench.rootDirectory.path, 'daily-assets'),
+        ).create();
+
+        final capture = await bench.service.prepareDefaultDurableCapture(
+          assetRootDirectory: assetRoot,
+          createdAt: DateTime.utc(2026, 7, 18, 8, 15),
+          origin: AudioCaptureOrigin.dailyOs,
+          intent: AudioCaptureIntent.dayPlan,
+          dayId: 'dayplan-2026-07-18',
+          planDate: DateTime(2026, 7, 18),
+        );
+
+        expect(capture.recordingSessionId, 'daily-session');
+        expect(
+          capture.activityEntryId,
+          const Uuid().v5(
+            const Uuid().v5(
+              Namespace.url.value,
+              dailyOsAudioActivityNamespaceName,
+            ),
+            'daily-session',
+          ),
+        );
+        expect(
+          capture.spool.manifest.context.dayId,
+          'dayplan-2026-07-18',
+        );
+        final context = capture.spool.manifest.context;
+        expect(context.origin, AudioCaptureOrigin.dailyOs);
+        expect(context.intent, AudioCaptureIntent.dayPlan);
+        expect(context.planDate, DateTime(2026, 7, 18));
+        expect(context.timeZoneOffsetMinutes, 0);
+        expect(
+          capture.sessionDirectory.path,
+          path.join(assetRoot.path, '.audio_spool', 'daily-session'),
+        );
+        expect(
+          capture.sessionDirectory.listSync().whereType<File>().map(
+            (file) => path.basename(file.path),
+          ),
+          contains('manifest-00000001.json'),
+        );
+        await capture.discard();
+      },
+    );
+
+    test('keeps local capture active when no backend is configured', () async {
       final bench = await RealtimeTranscriptionTestBench.create(
         addConfig: false,
       );
       addTearDown(bench.dispose);
+      final capture = await bench.prepareCapture();
 
-      await expectLater(
-        () => bench.service.startRealtimeTranscription(
-          pcmStream: const Stream<Uint8List>.empty(),
-          onDelta: (_) {},
-        ),
-        throwsA(isA<StateError>()),
+      await bench.service.startRealtimeTranscription(
+        capture: capture,
+        pcmStream: const Stream<Uint8List>.empty(),
+        onDelta: (_) {},
       );
+
+      expect(bench.service.isActive, isTrue);
+      expect(capture.spool.manifest.state, DurableAudioSpoolState.recording);
     });
 
     test(
@@ -180,40 +239,136 @@ void main() {
       },
     );
 
+    test('flushes each PCM frame before forwarding it', () async {
+      final repository = ControllableRealtimeRepository();
+      final bench = await RealtimeTranscriptionTestBench.create(
+        repository: repository,
+      );
+      addTearDown(() async {
+        await repository.close();
+        bench.dispose();
+      });
+      late Uint8List bytesAtSend;
+      repository.onSendAudioChunk = (_) {
+        bytesAtSend = File(
+          '${bench.activeCapture!.sessionDirectory.path}/'
+          'active-00000000.part',
+        ).readAsBytesSync();
+      };
+      await bench.startTranscription();
+      final pcm = Uint8List.fromList(<int>[1, 2, 3, 4]);
+
+      await bench.sendPcm(pcm);
+
+      expect(bytesAtSend, pcm);
+      expect(repository.sentChunks.single, pcm);
+    });
+
     test(
-      'second startRealtimeTranscription while active throws Already '
-      'connected',
+      'retains local audio when the realtime backend cannot connect',
+      () async {
+        final repository = ControllableRealtimeRepository()
+          ..connectError = Exception('offline');
+        final bench = await RealtimeTranscriptionTestBench.create(
+          repository: repository,
+        );
+        addTearDown(() async {
+          await repository.close();
+          bench.dispose();
+        });
+        await bench.startTranscription();
+        final pcm = Uint8List.fromList(<int>[5, 6, 7, 8]);
+        await bench.sendPcm(pcm);
+
+        final result = await bench.stop();
+
+        expect(result.usedTranscriptFallback, isTrue);
+        expect(result.audioFilePath, isNotNull);
+        expect(File(result.audioFilePath!).readAsBytesSync().sublist(44), pcm);
+        expect(repository.sentChunks, isEmpty);
+      },
+    );
+
+    test(
+      'rejects a second durable capture while the first remains active',
       () async {
         final bench = await RealtimeTranscriptionTestBench.create();
         addTearDown(bench.dispose);
 
         final pcm1 = await bench.startTranscription();
+        final firstCapture = bench.activeCapture!;
         expect(bench.service.isActive, isTrue);
 
-        // The repository guards reconnection: a second start while a
-        // session is live surfaces TranscriptionException('Already
-        // connected') instead of silently replacing the session.
         await expectLater(
           bench.startTranscription,
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'message',
-              contains('Already connected'),
-            ),
-          ),
+          throwsA(isA<StateError>()),
+        );
+        final rejectedCapture = bench.activeCapture!;
+        var rejectedRecorderStops = 0;
+        await bench.service.stopAndRetainForRecovery(
+          capture: rejectedCapture,
+          stopRecorder: () async {
+            rejectedRecorderStops += 1;
+          },
         );
 
         // The original session survives the failed restart: its PCM stream
-        // still reaches the wire and the service stays active.
+        // still reaches the wire and the rejected caller only stops its own
+        // recorder.
         expect(bench.service.isActive, isTrue);
+        expect(rejectedRecorderStops, 1);
+        expect(
+          firstCapture.spool.manifest.state,
+          DurableAudioSpoolState.recording,
+        );
         pcm1.add(pcmSilence(64));
-        await Future<void>.delayed(Duration.zero);
+        await bench.service.flushPendingPcm();
         final msg =
             jsonDecode(bench.channel.sentMessages.last) as Map<String, dynamic>;
         expect(msg['type'], 'input_audio.append');
+        await rejectedCapture.discard();
       },
     );
+
+    test('slow backend setup cannot resurrect a stopped capture', () async {
+      final repository = ControllableRealtimeRepository()
+        ..connectGate = Completer<void>();
+      final bench = await RealtimeTranscriptionTestBench.create(
+        repository: repository,
+      );
+      addTearDown(() async {
+        await repository.close();
+        bench.dispose();
+      });
+      final capture = await bench.prepareCapture();
+      final pcm = StreamController<Uint8List>(sync: true);
+      final recoveryStopStarted = Completer<Future<void>>();
+      final start = bench.service.startRealtimeTranscription(
+        capture: capture,
+        pcmStream: pcm.stream,
+        onDelta: (_) {},
+        onCaptureFailure: (_, _) {
+          recoveryStopStarted.complete(
+            bench.service.stopAndRetainForRecovery(
+              capture: capture,
+              stopRecorder: pcm.close,
+            ),
+          );
+        },
+      );
+      await repository.connectStarted.future;
+
+      pcm.addError(StateError('microphone disconnected'));
+      await (await recoveryStopStarted.future);
+      expect(bench.service.isActive, isFalse);
+
+      repository.connectGate!.complete();
+      await start;
+
+      expect(bench.service.isActive, isFalse);
+      expect(repository.disconnected, isTrue);
+      expect(repository.sentChunks, isEmpty);
+    });
 
     test('emits amplitude values from PCM chunks', () async {
       final bench = await RealtimeTranscriptionTestBench.create();
@@ -224,40 +379,36 @@ void main() {
 
       await bench.startTranscription();
       await bench.sendPcm(pcmSilence(64));
+      await Future<void>.value();
 
       expect(amplitudes, isNotEmpty);
     });
 
-    test('calls onDelta callback for each transcription delta', () {
-      fakeAsync((async) {
-        late RealtimeTranscriptionTestBench bench;
-        RealtimeTranscriptionTestBench.create().then((b) => bench = b);
-        async.flushMicrotasks();
-        addTearDown(bench.dispose);
+    test('calls onDelta callback for each transcription delta', () async {
+      final bench = await RealtimeTranscriptionTestBench.create();
+      addTearDown(bench.dispose);
 
-        final deltas = <String>[];
-        bench.startTranscription(onDelta: deltas.add);
-        // Flush microtasks for DB/setup, then elapse to fire the
-        // zero-duration timer that delivers session.created.
-        async
-          ..flushMicrotasks()
-          ..elapse(Duration.zero)
-          ..flushMicrotasks();
-
-        bench.channel.simulateServerMessage({
-          'type': 'transcription.text.delta',
-          'text': 'Hello ',
-        });
-        async.flushMicrotasks();
-
-        bench.channel.simulateServerMessage({
-          'type': 'transcription.text.delta',
-          'text': 'world',
-        });
-        async.flushMicrotasks();
-
-        expect(deltas, ['Hello ', 'world']);
+      final deltas = <String>[];
+      final received = Completer<void>();
+      await bench.startTranscription(
+        onDelta: (delta) {
+          deltas.add(delta);
+          if (deltas.length == 2 && !received.isCompleted) {
+            received.complete();
+          }
+        },
+      );
+      bench.channel.simulateServerMessage({
+        'type': 'transcription.text.delta',
+        'text': 'Hello ',
       });
+      bench.channel.simulateServerMessage({
+        'type': 'transcription.text.delta',
+        'text': 'world',
+      });
+      await received.future;
+
+      expect(deltas, ['Hello ', 'world']);
     });
 
     test(
@@ -364,7 +515,7 @@ void main() {
     });
 
     test(
-      'cleans up the MLX backend when native realtime startup fails',
+      'keeps durable local capture active when MLX startup fails',
       () async {
         final bench = await RealtimeTranscriptionTestBench.create(
           addConfig: false,
@@ -373,19 +524,14 @@ void main() {
         addTearDown(bench.dispose);
         bench.mlxAudioChannel.startError = Exception('native start failed');
 
-        await expectLater(
-          bench.startTranscription,
-          throwsA(
-            isA<Exception>().having(
-              (error) => error.toString(),
-              'message',
-              contains('native start failed'),
-            ),
-          ),
-        );
+        await bench.startTranscription();
+        await bench.sendPcm(pcmSilence(64));
 
-        expect(bench.service.isActive, isFalse);
+        expect(bench.service.isActive, isTrue);
         expect(bench.mlxAudioChannel.cancelled, isTrue);
+        final result = await bench.stop();
+        expect(result.audioFilePath, isNotNull);
+        expect(result.usedTranscriptFallback, isTrue);
       },
     );
 
@@ -399,10 +545,8 @@ void main() {
         addTearDown(bench.dispose);
         bench.mlxAudioChannel.appendError = Exception('append failed');
 
-        final pcm = await bench.startTranscription();
-        pcm.add(pcmSilence(64));
-        await Future<void>.value();
-        await Future<void>.value();
+        await bench.startTranscription();
+        await bench.sendPcm(pcmSilence(64));
 
         expect(bench.service.isActive, isTrue);
         expect(bench.mlxAudioChannel.appendedPcm, isEmpty);
@@ -487,26 +631,14 @@ void main() {
             text: 'before crash',
           ),
         );
-        final dir = await Directory.systemTemp.createTemp('rt_mlx_err_');
-        addTearDown(() async {
-          if (dir.existsSync()) await dir.delete(recursive: true);
-        });
-
-        // Start stop() and drain the event queue so it is parked on the
-        // done completer (error handler attached) before the error is
-        // emitted — deterministic, no wall-clock delay (fake-time policy).
-        final stopFuture = bench.service.stop(
-          stopRecorder: () async {},
-          outputPath: '${dir.path}/output',
-        );
-        await pumpEventQueue();
-        bench.mlxAudioChannel.emit(
-          const MlxAudioRealtimeEvent(
-            type: MlxAudioRealtimeEventType.error,
-            message: 'inference crashed',
+        final result = await bench.stop(
+          afterListening: () => bench.mlxAudioChannel.emit(
+            const MlxAudioRealtimeEvent(
+              type: MlxAudioRealtimeEventType.error,
+              message: 'inference crashed',
+            ),
           ),
         );
-        final result = await stopFuture;
 
         expect(result.usedTranscriptFallback, isTrue);
         expect(result.transcript, 'before crash');
@@ -530,22 +662,11 @@ void main() {
         addTearDown(bench.dispose);
 
         await bench.startTranscription();
-        final dir = await Directory.systemTemp.createTemp('rt_mlx_stream_err_');
-        addTearDown(() async {
-          if (dir.existsSync()) await dir.delete(recursive: true);
-        });
-        // Start stop() and drain the event queue so it is parked on the
-        // done completer (error handler attached) before the stream error
-        // is added — deterministic, no wall-clock delay (fake-time policy).
-        final stopFuture = bench.service.stop(
-          stopRecorder: () async {},
-          outputPath: '${dir.path}/output',
+        final result = await bench.stop(
+          afterListening: () => bench.mlxAudioChannel.eventsController.addError(
+            Exception('event stream broken'),
+          ),
         );
-        await pumpEventQueue();
-        bench.mlxAudioChannel.eventsController.addError(
-          Exception('event stream broken'),
-        );
-        final result = await stopFuture;
 
         expect(result.usedTranscriptFallback, isTrue);
         expect(
@@ -555,39 +676,24 @@ void main() {
       },
     );
 
-    test(
-      'logs MLX PCM stream errors and keeps the session active',
-      () {
-        fakeAsync((async) {
-          late RealtimeTranscriptionTestBench bench;
-          RealtimeTranscriptionTestBench.create(
-            addConfig: false,
-            addMlxConfig: true,
-          ).then((b) => bench = b);
-          async.flushMicrotasks();
-          addTearDown(bench.dispose);
+    test('logs MLX PCM stream errors and retains the durable source', () async {
+      final bench = await RealtimeTranscriptionTestBench.create(
+        addConfig: false,
+        addMlxConfig: true,
+      );
+      addTearDown(bench.dispose);
+      final pcm = await bench.startTranscription();
 
-          late StreamController<Uint8List> pcm;
-          bench.startTranscription().then((c) => pcm = c);
-          async
-            ..flushMicrotasks()
-            ..elapse(Duration.zero)
-            ..flushMicrotasks();
+      pcm.addError(Exception('mlx microphone disconnected'));
+      await pumpEventQueue();
 
-          pcm.addError(Exception('mlx microphone disconnected'));
-          async.flushMicrotasks();
-
-          expect(
-            fakeLogging.exceptions.map((error) => error.toString()),
-            contains(contains('mlx microphone disconnected')),
-          );
-          expect(bench.service.isActive, isTrue);
-
-          bench.service.dispose();
-          async.flushMicrotasks();
-        });
-      },
-    );
+      expect(
+        fakeLogging.exceptions.map((error) => error.toString()),
+        contains(contains('mlx microphone disconnected')),
+      );
+      expect(bench.service.isActive, isTrue);
+      expect(bench.activeCapture!.sessionDirectory.existsSync(), isTrue);
+    });
   });
 
   group('stop', () {
@@ -625,7 +731,7 @@ void main() {
           'type': 'transcription.text.delta',
           'text': 'and commission work',
         });
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.value();
 
       final result = await bench.stop(
         afterListening: () => bench.simulateDone('Complete client animation'),
@@ -655,16 +761,12 @@ void main() {
           'type': 'transcription.text.delta',
           'text': 'world',
         });
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
-      // Don't send transcription.done — let the short 50ms timeout trigger
-      // the fallback. Call service.stop directly to avoid file I/O in the
-      // test bench helper (Directory.createTemp). No PCM was sent so
-      // _saveAudio returns null (no file I/O).
-      final result = await bench.service.stop(
-        stopRecorder: () async {},
-        outputPath: '/tmp/rt_test_fallback/output',
-      );
+      // Don't send transcription.done — let the short timeout trigger the
+      // accumulated-delta fallback. The recorder callback closes the source
+      // stream before stop returns.
+      final result = await bench.stop();
 
       expect(result.transcript, 'Hello world');
       expect(result.usedTranscriptFallback, isTrue);
@@ -683,6 +785,118 @@ void main() {
       expect(endMessages, isNotEmpty);
     });
 
+    test('finalizes local audio when endAudio fails', () async {
+      final repo = ControllableRealtimeRepository()
+        ..endAudioError = Exception('network dropped at endAudio');
+      final bench = await RealtimeTranscriptionTestBench.create(
+        repository: repo,
+      );
+      addTearDown(() async {
+        await repo.close();
+        bench.dispose();
+      });
+      await bench.startTranscription();
+      await bench.sendPcm(pcmSilence(64));
+
+      final result = await bench.stop();
+
+      expect(repo.endAudioCalled, isTrue);
+      expect(result.audioFilePath, isNotNull);
+      expect(result.usedTranscriptFallback, isTrue);
+      expect(result.captureDisposition, RealtimeCaptureDisposition.complete);
+    });
+
+    test('cleanup failure cannot override a finalized local result', () async {
+      final repo = ControllableRealtimeRepository()
+        ..disconnectError = Exception('disconnect failed');
+      final bench = await RealtimeTranscriptionTestBench.create(
+        repository: repo,
+      );
+      addTearDown(() async {
+        await repo.close();
+        bench.dispose();
+      });
+      await bench.startTranscription();
+      await bench.sendPcm(pcmSilence(64));
+
+      final result = await bench.stop(
+        afterListening: () => repo.doneController.add(
+          const RealtimeTranscriptionDone(text: 'done'),
+        ),
+      );
+
+      expect(result.audioFilePath, isNotNull);
+      expect(result.captureDisposition, RealtimeCaptureDisposition.complete);
+      expect(
+        fakeLogging.exceptions.map((error) => error.toString()),
+        contains(contains('disconnect failed')),
+      );
+    });
+
+    test(
+      'terminal listener cancellation cannot override a finalized result',
+      () async {
+        final repo = ControllableRealtimeRepository(
+          throwOnDoneCancel: true,
+        );
+        final bench = await RealtimeTranscriptionTestBench.create(
+          repository: repo,
+        );
+        addTearDown(() async {
+          await repo.close();
+          bench.dispose();
+        });
+        await bench.startTranscription();
+        await bench.sendPcm(pcmSilence(64));
+
+        final result = await bench.stop(
+          afterListening: () => repo.doneController.add(
+            const RealtimeTranscriptionDone(text: 'done'),
+          ),
+        );
+
+        expect(result.audioFilePath, isNotNull);
+        expect(result.captureDisposition, RealtimeCaptureDisposition.complete);
+        expect(bench.service.isActive, isFalse);
+        expect(
+          fakeLogging.exceptions.map((error) => error.toString()),
+          contains(contains('done cancellation failed')),
+        );
+      },
+    );
+
+    test('concurrent stop calls share one terminal operation', () async {
+      final bench = await RealtimeTranscriptionTestBench.create();
+      addTearDown(bench.dispose);
+      await bench.startTranscription();
+      await bench.sendPcm(pcmSilence(64));
+      final outputPath = path.join(
+        bench.rootDirectory.path,
+        'assets',
+        'shared-stop',
+      );
+      var recorderStops = 0;
+
+      final first = bench.stop(
+        outputPath: outputPath,
+        stopRecorder: () async {
+          recorderStops += 1;
+        },
+        afterListening: () => bench.simulateDone('done'),
+      );
+      final second = bench.service.stop(
+        capture: bench.activeCapture!,
+        stopRecorder: () async {
+          recorderStops += 1;
+        },
+        outputPath: outputPath,
+      );
+
+      final results = await Future.wait([first, second]);
+      expect(recorderStops, 1);
+      expect(results[0].audioFilePath, results[1].audioFilePath);
+    });
+
     test('calls stopRecorder callback', () async {
       final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
@@ -698,6 +912,31 @@ void main() {
       );
 
       expect(recorderStopped, isTrue);
+    });
+
+    test('saves a partial WAV when recorder stop fails', () async {
+      final bench = await RealtimeTranscriptionTestBench.create();
+      addTearDown(bench.dispose);
+
+      await bench.startTranscription();
+      await bench.sendPcm(pcmSilence(64));
+
+      final result = await bench.stop(
+        stopRecorder: () => Future<void>.error(
+          StateError('recorder stop failed'),
+        ),
+        afterListening: () => bench.simulateDone('accepted prefix'),
+      );
+
+      expect(result.audioFilePath, isNotNull);
+      expect(
+        result.captureDisposition,
+        RealtimeCaptureDisposition.savedPartial,
+      );
+      expect(
+        fakeLogging.exceptions.map((error) => error.toString()),
+        contains(contains('recorder stop failed')),
+      );
     });
 
     test('sets isActive to false after stop', () async {
@@ -800,12 +1039,7 @@ void main() {
         );
         await Future<void>.value();
 
-        final result = await bench.service.stop(
-          stopRecorder: () async {},
-          outputPath: (await Directory.systemTemp.createTemp(
-            'rt_mlx_timeout_',
-          )).path,
-        );
+        final result = await bench.stop();
 
         expect(result.transcript, 'timeout fallback transcript');
         expect(result.usedTranscriptFallback, isTrue);
@@ -836,10 +1070,7 @@ void main() {
         ..stopError = Exception('native stop failed');
       await Future<void>.value();
 
-      final result = await bench.service.stop(
-        stopRecorder: () async {},
-        outputPath: '/tmp/rt_mlx_error/output',
-      );
+      final result = await bench.stop();
 
       expect(result.transcript, 'partial local transcript');
       expect(result.usedTranscriptFallback, isTrue);
@@ -850,91 +1081,35 @@ void main() {
     });
 
     test(
-      'propagates a transcription.done stream error out of stop()',
+      'finalizes local audio when the transcription.done stream errors',
       () async {
-        // The real Mistral repo never errors its done stream, so drive the
-        // onError branch via a controllable repository subclass. When the done
-        // stream errors, the listener completes the done completer with that
-        // error; the subsequent `await ...future.timeout(...)` rethrows it.
-        // stop() only catches TimeoutException, so a generic error surfaces to
-        // the caller (after endAudio + done-subscription cleanup).
         final repo = ControllableRealtimeRepository();
-        final container = ProviderContainer(
-          overrides: [
-            realtimeTranscriptionServiceProvider.overrideWith(
-              (ref) => RealtimeTranscriptionService(
-                ref,
-                repository: repo,
-                doneTimeout: const Duration(seconds: 30),
-              ),
-            ),
-          ],
+        final bench = await RealtimeTranscriptionTestBench.create(
+          repository: repo,
+          doneTimeout: const Duration(seconds: 30),
         );
         addTearDown(() async {
           await repo.close();
-          container.dispose();
+          bench.dispose();
         });
+        await bench.startTranscription();
+        await bench.sendPcm(pcmSilence(64));
 
-        final service = container.read(realtimeTranscriptionServiceProvider);
-        final pcm = StreamController<Uint8List>();
-        addTearDown(pcm.close);
-
-        final provider =
-            AiConfig.inferenceProvider(
-                  id: kTestProviderId,
-                  baseUrl: 'https://api.mistral.ai/v1',
-                  apiKey: 'test-key',
-                  name: 'Mistral',
-                  createdAt: DateTime(2024),
-                  inferenceProviderType: InferenceProviderType.mistral,
-                )
-                as AiConfigInferenceProvider;
-        final model =
-            AiConfig.model(
-                  id: kTestModelId,
-                  name: 'Voxtral Realtime',
-                  providerModelId: kTestProviderModelId,
-                  inferenceProviderId: kTestProviderId,
-                  createdAt: DateTime(2024),
-                  inputModalities: const [Modality.audio],
-                  outputModalities: const [Modality.text],
-                  isReasoningModel: false,
-                )
-                as AiConfigModel;
-
-        await service.startRealtimeTranscription(
-          pcmStream: pcm.stream,
-          onDelta: (_) {},
-          config: (provider: provider, model: model),
+        final stopFuture = bench.stop(
+          afterListening: () =>
+              repo.doneController.addError(StateError('done stream exploded')),
         );
 
-        // Begin stop(): it cancels the PCM sub, stops the recorder, calls
-        // endAudio, then awaits the done completer. Error the done stream a
-        // few microtasks in, once the completer future is being awaited, so
-        // the listener's onError completes it with the error.
-        final stopFuture = service.stop(
-          stopRecorder: () async {},
-          outputPath: '/tmp/rt_done_error/output',
-        );
+        final result = await stopFuture;
 
-        await Future<void>.value();
-        await Future<void>.value();
-        await Future<void>.value();
-        repo.doneController.addError(StateError('done stream exploded'));
-
-        await expectLater(
-          stopFuture,
-          throwsA(
-            isA<StateError>().having(
-              (error) => error.message,
-              'message',
-              'done stream exploded',
-            ),
-          ),
-        );
-
-        // endAudio still ran before the error surfaced.
         expect(repo.endAudioCalled, isTrue);
+        expect(result.audioFilePath, isNotNull);
+        expect(result.usedTranscriptFallback, isTrue);
+        expect(
+          result.captureDisposition,
+          RealtimeCaptureDisposition.complete,
+        );
+        expect(bench.service.isActive, isFalse);
       },
     );
   });
@@ -947,7 +1122,10 @@ void main() {
       await bench.startTranscription();
       expect(bench.service.isActive, isTrue);
 
-      await bench.service.dispose();
+      await bench.service.dispose(
+        capture: bench.activeCapture!,
+        stopRecorder: bench.closePcm,
+      );
       expect(bench.service.isActive, isFalse);
     });
 
@@ -958,39 +1136,311 @@ void main() {
       await bench.startTranscription();
       await bench.sendPcm(pcmSilence(64));
 
-      await bench.service.dispose();
+      await bench.service.dispose(
+        capture: bench.activeCapture!,
+        stopRecorder: bench.closePcm,
+      );
       expect(bench.service.isActive, isFalse);
+    });
+
+    test('waits for an in-flight stop instead of racing its cleanup', () async {
+      final repository = ControllableRealtimeRepository();
+      final bench = await RealtimeTranscriptionTestBench.create(
+        repository: repository,
+      );
+      addTearDown(() async {
+        await repository.close();
+        bench.dispose();
+      });
+      await bench.startTranscription();
+      await bench.sendPcm(pcmSilence(64));
+
+      final stopFuture = bench.stop();
+      final disposeFuture = bench.service.dispose(
+        capture: bench.activeCapture!,
+        stopRecorder: bench.closePcm,
+      );
+      repository.doneController.add(
+        const RealtimeTranscriptionDone(text: 'terminal transcript'),
+      );
+
+      final result = await stopFuture;
+      await disposeFuture;
+
+      expect(result.transcript, 'terminal transcript');
+      expect(result.audioFilePath, isNotNull);
+      expect(bench.service.isActive, isFalse);
+    });
+
+    test(
+      'recovery teardown drains buffered frames before cancellation',
+      () async {
+        final bench = await RealtimeTranscriptionTestBench.create(
+          addConfig: false,
+        );
+        addTearDown(bench.dispose);
+        final enteredFlush = Completer<void>();
+        final releaseFlush = Completer<void>();
+        var blocked = false;
+        final capture = await bench.service.prepareDurableCapture(
+          rootDirectory: Directory(
+            path.join(bench.rootDirectory.path, 'buffered-spool'),
+          ),
+          context: DurableAudioSpoolContext(
+            recordingSessionId: 'buffered-teardown',
+            activityEntryId: 'activity-buffered-teardown',
+            createdAt: DateTime.utc(2026, 7, 18, 7, 30),
+            assetRootPath: path.join(bench.rootDirectory.path, 'assets'),
+          ),
+          durability: AudioSpoolDurability(
+            onBoundary: (boundary) async {
+              if (!blocked &&
+                  boundary == AudioSpoolDurabilityBoundary.activeFileFlushed) {
+                blocked = true;
+                enteredFlush.complete();
+                await releaseFlush.future;
+              }
+            },
+          ),
+        );
+        final pcm = StreamController<Uint8List>();
+        await bench.service.startRealtimeTranscription(
+          capture: capture,
+          pcmStream: pcm.stream,
+          onDelta: (_) {},
+        );
+        pcm
+          ..add(pcmSilence(64))
+          ..add(pcmSilence(64));
+        await enteredFlush.future;
+
+        var teardownCompleted = false;
+        final teardown = bench.service
+            .stopAndRetainForRecovery(
+              capture: capture,
+              stopRecorder: pcm.close,
+            )
+            .then((_) => teardownCompleted = true);
+        await pumpEventQueue();
+        expect(teardownCompleted, isFalse);
+
+        releaseFlush.complete();
+        await teardown;
+        final recovery = await DurableAudioSpool.recover(
+          sessionDirectory: capture.sessionDirectory,
+        );
+        expect(recovery.manifest.acceptedPcmBytes, 128);
+        expect(recovery.isQuarantined, isFalse);
+      },
+    );
+
+    test(
+      'blocks a new session until recovery teardown fully completes',
+      () async {
+        final repository = ControllableRealtimeRepository()
+          ..disconnectGate = Completer<void>();
+        final bench = await RealtimeTranscriptionTestBench.create(
+          repository: repository,
+        );
+        addTearDown(() async {
+          final disconnectGate = repository.disconnectGate;
+          if (disconnectGate != null && !disconnectGate.isCompleted) {
+            disconnectGate.complete();
+          }
+          bench.dispose();
+        });
+        final firstCapture = await bench.prepareCapture();
+        final firstPcm = StreamController<Uint8List>();
+        await bench.service.startRealtimeTranscription(
+          capture: firstCapture,
+          pcmStream: firstPcm.stream,
+          onDelta: (_) {},
+        );
+
+        final teardown = bench.service.stopAndRetainForRecovery(
+          capture: firstCapture,
+          stopRecorder: firstPcm.close,
+        );
+        await repository.disconnectStarted.future;
+        final secondCapture = await bench.prepareCapture();
+        final rejectedPcm = StreamController<Uint8List>.broadcast();
+
+        await expectLater(
+          bench.service.startRealtimeTranscription(
+            capture: secondCapture,
+            pcmStream: rejectedPcm.stream,
+            onDelta: (_) {},
+          ),
+          throwsStateError,
+        );
+        await rejectedPcm.close();
+
+        repository.disconnectGate!.complete();
+        await teardown;
+        final secondPcm = StreamController<Uint8List>();
+        await bench.service.startRealtimeTranscription(
+          capture: secondCapture,
+          pcmStream: secondPcm.stream,
+          onDelta: (_) {},
+        );
+        expect(bench.service.isActive, isTrue);
+        await bench.service.stopAndRetainForRecovery(
+          capture: secondCapture,
+          stopRecorder: secondPcm.close,
+        );
+        expect(bench.service.isActive, isFalse);
+        await repository.close();
+      },
+    );
+
+    test('rejects normal stop while recovery retention is in flight', () async {
+      final repository = ControllableRealtimeRepository()
+        ..disconnectGate = Completer<void>();
+      final bench = await RealtimeTranscriptionTestBench.create(
+        repository: repository,
+      );
+      addTearDown(() async {
+        final gate = repository.disconnectGate;
+        if (gate != null && !gate.isCompleted) gate.complete();
+        bench.dispose();
+      });
+      final capture = await bench.prepareCapture();
+      final pcm = StreamController<Uint8List>();
+      await bench.service.startRealtimeTranscription(
+        capture: capture,
+        pcmStream: pcm.stream,
+        onDelta: (_) {},
+      );
+
+      final retention = bench.service.stopAndRetainForRecovery(
+        capture: capture,
+        stopRecorder: pcm.close,
+      );
+      await repository.disconnectStarted.future;
+
+      await expectLater(
+        bench.service.stop(
+          capture: capture,
+          stopRecorder: () async {},
+          outputPath: path.join(bench.rootDirectory.path, 'must-not-finalize'),
+        ),
+        throwsStateError,
+      );
+
+      repository.disconnectGate!.complete();
+      await retention;
+      expect(bench.service.isActive, isFalse);
+      await repository.close();
     });
   });
 
   group('PCM stream error handling', () {
-    test('logs exception when PCM stream emits error', () {
-      fakeAsync((async) {
-        late RealtimeTranscriptionTestBench bench;
-        RealtimeTranscriptionTestBench.create().then((b) => bench = b);
-        async.flushMicrotasks();
+    test(
+      'signals spool saturation once so the caller can stop the recorder',
+      () async {
+        final bench = await RealtimeTranscriptionTestBench.create(
+          addConfig: false,
+        );
         addTearDown(bench.dispose);
+        final enteredFlush = Completer<void>();
+        final releaseFlush = Completer<void>();
+        var blocked = false;
+        final capture = await bench.service.prepareDurableCapture(
+          rootDirectory: Directory(
+            path.join(bench.rootDirectory.path, 'saturated-spool'),
+          ),
+          context: DurableAudioSpoolContext(
+            recordingSessionId: 'saturated-session',
+            activityEntryId: 'activity-saturated-session',
+            createdAt: DateTime.utc(2026, 7, 18, 7, 30),
+            assetRootPath: path.join(bench.rootDirectory.path, 'assets'),
+          ),
+          maxPendingBytes: 4,
+          durability: AudioSpoolDurability(
+            onBoundary: (boundary) async {
+              if (!blocked &&
+                  boundary == AudioSpoolDurabilityBoundary.activeFileFlushed) {
+                blocked = true;
+                enteredFlush.complete();
+                await releaseFlush.future;
+              }
+            },
+          ),
+        );
+        final pcm = StreamController<Uint8List>(sync: true);
+        final failures = <Object>[];
+        final signalled = Completer<void>();
+        await bench.service.startRealtimeTranscription(
+          capture: capture,
+          pcmStream: pcm.stream,
+          onDelta: (_) {},
+          onCaptureFailure: (error, _) {
+            failures.add(error);
+            if (!signalled.isCompleted) signalled.complete();
+          },
+        );
+        pcm
+          ..add(Uint8List.fromList(<int>[1, 2]))
+          ..add(Uint8List.fromList(<int>[3, 4]));
+        await enteredFlush.future;
+        pcm.add(Uint8List.fromList(<int>[5, 6]));
 
-        late StreamController<Uint8List> pcm;
-        bench.startTranscription().then((c) => pcm = c);
-        async
-          ..flushMicrotasks()
-          ..elapse(Duration.zero)
-          ..flushMicrotasks();
+        await signalled.future;
+
+        expect(failures, hasLength(1));
+        expect(
+          failures.single,
+          isA<DurableAudioSpoolRecoveryRequiredException>(),
+        );
+        releaseFlush.complete();
+        final result = await bench.service.stop(
+          capture: capture,
+          stopRecorder: pcm.close,
+          outputPath: path.join(
+            bench.rootDirectory.path,
+            'assets',
+            'saturated-output',
+          ),
+        );
+        expect(
+          result.captureDisposition,
+          RealtimeCaptureDisposition.savedPartial,
+        );
+        expect(File(result.audioFilePath!).readAsBytesSync().sublist(44), [
+          1,
+          2,
+          3,
+          4,
+        ]);
+      },
+    );
+
+    test(
+      'returns a saved-partial result when PCM stream emits error',
+      () async {
+        final bench = await RealtimeTranscriptionTestBench.create();
+        addTearDown(bench.dispose);
+        final pcm = await bench.startTranscription();
+        await bench.sendPcm(pcmSilence(64));
 
         pcm.addError(Exception('microphone disconnected'));
-        async.flushMicrotasks();
+        await pumpEventQueue();
+        final result = await bench.stop(
+          afterListening: () => bench.simulateDone('partial'),
+        );
 
-        expect(fakeLogging.exceptions, hasLength(1));
+        expect(fakeLogging.exceptions, isNotEmpty);
         expect(
           fakeLogging.exceptions.first.toString(),
           contains('microphone disconnected'),
         );
-
-        bench.service.dispose();
-        async.flushMicrotasks();
-      });
-    });
+        expect(result.audioFilePath, isNotNull);
+        expect(
+          result.captureDisposition,
+          RealtimeCaptureDisposition.savedPartial,
+        );
+      },
+    );
   });
 
   group('WAV file output', () {
@@ -1026,22 +1476,14 @@ void main() {
     });
 
     test(
-      'returns the m4a path and removes the temp WAV on successful conversion',
+      'keeps the durable WAV without invoking lossy conversion',
       () async {
-        // Mock the native audio converter so convertWavToM4a returns true,
-        // exercising the success branch that deletes the temp WAV file.
         const channel = MethodChannel('com.matthiasn.lotti/audio_converter');
-        final converterCalls = <Map<Object?, Object?>>[];
+        var converterCalls = 0;
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(channel, (call) async {
               if (call.method == 'convertWavToM4a') {
-                final args = call.arguments as Map<Object?, Object?>;
-                converterCalls.add(args);
-                // Materialise the output file so the path is real, then report
-                // success so the service deletes the temp WAV.
-                await File(args['outputPath']! as String).writeAsBytes(
-                  const [0],
-                );
+                converterCalls += 1;
                 return true;
               }
               return null;
@@ -1063,14 +1505,8 @@ void main() {
 
         expect(result.transcript, 'converted ok');
         expect(result.audioFilePath, isNotNull);
-        expect(result.audioFilePath, endsWith('.m4a'));
-        // The native converter was invoked with the temp WAV as input.
-        expect(converterCalls, hasLength(1));
-        final tempWavPath = converterCalls.single['inputPath']! as String;
-        expect(tempWavPath, endsWith('.wav'));
-        // The temp WAV was deleted after the successful conversion.
-        expect(File(tempWavPath).existsSync(), isFalse);
-        // The returned m4a file is the materialised output.
+        expect(result.audioFilePath, endsWith('.wav'));
+        expect(converterCalls, 0);
         expect(File(result.audioFilePath!).existsSync(), isTrue);
       },
     );
@@ -1092,7 +1528,7 @@ void main() {
     });
 
     test(
-      'falls back to the temp WAV path when the output move fails',
+      'rejects publication outside the asset root and retains recovery',
       () async {
         final bench = await RealtimeTranscriptionTestBench.create();
         addTearDown(bench.dispose);
@@ -1100,45 +1536,36 @@ void main() {
         await bench.startTranscription();
         await bench.sendPcm(pcmSilence(64));
 
-        // Use an invalid path to trigger the catch block in _saveAudio.
-        // service.stop subscribes to the done stream synchronously, so the
-        // done event fired right after the call cannot be missed.
-        final stopFuture = bench.service.stop(
-          stopRecorder: () async {},
+        final result = await bench.stop(
           outputPath: '/nonexistent/deeply/nested/path/output',
+          afterListening: () => bench.simulateDone('test'),
         );
-        bench.simulateDone('test');
-        final result = await stopFuture;
-
-        // _saveAudio's catch block deliberately keeps the already-written
-        // temp WAV rather than losing the recording: the result carries the
-        // systemTemp fallback path instead of the unreachable output path.
-        expect(result.transcript, 'test');
-        expect(result.audioFilePath, isNotNull);
-        expect(result.audioFilePath, endsWith('.wav'));
         expect(
-          result.audioFilePath,
-          startsWith(Directory.systemTemp.path),
+          result.captureDisposition,
+          RealtimeCaptureDisposition.recoveryRequired,
         );
-        expect(File(result.audioFilePath!).existsSync(), isTrue);
-        // Clean up the kept temp WAV.
-        File(result.audioFilePath!).deleteSync();
+        expect(result.audioFilePath, isNull);
+
+        final recovery = await DurableAudioSpool.recover(
+          sessionDirectory: bench.activeCapture!.sessionDirectory,
+        );
+        expect(recovery.isQuarantined, isFalse);
+        expect(recovery.manifest.acceptedPcmBytes, 64);
       },
     );
   });
 
-  group('PCM buffer cap', () {
-    test('caps buffer to prevent OOM on long recordings', () async {
+  group('durable PCM capacity', () {
+    test('persists a long recording beyond the amplitude buffer cap', () async {
       final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
-      final pcm = await bench.startTranscription();
+      await bench.startTranscription();
 
       // Send chunks that exceed the max buffer size (3,840,000 bytes)
       // Each chunk is 64,000 bytes, so 61 chunks = 3,904,000 bytes > max
       for (var i = 0; i < 61; i++) {
-        pcm.add(Uint8List.fromList(List.filled(64000, i)));
-        await Future<void>.delayed(Duration.zero);
+        await bench.sendPcm(Uint8List.fromList(List.filled(64000, i)));
       }
 
       final result = await bench.stop(
@@ -1147,47 +1574,32 @@ void main() {
 
       expect(result.transcript, 'long recording test');
       expect(result.audioFilePath, isNotNull);
+      expect(
+        File(result.audioFilePath!).lengthSync(),
+        44 + (61 * 64000),
+      );
     });
 
-    test('single chunk exceeding max buffer keeps only tail', () async {
+    test('rejects a single frame larger than bounded spool capacity', () async {
       final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
-      await bench.startTranscription();
+      final failure = Completer<Object>();
+      await bench.startTranscription(
+        onCaptureFailure: (error, _) => failure.complete(error),
+      );
 
       // Send a single chunk that exceeds the max buffer size (3,840,000 bytes)
       final oversizedChunk = Uint8List.fromList(
         List.generate(4000000, (i) => i % 256),
       );
       await bench.sendPcm(oversizedChunk);
-
-      final result = await bench.stop(
-        afterListening: () => bench.simulateDone('oversized chunk test'),
+      expect(
+        await failure.future,
+        isA<DurableAudioSpoolRecoveryRequiredException>(),
       );
 
-      expect(result.transcript, 'oversized chunk test');
-      expect(result.audioFilePath, isNotNull);
+      expect(bench.activeCapture!.spool.manifest.acceptedPcmBytes, 0);
     });
-  });
-
-  group('_saveAudio error handling', () {
-    test(
-      'returns temp WAV path when conversion throws but WAV exists',
-      () async {
-        final bench = await RealtimeTranscriptionTestBench.create();
-        addTearDown(bench.dispose);
-
-        await bench.startTranscription();
-        await bench.sendPcm(pcmSilence(3200));
-
-        final result = await bench.stop(
-          afterListening: () => bench.simulateDone('save error test'),
-        );
-
-        expect(result.transcript, 'save error test');
-        // The audio file should still be present (WAV fallback on test env)
-        expect(result.audioFilePath, isNotNull);
-      },
-    );
   });
 }

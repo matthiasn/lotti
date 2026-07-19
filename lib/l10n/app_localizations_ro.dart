@@ -2817,10 +2817,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get chatInputListening => 'Ascultă...';
 
   @override
+  String get chatInputNoAudioRecorded =>
+      'Nu s-a înregistrat niciun sunet. Încercați din nou.';
+
+  @override
   String get chatInputPleaseWait => 'Așteaptă...';
 
   @override
   String get chatInputProcessing => 'Se procesează...';
+
+  @override
+  String get chatInputRecordingSavedForRecovery =>
+      'Sunetul capturat până acum este păstrat pe acest dispozitiv. Puteți înregistra din nou.';
 
   @override
   String get chatInputRecordVoice => 'Înregistrați un mesaj vocal';
@@ -3589,6 +3597,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Transcrierea în timp real nu a putut porni.';
 
   @override
+  String get dailyOsNextCaptureErrorRecordingSavedForRecovery =>
+      'Sunetul capturat până acum este păstrat pe acest dispozitiv. Puteți înregistra din nou sau puteți scrie în schimb.';
+
+  @override
+  String get dailyOsNextCaptureErrorRecordingSavedPendingTranscription =>
+      'Înregistrarea dvs. este salvată. Transcrierea nu a putut fi finalizată.';
+
+  @override
   String get dailyOsNextCaptureErrorRecordingStartFailed =>
       'Înregistrarea nu a putut porni.';
 
@@ -3646,6 +3662,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Verificați';
+
+  @override
+  String get dailyOsNextCaptureRecordingSavedStatus => 'Înregistrare salvată';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Capturi';
@@ -9641,6 +9660,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Recunoaștere vocală';
+
+  @override
+  String get speechNoAudioRecorded =>
+      'Nu s-a înregistrat niciun sunet. Încercați din nou.';
+
+  @override
+  String get speechRecordingSavedPendingRecovery =>
+      'Înregistrarea dvs. este salvată pe acest dispozitiv și trebuie recuperată.';
 
   @override
   String get speechSettingsModelDescription => 'Model de voce pe dispozitiv';

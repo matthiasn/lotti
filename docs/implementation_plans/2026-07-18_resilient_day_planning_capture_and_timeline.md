@@ -18,6 +18,24 @@ additional plan-review rounds fail to reach 9.0 and no critical blocker remains.
 | 1 | 8.1 | 7.8 | 8.6 | 8.17 | Rejected; critical blockers |
 | 2 | 9.3 | 9.2 | 9.5 | 9.33 | Accepted; no critical blockers |
 
+## Implementation progress
+
+The shared capture foundation is implemented and under its final quality gate:
+
+- `DurableAudioSpool` publishes a checksummed, typed capture context before
+  microphone access and accepts PCM locally before realtime forwarding;
+- output artifacts are session-owned and collision-safe, with deterministic
+  recording/activity identity and explicit recovery disposition invariants;
+- Daily OS uses the durable PCM source in both live-backend and local-only
+  modes, eliminating a weaker file-backed admission window;
+- Daily OS, chat, and journal realtime controllers fence asynchronous teardown
+  and obsolete starts; a failed durable admission never opens the microphone;
+- Daily OS local-only audio is persisted before transcription, and retained failures
+  use warning/saved language rather than a destructive error presentation.
+
+The processing outbox, day-context journal migration, Activity projection,
+manual retry controls, and runtime context integration remain the next slices.
+
 ## Executive decision
 
 Day-planning audio must become durable **before** any network-dependent work
@@ -71,9 +89,9 @@ The new outbox is the durable source of pending day work and rehydrates
 
 ## Current implementation and failure analysis
 
-### Current capture path
+### Baseline capture path at design time
 
-`CaptureController` currently has two paths:
+Before the foundation work above, `CaptureController` had two paths:
 
 - Batch capture records to an `.m4a` file, stops the recorder, calls
   `AudioTranscriptionService.transcribe`, and only then calls
@@ -131,7 +149,7 @@ its attachment with high priority.
 
 | Capability | Reuse | Adapt or build |
 | --- | --- | --- |
-| File-backed audio capture | Reuse `AudioRecorderRepository` path/layout and `AudioNote` | Add crash-recoverable local spooling and make realtime a consumer of the local stream |
+| Audio capture | Reuse `AudioNote` and the established journal asset layout | Use one crash-recoverable PCM spool for Daily OS; make realtime an optional consumer of locally acknowledged frames |
 | Durable audio entity | Reuse `JournalAudio`, `SpeechRepository`, `PersistenceLogic` | Add optional Daily OS origin/workspace metadata and an atomic capture commit API |
 | Playback | Reuse `AudioPlayerWidget` and waveform infrastructure | Render it directly from a day entry before a transcript exists |
 | Device sync | Reuse journal/agent sync outboxes and attachment handling | Do not put processing retries in the Matrix outbox |
@@ -215,9 +233,9 @@ sequenceDiagram
   UI-->>UI: show Saved / Waiting for transcript
 ```
 
-For normal file-backed recording, the spool can wrap the existing recorder.
-For PCM realtime capture, it must persist frames locally before forwarding
-them. To survive a process kill while the container is not finalized, use
+Daily OS always records PCM through the spool and persists each frame locally
+before an optional realtime backend receives it. To survive a process kill
+while the container is not finalized, use
 small independently recoverable PCM/WAV chunks plus an atomically replaced
 manifest. Normal stop consolidates chunks to the standard playback format.
 Startup recovery can salvage all complete chunks and create a playable entry;
@@ -708,7 +726,7 @@ repository's one-source/one-test-file convention.
 
 | Area | Existing files to change | Principal new production files |
 | --- | --- | --- |
-| Capture/spool | `daily_os_next/state/capture_controller.dart`, `ai_chat/services/realtime_transcription_service.dart`, `realtime_audio_buffer.dart`, `realtime_audio_writer.dart` | `speech/services/durable_audio_spool.dart`, `daily_os_next/state/capture_session_context.dart` |
+| Capture/spool | `daily_os_next/state/capture_controller.dart`, `ai_chat/services/realtime_transcription_service.dart`, `realtime_audio_buffer.dart` | `speech/services/durable_audio_spool.dart`, `daily_os_next/state/capture_session_context.dart` |
 | Journal/outbox | `classes/journal_entities.dart`, `database/database.drift`, `database/database_migration_recent.dart`, `database/conversions.dart`, inbound journal sync/upsert, `logic/persistence_logic.dart` / create-update collaborators | `daily_os_next/services/day_capture_commit_service.dart`, `day_capture_recovery_service.dart`, `day_processing_outbox_repository.dart`, `day_processing_outbox_processor.dart` |
 | Agent model/DB/sync | `agents/model/agent_domain_entity.dart`, `agent_constants.dart`, `agents/database/agent_database.drift`, `agent_db_conversions.dart`, repository/core, `agents/wake/wake_queue.dart`, wake-run schema/conversions, `sync/matrix/sync_event_processor_agent_handlers.dart` | `daily_os_next/agents/service/day_plan_read_projection.dart`, `day_processing_invariant_reconciler.dart` |
 | Plan writes/reads | `day_agent_plan_writer.dart`, `day_agent_plan_editor.dart`, `day_agent_plan_service.dart`, `day_agent_plan_reads.dart`, week context, workflow/tools/providers | Central revision/conflict transaction helpers split one source/one test |

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
+import 'package:lotti/features/speech/services/durable_audio_spool.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// The single refine⇄capture voice state machine, shared by the modal
@@ -32,7 +33,15 @@ void listenCaptureForRefine(
       return;
     }
     if (next.phase == CapturePhase.error) {
-      refineNotifier.cancelListening();
+      refineNotifier.cancelListening(
+        problem: switch (next.error) {
+          CaptureError.recordingSavedPendingTranscription =>
+            RefineProblem.captureSavedPendingTranscription,
+          CaptureError.recordingRetainedForRecovery =>
+            RefineProblem.captureRetainedForRecovery,
+          _ => RefineProblem.captureFailed,
+        },
+      );
     }
   });
 }
@@ -42,6 +51,7 @@ void handleRefineVoiceTap({
   required RefineState refineState,
   required RefineController refineNotifier,
   required CaptureController captureNotifier,
+  required DateTime planDate,
 }) {
   switch (refineState.phase) {
     case RefinePhase.idle:
@@ -52,9 +62,19 @@ void handleRefineVoiceTap({
       refineNotifier.beginListening(
         resetTranscript: refineState.phase != RefinePhase.diffReady,
       );
-      unawaited(captureNotifier.toggle());
+      unawaited(
+        captureNotifier.toggle(
+          forDate: planDate,
+          intent: AudioCaptureIntent.dayRefine,
+        ),
+      );
     case RefinePhase.listening:
-      unawaited(captureNotifier.toggle());
+      unawaited(
+        captureNotifier.toggle(
+          forDate: planDate,
+          intent: AudioCaptureIntent.dayRefine,
+        ),
+      );
     case RefinePhase.thinking:
     case RefinePhase.accepted:
       break;
