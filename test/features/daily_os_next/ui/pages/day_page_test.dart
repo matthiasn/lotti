@@ -267,11 +267,12 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // Failed or pending recordings are the primary no-plan recovery path.
+        // Failed or pending recordings are the primary no-plan recovery path,
+        // while already-tracked time remains visible on the same surface.
         expect(find.byType(DayActivityView), findsOneWidget);
         expect(find.byType(DayTimeline), findsNothing);
         expect(find.byType(AgendaView), findsNothing);
-        expect(find.text('Recorded session'), findsNothing);
+        expect(find.text('Recorded session'), findsOneWidget);
 
         // Footer carries the single check-in CTA, not Refine/Commit.
         final messages = tester.element(find.byType(DayPage)).messages;
