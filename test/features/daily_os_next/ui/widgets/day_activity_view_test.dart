@@ -22,6 +22,7 @@ void main() {
     required String activityId,
     required DayProcessingJobStatus status,
     String? transcript,
+    DayProcessingFailureClass? failureClass,
   }) => DayProcessingJob(
     id: id,
     kind: DayProcessingJobKind.transcribeAudio,
@@ -37,6 +38,7 @@ void main() {
     attempts: 0,
     generation: 0,
     resultTranscript: transcript,
+    lastFailureClass: failureClass,
   );
 
   testWidgets('shows durable states and lets a ready transcript build a plan', (
@@ -45,6 +47,8 @@ void main() {
     DayActivityEntry? used;
     final transcriptWriter = MockDayAudioTranscriptWriter();
     final outbox = MockDayProcessingOutboxRepository();
+    final recoveryService = MockDayAudioSpoolRecoveryService();
+    final runtime = MockDayProcessingRuntime();
     when(
       () => transcriptWriter.attachManual(
         audioId: any(named: 'audioId'),
@@ -54,6 +58,11 @@ void main() {
     when(
       () => outbox.satisfyWithReviewedText(any(), any()),
     ).thenAnswer((_) async => null);
+    when(() => outbox.retryNow(any())).thenAnswer((_) async => null);
+    when(
+      () => recoveryService.recoverSession(any()),
+    ).thenAnswer((_) async => null);
+    when(runtime.nudge).thenAnswer((_) async {});
     final waiting = DayActivityEntry(
       id: 'waiting',
       kind: DayActivityEntryKind.recording,
@@ -115,6 +124,10 @@ void main() {
           ),
           dayAudioTranscriptWriterProvider.overrideWithValue(transcriptWriter),
           dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
+          dayAudioSpoolRecoveryServiceProvider.overrideWithValue(
+            recoveryService,
+          ),
+          dayProcessingRuntimeProvider.overrideWithValue(runtime),
         ],
       ),
     );
@@ -135,6 +148,16 @@ void main() {
       find.text('Protect the afternoon for focused work.'),
       findsOneWidget,
     );
+
+    await tester.tap(find.text(messages.dailyOsNextActivityRetry));
+    await tester.pump();
+    verify(() => outbox.retryNow('job-waiting')).called(1);
+    verify(runtime.nudge).called(1);
+
+    await tester.tap(find.text(messages.dailyOsNextActivityRecover));
+    await tester.pump();
+    verify(() => recoveryService.recoverSession('session-recovery')).called(1);
+    verify(runtime.nudge).called(1);
 
     await tester.tap(
       find.text(messages.dailyOsNextActivityAddOrEditText).first,
@@ -221,5 +244,83 @@ void main() {
     final messages = tester.element(find.byType(DayActivityView)).messages;
     expect(find.text('Client follow-up'), findsOneWidget);
     expect(find.text(messages.dailyOsNextActivityEmpty), findsNothing);
+  });
+
+  testWidgets('renders plan, summary, processing, and failure semantics', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(1000, 2000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final entries = [
+      DayActivityEntry(
+        id: 'plan',
+        kind: DayActivityEntryKind.plan,
+        createdAt: capturedAt,
+        activityEntryId: 'plan',
+      ),
+      DayActivityEntry(
+        id: 'summary',
+        kind: DayActivityEntryKind.summary,
+        createdAt: capturedAt,
+        activityEntryId: 'summary',
+      ),
+      for (final (id, status, failure) in [
+        ('running', DayProcessingJobStatus.running, null),
+        (
+          'missing',
+          DayProcessingJobStatus.failed,
+          DayProcessingFailureClass.missingAsset,
+        ),
+        (
+          'setup',
+          DayProcessingJobStatus.waitingForUser,
+          DayProcessingFailureClass.setupRequired,
+        ),
+      ])
+        DayActivityEntry(
+          id: id,
+          kind: DayActivityEntryKind.recording,
+          createdAt: capturedAt,
+          activityEntryId: id,
+          processingJob: job(
+            id: 'job-$id',
+            activityId: id,
+            status: status,
+            failureClass: failure,
+          ),
+        ),
+    ];
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        DayActivityView(
+          date: date,
+          hasPlan: true,
+          actualBlocks: const [],
+          onUseEntry: (_) {},
+        ),
+        overrides: [
+          dayActivityProvider.overrideWith((ref, date) async => entries),
+        ],
+        mediaQueryData: const MediaQueryData(size: Size(1000, 2000)),
+      ),
+    );
+    await tester.pump();
+
+    final messages = tester.element(find.byType(DayActivityView)).messages;
+    for (final text in [
+      messages.dailyOsNextActivityPlanCreated,
+      messages.dailyOsNextActivityPlanAvailable,
+      messages.dailyOsNextActivityDaySummary,
+      messages.dailyOsNextActivityTranscribing,
+      messages.dailyOsNextActivityMissingAudio,
+      messages.dailyOsNextActivitySetupRequired,
+      messages.dailyOsNextActivityOpenSetup,
+    ]) {
+      expect(find.text(text), findsOneWidget);
+    }
   });
 }
